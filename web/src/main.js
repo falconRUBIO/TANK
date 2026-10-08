@@ -90,7 +90,7 @@ function startPlace(type, id = null) {
   const s = game.state, free = !id && s.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS', d = DECOR_DEF[type];
   const it = id ? s.decor.find((x) => x.id === id) : null;
   placing = { type, id, free }; decor.start({ type, id, x: it?.x ?? 0, z: it?.z ?? 1.6, ry: it?.ry ?? 0 });
-  $('placehint').textContent = id ? `Drag ${d.label} to move it` : `Drag ${d.label} left or right to line it up`;
+  $('placehint').textContent = id ? "Slide to move it" : "Slide left or right";
   $('pok').textContent = id ? 'Place' : `Place · ${free ? 'FREE' : '🐚 ' + d.price}`; $('psell').hidden = !id; if (id) $('psell').textContent = `Sell +${Math.floor(d.price / 2)}`;
   placebar.classList.add('on'); updatePlaceOk();
 }
