@@ -17,7 +17,7 @@ const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 export function stoneTex(seed = 1, base = [170, 162, 128]) {
   return makeTex(32, (g, S) => {
     const r = mulberry32(seed * 977), N = S / 2;                  // 16x16 cells drawn 2px wide: chunky, like the reference's big voxels
-    const dark = mix(base, [60, 58, 40], 0.55), light = mix(base, [236, 226, 170], 0.42);
+    const dark = mix(base, [60, 58, 40], 0.36), light = mix(base, [236, 226, 170], 0.26);
     const mossC = [[84, 122, 38], [122, 152, 48], [166, 174, 62]];
     const cell = (x, y, c) => { g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; g.fillRect(x * 2, y * 2, 2, 2); };
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -25,7 +25,7 @@ export function stoneTex(seed = 1, base = [170, 162, 128]) {
       const n = fbm(x * 0.34 + seed * 9, y * 0.34, seed) * 1.12 + (r() - 0.5) * 0.22;
       let c = n < 0.4 + th * 0.24 ? dark : n > 0.62 + th * 0.24 ? light : base;
       const q = r();
-      if (q > 0.95) c = mix(c, [40, 38, 28], 0.42); else if (q > 0.91) c = mix(c, [244, 232, 176], 0.34);
+      if (q > 0.97) c = mix(c, [40, 38, 28], 0.3); else if (q > 0.94) c = mix(c, [244, 232, 176], 0.22);
       const m = fbm(x * 0.28 + 40, y * 0.4 + seed, 3) + th * 0.3;
       if (m > 0.6 && y < N * 0.88) c = mossC[(r() * (m > 0.74 ? 3 : 2)) | 0];
       if (y < 1 || x < 1) c = mix(c, [246, 240, 200], 0.26);
@@ -78,7 +78,7 @@ export class CausticMap {
         c += 0.005 / Math.hypot(px0 / Math.sin(ix + tt), py0 / Math.cos(iy + tt)) ;
       }
       c /= 4; c = 1.17 - Math.pow(c, 1.4); c = Math.pow(Math.abs(c), 8);
-      const v = Math.max(0, Math.min(255, 70 + c * 640));
+      const v = Math.max(0, Math.min(255, 118 + c * 300));
       const i = (y * n + x) * 4; d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
     }
     this.g.putImageData(this.img, 0, 0); this.tex.needsUpdate = true;

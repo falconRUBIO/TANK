@@ -48,7 +48,7 @@ const fill = new THREE.DirectionalLight(0xffe6c8, 1.25); fill.position.set(-5, 9
 const rim = new THREE.DirectionalLight(0x6fc8ff, 1.2); rim.position.set(8, 7, -12); scene.add(rim);
 const lamp = new THREE.PointLight(0xffa24a, 0, 12, 1.6); lamp.position.copy(env.lampPos); scene.add(lamp);
 
-const shafts = new Shafts(); scene.add(shafts.group); shafts.rebuild();
+const shafts = new Shafts(); shafts.rebuild();   // god-ray streaks removed from the scene (too much); class kept for later
 const surf = waterSurface(); scene.add(surf.mesh);
 const snow = new Snow(); scene.add(snow.pts);
 const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -0.8, 16); scene.add(bubbles.mesh, bubbles2.mesh);
@@ -197,20 +197,20 @@ const grade = new ShaderPass({
       vec3 c = texture2D(tDiffuse, vUv).rgb;
       float l = dot(c, vec3(.299,.587,.114));
       c = mix(c*vec3(.92,1.0,1.1), c*vec3(1.08,1.02,.93), smoothstep(.25,.8,l));  // cool shadows / warm highlights
-      c = mix(vec3(l), c, 1.3) * uTint;
+      c = mix(vec3(l), c, 1.2) * uTint;
       // warm foreground / cool distance: the colour of the pixels carries the light, like the reference
       float cool = smoothstep(.3, .95, vUv.y*.75 + vUv.x*.35);
-      c *= mix(mix(vec3(1.0), vec3(1.1,1.03,.84), uWarm), vec3(.86,1.0,1.16), cool);
+      c *= mix(mix(vec3(1.0), vec3(1.06,1.02,.9), uWarm), vec3(.92,1.0,1.1), cool);
       // sparkling, blocky surface light along the top edge
       vec2 g = floor(vUv * vec2(96., 170.));
       float top = smoothstep(.87, 1., vUv.y);
       float w = sin(g.x*.55 + uT*1.3 + sin(g.y*.9 + uT*.7)*2.2) * .5 + .5;
       float sp = step(.72, fract(sin(dot(g, vec2(12.9,78.2)) + floor(uT*2.)) * 43758.5));
-      c += top * (pow(w, 3.) * .5 + sp * .35) * mix(vec3(.7,.9,1.), vec3(1.,.9,.6), uWarm*.6) * uPool * 1.6;
+      c += top * (pow(w, 3.) * .5 + sp * .35) * mix(vec3(.7,.9,1.), vec3(1.,.9,.6), uWarm*.6) * uPool * 0.6;
       vec2 d = vUv-vec2(.5,.38);
       float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
-      c *= mix(1. - uPool*.62, 1.08, pool);
-      c *= mix(.6, 1., smoothstep(1.05,.28, length((vUv-.5)*vec2(1.0,.9))));          // vignette
+      c *= mix(1. - uPool*.5, 1.03, pool);
+      c *= mix(.78, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
       // PS1-style 15-bit colour with ordered dither
       float levels = 31.;
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
@@ -222,10 +222,10 @@ composer.addPass(grade);
 
 // ── time of day ──
 const TOD = {
-  morning:   { sunCol: 0xf2f0d0, sunI: 12, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.05, ambI: 0.3, rimCol: 0x8ad8ff, rimI: 0.7, fog: 0x16506c, fogNear: 24, fogFar: 52, bgTop: 0x266c88, bgBot: 0x07222f, lampI: 0, shaft: 0.24, surf: 0.8, exposure: 1.03, bloom: 0.22, glow: 0.3, tint: 0xf4fbff, pool: 0.4, warm: 0.6 },
-  afternoon: { sunCol: 0xffe8a4, sunI: 13, sunPos: [-6, 24, 12], hemiSky: 0xa8c096, hemiGnd: 0x6a5430, hemiI: 1.05, ambI: 0.3, rimCol: 0x78ceff, rimI: 0.7, fog: 0x123f60, fogNear: 24, fogFar: 52, bgTop: 0x1c5c7c, bgBot: 0x061f2c, lampI: 0, shaft: 0.26, surf: 0.95, exposure: 1.05, bloom: 0.22, glow: 0.4, tint: 0xfff8ec, pool: 0.4, warm: 1.0 },
-  evening:   { sunCol: 0xff9050, sunI: 13, sunPos: [10, 17, 9], hemiSky: 0xa88aa8, hemiGnd: 0x5a3a2c, hemiI: 0.95, ambI: 0.26, rimCol: 0xff6aa0, rimI: 1.0, fog: 0x35305c, fogNear: 20, fogFar: 50, bgTop: 0x6a4c8c, bgBot: 0x120f28, lampI: 24, shaft: 0.4, surf: 0.8, exposure: 1.02, bloom: 0.42, glow: 1.4, tint: 0xfff0ec, pool: 0.45, warm: 1.2 },
-  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.8, fog: 0x06102a, fogNear: 16, fogFar: 46, bgTop: 0x0c2352, bgBot: 0x020610, lampI: 70, shaft: 0.16, surf: 0.3, exposure: 1.12, bloom: 0.7, glow: 3.0, tint: 0xeef2ff, pool: 0.3, warm: 0.2 },
+  morning:   { sunCol: 0xf2f0d0, sunI: 9.5, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.35, fog: 0x16506c, fogNear: 24, fogFar: 52, bgTop: 0x266c88, bgBot: 0x07222f, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
+  afternoon: { sunCol: 0xffe8a4, sunI: 10, sunPos: [-6, 24, 12], hemiSky: 0xa8c096, hemiGnd: 0x6a5430, hemiI: 1.25, ambI: 0.4, rimCol: 0x78ceff, rimI: 0.35, fog: 0x123f60, fogNear: 24, fogFar: 52, bgTop: 0x1c5c7c, bgBot: 0x061f2c, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.05, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
+  evening:   { sunCol: 0xff9050, sunI: 10, sunPos: [10, 17, 9], hemiSky: 0xb09ab0, hemiGnd: 0x5a4a38, hemiI: 0.95, ambI: 0.26, rimCol: 0xff6aa0, rimI: 0.5, fog: 0x2c3556, fogNear: 20, fogFar: 50, bgTop: 0x4a4f78, bgBot: 0x0e1426, lampI: 24, shaft: 0.4, surf: 0.4, exposure: 1.02, bloom: 0.23, glow: 1.4, tint: 0xfff0ec, pool: 0.23, warm: 1.2 },
+  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.4, fog: 0x0a1630, fogNear: 16, fogFar: 46, bgTop: 0x12295a, bgBot: 0x03070f, lampI: 70, shaft: 0.16, surf: 0.15, exposure: 1.12, bloom: 0.39, glow: 3.0, tint: 0xeef2ff, pool: 0.15, warm: 0.2 },
 };
 const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];
 const qs = new URLSearchParams(location.search);
