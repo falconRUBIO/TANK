@@ -3,16 +3,17 @@
 // collider so fish swim around it instead of through it.
 import * as THREE from 'three';
 import { mulberry32, fbm, mix } from '../color.js';
-import { swayTime } from './env.js';
+import { voxShading } from './voxshade.js';
 
 const rgb = (c, k = 1) => new THREE.Color().setRGB(Math.min(1.6, c[0] / 255 * k), Math.min(1.6, c[1] / 255 * k), Math.min(1.6, c[2] / 255 * k), THREE.SRGBColorSpace);
 const hash = (i, j, k, s = 0) => { let h = (i * 374761393 + j * 668265263 + k * 2147483647 + s * 1274126177) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
-const vmat = new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0 });
+const vmat = voxShading(new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0 }));
+const pmat = voxShading(new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, side: THREE.DoubleSide }), { sway: true, boost: 1.1 });
 
 // ── tiny voxel modeller ──
 class Vox {
   constructor(u) { this.u = u; this.m = new Map(); }
-  set(i, j, k, c, k2 = 1) { this.m.set(i + ',' + j + ',' + k, { i, j, k, c, k2 }); }
+  set(i, j, k, c, k2 = 1, sw, ph) { this.m.set(i + ',' + j + ',' + k, { i, j, k, c, k2, sw, ph }); }
   has(i, j, k) { return this.m.has(i + ',' + j + ',' + k); }
   fill(i0, j0, k0, i1, j1, k1, fn) { for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) for (let k = k0; k <= k1; k++) this.set(i, j, k, typeof fn === 'function' ? fn(i, j, k) : fn); }
   ellipsoid(ci, cj, ck, ri, rj, rk, fn, seed = 0, rough = 0.22) {
@@ -21,99 +22,78 @@ class Vox {
       if (d <= 1 + (fbm(i * 0.35 + seed, j * 0.35, k * 0.35) - 0.5) * rough * 2) this.set(i, j, k, fn(i, j, k));
     }
   }
-  mesh() {
-    const cells = [...this.m.values()].filter((c) => !(this.has(c.i + 1, c.j, c.k) && this.has(c.i - 1, c.j, c.k) && this.has(c.i, c.j + 1, c.k) && this.has(c.i, c.j - 1, c.k) && this.has(c.i, c.j, c.k + 1) && this.has(c.i, c.j, c.k - 1)));
-    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(this.u, this.u, this.u), vmat, cells.length);
-    const mt = new THREE.Matrix4();
-    cells.forEach((c, n) => { mt.makeTranslation(c.i * this.u, c.j * this.u, c.k * this.u); im.setMatrixAt(n, mt); im.setColorAt(n, rgb(c.c, c.k2)); });
+  // Same recipe as the fish: smooth normals from a 5x5x5 neighbourhood, baked AO, tiny per-cube colour jitter
+  mesh(sway = null) {
+    const g = (i, j, k) => (this.m.has(i + ',' + j + ',' + k) ? 1 : 0);
+    const cells = [...this.m.values()].filter((c) => !(g(c.i + 1, c.j, c.k) && g(c.i - 1, c.j, c.k) && g(c.i, c.j + 1, c.k) && g(c.i, c.j - 1, c.k) && g(c.i, c.j, c.k + 1) && g(c.i, c.j, c.k - 1)));
+    const n = cells.length, nrm = new Float32Array(n * 3), swa = new Float32Array(n * 2);
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(this.u, this.u, this.u), sway ? pmat : vmat, n), mt = new THREE.Matrix4(), col = new THREE.Color();
+    cells.forEach((c, id) => {
+      let gx = 0, gy = 0, gz = 0, cnt = 0;
+      for (let dz = -2; dz <= 2; dz++) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        if (!(dx | dy | dz) || !g(c.i + dx, c.j + dy, c.k + dz)) continue;
+        const w = 1 / (1 + dx * dx + dy * dy + dz * dz); gx -= dx * w; gy -= dy * w; gz -= dz * w; if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) <= 3) cnt++;
+      }
+      const m = Math.hypot(gx, gy, gz); if (m > 0.08) { nrm[id * 3] = gx / m; nrm[id * 3 + 1] = gy / m; nrm[id * 3 + 2] = gz / m; }
+      const ao = Math.max(0, Math.min(0.3, (cnt / 24 - 0.42) * 1.5)), jit = 0.95 + hash(c.i, c.j, c.k, 11) * 0.09;
+      mt.makeTranslation(c.i * this.u, c.j * this.u, c.k * this.u); im.setMatrixAt(id, mt);
+      const k = c.k2 * (1 - ao) * jit; col.setRGB(Math.min(1.6, c.c[0] / 255 * k), Math.min(1.6, c.c[1] / 255 * k), Math.min(1.6, c.c[2] / 255 * k), THREE.SRGBColorSpace); im.setColorAt(id, col);
+      if (sway) { swa[id * 2] = c.sw ?? 0; swa[id * 2 + 1] = c.ph ?? 0; }
+    });
+    im.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
+    if (sway) im.geometry.setAttribute('aSw', new THREE.InstancedBufferAttribute(swa, 2));
     im.castShadow = im.receiveShadow = true; im.frustumCulled = false; return im;
   }
 }
 // top faces catch a little light, like the reference's sun-warmed tops
 const topLit = (v, c) => { for (const q of v.m.values()) if (!v.has(q.i, q.j + 1, q.k)) q.c = mix(q.c, [255, 244, 200], 0.16); };
 
-// ── pixel-art cut-out plants ──
-function pixTex(w, h, draw) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
-  const P = (x, y, col) => { g.fillStyle = `rgb(${col[0] | 0},${col[1] | 0},${col[2] | 0})`; g.fillRect(x | 0, y | 0, 1, 1); };
-  draw(P, w, h);
-  const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-// Pixel-art plant cards. Blades are 2-3px ribbons with a lit left edge, a dark right edge and a pale midrib.
-const rb = mulberry32(5);
-function blade(P, x0, y0, len, lean, wMax, hue) {
-  for (let s = 0; s < len; s++) {
-    const t = s / len, cx = x0 + lean * Math.pow(t, 1.6) * 6 + Math.sin(t * 3 + x0) * 0.8, y = y0 - s;
-    const w = Math.max(0.5, wMax * (t < 0.7 ? 1 - t * 0.25 : (1 - t) / 0.3 * 0.82));
-    for (let x = Math.floor(cx - w); x <= Math.ceil(cx + w); x++) {
-      const d = (x + 0.5 - cx) / Math.max(w, 0.6); if (Math.abs(d) > 1.05) continue;
-      let c = mix(hue[0], hue[1], 0.25 + t * 0.7);
-      if (d < -0.35) c = mix(c, [214, 236, 110], 0.4); else if (d > 0.4) c = mix(c, [24, 60, 34], 0.5);
-      if (Math.abs(d) < 0.2 && s % 5 < 3) c = mix(c, [220, 240, 140], 0.3);
-      P(x, y, c);
+// ── voxel plants: the same chunky cubes, smooth shading and warm palette as the fish, swaying with the current ──
+const PU = 0.07;                                     // plant voxel size
+function plantVox(v, rng, base, kind, o = {}) {
+  const [bx, bz] = base, I = Math.round(bx / PU), K = Math.round(bz / PU), ph = rng() * 6.28;
+  const put = (i, j, k, c, H, k2 = 1) => v.set(i, j, k, c, k2, Math.min(1, j / H), ph);
+  const lerpc = (a, b, t) => mix(a, b, Math.max(0, Math.min(1, t)));
+  if (kind === 'grass') {                                           // tall ribbon blades, lit on the left, dark on the right
+    const n = o.n ?? 6, hues = o.hues ?? [[[38, 96, 44], [136, 196, 62]], [[54, 116, 40], [176, 208, 70]]];
+    for (let b = 0; b < n; b++) {
+      const H = Math.round((o.h ?? 52) * (0.55 + rng() * 0.6)), lean = (rng() - 0.5) * 0.55 + (o.lean ?? 0), x0 = I + Math.round((b - n / 2) * 2.2 + (rng() - 0.5) * 2), z0 = K + Math.round((rng() - 0.5) * 4), hue = hues[b % hues.length];
+      for (let j = 0; j <= H; j++) {
+        const t = j / H, cx = x0 + Math.round(lean * j * (0.25 + t * 0.8) + Math.sin(t * 3 + b) * 1.2), w = t < 0.78 ? 2 : 1;
+        for (let q = 0; q < w; q++) put(cx + q, j, z0, q === 0 ? lerpc(hue[0], hue[1], 0.2 + t * 0.9) : lerpc(mix(hue[0], [20, 54, 36], 0.35), hue[1], t * 0.55), H, q === 0 ? 1.12 : 0.92);
+        if (j % 11 === 5 && w === 2) put(cx, j, z0, [214, 236, 120], H, 1.1);               // pale midrib flecks
+      }
     }
-  }
-}
-const grassTex = (variant = 0) => pixTex(40, 96, (P) => {
-  const hues = [[[40, 92, 40], [128, 186, 56]], [[52, 110, 38], [150, 196, 60]], [[30, 80, 44], [96, 160, 62]]];
-  const n = 7;
-  for (let i = 0; i < n; i++) {
-    const x0 = 8 + i * 4 + (rb() - 0.5) * 3, len = 40 + rb() * 54, lean = (rb() - 0.5) * 2.6;
-    blade(P, x0, 95, len, lean, 2.2 + rb() * 1.2, hues[(i + variant) % 3]);
-  }
-});
-const fernTex = (v = 0) => pixTex(56, 96, (P) => {
-  // upright frond like the reference: slim curved rachis, many short chevron leaflets, lime to gold
-  const stem = (t) => [28 + Math.sin(t * (v ? 1.6 : 2.4)) * (v ? -6 : 5) + (v ? 3 : -3) * t, 95 - t * 90];
-  for (let n = 0; n <= 160; n++) { const [x, y] = stem(n / 160); P(x, y, [88, 118, 40]); P(x + 1, y, [60, 86, 32]); }
-  for (let k = 1; k < (v ? 26 : 34); k++) {
-    const t = k / (v ? 26 : 34), [bx, by] = stem(t), L = Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.04)) * (v ? 17 : 14) + 2;
-    for (const sd of [-1, 1]) for (let s = 1; s <= L; s++) {
-      const f = s / L, x = bx + sd * s * 0.95, y = by - s * 0.55 + f * f * 2.2 + (k & 1) * 0.6;
-      const c = mix(v ? [60, 112, 52] : [86, 128, 40], v ? [150, 200, 96] : [190, 208, 76], t * 0.55 + (1 - f) * 0.35);
-      P(x, y, c); P(x, y + 1, mix(c, [48, 84, 30], 0.5)); if (f < 0.5) P(x, y - 1, mix(c, [226, 232, 130], 0.3));
+  } else if (kind === 'fern') {                                     // arching frond with paired leaflets, lime to gold
+    const H = o.h ?? 56, side = o.side ?? 1, lowc = o.low ?? [70, 124, 44], hic = o.high ?? [196, 214, 78];
+    const stem = (j) => [I + Math.round(side * Math.pow(j / H, 1.6) * 14), j];
+    for (let j = 0; j <= H; j++) { const [x] = stem(j); put(x, j, K, [86, 118, 40], H); put(x + 1, j, K, [58, 84, 32], H, 0.9); }
+    for (let j = 4; j < H; j += 2) {
+      const t = j / H, L = Math.round(Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.05)) * 9 + 2), [sx] = stem(j);
+      for (const sd of [-1, 1]) for (let s2 = 1; s2 <= L; s2++) {
+        const f = s2 / L, x = sx + sd * s2, y = j + Math.round(s2 * 0.5 - f * f * 1.8), z = K + (j & 2 ? 1 : 0);
+        put(x, y, z, lerpc(lowc, hic, t * 0.55 + (1 - f) * 0.4), H, f > 0.6 ? 1.1 : 1);
+      }
     }
-  }
-});
-const swordTex = () => pixTex(48, 80, (P) => {
-  for (let l = 0; l < 7; l++) {
-    const an = (l - 3) * 0.3, len = 62 - Math.abs(l - 3) * 7;
-    for (let s = 0; s < len; s++) {
-      const t = s / len, cx = 24 + Math.sin(an) * s * 0.9 + Math.pow(t, 2) * (l - 3) * 3, y = 79 - s * Math.cos(an) * 0.98, w = Math.sin(Math.PI * Math.min(1, t * 1.1 + 0.04)) * 4.4 + 0.5;
-      for (let x = Math.floor(cx - w); x <= Math.ceil(cx + w); x++) { const d = (x + 0.5 - cx) / Math.max(w, 0.6); if (Math.abs(d) > 1.05) continue; let c = mix([40, 104, 44], [132, 188, 62], t * 0.7 + 0.15); if (d < -0.3) c = mix(c, [200, 232, 110], 0.35); else if (d > 0.4) c = mix(c, [24, 60, 36], 0.5); if (Math.abs(d) < 0.15) c = mix(c, [210, 236, 130], 0.4); P(x, y, c); }
+  } else if (kind === 'red') {                                      // bushy plume
+    const H = o.h ?? 54;
+    for (let j = 0; j <= H; j++) put(I, j, K, [128, 30, 40], H);
+    for (let j = 6; j < H; j += 2) {
+      const t = j / H, L = Math.round(Math.sin(Math.PI * Math.min(1, t * 0.95 + 0.08)) * 9 + 2);
+      for (const sd of [-1, 1]) for (let s2 = 1; s2 <= L; s2++) { const f = s2 / L; put(I + sd * s2, j + Math.round(s2 * 0.45 - f * f * 1.4), K + ((j >> 1) & 1), lerpc([170, 34, 46], [244, 92, 76], t * 0.5 + f * 0.45), H, f > 0.7 ? 1.12 : 1); }
     }
-  }
-});
-const redTex = () => pixTex(40, 80, (P) => {
-  for (let y = 79; y >= 4; y--) P(20 + Math.sin(y * 0.07) * 1.2, y, [118, 30, 38]);
-  for (let k = 0; k < 26; k++) {
-    const t = k / 26, y0 = 77 - k * 2.8, L = Math.sin(Math.PI * Math.min(1, t * 0.9 + 0.1)) * 13 + 2;
-    for (const sd of [-1, 1]) for (let s = 1; s <= L; s++) { const f = s / L, x = 20 + sd * s, y = y0 - s * 0.6 + f * f * 2; const c = mix([176, 36, 46], [244, 90, 74], t * 0.5 + f * 0.4); P(x, y, c); P(x, y + 1, mix(c, [90, 18, 28], 0.5)); }
-  }
-});
-
-function plantMesh(tex, items, rng, { w, hMin, hMax, alphaTest = 0.5 }) {
-  const g = new THREE.PlaneGeometry(1, 1, 1, 6); g.translate(0, 0.5, 0);
-  const sway = new Float32Array(g.attributes.uv.count); for (let i = 0; i < sway.length; i++) sway[i] = g.attributes.uv.getY(i);
-  g.setAttribute('aSway', new THREE.BufferAttribute(sway, 1));
-  const mat = new THREE.MeshStandardMaterial({ map: tex, alphaTest, side: THREE.DoubleSide, roughness: 0.85 });
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = swayTime;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;\nattribute float aSway;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        float ph = float(gl_InstanceID) * 1.31;
-        transformed.x += (sin(uTime * 1.15 + ph + position.y * 0.6) * 0.13 + sin(uTime * 2.1 + ph * 2.0) * 0.025) * aSway * aSway;`);
-  };
-  const n = items.length * 2, im = new THREE.InstancedMesh(g, mat, n), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3();
-  let i = 0;
-  for (const it of items) {
-    const h = hMin + rng() * (hMax - hMin), yaw = rng() * 3.14, wd = w * (0.85 + rng() * 0.4);
-    for (let k = 0; k < 2; k++) {                                              // two crossed cards read as a full little plant
-      q.setFromEuler(e.set(0, yaw + k * 1.5708, (rng() - 0.5) * 0.12)); m.compose(p.set(it.x + (rng() - 0.5) * 0.15, it.y ?? -0.02, it.z + (rng() - 0.5) * 0.15), q, sc.set(wd, h, 1));
-      im.setMatrixAt(i, m); const k0 = 0.8 + rng() * 0.3, hue = rng(); im.setColorAt(i, new THREE.Color(k0 * (1 + (hue - 0.5) * 0.25), k0 * (1 + (0.5 - Math.abs(hue - 0.5)) * 0.12), k0 * (1 - (hue - 0.5) * 0.25))); i++;
+  } else if (kind === 'sword') {                                    // broad leaves arching outward
+    for (let l = 0; l < 6; l++) {
+      const ang = (l - 2.5) * 0.42, H = Math.round(26 + rng() * 14 - Math.abs(l - 2.5) * 3);
+      for (let j = 0; j <= H; j++) {
+        const t = j / H, cx = I + Math.round(Math.sin(ang) * j * 0.9 + Math.pow(t, 2) * (l - 2.5) * 5), w = Math.max(1, Math.round(Math.sin(Math.PI * Math.min(1, t * 1.1 + 0.05)) * 3.2));
+        for (let q = -w + 1; q <= w - 1; q++) put(cx + q, j, K + (l & 1), lerpc([44, 108, 48], [140, 192, 66], t * 0.7 + (q < 0 ? 0.2 : 0)), H, q < 0 ? 1.1 : 0.94);
+      }
     }
+  } else if (kind === 'kelp') {
+    const H = o.h ?? 120, x0 = I;
+    for (let j = 0; j <= H; j++) { const cx = x0 + Math.round(Math.sin(j * 0.05 + ph) * 3 * (j / H)); put(cx, j, K, lerpc([22, 66, 62], [64, 128, 100], j / H), H); put(cx + 1, j, K, [28, 80, 70], H, 0.85); }
   }
-  im.castShadow = im.receiveShadow = true; im.frustumCulled = false; return im;
 }
 
 // Voxel-accurate collision: every solid voxel of every decoration is stamped into one coarse occupancy grid.
@@ -233,14 +213,21 @@ export function buildDecor(seed = 21) {
   // ── plants: dense layered cut-outs, placed like the reference (ferns hugging the left, tall grass through the middle, red plume by the lantern) ──
   const L = (x0, x1, z0, z1, n) => Array.from({ length: n }, () => ({ x: x0 + rng() * (x1 - x0), z: z0 + rng() * (z1 - z0) }));
   // composition: ferns frame the left and right edges, tall grass in a back row, mid clumps around the lantern and ruin base, low plants in front
-  const at = (...pts) => pts.map(([x, z]) => ({ x, z }));
-  group.add(plantMesh(fernTex(0), at([-4.6, 1.0], [-4.9, 0.3], [4.4, 1.7], [4.8, 0.9]), rng, { w: 2.3, hMin: 2.6, hMax: 3.9 }));
-  group.add(plantMesh(fernTex(1), at([-4.1, 0.6], [-3.9, 2.1], [3.9, 2.3], [4.2, 0.4]), rng, { w: 2.1, hMin: 2.2, hMax: 3.4 }));
-  group.add(plantMesh(grassTex(0), at([-4.6, -2.7], [1.5, -2.2], [3.3, -2.6], [4.6, -1.6], [0.9, -1.2]), rng, { w: 1.8, hMin: 3.8, hMax: 5.6 }));
-  group.add(plantMesh(grassTex(2), at([-4.2, 0.5], [0.9, 0.6], [1.6, 0.0], [4.5, 0.4], [3.8, -0.9]), rng, { w: 1.6, hMin: 2.2, hMax: 3.4 }));
-  group.add(plantMesh(grassTex(1), at([-4.0, 2.9], [0.6, 2.9], [1.8, 2.6], [3.4, 2.9], [-4.6, 2.3]), rng, { w: 1.4, hMin: 1.1, hMax: 2.0 }));
-  group.add(plantMesh(swordTex(), at([-3.2, 2.4], [2.4, 1.3], [0.3, 2.2]), rng, { w: 2.1, hMin: 1.6, hMax: 2.4 }));
-  group.add(plantMesh(redTex(), at([2.0, 0.2], [2.6, -0.4], [1.6, -0.8]), rng, { w: 1.7, hMin: 2.8, hMax: 3.8 }));
+  {
+    const pv = new Vox(PU);
+    const at = (...pts) => pts;
+    for (const p of at([-4.7, 1.1], [-4.2, 0.5], [4.4, 1.7], [4.9, 0.8])) plantVox(pv, rng, p, 'fern', { h: 54 + ((rng() * 12) | 0), side: p[0] < 0 ? 1 : -1 });
+    for (const p of at([-3.9, 2.1], [3.9, 2.3], [-4.9, 0.2])) plantVox(pv, rng, p, 'fern', { h: 44, side: p[0] < 0 ? 1 : -1, low: [52, 108, 56], high: [150, 204, 96] });
+    for (const p of at([-4.6, -2.7], [1.5, -2.2], [3.3, -2.6], [4.6, -1.6], [0.9, -1.2])) plantVox(pv, rng, p, 'grass', { h: 70, n: 7 });
+    for (const p of at([-4.2, 0.0], [0.9, 0.6], [1.7, 0.1], [4.5, 0.3], [3.8, -0.9])) plantVox(pv, rng, p, 'grass', { h: 44, n: 5 });
+    for (const p of at([-4.0, 2.9], [0.6, 2.9], [1.8, 2.6], [3.4, 2.9], [-4.6, 2.3])) plantVox(pv, rng, p, 'grass', { h: 24, n: 5, hues: [[[52, 112, 44], [150, 204, 70]], [[70, 128, 44], [190, 214, 80]]] });
+    for (const p of at([-3.2, 2.4], [2.4, 1.3], [0.3, 2.2])) plantVox(pv, rng, p, 'sword');
+    for (const p of at([2.0, 0.2], [2.6, -0.4], [1.6, -0.8])) plantVox(pv, rng, p, 'red', { h: 32 + ((rng() * 10) | 0) });
+    const pm = pv.mesh(true); group.add(pm);
+    const kv = new Vox(PU);
+    for (let n = 0; n < 6; n++) plantVox(kv, rng, [-5 + n * 2 + rng(), -5 - rng() * 3], 'kelp', { h: 60 + ((rng() * 40) | 0) });
+    group.add(kv.mesh(true));
+  }
 
   // ── the big ruin, built from chunky voxels so it matches the rest: crenellated top, round arch, mossy courses ──
   const WX = -1.5, WZ = -1.4;
@@ -251,9 +238,9 @@ export function buildDecor(seed = 21) {
     const brick = (i, j, k) => {
       const course = Math.floor(j / 4), off = (course & 1) * 3, bi = Math.floor((i + off) / 6);
       const mortar = j % 4 === 0 || (i + off) % 6 === 0;
-      let c = mix([136, 134, 118], [182, 176, 152], hash(bi, course, 1) * 0.8);
+      let c = mix([150, 140, 112], [204, 190, 150], hash(bi, course, 1) * 0.85);
       c = mix(c, [96, 92, 70], fbm(i * 0.2, j * 0.2, k * 0.2) * 0.5);
-      if (mortar) c = mix(c, [74, 70, 52], 0.5);
+      if (mortar) c = mix(c, [70, 62, 44], 0.62);
       if (hash(i, j, k, 4) > 0.9) c = mix(c, [60, 58, 44], 0.35);
       return c;
     };

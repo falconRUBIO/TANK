@@ -8,16 +8,9 @@ const VOX = 0.052, GLOBAL = 1.05;
 const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
-export const fishBoost = { value: new THREE.Vector3(0.2, 0.17, 0.12) };
-mat.onBeforeCompile = (sh) => {
-  sh.uniforms.uBoost = fishBoost;
-  // a little self-lit warmth in the shade so oranges and creams stay clean instead of going muddy
-  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uBoost;')
-    .replace('#include <opaque_fragment>', 'outgoingLight += diffuseColor.rgb * uBoost;\n#include <opaque_fragment>');
-  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 aN;')
-    .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
-      if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
-};
+import { fishBoost, voxShading } from './voxshade.js';
+export { fishBoost };
+voxShading(mat);
 const dummy = new THREE.Matrix4();
 const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3(), _o = new THREE.Vector3();
 const col = new THREE.Color();

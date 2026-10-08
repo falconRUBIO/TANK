@@ -5,7 +5,8 @@ import { mulberry32, fbm, mix, hex } from '../color.js';
 import { stoneTex, woodTex, gravelTex } from './textures.js';
 import { buildDecor } from './decor.js';
 
-export const swayTime = { value: 0 };
+import { swayTime } from './voxshade.js';
+export { swayTime };
 const C = (r, g, b) => new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
 const tint = (c, k) => C(c[0] * k, c[1] * k, c[2] * k);
 
