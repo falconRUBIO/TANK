@@ -90,4 +90,12 @@ ok('death needs both five days of neglect and critically low health, leaves a me
   const r = R.applyAction(t, { t: 'scoop', id: t.floaters[0].id }, { now: 6 * D + 1000, name: 'Sam' }); assert.ok(r.applied); assert.equal(t.floaters.length, 0); assert.equal(t.memorial[0].rested.by, 'Sam'); assert.equal(t.memorial.length, 1, 'the record stays');
   assert.equal(R.applyAction(t, { t: 'scoop', id: m.id }, { now: 6 * D + 2000 }).applied, false, 'no duplicate');
 });
+ok('regression: deaths are at least 24 hours apart, even after a month away in one jump', () => {
+  const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15; t.fish = ['A', 'B', 'C', 'D'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Calm'] })); return t; };
+  const a = mk(); for (let h = 12; h <= 24 * 20; h += 12) R.advance(a, h * 3600e3);
+  for (let i = 1; i < a.floaters.length; i++) assert.ok(a.floaters[i].died - a.floaters[i - 1].died >= D - 1, 'gap between deaths ' + (a.floaters[i].died - a.floaters[i - 1].died) / 3600e3 + 'h');
+  assert.ok(a.fish.length >= 1);
+  const b = mk(); R.advance(b, 30 * D); assert.ok(b.floaters.length <= 1, 'one jump of 30 days: ' + b.floaters.length + ' deaths'); assert.ok(b.fish.length >= 3);
+  const rt = JSON.parse(JSON.stringify(a)); assert.deepEqual(rt.memorial, a.memorial); assert.deepEqual(rt.floaters, a.floaters);
+});
 console.log(`All ${n} rule tests passed`);

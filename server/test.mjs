@@ -256,6 +256,43 @@ await t('every caretaker gets one free first fish of their own, with their name 
   assert.equal(w.fish.length, before + 1); assert.equal(f.owner, b.userId); assert.equal(f.ownerName, 'Sam'); assert.equal(f.name, 'Biscuit');
   assert.equal((await ackOf(wsB5, { t: 'firstFish', name: 'Twice', seed: 8, idem: 'ff2' })).reason, 'ALREADY_HAVE'); wsB5.close();
 });
+console.log('Phase 0 regression: mortality, multiplayer and persistence');
+await t('three caretakers, one tank: seats, first fish ownership, and the world survives a reload from the database', async () => {
+  const x = await mkUser('Xan'), y = await mkUser('Yui'), z = await mkUser('Zed'), q = await mkUser('Quincy');
+  const tk = (await call('/api/tanks', { name: 'Regress' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200); assert.equal((await call('/api/join', { code: tk.code }, z.token)).status, 200);
+  assert.equal((await call('/api/join', { code: tk.code }, q.token)).status, 409, 'a fourth is refused');
+  setW(tk.id, { level: 5 }); const wx = await open(x.token), wy = await open(y.token), wz = await open(z.token);
+  assert.equal((await ackOf(wy, { t: 'firstFish', name: 'YuiFish', seed: 11, idem: 'r-y1' })).ok, true); assert.equal((await ackOf(wz, { t: 'firstFish', name: 'ZedFish', seed: 12, idem: 'r-z1' })).ok, true);
+  assert.equal((await ackOf(wy, { t: 'firstFish', name: 'Again', seed: 13, idem: 'r-y2' })).reason, 'ALREADY_HAVE');
+  const w = getW(tk.id); const owners = Object.fromEntries(w.fish.map((f) => [f.name, f.owner])); assert.equal(owners.Pip, x.userId); assert.equal(owners.YuiFish, y.userId); assert.equal(owners.ZedFish, z.userId); assert.equal(w.fish.find((f) => f.name === 'ZedFish').ownerName, 'Zed');
+  const snap = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); assert.deepEqual(snap.fish.map((f) => f.id), w.fish.map((f) => f.id)); [wx, wy, wz].forEach((s) => s.close());
+  globalThis.regress = { tk, x, y, z };
+});
+await t('mortality on the server: one death at a time, last fish protected, recovery, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
+  const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now();
+  const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 9 * DAY, stage: 'adult' }));
+  let w = getW(tk.id); setW(tk.id, { fish: sick(w), createdAt: now - 20 * DAY, simTs: now - 1000, hunger: 0.85, water: 0.45, lastDeath: 0, flags: { ...w.flags, tut: 5 }, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
+  tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 1, 'exactly one death'); assert.equal(w.memorial.length, 1); assert.ok(w.fish.length >= 2);
+  const first = w.floaters[0]; assert.ok(first.owner && first.ownerName, 'original caretaker recorded'); assert.equal(w.memorial[0].rested, null);
+  tickTank(S.db, tk.id, now + 3600e3); assert.equal(getW(tk.id).floaters.length, 1, 'no second death within 24 hours');
+  setW(tk.id, { lastDeath: now - 25 * 3600e3 }); tickTank(S.db, tk.id, now + 7200e3); assert.equal(getW(tk.id).floaters.length, 2, 'a second death after 24 hours');
+  // last fish protection: reduce to one very sick fish
+  w = getW(tk.id); setW(tk.id, { fish: [w.fish[0]], lastDeath: 0, floaters: [] }); tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).fish.length, 1, 'the last fish never dies');
+  // recovery from neglect with real care
+  const wx = await open(x.token), wy = await open(y.token); w = getW(tk.id); setW(tk.id, { simTs: Date.now(), hunger: 0.8, water: 0.5, fish: w.fish.map((f) => ({ ...f, ail: 3 * 86400, health: 0.3 })) });
+  await ackOf(wx, { t: 'feed', x: 0, idem: 'rg-f' }); await ackOf(wx, { t: 'water', idem: 'rg-w' }); const rec = getW(tk.id); assert.ok(rec.hunger < 0.8 && rec.water > 0.9, 'care restored the tank');
+  // floating dead fish, lay to rest: two caretakers at the same moment, exactly one succeeds
+  setW(tk.id, { floaters: [{ id: 'dead1', name: 'Gone', species: 'goldfish', seed: 1, stage: 'adult', born: now - 5 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'] }], memorial: [{ id: 'dead1', name: 'Gone', species: 'goldfish', born: now - 5 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'], milestones: ['Reached the adult stage'], rested: null }] });
+  const [r1, r2] = await Promise.all([ackOf(wx, { t: 'scoop', id: 'dead1', idem: 'sc-1' }), ackOf(wy, { t: 'scoop', id: 'dead1', idem: 'sc-2' })]);
+  assert.equal([r1, r2].filter((r) => r.applied).length, 1, 'only one scoop applies'); assert.equal(getW(tk.id).floaters.length, 0);
+  const after = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); const mem = after.memorial.find((m) => m.id === 'dead1'); assert.ok(mem && mem.rested && mem.rested.by, 'memorial persisted with who laid it to rest'); assert.equal(mem.ownerName, 'Xan'); assert.deepEqual(mem.milestones, ['Reached the adult stage']);
+  [wx, wy].forEach((s) => s.close());
+});
+await t('offline simulation: ten days away costs at most one fish and the tank is still there', async () => {
+  const { tk } = globalThis.regress, DAY = 864e5, now = Date.now(); let w = getW(tk.id);
+  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 9 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
+  const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.ok(before - a2.fish.length <= 1, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();
