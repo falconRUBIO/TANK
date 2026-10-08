@@ -53,7 +53,7 @@ const B = {
   crystal: (g, seed) => {
     const u = 0.07, v = new Vox(u), r = mulberry32(seed);
     for (const [x0, z0, H, lean] of [[0, 0, 38, 0.1], [-6, 3, 26, -0.35], [6, -2, 30, 0.4], [3, 5, 18, 0.2], [-3, -4, 22, -0.15]]) {
-      for (let j = 0; j <= H; j++) { const t = j / H, w = Math.max(0, Math.round((1 - t * 0.85) * 3.4)); for (let i = -w; i <= w; i++) for (let k = -w; k <= w; k++) { if (Math.abs(i) + Math.abs(k) > w + 1) continue; const c = mix([30, 150, 250], [170, 250, 255], t * 0.8 + hash(i, j, k, 2) * 0.2); v.set(x0 + i + Math.round(lean * j), j, z0 + k, c, 2.0 + t * 1.8); } }
+      for (let j = 0; j <= H; j++) { const t = j / H, w = Math.max(0, Math.round((1 - t * 0.85) * 3.4)); for (let i = -w; i <= w; i++) for (let k = -w; k <= w; k++) { if (Math.abs(i) + Math.abs(k) > w + 1) continue; const c = mix([20, 110, 240], [90, 220, 255], t * 0.8 + hash(i, j, k, 2) * 0.2); v.set(x0 + i + Math.round(lean * j), j, z0 + k, c, 1.45 + t * 0.9); } }
     }
     const m = v.mesh(); m.position.y = 0.04; g.add(m); g.userData.crystal = true; return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
   },
