@@ -162,7 +162,7 @@ async function pickDrift() {
 // message in a bottle: only its addressee sees it; tap to open
 const px16 = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 16; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t; };
 const bottleTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; r(6, 1, 4, 2, '#b98a52'); r(7, 3, 2, 2, '#bfe8ee'); r(4, 5, 8, 9, '#a9dde6'); r(3, 7, 10, 5, '#a9dde6'); r(5, 7, 5, 5, '#fff6dc'); r(6, 8, 3, 1, '#c9a96a'); r(6, 10, 3, 1, '#c9a96a'); r(11, 6, 1, 6, '#e8fbff'); });
-const eggTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; r(6, 3, 4, 1, '#fff3d6'); r(5, 4, 6, 2, '#fff3d6'); r(4, 6, 8, 5, '#fff3d6'); r(5, 11, 6, 2, '#f0dcb4'); r(6, 13, 4, 1, '#e2c996'); r(6, 5, 2, 2, '#ffffff'); r(8, 8, 2, 1, '#d9c28e'); });
+const eggTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; const o = '#b8708f'; r(5, 2, 6, 1, o); r(4, 3, 8, 2, o); r(3, 5, 10, 7, o); r(4, 12, 8, 2, o); r(5, 14, 6, 1, o); r(6, 3, 4, 1, '#fff0f6'); r(5, 4, 6, 2, '#fff0f6'); r(4, 6, 8, 5, '#fff0f6'); r(5, 11, 6, 2, '#f4d2e0'); r(6, 13, 4, 1, '#e8bdd0'); r(6, 5, 2, 2, '#ffffff'); r(8, 8, 2, 1, '#e49abb'); r(6, 9, 1, 1, '#e49abb'); });
 const bottleSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bottleTex, transparent: true, depthWrite: false })); bottleSp.scale.set(1.4, 1.4, 1); bottleSp.visible = false; bottleSp.renderOrder = 6; scene.add(bottleSp);
 const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xa8f0ff })); bottleGlow.renderOrder = 5; bottleGlow.visible = false; scene.add(bottleGlow);
 stg.hideForDepth.push(bottleSp, bottleGlow);
@@ -173,7 +173,7 @@ function syncExtras() {
   if (!b) { bottleSp.visible = bottleGlow.visible = false; bottleId = null; }
   else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id); bottleSp.position.set(-3 + (h % 60) / 10, 2.1, 0.8 + ((h >> 8) % 20) / 10); if (s.flags.tut >= 5) { sfx('arrive'); fishes.burst(bottleSp.position); } } bottleSp.visible = bottleGlow.visible = true; }
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
-  for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: eggTex, transparent: true, depthWrite: false })); const h = hashId(e.id); sp.scale.set(0.8, 0.8, 1); sp.position.set(-3 + (h % 60) / 10, 0.5, 0.8 + ((h >> 8) % 20) / 10); sp.renderOrder = 4; scene.add(sp); stg.hideForDepth.push(sp); eggSprites.set(e.id, sp); }
+  for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: eggTex, transparent: true, depthWrite: false })); const h = hashId(e.id); sp.scale.set(1, 1, 1); sp.position.set(-3 + (h % 60) / 10, 0.7, 0.1 + ((h >> 8) % 14) / 10); sp.renderOrder = 4; scene.add(sp); stg.hideForDepth.push(sp); eggSprites.set(e.id, sp); }
   for (const [id, sp] of [...eggSprites]) if (!ids.has(id)) { scene.remove(sp); const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); eggSprites.delete(id); fishes.burst(sp.position); }
 }
 function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
@@ -335,7 +335,7 @@ function frame(now) {
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
   if (bottleSp.visible) { bottleSp.position.y = 2.1 + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
-  for (const sp of eggSprites.values()) { const w = 0.8 + Math.sin(t * 3 + sp.position.x) * 0.04; sp.scale.set(w, w, 1); }
+  for (const sp of eggSprites.values()) { const w = 1 + Math.sin(t * 3 + sp.position.x) * 0.05; sp.scale.set(w, w, 1); }
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
