@@ -26,9 +26,9 @@ export class Shafts {
       const g = new THREE.BufferGeometry();
       const m = new THREE.Mesh(g, this.mat); m.frustumCulled = false; m.renderOrder = 5;
       this.group.add(m);
-      this.items.push({ m, x: -5.5 + Math.random() * 11, z: -3.5 + Math.random() * 5, w: 0.45 + Math.random() * 1.0, ph: Math.random() * 6 });
+      this.items.push({ m, x: -1.5 + Math.random() * 8, z: -3.5 + Math.random() * 5, w: 0.3 + Math.random() * 0.7, ph: Math.random() * 6 });
     }
-    this.dir = new THREE.Vector3(-0.28, -1, -0.12).normalize();
+    this.dir = new THREE.Vector3(-0.34, -1, -0.1).normalize();
   }
   setDir(d) { this.dir.copy(d).normalize(); this.rebuild(); }
   rebuild() {
@@ -77,7 +77,7 @@ export class Snow {
 export class Bubbles {
   constructor(x, z, n = 26) {
     this.x = x; this.z = z; this.n = n;
-    this.mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.55, depthWrite: false }), n);
+    this.mesh = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.75, depthWrite: false }), n);
     this.mesh.frustumCulled = false;
     this.b = Array.from({ length: n }, () => ({ y: Math.random() * 15, s: 0.8 + Math.random() * 1.1, r: 0.03 + Math.random() * 0.07, ph: Math.random() * 6 }));
     this.m = new THREE.Matrix4();

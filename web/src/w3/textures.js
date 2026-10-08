@@ -13,17 +13,17 @@ export function makeTex(size, draw, { repeat = [1, 1] } = {}) {
 const px = (g, x, y, c) => { g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; g.fillRect(x, y, 1, 1); };
 
 // Carved stone block face: bevelled edges, speckle, cracks, moss in the top rows.
-export function stoneTex(seed = 1, base = [158, 166, 158]) {
+export function stoneTex(seed = 1, base = [170, 162, 128]) {
   return makeTex(32, (g, S) => {
     const r = mulberry32(seed * 977);
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const n = fbm(x * 0.22 + seed * 9, y * 0.22, seed);
-      let c = mix(base, [96, 108, 106], (1 - n) * 0.8);
+      let c = mix(base, [104, 100, 78], (1 - n) * 0.85);
       if (r() > 0.93) c = mix(c, [60, 70, 72], 0.4); else if (r() > 0.96) c = mix(c, [225, 230, 215], 0.35);
       if (y < 2 || x < 2) c = mix(c, [240, 240, 220], y < 1 || x < 1 ? 0.28 : 0.12);
       if (y > S - 3 || x > S - 3) c = mix(c, [22, 30, 36], y > S - 2 || x > S - 2 ? 0.55 : 0.28);
       const m = fbm(x * 0.18 + 40, y * 0.3 + seed, 3);
-      if (m > 0.64 && y < S * 0.55) c = mix(c, [78, 140, 56], Math.min(1, (m - 0.6) * 4));
+      if (m > 0.54 && y < S * 0.8) c = mix(c, mix([96, 138, 46], [176, 184, 70], n), Math.min(1, (m - 0.5) * 4));
       px(g, x, y, c);
     }
     let cx = (r() * S) | 0, cy = 2; for (let i = 0; i < 12; i++) { px(g, cx, cy, [40, 48, 50]); cy++; cx += r() < 0.5 ? 0 : (r() < 0.5 ? -1 : 1); }
@@ -33,7 +33,7 @@ export function woodTex() {
   return makeTex(32, (g, S) => {
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const n = fbm(x * 0.09, y * 0.55, 12);
-      let c = mix([58, 36, 20], [138, 94, 58], n);
+      let c = mix([54, 32, 16], [158, 106, 58], n);
       if (((x * 7 + y * 3) % 11) === 0) c = mix(c, [30, 18, 10], 0.4);
       if (fbm(x * 0.2 + 5, y * 0.2, 41) > 0.7) c = mix(c, [74, 130, 54], 0.5);
       px(g, x, y, c);
@@ -43,7 +43,7 @@ export function woodTex() {
 export function gravelTex() {
   return makeTex(64, (g, S) => {
     const r = mulberry32(3);
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) px(g, x, y, mix([188, 168, 132], [150, 128, 96], fbm(x * 0.1, y * 0.1, 4)));
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) px(g, x, y, mix([214, 186, 126], [164, 134, 84], fbm(x * 0.1, y * 0.1, 4)));
     for (let i = 0; i < 260; i++) {
       const x = (r() * S) | 0, y = (r() * S) | 0, k = r(), w = 1 + ((r() * 2) | 0);
       const c = k < 0.3 ? [96, 90, 82] : k < 0.55 ? [226, 208, 170] : k < 0.8 ? [150, 116, 82] : [120, 128, 124];

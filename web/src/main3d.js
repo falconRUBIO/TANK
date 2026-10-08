@@ -23,7 +23,7 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
-camera.position.set(0, 7.0, 30); camera.lookAt(0, 7.5, 0);
+camera.position.set(0, 7.4, 30); camera.lookAt(0, 8.0, 0);
 scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 
 // gradient water backdrop
@@ -46,10 +46,10 @@ const fill = new THREE.DirectionalLight(0xffe6c8, 1.25); fill.position.set(-5, 9
 const rim = new THREE.DirectionalLight(0x6fc8ff, 1.2); rim.position.set(8, 7, -12); scene.add(rim);
 const lamp = new THREE.PointLight(0xffa24a, 0, 12, 1.6); lamp.position.copy(env.lampPos); scene.add(lamp);
 
-const shafts = new Shafts(); scene.add(shafts.group);
+const shafts = new Shafts(); scene.add(shafts.group); shafts.rebuild();
 const surf = waterSurface(); scene.add(surf.mesh);
 const snow = new Snow(); scene.add(snow.pts);
-const bubbles = new Bubbles(0.9, -0.2); scene.add(bubbles.mesh);
+const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -0.8, 16); scene.add(bubbles.mesh, bubbles2.mesh);
 
 // ── fish ──
 const rng = mulberry32(11);
@@ -67,7 +67,7 @@ const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Cur
 arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 + rng() * 0.4, this.pos.z < -0.5 ? 1.6 : -3.0); this.retarget = 12; };
 
 // ── personality: each trait changes where a fish chooses to swim next ──
-const bubbleCol = new THREE.Vector3(0.9, 0, -0.2);
+const bubbleCol = new THREE.Vector3(-3.6, 0, 0.5);
 fishes.forEach((f) => {
   if (f === arch) return;
   const base = f.pick.bind(f), tr = f.profile?.traits ?? [];
@@ -163,16 +163,16 @@ composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
 // depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
 const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
-const hideForDepth = [shafts.group, surf.mesh, snow.pts, bubbles.mesh, bg, flakes.mesh];
+const hideForDepth = [shafts.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg, flakes.mesh];
 const bokehRender = bokeh.render.bind(bokeh);
 bokeh.render = (...a) => { hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o) => (o.visible = true)); };
 composer.addPass(bokeh);
 const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 } },
+  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 }, uWarm: { value: 1 }, uT: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool;
+  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool, uWarm, uT;
     const mat4 B = mat4(0.,8.,2.,10., 12.,4.,14.,6., 3.,11.,1.,9., 15.,7.,13.,5.);
     float bayer(vec2 p){ int x = int(mod(p.x,4.)), y = int(mod(p.y,4.)); return B[y][x]/16.; }
     void main(){
@@ -180,10 +180,19 @@ const grade = new ShaderPass({
       float l = dot(c, vec3(.299,.587,.114));
       c = mix(c*vec3(.92,1.0,1.1), c*vec3(1.08,1.02,.93), smoothstep(.25,.8,l));  // cool shadows / warm highlights
       c = mix(vec3(l), c, 1.3) * uTint;
+      // warm foreground / cool distance: the colour of the pixels carries the light, like the reference
+      float cool = smoothstep(.3, .95, vUv.y*.75 + vUv.x*.35);
+      c *= mix(mix(vec3(1.0), vec3(1.1,1.03,.84), uWarm), vec3(.86,1.0,1.16), cool);
+      // sparkling, blocky surface light along the top edge
+      vec2 g = floor(vUv * vec2(96., 170.));
+      float top = smoothstep(.87, 1., vUv.y);
+      float w = sin(g.x*.55 + uT*1.3 + sin(g.y*.9 + uT*.7)*2.2) * .5 + .5;
+      float sp = step(.72, fract(sin(dot(g, vec2(12.9,78.2)) + floor(uT*2.)) * 43758.5));
+      c += top * (pow(w, 3.) * .5 + sp * .35) * mix(vec3(.7,.9,1.), vec3(1.,.9,.6), uWarm*.6) * uPool * 1.6;
       vec2 d = vUv-vec2(.5,.38);
       float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
       c *= mix(1. - uPool*.62, 1.08, pool);
-      c *= mix(.72, 1., smoothstep(1.0,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
+      c *= mix(.6, 1., smoothstep(1.05,.28, length((vUv-.5)*vec2(1.0,.9))));          // vignette
       // PS1-style 15-bit colour with ordered dither
       float levels = 31.;
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
@@ -195,10 +204,10 @@ composer.addPass(grade);
 
 // ── time of day ──
 const TOD = {
-  morning:   { sunCol: 0xe4f2ff, sunI: 15, sunPos: [-9, 24, 10], hemiSky: 0x7fb8cc, hemiGnd: 0x3a4a3c, hemiI: 1.25, ambI: 0.34, rimCol: 0x8ad8ff, rimI: 1.1, fog: 0x1d6478, fogNear: 20, fogFar: 62, bgTop: 0x3a8aa0, bgBot: 0x08242f, lampI: 0, shaft: 0.36, surf: 0.5, exposure: 1.02, bloom: 0.25, glow: 0.3, tint: 0xf2fbff, pool: 0.5 },
-  afternoon: { sunCol: 0xffe2b0, sunI: 17, sunPos: [-6, 24, 12], hemiSky: 0x78b4c4, hemiGnd: 0x4a4430, hemiI: 1.25, ambI: 0.32, rimCol: 0x6fc8ff, rimI: 1.3, fog: 0x1a5668, fogNear: 20, fogFar: 60, bgTop: 0x2c7488, bgBot: 0x07202c, lampI: 0, shaft: 0.42, surf: 0.55, exposure: 1.05, bloom: 0.25, glow: 0.4, tint: 0xfff8ee, pool: 0.45 },
-  evening:   { sunCol: 0xff9050, sunI: 15, sunPos: [10, 17, 9], hemiSky: 0x9a7ab0, hemiGnd: 0x40302c, hemiI: 1.05, ambI: 0.28, rimCol: 0xff6aa0, rimI: 1.4, fog: 0x35305c, fogNear: 18, fogFar: 54, bgTop: 0x6a4c8c, bgBot: 0x120f28, lampI: 24, shaft: 0.62, surf: 0.55, exposure: 1.02, bloom: 0.42, glow: 1.4, tint: 0xfff0ec, pool: 0.5 },
-  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 1.0, fog: 0x06102a, fogNear: 16, fogFar: 48, bgTop: 0x0c2352, bgBot: 0x020610, lampI: 70, shaft: 0.22, surf: 0.2, exposure: 1.12, bloom: 0.7, glow: 3.0, tint: 0xeef2ff, pool: 0.3 },
+  morning:   { sunCol: 0xf2f0d0, sunI: 12, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.05, ambI: 0.3, rimCol: 0x8ad8ff, rimI: 0.7, fog: 0x16506c, fogNear: 24, fogFar: 52, bgTop: 0x266c88, bgBot: 0x07222f, lampI: 0, shaft: 0.24, surf: 0.8, exposure: 1.03, bloom: 0.22, glow: 0.3, tint: 0xf4fbff, pool: 0.4, warm: 0.6 },
+  afternoon: { sunCol: 0xffe8a4, sunI: 13, sunPos: [-6, 24, 12], hemiSky: 0xa8c096, hemiGnd: 0x6a5430, hemiI: 1.05, ambI: 0.3, rimCol: 0x78ceff, rimI: 0.7, fog: 0x123f60, fogNear: 24, fogFar: 52, bgTop: 0x1c5c7c, bgBot: 0x061f2c, lampI: 0, shaft: 0.26, surf: 0.95, exposure: 1.05, bloom: 0.22, glow: 0.4, tint: 0xfff8ec, pool: 0.4, warm: 1.0 },
+  evening:   { sunCol: 0xff9050, sunI: 13, sunPos: [10, 17, 9], hemiSky: 0xa88aa8, hemiGnd: 0x5a3a2c, hemiI: 0.95, ambI: 0.26, rimCol: 0xff6aa0, rimI: 1.0, fog: 0x35305c, fogNear: 20, fogFar: 50, bgTop: 0x6a4c8c, bgBot: 0x120f28, lampI: 24, shaft: 0.4, surf: 0.8, exposure: 1.02, bloom: 0.42, glow: 1.4, tint: 0xfff0ec, pool: 0.45, warm: 1.2 },
+  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.8, fog: 0x06102a, fogNear: 16, fogFar: 46, bgTop: 0x0c2352, bgBot: 0x020610, lampI: 70, shaft: 0.16, surf: 0.3, exposure: 1.12, bloom: 0.7, glow: 3.0, tint: 0xeef2ff, pool: 0.3, warm: 0.2 },
 };
 const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];
 const qs = new URLSearchParams(location.search);
@@ -220,17 +229,17 @@ function applyTod(dt) {
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI; amb.intensity = cur.ambI;
   const murk = 1 - water; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
-  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; lamp.intensity = cur.lampI; env.glow.emissiveIntensity = cur.glow;
+  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; lamp.intensity = cur.lampI; env.glow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
   renderer.toneMappingExposure = cur.exposure; bloom.strength = cur.bloom;
   grade.uniforms.uTint.value.copy(cur.tint);
-  const d = new THREE.Vector3().subVectors(sun.target.position, sun.position).normalize(); shafts.setDir(d);
+
 }
 
 // ── tap a fish: camera glides in, profile card slides up ──
 const card = document.getElementById('card');
-let focus = null; const look = new THREE.Vector3(0, 7.5, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
+let focus = null; const look = new THREE.Vector3(0, 8.0, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 const ray = new THREE.Raycaster();
 function pick(ev) {
   const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
@@ -273,7 +282,7 @@ function frame(now) {
   cTick += dt; if (cTick > 0.05) { cTick = 0; caustic.update(t * 0.7); }
   applyTod(dt);
   if (focus) { const d = Math.max(6, focus.radius * 6.8); camGoal.set(focus.pos.x + 0.4, focus.pos.y + 0.1, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - d * 0.17, focus.pos.z); }
-  else { camGoal.set(Math.sin(t * 0.13) * 0.35, 7.0 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 7.5, 0); }
+  else { camGoal.set(Math.sin(t * 0.13) * 0.35, 7.4 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 8.0, 0); }
   const fd = focus ? camera.position.distanceTo(focus.pos) : 30;
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
@@ -282,7 +291,7 @@ function frame(now) {
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   updateFlakes(dt, t);
   fishes.forEach((f) => f.update(dt, rng, fishes));
-  shafts.update(t); surf.mat.uniforms.uTime.value = t; snow.update(dt, t); bubbles.update(dt, t);
+  shafts.update(t); surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; snow.update(dt, t); bubbles.update(dt, t); bubbles2.update(dt, t);
   watchPerf(dt);
   composer.render();
   requestAnimationFrame(frame);

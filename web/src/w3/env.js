@@ -85,13 +85,13 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
 export function buildEnvironment() {
   const root = new THREE.Group();
   const rng = mulberry32(7);
-  const stoneA = new THREE.MeshStandardMaterial({ map: stoneTex(1, [126, 140, 130]), roughness: 0.92 });
+  const stoneA = new THREE.MeshStandardMaterial({ map: stoneTex(1, [170, 162, 128]), roughness: 0.92 });
   patch(stoneA);
 
   // ── ruins: staggered blocks, a keystone arch, mossy caps ──
   const blocks = [];
   const moss = [];
-  const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.6) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.82 + rng() * 0.3, mossy });
+  const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.6 + rng() * 0.28, mossy });
   const pillar = (cx, cz, w, d, top, ch = 0.46, jag = 0.5) => {
     let y = 0, c = 0;
     while (y < top) {
@@ -107,9 +107,10 @@ export function buildEnvironment() {
       y += h; c++;
     }
   };
-  const AX = -1.95, AY = 4.5, AR = 1.4;
-  pillar(-3.85, -0.95, 1.2, 1.15, 6.9, 0.46, 0.8);     // left tower
-  pillar(-0.2, -0.95, 1.2, 1.15, AY, 0.46, 0);          // right pier (springs the arch)
+  const AX = -0.9, AY = 4.6, AR = 1.0;
+  pillar(-2.8, -0.95, 1.8, 1.25, 10.6, 0.46, 1.4);    // left tower
+  pillar(-3.9, -1.7, 1.2, 1.0, 6.8, 0.46, 1.2);          // buttress behind
+  pillar(0.7, -0.95, 1.2, 1.15, AY, 0.46, 0);          // right pier (springs the arch)
   // arch ring of wedge blocks
   const wedges = 11;
   for (let i = 0; i <= wedges; i++) {
@@ -118,8 +119,8 @@ export function buildEnvironment() {
     B(x, y, -0.95, 0.5, 0.62, 1.15, 0, a - Math.PI / 2 + Math.PI, true);
   }
   // wall above the arch + broken fragment on the right
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-3.3 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + 1.5 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
-  B(-3.85, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(-0.2, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(-0.2, AY + 0.13, -0.95, 1.5, 0.26, 1.4, 0, 0, true);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-1.9 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + 1.5 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
+  B(-2.8, 0.1, -0.95, 2.2, 0.22, 1.6, 0, 0, false); B(0.7, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(0.7, AY + 0.13, -0.95, 1.5, 0.26, 1.4, 0, 0, true);
   pillar(2.9, -3.6, 1.1, 1.0, 5.4, 0.46, 1.2);           // second broken column, further back
   pillar(4.1, -2.4, 1.0, 1.0, 2.4, 0.46, 0.6);
   for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
@@ -141,6 +142,7 @@ export function buildEnvironment() {
   const farPillar = (cx, cz, w, top, ch) => { for (let y = 0; y < top; y += ch) { if (y > top - 1 && rng() < 0.4) continue; m4.compose(v.set(cx + (rng() - 0.5) * 0.1, y + ch / 2, cz), q.identity(), s.set(w, ch * 0.97, w)); far.setMatrixAt(fc++, m4); } };
   farPillar(-6, -9, 1.6, 9, 0.7); farPillar(-1.5, -10, 1.6, 6, 0.7); farPillar(4.5, -9.5, 1.6, 10, 0.7); farPillar(8, -11, 1.8, 5, 0.7);
   for (let x = -6; x <= -1.5; x += 0.8) { m4.compose(v.set(x + 0.4, 6.4, -9.5), q.identity(), s.set(0.85, 0.7, 1.5)); far.setMatrixAt(fc++, m4); }
+  for (let x = 4.5; x <= 8; x += 0.8) { m4.compose(v.set(x + 0.4, 5.1, -10), q.identity(), s.set(0.85, 0.7, 1.5)); far.setMatrixAt(fc++, m4); }
   far.count = fc; far.frustumCulled = false; root.add(far);
 
   // fallen column drums half-buried in the sand
@@ -174,10 +176,10 @@ export function buildEnvironment() {
 
   // ── driftwood ──
   const wood = patch(new THREE.MeshStandardMaterial({ map: woodTex(), roughness: 0.9, flatShading: true }));
-  const trunk = lowPolyTube([new THREE.Vector3(-4.8, 0.2, 1.0), new THREE.Vector3(-3.4, 0.6, 1.1), new THREE.Vector3(-2.2, 1.5, 1.0), new THREE.Vector3(-0.8, 1.9, 0.9), new THREE.Vector3(0.5, 1.2, 1.0), new THREE.Vector3(1.8, 0.35, 1.1)], (t) => 0.36 - t * 0.14 + Math.sin(t * 9) * 0.03, 6);
+  const trunk = lowPolyTube([new THREE.Vector3(-5.0, 0.3, 0.9), new THREE.Vector3(-4.4, 1.4, 1.0), new THREE.Vector3(-3.4, 2.3, 0.9), new THREE.Vector3(-2.4, 2.0, 1.0), new THREE.Vector3(-1.2, 1.0, 1.1), new THREE.Vector3(0.2, 0.45, 1.2), new THREE.Vector3(1.6, 0.3, 1.2)], (t) => 0.64 - t * 0.3 + Math.sin(t * 9) * 0.04, 7);
   const wm = new THREE.Mesh(trunk, wood); wm.castShadow = wm.receiveShadow = true; root.add(wm);
-  for (const pts of [[[-2.2, 1.5, 1.0], [-2.6, 2.4, 0.9], [-2.4, 3.3, 0.8]], [[-0.8, 1.9, 0.9], [-0.2, 2.9, 0.8], [0.4, 3.6, 0.8]], [[-3.4, 0.6, 1.1], [-3.9, 1.4, 1.0], [-4.0, 2.2, 0.9]]]) {
-    const b = new THREE.Mesh(lowPolyTube(pts.map((a) => new THREE.Vector3(...a)), (t) => 0.13 - t * 0.09, 5), wood); b.castShadow = true; root.add(b);
+  for (const pts of [[[-3.4, 2.3, 0.9], [-3.0, 3.1, 0.8], [-2.6, 3.9, 0.8]], [[-1.2, 1.0, 1.1], [-0.6, 1.9, 1.0], [0, 2.6, 1.0]], [[-4.4, 1.4, 1.0], [-4.9, 2.2, 0.9], [-5, 3, 0.8]]]) {
+    const b = new THREE.Mesh(lowPolyTube(pts.map((a) => new THREE.Vector3(...a)), (t) => 0.2 - t * 0.14, 5), wood); b.castShadow = true; root.add(b);
   }
 
   // ── gravel bed ──
@@ -220,14 +222,24 @@ export function buildEnvironment() {
     }
   });
   // red stem plants
-  [[-0.2, 0.9], [3.7, 0.4], [1.2, -0.4]].forEach(([x, z], ri) => {
-    const hh = 3 + ri * 0.6;
+  [[2.6, 0.2], [3.9, 0.7], [1.5, -0.6], [3.2, -0.5]].forEach(([x, z], ri) => {
+    const hh = 3.2 + ri * 0.5;
     red.add({ x, y: 0, z, h: hh, w: 0.03, lean: 0.1, curl: 0.5, dir: ri, seg: 10, base: [110, 30, 40], tip: [190, 60, 64] });
-    for (let k = 1; k < 12; k++) { const yy = k * hh / 12; for (const s of [-1, 1]) red.add({ x: x + Math.sin(ri) * 0.02, y: yy, z, h: 0.45 * (1 - k / 14), w: 0.07, dir: s > 0 ? 0 : Math.PI, lean: 0.6, curl: 0.4, seg: 3, taper: 2, base: [150, 40, 50], tip: [244, 110, 90] }); }
+    for (let k = 1; k < 14; k++) { const yy = k * hh / 14; for (const s of [-1, 1]) red.add({ x: x + Math.sin(ri) * 0.02, y: yy, z, h: 0.75 * (1 - k / 17), w: 0.1, dir: s > 0 ? 0 : Math.PI, lean: 0.6, curl: 0.4, seg: 3, taper: 2, base: [160, 36, 44], tip: [236, 84, 70] }); }
   });
+  // feathery ferns (reference: lime fronds with side leaflets)
+  const fern = (x, z, h, nStem) => { for (let st = 0; st < nStem; st++) { const dir = st * 2.4 + x, hh = h * (0.7 + rng() * 0.4);
+    leaves.add({ x, y: 0, z, h: hh, w: 0.025, dir, lean: 0.55, curl: 0.7, seg: 9, base: [90, 120, 40], tip: [150, 172, 60] });
+    for (let k = 2; k < 11; k++) { const f = k / 11, len = 0.9 * (1 - f * 0.7) * h * 0.28, off = (0.55 * f + 0.7 * f * f) * hh * 0.5;
+      for (const sd of [-1, 1]) leaves.add({ x: x + Math.cos(dir) * off, y: f * hh * (1 - 0.15 * f), z: z + Math.sin(dir) * off, h: len, w: 0.07, dir: dir + sd * 1.45, lean: 0.8, curl: -0.4, seg: 3, taper: 2, base: [112, 142, 44], tip: mix([158, 184, 62], [200, 206, 90], rng()) }); } } };
+  fern(-4.3, 1.2, 3.6, 5); fern(-3.3, 1.9, 2.6, 4); fern(-4.7, 0.2, 4.4, 4); fern(0.3, 1.5, 2.2, 3); fern(2.0, 1.9, 2.4, 3); fern(-0.9, -2.6, 4.2, 4);
+  // dark, blurred foreground blades frame the shot like in the reference
+  const fg = new Blades();
+  for (let i = 0; i < 26; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.4 + rng() * 2.2), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 5, w: 0.16 + rng() * 0.12, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
+  root.add(fg.mesh(leafMat()));
   // grass tufts rooted on top of the ruins
   const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [40, 100, 44], tip: [140, 196, 74] }); };
-  tuft(-3.85, 6.95, -0.95, 9); tuft(-0.2, AY + 0.05, -0.95, 7); tuft(-3.0, AY + 3.1, -0.95, 6); tuft(2.9, 5.45, -3.6, 7); tuft(-1.95, AY + 1.62, -0.95, 5);
+  tuft(-2.8, 10.7, -0.95, 10); tuft(0.7, AY + 0.3, -0.95, 7); tuft(-1.2, AY + 3.1, -0.95, 6); tuft(2.9, 5.45, -3.6, 7); tuft(-0.9, AY + 1.62, -0.95, 5); tuft(-3.9, 6.9, -1.7, 6);
   // bushy green stem plants + moss mounds
   [[-2.2, 2.1], [2.0, 1.9], [4.2, 1.0], [-3.2, -1.0]].forEach(([x, z], bi) => {
     for (let st = 0; st < 5; st++) { const hh = 1.6 + rng() * 1.6, dir = st * 1.3 + bi; leaves.add({ x, y: 0, z, h: hh, w: 0.03, dir, lean: 0.3, curl: 0.4, seg: 8, base: [50, 110, 46], tip: [120, 190, 70] });
@@ -235,7 +247,7 @@ export function buildEnvironment() {
   });
   const mossG = new THREE.IcosahedronGeometry(1, 1);
   [[-3.0, 0.3, 1.8, 0.5], [1.7, 0.25, 2.0, 0.4], [-0.3, 0.2, -1.8, 0.45]].forEach(([x, y, z, r], mi) => {
-    const mm = new THREE.Mesh(mossG, patch(new THREE.MeshStandardMaterial({ color: C(70, 130, 56), flatShading: true, roughness: 1 })));
+    const mm = new THREE.Mesh(mossG, patch(new THREE.MeshStandardMaterial({ color: C(110, 150, 52), flatShading: true, roughness: 1 })));
     mm.position.set(x, y, z); mm.scale.set(r * 1.6, r * 0.7, r * 1.2); mm.castShadow = mm.receiveShadow = true; root.add(mm);
   });
   // starfish + a couple of shells on the sand
@@ -246,7 +258,7 @@ export function buildEnvironment() {
   for (let i = 0; i < 34; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
   // hanging moss/vines off the ruin
-  for (let i = 0; i < 26; i++) { const x = -4.4 + rng() * 4.6, top = 6.9 - rng() * 0.2; if (x > -3.2 && x < -0.8) { vines.add({ x, y: AY - 0.5, z: -0.4, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); } else vines.add({ x, y: 2 + rng() * 4.2, z: -0.38, h: -(0.3 + rng() * 1.0), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); }
+  for (let i = 0; i < 26; i++) { const x = -3.7 + rng() * 4.6, top = 6.9 - rng() * 0.2; if (x > -1.9 && x < 0.1) { vines.add({ x, y: AY - 0.5, z: -0.4, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); } else vines.add({ x, y: 2 + rng() * 7.5, z: -0.38, h: -(0.3 + rng() * 1.0), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); }
   [grass, leaves, red, vines].forEach((b) => root.add(b.mesh(leafMat())));
 
   // ── stone lantern ──

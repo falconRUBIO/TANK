@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
 import { patch } from './env.js';
 
-const VOX = 0.052, GLOBAL = 1.22;
+const VOX = 0.052, GLOBAL = 1.05;
 const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
