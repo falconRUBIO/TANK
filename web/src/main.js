@@ -449,6 +449,7 @@ async function boot() {
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
+window.__fishes = fishes;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
