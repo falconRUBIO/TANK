@@ -33,4 +33,31 @@ ok('the tank wish completes once and pays', () => { const t = R.newWorld(0); R.n
 ok('the collection book pays every five discoveries', () => { const t = R.newWorld(0); R.norm(t); t.seen.fish = ['goldfish', 'neon', 'cory']; t.seen.decor = ['grass', 'fern', 'rock']; t.flags.collMs = 0; t.wishIdx = 99; t.level = 8; const s0 = t.shells; R.advance(t, 60e3); assert.equal(t.flags.collMs, 1); assert.equal(t.shells, s0 + 3); R.advance(t, 120e3); assert.equal(t.flags.collMs, 1); });
 ok('a tank birthday pays once per week of tank age', () => { const t = R.newWorld(0); R.norm(t); const s0 = t.shells; R.advance(t, 7 * 864e5 + 1000); assert.equal(t.flags.weeks, 1); assert.ok(t.shells >= s0 + 8); const s1 = t.shells; R.advance(t, 7 * 864e5 + 2000); assert.equal(t.shells, s1); });
 ok('one fish is cheaper each day and the price is charged', () => { const now = 5 * 864e5; const id = R.dailyFish(now); assert.ok(R.fishPrice(id, now) < R.SPECIES_DEF[id].price); const t = R.newWorld(now); R.norm(t, now); t.level = 8; t.shells = 100; R.applyAction(t, { t: 'buyFish', species: id, name: 'X', seed: 1 }, { now }); assert.equal(t.shells, 100 - R.fishPrice(id, now)); });
+ok('a rare visitor drops by, saying hello pays and adds it to the book, and it leaves otherwise', () => {
+  const now = 1e9, t = R.newWorld(now - 3 * 864e5); R.norm(t, now); t.flags.tut = 5; t.visitAt = now - 1;
+  R.advance(t, now); assert.ok(t.visitor, 'visitor arrived'); const v = t.visitor, sp = v.species; assert.ok(R.SPECIES_DEF[sp].visitor);
+  const s0 = t.shells, r = R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 1000 }); assert.ok(r.applied); assert.equal(t.shells, s0 + 4); assert.ok(t.seen.fish.includes(sp)); assert.equal(t.visitor, null);
+  assert.equal(R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 2000 }).applied, false);
+  const t2 = R.newWorld(now - 864e5); R.norm(t2, now); t2.flags.tut = 5; t2.visitAt = now - 1; R.advance(t2, now); assert.ok(t2.visitor); R.advance(t2, now + 3 * 3600e3 + 1000); assert.equal(t2.visitor, null);
+});
+ok('two adults of one species lay an egg that hatches into a blend of both', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
+  t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
+  const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1, 'egg laid');
+  R.advance(t, now + 5 * 3600e3); assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2];
+  assert.equal(c.species, 'goldfish'); assert.equal(c.stage, 'baby'); assert.ok(c.seed >= 15 && c.seed <= 25, 'seed blends the parents ' + c.seed); assert.ok(c.traits.every((x) => ['Shy', 'Brave'].includes(x)));
+});
+ok('the journal tells a small true story now and then', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.storyAt = 0; t.fish[0].traits = ['Lazy']; const ev = R.advance(t, 3600e3);
+  assert.ok(ev.some((e) => /napped low/.test(e.journal ?? '')), JSON.stringify(ev)); assert.ok(t.storyAt > 3600e3);
+});
+ok('a bottle goes to one friend, costs two shells, once per six hours, and pays when opened', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.shells = 20; const members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }], now = 1e6;
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u1', note: 'hi' }, { uid: 'u1', name: 'Alex', members, now }).reason, 'NOT_A_FRIEND');
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: '' }, { uid: 'u1', name: 'Alex', members, now }).ok, false);
+  assert.ok(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'love the tank' }, { uid: 'u1', name: 'Alex', members, now }).ok); assert.equal(t.shells, 18);
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'again' }, { uid: 'u1', name: 'Alex', members, now: now + 1000 }).reason, 'TOO_SOON');
+  const id = t.bottles[0].id; assert.equal(R.applyAction(t, { t: 'openBottle', id }, { uid: 'u1', now: now + 2000 }).applied, false);
+  const r = R.applyAction(t, { t: 'openBottle', id }, { uid: 'u2', name: 'Sam', now: now + 3000 }); assert.ok(r.applied); assert.equal(t.shells, 22); assert.equal(t.bottles.length, 0);
+});
 console.log(`All ${n} rule tests passed`);

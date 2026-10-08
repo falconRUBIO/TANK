@@ -421,4 +421,10 @@ const betta = {
   },
 };
 
-export const SPECIES = { goldfish, blue: bluefish, angelfish, neon, cory, guppy, platy, danio, betta };
+// rare visitors: recoloured cousins of the shop fish
+const recolor = (base, id, label, fn) => ({ ...base, id, label, make(seed = 1) { const m = base.make(seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? { ...r, c: fn(r.c), em: r.em } : r; } }; } });
+const moonbetta = recolor(betta, 'moonbetta', 'Moon Betta', (c) => mix(c, [214, 228, 255], 0.62));
+const sunangel = recolor(angelfish, 'sunangel', 'Sun Angelfish', (c) => [Math.min(255, c[0] * 0.7 + 110), Math.min(255, c[1] * 0.75 + 70), Math.max(0, c[2] * 0.35)]);
+const rosecory = recolor(cory, 'rosecory', 'Rose Corydoras', (c) => mix(c, [255, 150, 190], 0.5));
+
+export const SPECIES = { goldfish, blue: bluefish, angelfish, neon, cory, guppy, platy, danio, betta, moonbetta, sunangel, rosecory };

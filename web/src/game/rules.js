@@ -11,6 +11,10 @@ export const SPECIES_DEF = {
   danio:     { label: 'Zebra Danio',price: 32, level: 4, wait: 60, count: 4, blurb: 'A striped school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
   betta:     { label: 'Betta',      price: 52, level: 4, wait: 240, count: 1, blurb: 'Flowing fins, quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
+// rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
+SPECIES_DEF.moonbetta = { label: 'Moon Betta', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
+SPECIES_DEF.sunangel = { label: 'Sun Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
+SPECIES_DEF.rosecory = { label: 'Rose Corydoras', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pink bottom dweller passing through.', traits: ['Social', 'Lazy'], speed: 0.6, visitor: true };
 export const DECOR_DEF = {
   grass:    { label: 'Tall Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
   fern:     { label: 'Fern',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
@@ -52,7 +56,7 @@ export function nextStage(fish, now = Date.now()) {
 }
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
-export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
+export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
 export const FLOORS = { sand: 'Sand', pearl: 'Pearl', gravel: 'Gravel', black: 'Black sand', coral: 'Pink coral' };
@@ -111,7 +115,7 @@ function tendFish(t, dt, now) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   return t;
 }
@@ -140,6 +144,48 @@ function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
   const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75 }); t.fish.push(f);
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
+}
+const HOUR = 3600e3;
+function visitors(t, now, ev) {
+  if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; }
+  if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
+  const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), pool = fresh.length ? fresh : all;
+  const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
+  t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR };
+  ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
+}
+function eggs(t, now, ev) {
+  for (const e of [...t.eggs]) {
+    if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
+    const A = t.fish.find((f) => f.id === e.a), B = t.fish.find((f) => f.id === e.b), h = hash32(e.hatchAt / 1e3);
+    const seed = A && B ? ((A.seed + B.seed) >> 1) + (h % 9) : e.seed, pick = (f, k) => (f?.traits?.length ? f.traits[(h >> k) % f.traits.length] : null);
+    const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
+    const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8 }); t.fish.push(f);
+    ev.push({ journal: `${A?.name ?? 'An'} egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+  }
+  if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
+  if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
+  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school), by = {};
+  for (const f of adults) (by[f.species] ||= []).push(f);
+  const pairs = Object.values(by).filter((g) => g.length >= 2); if (!pairs.length) return;
+  const g = pairs[hash32(now / 6e4) % pairs.length], [A, B] = [g[0], g[1]];
+  t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, hatchAt: now + 4 * HOUR });
+  ev.push({ journal: `${A.name} and ${B.name} laid an egg.`, toast: 'An egg! It will hatch in a few hours.' });
+}
+const STORY = {
+  Shy: (f, t) => (t.decor.length ? `${f.name} spent a while tucked in behind the plants.` : null),
+  Brave: (f) => `${f.name} swam right up to the glass to look at you.`,
+  Curious: (f, t) => { const d = t.decor[hash32(f.seed + t.seq) % Math.max(1, t.decor.length)]; return d ? `${f.name} went to inspect the ${DECOR_DEF[d.type].label.toLowerCase()}.` : `${f.name} nosed around the tank.`; },
+  Social: (f, t) => { const o = t.fish.find((x) => x.id !== f.id); return o ? `${f.name} and ${o.name} swam together for a while.` : null; },
+  Playful: (f) => `${f.name} chased bubbles for ages.`,
+  Lazy: (f) => `${f.name} napped low on the sand.`,
+  Calm: (f) => `${f.name} drifted around without a care.`,
+  Greedy: (f) => `${f.name} waited near the surface, just in case.`,
+};
+function stories(t, now, ev) {
+  if (now < t.storyAt || !t.fish.length || (t.flags.tut ?? 0) < 5) return; t.storyAt = now + (3 + (hash32(now / 6e4) % 3)) * HOUR;
+  const f = t.fish[hash32(now / 6e4 + 7) % t.fish.length], tr = f.traits?.[hash32(now / 6e4 + 11) % Math.max(1, f.traits.length)], line = STORY[tr]?.(f, t);
+  if (line) ev.push({ journal: line });
 }
 function deliver(t, now, ev) {
   for (const o of [...t.orders]) {
@@ -183,6 +229,7 @@ export function advance(t, now = Date.now()) {
   }
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
+  visitors(t, now, ev); eggs(t, now, ev); stories(t, now, ev);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
@@ -199,7 +246,7 @@ const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim(
 const num = (v) => (Number.isFinite(+v) ? +v : NaN);
 
 // Apply one player action. Mutates `t`; returns { ok, reason?, events[], delta? }.
-export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false, uid = 'me' } = {}) {
+export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
@@ -290,6 +337,25 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (!FLOORS[fl] || !BACKDROPS[bd]) return fail('BAD_NAME');
       t.style = { floor: fl, backdrop: bd }; events.push({ activity: { type: 'decor', text: `${name} restyled the tank.` } }); return ok();
     }
+    case 'greet': {
+      const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });
+      const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
+      t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; t.shells += 4;
+      events.push({ journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
+    }
+    case 'bottle': {
+      const to = members?.find((m) => m.id === a.to); if (!to || to.id === uid) return fail('NOT_A_FRIEND');
+      const note = String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40); if (!note) return fail('BAD_NAME');
+      if (t.bottles.some((b) => b.from === uid && now - b.at < 6 * HOUR)) return fail('TOO_SOON');
+      if (t.shells < 2) return fail('NOT_ENOUGH_SHELLS'); if (t.bottles.length >= 12) return fail('TANK_CROWDED');
+      t.shells -= 2; t.bottles.push({ id: nextId(t, 'b'), from: uid, fromName: name, to: to.id, note, at: now });
+      events.push({ activity: { type: 'bottle', text: `${name} sent ${to.name} a bottle.` }, toast: `Bottle sent to ${to.name}` }); return ok();
+    }
+    case 'openBottle': {
+      const b = t.bottles.find((x) => x.id === a.id && x.to === uid); if (!b) return ok({ applied: false, delta: 0 });
+      t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += 4;
+      events.push({ journal: `${name} opened a bottle from ${b.fromName}: “${b.note}”`, toast: `${b.fromName}: “${b.note}” +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4, from: b.fromName, note: b.note });
+    }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
       events.push({ journal: `${name}: “${txt}”` }); return ok();
@@ -298,6 +364,9 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (!dev) return fail('FORBIDDEN');
       if (a.what === 'shells') t.shells += 50;
       if (a.what === 'rush') { for (const o of t.orders) o.arrivesAt = now; events.push(...advance(t, now)); }
+      if (a.what === 'visitor') { t.visitAt = now; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }
+      if (a.what === 'egg') { t.eggAt = now; for (const f of t.fish) f.born -= 4 * DAY; events.push(...advance(t, now)); }
+      if (a.what === 'hatch') { for (const e of t.eggs) e.hatchAt = now; events.push(...advance(t, now)); }
       if (a.what === 'drift') { t.driftAt = now; events.push(...advance(t, now)); }
       if (a.what === 'day') { for (const f of t.fish) f.born -= DAY; t.hunger = Math.min(0.85, t.hunger + 0.3); t.water = Math.max(0.45, t.water - 0.2); t.glass = Math.min(0.8, t.glass + 0.3); events.push(...advance(t, now)); }
       return ok();

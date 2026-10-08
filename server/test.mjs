@@ -214,6 +214,15 @@ await t('nudges only reach a real friend, only when something needs doing, and n
   const out = await mkUser('Outsider'); wsA.send(JSON.stringify({ t: 'nudge', to: out.userId })); assert.ok(await waitFor(wsA, (m) => m.t === 'nudged' && m.reason === 'NOT_A_FRIEND')); wsB3.close();
 });
 await t('dev actions are refused unless the server runs in dev mode', async () => { assert.equal((await ackOf(wsA, { t: 'dev', what: 'shells', idem: 'dv' })).reason, 'FORBIDDEN'); });
+await t('a visitor can be greeted once and a bottle only reaches its friend', async () => {
+  setW(tank.id, { simTs: Date.now(), visitor: { id: 'vtest', species: 'moonbetta', seed: 5, until: Date.now() + 3600e3 }, shells: 50 });
+  const r = await ackOf(wsA, { t: 'greet', id: 'vtest', idem: 'g1' }); assert.equal(r.ok, true); let w = getW(tank.id); assert.equal(w.visitor, null); assert.ok(w.seen.fish.includes('moonbetta'));
+  assert.equal((await ackOf(wsA, { t: 'bottle', to: a.userId, note: 'me', idem: 'b0' })).reason, 'NOT_A_FRIEND');
+  const sh = getW(tank.id).shells; assert.equal((await ackOf(wsA, { t: 'bottle', to: b.userId, note: 'nice fish', idem: 'b1' })).ok, true); w = getW(tank.id); assert.equal(w.shells, sh - 2); assert.equal(w.bottles.length, 1);
+  const wsB4 = await open(b.token); const bid = w.bottles[0].id;
+  assert.equal((await ackOf(wsA, { t: 'openBottle', id: bid, idem: 'b2' })).applied, false);
+  assert.equal((await ackOf(wsB4, { t: 'openBottle', id: bid, idem: 'b3' })).applied, true); assert.equal(getW(tank.id).bottles.length, 0); wsB4.close();
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();
