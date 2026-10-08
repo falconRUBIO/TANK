@@ -64,7 +64,7 @@ composer.addPass(new RenderPass(scene, camera));
 export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
 export const hideForDepth = [halo, pool, shafts.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
 const bokehRender = bokeh.render.bind(bokeh);
-bokeh.render = (...a) => { hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o) => (o.visible = true)); };
+bokeh.render = (...a) => { const was = hideForDepth.map((o) => o.visible); hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o, i) => (o.visible = was[i])); };   // put back what was visible, never force things on
 composer.addPass(bokeh);
 export const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());

@@ -3,7 +3,7 @@ import { writeFileSync } from 'fs';
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage();
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForTimeout(3000);
-const clip = { x: 165, y: 600, width: 40, height: 40 };
+const clip = { x: 100, y: 540, width: 190, height: 130 };
 const names = await p.evaluate(() => window.__tank.scene.children.map((c, i) => i + ':' + c.type + ':' + (c.geometry?.type ?? '') + ':' + (c.isInstancedMesh ? c.count : '') + ':' + c.children.length));
 const px = async () => (await p.screenshot({ clip, type: 'png' })).length;
 const sum = async () => { const buf = await p.screenshot({ clip, type: 'jpeg', quality: 90 }); return buf.length; };
