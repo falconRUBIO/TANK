@@ -37,7 +37,7 @@ const goldfish = {
       return dy * dy + dz * dz <= 1 ? { t, dy, dz } : null;
     };
     const ex = Math.round(X0 + 0.86 * L), ey = 4;
-    const cream = hex(0xfbeed8), pale = hex(0xe6dcd8), gray = hex(0xc4bfc8), deepO = hex(0xea600a);
+    const cream = hex(0xfff6e8), pale = hex(0xf0e8e2), gray = hex(0xc4bfc8), deepO = hex(0xea600a);
     const bt = (x) => clamp((x - X0) / L);
     return {
       bounds: { x: [-14, 56], y: [-26, 26], z: [-12, 12] },

@@ -143,6 +143,11 @@ export function buildEnvironment() {
   for (let x = -6; x <= -1.5; x += 0.8) { m4.compose(v.set(x + 0.4, 6.4, -9.5), q.identity(), s.set(0.85, 0.7, 1.5)); far.setMatrixAt(fc++, m4); }
   far.count = fc; far.frustumCulled = false; root.add(far);
 
+  // fallen column drums half-buried in the sand
+  const drumMat = stoneA.clone(); patch(drumMat);
+  [[1.9, 0.38, -1.4, 1.5, 0.3], [3.0, 0.3, -1.1, 1.2, -0.5], [2.4, 0.55, -1.25, 0.9, 0.9]].forEach(([x, y, z, len, ry], di) => {
+    const d = new THREE.Mesh(new THREE.CylinderGeometry(0.45 - di * 0.05, 0.45 - di * 0.05, len, 9), drumMat); d.rotation.z = Math.PI / 2; d.rotation.y = ry; d.position.set(x, y, z); d.castShadow = d.receiveShadow = true; root.add(d);
+  });
   // ── rocks ──
   const rockMat = patch(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
   const rock = (x, y, z, sx, sy, sz, seed) => {
@@ -206,7 +211,7 @@ export function buildEnvironment() {
         base: mix([36, 70, 40], [58, 98, 46], k), tip: mix([104, 150, 60], [160, 190, 84], k + light) });
     }
   };
-  [[-4.4, 0.3, 8, 3, 6.5, 0.9], [-3.4, 1.9, 7, 2.4, 5, 0.9], [-1.2, 1.7, 6, 1.5, 3.4, 0.8], [1.8, 1.5, 9, 3, 7, 1.0], [4.0, 1.4, 8, 3.5, 7.5, 1.0], [3.0, -1.6, 7, 4, 7.5, 0.9], [-2.9, -2.2, 6, 3, 6, 0.9], [0.2, -3.2, 8, 3.5, 7, 1.2], [-1.7, 0.4, 5, 1.2, 2.5, 0.7], [4.6, 0.3, 6, 2, 4, 0.8], [-0.3, 2.3, 5, 0.8, 1.6, 0.8]].forEach(([x, z, n, a, b, sp]) => clump(x, z, n, a, b, sp));
+  [[-4.4, 0.3, 8, 3, 6.5, 0.9], [-3.4, 1.9, 7, 2.4, 5, 0.9], [1.8, 1.5, 9, 3, 7, 1.0], [4.0, 1.4, 8, 3.5, 7.5, 1.0], [3.0, -1.6, 7, 4, 7.5, 0.9], [-2.9, -2.2, 6, 3, 6, 0.9], [0.2, -3.2, 8, 3.5, 7, 1.2], [4.6, 0.3, 6, 2, 4, 0.8]].forEach(([x, z, n, a, b, sp]) => clump(x, z, n, a, b, sp));
   // broad sword leaves
   [[-0.9, 1.5, 0], [2.4, 0.8, 1], [-4.1, 2.2, 2], [1.0, -2.0, 3]].forEach(([x, z, si]) => {
     for (let l = 0; l < 9; l++) {

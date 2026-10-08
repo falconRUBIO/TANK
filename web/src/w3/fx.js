@@ -13,11 +13,11 @@ export class Shafts {
         float n(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y); }
         void main(){
           float edge = smoothstep(0.0,0.35,vUv.x)*smoothstep(1.0,0.65,vUv.x);
-          float along = pow(1.0 - vUv.y, 1.25) * smoothstep(0.0, 0.04, vUv.y);
+          float along = pow(1.0 - vUv.y, 0.7) * smoothstep(0.0, 0.04, vUv.y);
           float shimmer = 0.55 + 0.45*n(vec2(vUv.x*6.0 + uTime*0.15, vUv.y*2.5 - uTime*0.2));
           float a = edge*along*shimmer*uI;
           // steps the alpha into a few bands for a posterised, retro-lit look
-          a = floor(a*9.0+0.5)/9.0;
+          a = floor(a*14.0+0.5)/14.0;
           gl_FragColor = vec4(uCol*a, a);
         }`,
     });
@@ -32,9 +32,9 @@ export class Shafts {
   }
   setDir(d) { this.dir.copy(d).normalize(); this.rebuild(); }
   rebuild() {
-    const D = this.dir, L = 19, R = new THREE.Vector3(1, 0, 0);
+    const D = this.dir, L = 26, R = new THREE.Vector3(1, 0, 0);
     for (const it of this.items) {
-      const top = new THREE.Vector3(it.x - D.x * 0, 16.2, it.z), bot = top.clone().addScaledVector(D, L / Math.abs(D.y));
+      const top = new THREE.Vector3(it.x - D.x * 0, 19, it.z), bot = top.clone().addScaledVector(D, L / Math.abs(D.y));
       const w0 = it.w * 0.5, w1 = it.w * 1.7;
       const p = [top.clone().addScaledVector(R, -w0), top.clone().addScaledVector(R, w0), bot.clone().addScaledVector(R, -w1), bot.clone().addScaledVector(R, w1)];
       const g = it.m.geometry;

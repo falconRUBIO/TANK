@@ -58,7 +58,7 @@ export class CausticMap {
     this.img = this.g.createImageData(n, n);
     this.tex = new THREE.CanvasTexture(this.c);
     this.tex.magFilter = THREE.NearestFilter; this.tex.minFilter = THREE.NearestFilter; this.tex.generateMipmaps = false;
-    this.tex.wrapS = this.tex.wrapT = THREE.RepeatWrapping; this.tex.colorSpace = THREE.SRGBColorSpace;
+    this.tex.wrapS = this.tex.wrapT = THREE.RepeatWrapping; this.tex.colorSpace = THREE.SRGBColorSpace; this.tex.repeat.set(2.5, 2.5);
   }
   update(t) {
     const n = this.n, d = this.img.data, TAU = Math.PI * 2;
@@ -72,7 +72,7 @@ export class CausticMap {
         c += 0.005 / Math.hypot(px0 / Math.sin(ix + tt), py0 / Math.cos(iy + tt)) ;
       }
       c /= 4; c = 1.17 - Math.pow(c, 1.4); c = Math.pow(Math.abs(c), 8);
-      const v = Math.max(0, Math.min(255, 128 + c * 420));
+      const v = Math.max(0, Math.min(255, 70 + c * 640));
       const i = (y * n + x) * 4; d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
     }
     this.g.putImageData(this.img, 0, 0); this.tex.needsUpdate = true;

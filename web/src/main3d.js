@@ -39,10 +39,11 @@ const hemi = new THREE.HemisphereLight(0x6fb4e8, 0x1c4a52, 0.9); scene.add(hemi)
 const amb = new THREE.AmbientLight(0x4a7090, 0.3); scene.add(amb);
 const caustic = new CausticMap(96);
 const sun = new THREE.SpotLight(0xffe0a6, 6, 0, 0.62, 0.7, 0);
-sun.position.set(2.5, 26, 9); sun.target.position.set(-0.4, 0, -1.2); scene.add(sun, sun.target);
+sun.position.set(-6, 24, 12); sun.target.position.set(0.2, 2, -1.2); scene.add(sun, sun.target);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.camera.near = 8; sun.shadow.camera.far = 50;
 sun.map = caustic.tex;
 const fill = new THREE.DirectionalLight(0xffe6c8, 1.25); fill.position.set(-5, 9, 20); scene.add(fill);
+const rim = new THREE.DirectionalLight(0x6fc8ff, 1.2); rim.position.set(8, 7, -12); scene.add(rim);
 const lamp = new THREE.PointLight(0xffa24a, 0, 12, 1.6); lamp.position.copy(env.lampPos); scene.add(lamp);
 
 const shafts = new Shafts(); scene.add(shafts.group);
@@ -65,6 +66,20 @@ add('cory', 9, { name: 'Dusty', profile: { traits: ['Shy', 'Lazy'], age: 'Juveni
 const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Curious'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.9, 0.75, 1] }, speed: 0.8, scale: 0.9, band: { x: [-2, -1.9], y: [2.2, 2.6], z: [-3, 1.6] }, start: [env.archX, 2.4, -2.8] });
 arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 + rng() * 0.4, this.pos.z < -0.5 ? 1.6 : -3.0); this.retarget = 12; };
 
+// ── personality: each trait changes where a fish chooses to swim next ──
+const bubbleCol = new THREE.Vector3(0.9, 0, -0.2);
+fishes.forEach((f) => {
+  if (f === arch) return;
+  const base = f.pick.bind(f), tr = f.profile?.traits ?? [];
+  f.pick = function (r) {
+    base(r); const roll = r();
+    if (tr.includes('Curious') && roll < 0.28) { this.target.set((r() - 0.5) * 6, 4 + r() * 6, 3.4); this.retarget = 4; }                       // swim up to the glass
+    else if (tr.includes('Social') && roll < 0.35) { const o = fishes[(r() * fishes.length) | 0]; if (o !== this) { this.target.copy(o.pos).add(new THREE.Vector3((r() - 0.5) * 1.2, (r() - 0.5) * 0.8, 0.2)); this.retarget = 3; } }
+    else if (tr.includes('Shy') && roll < 0.45) { this.target.set(-3.4 + r() * 7, 1 + r() * 3, -1.6 - r() * 1.2); this.retarget = 7; }                // tuck into the plants
+    else if (tr.includes('Playful') && roll < 0.3) { this.target.set(bubbleCol.x + (r() - 0.5) * 0.6, 2 + r() * 8, 0.2 + r()); this.retarget = 3; }  // chase the bubbles
+    if (tr.includes('Lazy')) this.retarget += 4;
+  };
+});
 // ── feeding: flakes sink, fish react by personality, only hungry meals pay Shells ──
 const flakes = { list: [], mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200) };
 flakes.mesh.frustumCulled = false; flakes.mesh.count = 0; flakes.mesh.castShadow = true; scene.add(flakes.mesh);
@@ -74,7 +89,42 @@ const journal = [{ day: 1, text: 'Our tank began.' }];
 let dayStart = Date.now(); try { dayStart = +localStorage.getItem('ourtank.start') || Date.now(); localStorage.setItem('ourtank.start', dayStart); } catch (e) { /* storage unavailable */ }
 const dayNo = () => Math.floor((Date.now() - dayStart) / 864e5) + 1;
 document.getElementById('day').textContent = 'DAY ' + String(dayNo()).padStart(3, '0');
-const ui = initUI({ onFeed: () => { feedMode = true; ui.toast('Tap the water to drop flakes'); }, journal: () => journal.slice().reverse(), shells: () => shells });
+let water = 1, glass = 0, cleanMode = false, waterAnim = 0, lastReward = 0;
+// ── persistence (localStorage; survives reloads, and the tank keeps living while you're away) ──
+try {
+  const sv = JSON.parse(localStorage.getItem('ourtank.save') || 'null');
+  if (sv) {
+    shells = sv.shells || 0; journal.splice(0, journal.length, ...(sv.journal || journal));
+    const away = Math.min(8 * 3600, (Date.now() - (sv.at || Date.now())) / 1000);
+    hunger = Math.min(0.85, (sv.hunger ?? 0.6) + away * 0.004); water = Math.max(0.45, (sv.water ?? 1) - away * 0.00008); glass = Math.min(0.8, (sv.glass ?? 0) + away * 0.0001);
+    if (away > 600 && glass > 0.15) journal.push({ day: dayNo(), text: 'Algae crept onto the glass while you were away.' });
+  }
+} catch (e) { /* ignore corrupt save */ }
+const save = () => { try { localStorage.setItem('ourtank.save', JSON.stringify({ shells, journal, hunger, water, glass, at: Date.now() })); } catch (e) { /* storage unavailable */ } };
+setInterval(save, 4000); addEventListener('pagehide', save);
+const ui = initUI({ journal: () => journal.slice().reverse(), onAct: (a) => {
+  if (a === 'feed') { feedMode = true; cleanMode = false; ui.toast('Tap the water to drop flakes'); }
+  else if (a === 'clean') { startClean(); }
+  else if (a === 'water') { if (waterAnim > 0) return; waterAnim = 1; ui.toast('Changing the water…'); if (water < 0.7 && Date.now() - lastReward > 60000) { shells += 2; lastReward = Date.now(); ui.toast('Fresh water! +2 shells'); journal.push({ day: dayNo(), text: 'The water was changed.' }); } }
+  else if (a === 'health') { ui.toast(`Water ${Math.round(water * 100)}% · Glass ${Math.round((1 - glass) * 100)}% · Fed ${Math.round((1 - hunger) * 100)}%`); }
+  ui.setShells(shells);
+} });
+ui.setShells(shells);
+// glass algae overlay you wipe with a finger
+const gcv = document.getElementById('glass'), gg = gcv.getContext('2d'); gcv.width = 195; gcv.height = 346;
+function addAlgae(n) { for (let i = 0; i < n; i++) { const edge = Math.random() < 0.6, x = edge ? (Math.random() < 0.5 ? Math.random() * 40 : 155 + Math.random() * 40) : Math.random() * 195, y = Math.pow(Math.random(), 0.6) * 346; gg.fillStyle = `rgba(${70 + Math.random() * 40},${130 + Math.random() * 40},${40 + Math.random() * 30},${0.12 + Math.random() * 0.2})`; gg.beginPath(); gg.arc(x, y, 1.2 + Math.random() * 4.5, 0, 6.3); gg.fill(); } }
+addAlgae(Math.round(glass * 900));
+function startClean() { cleanMode = true; feedMode = false; gcv.style.pointerEvents = 'auto'; ui.toast(glass > 0.12 ? 'Swipe the glass to wipe it clean' : 'The glass is already clean'); if (glass <= 0.12) { cleanMode = false; gcv.style.pointerEvents = 'none'; } }
+let wiping = false;
+const wipe = (e) => { const r = gcv.getBoundingClientRect(); gg.globalCompositeOperation = 'destination-out'; gg.beginPath(); gg.arc((e.clientX - r.left) / r.width * 195, (e.clientY - r.top) / r.height * 346, 16, 0, 6.3); gg.fill(); gg.globalCompositeOperation = 'source-over'; };
+gcv.addEventListener('pointerdown', (e) => { wiping = true; wipe(e); }); gcv.addEventListener('pointermove', (e) => { if (wiping) wipe(e); });
+addEventListener('pointerup', () => {
+  if (!wiping) return; wiping = false;
+  const d = gg.getImageData(0, 0, 195, 346).data; let left = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 14) left++;
+  glass = Math.min(glass, left / (d.length / 16) * 6);
+  if (glass < 0.06) { const was = lastClean; glass = 0; cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); if (Date.now() - lastReward > 30000) { shells++; lastReward = Date.now(); ui.setShells(shells); ui.toast('Spotless! +1 shell'); journal.push({ day: dayNo(), text: 'The glass was cleaned.' }); } else ui.toast('Spotless'); }
+});
+let lastClean = 0;
 const fedToday = new Set();
 function dropFlakes(x, n = 7) { for (let i = 0; i < n && flakes.list.length < 190; i++) flakes.list.push({ pos: new THREE.Vector3(x + (rng() - 0.5) * 0.9, 15 + rng() * 0.5, 0.3 + rng() * 1.6), age: 0, ph: rng() * 6, c: flakeCols[(rng() * 4) | 0] }); }
 const fm = new THREE.Matrix4();
@@ -85,6 +135,8 @@ function updateFlakes(dt, t) {
   flakes.list.forEach((f, i) => { fm.makeRotationY(f.ph + t * 0.4); fm.setPosition(f.pos); flakes.mesh.setMatrixAt(i, fm); flakes.mesh.setColorAt(i, f.c); });
   flakes.mesh.instanceMatrix.needsUpdate = true; if (flakes.mesh.instanceColor) flakes.mesh.instanceColor.needsUpdate = true;
   hunger = Math.min(1, hunger + dt * 0.01);
+  water = Math.max(0.3, water - dt * 0.00012); const g0 = glass; glass = Math.min(1, glass + dt * 0.00018); if (Math.floor(glass * 900) > Math.floor(g0 * 900)) addAlgae(1);
+  if (waterAnim > 0) { waterAnim = Math.max(0, waterAnim - dt * 0.5); water += (1 - water) * Math.min(1, dt * 2.5); }
   for (const f of fishes) {
     let best = null, bd = 8;
     const shy = f.profile?.traits.includes('Shy'), greedy = f.profile?.traits.includes('Greedy');
@@ -97,7 +149,7 @@ function updateFlakes(dt, t) {
       f.target.copy(best.pos); f.retarget = 0.3;
       if (f.mouth().distanceTo(best.pos) < 0.32) {
         best.eaten = true;
-        const paid = hunger > 0.25; hunger = Math.max(0, hunger - 0.045);
+        const paid = hunger > 0.25; hunger = Math.max(0, hunger - 0.045); water = Math.max(0.3, water - 0.01);
         if (paid && ++eatenSinceReward >= 4) { eatenSinceReward = 0; shells++; ui.setShells(shells); ui.toast('+1 shell'); }
         if (!fedToday.has(f.name)) { fedToday.add(f.name); journal.push({ day: dayNo(), text: `${f.name} found the flakes.` }); }
       }
@@ -118,9 +170,9 @@ composer.addPass(bokeh);
 const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) } },
+  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint;
+  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool;
     const mat4 B = mat4(0.,8.,2.,10., 12.,4.,14.,6., 3.,11.,1.,9., 15.,7.,13.,5.);
     float bayer(vec2 p){ int x = int(mod(p.x,4.)), y = int(mod(p.y,4.)); return B[y][x]/16.; }
     void main(){
@@ -128,7 +180,10 @@ const grade = new ShaderPass({
       float l = dot(c, vec3(.299,.587,.114));
       c = mix(c*vec3(.92,1.0,1.1), c*vec3(1.08,1.02,.93), smoothstep(.25,.8,l));  // cool shadows / warm highlights
       c = mix(vec3(l), c, 1.3) * uTint;
-      vec2 d = vUv-.5; c *= mix(.5, 1., smoothstep(.95,.2, length(d*vec2(1.0,.85))));  // vignette
+      vec2 d = vUv-vec2(.5,.38);
+      float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
+      c *= mix(1. - uPool*.62, 1.08, pool);
+      c *= mix(.72, 1., smoothstep(1.0,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
       // PS1-style 15-bit colour with ordered dither
       float levels = 31.;
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
@@ -140,12 +195,12 @@ composer.addPass(grade);
 
 // ── time of day ──
 const TOD = {
-  morning:   { sunCol: 0xd8ecff, sunI: 8.0, sunPos: [-3, 26, 9], hemiSky: 0x9ccfe0, hemiGnd: 0x16424a, hemiI: 1.45, ambI: 0.55, fog: 0x1f6a7c, fogNear: 26, fogFar: 74, bgTop: 0x3a8aa0, bgBot: 0x0a2c3a, lampI: 0, shaft: 0.2, surf: 0.4, exposure: 1.0, bloom: 0.22, glow: 0.3, tint: 0xf6fcff },
-  afternoon: { sunCol: 0xffecc8, sunI: 9.0, sunPos: [1, 26, 9], hemiSky: 0x9ccbd8, hemiGnd: 0x1a4a4a, hemiI: 1.45, ambI: 0.55, fog: 0x1c5d70, fogNear: 26, fogFar: 72, bgTop: 0x2f7a90, bgBot: 0x0a2a38, lampI: 0, shaft: 0.26, surf: 0.45, exposure: 1.0, bloom: 0.22, glow: 0.4, tint: 0xfffaf2 },
-  evening:   { sunCol: 0xff9a5a, sunI: 8.5, sunPos: [8, 21, 7], hemiSky: 0xb08ab0, hemiGnd: 0x2a2236, hemiI: 1.25, ambI: 0.45, fog: 0x3a3460, fogNear: 22, fogFar: 62, bgTop: 0x7a5c98, bgBot: 0x16142e, lampI: 20, shaft: 0.32, surf: 0.5, exposure: 1.0, bloom: 0.4, glow: 1.4, tint: 0xfff2ee },
-  night:     { sunCol: 0x7a96ff, sunI: 2.6, sunPos: [-3, 26, 8], hemiSky: 0x3a58a8, hemiGnd: 0x0a1030, hemiI: 0.9, ambI: 0.42, fog: 0x07142e, fogNear: 18, fogFar: 54, bgTop: 0x0e2858, bgBot: 0x030814, lampI: 64, shaft: 0.14, surf: 0.2, exposure: 1.1, bloom: 0.7, glow: 3.0, tint: 0xeef2ff },
+  morning:   { sunCol: 0xe4f2ff, sunI: 15, sunPos: [-9, 24, 10], hemiSky: 0x7fb8cc, hemiGnd: 0x3a4a3c, hemiI: 1.25, ambI: 0.34, rimCol: 0x8ad8ff, rimI: 1.1, fog: 0x1d6478, fogNear: 20, fogFar: 62, bgTop: 0x3a8aa0, bgBot: 0x08242f, lampI: 0, shaft: 0.36, surf: 0.5, exposure: 1.02, bloom: 0.25, glow: 0.3, tint: 0xf2fbff, pool: 0.5 },
+  afternoon: { sunCol: 0xffe2b0, sunI: 17, sunPos: [-6, 24, 12], hemiSky: 0x78b4c4, hemiGnd: 0x4a4430, hemiI: 1.25, ambI: 0.32, rimCol: 0x6fc8ff, rimI: 1.3, fog: 0x1a5668, fogNear: 20, fogFar: 60, bgTop: 0x2c7488, bgBot: 0x07202c, lampI: 0, shaft: 0.42, surf: 0.55, exposure: 1.05, bloom: 0.25, glow: 0.4, tint: 0xfff8ee, pool: 0.45 },
+  evening:   { sunCol: 0xff9050, sunI: 15, sunPos: [10, 17, 9], hemiSky: 0x9a7ab0, hemiGnd: 0x40302c, hemiI: 1.05, ambI: 0.28, rimCol: 0xff6aa0, rimI: 1.4, fog: 0x35305c, fogNear: 18, fogFar: 54, bgTop: 0x6a4c8c, bgBot: 0x120f28, lampI: 24, shaft: 0.62, surf: 0.55, exposure: 1.02, bloom: 0.42, glow: 1.4, tint: 0xfff0ec, pool: 0.5 },
+  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 1.0, fog: 0x06102a, fogNear: 16, fogFar: 48, bgTop: 0x0c2352, bgBot: 0x020610, lampI: 70, shaft: 0.22, surf: 0.2, exposure: 1.12, bloom: 0.7, glow: 3.0, tint: 0xeef2ff, pool: 0.3 },
 };
-const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint'];
+const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];
 const qs = new URLSearchParams(location.search);
 let target = TOD[qs.get('tod')] ? qs.get('tod') : 'afternoon';
 for (const k of Object.keys(TOD.afternoon)) cur[k] = ck.includes(k) ? new THREE.Color(TOD[target][k]) : Array.isArray(TOD[target][k]) ? [...TOD[target][k]] : TOD[target][k];
@@ -153,7 +208,7 @@ export function setTod(n) { if (TOD[n]) { target = n; document.querySelectorAll(
 window.__setTod = setTod;
 document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => setTod(b.dataset.tod)));
 setTod(target);
-const tmpC = new THREE.Color();
+const tmpC = new THREE.Color(), murkCol = new THREE.Color(0x4f5a2a);
 function applyTod(dt) {
   const k = Math.min(1, dt * 2.0), T = TOD[target];
   for (const key of Object.keys(T)) {
@@ -163,9 +218,9 @@ function applyTod(dt) {
   }
   sun.color.copy(cur.sunCol); sun.intensity = cur.sunI; sun.position.set(...cur.sunPos);
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI; amb.intensity = cur.ambI;
-  scene.fog.color.copy(cur.fog); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogFar;
+  const murk = 1 - water; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
-  lamp.intensity = cur.lampI; env.glow.emissiveIntensity = cur.glow;
+  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; lamp.intensity = cur.lampI; env.glow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
   renderer.toneMappingExposure = cur.exposure; bloom.strength = cur.bloom;
@@ -223,7 +278,7 @@ function frame(now) {
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
   bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
-  fishBoost.value.set(0.2, 0.17, 0.12).multiplyScalar(0.35 + 0.65 * Math.min(1, cur.sunI / 8));
+  fishBoost.value.set(0.26, 0.22, 0.16).multiplyScalar(0.3 + 0.7 * Math.min(1, cur.sunI / 12));
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   updateFlakes(dt, t);
   fishes.forEach((f) => f.update(dt, rng, fishes));

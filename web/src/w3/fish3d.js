@@ -94,8 +94,8 @@ export class Fish3D {
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
-      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 0.5) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
-      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.5); al.multiplyScalar(1 / cnt).multiplyScalar(0.6); desired.add(c).add(al).add(sep.multiplyScalar(0.4)); }
+      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 0.9) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
+      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.3); al.multiplyScalar(1 / cnt).multiplyScalar(0.5); desired.add(c).add(al).add(sep.multiplyScalar(1.1)); }
     }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
     if (this.vel.length() > this.speed * 1.4) this.vel.setLength(this.speed * 1.4);
