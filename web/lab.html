@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Our Tank — Sprite Lab</title>
+<style>
+  :root{--bg:#0b1522;--panel:#121f31;--line:#22344d;--ink:#cfe0f2;--dim:#7d93ad}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 -apple-system,system-ui,sans-serif;padding:16px 16px 40px}
+  h1{font-size:18px;margin:0 0 4px} p.sub{color:var(--dim);margin:0 0 16px}
+  .row{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+  .row h2{font:600 13px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+  .strip{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+  canvas{image-rendering:pixelated;background:linear-gradient(#1a3c58,#102a40)}
+  .cap{font:11px ui-monospace,monospace;color:var(--dim)}
+</style></head><body>
+<h1>Sprite Lab</h1><p class="sub">Voxel-built, pixel-shaded fish. Every frame is rendered live from a 3D voxel model.</p>
+<div id="out"></div>
+<script type="module" src="src/lab.js"></script>
+</body></html>
