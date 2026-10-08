@@ -64,10 +64,11 @@ export function initUI({ onAct, journal, social, onTab }) {
   function setMembers() {
     const s = social.get(), box = document.getElementById('avs'); if (!box) return;
     box.innerHTML = '';
+    const solo = { avatar: { skin: '#b06a42', hair: '#222222', hat: '#56703a' } };
     for (let n = 1; n <= 3; n++) {
-      const m = s?.members.find((x) => x.slot === n), d = document.createElement('div'); d.className = 'av' + (m ? '' : ' empty');
-      if (m) { const c = document.createElement('canvas'); c.className = 'av'; drawAvatar(c, m.avatar); d.append(c); const i = document.createElement('i'); if (!s.online.includes(m.id)) i.className = 'off'; d.append(i); d.onclick = () => open('friends'); }
-      else if (s) { d.textContent = '+'; d.onclick = () => social.invite(); } else { d.classList.add('ghost'); }
+      const m = s ? s.members.find((x) => x.slot === n) : (n === 1 ? solo : null), d = document.createElement('div'); d.className = 'av' + (m ? '' : ' empty');
+      if (m) { const c = document.createElement('canvas'); c.className = 'av'; drawAvatar(c, m.avatar); d.append(c); const i = document.createElement('i'); if (s && !s.online.includes(m.id)) i.className = 'off'; d.append(i); d.onclick = () => open('friends'); }
+      else { d.textContent = '+'; d.onclick = () => social.invite(); }
       box.append(d);
     }
   }

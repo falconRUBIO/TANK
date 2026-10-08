@@ -62,15 +62,15 @@ const grassTex = (variant = 0) => pixTex(40, 96, (P) => {
     blade(P, x0, 95, len, lean, 2.2 + rb() * 1.2, hues[(i + variant) % 3]);
   }
 });
-const fernTex = () => pixTex(56, 96, (P) => {
+const fernTex = (v = 0) => pixTex(56, 96, (P) => {
   // upright frond like the reference: slim curved rachis, many short chevron leaflets, lime to gold
-  const stem = (t) => [28 + Math.sin(t * 2.4) * 5 - t * 3, 95 - t * 90];
+  const stem = (t) => [28 + Math.sin(t * (v ? 1.6 : 2.4)) * (v ? -6 : 5) + (v ? 3 : -3) * t, 95 - t * 90];
   for (let n = 0; n <= 160; n++) { const [x, y] = stem(n / 160); P(x, y, [88, 118, 40]); P(x + 1, y, [60, 86, 32]); }
-  for (let k = 1; k < 34; k++) {
-    const t = k / 34, [bx, by] = stem(t), L = Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.04)) * 14 + 2;
+  for (let k = 1; k < (v ? 26 : 34); k++) {
+    const t = k / (v ? 26 : 34), [bx, by] = stem(t), L = Math.sin(Math.PI * Math.min(1, t * 1.05 + 0.04)) * (v ? 17 : 14) + 2;
     for (const sd of [-1, 1]) for (let s = 1; s <= L; s++) {
       const f = s / L, x = bx + sd * s * 0.95, y = by - s * 0.55 + f * f * 2.2 + (k & 1) * 0.6;
-      const c = mix([86, 128, 40], [190, 208, 76], t * 0.55 + (1 - f) * 0.35);
+      const c = mix(v ? [60, 112, 52] : [86, 128, 40], v ? [150, 200, 96] : [190, 208, 76], t * 0.55 + (1 - f) * 0.35);
       P(x, y, c); P(x, y + 1, mix(c, [48, 84, 30], 0.5)); if (f < 0.5) P(x, y - 1, mix(c, [226, 232, 130], 0.3));
     }
   }
@@ -110,7 +110,7 @@ function plantMesh(tex, items, rng, { w, hMin, hMax, alphaTest = 0.5 }) {
     const h = hMin + rng() * (hMax - hMin), yaw = rng() * 3.14, wd = w * (0.85 + rng() * 0.4);
     for (let k = 0; k < 2; k++) {                                              // two crossed cards read as a full little plant
       q.setFromEuler(e.set(0, yaw + k * 1.5708, (rng() - 0.5) * 0.12)); m.compose(p.set(it.x + (rng() - 0.5) * 0.15, it.y ?? -0.02, it.z + (rng() - 0.5) * 0.15), q, sc.set(wd, h, 1));
-      im.setMatrixAt(i, m); im.setColorAt(i, new THREE.Color().setScalar(0.82 + rng() * 0.3)); i++;
+      im.setMatrixAt(i, m); const k0 = 0.8 + rng() * 0.3, hue = rng(); im.setColorAt(i, new THREE.Color(k0 * (1 + (hue - 0.5) * 0.25), k0 * (1 + (0.5 - Math.abs(hue - 0.5)) * 0.12), k0 * (1 - (hue - 0.5) * 0.25))); i++;
     }
   }
   im.castShadow = im.receiveShadow = true; im.frustumCulled = false; return im;
@@ -164,8 +164,8 @@ export function buildDecor(seed = 21) {
   // ── driftwood: one thick arch with a root branch, like the reference ──
   {
     const u = 0.1, v = new Vox(u);
-    const path = new THREE.CatmullRomCurve3([[-5.2, 0.15, 0.9], [-4.5, 1.2, 1.0], [-3.6, 2.2, 0.95], [-2.6, 1.9, 1.0], [-1.5, 1.0, 1.1], [-0.2, 0.45, 1.25], [1.2, 0.3, 1.3]].map((a) => new THREE.Vector3(...a)));
-    const branch = new THREE.CatmullRomCurve3([[-3.6, 2.2, 0.95], [-3.1, 2.9, 0.9], [-2.7, 3.7, 0.85]].map((a) => new THREE.Vector3(...a)));
+    const path = new THREE.CatmullRomCurve3([[-5.4, 0.15, 1.5], [-4.9, 1.0, 1.6], [-4.3, 1.8, 1.55], [-3.7, 1.5, 1.6], [-3.1, 0.8, 1.7], [-2.4, 0.35, 1.8], [-1.6, 0.25, 1.9]].map((a) => new THREE.Vector3(...a)));
+    const branch = new THREE.CatmullRomCurve3([[-4.3, 1.8, 1.55], [-3.9, 2.6, 1.5], [-3.6, 3.3, 1.45]].map((a) => new THREE.Vector3(...a)));
     const tube = (curve, r0, r1) => { const N = 70; for (let n = 0; n <= N; n++) { const t = n / N, p = curve.getPoint(t), r = (r0 + (r1 - r0) * t) / u; const ci = Math.round(p.x / u), cj = Math.round(p.y / u), ck = Math.round(p.z / u);
       for (let i = ci - Math.ceil(r); i <= ci + Math.ceil(r); i++) for (let j = cj - Math.ceil(r); j <= cj + Math.ceil(r); j++) for (let k = ck - Math.ceil(r); k <= ck + Math.ceil(r); k++) if ((i * u - p.x) ** 2 + (j * u - p.y) ** 2 + (k * u - p.z) ** 2 <= (r * u) ** 2 && !v.has(i, j, k)) { const t2 = fbm(i * 0.18, j * 0.5, k * 0.18); v.set(i, j, k, mix([52, 33, 20], [102, 68, 40], t2)); } } };
     tube(path, 0.5, 0.26); tube(branch, 0.2, 0.1);
@@ -234,19 +234,20 @@ export function buildDecor(seed = 21) {
   const L = (x0, x1, z0, z1, n) => Array.from({ length: n }, () => ({ x: x0 + rng() * (x1 - x0), z: z0 + rng() * (z1 - z0) }));
   // composition: ferns frame the left and right edges, tall grass in a back row, mid clumps around the lantern and ruin base, low plants in front
   const at = (...pts) => pts.map(([x, z]) => ({ x, z }));
-  group.add(plantMesh(fernTex(), at([-4.6, 1.5], [-4.1, 0.9], [-4.9, 0.4], [-3.6, 2.0], [-4.3, 2.2], [4.4, 1.7], [3.9, 2.3], [4.8, 0.9]), rng, { w: 2.3, hMin: 2.6, hMax: 3.9 }));
-  group.add(plantMesh(grassTex(0), at([-3.4, -2.7], [-0.6, -2.5], [1.5, -2.2], [3.3, -2.6], [4.6, -1.6], [-4.8, -2.0], [0.4, -1.2]), rng, { w: 1.8, hMin: 3.8, hMax: 5.6 }));
-  group.add(plantMesh(grassTex(2), at([-2.4, 0.9], [0.9, 0.6], [1.6, 0.0], [4.5, 0.4], [-1.1, 0.4], [3.8, -0.9]), rng, { w: 1.6, hMin: 2.2, hMax: 3.4 }));
-  group.add(plantMesh(grassTex(1), at([-3.8, 2.9], [-2.2, 2.7], [0.1, 2.9], [1.6, 2.6], [3.4, 2.9], [-0.9, 3.2]), rng, { w: 1.4, hMin: 1.1, hMax: 2.0 }));
+  group.add(plantMesh(fernTex(0), at([-4.6, 1.0], [-4.9, 0.3], [4.4, 1.7], [4.8, 0.9]), rng, { w: 2.3, hMin: 2.6, hMax: 3.9 }));
+  group.add(plantMesh(fernTex(1), at([-4.1, 0.6], [-3.9, 2.1], [3.9, 2.3], [4.2, 0.4]), rng, { w: 2.1, hMin: 2.2, hMax: 3.4 }));
+  group.add(plantMesh(grassTex(0), at([-4.6, -2.7], [1.5, -2.2], [3.3, -2.6], [4.6, -1.6], [0.9, -1.2]), rng, { w: 1.8, hMin: 3.8, hMax: 5.6 }));
+  group.add(plantMesh(grassTex(2), at([-4.2, 0.5], [0.9, 0.6], [1.6, 0.0], [4.5, 0.4], [3.8, -0.9]), rng, { w: 1.6, hMin: 2.2, hMax: 3.4 }));
+  group.add(plantMesh(grassTex(1), at([-4.0, 2.9], [0.6, 2.9], [1.8, 2.6], [3.4, 2.9], [-4.6, 2.3]), rng, { w: 1.4, hMin: 1.1, hMax: 2.0 }));
   group.add(plantMesh(swordTex(), at([-3.2, 2.4], [2.4, 1.3], [0.3, 2.2]), rng, { w: 2.1, hMin: 1.6, hMax: 2.4 }));
   group.add(plantMesh(redTex(), at([2.0, 0.2], [2.6, -0.4], [1.6, -0.8]), rng, { w: 1.7, hMin: 2.8, hMax: 3.8 }));
 
   // ── the big ruin, built from chunky voxels so it matches the rest: crenellated top, round arch, mossy courses ──
-  const WX = -1.9, WZ = -1.4;
+  const WX = -1.5, WZ = -1.4;
   {
     const u = 0.115, v = new Vox(u);
-    const topOf = (i) => (i < -13 ? 58 : i < -4 ? 49 : i < 8 ? 36 : -1) + ((Math.floor(i / 5) & 1) && i < 8 ? -4 : 0);       // crenellations
-    const inArch = (i, j) => { const dx = (i + 4) / 8.5; return j <= 14 ? Math.abs(i + 4) <= 8.5 : dx * dx + ((j - 14) / 9) ** 2 < 1; };
+    const topOf = (i) => (i < -17 ? 58 : i < 11 ? 46 : -1) + ((Math.floor(i / 5) & 1) && i >= -17 ? -4 : 0);       // crenellations
+    const inArch = (i, j) => { const dx = (i + 4) / 11; return j <= 18 ? Math.abs(i + 4) <= 11 : dx * dx + ((j - 18) / 12) ** 2 < 1; };
     const brick = (i, j, k) => {
       const course = Math.floor(j / 4), off = (course & 1) * 3, bi = Math.floor((i + off) / 6);
       const mortar = j % 4 === 0 || (i + off) % 6 === 0;
@@ -258,7 +259,7 @@ export function buildDecor(seed = 21) {
     };
     const solid = (i, j, k) => {
       if (j < 0) return false;
-      if (i >= -22 && i <= 8) { if (j > topOf(i) + Math.round((fbm(i * 0.4, 3, 9) - 0.5) * 6)) return false; if (inArch(i, j) && Math.abs(k) < 8) return false; if (Math.abs(k) <= 6) return true; }
+      if (i >= -26 && i <= 10) { if (j > topOf(i) + Math.round((fbm(i * 0.4, 3, 9) - 0.5) * 6)) return false; if (inArch(i, j) && Math.abs(k) < 8) return false; if (Math.abs(k) <= 6) return true; }
       if (i >= 13 && i <= 23 && Math.abs(k) <= 5) return j <= 44 - Math.floor((i - 13) / 3) * 3 + Math.round((fbm(i * 0.5, 1, 4) - 0.5) * 10);   // second tower
       if (i >= 29 && i <= 37 && Math.abs(k) <= 4) return j <= 14 + Math.round((fbm(i * 0.6, 2, 4) - 0.5) * 8);                                            // broken stub
       return false;
@@ -273,8 +274,8 @@ export function buildDecor(seed = 21) {
     const m = v.mesh(); m.position.set(WX, 0.02, WZ); group.add(m); solids.addVox(v, WX, 0.02, WZ, 0);
     const X = (i) => WX + i * u;
     const Y = (j) => j * u + 0.02;
-    boxes.push({ min: [X(-22), 0, WZ - 1.0], max: [X(-13), Y(56), WZ + 1.0] }, { min: [X(-13), 0, WZ - 1.0], max: [X(-12), Y(46), WZ + 1.0] },
-      { min: [X(-4) + 1.4, 0, WZ - 1.0], max: [X(8), Y(34), WZ + 1.0] }, { min: [X(-12), Y(23), WZ - 1.0], max: [X(-4) + 1.4, Y(36), WZ + 1.0] },
+    boxes.push({ min: [X(-26), 0, WZ - 1.0], max: [X(-17), Y(56), WZ + 1.0] }, { min: [X(-17), 0, WZ - 1.0], max: [X(-15), Y(44), WZ + 1.0] },
+      { min: [X(7), 0, WZ - 1.0], max: [X(10), Y(44), WZ + 1.0] }, { min: [X(-15), Y(30), WZ - 1.0], max: [X(7), Y(44), WZ + 1.0] },
       { min: [X(13), 0, WZ - 0.9], max: [X(23), Y(40), WZ + 0.9] });
   }
   return { group, spheres, boxes, solids, glow, lampPos, archX: WX - 4 * 0.115 };

@@ -132,7 +132,7 @@ export function buildEnvironment() {
   // far ruins: hazy colonnades with real arches, fading into the water
   const far = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(120, 140, 150), roughness: 1 })), 700);
   let fc = 0;
-  const fb = (x, y, z, w, h, d, rz = 0) => { m4.compose(v.set(x, y, z), q.setFromEuler(e.set(0, 0, rz)), s.set(w, h, d)); far.setMatrixAt(fc++, m4); };
+  const fb = (x, y, z, w, h, d, rz = 0) => { m4.compose(v.set(x, y, z), q.setFromEuler(e.set(0, 0, rz)), s.set(w, h, d)); far.setMatrixAt(fc, m4); const k = 0.78 + rng() * 0.36; far.setColorAt(fc++, new THREE.Color(k * (y > 4 ? 0.95 : 1), k * (y > 4 ? 1.06 : 1), k)); };
   const farPier = (cx, cz, w, top, ch) => { for (let y = 0; y < top; y += ch) { if (y > top - 1.2 && rng() < 0.45) continue; fb(cx + (rng() - 0.5) * 0.12, y + ch / 2, cz, w * (0.94 + rng() * 0.1), ch * 0.97, w); } };
   const farArch = (cx, cz, span, spring, w) => {                              // two piers + a ring of wedges + a lintel course above
     farPier(cx - span / 2 - w / 2, cz, w, spring, 0.7); farPier(cx + span / 2 + w / 2, cz, w, spring + 0.7, 0.7);
