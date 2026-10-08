@@ -25,7 +25,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.info.autoReset = false;      // count draw calls across every post-processing pass
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
-camera.position.set(0, 7.4, 30); camera.lookAt(0, 8.0, 0);
+camera.position.set(0, 6.3, 30); camera.lookAt(0, 7.0, 0);
 scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 
 // gradient water backdrop
@@ -287,11 +287,11 @@ function applyTod(dt) {
 
 // ── tap a fish: camera glides in, profile card slides up ──
 const card = document.getElementById('card');
-let focus = null; const look = new THREE.Vector3(0, 8.0, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
+let focus = null; const look = new THREE.Vector3(0, 7.0, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 const ray = new THREE.Raycaster();
 function pick(ev) {
   const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
-  const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
+  const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 1.0) / dh;
   ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
   let best = null, bd = 1e9;
   for (const f of fishes) { const hit = ray.ray.distanceToPoint(f.pos); if (hit < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } }
@@ -314,7 +314,7 @@ function setFocus(f) {
 canvas.addEventListener('pointerdown', (ev) => {
   if (feedMode) {
     const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
-    const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
+    const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 1.0) / dh;
     ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
     const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { const fx = Math.max(-4, Math.min(4, hit.x)); if (net && hunger < 0.08) { ui.toast('The fish are full'); endFeed(); } else { dropFlakes(fx); net?.action('feed', { x: fx }); feedDrops++; feedIdle = 0; feedLabel(); if (feedDrops >= 3) endFeed(); } }
     return;
@@ -333,7 +333,7 @@ function frame(now) {
   cTick += dt; if (cTick > 0.05) { cTick = 0; caustic.update(t * 0.7); }
   applyTod(dt);
   if (focus) { const d = Math.max(6, focus.radius * 6.8); camGoal.set(focus.pos.x + 0.4, focus.pos.y + 0.1, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - d * 0.17, focus.pos.z); }
-  else { camGoal.set(Math.sin(t * 0.13) * 0.35, 7.4 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 8.0, 0); }
+  else { camGoal.set(Math.sin(t * 0.13) * 0.35, 6.3 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 7.0, 0); }
   const fd = focus ? camera.position.distanceTo(focus.pos) : 30;
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);

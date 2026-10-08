@@ -113,17 +113,6 @@ export function buildEnvironment() {
       y += ch; c++;
     }
   };
-  const AX = -0.95, AY = 4.3, AR = 1.2;
-  wall(-3.15, -1.0, 2.0, 1.5, 0, 9.4, { crown: 1.0, ornate: true });         // left tower
-  wall(1.2, -1.0, 1.9, 1.5, 0, 7.2, { crown: 1.0, ornate: true });          // right pier, carries the arch
-  wall(-4.6, -2.3, 1.4, 1.2, 0, 6.6, { crown: 1.4 });                        // buttress behind the tower
-  for (let i = 1; i < 11; i++) { const a = Math.PI - (i / 11) * Math.PI; B(AX + Math.cos(a) * AR, AY + Math.sin(a) * AR, -1.0, 0.9, 0.95, 1.5, 0, a - Math.PI / 2, true); }
-  B(AX, AY + AR + 0.05, -1.0, 1.0, 1.2, 1.55, 0, 0, true);                   // keystone
-  wall(-0.95, -1.0, 2.4, 1.5, AY + AR + 0.45, 7.6, { crown: 0.5 });          // wall above the arch
-  B(-3.15, 0.1, -1.0, 2.6, 0.22, 1.8, 0, 0, false); B(1.2, 0.1, -1.0, 2.3, 0.22, 1.7, 0, 0, false);
-  for (let st = 0; st < 3; st++) B(AX, 0.12 + st * 0.2, 0.2 - st * 0.22, 2.2 - st * 0.12, 0.22, 0.5, 0, 0, st > 0);   // steps into the arch
-  wall(3.9, -3.2, 1.3, 1.2, 0, 5.6, { crown: 1.4 }); wall(5.1, -2.4, 1.1, 1.0, 0, 2.8, { crown: 0.8 });
-  B(4.3, 0.35, -1.7, 1.6, 0.5, 0.8, 0.6, 0, true);                          // fallen lintel
   for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
   const blockMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stoneA, blocks.length);
   const mossMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(86, 150, 52), roughness: 1 })), blocks.length);
@@ -178,20 +167,17 @@ export function buildEnvironment() {
   }
 
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
-  const grass = new Blades(), vines = new Blades();
-  const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [60, 100, 44], tip: [150, 190, 76] }); };
-  tuft(-3.15, 9.5, -1.0, 8); tuft(1.2, 7.3, -1.0, 6); tuft(-0.95, 7.7, -1.0, 6); tuft(3.9, 5.7, -3.2, 6); tuft(-4.6, 6.7, -2.3, 5);
+
   const kelp = new Blades();
   for (let i = 0; i < 26; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
   const fg = new Blades();
   for (let i = 0; i < 8; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.6 + rng() * 2.0), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 4, w: 0.16 + rng() * 0.1, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
   root.add(fg.mesh(leafMat()));
-  for (let i = 0; i < 22; i++) { const x = -4.0 + rng() * 6.0, yy = 2.4 + rng() * 5.4; if (x > -2.1 && x < 0.2 && yy < AY + AR + 0.2) continue; vines.add({ x, y: yy, z: -0.2, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [100, 150, 56], tip: [56, 112, 46] }); }
-  [grass, vines].forEach((b) => root.add(b.mesh(leafMat())));
+  
 
   const decor = buildDecor();
   root.add(decor.group);
-  colBoxes.push({ min: [AX - 1.3, AY + AR * 0.8, -1.8], max: [AX + 1.3, AY + AR + 0.6, -0.2] });   // arch crown (the opening below stays open)
-  return { root, glow: decor.glow, lampPos: decor.lampPos, archX: AX, colliders: { boxes: [...colBoxes, ...decor.boxes], spheres: decor.spheres } };
+  const AX = decor.archX;
+  return { root, glow: decor.glow, lampPos: decor.lampPos, archX: AX, colliders: { boxes: [...decor.boxes], spheres: decor.spheres } };
 }
