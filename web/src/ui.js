@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -47,7 +47,7 @@ export function initUI({ game, social, cb }) {
     if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - Date.now())}`, tab: '' };
     const cheapest = Math.min(...Object.values(DECOR_DEF).filter((d) => d.level <= s.level).map((d) => d.price));
     const fish = Object.entries(SPECIES_DEF).filter(([, d]) => d.level <= s.level && s.fish.length + d.count <= capacity(s.level)).sort((x, y) => x[1].price - y[1].price)[0];
-    if (fish && s.shells >= fish[1].price) return { text: `You can adopt a ${fish[1].label.toLowerCase()}!`, tab: 'decorate' };
+    if (fish && s.shells >= fishPrice(fish[0])) return { text: `You can adopt a ${fish[1].label.toLowerCase()}!`, tab: 'decorate' };
     if (s.shells >= cheapest) return { text: 'You have shells to spend on decorations.', tab: 'decorate' };
     const w = WISHES[s.wishIdx]; if (w) return { text: `Tank wish: ${w.text}`, tab: '' };
     const b = LEVEL_AT[s.level]; return { text: b ? `Earn shells by caring · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
@@ -64,23 +64,23 @@ export function initUI({ game, social, cb }) {
   };
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'ALL', fishCat = cat === 'FISH';
-    if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF)) out.push({ kind: 'fish', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
+    if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
     if (!fishCat) for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
     return out.map((c) => {
       const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && s.flags.freePlant > 0 && c.cat === 'PLANTS';
-      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}"><b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}</span></button>`;
+      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}"><b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
     const s = S(); if (!selected) return `<div class="detail dim">Pick something to see what it does.</div>`;
     const [kind, id] = selected.split(':'), d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return '';
-    const free = kind === 'decor' && s.flags.freePlant > 0 && d.cat === 'PLANTS';
+    const free = kind === 'decor' && s.flags.freePlant > 0 && d.cat === 'PLANTS', priceNow = kind === 'fish' ? fishPrice(id) : d.price;
     let note = '', can = true;
     if (s.level < d.level) { note = `Unlocks at tank level ${d.level}`; can = false; }
-    else if (!free && s.shells < d.price) { note = `${d.price - s.shells} more shell${d.price - s.shells === 1 ? '' : 's'} needed`; can = false; }
+    else if (!free && s.shells < priceNow) { note = `${priceNow - s.shells} more shell${priceNow - s.shells === 1 ? '' : 's'} needed`; can = false; }
     else if (kind === 'fish' && s.fish.length + d.count > capacity(s.level)) { note = 'No room yet. Level up to grow the tank.'; can = false; }
     return `<div class="detail"><div><h4>${esc(d.label)}</h4><p>${esc(d.blurb)}${kind === 'fish' && d.count > 1 ? ` Comes as a school of ${d.count}.` : ''}</p>${note ? `<small class="note">${esc(note)}</small>` : ''}</div>
-      <button class="big gold" id="buy" ${can ? '' : 'disabled'}>${kind === 'fish' ? 'ADOPT' : 'PLACE'} · ${free ? 'FREE' : '🐚 ' + d.price}</button></div>`;
+      <button class="big gold" id="buy" ${can ? '' : 'disabled'}>${kind === 'fish' ? 'ADOPT' : 'PLACE'} · ${free ? 'FREE' : '🐚 ' + priceNow}</button></div>`;
   }
   const growLine = () => {
     const soon = S().fish.map((f) => ({ f, n: nextStage(f) })).filter((x) => x.n).sort((a, b) => a.n.ms - b.n.ms)[0];

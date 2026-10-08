@@ -51,6 +51,9 @@ export function nextStage(fish, now = Date.now()) {
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
 }
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
+// one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
+export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
+export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
 export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
 export const capacity = (level) => 4 + 3 * level;
 export function scoreOf(t, now = Date.now()) { return t.fish.length * 2 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 2 + ((t.seen?.fish.length ?? 0) + (t.seen?.decor.length ?? 0)) + 3 * (t.wishIdx ?? 0); }
@@ -222,8 +225,9 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
       if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
-      if (t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
-      t.shells -= d.price;
+      const price = fishPrice(a.species, now);
+      if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
+      t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
       events.push({ journal: `${name} ordered ${d.count === 1 ? (nm || 'a new fish') + ' the ' + d.label.toLowerCase() : 'a school of ' + d.label.toLowerCase() + 's'}.`, activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });

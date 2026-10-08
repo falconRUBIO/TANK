@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, fishPrice, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -119,8 +119,8 @@ function setRearrange(on, silent = false) {
 // ── adopting fish ──
 async function adopt(species) {
   const d = SPECIES_DEF[species], s = game.state;
-  const names = d.count === 1 ? await ui.dialog({ title: `NAME YOUR ${d.label.toUpperCase()}`, text: 'It will be shared by everyone in the tank.', input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${d.price}`, cancel: 'Not now' })
-    : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `Four ${d.label.toLowerCase()}s swim together. Choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${d.price}`, cancel: 'Not now' });
+  const names = d.count === 1 ? await ui.dialog({ title: `NAME YOUR ${d.label.toUpperCase()}`, text: 'It will be shared by everyone in the tank.', input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
+    : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `Four ${d.label.toLowerCase()}s swim together. Choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
   const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0 });
   if (!r.ok) return fail(r);
