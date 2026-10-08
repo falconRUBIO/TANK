@@ -54,14 +54,13 @@ export function plantVox(v, rng, base, kind, o = {}) {
   const [bx, bz] = base, I = Math.round(bx / PU), K = Math.round(bz / PU), ph = rng() * 6.28;
   const put = (i, j, k, c, H, k2 = 1) => v.set(i, j, k, c, k2, Math.min(1, j / H), ph);
   const lerpc = (a, b, t) => mix(a, b, Math.max(0, Math.min(1, t)));
-  if (kind === 'grass') {                                           // tall ribbon blades, lit on the left, dark on the right
-    const n = o.n ?? 6, hues = o.hues ?? [[[38, 96, 44], [136, 196, 62]], [[54, 116, 40], [176, 208, 70]]];
+  if (kind === 'grass') {                                           // chunky tufts: wide at the root, tapering to a bright tip, in the same lime as the ferns
+    const n = o.n ?? 5, H0 = o.h ?? 38, low = o.low ?? [58, 118, 40], high = o.high ?? [176, 208, 74];
     for (let b = 0; b < n; b++) {
-      const H = Math.round((o.h ?? 52) * (0.55 + rng() * 0.6)), lean = (rng() - 0.5) * 0.55 + (o.lean ?? 0), x0 = I + Math.round((b - n / 2) * 2.2 + (rng() - 0.5) * 2), z0 = K + Math.round((rng() - 0.5) * 4), hue = hues[b % hues.length];
+      const mid = b - (n - 1) / 2, H = Math.round(H0 * (0.62 + rng() * 0.45) * (1 - Math.abs(mid) * 0.06)), lean = mid * 0.26 + (rng() - 0.5) * 0.2 + (o.lean ?? 0), x0 = I + Math.round(mid * 3.6), z0 = K + (b & 1);
       for (let j = 0; j <= H; j++) {
-        const t = j / H, cx = x0 + Math.round(lean * j * (0.25 + t * 0.8) + Math.sin(t * 3 + b) * 1.2), w = t < 0.78 ? 2 : 1;
-        for (let q = 0; q < w; q++) put(cx + q, j, z0, q === 0 ? lerpc(hue[0], hue[1], 0.2 + t * 0.9) : lerpc(mix(hue[0], [20, 54, 36], 0.35), hue[1], t * 0.55), H, q === 0 ? 1.12 : 0.92);
-        if (j % 11 === 5 && w === 2) put(cx, j, z0, [214, 236, 120], H, 1.1);               // pale midrib flecks
+        const t = j / H, cx = x0 + Math.round(lean * j * (0.35 + t * 0.6) + t * t * lean * 7), w = t < 0.4 ? 3 : t < 0.78 ? 2 : 1;
+        for (let q = 0; q < w; q++) put(cx + q, j, z0, q === w - 1 && w > 1 ? mix(lerpc(low, high, 0.1 + t * 0.7), [30, 76, 36], 0.4) : lerpc(low, high, 0.15 + t * 0.85), H, q === 0 ? 1.1 : 0.95);
       }
     }
   } else if (kind === 'fern') {                                     // arching frond with paired leaflets, lime to gold

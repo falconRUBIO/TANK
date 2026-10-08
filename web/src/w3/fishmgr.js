@@ -10,11 +10,12 @@ const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
   angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] },
 };
+export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Tall Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
 const bubbleSpot = new THREE.Vector3(-3.6, 0, 0.5);
 
 // little speech-bubble icons drawn once per mood
-const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Happy: ['💛', '#2a2410'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'] };
+const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'] };
 const emoteTex = {};
 function emoteTexture(mood) {
   if (emoteTex[mood]) return emoteTex[mood];
@@ -74,20 +75,34 @@ export class Fishes {
       if (sp.visible) { if (sp.userData.mood !== mood) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
     }
   }
-  // personality: traits change where a fish chooses to swim next
+  // personality: traits decide how a fish moves, where it goes and who it goes with
   wrapPick(f, d) {
-    const base = f.pick.bind(f), tr = d.traits ?? [], all = this.list;
+    const base = f.pick.bind(f), tr = d.traits ?? [], has = (t) => tr.includes(t), school = !!f.species.school;
+    f.tmul = (has('Lazy') ? 0.6 : 1) * (has('Calm') ? 0.85 : 1) * (has('Playful') ? 1.25 : 1) * (has('Shy') ? 0.9 : 1) * (has('Brave') ? 1.08 : 1) * (has('Greedy') ? 1.05 : 1);
+    f.isShy = has('Shy');
     f.pick = (r) => {
-      base(r); const roll = r(), mood = f.profile?.mood;
-      if (mood === 'Hungry' && roll < 0.5 && f.id !== 'cory') { f.target.set(-2.5 + r() * 5, 9 + r() * 2.5, 0.8 + r() * 1.2); f.retarget = 4; return; }
-      if (mood === 'Sleepy') { f.target.set(-3 + r() * 6, 1 + r() * 2.2, f.target.z); f.retarget = 8; return; }
-      if (tr.includes('Curious') && roll < 0.28) { f.target.set((r() - 0.5) * 6, 4 + r() * 5, 3.0); f.retarget = 4; }
-      else if (tr.includes('Social') && roll < 0.22 && f.id !== 'neon') {
-        const lead = all.filter((o) => o !== f && o.id !== 'neon' && o.profile?.traits.includes('Social') && !o.follower), o = lead[(r() * lead.length) | 0];
-        if (o) { f.following = o; o.follower = f; f.target.set(o.pos.x - Math.cos(o.heading) * 2.4 + (r() - 0.5) * 1.2, o.pos.y + (r() - 0.5) * 1.2, o.pos.z - (r() - 0.5) * 0.4); f.retarget = 2.5; setTimeout(() => { if (o.follower === f) o.follower = null; f.following = null; }, 5000); }
-      } else if (tr.includes('Shy') && roll < 0.45) { f.target.set(-3.4 + r() * 7, 1 + r() * 3, -1.6 - r() * 1.2); f.retarget = 7; }
-      else if (tr.includes('Playful') && roll < 0.3) { f.target.set(this.bubbleAt.x + (r() - 0.5) * 0.6, 2 + r() * 8, 0.2 + r()); f.retarget = 3; }
-      if (tr.includes('Lazy')) f.retarget += 4;
+      base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
+      const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(13.5, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
+      f.idle = 0;
+      if (mood === 'Hungry' && r() < 0.5 && f.id !== 'cory') return T(-2.5 + r() * 5, 9 + r() * 2.5, 0.8 + r() * 1.2, 4);
+      if (mood === 'Sleepy') return T(-3 + r() * 6, 1 + r() * 2.2, f.target.z, 8);
+      if (has('Shy') && r() < 0.75) {                                              // tucks in behind plants and decorations, or hugs the back wall
+        const s = spots.length ? spots[(r() * spots.length) | 0] : null;
+        return s ? T(s.x + (r() - 0.5) * 0.8, 0.9 + r() * Math.max(0.6, s.h * 0.5), s.z - 0.9 - r() * 0.4, 6 + r() * 4) : T(-3.4 + r() * 7, 1 + r() * 2.5, -1.6 - r() * 1.2, 6 + r() * 4);
+      }
+      if (has('Brave') && r() < 0.6) return T(-2 + r() * 4, 3 + r() * 7, 2.2 + r() * 0.6, 3 + r() * 3);   // swims out front, close to the glass
+      if (has('Curious') && r() < 0.65) {                                          // goes to inspect decorations and other fish
+        if (spots.length && r() < 0.7) { const s = spots[(r() * spots.length) | 0]; return T(s.x + (r() - 0.5) * 0.8, 1 + s.h * 0.55, s.z + 1.2, 3.5); }
+        const o = others[(r() * others.length) | 0]; if (o) return T(o.pos.x + (r() - 0.5) * 1.6, o.pos.y + (r() - 0.5), o.pos.z + 0.6, 3);
+      }
+      if (has('Social') && !school && r() < 0.7 && others.length) {                // sticks close to a buddy
+        const mates = others.filter((o) => o.id === f.id), pool = mates.length ? mates : others, o = pool.reduce((a, c) => (c.pos.distanceTo(f.pos) < a.pos.distanceTo(f.pos) ? c : a), pool[0]);
+        return T(o.pos.x - Math.cos(o.heading) * 1.6 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.2);
+      }
+      if (has('Playful')) { f.retarget = 1.4 + r() * 1.4; if (r() < 0.4) T(this.bubbleAt.x + (r() - 0.5) * 0.8, 2 + r() * 8, 0.2 + r(), 2 + r()); return; }
+      if (has('Lazy')) { f.target.y = 1 + r() * 2.5; f.retarget = 7 + r() * 5; if (r() < 0.4) f.idle = 3; return; }
+      if (has('Greedy') && r() < 0.5) return T(-2.5 + r() * 5, 10.5 + r() * 3, 0.8 + r() * 1.6, 4);   // waits near the surface where food falls
+      if (has('Calm')) f.retarget += 3;
     };
   }
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
@@ -131,6 +146,10 @@ export class Fishes {
         f.pm = m.clone(); f.nibble = Math.hypot(cx, cy, cz);
         if (f.nibble < reach) { fl.eaten = true; f.flake = null; f.pm = null; f.gulp = 0.35; this.onEat?.(f); }
       } else f.pm = null;
+    }
+    for (const f of this.list) if (f.isShy && !(f.fleeT > 0) && !f.seeking) for (const o of this.list) {
+      if (o === f || o.id === f.id) continue; const dx = f.pos.x - o.pos.x, dy = f.pos.y - o.pos.y, dz = f.pos.z - o.pos.z;
+      if (Math.hypot(dx, dy, dz) < 2.1) { const m = Math.hypot(dx, dy, dz) || 1; f.target.set(Math.max(-4, Math.min(4, f.pos.x + dx / m * 3)), Math.max(1, Math.min(12, f.pos.y + dy / m * 2)), Math.max(-2, Math.min(2.6, f.pos.z + dz / m * 2))); f.fleeT = 1.8; f.retarget = 2.5; break; }
     }
     this.updateEmotes(t);
     for (const b of this.bursts) { b.age += dt; b.pos.y += b.v * dt; }

@@ -5,7 +5,7 @@ import { DECOR_DEF, SPECIES_DEF, fishPrice, isFree, STAGE_SCALE, stageOf, nextSt
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
-import { Fishes } from './w3/fishmgr.js';
+import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
@@ -21,6 +21,7 @@ window.__game = game;
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
 stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker);
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
+fishes.spots = () => decor.spots();
 const rng = fishes.rng; fishes.defaultBubble = fishes.bubbleAt;
 
 // ── the interface ──
@@ -192,7 +193,7 @@ function showCard(f) {
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
+    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
     <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${bondLine(rec)}</dl><button class="pet" id="pet">Pet ${f.name}</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => petFish(f);
@@ -263,7 +264,7 @@ function syncWorld() {
   decor.sync(s.decor);
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
-  syncGlass(); syncDrift(); ui?.refresh(); tut.run();
+  env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); ui?.refresh(); tut.run();
 }
 game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
@@ -291,7 +292,12 @@ function frame(now) {
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
   stg.applyTod(dt);
-  if (focus) { const d = Math.max(6, focus.radius * 6.8); camGoal.set(focus.pos.x + 0.4, focus.pos.y + 0.1, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - d * 0.17, focus.pos.z); }
+  if (focus) {
+    // frame the fish in the open water between the top bar and the profile card
+    const H = window.innerHeight, cardTop = card.classList.contains('on') ? card.getBoundingClientRect().top : H - 150, topPx = 64, cy = topPx + Math.max(150, cardTop - topPx - 8) / 2;
+    const d = Math.max(6, focus.radius * 8.6), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    camGoal.set(focus.pos.x + 0.3, focus.pos.y - shift + 0.12, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - shift, focus.pos.z);
+  }
   else { camGoal.set(Math.sin(t * 0.13) * 0.35, 4.6 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 5.3, 0); }
   const fd = focus ? camera.position.distanceTo(focus.pos) : 30;
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
@@ -354,6 +360,7 @@ async function boot() {
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
+window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   window.__eaten = 0; const oe = fishes.onEat; fishes.onEat = (f) => { window.__eaten++; oe?.(f); };

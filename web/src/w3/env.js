@@ -87,7 +87,7 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
 // a soft, sweet backdrop: layered pastel sand dunes with round coral domes and little stars, all unlit so the water tint does the shading
 function buildBackdrop() {
   const g = new THREE.Group(), r = mulberry32(31);
-  const layers = [[-7, 0xf6b8c8, 2.4, 0.2], [-12, 0xc9b6f0, 3.6, 1.4], [-18, 0x9fd0f2, 4.8, 2.6], [-26, 0x86e0d0, 6.0, 3.8]];
+  const layers = [[-7, 0xf6b8c8, 2.4, 0.2], [-12, 0xc9b6f0, 3.6, 1.4], [-18, 0x9fd0f2, 4.8, 2.6], [-26, 0x86e0d0, 6.0, 3.8]]; g.userData.mats = [];
   const domeCols = [0xff9ec4, 0xffd36e, 0xb89cff, 0x7fe3c8, 0xff9a7a];
   const dome = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff }), 90);
   const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? 0.42 : 1; i ? star.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : star.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
@@ -96,7 +96,7 @@ function buildBackdrop() {
   layers.forEach(([z, col, amp, base], li) => {
     const sh = new THREE.Shape(), top = (x) => base + amp * (Math.sin(x * 0.13 + li * 1.7) * 0.5 + Math.sin(x * 0.29 + li * 3.1) * 0.3 + 0.55);
     sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 1.5) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); m.position.z = z; g.add(m);
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); g.userData.mats.push(m.material); m.position.z = z; g.add(m);
     for (let i = 0; i < 18 && nd < 90; i++) { const x = -40 + r() * 80, sc = 0.5 + r() * 1.1 + li * 0.25; m4.compose(new THREE.Vector3(x, top(x) - 0.1, z + 0.2), q.identity(), new THREE.Vector3(sc, sc * (0.8 + r() * 0.5), sc)); dome.setMatrixAt(nd, m4); dome.setColorAt(nd++, new THREE.Color(domeCols[(r() * domeCols.length) | 0])); }
     for (let i = 0; i < 6 && ns < 40; i++) { const x = -34 + r() * 68, sc = 0.45 + r() * 0.5 + li * 0.15; m4.compose(new THREE.Vector3(x, top(x) + 0.35 + r() * 0.5, z + 0.3), q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), (r() - 0.5) * 0.8), new THREE.Vector3(sc, sc, 1)); stars.setMatrixAt(ns, m4); stars.setColorAt(ns++, new THREE.Color(r() < 0.5 ? 0xffe27a : 0xffb0d0)); }
   });
@@ -162,6 +162,7 @@ export function buildEnvironment() {
   };
   far.count = fc; far.frustumCulled = false; root.add(far);
 
+  let floorMesh = null, pebblesMesh = null;
   // ── gravel bed ──
   {
     const g = new THREE.PlaneGeometry(30, 30, 64, 64); g.rotateX(-Math.PI / 2);
@@ -174,19 +175,25 @@ export function buildEnvironment() {
     }
     g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); g.computeVertexNormals();
     const fl = new THREE.Mesh(g, patch(new THREE.MeshStandardMaterial({ map: gravelTex(), vertexColors: true, roughness: 1 })));
-    fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl);
+    fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl); floorMesh = fl;
     const pebbles = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5, 0), patch(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.9 })), 420);
     for (let i = 0; i < 420; i++) {
       const x = (rng() - 0.5) * 12, z = -4 + rng() * 6.4, sc = 0.05 + rng() * rng() * 0.2;
       m4.compose(v.set(x, 0.05 + fbm(x * 0.35, (z + 2.5) * 0.35, 8) * 0.34 - 0.1 + sc * 0.2, z), q.setFromEuler(e.set(rng() * 3, rng() * 3, rng() * 3)), s.set(sc * 1.4, sc, sc * 1.2)); pebbles.setMatrixAt(i, m4);
       const k = rng(); pebbles.setColorAt(i, k < 0.3 ? C(112, 104, 94) : k < 0.55 ? C(232, 214, 176) : k < 0.8 ? C(156, 120, 84) : C(128, 138, 134));
     }
-    pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
+    pebblesMesh = pebbles; pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
   }
 
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
-  root.add(buildBackdrop());
+  const backdrop = buildBackdrop(); root.add(backdrop);
 
-  return { root, archX: 0, colliders: new Solids() };
+  const FLOOR = { sand: [0xffffff, 0xffffff], pearl: [0xffdde8, 0xfff0f6], gravel: [0x8aa2c8, 0xb8c4d8], black: [0x5e5a6c, 0x8a8698], coral: [0xff9fb4, 0xffd0dc] };
+  const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2, 0x86e0d0], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0, 0x8a86e0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0, 0x8a9ae8], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0, 0xc0b0f0] };
+  const setStyle = (floor = 'sand', back = 'candy') => {
+    const f = FLOOR[floor] ?? FLOOR.sand; floorMesh?.material.color.setHex(f[0]); pebblesMesh?.material.color.setHex(f[1]);
+    (BACK[back] ?? BACK.candy).forEach((c, i) => backdrop.userData.mats[i]?.color.setHex(c));
+  };
+  return { root, archX: 0, colliders: new Solids(), setStyle };
 }

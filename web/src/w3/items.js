@@ -84,7 +84,7 @@ const B = {
     for (const q of v.m.values()) if (!v.has(q.i, q.j + 1, q.k) && hash(q.i, q.j, q.k, 8) > 0.4) q.c = mix([96, 134, 54], [150, 176, 64], hash(q.i, q.k, 4));
     topLit(v); const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
   },
-  grass: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'grass', { h: 44 + ((r() * 18) | 0), n: 6 }); g.add(v.mesh(true)); return []; },
+  grass: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'grass', { h: 32 + ((r() * 10) | 0), n: 5 }); g.add(v.mesh(true)); return []; },
   fern: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'fern', { h: 50 + ((r() * 12) | 0), side: seed & 1 ? 1 : -1 }); g.add(v.mesh(true)); return []; },
   sword: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'sword'); g.add(v.mesh(true)); return []; },
   red: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'red', { h: 34 + ((r() * 10) | 0) }); g.add(v.mesh(true)); return []; },

@@ -2,6 +2,7 @@
 // shadowed and animated (tail bend, fin flutter) in the scene, steered in 3D.
 import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
+import { mulberry32 } from '../color.js';
 import { patch } from './env.js';
 
 const VOX = 0.052, GLOBAL = 1.05;
@@ -35,6 +36,10 @@ export class Fish3D {
       col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });
+    // every fish is its own: a small hue, saturation, brightness and size shift from its seed (neutral whites and eyes stay put)
+    { const vr = mulberry32(((seed | 0) * 2654435761 + 977) >>> 0), dh = (vr() - 0.5) * 0.08, ds = 0.88 + vr() * 0.24, dl = 0.95 + vr() * 0.1, hsl = {};
+      this.size = 0.93 + vr() * 0.14;
+      this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
     const nrm = new Float32Array(n * 3);
     this.vox.forEach((v, i) => {
@@ -53,7 +58,7 @@ export class Fish3D {
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(1, 0, 0); this.target = new THREE.Vector3();
     this.phase = Math.random() * 6; this.retarget = 0; this.heading = 0; this.pitch = 0; this.roll = 0;
     this.speed = opts.speed ?? 1; this.band = opts.band ?? { x: [-3.6, 3.6], y: [2, 13], z: [0.4, 1.9] };
-    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cool = 0; this.baseScale = opts.scale ?? 1; this.cr = Math.max(0.2, this.radius * 0.3);
+    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cool = 0; this.baseScale = (opts.scale ?? 1) * (this.size ?? 1); this.cr = Math.max(0.2, this.radius * 0.3);
   }
   // growth: baby -> juvenile -> adult changes the fish's size
   setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * 0.3); this.setPose(this.phase, true); }
@@ -107,7 +112,8 @@ export class Fish3D {
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
+    this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt;
+    desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
@@ -139,7 +145,7 @@ export class Fish3D {
       this.cool -= dt;
     }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
-    if (this.vel.length() > this.speed * 1.4) this.vel.setLength(this.speed * 1.4);
+    const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length();

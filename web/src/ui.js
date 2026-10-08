@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -86,6 +86,7 @@ export function initUI({ game, social, cb }) {
     const soon = S().fish.map((f) => ({ f, n: nextStage(f) })).filter((x) => x.n).sort((a, b) => a.n.ms - b.n.ms)[0];
     return soon ? `<p class="grow">🌱 ${esc(soon.f.name)} grows up in ${esc(soon.n.label)}</p>` : '';
   };
+  const lvRow = () => { const s = S(), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.round(((sc - a) / (b - a)) * 100) : 100; return `<div class="lvrow"><b>LEVEL ${lv}</b><i><b style="width:${Math.max(4, Math.min(100, pct))}%"></b></i><span>Day ${game.day}</span></div>`; };
   const ordersHtml = () => { const o = S().orders ?? []; return o.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>📦 ${esc(x.name || SPECIES_DEF[x.species].label)}</span><b>${eta(x.arrivesAt - Date.now())}</b></div>`).join('')}</div>` : ''; };
   const wishHtml = () => { const s = S(), w = WISHES[s.wishIdx]; return w ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(w.text)}</span><b>+${w.reward} 🐚</b></div>` : `<div class="wish"><small>THE TANK'S WISH</small><span>Every wish has come true.</span></div>`; };
   const bookHtml = () => {
@@ -93,9 +94,10 @@ export function initUI({ game, social, cb }) {
     return `<div class="bkhead"><b>${s.seen.fish.length + s.seen.decor.length} / ${COLLECTION_SIZE()}</b><small>Every 5 finds earns 3 shells</small></div><h4>Fish</h4><div class="bkg">${Object.entries(SPECIES_DEF).map(([id, d]) => cell('fish', id, d.label)).join('')}</div><h4>Decorations</h4><div class="bkg">${Object.entries(DECOR_DEF).map(([id, d]) => cell('decor', id, d.label)).join('')}</div>`;
   };
   const journalHtml = () => `<form class="send note"><input maxlength="90" placeholder="Add a note to the journal" autocomplete="off"><button>Add</button></form><div class="jl">${game.journal.slice().reverse().map((e) => `<div class="je"><small>DAY ${String(e.day).padStart(3, '0')}</small><span>${esc(e.text)}</span></div>`).join('')}</div>`;
+  const styleHtml = () => { const st = S().style ?? { floor: 'sand', backdrop: 'candy' }, row = (label, key, opts) => `<div class="sty"><small>${label}</small><div>${Object.entries(opts).map(([k, v]) => `<button class="chipb ${st[key] === k ? 'on' : ''}" data-style="${key}:${k}">${v}</button>`).join('')}</div></div>`; return `<div class="styles">${row('FLOOR', 'floor', FLOORS)}${row('BACKDROP', 'backdrop', BACKDROPS)}</div>`; };
   const views = {
-    care: () => `<h3>Care</h3>${meters()}${growLine()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
-    decorate: () => `<h3>Decorate</h3><div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
+    care: () => `<h3>Care</h3>${lvRow()}${meters()}${growLine()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
+    decorate: () => `<h3>Decorate</h3>${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
       if (!game.shared) return `<h3>Friends</h3><div class="slots"><div class="slot"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div></div>
@@ -134,6 +136,7 @@ export function initUI({ game, social, cb }) {
     bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
     bind('rkey', () => cb.recoveryKey()); bind('leave', () => cb.leaveTank()); bind('tutr', () => { open('tank'); cb.replayTutorial(); }); bind('reset', (ev) => { if (ev.target.dataset.sure) game.reset(); else { ev.target.dataset.sure = 1; ev.target.textContent = 'Tap again to erase'; } });
     bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('settings', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
+    sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; await game.dispatch({ t: 'style', [k]: v }); open('decorate', true); sheet.scrollTop = y; }));
     sheet.querySelectorAll('[data-book]').forEach((b) => (b.onclick = () => { book = b.dataset.book === '1'; sfx('tap'); open('journal', true); }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     if (tab === 'decorate' || (tab === 'journal' && book)) thumbs();

@@ -55,6 +55,8 @@ export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= nee
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
+export const FLOORS = { sand: 'Sand', pearl: 'Pearl', gravel: 'Gravel', black: 'Black sand', coral: 'Pink coral' };
+export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', mint: 'Mint' };
 export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
 export const capacity = (level) => 4 + 3 * level;
 export function scoreOf(t, now = Date.now()) { return t.fish.length * 2 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 2 + ((t.seen?.fish.length ?? 0) + (t.seen?.decor.length ?? 0)) + 3 * (t.wishIdx ?? 0); }
@@ -109,7 +111,7 @@ function tendFish(t, dt, now) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.orders ||= []; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   return t;
 }
@@ -155,7 +157,7 @@ function milestones(t, now, ev) {
 
 export function newWorld(now = Date.now(), seed = 1) {
   return {
-    shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
     fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05 }],
     decor: [],
     seen: { fish: ['goldfish'], decor: [] },
@@ -282,6 +284,11 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03);
       f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
+    }
+    case 'style': {
+      const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';
+      if (!FLOORS[fl] || !BACKDROPS[bd]) return fail('BAD_NAME');
+      t.style = { floor: fl, backdrop: bd }; events.push({ activity: { type: 'decor', text: `${name} restyled the tank.` } }); return ok();
     }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');

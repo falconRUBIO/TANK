@@ -138,14 +138,33 @@
   .nudge{all:unset;cursor:pointer;margin-top:2px;font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid #2a4468;background:#17304f;color:#a9c8ee}.nudge:disabled{opacity:.5}
   #card .pet{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:10px;text-align:center;padding:9px;border-radius:10px;border:1px solid #4a3a52;background:#2a1a30;color:#ffc9e0;font-size:13px;cursor:pointer}#card .pet:active{background:#3a2440}
 .pr em{font-style:normal;color:#8fe0a8;font-size:10px}
+#card .why{margin:-4px 0 10px;font-size:12px;line-height:1.4;color:#a9c0dc}
+.styles{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#0e1b2e}
+  .sty small{display:block;color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-bottom:5px}.sty>div{display:flex;gap:6px;flex-wrap:wrap}
+  .chipb{all:unset;cursor:pointer;font-size:12px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}.chipb.on{background:#17304f;color:var(--ink);border-color:#2a4468}
+
+  /* ── clean top: the tank fills the screen; only a shells capsule and a settings button float above it ── */
+  :root{--top:calc(env(safe-area-inset-top,0px) + 62px)}
+  header{position:absolute;top:0;left:0;right:0;z-index:7;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 0;pointer-events:none;background:none}
+  header .pill,#gear{pointer-events:auto;margin:0;height:38px;border:1px solid rgba(255,255,255,.14);background:rgba(14,24,40,.5);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  header .pill{display:inline-flex;align-items:center;gap:8px;padding:0 15px;border-radius:999px;font:600 15px -apple-system,system-ui,sans-serif;color:var(--ink)}
+  #gear{width:38px;border-radius:50%;color:var(--ink);display:flex;align-items:center;justify-content:center}
+  #conn{display:none;color:#f0a050;font-size:9px}#conn.on{display:inline}
+  #sub{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:5;display:flex;justify-content:center;padding:0 24px;pointer-events:none;transition:opacity .25s}
+  #sub .lv{display:none}
+  #goal{pointer-events:auto;flex:none;max-width:100%;text-align:center;padding:8px 16px;border-radius:999px;font-size:12.5px;color:var(--ink);background:rgba(14,24,40,.55);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  #goal:empty{display:none}
+  main:has(#card.on,#sheet.on,#feedbar.on,#placebar.on,#coach.on) + #sub{opacity:0;pointer-events:none}
+  #toast{top:var(--top)}#coach{top:var(--top)}#placebar{top:var(--top)}.tod{top:var(--top)}
+  .lvrow{display:flex;align-items:center;gap:10px;margin:-2px 0 12px;font-size:12px;color:var(--dim)}.lvrow b{color:var(--gold);font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.06em}.lvrow i{flex:1;height:5px;border-radius:3px;background:#17304f;overflow:hidden}.lvrow i b{display:block;height:100%;background:linear-gradient(90deg,#e6c36a,#f4dd9a)}
 </style></head><body><div id="app">
-<header><div class="hl"><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span><span id="todl" hidden>Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
-<div class="hr"><div class="avs" id="avs"></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
-<div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
+<header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
+<div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
 <main><canvas id="tank"></canvas>
 <canvas id="glass"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
 <div id="feedbar"><span>🫙 Tap the water to drop food · <b id="feedleft"></b></span><button id="feeddone">Done</button></div><div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
+<div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
 <nav><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
 <div data-tab="care"><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>
 <div data-tab="decorate"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/></svg>Decorate</div>
