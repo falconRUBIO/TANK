@@ -42,12 +42,12 @@ export function initUI({ game, social, cb }) {
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };
+    const o = (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)[0];
+    if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - Date.now())}`, tab: '' };
     const cheapest = Math.min(...Object.values(DECOR_DEF).filter((d) => d.level <= s.level).map((d) => d.price));
     const fish = Object.entries(SPECIES_DEF).filter(([, d]) => d.level <= s.level && s.fish.length + d.count <= capacity(s.level)).sort((x, y) => x[1].price - y[1].price)[0];
     if (fish && s.shells >= fish[1].price) return { text: `You can adopt a ${fish[1].label.toLowerCase()}!`, tab: 'decorate' };
     if (s.shells >= cheapest) return { text: 'You have shells to spend on decorations.', tab: 'decorate' };
-    const o = (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)[0];
-    if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - Date.now())}`, tab: '' };
     const w = WISHES[s.wishIdx]; if (w) return { text: `Tank wish: ${w.text}`, tab: '' };
     const b = LEVEL_AT[s.level]; return { text: b ? `Earn shells by caring · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
   }
