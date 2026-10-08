@@ -123,7 +123,14 @@ export class Fishes {
         fl = best;
       }
       f.flake = fl; f.seeking = !!fl; f.foodMul = fl ? (greedy ? 2.0 : 1.5) : 1;
-      if (fl) { f.target.copy(fl.pos); f.retarget = 0.3; if (f.mouth().distanceTo(fl.pos) < 0.34) { fl.eaten = true; f.flake = null; this.onEat?.(f); } }
+      if (fl) {
+        f.target.copy(fl.pos); f.retarget = 0.3;
+        // bite test along the path the mouth travelled this frame (so a fast fish cannot swim through food), with depth counting half
+        const m = f.mouth(), a = f.pm ?? m, ab = o.copy(m).sub(a), len2 = ab.lengthSq(), tt = len2 > 1e-6 ? Math.max(0, Math.min(1, (fl.pos.clone().sub(a).dot(ab)) / len2)) : 1;
+        const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = Math.max(0.45, f.radius * 0.5);
+        f.pm = m.clone(); f.nibble = Math.hypot(cx, cy, cz);
+        if (f.nibble < reach) { fl.eaten = true; f.flake = null; f.pm = null; f.gulp = 0.35; this.onEat?.(f); }
+      } else f.pm = null;
     }
     this.updateEmotes(t);
     for (const b of this.bursts) { b.age += dt; b.pos.y += b.v * dt; }

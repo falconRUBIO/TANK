@@ -86,11 +86,11 @@ function rayFrom(ev) {
 let placing = null, resumeRearrange = false;           // placing: { type, id, free }
 function startPlace(type, id = null) {
   const wasRearranging = rearrange; cancelModes(); ui.open('tank'); resumeRearrange = !!id && wasRearranging;
-  $('prot').hidden = false; $('pok').hidden = false; $('pcan').textContent = 'Cancel';
+  $('prot').hidden = true; $('pok').hidden = false; $('pcan').textContent = 'Cancel';
   const s = game.state, free = !id && s.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS', d = DECOR_DEF[type];
   const it = id ? s.decor.find((x) => x.id === id) : null;
   placing = { type, id, free }; decor.start({ type, id, x: it?.x ?? 0, z: it?.z ?? 1.6, ry: it?.ry ?? 0 });
-  $('placehint').textContent = id ? `Drag ${d.label} to move it` : `Drag ${d.label} where you want it`;
+  $('placehint').textContent = id ? `Drag ${d.label} to move it` : `Drag ${d.label} left or right to line it up`;
   $('pok').textContent = id ? 'Place' : `Place · ${free ? 'FREE' : '🐚 ' + d.price}`; $('psell').hidden = !id; if (id) $('psell').textContent = `Sell +${Math.floor(d.price / 2)}`;
   placebar.classList.add('on'); updatePlaceOk();
 }
@@ -345,6 +345,7 @@ window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
+  window.__eaten = 0; const oe = fishes.onEat; fishes.onEat = (f) => { window.__eaten++; oe?.(f); };
   let inside = 0, samples = 0, worstFish = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
     for (const [at, x] of drops) if (i === at) fishes.drop(x);
@@ -355,5 +356,5 @@ window.__sim = (n, dt = 1 / 30, drops = []) => {
       for (const q of fishes.list) if (q !== f) { const d = Math.hypot(f.pos.x - q.pos.x, f.pos.y - q.pos.y, (f.pos.z - q.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + q.radius)); worstFish = Math.max(worstFish, 1 - d / mn); }
     }
   }
-  return { bodySamplesTouchingDecor: inside, ofSamples: samples, pct: +(100 * inside / samples).toFixed(2), worstFishOverlap: +worstFish.toFixed(3), chasing: fishes.list.filter((f) => f.flake).length };
+  return { eaten: window.__eaten, flakesLeft: fishes.flakes.length, bodySamplesTouchingDecor: inside, ofSamples: samples, pct: +(100 * inside / samples).toFixed(2), worstFishOverlap: +worstFish.toFixed(3), chasing: fishes.list.filter((f) => f.flake).length };
 };

@@ -29,6 +29,6 @@ ok('petting builds a bond per player, has a cooldown, and a fish learns to know 
   assert.equal(f.bond.u1, 12); assert.equal(got, 2); assert.equal(R.applyAction(t, { t: 'pet', id: f.id }, { now: 1e6 + 11 * 5 * 60e3 + 60e3, uid: 'u1' }).applied, false);
   assert.ok(R.applyAction(t, { t: 'pet', id: f.id }, { now: 1e6 + 11 * 5 * 60e3 + 61e3, uid: 'u2' }).applied); assert.equal(f.bond.u2, 1); });
 ok('the tank wish completes once and pays', () => { const t = R.newWorld(0); R.norm(t); t.fish.push(R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: [] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 2, born: 0, stage: 'baby', traits: [] })); const s0 = t.shells; const ev = R.advance(t, 60e3);
-  assert.equal(t.wishIdx >= 1, true); assert.ok(ev.some((e) => e.wish)); assert.ok(t.shells >= s0 + 6); });
+  assert.equal(t.wishIdx >= 1, true); assert.ok(ev.some((e) => e.wish)); assert.ok(t.shells >= s0 + 4); });
 ok('the collection book pays every five discoveries', () => { const t = R.newWorld(0); R.norm(t); t.seen.fish = ['goldfish', 'neon', 'cory']; t.seen.decor = ['grass', 'fern', 'rock']; t.flags.collMs = 0; t.wishIdx = 99; t.level = 8; const s0 = t.shells; R.advance(t, 60e3); assert.equal(t.flags.collMs, 1); assert.equal(t.shells, s0 + 3); R.advance(t, 120e3); assert.equal(t.flags.collMs, 1); });
 console.log(`All ${n} rule tests passed`);

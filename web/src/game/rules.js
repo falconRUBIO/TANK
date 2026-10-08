@@ -150,11 +150,8 @@ export function newWorld(now = Date.now(), seed = 1) {
   return {
     shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0 },
     fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05 }],
-    decor: [
-      { id: 'd1', type: 'grass', x: -3.6, z: 2.6, ry: 0 }, { id: 'd2', type: 'grass', x: 3.4, z: 1.8, ry: 0 },
-      { id: 'd3', type: 'fern', x: -4.2, z: 1.0, ry: 0 }, { id: 'd4', type: 'rock', x: 1.2, z: 2.4, ry: 0.4 },
-    ],
-    seen: { fish: ['goldfish'], decor: ['grass', 'fern', 'rock'] },
+    decor: [],
+    seen: { fish: ['goldfish'], decor: [] },
   };
 }
 

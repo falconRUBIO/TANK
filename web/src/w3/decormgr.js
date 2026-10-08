@@ -6,6 +6,7 @@ import { BOUNDS } from '../game/rules.js';
 import { Bubbles } from './fx.js';
 
 const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6] };
+export const LANES = [0.3, 1.5, 2.7];
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 
 export class DecorMgr {
@@ -35,11 +36,23 @@ export class DecorMgr {
     if (id && this.items.get(id)) { item = this.items.get(id); stampItem(item, this.solids, item.at.x, item.at.z, item.at.ry, -1); }   // lift it off the sand
     else { item = buildItem(type, (Math.random() * 99999) | 0); this.scene.add(item.group); }
     this.preview = { type, id, item, x, z, ry, orig: id ? { ...item.at } : null, valid: true };
+    if (!id) { const spot = this.autoSpot(); x = spot.x; z = spot.z; }
     this.move(x, z); this.marker.visible = true; return this.preview;
+  }
+  // the first free place, trying the middle row, then front, then back, spreading outward from the centre
+  autoSpot() {
+    const p = this.preview; let best = { x: 0, z: LANES[1] };
+    for (const z of [LANES[1], LANES[2], LANES[0]]) for (let k = 0; k < 24; k++) {
+      const x = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.8; if (x < BOUNDS.x[0] || x > BOUNDS.x[1]) continue;
+      placeGroup(p.item, x, z, p.ry); if (itemOverlaps(p.item, this.solids, x, z, p.ry) === 0) return { x, z };
+    }
+    return best;
   }
   move(x, z) {
     const p = this.preview; if (!p) return;
-    p.x = Math.max(BOUNDS.x[0], Math.min(BOUNDS.x[1], x)); p.z = Math.max(BOUNDS.z[0], Math.min(BOUNDS.z[1], z)); this.refresh();
+    // snap to a tidy grid: columns every 0.4, three depth rows (back, middle, front)
+    const sx = Math.round(x / 0.4) * 0.4, lane = LANES.reduce((b, l) => (Math.abs(l - z) < Math.abs(b - z) ? l : b), LANES[0]);
+    p.x = +Math.max(BOUNDS.x[0], Math.min(BOUNDS.x[1], sx)).toFixed(2); p.z = lane; this.refresh();
   }
   rotate() { const p = this.preview; if (!p) return; p.ry += Math.PI / 4; this.refresh(); }
   refresh() {

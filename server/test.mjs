@@ -159,7 +159,7 @@ await t('absence is bounded: 10 days away never starves the tank', async () => {
 });
 
 console.log('Shop & progression');
-await t('a new tank starts with Pip, starter decor and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 4); assert.ok(w.level === 1); });
+await t('a new tank starts with Pip, no decor yet and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
 const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {
@@ -175,7 +175,7 @@ await t('a purchase takes shells once, shows for everyone, and a replay is ignor
   const before = getW(tank.id);
   const r = await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' }); assert.equal(r.ok, true);
   await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' });
-  const w = getW(tank.id); assert.equal(w.shells, before.shells - 7); assert.equal(w.decor.length, before.decor.length + 1);
+  const w = getW(tank.id); assert.equal(w.shells, before.shells - 10); assert.equal(w.decor.length, before.decor.length + 1);
   const st = await waitFor(wb2 ?? wsA, (m) => m.t === 'state' && m.tank.decor.length === w.decor.length); assert.ok(st);
 });
 await t('two players spending the last shells at once: exactly one purchase succeeds', async () => {
