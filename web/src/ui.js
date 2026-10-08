@@ -39,7 +39,7 @@ export function initUI({ game, social, cb }) {
     const s = S(); if (!s) return { text: '' };
     if ((s.flags.tut ?? 0) < 5 && game.isTutOwner) return { text: 'Follow the tips to get started', tab: '' };
     if (s.drift) return { text: 'Something washed in. Tap it in the tank.', tab: '' };
-    if (!s.decor.length && !s.orders.length) return { text: 'Your tank is empty. Open Decorate to add a plant.', tab: 'decorate' };
+    if (!s.decor.length && !s.orders.length) return { text: 'Empty tank. Open Decorate to add a plant.', tab: 'decorate' };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };

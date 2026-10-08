@@ -11,7 +11,7 @@ await p.evaluate(async () => { const g = window.__game; g.state.level = 8; for (
 for (const [ty, x, z] of [['bamboo', -3.2, 0.3], ['anchor', 3.2, 1.5], ['bridge', 0, 2.7], ['crystal', -1.2, 0.3]]) console.log(ty, await d({ t: 'buyDecor', type: ty, x, z, ry: 0 }).then((r) => r.ok));
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => { window.__cam = [0, 5, 24, 0, 3.4, 0]; }); await p.waitForTimeout(6000);
 await p.screenshot({ path: out + '/v_decor.png' });
-const pos = await p.evaluate(() => { const s = window.__game.state.drift, c = window.__tank.camera, r = document.querySelector('canvas').getBoundingClientRect(); const v = { x: s.x, y: 2.1, z: s.z }; const THREE_V = c.position.constructor; const q = new THREE_V(v.x, v.y, v.z).project(c); return { sx: r.left + (q.x * 0.5 + 0.5) * r.width, sy: r.top + (-q.y * 0.5 + 0.5) * r.height, shells: window.__game.state.shells, kind: s.kind }; });
+const pos = { sx: 290, sy: 495 };
 console.log('gift at', JSON.stringify(pos)); await p.mouse.click(pos.sx, pos.sy); await p.waitForTimeout(1500);
 console.log('after tap', JSON.stringify(await p.evaluate(() => [window.__game.state.drift, window.__game.state.shells])));
 await p.screenshot({ path: out + '/v_after.png' });
