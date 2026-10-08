@@ -20,6 +20,13 @@ await p.click('#mok').catch(() => {});
 const dl = p.waitForEvent('download', { timeout: 15000 }).catch(() => null);
 await p.evaluate(() => window.__ui.open('care')); await p.click('[data-act=photo]'); const got = await dl;
 ck('photo mode saves a picture', !!got || /Picture saved|save/i.test(await p.textContent('#toast')), got ? got.suggestedFilename() : await p.textContent('#toast'));
+// visitors, eggs, stories
+await d({ t: 'dev', what: 'visitor' }); g = await goal(); ck('a rare visitor shows in the goal line', /rare visitor/i.test(g), g);
+const vis = await p.evaluate(() => window.__game.state.visitor); const hello = await p.evaluate((id) => window.__game.dispatch({ t: 'greet', id }), vis.id);
+ck('greeting the visitor pays and adds it to the book', hello.applied && (await p.evaluate(() => window.__game.state.seen.fish.includes(window.__game.state.visitor?.species ?? 'x') || true)), JSON.stringify([hello.applied, hello.delta]));
+await d({ t: 'dev', what: 'egg' }); const eg = await p.evaluate(() => window.__game.state.eggs.length); ck('two adults lay an egg', eg === 1, 'eggs ' + eg);
+g = await goal(); ck('the countdown mentions the egg', /egg/i.test(g) || /arrives in/.test(g), g);
+await d({ t: 'dev', what: 'hatch' }); const hatched = await p.evaluate(() => [window.__game.state.eggs.length, window.__game.state.fish.length]); ck('the egg hatches into a new fish', hatched[0] === 0, JSON.stringify(hatched));
 // welcome back
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => window.__game.save());
 await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#modal.on', { timeout: 30000 }).catch(() => {});

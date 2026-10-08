@@ -159,6 +159,32 @@ async function pickDrift() {
   fishes.burst(driftSp.position.clone()); sfx('coin'); haptic(10);
   if (r.delta > 0) flyShells(r.delta, [rc.left + (at.x * 0.5 + 0.5) * rc.width, rc.top + (-at.y * 0.5 + 0.5) * rc.height]); else if (r.kind === 'treat') { for (const f of fishes.list) fishes.burst(f.pos); }
 }
+// message in a bottle: only its addressee sees it; tap to open
+const px16 = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 16; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t; };
+const bottleTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; r(6, 1, 4, 2, '#b98a52'); r(7, 3, 2, 2, '#bfe8ee'); r(4, 5, 8, 9, '#a9dde6'); r(3, 7, 10, 5, '#a9dde6'); r(5, 7, 5, 5, '#fff6dc'); r(6, 8, 3, 1, '#c9a96a'); r(6, 10, 3, 1, '#c9a96a'); r(11, 6, 1, 6, '#e8fbff'); });
+const eggTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; r(6, 3, 4, 1, '#fff3d6'); r(5, 4, 6, 2, '#fff3d6'); r(4, 6, 8, 5, '#fff3d6'); r(5, 11, 6, 2, '#f0dcb4'); r(6, 13, 4, 1, '#e2c996'); r(6, 5, 2, 2, '#ffffff'); r(8, 8, 2, 1, '#d9c28e'); });
+const bottleSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bottleTex, transparent: true, depthWrite: false })); bottleSp.scale.set(1.4, 1.4, 1); bottleSp.visible = false; bottleSp.renderOrder = 6; scene.add(bottleSp);
+const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xa8f0ff })); bottleGlow.renderOrder = 5; bottleGlow.visible = false; scene.add(bottleGlow);
+stg.hideForDepth.push(bottleSp, bottleGlow);
+const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+let bottleId = null; const eggSprites = new Map();
+function syncExtras() {
+  const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
+  if (!b) { bottleSp.visible = bottleGlow.visible = false; bottleId = null; }
+  else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id); bottleSp.position.set(-3 + (h % 60) / 10, 2.1, 0.8 + ((h >> 8) % 20) / 10); if (s.flags.tut >= 5) { sfx('arrive'); fishes.burst(bottleSp.position); } } bottleSp.visible = bottleGlow.visible = true; }
+  const ids = new Set((s.eggs ?? []).map((e) => e.id));
+  for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: eggTex, transparent: true, depthWrite: false })); const h = hashId(e.id); sp.scale.set(0.8, 0.8, 1); sp.position.set(-3 + (h % 60) / 10, 0.5, 0.8 + ((h >> 8) % 20) / 10); sp.renderOrder = 4; scene.add(sp); stg.hideForDepth.push(sp); eggSprites.set(e.id, sp); }
+  for (const [id, sp] of [...eggSprites]) if (!ids.has(id)) { scene.remove(sp); const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); eggSprites.delete(id); fishes.burst(sp.position); }
+}
+function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
+async function openBottle() {
+  const id = bottleId; if (!id) return; const r = await game.dispatch({ t: 'openBottle', id }); if (!r.ok) return fail(r); if (!r.applied) return;
+  sfx('coin'); fishes.burst(bottleSp.position.clone()); await ui.dialog({ title: `FROM ${String(r.from ?? 'a friend').toUpperCase()}`, text: `“${r.note}”`, ok: 'Thank you' }); flyShells(4);
+}
+async function greetVisitor(f) {
+  const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
+  sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
+}
 // petting
 async function petFish(f) {
   const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) return fail(r);
@@ -201,10 +227,11 @@ function showCard(f) {
 function setFocus(f) { if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
+  if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
-  const f = pickFish(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
+  const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
 });
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
@@ -264,7 +291,7 @@ function syncWorld() {
   decor.sync(s.decor);
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
-  env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); ui?.refresh(); tut.run();
+  env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); syncExtras(); ui?.refresh(); tut.run();
 }
 game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
@@ -307,6 +334,8 @@ function frame(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
+  if (bottleSp.visible) { bottleSp.position.y = 2.1 + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
+  for (const sp of eggSprites.values()) { const w = 0.8 + Math.sin(t * 3 + sp.position.x) * 0.04; sp.scale.set(w, w, 1); }
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
@@ -355,7 +384,8 @@ async function boot() {
   // the light follows the phone's clock and drifts on its own while you play; the picker only exists for ?tod= or ?dev testing
   const phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
   if (qs.get('tod') || qs.has('dev')) document.querySelector('.tod').hidden = false;
-  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); } }, 30000); }
+  fishes.setNight((qs.get('tod') ?? phase()) === 'night');
+  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); } }, 30000); }
   welcomeBack(); requestAnimationFrame(frame);
 }
 window.__booted = false;

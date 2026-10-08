@@ -38,6 +38,8 @@ export function initUI({ game, social, cb }) {
   function goalText() {
     const s = S(); if (!s) return { text: '' };
     if ((s.flags.tut ?? 0) < 5 && game.isTutOwner) return { text: 'Follow the tips to get started', tab: '' };
+    if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
+    if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle washed in for you. Tap it.', tab: '' };
     if (s.drift) return { text: 'Something washed in. Tap it in the tank.', tab: '' };
     if (!s.decor.length && !s.orders.length) return { text: 'Empty tank. Open Decorate to add a plant.', tab: 'decorate' };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
@@ -45,6 +47,7 @@ export function initUI({ game, social, cb }) {
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };
     const o = (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)[0];
     if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - Date.now())}`, tab: '' };
+    const eg = (s.eggs ?? [])[0]; if (eg) return { text: `An egg is about to hatch in ${eta(eg.hatchAt - Date.now())}`, tab: '' };
     const cheapest = Math.min(...Object.values(DECOR_DEF).filter((d) => d.level <= s.level).map((d) => d.price));
     const fish = Object.entries(SPECIES_DEF).filter(([, d]) => d.level <= s.level && s.fish.length + d.count <= capacity(s.level)).sort((x, y) => x[1].price - y[1].price)[0];
     if (fish && s.shells >= fishPrice(fish[0])) return { text: `You can adopt a ${fish[1].label.toLowerCase()}!`, tab: 'decorate' };
@@ -59,12 +62,12 @@ export function initUI({ game, social, cb }) {
   const slotsHtml = () => {
     const s = game.members; if (!s) return '';
     return [1, 2, 3].map((n) => { const m = s.find((x) => x.slot === n); return m
-      ? `<div class="slot"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '' : `<button class="nudge" data-nudge="${m.id}">Nudge</button>`}</div>`
+      ? `<div class="slot"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
       : `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>Slot ${n}</small></div>`; }).join('');
   };
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'ALL', fishCat = cat === 'FISH';
-    if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
+    if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
     if (!fishCat) for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
     return out.map((c) => {
       const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
@@ -87,7 +90,7 @@ export function initUI({ game, social, cb }) {
     return soon ? `<p class="grow">🌱 ${esc(soon.f.name)} grows up in ${esc(soon.n.label)}</p>` : '';
   };
   const lvRow = () => { const s = S(), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.round(((sc - a) / (b - a)) * 100) : 100; return `<div class="lvrow"><b>LEVEL ${lv}</b><i><b style="width:${Math.max(4, Math.min(100, pct))}%"></b></i><span>Day ${game.day}</span></div>`; };
-  const ordersHtml = () => { const o = S().orders ?? []; return o.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>📦 ${esc(x.name || SPECIES_DEF[x.species].label)}</span><b>${eta(x.arrivesAt - Date.now())}</b></div>`).join('')}</div>` : ''; };
+  const ordersHtml = () => { const o = S().orders ?? [], e = S().eggs ?? []; return o.length || e.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>📦 ${esc(x.name || SPECIES_DEF[x.species].label)}</span><b>${eta(x.arrivesAt - Date.now())}</b></div>`).join('')}${e.map((x) => `<div><span>🥚 Egg</span><b>${eta(x.hatchAt - Date.now())}</b></div>`).join('')}</div>` : ''; };
   const wishHtml = () => { const s = S(), w = WISHES[s.wishIdx]; return w ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(w.text)}</span><b>+${w.reward} 🐚</b></div>` : `<div class="wish"><small>THE TANK'S WISH</small><span>Every wish has come true.</span></div>`; };
   const bookHtml = () => {
     const s = S(), cell = (kind, id, label) => { const got = s.seen[kind].includes(id); return `<div class="bk ${got ? '' : 'nope'}"><img alt="" data-thumb="${kind === 'fish' ? 'fish' : 'decor'}:${id}"><b>${got ? esc(label) : '???'}</b></div>`; };
@@ -138,6 +141,10 @@ export function initUI({ game, social, cb }) {
     bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('settings', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
     sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; await game.dispatch({ t: 'style', [k]: v }); open('decorate', true); sheet.scrollTop = y; }));
     sheet.querySelectorAll('[data-book]').forEach((b) => (b.onclick = () => { book = b.dataset.book === '1'; sfx('tap'); open('journal', true); }));
+    sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
+      const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It washes into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
+      const r = await game.dispatch({ t: 'bottle', to: b.dataset.bottle, note }); if (r.ok) { sfx('tap'); toast('Bottle sent'); } else toast(REASONS[r.reason] ?? 'Could not send that.');
+    }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     if (tab === 'decorate' || (tab === 'journal' && book)) thumbs();
   }
