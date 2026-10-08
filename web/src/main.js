@@ -141,15 +141,17 @@ function driftTexture(kind) {
   else { px(4, 5, 8, 6, '#f2c9b8'); px(3, 7, 10, 3, '#f2c9b8'); px(5, 4, 6, 1, '#f9e3d8'); px(5, 6, 1, 4, '#d99a86'); px(8, 6, 1, 4, '#d99a86'); px(11, 7, 1, 3, '#d99a86'); px(4, 11, 8, 1, '#c27a68'); }
   const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return (driftTex[kind] = t);
 }
-const driftSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: driftTexture('shells'), transparent: true, depthWrite: false })); driftSp.scale.set(1.1, 1.1, 1); driftSp.visible = false; driftSp.renderOrder = 6; scene.add(driftSp);
+const driftSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: driftTexture('shells'), transparent: true, depthWrite: false })); driftSp.scale.set(1.3, 1.3, 1); driftSp.visible = false; driftSp.renderOrder = 6; scene.add(driftSp);
+const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,240,190,.95)'); gr.addColorStop(0.4, 'rgba(255,214,120,.38)'); gr.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const driftGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })); driftGlow.renderOrder = 5; driftGlow.visible = false; scene.add(driftGlow); stg.hideForDepth.push(driftGlow);
 stg.hideForDepth.push(driftSp);
 let driftId = null;
 function syncDrift() {
-  const g = game.state?.drift; if (!g) { driftSp.visible = false; driftId = null; return; }
+  const g = game.state?.drift; if (!g) { driftSp.visible = false; driftGlow.visible = false; driftId = null; return; }
   if (driftId !== g.id) { driftId = g.id; driftSp.material.map = driftTexture(g.kind); driftSp.material.needsUpdate = true; driftSp.position.set(g.x, 2.1, g.z); if (driftSp.userData.seen !== g.id) { driftSp.userData.seen = g.id; if (game.state.flags.tut >= 5) { sfx('arrive'); fishes.burst(driftSp.position); } } }
-  driftSp.visible = true;
+  driftSp.visible = true; driftGlow.visible = true;
 }
-function driftHit(ev) { const g = game.state?.drift; if (!g || !driftSp.visible) return false; const r = rayFrom(ev); return r.ray.distanceToPoint(driftSp.position) < 0.9; }
+function driftHit(ev) { const g = game.state?.drift; if (!g || !driftSp.visible) return false; const r = rayFrom(ev); return r.ray.distanceToPoint(driftSp.position) < 1.3; }
 async function pickDrift() {
   const g = game.state.drift; if (!g) return; const at = driftSp.position.clone().project(camera), rc = canvas.getBoundingClientRect();
   const r = await game.dispatch({ t: 'collect', id: g.id }); if (!r.ok) return fail(r);
@@ -265,7 +267,12 @@ function syncWorld() {
 }
 game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
-game.on('levelup', (lv) => { sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1)); ui?.toast(`Tank level ${lv}! New fish and decorations unlocked.`, 4200); });
+game.on('levelup', (lv) => {
+  sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1));
+  const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label + ' (fish)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
+  ui?.toast(`Tank level ${lv}!`, 3000);
+  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: `The tank is bigger. Now in the shop:`, lines: fresh, ok: 'Nice' }), 1200);
+});
 game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
@@ -294,7 +301,7 @@ function frame(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
-  if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.1 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); }
+  if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
@@ -314,6 +321,7 @@ async function welcomeBack() {
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
   const mine = game.you?.userId, lines = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).slice(-3).map((e) => e.text);
+  const g = game.state.drift; if (g) lines.push('Something washed in. Tap it in the tank.'); const o = game.state.orders ?? []; if (o.length) lines.push(`${o.length} delivery on the way.`);
   if (!lines.length) return;
   await new Promise((r) => setTimeout(r, 900)); await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank' });
 }
