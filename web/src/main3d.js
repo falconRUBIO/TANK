@@ -13,7 +13,7 @@ import { Fish3D } from './w3/fish3d.js';
 import { Shafts, waterSurface, Snow, Bubbles } from './w3/fx.js';
 import { CausticMap } from './w3/textures.js';
 
-const IW = 360, IH = 640;                 // internal resolution (nearest-upscaled by CSS)
+const IW = 405, IH = 720;                 // internal resolution (nearest-upscaled by CSS)
 const canvas = document.getElementById('tank');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
 renderer.setPixelRatio(1); renderer.setSize(IW, IH, false);
@@ -40,7 +40,7 @@ const sun = new THREE.SpotLight(0xffe0a6, 6, 0, 0.62, 0.7, 0);
 sun.position.set(2.5, 26, 9); sun.target.position.set(-0.4, 0, -1.2); scene.add(sun, sun.target);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.camera.near = 8; sun.shadow.camera.far = 50;
 sun.map = caustic.tex;
-const fill = new THREE.DirectionalLight(0xffe6c8, 1.0); fill.position.set(-5, 9, 20); scene.add(fill);
+const fill = new THREE.DirectionalLight(0xffe6c8, 1.25); fill.position.set(-5, 9, 20); scene.add(fill);
 const lamp = new THREE.PointLight(0xffa24a, 0, 12, 1.6); lamp.position.copy(env.lampPos); scene.add(lamp);
 
 const shafts = new Shafts(); scene.add(shafts.group);
@@ -53,21 +53,21 @@ const rng = mulberry32(11);
 const fishes = [];
 const add = (id, seed, o) => { const f = new Fish3D(SPECIES[id], seed, o); f.pos.set(o.start?.[0] ?? (rng() - 0.5) * 6, o.start?.[1] ?? 6, o.start?.[2] ?? 1); f.pick(rng); scene.add(f.group); fishes.push(f); return f; };
 SPECIES.neon.school = true;
-add('goldfish', 1, { speed: 1.0, band: { x: [-3.4, 3.6], y: [3, 12], z: [0.7, 2.0] }, start: [1, 7, 1.4] });
-add('goldfish', 5, { speed: 0.9, scale: 0.78, band: { x: [-3.6, 3.6], y: [2, 11], z: [-3.2, -2.0] }, start: [-2, 5, -2.5] });
-add('blue', 2, { speed: 0.9, band: { x: [-3.2, 3.4], y: [4, 13], z: [0.5, 1.9] }, start: [2, 11, 1.2] });
-const angel = add('angelfish', 3, { speed: 0.7, band: { x: [-3.0, 3.6], y: [3, 10], z: [-3.2, -2.0] }, start: [3, 6, -2.6] });
-for (let i = 0; i < 5; i++) add('neon', 4 + i, { speed: 1.3, band: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, start: [-1 + i * 0.25, 5 + (i % 2) * 0.3, 1.2 + (i % 3) * 0.2] });
-add('cory', 9, { speed: 0.55, band: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 1.9] }, start: [0, 0.4, 1.4] });
+add('goldfish', 1, { name: 'Pip', profile: { traits: ['Curious', 'Social', 'Brave'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.92, 0.7, 1] }, speed: 1.0, band: { x: [-3.4, 3.6], y: [3, 12], z: [0.7, 2.0] }, start: [1, 7, 1.4] });
+add('goldfish', 5, { name: 'Mango', profile: { traits: ['Playful', 'Greedy'], age: 'Baby', spot: 'Driftwood', food: 'Pellets', needs: [0.55, 0.95, 0.9, 1] }, speed: 0.9, scale: 0.78, band: { x: [-3.6, 3.6], y: [2, 11], z: [-3.2, -2.0] }, start: [-2, 5, -2.5] });
+add('blue', 2, { name: 'Azure', profile: { traits: ['Shy', 'Lazy'], age: 'Adult', spot: 'Red Plants', food: 'Algae wafers', needs: [0.7, 0.8, 0.6, 1] }, speed: 0.9, band: { x: [-3.2, 3.4], y: [4, 13], z: [0.5, 1.9] }, start: [2, 11, 1.2] });
+const angel = add('angelfish', 3, { name: 'Luna', profile: { traits: ['Calm', 'Curious'], age: 'Adult', spot: 'Tall Grass', food: 'Flakes', needs: [0.75, 0.88, 0.8, 1] }, speed: 0.7, band: { x: [-3.0, 3.6], y: [3, 10], z: [-3.2, -2.0] }, start: [3, 6, -2.6] });
+for (let i = 0; i < 5; i++) add('neon', 4 + i, { name: 'Neon ' + (i + 1), profile: { traits: ['Social', 'Playful'], age: 'Adult', spot: 'Open water', food: 'Flakes', needs: [0.85, 0.9, 0.9, 1] }, speed: 1.3, band: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, start: [-1 + i * 0.25, 5 + (i % 2) * 0.3, 1.2 + (i % 3) * 0.2] });
+add('cory', 9, { name: 'Dusty', profile: { traits: ['Shy', 'Lazy'], age: 'Juvenile', spot: 'Driftwood', food: 'Sinking food', needs: [0.6, 0.85, 0.4, 1] }, speed: 0.55, band: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 1.9] }, start: [0, 0.4, 1.4] });
 // one swimmer explores the arch: through the opening, toward the camera and back
-const arch = add('blue', 12, { speed: 0.8, scale: 0.9, band: { x: [-2, -1.9], y: [2.2, 2.6], z: [-3, 1.6] }, start: [env.archX, 2.4, -2.8] });
+const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Curious'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.9, 0.75, 1] }, speed: 0.8, scale: 0.9, band: { x: [-2, -1.9], y: [2.2, 2.6], z: [-3, 1.6] }, start: [env.archX, 2.4, -2.8] });
 arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 + rng() * 0.4, this.pos.z < -0.5 ? 1.6 : -3.0); this.retarget = 12; };
 
 // ── post: bloom -> tonemap -> PS1 15-bit dither + grade ──
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(IW, IH, { type: THREE.HalfFloatType, samples: 4 }));
 composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.55, 0.6, 0.92); composer.addPass(bloom);
+const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) } },
@@ -79,7 +79,7 @@ const grade = new ShaderPass({
       vec3 c = texture2D(tDiffuse, vUv).rgb;
       float l = dot(c, vec3(.299,.587,.114));
       c = mix(c*vec3(.92,1.0,1.1), c*vec3(1.08,1.02,.93), smoothstep(.25,.8,l));  // cool shadows / warm highlights
-      c = mix(vec3(l), c, 1.18) * uTint;
+      c = mix(vec3(l), c, 1.3) * uTint;
       vec2 d = vUv-.5; c *= mix(.5, 1., smoothstep(.95,.2, length(d*vec2(1.0,.85))));  // vignette
       // PS1-style 15-bit colour with ordered dither
       float levels = 31.;
@@ -92,10 +92,10 @@ composer.addPass(grade);
 
 // ── time of day ──
 const TOD = {
-  morning:   { sunCol: 0xcfe6ff, sunI: 9.5, sunPos: [-5, 26, 9], hemiSky: 0x9ccfe8, hemiGnd: 0x1b4a58, hemiI: 1.9, ambI: 0.7, fog: 0x2f7aa6, fogNear: 28, fogFar: 82, bgTop: 0x64b4dc, bgBot: 0x10405c, lampI: 0, shaft: 0.42, surf: 0.5, exposure: 0.95, bloom: 0.4, glow: 0.3, tint: 0xf4fbff },
-  afternoon: { sunCol: 0xffeccb, sunI: 12, sunPos: [2.5, 26, 9], hemiSky: 0x8cc4e8, hemiGnd: 0x1c4a52, hemiI: 1.9, ambI: 0.7, fog: 0x2a6d99, fogNear: 28, fogFar: 80, bgTop: 0x58a8d6, bgBot: 0x0e3552, lampI: 0, shaft: 0.6, surf: 0.65, exposure: 0.95, bloom: 0.4, glow: 0.4, tint: 0xfffaf0 },
-  evening:   { sunCol: 0xff8a4a, sunI: 10.5, sunPos: [9, 20, 7], hemiSky: 0xa07ab8, hemiGnd: 0x2a2038, hemiI: 1.6, ambI: 0.55, fog: 0x3f3a68, fogNear: 24, fogFar: 70, bgTop: 0x9a6aa8, bgBot: 0x1a1838, lampI: 22, shaft: 0.62, surf: 0.7, exposure: 0.95, bloom: 0.55, glow: 1.4, tint: 0xfff0f0 },
-  night:     { sunCol: 0x6f8cff, sunI: 3.2, sunPos: [-3, 26, 8], hemiSky: 0x2c4a9a, hemiGnd: 0x0a1030, hemiI: 1.15, ambI: 0.5, fog: 0x07142e, fogNear: 20, fogFar: 58, bgTop: 0x0e2858, bgBot: 0x030814, lampI: 70, shaft: 0.22, surf: 0.25, exposure: 1.1, bloom: 1.0, glow: 3.2, tint: 0xeef2ff },
+  morning:   { sunCol: 0xd8ecff, sunI: 8.0, sunPos: [-3, 26, 9], hemiSky: 0x9ccfe0, hemiGnd: 0x16424a, hemiI: 1.45, ambI: 0.55, fog: 0x1f6a7c, fogNear: 26, fogFar: 74, bgTop: 0x3a8aa0, bgBot: 0x0a2c3a, lampI: 0, shaft: 0.2, surf: 0.4, exposure: 1.0, bloom: 0.22, glow: 0.3, tint: 0xf6fcff },
+  afternoon: { sunCol: 0xffecc8, sunI: 9.0, sunPos: [1, 26, 9], hemiSky: 0x9ccbd8, hemiGnd: 0x1a4a4a, hemiI: 1.45, ambI: 0.55, fog: 0x1c5d70, fogNear: 26, fogFar: 72, bgTop: 0x2f7a90, bgBot: 0x0a2a38, lampI: 0, shaft: 0.26, surf: 0.45, exposure: 1.0, bloom: 0.22, glow: 0.4, tint: 0xfffaf2 },
+  evening:   { sunCol: 0xff9a5a, sunI: 8.5, sunPos: [8, 21, 7], hemiSky: 0xb08ab0, hemiGnd: 0x2a2236, hemiI: 1.25, ambI: 0.45, fog: 0x3a3460, fogNear: 22, fogFar: 62, bgTop: 0x7a5c98, bgBot: 0x16142e, lampI: 20, shaft: 0.32, surf: 0.5, exposure: 1.0, bloom: 0.4, glow: 1.4, tint: 0xfff2ee },
+  night:     { sunCol: 0x7a96ff, sunI: 2.6, sunPos: [-3, 26, 8], hemiSky: 0x3a58a8, hemiGnd: 0x0a1030, hemiI: 0.9, ambI: 0.42, fog: 0x07142e, fogNear: 18, fogFar: 54, bgTop: 0x0e2858, bgBot: 0x030814, lampI: 64, shaft: 0.14, surf: 0.2, exposure: 1.1, bloom: 0.7, glow: 3.0, tint: 0xeef2ff },
 };
 const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint'];
 const qs = new URLSearchParams(location.search);
@@ -125,18 +125,49 @@ function applyTod(dt) {
   const d = new THREE.Vector3().subVectors(sun.target.position, sun.position).normalize(); shafts.setDir(d);
 }
 
+// ── tap a fish: camera glides in, profile card slides up ──
+const card = document.getElementById('card');
+let focus = null; const look = new THREE.Vector3(0, 7.5, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
+const ray = new THREE.Raycaster();
+function pick(ev) {
+  const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
+  const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
+  ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
+  let best = null, bd = 1e9;
+  for (const f of fishes) { const hit = ray.ray.distanceToPoint(f.pos); if (hit < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } }
+  return best;
+}
+function bar(label, v) { return `<div class="nb"><span>${label}</span><i><b style="width:${Math.round(v * 100)}%"></b></i></div>`; }
+function showCard(f) {
+  const p = f.profile || { traits: [], age: 'Adult', spot: '—', food: 'Flakes', needs: [0.8, 0.8, 0.8, 1] };
+  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name}</h2><div class="sp">${f.species.label}</div>
+    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
+    <dl><dt>Age</dt><dd>${p.age}</dd><dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd></dl>
+    <div class="needs">${bar('Hunger', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null);
+}
+function setFocus(f) {
+  if (focus) focus.mul = 1;
+  focus = f;
+  if (f) { f.mul = 0.35; showCard(f); } else card.classList.remove('on');
+}
+canvas.addEventListener('pointerdown', (ev) => { const f = pick(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null); });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setFocus(null); });
+window.__focus = (i) => setFocus(fishes[i] ?? null);
+
 let last = performance.now(), cTick = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t;
   cTick += dt; if (cTick > 0.05) { cTick = 0; caustic.update(t * 0.7); }
   applyTod(dt);
-  if (window.__follow) { const f = window.__follow; camera.position.set(f.pos.x + 0.3, f.pos.y + 0.2, f.pos.z + 9.5); camera.lookAt(f.pos); }
-  else { camera.position.x = Math.sin(t * 0.13) * 0.35; camera.position.y = 7.0 + Math.sin(t * 0.09) * 0.12; camera.lookAt(0, 7.5, 0); }
+  if (focus) { const d = Math.max(6, focus.radius * 6.8); camGoal.set(focus.pos.x + 0.4, focus.pos.y + 0.1, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - d * 0.17, focus.pos.z); }
+  else { camGoal.set(Math.sin(t * 0.13) * 0.35, 7.0 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 7.5, 0); }
+  const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   fishes.forEach((f) => f.update(dt, rng, fishes));
   shafts.update(t); surf.mat.uniforms.uTime.value = t; snow.update(dt, t); bubbles.update(dt, t);
   composer.render();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__tank = { fishes, follow: (i) => { window.__follow = fishes[i]; }, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };
+window.__tank = { fishes, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };

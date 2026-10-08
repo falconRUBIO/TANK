@@ -70,13 +70,14 @@ const goldfish = {
         }
         // ── tail: big forked fan, zig-zag stepped edges, two-tone rays ──
         const dT = 10 - x;
-        if (dT >= 0 && dT <= 24 && Math.abs(z) <= (dT < 4 ? 1 : 0)) {
+        if (dT >= 0 && dT <= 24 && Math.abs(z) <= 1) {
           const step = (Math.floor(dT / 3) & 1) ? 1.4 : -0.6;
           const hh = 3.5 + dT * 0.66 + step;
           const ay = Math.abs(y);
           const notch = dT > 9 ? (dT - 9) * 0.78 : -1;
           if (ay <= hh && ay > notch) {
             const ray = Math.floor((Math.atan2(y, dT + 2) * 11 + 40)) & 1;
+            if (Math.abs(z) === 1 && (dT < 3 ? false : !ray)) return null;                  // ridged, rippled fin: rays stand proud of the membrane
             let c = mix(ray ? pale : cream, gray, clamp(dT / 26));
             if (dT < 4) c = mix(orange, cream, dT / 4);
             return { c, wave: 0.6 };
@@ -114,73 +115,76 @@ const goldfish = {
   },
 };
 
-// ───────────────────────── Blue (electric blue cichlid) ─────────────────────────
+// shared helpers for the high-res species below
+const mkBody = (X0, L, hy, hz, cy) => (x, y, z) => {
+  const t = (x - X0) / L;
+  if (t < 0 || t > 1) return null;
+  const h = hy(t), w = hz(t), dy = (y - cy(t)) / h, dz = z / w;
+  return dy * dy + dz * dz <= 1 ? { t, dy, dz } : null;
+};
+// Square pupil + glint + optional ring on the outer shell of the head.
+const mkEye = (body, ex, ey, ring = null, ringR = 2.4, r = 1) => (x, y, z) => {
+  if (z === 0 || body(x, y, z + (z < 0 ? -1 : 1))) return null;
+  const dx = x - ex, dy = y - ey;
+  if (Math.abs(dx) <= r && Math.abs(dy) <= r) return dx === -r && dy === r ? { c: [255, 255, 255], em: 2 } : { c: [10, 12, 20], em: 1 };
+  if (ring && Math.hypot(dx, dy) <= ringR) return { c: ring, em: 1 };
+  return null;
+};
+
+// ───────────────────────── Blue ram ─────────────────────────
 const bluefish = {
-  id: 'blue', label: 'Blue Ram', length: 34,
+  id: 'blue', label: 'Blue Ram', length: 60, vox: 0.04,
   make(seed = 1) {
     const rng = mulberry32(seed * 104729 + 5);
     const off = [rng() * 90, rng() * 90, rng() * 90];
-    const blue = mix(hex(0x2450e0), hex(0x2a78f0), rng());
-    const X0 = 4, L = 25;
-    const hy = prof([[0, 2], [0.12, 4.2], [0.35, 7], [0.58, 7.8], [0.8, 6.6], [0.94, 4.6], [1, 2.6]]);
-    const hz = prof([[0, 1], [0.15, 2.2], [0.4, 3.8], [0.6, 4.2], [0.85, 3.4], [1, 1.5]]);
-    const cy = prof([[0, 0], [0.7, 0.4], [1, -0.6]]);
-    const body = (x, y, z) => {
-      const t = (x - X0) / L;
-      if (t < 0 || t > 1) return null;
-      const h = hy(t), w = hz(t);
-      const dy = (y - cy(t)) / h, dz = z / w;
-      return dy * dy + dz * dz <= 1 ? { t, dy } : null;
-    };
-    const eye = eyePainter(body, X0 + 0.8 * L, 2.0, 2.1, hex(0xf2c230), 1.05);
-    const edge = hex(0x8ec8ff), deep = hex(0x14288f);
+    const X0 = 8, L = 36;
+    const hy = prof([[0, 3], [0.1, 6], [0.3, 11], [0.55, 13], [0.8, 11], [0.94, 7.5], [1, 4]]);
+    const hz = prof([[0, 2], [0.15, 3.5], [0.4, 6], [0.6, 6.6], [0.85, 5.2], [1, 2.5]]);
+    const cy = prof([[0, 0], [0.7, 0.8], [1, -1.2]]);
+    const body = mkBody(X0, L, hy, hz, cy);
+    const eye = mkEye(body, Math.round(X0 + 0.8 * L), 4, hex(0xf0b324), 2.7);
+    const deep = mix(hex(0x1a2cb0), hex(0x2030c8), rng()), royal = hex(0x2a5ae8), elec = hex(0x3aa2ff), cyan = hex(0x86dcff), gold = hex(0xf2b82a);
+    const bt = (x) => clamp((x - X0) / L);
     return {
-      bounds: { x: [-10, 34], y: [-16, 16], z: [-7, 7] },
-      center: [15, 0],
-      bend: { pivot: 8, len: 14, amp: 0.55, bob: 0.8 },
+      bounds: { x: [-12, 48], y: [-24, 26], z: [-10, 10] },
+      center: [22, 0],
+      bend: { pivot: 14, len: 22, amp: 0.45, bob: 1.0 },
       sample(x, y, z) {
-        const e = eye(x, y, z);
-        if (e) return e;
+        const e = eye(x, y, z); if (e) return e;
         const b = body(x, y, z);
         if (b) {
-          const { t, dy } = b;
-          let c = mix(deep, blue, clamp(0.55 + dy * 0.5 + 0.2));
-          const sc = fbm(x * 0.5 + off[0], y * 0.5 + off[1], z * 0.4 + off[2]);
-          if (sc > 0.64) c = mix(c, hex(0x6fb4ff), 0.45);       // iridescent scale glints
-          if (dy > 0.5) c = mix(c, hex(0x2c6bff), 0.5);
-          if (t > 0.93 && dy < 0.1) c = hex(0xf0b830);          // golden lips
-          if (t > 0.6 && t < 0.7 && Math.abs(dy) < 0.8 && ((x + y) & 1) === 0) c = mix(c, hex(0x1a2f9a), 0.45); // faint gill bar
+          const { t, dy } = b, k = (dy + 1) / 2;
+          if (t > 0.95 && dy < -0.1 && dy > -0.5) return { c: gold };
+          let c = k > 0.68 ? mix(royal, deep, (k - 0.68) / 0.32) : mix(cyan, royal, k / 0.68);
+          const row = Math.floor(y / 3);
+          if (((x + (row & 1) * 2) % 4 === 0) && (y % 3 + 3) % 3 === 1) c = mix(c, cyan, 0.5);          // diamond scale glints
+          if (t > 0.66 && t < 0.84 && dy < 0.35 && dy > -0.55) c = mix(c, [80, 230, 214], 0.4);          // iridescent cheek
+          if (fbm(x * 0.25 + off[0], y * 0.25 + off[1], Math.abs(z) * 0.2) > 0.68) c = mix(c, deep, 0.35);
           return { c };
         }
-        const topAt = cy(clamp((x - X0) / L)) + hy(clamp((x - X0) / L));
-        // long spiny dorsal
-        if (z === 0 && x >= 6 && x <= 28 && y >= topAt - 1) {
-          const s = (x - 6) / 22;
-          const h = 6.5 * Math.sin(Math.PI * Math.pow(s, 0.75)) + 1.5 * (1 - s);
-          if (y - topAt <= h) {
-            const spike = ((x & 1) === 0);
-            return { c: mix(blue, edge, spike ? 0.55 : 0.1), wave: 0.3 };
-          }
+        const top = cy(bt(x)) + hy(bt(x)), bot = cy(bt(x)) - hy(bt(x));
+        if (z === 0 && x >= 14 && x <= 46 && y >= top - 3) {      // long spiny dorsal
+          const s = (x - 14) / 32, up = y - top;
+          let h = 9 * Math.sin(Math.PI * Math.pow(s, 0.7)) + 3 * (1 - s); if (Math.floor(x / 2) & 1) h += 1.5;
+          if (up <= h) return { c: up > h - 2.2 ? cyan : mix(royal, elec, (Math.floor(x / 2) & 1) ? 0.55 : 0.15), wave: 0.35 };
         }
-        // anal fin
-        const botAt = cy(clamp((x - X0) / L)) - hy(clamp((x - X0) / L));
-        if (z === 0 && x >= 9 && x <= 22 && y <= botAt + 1) {
-          const s = (x - 9) / 13;
-          if (botAt - y <= 5 * Math.sin(Math.PI * s) + 1) return { c: mix(deep, blue, 0.7), wave: 0.3 };
+        if (z === 0 && x >= 18 && x <= 40 && y <= bot + 2) {      // anal fin
+          const s = (x - 18) / 22, dn = bot - y;
+          if (dn <= 8 * Math.sin(Math.PI * s) + 2 * (1 - s)) return { c: dn > 6 ? cyan : mix(royal, deep, 0.35), wave: 0.3 };
         }
-        // rounded tail
-        const dT = 4 - x;
-        if (dT >= 0 && dT <= 11 && z === 0) {
-          const hh = 2 + Math.sqrt(dT) * 3.1 * (1 - dT / 18);
+        const dT = 8 - x;                                          // rounded fan tail, a touch thick at the root
+        if (dT >= 0 && dT <= 17 && Math.abs(z) <= (dT < 5 ? 1 : 0)) {
+          const hh = 3 + Math.sqrt(dT) * 3.3 * (1 - dT / 30);
           if (Math.abs(y) <= hh) {
-            const rim = dT > 8.5 || Math.abs(y) > hh - 1.4;
-            const ray = Math.floor(Math.atan2(y, dT + 1) * 7) & 1;
-            return { c: mix(mix(deep, blue, 0.55), edge, rim ? 0.6 : ray ? 0.2 : 0), wave: 0.5 };
+            const ray = Math.floor(Math.atan2(y, dT + 2) * 9 + 40) & 1, rim = dT > 14 || Math.abs(y) > hh - 1.6;
+            return { c: mix(mix(deep, royal, ray ? 0.7 : 0.25), cyan, rim ? 0.6 : 0), wave: 0.6 };
           }
         }
-        // pectoral
-        const pz = Math.abs(z);
-        if (pz === 4 && x >= 18 && x <= 24 && y >= -3 && y <= 0 && Math.abs(y + 1.5) <= 2 - Math.abs(x - 21) * 0.4) return { c: mix(blue, edge, 0.45), flap: 1.2 };
+        const az = Math.abs(z);
+        if (az >= 1 && x >= 30 && x <= 40 && y >= -7 && y <= -1) {   // pectoral
+          const edge = Math.round(hz(bt(x)) * 0.9) + 1;
+          if (az === edge && Math.abs(y + 4) <= 3 - Math.abs(x - 35) * 0.45) return { c: mix(cyan, elec, 0.3), flap: 1.6 };
+        }
         return null;
       },
     };
@@ -189,78 +193,53 @@ const bluefish = {
 
 // ───────────────────────── Angelfish ─────────────────────────
 const angelfish = {
-  id: 'angelfish', label: 'Angelfish', length: 46,
+  id: 'angelfish', label: 'Angelfish', length: 66, vox: 0.036,
   make(seed = 1) {
     const rng = mulberry32(seed * 15485863 + 3);
-    const off = [rng() * 90, rng() * 90, rng() * 90];
-    const silver = mix(hex(0xe2e4da), hex(0xf2ecd2), rng() * 0.6);
-    const X0 = 6, L = 22;
-    const hy = prof([[0, 2.4], [0.14, 7], [0.38, 11.2], [0.6, 11.4], [0.82, 8], [0.95, 4.2], [1, 1.6]]);
-    const hz = prof([[0, 1.2], [0.2, 2.6], [0.5, 3.6], [0.8, 3], [1, 1.2]]);
-    const cy = prof([[0, 0], [1, -0.5]]);
-    const body = (x, y, z) => {
-      const t = (x - X0) / L;
-      if (t < 0 || t > 1) return null;
-      const h = hy(t), w = hz(t);
-      const dy = (y - cy(t)) / h, dz = z / w;
-      return dy * dy + dz * dz <= 1 ? { t, dy } : null;
-    };
-    const eye = eyePainter(body, X0 + 0.82 * L, 2.2, 1.9, hex(0xe8a53a), 1.0);
-    const black = hex(0x23272c);
-    const stripe = (t) => (Math.abs(t - 0.1) < 0.045 || Math.abs(t - 0.4) < 0.075 || Math.abs(t - 0.84) < 0.05);
+    const silver = mix(hex(0xe4e6dc), hex(0xf4eed4), rng() * 0.6), black = hex(0x1e2026);
+    const X0 = 12, L = 30;
+    const hy = prof([[0, 3], [0.12, 9], [0.35, 17], [0.58, 18.5], [0.8, 14], [0.94, 8], [1, 3]]);
+    const hz = prof([[0, 1.6], [0.2, 3], [0.5, 4.2], [0.8, 3.4], [1, 1.5]]);
+    const cy = prof([[0, 0], [1, -1]]);
+    const body = mkBody(X0, L, hy, hz, cy);
+    const eye = mkEye(body, Math.round(X0 + 0.83 * L), 5, hex(0xe2782a), 2.6);
+    const bar = (t) => Math.abs(t - 0.1) < 0.05 || Math.abs(t - 0.42) < 0.07 || Math.abs(t - 0.86) < 0.045;
+    const bt = (x) => clamp((x - X0) / L);
     return {
-      bounds: { x: [-6, 30], y: [-30, 28], z: [-6, 6] },
-      center: [17, 0],
-      bend: { pivot: 8, len: 12, amp: 0.4, bob: 0.4 },
+      bounds: { x: [-6, 50], y: [-42, 40], z: [-8, 8] },
+      center: [28, 0],
+      bend: { pivot: 15, len: 14, amp: 0.35, bob: 0.5 },
       sample(x, y, z) {
-        const e = eye(x, y, z);
-        if (e) return e;
+        const e = eye(x, y, z); if (e) return e;
         const b = body(x, y, z);
         if (b) {
           const { t, dy } = b;
+          if (bar(t)) return { c: mix(black, silver, 0.06 + (Math.abs(dy) > 0.9 ? 0.2 : 0)) };
           let c = silver;
-          if (dy > 0.55) c = mix(c, hex(0xd2c08a), (dy - 0.55) * 1.2);
-          if (dy < -0.5) c = mix(c, hex(0xf7efe0), 0.5);
-          if (stripe(t)) c = black;
-          if (t > 0.9 && dy < 0.3) c = mix(c, hex(0xe0a090), 0.4);
+          if (dy > 0.5) c = mix(c, [214, 192, 120], (dy - 0.5) * 1.1);
+          if (dy < -0.45) c = mix(c, [250, 245, 234], 0.6);
+          if (t > 0.78 && dy > 0.15) c = mix(c, [244, 212, 130], 0.5);
+          if (t > 0.9) c = mix(c, [236, 180, 160], 0.3);
           return { c };
         }
-        const bt = (x) => clamp((x - X0) / L);
-        // tall swept dorsal fin
-        const top = cy(bt(x)) + hy(bt(x));
-        if (z === 0 && y >= top - 4 && x >= 8 && x <= 30) {
-          const sx = x + 0.9 * (y - top);   // lean back
-          const s = (sx - 10) / 13;
-          if (s > 0 && s < 1) {
-            const h = 17 * (s < 0.55 ? s / 0.55 : (1 - s) / 0.45);
-            if (y - top <= h) {
-              const t = bt(sx);
-              return { c: stripe(t * 0.9 + 0.05) ? mix(black, silver, 0.2) : mix(silver, hex(0xcfd8d4), 0.35), wave: 0.4 };
-            }
-          }
+        const top = cy(bt(x)) + hy(bt(x)), bot = cy(bt(x)) - hy(bt(x));
+        const finCol = (t, up, h) => bar(clamp(t)) ? mix(black, silver, 0.15) : mix(silver, [176, 190, 188], clamp(up / h) * 0.7);
+        if (z === 0 && y >= top - 6 && x >= 14 && x <= 50) {      // tall swept dorsal sail
+          const sx = x + 1.0 * (y - top), s = (sx - 18) / 20, up = y - top;
+          if (s > 0 && s < 1) { const h = 26 * (s < 0.5 ? s / 0.5 : (1 - s) / 0.5); if (up <= h) return { c: finCol(bt(sx), up, h), wave: 0.4 }; }
         }
-        // anal fin, mirrored
-        const bot = cy(bt(x)) - hy(bt(x));
-        if (z === 0 && y <= bot + 4 && x >= 8 && x <= 28) {
-          const sx = x + 0.9 * (bot - y);
-          const s = (sx - 10) / 13;
-          if (s > 0 && s < 1) {
-            const h = 14 * (s < 0.5 ? s / 0.5 : (1 - s) / 0.5);
-            if (bot - y <= h) return { c: stripe(bt(sx) * 0.9 + 0.1) ? mix(black, silver, 0.2) : mix(silver, hex(0xcfd8d4), 0.35), wave: 0.4 };
-          }
+        if (z === 0 && y <= bot + 6 && x >= 14 && x <= 48) {      // anal sail
+          const sx = x + 1.0 * (bot - y), s = (sx - 18) / 20, dn = bot - y;
+          if (s > 0 && s < 1) { const h = 22 * (s < 0.5 ? s / 0.5 : (1 - s) / 0.5); if (dn <= h) return { c: finCol(bt(sx), dn, h), wave: 0.4 }; }
         }
-        // trailing pelvic filaments
-        if (Math.abs(z) === 1 && x >= 18 && x <= 24) {
-          const yy = bot + 1 - ((x - 18) * 0 + 0);
-          const len = 15;
-          const k = (24 - x);
-          if (y <= yy - 1 && y >= yy - len + k * 1.2 && Math.abs(x - (20 - (yy - y) * 0.18)) < 0.9) return { c: mix(silver, [255, 255, 255], 0.3), flap: 0.7 };
+        if (Math.abs(z) <= 1 && x >= 28 && x <= 36 && y < bot + 2 && y > bot - 30) {     // pelvic filaments
+          const cx = 33 - (bot + 2 - y) * 0.1;
+          if (Math.abs(x - cx) < 0.9) return { c: [248, 246, 240], flap: 0.8 };
         }
-        // forked tail
-        const dT = 6 - x;
-        if (dT >= 0 && dT <= 7 && z === 0) {
-          const hh = 2 + dT * 1.15;
-          if (Math.abs(y) <= hh && !(dT > 4 && Math.abs(y) < (dT - 4) * 0.8)) return { c: mix(silver, hex(0xc7d4d0), dT / 8), wave: 0.5 };
+        const dT = 12 - x;
+        if (dT >= 0 && dT <= 12 && Math.abs(z) <= (dT < 3 ? 1 : 0)) {
+          const hh = 4 + dT * 1.3, ay = Math.abs(y);
+          if (ay <= hh && !(dT > 5 && ay < (dT - 5) * 0.9)) return { c: Math.floor(dT / 3) & 1 ? mix(silver, [150, 160, 168], 0.5) : mix(silver, black, 0.12 * (ay < 2)), wave: 0.6 };
         }
         return null;
       },
@@ -270,38 +249,34 @@ const angelfish = {
 
 // ───────────────────────── Neon tetra ─────────────────────────
 const neon = {
-  id: 'neon', label: 'Neon Tetra', length: 20,
+  id: 'neon', label: 'Neon Tetra', length: 36, vox: 0.04,
   make(seed = 1) {
-    const X0 = 3, L = 14;
-    const hy = prof([[0, 1.2], [0.2, 2.6], [0.45, 3.4], [0.75, 2.8], [1, 1.5]]);
-    const hz = prof([[0, 0.8], [0.4, 1.8], [0.8, 1.5], [1, 0.8]]);
-    const body = (x, y, z) => {
-      const t = (x - X0) / L;
-      if (t < 0 || t > 1) return null;
-      const h = hy(t), w = hz(t);
-      const dy = y / h, dz = z / w;
-      return dy * dy + dz * dz <= 1 ? { t, dy } : null;
-    };
-    const eye = eyePainter(body, X0 + 0.84 * L, 0.7, 1.35, [200, 220, 235], 0.55);
+    const X0 = 6, L = 24;
+    const hy = prof([[0, 2], [0.15, 4], [0.45, 5.6], [0.75, 4.6], [1, 2.4]]);
+    const hz = prof([[0, 1], [0.4, 3.2], [0.8, 2.6], [1, 1.2]]);
+    const cy = () => 0;
+    const body = mkBody(X0, L, hy, hz, cy);
+    const eye = mkEye(body, Math.round(X0 + 0.85 * L), 1, [214, 226, 236], 2.3);
+    const bt = (x) => clamp((x - X0) / L);
     return {
-      bounds: { x: [-6, 20], y: [-7, 7], z: [-4, 4] },
-      center: [9, 0],
-      bend: { pivot: 6, len: 8, amp: 0.55, bob: 0.4 },
+      bounds: { x: [-10, 32], y: [-12, 12], z: [-6, 6] },
+      center: [16, 0],
+      bend: { pivot: 10, len: 14, amp: 0.55, bob: 0.6 },
       sample(x, y, z) {
-        const e = eye(x, y, z);
-        if (e) return e;
+        const e = eye(x, y, z); if (e) return e;
         const b = body(x, y, z);
         if (b) {
           const { t, dy } = b;
-          if (t > 0.1 && t < 0.88 && y >= 0 && y <= 1.2 && Math.abs(z) >= 0 ) return { c: hex(0x32d2ff), em: 2 }; // neon stripe
-          if (dy > 0.2) return { c: hex(0x4a5f68) };
-          if (t < 0.58 && dy < 0) return { c: hex(0xe83a2a), em: 1 };           // red rear belly
-          return { c: hex(0xcfd8dc) };
+          if (t > 0.1 && t < 0.9 && y >= 1 && y <= 3) return { c: [60, 224, 255], em: 2 };               // neon stripe
+          if (y > 3) return { c: mix([46, 68, 60], [76, 98, 86], t) };                                   // olive back
+          if (t < 0.55) return { c: [238, 44, 36], em: 1 };                                              // red lower rear
+          return { c: mix([214, 224, 230], [248, 250, 252], clamp(-dy)) };
         }
-        const dT = 3 - x;
-        if (dT >= 0 && dT <= 5 && z === 0 && Math.abs(y) <= 1 + dT * 0.7 && !(dT > 3 && Math.abs(y) < 0.8)) return { c: [150, 190, 205], wave: 0.3 };
-        if (z === 0 && x >= 6 && x <= 10 && y >= 3 && y <= 3 + (10 - x) * 0.5 + 0.4 && y > hy((x - X0) / L) - 0.5) return { c: hex(0x6a7f88) };
-        if (z === 0 && x >= 6 && x <= 9 && y <= -2.8 && y >= -4.2) return { c: [220, 230, 235] };
+        const dT = 8 - x;
+        if (dT >= 0 && dT <= 12 && z === 0) { const hh = 2.5 + dT * 0.8; if (Math.abs(y) <= hh && !(dT > 5 && Math.abs(y) < (dT - 5) * 0.8)) return { c: mix([176, 206, 220], [120, 150, 170], dT / 14), wave: 0.5 }; }
+        const top = hy(bt(x)), bot = -hy(bt(x));
+        if (z === 0 && x >= 16 && x <= 24 && y >= top - 1 && y <= top + 5 * (1 - Math.abs(x - 19) / 5)) return { c: [70, 92, 100], wave: 0.2 };
+        if (z === 0 && x >= 14 && x <= 24 && y <= bot + 1 && y >= bot - 4 * Math.sin(Math.PI * (x - 14) / 10)) return { c: Math.floor(x / 2) & 1 ? [238, 60, 50] : [240, 240, 240], wave: 0.2 };
         return null;
       },
     };
@@ -310,59 +285,40 @@ const neon = {
 
 // ───────────────────────── Corydoras ─────────────────────────
 const cory = {
-  id: 'cory', label: 'Corydoras', length: 30,
+  id: 'cory', label: 'Corydoras', length: 46, vox: 0.04,
   make(seed = 1) {
     const rng = mulberry32(seed * 8191 + 7);
     const off = [rng() * 90, rng() * 90, rng() * 90];
-    const X0 = 4, L = 20;
-    const hy = prof([[0, 1.6], [0.15, 3.4], [0.45, 5.4], [0.75, 5.2], [0.95, 3.6], [1, 2.4]]);
-    const hz = prof([[0, 1], [0.3, 3], [0.6, 3.8], [0.9, 3], [1, 1.5]]);
-    const cyp = prof([[0, 0.5], [0.5, 1.2], [1, 0.2]]);
-    const body = (x, y, z) => {
-      const t = (x - X0) / L;
-      if (t < 0 || t > 1) return null;
-      const h = hy(t), w = hz(t);
-      const dy = (y - cyp(t)) / h, dz = z / w;
-      if (y < -3.6) return null; // flat belly
-      return dy * dy + dz * dz <= 1 ? { t, dy } : null;
-    };
-    const eye = eyePainter(body, X0 + 0.8 * L, 2.4, 1.6, hex(0xd8c8a0), 0.95);
-    const tan = hex(0xd5a572), brown = hex(0x6b4a30);
+    const X0 = 8, L = 30;
+    const hy = prof([[0, 2.5], [0.15, 5], [0.45, 8], [0.75, 8], [0.95, 5.5], [1, 3.5]]);
+    const hz = prof([[0, 1.5], [0.3, 5], [0.6, 6], [0.9, 4.5], [1, 2.5]]);
+    const cyp = prof([[0, 0.8], [0.5, 2], [1, 0.4]]);
+    const raw = mkBody(X0, L, hy, hz, cyp);
+    const body = (x, y, z) => (y < -5.5 ? null : raw(x, y, z));                // flat belly
+    const eye = mkEye(body, Math.round(X0 + 0.82 * L), 5, [214, 190, 150], 2.4);
+    const bt = (x) => clamp((x - X0) / L);
     return {
-      bounds: { x: [-8, 28], y: [-8, 12], z: [-6, 6] },
-      center: [13, 0],
-      bend: { pivot: 6, len: 10, amp: 0.5, bob: 0.3 },
+      bounds: { x: [-10, 46], y: [-12, 18], z: [-9, 9] },
+      center: [20, 0],
+      bend: { pivot: 12, len: 16, amp: 0.5, bob: 0.4 },
       sample(x, y, z) {
-        const e = eye(x, y, z);
-        if (e) return e;
+        const e = eye(x, y, z); if (e) return e;
         const b = body(x, y, z);
         if (b) {
           const { t, dy } = b;
-          let c = tan;
-          if (dy > 0.2) c = mix(c, hex(0x8a6540), (dy - 0.2) * 0.9);
-          if (dy < -0.3) c = mix(c, hex(0xf2dcc0), 0.6);
-          const n = fbm(x * 0.35 + off[0], y * 0.35 + off[1], Math.abs(z) * 0.3 + off[2]);
-          if (n > 0.6 && dy > -0.2) c = mix(c, brown, 0.8);           // dark mottling
-          if (Math.abs(dy - 0.15) < 0.14 && t > 0.15 && t < 0.8) c = mix(c, hex(0xa4713f), 0.45); // lateral plate seam
+          let c = dy > 0.3 ? mix([196, 150, 92], [146, 114, 64], (dy - 0.3) * 1.3) : mix([244, 226, 196], [214, 170, 112], clamp(dy + 0.9));
+          const n = fbm(x * 0.3 + off[0], y * 0.3 + off[1], Math.abs(z) * 0.25 + off[2]);
+          if (n > 0.6 && dy > -0.3) c = mix(c, [72, 50, 32], 0.8);              // dark mottling
+          if (Math.abs(dy - 0.12) < 0.07 && t > 0.15 && t < 0.85) c = mix(c, [128, 92, 54], 0.5);   // plate seam
           return { c };
         }
-        // barbels
-        if (z !== 0 && Math.abs(z) === 1 && x >= 24 && x <= 27 && y <= -1.5 && y >= -3 - (x - 24) * 0.2) return { c: hex(0xe8c9a0), wave: 0.6 };
-        const bt = (x) => clamp((x - X0) / L);
-        // dorsal spine fin
+        if (Math.abs(z) >= 1 && Math.abs(z) <= 2 && x >= 40 && x <= 46 && y <= -2.5 && y >= -5.5 + (x - 40) * 0.3) return { c: [238, 214, 176], wave: 0.7 };   // barbels
         const top = cyp(bt(x)) + hy(bt(x));
-        if (z === 0 && x >= 12 && x <= 19 && y >= top - 1) {
-          const sx = x + 0.7 * (y - top);
-          if (sx >= 12 && sx <= 18 && y - top <= 7 * (1 - Math.abs(sx - 13.5) / 5)) return { c: mix(tan, hex(0x8a6540), 0.4 + (y - top) * 0.08), wave: 0.2 };
-        }
-        // forked tail
-        const dT = 5 - x;
-        if (dT >= 0 && dT <= 8 && z === 0) {
-          const hh = 1.5 + dT * 1.0;
-          if (Math.abs(y - 0.5) <= hh && !(dT > 5 && Math.abs(y - 0.5) < (dT - 5) * 0.9)) return { c: Math.floor(dT / 2) % 2 ? mix(tan, brown, 0.55) : mix(tan, hex(0xf2dcc0), 0.4), wave: 0.4 };
-        }
-        // pectoral (broad, on the flank)
-        if (Math.abs(z) === 4 && x >= 17 && x <= 23 && y >= -3 && y <= 0) return { c: mix(tan, hex(0xf2dcc0), 0.4), flap: 1.2 };
+        if (z === 0 && x >= 20 && x <= 32 && y >= top - 1) { const sx = x + 0.8 * (y - top), h = 13 * (1 - Math.abs(sx - 25) / 6); if (h > 0 && y - top <= h) return { c: mix([208, 166, 108], [110, 80, 50], clamp((y - top) / 14)), wave: 0.2 }; }
+        const dT = 8 - x;
+        if (dT >= 0 && dT <= 12 && Math.abs(z) <= (dT < 3 ? 1 : 0)) { const hh = 2.5 + dT * 0.95; if (Math.abs(y - 0.5) <= hh && !(dT > 5 && Math.abs(y - 0.5) < (dT - 5) * 0.9)) return { c: Math.floor(dT / 3) & 1 ? [112, 80, 50] : [226, 188, 140], wave: 0.6 }; }
+        const az = Math.abs(z);
+        if (az >= 1 && x >= 30 && x <= 38 && y >= -6 && y <= -1) { const edge = Math.round(hz(bt(x)) * 0.9) + 1; if (az === edge && y <= -1 - Math.abs(x - 33) * 0.4) return { c: [232, 204, 164], flap: 1.5 }; }
         return null;
       },
     };

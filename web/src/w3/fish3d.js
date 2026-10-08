@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
 import { patch } from './env.js';
 
-const VOX = 0.052;
+const VOX = 0.052, GLOBAL = 1.22;
 const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
@@ -25,13 +25,13 @@ export class Fish3D {
     // drop voxels buried on all six sides – they can never be seen
     this.vox = model.list.filter((v) => !(occ.has(key(v.x + 1, v.y, v.z)) && occ.has(key(v.x - 1, v.y, v.z)) && occ.has(key(v.x, v.y + 1, v.z)) && occ.has(key(v.x, v.y - 1, v.z)) && occ.has(key(v.x, v.y, v.z + 1)) && occ.has(key(v.x, v.y, v.z - 1))));
     this.sp = model.sp; this.cx = model.sp.center?.[0] ?? 0;
-    this.scale = (opts.scale ?? 1) * (species.vox ?? VOX);
+    this.scale = (opts.scale ?? 1) * (species.vox ?? VOX) * GLOBAL;
     const n = this.vox.length;
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, n);
     this.mesh.castShadow = this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
     const jr = (i) => 0.94 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.1;
     this.vox.forEach((v, i) => {
-      const k = jr(i), glow = v.em > 1 ? 2.2 : v.em ? 1.0 : 1;
+      const k = jr(i), glow = v.em > 1 ? 1.55 : v.em ? 1.0 : 1;
       col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });
@@ -53,7 +53,7 @@ export class Fish3D {
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(1, 0, 0); this.target = new THREE.Vector3();
     this.phase = Math.random() * 6; this.retarget = 0; this.heading = 0; this.pitch = 0; this.roll = 0;
     this.speed = opts.speed ?? 1; this.band = opts.band ?? { x: [-3.6, 3.6], y: [2, 13], z: [0.4, 1.9] };
-    this.name = opts.name ?? species.label; this.accum = 0;
+    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0;
   }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
@@ -84,7 +84,7 @@ export class Fish3D {
     this.retarget -= dt;
     if (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    desired.multiplyScalar(this.speed * (d < 1.5 ? 0.35 + d / 2.3 : 1) / d);
+    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (d < 1.5 ? 0.35 + d / 2.3 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;

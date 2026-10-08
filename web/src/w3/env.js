@@ -119,6 +119,7 @@ export function buildEnvironment() {
   }
   // wall above the arch + broken fragment on the right
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-3.3 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + 1.5 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
+  B(-3.85, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(-0.2, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(-0.2, AY + 0.13, -0.95, 1.5, 0.26, 1.4, 0, 0, true);
   pillar(2.9, -3.6, 1.1, 1.0, 5.4, 0.46, 1.2);           // second broken column, further back
   pillar(4.1, -2.4, 1.0, 1.0, 2.4, 0.46, 0.6);
   for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
@@ -219,6 +220,26 @@ export function buildEnvironment() {
     red.add({ x, y: 0, z, h: hh, w: 0.03, lean: 0.1, curl: 0.5, dir: ri, seg: 10, base: [110, 30, 40], tip: [190, 60, 64] });
     for (let k = 1; k < 12; k++) { const yy = k * hh / 12; for (const s of [-1, 1]) red.add({ x: x + Math.sin(ri) * 0.02, y: yy, z, h: 0.45 * (1 - k / 14), w: 0.07, dir: s > 0 ? 0 : Math.PI, lean: 0.6, curl: 0.4, seg: 3, taper: 2, base: [150, 40, 50], tip: [244, 110, 90] }); }
   });
+  // grass tufts rooted on top of the ruins
+  const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [40, 100, 44], tip: [140, 196, 74] }); };
+  tuft(-3.85, 6.95, -0.95, 9); tuft(-0.2, AY + 0.05, -0.95, 7); tuft(-3.0, AY + 3.1, -0.95, 6); tuft(2.9, 5.45, -3.6, 7); tuft(-1.95, AY + 1.62, -0.95, 5);
+  // bushy green stem plants + moss mounds
+  [[-2.2, 2.1], [2.0, 1.9], [4.2, 1.0], [-3.2, -1.0]].forEach(([x, z], bi) => {
+    for (let st = 0; st < 5; st++) { const hh = 1.6 + rng() * 1.6, dir = st * 1.3 + bi; leaves.add({ x, y: 0, z, h: hh, w: 0.03, dir, lean: 0.3, curl: 0.4, seg: 8, base: [50, 110, 46], tip: [120, 190, 70] });
+      for (let k = 1; k < 9; k++) for (const sd of [-1, 1]) leaves.add({ x: x + Math.cos(dir) * 0.3 * k / 9 * hh * 0.5, y: k * hh / 9, z: z + Math.sin(dir) * 0.3 * k / 9 * hh * 0.5, h: 0.32, w: 0.06, dir: dir + (sd > 0 ? 1.57 : -1.57), lean: 0.6, curl: 0.3, seg: 2, taper: 2, base: [60, 130, 52], tip: [150, 206, 84] }); }
+  });
+  const mossG = new THREE.IcosahedronGeometry(1, 1);
+  [[-3.0, 0.3, 1.8, 0.5], [1.7, 0.25, 2.0, 0.4], [-0.3, 0.2, -1.8, 0.45]].forEach(([x, y, z, r], mi) => {
+    const mm = new THREE.Mesh(mossG, patch(new THREE.MeshStandardMaterial({ color: C(70, 130, 56), flatShading: true, roughness: 1 })));
+    mm.position.set(x, y, z); mm.scale.set(r * 1.6, r * 0.7, r * 1.2); mm.castShadow = mm.receiveShadow = true; root.add(mm);
+  });
+  // starfish + a couple of shells on the sand
+  const starMat = patch(new THREE.MeshStandardMaterial({ color: C(238, 120, 52), roughness: 0.8 }));
+  for (let a = 0; a < 5; a++) { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.11), starMat); arm.rotation.y = a * 1.2566; arm.position.set(-1.6 + Math.cos(a * 1.2566) * 0.2, 0.1, 2.35 + Math.sin(a * 1.2566) * -0.2); arm.castShadow = true; root.add(arm); }
+  // backdrop kelp forest (hazy, deep)
+  const kelp = new Blades();
+  for (let i = 0; i < 34; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
+  root.add(kelp.mesh(leafMat()));
   // hanging moss/vines off the ruin
   for (let i = 0; i < 26; i++) { const x = -4.4 + rng() * 4.6, top = 6.9 - rng() * 0.2; if (x > -3.2 && x < -0.8) { vines.add({ x, y: AY - 0.5, z: -0.4, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); } else vines.add({ x, y: 2 + rng() * 4.2, z: -0.38, h: -(0.3 + rng() * 1.0), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); }
   [grass, leaves, red, vines].forEach((b) => root.add(b.mesh(leafMat())));
