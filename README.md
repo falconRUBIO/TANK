@@ -4,11 +4,14 @@ Three friends, one living aquarium. Chunky voxel fish and decorations, modern li
 
 ## The game
 
-- **Start:** name your first fish, feed it, meet your friends, place a free plant. Four short tips, skippable.
+- **Start:** an empty tank with one goldfish and a starter pack of free items. Name your fish, feed it, meet your friends, place something. Four short tips, skippable.
 - **Care:** feed (tap the water to drop food, three drops per feeding), wipe algae off the glass, change the water. You earn **shells** only when the tank actually needs the care. No streaks, no timers you must obey, no ads, no purchases.
 - **Grow:** adopt fish (goldfish, neon school, guppies, corydoras, blue ram, angelfish, betta) and place decorations (18 items: plants, kelp, rocks, driftwood, lantern, chest, bubbler, clam, skull, torii gate, stone arch…). Fish grow baby → juvenile → adult over real days and the tank levels up (8 levels), unlocking new species, items and room.
 - **Every fish has its own needs:** it gets hungry at its own pace (greedy fish sooner, lazy fish later), its happiness depends on clean water and on things it likes in the tank (shy fish like plants, curious fish like structures, playful fish like bubbles…), and its health slips if it is neglected. Neglect makes fish listless but never kills them; care brings them back. Tap a fish to see its mood.
 - **Together:** up to **three** caretakers share one tank with a six-character code or invite link. Everything is shared: fish, decorations, shells, journal, chat.
+- **Things that bring you back, without streaks:** gifts wash in and wait for you forever; new fish arrive after a short wait; one fish a day is a quarter cheaper; rare visitors (Moon Betta, Sun Angelfish, Rose Corydoras) drop by for a few hours and are added to the collection book when you say hello; two adult fish of one species sometimes lay an egg that hatches into a blend of both; the journal tells small true stories about your fish; friends can wash a message in a bottle into the tank for each other; the tank has a birthday every week.
+- **Personalities are behaviour:** shy fish hide behind plants and bolt when others come close, brave fish swim to the glass, curious fish inspect decorations, social fish stick to a buddy, playful fish chase bubbles, lazy fish rest low, greedy fish wait by the surface. After dark most fish drift low and slow. Every fish is a little different in colour and size.
+- **Make it yours:** pick the floor (sand, pearl, gravel, black sand, pink coral) and the backdrop. The light follows your phone's clock.
 - **While you are away** the tank keeps living: hunger rises, water clouds, algae grows, fish grow. It is capped so a holiday never hurts the fish.
 
 ## Run it
