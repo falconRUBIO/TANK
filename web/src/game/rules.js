@@ -161,7 +161,7 @@ function eggs(t, now, ev) {
     const seed = A && B ? ((A.seed + B.seed) >> 1) + (h % 9) : e.seed, pick = (f, k) => (f?.traits?.length ? f.traits[(h >> k) % f.traits.length] : null);
     const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
     const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8 }); t.fish.push(f);
-    ev.push({ journal: `${A?.name ?? 'An'} egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+    ev.push({ journal: `An egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
