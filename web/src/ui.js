@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -39,7 +39,7 @@ export function initUI({ game, social, cb }) {
     const s = S(); if (!s) return { text: '' };
     if ((s.flags.tut ?? 0) < 5 && game.isTutOwner) return { text: 'Follow the tips to get started', tab: '' };
     const fl = (s.floaters ?? [])[0]; if (fl) return { text: `${fl.name} has passed away. Tap to lay them to rest.`, tab: '' };
-    const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: `${weak.name} is run down. Give the tank some care.`, tab: 'care' };
+    const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: `${weak.name} is in a critical state. Feed the tank and freshen the water.`, tab: 'care' };
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle washed in for you. Tap it.', tab: '' };
     if (s.drift) return { text: 'Something washed in. Tap it in the tank.', tab: '' };
@@ -98,7 +98,7 @@ export function initUI({ game, social, cb }) {
     const s = S(), cell = (kind, id, label) => { const got = s.seen[kind].includes(id); return `<div class="bk ${got ? '' : 'nope'}"><img alt="" data-thumb="${kind === 'fish' ? 'fish' : 'decor'}:${id}"><b>${got ? esc(label) : '???'}</b></div>`; };
     return `<div class="bkhead"><b>${s.seen.fish.length + s.seen.decor.length} / ${COLLECTION_SIZE()}</b><small>Every 5 finds earns 3 shells</small></div><h4>Fish</h4><div class="bkg">${Object.entries(SPECIES_DEF).map(([id, d]) => cell('fish', id, d.label)).join('')}</div><h4>Decorations</h4><div class="bkg">${Object.entries(DECOR_DEF).map(([id, d]) => cell('decor', id, d.label)).join('')}</div>`;
   };
-  const memorialHtml = () => { const m = S().memorial ?? []; return m.length ? `<h4>Remembered</h4><div class="mem">${m.slice().reverse().map((x) => `<span>${esc(x.name)} · ${esc(SPECIES_DEF[x.species]?.label ?? x.species)}</span>`).join('')}</div>` : ''; };
+  const memorialHtml = () => { const m = S().memorial ?? []; return m.length ? `<h4>Remembered</h4><div class="mem">${m.map((x, i) => [x, i]).reverse().map(([x, i]) => `<button data-mem="${i}">${esc(x.name)} · ${esc(SPECIES_DEF[x.species]?.label ?? x.species)}</button>`).join('')}</div>` : ''; };
   const journalHtml = () => `${memorialHtml()}<form class="send note"><input maxlength="90" placeholder="Add a note to the journal" autocomplete="off"><button>Add</button></form><div class="jl">${game.journal.slice().reverse().map((e) => `<div class="je"><small>DAY ${String(e.day).padStart(3, '0')}</small><span>${esc(e.text)}</span></div>`).join('')}</div>`;
   const styleHtml = () => { const st = S().style ?? { floor: 'sand', backdrop: 'candy' }, row = (label, key, opts) => `<div class="sty"><small>${label}</small><div>${Object.entries(opts).map(([k, v]) => `<button class="chipb ${st[key] === k ? 'on' : ''}" data-style="${key}:${k}">${v}</button>`).join('')}</div></div>`; return `<div class="styles">${row('FLOOR', 'floor', FLOORS)}${row('BACKDROP', 'backdrop', BACKDROPS)}</div>`; };
   const views = {
@@ -150,6 +150,10 @@ export function initUI({ game, social, cb }) {
     bind('rkey', () => cb.recoveryKey()); bind('leave', () => cb.leaveTank()); bind('tutr', () => { open('tank'); cb.replayTutorial(); }); bind('reset', (ev) => { if (ev.target.dataset.sure) game.reset(); else { ev.target.dataset.sure = 1; ev.target.textContent = 'Tap again to erase'; } });
     bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('settings', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
     sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; await game.dispatch({ t: 'style', [k]: v }); open('decorate', true); sheet.scrollTop = y; }));
+    sheet.querySelectorAll('[data-mem]').forEach((b) => (b.onclick = () => {
+      const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
+    }));
     sheet.querySelectorAll('[data-book]').forEach((b) => (b.onclick = () => { book = b.dataset.book === '1'; sfx('tap'); open('journal', true); }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
       const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It washes into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;

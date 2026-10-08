@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
 import { mulberry32 } from '../color.js';
-import { SPECIES_DEF, STAGE_SCALE, AIL_WARN, stageOf, needsOf } from '../game/rules.js';
+import { SPECIES_DEF, STAGE_SCALE, AIL_TIRED, AIL_WARN, stageOf, needsOf } from '../game/rules.js';
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
@@ -53,9 +53,9 @@ export class Fishes {
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
+        this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: 3 + (((d.seed * 13) % 100) / 100) * 8 }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; this.sicken(f, d); f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
+        f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
@@ -81,12 +81,17 @@ export class Fishes {
       if (sp.visible) { if (sp.userData.mood !== mood) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
     }
   }
+  // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
+  relate(f, d) {
+    f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
+    const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
+  }
   // fish that are going without care look pale and tired, and keep low
   sicken(f, d) {
-    const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_WARN / 2 ? 0.28 : 0, weak = ail >= AIL_WARN;
-    f.setPale(k); if (f.weak !== weak) { f.weak = weak; f.tmul = this.mulFor(f); }
+    const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_TIRED ? 0.3 : 0, weak = ail >= AIL_WARN, tired = ail >= AIL_TIRED;
+    f.setPale(k); if (f.weak !== weak || f.tired !== tired) { f.weak = weak; f.tired = tired; f.tmul = this.mulFor(f); }
   }
-  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : 1); }
+  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1); }
   // a rare visitor swims in from the side, glowing softly, until it is greeted or leaves
   addVisitor(v) {
     const sp = SPECIES[v.species], def = SPECIES_DEF[v.species]; if (!sp) return;
@@ -111,6 +116,11 @@ export class Fishes {
       const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(13.5, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
       f.idle = 0;
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
+      // identity: a fish swims out to the glass for its own caretaker, goes back to its favourite spot, stays near its best friend, and has a corner of the tank it prefers
+      if (f.mine && r() < (has('Shy') ? 0.1 : 0.25)) return T(-1.5 + r() * 3, 4 + r() * 6, 2.5 + r() * 0.4, 4);
+      if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
+      if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
+      if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
       if (this.night && !has('Playful')) {
         if (has('Shy')) return T(-3 + r() * 6, 4 + r() * 6, 0.8 + r() * 1.8, 4 + r() * 3);
         if (r() < 0.5) f.idle = 4; return T(-3.4 + r() * 6.8, 0.9 + r() * 2.2, -1 + r() * 2.5, 7 + r() * 4);
@@ -139,7 +149,7 @@ export class Fishes {
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
   drop(x, n = 7) {
-    for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9; }      // about half the fish notice the new food, the rest stay on the old
+    for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
     for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, 15 + this.rng() * 0.5, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: this.cols[(this.rng() * 4) | 0] });
   }
   update(dt, t) {

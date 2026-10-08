@@ -248,6 +248,14 @@ await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the
   setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
   await call('/api/push/unsubscribe', { endpoint: sub.endpoint }, x.token); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM push_subs WHERE user_id=?').get(x.userId).n, 0);
 });
+await t('every caretaker gets one free first fish of their own, with their name on it', async () => {
+  setW(tank.id, { simTs: Date.now(), level: 8 });
+  assert.equal((await ackOf(wsA, { t: 'firstFish', name: 'Again', seed: 3, idem: 'ff0' })).reason, 'ALREADY_HAVE');
+  const wsB5 = await open(b.token); const before = getW(tank.id).fish.length;
+  const r = await ackOf(wsB5, { t: 'firstFish', name: 'Biscuit', seed: 7, idem: 'ff1' }); assert.equal(r.ok, true); const w = getW(tank.id), f = w.fish.at(-1);
+  assert.equal(w.fish.length, before + 1); assert.equal(f.owner, b.userId); assert.equal(f.ownerName, 'Sam'); assert.equal(f.name, 'Biscuit');
+  assert.equal((await ackOf(wsB5, { t: 'firstFish', name: 'Twice', seed: 8, idem: 'ff2' })).reason, 'ALREADY_HAVE'); wsB5.close();
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();

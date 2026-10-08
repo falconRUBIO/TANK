@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -204,11 +204,6 @@ async function finishPlay() {
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
   showCard(f);
 }
-// scooping out a fish that has passed away
-async function scoopFish(f) {
-  const r = await game.dispatch({ t: 'scoop', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
-  sfx('tap'); haptic(10); fishes.burst(f.pos);
-}
 // photo mode: the clean tank frame, no interface
 async function takePhoto() {
   const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #feedbar, #placebar, #toast, #glass')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
@@ -231,12 +226,22 @@ function bondLine(rec) {
   const who = top === you ? 'You' : game.members?.find((m) => m.id === top)?.name ?? 'Someone';
   return `<dt>Closest to</dt><dd>${mine >= 10 && top === you ? 'You' : who}${b[top] >= 10 ? ' ♥' : ''}</dd>`;
 }
+function showDeadCard(f) {
+  lastCard = Date.now(); const x = game.state.floaters?.find((z) => z.id === f.fid); if (!x) { card.classList.remove('on'); return; }
+  const days = Math.max(1, Math.round((x.died - x.born) / 864e5)), who = x.ownerName ?? game.members?.find((mm) => mm.id === x.owner)?.name ?? 'Unknown';
+  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${x.name}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
+    <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${who}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
+    <button class="pet rest" id="rest">LAY TO REST</button>`;
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null);
+  $('rest').onclick = async () => { $('rest').disabled = true; const r = await game.dispatch({ t: 'scoop', id: f.fid }); setFocus(null); if (!r.ok) return fail(r); if (r.applied) { sfx('tap'); haptic(10); } };
+}
 function showCard(f) {
+  if (f.dead) return showDeadCard(f);
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
-    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Run down. Growth is paused until it is cared for.</dd>' : rec.ail >= AIL_WARN / 2 ? '<dt>Health</dt><dd>A little tired. Some care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button>
+    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f);
 }
@@ -248,7 +253,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
-  const f = pickFish(ev); if (f?.dead) { scoopFish(f); return; } if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
+  const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
 });
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
@@ -304,7 +309,7 @@ const pendingArrivals = new Set();
 let lastLamp = null;
 function syncWorld() {
   const s = game.state; if (!s) return;
-  fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
+  fishes.me = game.you?.userId ?? 'me'; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
   decor.sync(s.decor);
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
@@ -379,6 +384,13 @@ async function welcomeBack() {
   await new Promise((r) => setTimeout(r, 900)); await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank' });
 }
 
+// every caretaker brings in a first fish of their own (the creator's is Pip)
+async function firstFishPrompt() {
+  const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
+  const s = game.state; if (!s || s.flags.firsts?.[me] || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
+  const nm = await ui.dialog({ title: 'YOUR FIRST FISH', text: 'A little goldfish of your own is ready to join the tank. Everyone can care for it, but you brought it in. What is its name?', input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0], placeholder: 'Name' }, ok: 'Bring it in' });
+  if (!nm) return; const r = await game.dispatch({ t: 'firstFish', name: nm, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
+}
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
@@ -404,7 +416,7 @@ async function boot() {
   if (qs.get('tod') || qs.has('dev')) document.querySelector('.tod').hidden = false;
   fishes.setNight((qs.get('tod') ?? phase()) === 'night');
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); } }, 30000); }
-  welcomeBack(); requestAnimationFrame(frame);
+  welcomeBack(); firstFishPrompt(); requestAnimationFrame(frame);
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
