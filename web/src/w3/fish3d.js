@@ -97,6 +97,12 @@ export class Fish3D {
       for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 0.9) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
       if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.3); al.multiplyScalar(1 / cnt).multiplyScalar(0.5); desired.add(c).add(al).add(sep.multiplyScalar(1.1)); }
     }
+    // personal space: never pile up on top of another fish (different species included)
+    for (const o of others) {
+      if (o === this) continue;
+      const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 0.6;
+      if (dd < min && dd > 1e-3) desired.x += dx / dd * (min - dd) / min * this.speed * 2.4, desired.y += dy / dd * (min - dd) / min * this.speed * 2.4, desired.z += dz / dd * (min - dd) / min * this.speed * 1.6;
+    }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
     if (this.vel.length() > this.speed * 1.4) this.vel.setLength(this.speed * 1.4);
     this.pos.addScaledVector(this.vel, dt);

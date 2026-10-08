@@ -1,0 +1,121 @@
+// Client networking + onboarding (create / join a tank). Falls back to offline play if no server answers.
+import { drawAvatar, SKINS, HAIRS, HATS } from './ui.js';
+
+const KEY = 'ourtank.session';
+const qs = new URLSearchParams(location.search);
+export const base = qs.get('api') || (location.protocol.startsWith('http') ? location.origin : '');
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
+const store = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* storage unavailable */ } };
+let session = load();
+
+export async function api(path, body, method = body ? 'POST' : 'GET') {
+  const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', ...(session?.token ? { authorization: 'Bearer ' + session.token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const ct = r.headers.get('content-type') || '';
+  if (!ct.includes('json')) throw Object.assign(new Error('no server'), { offline: true });
+  const j = await r.json(); if (!r.ok) throw Object.assign(new Error(j.message || j.error), { code: j.error, status: r.status });
+  return j;
+}
+export async function serverAvailable() { try { await api('/api/me'); return true; } catch (e) { return !e.offline && !!e.status; } }
+
+// ── realtime ──
+export class Live {
+  constructor(onMsg, onStatus) { this.onMsg = onMsg; this.onStatus = onStatus; this.pending = new Map(); this.retry = 0; this.open(); }
+  open() {
+    this.closed = false;
+    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws?token=' + session.token;
+    const ws = (this.ws = new WebSocket(url));
+    ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
+    ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
+    ws.onclose = () => { this.onStatus(false); if (!this.closed) setTimeout(() => this.open(), Math.min(8000, 800 * 2 ** this.retry++)); };
+    ws.onerror = () => ws.close();
+  }
+  action(t, extra = {}) { const m = { t, idem: crypto.randomUUID().slice(0, 18), ...extra }; this.pending.set(m.idem, m); if (this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); return m.idem; }
+  chat(text) { if (this.ws.readyState === 1) this.ws.send(JSON.stringify({ t: 'chat', text })); }
+  get connected() { return this.ws.readyState === 1; }
+}
+
+// ── onboarding ──
+const $ = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; };
+const CODE = /^[A-Za-z0-9]{6}$/;
+function avatarPicker(host, state) {
+  host.innerHTML = `<canvas class="pv"></canvas><div class="sw" data-k="skin"></div><div class="sw" data-k="hair"></div><div class="sw" data-k="hat"></div>`;
+  const pv = host.querySelector('.pv'); const paint = () => drawAvatar(pv, state);
+  const opts = { skin: SKINS, hair: HAIRS, hat: HATS };
+  for (const k of Object.keys(opts)) {
+    const row = host.querySelector(`[data-k=${k}]`);
+    opts[k].forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.style.background = c || 'transparent'; if (!c) b.className = 'none'; b.onclick = () => { state[k] = c; row.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b)); paint(); }; if (c === state[k]) b.className += ' sel'; row.append(b); });
+  }
+  paint();
+}
+
+export function runOnboarding() {
+  return new Promise(async (resolve) => {
+    const root = document.getElementById('welcome');
+    const done = (r) => { root.classList.remove('on'); setTimeout(() => (root.innerHTML = ''), 400); resolve(r); };
+    const link = (code) => `${location.origin}/join/${code}`;
+    const shareText = (code) => `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${code}`;
+    const screen = (html) => { root.innerHTML = ''; const s = $(`<div class="scr">${html}</div>`); root.append(s); root.classList.add('on'); return s; };
+    const pk = (a) => a[(Math.random() * a.length) | 0];
+    const avatar = { skin: pk(SKINS), hair: pk(HAIRS), hat: pk(HATS) };
+
+    // returning player with a saved identity
+    if (session?.token) {
+      try { const me = await api('/api/me'); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank }); }
+      catch (e) { if (e.offline) return done({ mode: 'local' }); session = null; }
+    } else if (!(await serverAvailable())) return done({ mode: 'local' });
+
+    const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId }; store(session); };
+    const welcome = () => {
+      const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>OUR TANK</h1><p>A little world to share.</p>
+        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button>`);
+      s.querySelector('[data-a=create]').onclick = () => profile('create'); s.querySelector('[data-a=join]').onclick = () => joinScreen();
+      s.querySelector('[data-a=solo]').onclick = () => done({ mode: 'local' });
+    };
+    const profile = (kind, joinCode) => {
+      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : 'YOU'}</h2><label>Your name<input id="nm" maxlength="16" placeholder="Name" autocomplete="off"></label>
+        <div class="ap"></div>${kind === 'create' ? '<label>Tank name<input id="tn" maxlength="24" value="Our Tank" autocomplete="off"></label>' : ''}
+        <div class="err" id="er"></div><button class="big" id="go">${kind === 'create' ? 'CREATE' : 'JOIN THE TANK'}</button><button class="lnk" id="bk">Back</button>`);
+      avatarPicker(s.querySelector('.ap'), avatar);
+      s.querySelector('#bk').onclick = welcome;
+      s.querySelector('#go').onclick = async () => {
+        const name = s.querySelector('#nm').value.trim(), er = s.querySelector('#er'); if (!name) { er.textContent = 'Please choose a name.'; return; }
+        try {
+          if (session?.token) await api('/api/profile', { name, avatar }); else await ensureUser(name);
+          if (session && !session.named) { await api('/api/profile', { name, avatar }); session.named = true; store(session); }
+          if (kind === 'create') { const t = await api('/api/tanks', { name: s.querySelector('#tn').value }); codeScreen(t); }
+          else { const r = await api('/api/join', { code: joinCode }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
+        } catch (e) { if (e.code === 'FULL') fullScreen(); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
+      };
+    };
+    const codeScreen = (t) => {
+      const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with two friends. They can join in seconds.</p>
+        <button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
+      s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
+      s.querySelector('#sh').onclick = async () => { const data = { title: 'OUR TANK', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
+      s.querySelector('#en').onclick = async () => { const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank }); };
+    };
+    const fullScreen = () => { const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has three caretakers.</p><button class="big" id="bk">BACK</button>`); s.querySelector('#bk').onclick = welcome; };
+    const joinScreen = (err, prefill = '') => {
+      const s = screen(`<h2>JOIN YOUR FRIENDS</h2><p>Enter your six-character code.</p><input id="cd" class="codein" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="······" value="${prefill}">
+        <div class="err" id="er">${err === 'notfound' ? 'TANK NOT FOUND — Check the code and try again.' : ''}</div><div id="pv"></div><button class="big" id="go" disabled>FIND TANK</button><button class="lnk" id="bk">Back</button>`);
+      const inp = s.querySelector('#cd'), go = s.querySelector('#go');
+      inp.oninput = () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); go.disabled = !CODE.test(inp.value); };
+      inp.oninput(); s.querySelector('#bk').onclick = welcome; inp.focus();
+      go.onclick = async () => {
+        const er = s.querySelector('#er'); er.textContent = '';
+        try {
+          await ensureUser('Guest');
+          const p = await api('/api/join/preview', { code: inp.value });
+          if (p.full) return fullScreen();
+          const pv = s.querySelector('#pv'); pv.innerHTML = `<div class="pvt"><b>${p.name.replace(/[<>&]/g, '')}</b><div class="mem"></div></div>`;
+          p.members.forEach((m) => { const c = document.createElement('canvas'); drawAvatar(c, m.avatar); c.title = m.name; pv.querySelector('.mem').append(c, Object.assign(document.createElement('span'), { textContent: m.name })); });
+          go.textContent = 'JOIN THIS TANK'; go.onclick = () => profile('join', inp.value);
+        } catch (e) { er.textContent = e.code === 'NOT_FOUND' ? 'TANK NOT FOUND — Check the code and try again.' : e.message; }
+      };
+      if (prefill.length === 6) go.click();
+    };
+    const m = location.pathname.match(/^\/join\/([A-Za-z0-9]{6})$/);
+    if (m) joinScreen('', m[1].toUpperCase()); else welcome();
+  });
+}
+export const getSession = () => session;

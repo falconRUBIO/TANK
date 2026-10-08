@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Our Tank</title>
+<script>if (location.pathname.startsWith("/join/")) document.write('<base href="/">')</script>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/jsm/"}}</script>
 <style>
   :root{--bg:#0a1220;--panel:#0f1a2c;--line:#1d2c44;--ink:#dbe8f7;--dim:#7e93ad;--gold:#e6c36a}
@@ -44,9 +45,35 @@
   .slot small{color:var(--dim);font-size:11px}.slot canvas.big{width:76px;height:76px;border-radius:12px;image-rendering:pixelated;border:1px solid var(--line)}
   .slot.empty span{width:76px;height:76px;border-radius:12px;border:1px dashed #2c4466;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--dim)}
   .jl{display:flex;flex-direction:column;gap:8px}.je{border:1px solid var(--line);background:#101f33;border-radius:10px;padding:10px 12px}.je small{display:block;color:var(--dim);font:10px ui-monospace,Menlo,monospace;letter-spacing:.08em;margin-bottom:3px}
+  #conn{display:none;color:#e8b04a}#conn.on{display:inline}
+  .av.empty{border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:18px;cursor:pointer;background:transparent}.av.ghost{opacity:.3}
+  .av i.off{background:#5a6b82}.av{cursor:pointer}
+  .code{margin:14px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#101f33;text-align:center}.code small{display:block;color:var(--dim);font:10px ui-monospace,Menlo,monospace;letter-spacing:.12em}
+  .code b{display:block;font:600 26px ui-monospace,Menlo,monospace;letter-spacing:.3em;margin:4px 0 8px;color:var(--gold)}.code .row{display:flex;gap:6px;justify-content:center}
+  .code button,.send button{all:unset;cursor:pointer;font-size:12px;padding:6px 10px;border-radius:8px;background:#17304f;color:#a9c8ee;border:1px solid #244368}
+  #sheet h4{margin:14px 0 6px;font:11px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+  .act{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #15243a}.act small{color:var(--dim)}
+  .chat{max-height:110px;overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:12.5px}.msg b{color:#8ec3ff}.msg.me b{color:var(--gold)}
+  .send{display:flex;gap:6px;margin-top:8px}.send input{flex:1;background:#0c1626;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font:inherit;outline:none}
+  #welcome{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(5,10,18,.72);backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .35s}
+  #welcome.on{opacity:1;pointer-events:auto}
+  .scr{width:min(340px,88vw);display:flex;flex-direction:column;align-items:stretch;gap:12px;text-align:center}
+  .scr h1{margin:4px 0 0;font:700 26px/1.15 -apple-system,system-ui,sans-serif;letter-spacing:.12em}.scr h2{margin:0;font-size:15px;letter-spacing:.16em}
+  .scr p{margin:0;color:var(--dim)}.logo{font-size:44px}
+  .big{all:unset;box-sizing:border-box;cursor:pointer;padding:14px;border-radius:12px;background:linear-gradient(#2c6ab0,#235a98);color:#fff;font-weight:600;letter-spacing:.08em;font-size:13px}
+  .big.alt{background:#14263e;border:1px solid #2a4468;color:#cfe3ff}.big:disabled{opacity:.4}.big:active{transform:translateY(1px)}
+  .lnk{all:unset;cursor:pointer;color:var(--dim);font-size:12px;padding:6px}
+  .scr label{display:flex;flex-direction:column;gap:6px;text-align:left;font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+  .scr input{background:#0c1626;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 12px;font:15px -apple-system,system-ui,sans-serif;outline:none;text-transform:none;letter-spacing:0}
+  .codein{text-align:center;font:600 28px ui-monospace,Menlo,monospace!important;letter-spacing:.35em!important;text-transform:uppercase!important}
+  .codebig{font:700 38px ui-monospace,Menlo,monospace;letter-spacing:.3em;color:var(--gold);padding:12px 0 12px .3em;border:1px solid var(--line);border-radius:14px;background:#0c1626}
+  .err{min-height:16px;color:#f0937a;font-size:12px}.ap{display:flex;flex-direction:column;gap:8px;align-items:center}
+  canvas.pv{width:84px;height:84px;image-rendering:pixelated;border-radius:14px;border:1px solid var(--line)}
+  .sw{display:flex;gap:6px}.sw button{all:unset;width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;box-sizing:border-box}.sw button.sel{border-color:#fff}.sw .none{border:2px dashed #3a5070}.sw .none.sel{border-color:#fff}
+  .pvt{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0c1626}.mem{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;font-size:12px}.mem canvas{width:34px;height:34px;image-rendering:pixelated;border-radius:8px}
 </style></head><body><div id="app">
-<header><div><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span> · <span id="todl">Afternoon</span> · <span id="shells">🐚 0</span></div></div>
-<div class="avs"><div class="av"><canvas class="av"></canvas><i></i></div><div class="av"><canvas class="av"></canvas><i></i></div><div class="av"><canvas class="av"></canvas><i></i></div></div></header>
+<header><div><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span> · <span id="todl">Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
+<div class="avs" id="avs"></div></header>
 <main><canvas id="tank"></canvas>
 <canvas id="glass"></canvas><div id="card"></div><div id="sheet"></div><div id="toast"></div>
 <div class="tod"><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
@@ -55,5 +82,6 @@
 <div data-tab="decorate"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/></svg>Decorate</div>
 <div data-tab="friends"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>Friends</div>
 <div data-tab="journal"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v13H6a2 2 0 01-2-2zM20 5h-7"/></svg>Journal</div></nav></div>
+<div id="welcome"></div>
 <script type="module" src="src/main3d.js"></script>
 </body></html>

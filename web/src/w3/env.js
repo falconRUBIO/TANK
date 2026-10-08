@@ -92,35 +92,44 @@ export function buildEnvironment() {
   const blocks = [];
   const moss = [];
   const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.6 + rng() * 0.28, mossy });
-  const pillar = (cx, cz, w, d, top, ch = 0.46, jag = 0.5) => {
+  const carve = [];
+  const pillar = (cx, cz, w, d, top, ch = 0.46, jag = 0.5, ornate = false) => {
     let y = 0, c = 0;
     while (y < top) {
-      const h = ch * (0.9 + rng() * 0.3);
-      const off = (c & 1) ? w * 0.18 : -w * 0.1;
-      const n = rng() < 0.5 ? 1 : 2;
+      const cornice = ornate && c % 5 === 4;
+      const h = cornice ? 0.3 : ch * (0.9 + rng() * 0.3);
+      const hi = y / top, rag = jag > 0.7 ? hi * hi * 0.55 : 0;                 // the higher up, the more broken the wall
+      if (cornice) { B(cx + (rng() - 0.5) * 0.04, y + h / 2, cz, w * 1.12, h, d * 1.12, 0, 0, true); y += h; c++; continue; }
+      const n = Math.max(1, Math.round(w / (0.62 + rng() * 0.5)));
       for (let i = 0; i < n; i++) {
-        const bw = w / n * (0.92 + rng() * 0.12);
-        const bx = cx - w / 2 + (i + 0.5) * (w / n) + off * (n === 1 ? 0.3 : 1);
-        if (y + h > top - jag && rng() < 0.28) continue; // broken top
-        B(bx, y + h / 2, cz + (rng() - 0.5) * 0.08, bw, h * 0.98, d * (0.94 + rng() * 0.1), (rng() - 0.5) * 0.06);
+        const bw = w / n * (0.9 + rng() * 0.16), off = (c & 1) ? w * 0.16 : -w * 0.08;
+        const bx = cx - w / 2 + (i + 0.5) * (w / n) + off * (n === 1 ? 0.3 : 1) + (rng() - 0.5) * 0.06;
+        if (y + h > top - jag && rng() < 0.3) continue;                          // broken top
+        if (n > 1 && (i === 0 || i === n - 1) && rng() < rag) continue;                   // ragged edges
+        const push = rng() < 0.16 ? (rng() - 0.5) * 0.28 : 0;                    // blocks that stick out or sink in
+        const bz = cz + push + (rng() - 0.5) * 0.06, bd = d * (0.94 + rng() * 0.1);
+        B(bx, y + h / 2, bz, bw, h * 0.98, bd, (rng() - 0.5) * 0.07, (rng() - 0.5) * 0.02);
+        if (ornate && c % 4 === 2 && rng() < 0.8) for (let k = -1; k <= 1; k++) carve.push({ x: bx + k * Math.min(0.34, bw * 0.28), y: y + h / 2, z: bz + bd / 2 + 0.012, w: 0.13, h: 0.13 + (k === 0 ? 0.08 : 0) });
       }
       y += h; c++;
     }
   };
   const AX = -0.9, AY = 4.6, AR = 1.0;
-  pillar(-2.8, -0.95, 1.8, 1.25, 10.6, 0.46, 1.4);    // left tower
-  pillar(-3.9, -1.7, 1.2, 1.0, 6.8, 0.46, 1.2);          // buttress behind
-  pillar(0.7, -0.95, 1.2, 1.15, AY, 0.46, 0);          // right pier (springs the arch)
+  pillar(-2.8, -0.95, 2.3, 1.4, 10.6, 0.46, 1.5, true);    // left tower, thick and carved
+  pillar(-4.1, -1.7, 1.5, 1.1, 7.2, 0.46, 1.4, true);          // buttress behind
+  pillar(0.9, -0.95, 1.5, 1.25, AY, 0.46, 0, true);          // right pier (springs the arch)
   // arch ring of wedge blocks
-  const wedges = 11;
+  const wedges = 9;
   for (let i = 0; i <= wedges; i++) {
     const a = Math.PI - (i / wedges) * Math.PI, x = AX + Math.cos(a) * AR, y = AY + Math.sin(a) * AR;
     if (i === 0 || i === wedges) continue;
-    B(x, y, -0.95, 0.5, 0.62, 1.15, 0, a - Math.PI / 2 + Math.PI, true);
+    B(x, y, -0.95, 0.78, 0.98, 1.3, 0, a - Math.PI / 2 + Math.PI, true);
   }
+  B(AX, AY + AR + 0.05, -0.95, 0.95, 1.2, 1.4, 0, 0, true);   // keystone
   // wall above the arch + broken fragment on the right
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-1.9 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + 1.5 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
-  B(-2.8, 0.1, -0.95, 2.2, 0.22, 1.6, 0, 0, false); B(0.7, 0.1, -0.95, 1.55, 0.22, 1.5, 0, 0, false); B(0.7, AY + 0.13, -0.95, 1.5, 0.26, 1.4, 0, 0, true);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-1.9 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + AR + 1.25 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
+  B(-2.8, 0.1, -0.95, 2.8, 0.22, 1.8, 0, 0, false); B(0.9, 0.1, -0.95, 2.0, 0.22, 1.6, 0, 0, false); B(0.9, AY + 0.13, -0.95, 1.9, 0.26, 1.5, 0, 0, true);
+  for (let st = 0; st < 3; st++) B(-0.9, 0.12 + st * 0.2, 0.15 - st * 0.22, 1.9 - st * 0.1, 0.22, 0.5, 0, 0, st > 0);   // steps into the arch
   pillar(2.9, -3.6, 1.1, 1.0, 5.4, 0.46, 1.2);           // second broken column, further back
   pillar(4.1, -2.4, 1.0, 1.0, 2.4, 0.46, 0.6);
   for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
@@ -134,22 +143,26 @@ export function buildEnvironment() {
     if (b.mossy) { m4.compose(v.set(b.x + (rng() - 0.5) * 0.1, b.y + b.h / 2 + 0.03, b.z), q.setFromEuler(e.set(0, b.ry, b.rz)), s.set(b.w * (0.5 + rng() * 0.5), 0.09, b.d * (0.6 + rng() * 0.4))); mossMesh.setMatrixAt(mc++, m4); }
   });
   mossMesh.count = mc;
+  const carveMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(46, 44, 32), roughness: 1 })), Math.max(1, carve.length));
+  carve.forEach((cv, i) => { m4.compose(v.set(cv.x, cv.y, cv.z), q.identity(), s.set(cv.w, cv.h, 0.05)); carveMesh.setMatrixAt(i, m4); });
+  carveMesh.castShadow = false; carveMesh.receiveShadow = true; carveMesh.frustumCulled = false; root.add(carveMesh);
   [blockMesh, mossMesh].forEach((m) => { m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; root.add(m); });
 
-  // far ruins (hazy silhouettes) – cheap copies pushed back
-  const far = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(120, 140, 150), roughness: 1 })), 90);
+  // far ruins: hazy colonnades with real arches, fading into the water
+  const far = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(120, 140, 150), roughness: 1 })), 700);
   let fc = 0;
-  const farPillar = (cx, cz, w, top, ch) => { for (let y = 0; y < top; y += ch) { if (y > top - 1 && rng() < 0.4) continue; m4.compose(v.set(cx + (rng() - 0.5) * 0.1, y + ch / 2, cz), q.identity(), s.set(w, ch * 0.97, w)); far.setMatrixAt(fc++, m4); } };
-  farPillar(-6, -9, 1.6, 9, 0.7); farPillar(-1.5, -10, 1.6, 6, 0.7); farPillar(4.5, -9.5, 1.6, 10, 0.7); farPillar(8, -11, 1.8, 5, 0.7);
-  for (let x = -6; x <= -1.5; x += 0.8) { m4.compose(v.set(x + 0.4, 6.4, -9.5), q.identity(), s.set(0.85, 0.7, 1.5)); far.setMatrixAt(fc++, m4); }
-  for (let x = 4.5; x <= 8; x += 0.8) { m4.compose(v.set(x + 0.4, 5.1, -10), q.identity(), s.set(0.85, 0.7, 1.5)); far.setMatrixAt(fc++, m4); }
+  const fb = (x, y, z, w, h, d, rz = 0) => { m4.compose(v.set(x, y, z), q.setFromEuler(e.set(0, 0, rz)), s.set(w, h, d)); far.setMatrixAt(fc++, m4); };
+  const farPier = (cx, cz, w, top, ch) => { for (let y = 0; y < top; y += ch) { if (y > top - 1.2 && rng() < 0.45) continue; fb(cx + (rng() - 0.5) * 0.12, y + ch / 2, cz, w * (0.94 + rng() * 0.1), ch * 0.97, w); } };
+  const farArch = (cx, cz, span, spring, w) => {                              // two piers + a ring of wedges + a lintel course above
+    farPier(cx - span / 2 - w / 2, cz, w, spring, 0.7); farPier(cx + span / 2 + w / 2, cz, w, spring + 0.7, 0.7);
+    const R = span / 2;
+    for (let i = 1; i < 8; i++) { const a = Math.PI - (i / 8) * Math.PI; fb(cx + Math.cos(a) * R, spring + Math.sin(a) * R, cz, 0.7, 0.9, w, a - Math.PI / 2 + Math.PI); }
+    for (let x = cx - span / 2 - w; x <= cx + span / 2 + w; x += 0.85) if (rng() < 0.85) fb(x + 0.4, spring + R + 0.75, cz, 0.85, 0.6, w * 1.1);
+  };
+  farArch(-5.4, -9.5, 2.6, 4.2, 1.4); farArch(0.5, -11.5, 3.0, 5.0, 1.6); farArch(6.2, -10, 2.4, 4.6, 1.4);
+  farPier(-8.6, -9, 1.5, 9, 0.7); farPier(9.6, -11, 1.8, 11, 0.7); farPier(3.4, -13, 1.6, 8, 0.7); farPier(-2.6, -13.5, 1.4, 7, 0.7);
   far.count = fc; far.frustumCulled = false; root.add(far);
 
-  // fallen column drums half-buried in the sand
-  const drumMat = stoneA.clone(); patch(drumMat);
-  [[1.9, 0.38, -1.4, 1.5, 0.3], [3.0, 0.3, -1.1, 1.2, -0.5], [2.4, 0.55, -1.25, 0.9, 0.9]].forEach(([x, y, z, len, ry], di) => {
-    const d = new THREE.Mesh(new THREE.CylinderGeometry(0.45 - di * 0.05, 0.45 - di * 0.05, len, 9), drumMat); d.rotation.z = Math.PI / 2; d.rotation.y = ry; d.position.set(x, y, z); d.castShadow = d.receiveShadow = true; root.add(d);
-  });
   // ── rocks ──
   const rockMat = patch(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
   const rock = (x, y, z, sx, sy, sz, seed) => {

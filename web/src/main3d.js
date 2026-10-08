@@ -8,6 +8,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { initUI } from './ui.js';
+import { runOnboarding, Live, api, getSession } from './online.js';
 import { SPECIES } from './species.js';
 import { mulberry32 } from './color.js';
 import { buildEnvironment, swayTime } from './w3/env.js';
@@ -21,6 +22,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPrefer
 renderer.setPixelRatio(1); renderer.setSize(IW, IH, false);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.info.autoReset = false;      // count draw calls across every post-processing pass
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
 camera.position.set(0, 7.4, 30); camera.lookAt(0, 8.0, 0);
@@ -100,12 +102,28 @@ try {
     if (away > 600 && glass > 0.15) journal.push({ day: dayNo(), text: 'Algae crept onto the glass while you were away.' });
   }
 } catch (e) { /* ignore corrupt save */ }
-const save = () => { try { localStorage.setItem('ourtank.save', JSON.stringify({ shells, journal, hunger, water, glass, at: Date.now() })); } catch (e) { /* storage unavailable */ } };
+const save = () => { if (net) return; try { localStorage.setItem('ourtank.save', JSON.stringify({ shells, journal, hunger, water, glass, at: Date.now() })); } catch (e) { /* storage unavailable */ } };
 setInterval(save, 4000); addEventListener('pagehide', save);
-const ui = initUI({ journal: () => journal.slice().reverse(), onAct: (a) => {
+let net = null; const S = { data: null };
+const meName = () => S.data?.members.find((m) => m.id === S.data.you.userId)?.name;
+const nameOf = (id) => S.data?.members.find((m) => m.id === id)?.name ?? 'Someone';
+const copyText = async (t, ok) => { try { await navigator.clipboard.writeText(t); ui.toast(ok); } catch { ui.toast(t); } };
+const social = {
+  get: () => S.data,
+  chat: (t) => net?.chat(t),
+  invite: () => ui.open('friends'),
+  copy: () => copyText(S.data.tank.code, 'Code copied'),
+  share: async () => { const c = S.data.tank.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(d.text + ' ' + d.url, 'Invite copied'); } catch { /* cancelled */ } },
+  regen: async () => { if (!confirm('Make a new code? The old one will stop working.')) return; try { S.data.tank.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
+};
+const ui = initUI({ journal: () => journal.slice().reverse(), social, onAct: (a) => {
   if (a === 'feed') { feedMode = true; cleanMode = false; ui.toast('Tap the water to drop flakes'); }
   else if (a === 'clean') { startClean(); }
-  else if (a === 'water') { if (waterAnim > 0) return; waterAnim = 1; ui.toast('Changing the water…'); if (water < 0.7 && Date.now() - lastReward > 60000) { shells += 2; lastReward = Date.now(); ui.toast('Fresh water! +2 shells'); journal.push({ day: dayNo(), text: 'The water was changed.' }); } }
+  else if (a === 'water') {
+    if (waterAnim > 0) return;
+    if (net) { if (water >= 0.7) return ui.toast('The water is already fresh'); net.action('water'); waterAnim = 1; ui.toast('Changing the water…'); return; }
+    waterAnim = 1; ui.toast('Changing the water…'); if (water < 0.7 && Date.now() - lastReward > 60000) { shells += 2; lastReward = Date.now(); ui.toast('Fresh water! +2 shells'); journal.push({ day: dayNo(), text: 'The water was changed.' }); }
+  }
   else if (a === 'health') { ui.toast(`Water ${Math.round(water * 100)}% · Glass ${Math.round((1 - glass) * 100)}% · Fed ${Math.round((1 - hunger) * 100)}%`); }
   ui.setShells(shells);
 } });
@@ -122,7 +140,8 @@ addEventListener('pointerup', () => {
   if (!wiping) return; wiping = false;
   const d = gg.getImageData(0, 0, 195, 346).data; let left = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 14) left++;
   glass = Math.min(glass, left / (d.length / 16) * 6);
-  if (glass < 0.06) { const was = lastClean; glass = 0; cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); if (Date.now() - lastReward > 30000) { shells++; lastReward = Date.now(); ui.setShells(shells); ui.toast('Spotless! +1 shell'); journal.push({ day: dayNo(), text: 'The glass was cleaned.' }); } else ui.toast('Spotless'); }
+  if (glass < 0.06 && net) { net.action('glass'); glass = 0; cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); }
+  else if (glass < 0.06) { const was = lastClean; glass = 0; cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); if (Date.now() - lastReward > 30000) { shells++; lastReward = Date.now(); ui.setShells(shells); ui.toast('Spotless! +1 shell'); journal.push({ day: dayNo(), text: 'The glass was cleaned.' }); } else ui.toast('Spotless'); }
 });
 let lastClean = 0;
 const fedToday = new Set();
@@ -134,13 +153,12 @@ function updateFlakes(dt, t) {
   flakes.mesh.count = flakes.list.length;
   flakes.list.forEach((f, i) => { fm.makeRotationY(f.ph + t * 0.4); fm.setPosition(f.pos); flakes.mesh.setMatrixAt(i, fm); flakes.mesh.setColorAt(i, f.c); });
   flakes.mesh.instanceMatrix.needsUpdate = true; if (flakes.mesh.instanceColor) flakes.mesh.instanceColor.needsUpdate = true;
-  hunger = Math.min(1, hunger + dt * 0.01);
-  water = Math.max(0.3, water - dt * 0.00012); const g0 = glass; glass = Math.min(1, glass + dt * 0.00018); if (Math.floor(glass * 900) > Math.floor(g0 * 900)) addAlgae(1);
+  if (!net) { hunger = Math.min(1, hunger + dt * 0.01); water = Math.max(0.3, water - dt * 0.00012); const g0 = glass; glass = Math.min(1, glass + dt * 0.00018); if (Math.floor(glass * 900) > Math.floor(g0 * 900)) addAlgae(1); }
   if (waterAnim > 0) { waterAnim = Math.max(0, waterAnim - dt * 0.5); water += (1 - water) * Math.min(1, dt * 2.5); }
   for (const f of fishes) {
     let best = null, bd = 8;
     const shy = f.profile?.traits.includes('Shy'), greedy = f.profile?.traits.includes('Greedy');
-    if (hunger > 0.05) for (const fl of flakes.list) {
+    if (net || hunger > 0.05) for (const fl of flakes.list) {
       if (fl.eaten || (f.id === 'cory' && fl.pos.y > 0.7) || (shy && fl.age < 1.8)) continue;
       const d = f.pos.distanceTo(fl.pos); if (d < bd) { bd = d; best = fl; }
     }
@@ -149,9 +167,9 @@ function updateFlakes(dt, t) {
       f.target.copy(best.pos); f.retarget = 0.3;
       if (f.mouth().distanceTo(best.pos) < 0.32) {
         best.eaten = true;
-        const paid = hunger > 0.25; hunger = Math.max(0, hunger - 0.045); water = Math.max(0.3, water - 0.01);
+        const paid = !net && hunger > 0.25; if (!net) { hunger = Math.max(0, hunger - 0.045); water = Math.max(0.3, water - 0.01); }
         if (paid && ++eatenSinceReward >= 4) { eatenSinceReward = 0; shells++; ui.setShells(shells); ui.toast('+1 shell'); }
-        if (!fedToday.has(f.name)) { fedToday.add(f.name); journal.push({ day: dayNo(), text: `${f.name} found the flakes.` }); }
+        if (!net && !fedToday.has(f.name)) { fedToday.add(f.name); journal.push({ day: dayNo(), text: `${f.name} found the flakes.` }); }
       }
     }
   }
@@ -211,6 +229,7 @@ const TOD = {
 };
 const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];
 const qs = new URLSearchParams(location.search);
+const LITE = qs.has('lite');
 let target = TOD[qs.get('tod')] ? qs.get('tod') : 'afternoon';
 for (const k of Object.keys(TOD.afternoon)) cur[k] = ck.includes(k) ? new THREE.Color(TOD[target][k]) : Array.isArray(TOD[target][k]) ? [...TOD[target][k]] : TOD[target][k];
 export function setTod(n) { if (TOD[n]) { target = n; document.querySelectorAll('[data-tod]').forEach((b) => b.classList.toggle('on', b.dataset.tod === n)); const l = document.getElementById('todl'); if (l) l.textContent = n[0].toUpperCase() + n.slice(1); } }
@@ -268,7 +287,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
     const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
     ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
-    const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { dropFlakes(Math.max(-4, Math.min(4, hit.x))); }
+    const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { const fx = Math.max(-4, Math.min(4, hit.x)); if (net && hunger < 0.08) ui.toast('The fish are full'); else { dropFlakes(fx); net?.action('feed', { x: fx }); } }
     return;
   }
   const f = pick(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null); });
@@ -276,6 +295,9 @@ window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setFocus(nul
 window.__focus = (i) => setFocus(fishes[i] ?? null);
 
 let last = performance.now(), cTick = 0;
+// ?fps=1 shows a live meter so frame rate can be checked on a real device
+const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:30;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
+let fpsN = 0, fpsT = 0, lastMeter = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t;
@@ -288,14 +310,40 @@ function frame(now) {
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
   bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
   fishBoost.value.set(0.26, 0.22, 0.16).multiplyScalar(0.3 + 0.7 * Math.min(1, cur.sunI / 12));
+  if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   updateFlakes(dt, t);
   fishes.forEach((f) => f.update(dt, rng, fishes));
   shafts.update(t); surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; snow.update(dt, t); bubbles.update(dt, t); bubbles2.update(dt, t);
   watchPerf(dt);
+  if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${quality}\n${renderer.info.render.calls} calls · ${(renderer.info.render.triangles / 1000) | 0}k tris`; fpsN = fpsT = 0; }
+  if (LITE) { setTimeout(() => requestAnimationFrame(frame), 120); return; }   // ?lite=1: logic only, no drawing (used by the multi-browser tests)
+  renderer.info.reset();
   composer.render();
   requestAnimationFrame(frame);
 }
+// ── multiplayer: server is authoritative; this client animates what it's told ──
+const conn = document.getElementById('conn');
+function applyTank(t) {
+  if (t.shells != null) { shells = t.shells; ui.setShells(shells); }
+  if (t.hunger != null) hunger = t.hunger;
+  if (t.water != null) water = t.water;
+  if (t.glass != null) { const was = glass; glass = t.glass; if (glass < 0.05 || Math.abs(glass - was) > 0.2) { gg.clearRect(0, 0, 195, 346); addAlgae(Math.round(glass * 900)); } }
+  if (t.day) document.getElementById('day').textContent = 'DAY ' + String(t.day).padStart(3, '0');
+}
+function onNet(m) {
+  const D = S.data;
+  if (m.t === 'snapshot') { S.data = { you: m.you, tank: m.tank, members: m.members, online: m.online, activity: m.activity, messages: m.messages }; journal.splice(0, journal.length, ...m.journal.map((e) => ({ day: e.day, text: e.text }))); applyTank(m.tank); ui.refresh(); }
+  else if (!D) return;
+  else if (m.t === 'state') applyTank(m.tank);
+  else if (m.t === 'feed') { if (m.by !== D.you.userId) { dropFlakes(m.x); ui.toast(`${nameOf(m.by)} fed the fish`); } }
+  else if (m.t === 'event') { if (m.journal) journal.push({ day: m.journal.day, text: m.journal.text }); if (m.activity) { D.activity.push(m.activity); if (m.activity.userId !== D.you.userId && m.activity.type !== 'feed') ui.toast(m.activity.text); } ui.refresh(); }
+  else if (m.t === 'presence') { D.online = m.online; ui.refresh(); }
+  else if (m.t === 'members') { const before = D.members.length; D.members = m.members; if (m.members.length > before) ui.toast(`${m.members[m.members.length - 1].name} joined the tank`); ui.refresh(); }
+  else if (m.t === 'chat') { D.messages.push(m.msg); if (m.msg.userId !== D.you.userId) ui.toast(`${m.msg.name}: ${m.msg.text}`); ui.refresh(); }
+  else if (m.t === 'ack') { if (m.ok && m.delta > 0) ui.toast(`+${m.delta} shell${m.delta > 1 ? 's' : ''}`); else if (m.ok && m.applied === false) ui.toast('Nothing needed right now'); else if (!m.ok) ui.toast('Slow down a little'); }
+}
+runOnboarding().then((r) => { if (r.mode === 'net') net = new Live(onNet, (up) => { conn.classList.toggle('on', !up); }); });
 // quality: auto-drops depth of field / resolution if the device can't hold ~30fps (?q=2 pins full quality)
 let quality = qs.get('q') ? +qs.get('q') : 2, slow = 0, born = performance.now();
 function setQuality(q) {
