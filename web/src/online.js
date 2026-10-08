@@ -64,10 +64,11 @@ export function runOnboarding() {
       catch (e) { if (e.offline) return done({ mode: 'local' }); session = null; }
     } else if (!(await serverAvailable())) return done({ mode: 'local' });
 
-    const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId }; store(session); };
+    const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey }; store(session); };
     const welcome = () => {
       const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>OUR TANK</h1><p>A little world to share.</p>
-        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button>`);
+        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button>`);
+      s.querySelector('[data-a=recover]').onclick = () => recoverScreen();
       s.querySelector('[data-a=create]').onclick = () => profile('create'); s.querySelector('[data-a=join]').onclick = () => joinScreen();
       s.querySelector('[data-a=solo]').onclick = () => done({ mode: 'local' });
     };
@@ -87,9 +88,21 @@ export function runOnboarding() {
         } catch (e) { if (e.code === 'FULL') fullScreen(); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
       };
     };
+    const recoverScreen = (err = '') => {
+      const s = screen(`<h2>WELCOME BACK</h2><p>Type the recovery key you saved when you started.</p><input id="rk" class="rk" maxlength="19" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
+        <div class="err" id="er">${err}</div><button class="big" id="go">SIGN IN</button><button class="lnk" id="bk">Back</button>`);
+      s.querySelector('#bk').onclick = welcome;
+      s.querySelector('#go').onclick = async () => {
+        const er = s.querySelector('#er'); er.textContent = '';
+        try {
+          const r = await api('/api/recover', { key: s.querySelector('#rk').value }); session = { token: r.token, userId: r.userId, recoveryKey: s.querySelector('#rk').value.toUpperCase().trim() }; store(session);
+          const me = await api('/api/me'); if (me.tank) done({ mode: 'net', user: me.user, tank: me.tank }); else welcome();
+        } catch (e) { er.textContent = e.message; }
+      };
+    };
     const codeScreen = (t) => {
       const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with two friends. They can join in seconds.</p>
-        <button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
+        <div class="rkbox"><small>RECOVERY KEY · save it somewhere safe</small><b>${session?.recoveryKey ?? ''}</b></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
       s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
       s.querySelector('#sh').onclick = async () => { const data = { title: 'OUR TANK', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
       s.querySelector('#en').onclick = async () => { const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank }); };
@@ -119,3 +132,5 @@ export function runOnboarding() {
   });
 }
 export const getSession = () => session;
+export async function ensureRecoveryKey() { if (session?.recoveryKey) return session.recoveryKey; const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
+export async function leaveTankNow() { await api('/api/tanks/leave', {}); try { localStorage.removeItem('ourtank.seen.' + session.userId); } catch { /* ignore */ } }

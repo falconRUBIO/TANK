@@ -1,0 +1,16 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const out = process.env.OUT || '.';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage();
+p.on('pageerror', (e) => console.log('pageerror:', e.message));
+await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 90000 }); await p.click('#mok'); await p.waitForTimeout(800);
+await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'tut', step: 5 }); g.state.level = 8; for (let i = 0; i < 8; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true });
+  for (const sp of ['guppy', 'betta', 'neon']) await g.dispatch({ t: 'buyFish', species: sp, name: 'Test', seed: 11 });
+  let x = -3.6; for (const ty of ['moss', 'kelp', 'bubbler', 'shell', 'skull', 'arch', 'lantern', 'chest']) await g.dispatch({ t: 'buyDecor', type: ty, x: (x += 0.95), z: 2.6, ry: 0 }); });
+await p.waitForTimeout(4000); await p.screenshot({ path: out + '/n_tank.png' }); console.log('tank');
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('[data-cat=SPECIAL]'); await p.waitForTimeout(4000); await p.screenshot({ path: out + '/n_special.png' }); console.log('special');
+await p.click('[data-cat=FISH]'); await p.waitForTimeout(3000); await p.screenshot({ path: out + '/n_fish.png' }); console.log('fish');
+await p.evaluate(() => window.__ui.open('tank')); await p.waitForTimeout(500);
+await p.evaluate(() => window.__tank.fishes.forEach((f, i) => { f.group.visible = i === 8 || f.species.id === 'betta'; })); await p.evaluate(() => { window.__cam = [0, 7, 9, 0, 6.5, 0]; const f = window.__tank.fishes.find((x) => x.species.id === 'betta'); f.pos.set(0.5, 6.6, 1); f.target.copy(f.pos); f.vel.set(0, 0, 0); f.heading = 0; });
+await p.waitForTimeout(3500); await p.screenshot({ path: out + '/n_betta.png' }); console.log('betta');
+await b.close();

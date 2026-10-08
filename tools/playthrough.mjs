@@ -51,11 +51,24 @@ await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'day' }, { dev: 
 const s5 = await S(); const g1 = (await p.evaluate(() => window.__tank.fishes.map((f) => f.growth)))[0];
 ck('fish grow over days', s5.fish[0].stage !== 'baby' && g1 > g0, `${s5.fish[0].stage}, scale ${g0}→${g1}`);
 ck('journal records real events', (await p.evaluate(() => window.__game.journal.map((j) => j.text))).some((t) => /grow|adult|level|Mango|brought/i.test(t)), '');
+console.log('Content');
+await p.evaluate(async () => { const g = window.__game; g.state.level = 8; for (let i = 0; i < 6; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); });
+const bought = await p.evaluate(async () => { const g = window.__game, out = []; let x = -4;
+  for (const sp of ['guppy', 'betta']) out.push((await g.dispatch({ t: 'buyFish', species: sp, name: 'T' + sp, seed: 7 })).ok);
+  for (const ty of ['moss', 'kelp', 'bubbler', 'shell', 'skull', 'arch']) { out.push((await g.dispatch({ t: 'buyDecor', type: ty, x: x += 1.3, z: 2.9, ry: 0 })).ok); }
+  return out; });
+ck('new species and decorations can be bought', bought.every(Boolean), JSON.stringify(bought));
+await p.waitForTimeout(800); const nf = await p.evaluate(() => [window.__tank.fishes.length, window.__tank.decor.items.size, window.__tank.decor.streams.size]);
+ck('and appear in the tank (bubbler makes a bubble stream)', nf[0] === 9 && nf[1] >= 11 && nf[2] === 1, JSON.stringify(nf));
+const sim = await p.evaluate(() => window.__sim(900)); ck('fish still avoid every new item', sim.pct < 0.5 && sim.worstFishOverlap < 0.4, JSON.stringify(sim));
+await p.evaluate(() => { const s = window.__game.state; for (const f of s.fish) { f.health = 0.45; } s.hunger = 0.85; window.__game.emit('state'); });
+const mood = await p.evaluate(() => window.__tank.fishes[0].profile.mood); ck('hungry fish show a hungry mood', mood === 'Hungry', mood);
+await p.evaluate(() => window.__game.dispatch({ t: 'note', text: 'Pip loves the bubbles' })); ck('journal notes work', (await p.evaluate(() => window.__game.journal.at(-1).text)).includes('Pip loves'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=water]'); await p.waitForTimeout(700); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
-const s6 = await S(); ck('progress survives a reload', s6.fish.length === 6 && s6.decor.length >= 6 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
+const s6 = await S(); ck('progress survives a reload', s6.fish.length === 9 && s6.decor.length >= 12 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
 await p.waitForSelector('#modal.on', { timeout: 15000 });
 ck('coming back shows what happened while away', (await p.textContent('#modal h2')) === 'WHILE YOU WERE AWAY' && (await p.$$eval('#modal li', (n) => n.length)) <= 3, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | '));
 await p.click('#mok');

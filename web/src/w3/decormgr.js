@@ -3,13 +3,14 @@
 import * as THREE from 'three';
 import { buildItem, stampItem, itemOverlaps, placeGroup, disposeItem } from './items.js';
 import { BOUNDS } from '../game/rules.js';
+import { Bubbles } from './fx.js';
 
-const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6] };
+const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6] };
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 
 export class DecorMgr {
   constructor(scene, solids) {
-    this.scene = scene; this.solids = solids; this.items = new Map(); this.preview = null;
+    this.scene = scene; this.solids = solids; this.items = new Map(); this.preview = null; this.streams = new Map();
     this.marker = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.75, 24), new THREE.MeshBasicMaterial({ color: 0x66e08a, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
     this.marker.rotation.x = -Math.PI / 2; this.marker.visible = false; this.marker.renderOrder = 8; scene.add(this.marker);
   }
@@ -18,9 +19,10 @@ export class DecorMgr {
     for (const d of list) {
       seen.add(d.id); const have = this.items.get(d.id);
       if (this.preview?.id === d.id) continue;                       // being moved right now
-      if (!have) { const it = buildItem(d.type, seedOf(d.id)); it.id = d.id; it.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(it, d.x, d.z, d.ry); stampItem(it, this.solids, d.x, d.z, d.ry, 1); this.scene.add(it.group); this.items.set(d.id, it); }
+      if (!have) { const it = buildItem(d.type, seedOf(d.id)); it.id = d.id; it.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(it, d.x, d.z, d.ry); stampItem(it, this.solids, d.x, d.z, d.ry, 1); this.scene.add(it.group); this.items.set(d.id, it); if (d.type === 'bubbler') { const b = new Bubbles(d.x, d.z, 14); b.mesh.position.y = 0.4; b.baseY = 0.4; this.scene.add(b.mesh); this.streams.set(d.id, b); } }
       else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); }
     }
+    for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
     for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
   }
   // world position of the first lantern, for the lamp light
@@ -46,7 +48,8 @@ export class DecorMgr {
     this.marker.position.set(p.x, 0.12, p.z); this.marker.material.color.setHex(p.valid ? 0x66e08a : 0xf0634a);
     this.marker.scale.setScalar(Math.max(0.8, (PICK[p.type]?.[0] ?? 1)));
   }
-  tick(t) { const p = this.preview; if (p) { p.item.group.position.y = 0.12 + Math.sin(t * 4) * 0.05; } }
+  bubbleSpot() { for (const [id] of this.streams) { const it = this.items.get(id); if (it) return new THREE.Vector3(it.at.x, 0, it.at.z); } return null; }
+  tick(t, dt = 0.016) { for (const b of this.streams.values()) b.update(dt, t); const p = this.preview; if (p) { p.item.group.position.y = 0.12 + Math.sin(t * 4) * 0.05; } }
   // returns the final placement, leaving the item to be created/updated by sync() when the game state changes
   commit() {
     const p = this.preview; if (!p || !p.valid) return null;

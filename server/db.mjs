@@ -36,6 +36,8 @@ export function openDb(path = 'ourtank.db') {
     );
   `);
   try { db.exec('ALTER TABLE tanks ADD COLUMN world TEXT'); } catch { /* column already there */ }
+  try { db.exec('ALTER TABLE users ADD COLUMN recovery_hash TEXT'); } catch { /* column already there */ }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_recovery ON users(recovery_hash) WHERE recovery_hash IS NOT NULL');
   return db;
 }
 

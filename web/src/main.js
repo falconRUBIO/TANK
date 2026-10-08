@@ -9,7 +9,7 @@ import { Fishes } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
-import { runOnboarding, Live, api } from './online.js';
+import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow } from './online.js';
 import { sfx, haptic } from './audio.js';
 
 const { stage, canvas, IW, IH, camera, scene, composer, bokeh, grade, TOD, cur, env, lamp, halo, pool, qs, LITE } = stg;
@@ -20,7 +20,7 @@ window.__game = game;
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
 stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker);
-const rng = fishes.rng;
+const rng = fishes.rng; fishes.defaultBubble = fishes.bubbleAt;
 
 // ── the interface ──
 let net = null, ui = null;
@@ -126,9 +126,11 @@ async function renameFish(f) {
 const card = $('card'), look = new THREE.Vector3(0, 5.3, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 function pickFish(ev) { const r = rayFrom(ev); let best = null, bd = 1e9; for (const f of fishes.list) { const h = r.ray.distanceToPoint(f.pos); if (h < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } } return best; }
 const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`;
+let lastCard = 0;
 function showCard(f) {
+  lastCard = Date.now();
   const p = fishes.profileOf(game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, game.state);
-  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}</div>
+  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
     <dl><dt>Age</dt><dd>${p.age}</dd><dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd></dl>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
@@ -193,14 +195,14 @@ function syncWorld() {
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
   syncGlass(); ui?.refresh(); tut.run();
 }
-game.on('tick', () => ui?.updateHeader()).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
+game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => { sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1)); ui?.toast(`Tank level ${lv}! New fish and decorations unlocked.`, 4200); });
 game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } });
 game.on('placed', () => tut.onPlaced());
 game.on('remoteFeed', (x, by) => { fishes.drop(x); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
-game.on('remoteActivity', (a) => { if (a.type !== 'feed' && a.userId !== game.you?.userId) ui?.toast(a.text); });
-game.on('chat', (m) => { if (m.userId !== game.you?.userId) ui?.toast(`${m.name}: ${m.text}`); ui?.refresh(); });
+game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (a.type !== 'feed') ui?.toast(a.text); } });
+game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
 fishes.onEat = () => { sfx('eat'); };
 
 // ── frame loop ──
@@ -221,7 +223,7 @@ function frame(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
-  decor.tick(t); fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
+  decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
@@ -247,6 +249,7 @@ async function welcomeBack() {
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
+  if (window.__noGL) { $('ltxt').textContent = 'This browser cannot draw the tank. Try Safari or Chrome on a recent phone.'; return new Promise(() => {}); }
   const r = await runOnboarding();
   if (r.mode === 'net') {
     const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); });
@@ -256,6 +259,9 @@ async function boot() {
     act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
+    note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
+    recoveryKey: async () => { try { const k = await ensureRecoveryKey(); await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Write it down. Typing it on a new phone signs you back in to your tank.', lines: [k], ok: 'Done' }); } catch (e) { ui.toast(e.message); } },
+    leaveTank: async () => { const yes = await ui.dialog({ title: 'LEAVE THIS TANK?', text: 'Your seat opens up for someone else. You can join another tank afterwards.', ok: 'Leave', cancel: 'Stay', danger: true }); if (!yes) return; try { await leaveTankNow(); location.href = '/'; } catch (e) { ui.toast(e.message); } },
     quality: () => stage.quality, cycleQuality: () => stg.setQuality((stage.quality + 1) % 3), replayTutorial: () => tut.replay(),
   } });
   window.__ui = ui; syncWorld(); ui.setMembers();
@@ -263,7 +269,8 @@ async function boot() {
   if (!qs.get('tod')) { const h = new Date().getHours(); stg.setTod(h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'); }
   welcomeBack(); requestAnimationFrame(frame);
 }
-boot().catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
+window.__booted = false;
+boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   let inside = 0, samples = 0, worstFish = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();

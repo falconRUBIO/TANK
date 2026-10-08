@@ -4,11 +4,11 @@ import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
 import { mulberry32 } from '../color.js';
-import { SPECIES_DEF, STAGE_SCALE, stageOf } from '../game/rules.js';
+import { SPECIES_DEF, STAGE_SCALE, stageOf, needsOf } from '../game/rules.js';
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] },
+  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] },
 };
 const SPOTS = { Shy: 'Tall Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
 const bubbleSpot = new THREE.Vector3(-3.6, 0, 0.5);
@@ -19,14 +19,14 @@ export class Fishes {
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200);
     this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.castShadow = true; scene.add(this.mesh);
     this.cols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
-    this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null;
+    this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot;
     SPECIES.neon.school = true;
     this.bm = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.7, depthWrite: false }), 80);
     this.bm.frustumCulled = false; this.bm.count = 0; scene.add(this.bm);
   }
   profileOf(f, st) {
-    const tr = f.traits ?? [];
-    return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: SPOTS[tr[0]] ?? 'Open water', food: 'Flakes', needs: [1 - st.hunger, Math.max(0.3, 0.5 + 0.5 * st.water - st.glass * 0.25), 0.8, st.water] };
+    const tr = f.traits ?? [], n = needsOf(f, st);
+    return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: SPOTS[tr[0]] ?? 'Open water', food: 'Flakes', needs: [n.fed, n.happy, n.energy, n.health], mood: n.mood, vigor: n.vigor };
   }
   // make the scene match the game's fish list
   sync(state, { arrivals = [] } = {}) {
@@ -38,13 +38,13 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.profile = this.profileOf(d, state); f.setGrowth(k);
+        f.fid = d.id; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor; f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
         this.wrapPick(f, d); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; f.profile = this.profileOf(d, state);
+        f.name = d.name; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor;
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
@@ -60,7 +60,7 @@ export class Fishes {
         const lead = all.filter((o) => o !== f && o.id !== 'neon' && o.profile?.traits.includes('Social') && !o.follower), o = lead[(r() * lead.length) | 0];
         if (o) { f.following = o; o.follower = f; f.target.set(o.pos.x - Math.cos(o.heading) * 2.4 + (r() - 0.5) * 1.2, o.pos.y + (r() - 0.5) * 1.2, o.pos.z - (r() - 0.5) * 0.4); f.retarget = 2.5; setTimeout(() => { if (o.follower === f) o.follower = null; f.following = null; }, 5000); }
       } else if (tr.includes('Shy') && roll < 0.45) { f.target.set(-3.4 + r() * 7, 1 + r() * 3, -1.6 - r() * 1.2); f.retarget = 7; }
-      else if (tr.includes('Playful') && roll < 0.3) { f.target.set(bubbleSpot.x + (r() - 0.5) * 0.6, 2 + r() * 8, 0.2 + r()); f.retarget = 3; }
+      else if (tr.includes('Playful') && roll < 0.3) { f.target.set(this.bubbleAt.x + (r() - 0.5) * 0.6, 2 + r() * 8, 0.2 + r()); f.retarget = 3; }
       if (tr.includes('Lazy')) f.retarget += 4;
     };
   }

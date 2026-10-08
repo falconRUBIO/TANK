@@ -23,7 +23,7 @@ class Limiter {
 
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {} } = {}) {
   const db = openDb(dbPath), lim = new Limiter();
-  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, ...limits };
+  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -41,6 +41,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (req.method === 'POST' && p === '/api/users') {
         if (!lim.hit('u:' + ip(req), cfg.userPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
         return json(res, 200, L.createUser(db, await readBody(req)));
+      }
+      if (req.method === 'POST' && p === '/api/recover') {
+        if (!lim.hit('r:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
+        return json(res, 200, L.recover(db, (await readBody(req)).key));
       }
       const user = authed(req);
       if (!user) throw new L.GameError('UNAUTHORIZED', 'Sign in required.', 401);
@@ -63,6 +67,11 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const r = L.joinTank(db, user, b.code);
         if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); }
         return json(res, 200, r);
+      }
+      if (req.method === 'POST' && p === '/api/recovery') return json(res, 200, { key: L.newRecoveryKey(db, user) });
+      if (req.method === 'POST' && p === '/api/tanks/leave') {
+        const t = L.tankOf(db, user.id); const r = L.leaveTank(db, user);
+        for (const w of [...(rooms.get(r.tankId) ?? [])]) if (w.userId === user.id) { w.close(); } broadcast(r.tankId, { t: 'members', members: L.listMembers(db, r.tankId) }); return json(res, 200, { ok: true });
       }
       if (req.method === 'POST' && p === '/api/tanks/code') return json(res, 200, { code: L.regenerateCode(db, user) });
       throw new L.GameError('NOT_FOUND', 'No such endpoint.', 404);

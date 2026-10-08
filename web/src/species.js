@@ -325,4 +325,71 @@ const cory = {
   },
 };
 
-export const SPECIES = { goldfish, blue: bluefish, angelfish, neon, cory };
+
+// ───────────────────────── Guppy ─────────────────────────
+const guppy = {
+  id: 'guppy', label: 'Guppy', length: 34, vox: 0.04,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 6151 + 11);
+    const pals = [[hex(0xff7a2a), hex(0xffd23a), hex(0x2a8ad8)], [hex(0x3a8ae8), hex(0x8ae0ff), hex(0xff5a9a)], [hex(0xe0409a), hex(0xff9ad0), hex(0x6a3ad0)], [hex(0x34c08a), hex(0xb8ff8a), hex(0xff8a3a)]];
+    const [bodyC, bellyC, tailC] = pals[Math.floor(rng() * pals.length)];
+    const X0 = 8, L = 18;
+    const hy = prof([[0, 1.6], [0.2, 3.4], [0.5, 4.4], [0.8, 3.6], [1, 2]]);
+    const hz = prof([[0, 0.8], [0.4, 2.6], [0.8, 2.2], [1, 1]]);
+    const body = mkBody(X0, L, hy, hz, () => 0);
+    const eye = mkEye(body, Math.round(X0 + 0.84 * L), 1, [248, 236, 200], 2.2);
+    return {
+      bounds: { x: [-14, 30], y: [-14, 14], z: [-6, 6] }, center: [14, 0],
+      bend: { pivot: 10, len: 10, amp: 0.6, bob: 0.5 },
+      sample(x, y, z) {
+        const e = eye(x, y, z); if (e) return e;
+        const b = body(x, y, z);
+        if (b) { const { t, dy } = b; let c = mix(bellyC, bodyC, clamp((dy + 1) * 0.6 + 0.1)); if (t < 0.4) c = mix(c, tailC, 0.5 + (0.4 - t)); if (t > 0.45 && t < 0.6 && dy > -0.2 && dy < 0.5) c = mix(c, [255, 255, 255], 0.4); return { c }; }
+        const dT = 8 - x;
+        if (dT >= 0 && dT <= 18 && Math.abs(z) <= (dT < 3 ? 1 : 0)) {          // big fan tail with a spotted edge
+          const hh = 2.5 + dT * 0.85;
+          if (Math.abs(y) <= hh) { const spot = ((Math.floor(dT / 3) + Math.floor(y / 3)) & 1) === 0; const rim = dT > 15 || Math.abs(y) > hh - 1.5; return { c: mix(tailC, rim ? [255, 240, 200] : bodyC, spot ? 0.15 : 0.5), wave: 0.7 }; }
+        }
+        const bt = (x) => clamp((x - X0) / L);
+        if (z === 0 && x >= 15 && x <= 22 && y >= hy(bt(x)) - 1 && y <= hy(bt(x)) + 4 * (1 - Math.abs(x - 18.5) / 4)) return { c: mix(tailC, bodyC, 0.4), wave: 0.3 };
+        if (z === 0 && x >= 14 && x <= 20 && y <= -hy(bt(x)) + 1 && y >= -hy(bt(x)) - 3) return { c: mix(tailC, bellyC, 0.5), wave: 0.3 };
+        return null;
+      },
+    };
+  },
+};
+
+// ───────────────────────── Betta ─────────────────────────
+const betta = {
+  id: 'betta', label: 'Betta', length: 54, vox: 0.04,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 2713 + 5);
+    const pals = [[hex(0xd01838), hex(0xff6a7a), hex(0x2a4ad8)], [hex(0x2a48e0), hex(0x7ab8ff), hex(0xd02a8a)], [hex(0x8a2ad0), hex(0xd88aff), hex(0x2ad0c0)]];
+    const [bodyC, lightC, edgeC] = pals[Math.floor(rng() * pals.length)];
+    const X0 = 12, L = 28;
+    const hy = prof([[0, 2], [0.2, 4.6], [0.5, 6], [0.8, 4.8], [1, 3]]);
+    const hz = prof([[0, 1], [0.4, 3.2], [0.8, 2.6], [1, 1.2]]);
+    const body = mkBody(X0, L, hy, hz, () => 0);
+    const eye = mkEye(body, Math.round(X0 + 0.84 * L), 2, [250, 220, 120], 2.4);
+    const bt = (x) => clamp((x - X0) / L);
+    return {
+      bounds: { x: [-26, 44], y: [-22, 22], z: [-6, 6] }, center: [20, 0],
+      bend: { pivot: 14, len: 24, amp: 0.5, bob: 1.0 },
+      sample(x, y, z) {
+        const e = eye(x, y, z); if (e) return e;
+        const b = body(x, y, z);
+        if (b) { const { t, dy } = b; let c = mix(lightC, bodyC, clamp((dy + 1) * 0.7)); if (fbm(x * 0.5, y * 0.5, Math.abs(z) * 0.4 + seed) > 0.66) c = mix(c, edgeC, 0.5); if (t > 0.9 && dy < 0) c = mix(c, [255, 220, 150], 0.5); return { c, em: 0 }; }
+        const dT = 12 - x;
+        if (dT >= 0 && dT <= 36 && Math.abs(z) <= (dT < 4 ? 1 : 0)) {          // flowing tail with a scalloped edge
+          const hh = 3 + dT * 0.72 - (Math.sin(dT * 0.5) > 0.7 ? 1.5 : 0);
+          if (Math.abs(y) <= hh) { const ray = Math.floor(Math.atan2(y, dT + 2) * 12 + 40) & 1; return { c: mix(mix(bodyC, edgeC, clamp(dT / 36)), lightC, ray ? 0.35 : 0), wave: 0.9 }; }
+        }
+        if (z === 0 && x >= 16 && x <= 38 && y >= hy(bt(x)) - 1) { const s = (x - 16) / 22, h = 14 * Math.sin(Math.PI * Math.pow(s, 0.8)) + 3 * (1 - s), up = y - hy(bt(x)); if (up <= h) return { c: mix(bodyC, edgeC, clamp(up / 14)), wave: 0.6 }; }
+        if (z === 0 && x >= 14 && x <= 38 && y <= -hy(bt(x)) + 1) { const s = (x - 14) / 24, h = 12 * Math.sin(Math.PI * Math.pow(s, 0.8)) + 2 * (1 - s), dn = -hy(bt(x)) - y; if (dn <= h) return { c: mix(bodyC, edgeC, clamp(dn / 12)), wave: 0.6 }; }
+        return null;
+      },
+    };
+  },
+};
+
+export const SPECIES = { goldfish, blue: bluefish, angelfish, neon, cory, guppy, betta };

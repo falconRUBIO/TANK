@@ -19,11 +19,31 @@ function cleanAvatar(a) {
 export function randomCode() { let s = ''; for (let i = 0; i < 6; i++) s += ALPHABET[crypto.randomInt(ALPHABET.length)]; return s; }
 
 // ── identity ──
+const fmtKey = (k) => k.match(/.{4}/g).join('-');
+const keyHash = (k) => sha('rk:' + String(k ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
+function makeKey() { let s = ''; for (let i = 0; i < 16; i++) s += ALPHABET[crypto.randomInt(ALPHABET.length)]; return fmtKey(s); }
 export function createUser(db, { name, avatar }) {
   const n = clean(name, 16); if (n.length < 1) throw new GameError('BAD_NAME', 'Please choose a name.');
   const token = crypto.randomBytes(32).toString('hex'), id = crypto.randomUUID();
-  db.prepare('INSERT INTO users (id,name,avatar,token_hash,created_at) VALUES (?,?,?,?,?)').run(id, n, JSON.stringify(cleanAvatar(avatar)), sha(token), Date.now());
-  return { userId: id, token };
+  const recoveryKey = makeKey();
+  db.prepare('INSERT INTO users (id,name,avatar,token_hash,created_at,recovery_hash) VALUES (?,?,?,?,?,?)').run(id, n, JSON.stringify(cleanAvatar(avatar)), sha(token), Date.now(), keyHash(recoveryKey));
+  return { userId: id, token, recoveryKey };
+}
+// A new recovery key replaces the old one (used when an older account never had one, or the key was lost).
+export function newRecoveryKey(db, user) { const k = makeKey(); db.prepare('UPDATE users SET recovery_hash=? WHERE id=?').run(keyHash(k), user.id); return k; }
+// Signing in with a recovery key issues a fresh token and retires the old one, so a lost phone can be locked out.
+export function recover(db, key) {
+  const u = db.prepare('SELECT id FROM users WHERE recovery_hash=?').get(keyHash(key));
+  if (!u) throw new GameError('BAD_KEY', 'That recovery key was not recognised.', 404);
+  const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), u.id);
+  return { userId: u.id, token };
+}
+export function leaveTank(db, user) {
+  return tx(db, () => {
+    const t = tankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+    db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); addJournal(db, t.id, `${user.name} left the tank.`, user.id);
+    return { ok: true, tankId: t.id };
+  });
 }
 export function authUser(db, token) {
   if (typeof token !== 'string' || token.length !== 64) return null;
@@ -107,7 +127,7 @@ export function addActivity(db, tankId, userId, type, text, now = Date.now()) {
   const r = db.prepare('INSERT INTO activity (tank_id,user_id,type,text,ts) VALUES (?,?,?,?,?)').run(tankId, userId, type, text, now);
   return { id: Number(r.lastInsertRowid), userId, type, text, ts: now };
 }
-export const ACTIONS = new Set(['feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
+export const ACTIONS = new Set(['note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

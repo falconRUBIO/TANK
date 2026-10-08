@@ -79,6 +79,24 @@ await t('static files cannot escape the web folder, and /healthz answers', async
   for (const u of ['/%2e%2e/server/db.mjs', '/..%2fserver%2fdb.mjs', '/%2e%2e/webx/a']) assert.equal((await fetch(base + u)).status, 404);
   assert.equal((await fetch(base + '/healthz')).status, 200); assert.equal((await fetch(base + '/join/ABC123')).status, 200);
 });
+await t('a recovery key signs you back in on a new phone and retires the old token', async () => {
+  const u = await mkUser('Rec'); assert.match(u.recoveryKey, /^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  const r = await call('/api/recover', { key: u.recoveryKey.toLowerCase().replace(/-/g, ' ') }); assert.equal(r.status, 200); assert.equal(r.body.userId, u.userId); assert.notEqual(r.body.token, u.token);
+  assert.equal((await call('/api/me', null, u.token)).status, 401); assert.equal((await call('/api/me', null, r.body.token)).status, 200);
+  assert.equal((await call('/api/recover', { key: 'AAAA-BBBB-CCCC-DDDD' })).status, 404);
+  const k2 = (await call('/api/recovery', {}, r.body.token)).body.key; assert.notEqual(k2, u.recoveryKey); assert.equal((await call('/api/recover', { key: u.recoveryKey })).status, 404);
+});
+await t('recovery attempts are rate limited', async () => {
+  const lim = await start({ port: 0, dbPath: ':memory:', limits: { recoverPerHour: 3 } }); const out = [];
+  for (let i = 0; i < 5; i++) out.push((await fetch(`http://localhost:${lim.port}/api/recover`, { method: 'POST', body: JSON.stringify({ key: 'AAAA-BBBB-CCCC-DDDD' }) })).status);
+  assert.deepEqual(out, [404, 404, 404, 429, 429]); await lim.close();
+});
+await t('leaving a tank frees the seat for someone else', async () => {
+  const o = await mkUser('Own'), m = await mkUser('Mid'), n = await mkUser('New'); const tk = (await call('/api/tanks', { name: 'Leave' }, o.token)).body; await call('/api/join', { code: tk.code }, m.token);
+  assert.equal((await call('/api/tanks/leave', {}, m.token)).status, 200); assert.equal((await call('/api/me', null, m.token)).body.tank, null);
+  const j = await call('/api/join', { code: tk.code }, n.token); assert.equal(j.status, 200); assert.equal(j.body.slot, 2);
+  assert.equal((await call('/api/tanks/leave', {}, m.token)).status, 404);
+});
 console.log('Realtime');
 let wb2;
 const wa = await open(a.token), wb = await open(b.token), wc = await open(c.token);
@@ -168,6 +186,11 @@ await t('buying a school adds four fish; selling decor refunds half; capacity is
   setW(tank.id, { level: 1, shells: 500, simTs: Date.now() });
   let last; for (let i = 0; i < 4; i++) last = await ackOf(wsA, { t: 'buyFish', species: 'goldfish', idem: 'cap' + i });
   assert.ok(['TANK_FULL'].includes(last.reason) || last.ok);
+});
+await t('players can leave short notes in the journal', async () => {
+  const r = await ackOf(wsA, { t: 'note', text: 'Pip likes the <b>arch</b>', idem: 'n1' }); assert.equal(r.ok, true);
+  const j = S.db.prepare("SELECT text FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 1").get(tank.id); assert.ok(j.text.includes('Pip likes') && !j.text.includes('<'), j.text);
+  assert.equal((await ackOf(wsA, { t: 'note', text: '   ', idem: 'n2' })).ok, false);
 });
 await t('dev actions are refused unless the server runs in dev mode', async () => { assert.equal((await ackOf(wsA, { t: 'dev', what: 'shells', idem: 'dv' })).reason, 'FORBIDDEN'); });
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.freePlant, 1); });

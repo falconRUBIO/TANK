@@ -107,7 +107,7 @@ export class Fish3D {
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.foodMul ?? 1) * (d < 2 ? 0.6 + d * 0.2 : 1) / d);
+    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (d < 2 ? 0.6 + d * 0.2 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;

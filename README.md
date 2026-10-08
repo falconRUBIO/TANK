@@ -6,7 +6,8 @@ Three friends, one living aquarium. Chunky voxel fish and decorations, modern li
 
 - **Start:** name your first fish, feed it, meet your friends, place a free plant. Four short tips, skippable.
 - **Care:** feed (tap the water to drop food, three drops per feeding), wipe algae off the glass, change the water. You earn **shells** only when the tank actually needs the care. No streaks, no timers you must obey, no ads, no purchases.
-- **Grow:** adopt fish (goldfish, neon school, corydoras, blue ram, angelfish) and place decorations (plants, rocks, driftwood, lantern, chest, torii gate…). Fish grow baby → juvenile → adult over real days and the tank levels up, unlocking new species, items and room.
+- **Grow:** adopt fish (goldfish, neon school, guppies, corydoras, blue ram, angelfish, betta) and place decorations (18 items: plants, kelp, rocks, driftwood, lantern, chest, bubbler, clam, skull, torii gate, stone arch…). Fish grow baby → juvenile → adult over real days and the tank levels up (8 levels), unlocking new species, items and room.
+- **Every fish has its own needs:** it gets hungry at its own pace (greedy fish sooner, lazy fish later), its happiness depends on clean water and on things it likes in the tank (shy fish like plants, curious fish like structures, playful fish like bubbles…), and its health slips if it is neglected. Neglect makes fish listless but never kills them; care brings them back. Tap a fish to see its mood.
 - **Together:** up to **three** caretakers share one tank with a six-character code or invite link. Everything is shared: fish, decorations, shells, journal, chat.
 - **While you are away** the tank keeps living: hunger rises, water clouds, algae grows, fish grow. It is capped so a holiday never hurts the fish.
 
@@ -15,7 +16,7 @@ Three friends, one living aquarium. Chunky voxel fish and decorations, modern li
 ```bash
 npm install
 npm start          # http://localhost:8080 – game + shared-tank server
-npm test           # 31 backend tests
+npm test           # 6 rule tests + 35 server tests
 ```
 
 Without the server (static hosting) the game runs solo and saves to the browser.
@@ -47,5 +48,5 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 ## Known limits
 
 - No App Store build. iPhone haptics are not available to web apps (Android vibrates).
-- Account recovery is not built yet: clearing browser data loses the identity (the tank stays on the server).
-- One server instance. Push notifications are not built.
+- Recovery: every account has a recovery key (shown when you create a tank, and under Settings). Typing it on a new phone signs you back in and retires the old phone's token. Without the key, clearing browser data loses the identity.
+- One server instance. Push notifications are not built (the Friends tab shows a dot for new activity instead).

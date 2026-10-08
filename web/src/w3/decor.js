@@ -91,8 +91,8 @@ export function plantVox(v, rng, base, kind, o = {}) {
       }
     }
   } else if (kind === 'kelp') {
-    const H = o.h ?? 120, x0 = I;
-    for (let j = 0; j <= H; j++) { const cx = x0 + Math.round(Math.sin(j * 0.05 + ph) * 3 * (j / H)); put(cx, j, K, lerpc([22, 66, 62], [64, 128, 100], j / H), H); put(cx + 1, j, K, [28, 80, 70], H, 0.85); }
+    const H = o.h ?? 120, x0 = I, lo = o.lo ?? [22, 66, 62], hi = o.hi ?? [64, 128, 100];
+    for (let j = 0; j <= H; j++) { const cx = x0 + Math.round(Math.sin(j * 0.05 + ph) * 3 * (j / H)); put(cx, j, K, lerpc(lo, hi, j / H), H, 1.1); put(cx + 1, j, K, mix(lo, [20, 60, 50], 0.4), H, 0.85); if (o.leaf && j % 9 === 4) { put(cx - 1, j, K, hi, H, 1.15); put(cx - 2, j + 1, K, hi, H, 1.2); put(cx + 2, j + 1, K, hi, H, 1.1); } }
   }
 }
 
