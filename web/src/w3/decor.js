@@ -232,12 +232,14 @@ export function buildDecor(seed = 21) {
 
   // ── plants: dense layered cut-outs, placed like the reference (ferns hugging the left, tall grass through the middle, red plume by the lantern) ──
   const L = (x0, x1, z0, z1, n) => Array.from({ length: n }, () => ({ x: x0 + rng() * (x1 - x0), z: z0 + rng() * (z1 - z0) }));
-  // a few tidy clumps in clear places: ferns at the far left, grass beside the ruin and by the lantern, nothing in the middle
-  group.add(plantMesh(fernTex(), [{ x: -4.5, z: 1.0 }, { x: -3.9, z: 1.5 }, { x: -4.9, z: 0.3 }, { x: 1.7, z: 1.9 }], rng, { w: 2.4, hMin: 2.8, hMax: 3.8 }));
-  group.add(plantMesh(grassTex(0), [{ x: 0.7, z: -1.9 }, { x: 4.6, z: 0.9 }, { x: 3.7, z: -0.3 }, { x: -2.2, z: -2.4 }], rng, { w: 1.7, hMin: 3, hMax: 4.4 }));
-  group.add(plantMesh(grassTex(1), [{ x: -1.0, z: 2.6 }, { x: 2.4, z: 2.8 }], rng, { w: 1.5, hMin: 1.4, hMax: 2.2 }));
-  group.add(plantMesh(swordTex(), [{ x: -3.2, z: 2.4 }, { x: 2.3, z: 1.2 }], rng, { w: 2.1, hMin: 1.8, hMax: 2.7 }));
-  group.add(plantMesh(redTex(), [{ x: 2.0, z: 0.3 }, { x: 2.5, z: -0.4 }], rng, { w: 1.7, hMin: 2.6, hMax: 3.8 }));
+  // composition: ferns frame the left and right edges, tall grass in a back row, mid clumps around the lantern and ruin base, low plants in front
+  const at = (...pts) => pts.map(([x, z]) => ({ x, z }));
+  group.add(plantMesh(fernTex(), at([-4.6, 1.5], [-4.1, 0.9], [-4.9, 0.4], [-3.6, 2.0], [-4.3, 2.2], [4.4, 1.7], [3.9, 2.3], [4.8, 0.9]), rng, { w: 2.3, hMin: 2.6, hMax: 3.9 }));
+  group.add(plantMesh(grassTex(0), at([-3.4, -2.7], [-0.6, -2.5], [1.5, -2.2], [3.3, -2.6], [4.6, -1.6], [-4.8, -2.0], [0.4, -1.2]), rng, { w: 1.8, hMin: 3.8, hMax: 5.6 }));
+  group.add(plantMesh(grassTex(2), at([-2.4, 0.9], [0.9, 0.6], [1.6, 0.0], [4.5, 0.4], [-1.1, 0.4], [3.8, -0.9]), rng, { w: 1.6, hMin: 2.2, hMax: 3.4 }));
+  group.add(plantMesh(grassTex(1), at([-3.8, 2.9], [-2.2, 2.7], [0.1, 2.9], [1.6, 2.6], [3.4, 2.9], [-0.9, 3.2]), rng, { w: 1.4, hMin: 1.1, hMax: 2.0 }));
+  group.add(plantMesh(swordTex(), at([-3.2, 2.4], [2.4, 1.3], [0.3, 2.2]), rng, { w: 2.1, hMin: 1.6, hMax: 2.4 }));
+  group.add(plantMesh(redTex(), at([2.0, 0.2], [2.6, -0.4], [1.6, -0.8]), rng, { w: 1.7, hMin: 2.8, hMax: 3.8 }));
 
   // ── the big ruin, built from chunky voxels so it matches the rest: crenellated top, round arch, mossy courses ──
   const WX = -1.9, WZ = -1.4;

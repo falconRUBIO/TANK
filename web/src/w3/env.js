@@ -146,7 +146,7 @@ export function buildEnvironment() {
 
   // ── gravel bed ──
   {
-    const g = new THREE.PlaneGeometry(26, 14, 56, 30); g.rotateX(-Math.PI / 2);
+    const g = new THREE.PlaneGeometry(30, 30, 64, 64); g.rotateX(-Math.PI / 2);
     const p = g.attributes.position, cols = [];
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
@@ -156,7 +156,7 @@ export function buildEnvironment() {
     }
     g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); g.computeVertexNormals();
     const fl = new THREE.Mesh(g, patch(new THREE.MeshStandardMaterial({ map: gravelTex(), vertexColors: true, roughness: 1 })));
-    fl.position.set(0, 0, -2.5); fl.receiveShadow = true; root.add(fl);
+    fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl);
     const pebbles = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5, 0), patch(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.9 })), 420);
     for (let i = 0; i < 420; i++) {
       const x = (rng() - 0.5) * 12, z = -4 + rng() * 6.4, sc = 0.05 + rng() * rng() * 0.2;
@@ -169,7 +169,7 @@ export function buildEnvironment() {
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
   const kelp = new Blades();
-  for (let i = 0; i < 7; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
+  for (let i = 0; i < 12; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
   
 
