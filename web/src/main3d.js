@@ -71,8 +71,7 @@ const angel = add('angelfish', 3, { name: 'Luna', profile: { traits: ['Calm', 'C
 for (let i = 0; i < 4; i++) add('neon', 4 + i, { name: 'Neon ' + (i + 1), profile: { traits: ['Social', 'Playful'], age: 'Adult', spot: 'Open water', food: 'Flakes', needs: [0.85, 0.9, 0.9, 1] }, speed: 1.3, band: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, start: [-1 + i * 0.25, 5 + (i % 2) * 0.3, 1.2 + (i % 3) * 0.2] });
 add('cory', 9, { name: 'Dusty', profile: { traits: ['Shy', 'Lazy'], age: 'Juvenile', spot: 'Driftwood', food: 'Sinking food', needs: [0.6, 0.85, 0.4, 1] }, speed: 0.55, band: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 1.9] }, start: [0, 0.4, 1.4] });
 // one swimmer explores the arch: through the opening, toward the camera and back
-const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Curious'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.9, 0.75, 1] }, speed: 0.8, scale: 0.9, band: { x: [-2, -1.9], y: [2.2, 2.6], z: [-3, 1.6] }, start: [env.archX, 2.4, -2.8] });
-arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 + rng() * 0.4, this.pos.z < -0.5 ? 1.6 : -3.0); this.retarget = 12; };
+const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Curious'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.9, 0.75, 1] }, speed: 0.8, scale: 0.9, band: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] }, start: [1.5, 8, 1.2] });
 
 // ── personality: each trait changes where a fish chooses to swim next ──
 const bubbleCol = new THREE.Vector3(-3.6, 0, 0.5);
@@ -385,16 +384,16 @@ function watchPerf(dt) { if (qs.get('q') || performance.now() - born < 4000) ret
 requestAnimationFrame(frame);
 // headless self-check: advance the simulation without drawing and report the worst overlaps
 window.__sim = (n, dt = 1 / 30, drops = []) => {
-  let worstDeco = 0, worstFish = 0, minPair = 1e9; const W = Fish3D.world;
+  let worst = 0, worstFish = 0, inside = 0, samples = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
     for (const [at, x] of drops) if (i === at) dropFlakes(x);
     updateFlakes(dt, i * dt); fishes.forEach((f) => f.update(dt, rng, fishes));
     for (const f of fishes) {
-      for (const b of W.boxes) { const dx = f.pos.x - Math.max(b.min[0], Math.min(f.pos.x, b.max[0])), dy = f.pos.y - Math.max(b.min[1], Math.min(f.pos.y, b.max[1])), dz = f.pos.z - Math.max(b.min[2], Math.min(f.pos.z, b.max[2])); worstDeco = Math.max(worstDeco, f.cr - Math.hypot(dx, dy, dz)); }
-      for (const s of W.spheres) worstDeco = Math.max(worstDeco, s.r + f.cr - Math.hypot(f.pos.x - s.x, f.pos.y - s.y, f.pos.z - s.z));
-      for (const o of fishes) if (o !== f) { const d = Math.hypot(f.pos.x - o.pos.x, f.pos.y - o.pos.y, (f.pos.z - o.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + o.radius)); worstFish = Math.max(worstFish, 1 - d / mn); minPair = Math.min(minPair, d / mn); }
+      const cp = Math.cos(f.pitch), R = f.radius;
+      for (const off of [-0.8, -0.4, 0, 0.4, 0.8]) { p.set(f.pos.x + cp * Math.cos(f.heading) * R * off, f.pos.y + Math.sin(f.pitch) * R * off, f.pos.z - cp * Math.sin(f.heading) * R * off); samples++; o.set(0, 0, 0); if (W.push(p, f.cr * 0.7, o)) inside++; }
+      for (const q of fishes) if (q !== f) { const d = Math.hypot(f.pos.x - q.pos.x, f.pos.y - q.pos.y, (f.pos.z - q.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + q.radius)); worstFish = Math.max(worstFish, 1 - d / mn); }
     }
   }
-  return { worstDecoPenetration: +worstDeco.toFixed(3), worstFishOverlap: +worstFish.toFixed(3), minPairRatio: +minPair.toFixed(2), targets: [...new Set(fishes.map((f) => f.flake).filter(Boolean))].length, chasing: fishes.filter((f) => f.flake).length };
+  return { bodySamplesTouchingDecor: inside, ofSamples: samples, pct: +(100 * inside / samples).toFixed(2), worstFishOverlap: +worstFish.toFixed(3), chasing: fishes.filter((f) => f.flake).length };
 };
 window.__tank = { fishes, bokeh, dropFlakes, setQuality, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };

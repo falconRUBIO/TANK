@@ -19,11 +19,11 @@ mat.onBeforeCompile = (sh) => {
       if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
 };
 const dummy = new THREE.Matrix4();
-const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3();
+const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3(), _o = new THREE.Vector3();
 const col = new THREE.Color();
 
 export class Fish3D {
-  static world = { boxes: [], spheres: [] };            // decoration colliders, set by the scene
+  static world = { push: null };            // decoration colliders, set by the scene
   constructor(species, seed, opts = {}) {
     this.species = species; this.id = species.id;
     const model = buildModel(species.make(seed));
@@ -60,7 +60,7 @@ export class Fish3D {
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(1, 0, 0); this.target = new THREE.Vector3();
     this.phase = Math.random() * 6; this.retarget = 0; this.heading = 0; this.pitch = 0; this.roll = 0;
     this.speed = opts.speed ?? 1; this.band = opts.band ?? { x: [-3.6, 3.6], y: [2, 13], z: [0.4, 1.9] };
-    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cr = Math.min(0.55, this.radius * 0.26);
+    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cr = Math.max(0.2, this.radius * 0.3);
   }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
@@ -84,23 +84,15 @@ export class Fish3D {
   }
   // hard constraints: never end a frame inside a decoration or another fish
   resolve(others) {
-    const W = Fish3D.world, half = this.radius * 0.42, fx = Math.cos(this.heading), fz = -Math.sin(this.heading), r = this.cr;
-    for (let pass = 0; pass < 2; pass++) for (const off of [0, half, -half]) {
-      const px = this.pos.x + fx * off, py = this.pos.y, pz = this.pos.z + fz * off;
-      for (const b of W.boxes) {
-        const cx = Math.max(b.min[0], Math.min(px, b.max[0])), cy = Math.max(b.min[1], Math.min(py, b.max[1])), cz = Math.max(b.min[2], Math.min(pz, b.max[2]));
-        let dx = px - cx, dy = py - cy, dz = pz - cz, dd = Math.hypot(dx, dy, dz);
-        if (dd >= r) continue;
-        if (dd < 1e-4) { // centre is inside the box: leave through the nearest face
-          const ex = [px - b.min[0], b.max[0] - px, py - b.min[1], b.max[1] - py, pz - b.min[2], b.max[2] - pz]; const m = Math.min(...ex), i = ex.indexOf(m);
-          this.pos.x += (i === 0 ? -1 : i === 1 ? 1 : 0) * (m + r); this.pos.y += (i === 2 ? -1 : i === 3 ? 1 : 0) * (m + r); this.pos.z += (i === 4 ? -1 : i === 5 ? 1 : 0) * (m + r); continue;
-        }
-        const k = (r - dd) / dd; this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k;
+    const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
+    if (W.push) for (let pass = 0; pass < 4; pass++) {
+      let moved = false;
+      for (const off of [-0.8, -0.4, 0, 0.4, 0.8]) {                        // samples down the length of the body
+        _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
+        const n = W.push(_p1, this.cr, _o);
+        if (n) { const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
-      for (const sph of W.spheres) {
-        const dx = px - sph.x, dy = py - sph.y, dz = pz - sph.z, dd = Math.hypot(dx, dy, dz) || 1e-3, lim = sph.r + r;
-        if (dd >= lim) continue; const k = (lim - dd) / dd; this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k;
-      }
+      if (!moved) break;
     }
     for (const o of others) {                                               // fish are solid too
       if (o === this) continue;
@@ -132,23 +124,12 @@ export class Fish3D {
       const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 0.6;
       if (dd < min && dd > 1e-3) desired.x += dx / dd * (min - dd) / min * this.speed * 2.4, desired.y += dy / dd * (min - dd) / min * this.speed * 2.4, desired.z += dz / dd * (min - dd) / min * this.speed * 1.6;
     }
-    // decorations are solid: steer around them, then push out of anything we still touch
-    const W = Fish3D.world, half = this.radius * 0.42, fx = Math.cos(this.heading), fz = -Math.sin(this.heading);
-    const probes = [this.pos, _p1.set(this.pos.x + fx * half, this.pos.y, this.pos.z + fz * half), _p2.set(this.pos.x - fx * half, this.pos.y, this.pos.z - fz * half)];
-    const margin = this.cr + 0.4;
-    for (const p of probes) {
-      for (const b of W.boxes) {
-        const cx = Math.max(b.min[0], Math.min(p.x, b.max[0])), cy = Math.max(b.min[1], Math.min(p.y, b.max[1])), cz = Math.max(b.min[2], Math.min(p.z, b.max[2]));
-        let dx = p.x - cx, dy = p.y - cy, dz = p.z - cz, dd = Math.hypot(dx, dy, dz);
-        if (dd >= margin) continue;
-        if (dd < 1e-4) { dx = p.x - (b.min[0] + b.max[0]) / 2; dy = 0.4; dz = p.z - (b.min[2] + b.max[2]) / 2; dd = Math.hypot(dx, dy, dz) || 1; }
-        const k = (margin - dd) / margin * this.speed * 3.4; desired.x += dx / dd * k; desired.y += dy / dd * k; desired.z += dz / dd * k;
-      }
-      for (const sph of W.spheres) {
-        const dx = p.x - sph.x, dy = p.y - sph.y, dz = p.z - sph.z, dd = Math.hypot(dx, dy, dz) || 1e-3, lim = sph.r + margin;
-        if (dd >= lim) continue;
-        const k = (lim - dd) / lim * this.speed * 3.4; desired.x += dx / dd * k; desired.y += dy / dd * k; desired.z += dz / dd * k;
-      }
+    // decorations are solid: look ahead along the body and steer away from voxels in the way
+    const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
+    if (W.push) {
+      _o.set(0, 0, 0);
+      for (const k of [0.4, 1.0, 1.7]) { _p1.set(this.pos.x + fx * R * k, this.pos.y + fy * R * k, this.pos.z + fz * R * k); W.push(_p1, this.cr + 0.25 + 0.3 * k, _o); }
+      if (_o.lengthSq() > 0) { const m = _o.length(); _o.multiplyScalar(this.speed * 2.6 / Math.max(m, 1)); desired.add(_o); this.retarget = Math.min(this.retarget, 0.6); }
     }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
     if (this.vel.length() > this.speed * 1.4) this.vel.setLength(this.speed * 1.4);

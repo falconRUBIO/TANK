@@ -179,5 +179,5 @@ export function buildEnvironment() {
   const decor = buildDecor();
   root.add(decor.group);
   const AX = decor.archX;
-  return { root, glow: decor.glow, lampPos: decor.lampPos, archX: AX, colliders: { boxes: [...decor.boxes], spheres: decor.spheres } };
+  return { root, glow: decor.glow, lampPos: decor.lampPos, archX: AX, colliders: decor.solids };
 }

@@ -116,11 +116,34 @@ function plantMesh(tex, items, rng, { w, hMin, hMax, alphaTest = 0.5 }) {
   im.castShadow = im.receiveShadow = true; im.frustumCulled = false; return im;
 }
 
+// Voxel-accurate collision: every solid voxel of every decoration is stamped into one coarse occupancy grid.
+const G = 0.2, N = 128, OX = 64, OY = 8, OZ = 64;
+export class Solids {
+  constructor() { this.a = new Uint8Array(N * N * N); }
+  idx(ix, iy, iz) { ix += OX; iy += OY; iz += OZ; return ix < 0 || iy < 0 || iz < 0 || ix >= N || iy >= N || iz >= N ? -1 : (ix * N + iy) * N + iz; }
+  stamp(x, y, z) { const k = this.idx(Math.round(x / G), Math.round(y / G), Math.round(z / G)); if (k >= 0) this.a[k] = 1; }
+  addVox(v, px, py, pz, ry = 0) {
+    const c = Math.cos(ry), s = Math.sin(ry);
+    for (const q of v.m.values()) { const x = q.i * v.u, y = q.j * v.u, z = q.k * v.u; this.stamp(px + x * c + z * s, py + y, pz - x * s + z * c); }
+  }
+  // sum of unit-ish push vectors away from solid cells within r of p; returns the number of touching cells
+  push(p, r, out) {
+    const cx = Math.round(p.x / G), cy = Math.round(p.y / G), cz = Math.round(p.z / G), R = Math.ceil(r / G) + 1; let n = 0;
+    for (let i = cx - R; i <= cx + R; i++) for (let j = cy - R; j <= cy + R; j++) for (let k = cz - R; k <= cz + R; k++) {
+      const id = this.idx(i, j, k); if (id < 0 || !this.a[id]) continue;
+      const dx = p.x - i * G, dy = p.y - j * G, dz = p.z - k * G, d = Math.hypot(dx, dy, dz);
+      if (d >= r + G * 0.5) continue; const w = (r + G * 0.5 - d) / (d || 0.05); out.x += dx * w; out.y += dy * w; out.z += dz * w; n++;
+    }
+    return n;
+  }
+}
+
 export function buildDecor(seed = 21) {
+  const solids = new Solids();
   const rng = mulberry32(seed);
   const group = new THREE.Group();
   const spheres = [], boxes = [];
-  const place = (v, x, y, z, ry = 0) => { const m = v.mesh(); m.position.set(x, y, z); m.rotation.y = ry; group.add(m); return m; };
+  const place = (v, x, y, z, ry = 0, solid = true) => { const m = v.mesh(); m.position.set(x, y, z); m.rotation.y = ry; group.add(m); if (solid) solids.addVox(v, x, y, z, ry); return m; };
 
   // ── rocks: rounded, mossy on top ──
   const rock = (x, z, rx, ry, rz, sd, sink = 0.3) => {
@@ -147,7 +170,7 @@ export function buildDecor(seed = 21) {
       for (let i = ci - Math.ceil(r); i <= ci + Math.ceil(r); i++) for (let j = cj - Math.ceil(r); j <= cj + Math.ceil(r); j++) for (let k = ck - Math.ceil(r); k <= ck + Math.ceil(r); k++) if ((i * u - p.x) ** 2 + (j * u - p.y) ** 2 + (k * u - p.z) ** 2 <= (r * u) ** 2 && !v.has(i, j, k)) { const t2 = fbm(i * 0.18, j * 0.5, k * 0.18); v.set(i, j, k, mix([52, 33, 20], [102, 68, 40], t2)); } } };
     tube(path, 0.5, 0.26); tube(branch, 0.2, 0.1);
     topLit(v);
-    const mesh = v.mesh(); group.add(mesh);
+    const mesh = v.mesh(); group.add(mesh); solids.addVox(v, 0, 0, 0, 0);
     for (let n = 0; n <= 16; n++) { const p = path.getPoint(n / 16); spheres.push({ x: p.x, y: p.y, z: p.z, r: 0.5 - 0.22 * (n / 16) }); }
     for (let n = 0; n <= 5; n++) { const p = branch.getPoint(n / 5); spheres.push({ x: p.x, y: p.y, z: p.z, r: 0.2 }); }
   }
@@ -202,10 +225,10 @@ export function buildDecor(seed = 21) {
   {
     const u = 0.075, v = new Vox(u);
     for (let a = 0; a < 5; a++) { const an = a * 1.2566; for (let s = 0; s <= 5; s++) { const i = Math.round(Math.cos(an) * s), k = Math.round(Math.sin(an) * s); v.set(i, 0, k, mix([240, 122, 52], [252, 170, 90], s / 5)); if (s < 3) v.set(i, 1, k, [244, 130, 60]); } }
-    place(v, 0.6, 0.06, 2.55, 0.3);
+    place(v, 0.6, 0.06, 2.55, 0.3, false);
   }
   // ── air stones where the bubbles start ──
-  for (const [x, z] of [[-3.6, 0.5], [3.3, -0.8]]) { const v = new Vox(0.06); v.fill(-2, 0, -2, 2, 1, 2, [150, 156, 150]); v.fill(-1, 2, -1, 1, 2, 1, [176, 182, 176]); place(v, x, 0.04, z); }
+  for (const [x, z] of [[-3.6, 0.5], [3.3, -0.8]]) { const v = new Vox(0.06); v.fill(-2, 0, -2, 2, 1, 2, [150, 156, 150]); v.fill(-1, 2, -1, 1, 2, 1, [176, 182, 176]); place(v, x, 0.04, z, 0, false); }
 
   // ── plants: dense layered cut-outs, placed like the reference (ferns hugging the left, tall grass through the middle, red plume by the lantern) ──
   const L = (x0, x1, z0, z1, n) => Array.from({ length: n }, () => ({ x: x0 + rng() * (x1 - x0), z: z0 + rng() * (z1 - z0) }));
@@ -244,12 +267,12 @@ export function buildDecor(seed = 21) {
       if ((top && m > 0.55) || m > 0.72 || (q.j < 4 && m > 0.58)) q.c = mix([84, 128, 40], [150, 176, 64], hash(q.i, q.j, q.k, 8));
       else if (top) q.c = mix(q.c, [255, 244, 200], 0.14);
     }
-    const m = v.mesh(); m.position.set(WX, 0.02, WZ); group.add(m);
+    const m = v.mesh(); m.position.set(WX, 0.02, WZ); group.add(m); solids.addVox(v, WX, 0.02, WZ, 0);
     const X = (i) => WX + i * u;
     const Y = (j) => j * u + 0.02;
     boxes.push({ min: [X(-22), 0, WZ - 1.0], max: [X(-13), Y(56), WZ + 1.0] }, { min: [X(-13), 0, WZ - 1.0], max: [X(-12), Y(46), WZ + 1.0] },
       { min: [X(-4) + 1.4, 0, WZ - 1.0], max: [X(8), Y(34), WZ + 1.0] }, { min: [X(-12), Y(23), WZ - 1.0], max: [X(-4) + 1.4, Y(36), WZ + 1.0] },
       { min: [X(13), 0, WZ - 0.9], max: [X(23), Y(40), WZ + 0.9] });
   }
-  return { group, spheres, boxes, glow, lampPos, archX: WX - 4 * 0.18 };
+  return { group, spheres, boxes, solids, glow, lampPos, archX: WX - 4 * 0.18 };
 }
