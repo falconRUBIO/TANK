@@ -1,0 +1,16 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const out = process.env.OUT || '.';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage(); p.on('pageerror', (e) => console.log('pageerror:', e.message));
+await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForTimeout(800);
+const d = (a) => p.evaluate((a) => window.__game.dispatch(a, { dev: true }), a);
+await d({ t: 'tut', step: 5 }); for (let i = 0; i < 3; i++) await d({ t: 'dev', what: 'shells' });
+for (const s of [3, 41]) await d({ t: 'buyFish', species: 'goldfish', name: 'G' + s, seed: s, rush: true });
+await d({ t: 'dev', what: 'neglect' });
+console.log('state', JSON.stringify(await p.evaluate(() => [window.__game.state.fish.map((f) => [f.name, Math.round((f.ail ?? 0) / 3600)]), window.__game.state.floaters.map((f) => f.name)])));
+await p.waitForTimeout(3000); await p.evaluate(() => document.getElementById('mok')?.click()); await p.waitForTimeout(9000);
+await p.screenshot({ path: out + '/d_float.png' }); console.log('goal:', await p.textContent('#goal'));
+const sc = await p.evaluate(async () => { const g = window.__game; return g.dispatch({ t: 'scoop', id: g.state.floaters[0].id }); }); console.log('scoop', sc.applied);
+await p.waitForTimeout(1500); console.log('after', JSON.stringify(await p.evaluate(() => [window.__game.state.floaters.length, window.__game.state.memorial.map((m) => m.name)])));
+await p.evaluate(() => window.__focus(0)); await p.waitForTimeout(6000); await p.screenshot({ path: out + '/d_card.png' });
+await b.close(); console.log('FINISHED');

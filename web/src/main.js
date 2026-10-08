@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -185,13 +185,29 @@ async function greetVisitor(f) {
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }
-// petting
-async function petFish(f) {
+// playing: fish follow a fingertip along the glass. Five seconds of it builds the bond.
+let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
+function playWith(f) {
+  if (play) return; play = { fish: f, until: performance.now() + 5500, moved: 0, last: null }; f.mul = 1.3;
+  $('pet').disabled = true; $('pet').textContent = `${f.name} is watching your finger…`; ui.toast(`Drag your finger along the glass`, 3000);
+}
+function playPoint(ev) {
+  if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; const p = play.fish; p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1;
+  if (play.last) play.moved += Math.hypot(playHit.x - play.last.x, playHit.y - play.last.y); play.last = { x: playHit.x, y: playHit.y };
+}
+async function finishPlay() {
+  const { fish: f, moved } = play; play = null; f.mul = 0.35; if ($('pet')) { $('pet').disabled = false; $('pet').textContent = `Play with ${f.name}`; }
+  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); return; }
   const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) return fail(r);
-  if (!r.applied) { ui.toast(`${f.name} needs a moment`); return; }
+  if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); return; }
   fishes.burst(f.pos); sfx('arrive'); haptic(10); f.vigor = Math.max(f.vigor, 1.1);
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
   showCard(f);
+}
+// scooping out a fish that has passed away
+async function scoopFish(f) {
+  const r = await game.dispatch({ t: 'scoop', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
+  sfx('tap'); haptic(10); fishes.burst(f.pos);
 }
 // photo mode: the clean tank frame, no interface
 async function takePhoto() {
@@ -220,22 +236,23 @@ function showCard(f) {
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
-    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${bondLine(rec)}</dl><button class="pet" id="pet">Pet ${f.name}</button>
+    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Very weak. Needs care soon.</dd>' : rec.ail >= AIL_WARN / 2 ? '<dt>Health</dt><dd>Run down. Feed the tank.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
-  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => petFish(f);
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f);
 }
-function setFocus(f) { if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
+function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
+  if (play) { playPoint(ev); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
-  const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
+  const f = pickFish(ev); if (f?.dead) { scoopFish(f); return; } if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
 });
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
-canvas.addEventListener('pointermove', (ev) => { if (placing && dragging) movePlace(ev); });
+canvas.addEventListener('pointermove', (ev) => { if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', () => { dragging = false; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });
 
@@ -293,7 +310,7 @@ function syncWorld() {
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
   env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); syncExtras(); ui?.refresh(); tut.run();
 }
-game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
+game.on('tick', () => { ui?.updateHeader(); if (focus && !play && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
   sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1));
@@ -337,6 +354,7 @@ function frame(now) {
   if (bottleSp.visible) { bottleSp.position.y = 2.1 + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
   for (const sp of eggSprites.values()) { const w = 1 + Math.sin(t * 3 + sp.position.x) * 0.05; sp.scale.set(w, w, 1); }
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
+  if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
