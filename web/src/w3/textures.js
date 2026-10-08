@@ -14,25 +14,23 @@ const px = (g, x, y, c) => { g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] |
 
 // Carved stone block face: Bayer-dithered 3-tone mottling, hard 1px speckle, mossy green flecks, bevelled edges.
 const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-export function stoneTex(seed = 1, base = [170, 162, 128]) {
+export function stoneTex(seed = 1, base = [152, 148, 118]) {
   return makeTex(32, (g, S) => {
-    const r = mulberry32(seed * 977), N = S / 2;                  // 16x16 cells drawn 2px wide: chunky, like the reference's big voxels
-    const dark = mix(base, [60, 58, 40], 0.36), light = mix(base, [236, 226, 170], 0.26);
-    const mossC = [[84, 122, 38], [122, 152, 48], [166, 174, 62]];
+    const r = mulberry32(seed * 977), N = S / 2;                  // 16x16 cells drawn 2px wide
+    const dark = mix(base, [70, 68, 50], 0.34), light = mix(base, [214, 206, 160], 0.3);
+    const mossC = [[92, 128, 44], [132, 156, 56]];
     const cell = (x, y, c) => { g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; g.fillRect(x * 2, y * 2, 2, 2); };
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const th = (BAY[(y & 3) * 4 + (x & 3)] + 0.5) / 16 - 0.5;
-      const n = fbm(x * 0.34 + seed * 9, y * 0.34, seed) * 1.12 + (r() - 0.5) * 0.22;
-      let c = n < 0.4 + th * 0.24 ? dark : n > 0.62 + th * 0.24 ? light : base;
-      const q = r();
-      if (q > 0.97) c = mix(c, [40, 38, 28], 0.3); else if (q > 0.94) c = mix(c, [244, 232, 176], 0.22);
-      const m = fbm(x * 0.28 + 40, y * 0.4 + seed, 3) + th * 0.3;
-      if (m > 0.6 && y < N * 0.88) c = mossC[(r() * (m > 0.74 ? 3 : 2)) | 0];
-      if (y < 1 || x < 1) c = mix(c, [246, 240, 200], 0.26);
-      if (y > N - 2 || x > N - 2) c = mix(c, [20, 24, 20], 0.5);
+      const n = fbm(x * 0.16 + seed * 9, y * 0.16, seed);               // broad, soft variation: calm stone
+      let c = n < 0.42 + th * 0.2 ? dark : n > 0.58 + th * 0.2 ? light : base;
+      const m = fbm(x * 0.2 + 40, y * 0.3 + seed, 3) + th * 0.18;
+      if (m > 0.64 && y < N * 0.7) c = mossC[m > 0.72 ? 1 : 0];        // moss only in distinct patches
+      if (y < 1 || x < 1) c = mix(c, [236, 230, 190], 0.22);
+      if (y > N - 2 || x > N - 2) c = mix(c, [24, 28, 22], 0.42);
       cell(x, y, c);
     }
-    let cx = (r() * N) | 0, cy = 1; for (let i = 0; i < 6; i++) { cell(cx, cy, [34, 36, 28]); cy++; cx += r() < 0.5 ? 0 : (r() < 0.5 ? -1 : 1); }
+    let cx = (r() * N) | 0, cy = 1; for (let i = 0; i < 5; i++) { cell(cx, cy, [48, 48, 36]); cy++; cx += r() < 0.5 ? 0 : (r() < 0.5 ? -1 : 1); }
   });
 }
 export function woodTex() {

@@ -93,45 +93,34 @@ export function buildEnvironment() {
   const moss = [];
   const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.5 + rng() * 0.26, mossy });
   const carve = [];
-  const pillar = (cx, cz, w, d, top, ch = 0.46, jag = 0.5, ornate = false) => {
-    let y = 0, c = 0;
-    while (y < top) {
-      const cornice = ornate && c % 5 === 4;
-      const h = cornice ? 0.3 : ch * (0.9 + rng() * 0.3);
-      const hi = y / top, rag = jag > 0.7 ? hi * hi * 0.55 : 0;                 // the higher up, the more broken the wall
-      if (cornice) { B(cx + (rng() - 0.5) * 0.04, y + h / 2, cz, w * 1.12, h, d * 1.12, 0, 0, true); y += h; c++; continue; }
-      const n = Math.max(1, Math.round(w / (0.62 + rng() * 0.5)));
-      for (let i = 0; i < n; i++) {
-        const bw = w / n * (0.9 + rng() * 0.16), off = (c & 1) ? w * 0.16 : -w * 0.08;
-        const bx = cx - w / 2 + (i + 0.5) * (w / n) + off * (n === 1 ? 0.3 : 1) + (rng() - 0.5) * 0.06;
-        if (y + h > top - jag && rng() < 0.3) continue;                          // broken top
-        if (n > 1 && (i === 0 || i === n - 1) && rng() < rag) continue;                   // ragged edges
-        const push = rng() < 0.16 ? (rng() - 0.5) * 0.28 : 0;                    // blocks that stick out or sink in
-        const bz = cz + push + (rng() - 0.5) * 0.06, bd = d * (0.94 + rng() * 0.1);
-        B(bx, y + h / 2, bz, bw, h * 0.98, bd, (rng() - 0.5) * 0.07, (rng() - 0.5) * 0.02);
-        if (ornate && c % 4 === 2 && rng() < 0.8) for (let k = -1; k <= 1; k++) carve.push({ x: bx + k * Math.min(0.34, bw * 0.28), y: y + h / 2, z: bz + bd / 2 + 0.012, w: 0.13, h: 0.13 + (k === 0 ? 0.08 : 0) });
+  // regular masonry: staggered courses of squarish blocks; only the crowns are broken
+  const wall = (cx, cz, w, d, y0, y1, { crown = 0, ornate = false, ch = 0.5 } = {}) => {
+    let y = y0, c = 0;
+    while (y < y1 - 0.05) {
+      if (ornate && c % 6 === 5) { B(cx, y + 0.15, cz, w * 1.1, 0.3, d * 1.1, 0, 0, true); y += 0.3; c++; continue; }   // cornice band
+      const n = Math.max(1, Math.round(w / 0.95)), bn = w / n, half = c & 1;
+      const cells = half ? [[0, bn / 2], ...Array.from({ length: n - 1 }, (_, i) => [bn / 2 + i * bn, bn]), [w - bn / 2, bn / 2]] : Array.from({ length: n }, (_, i) => [i * bn, bn]);
+      for (const [x0, bw] of cells) {
+        const bx = cx - w / 2 + x0 + bw / 2, hi = (y - y0) / Math.max(1, y1 - y0);
+        if (y + ch > y1 - crown && rng() < 0.28 + hi * 0.22) continue;                       // broken crown
+        const bz = cz + (rng() < 0.08 ? (rng() - 0.5) * 0.18 : 0);
+        B(bx, y + ch / 2, bz, bw * 0.985, ch * 0.985, d, (rng() - 0.5) * 0.015, 0);
+        if (ornate && c % 5 === 2 && cells.indexOf(cells.find((q2) => q2[0] === x0)) % 2 === 0) for (let k = -1; k <= 1; k++) carve.push({ x: bx + k * bw * 0.26, y: y + ch / 2, z: bz + d / 2 + 0.012, w: 0.13, h: 0.13 + (k === 0 ? 0.08 : 0) });
       }
-      y += h; c++;
+      y += ch; c++;
     }
   };
-  const AX = -0.9, AY = 4.6, AR = 1.0;
-  pillar(-2.8, -0.95, 2.3, 1.4, 10.6, 0.46, 1.5, true);    // left tower, thick and carved
-  pillar(-4.1, -1.7, 1.5, 1.1, 7.2, 0.46, 1.4, true);          // buttress behind
-  pillar(0.9, -0.95, 1.5, 1.25, AY, 0.46, 0, true);          // right pier (springs the arch)
-  // arch ring of wedge blocks
-  const wedges = 9;
-  for (let i = 0; i <= wedges; i++) {
-    const a = Math.PI - (i / wedges) * Math.PI, x = AX + Math.cos(a) * AR, y = AY + Math.sin(a) * AR;
-    if (i === 0 || i === wedges) continue;
-    B(x, y, -0.95, 0.78, 0.98, 1.3, 0, a - Math.PI / 2 + Math.PI, true);
-  }
-  B(AX, AY + AR + 0.05, -0.95, 0.95, 1.2, 1.4, 0, 0, true);   // keystone
-  // wall above the arch + broken fragment on the right
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { if (r > 1 && rng() < 0.45) continue; B(-1.9 + c * 0.75 + (r & 1) * 0.2 + 0.4, AY + AR + 1.25 + r * 0.5, -0.95, 0.74, 0.48, 1.05, (rng() - 0.5) * 0.05); }
-  B(-2.8, 0.1, -0.95, 2.8, 0.22, 1.8, 0, 0, false); B(0.9, 0.1, -0.95, 2.0, 0.22, 1.6, 0, 0, false); B(0.9, AY + 0.13, -0.95, 1.9, 0.26, 1.5, 0, 0, true);
-  for (let st = 0; st < 3; st++) B(-0.9, 0.12 + st * 0.2, 0.15 - st * 0.22, 1.9 - st * 0.1, 0.22, 0.5, 0, 0, st > 0);   // steps into the arch
-  pillar(2.9, -3.6, 1.1, 1.0, 5.4, 0.46, 1.2);           // second broken column, further back
-  pillar(4.1, -2.4, 1.0, 1.0, 2.4, 0.46, 0.6);
+  const AX = -0.95, AY = 4.3, AR = 1.2;
+  wall(-3.15, -1.0, 2.0, 1.5, 0, 9.4, { crown: 1.0, ornate: true });         // left tower
+  wall(1.2, -1.0, 1.9, 1.5, 0, 7.2, { crown: 1.0, ornate: true });          // right pier, carries the arch
+  wall(-4.6, -2.3, 1.4, 1.2, 0, 6.6, { crown: 1.4 });                        // buttress behind the tower
+  for (let i = 1; i < 11; i++) { const a = Math.PI - (i / 11) * Math.PI; B(AX + Math.cos(a) * AR, AY + Math.sin(a) * AR, -1.0, 0.9, 0.95, 1.5, 0, a - Math.PI / 2, true); }
+  B(AX, AY + AR + 0.05, -1.0, 1.0, 1.2, 1.55, 0, 0, true);                   // keystone
+  wall(-0.95, -1.0, 2.4, 1.5, AY + AR + 0.45, 7.6, { crown: 0.5 });          // wall above the arch
+  B(-3.15, 0.1, -1.0, 2.6, 0.22, 1.8, 0, 0, false); B(1.2, 0.1, -1.0, 2.3, 0.22, 1.7, 0, 0, false);
+  for (let st = 0; st < 3; st++) B(AX, 0.12 + st * 0.2, 0.2 - st * 0.22, 2.2 - st * 0.12, 0.22, 0.5, 0, 0, st > 0);   // steps into the arch
+  wall(3.9, -3.2, 1.3, 1.2, 0, 5.6, { crown: 1.4 }); wall(5.1, -2.4, 1.1, 1.0, 0, 2.8, { crown: 0.8 });
+  B(4.3, 0.35, -1.7, 1.6, 0.5, 0.8, 0.6, 0, true);                          // fallen lintel
   for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
   const blockMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stoneA, blocks.length);
   const mossMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(86, 150, 52), roughness: 1 })), blocks.length);
@@ -184,7 +173,7 @@ export function buildEnvironment() {
     const m = new THREE.Mesh(g, rockMat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.y = seed;
     m.castShadow = m.receiveShadow = true; root.add(m);
   };
-  rock(-4.0, 0.4, 1.5, 1.5, 0.95, 1.1, 1); rock(1.2, 0.3, -0.9, 0.9, 0.6, 0.8, 2); rock(3.4, 0.35, 0.6, 1.15, 0.7, 0.9, 3);
+  rock(-1.3, 0.16, 2.7, 0.7, 0.4, 0.6, 8); rock(1.9, 0.18, 2.9, 0.9, 0.45, 0.7, 9); rock(-4.0, 0.4, 1.5, 1.5, 0.95, 1.1, 1); rock(1.2, 0.3, -0.9, 0.9, 0.6, 0.8, 2); rock(3.4, 0.35, 0.6, 1.15, 0.7, 0.9, 3);
   rock(-1.0, 0.18, 1.9, 0.5, 0.3, 0.45, 4); rock(0.4, 0.22, -2.6, 1.3, 0.8, 1.0, 5); rock(4.3, 0.5, -1.3, 0.8, 1.0, 0.8, 6); rock(-4.6, 0.25, -0.2, 0.6, 0.5, 0.6, 7);
 
   // ── driftwood ──
@@ -248,11 +237,11 @@ export function buildEnvironment() {
   fern(-4.3, 1.2, 3.6, 5); fern(-3.3, 1.9, 2.6, 4); fern(-4.7, 0.2, 4.4, 4); fern(0.3, 1.5, 2.2, 3); fern(2.0, 1.9, 2.4, 3); fern(-0.9, -2.6, 4.2, 4);
   // dark, blurred foreground blades frame the shot like in the reference
   const fg = new Blades();
-  for (let i = 0; i < 26; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.4 + rng() * 2.2), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 5, w: 0.16 + rng() * 0.12, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
+  for (let i = 0; i < 12; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.4 + rng() * 2.2), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 5, w: 0.16 + rng() * 0.12, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
   root.add(fg.mesh(leafMat()));
   // grass tufts rooted on top of the ruins
   const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [40, 100, 44], tip: [140, 196, 74] }); };
-  tuft(-2.8, 10.7, -0.95, 10); tuft(0.7, AY + 0.3, -0.95, 7); tuft(-1.2, AY + 3.1, -0.95, 6); tuft(2.9, 5.45, -3.6, 7); tuft(-0.9, AY + 1.62, -0.95, 5); tuft(-3.9, 6.9, -1.7, 6);
+  tuft(-3.15, 9.5, -1.0, 10); tuft(1.2, 7.3, -1.0, 7); tuft(-0.95, 7.7, -1.0, 7); tuft(3.9, 5.7, -3.2, 7); tuft(-4.6, 6.7, -2.3, 6);
   // bushy green stem plants + moss mounds
   [[-2.2, 2.1], [2.0, 1.9], [4.2, 1.0], [-3.2, -1.0]].forEach(([x, z], bi) => {
     for (let st = 0; st < 5; st++) { const hh = 1.6 + rng() * 1.6, dir = st * 1.3 + bi; leaves.add({ x, y: 0, z, h: hh, w: 0.03, dir, lean: 0.3, curl: 0.4, seg: 8, base: [50, 110, 46], tip: [120, 190, 70] });
@@ -270,8 +259,8 @@ export function buildEnvironment() {
   const kelp = new Blades();
   for (let i = 0; i < 34; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
-  // hanging moss/vines off the ruin
-  for (let i = 0; i < 26; i++) { const x = -3.7 + rng() * 4.6, top = 6.9 - rng() * 0.2; if (x > -1.9 && x < 0.1) { vines.add({ x, y: AY - 0.5, z: -0.4, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); } else vines.add({ x, y: 2 + rng() * 7.5, z: -0.38, h: -(0.3 + rng() * 1.0), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [90, 150, 56], tip: [50, 110, 44] }); }
+  // hanging moss/vines off the ruin faces
+  for (let i = 0; i < 30; i++) { const x = -4.0 + rng() * 6.0, yy = 2.4 + rng() * 5.4; if (x > -2.1 && x < 0.2 && yy < AY + AR + 0.2) continue; vines.add({ x, y: yy, z: -0.2, h: -(0.4 + rng() * 1.3), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [100, 150, 56], tip: [56, 112, 46] }); }
   [grass, leaves, red, vines].forEach((b) => root.add(b.mesh(leafMat())));
 
   // ── stone lantern ──
