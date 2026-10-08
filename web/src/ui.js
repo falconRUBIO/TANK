@@ -13,7 +13,7 @@ export function drawAvatar(c, { skin = '#b06a42', hair = '#222222', hat = null, 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ago = (ts) => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago'; };
 
-export function initUI({ onAct, journal, social }) {
+export function initUI({ onAct, journal, social, onTab }) {
   // social: { get(): {online, you, members, tank, activity, messages}|null, chat(text), regen(), invite() }
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast');
   let tab = 'tank', tt;
@@ -50,7 +50,7 @@ export function initUI({ onAct, journal, social }) {
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
   }
   function open(t) {
-    tab = t;
+    tab = t; onTab?.(t);
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     if (t === 'tank') { sheet.classList.remove('on'); return; }
     sheet.innerHTML = `<button class="x">×</button>` + views[t]();

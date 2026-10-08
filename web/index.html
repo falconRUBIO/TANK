@@ -71,11 +71,14 @@
   canvas.pv{width:84px;height:84px;image-rendering:pixelated;border-radius:14px;border:1px solid var(--line)}
   .sw{display:flex;gap:6px}.sw button{all:unset;width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;box-sizing:border-box}.sw button.sel{border-color:#fff}.sw .none{border:2px dashed #3a5070}.sw .none.sel{border-color:#fff}
   .pvt{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0c1626}.mem{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;font-size:12px}.mem canvas{width:34px;height:34px;image-rendering:pixelated;border-radius:8px}
+  #feedbar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 10px 14px;background:rgba(10,18,32,.92);border:1px solid #2a4468;border-radius:14px;font-size:13px;transform:translateY(140%);transition:transform .3s;pointer-events:none;backdrop-filter:blur(10px)}
+  #feedbar.on{transform:none;pointer-events:auto}#feedbar b{color:var(--gold);font-weight:600}
+  #feedbar button{all:unset;cursor:pointer;background:#2c6ab0;color:#fff;font-weight:600;font-size:12px;padding:7px 14px;border-radius:9px;letter-spacing:.06em}
 </style></head><body><div id="app">
 <header><div><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span> · <span id="todl">Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
 <div class="avs" id="avs"></div></header>
 <main><canvas id="tank"></canvas>
-<canvas id="glass"></canvas><div id="card"></div><div id="sheet"></div><div id="toast"></div>
+<canvas id="glass"></canvas><div id="feedbar"><span>🫙 Tap the water to drop food · <b id="feedleft"></b></span><button id="feeddone">Done</button></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
 <div class="tod"><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <nav><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
 <div data-tab="care"><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>

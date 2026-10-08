@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mulberry32, fbm, mix, hex } from '../color.js';
 import { stoneTex, woodTex, gravelTex } from './textures.js';
+import { buildDecor } from './decor.js';
 
 export const swayTime = { value: 0 };
 const C = (r, g, b) => new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
@@ -94,7 +95,9 @@ export function buildEnvironment() {
   const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.5 + rng() * 0.26, mossy });
   const carve = [];
   // regular masonry: staggered courses of squarish blocks; only the crowns are broken
+  const colBoxes = [];                                                         // solid volumes fish must swim around
   const wall = (cx, cz, w, d, y0, y1, { crown = 0, ornate = false, ch = 0.5 } = {}) => {
+    colBoxes.push({ min: [cx - w / 2, y0, cz - d / 2], max: [cx + w / 2, y1 - crown * 0.4, cz + d / 2] });
     let y = y0, c = 0;
     while (y < y1 - 0.05) {
       if (ornate && c % 6 === 5) { B(cx, y + 0.15, cz, w * 1.1, 0.3, d * 1.1, 0, 0, true); y += 0.3; c++; continue; }   // cornice band
@@ -132,7 +135,7 @@ export function buildEnvironment() {
     if (b.mossy) { m4.compose(v.set(b.x + (rng() - 0.5) * 0.1, b.y + b.h / 2 + 0.03, b.z), q.setFromEuler(e.set(0, b.ry, b.rz)), s.set(b.w * (0.5 + rng() * 0.5), 0.09, b.d * (0.6 + rng() * 0.4))); mossMesh.setMatrixAt(mc++, m4); }
   });
   mossMesh.count = mc;
-  const carveMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(46, 44, 32), roughness: 1 })), Math.max(1, carve.length));
+  const carveMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(96, 90, 66), roughness: 1 })), Math.max(1, carve.length));
   carve.forEach((cv, i) => { m4.compose(v.set(cv.x, cv.y, cv.z), q.identity(), s.set(cv.w, cv.h, 0.05)); carveMesh.setMatrixAt(i, m4); });
   carveMesh.castShadow = false; carveMesh.receiveShadow = true; carveMesh.frustumCulled = false; root.add(carveMesh);
   [blockMesh, mossMesh].forEach((m) => { m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; root.add(m); });
@@ -151,38 +154,6 @@ export function buildEnvironment() {
   farArch(-5.4, -9.5, 2.6, 4.2, 1.4); farArch(0.5, -11.5, 3.0, 5.0, 1.6); farArch(6.2, -10, 2.4, 4.6, 1.4);
   farPier(-8.6, -9, 1.5, 9, 0.7); farPier(9.6, -11, 1.8, 11, 0.7); farPier(3.4, -13, 1.6, 8, 0.7); farPier(-2.6, -13.5, 1.4, 7, 0.7);
   far.count = fc; far.frustumCulled = false; root.add(far);
-
-  // ── rocks ──
-  const rockMat = patch(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
-  const rock = (x, y, z, sx, sy, sz, seed) => {
-    const g = new THREE.IcosahedronGeometry(1, 1);
-    const p = g.attributes.position, cols = [];
-    for (let i = 0; i < p.count; i++) {
-      const n = fbm(p.getX(i) * 1.7 + seed, p.getY(i) * 1.7, p.getZ(i) * 1.7 + seed);
-      const f = 0.75 + n * 0.5; p.setXYZ(i, p.getX(i) * f, p.getY(i) * f, p.getZ(i) * f);
-    }
-    g.computeVertexNormals();
-    const nrm = g.attributes.normal;
-    for (let i = 0; i < p.count; i++) {
-      const up = nrm.getY(i), n = fbm(p.getX(i) * 3 + seed, p.getZ(i) * 3, 2);
-      let c = mix([92, 100, 98], [150, 158, 150], n);
-      if (up > 0.55 && n > 0.45) c = mix(c, [74, 138, 52], 0.65);
-      cols.push(...C(c[0], c[1], c[2]).toArray());
-    }
-    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-    const m = new THREE.Mesh(g, rockMat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.y = seed;
-    m.castShadow = m.receiveShadow = true; root.add(m);
-  };
-  rock(-1.3, 0.16, 2.7, 0.7, 0.4, 0.6, 8); rock(1.9, 0.18, 2.9, 0.9, 0.45, 0.7, 9); rock(-4.0, 0.4, 1.5, 1.5, 0.95, 1.1, 1); rock(1.2, 0.3, -0.9, 0.9, 0.6, 0.8, 2); rock(3.4, 0.35, 0.6, 1.15, 0.7, 0.9, 3);
-  rock(-1.0, 0.18, 1.9, 0.5, 0.3, 0.45, 4); rock(0.4, 0.22, -2.6, 1.3, 0.8, 1.0, 5); rock(4.3, 0.5, -1.3, 0.8, 1.0, 0.8, 6); rock(-4.6, 0.25, -0.2, 0.6, 0.5, 0.6, 7);
-
-  // ── driftwood ──
-  const wood = patch(new THREE.MeshStandardMaterial({ map: woodTex(), roughness: 0.9, flatShading: true }));
-  const trunk = lowPolyTube([new THREE.Vector3(-5.0, 0.3, 0.9), new THREE.Vector3(-4.4, 1.4, 1.0), new THREE.Vector3(-3.4, 2.3, 0.9), new THREE.Vector3(-2.4, 2.0, 1.0), new THREE.Vector3(-1.2, 1.0, 1.1), new THREE.Vector3(0.2, 0.45, 1.2), new THREE.Vector3(1.6, 0.3, 1.2)], (t) => 0.64 - t * 0.3 + Math.sin(t * 9) * 0.04, 7);
-  const wm = new THREE.Mesh(trunk, wood); wm.castShadow = wm.receiveShadow = true; root.add(wm);
-  for (const pts of [[[-3.4, 2.3, 0.9], [-3.0, 3.1, 0.8], [-2.6, 3.9, 0.8]], [[-1.2, 1.0, 1.1], [-0.6, 1.9, 1.0], [0, 2.6, 1.0]], [[-4.4, 1.4, 1.0], [-4.9, 2.2, 0.9], [-5, 3, 0.8]]]) {
-    const b = new THREE.Mesh(lowPolyTube(pts.map((a) => new THREE.Vector3(...a)), (t) => 0.2 - t * 0.14, 5), wood); b.castShadow = true; root.add(b);
-  }
 
   // ── gravel bed ──
   {
@@ -206,72 +177,21 @@ export function buildEnvironment() {
     pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
   }
 
-  // ── plants ──
-  const grass = new Blades(), leaves = new Blades(), red = new Blades(), vines = new Blades();
-  const clump = (x, z, n, hMin, hMax, spread, light = 0) => {
-    for (let i = 0; i < n; i++) {
-      const hh = hMin + rng() * (hMax - hMin), k = rng();
-      grass.add({ x: x + (rng() - 0.5) * spread, y: 0, z: z + (rng() - 0.5) * spread * 0.6, h: hh, w: 0.07 + rng() * 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.7, curl: (rng() - 0.5) * 0.9, seg: 7,
-        base: mix([36, 70, 40], [58, 98, 46], k), tip: mix([104, 150, 60], [160, 190, 84], k + light) });
-    }
-  };
-  [[-4.4, 0.3, 8, 3, 6.5, 0.9], [-3.4, 1.9, 7, 2.4, 5, 0.9], [1.8, 1.5, 9, 3, 7, 1.0], [4.0, 1.4, 8, 3.5, 7.5, 1.0], [3.0, -1.6, 7, 4, 7.5, 0.9], [-2.9, -2.2, 6, 3, 6, 0.9], [0.2, -3.2, 8, 3.5, 7, 1.2], [4.6, 0.3, 6, 2, 4, 0.8]].forEach(([x, z, n, a, b, sp]) => clump(x, z, n, a, b, sp));
-  // broad sword leaves
-  [[-0.9, 1.5, 0], [2.4, 0.8, 1], [-4.1, 2.2, 2], [1.0, -2.0, 3]].forEach(([x, z, si]) => {
-    for (let l = 0; l < 9; l++) {
-      const dir = (l / 9) * 6.28 + si; leaves.add({ x: x + Math.cos(dir) * 0.08, y: 0, z: z + Math.sin(dir) * 0.08, h: 1.7 + rng() * 1.1, w: 0.2 + rng() * 0.08, dir, lean: 0.9, curl: 0.9, seg: 6, taper: 2,
-        base: [34, 94, 40], tip: mix([96, 146, 64], [140, 180, 80], rng()) });
-    }
-  });
-  // red stem plants
-  [[2.6, 0.2], [3.9, 0.7], [1.5, -0.6], [3.2, -0.5]].forEach(([x, z], ri) => {
-    const hh = 3.2 + ri * 0.5;
-    red.add({ x, y: 0, z, h: hh, w: 0.03, lean: 0.1, curl: 0.5, dir: ri, seg: 10, base: [110, 30, 40], tip: [190, 60, 64] });
-    for (let k = 1; k < 14; k++) { const yy = k * hh / 14; for (const s of [-1, 1]) red.add({ x: x + Math.sin(ri) * 0.02, y: yy, z, h: 0.75 * (1 - k / 17), w: 0.1, dir: s > 0 ? 0 : Math.PI, lean: 0.6, curl: 0.4, seg: 3, taper: 2, base: [160, 36, 44], tip: [236, 84, 70] }); }
-  });
-  // feathery ferns (reference: lime fronds with side leaflets)
-  const fern = (x, z, h, nStem) => { for (let st = 0; st < nStem; st++) { const dir = st * 2.4 + x, hh = h * (0.7 + rng() * 0.4);
-    leaves.add({ x, y: 0, z, h: hh, w: 0.025, dir, lean: 0.55, curl: 0.7, seg: 9, base: [90, 120, 40], tip: [150, 172, 60] });
-    for (let k = 2; k < 11; k++) { const f = k / 11, len = 0.9 * (1 - f * 0.7) * h * 0.28, off = (0.55 * f + 0.7 * f * f) * hh * 0.5;
-      for (const sd of [-1, 1]) leaves.add({ x: x + Math.cos(dir) * off, y: f * hh * (1 - 0.15 * f), z: z + Math.sin(dir) * off, h: len, w: 0.07, dir: dir + sd * 1.45, lean: 0.8, curl: -0.4, seg: 3, taper: 2, base: [112, 142, 44], tip: mix([158, 184, 62], [200, 206, 90], rng()) }); } } };
-  fern(-4.3, 1.2, 3.6, 5); fern(-3.3, 1.9, 2.6, 4); fern(-4.7, 0.2, 4.4, 4); fern(0.3, 1.5, 2.2, 3); fern(2.0, 1.9, 2.4, 3); fern(-0.9, -2.6, 4.2, 4);
-  // dark, blurred foreground blades frame the shot like in the reference
-  const fg = new Blades();
-  for (let i = 0; i < 12; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.4 + rng() * 2.2), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 5, w: 0.16 + rng() * 0.12, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
-  root.add(fg.mesh(leafMat()));
-  // grass tufts rooted on top of the ruins
-  const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [40, 100, 44], tip: [140, 196, 74] }); };
-  tuft(-3.15, 9.5, -1.0, 10); tuft(1.2, 7.3, -1.0, 7); tuft(-0.95, 7.7, -1.0, 7); tuft(3.9, 5.7, -3.2, 7); tuft(-4.6, 6.7, -2.3, 6);
-  // bushy green stem plants + moss mounds
-  [[-2.2, 2.1], [2.0, 1.9], [4.2, 1.0], [-3.2, -1.0]].forEach(([x, z], bi) => {
-    for (let st = 0; st < 5; st++) { const hh = 1.6 + rng() * 1.6, dir = st * 1.3 + bi; leaves.add({ x, y: 0, z, h: hh, w: 0.03, dir, lean: 0.3, curl: 0.4, seg: 8, base: [50, 110, 46], tip: [120, 190, 70] });
-      for (let k = 1; k < 9; k++) for (const sd of [-1, 1]) leaves.add({ x: x + Math.cos(dir) * 0.3 * k / 9 * hh * 0.5, y: k * hh / 9, z: z + Math.sin(dir) * 0.3 * k / 9 * hh * 0.5, h: 0.32, w: 0.06, dir: dir + (sd > 0 ? 1.57 : -1.57), lean: 0.6, curl: 0.3, seg: 2, taper: 2, base: [60, 130, 52], tip: [150, 206, 84] }); }
-  });
-  const mossG = new THREE.IcosahedronGeometry(1, 1);
-  [[-3.0, 0.3, 1.8, 0.5], [1.7, 0.25, 2.0, 0.4], [-0.3, 0.2, -1.8, 0.45]].forEach(([x, y, z, r], mi) => {
-    const mm = new THREE.Mesh(mossG, patch(new THREE.MeshStandardMaterial({ color: C(110, 150, 52), flatShading: true, roughness: 1 })));
-    mm.position.set(x, y, z); mm.scale.set(r * 1.6, r * 0.7, r * 1.2); mm.castShadow = mm.receiveShadow = true; root.add(mm);
-  });
-  // starfish + a couple of shells on the sand
-  const starMat = patch(new THREE.MeshStandardMaterial({ color: C(238, 120, 52), roughness: 0.8 }));
-  for (let a = 0; a < 5; a++) { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.07, 0.11), starMat); arm.rotation.y = a * 1.2566; arm.position.set(-1.6 + Math.cos(a * 1.2566) * 0.2, 0.1, 2.35 + Math.sin(a * 1.2566) * -0.2); arm.castShadow = true; root.add(arm); }
-  // backdrop kelp forest (hazy, deep)
+  // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
+  const grass = new Blades(), vines = new Blades();
+  const tuft = (x, y, z, n) => { for (let i = 0; i < n; i++) grass.add({ x: x + (rng() - 0.5) * 0.7, y, z: z + (rng() - 0.5) * 0.5, h: 0.35 + rng() * 0.7, w: 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.9, curl: 0.5, seg: 4, base: [60, 100, 44], tip: [150, 190, 76] }); };
+  tuft(-3.15, 9.5, -1.0, 8); tuft(1.2, 7.3, -1.0, 6); tuft(-0.95, 7.7, -1.0, 6); tuft(3.9, 5.7, -3.2, 6); tuft(-4.6, 6.7, -2.3, 5);
   const kelp = new Blades();
-  for (let i = 0; i < 34; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
+  for (let i = 0; i < 26; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
-  // hanging moss/vines off the ruin faces
-  for (let i = 0; i < 30; i++) { const x = -4.0 + rng() * 6.0, yy = 2.4 + rng() * 5.4; if (x > -2.1 && x < 0.2 && yy < AY + AR + 0.2) continue; vines.add({ x, y: yy, z: -0.2, h: -(0.4 + rng() * 1.3), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [100, 150, 56], tip: [56, 112, 46] }); }
-  [grass, leaves, red, vines].forEach((b) => root.add(b.mesh(leafMat())));
+  const fg = new Blades();
+  for (let i = 0; i < 8; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.6 + rng() * 2.0), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 4, w: 0.16 + rng() * 0.1, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
+  root.add(fg.mesh(leafMat()));
+  for (let i = 0; i < 22; i++) { const x = -4.0 + rng() * 6.0, yy = 2.4 + rng() * 5.4; if (x > -2.1 && x < 0.2 && yy < AY + AR + 0.2) continue; vines.add({ x, y: yy, z: -0.2, h: -(0.4 + rng() * 1.2), w: 0.05, dir: 0, lean: 0.1, curl: 0.2, seg: 4, base: [100, 150, 56], tip: [56, 112, 46] }); }
+  [grass, vines].forEach((b) => root.add(b.mesh(leafMat())));
 
-  // ── stone lantern ──
-  const lant = new THREE.Group();
-  const lmat = stoneA.clone(); patch(lmat);
-  const box = (w, h, d, y, mat = lmat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.y = y; m.castShadow = m.receiveShadow = true; lant.add(m); return m; };
-  box(1.1, 0.25, 1.1, 0.12); box(0.4, 0.9, 0.4, 0.7); box(1.0, 0.18, 1.0, 1.24);
-  const glow = new THREE.MeshStandardMaterial({ color: C(255, 190, 90), emissive: C(255, 150, 50), emissiveIntensity: 1.2, roughness: 0.6 });
-  box(0.62, 0.55, 0.62, 1.6, glow);
-  for (const [sx, sz] of [[0.36, 0.36], [-0.36, 0.36], [0.36, -0.36], [-0.36, -0.36]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.12), lmat); p.position.set(sx * 0.8, 1.6, sz * 0.8); p.castShadow = true; lant.add(p); }
-  box(1.5, 0.16, 1.5, 2.0); box(1.1, 0.14, 1.1, 2.14); box(0.7, 0.14, 0.7, 2.28); box(0.3, 0.22, 0.3, 2.45);
-  lant.position.set(3.35, 0.0, -0.4); lant.rotation.y = -0.25; root.add(lant);
-  return { root, glow, lampPos: new THREE.Vector3(3.35, 1.6, -0.1), archX: AX };
+  const decor = buildDecor();
+  root.add(decor.group);
+  colBoxes.push({ min: [AX - 1.3, AY + AR * 0.8, -1.8], max: [AX + 1.3, AY + AR + 0.6, -0.2] });   // arch crown (the opening below stays open)
+  return { root, glow: decor.glow, lampPos: decor.lampPos, archX: AX, colliders: { boxes: [...colBoxes, ...decor.boxes], spheres: decor.spheres } };
 }

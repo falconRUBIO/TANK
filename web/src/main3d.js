@@ -35,6 +35,7 @@ const bgMat = new THREE.ShaderMaterial({ fog: false, depthWrite: false, uniforms
 const bg = new THREE.Mesh(new THREE.PlaneGeometry(90, 32), bgMat); bg.position.set(0, 8, -22); bg.renderOrder = -10; scene.add(bg);
 
 const env = buildEnvironment(); scene.add(env.root);
+Fish3D.world = env.colliders;                 // decorations are solid for the fish
 
 // lights
 const hemi = new THREE.HemisphereLight(0x6fb4e8, 0x1c4a52, 0.9); scene.add(hemi);
@@ -91,7 +92,12 @@ fishes.forEach((f) => {
 const flakes = { list: [], mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200) };
 flakes.mesh.frustumCulled = false; flakes.mesh.count = 0; flakes.mesh.castShadow = true; scene.add(flakes.mesh);
 const flakeCols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
-let hunger = 0.6, shells = 0, feedMode = false, eatenSinceReward = 0;
+let hunger = 0.6, shells = 0, feedMode = false, eatenSinceReward = 0, feedDrops = 0, feedIdle = 0;
+const feedbar = document.getElementById('feedbar');
+function startFeed() { feedMode = true; cleanMode = false; feedDrops = 0; feedIdle = 0; feedbar.classList.add('on'); feedLabel(); }
+function endFeed() { feedMode = false; feedbar.classList.remove('on'); }
+function feedLabel() { document.getElementById('feedleft').textContent = `${3 - feedDrops} drop${3 - feedDrops === 1 ? '' : 's'} left`; }
+document.getElementById('feeddone').onclick = endFeed;
 const journal = [{ day: 1, text: 'Our tank began.' }];
 let dayStart = Date.now(); try { dayStart = +localStorage.getItem('ourtank.start') || Date.now(); localStorage.setItem('ourtank.start', dayStart); } catch (e) { /* storage unavailable */ }
 const dayNo = () => Math.floor((Date.now() - dayStart) / 864e5) + 1;
@@ -121,8 +127,8 @@ const social = {
   share: async () => { const c = S.data.tank.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(d.text + ' ' + d.url, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { if (!confirm('Make a new code? The old one will stop working.')) return; try { S.data.tank.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
-const ui = initUI({ journal: () => journal.slice().reverse(), social, onAct: (a) => {
-  if (a === 'feed') { feedMode = true; cleanMode = false; ui.toast('Tap the water to drop flakes'); }
+const ui = initUI({ journal: () => journal.slice().reverse(), social, onTab: () => { if (feedMode) endFeed(); }, onAct: (a) => {
+  if (a === 'feed') startFeed();
   else if (a === 'clean') { startClean(); }
   else if (a === 'water') {
     if (waterAnim > 0) return;
@@ -150,7 +156,9 @@ addEventListener('pointerup', () => {
 });
 let lastClean = 0;
 const fedToday = new Set();
-function dropFlakes(x, n = 7) { for (let i = 0; i < n && flakes.list.length < 190; i++) flakes.list.push({ pos: new THREE.Vector3(x + (rng() - 0.5) * 0.9, 15 + rng() * 0.5, 0.3 + rng() * 1.6), age: 0, ph: rng() * 6, c: flakeCols[(rng() * 4) | 0] }); }
+function dropFlakes(x, n = 7) {
+  for (const f of fishes) if (rng() < 0.5) { f.flake = null; f.hold = rng() * 0.9; }      // about half of the fish notice the new food; the rest stay on the old
+  for (let i = 0; i < n && flakes.list.length < 190; i++) flakes.list.push({ pos: new THREE.Vector3(x + (rng() - 0.5) * 0.9, 15 + rng() * 0.5, 0.3 + rng() * 1.6), age: 0, ph: rng() * 6, c: flakeCols[(rng() * 4) | 0] }); }
 const fm = new THREE.Matrix4();
 function updateFlakes(dt, t) {
   for (const f of flakes.list) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
@@ -160,18 +168,31 @@ function updateFlakes(dt, t) {
   flakes.mesh.instanceMatrix.needsUpdate = true; if (flakes.mesh.instanceColor) flakes.mesh.instanceColor.needsUpdate = true;
   if (!net) { hunger = Math.min(1, hunger + dt * 0.01); water = Math.max(0.3, water - dt * 0.00012); const g0 = glass; glass = Math.min(1, glass + dt * 0.00018); if (Math.floor(glass * 900) > Math.floor(g0 * 900)) addAlgae(1); }
   if (waterAnim > 0) { waterAnim = Math.max(0, waterAnim - dt * 0.5); water += (1 - water) * Math.min(1, dt * 2.5); }
+  // every fish picks its own piece of food; claims spread them out so some chase the new drop while others finish the old one
+  const claims = new Map();
+  for (const f of fishes) { if (f.flake && !f.flake.eaten && flakes.list.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
   for (const f of fishes) {
-    let best = null, bd = 8;
-    const shy = f.profile?.traits.includes('Shy'), greedy = f.profile?.traits.includes('Greedy');
-    if (net || hunger > 0.05) for (const fl of flakes.list) {
-      if (fl.eaten || (f.id === 'cory' && fl.pos.y > 0.7) || (shy && fl.age < 1.8)) continue;
-      const d = f.pos.distanceTo(fl.pos); if (d < bd) { bd = d; best = fl; }
+    const tr = f.profile?.traits ?? [], shy = tr.includes('Shy'), greedy = tr.includes('Greedy'), curious = tr.includes('Curious');
+    f.hold = (f.hold ?? 0) - dt; f.think = (f.think ?? 0) - dt;
+    let fl = f.flake;
+    if (!(net || hunger > 0.05)) fl = null;
+    else if ((!fl && f.hold <= 0) || (fl && f.think <= 0 && rng() < 0.4)) {                     // choose, or reconsider, a target
+      f.think = 0.8 + rng() * 1.6;
+      let best = null, bs = 1e9;
+      for (const c of flakes.list) {
+        if (c.eaten || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
+        const d = f.pos.distanceTo(c.pos); if (d > 9) continue;
+        const sc = d + ((claims.get(c) || 0) - (c === f.flake ? 1 : 0)) * (greedy ? 0.8 : 2.6) + rng() * 1.4 - (curious ? Math.max(0, 3 - c.age) * 0.6 : 0) - (c === f.flake ? 1 : 0);
+        if (sc < bs) { bs = sc; best = c; }
+      }
+      if (best !== f.flake) { if (f.flake) claims.set(f.flake, claims.get(f.flake) - 1); if (best) claims.set(best, (claims.get(best) || 0) + 1); }
+      fl = best;
     }
-    f.seeking = !!best; f.foodMul = best ? (greedy ? 2.0 : 1.5) : 1;
-    if (best) {
-      f.target.copy(best.pos); f.retarget = 0.3;
-      if (f.mouth().distanceTo(best.pos) < 0.32) {
-        best.eaten = true;
+    f.flake = fl; f.seeking = !!fl; f.foodMul = fl ? (greedy ? 2.0 : 1.5) : 1;
+    if (fl) {
+      f.target.copy(fl.pos); f.retarget = 0.3;
+      if (f.mouth().distanceTo(fl.pos) < 0.34) {
+        fl.eaten = true; f.flake = null;
         const paid = !net && hunger > 0.25; if (!net) { hunger = Math.max(0, hunger - 0.045); water = Math.max(0.3, water - 0.01); }
         if (paid && ++eatenSinceReward >= 4) { eatenSinceReward = 0; shells++; ui.setShells(shells); ui.toast('+1 shell'); }
         if (!net && !fedToday.has(f.name)) { fedToday.add(f.name); journal.push({ day: dayNo(), text: `${f.name} found the flakes.` }); }
@@ -295,7 +316,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
     const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
     ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
-    const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { const fx = Math.max(-4, Math.min(4, hit.x)); if (net && hunger < 0.08) ui.toast('The fish are full'); else { dropFlakes(fx); net?.action('feed', { x: fx }); } }
+    const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { const fx = Math.max(-4, Math.min(4, hit.x)); if (net && hunger < 0.08) { ui.toast('The fish are full'); endFeed(); } else { dropFlakes(fx); net?.action('feed', { x: fx }); feedDrops++; feedIdle = 0; feedLabel(); if (feedDrops >= 3) endFeed(); } }
     return;
   }
   const f = pick(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null); });
@@ -321,6 +342,7 @@ function frame(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   updateFlakes(dt, t);
+  if (feedMode && (feedIdle += dt) > 12) endFeed();
   fishes.forEach((f) => f.update(dt, rng, fishes));
   shafts.update(t); surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; snow.update(dt, t); bubbles.update(dt, t); bubbles2.update(dt, t);
   watchPerf(dt);
@@ -361,4 +383,18 @@ function setQuality(q) {
 }
 function watchPerf(dt) { if (qs.get('q') || performance.now() - born < 4000) return; slow = dt > 0.036 ? slow + 1 : Math.max(0, slow - 2); if (slow > 90 && quality > 0) { slow = 0; setQuality(quality - 1); } }
 requestAnimationFrame(frame);
+// headless self-check: advance the simulation without drawing and report the worst overlaps
+window.__sim = (n, dt = 1 / 30, drops = []) => {
+  let worstDeco = 0, worstFish = 0, minPair = 1e9; const W = Fish3D.world;
+  for (let i = 0; i < n; i++) {
+    for (const [at, x] of drops) if (i === at) dropFlakes(x);
+    updateFlakes(dt, i * dt); fishes.forEach((f) => f.update(dt, rng, fishes));
+    for (const f of fishes) {
+      for (const b of W.boxes) { const dx = f.pos.x - Math.max(b.min[0], Math.min(f.pos.x, b.max[0])), dy = f.pos.y - Math.max(b.min[1], Math.min(f.pos.y, b.max[1])), dz = f.pos.z - Math.max(b.min[2], Math.min(f.pos.z, b.max[2])); worstDeco = Math.max(worstDeco, f.cr - Math.hypot(dx, dy, dz)); }
+      for (const s of W.spheres) worstDeco = Math.max(worstDeco, s.r + f.cr - Math.hypot(f.pos.x - s.x, f.pos.y - s.y, f.pos.z - s.z));
+      for (const o of fishes) if (o !== f) { const d = Math.hypot(f.pos.x - o.pos.x, f.pos.y - o.pos.y, (f.pos.z - o.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + o.radius)); worstFish = Math.max(worstFish, 1 - d / mn); minPair = Math.min(minPair, d / mn); }
+    }
+  }
+  return { worstDecoPenetration: +worstDeco.toFixed(3), worstFishOverlap: +worstFish.toFixed(3), minPairRatio: +minPair.toFixed(2), targets: [...new Set(fishes.map((f) => f.flake).filter(Boolean))].length, chasing: fishes.filter((f) => f.flake).length };
+};
 window.__tank = { fishes, bokeh, dropFlakes, setQuality, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };
