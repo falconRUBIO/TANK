@@ -97,21 +97,22 @@ export class Fishes {
     const phase = this.phase?.() ?? 'day';
     for (const f of live) {
       const tr = f.profile?.traits ?? [], has = (x) => tr.includes(x), d = (f.dw ||= { near: {} });
-      d.glass = f.pos.z > 2.2 ? (d.glass ?? 0) + dt : Math.max(0, (d.glass ?? 0) - dt * 2); if ((has('Brave') || has('Social')) && d.glass > 20 && this.wants(f, 'glass')) this.said(f, 'glass');
-      d.surface = f.pos.y > 11 ? (d.surface ?? 0) + dt : Math.max(0, (d.surface ?? 0) - dt * 2); if (has('Greedy') && d.surface > 20 && this.wants(f, 'surface')) this.said(f, 'surface');
+      d.glass = f.pos.z > 2.1 ? (d.glass ?? 0) + dt : Math.max(0, (d.glass ?? 0) - dt * 0.4); if ((has('Brave') || has('Social')) && d.glass > 12 && this.wants(f, 'glass')) this.said(f, 'glass');
+      d.surface = f.pos.y > 10.5 ? (d.surface ?? 0) + dt : Math.max(0, (d.surface ?? 0) - dt * 0.4); if (has('Greedy') && d.surface > 12 && this.wants(f, 'surface')) this.said(f, 'surface');
       d.rest = this.night && f.pos.y < 3 && f.vel.length() < 0.4 ? (d.rest ?? 0) + dt : Math.max(0, (d.rest ?? 0) - dt * 2); if (d.rest > 20 && this.wants(f, 'night_rest')) this.said(f, 'night_rest');
       for (const sp of spots) {
-        const n = (d.near[sp.id] ||= { t: 0, visits: 0 }), dx = f.pos.x - sp.x, dz = (f.pos.z - sp.z) * 1.3, near = Math.hypot(dx, dz) < 1.35 && f.pos.y < sp.h + 1.2;
+        const n = (d.near[sp.id] ||= { t: 0, visits: 0, hide: 0 }), dx = f.pos.x - sp.x, dzr = f.pos.z - sp.z, near = Math.hypot(dx, dzr * 1.3) < 1.35 && f.pos.y < sp.h + 1.2;
+        const behind = Math.abs(dx) < 1.2 && dzr < -0.25 && dzr > -1.9 && f.pos.y < sp.h + 1.4;       // tucked in behind it, out of sight from the glass
+        n.hide = behind ? n.hide + dt : Math.max(0, n.hide - dt * 0.5); if (has('Shy') && n.hide > 8 && this.wants(f, 'hideaway')) this.said(f, 'hideaway', { spot: sp.id });
         if (near) {
-          n.t += dt; const behind = f.pos.z < sp.z - 0.2;
-          if (has('Shy') && behind && n.t > 10 && this.wants(f, 'hideaway')) this.said(f, 'hideaway', { spot: sp.id });
+          n.t += dt;
           if (has('Curious') && n.t > 5 && this.wants(f, 'object')) this.said(f, 'object', { spot: sp.id });
         } else if (n.t > 0) {
           if (n.t >= 3) { n.visits++; if (n.visits >= 3 && this.wants(f, 'regular')) this.said(f, 'regular', { spot: sp.id }); else if (this.wants(f, 'visit')) this.said(f, 'visit', { spot: sp.id }, 90); }
           n.t = 0;
         }
       }
-      if (has('Playful') && Math.hypot(f.pos.x - this.bubbleAt.x, (f.pos.z - this.bubbleAt.z) * 1.3) < 1.3 && f.pos.y < 9 && this.hasBubbler?.()) { d.bub = (d.bub ?? 0) + dt; if (d.bub > 6 && this.wants(f, 'bubbles')) this.said(f, 'bubbles'); } else d.bub = Math.max(0, (d.bub ?? 0) - dt);
+      if (has('Playful') && Math.hypot(f.pos.x - this.bubbleAt.x, (f.pos.z - this.bubbleAt.z) * 1.1) < 1.6 && f.pos.y < 10 && this.hasBubbler?.()) { d.bub = (d.bub ?? 0) + dt; if (d.bub > 4 && this.wants(f, 'bubbles')) this.said(f, 'bubbles'); } else d.bub = Math.max(0, (d.bub ?? 0) - dt);
       // routine: the same part of the tank in two different parts of the day, remembered between visits
       const reg = (f.pos.x < -1.3 ? 0 : f.pos.x > 1.3 ? 2 : 1) * 2 + (f.pos.y > 7 ? 1 : 0); this.routine ||= this.loadRoutine(); const rr = ((this.routine[f.fid] ||= {})[phase] ||= {}); rr[reg] = (rr[reg] ?? 0) + dt; this.rdirty = true;
       if (!d.rchk || t - d.rchk > 20) { d.rchk = t; const seenIn = Object.values(this.routine[f.fid] ?? {}).filter((m) => Object.values(m).some((v) => v >= 40)); const hasTwo = [0, 1, 2, 3, 4, 5].some((r) => Object.values(this.routine[f.fid] ?? {}).filter((m) => (m[r] ?? 0) >= 40).length >= 2); if (hasTwo && seenIn.length && this.wants(f, 'routine')) this.said(f, 'routine'); }
