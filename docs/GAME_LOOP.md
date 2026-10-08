@@ -21,7 +21,6 @@ Three friends share one aquarium on a phone. Calm, no ads, no purchases, no stre
 | Ordered fish arrives | 10 min to 4 hours, by species |
 | Rare visitor (Moon Betta, Sun Angelfish, Rose Corydoras; greet for +4 and a book entry) | every 9 to 15 hours, stays 3 hours |
 | Egg (two adults of one species; hatches in 4 hours into a blend of both) | every 16 to 28 hours |
-| Journal story about a fish | every 3 to 5 hours |
 | Tank birthday | +8 shells each week of the tank's age |
 
 Light follows the phone's clock (morning, afternoon, evening, night). At night most fish drift low and slow.
@@ -43,7 +42,7 @@ A fish that is starving or in foul water accumulates neglect time. Care wins it 
 - Collection book: 34 entries (fish, decorations, rare visitors); +3 shells for every 5 found.
 - Tank wishes (shared goals, in order): 12 of them, from "three fish swimming together" (+4) to "find everything in the book" (+25).
 - The tank starts empty except for one goldfish and a free starter pack of five decorations. Floor (5 choices) and backdrop (4 choices) are picked in the Decorate tab.
-- Nothing beyond level 8 exists yet.
+- Nothing beyond level 8 exists yet (see `docs/PROGRESSION_9_12.md`).
 
 ## 5. Fish as individuals
 - Each fish has one or two traits (Shy, Brave, Curious, Social, Playful, Lazy, Calm, Greedy) that drive real movement: shy fish hide behind plants and bolt when others come close; brave fish swim to the glass; curious fish inspect decorations and other fish; social fish keep a buddy; playful fish chase bubbles; lazy fish rest low; greedy fish wait near the surface.
@@ -56,17 +55,21 @@ A fish that is starving or in foul water accumulates neglect time. Care wins it 
 - Nudge a friend when the tank needs something. Send a message in a bottle (40 characters, 2 shells to send, +4 shells for whoever opens it; one per 6 hours). Chat. Activity list.
 - Opt-in push notifications (needs keys on the server): rare visitor, an arrival or hatch, a critical-state warning, a nudge, a bottle. Maximum two a day per person, never 22:00 to 08:00 local time, never while the game is open.
 
-## 7. Not built yet
-- Small optional daily wishes (shared, no penalty for missing a day).
-- A no-cost "thank you" between caretakers.
-- Cooperative discoveries (one finds an object, another investigates it, a third places it).
-- Progression beyond level 8 (new species, environments, rare decorations, behaviour milestones, aquarium history).
-- Usage analytics and the developer dashboard.
-- Simulations for one versus three caretakers, absent players, and level 10+, and a written audit.
-- Real-device testing: frame rate, touch feel, how the fish movement reads, and whether the timings feel right.
+## 7. Added since the first version of this document
+- **Behaviour discoveries (14).** Noticed once per fish, from real behaviour, saved permanently, written to the journal, shared by everyone, and shown only as a small toast. Found a best friend, a favourite spot, trusts a caretaker, follows a fingertip, became a parent (all decided by the server), and comfortable at the glass, waits at the surface, rests at night, has a hiding place, returns to one decoration, investigates objects, swims with a friend, plays in the bubbles, has a daily routine (all seen by a watching phone and checked by the server: right personality, a real decoration, a real partner, a real bubbler).
+- **One shared daily wish.** Watch fish swim for 15 seconds, say hello to three fish, see two fish swim together, watch a fish visit a decoration, watch a playful fish by the bubbles, give the tank some needed care, or place a plant. Only wishes that can be done right now are chosen; it is replaced each day; +3 shells once; nothing happens if it is missed. It shows quietly in the hint pill and in the Care sheet.
+- **Thank-yous.** A heart beside a friend's recent contribution (24 hours). Free, once per contribution, limited to one per friend per ten minutes, no counts or rankings anywhere. They get a small toast: "Sam appreciated you feeding the fish."
+- **Journal versus activity.** The Journal holds meaningful history (arrivals, births, growth, deaths and memorials, friendships, discoveries, tank milestones, unusual events, your own notes). Feeding, cleaning, purchases, decorating, renamed fish and opened bottles go to the Activity list in the Friends tab, which names who did what ("You fed the fish", "Alex and Sam helped Pip grow up"). The invented stories every few hours are gone; old journal rows are kept.
+- **Family trees.** Eggs record both parents. A hatchling keeps its parents, a snapshot of its grandparents, its generation number and blended colour genes (pattern from one parent, tint and size from both, with a little mutation). The Family button on a fish card lists generation, parents, grandparents and children, including ones that have died. Memorial records carry the same lineage. The journal marks the first hatch of each generation.
+- **Usage tracking and a private dashboard** (see README).
+
+## 7b. Not built yet
+- Progression beyond level 8 (a proposal is in `docs/PROGRESSION_9_12.md`).
+- A first-generation family tree picture beyond the text dialog.
+- Real-device testing: frame rate, touch feel, whether the timings feel right, and whether people actually notice the discoveries.
 
 ## 8. Questions for the reviewer
 1. Is five days of neglect before death possible the right weight for a casual shared game, or too harsh for friends who stop opening it?
-2. After the first few days, what gives a visit a goal beyond care (levels are slow: about 12 days to level 5)?
+2. After the first few days, the daily wish and discoveries give a visit a small goal beyond care. Is that enough, given levels are slow (about 12 days to level 5)?
 3. Is the shared shell wallet right for three players, or should contributions be visible?
-4. Which of the unbuilt items matters most?
+4. Do the discoveries, daily wish and family trees make players care about individual fish, or do they read as extra chores?

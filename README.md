@@ -52,7 +52,11 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 
 ## Notifications (optional)
 
-Off until the server has a key pair. Generate one with `npx web-push generate-vapid-keys`, then set three environment variables on the server: `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` (a `mailto:` address you own). Players then get a Notifications switch in Settings. On iPhone it only appears after the game is added to the Home Screen (Share, then Add to Home Screen). Rules: opt in per phone, at most two a day per person, nothing between 22:00 and 08:00 their local time, and only for a rare visitor, a fish or egg arriving, a nudge or a bottle.
+Off until the server has a key pair. Generate one with `npx web-push generate-vapid-keys`, then set three environment variables on the server: `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` (a `mailto:` address you own). Players then get a Notifications switch in Settings. On iPhone it only appears after the game is added to the Home Screen (Share, then Add to Home Screen). Rules: opt in per phone, at most two a day per person, nothing between 22:00 and 08:00 their local time, and only for a rare visitor, a fish or egg arriving, a nudge or a bottle (never for a thank-you or a death).
+
+## Usage tracking and the developer view
+
+The server records anonymous events (a random player id, a random tank id, an event name and a number; no names, no IP addresses, no message text): sessions (counting only time the game is visible), care actions, fish played with and inspected, decorations placed, shells earned and spent, daily wishes completed, discoveries, journal opened, friend interactions, fish deaths and level-ups. Set `ADMIN_KEY` on the server, then open `/admin?key=YOUR_KEY` (or `/admin/stats?key=YOUR_KEY` for JSON). It shows individual-player numbers (daily active players, session length, visits per day, retention on days 1, 7 and 30, what a session contains) separately from shared-tank numbers (active tanks, caretakers per tank, level distribution, deaths). Three people opening one tank count as three players and one tank. Without `ADMIN_KEY` the page does not exist.
 
 ## Known limits
 
