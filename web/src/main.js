@@ -232,7 +232,7 @@ const tut = (() => {
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so two friends can join.` : 'Up to three friends can care for one tank. They join with a six-character code once the game is hosted online.';
         ui.showCoach({ title: 'BETTER TOGETHER', text: share, button: 'Got it', onButton: () => set(3), skip: skip });
       } else if (step === 3) {
-        ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'Here is a free plant. Open Decorate, pick a plant and drag it into place.', skip: skip }); ui.pulse('decorate');
+        ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open Decorate, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
         ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Care for the fish to earn shells. Next: add a plant in Decorate, then adopt a friend for your fish. Tap a fish to get to know it.', button: 'Start', onButton: () => { set(5); ui.hideCoach(); } });
       }

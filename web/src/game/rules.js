@@ -266,8 +266,8 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const d = DECOR_DEF[t.decor[i].type]; t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
-      if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.freePlant = 1; return ok(); }
-      const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; if (step === 3 && t.flags.freePlant === undefined) t.flags.freePlant = 1; }
+      if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
+      const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; }
       return ok();
     }
     case 'collect': {

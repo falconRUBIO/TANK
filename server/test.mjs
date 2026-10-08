@@ -214,7 +214,7 @@ await t('nudges only reach a real friend, only when something needs doing, and n
   const out = await mkUser('Outsider'); wsA.send(JSON.stringify({ t: 'nudge', to: out.userId })); assert.ok(await waitFor(wsA, (m) => m.t === 'nudged' && m.reason === 'NOT_A_FRIEND')); wsB3.close();
 });
 await t('dev actions are refused unless the server runs in dev mode', async () => { assert.equal((await ackOf(wsA, { t: 'dev', what: 'shells', idem: 'dv' })).reason, 'FORBIDDEN'); });
-await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.freePlant, 1); });
+await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);
