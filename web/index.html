@@ -47,7 +47,7 @@
   #sheet.on{transform:none}#sheet h3{margin:0 0 12px;font-size:15px;letter-spacing:.06em;text-align:center}
   #sheet .x{all:unset;position:absolute;right:16px;top:12px;font-size:22px;color:var(--dim);cursor:pointer}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12px;text-align:center}
+  .tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 8px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12px;text-align:center}
   .tile span{font-size:26px}.tile:active{border-color:var(--gold)}
   .dim{color:var(--dim);font-size:12px;margin:12px 0 0;text-align:center}
   .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.slot{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px}
@@ -125,6 +125,17 @@
   .lc{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink)}.lc b{letter-spacing:.2em}.lc small{color:var(--dim)}.fishy{font-size:42px;animation:sw 1.6s ease-in-out infinite}@keyframes sw{50%{transform:translateX(12px) rotate(4deg)}}
   .big.gold:disabled{opacity:.45}
   @media (prefers-reduced-motion:reduce){.fishy,nav div.pulse{animation:none}}
+  .orders,.wish{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12.5px}
+  .orders small,.wish small{display:block;color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-bottom:5px}
+  .orders div{display:flex;justify-content:space-between;padding:2px 0}.orders b{color:var(--gold);font:600 12px ui-monospace,Menlo,monospace}
+  .wish{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-top:12px;border-color:#2c4a3a;background:#10261f}.wish small{grid-column:1/3}.wish b{color:var(--gold);font:600 12px ui-monospace,Menlo,monospace}
+  .seg{display:flex;gap:6px;margin:-4px 0 12px}.seg button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px;border-radius:10px;border:1px solid var(--line);font-size:12px;color:var(--dim)}.seg button.on{background:#17304f;color:var(--ink);border-color:#2a4468}
+  .bkhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.bkhead b{font:600 15px ui-monospace,Menlo,monospace;color:var(--gold)}.bkhead small{color:var(--dim);font-size:11px}
+  .bkg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}.bk{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;text-align:center;min-width:0}
+  .bk img{width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;background:radial-gradient(circle at 50% 60%,#183a58,#0e1b2e 70%);border-radius:8px}
+  .bk b{font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bk.nope img{filter:brightness(0) opacity(.45)}.bk.nope b{color:var(--dim)}
+  .nudge{all:unset;cursor:pointer;margin-top:2px;font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid #2a4468;background:#17304f;color:#a9c8ee}.nudge:disabled{opacity:.5}
+  #card .pet{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:10px;text-align:center;padding:9px;border-radius:10px;border:1px solid #4a3a52;background:#2a1a30;color:#ffc9e0;font-size:13px;cursor:pointer}#card .pet:active{background:#3a2440}
 </style></head><body><div id="app">
 <header><div class="hl"><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span><span id="todl" hidden>Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
 <div class="hr"><div class="avs" id="avs"></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

@@ -30,6 +30,7 @@ export class Live {
     ws.onerror = () => ws.close();
   }
   action(t, extra = {}) { const m = { t, idem: crypto.randomUUID().slice(0, 18), ...extra }; this.pending.set(m.idem, m); if (this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); return m.idem; }
+  send(m) { if (this.ws.readyState === 1) { this.ws.send(JSON.stringify(m)); return true; } return false; }
   chat(text) { if (this.ws.readyState === 1) this.ws.send(JSON.stringify({ t: 'chat', text })); }
   get connected() { return this.ws.readyState === 1; }
 }

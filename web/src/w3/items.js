@@ -22,6 +22,41 @@ function blob(rx, ry, rz, sd, colors) {
   const u = 0.07, v = new Vox(u); v.ellipsoid(0, 0, 0, rx / u, ry / u, rz / u, (i, j, k) => mix(colors[0], colors[1], fbm(i * 0.35 + sd, j * 0.35, k * 0.35)), sd, 0.18); topLit(v); return v;
 }
 const B = {
+  bamboo: (g, seed) => {
+    const v = new Vox(0.07), r = mulberry32(seed);
+    for (const [x0, z0, H] of [[-4, 0, 70], [0, 2, 92], [4, -1, 80], [-1, -3, 56]]) {
+      const ph = r() * 6; const I = Math.round(x0 * 1.2), K = z0;
+      for (let j = 0; j <= H; j++) { const node = j % 17 === 0, bend = Math.round(Math.sin(j * 0.04 + ph) * 2 * (j / H)); const c = node ? [92, 124, 52] : mix([84, 160, 70], [150, 206, 96], (j % 17) / 17);
+        for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) v.set(I + dx + bend, j, K + dz, mix(c, [30, 70, 40], dx ? 0.3 : 0), dx ? 0.9 : 1.1, Math.min(1, j / H), ph);
+        if (node && j > 10 && j < H - 6) { v.set(I + 3 + bend, j + 1, K, [74, 150, 70], 1.1, j / H, ph); v.set(I + 4 + bend, j + 2, K, [120, 190, 84], 1.15, j / H, ph); v.set(I - 2 + bend, j + 1, K, [74, 150, 70], 1.1, j / H, ph); } }
+    }
+    g.add(v.mesh(true)); return [];
+  },
+  anchor: (g) => {
+    const u = 0.075, v = new Vox(u), iron = (i, j, k) => mix([58, 66, 70], [96, 104, 100], hash(i, j, k, 3));
+    for (let j = 0; j <= 30; j++) for (let k = -1; k <= 1; k++) for (const i of [-1, 0, 1]) v.set(i, j, k, iron(i, j, k));
+    for (let i = -9; i <= 9; i++) for (let k = -1; k <= 1; k++) for (const j of [24, 25]) v.set(i, j, k, iron(i, j, k));
+    for (let a = -Math.PI * 0.95; a <= -Math.PI * 0.05; a += 0.05) for (const th of [0, 1, 2]) for (let k = -1; k <= 1; k++) v.set(Math.round(Math.cos(a) * (11 - th)), Math.round(12 + Math.sin(a) * 10 - th * 0.2), k, iron(a * 10, th, k));
+    for (let a = 0; a < 6.3; a += 0.15) for (let k = -1; k <= 0; k++) v.set(Math.round(Math.cos(a) * 3), 34 + Math.round(Math.sin(a) * 3), k, iron(a * 9, 2, k));
+    for (const q of v.m.values()) { if (hash(q.i, q.j, q.k, 8) > 0.72) q.c = mix(q.c, [150, 96, 54], 0.6); if (!v.has(q.i, q.j + 1, q.k) && hash(q.i, q.j, q.k, 4) > 0.45) q.c = mix([96, 134, 54], [150, 176, 64], hash(q.i, q.k, 4)); }
+    const m = v.mesh(); m.position.y = 0.0; m.rotation.z = 0.12; g.add(m); return [{ v, x: 0, y: 0, z: 0, ry: 0 }];
+  },
+  bridge: (g) => {
+    const u = 0.1, v = new Vox(u), wood = (i, j, k) => mix([112, 76, 44], [158, 110, 62], hash(Math.floor(i / 2), j, k, 6));
+    for (let i = -16; i <= 16; i++) { const y = Math.round(9 * Math.cos((i / 16) * Math.PI / 2) ** 1.3) + 3; for (let k = -3; k <= 3; k++) { v.set(i, y, k, wood(i, y, k)); if (i % 3 === 0) v.set(i, y - 1, k, [70, 46, 28]); } }
+    for (const k of [-3, 3]) for (let i = -16; i <= 16; i += 4) { const y = Math.round(9 * Math.cos((i / 16) * Math.PI / 2) ** 1.3) + 3; for (let h = 1; h <= 5; h++) v.set(i, y + h, k, wood(i, h, k)); }
+    for (const k of [-3, 3]) for (let i = -16; i <= 16; i++) { const y = Math.round(9 * Math.cos((i / 16) * Math.PI / 2) ** 1.3) + 3; v.set(i, y + 5, k, wood(i, 5, k)); }
+    for (const sx of [-16, 16]) for (let j = 0; j < 4; j++) for (const k of [-3, 3]) { v.set(sx, j, k, [96, 90, 80]); v.set(sx, j, k + (k > 0 ? -1 : 1), [96, 90, 80]); }
+    for (const q of v.m.values()) if (!v.has(q.i, q.j + 1, q.k) && hash(q.i, q.j, q.k, 8) > 0.6) q.c = mix([96, 134, 54], [150, 176, 64], hash(q.i, q.k, 4));
+    topLit(v); const m = v.mesh(); m.position.y = 0.05; g.add(m); return [{ v, x: 0, y: 0.05, z: 0, ry: 0 }];
+  },
+  crystal: (g, seed) => {
+    const u = 0.07, v = new Vox(u), r = mulberry32(seed);
+    for (const [x0, z0, H, lean] of [[0, 0, 38, 0.1], [-6, 3, 26, -0.35], [6, -2, 30, 0.4], [3, 5, 18, 0.2], [-3, -4, 22, -0.15]]) {
+      for (let j = 0; j <= H; j++) { const t = j / H, w = Math.max(0, Math.round((1 - t * 0.85) * 3.4)); for (let i = -w; i <= w; i++) for (let k = -w; k <= w; k++) { if (Math.abs(i) + Math.abs(k) > w + 1) continue; const c = mix([40, 120, 232], [150, 238, 255], t * 0.8 + hash(i, j, k, 2) * 0.2); v.set(x0 + i + Math.round(lean * j), j, z0 + k, c, 1.15 + t * 0.9); } }
+    }
+    const m = v.mesh(); m.position.y = 0.04; g.add(m); g.userData.crystal = true; return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
+  },
   moss: (g, seed) => { const v = blob(0.38, 0.3, 0.36, seed % 7 + 1, [[70, 120, 46], [160, 200, 80]]); const m = v.mesh(); m.position.y = 0.16; g.add(m); return [{ v, x: 0, y: 0.16, z: 0, ry: 0 }]; },
   kelp: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); for (const [x, z, h] of [[-0.3, 0, 84], [0.05, 0.25, 104], [0.35, -0.1, 92]]) plantVox(v, r, [x, z], 'kelp', { h, lo: [40, 108, 56], hi: [150, 204, 84], leaf: true }); g.add(v.mesh(true)); return []; },
   bubbler: (g) => {

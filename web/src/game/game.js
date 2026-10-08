@@ -58,7 +58,14 @@ export class Game {
     } else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }
     else if (m.t === 'chat') { this.messages.push(m.msg); this.emit('chat', m.msg); }
+    else if (m.t === 'nudge') this.emit('nudged', m.from, m.why);
+    else if (m.t === 'nudged') { const w = this.nudgeWait; this.nudgeWait = null; w?.(m); }
     else if (m.t === 'ack') { const w = this.waiting.get(m.idem); if (w) { this.waiting.delete(m.idem); w(m); } }
+  }
+
+  nudge(to) {
+    if (!this.live?.connected) return Promise.resolve({ ok: false, reason: 'OFFLINE' });
+    return new Promise((res) => { const t = setTimeout(() => { this.nudgeWait = null; res({ ok: false, reason: 'TIMEOUT' }); }, 6000); this.nudgeWait = (m) => { clearTimeout(t); res(m); }; this.live.send({ t: 'nudge', to }); });
   }
 
   // ── actions ──
@@ -74,4 +81,4 @@ export class Game {
     return new Promise((res) => { const t = setTimeout(() => { this.waiting.delete(idem); res({ ok: false, reason: 'TIMEOUT' }); }, 8000); this.waiting.set(idem, (m) => { clearTimeout(t); res(m); }); });
   }
 }
-export const REASONS = { NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.' };
+export const REASONS = { NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.', TOO_SOON: 'You nudged them recently. Give them some time.', NOTHING_NEEDED: 'The tank is fine right now, nothing to nudge about.', NOT_A_FRIEND: 'They are not in this tank.' };
