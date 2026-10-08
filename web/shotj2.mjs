@@ -1,0 +1,11 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [,, url, file, js, w='390', h='760'] = process.argv;
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await b.newPage({ viewport: { width: +w, height: +h } });
+p.on('pageerror', (e) => console.log('pageerror:', e.message));
+p.on('console', (m) => { if (m.type()==='error') console.log('err:', m.text()); });
+await p.goto(url); await p.waitForTimeout(1200);
+if (js) await p.evaluate(js);
+await p.waitForTimeout(2500);
+await p.screenshot({ path: file });
+await b.close();

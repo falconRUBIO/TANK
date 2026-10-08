@@ -17,18 +17,18 @@ function eyePainter(body, ex, ey, r, iris, pupil = 0.95) {
   };
 }
 
-// ───────────────────────── Goldfish (Pip) ─────────────────────────
+// ───────────────────────── Goldfish (Pip) – hero fish, high-res voxels ─────────────────────────
 const goldfish = {
-  id: 'goldfish', label: 'Goldfish', length: 40,
+  id: 'goldfish', label: 'Goldfish', length: 62, vox: 0.04,
   make(seed = 1) {
     const rng = mulberry32(seed * 7919 + 13);
     const off = [rng() * 90, rng() * 90, rng() * 90];
-    const whiteAmt = 0.22 + rng() * 0.2;
-    const orange = mix(hex(0xea6a1c), hex(0xf08a24), rng());
-    const X0 = 6, L = 28;
-    const hy = prof([[0, 2.2], [0.1, 4.2], [0.28, 7.6], [0.5, 9.4], [0.72, 8.4], [0.9, 5.8], [1, 3]]);
-    const hz = prof([[0, 1], [0.1, 2.2], [0.3, 4.2], [0.5, 5.2], [0.75, 4.6], [0.92, 3], [1, 1.4]]);
-    const cy = prof([[0, 0], [0.5, 0.7], [1, -0.4]]);
+    const orange = mix(hex(0xff7a10), hex(0xff9a1c), rng());
+    const bands = [0.2 + rng() * 0.04, 0.43 + rng() * 0.04, 0.64 + rng() * 0.03].slice(0, 2 + (rng() < 0.7 ? 1 : 0));
+    const X0 = 10, L = 42;
+    const hy = prof([[0, 3.5], [0.1, 6], [0.25, 11], [0.45, 14], [0.65, 13.5], [0.85, 10.5], [0.95, 7], [1, 4.5]]);
+    const hz = prof([[0, 2], [0.15, 4], [0.35, 7], [0.55, 8], [0.8, 6.8], [0.93, 4.5], [1, 2.5]]);
+    const cy = prof([[0, 0], [0.5, 1], [1, -0.6]]);
     const body = (x, y, z) => {
       const t = (x - X0) / L;
       if (t < 0 || t > 1) return null;
@@ -36,68 +36,77 @@ const goldfish = {
       const dy = (y - cy(t)) / h, dz = z / w;
       return dy * dy + dz * dz <= 1 ? { t, dy, dz } : null;
     };
-    const eye = eyePainter(body, X0 + 0.82 * L, 2.6, 2.3, [250, 236, 200], 1.35);
-    const cream = hex(0xfbebd0);
-    const tailCol = (d, y) => {
-      const ray = Math.floor(Math.atan2(y, d + 1) * 9) & 1;
-      let c = mix(cream, hex(0xf6c9a0), clamp(1 - d / 5) * 0.8);
-      if (ray) c = mix(c, [255, 255, 250], 0.35);
-      return c;
-    };
+    const ex = Math.round(X0 + 0.86 * L), ey = 4;
+    const cream = hex(0xf6ecdc), pale = hex(0xd9d4d6), gray = hex(0xb4b2bc), deepO = hex(0xe85e0c);
+    const bt = (x) => clamp((x - X0) / L);
     return {
-      bounds: { x: [-10, 40], y: [-20, 20], z: [-8, 8] },
-      center: [17, 0],
-      bend: { pivot: 12, len: 16, amp: 0.5, bob: 0.9 },
+      bounds: { x: [-14, 56], y: [-26, 26], z: [-12, 12] },
+      center: [26, 0],
+      bend: { pivot: 18, len: 26, amp: 0.42, bob: 1.2 },
       sample(x, y, z) {
-        const e = eye(x, y, z);
-        if (e) return e;
         const b = body(x, y, z);
         if (b) {
           const { t, dy } = b;
-          const n = fbm(x * 0.13 + off[0], y * 0.16 + off[1], Math.abs(z) * 0.1 + off[2]);
-          const banded = fbm(x * 0.1 + off[1], 3 + off[2], 5) * 0.6 + n * 0.4;
-          let c = orange;
-          if (t > 0.78 && dy > -0.2) c = mix(orange, [255, 120, 40], 0.4); // orange head cap
-          else if (banded > 0.76 - whiteAmt * 0.5) c = cream;
-          if (dy > 0.45) c = mix(c, hex(0xc24a18), (dy - 0.45) * 0.9);
-          if (dy < -0.45) c = mix(c, hex(0xffd9a6), (-dy - 0.45) * 1.1);
-          if (t > 0.97 && Math.abs(dy) < 0.5) c = mix(c, hex(0xffb070), 0.5);
+          const surface = z !== 0 && !body(x, y, z + (z < 0 ? -1 : 1));
+          // eye: black square with a white glint
+          if (surface && Math.abs(x - ex) <= 1 && Math.abs(y - ey) <= 1) {
+            if (x === ex - 1 && y === ey + 1) return { c: [255, 255, 255], em: 2 };
+            return { c: [12, 12, 20], em: 1 };
+          }
+          // lips: pale upper lip, thin red mouth line
+          if (t > 0.93 && dy < -0.12 && dy > -0.34) return { c: cream };
+          if (t > 0.93 && dy <= -0.34 && dy > -0.47) return { c: [186, 44, 34] };
+          const n = (fbm(x * 0.2 + off[0], y * 0.2 + off[1], Math.abs(z) * 0.12 + off[2]) - 0.5);
+          let c = mix(orange, deepO, clamp((dy - 0.35) * 1.3));              // darker back
+          // slanted white bands that wrap round the flank
+          for (const cb of bands) {
+            const wd = 0.034 + (cb > 0.5 ? 0.02 : 0.012) + n * 0.03;
+            if (Math.abs(t - cb + dy * 0.09 + n * 0.05) < wd && dy < 0.82) c = cream;
+          }
+          if (t > 0.69 && t < 0.79 && dy < 0.15 && dy > -0.6 + n * 0.3) c = cream;            // cheek patch
+          if (dy < -0.38 + n * 0.5 && t > 0.18) c = mix(cream, [255, 214, 176], clamp((t - 0.6) * 0.9));   // pale belly
+          if (t < 0.17) c = mix(orange, cream, clamp((0.17 - t) * 5) * 0.5);                  // peduncle fades to tail
           return { c };
         }
-        // tail: flowing forked fan
-        const dT = 6 - x;
-        if (dT >= 0 && dT <= 13 && z === 0) {
-          const wob = Math.sin(dT * 0.55 + 0.5) * 1.1;
-          const hh = 2.2 + dT * 0.68;
-          const ay = Math.abs(y - wob * 0.5);
-          if (ay <= hh && !(dT > 6 && ay < (dT - 6) * 0.7)) return { c: tailCol(dT, y), wave: 0.5 };
+        // ── tail: big forked fan, zig-zag stepped edges, two-tone rays ──
+        const dT = 10 - x;
+        if (dT >= 0 && dT <= 24 && Math.abs(z) <= (dT < 4 ? 1 : 0)) {
+          const step = (Math.floor(dT / 3) & 1) ? 1.4 : -0.6;
+          const hh = 3.5 + dT * 0.66 + step;
+          const ay = Math.abs(y);
+          const notch = dT > 9 ? (dT - 9) * 0.78 : -1;
+          if (ay <= hh && ay > notch) {
+            const ray = Math.floor((Math.atan2(y, dT + 2) * 11 + 40)) & 1;
+            let c = mix(ray ? pale : cream, gray, clamp(dT / 26));
+            if (dT < 4) c = mix(orange, cream, dT / 4);
+            return { c, wave: 0.6 };
+          }
         }
-        // dorsal fin, swept back
-        const top = 0.7 + hy(clamp((x - X0) / L)) + 0.3;
-        if (z === 0 && x >= 8 && x <= 34 && y >= top - 2) {
-          const sx = x + 0.55 * (y - top);
-          const s = (sx - 10) / 22;
+        // ── dorsal fin: swept back, jagged crest, orange base fading to white ──
+        const top = cy(bt(x)) + hy(bt(x));
+        if (z === 0 && x >= 18 && x <= 50 && y >= top - 3) {
+          const sx = x + 0.5 * (y - top);
+          const s = (sx - 20) / 28;
           if (s > 0 && s < 1) {
-            const h = 8 * (s < 0.72 ? Math.pow(s / 0.72, 1.3) : (1 - s) / 0.28);
-            if (y - top <= h) {
-              const ray = (Math.floor((x - y * 0.4) / 2) & 1);
-              return { c: mix(cream, [255, 255, 248], ray ? 0.4 : 0), wave: 0.3 };
+            const spike = 1 - 0.2 * ((Math.floor(sx / 3) & 1));
+            const h = 13 * (s < 0.62 ? Math.pow(s / 0.62, 1.15) : (1 - s) / 0.38) * spike;
+            const up = y - top;
+            if (up <= h) {
+              const ray = (Math.floor((sx + up * 0.2) / 2) & 1);
+              return { c: up < h * 0.35 ? mix(orange, deepO, 0.2) : mix(ray ? pale : cream, gray, clamp(up / 16)), wave: 0.35 };
             }
           }
         }
-        // anal + pelvic fins
-        if (z === 0 && x >= 9 && x <= 18) {
-          const bot = cy(0.3) - hy(clamp((x - X0) / L)) + 0.6;
-          const s = (x - 9) / 9;
-          if (y <= bot + 1 && y >= bot - 6 * Math.sin(Math.PI * s) * (1 - s * 0.3) && s >= 0) return { c: mix(cream, hex(0xf6c9a0), 0.4), wave: 0.3 };
-        }
-        // pectoral fins: lie against the flanks, flutter outward
-        const pz = Math.abs(z);
-        if (pz >= 1 && x >= 20 && x <= 29 && y >= -5 && y <= -1) {
-          const bw = body(x, y, 0) ? hz(clamp((x - X0) / L)) : 0;
-          const edge = Math.round(bw * 0.8) + 1;
-          const s = (x - 20) / 9;
-          if (pz === edge && y <= -1 - Math.abs(s - 0.2) * 3 && y >= -5 + s * 2) return { c: mix(cream, hex(0xf6c9a0), 0.3), flap: 1.4 };
+        // ── anal + pelvic fins ──
+        const bot = cy(bt(x)) - hy(bt(x));
+        if (z === 0 && x >= 20 && x <= 32 && y <= bot + 1.5 && y >= bot - 9 * Math.sin(Math.PI * (x - 20) / 12) * (1 - (x - 20) / 24)) return { c: mix(orange, cream, clamp((bot - y) / 7)), wave: 0.3 };
+        if (Math.abs(z) === 3 && x >= 34 && x <= 44 && y <= bot + 2 && y >= bot - 8 + (x - 34) * 0.7) return { c: mix(cream, pale, 0.4), wave: 0.4 };
+        // ── pectoral fins hugging the flank ──
+        const az = Math.abs(z);
+        if (az >= 1 && x >= 34 && x <= 46 && y >= -9 && y <= -2) {
+          const w = hz(bt(x)), edge = Math.round(w * 0.9) + 1;
+          const s = (x - 34) / 12;
+          if (az === edge && y <= -2 - Math.abs(s - 0.25) * 4 && y >= -9 + s * 4) return { c: mix(cream, pale, ((Math.floor((x - y) / 2)) & 1) ? 0.5 : 0), flap: 1.8 };
         }
         return null;
       },

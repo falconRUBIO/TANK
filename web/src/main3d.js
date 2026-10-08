@@ -40,7 +40,7 @@ const sun = new THREE.SpotLight(0xffe0a6, 6, 0, 0.62, 0.7, 0);
 sun.position.set(2.5, 26, 9); sun.target.position.set(-0.4, 0, -1.2); scene.add(sun, sun.target);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.camera.near = 8; sun.shadow.camera.far = 50;
 sun.map = caustic.tex;
-const fill = new THREE.DirectionalLight(0x9cc8ff, 0.5); fill.position.set(-4, 6, 20); scene.add(fill);
+const fill = new THREE.DirectionalLight(0xffe6c8, 1.0); fill.position.set(-5, 9, 20); scene.add(fill);
 const lamp = new THREE.PointLight(0xffa24a, 0, 12, 1.6); lamp.position.copy(env.lampPos); scene.add(lamp);
 
 const shafts = new Shafts(); scene.add(shafts.group);
@@ -67,7 +67,7 @@ arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(IW, IH, { type: THREE.HalfFloatType, samples: 4 }));
 composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.55, 0.7, 0.78); composer.addPass(bloom);
+const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.55, 0.6, 0.92); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) } },
@@ -92,8 +92,8 @@ composer.addPass(grade);
 
 // ── time of day ──
 const TOD = {
-  morning:   { sunCol: 0xcfe6ff, sunI: 9.5, sunPos: [-5, 26, 9], hemiSky: 0x7fbde8, hemiGnd: 0x1b4a58, hemiI: 1.9, ambI: 0.7, fog: 0x2f7aa6, fogNear: 28, fogFar: 82, bgTop: 0x64b4dc, bgBot: 0x10405c, lampI: 0, shaft: 0.42, surf: 0.5, exposure: 0.95, bloom: 0.4, glow: 0.3, tint: 0xf4fbff },
-  afternoon: { sunCol: 0xffeccb, sunI: 12, sunPos: [2.5, 26, 9], hemiSky: 0x6fb4e8, hemiGnd: 0x1c4a52, hemiI: 1.9, ambI: 0.7, fog: 0x2a6d99, fogNear: 28, fogFar: 80, bgTop: 0x58a8d6, bgBot: 0x0e3552, lampI: 0, shaft: 0.6, surf: 0.65, exposure: 0.95, bloom: 0.4, glow: 0.4, tint: 0xfffaf0 },
+  morning:   { sunCol: 0xcfe6ff, sunI: 9.5, sunPos: [-5, 26, 9], hemiSky: 0x9ccfe8, hemiGnd: 0x1b4a58, hemiI: 1.9, ambI: 0.7, fog: 0x2f7aa6, fogNear: 28, fogFar: 82, bgTop: 0x64b4dc, bgBot: 0x10405c, lampI: 0, shaft: 0.42, surf: 0.5, exposure: 0.95, bloom: 0.4, glow: 0.3, tint: 0xf4fbff },
+  afternoon: { sunCol: 0xffeccb, sunI: 12, sunPos: [2.5, 26, 9], hemiSky: 0x8cc4e8, hemiGnd: 0x1c4a52, hemiI: 1.9, ambI: 0.7, fog: 0x2a6d99, fogNear: 28, fogFar: 80, bgTop: 0x58a8d6, bgBot: 0x0e3552, lampI: 0, shaft: 0.6, surf: 0.65, exposure: 0.95, bloom: 0.4, glow: 0.4, tint: 0xfffaf0 },
   evening:   { sunCol: 0xff8a4a, sunI: 10.5, sunPos: [9, 20, 7], hemiSky: 0xa07ab8, hemiGnd: 0x2a2038, hemiI: 1.6, ambI: 0.55, fog: 0x3f3a68, fogNear: 24, fogFar: 70, bgTop: 0x9a6aa8, bgBot: 0x1a1838, lampI: 22, shaft: 0.62, surf: 0.7, exposure: 0.95, bloom: 0.55, glow: 1.4, tint: 0xfff0f0 },
   night:     { sunCol: 0x6f8cff, sunI: 3.2, sunPos: [-3, 26, 8], hemiSky: 0x2c4a9a, hemiGnd: 0x0a1030, hemiI: 1.15, ambI: 0.5, fog: 0x07142e, fogNear: 20, fogFar: 58, bgTop: 0x0e2858, bgBot: 0x030814, lampI: 70, shaft: 0.22, surf: 0.25, exposure: 1.1, bloom: 1.0, glow: 3.2, tint: 0xeef2ff },
 };
@@ -131,11 +131,12 @@ function frame(now) {
   swayTime.value = t;
   cTick += dt; if (cTick > 0.05) { cTick = 0; caustic.update(t * 0.7); }
   applyTod(dt);
-  camera.position.x = Math.sin(t * 0.13) * 0.35; camera.position.y = 7.0 + Math.sin(t * 0.09) * 0.12; camera.lookAt(0, 7.5, 0);
+  if (window.__follow) { const f = window.__follow; camera.position.set(f.pos.x + 0.3, f.pos.y + 0.2, f.pos.z + 9.5); camera.lookAt(f.pos); }
+  else { camera.position.x = Math.sin(t * 0.13) * 0.35; camera.position.y = 7.0 + Math.sin(t * 0.09) * 0.12; camera.lookAt(0, 7.5, 0); }
   fishes.forEach((f) => f.update(dt, rng, fishes));
   shafts.update(t); surf.mat.uniforms.uTime.value = t; snow.update(dt, t); bubbles.update(dt, t);
   composer.render();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__tank = { fishes, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };
+window.__tank = { fishes, follow: (i) => { window.__follow = fishes[i]; }, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };

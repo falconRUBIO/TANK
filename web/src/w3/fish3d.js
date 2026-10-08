@@ -5,7 +5,14 @@ import { buildModel } from '../voxel.js';
 import { patch } from './env.js';
 
 const VOX = 0.052;
-const mat = patch(new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.0 }));
+const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
+// Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
+// so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
+mat.onBeforeCompile = (sh) => {
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 aN;')
+    .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+      if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
+};
 const dummy = new THREE.Matrix4();
 const col = new THREE.Color();
 
@@ -18,7 +25,7 @@ export class Fish3D {
     // drop voxels buried on all six sides – they can never be seen
     this.vox = model.list.filter((v) => !(occ.has(key(v.x + 1, v.y, v.z)) && occ.has(key(v.x - 1, v.y, v.z)) && occ.has(key(v.x, v.y + 1, v.z)) && occ.has(key(v.x, v.y - 1, v.z)) && occ.has(key(v.x, v.y, v.z + 1)) && occ.has(key(v.x, v.y, v.z - 1))));
     this.sp = model.sp; this.cx = model.sp.center?.[0] ?? 0;
-    this.scale = (opts.scale ?? 1) * VOX;
+    this.scale = (opts.scale ?? 1) * (species.vox ?? VOX);
     const n = this.vox.length;
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, n);
     this.mesh.castShadow = this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
@@ -28,6 +35,16 @@ export class Fish3D {
       col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });
+    // baked ambient occlusion from neighbour density + smooth normals for the shader
+    const nrm = new Float32Array(n * 3);
+    this.vox.forEach((v, i) => {
+      let c = 0;
+      for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy || dz) && occ.has(key(v.x + dx, v.y + dy, v.z + dz))) c++;
+      const ao = Math.max(0, Math.min(0.28, (c / 26 - 0.42) * 1.4));
+      this.mesh.getColorAt(i, col); col.multiplyScalar(1 - ao); this.mesh.setColorAt(i, col);
+      if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; }
+    });
+    this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.mobile = [];
     this.vox.forEach((v, i) => { if ((this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave) this.mobile.push(i); });
     this.setPose(0, true);
