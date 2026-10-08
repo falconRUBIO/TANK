@@ -21,7 +21,7 @@ ck('then offers a free plant', await waitCoach('A GIFT FOR THE TANK'));
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:fern"]');
 ck('the plant is free', (await p.textContent('#buy')).includes('FREE'));
 await p.click('#buy'); ck('placement bar opens', await p.evaluate(() => document.getElementById('placebar').classList.contains('on')));
-await p.mouse.click(120, 600); await p.waitForTimeout(150);
+await p.waitForTimeout(700); await p.mouse.click(120, 600); await p.waitForTimeout(150);
 const valid = await p.evaluate(() => !document.getElementById('pok').disabled); ck('a clear spot is valid', valid);
 const before = (await S()); await p.click('#pok'); await p.waitForTimeout(300); const after = await S();
 ck('placing adds the plant for free', after.decor.length === before.decor.length + 1 && after.shells === before.shells, `${before.decor.length}→${after.decor.length}`);
