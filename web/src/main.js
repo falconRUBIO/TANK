@@ -272,7 +272,7 @@ game.on('levelup', (lv) => {
   sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1));
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label + ' (fish)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
-  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: `The tank is bigger. Now in the shop:`, lines: fresh, ok: 'Nice' }), 1200);
+  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: `The tank is bigger. New in the shop:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 1200);
 });
 game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());

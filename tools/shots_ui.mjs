@@ -9,7 +9,7 @@ await d({ t: 'tut', step: 5 }); for (let i = 0; i < 3; i++) await d({ t: 'dev', 
 for (const s of [3, 41]) await d({ t: 'buyFish', species: 'goldfish', name: 'Gold' + s, seed: s, rush: true });
 for (const [t, x, z] of [['fern', -2.4, 1.5], ['grass', 2.4, 1.5], ['rock', 0.4, 2.7]]) await d({ t: 'buyDecor', type: t, x, z, ry: 0, free: true });
 await d({ t: 'style', floor: 'pearl', backdrop: 'sunset' });
-await p.waitForTimeout(6000); await p.screenshot({ path: out + '/u_main.png' });
+await p.waitForTimeout(3000); await p.evaluate(() => document.getElementById('mok')?.click()); await p.waitForTimeout(4000); await p.screenshot({ path: out + '/u_main.png' });
 await p.evaluate(() => window.__focus(1)); await p.waitForTimeout(7000); await p.screenshot({ path: out + '/u_focus.png' });
 await p.evaluate(() => window.__focus(null)); await p.evaluate(() => window.__ui.open('decorate')); await p.waitForTimeout(3000); await p.screenshot({ path: out + '/u_decorate.png' });
 console.log('looks', JSON.stringify(await p.evaluate(() => window.__tank.fishes.map((f) => [f.name, f.size?.toFixed(2), f.tmul?.toFixed(2)]))));
