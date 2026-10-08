@@ -60,7 +60,7 @@ export class Fish3D {
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(1, 0, 0); this.target = new THREE.Vector3();
     this.phase = Math.random() * 6; this.retarget = 0; this.heading = 0; this.pitch = 0; this.roll = 0;
     this.speed = opts.speed ?? 1; this.band = opts.band ?? { x: [-3.6, 3.6], y: [2, 13], z: [0.4, 1.9] };
-    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cr = Math.max(0.2, this.radius * 0.3);
+    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cool = 0; this.cr = Math.max(0.2, this.radius * 0.3);
   }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
@@ -105,41 +105,53 @@ export class Fish3D {
   pick(rng) {
     const b = this.band;
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0]));
+    for (let tries = 0; tries < 10 && Fish3D.world.push; tries++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
     this.retarget = 3 + rng() * 5;
   }
   update(dt, rng, others) {
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.foodMul ?? 1) * (d < 1.5 ? 0.35 + d / 2.3 : 1) / d);
+    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.foodMul ?? 1) * (d < 2 ? 0.6 + d * 0.2 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
-      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 0.9) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
-      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.3); al.multiplyScalar(1 / cnt).multiplyScalar(0.5); desired.add(c).add(al).add(sep.multiplyScalar(1.1)); }
+      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 1.4) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
+      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.12); al.multiplyScalar(1 / cnt).multiplyScalar(0.25); desired.add(c).add(al).add(sep.multiplyScalar(1.3)); }
     }
     // personal space: never pile up on top of another fish (different species included)
     for (const o of others) {
       if (o === this) continue;
-      const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 0.6;
-      if (dd < min && dd > 1e-3) desired.x += dx / dd * (min - dd) / min * this.speed * 2.4, desired.y += dy / dd * (min - dd) / min * this.speed * 2.4, desired.z += dz / dd * (min - dd) / min * this.speed * 1.6;
+      const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (o.id === this.id ? 0.7 : 1.0);
+      if (dd < min && dd > 1e-3) desired.x += dx / dd * (min - dd) / min * this.speed * 3.2, desired.y += dy / dd * (min - dd) / min * this.speed * 3.2, desired.z += dz / dd * (min - dd) / min * this.speed * 2.2;
     }
     // decorations are solid: look ahead along the body and steer away from voxels in the way
     const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
     if (W.push) {
-      _o.set(0, 0, 0);
-      for (const k of [0.4, 1.0, 1.7]) { _p1.set(this.pos.x + fx * R * k, this.pos.y + fy * R * k, this.pos.z + fz * R * k); W.push(_p1, this.cr + 0.25 + 0.3 * k, _o); }
-      if (_o.lengthSq() > 0) { const m = _o.length(); _o.multiplyScalar(this.speed * 2.6 / Math.max(m, 1)); desired.add(_o); this.retarget = Math.min(this.retarget, 0.6); }
+      _o.set(0, 0, 0); let near = 0;
+      for (const k of [0.5, 1.1, 1.8]) { _p1.set(this.pos.x + fx * R * k, this.pos.y + fy * R * k, this.pos.z + fz * R * k); near += W.push(_p1, this.cr + 0.3 + 0.25 * k, _o); }
+      if (near) {
+        const m = _o.length();
+        if (m > 1e-4) {
+          _o.multiplyScalar(1 / m);                                             // surface normal, pointing out of the obstacle
+          const into = desired.dot(_o);
+          if (into < 0) desired.addScaledVector(_o, -into * 1.0);              // slide along the surface instead of pushing into it
+          desired.addScaledVector(_o, this.speed * 0.5);                       // and ease away
+        }
+        this.blocked = (this.blocked ?? 0) + dt;
+        if (this.blocked > 0.9 && this.cool <= 0) { this.retarget = 0; this.cool = 2.5; this.blocked = 0; }   // not getting anywhere: choose somewhere else
+      } else this.blocked = Math.max(0, (this.blocked ?? 0) - dt);
+      this.cool -= dt;
     }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
     if (this.vel.length() > this.speed * 1.4) this.vel.setLength(this.speed * 1.4);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length();
-    if (sp > 0.05) {
+    if (sp > 0.25) {
       const wantYaw = Math.atan2(-this.vel.z, this.vel.x);
       let dy = wantYaw - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-      this.heading += dy * Math.min(1, dt * 3.2);
+      this.heading += dy * Math.min(1, dt * 2.2);
       const wantPitch = Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));
       this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3);
       this.roll += (-dy * 0.5 - this.roll) * Math.min(1, dt * 4);

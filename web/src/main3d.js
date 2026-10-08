@@ -81,7 +81,7 @@ fishes.forEach((f) => {
   f.pick = function (r) {
     base(r); const roll = r();
     if (tr.includes('Curious') && roll < 0.28) { this.target.set((r() - 0.5) * 6, 4 + r() * 6, 3.4); this.retarget = 4; }                       // swim up to the glass
-    else if (tr.includes('Social') && roll < 0.35) { const o = fishes[(r() * fishes.length) | 0]; if (o !== this) { this.target.copy(o.pos).add(new THREE.Vector3((r() - 0.5) * 1.2, (r() - 0.5) * 0.8, 0.2)); this.retarget = 3; } }
+    else if (tr.includes('Social') && roll < 0.22) { const lead = fishes.filter((o) => o !== this && o.profile?.traits.includes('Social') && !o.follower && o.id !== 'neon'); const o = lead[(r() * lead.length) | 0]; if (o && this.id !== 'neon') { this.following = o; o.follower = this; this.target.set(o.pos.x - Math.cos(o.heading) * 2.4 + (r() - 0.5) * 1.2, o.pos.y + (r() - 0.5) * 1.2, o.pos.z - (r() - 0.5) * 0.4); this.retarget = 2.5; setTimeout(() => { if (o.follower === this) o.follower = null; this.following = null; }, 5000); } }
     else if (tr.includes('Shy') && roll < 0.45) { this.target.set(-3.4 + r() * 7, 1 + r() * 3, -1.6 - r() * 1.2); this.retarget = 7; }                // tuck into the plants
     else if (tr.includes('Playful') && roll < 0.3) { this.target.set(bubbleCol.x + (r() - 0.5) * 0.6, 2 + r() * 8, 0.2 + r()); this.retarget = 3; }  // chase the bubbles
     if (tr.includes('Lazy')) this.retarget += 4;
@@ -159,6 +159,7 @@ function dropFlakes(x, n = 7) {
   for (const f of fishes) if (rng() < 0.5) { f.flake = null; f.hold = rng() * 0.9; }      // about half of the fish notice the new food; the rest stay on the old
   for (let i = 0; i < n && flakes.list.length < 190; i++) flakes.list.push({ pos: new THREE.Vector3(x + (rng() - 0.5) * 0.9, 15 + rng() * 0.5, 0.3 + rng() * 1.6), age: 0, ph: rng() * 6, c: flakeCols[(rng() * 4) | 0] }); }
 const fm = new THREE.Matrix4();
+const _fo = new THREE.Vector3();
 function updateFlakes(dt, t) {
   for (const f of flakes.list) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
   flakes.list = flakes.list.filter((f) => !f.eaten && f.age < 30);
@@ -180,6 +181,7 @@ function updateFlakes(dt, t) {
       let best = null, bs = 1e9;
       for (const c of flakes.list) {
         if (c.eaten || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
+        if (Fish3D.world.push) { _fo.set(0, 0, 0); if (Fish3D.world.push(c.pos, 0.25, _fo)) continue; }      // food resting inside a rock can't be reached
         const d = f.pos.distanceTo(c.pos); if (d > 9) continue;
         const sc = d + ((claims.get(c) || 0) - (c === f.flake ? 1 : 0)) * (greedy ? 0.8 : 2.6) + rng() * 1.4 - (curious ? Math.max(0, 3 - c.age) * 0.6 : 0) - (c === f.flake ? 1 : 0);
         if (sc < bs) { bs = sc; best = c; }
@@ -383,6 +385,7 @@ function setQuality(q) {
 function watchPerf(dt) { if (qs.get('q') || performance.now() - born < 4000) return; slow = dt > 0.036 ? slow + 1 : Math.max(0, slow - 2); if (slow > 90 && quality > 0) { slow = 0; setQuality(quality - 1); } }
 requestAnimationFrame(frame);
 // headless self-check: advance the simulation without drawing and report the worst overlaps
+window.__world = Fish3D.world;
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   let worst = 0, worstFish = 0, inside = 0, samples = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
