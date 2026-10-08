@@ -45,11 +45,13 @@ ok('two adults of one species lay an egg that hatches into a blend of both', () 
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
   const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1, 'egg laid');
   R.advance(t, now + 5 * 3600e3); assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2];
-  assert.equal(c.species, 'goldfish'); assert.equal(c.stage, 'baby'); assert.ok(c.seed >= 15 && c.seed <= 25, 'seed blends the parents ' + c.seed); assert.ok(c.traits.every((x) => ['Shy', 'Brave'].includes(x)));
+  assert.equal(c.species, 'goldfish'); assert.equal(c.stage, 'baby'); assert.ok(c.seed === 10 || c.seed === 20, 'pattern from one parent ' + c.seed); assert.ok(c.genes && c.gen === 1 && c.parents.length === 2); assert.ok(c.traits.every((x) => ['Shy', 'Brave'].includes(x)));
 });
-ok('the journal tells a small true story now and then', () => {
-  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.storyAt = 0; t.fish[0].traits = ['Lazy']; const ev = R.advance(t, 3600e3);
-  assert.ok(ev.some((e) => /napped low/.test(e.journal ?? '')), JSON.stringify(ev)); assert.ok(t.storyAt > 3600e3);
+ok('the journal no longer invents stories on a timer, and routine care goes to the activity list', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.storyAt = 0; t.fish[0].traits = ['Lazy']; const ev = R.advance(t, 20 * 3600e3);
+  assert.ok(!ev.some((e) => /napped|chased|swam together/.test(e.journal ?? '')), 'no artificial stories');
+  const r = R.applyAction(t, { t: 'feed', x: 0 }, { now: 20 * 3600e3 + 1000, name: 'Alex', uid: 'u1' }); assert.ok(r.events.some((e) => e.activity && /fed the fish/.test(e.activity.text)) && !r.events.some((e) => e.journal));
+  const w = R.applyAction(t, { t: 'water' }, { now: 20 * 3600e3 + 2000, name: 'Alex', uid: 'u1' }); assert.ok(w.events.some((e) => e.activity) && !w.events.some((e) => e.journal));
 });
 ok('a bottle goes to one friend, costs two shells, once per six hours, and pays when opened', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.shells = 20; const members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }], now = 1e6;
@@ -97,5 +99,42 @@ ok('regression: deaths are at least 24 hours apart, even after a month away in o
   assert.ok(a.fish.length >= 1);
   const b = mk(); R.advance(b, 30 * D); assert.ok(b.floaters.length <= 1, 'one jump of 30 days: ' + b.floaters.length + ' deaths'); assert.ok(b.fish.length >= 3);
   const rt = JSON.parse(JSON.stringify(a)); assert.deepEqual(rt.memorial, a.memorial); assert.deepEqual(rt.floaters, a.floaters);
+});
+ok('discoveries come from real behaviour: right trait, real decoration, once per fish, saved in the journal', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.fish = [R.ensureFish({ id: 'a', name: 'Aya', species: 'goldfish', seed: 1, born: -864e5, stage: 'juvenile', traits: ['Shy', 'Social'] }), R.ensureFish({ id: 'b', name: 'Bo', species: 'goldfish', seed: 2, born: -864e5, stage: 'juvenile', traits: ['Brave'] })];
+  t.decor = [{ id: 'd1', type: 'rock', x: 0, z: 1, ry: 0 }]; const now = 5e6, ob = (a) => R.applyAction(t, { t: 'observe', ...a }, { now: now + (ob.n = (ob.n ?? 0) + 1) * 1000, name: 'Sam', uid: 'u2' });
+  assert.equal(ob({ key: 'hideaway', fish: 'a', spot: 'd1' }).applied, true); assert.equal(ob({ key: 'hideaway', fish: 'a', spot: 'd1' }).applied, false, 'no duplicate');
+  assert.equal(ob({ key: 'hideaway', fish: 'b', spot: 'd1' }).applied, false, 'a brave fish does not hide'); assert.equal(ob({ key: 'hideaway', fish: 'a', spot: 'nope' }).applied, false, 'needs a real decoration');
+  assert.equal(ob({ key: 'bubbles', fish: 'a' }).applied, false, 'no bubbler, no bubble play'); assert.equal(ob({ key: 'glass', fish: 'b' }).applied, true); assert.equal(ob({ key: 'made-up', fish: 'a' }).applied, false);
+  assert.equal(ob({ key: 'together', fish: 'a', with: 'b' }).applied, true); assert.equal(ob({ key: 'together', fish: 'a', with: 'a' }).applied, false, 'not with itself');
+  assert.ok(t.fish[0].disc.hideaway && t.fish[0].disc['together:b'] && t.fish[1].disc.glass); const r = ob({ key: 'routine', fish: 'a' }); assert.ok(r.events.some((e) => /routine/.test(e.journal ?? '') && e.noticed));
+  assert.equal(Object.keys(R.DISCOVERIES).length, 14);
+});
+ok('one shared daily wish: feasible, replaced each day, paid once, never punishing', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: -D, stage: 'baby', traits: ['Calm'] })];
+  R.advance(t, 2 * D + 10); const d1 = t.daily; assert.ok(d1 && d1.day === 2 && !d1.done); assert.ok(R.DAILY[d1.kind].ok(t), 'only wishes that can be done now');
+  for (let day = 3; day < 40; day++) { R.advance(t, day * D + 10); assert.ok(R.DAILY[t.daily.kind].ok(t), 'feasible on day ' + day); if (day > 3) assert.notEqual(t.daily.kind, prev, 'no repeats back to back'); var prev = t.daily.kind; }
+  const c = R.newWorld(0); R.norm(c, 0); c.flags.tut = 5; c.fish = t.fish; c.daily = { day: 50, kind: 'care', text: R.DAILY.care.text, need: 1, have: 0, ids: [], done: false }; R.advance(c, 50 * D + 500); const s0 = c.shells;
+  R.applyAction(c, { t: 'feed', x: 0 }, { now: 50 * D + 1000, name: 'Sam', uid: 'u2' }); assert.ok(c.daily.done && c.daily.by === 'Sam'); const after = c.shells; assert.equal(after - s0, 1 + R.DAILY_REWARD, 'one shell for feeding, plus the wish');
+  R.applyAction(c, { t: 'feed', x: 0 }, { now: 50 * D + 2000, name: 'Sam', uid: 'u2' }); R.applyAction(c, { t: 'water' }, { now: 50 * D + 3000, name: 'Sam' }); assert.ok(c.shells - after <= 3, 'the wish pays once a day');
+  const g = R.newWorld(0); R.norm(g, 0); g.flags.tut = 5; g.fish = ['a', 'b', 'c'].map((n, i) => R.ensureFish({ id: n, name: n, species: 'goldfish', seed: i, born: -D, stage: 'baby', traits: [] })); g.simTs = 70 * D - 10; g.daily = { day: 70, kind: 'greet', text: R.DAILY.greet.text, need: 3, have: 0, ids: [], done: false };
+  const seen = (id) => R.applyAction(g, { t: 'observe', key: 'inspect', fish: id }, { now: 70 * D + 500, name: 'Riley' }); seen('a'); seen('a'); seen('b'); assert.equal(g.daily.have, 2, 'the same fish twice counts once'); seen('c'); assert.ok(g.daily.done);
+  const un = R.newWorld(0); R.norm(un, 0); un.flags.tut = 5; un.fish = []; un.simTs = 80 * D - 10; un.daily = { day: 80, kind: 'together', text: '', need: 1, have: 0, ids: [], done: false }; R.advance(un, 80 * D + 5); assert.ok(R.DAILY[un.daily.kind].ok(un), 'a wish that became impossible is swapped');
+});
+ok('family trees: hatchlings keep their parents, grandparents, generation and blended colours; the record outlives the fish', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.createdAt = -50 * D; t.visitAt = t.storyAt = 1e15; const mk = (id, name, seed, extra = {}) => R.ensureFish({ id, name, species: 'goldfish', seed, born: -9 * D, stage: 'adult', traits: ['Calm'], owner: 'u1', ownerName: 'Alex', ...extra });
+  t.fish = [mk('a', 'Ada', 4), mk('b', 'Bix', 9)]; t.eggAt = 0; let now = 20 * 3600e3; R.advance(t, now); assert.equal(t.eggs.length, 1); assert.equal(t.eggs[0].pa.name, 'Ada'); assert.ok(t.eggs[0].pa.genes && t.eggs[0].pb.genes);
+  now += 5 * 3600e3; const ev = R.advance(t, now); const kid = t.fish.find((f) => f.parents); assert.ok(kid && kid.gen === 1 && kid.parents.length === 2 && kid.parents.map((p) => p.name).sort().join() === 'Ada,Bix'); assert.ok(kid.genes && kid.ownerName === 'Alex');
+  assert.ok(ev.some((e) => /child of/.test(e.journal ?? ''))); assert.ok(ev.some((e) => /first generation/.test(e.journal ?? '')));
+  const ga = R.genesOf(4), gb = R.genesOf(9); assert.ok(Math.abs(kid.genes.dh - (ga.dh + gb.dh) / 2) <= 0.016 && kid.genes.size >= 0.9 && kid.genes.size <= 1.1, 'colours blend the parents');
+  // a second generation: grandparents are remembered by name even after the grandparents are gone
+  kid.born = now - 9 * D; kid.stage = 'adult'; const kid2 = mk('k2', 'Kit', 5, { parents: [{ id: 'x', name: 'Zed', parents: [] }], gen: 1, genes: R.genesOf(5) }); t.fish = [kid, kid2]; t.eggAt = 0; t.eggs = []; now += 30 * 3600e3; R.advance(t, now); now += 5 * 3600e3; R.advance(t, now);
+  const grand = t.fish.find((f) => f.gen === 2); assert.ok(grand, 'a second generation'); const names = grand.parents.map((p) => p.name); assert.ok(names.includes(kid.name) && names.includes('Kit'));
+  assert.ok(grand.parents.find((p) => p.name === kid.name).parents.map((q) => q.name).sort().join() === 'Ada,Bix', 'grandparents survive in the record');
+  assert.ok(R.childrenOf(t, kid.id).some((c) => c.id === grand.id)); const rt = JSON.parse(JSON.stringify(t)); assert.deepEqual(rt.fish.find((f) => f.gen === 2).parents, grand.parents);
+});
+ok('care is credited to the caretakers who helped a fish grow, without ranking anyone', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.visitAt = t.eggAt = t.storyAt = 1e15; R.applyAction(t, { t: 'feed', x: 0 }, { now: 0.9 * D, name: 'Alex', uid: 'u1' }); R.applyAction(t, { t: 'water' }, { now: 0.95 * D + 1, name: 'Sam', uid: 'u2' });
+  const ev = R.advance(t, 1.01 * D); assert.ok(ev.some((e) => e.activity && /Alex and Sam helped Pip grow up/.test(e.activity.text)), JSON.stringify(ev.filter((e) => e.activity)));
 });
 console.log(`All ${n} rule tests passed`);

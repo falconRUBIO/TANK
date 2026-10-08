@@ -35,6 +35,10 @@ export function openDb(path = 'ourtank.db') {
       endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, offset_min INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS push_subs_user ON push_subs (user_id);
+    CREATE TABLE IF NOT EXISTS thanks ( activity_id INTEGER NOT NULL, from_user TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (activity_id, from_user) );
+    CREATE TABLE IF NOT EXISTS events ( id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, user_id TEXT, tank_id TEXT, type TEXT NOT NULL, n REAL );
+    CREATE INDEX IF NOT EXISTS events_ts ON events (ts);
+    CREATE INDEX IF NOT EXISTS events_type ON events (type, ts);
     CREATE TABLE IF NOT EXISTS push_log ( user_id TEXT NOT NULL, ts INTEGER NOT NULL );
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT, tank_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL,

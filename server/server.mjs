@@ -3,11 +3,13 @@ import http from 'node:http';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import path from 'node:path';
+import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { openDb } from './db.mjs';
 import * as L from './logic.mjs';
 import { makePush } from './push.mjs';
+import { makeAnalytics, CLIENT_EVENTS } from './analytics.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -28,6 +30,22 @@ function sendStatic(req, res, file) {
   res.writeHead(200, { ...head, 'Content-Length': body.length, ...(gz ? { 'Content-Encoding': 'gzip' } : {}) }); res.end(req.method === 'HEAD' ? undefined : body);
 }
 
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function dashboardHtml(st) {
+  const row = (k, v) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`, p = st.players, tk = st.tanks;
+  const series = (a) => a.length ? a.slice(-14).map((d) => `${d.day.slice(5)}: ${d.n}`).join(' · ') : 'no data yet';
+  const ret = (r) => (r.pct == null ? 'not enough data' : `${r.pct}% (${r.returned} of ${r.eligible})`);
+  return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OUR TANK developer view</title>
+<style>body{font:14px -apple-system,system-ui,sans-serif;background:#0a1220;color:#dbe8f7;margin:0;padding:20px;max-width:760px;margin-inline:auto}h1{font-size:18px;letter-spacing:.1em}h2{font-size:12px;letter-spacing:.14em;color:#7e93ad;margin:26px 0 8px}table{width:100%;border-collapse:collapse}td{padding:6px 8px;border-bottom:1px solid #1d2c44}td:last-child{text-align:right;font-variant-numeric:tabular-nums}p{color:#7e93ad;font-size:12px}</style>
+<h1>OUR TANK · developer view</h1><p>Last ${st.window.days} days from ${esc(st.window.from)} · ${st.window.events} events · random ids only, no names or message text.</p>
+<h2>PLAYERS (individual)</h2><table>${row('Distinct players', p.distinctPlayers)}${row('Sessions', p.sessions)}${row('Average session', p.avgSessionSeconds + ' s')}${row('Visits per player per active day', p.visitsPerPlayerPerActiveDay)}${row('Median hours between visits', p.medianHoursBetweenVisits)}${row('Actions per session', p.actionsPerSession)}${row('Sessions with care', p.sessionsWithCarePct + '%')}${row('Sessions with fish interaction', p.sessionsWithFishInteractionPct + '%')}${row('Sessions with decoration', p.sessionsWithDecorationPct + '%')}${row('Sessions with social interaction', p.sessionsWithSocialPct + '%')}${row('Retention, day 1', ret(p.retention.day1))}${row('Retention, day 7', ret(p.retention.day7))}${row('Retention, day 30', ret(p.retention.day30))}</table>
+<p>Daily active players: ${esc(series(p.dailyActive))}</p>
+<h2>TANKS (shared)</h2><table>${row('Tanks in total', tk.tanksTotal)}${row('Avg active caretakers per tank per day', tk.avgActiveCaretakersPerTankDay)}${row('Tank-days with 2+ players', tk.tankDaysWithTwoOrMorePlayersPct + '%')}${row('Discoveries unlocked', tk.discoveries)}${row('Daily wishes completed', tk.dailyWishesCompleted)}${row('Friend interactions', tk.friendInteractions)}${row('Fish deaths', tk.fishDeaths)}${row('Level distribution', Object.entries(tk.levelDistribution).map(([l, n]) => `L${l}: ${n}`).join(' · ') || 'none')}</table>
+<p>Active tanks per day: ${esc(series(tk.activeTanksPerDay))}</p>
+<h2>MOST USED</h2><table>${st.interactions.mostUsed.map(([k, v]) => row(k, v)).join('') || row('none yet', '')}</table>
+<h2>LEAST USED</h2><table>${st.interactions.leastUsed.map(([k, v]) => row(k, v)).join('')}</table>`;
+}
+
 // sliding-window rate limiter
 class Limiter {
   constructor() { this.h = new Map(); }
@@ -40,7 +58,7 @@ class Limiter {
 }
 
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null } = {}) {
-  const db = openDb(dbPath), lim = new Limiter();
+  const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
   const push = makePush(db, pushOpts ?? { publicKey: process.env.VAPID_PUBLIC, privateKey: process.env.VAPID_PRIVATE, subject: process.env.VAPID_SUBJECT });
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
@@ -83,7 +101,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!lim.hit('j:' + ip(req), cfg.joinPerMin, 60e3) || !lim.hit('ju:' + user.id, cfg.joinPerMin, 60e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Wait a moment.', 429);
         const b = await readBody(req);
         if (p.endsWith('preview')) return json(res, 200, L.previewJoin(db, b.code));
-        const r = L.joinTank(db, user, b.code);
+        const r = L.joinTank(db, user, b.code); if (!r.already) an.record(user.id, r.id, 'friend_joined');
         if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); }
         return json(res, 200, r);
       }
@@ -111,6 +129,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/healthz') { try { db.prepare('SELECT 1').get(); res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); } catch { res.writeHead(500); return res.end('db'); } }
+    if (url.pathname === '/admin' || url.pathname === '/admin/stats') {
+      const key = process.env.ADMIN_KEY ?? ''; const given = url.searchParams.get('key') ?? '';
+      if (!key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
+      const st = an.stats(Date.now(), +url.searchParams.get('days') || 30);
+      if (url.pathname === '/admin/stats') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify(st, null, 1)); }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); return res.end(dashboardHtml(st));
+    }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel = decodeURIComponent(url.pathname);
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
@@ -131,6 +156,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     const tank = L.tankOf(db, ws.userId); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
     rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
+    ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
     send(ws, { t: 'snapshot', ...L.snapshot(db, ws.user, online(tank.id)) });
     broadcast(tank.id, { t: 'presence', online: online(tank.id) });
     ws.on('message', (raw) => {
@@ -145,8 +171,28 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
           const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
           for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why });
+          an.record(ws.userId, mine.id, 'nudge_sent');
           if (!there.length) push.notify(to, `${ws.user.name} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`).catch(() => {});
           return send(ws, { t: 'nudged', ok: true });
+        }
+        if (m.t === 'thank') {
+          const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to), ref = Number(m.ref) || 0;
+          if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'thanked', ok: false, reason: 'NOT_A_FRIEND', ref });
+          const row = db.prepare('SELECT id,user_id,type,ts FROM activity WHERE id=? AND tank_id=?').get(ref, mine.id), PHRASE = { feed: 'feeding the fish', glass: 'cleaning the glass', water: 'changing the water', decor: 'decorating the tank', fish: 'looking after the fish', visitor: 'greeting a visitor', bottle: 'sending a bottle', gift: 'finding a gift' };
+          if (!row || row.user_id !== to || !PHRASE[row.type] || Date.now() - row.ts > 24 * 3600e3) return send(ws, { t: 'thanked', ok: false, reason: 'NOTHING_TO_THANK', ref });
+          if (db.prepare('SELECT 1 FROM thanks WHERE activity_id=? AND from_user=?').get(ref, ws.userId)) return send(ws, { t: 'thanked', ok: false, reason: 'ALREADY', ref });
+          if (!lim.hit(`th:${ws.userId}:${to}`, 1, 10 * 60e3) || !lim.hit('th:' + ws.userId, 8, 3600e3)) return send(ws, { t: 'thanked', ok: false, reason: 'TOO_SOON', ref });
+          db.prepare('INSERT INTO thanks (activity_id,from_user,ts) VALUES (?,?,?)').run(ref, ws.userId, Date.now());
+          const toName = L.listMembers(db, mine.id).find((x) => x.id === to)?.name ?? 'a friend', act = L.addActivity(db, mine.id, ws.userId, 'thanks', `${ws.user.name} thanked ${toName}.`);
+          an.record(ws.userId, mine.id, 'friend_thanked'); send(ws, { t: 'thanked', ok: true, ref });
+          broadcast(mine.id, { t: 'event', activity: act });
+          for (const o of rooms.get(mine.id) ?? []) if (o.userId === to) send(o, { t: 'thanks', from: ws.user.name, text: `${ws.user.name} appreciated you ${PHRASE[row.type]}.` });
+          return;
+        }
+        if (m.t === 'track') {
+          if (!CLIENT_EVENTS.has(m.e) || !lim.hit('tr:' + ws.userId, 60, 60e3)) return;
+          const now = Date.now(); if (m.e === 'hidden') { if (ws.visSince) { ws.visMs = (ws.visMs ?? 0) + now - ws.visSince; ws.visSince = null; } return; } if (m.e === 'visible') { ws.visSince ??= now; return; }
+          return an.record(ws.userId, ws.tankId, m.e);
         }
         if (m.t === 'chat') {
           if (!lim.hit('c:' + ws.userId, 6, 10e3)) return send(ws, { t: 'error', code: 'RATE_LIMIT' });
@@ -156,8 +202,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (L.ACTIONS.has(m.t)) {
           if (!lim.hit('a:' + ws.userId, 30, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
           const { t: type, idem, ...rest } = m;
-          const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV });
+          if (type === 'observe' && !lim.hit('ob:' + ws.userId, 24, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
+          const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an });
           send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id });
+          if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
           if (r.ok && !r.dup) {
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0 });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
@@ -167,7 +215,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
     });
-    ws.on('close', () => { const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); });
+    ws.on('close', () => { const nowT = Date.now(); if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref();
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
@@ -180,7 +228,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     for (const { id } of tanks) {
       if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
       try {
-        const r = L.tickTank(db, id, now), hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.arrival);
+        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.arrival);
         if (!hit) continue;
         for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something happened in your tank'), { now });
       } catch (e) { console.error('push sweep failed', e); }
@@ -192,7 +240,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     for (const [tankId, set] of rooms) {
       if (!set.size) continue;
       try {
-        const r = L.tickTank(db, tankId);
+        const r = L.tickTank(db, tankId); an.fromTick(tankId, r.events);
         if (r.events.length) { broadcast(tankId, { t: 'state', tank: L.publicTank(r.world) }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
       } catch (e) { console.error('tick failed', e); }
     }

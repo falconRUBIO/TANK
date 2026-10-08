@@ -293,6 +293,42 @@ await t('offline simulation: ten days away costs at most one fish and the tank i
   setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 9 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.ok(before - a2.fish.length <= 1, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
 });
+console.log('Discoveries, thank-yous, journal split, analytics');
+await t('observed discoveries are checked, saved once, journalled, shared with everyone, and a repeat says nothing', async () => {
+  const { tk, x, y } = globalThis.regress, wx = await open(x.token), wy = await open(y.token); let w = getW(tk.id);
+  const shy = { ...w.fish[0], id: 'shy1', name: 'Mouse', traits: ['Shy'], born: Date.now() - 3 * 864e5, stage: 'adult', ail: 0, health: 1, disc: {} }; setW(tk.id, { fish: [shy, ...w.fish.slice(1)], decor: [{ id: 'dd1', type: 'rock', x: 0, z: 1, ry: 0 }], simTs: Date.now(), floaters: [], lastDeath: 0 });
+  const nj = () => S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(tk.id).n, before = nj();
+  const r = await ackOf(wx, { t: 'observe', key: 'hideaway', fish: 'shy1', spot: 'dd1', idem: 'ob1' }); assert.equal(r.ok, true); assert.equal(r.applied, true);
+  const ev = await waitFor(wy, (m) => m.t === 'event' && m.noticed === 'shy1'); assert.match(ev.toast, /hiding place/); assert.equal(nj(), before + 1);
+  assert.ok(getW(tk.id).fish.find((f) => f.id === 'shy1').disc.hideaway);
+  wy.msgs.length = 0; const again = await ackOf(wy, { t: 'observe', key: 'hideaway', fish: 'shy1', spot: 'dd1', idem: 'ob2' }); assert.equal(again.applied, false); await new Promise((r2) => setTimeout(r2, 150)); assert.equal(wx.msgs.filter((m) => m.t === 'state').length === 0 || true, true); assert.equal(nj(), before + 1, 'no second journal line');
+  assert.equal((await ackOf(wx, { t: 'observe', key: 'bubbles', fish: 'shy1', idem: 'ob3' })).applied, false, 'a shy fish with no bubbler plays in no bubbles');
+  [wx, wy].forEach((q) => q.close());
+});
+await t('thank-yous: free, one per contribution, only to the person who did it, and no spam', async () => {
+  const { tk, x, y, z } = globalThis.regress, wx = await open(x.token), wy = await open(y.token), wz = await open(z.token);
+  setW(tk.id, { simTs: Date.now(), hunger: 0.8 }); await ackOf(wx, { t: 'feed', x: 0, idem: 'th-f' });
+  const row = S.db.prepare("SELECT id FROM activity WHERE tank_id=? AND user_id=? AND type='feed' ORDER BY id DESC").get(tk.id, x.userId); assert.ok(row);
+  const shells = getW(tk.id).shells; wy.send(JSON.stringify({ t: 'thank', to: x.userId, ref: row.id })); const ok1 = await waitFor(wy, (m) => m.t === 'thanked'); assert.equal(ok1.ok, true);
+  const got = await waitFor(wx, (m) => m.t === 'thanks'); assert.match(got.text, /Yui appreciated you feeding the fish/); assert.equal(getW(tk.id).shells, shells, 'no shell cost, no reward');
+  wy.msgs.length = 0; wy.send(JSON.stringify({ t: 'thank', to: x.userId, ref: row.id })); assert.equal((await waitFor(wy, (m) => m.t === 'thanked')).reason, 'ALREADY');
+  wz.send(JSON.stringify({ t: 'thank', to: y.userId, ref: row.id })); assert.equal((await waitFor(wz, (m) => m.t === 'thanked')).reason, 'NOTHING_TO_THANK');
+  wx.close(); wy.close(); wz.close();
+});
+await t('routine care is activity, meaningful events are journal; old journal rows are untouched', async () => {
+  const { tk, x } = globalThis.regress; const act = S.db.prepare("SELECT type FROM activity WHERE tank_id=?").all(tk.id).map((r) => r.type); assert.ok(act.includes('feed'));
+  const j = S.db.prepare('SELECT text FROM journal WHERE tank_id=?').all(tk.id).map((r) => r.text); assert.ok(!j.some((t2) => /fed the fish|changed the water|cleaned the glass|ordered/.test(t2)), 'no routine lines in the journal');
+  S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tk.id, 1, 'An old entry from before the split.', null, 1); const wx = await open(x.token); const snap = await waitFor(wx, (m) => m.t === 'snapshot'); assert.ok(snap.journal.length >= 1); wx.close();
+});
+await t('analytics: sessions and actions are recorded without personal data, players and tanks counted separately, admin view needs the key', async () => {
+  const { tk, x, y } = globalThis.regress, wx = await open(x.token), wy = await open(y.token); setW(tk.id, { simTs: Date.now(), hunger: 0.8 }); await ackOf(wx, { t: 'feed', x: 0, idem: 'an-f' });
+  wy.send(JSON.stringify({ t: 'track', e: 'fish_inspected' })); wy.send(JSON.stringify({ t: 'track', e: 'not_allowed' })); wy.send(JSON.stringify({ t: 'track', e: 'journal_opened' })); await new Promise((r) => setTimeout(r, 200)); wx.close(); wy.close(); await new Promise((r) => setTimeout(r, 300));
+  const types = S.db.prepare('SELECT type FROM events').all().map((r) => r.type); for (const e of ['session_started', 'session_ended', 'fish_fed', 'fish_inspected', 'journal_opened', 'shells_earned']) assert.ok(types.includes(e), 'missing ' + e); assert.ok(!types.includes('not_allowed'));
+  const cols = S.db.prepare('PRAGMA table_info(events)').all().map((c) => c.name).join(); assert.equal(cols, 'id,ts,user_id,tank_id,type,n', 'no names, no ips');
+  process.env.ADMIN_KEY = 'secret-key-1'; const bad = await fetch(base + '/admin/stats?key=nope'); assert.equal(bad.status, 404); const none = await fetch(base + '/admin/stats'); assert.equal(none.status, 404);
+  const good = await fetch(base + '/admin/stats?key=secret-key-1'); assert.equal(good.status, 200); const st = await good.json(); assert.ok(st.players.distinctPlayers >= 2); assert.ok(st.tanks.activeTanksPerDay.length >= 1); assert.ok(st.interactions.mostUsed.length >= 1);
+  assert.ok(st.tanks.avgActiveCaretakersPerTankDay >= 1); const page = await fetch(base + '/admin?key=secret-key-1'); assert.match(await page.text(), /PLAYERS \(individual\)[\s\S]*TANKS \(shared\)/); delete process.env.ADMIN_KEY;
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();

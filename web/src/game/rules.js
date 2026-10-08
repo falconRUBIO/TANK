@@ -1,5 +1,7 @@
 // OUR TANK game rules. Pure functions with no browser or server dependencies, so the exact same code
 // runs on the server (authoritative, shared tank) and in the browser (solo tank).
+import { genesOf, blendGenes, seededRandom } from './genes.js';
+export { genesOf };
 export const SPECIES_DEF = {
   goldfish:  { label: 'Goldfish',   price: 10,  level: 1, wait: 10, count: 1, blurb: 'Curious and bold. Loves flakes.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
   neon:      { label: 'Neon Tetra', price: 20, level: 1, wait: 20, count: 4, blurb: 'A glowing school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
@@ -94,13 +96,32 @@ export function favouriteOf(f, t) {
   for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && count(t, sp[0]) >= sp[1]) { const hit = t.decor.find((d) => DECOR_DEF[d.type]?.cat === sp[0]); return { label: hit ? DECOR_DEF[hit.type].label.toLowerCase() : sp[2], key: tr }; } }
   return null;
 }
+// What fish are noticed doing. Each is recorded once per fish (`f.disc[key]`), permanently, and written to the journal.
+// Some are noticed by the server from state; the rest are reported by a watching phone (`observe`) and checked here.
+export const DISCOVERIES = {
+  friend: { label: 'Found a best friend' }, spot: { label: 'Found a favourite spot' }, bond: { label: 'Trusts a caretaker' }, trust: { label: 'Follows a fingertip' }, parent: { label: 'Became a parent' },
+  glass: { label: 'Comfortable at the glass', traits: ['Brave', 'Social'], line: (f) => `${f.name} has become comfortable near the glass.` },
+  surface: { label: 'Waits at the surface', traits: ['Greedy'], line: (f) => `${f.name} has started waiting near the surface at feeding time.` },
+  night_rest: { label: 'Rests at night', traits: null, line: (f) => `${f.name} settles low in the tank to rest at night.` },
+  hideaway: { label: 'Has a hiding place', traits: ['Shy'], needsDecor: true, line: (f, x) => `${f.name} has a new hiding place behind the ${x.decor}.` },
+  regular: { label: 'Returns to one decoration', traits: null, needsDecor: true, line: (f, x) => `${f.name} keeps coming back to the ${x.decor}.` },
+  object: { label: 'Investigates objects', traits: ['Curious'], needsDecor: true, line: (f, x) => `${f.name} has started investigating the ${x.decor}.` },
+  together: { label: 'Swims with a friend', traits: null, pair: true, line: (f, x) => `${f.name} and ${x.other} have begun swimming together.` },
+  bubbles: { label: 'Plays in the bubbles', traits: ['Playful'], needsBubbler: true, line: (f) => `${f.name} has found the bubbles and plays in them.` },
+  routine: { label: 'Has a daily routine', traits: null, line: (f) => `${f.name} has settled into a daily routine.` },
+};
+function unlock(t, f, key, now, ev, x = {}) {
+  const d = DISCOVERIES[key]; if (!d) return false; f.disc ||= {}; const k = d.pair ? `${key}:${x.otherId}` : key; if (f.disc[k] || (d.pair && f.disc[key + ':' + x.otherId])) return false;
+  f.disc[k] = now; if (d.pair) f.disc.together = f.disc.together ?? now; if (!d.line) return true;
+  ev.push({ journal: d.line(f, x), noticed: f.id, toast: d.line(f, x) }); return true;
+}
 function discover(t, now, ev) {
   const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon');
   for (const f of t.fish) {
     ensureFish(f); f.found ||= []; if (now - f.born < 2 * 3600e3 || f.happy < 0.7) continue;
     const fav = favouriteOf(f, t);
-    if (fav && !f.found.includes('spot')) { f.found.push('spot'); const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
-    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.pal = pal.id; pal.pal ??= f.id; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
+    if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
+    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.pal = pal.id; pal.pal ??= f.id; (f.disc ||= {}).friend ??= now; (pal.disc ||= {}).friend ??= now; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
   }
 }
 // Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
@@ -110,7 +131,7 @@ export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;  
 function memorialOf(t, f, now) {
   const ms = [`Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favourite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favourite spot');
   const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
-  return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, rested: null };
+  return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, disc: Object.keys(f.disc ?? {}), rested: null };
 }
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
   for (const f of [...t.fish]) {
@@ -174,6 +195,11 @@ function makeFish(t, o, now, idx) {
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
 const HOUR = 3600e3;
+// A snapshot of a fish for its family record, so a family tree survives its members: identity, look, generation and its own parents' names.
+const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.seed, traits: f.traits ?? [], genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 0, owner: f.owner ?? null, ownerName: f.ownerName ?? null, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
+const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
+export const parentsOf = (f) => f.parents ?? [];
+export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }
 function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
@@ -185,11 +211,13 @@ function visitors(t, now, ev) {
 function eggs(t, now, ev) {
   for (const e of [...t.eggs]) {
     if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
-    const A = t.fish.find((f) => f.id === e.a), B = t.fish.find((f) => f.id === e.b), h = hash32(e.hatchAt / 1e3);
-    const seed = A && B ? ((A.seed + B.seed) >> 1) + (h % 9) : e.seed, pick = (f, k) => (f?.traits?.length ? f.traits[(h >> k) % f.traits.length] : null);
+    const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
+    const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
     const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
-    const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8 }); t.fish.push(f);
-    ev.push({ journal: `An egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+    const genes = A && B ? blendGenes(A.genes, B.genes, seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
+    const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
+    ev.push({ journal: A && B ? `An egg hatched: meet ${f.name}, child of ${A.name} and ${B.name}.` : `An egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+    if (gen > (t.flags.topGen ?? 0)) { t.flags.topGen = gen; ev.push({ journal: gen === 1 ? 'The first generation hatched in this tank.' : `A ${['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'][gen] ?? gen + 'th'} generation has hatched in this tank.` }); }
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
@@ -197,7 +225,7 @@ function eggs(t, now, ev) {
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.length >= 2); if (!pairs.length) return;
   const g = pairs[hash32(now / 6e4) % pairs.length], [A, B] = [g[0], g[1]];
-  t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, hatchAt: now + 4 * HOUR });
+  t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), hatchAt: now + 4 * HOUR }); unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
   ev.push({ journal: `${A.name} and ${B.name} laid an egg.`, toast: 'An egg! It will hatch in a few hours.' });
 }
 const STORY = {
@@ -210,6 +238,31 @@ const STORY = {
   Calm: (f) => `${f.name} drifted around without a care.`,
   Greedy: (f) => `${f.name} waited near the surface, just in case.`,
 };
+// One small shared wish a day. Optional, replaced (never carried over) the next day, and only ever a thing that can actually be done right now.
+export const DAILY = {
+  watch: { text: 'Watch your fish swim for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
+  greet: { text: 'Say hello to three fish', need: 3, ok: (t) => t.fish.length >= 3 },
+  together: { text: 'See two fish swimming together', need: 1, ok: (t) => t.fish.length >= 2 },
+  visit: { text: 'Watch a fish visit a decoration', need: 1, ok: (t) => t.fish.length >= 1 && t.decor.some((d) => !['starfish', 'moss', 'shell'].includes(d.type)) },
+  bubbles: { text: 'Watch a playful fish by the bubbles', need: 1, ok: (t) => t.decor.some((d) => d.type === 'bubbler') && t.fish.some((f) => (f.traits ?? []).includes('Playful')) },
+  care: { text: 'Give the tank some care it needs', need: 1, ok: () => true },
+  plant: { text: 'Place a plant', need: 1, ok: (t) => t.decor.length < MAX_DECOR },
+};
+export const DAILY_REWARD = 3;
+function rollDaily(t, now) {
+  const day = Math.floor(now / DAY); if ((t.flags.tut ?? 0) < 5) return;
+  if (t.daily && t.daily.day === day && (t.daily.done || DAILY[t.daily.kind].ok(t))) return;
+  const pool = Object.keys(DAILY).filter((k) => DAILY[k].ok(t) && k !== t.daily?.kind), pick = pool[hash32(day * 31 + (t.createdAt % 997)) % pool.length] ?? 'care';
+  t.daily = { day, kind: pick, text: DAILY[pick].text, need: DAILY[pick].need, have: 0, ids: [], done: false };
+}
+function progress(t, kind, ev, who, id = null) {
+  const d = t.daily; if (!d || d.done || d.kind !== kind) return false;
+  if (kind === 'greet') { if (!id || d.ids.includes(id)) return false; d.ids.push(id); d.have = d.ids.length; } else d.have++;
+  if (d.have < d.need) return true;
+  d.done = true; d.by = who; t.shells += DAILY_REWARD; ev.push({ activity: { type: 'wish', text: `${who} completed today's wish.` }, toast: `Today's wish is done. +${DAILY_REWARD} shells`, dailyDone: true }); return true;
+}
+// who has been looking after the tank lately, so a growing fish can thank the right people
+function careBy(t, uid, name, now) { (t.care ||= {})[uid] = { name, ts: now }; }
 function stories(t, now, ev) {
   if (now < t.storyAt || !t.fish.length || (t.flags.tut ?? 0) < 5) return; t.storyAt = now + (3 + (hash32(now / 6e4) % 3)) * HOUR;
   const f = t.fish[hash32(now / 6e4 + 7) % t.fish.length], tr = f.traits?.[hash32(now / 6e4 + 11) % Math.max(1, f.traits.length)], line = STORY[tr]?.(f, t);
@@ -252,13 +305,14 @@ export function advance(t, now = Date.now()) {
     const s = stageOf(f, now);
     if (s !== f.stage) {
       f.stage = s;
-      if (s === 'juvenile') { t.shells += 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }); }
-      if (s === 'adult') { t.shells += 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id }); }
+      const helpers = Object.values(t.care ?? {}).filter((c) => now - c.ts < 24 * HOUR).map((c) => c.name), crew = helpers.length ? { activity: { type: 'grow', text: `${helpers.join(' and ')} helped ${f.name} grow up.`, noUser: true } } : {};
+      if (s === 'juvenile') { t.shells += 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+      if (s === 'adult') { t.shells += 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
     }
   }
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
-  visitors(t, now, ev); eggs(t, now, ev); stories(t, now, ev);
+  visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
@@ -284,18 +338,20 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       const pay = t.hunger > 0.25 ? 1 : 0;
       t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
+      if (pay) { careBy(t, uid, name, now); progress(t, 'care', events, name); }
       events.push({ activity: { type: 'feed', text: `${name} fed the fish.` } });
       return ok({ applied: true, delta: pay });
     }
     case 'water': {
       if (t.water >= 0.7) return ok({ applied: false, delta: 0 });
-      t.water = 1; t.shells += 2;
-      events.push({ journal: `${name} changed the water.`, activity: { type: 'water', text: `${name} changed the water.` } });
+      t.water = 1; t.shells += 2; careBy(t, uid, name, now); progress(t, 'care', events, name);
+      events.push({ activity: { type: 'water', text: `${name} changed the water.` } });
       return ok({ applied: true, delta: 2 });
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
       t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? 3 : 1; t.shells += gain;
+      careBy(t, uid, name, now); if (gain) progress(t, 'care', events, name);
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
       if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: 'You found a pearl! +2 bonus shells', found: true });
       return ok({ applied: true, delta: gain });
@@ -309,14 +365,14 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, owner: uid, ownerName: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
-      events.push({ journal: `${name} ordered ${d.count === 1 ? (nm || 'a new fish') + ' the ' + d.label.toLowerCase() : 'a school of ' + d.label.toLowerCase() + 's'}.`, activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
+      events.push({ activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
     }
     case 'nameFish': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND');
       const nm = cleanName(a.name); if (!nm) return fail('BAD_NAME');
-      const old = f.name; f.name = nm; events.push({ journal: `${old} is now called ${nm}.` }); return ok();
+      const old = f.name; f.name = nm; events.push({ activity: { type: 'fish', text: `${name} renamed ${old} to ${nm}.` } }); return ok();
     }
     case 'buyDecor': {
       const d = DECOR_DEF[a.type]; if (!d) return fail('UNKNOWN_ITEM');
@@ -328,7 +384,8 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
       const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2) }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
-      events.push({ journal: t.decor.length % 4 === 0 || d.price >= 14 ? `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` : undefined, activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
+      if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
+      events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
       levelCheck(t, now, events);
       return ok({ id: item.id });
     }
@@ -354,7 +411,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'collect': {
       const g = t.drift; if (!g || g.id !== a.id) return ok({ applied: false, delta: 0 });
       t.drift = null; t.driftAt = now + 6 * 3600e3;
-      if (g.kind === 'treat') { for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); events.push({ journal: `${name} found a bottle of fish treats washed in.`, toast: 'Fish treats! Everyone feels happier.' }); return ok({ applied: true, delta: 0, kind: 'treat' }); }
+      if (g.kind === 'treat') { for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); events.push({ activity: { type: 'gift', text: `${name} found fish treats washed in.` }, toast: 'Fish treats! Everyone feels happier.' }); return ok({ applied: true, delta: 0, kind: 'treat' }); }
       t.shells += g.amount; if (g.kind === 'pearl') events.push({ journal: `${name} found a pearl washed in.`, toast: `A pearl! +${g.amount} shells` });
       else events.push({ toast: `Something washed in: +${g.amount} shells` });
       levelCheck(t, now, events); return ok({ applied: true, delta: g.amount, kind: g.kind });
@@ -362,8 +419,8 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
       if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
-      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03);
-      f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
+      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now;
+      f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
     }
     case 'style': {
@@ -377,11 +434,23 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const f = makeFish(t, { species: 'goldfish', name: cleanName(a.name), seed: Math.abs(Math.floor(num(a.seed) || now)) % 100000, owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their first fish.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} added their first fish.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
+    case 'observe': {                                              // a phone that is watching reports what its fish are really doing
+      const key = String(a.key ?? ''), f = t.fish.find((x) => x.id === a.fish); let did = false;
+      const sight = { watch: 'watch', inspect: 'greet', together: 'together', regular: 'visit', object: 'visit', hideaway: 'visit', bubbles: 'bubbles' }[key];
+      if (sight && progress(t, sight, events, name, sight === 'greet' ? String(a.fish ?? '') : null)) did = true;
+      const d = DISCOVERIES[key];
+      if (d && d.line && f && !(f.stage === 'baby' && now - f.born < 3600e3)) {
+        const tr = f.traits ?? [], decor = a.spot ? t.decor.find((x) => x.id === a.spot) : null, other = d.pair ? t.fish.find((x) => x.id === a.with && x.id !== f.id) : null;
+        const okTrait = !d.traits || d.traits.some((x) => tr.includes(x)), okDecor = !d.needsDecor || decor, okPair = !d.pair || other, okBubble = !d.needsBubbler || t.decor.some((x) => x.type === 'bubbler');
+        if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id })) did = true;
+      }
+      return ok({ applied: did });
+    }
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });
       const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
       t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; t.shells += 4;
-      events.push({ journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
+      events.push({ activity: { type: 'visitor', text: `${name} greeted a rare visitor.` }, journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
     }
     case 'bottle': {
       const to = members?.find((m) => m.id === a.to); if (!to || to.id === uid) return fail('NOT_A_FRIEND');
@@ -394,7 +463,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'openBottle': {
       const b = t.bottles.find((x) => x.id === a.id && x.to === uid); if (!b) return ok({ applied: false, delta: 0 });
       t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += 4;
-      events.push({ journal: `${name} opened a bottle from ${b.fromName}: “${b.note}”`, toast: `${b.fromName}: “${b.note}” +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4, from: b.fromName, note: b.note });
+      events.push({ activity: { type: 'bottle', text: `${name} opened a bottle from ${b.fromName}.` }, toast: `${b.fromName}: “${b.note}” +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4, from: b.fromName, note: b.note });
     }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');

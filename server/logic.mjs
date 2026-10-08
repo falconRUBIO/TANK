@@ -132,15 +132,16 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died });
       else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival });
+      if (e.activity) out.push({ activity: addActivity(db, tankId, null, e.activity.type, e.activity.text, now) });
     }
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'tut', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
-export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
+export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
   if (!ACTIONS.has(action?.t)) throw new GameError('BAD_ACTION', 'Unknown action.');
   const key = clean(idem, 64); if (!key) throw new GameError('BAD_IDEM', 'Missing idempotency key.');
@@ -148,15 +149,16 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false } = 
     const { w } = loadWorld(db, t0.id), out = [];
     const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, action.t, now, key);
     if (ins.changes === 0) { const ev = R.advance(w, now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: [] }; }
-    const r = R.applyAction(w, action, { name: user.name, now, dev, uid: user.id, members: members(db, t0.id) });
+    const shellsBefore = w.shells, r = R.applyAction(w, action, { name: user.name, now, dev, uid: user.id, members: members(db, t0.id) });
     if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
     for (const e of r.events) {
-      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, found: e.found, arrival: e.arrival, wish: e.wish });
-      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, wish: e.wish });
-      if (e.activity) out.push({ activity: addActivity(db, t0.id, user.id, e.activity.type, e.activity.text, now) });
+      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, found: e.found, arrival: e.arrival, wish: e.wish, died: e.died, warn: e.warn });
+      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, wish: e.wish, dailyDone: e.dailyDone });
+      if (e.activity) out.push({ activity: addActivity(db, t0.id, e.activity.noUser ? null : user.id, e.activity.type, e.activity.text, now) });
     }
     saveWorld(db, t0.id, w);
     db.prepare('UPDATE transactions SET amount=? WHERE tank_id=? AND user_id=? AND idem=?').run(r.delta ?? 0, t0.id, user.id, key);
+    analytics?.fromAction(user.id, t0.id, action, { ...r, events: r.events }, shellsBefore, w.shells, now);
     return { ...r, world: w, events: out };
   });
 }
@@ -171,7 +173,7 @@ export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members
 export function snapshot(db, user, online = []) {
   const t0 = tankOf(db, user.id); if (!t0) return null;
   const { row, w } = loadWorld(db, t0.id);
-  for (const e of R.advance(w)) if (e.journal) addJournal(db, t0.id, e.journal, null);     // growth and discoveries that happened while nobody was looking
+  for (const e of R.advance(w)) { if (e.journal) addJournal(db, t0.id, e.journal, null); if (e.activity) addActivity(db, t0.id, null, e.activity.type, e.activity.text); }     // growth and discoveries that happened while nobody was looking
   saveWorld(db, t0.id, w);
   const names = Object.fromEntries(members(db, t0.id).map((m) => [m.id, m.name]));
   return {
@@ -179,7 +181,8 @@ export function snapshot(db, user, online = []) {
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,
     journal: db.prepare('SELECT id,day,text,user_id AS userId,ts FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 60').all(t0.id).reverse(),
-    activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 20').all(t0.id).reverse(),
+    activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 30').all(t0.id).reverse(),
+    thanked: db.prepare('SELECT activity_id AS id FROM thanks WHERE from_user=?').all(user.id).map((r) => r.id),
     messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t0.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),
   };
 }
