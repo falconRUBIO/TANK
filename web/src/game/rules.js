@@ -38,6 +38,12 @@ const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < 1 ? 'baby' : d < 3 ? 'juvenile' : 'adult'; }
+export function nextStage(fish, now = Date.now()) {
+  const age = now - fish.born, s = stageOf(fish, now);
+  if (s === 'adult') return null;
+  const ms = (s === 'baby' ? 1 : 3) * DAY - age, h = Math.ceil(ms / 36e5);
+  return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
+}
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 export const capacity = (level) => 4 + 3 * level;
 export function scoreOf(t, now = Date.now()) { return t.fish.length * 3 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 3; }
@@ -64,6 +70,21 @@ export function needsOf(f, t, now = Date.now()) {
   const energy = Math.max(0.1, Math.min(1, 0.55 + 0.4 * Math.sin(((h - 6) / 24) * Math.PI * 2) + ((f.traits ?? []).includes('Lazy') ? -0.15 : 0) + ((f.traits ?? []).includes('Playful') ? 0.1 : 0)));
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
+}
+// Favourite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
+const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
+export function favouriteOf(f, t) {
+  for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && count(t, sp[0]) >= sp[1]) { const hit = t.decor.find((d) => DECOR_DEF[d.type]?.cat === sp[0]); return { label: hit ? DECOR_DEF[hit.type].label.toLowerCase() : sp[2], key: tr }; } }
+  return null;
+}
+function discover(t, now, ev) {
+  const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon');
+  for (const f of t.fish) {
+    ensureFish(f); f.found ||= []; if (now - f.born < 2 * 3600e3 || f.happy < 0.7) continue;
+    const fav = favouriteOf(f, t);
+    if (fav && !f.found.includes('spot')) { f.found.push('spot'); t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
+    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
+  }
 }
 function tendFish(t, dt, now) {
   for (const f of t.fish) {
@@ -99,10 +120,11 @@ export function advance(t, now = Date.now()) {
     const s = stageOf(f, now);
     if (s !== f.stage) {
       f.stage = s;
-      if (s === 'juvenile') { t.shells += 2; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +2 shells` }); }
-      if (s === 'adult') { t.shells += 5; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +5 shells` }); }
+      if (s === 'juvenile') { t.shells += 2; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +2 shells`, grew: f.id }); }
+      if (s === 'adult') { t.shells += 5; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +5 shells`, grew: f.id }); }
     }
   }
+  if (dt >= 1) discover(t, now, ev);
   levelCheck(t, now, ev);
   return ev;
 }
@@ -135,9 +157,10 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
-      t.glass = 0; t.shells += 1;
+      t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 4 === 0, gain = find ? 3 : 1; t.shells += gain;
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
-      return ok({ applied: true, delta: 1 });
+      if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: 'You found a pearl! +2 bonus shells', found: true });
+      return ok({ applied: true, delta: gain });
     }
     case 'buyFish': {
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');

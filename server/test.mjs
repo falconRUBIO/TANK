@@ -2,14 +2,15 @@
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { start } from './server.mjs';
-import { ALPHABET } from './logic.mjs';
+import { ALPHABET, tickTank } from './logic.mjs';
 
-let pass = 0;
+let pass = 0; let L_tick = () => null;
 const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
 const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000 } });
 const base = `http://localhost:${S.port}`;
+L_tick = () => tickTank(S.db, tank.id);
 const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
   const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
   return { status: r.status, body: await r.json() };
@@ -145,6 +146,11 @@ await t('a new member appears for everyone already connected', async () => {
 await t('reconnecting restores the same authoritative state', async () => {
   wb.close(); await new Promise((r) => setTimeout(r, 50)); const wb2 = await open(b.token); const s = await waitFor(wb2, (m) => m.t === 'snapshot');
   assert.equal(s.tank.shells, getW(tank.id).shells); assert.ok(s.journal.length >= 2); wb2.close();
+});
+await t('while players are connected the tank grows up and everyone is told', async () => {
+  const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 1.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
+  const r = L_tick(); assert.ok(r.events.some((e) => e.grew === pip.id), JSON.stringify(r.events.map((e) => e.journal?.text)));
+  assert.ok(S.db.prepare("SELECT 1 FROM journal WHERE tank_id=? AND text LIKE '%growing up%'").get(tank.id));
 });
 await t('absence is bounded: 10 days away never starves the tank', async () => {
   setW(tank.id, { hunger: 0.3, water: 0.9, glass: 0.1, simTs: Date.now() - 10 * 864e5 });

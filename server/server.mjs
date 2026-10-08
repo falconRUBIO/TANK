@@ -132,9 +132,19 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     ws.on('close', () => { const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref();
+  // while people are connected, time passes for their tank: growth, moods and discoveries are announced to everyone
+  const tick = setInterval(() => {
+    for (const [tankId, set] of rooms) {
+      if (!set.size) continue;
+      try {
+        const r = L.tickTank(db, tankId);
+        if (r.events.length) { broadcast(tankId, { t: 'state', tank: L.publicTank(r.world) }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
+      } catch (e) { console.error('tick failed', e); }
+    }
+  }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
     port: server.address().port, db,
-    close: () => new Promise((done) => { clearInterval(sweep); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
   })));
 }
 

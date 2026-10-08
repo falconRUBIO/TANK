@@ -34,6 +34,7 @@ export class Game {
       if (e.activity) { this.activity.push({ ...e.activity, text: e.activity.text, ts: Date.now(), userId: 'me' }); }
       if (e.toast) this.emit('toast', e.toast);
       if (e.levelUp) this.emit('levelup', e.levelUp);
+      if (e.grew) this.emit('grew', e.grew); if (e.discovery) this.emit('discovery', e.discovery);
       if (e.arrival) this.emit('arrival', e.arrival);
       if (e.placed) this.emit('placed', e.placed);
     }
@@ -52,7 +53,7 @@ export class Game {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
-      if (m.toast && mine) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp);
+      if (m.toast && (mine || m.grew || m.discovery)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery);
       if (m.arrival) this.emit('arrival', m.arrival); if (m.placed) this.emit('placed', m.placed);
     } else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }

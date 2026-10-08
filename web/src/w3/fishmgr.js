@@ -13,13 +13,23 @@ const BANDS = {
 const SPOTS = { Shy: 'Tall Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
 const bubbleSpot = new THREE.Vector3(-3.6, 0, 0.5);
 
+// little speech-bubble icons drawn once per mood
+const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Happy: ['💛', '#2a2410'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'] };
+const emoteTex = {};
+function emoteTexture(mood) {
+  if (emoteTex[mood]) return emoteTex[mood];
+  const [glyph, bg] = EMOTE[mood], c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.arc(24, 21, 19, 0, 6.3); g.fill(); g.fillRect(14, 34, 8, 8); g.fillStyle = bg; g.globalAlpha = 0.1; g.fillRect(0, 0, 48, 48); g.globalAlpha = 1;
+  g.font = '24px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, 24, 22);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return (emoteTex[mood] = t);
+}
 export class Fishes {
   constructor(scene) {
     this.scene = scene; this.list = []; this.byId = new Map(); this.rng = mulberry32(11); this.flakes = [];
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200);
     this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.castShadow = true; scene.add(this.mesh);
     this.cols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
-    this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot;
+    this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot; this.onSprite = null; this.onSpriteGone = null; this.clock = 0;
     SPECIES.neon.school = true;
     this.bm = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.7, depthWrite: false }), 160);
     this.bm.frustumCulled = false; this.bm.count = 0; scene.add(this.bm);
@@ -38,23 +48,39 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor; f.setGrowth(k);
+        f.fid = d.id; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        this.wrapPick(f, d); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
+        this.wrapPick(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor;
+        f.name = d.name; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
-    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.scene.remove(f.group); this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.scene.remove(f.group); if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+  }
+  makeEmote(f) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, fog: false, opacity: 0 })); sp.scale.setScalar(0.8); sp.renderOrder = 9; sp.visible = false;
+    f.emote = sp; f.emoteSeed = Math.random() * 20; this.scene.add(sp); this.onSprite?.(sp);
+  }
+  // the mood bubble shows for a few seconds out of every ~14, so the tank stays calm
+  updateEmotes(t) {
+    for (const f of this.list) {
+      const sp = f.emote, mood = f.profile?.mood; if (!sp) continue;
+      const phase = (t + f.emoteSeed) % 14, show = EMOTE[mood] && (phase < 3.4 || (mood === 'Hungry' && phase < 7)) && !f.group.parent?.userData?.hide;
+      const want = show ? Math.min(1, Math.min(phase, 3.4 - phase + 0.4) * 2.5) : 0;
+      sp.material.opacity += (want - sp.material.opacity) * 0.2; sp.visible = sp.material.opacity > 0.03;
+      if (sp.visible) { if (sp.userData.mood !== mood) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
+    }
   }
   // personality: traits change where a fish chooses to swim next
   wrapPick(f, d) {
     const base = f.pick.bind(f), tr = d.traits ?? [], all = this.list;
     f.pick = (r) => {
-      base(r); const roll = r();
+      base(r); const roll = r(), mood = f.profile?.mood;
+      if (mood === 'Hungry' && roll < 0.5 && f.id !== 'cory') { f.target.set(-2.5 + r() * 5, 9 + r() * 2.5, 0.8 + r() * 1.2); f.retarget = 4; return; }
+      if (mood === 'Sleepy') { f.target.set(-3 + r() * 6, 1 + r() * 2.2, f.target.z); f.retarget = 8; return; }
       if (tr.includes('Curious') && roll < 0.28) { f.target.set((r() - 0.5) * 6, 4 + r() * 5, 3.0); f.retarget = 4; }
       else if (tr.includes('Social') && roll < 0.22 && f.id !== 'neon') {
         const lead = all.filter((o) => o !== f && o.id !== 'neon' && o.profile?.traits.includes('Social') && !o.follower), o = lead[(r() * lead.length) | 0];
@@ -99,6 +125,7 @@ export class Fishes {
       f.flake = fl; f.seeking = !!fl; f.foodMul = fl ? (greedy ? 2.0 : 1.5) : 1;
       if (fl) { f.target.copy(fl.pos); f.retarget = 0.3; if (f.mouth().distanceTo(fl.pos) < 0.34) { fl.eaten = true; f.flake = null; this.onEat?.(f); } }
     }
+    this.updateEmotes(t);
     for (const b of this.bursts) { b.age += dt; b.pos.y += b.v * dt; }
     this.bursts = this.bursts.filter((b) => b.age < 1.4);
     this.bm.count = this.bursts.length;

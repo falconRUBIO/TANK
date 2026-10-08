@@ -14,7 +14,7 @@ ck('first run asks you to name your fish', (await p.textContent('#modal h2')) ==
 await p.fill('#mi', 'Pip'); await p.click('#mok');
 ck('then prompts to feed', await waitCoach('TIME FOR A SNACK'));
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feed]'); ck('feed bar appears', await p.evaluate(() => document.getElementById('feedbar').classList.contains('on')));
-const s0 = await S(); await p.mouse.click(200, 300); await p.waitForTimeout(400);
+const s0 = await S(); await p.mouse.click(200, 300); await p.waitForTimeout(250); ck('shells fly up to the counter', (await p.$$('.flyshell')).length > 0); await p.waitForTimeout(200);
 const s1 = await S(); ck('feeding pays a shell and lowers hunger', s1.shells === s0.shells + 1 && s1.hunger < s0.hunger, `${s0.shells}→${s1.shells}`);
 ck('tutorial moves on to friends', await waitCoach('BETTER TOGETHER')); await p.click('#cbtn');
 ck('then offers a free plant', await waitCoach('A GIFT FOR THE TANK'));
@@ -64,6 +64,13 @@ const sim = await p.evaluate(() => window.__sim(900)); ck('fish still avoid ever
 await p.evaluate(() => { const s = window.__game.state; for (const f of s.fish) { f.health = 0.45; } s.hunger = 0.85; window.__game.emit('state'); });
 const mood = await p.evaluate(() => window.__tank.fishes[0].profile.mood); ck('hungry fish show a hungry mood', mood === 'Hungry', mood);
 await p.evaluate(() => window.__game.dispatch({ t: 'note', text: 'Pip loves the bubbles' })); ck('journal notes work', (await p.evaluate(() => window.__game.journal.at(-1).text)).includes('Pip loves'));
+console.log('Life in the tank');
+await p.evaluate(async () => { const g = window.__game; g.state.fish[0].traits = ['Lazy']; g.state.fish[0].found = []; g.state.fish[0].happy = 0.95; g.state.fish[0].born -= 5 * 864e5; await g.dispatch({ t: 'buyDecor', type: 'wood', x: 0, z: 3.0, ry: 0 }); });
+await p.waitForFunction(() => window.__game.journal.some((j) => /favourite spot/.test(j.text)), null, { timeout: 8000 }).then(() => ck('a fish discovers a favourite spot from what is really in the tank', true), () => ck('a fish discovers a favourite spot from what is really in the tank', false));
+await p.evaluate(() => { const s = window.__game.state; s.hunger = 0.9; window.__game.emit('state'); });
+const em = await p.waitForFunction(() => window.__tank.fishes.some((f) => f.emote && f.emote.visible && f.profile.mood === 'Hungry'), null, { timeout: 16000 }).then(() => true, () => false); ck('hungry fish show a mood bubble', em);
+const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]').click(); return document.querySelector('.grow')?.textContent ?? ''; }); ck('the care sheet shows what grows up next', /grows up in/.test(nxt) || nxt === '', nxt || '(all adults)');
+await p.evaluate(() => window.__ui.open('tank'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=water]'); await p.waitForTimeout(700); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));

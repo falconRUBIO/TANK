@@ -127,6 +127,16 @@ export function addActivity(db, tankId, userId, type, text, now = Date.now()) {
   const r = db.prepare('INSERT INTO activity (tank_id,user_id,type,text,ts) VALUES (?,?,?,?,?)').run(tankId, userId, type, text, now);
   return { id: Number(r.lastInsertRowid), userId, type, text, ts: now };
 }
+// Time passing for a tank nobody is acting on. Returns the events worth announcing (already saved to the journal).
+export function tickTank(db, tankId, now = Date.now()) {
+  return tx(db, () => {
+    const { w } = loadWorld(db, tankId), out = [];
+    for (const e of R.advance(w, now)) {
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery });
+    }
+    saveWorld(db, tankId, w); return { world: w, events: out };
+  });
+}
 export const ACTIONS = new Set(['note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
@@ -140,8 +150,8 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false } = 
     const r = R.applyAction(w, action, { name: user.name, now, dev });
     if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
     for (const e of r.events) {
-      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp });
-      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp });
+      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, found: e.found });
+      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery });
       if (e.activity) out.push({ activity: addActivity(db, t0.id, user.id, e.activity.type, e.activity.text, now) });
     }
     saveWorld(db, t0.id, w);
@@ -159,7 +169,9 @@ export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members
 
 export function snapshot(db, user, online = []) {
   const t0 = tankOf(db, user.id); if (!t0) return null;
-  const { row, w } = loadWorld(db, t0.id); R.advance(w); saveWorld(db, t0.id, w);
+  const { row, w } = loadWorld(db, t0.id);
+  for (const e of R.advance(w)) if (e.journal) addJournal(db, t0.id, e.journal, null);     // growth and discoveries that happened while nobody was looking
+  saveWorld(db, t0.id, w);
   const names = Object.fromEntries(members(db, t0.id).map((m) => [m.id, m.name]));
   return {
     you: { userId: user.id, slot: t0.slot },

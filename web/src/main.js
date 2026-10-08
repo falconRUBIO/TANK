@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, STAGE_SCALE, stageOf } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -20,6 +20,7 @@ window.__game = game;
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
 stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker);
+fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 const rng = fishes.rng; fishes.defaultBubble = fishes.bubbleAt;
 
 // ── the interface ──
@@ -36,7 +37,15 @@ const social = {
 let feedMode = false, cleanMode = false, feedDrops = 0, feedIdle = 0, rearrange = false, focus = null;
 const feedbar = $('feedbar'), placebar = $('placebar');
 const fail = (r) => { sfx('error'); ui.toast(REASONS[r.reason] ?? 'That did not work. Try again.'); };
-const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.delta > 1 ? 's' : ''}`); sfx('coin'); } };
+function flyShells(n, from = [window.innerWidth / 2, window.innerHeight * 0.55]) {
+  const to = $('shells').getBoundingClientRect(); sfx('coin'); haptic(8);
+  for (let i = 0; i < Math.min(5, n); i++) {
+    const el = document.createElement('div'); el.className = 'flyshell'; el.textContent = '🐚'; el.style.left = from[0] + (Math.random() - 0.5) * 50 + 'px'; el.style.top = from[1] + 'px'; document.body.append(el);
+    const dx = to.left + 14 - from[0], dy = to.top + 8 - from[1], a = el.animate([{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: `translate(${dx * 0.1}px,${-50 - i * 6}px) scale(1.15)`, opacity: 1, offset: 0.25 }, { transform: `translate(${dx}px,${dy}px) scale(.7)`, opacity: 0.9 }], { duration: 850 + i * 90, delay: i * 70, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
+    a.onfinish = () => { el.remove(); const sh = $('shells'); sh.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)', color: '#f4dd9a' }, { transform: 'scale(1)' }], { duration: 260 }); };
+  }
+}
+const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.delta > 1 ? 's' : ''}`); flyShells(r.delta); } };
 
 // feeding
 function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; feedbar.classList.add('on'); feedLabel(); }
@@ -129,10 +138,10 @@ const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Mat
 let lastCard = 0;
 function showCard(f) {
   lastCard = Date.now();
-  const p = fishes.profileOf(game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, game.state);
+  const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
-    <dl><dt>Age</dt><dd>${p.age}</dd><dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd></dl>
+    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd></dl>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f);
 }
@@ -184,6 +193,14 @@ const tut = (() => {
   };
 })();
 
+// a short, cinematic look at a fish: used for arrivals, growth and discoveries (only when you are just watching the tank)
+let spotlight = null;
+function spotlightFish(id, ms = 3600, delay = 700) {
+  setTimeout(() => {
+    const f = fishes.byId.get(id); if (!f || focus || placing || feedMode || cleanMode || rearrange || ui?.tab !== 'tank' || $('modal').classList.contains('on')) return;
+    setFocus(f); spotlight = f; setTimeout(() => { if (spotlight === f && focus === f) { setFocus(null); } spotlight = null; }, ms);
+  }, delay);
+}
 // ── wiring the game to the scene and the interface ──
 const pendingArrivals = new Set();
 let lastLamp = null;
@@ -198,8 +215,10 @@ function syncWorld() {
 game.on('tick', () => { ui?.updateHeader(); if (focus && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => { sfx('level'); haptic(30); fishes.burst(new THREE.Vector3(0, 6, 1)); ui?.toast(`Tank level ${lv}! New fish and decorations unlocked.`, 4200); });
-game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } });
+game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
+game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('level'); haptic(25); spotlightFish(id, 3200, 500); } });
+game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('arrive'); spotlightFish(id, 3000, 600); flyShells(2, [window.innerWidth / 2, window.innerHeight * 0.4]); } });
 game.on('remoteFeed', (x, by) => { fishes.drop(x); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (a.type !== 'feed') ui?.toast(a.text); } });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
