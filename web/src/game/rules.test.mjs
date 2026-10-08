@@ -6,7 +6,7 @@ ok('fish get hungry at their own pace', () => { const t = R.newWorld(0); t.fish.
   const g = R.needsOf(t.fish[1], t), l = R.needsOf(t.fish[2], t); assert.ok(g.fed < l.fed, `${g.fed} < ${l.fed}`); });
 ok('a clean, fed tank with things the fish like makes them happier', () => { const a = R.newWorld(0), b = R.newWorld(0); a.fish[0].traits = ['Shy']; b.fish[0].traits = ['Shy']; a.water = b.water = 1; b.water = 0.45; b.glass = 0.8; b.hunger = 0.85;
   R.advance(a, 6 * 3600e3 + 1); R.advance(b, 6 * 3600e3 + 1); assert.ok(a.fish[0].happy > b.fish[0].happy + 0.1, `${a.fish[0].happy} vs ${b.fish[0].happy}`); });
-ok('neglect makes fish unwell but never kills them', () => { const t = R.newWorld(0); t.water = 0.45; t.hunger = 0.85; R.advance(t, 30 * DAY); assert.ok(t.fish[0].health >= 0.35 && t.fish[0].health < 0.8, String(t.fish[0].health)); assert.equal(t.fish.length, 1); });
+ok('long neglect drives health critical, but the last fish never dies', () => { const t = R.newWorld(0); t.water = 0.45; t.hunger = 0.85; R.advance(t, 30 * DAY); assert.ok(t.fish[0].health >= 0.2 && t.fish[0].health <= 0.4, String(t.fish[0].health)); assert.equal(t.fish.length, 1); });
 ok('care brings them back', () => { const t = R.newWorld(0); t.water = 0.45; t.hunger = 0.85; R.advance(t, 5 * DAY); const low = t.fish[0].health; t.water = 1; t.hunger = 0.1; t.simTs = 5 * DAY; R.advance(t, 5 * DAY + 3 * 3600e3); assert.ok(t.fish[0].health > low + 0.2, `${low} → ${t.fish[0].health}`); });
 ok('moods read the real state', () => { const t = R.newWorld(0); t.hunger = 0.9; assert.equal(R.needsOf(t.fish[0], t).mood, 'Hungry'); t.hunger = 0.1; t.fish[0].happy = 0.9; assert.ok(['Happy', 'Sleepy'].includes(R.needsOf(t.fish[0], t, 13 * 3600e3).mood)); });
 ok('old saves without per-fish needs still load', () => { const t = R.newWorld(0); for (const f of t.fish) { delete f.happy; delete f.health; delete f.appetite; } R.advance(t, 3600e3); assert.ok(t.fish[0].happy > 0 && t.fish[0].health > 0.5); });
@@ -63,21 +63,31 @@ ok('a bottle goes to one friend, costs two shells, once per six hours, and pays 
 ok('neglect is slow, warned about, shared out fairly: a fish floats after five days, never all at once, never the last, never in a new tank', () => {
   const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Greedy'] })); return t; };
   const young = mk(); R.advance(young, 2 * D); R.advance(young, 2.9 * D); assert.equal(young.floaters.length, 0, 'a new tank is protected');
-  const t = mk(); t.flags.mortality = true; t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
-  let ev = []; for (let h = 12; h <= 24 * 3; h += 12) ev.push(...R.advance(t, h * 3600e3)); assert.ok(ev.some((e) => e.warn), 'a warning arrives before anyone dies'); assert.equal(t.floaters.length, 0);
-  for (let h = 3 * 24 + 12; h <= 24 * 12; h += 12) R.advance(t, h * 3600e3);
+  const t = mk(); t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
+  let ev = []; for (let h = 12; h <= 24 * 4; h += 12) ev.push(...R.advance(t, h * 3600e3)); assert.ok(ev.some((e) => e.warn), 'a warning arrives before anyone dies'); assert.equal(t.floaters.length, 0);
+  for (let h = 4 * 24 + 12; h <= 24 * 12; h += 12) R.advance(t, h * 3600e3);
   assert.ok(t.floaters.length >= 1 && t.fish.length >= 1, `deaths ${t.floaters.length}, alive ${t.fish.length}`); assert.ok(t.floaters.every((f) => f.died > 0));
   const alive = t.fish.length; for (let h = 24 * 12 + 12; h <= 24 * 40; h += 12) R.advance(t, h * 3600e3); assert.ok(t.fish.length >= 1, 'the last fish never dies');
-  const f1 = t.floaters[0], r1 = R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D, name: 'Sam' }); assert.ok(r1.applied); assert.equal(t.memorial.at(-1).name, f1.name); assert.equal(R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D }).applied, false);
+  const f1 = t.floaters[0], r1 = R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D, name: 'Sam' }); assert.ok(r1.applied); assert.ok(t.memorial.some((x) => x.name === f1.name && x.rested)); assert.equal(R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D }).applied, false);
   // care wins the time back
   const c = mk(); c.createdAt = -20 * D; c.simTs = 0; c.visitAt = c.eggAt = c.storyAt = 1e15; R.advance(c, 3 * D); assert.ok(c.fish[0].ail > 0); R.applyAction(c, { t: 'feed', x: 0 }, { now: 3 * D + 1000 }); R.applyAction(c, { t: 'water' }, { now: 3 * D + 2000 });
   const before = c.fish[0].ail; R.advance(c, 3 * D + 1800e3); assert.ok(c.fish[0].ail < before, 'ail ' + before + ' -> ' + c.fish[0].ail);
 });
-ok('by default nobody dies from being away: fish get tired, pause growing, and recover with care', () => {
-  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -30 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
+ok('a tank can opt out of death: fish pause growing instead', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.mortality = false; t.createdAt = -30 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Greedy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 2, born: 0, stage: 'baby', traits: ['Calm'] })];
   for (let h = 12; h <= 24 * 30; h += 12) R.advance(t, h * 3600e3);
-  assert.equal(t.fish.length, 2); assert.equal(t.floaters.length, 0); assert.ok(t.fish[0].born > 5 * D, 'growth was paused: born moved to ' + t.fish[0].born / D);
-  R.applyAction(t, { t: 'feed', x: 0 }, { now: 30 * D + 1000 }); R.applyAction(t, { t: 'water' }, { now: 30 * D + 2000 }); R.advance(t, 30 * D + 3600e3); assert.ok(t.fish[0].ail < 5 * 86400 - 1);
+  assert.equal(t.fish.length, 2); assert.equal(t.floaters.length, 0); assert.ok(t.fish[0].born > 5 * D, 'growth was paused');
+});
+ok('death needs both five days of neglect and critically low health, leaves a memorial and a floating fish, and lying to rest keeps the record', () => {
+  const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Calm', 'Shy'], owner: 'u1', ownerName: 'Alex', found: ['spot'] })); return t; };
+  const t = mk(); for (let h = 12; h <= 24 * 4; h += 12) R.advance(t, h * 3600e3); assert.equal(t.floaters.length, 0, 'nobody dies before day 5');
+  const tired = t.fish.map((f) => f.ail); assert.ok(tired.every((x) => x >= R.AIL_WARN), 'critical by day 4');
+  for (let h = 24 * 4 + 12; h <= 24 * 6; h += 12) R.advance(t, h * 3600e3); assert.equal(t.floaters.length, 1, 'one fish after five days, not all at once');
+  const m = t.memorial[0]; assert.equal(m.ownerName, 'Alex'); assert.deepEqual(m.traits, ['Calm', 'Shy']); assert.ok(m.milestones.length >= 1 && m.died > 0 && m.born < 0 && m.rested === null);
+  // a healthy-looking fish does not die just because time passed
+  const h = mk(); h.fish.forEach((f) => { f.ail = R.AIL_DIE + 10; f.health = 1; }); R.advance(h, 1000); assert.equal(h.floaters.length, 0);
+  const r = R.applyAction(t, { t: 'scoop', id: t.floaters[0].id }, { now: 6 * D + 1000, name: 'Sam' }); assert.ok(r.applied); assert.equal(t.floaters.length, 0); assert.equal(t.memorial[0].rested.by, 'Sam'); assert.equal(t.memorial.length, 1, 'the record stays');
+  assert.equal(R.applyAction(t, { t: 'scoop', id: m.id }, { now: 6 * D + 2000 }).applied, false, 'no duplicate');
 });
 console.log(`All ${n} rule tests passed`);

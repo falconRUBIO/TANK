@@ -66,7 +66,7 @@ export function createTank(db, user, name) {
   return tx(db, () => {
     for (let i = 0; i < 40; i++) {
       const code = randomCode();
-      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(R.newWorld(now, crypto.randomInt(1000)))); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify((() => { const w = R.newWorld(now, crypto.randomInt(1000)); w.fish[0].owner = user.id; w.flags.firsts = { [user.id]: true }; return w; })())); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
       db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,1,?,?)').run(id, user.id, now, now);
       addJournal(db, id, 'Our tank began.', user.id, now);
       return { id, code, name: tn, slot: 1 };
@@ -138,7 +138,7 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'tut', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

@@ -99,44 +99,51 @@ function discover(t, now, ev) {
   for (const f of t.fish) {
     ensureFish(f); f.found ||= []; if (now - f.born < 2 * 3600e3 || f.happy < 0.7) continue;
     const fav = favouriteOf(f, t);
-    if (fav && !f.found.includes('spot')) { f.found.push('spot'); t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
-    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
+    if (fav && !f.found.includes('spot')) { f.found.push('spot'); const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
+    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.pal = pal.id; pal.pal ??= f.id; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
   }
 }
-// Neglect has a cost, but it is never a punishment for being away. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds).
-// One day: it looks tired. Two days: it turns pale, slows down, stops growing, and a warning goes out. Care wins the time back twice as fast.
-// Death is switched off by default (`flags.mortality`). When a tank turns it on: no deaths in the first three days, at most one a day, and the last fish never dies.
-export const AIL_WARN = 2 * 86400, AIL_DIE = 5 * 86400;
+// Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
+// Days 1-2 normal. Day 3 (2d) sluggish and paler, growth pauses. Day 4 (3d) critical: slow, less appetite, a warning goes out.
+// Day 5 (4d-5d) death is possible if the fish's own health stays critically low. Guard rails: no deaths in a new tank's first three days, at most one a day, the last fish never dies.
+export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
+function memorialOf(t, f, now) {
+  const ms = [`Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favourite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favourite spot');
+  const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
+  return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, rested: null };
+}
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
   for (const f of [...t.fish]) {
     ensureFish(f); const n = needsOf(f, t, now);
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
-    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; let ailingNow = false; const stepMs = (dt / steps) * 1000;
+    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
       const fr = (k + 0.5) / steps, hun = h0 + (t.hunger - h0) * fr, wat = w0 + (t.water - w0) * fr, fedK = 1 - hun * (1 + f.appetite), bad = fedK < 0.2 || wat < 0.5;
-      f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); ailingNow = bad; if (bad && f.ail >= AIL_WARN / 2) f.born += stepMs;
-    }
-    if (f.ail < AIL_WARN / 2) f.warned = false;
-    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is run down and has stopped growing.`, toast: `${f.name} is run down. The tank could use some care.`, warn: f.id }); }
-    if (f.ail >= AIL_DIE && !t.flags.mortality) f.ail = AIL_DIE - 1;
-    if (f.ail >= AIL_DIE) {
-      const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
-      if (young || rested || t.fish.length <= 1) f.ail = AIL_DIE - 1;
-      else {
-        t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now });
-        ev.push({ journal: `${f.name} has passed away.`, toast: `${f.name} has passed away. Tap to lay them to rest.`, died: f.id }); continue;
-      }
+      f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); if (bad && f.ail >= AIL_TIRED) f.born += stepMs;      // growth pauses once a fish is run down
     }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));
     f.happy += (target - f.happy) * Math.min(1, dt / 2400);
-    const ht = t.water > 0.5 && n.fed > 0.2 ? 1 : Math.max(0.35, 0.4 + 0.6 * Math.min(t.water, n.fed + 0.2));
-    f.health = Math.max(0.35, Math.min(1, f.health + (ht - f.health) * Math.min(1, dt / (ht < f.health ? 5400 : 1800))));
+    // health follows how long the fish has really been neglected: it sinks toward critical over days, and climbs back quickly with care
+    const ht = t.water > 0.5 && n.fed > 0.2 ? 1 : Math.max(0.2, 0.4 + 0.6 * Math.min(t.water, n.fed + 0.2) - 0.45 * Math.min(1, f.ail / AIL_DIE));
+    f.health = Math.max(0.2, Math.min(1, f.health + (ht - f.health) * Math.min(1, dt / (ht < f.health ? 5400 : 1800))));
+    if (f.ail < AIL_TIRED) f.warned = false;
+    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is in a critical state. It needs food and clean water.`, toast: `${f.name} is in a critical state. The tank needs care.`, warn: f.id }); }
+    // death follows the fish's real condition: five days of neglect AND health that has stayed critically low, then the guard rails
+    if (f.ail >= AIL_DIE && f.health <= 0.4 && t.flags.mortality !== false) {
+      const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
+      if (young || rested || t.fish.length <= 1) f.ail = AIL_DIE - 1;
+      else {
+        t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; (t.memorial ||= []).push(memorialOf(t, f, now));
+        (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [] });
+        ev.push({ journal: `${f.name} has passed away.`, toast: `${f.name} has passed away.`, died: f.id }); continue;
+      }
+    } else if (f.ail >= AIL_DIE) f.ail = AIL_DIE - 1;
   }
 }
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.flags.mortality ??= false; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   return t;
 }
@@ -163,7 +170,7 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75 }); t.fish.push(f);
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null }); t.fish.push(f);
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
 const HOUR = 3600e3;
@@ -224,8 +231,8 @@ function milestones(t, now, ev) {
 
 export function newWorld(now = Date.now(), seed = 1) {
   return {
-    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
-    fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05 }],
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, firsts: { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
+    fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me' }],
     decor: [],
     seen: { fish: ['goldfish'], decor: [] },
   };
@@ -301,7 +308,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
-      t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, owner: uid, ownerName: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
       events.push({ journal: `${name} ordered ${d.count === 1 ? (nm || 'a new fish') + ' the ' + d.label.toLowerCase() : 'a school of ' + d.label.toLowerCase() + 's'}.`, activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
@@ -341,7 +348,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'scoop': {
       const x = t.floaters.find((f) => f.id === a.id); if (!x) return ok({ applied: false });
-      t.floaters.splice(t.floaters.indexOf(x), 1); t.memorial.push({ name: x.name, species: x.species, born: x.born, died: x.died, by: name });
+      t.floaters.splice(t.floaters.indexOf(x), 1); const m = t.memorial.find((r) => r.id === x.id); if (m) m.rested = { by: name, at: now };
       events.push({ journal: `${name} laid ${x.name} to rest.`, toast: `${x.name} was laid to rest.` }); return ok({ applied: true });
     }
     case 'collect': {
@@ -363,6 +370,12 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';
       if (!FLOORS[fl] || !BACKDROPS[bd]) return fail('BAD_NAME');
       t.style = { floor: fl, backdrop: bd }; events.push({ activity: { type: 'decor', text: `${name} restyled the tank.` } }); return ok();
+    }
+    case 'firstFish': {                                            // every caretaker gets a free first fish of their own
+      if (members && !members.some((m) => m.id === uid)) return fail('FORBIDDEN');
+      t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');
+      const f = makeFish(t, { species: 'goldfish', name: cleanName(a.name), seed: Math.abs(Math.floor(num(a.seed) || now)) % 100000, owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
+      events.push({ journal: `${name} brought in ${f.name}, their first fish.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} added their first fish.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });
