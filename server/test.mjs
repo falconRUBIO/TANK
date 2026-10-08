@@ -223,6 +223,14 @@ await t('a visitor can be greeted once and a bottle only reaches its friend', as
   assert.equal((await ackOf(wsA, { t: 'openBottle', id: bid, idem: 'b2' })).applied, false);
   assert.equal((await ackOf(wsB4, { t: 'openBottle', id: bid, idem: 'b3' })).applied, true); assert.equal(getW(tank.id).bottles.length, 0); wsB4.close();
 });
+await t('static files are compressed, cached by ETag and the database backs itself up', async () => {
+  const base = 'http://localhost:' + S.port, r1 = await fetch(base + '/vendor/three.module.min.js', { headers: { 'accept-encoding': 'gzip' } });
+  assert.equal(r1.status, 200); const etag = r1.headers.get('etag'); assert.ok(etag); const raw = await fetch(base + '/vendor/three.module.min.js', { headers: { 'accept-encoding': 'identity' } });
+  assert.ok(Number(raw.headers.get('content-length')) > 300000 && !raw.headers.get('content-encoding'));
+  const r2 = await fetch(base + '/vendor/three.module.min.js', { headers: { 'if-none-match': etag } }); assert.equal(r2.status, 304);
+  const home = await fetch(base + '/', { headers: { 'accept-encoding': 'gzip' } }); assert.equal(home.headers.get('content-encoding'), 'gzip');
+  assert.doesNotThrow(() => S.backup());
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();

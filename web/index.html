@@ -144,6 +144,10 @@
   .chipb{all:unset;cursor:pointer;font-size:12px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}.chipb.on{background:#17304f;color:var(--ink);border-color:#2a4468}
 
   [hidden]{display:none!important}
+  /* phone feel: no grey tap flash, no double-tap zoom, no rubber-banding, no text selection or callouts on the game; inputs stay 16px so iOS never zooms them */
+  html,body{-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  input,textarea{-webkit-user-select:text;user-select:text;font-size:16px!important}
+  #sheet{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   /* ── clean top: the tank fills the screen; only a shells capsule and a settings button float above it ── */
   :root{--top:calc(env(safe-area-inset-top,0px) + 62px)}
   header{position:absolute;top:0;left:0;right:0;z-index:7;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 0;pointer-events:none;background:none}

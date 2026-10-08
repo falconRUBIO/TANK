@@ -1,6 +1,7 @@
 // OUR TANK server: REST (identity, create/join) + WebSocket (shared live tank) + static client.
 import http from 'node:http';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
@@ -9,6 +10,22 @@ import * as L from './logic.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+
+// static files are read once, compressed once, and answered with an ETag so a returning phone only re-downloads what changed
+const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.webmanifest']);
+const staticCache = new Map();
+function sendStatic(req, res, file) {
+  const st = fs.statSync(file), ext = path.extname(file); let e = staticCache.get(file);
+  if (!e || e.mtime !== st.mtimeMs) {
+    const raw = fs.readFileSync(file);
+    e = { mtime: st.mtimeMs, raw, gz: COMPRESSIBLE.has(ext) && raw.length > 1024 ? zlib.gzipSync(raw, { level: 9 }) : null, etag: `"${raw.length.toString(16)}-${Math.floor(st.mtimeMs).toString(16)}"` };
+    staticCache.set(file, e);
+  }
+  const head = { 'Content-Type': MIME[ext] ?? 'application/octet-stream', ETag: e.etag, 'Cache-Control': /\.(png|webmanifest)$/.test(file) ? 'public, max-age=86400' : 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', Vary: 'Accept-Encoding' };
+  if (req.headers['if-none-match'] === e.etag) { res.writeHead(304, head); return res.end(); }
+  const gz = e.gz && /\bgzip\b/.test(req.headers['accept-encoding'] ?? ''), body = gz ? e.gz : e.raw;
+  res.writeHead(200, { ...head, 'Content-Length': body.length, ...(gz ? { 'Content-Encoding': 'gzip' } : {}) }); res.end(req.method === 'HEAD' ? undefined : body);
+}
 
 // sliding-window rate limiter
 class Limiter {
@@ -89,8 +106,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
     const file = path.normalize(path.join(staticDir, rel));
     if (!(file === staticDir || file.startsWith(staticDir + path.sep)) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control': /\.(png|webmanifest)$/.test(file) ? 'public, max-age=86400' : 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' });
-    fs.createReadStream(file).pipe(res);
+    return sendStatic(req, res, file);
   });
 
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
@@ -141,6 +157,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     ws.on('close', () => { const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref();
+  // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
+  const backup = () => { if (dbPath === ':memory:') return; const tmp = dbPath + '.backup.tmp'; try { fs.rmSync(tmp, { force: true }); db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); fs.renameSync(tmp, dbPath + '.backup'); } catch (e) { console.error('backup failed', e.message); } };
+  const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
   // while people are connected, time passes for their tank: growth, moods and discoveries are announced to everyone
   const tick = setInterval(() => {
     for (const [tankId, set] of rooms) {
@@ -152,12 +171,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
-    port: server.address().port, db,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
+    port: server.address().port, db, backup,
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
   })));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const s = await start({ port: +process.env.PORT || 8080, dbPath: process.env.DB || 'ourtank.db' });
   console.log(`OUR TANK listening on http://localhost:${s.port}`);
+  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('shutting down'); try { s.backup(); await s.close(); } finally { process.exit(0); } });
 }
