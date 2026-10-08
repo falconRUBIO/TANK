@@ -132,13 +132,13 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish, visitor: e.visitor });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died });
       else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival });
     }
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'tut', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

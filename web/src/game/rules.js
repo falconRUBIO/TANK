@@ -103,9 +103,29 @@ function discover(t, now, ev) {
     else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
   }
 }
-function tendFish(t, dt, now) {
-  for (const f of t.fish) {
+// Neglect has a cost. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds). Two days: it looks pale and a warning goes out.
+// Five days: it dies. Any real care wins the time back twice as fast. Guard rails keep a shared tank fair: no deaths in a tank's first three days,
+// at most one death a day, and the last fish never dies.
+export const AIL_WARN = 2 * 86400, AIL_DIE = 5 * 86400;
+function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
+  for (const f of [...t.fish]) {
     ensureFish(f); const n = needsOf(f, t, now);
+    // walk through the interval in half-hour steps so a feeding in the middle of it counts
+    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0;
+    for (let k = 0; k < steps; k++) {
+      const fr = (k + 0.5) / steps, hun = h0 + (t.hunger - h0) * fr, wat = w0 + (t.water - w0) * fr, fedK = 1 - hun * (1 + f.appetite);
+      f.ail = Math.max(0, f.ail + ((fedK < 0.2 || wat < 0.5) ? dt / steps : -(dt / steps) * 2));
+    }
+    if (f.ail < AIL_WARN / 2) f.warned = false;
+    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is very weak. The tank needs care soon.`, toast: `${f.name} is very weak. Feed the tank.`, warn: f.id }); }
+    if (f.ail >= AIL_DIE) {
+      const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
+      if (young || rested || t.fish.length <= 1) f.ail = AIL_DIE - 1;
+      else {
+        t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now });
+        ev.push({ journal: `${f.name} has passed away.`, toast: `${f.name} has passed away. Tap to lay them to rest.`, died: f.id }); continue;
+      }
+    }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));
     f.happy += (target - f.happy) * Math.min(1, dt / 2400);
     const ht = t.water > 0.5 && n.fed > 0.2 ? 1 : Math.max(0.35, 0.4 + 0.6 * Math.min(t.water, n.fed + 0.2));
@@ -115,7 +135,7 @@ function tendFish(t, dt, now) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   return t;
 }
@@ -214,10 +234,11 @@ export function newWorld(now = Date.now(), seed = 1) {
 export function advance(t, now = Date.now()) {
   norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   if (dt >= 1) {
+    const h0 = t.hunger, w0 = t.water;
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
-    t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR);
+    t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
-    tendFish(t, dt, now); t.simTs = now;
+    tendFish(t, dt, now, ev, h0, w0); t.simTs = now;
   }
   for (const f of t.fish) {                                          // growth milestones
     const s = stageOf(f, now);
@@ -316,6 +337,11 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
       const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; }
       return ok();
+    }
+    case 'scoop': {
+      const x = t.floaters.find((f) => f.id === a.id); if (!x) return ok({ applied: false });
+      t.floaters.splice(t.floaters.indexOf(x), 1); t.memorial.push({ name: x.name, species: x.species, born: x.born, died: x.died, by: name });
+      events.push({ journal: `${name} laid ${x.name} to rest.`, toast: `${x.name} was laid to rest.` }); return ok({ applied: true });
     }
     case 'collect': {
       const g = t.drift; if (!g || g.id !== a.id) return ok({ applied: false, delta: 0 });

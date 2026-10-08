@@ -60,4 +60,17 @@ ok('a bottle goes to one friend, costs two shells, once per six hours, and pays 
   const id = t.bottles[0].id; assert.equal(R.applyAction(t, { t: 'openBottle', id }, { uid: 'u1', now: now + 2000 }).applied, false);
   const r = R.applyAction(t, { t: 'openBottle', id }, { uid: 'u2', name: 'Sam', now: now + 3000 }); assert.ok(r.applied); assert.equal(t.shells, 22); assert.equal(t.bottles.length, 0);
 });
+ok('neglect is slow, warned about, shared out fairly: a fish floats after five days, never all at once, never the last, never in a new tank', () => {
+  const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Greedy'] })); return t; };
+  const young = mk(); R.advance(young, 2 * D); R.advance(young, 2.9 * D); assert.equal(young.floaters.length, 0, 'a new tank is protected');
+  const t = mk(); t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
+  let ev = []; for (let h = 12; h <= 24 * 3; h += 12) ev.push(...R.advance(t, h * 3600e3)); assert.ok(ev.some((e) => e.warn), 'a warning arrives before anyone dies'); assert.equal(t.floaters.length, 0);
+  for (let h = 3 * 24 + 12; h <= 24 * 12; h += 12) R.advance(t, h * 3600e3);
+  assert.ok(t.floaters.length >= 1 && t.fish.length >= 1, `deaths ${t.floaters.length}, alive ${t.fish.length}`); assert.ok(t.floaters.every((f) => f.died > 0));
+  const alive = t.fish.length; for (let h = 24 * 12 + 12; h <= 24 * 40; h += 12) R.advance(t, h * 3600e3); assert.ok(t.fish.length >= 1, 'the last fish never dies');
+  const f1 = t.floaters[0], r1 = R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D, name: 'Sam' }); assert.ok(r1.applied); assert.equal(t.memorial.at(-1).name, f1.name); assert.equal(R.applyAction(t, { t: 'scoop', id: f1.id }, { now: 40 * D }).applied, false);
+  // care wins the time back
+  const c = mk(); c.createdAt = -20 * D; c.simTs = 0; c.visitAt = c.eggAt = c.storyAt = 1e15; R.advance(c, 3 * D); assert.ok(c.fish[0].ail > 0); R.applyAction(c, { t: 'feed', x: 0 }, { now: 3 * D + 1000 }); R.applyAction(c, { t: 'water' }, { now: 3 * D + 2000 });
+  const before = c.fish[0].ail; R.advance(c, 3 * D + 1800e3); assert.ok(c.fish[0].ail < before, 'ail ' + before + ' -> ' + c.fish[0].ail);
+});
 console.log(`All ${n} rule tests passed`);
