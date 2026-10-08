@@ -24,6 +24,11 @@ await D.goto(base + '/?lite=1'); await D.waitForSelector('text=JOIN A TANK'); aw
 await D.waitForSelector('text=THIS TANK IS FULL'); step('D (4th player) is shown THIS TANK IS FULL'); await D.screenshot({ path: out + '/e4_full.png' });
 await D.click('#bk'); await D.click('text=JOIN A TANK'); await D.fill('#cd', 'ZZZZZZ'); await D.click('#go'); await D.waitForSelector('text=TANK NOT FOUND'); step('a bad code shows TANK NOT FOUND');
 
+// each joiner brings in a first fish of their own
+const first = async (P, nm) => { await P.waitForSelector('#modal.on #mi', { timeout: 30000 }); await P.fill('#mi', nm); await P.click('#mok'); await P.waitForTimeout(1200); };
+await first(B, 'Biscuit'); await first(C, 'Nori'); await A.waitForTimeout(1000);
+const own = await A.evaluate(() => window.__game.state.fish.map((f) => [f.name, f.ownerName]));
+step('first fish with owners: ' + JSON.stringify(own)); if (!(own.length === 3 && own.some((x) => x[0] === 'Biscuit' && x[1] === 'Sam') && own.some((x) => x[0] === 'Nori' && x[1] === 'Riley'))) { console.log('FAIL: first fish ownership'); process.exitCode = 1; }
 // shared live state
 await A.click('[data-tab=care]'); await A.click('[data-act=feed]'); await A.mouse.click(200, 300); await B.waitForTimeout(1500);
 step('B saw toast: ' + JSON.stringify(await B.textContent('#toast')));
