@@ -8,6 +8,7 @@ let fails = 0; const ck = (name, ok, extra = '') => { console.log(ok ? '  ✓' :
 const S = () => p.evaluate(() => JSON.parse(JSON.stringify(window.__game.state)));
 const coach = () => p.evaluate(() => document.getElementById('coach').classList.contains('on') ? document.querySelector('#coach b').textContent : '');
 const waitCoach = async (t) => { for (let i = 0; i < 40; i++) { if ((await coach()) === t) return true; await p.waitForTimeout(150); } return false; };
+await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^LEVEL \d/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 700));
 await p.goto(base + '/?lite=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 });
 console.log('Tutorial');
 ck('first run asks you to name your fish', (await p.textContent('#modal h2')) === 'MEET YOUR FIRST FISH');
