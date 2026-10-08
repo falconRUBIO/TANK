@@ -33,5 +33,7 @@ await A.click('[data-tab=friends]'); await A.waitForTimeout(500);
 step('A sees chat: ' + JSON.stringify(await A.$$eval('.msg', (n) => n.map((x) => x.textContent))));
 step('A friends tab members: ' + JSON.stringify(await A.$$eval('.slot b', (n) => n.map((x) => x.textContent))));
 step('header slots on A: ' + (await A.$$eval('#avs .av', (n) => n.length)));
+await A.click('[data-nudge]'); await B.waitForTimeout(1500);
+step('nudge: A got ' + JSON.stringify(await A.textContent('#toast')) + ', someone received ' + JSON.stringify([await B.textContent('#toast'), await C.textContent('#toast')]));
 await A.screenshot({ path: out + '/e5_friends_A.png' }); await C.screenshot({ path: out + '/e6_C.png' });
 await b.close();

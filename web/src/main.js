@@ -233,7 +233,7 @@ const tut = (() => {
       } else if (step === 3) {
         ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'Here is a free plant. Open Decorate, pick a plant and drag it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
-        ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Care for the fish to earn shells. Spend them on new fish and decorations, and watch your tank level grow. Tap a fish to get to know it.', button: 'Start', onButton: () => { set(5); ui.hideCoach(); } });
+        ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Care for the fish to earn shells. Next: add a plant in Decorate, then adopt a friend for your fish. Tap a fish to get to know it.', button: 'Start', onButton: () => { set(5); ui.hideCoach(); } });
       }
     } finally { busy = false; setTimeout(run, 0); }
   }

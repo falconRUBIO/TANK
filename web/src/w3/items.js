@@ -39,7 +39,7 @@ const B = {
     for (let a = -Math.PI * 0.95; a <= -Math.PI * 0.05; a += 0.05) for (const th of [0, 1, 2]) for (let k = -1; k <= 1; k++) v.set(Math.round(Math.cos(a) * (11 - th)), Math.round(12 + Math.sin(a) * 10 - th * 0.2), k, iron(a * 10, th, k));
     for (let a = 0; a < 6.3; a += 0.15) for (let k = -1; k <= 0; k++) v.set(Math.round(Math.cos(a) * 3), 34 + Math.round(Math.sin(a) * 3), k, iron(a * 9, 2, k));
     for (const q of v.m.values()) { if (hash(q.i, q.j, q.k, 8) > 0.72) q.c = mix(q.c, [150, 96, 54], 0.6); if (!v.has(q.i, q.j + 1, q.k) && hash(q.i, q.j, q.k, 4) > 0.45) q.c = mix([96, 134, 54], [150, 176, 64], hash(q.i, q.k, 4)); }
-    const m = v.mesh(); m.position.y = 0.0; m.rotation.z = 0.12; g.add(m); return [{ v, x: 0, y: 0, z: 0, ry: 0 }];
+    const m = v.mesh(); m.position.y = 0.0; g.add(m); return [{ v, x: 0, y: 0, z: 0, ry: 0 }];
   },
   bridge: (g) => {
     const u = 0.1, v = new Vox(u), wood = (i, j, k) => mix([112, 76, 44], [158, 110, 62], hash(Math.floor(i / 2), j, k, 6));
@@ -53,7 +53,7 @@ const B = {
   crystal: (g, seed) => {
     const u = 0.07, v = new Vox(u), r = mulberry32(seed);
     for (const [x0, z0, H, lean] of [[0, 0, 38, 0.1], [-6, 3, 26, -0.35], [6, -2, 30, 0.4], [3, 5, 18, 0.2], [-3, -4, 22, -0.15]]) {
-      for (let j = 0; j <= H; j++) { const t = j / H, w = Math.max(0, Math.round((1 - t * 0.85) * 3.4)); for (let i = -w; i <= w; i++) for (let k = -w; k <= w; k++) { if (Math.abs(i) + Math.abs(k) > w + 1) continue; const c = mix([40, 120, 232], [150, 238, 255], t * 0.8 + hash(i, j, k, 2) * 0.2); v.set(x0 + i + Math.round(lean * j), j, z0 + k, c, 1.15 + t * 0.9); } }
+      for (let j = 0; j <= H; j++) { const t = j / H, w = Math.max(0, Math.round((1 - t * 0.85) * 3.4)); for (let i = -w; i <= w; i++) for (let k = -w; k <= w; k++) { if (Math.abs(i) + Math.abs(k) > w + 1) continue; const c = mix([30, 150, 250], [170, 250, 255], t * 0.8 + hash(i, j, k, 2) * 0.2); v.set(x0 + i + Math.round(lean * j), j, z0 + k, c, 2.0 + t * 1.8); } }
     }
     const m = v.mesh(); m.position.y = 0.04; g.add(m); g.userData.crystal = true; return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
   },

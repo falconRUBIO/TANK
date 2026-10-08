@@ -119,7 +119,10 @@ export const WISHES = [
   { text: 'Raise a fully grown fish', done: (t) => t.fish.some((f) => f.stage === 'adult'), reward: 6 },
   { text: 'Fill the tank with twelve fish', done: (t) => t.fish.length >= 12, reward: 8 },
   { text: 'Reach tank level 6', done: (t) => t.level >= 6, reward: 10 },
+  { text: 'Fill the tank with twenty-five fish', done: (t) => t.fish.length >= 25, reward: 15 },
+  { text: 'Reach tank level 8', done: (t) => t.level >= 8, reward: 15 },
   { text: 'Discover 20 things for the collection book', done: (t) => t.seen.fish.length + t.seen.decor.length >= 20, reward: 12 },
+  { text: 'Find every fish and decoration in the book', done: (t) => t.seen.fish.length + t.seen.decor.length >= COLLECTION_SIZE(), reward: 25 },
 ];
 export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
 function makeDrift(t, now) {
@@ -174,6 +177,8 @@ export function advance(t, now = Date.now()) {
   }
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
+  const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
+  if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
   levelCheck(t, now, ev);
   return ev;
