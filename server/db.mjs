@@ -35,6 +35,7 @@ export function openDb(path = 'ourtank.db') {
       amount INTEGER NOT NULL, ts INTEGER NOT NULL, idem TEXT NOT NULL, UNIQUE (tank_id, user_id, idem)
     );
   `);
+  try { db.exec('ALTER TABLE tanks ADD COLUMN world TEXT'); } catch { /* column already there */ }
   return db;
 }
 

@@ -106,15 +106,16 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const { tankId, msg } = L.addMessage(db, ws.user, m.text);
           return broadcast(tankId, { t: 'chat', msg });
         }
-        if (['feed', 'water', 'glass'].includes(m.t)) {
-          if (!lim.hit('a:' + ws.userId, 20, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
-          const r = L.act(db, ws.user, m.t, { idem: m.idem });
-          send(ws, { t: 'ack', idem: m.idem, ok: true, dup: !!r.dup, applied: r.fed !== false, delta: r.delta });
-          if (!r.dup) {
-            if (m.t === 'feed' && r.fed !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0 });
-            broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.tank) });
+        if (L.ACTIONS.has(m.t)) {
+          if (!lim.hit('a:' + ws.userId, 30, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
+          const { t: type, idem, ...rest } = m;
+          const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV });
+          send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id });
+          if (r.ok && !r.dup) {
+            if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0 });
+            broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
-          }
+          } else if (!r.ok) send(ws, { t: 'state', tank: L.publicTank(r.world) });
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
     });

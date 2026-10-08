@@ -1,6 +1,7 @@
 // Game rules. The server is authoritative for membership, shells, and tank condition.
 import crypto from 'node:crypto';
 import { tx } from './db.mjs';
+import * as R from '../web/src/game/rules.js';
 
 export const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';   // 31 chars, no 0/O/1/I/L
 export const MAX_MEMBERS = 3;
@@ -45,7 +46,7 @@ export function createTank(db, user, name) {
   return tx(db, () => {
     for (let i = 0; i < 40; i++) {
       const code = randomCode();
-      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts) VALUES (?,?,?,?,?)').run(id, tn, code, now, now); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(R.newWorld(now, crypto.randomInt(1000)))); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
       db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,1,?,?)').run(id, user.id, now, now);
       addJournal(db, id, 'Our tank began.', user.id, now);
       return { id, code, name: tn, slot: 1 };
@@ -85,18 +86,17 @@ export function regenerateCode(db, user) {
   });
 }
 
-// ── simulation (lazy: advanced whenever anyone touches the tank; bounded so absence never punishes) ──
-export function advance(db, tankId, now = Date.now()) {
-  const t = db.prepare('SELECT * FROM tanks WHERE id=?').get(tankId);
-  const dt = Math.max(0, (now - t.sim_ts) / 1000);
-  if (dt < 1) return t;
-  let h = t.hunger + dt * HR; if (h > 0.85) h = Math.max(t.hunger, 0.85);
-  let w = t.water - dt * WR; if (w < 0.45) w = Math.min(t.water, 0.45);
-  let g = t.glass + dt * GR; if (g > 0.8) g = Math.max(t.glass, 0.8);
-  db.prepare('UPDATE tanks SET hunger=?,water=?,glass=?,sim_ts=? WHERE id=?').run(h, w, g, now, tankId);
-  return { ...t, hunger: h, water: w, glass: g, sim_ts: now };
+// ── tank state. The whole game state is one JSON document (rules.js), saved with a few mirrored columns ──
+export function loadWorld(db, tankId) {
+  const row = db.prepare('SELECT * FROM tanks WHERE id=?').get(tankId);
+  let w = row.world ? JSON.parse(row.world) : null;
+  if (!w) { w = R.newWorld(row.created_at); Object.assign(w, { shells: row.shells, hunger: row.hunger, water: row.water, glass: row.glass, level: row.level, simTs: row.sim_ts }); }
+  return { row, w };
 }
-export const dayOf = (t, now = Date.now()) => Math.floor((now - t.created_at) / 864e5) + 1;
+export function saveWorld(db, tankId, w) {
+  db.prepare('UPDATE tanks SET world=?, shells=?, hunger=?, water=?, glass=?, level=?, sim_ts=? WHERE id=?').run(JSON.stringify(w), w.shells, w.hunger, w.water, w.glass, w.level, w.simTs, tankId);
+}
+export const dayOf = (w, now = Date.now()) => Math.floor((now - w.createdAt) / 864e5) + 1;
 export function addJournal(db, tankId, text, userId = null, now = Date.now()) {
   const t = db.prepare('SELECT created_at FROM tanks WHERE id=?').get(tankId);
   const day = Math.floor((now - (t?.created_at ?? now)) / 864e5) + 1;
@@ -107,35 +107,26 @@ export function addActivity(db, tankId, userId, type, text, now = Date.now()) {
   const r = db.prepare('INSERT INTO activity (tank_id,user_id,type,text,ts) VALUES (?,?,?,?,?)').run(tankId, userId, type, text, now);
   return { id: Number(r.lastInsertRowid), userId, type, text, ts: now };
 }
-
-// Idempotent, atomic action. Returns { ok, dup?, fed?, delta, tank, events[] }.
-export function act(db, user, type, { idem, now = Date.now() } = {}) {
+export const ACTIONS = new Set(['feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
+// Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
+export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+  if (!ACTIONS.has(action?.t)) throw new GameError('BAD_ACTION', 'Unknown action.');
   const key = clean(idem, 64); if (!key) throw new GameError('BAD_IDEM', 'Missing idempotency key.');
   return tx(db, () => {
-    const events = [];
-    const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, type, now, key);
-    if (ins.changes === 0) return { ok: true, dup: true, delta: 0, tank: advance(db, t0.id, now), events };
-    let t = advance(db, t0.id, now), delta = 0, fed = true;
-    if (type === 'feed') {
-      if (t.hunger < 0.08) fed = false;
-      else {
-        delta = t.hunger > 0.25 ? 1 : 0;
-        t = { ...t, hunger: Math.max(0, t.hunger - 0.3), water: Math.max(0.3, t.water - 0.015), shells: t.shells + delta };
-        const recent = db.prepare("SELECT 1 FROM activity WHERE tank_id=? AND type='feed' AND ts>?").get(t.id, now - 6 * 3600 * 1000);
-        if (!recent) events.push({ journal: addJournal(db, t.id, `${user.name} fed the fish.`, user.id, now) });
-        events.push({ activity: addActivity(db, t.id, user.id, 'feed', `${user.name} fed the fish.`, now) });
-      }
-    } else if (type === 'water') {
-      if (t.water >= 0.7) fed = false;
-      else { delta = 2; t = { ...t, water: 1, shells: t.shells + 2 }; events.push({ journal: addJournal(db, t.id, `${user.name} changed the water.`, user.id, now) }, { activity: addActivity(db, t.id, user.id, 'water', `${user.name} changed the water.`, now) }); }
-    } else if (type === 'glass') {
-      if (t.glass <= 0.12) fed = false;
-      else { delta = 1; t = { ...t, glass: 0, shells: t.shells + 1 }; events.push({ activity: addActivity(db, t.id, user.id, 'glass', `${user.name} cleaned the glass.`, now) }); }
-    } else throw new GameError('BAD_ACTION', 'Unknown action.');
-    db.prepare('UPDATE tanks SET hunger=?,water=?,glass=?,shells=? WHERE id=?').run(t.hunger, t.water, t.glass, t.shells, t.id);
-    db.prepare('UPDATE transactions SET amount=? WHERE tank_id=? AND user_id=? AND idem=?').run(delta, t.id, user.id, key);
-    return { ok: true, fed, delta, tank: t, events };
+    const { w } = loadWorld(db, t0.id), out = [];
+    const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, action.t, now, key);
+    if (ins.changes === 0) { const ev = R.advance(w, now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: [] }; }
+    const r = R.applyAction(w, action, { name: user.name, now, dev });
+    if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
+    for (const e of r.events) {
+      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp });
+      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp });
+      if (e.activity) out.push({ activity: addActivity(db, t0.id, user.id, e.activity.type, e.activity.text, now) });
+    }
+    saveWorld(db, t0.id, w);
+    db.prepare('UPDATE transactions SET amount=? WHERE tank_id=? AND user_id=? AND idem=?').run(r.delta ?? 0, t0.id, user.id, key);
+    return { ...r, world: w, events: out };
   });
 }
 export function addMessage(db, user, text, now = Date.now()) {
@@ -148,15 +139,15 @@ export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members
 
 export function snapshot(db, user, online = []) {
   const t0 = tankOf(db, user.id); if (!t0) return null;
-  const t = advance(db, t0.id);
-  const names = Object.fromEntries(members(db, t.id).map((m) => [m.id, m.name]));
+  const { row, w } = loadWorld(db, t0.id); R.advance(w); saveWorld(db, t0.id, w);
+  const names = Object.fromEntries(members(db, t0.id).map((m) => [m.id, m.name]));
   return {
     you: { userId: user.id, slot: t0.slot },
-    tank: { id: t.id, name: t.name, code: t.code, level: t.level, shells: t.shells, hunger: t.hunger, water: t.water, glass: t.glass, day: dayOf(t), createdAt: t.created_at },
-    members: members(db, t.id), online,
-    journal: db.prepare('SELECT id,day,text,user_id AS userId,ts FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t.id).reverse(),
-    activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 20').all(t.id).reverse(),
-    messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),
+    tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
+    members: members(db, t0.id), online,
+    journal: db.prepare('SELECT id,day,text,user_id AS userId,ts FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 60').all(t0.id).reverse(),
+    activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 20').all(t0.id).reverse(),
+    messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t0.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),
   };
 }
-export const publicTank = (t) => ({ shells: t.shells, hunger: t.hunger, water: t.water, glass: t.glass, level: t.level });
+export const publicTank = (w) => ({ ...w, day: dayOf(w) });

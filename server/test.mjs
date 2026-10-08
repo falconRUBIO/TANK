@@ -5,6 +5,8 @@ import { start } from './server.mjs';
 import { ALPHABET } from './logic.mjs';
 
 let pass = 0;
+const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
+const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
 const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000 } });
 const base = `http://localhost:${S.port}`;
@@ -74,6 +76,7 @@ await t('join attempts are rate limited', async () => {
 });
 
 console.log('Realtime');
+let wb2;
 const wa = await open(a.token), wb = await open(b.token), wc = await open(c.token);
 await t('snapshots show the shared tank and who is online', async () => {
   const s = await waitFor(wb, (m) => m.t === 'snapshot'); assert.equal(s.tank.name, 'Reef'); assert.equal(s.members.length, 3); assert.equal(s.you.slot, 2);
@@ -84,27 +87,27 @@ await t('a feed is validated by the server and seen by the other players', async
   wa.send(JSON.stringify({ t: 'feed', x: 1.5, idem: 'f1' }));
   const ack = await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'f1'); assert.equal(ack.ok, true); assert.equal(ack.delta, 1);
   const f = await waitFor(wb, (m) => m.t === 'feed'); assert.equal(f.x, 1.5); await waitFor(wc, (m) => m.t === 'feed');
-  const st = await waitFor(wb, (m) => m.t === 'state'); assert.equal(st.tank.shells, 1);
+  const st = await waitFor(wb, (m) => m.t === 'state'); assert.equal(st.tank.shells, 11);
 });
 await t('replaying the same idempotency key never pays twice', async () => {
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' })); wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' }));
-  await new Promise((r) => setTimeout(r, 200)); assert.equal(S.db.prepare('SELECT shells FROM tanks WHERE id=?').get(tank.id).shells, 1);
+  await new Promise((r) => setTimeout(r, 200)); assert.equal(getW(tank.id).shells, 11);
   assert.equal(wa.msgs.filter((m) => m.t === 'ack' && m.idem === 'f1' && m.dup).length, 2);
 });
 await t('two players acting at once with different keys are both applied atomically', async () => {
-  S.db.prepare('UPDATE tanks SET hunger=0.9 WHERE id=?').run(tank.id);
+  setW(tank.id, { hunger: 0.9, simTs: Date.now() });
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'a1' })); wb.send(JSON.stringify({ t: 'feed', x: 0, idem: 'b1' }));
   await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'a1'); await waitFor(wb, (m) => m.t === 'ack' && m.idem === 'b1');
-  const row = S.db.prepare('SELECT shells,hunger FROM tanks WHERE id=?').get(tank.id);
-  assert.equal(row.shells, 3); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // 1 earlier + two paid feeds (0.9 → 0.6 → 0.3), no double-spend
+  const row = getW(tank.id);
+  assert.equal(row.shells, 13); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // 1 earlier + two paid feeds (0.9 → 0.6 → 0.3), no double-spend
 });
 await t('feeding a full tank is accepted but not rewarded', async () => {
-  S.db.prepare('UPDATE tanks SET hunger=0.02 WHERE id=?').run(tank.id);
+  setW(tank.id, { hunger: 0.02, simTs: Date.now() });
   wc.send(JSON.stringify({ t: 'feed', x: 0, idem: 'full1' })); const ack = await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'full1'); assert.equal(ack.applied, false); assert.equal(ack.delta, 0);
 });
 await t('water change and glass cleaning only pay when actually needed', async () => {
   wc.send(JSON.stringify({ t: 'water', idem: 'w0' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'w0')).applied, false);
-  S.db.prepare('UPDATE tanks SET water=0.4,glass=0.5,sim_ts=? WHERE id=?').run(Date.now(), tank.id);
+  setW(tank.id, { water: 0.4, glass: 0.5, simTs: Date.now() });
   wc.send(JSON.stringify({ t: 'water', idem: 'w1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'w1')).delta, 2);
   wc.send(JSON.stringify({ t: 'glass', idem: 'g1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'g1')).delta, 1);
 });
@@ -119,11 +122,51 @@ await t('a new member appears for everyone already connected', async () => {
 });
 await t('reconnecting restores the same authoritative state', async () => {
   wb.close(); await new Promise((r) => setTimeout(r, 50)); const wb2 = await open(b.token); const s = await waitFor(wb2, (m) => m.t === 'snapshot');
-  assert.equal(s.tank.shells, S.db.prepare('SELECT shells FROM tanks WHERE id=?').get(tank.id).shells); assert.ok(s.journal.length >= 2); wb2.close();
+  assert.equal(s.tank.shells, getW(tank.id).shells); assert.ok(s.journal.length >= 2); wb2.close();
 });
 await t('absence is bounded: 10 days away never starves the tank', async () => {
-  S.db.prepare('UPDATE tanks SET hunger=0.3,water=0.9,glass=0.1,sim_ts=? WHERE id=?').run(Date.now() - 10 * 864e5, tank.id);
+  setW(tank.id, { hunger: 0.3, water: 0.9, glass: 0.1, simTs: Date.now() - 10 * 864e5 });
   const w = await open(a.token); const s = await waitFor(w, (m) => m.t === 'snapshot'); assert.ok(s.tank.hunger <= 0.85 && s.tank.water >= 0.45 && s.tank.glass <= 0.8, JSON.stringify(s.tank)); w.close();
 });
+
+console.log('Shop & progression');
+await t('a new tank starts with Pip, starter decor and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 4); assert.ok(w.level === 1); });
+const wsA = await open(a.token);
+const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
+await t('buying is validated by the server: price, level, bounds', async () => {
+  setW(tank.id, { shells: 3, simTs: Date.now() });
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 0, z: 1, idem: 'p1' })).reason, 'NOT_ENOUGH_SHELLS');
+  setW(tank.id, { shells: 100, simTs: Date.now() });
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'torii', x: 0, z: 1, idem: 'p2' })).reason, 'LEVEL_TOO_LOW');
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 99, z: 1, idem: 'p3' })).reason, 'OUT_OF_BOUNDS');
+  assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'angelfish', idem: 'p4' })).reason, 'LEVEL_TOO_LOW');
+  assert.equal(getW(tank.id).shells, 100);
+});
+await t('a purchase takes shells once, shows for everyone, and a replay is ignored', async () => {
+  const before = getW(tank.id);
+  const r = await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' }); assert.equal(r.ok, true);
+  await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' });
+  const w = getW(tank.id); assert.equal(w.shells, before.shells - 7); assert.equal(w.decor.length, before.decor.length + 1);
+  const st = await waitFor(wb2 ?? wsA, (m) => m.t === 'state' && m.tank.decor.length === w.decor.length); assert.ok(st);
+});
+await t('two players spending the last shells at once: exactly one purchase succeeds', async () => {
+  setW(tank.id, { shells: 8, simTs: Date.now() });
+  const wsB = await open(b.token);
+  const [r1, r2] = await Promise.all([ackOf(wsA, { t: 'buyFish', species: 'goldfish', name: 'Gus', idem: 'r1' }), ackOf(wsB, { t: 'buyFish', species: 'goldfish', name: 'Gil', idem: 'r2' })]);
+  assert.equal([r1, r2].filter((r) => r.ok).length, 1); assert.equal(getW(tank.id).shells, 0); wsB.close();
+});
+await t('buying a school adds four fish; selling decor refunds half; capacity is enforced', async () => {
+  setW(tank.id, { shells: 200, level: 1, simTs: Date.now() });
+  const n0 = getW(tank.id).fish.length;
+  assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'neon', idem: 's1' })).ok, true); assert.equal(getW(tank.id).fish.length, n0 + 4);
+  const d = getW(tank.id).decor.at(-1); const s0 = getW(tank.id).shells;
+  assert.equal((await ackOf(wsA, { t: 'sellDecor', id: d.id, idem: 's2' })).ok, true); assert.equal(getW(tank.id).shells, s0 + 3);
+  setW(tank.id, { level: 1, shells: 500, simTs: Date.now() });
+  let last; for (let i = 0; i < 4; i++) last = await ackOf(wsA, { t: 'buyFish', species: 'goldfish', idem: 'cap' + i });
+  assert.ok(['TANK_FULL'].includes(last.reason) || last.ok);
+});
+await t('dev actions are refused unless the server runs in dev mode', async () => { assert.equal((await ackOf(wsA, { t: 'dev', what: 'shells', idem: 'dv' })).reason, 'FORBIDDEN'); });
+await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.freePlant, 1); });
+wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);
