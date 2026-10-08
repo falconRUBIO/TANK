@@ -142,9 +142,9 @@ export function initUI({ game, social, cb }) {
 
   // ── modal: a small in-page dialog (no browser prompts) ──
   const modal = $('modal');
-  function dialog({ title, text = '', input = null, ok = 'OK', cancel = null, danger = false }) {
+  function dialog({ title, text = '', lines = null, input = null, ok = 'OK', cancel = null, danger = false }) {
     return new Promise((res) => {
-      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${input ? `<input id="mi" maxlength="${input.max ?? 14}" value="${esc(input.value ?? '')}" placeholder="${esc(input.placeholder ?? '')}" autocomplete="off">` : ''}<div class="err" id="me"></div>
+      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${lines ? `<ul class="away">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}${input ? `<input id="mi" maxlength="${input.max ?? 14}" value="${esc(input.value ?? '')}" placeholder="${esc(input.placeholder ?? '')}" autocomplete="off">` : ''}<div class="err" id="me"></div>
         <button class="big ${danger ? 'warn' : ''}" id="mok">${esc(ok)}</button>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
       modal.classList.add('on'); const inp = $('mi'); if (inp) { inp.focus(); inp.select(); }
       const done = (v) => { modal.classList.remove('on'); res(v); };

@@ -44,12 +44,12 @@ export class Game {
   onNet(m) {
     if (m.t === 'snapshot') {
       const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages;
-      this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts })); this.emit('state'); this.emit('members');
+      this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members');
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by); }
     else if (m.t === 'event') {
-      if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts }); this.emit('journal'); }
+      if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
       if (m.toast && mine) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp);

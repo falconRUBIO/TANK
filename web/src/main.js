@@ -231,6 +231,19 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// ── coming back: show up to three things that really happened while you were away ──
+const seenKey = () => 'ourtank.seen.' + (game.shared ? game.you.userId : 'solo');
+const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now())); } catch { /* ignore */ } };
+async function welcomeBack() {
+  let seen = 0; try { seen = +localStorage.getItem(seenKey()) || 0; } catch { /* ignore */ }
+  markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
+  if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
+  if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
+  const mine = game.you?.userId, lines = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).slice(-3).map((e) => e.text);
+  if (!lines.length) return;
+  await new Promise((r) => setTimeout(r, 900)); await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank' });
+}
+
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
@@ -246,7 +259,9 @@ async function boot() {
     quality: () => stage.quality, cycleQuality: () => stg.setQuality((stage.quality + 1) % 3), replayTutorial: () => tut.replay(),
   } });
   window.__ui = ui; syncWorld(); ui.setMembers();
-  requestAnimationFrame(frame);
+  // lighting follows the clock unless you picked a time yourself (?tod=… or the pill)
+  if (!qs.get('tod')) { const h = new Date().getHours(); stg.setTod(h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'); }
+  welcomeBack(); requestAnimationFrame(frame);
 }
 boot().catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
