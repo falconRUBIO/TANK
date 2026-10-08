@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Our Tank</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/jsm/"}}</script>
 <style>
   :root{--bg:#0a1220;--panel:#0f1a2c;--line:#1d2c44;--ink:#dbe8f7;--dim:#7e93ad;--gold:#e6c36a}
   *{box-sizing:border-box}
@@ -13,7 +14,7 @@
   .avs{display:flex;gap:6px}.av{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);position:relative;background:#16263c}
   .av i{position:absolute;right:-2px;bottom:-2px;width:8px;height:8px;border-radius:50%;background:#41d37e;border:2px solid var(--bg)}
   main{flex:1;min-height:0;position:relative;overflow:hidden}
-  canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%;display:block}
+  canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%;display:block;image-rendering:pixelated}
   .tod{position:absolute;left:50%;transform:translateX(-50%);top:10px;display:flex;gap:4px;padding:4px;background:rgba(8,14,26,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:999px}
   .tod button{all:unset;font:11px ui-monospace,Menlo,monospace;color:var(--dim);padding:6px 10px;border-radius:999px;cursor:pointer}
   .tod button.on{background:rgba(255,255,255,.12);color:var(--ink)}
@@ -30,6 +31,5 @@
 <div><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/></svg>Decorate</div>
 <div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>Friends</div>
 <div><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v13H6a2 2 0 01-2-2zM20 5h-7"/></svg>Journal</div></nav></div>
-<script type="module" src="src/tank.js"></script>
-<script>document.querySelectorAll('[data-tod]').forEach(b=>b.addEventListener('click',()=>document.getElementById('todl').textContent=b.textContent))</script>
-<script>const q=new URLSearchParams(location.search).get('tod');if(q){document.getElementById('todl').textContent=q[0].toUpperCase()+q.slice(1)}</script></body></html>
+<script type="module" src="src/main3d.js"></script>
+</body></html>
