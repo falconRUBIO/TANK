@@ -63,7 +63,7 @@ ok('a bottle goes to one friend, costs two shells, once per six hours, and pays 
 ok('neglect is slow, warned about, shared out fairly: a fish floats after five days, never all at once, never the last, never in a new tank', () => {
   const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Greedy'] })); return t; };
   const young = mk(); R.advance(young, 2 * D); R.advance(young, 2.9 * D); assert.equal(young.floaters.length, 0, 'a new tank is protected');
-  const t = mk(); t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
+  const t = mk(); t.flags.mortality = true; t.createdAt = -20 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
   let ev = []; for (let h = 12; h <= 24 * 3; h += 12) ev.push(...R.advance(t, h * 3600e3)); assert.ok(ev.some((e) => e.warn), 'a warning arrives before anyone dies'); assert.equal(t.floaters.length, 0);
   for (let h = 3 * 24 + 12; h <= 24 * 12; h += 12) R.advance(t, h * 3600e3);
   assert.ok(t.floaters.length >= 1 && t.fish.length >= 1, `deaths ${t.floaters.length}, alive ${t.fish.length}`); assert.ok(t.floaters.every((f) => f.died > 0));
@@ -72,5 +72,12 @@ ok('neglect is slow, warned about, shared out fairly: a fish floats after five d
   // care wins the time back
   const c = mk(); c.createdAt = -20 * D; c.simTs = 0; c.visitAt = c.eggAt = c.storyAt = 1e15; R.advance(c, 3 * D); assert.ok(c.fish[0].ail > 0); R.applyAction(c, { t: 'feed', x: 0 }, { now: 3 * D + 1000 }); R.applyAction(c, { t: 'water' }, { now: 3 * D + 2000 });
   const before = c.fish[0].ail; R.advance(c, 3 * D + 1800e3); assert.ok(c.fish[0].ail < before, 'ail ' + before + ' -> ' + c.fish[0].ail);
+});
+ok('by default nobody dies from being away: fish get tired, pause growing, and recover with care', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -30 * D; t.simTs = 0; t.visitAt = t.eggAt = t.storyAt = 1e15;
+  t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Greedy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 2, born: 0, stage: 'baby', traits: ['Calm'] })];
+  for (let h = 12; h <= 24 * 30; h += 12) R.advance(t, h * 3600e3);
+  assert.equal(t.fish.length, 2); assert.equal(t.floaters.length, 0); assert.ok(t.fish[0].born > 5 * D, 'growth was paused: born moved to ' + t.fish[0].born / D);
+  R.applyAction(t, { t: 'feed', x: 0 }, { now: 30 * D + 1000 }); R.applyAction(t, { t: 'water' }, { now: 30 * D + 2000 }); R.advance(t, 30 * D + 3600e3); assert.ok(t.fish[0].ail < 5 * 86400 - 1);
 });
 console.log(`All ${n} rule tests passed`);

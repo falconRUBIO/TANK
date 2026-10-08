@@ -103,21 +103,22 @@ function discover(t, now, ev) {
     else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f); f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); t.shells += 2; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: `${f.name} and ${pal.name} are friends now! +2 shells`, discovery: f.id }); }
   }
 }
-// Neglect has a cost. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds). Two days: it looks pale and a warning goes out.
-// Five days: it dies. Any real care wins the time back twice as fast. Guard rails keep a shared tank fair: no deaths in a tank's first three days,
-// at most one death a day, and the last fish never dies.
+// Neglect has a cost, but it is never a punishment for being away. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds).
+// One day: it looks tired. Two days: it turns pale, slows down, stops growing, and a warning goes out. Care wins the time back twice as fast.
+// Death is switched off by default (`flags.mortality`). When a tank turns it on: no deaths in the first three days, at most one a day, and the last fish never dies.
 export const AIL_WARN = 2 * 86400, AIL_DIE = 5 * 86400;
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
   for (const f of [...t.fish]) {
     ensureFish(f); const n = needsOf(f, t, now);
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
-    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0;
+    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; let ailingNow = false; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
-      const fr = (k + 0.5) / steps, hun = h0 + (t.hunger - h0) * fr, wat = w0 + (t.water - w0) * fr, fedK = 1 - hun * (1 + f.appetite);
-      f.ail = Math.max(0, f.ail + ((fedK < 0.2 || wat < 0.5) ? dt / steps : -(dt / steps) * 2));
+      const fr = (k + 0.5) / steps, hun = h0 + (t.hunger - h0) * fr, wat = w0 + (t.water - w0) * fr, fedK = 1 - hun * (1 + f.appetite), bad = fedK < 0.2 || wat < 0.5;
+      f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); ailingNow = bad; if (bad && f.ail >= AIL_WARN / 2) f.born += stepMs;
     }
     if (f.ail < AIL_WARN / 2) f.warned = false;
-    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is very weak. The tank needs care soon.`, toast: `${f.name} is very weak. Feed the tank.`, warn: f.id }); }
+    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is run down and has stopped growing.`, toast: `${f.name} is run down. The tank could use some care.`, warn: f.id }); }
+    if (f.ail >= AIL_DIE && !t.flags.mortality) f.ail = AIL_DIE - 1;
     if (f.ail >= AIL_DIE) {
       const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
       if (young || rested || t.fish.length <= 1) f.ail = AIL_DIE - 1;
@@ -135,7 +136,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.flags.mortality ??= false; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   return t;
 }
