@@ -85,7 +85,7 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
 export function buildEnvironment() {
   const root = new THREE.Group();
   const rng = mulberry32(7);
-  const stoneA = new THREE.MeshStandardMaterial({ map: stoneTex(1), roughness: 0.92 });
+  const stoneA = new THREE.MeshStandardMaterial({ map: stoneTex(1, [126, 140, 130]), roughness: 0.92 });
   patch(stoneA);
 
   // ── ruins: staggered blocks, a keystone arch, mossy caps ──
@@ -203,7 +203,7 @@ export function buildEnvironment() {
     for (let i = 0; i < n; i++) {
       const hh = hMin + rng() * (hMax - hMin), k = rng();
       grass.add({ x: x + (rng() - 0.5) * spread, y: 0, z: z + (rng() - 0.5) * spread * 0.6, h: hh, w: 0.07 + rng() * 0.05, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.7, curl: (rng() - 0.5) * 0.9, seg: 7,
-        base: mix([28, 84, 40], [52, 120, 50], k), tip: mix([110, 180, 62], [170, 214, 88], k + light) });
+        base: mix([36, 70, 40], [58, 98, 46], k), tip: mix([104, 150, 60], [160, 190, 84], k + light) });
     }
   };
   [[-4.4, 0.3, 8, 3, 6.5, 0.9], [-3.4, 1.9, 7, 2.4, 5, 0.9], [-1.2, 1.7, 6, 1.5, 3.4, 0.8], [1.8, 1.5, 9, 3, 7, 1.0], [4.0, 1.4, 8, 3.5, 7.5, 1.0], [3.0, -1.6, 7, 4, 7.5, 0.9], [-2.9, -2.2, 6, 3, 6, 0.9], [0.2, -3.2, 8, 3.5, 7, 1.2], [-1.7, 0.4, 5, 1.2, 2.5, 0.7], [4.6, 0.3, 6, 2, 4, 0.8], [-0.3, 2.3, 5, 0.8, 1.6, 0.8]].forEach(([x, z, n, a, b, sp]) => clump(x, z, n, a, b, sp));
@@ -211,7 +211,7 @@ export function buildEnvironment() {
   [[-0.9, 1.5, 0], [2.4, 0.8, 1], [-4.1, 2.2, 2], [1.0, -2.0, 3]].forEach(([x, z, si]) => {
     for (let l = 0; l < 9; l++) {
       const dir = (l / 9) * 6.28 + si; leaves.add({ x: x + Math.cos(dir) * 0.08, y: 0, z: z + Math.sin(dir) * 0.08, h: 1.7 + rng() * 1.1, w: 0.2 + rng() * 0.08, dir, lean: 0.9, curl: 0.9, seg: 6, taper: 2,
-        base: [34, 94, 40], tip: mix([100, 176, 66], [150, 206, 86], rng()) });
+        base: [34, 94, 40], tip: mix([96, 146, 64], [140, 180, 80], rng()) });
     }
   });
   // red stem plants

@@ -23,7 +23,7 @@ const goldfish = {
   make(seed = 1) {
     const rng = mulberry32(seed * 7919 + 13);
     const off = [rng() * 90, rng() * 90, rng() * 90];
-    const orange = mix(hex(0xff7a10), hex(0xff9a1c), rng());
+    const orange = mix(hex(0xff7408), hex(0xff9412), rng());
     const bands = [0.2 + rng() * 0.04, 0.43 + rng() * 0.04, 0.64 + rng() * 0.03].slice(0, 2 + (rng() < 0.7 ? 1 : 0));
     const X0 = 10, L = 42;
     const hy = prof([[0, 3.5], [0.1, 6], [0.25, 11], [0.45, 14], [0.65, 13.5], [0.85, 10.5], [0.95, 7], [1, 4.5]]);
@@ -37,7 +37,7 @@ const goldfish = {
       return dy * dy + dz * dz <= 1 ? { t, dy, dz } : null;
     };
     const ex = Math.round(X0 + 0.86 * L), ey = 4;
-    const cream = hex(0xf6ecdc), pale = hex(0xd9d4d6), gray = hex(0xb4b2bc), deepO = hex(0xe85e0c);
+    const cream = hex(0xfbeed8), pale = hex(0xe6dcd8), gray = hex(0xc4bfc8), deepO = hex(0xea600a);
     const bt = (x) => clamp((x - X0) / L);
     return {
       bounds: { x: [-14, 56], y: [-26, 26], z: [-12, 12] },
@@ -60,11 +60,11 @@ const goldfish = {
           let c = mix(orange, deepO, clamp((dy - 0.35) * 1.3));              // darker back
           // slanted white bands that wrap round the flank
           for (const cb of bands) {
-            const wd = 0.034 + (cb > 0.5 ? 0.02 : 0.012) + n * 0.03;
+            const wd = 0.05 + (cb > 0.5 ? 0.025 : 0.014) + n * 0.03;
             if (Math.abs(t - cb + dy * 0.09 + n * 0.05) < wd && dy < 0.82) c = cream;
           }
-          if (t > 0.69 && t < 0.79 && dy < 0.15 && dy > -0.6 + n * 0.3) c = cream;            // cheek patch
-          if (dy < -0.38 + n * 0.5 && t > 0.18) c = mix(cream, [255, 214, 176], clamp((t - 0.6) * 0.9));   // pale belly
+          if (t > 0.67 && t < 0.8 && dy < 0.25 && dy > -0.7 + n * 0.3) c = cream;            // cheek patch
+          if (dy < -0.24 + n * 0.45 && t > 0.18) c = mix(cream, [255, 214, 176], clamp((t - 0.6) * 0.9));   // pale belly
           if (t < 0.17) c = mix(orange, cream, clamp((0.17 - t) * 5) * 0.5);                  // peduncle fades to tail
           return { c };
         }
@@ -143,7 +143,7 @@ const bluefish = {
     const cy = prof([[0, 0], [0.7, 0.8], [1, -1.2]]);
     const body = mkBody(X0, L, hy, hz, cy);
     const eye = mkEye(body, Math.round(X0 + 0.8 * L), 4, hex(0xf0b324), 2.7);
-    const deep = mix(hex(0x1a2cb0), hex(0x2030c8), rng()), royal = hex(0x2a5ae8), elec = hex(0x3aa2ff), cyan = hex(0x86dcff), gold = hex(0xf2b82a);
+    const deep = mix(hex(0x2438c8), hex(0x2c44e0), rng()), royal = hex(0x3470f4), elec = hex(0x3aa2ff), cyan = hex(0x86dcff), gold = hex(0xf2b82a);
     const bt = (x) => clamp((x - X0) / L);
     return {
       bounds: { x: [-12, 48], y: [-24, 26], z: [-10, 10] },

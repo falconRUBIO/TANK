@@ -8,7 +8,12 @@ const VOX = 0.052, GLOBAL = 1.22;
 const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
+export const fishBoost = { value: new THREE.Vector3(0.2, 0.17, 0.12) };
 mat.onBeforeCompile = (sh) => {
+  sh.uniforms.uBoost = fishBoost;
+  // a little self-lit warmth in the shade so oranges and creams stay clean instead of going muddy
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uBoost;')
+    .replace('#include <opaque_fragment>', 'outgoingLight += diffuseColor.rgb * uBoost;\n#include <opaque_fragment>');
   sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec3 aN;')
     .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
       if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
@@ -31,7 +36,7 @@ export class Fish3D {
     this.mesh.castShadow = this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
     const jr = (i) => 0.94 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.1;
     this.vox.forEach((v, i) => {
-      const k = jr(i), glow = v.em > 1 ? 1.55 : v.em ? 1.0 : 1;
+      const k = jr(i), glow = v.em > 1 ? 1.2 : v.em ? 1.0 : 1;
       col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });
@@ -75,6 +80,7 @@ export class Fish3D {
     }
     this.mesh.instanceMatrix.needsUpdate = true;
   }
+  mouth() { return new THREE.Vector3(Math.cos(this.heading), 0, -Math.sin(this.heading)).multiplyScalar(this.radius * 0.62).add(this.pos); }
   pick(rng) {
     const b = this.band;
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0]));
@@ -82,9 +88,9 @@ export class Fish3D {
   }
   update(dt, rng, others) {
     this.retarget -= dt;
-    if (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5) this.pick(rng);
+    if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (d < 1.5 ? 0.35 + d / 2.3 : 1) / d);
+    desired.multiplyScalar(this.speed * (this.mul ?? 1) * (this.foodMul ?? 1) * (d < 1.5 ? 0.35 + d / 2.3 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;

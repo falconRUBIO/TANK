@@ -6,10 +6,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { initUI } from './ui.js';
 import { SPECIES } from './species.js';
 import { mulberry32 } from './color.js';
 import { buildEnvironment, swayTime } from './w3/env.js';
-import { Fish3D } from './w3/fish3d.js';
+import { Fish3D, fishBoost } from './w3/fish3d.js';
 import { Shafts, waterSurface, Snow, Bubbles } from './w3/fx.js';
 import { CausticMap } from './w3/textures.js';
 
@@ -63,10 +65,56 @@ add('cory', 9, { name: 'Dusty', profile: { traits: ['Shy', 'Lazy'], age: 'Juveni
 const arch = add('blue', 12, { name: 'Indigo', profile: { traits: ['Brave', 'Curious'], age: 'Juvenile', spot: 'Stone Arch', food: 'Flakes', needs: [0.8, 0.9, 0.75, 1] }, speed: 0.8, scale: 0.9, band: { x: [-2, -1.9], y: [2.2, 2.6], z: [-3, 1.6] }, start: [env.archX, 2.4, -2.8] });
 arch.pick = function () { this.target.set(env.archX + (rng() - 0.5) * 0.25, 2.3 + rng() * 0.4, this.pos.z < -0.5 ? 1.6 : -3.0); this.retarget = 12; };
 
+// ── feeding: flakes sink, fish react by personality, only hungry meals pay Shells ──
+const flakes = { list: [], mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200) };
+flakes.mesh.frustumCulled = false; flakes.mesh.count = 0; flakes.mesh.castShadow = true; scene.add(flakes.mesh);
+const flakeCols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
+let hunger = 0.6, shells = 0, feedMode = false, eatenSinceReward = 0;
+const journal = [{ day: 1, text: 'Our tank began.' }];
+let dayStart = Date.now(); try { dayStart = +localStorage.getItem('ourtank.start') || Date.now(); localStorage.setItem('ourtank.start', dayStart); } catch (e) { /* storage unavailable */ }
+const dayNo = () => Math.floor((Date.now() - dayStart) / 864e5) + 1;
+document.getElementById('day').textContent = 'DAY ' + String(dayNo()).padStart(3, '0');
+const ui = initUI({ onFeed: () => { feedMode = true; ui.toast('Tap the water to drop flakes'); }, journal: () => journal.slice().reverse(), shells: () => shells });
+const fedToday = new Set();
+function dropFlakes(x, n = 7) { for (let i = 0; i < n && flakes.list.length < 190; i++) flakes.list.push({ pos: new THREE.Vector3(x + (rng() - 0.5) * 0.9, 15 + rng() * 0.5, 0.3 + rng() * 1.6), age: 0, ph: rng() * 6, c: flakeCols[(rng() * 4) | 0] }); }
+const fm = new THREE.Matrix4();
+function updateFlakes(dt, t) {
+  for (const f of flakes.list) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
+  flakes.list = flakes.list.filter((f) => !f.eaten && f.age < 30);
+  flakes.mesh.count = flakes.list.length;
+  flakes.list.forEach((f, i) => { fm.makeRotationY(f.ph + t * 0.4); fm.setPosition(f.pos); flakes.mesh.setMatrixAt(i, fm); flakes.mesh.setColorAt(i, f.c); });
+  flakes.mesh.instanceMatrix.needsUpdate = true; if (flakes.mesh.instanceColor) flakes.mesh.instanceColor.needsUpdate = true;
+  hunger = Math.min(1, hunger + dt * 0.01);
+  for (const f of fishes) {
+    let best = null, bd = 8;
+    const shy = f.profile?.traits.includes('Shy'), greedy = f.profile?.traits.includes('Greedy');
+    if (hunger > 0.05) for (const fl of flakes.list) {
+      if (fl.eaten || (f.id === 'cory' && fl.pos.y > 0.7) || (shy && fl.age < 1.8)) continue;
+      const d = f.pos.distanceTo(fl.pos); if (d < bd) { bd = d; best = fl; }
+    }
+    f.seeking = !!best; f.foodMul = best ? (greedy ? 2.0 : 1.5) : 1;
+    if (best) {
+      f.target.copy(best.pos); f.retarget = 0.3;
+      if (f.mouth().distanceTo(best.pos) < 0.32) {
+        best.eaten = true;
+        const paid = hunger > 0.25; hunger = Math.max(0, hunger - 0.045);
+        if (paid && ++eatenSinceReward >= 4) { eatenSinceReward = 0; shells++; ui.setShells(shells); ui.toast('+1 shell'); }
+        if (!fedToday.has(f.name)) { fedToday.add(f.name); journal.push({ day: dayNo(), text: `${f.name} found the flakes.` }); }
+      }
+    }
+  }
+}
+
 // ── post: bloom -> tonemap -> PS1 15-bit dither + grade ──
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(IW, IH, { type: THREE.HalfFloatType, samples: 4 }));
 composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
+// depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
+const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
+const hideForDepth = [shafts.group, surf.mesh, snow.pts, bubbles.mesh, bg, flakes.mesh];
+const bokehRender = bokeh.render.bind(bokeh);
+bokeh.render = (...a) => { hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o) => (o.visible = true)); };
+composer.addPass(bokeh);
 const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass({
@@ -151,7 +199,15 @@ function setFocus(f) {
   focus = f;
   if (f) { f.mul = 0.35; showCard(f); } else card.classList.remove('on');
 }
-canvas.addEventListener('pointerdown', (ev) => { const f = pick(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null); });
+canvas.addEventListener('pointerdown', (ev) => {
+  if (feedMode) {
+    const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
+    const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 0.6) / dh;
+    ray.setFromCamera(new THREE.Vector2(u * 2 - 1, -(v * 2 - 1)), camera);
+    const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) { dropFlakes(Math.max(-4, Math.min(4, hit.x))); }
+    return;
+  }
+  const f = pick(ev); if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null); });
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setFocus(null); });
 window.__focus = (i) => setFocus(fishes[i] ?? null);
 
@@ -163,11 +219,26 @@ function frame(now) {
   applyTod(dt);
   if (focus) { const d = Math.max(6, focus.radius * 6.8); camGoal.set(focus.pos.x + 0.4, focus.pos.y + 0.1, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - d * 0.17, focus.pos.z); }
   else { camGoal.set(Math.sin(t * 0.13) * 0.35, 7.0 + Math.sin(t * 0.09) * 0.12, 30); lookGoal.set(0, 7.5, 0); }
+  const fd = focus ? camera.position.distanceTo(focus.pos) : 30;
+  bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
+  bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
+  bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
+  fishBoost.value.set(0.2, 0.17, 0.12).multiplyScalar(0.35 + 0.65 * Math.min(1, cur.sunI / 8));
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
+  updateFlakes(dt, t);
   fishes.forEach((f) => f.update(dt, rng, fishes));
   shafts.update(t); surf.mat.uniforms.uTime.value = t; snow.update(dt, t); bubbles.update(dt, t);
+  watchPerf(dt);
   composer.render();
   requestAnimationFrame(frame);
 }
+// quality: auto-drops depth of field / resolution if the device can't hold ~30fps (?q=2 pins full quality)
+let quality = qs.get('q') ? +qs.get('q') : 2, slow = 0, born = performance.now();
+function setQuality(q) {
+  quality = q; bokeh.enabled = q >= 2;
+  const w = q >= 1 ? IW : 360, h = q >= 1 ? IH : 640;
+  renderer.setSize(w, h, false); composer.setSize(w, h); grade.uniforms.uRes.value.set(w, h);
+}
+function watchPerf(dt) { if (qs.get('q') || performance.now() - born < 4000) return; slow = dt > 0.036 ? slow + 1 : Math.max(0, slow - 2); if (slow > 90 && quality > 0) { slow = 0; setQuality(quality - 1); } }
 requestAnimationFrame(frame);
-window.__tank = { fishes, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };
+window.__tank = { fishes, bokeh, dropFlakes, setQuality, scene, renderer, camera, sun, hemi, amb, fill, bloom, TOD };
