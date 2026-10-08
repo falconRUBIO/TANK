@@ -63,9 +63,9 @@ ck('fish grow over days', s5.fish[0].stage !== 'baby' && g1 > g0, `${s5.fish[0].
 ck('journal records real events', (await p.evaluate(() => window.__game.journal.map((j) => j.text))).some((t) => /grow|adult|level|Mango|brought/i.test(t)), '');
 console.log('Content');
 await p.evaluate(async () => { const g = window.__game; g.state.level = 8; for (let i = 0; i < 20; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); });
-const bought = await p.evaluate(async () => { const g = window.__game, out = []; let x = -4;
+const bought = await p.evaluate(async () => { const g = window.__game, out = []; let x = -4.4;
   for (const sp of ['guppy', 'platy', 'danio', 'betta']) out.push((await g.dispatch({ t: 'buyFish', species: sp, name: 'T' + sp, seed: 7 })).ok);
-  for (const ty of ['moss', 'kelp', 'bubbler', 'shell', 'skull', 'arch', 'anchor', 'bamboo', 'bridge', 'crystal']) { out.push((await g.dispatch({ t: 'buyDecor', type: ty, x: x += 1.3, z: 2.9, ry: 0 })).ok); }
+  for (const ty of ['moss', 'kelp', 'bubbler', 'shell', 'skull', 'arch', 'anchor', 'bamboo', 'bridge', 'crystal']) { out.push((await g.dispatch({ t: 'buyDecor', type: ty, x: x += 0.85, z: 2.9, ry: 0 })).ok); }
   return out; });
 ck('new species and decorations can be bought', bought.every(Boolean), JSON.stringify(bought));
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'rush' }, { dev: true })); await p.waitForTimeout(1200); const nFish = (await S()).fish.length; const nf = await p.evaluate(() => [window.__tank.fishes.length, window.__tank.decor.items.size, window.__tank.decor.streams.size]);
