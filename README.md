@@ -48,8 +48,12 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 - Every action carries an idempotency key, so a retry or a double tap never pays or charges twice. Two players spending the last shells at the same time: exactly one purchase succeeds.
 - Identity is an anonymous account token kept in the browser (only its hash is stored).
 
+## Notifications (optional)
+
+Off until the server has a key pair. Generate one with `npx web-push generate-vapid-keys`, then set three environment variables on the server: `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` (a `mailto:` address you own). Players then get a Notifications switch in Settings. On iPhone it only appears after the game is added to the Home Screen (Share, then Add to Home Screen). Rules: opt in per phone, at most two a day per person, nothing between 22:00 and 08:00 their local time, and only for a rare visitor, a fish or egg arriving, a nudge or a bottle.
+
 ## Known limits
 
 - No App Store build. iPhone haptics are not available to web apps (Android vibrates).
 - Recovery: every account has a recovery key (shown when you create a tank, and under Settings). Typing it on a new phone signs you back in and retires the old phone's token. Without the key, clearing browser data loses the identity.
-- One server instance. Push notifications are not built (the Friends tab shows a dot for new activity instead).
+- One server instance. The database keeps a rolling backup next to it (`ourtank.db.backup`, every six hours and on shutdown).
