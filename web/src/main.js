@@ -346,7 +346,10 @@ async function boot() {
   } });
   window.__ui = ui; syncWorld(); ui.setMembers();
   // lighting follows the clock unless you picked a time yourself (?tod=… or the pill)
-  if (!qs.get('tod')) { const h = new Date().getHours(); stg.setTod(h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'); }
+  // the light follows the phone's clock and drifts on its own while you play; the picker only exists for ?tod= or ?dev testing
+  const phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
+  if (qs.get('tod') || qs.has('dev')) document.querySelector('.tod').hidden = false;
+  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); } }, 30000); }
   welcomeBack(); requestAnimationFrame(frame);
 }
 window.__booted = false;
