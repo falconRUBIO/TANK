@@ -75,7 +75,7 @@ const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim(
 const num = (v) => (Number.isFinite(+v) ? +v : NaN);
 
 // Apply one player action. Mutates `t`; returns { ok, reason?, events[], delta? }.
-export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false } = {}) {
+export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
@@ -143,6 +143,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const d = DECOR_DEF[t.decor[i].type]; t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
+      if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.freePlant = 1; return ok(); }
       const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; if (step === 3 && t.flags.freePlant === undefined) t.flags.freePlant = 1; }
       return ok();
     }

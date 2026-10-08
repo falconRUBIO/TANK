@@ -1,0 +1,10 @@
+# Render.com blueprint: New → Blueprint → pick this repo. The disk keeps the shared tanks between restarts.
+services:
+  - type: web
+    name: our-tank
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    disk: { name: ourtank-data, mountPath: /data, sizeGB: 1 }
+    envVars:
+      - { key: DB, value: /data/ourtank.db }

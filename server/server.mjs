@@ -8,7 +8,7 @@ import { openDb } from './db.mjs';
 import * as L from './logic.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 
 // sliding-window rate limiter
 class Limiter {
@@ -74,12 +74,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/healthz') { try { db.prepare('SELECT 1').get(); res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); } catch { res.writeHead(500); return res.end('db'); } }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel = decodeURIComponent(url.pathname);
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
     const file = path.normalize(path.join(staticDir, rel));
-    if (!file.startsWith(staticDir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+    if (!(file === staticDir || file.startsWith(staticDir + path.sep)) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control': /\.(png|webmanifest)$/.test(file) ? 'public, max-age=86400' : 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' });
     fs.createReadStream(file).pipe(res);
   });
 

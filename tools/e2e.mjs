@@ -8,7 +8,8 @@ const A = await mk(), B = await mk(), C = await mk(), D = await mk();
 await A.goto(base + '/?lite=1'); await A.waitForSelector('text=CREATE A TANK'); await A.screenshot({ path: out + '/e1_welcome.png' });
 await A.click('text=CREATE A TANK'); await A.fill('#nm', 'Alex'); await A.click('.sw[data-k=hair] button:nth-child(2)'); await A.click('#go');
 await A.waitForSelector('.codebig'); const code = (await A.textContent('.codebig')).trim(); step('A created a tank, code ' + code); await A.screenshot({ path: out + '/e2_code.png' });
-await A.click('#en'); await A.waitForTimeout(1500);
+await A.click('#en'); await A.waitForSelector('#modal.on #mok'); await A.click('#mok'); await A.waitForTimeout(1200);
+await A.evaluate(() => window.__game.dispatch({ t: 'tut', step: 5 }));
 
 // B joins through the invitation link
 await B.goto(base + '/join/' + code.toLowerCase() + '?lite=1'); await B.waitForSelector('.pvt');

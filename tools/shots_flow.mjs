@@ -1,0 +1,17 @@
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const out = process.env.OUT || '.';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 })).newPage();
+p.on('pageerror', (e) => console.log('pageerror:', e.message));
+await p.goto('http://localhost:8123/?q=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 90000 });
+await p.click('#mok'); await p.waitForTimeout(1000);
+await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'tut', step: 5 }); await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); });
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.waitForTimeout(3000); await p.click('.card[data-k="decor:red"]'); await p.waitForTimeout(800);
+await p.screenshot({ path: out + '/a_shop.png' }); console.log('shop');
+await p.click('#buy'); await p.waitForTimeout(1500); await p.mouse.click(250, 540); await p.waitForTimeout(1500);
+await p.screenshot({ path: out + '/b_place.png' }); console.log('place');
+await p.click('#pok'); await p.waitForTimeout(1500);
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('[data-cat=FISH]'); await p.waitForTimeout(1500); await p.click('.card[data-k="fish:neon"]'); await p.click('#buy'); await p.waitForSelector('#modal.on #mi'); await p.fill('#mi', 'Glow'); await p.waitForTimeout(500);
+await p.screenshot({ path: out + '/c_adopt.png' }); console.log('adopt');
+await p.click('#mok'); await p.waitForTimeout(2500); await p.screenshot({ path: out + '/d_arrive.png' }); console.log('arrive');
+await b.close();

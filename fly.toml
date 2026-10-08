@@ -1,0 +1,18 @@
+# fly launch --copy-config --no-deploy ; fly volumes create ourtank_data --size 1 ; fly deploy
+app = "our-tank"
+primary_region = "iad"
+[build]
+[env]
+  PORT = "8080"
+  DB = "/data/ourtank.db"
+[[mounts]]
+  source = "ourtank_data"
+  destination = "/data"
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

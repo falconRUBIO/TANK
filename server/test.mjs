@@ -75,6 +75,10 @@ await t('join attempts are rate limited', async () => {
   assert.deepEqual(codes.slice(0, 5), [404, 404, 404, 404, 404]); assert.equal(codes[5], 429); await lim.close();
 });
 
+await t('static files cannot escape the web folder, and /healthz answers', async () => {
+  for (const u of ['/%2e%2e/server/db.mjs', '/..%2fserver%2fdb.mjs', '/%2e%2e/webx/a']) assert.equal((await fetch(base + u)).status, 404);
+  assert.equal((await fetch(base + '/healthz')).status, 200); assert.equal((await fetch(base + '/join/ABC123')).status, 200);
+});
 console.log('Realtime');
 let wb2;
 const wa = await open(a.token), wb = await open(b.token), wc = await open(c.token);

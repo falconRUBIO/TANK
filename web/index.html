@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Our Tank</title>
+<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#0a1220"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Our Tank">
 <script>if (location.pathname.startsWith("/join/")) document.write('<base href="/">')</script>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/jsm/"}}</script>
 <style>
@@ -74,11 +75,54 @@
   #feedbar{position:absolute;left:12px;right:12px;bottom:84px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 10px 14px;background:rgba(10,18,32,.92);border:1px solid #2a4468;border-radius:14px;font-size:13px;transform:translateY(300%);opacity:0;transition:transform .3s,opacity .3s;pointer-events:none;backdrop-filter:blur(10px)}
   #feedbar.on{transform:none;opacity:1;pointer-events:auto}#feedbar b{color:var(--gold);font-weight:600}
   #feedbar button{all:unset;cursor:pointer;background:#2c6ab0;color:#fff;font-weight:600;font-size:12px;padding:7px 14px;border-radius:9px;letter-spacing:.06em}
+  header{padding:calc(env(safe-area-inset-top) + 8px) 14px 4px}
+  .hl{min-width:0}.hr{display:flex;align-items:center;gap:8px}
+  #gear{all:unset;cursor:pointer;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--dim);border:1px solid var(--line);background:#101c2e}
+  #gear svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}#gear:active{color:var(--ink)}
+  #sub{display:flex;align-items:center;gap:10px;padding:2px 14px 8px}
+  .lv{display:flex;align-items:center;gap:7px;flex:none}.lv b{font:600 10.5px ui-monospace,Menlo,monospace;color:var(--gold);letter-spacing:.06em}
+  .bar{width:58px;height:5px;border-radius:3px;background:#17253b;overflow:hidden}.bar i{display:block;height:100%;width:10%;background:linear-gradient(90deg,#e6c36a,#f4dd9a);border-radius:3px;transition:width .6s}
+  #goal{all:unset;flex:1;min-width:0;cursor:pointer;font-size:11.5px;color:#a9c0dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+  nav div{position:relative}nav div.dot::after{content:"";position:absolute;top:0;right:12px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+  nav div.pulse{animation:pl 1.1s ease-in-out infinite;color:var(--gold)}@keyframes pl{50%{transform:translateY(-3px)}}
+  .tod{top:8px}
+  .big.gold{background:linear-gradient(#e6c36a,#c9a24a);color:#2a2008}.big.warn{background:#7a2a2a}.big.sm{padding:9px 16px;font-size:12px}
+  .cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}.cats::-webkit-scrollbar{display:none}
+  .cat{all:unset;flex:none;cursor:pointer;font:600 10.5px ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--dim);padding:6px 10px;border-radius:999px;border:1px solid var(--line)}.cat.on{color:var(--ink);background:#17304f;border-color:#2a4468}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 8px;border:1px solid var(--line);border-radius:12px;background:#0e1b2e;text-align:center;font-size:11.5px;min-width:0}
+  .card img{width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;background:radial-gradient(circle at 50% 60%,#183a58,#0e1b2e 70%);border-radius:8px}
+  .card b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.card .pr{color:var(--gold);font:600 11px ui-monospace,Menlo,monospace}
+  .card.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}.card.lock{opacity:.5}.card.lock .pr{color:var(--dim)}
+  .detail{position:sticky;bottom:78px;z-index:2;box-shadow:0 -10px 14px #0a1220;display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0c1829}
+  .detail h4{margin:0 0 3px!important;font:600 15px -apple-system,system-ui,sans-serif!important;letter-spacing:0!important;color:var(--ink)!important;text-transform:none!important}.detail p{margin:0;font-size:12px;color:var(--dim)}
+  .detail .note{color:#f0b070;font-size:11px;display:block;margin-top:4px}.detail .big{flex:none;padding:12px 14px}
+  .shopfoot{text-align:center;margin-top:10px}.shopfoot .lnk.on{color:var(--gold)}
+  .needs.wide{grid-template-columns:repeat(4,1fr);margin-bottom:12px}
+  .tile small{color:var(--dim);font-size:10.5px}
+  .set{display:flex;flex-direction:column;gap:10px}.row2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#0e1b2e;font-size:13px}
+  .tog{all:unset;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:8px;background:#17304f;color:#a9c8ee;border:1px solid #244368}.tog.on{background:#2c6ab0;color:#fff}.tog.warn{background:#4a2020;color:#f0a090;border-color:#6a2a2a}
+  #modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(5,10,18,.55)}#modal.on{display:flex}
+  #modal .box{width:min(330px,88vw);display:flex;flex-direction:column;gap:12px;text-align:center;padding:20px;border:1px solid #2a4468;border-radius:18px;background:#0c1829}
+  #modal h2{margin:0;font-size:15px;letter-spacing:.14em}#modal p{margin:0;color:var(--dim);font-size:13px}
+  #modal input{background:#0c1626;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:12px;font:600 18px -apple-system,system-ui,sans-serif;text-align:center;outline:none}
+  #coach{position:absolute;z-index:5;left:12px;right:12px;top:52px;padding:12px 14px;background:rgba(10,18,32,.92);border:1px solid #2a4468;border-radius:14px;backdrop-filter:blur(12px);transform:translateY(-160%);opacity:0;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s;pointer-events:none}
+  #coach.on{transform:none;opacity:1;pointer-events:auto}#coach b{font-size:13px;letter-spacing:.1em;color:var(--gold)}#coach p{margin:4px 0 0;font-size:13px;color:#c5d6ea}
+  #coach .crow{display:flex;align-items:center;justify-content:space-between;margin-top:8px}#coach .crow:empty{display:none}
+  #placebar{position:absolute;left:12px;right:12px;bottom:84px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px 9px 14px;background:rgba(10,18,32,.93);border:1px solid #2a4468;border-radius:14px;font-size:12.5px;transform:translateY(300%);opacity:0;transition:transform .3s,opacity .3s;pointer-events:none;backdrop-filter:blur(10px)}
+  #placebar.on{transform:none;opacity:1;pointer-events:auto}#placebar .pbtns{display:flex;gap:6px}
+  #placebar button{all:unset;cursor:pointer;font-weight:600;font-size:12px;padding:8px 12px;border-radius:9px;background:#17304f;color:#cfe3ff;border:1px solid #244368}#placebar button.go{background:linear-gradient(#e6c36a,#c9a24a);color:#2a2008;border-color:#c9a24a}#placebar button.go:disabled{opacity:.4}
+  #loading{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#07101c;transition:opacity .5s}#loading.off{opacity:0;pointer-events:none}
+  .lc{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink)}.lc b{letter-spacing:.2em}.lc small{color:var(--dim)}.fishy{font-size:42px;animation:sw 1.6s ease-in-out infinite}@keyframes sw{50%{transform:translateX(12px) rotate(4deg)}}
+  .big.gold:disabled{opacity:.45}
+  @media (prefers-reduced-motion:reduce){.fishy,nav div.pulse{animation:none}}
 </style></head><body><div id="app">
-<header><div><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span> · <span id="todl">Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
-<div class="avs" id="avs"></div></header>
+<header><div class="hl"><h1>OUR TANK</h1><div class="pill"><span id="day">DAY 001</span><span id="todl" hidden>Afternoon</span> · <span id="shells">🐚 0</span><span id="conn">· reconnecting…</span></div></div>
+<div class="hr"><div class="avs" id="avs"></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
+<div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
 <main><canvas id="tank"></canvas>
-<canvas id="glass"></canvas><div id="feedbar"><span>🫙 Tap the water to drop food · <b id="feedleft"></b></span><button id="feeddone">Done</button></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
+<canvas id="glass"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
+<div id="feedbar"><span>🫙 Tap the water to drop food · <b id="feedleft"></b></span><button id="feeddone">Done</button></div><div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
 <div class="tod"><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <nav><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
 <div data-tab="care"><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>
@@ -86,5 +130,9 @@
 <div data-tab="friends"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>Friends</div>
 <div data-tab="journal"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v13H6a2 2 0 01-2-2zM20 5h-7"/></svg>Journal</div></nav></div>
 <div id="welcome"></div>
-<script type="module" src="src/main3d.js"></script>
+<div id="modal"></div>
+<div id="loading"><div class="lc"><div class="fishy">🐠</div><b>OUR TANK</b><small id="ltxt">Filling the tank…</small></div></div>
+<noscript>OUR TANK needs JavaScript.</noscript>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
+<script type="module" src="src/main.js"></script>
 </body></html>

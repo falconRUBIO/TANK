@@ -1,0 +1,24 @@
+{
+ "name": "OUR TANK",
+ "short_name": "Our Tank",
+ "description": "Three friends, one living aquarium.",
+ "start_url": "/",
+ "scope": "/",
+ "display": "standalone",
+ "orientation": "portrait",
+ "background_color": "#07101c",
+ "theme_color": "#0a1220",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
