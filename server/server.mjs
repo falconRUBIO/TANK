@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { openDb } from './db.mjs';
 import * as L from './logic.mjs';
+import { makePush } from './push.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -38,8 +39,9 @@ class Limiter {
   sweep() { const now = Date.now(); for (const [k, a] of this.h) if (!a.length || now - a[a.length - 1] > 3600e3) this.h.delete(k); }
 }
 
-export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {} } = {}) {
+export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null } = {}) {
   const db = openDb(dbPath), lim = new Limiter();
+  const push = makePush(db, pushOpts ?? { publicKey: process.env.VAPID_PUBLIC, privateKey: process.env.VAPID_PRIVATE, subject: process.env.VAPID_SUBJECT });
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
@@ -85,6 +87,14 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); }
         return json(res, 200, r);
       }
+      if (req.method === 'GET' && p === '/api/push/key') return json(res, 200, { enabled: push.enabled, key: push.key });
+      if (req.method === 'POST' && p === '/api/push/subscribe') {
+        if (!push.enabled) throw new L.GameError('PUSH_OFF', 'Notifications are not set up on this server.', 400);
+        if (!lim.hit('ps:' + user.id, 10, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
+        const b = await readBody(req); if (!push.subscribe(user.id, b.subscription, b.offset)) throw new L.GameError('BAD_SUB', 'That subscription was not valid.', 400);
+        return json(res, 200, { ok: true });
+      }
+      if (req.method === 'POST' && p === '/api/push/unsubscribe') { push.unsubscribe(user.id, (await readBody(req)).endpoint); return json(res, 200, { ok: true }); }
       if (req.method === 'POST' && p === '/api/recovery') return json(res, 200, { key: L.newRecoveryKey(db, user) });
       if (req.method === 'POST' && p === '/api/tanks/leave') {
         const t = L.tankOf(db, user.id); const r = L.leaveTank(db, user);
@@ -133,7 +143,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           if (!lim.hit(`n:${ws.userId}:${to}`, 1, 2 * 3600e3)) return send(ws, { t: 'nudged', ok: false, reason: 'TOO_SOON' });
           const { w } = L.loadWorld(db, mine.id); const why = w.hunger > 0.5 ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null;
           if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
-          for (const o of rooms.get(mine.id) ?? []) if (o.userId === to) send(o, { t: 'nudge', from: ws.user.name, why });
+          const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
+          for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why });
+          if (!there.length) push.notify(to, `${ws.user.name} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`).catch(() => {});
           return send(ws, { t: 'nudged', ok: true });
         }
         if (m.t === 'chat') {
@@ -150,6 +162,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0 });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
+            if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`).catch(() => {});
           } else if (!r.ok) send(ws, { t: 'state', tank: L.publicTank(r.world) });
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
@@ -160,6 +173,20 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
   const backup = () => { if (dbPath === ':memory:') return; const tmp = dbPath + '.backup.tmp'; try { fs.rmSync(tmp, { force: true }); db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); fs.renameSync(tmp, dbPath + '.backup'); } catch (e) { console.error('backup failed', e.message); } };
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
+  // tanks nobody has open still move on: tell the people who opted in when something worth seeing happens (visitor, arrival, hatch)
+  const pushSweep = async (now = Date.now()) => {
+    if (!push.enabled) return;
+    const tanks = db.prepare('SELECT DISTINCT m.tank_id id FROM members m JOIN push_subs p ON p.user_id = m.user_id').all();
+    for (const { id } of tanks) {
+      if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
+      try {
+        const r = L.tickTank(db, id, now), hit = r.events.find((e) => e.visitor) ?? r.events.find((e) => e.arrival);
+        if (!hit) continue;
+        for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something arrived in your tank'), { now });
+      } catch (e) { console.error('push sweep failed', e); }
+    }
+  };
+  const pushTimer = setInterval(() => pushSweep().catch(() => {}), +(process.env.PUSH_SWEEP_MS || 300000)); pushTimer.unref();
   // while people are connected, time passes for their tank: growth, moods and discoveries are announced to everyone
   const tick = setInterval(() => {
     for (const [tankId, set] of rooms) {
@@ -171,8 +198,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
-    port: server.address().port, db, backup,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
+    port: server.address().port, db, backup, push, pushSweep,
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
   })));
 }
 

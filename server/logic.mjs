@@ -132,7 +132,7 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish, visitor: e.visitor });
       else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival });
     }
     saveWorld(db, tankId, w); return { world: w, events: out };

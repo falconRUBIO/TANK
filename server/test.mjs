@@ -9,7 +9,8 @@ let pass = 0; let L_tick = () => null;
 const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
-const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000 } });
+const pushed = [];
+const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
 const base = `http://localhost:${S.port}`;
 L_tick = () => tickTank(S.db, tank.id);
 const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
@@ -230,6 +231,22 @@ await t('static files are compressed, cached by ETag and the database backs itse
   const r2 = await fetch(base + '/vendor/three.module.min.js', { headers: { 'if-none-match': etag } }); assert.equal(r2.status, 304);
   const home = await fetch(base + '/', { headers: { 'accept-encoding': 'gzip' } }); assert.equal(home.headers.get('content-encoding'), 'gzip');
   assert.doesNotThrow(() => S.backup());
+});
+await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the daily cap are respected', async () => {
+  const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
+  const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;
+  const bad = await call('/api/push/subscribe', { subscription: { endpoint: 'http://nope', keys: {} }, offset: 0 }, x.token); assert.equal(bad.status, 400);
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;      // a phone whose local time is about noon right now
+  const sub = { endpoint: 'https://push.example/abc', keys: { p256dh: 'k1', auth: 'k2' } };
+  assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
+  const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
+  pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /rare visitor/i); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
+  await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the same event is not announced twice');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2);
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'two a day at most');
+  const night = new Date(); night.setUTCHours(3, 0, 0, 0); S.db.prepare('DELETE FROM push_log').run(); S.db.prepare('UPDATE push_subs SET offset_min=0').run();
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
+  await call('/api/push/unsubscribe', { endpoint: sub.endpoint }, x.token); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM push_subs WHERE user_id=?').get(x.userId).n, 0);
 });
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();

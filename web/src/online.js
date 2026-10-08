@@ -135,3 +135,21 @@ export function runOnboarding() {
 export const getSession = () => session;
 export async function ensureRecoveryKey() { if (session?.recoveryKey) return session.recoveryKey; const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
 export async function leaveTankNow() { await api('/api/tanks/leave', {}); try { localStorage.removeItem('ourtank.seen.' + session.userId); } catch { /* ignore */ } }
+
+// ── notifications (opt in; the server only sends a couple a day) ──
+const b64 = (s) => { const p = '='.repeat((4 - (s.length % 4)) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map((c) => c.charCodeAt(0))); };
+export async function pushState() {
+  const ios = /iphone|ipad/i.test(navigator.userAgent), standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return ios && !standalone ? 'install' : 'unsupported';
+  try { if (!(await api('/api/push/key')).enabled) return 'unavailable'; } catch { return 'unavailable'; }
+  if (Notification.permission === 'denied') return 'blocked';
+  const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription();
+  return sub && Notification.permission === 'granted' ? 'on' : 'off';
+}
+export async function pushToggle(on) {
+  const reg = await navigator.serviceWorker.ready;
+  if (!on) { const sub = await reg.pushManager.getSubscription(); if (sub) { await api('/api/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); } return 'off'; }
+  if ((await Notification.requestPermission()) !== 'granted') return 'blocked';
+  const { key } = await api('/api/push/key'); const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+  await api('/api/push/subscribe', { subscription: sub.toJSON(), offset: -new Date().getTimezoneOffset() }); return 'on';
+}

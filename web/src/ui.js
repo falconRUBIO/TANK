@@ -117,6 +117,7 @@ export function initUI({ game, social, cb }) {
     settings: () => `<h3>Settings</h3><div class="set">
       <label class="row2"><span>Sound</span><button class="tog ${soundOn() ? 'on' : ''}" id="snd">${soundOn() ? 'On' : 'Off'}</button></label>
       <label class="row2"><span>Graphics</span><button class="tog" id="gfx">${['Low', 'Medium', 'High'][cb.quality()]}</button></label>
+      ${game.shared ? `<label class="row2"><span>Notifications</span><button class="tog" id="pushbtn">…</button></label>` : ''}
       ${game.shared ? '' : '<label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label>'}
       ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div><label class="row2"><span>Recovery key</span><button class="tog" id="rkey">Show</button></label><label class="row2"><span>Leave this tank</span><button class="tog warn" id="leave">Leave</button></label>` : `<label class="row2"><span>Start over</span><button class="tog warn" id="reset">Reset tank</button></label>`}
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div>` : ''}
@@ -137,6 +138,12 @@ export function initUI({ game, social, cb }) {
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
     bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
+    const pb = $('pushbtn'); if (pb) {
+      const label = { on: 'On', off: 'Off', blocked: 'Blocked in browser settings', install: 'Add to Home Screen first', unsupported: 'Not supported here', unavailable: 'Not set up on this server' };
+      const paint2 = (st) => { pb.textContent = label[st] ?? st; pb.classList.toggle('on', st === 'on'); pb.dataset.st = st; pb.disabled = !['on', 'off'].includes(st); };
+      cb.pushState().then(paint2).catch(() => paint2('unsupported'));
+      pb.onclick = async () => { const st = pb.dataset.st; if (st !== 'on' && st !== 'off') return; pb.disabled = true; try { paint2(await cb.pushToggle(st === 'off')); } catch (e) { toast('Could not change notifications'); paint2(st); } };
+    }
     bind('rkey', () => cb.recoveryKey()); bind('leave', () => cb.leaveTank()); bind('tutr', () => { open('tank'); cb.replayTutorial(); }); bind('reset', (ev) => { if (ev.target.dataset.sure) game.reset(); else { ev.target.dataset.sure = 1; ev.target.textContent = 'Tap again to erase'; } });
     bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('settings', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
     sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; await game.dispatch({ t: 'style', [k]: v }); open('decorate', true); sheet.scrollTop = y; }));

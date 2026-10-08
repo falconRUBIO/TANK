@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "start": "node server/server.mjs",
     "test": "node web/src/game/rules.test.mjs && node --disable-warning=ExperimentalWarning server/test.mjs"
   },
-  "dependencies": { "ws": "^8.18.0" }
+  "dependencies": {
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0"
+  }
 }
