@@ -239,9 +239,9 @@ export function buildDecor(seed = 21) {
   group.add(plantMesh(redTex(), [{ x: 2.0, z: 0.3 }, { x: 1.5, z: -0.7 }, { x: 2.4, z: -0.4 }, { x: 1.7, z: 0.9 }], rng, { w: 1.7, hMin: 2.6, hMax: 3.8 }));
 
   // ── the big ruin, built from chunky voxels so it matches the rest: crenellated top, round arch, mossy courses ──
-  const WX = -0.7, WZ = -1.2;
+  const WX = -1.9, WZ = -1.4;
   {
-    const u = 0.18, v = new Vox(u);
+    const u = 0.115, v = new Vox(u);
     const topOf = (i) => (i < -13 ? 58 : i < -4 ? 49 : i < 8 ? 36 : -1) + ((Math.floor(i / 5) & 1) && i < 8 ? -4 : 0);       // crenellations
     const inArch = (i, j) => { const dx = (i + 4) / 8.5; return j <= 14 ? Math.abs(i + 4) <= 8.5 : dx * dx + ((j - 14) / 9) ** 2 < 1; };
     const brick = (i, j, k) => {
@@ -274,5 +274,5 @@ export function buildDecor(seed = 21) {
       { min: [X(-4) + 1.4, 0, WZ - 1.0], max: [X(8), Y(34), WZ + 1.0] }, { min: [X(-12), Y(23), WZ - 1.0], max: [X(-4) + 1.4, Y(36), WZ + 1.0] },
       { min: [X(13), 0, WZ - 0.9], max: [X(23), Y(40), WZ + 0.9] });
   }
-  return { group, spheres, boxes, solids, glow, lampPos, archX: WX - 4 * 0.18 };
+  return { group, spheres, boxes, solids, glow, lampPos, archX: WX - 4 * 0.115 };
 }
