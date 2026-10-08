@@ -33,6 +33,7 @@ export class Game {
       if (e.journal) this.addJournal(e.journal);
       if (e.activity) { this.activity.push({ ...e.activity, text: e.activity.text, ts: Date.now(), userId: 'me' }); }
       if (e.toast) this.emit('toast', e.toast);
+      if (e.noticed) this.emit('noticed', e.noticed);
       if (e.levelUp) this.emit('levelup', e.levelUp);
       if (e.grew) this.emit('grew', e.grew); if (e.discovery) this.emit('discovery', e.discovery);
       if (e.arrival) this.emit('arrival', e.arrival);
@@ -44,7 +45,7 @@ export class Game {
   attachNet(live, { user, tank }) { this.mode = 'net'; this.live = live; this.you = { userId: user.id }; this.code = tank.code; this.tankName = tank.name; }
   onNet(m) {
     if (m.t === 'snapshot') {
-      const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages;
+      const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members');
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); }
@@ -59,6 +60,8 @@ export class Game {
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }
     else if (m.t === 'chat') { this.messages.push(m.msg); this.emit('chat', m.msg); }
     else if (m.t === 'nudge') this.emit('nudged', m.from, m.why);
+    else if (m.t === 'thanks') this.emit('thanks', m.text);
+    else if (m.t === 'thanked') { const w = this.thankWait?.get(m.ref); this.thankWait?.delete(m.ref); if (m.ok) this.thanked?.add(m.ref); w?.(m); }
     else if (m.t === 'nudged') { const w = this.nudgeWait; this.nudgeWait = null; w?.(m); }
     else if (m.t === 'ack') { const w = this.waiting.get(m.idem); if (w) { this.waiting.delete(m.idem); w(m); } }
   }
@@ -67,6 +70,14 @@ export class Game {
     if (!this.live?.connected) return Promise.resolve({ ok: false, reason: 'OFFLINE' });
     return new Promise((res) => { const t = setTimeout(() => { this.nudgeWait = null; res({ ok: false, reason: 'TIMEOUT' }); }, 6000); this.nudgeWait = (m) => { clearTimeout(t); res(m); }; this.live.send({ t: 'nudge', to }); });
   }
+
+  thank(to, ref) {
+    if (!this.live?.connected) return Promise.resolve({ ok: false, reason: 'OFFLINE' });
+    return new Promise((res) => { const t = setTimeout(() => { this.thankWait?.delete(ref); res({ ok: false, reason: 'TIMEOUT' }); }, 6000); (this.thankWait ||= new Map()).set(ref, (m) => { clearTimeout(t); res(m); }); this.live.send({ t: 'thank', to, ref }); });
+  }
+  // what the watching phone has noticed (the server checks it, so duplicates and nonsense are harmless)
+  observe(o) { return this.dispatch({ t: 'observe', ...o }).catch(() => null); }
+  track(e) { try { if (this.mode === 'net' && this.live?.connected) this.live.send({ t: 'track', e }); } catch { /* ignore */ } }
 
   // ── actions ──
   async dispatch(action, opts = {}) {
@@ -81,4 +92,4 @@ export class Game {
     return new Promise((res) => { const t = setTimeout(() => { this.waiting.delete(idem); res({ ok: false, reason: 'TIMEOUT' }); }, 8000); this.waiting.set(idem, (m) => { clearTimeout(t); res(m); }); });
   }
 }
-export const REASONS = { NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.', TOO_SOON: 'Not yet. Give it a little while.', NOTHING_NEEDED: 'The tank is fine right now, nothing to nudge about.', NOT_A_FRIEND: 'They are not in this tank.' };
+export const REASONS = { NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.', TOO_SOON: 'Not yet. Give it a little while.', ALREADY: 'You already thanked them for that.', NOTHING_TO_THANK: 'That was a while ago.', NOTHING_NEEDED: 'The tank is fine right now, nothing to nudge about.', NOT_A_FRIEND: 'They are not in this tank.' };

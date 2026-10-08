@@ -112,7 +112,7 @@ export const DISCOVERIES = {
 };
 function unlock(t, f, key, now, ev, x = {}) {
   const d = DISCOVERIES[key]; if (!d) return false; f.disc ||= {}; const k = d.pair ? `${key}:${x.otherId}` : key; if (f.disc[k] || (d.pair && f.disc[key + ':' + x.otherId])) return false;
-  f.disc[k] = now; if (d.pair) f.disc.together = f.disc.together ?? now; if (!d.line) return true;
+  f.disc[k] = now; if (d.pair) { f.disc.together = f.disc.together ?? now; if (x.otherObj) { x.otherObj.disc ||= {}; x.otherObj.disc['together:' + f.id] ??= now; x.otherObj.disc.together ??= now; } } if (!d.line) return true;
   ev.push({ journal: d.line(f, x), noticed: f.id, toast: d.line(f, x) }); return true;
 }
 function discover(t, now, ev) {
@@ -436,13 +436,13 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'observe': {                                              // a phone that is watching reports what its fish are really doing
       const key = String(a.key ?? ''), f = t.fish.find((x) => x.id === a.fish); let did = false;
-      const sight = { watch: 'watch', inspect: 'greet', together: 'together', regular: 'visit', object: 'visit', hideaway: 'visit', bubbles: 'bubbles' }[key];
+      const sight = { watch: 'watch', inspect: 'greet', together: 'together', visit: 'visit', regular: 'visit', object: 'visit', hideaway: 'visit', bubbles: 'bubbles' }[key];
       if (sight && progress(t, sight, events, name, sight === 'greet' ? String(a.fish ?? '') : null)) did = true;
       const d = DISCOVERIES[key];
       if (d && d.line && f && !(f.stage === 'baby' && now - f.born < 3600e3)) {
         const tr = f.traits ?? [], decor = a.spot ? t.decor.find((x) => x.id === a.spot) : null, other = d.pair ? t.fish.find((x) => x.id === a.with && x.id !== f.id) : null;
         const okTrait = !d.traits || d.traits.some((x) => tr.includes(x)), okDecor = !d.needsDecor || decor, okPair = !d.pair || other, okBubble = !d.needsBubbler || t.decor.some((x) => x.type === 'bubbler');
-        if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id })) did = true;
+        if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other })) did = true;
       }
       return ok({ applied: did });
     }

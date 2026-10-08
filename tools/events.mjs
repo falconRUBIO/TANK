@@ -27,6 +27,16 @@ ck('greeting the visitor pays and adds it to the book', hello.applied && (await 
 await d({ t: 'dev', what: 'egg' }); const eg = await p.evaluate(() => window.__game.state.eggs.length); ck('two adults lay an egg', eg === 1, 'eggs ' + eg);
 g = await goal(); ck('the countdown mentions the egg', /egg/i.test(g) || /arrives in/.test(g), g);
 await d({ t: 'dev', what: 'hatch' }); const hatched = await p.evaluate(() => [window.__game.state.eggs.length, window.__game.state.fish.length]); ck('the egg hatches into a new fish', hatched[0] === 0, JSON.stringify(hatched));
+// daily wish, discoveries, family
+const dw = await p.evaluate(() => window.__game.state.daily); ck('there is one shared daily wish, and it can be done right now', !!dw && !dw.done && dw.text.length > 3, JSON.stringify([dw?.kind, dw?.text]));
+const modalsBefore = await p.evaluate(() => document.getElementById('modal').classList.contains('on'));
+const ob = await p.evaluate(() => { const g = window.__game, f = g.state.fish.find((x) => (x.traits ?? []).some((t) => ['Brave', 'Social'].includes(t))); return f ? g.dispatch({ t: 'observe', key: 'glass', fish: f.id }).then((r) => [r.applied, f.name]) : null; });
+await p.waitForTimeout(500); ck('a real observation becomes a quiet discovery (a toast, no pop-up)', ob && ob[0] === true && !modalsBefore && !(await p.evaluate(() => document.getElementById('modal').classList.contains('on'))), JSON.stringify(ob) + ' ' + await p.textContent('#toast'));
+const dupe = await p.evaluate((n) => { const g = window.__game, f = g.state.fish.find((x) => x.name === n); return g.dispatch({ t: 'observe', key: 'glass', fish: f.id }).then((r) => r.applied); }, ob?.[1]); ck('the same discovery cannot be earned twice', dupe === false);
+await d({ t: 'dev', what: 'egg' }); await d({ t: 'dev', what: 'hatch' });
+const kid = await p.evaluate(() => { const f = window.__game.state.fish.find((x) => x.parents?.length === 2); return f ? { name: f.name, parents: f.parents.map((q) => q.name), gen: f.gen, hasGenes: !!f.genes } : null; }); ck('a hatchling remembers its parents and generation', !!kid && kid.gen === 1 && kid.hasGenes, JSON.stringify(kid));
+await p.evaluate((n) => { const i = window.__tank.fishes.findIndex((f) => f.name === n); window.__focus(i); }, kid?.name); await p.waitForSelector('#fam', { timeout: 15000 }).catch(() => {}); await p.click('#fam').catch(() => {}); await p.waitForTimeout(400);
+ck('the Family button shows parents and generation', /Parents/.test(await p.textContent('#modal').catch(() => '')), (await p.textContent('#modal').catch(() => '')).slice(0, 120)); await p.click('#mok').catch(() => {}); await p.evaluate(() => window.__focus(null));
 // welcome back
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => window.__game.save());
 await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#modal.on', { timeout: 30000 }).catch(() => {});

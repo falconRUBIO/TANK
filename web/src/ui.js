@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -54,6 +54,7 @@ export function initUI({ game, social, cb }) {
     const fish = Object.entries(SPECIES_DEF).filter(([, d]) => d.level <= s.level && s.fish.length + d.count <= capacity(s.level)).sort((x, y) => x[1].price - y[1].price)[0];
     if (fish && s.shells >= fishPrice(fish[0])) return { text: `You can adopt a ${fish[1].label.toLowerCase()}!`, tab: 'decorate' };
     if (s.shells >= cheapest) return { text: 'You have shells to spend on decorations.', tab: 'decorate' };
+    const dw = s.daily; if (dw && !dw.done) return { text: `Today's wish: ${dw.text}${dw.need > 1 ? ` (${dw.have}/${dw.need})` : ''}`, tab: '' };
     const w = WISHES[s.wishIdx]; if (w) return { text: `Tank wish: ${w.text}`, tab: '' };
     const b = LEVEL_AT[s.level]; return { text: b ? `Earn shells by caring · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
   }
@@ -93,6 +94,7 @@ export function initUI({ game, social, cb }) {
   };
   const lvRow = () => { const s = S(), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.round(((sc - a) / (b - a)) * 100) : 100; return `<div class="lvrow"><b>LEVEL ${lv}</b><i><b style="width:${Math.max(4, Math.min(100, pct))}%"></b></i><span>Day ${game.day}</span></div>`; };
   const ordersHtml = () => { const o = S().orders ?? [], e = S().eggs ?? []; return o.length || e.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>📦 ${esc(x.name || SPECIES_DEF[x.species].label)}</span><b>${eta(x.arrivesAt - Date.now())}</b></div>`).join('')}${e.map((x) => `<div><span>🥚 Egg</span><b>${eta(x.hatchAt - Date.now())}</b></div>`).join('')}</div>` : ''; };
+  const dailyHtml = () => { const d = S().daily; if (!d) return ''; return `<div class="wish daily ${d.done ? 'done' : ''}"><small>TODAY'S WISH · OPTIONAL</small><span>${esc(d.text)}${d.need > 1 && !d.done ? ` (${d.have}/${d.need})` : ''}</span><b>${d.done ? 'Done' : `+${DAILY_REWARD} 🐚`}</b></div>`; };
   const wishHtml = () => { const s = S(), w = WISHES[s.wishIdx]; return w ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(w.text)}</span><b>+${w.reward} 🐚</b></div>` : `<div class="wish"><small>THE TANK'S WISH</small><span>Every wish has come true.</span></div>`; };
   const bookHtml = () => {
     const s = S(), cell = (kind, id, label) => { const got = s.seen[kind].includes(id); return `<div class="bk ${got ? '' : 'nope'}"><img alt="" data-thumb="${kind === 'fish' ? 'fish' : 'decor'}:${id}"><b>${got ? esc(label) : '???'}</b></div>`; };
@@ -102,14 +104,16 @@ export function initUI({ game, social, cb }) {
   const journalHtml = () => `${memorialHtml()}<form class="send note"><input maxlength="90" placeholder="Add a note to the journal" autocomplete="off"><button>Add</button></form><div class="jl">${game.journal.slice().reverse().map((e) => `<div class="je"><small>DAY ${String(e.day).padStart(3, '0')}</small><span>${esc(e.text)}</span></div>`).join('')}</div>`;
   const styleHtml = () => { const st = S().style ?? { floor: 'sand', backdrop: 'candy' }, row = (label, key, opts) => `<div class="sty"><small>${label}</small><div>${Object.entries(opts).map(([k, v]) => `<button class="chipb ${st[key] === k ? 'on' : ''}" data-style="${key}:${k}">${v}</button>`).join('')}</div></div>`; return `<div class="styles">${row('FLOOR', 'floor', FLOORS)}${row('BACKDROP', 'backdrop', BACKDROPS)}</div>`; };
   const views = {
-    care: () => `<h3>Care</h3>${lvRow()}${meters()}${growLine()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
+    care: () => `<h3>Care</h3>${lvRow()}${meters()}${growLine()}${dailyHtml()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
     decorate: () => `<h3>Decorate</h3>${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
       if (!game.shared) return `<h3>Friends</h3><div class="slots"><div class="slot"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div></div>
         <p class="dim">You are playing solo. Host the game online and two friends can join with a six-character code to care for the same tank.</p>`;
       const wish = WISHES[S().wishIdx];
-      const act = game.activity.slice().reverse().slice(0, 6).map((a) => `<div class="act"><span>${esc(a.text)}</span><small>${ago(a.ts)}</small></div>`).join('') || '<p class="dim">Nothing yet.</p>';
+      const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
+      const THANKABLE = ['feed', 'glass', 'water', 'decor', 'fish', 'visitor', 'bottle', 'gift'];
+      const act = game.activity.slice().reverse().slice(0, 12).map((a) => { const can = a.userId && a.userId !== me && THANKABLE.includes(a.type) && Date.now() - a.ts < 24 * 3600e3 && !game.thanked?.has(a.id); return `<div class="act"><span>${esc(youify(a.text))}</span>${can ? `<button class="heart" data-thank="${a.id}" data-to="${a.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(a.ts)}</small>`}</div>`; }).join('') || '<p class="dim">Nothing yet.</p>';
       const msgs = game.messages.slice(-20).map((m) => `<div class="msg ${m.userId === game.you.userId ? 'me' : ''}"><b>${esc(m.name)}</b> ${esc(m.text)}</div>`).join('');
       return `<h3>Friends</h3><div class="slots">${slotsHtml()}</div>
         <div class="code"><small>TANK CODE</small><b>${esc(game.code)}</b><div class="row"><button data-code="copy">Copy</button><button data-code="share">Invite friends</button><button data-code="regen" title="Invalidate the old code">New code</button></div></div>
@@ -134,7 +138,7 @@ export function initUI({ game, social, cb }) {
     const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'); if (i.value.trim()) { social.chat(i.value); i.value = ''; } };
     const nf = sheet.querySelector('form.note'); if (nf) nf.onsubmit = (e) => { e.preventDefault(); const i = nf.querySelector('input'); if (i.value.trim()) { cb.note(i.value); i.value = ''; } };
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
-    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { book = true; open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
+    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { book = true; game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     sheet.querySelectorAll('.card').forEach((b) => (b.onclick = () => { selected = b.dataset.k; sfx('tap'); const y = sheet.scrollTop; open('decorate', true); sheet.scrollTop = y; }));
     const buy = $('buy'); if (buy) buy.onclick = () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else cb.startPlace(id); };
@@ -152,9 +156,10 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; await game.dispatch({ t: 'style', [k]: v }); open('decorate', true); sheet.scrollTop = y; }));
     sheet.querySelectorAll('[data-mem]').forEach((b) => (b.onclick = () => {
       const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-      dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
+      dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, ...(x.parents?.length ? [`Parents: ${x.parents.map((q) => q.name).join(' & ')}`] : []), ...(x.gen ? [`Generation ${x.gen}`] : []), x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
     }));
     sheet.querySelectorAll('[data-book]').forEach((b) => (b.onclick = () => { book = b.dataset.book === '1'; sfx('tap'); open('journal', true); }));
+    sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
       const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It washes into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
       const r = await game.dispatch({ t: 'bottle', to: b.dataset.bottle, note }); if (r.ok) { sfx('tap'); toast('Bottle sent'); } else toast(REASONS[r.reason] ?? 'Could not send that.');
@@ -165,7 +170,7 @@ export function initUI({ game, social, cb }) {
   function open(t, quiet = false) {
     tab = t; if (!quiet) sfx('open');
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
-    cb.onTab(t); if (t === 'friends') flag('friends', false);
+    cb.onTab(t); if (t === 'friends') flag('friends', false); if (!quiet && t === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); return; }
     sheet.innerHTML = `<button class="x">×</button>` + views[t](); sheet.classList.add('on');
     sheet.querySelector('.x').onclick = () => open('tank'); paint();

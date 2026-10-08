@@ -40,5 +40,9 @@ step('A friends tab members: ' + JSON.stringify(await A.$$eval('.slot b', (n) =>
 step('header slots on A: ' + (await A.$$eval('#avs .av', (n) => n.length)));
 await A.click('[data-nudge]'); await B.waitForTimeout(1500);
 step('nudge: A got ' + JSON.stringify(await A.textContent('#toast')) + ', someone received ' + JSON.stringify([await B.textContent('#toast'), await C.textContent('#toast')]));
+// thank-you: A feeds, B thanks A for it, A hears about it quietly
+await A.evaluate(() => window.__game.dispatch({ t: 'feed', x: 0 })); await B.waitForTimeout(800); await B.click('[data-tab=friends]'); await B.waitForTimeout(800);
+const hearts = await B.$$('.heart'); step('B sees ' + hearts.length + ' thank button(s) on A\'s contributions'); if (hearts.length) { await hearts[0].click(); await A.waitForTimeout(1500); step('A toast after the thank-you: ' + JSON.stringify(await A.textContent('#toast'))); }
+else { console.log('FAIL: no thank button'); process.exitCode = 1; }
 await A.screenshot({ path: out + '/e5_friends_A.png' }); await C.screenshot({ path: out + '/e6_C.png' });
 await b.close();

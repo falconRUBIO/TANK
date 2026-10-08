@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -22,6 +22,13 @@ const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
 stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker);
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
+fishes.hasBubbler = () => !!decor.bubbleSpot();
+fishes.dailyKind = () => { const d = game.state?.daily; return d && !d.done ? d.kind : null; };
+fishes.phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
+// what the fish are really doing is reported to the game, a little at a time, and the game decides what counts
+let lastObs = 0, obsQueue = [];
+fishes.onObserve = (o) => { obsQueue.push(o); };
+setInterval(() => { if (!game.state || performance.now() - lastObs < 1500 || !obsQueue.length) return; lastObs = performance.now(); game.observe(obsQueue.shift()); if (obsQueue.length > 8) obsQueue.length = 8; }, 800);
 const rng = fishes.rng; fishes.defaultBubble = fishes.bubbleAt;
 
 // ── the interface ──
@@ -30,8 +37,8 @@ const copyText = async (t, ok) => { try { await navigator.clipboard.writeText(t)
 const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone';
 const social = {
   chat: (t) => net?.chat(t), invite: () => ui.open('friends'),
-  copy: () => copyText(game.code, 'Code copied'),
-  share: async () => { const c = game.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
+  copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
+  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'MAKE A NEW CODE?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 
@@ -219,7 +226,19 @@ async function takePhoto() {
 const card = $('card'), look = new THREE.Vector3(0, 5.3, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 function pickFish(ev) { const r = rayFrom(ev); let best = null, bd = 1e9; for (const f of fishes.list) { const h = r.ray.distanceToPoint(f.pos); if (h < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } } return best; }
 const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`;
-let lastCard = 0;
+let lastCard = 0, lastInspect = null;
+const DISC_LABEL = (k) => DISCOVERIES[k.split(':')[0]]?.label;
+function noticedRow(rec) {
+  const labels = [...new Set(Object.keys(rec.disc ?? {}).map(DISC_LABEL).filter(Boolean))]; if (!labels.length) return '';
+  return `<dt>Noticed</dt><dd>${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ` +${labels.length - 3}` : ''}</dd>`;
+}
+function familyRows(rec) { const p = rec.parents ?? []; return p.length ? `<dt>Parents</dt><dd>${p.map((x) => x.name).join(' & ')}</dd>` : ''; }
+function showFamily(rec) {
+  const t = game.state, p = rec.parents ?? [], gp = p.flatMap((x) => (x.parents ?? []).map((y) => y.name)), kids = childrenOf(t, rec.id), lines = [];
+  lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the first fish'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
+  lines.push(kids.length ? `Children: ${kids.map((k) => k.name + (k.alive ? '' : ' (passed away)')).join(', ')}` : 'Children: none yet');
+  ui.dialog({ title: `${rec.name.toUpperCase()}'S FAMILY`, lines, ok: 'Close' });
+}
 function bondLine(rec) {
   const b = rec.bond ?? {}, ids = Object.keys(b); if (!ids.length) return '';
   const top = ids.sort((x, y) => b[y] - b[x])[0], you = game.shared ? game.you?.userId : 'me', mine = b[you] ?? 0;
@@ -237,13 +256,14 @@ function showDeadCard(f) {
 }
 function showCard(f) {
   if (f.dead) return showDeadCard(f);
+  if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
-    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button>
+    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button><button class="lnk fam" id="fam">Family</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
-  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f);
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); $('fam').onclick = () => showFamily(rec);
 }
 function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -329,10 +349,19 @@ game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ f
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('level'); haptic(25); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('arrive'); spotlightFish(id, 3000, 600); flyShells(2, [window.innerWidth / 2, window.innerHeight * 0.4]); } });
 game.on('remoteFeed', (x, by) => { fishes.drop(x); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
-game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (a.type !== 'feed') ui?.toast(a.text); } });
+game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
+game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
 fishes.onEat = () => { sfx('eat'); };
 
+// a quiet counter for 'watch your fish swim for 15 seconds': the tank is on screen, nothing is being done to it, and it is visible
+let watchT = 0; const dayKey = () => Math.floor(Date.now() / 864e5);
+function watchTick(dt) {
+  const d = game.state?.daily; if (!d || d.done || d.kind !== 'watch') { watchT = 0; return; }
+  if (document.hidden || focus || placing || feedMode || cleanMode || rearrange || ui?.tab !== 'tank' || !fishes.list.some((f) => !f.dead)) { watchT = Math.max(0, watchT - dt); return; }
+  watchT += Math.min(dt, 0.1); if (watchT >= 15) { watchT = -1e9; game.observe({ key: 'watch' }); }
+}
+document.addEventListener('visibilitychange', () => game.track(document.hidden ? 'hidden' : 'visible'));
 // ── frame loop ──
 let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = performance.now(), first = true;
 const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:60;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
@@ -360,7 +389,7 @@ function frame(now) {
   for (const sp of eggSprites.values()) { const w = 1 + Math.sin(t * 3 + sp.position.x) * 0.05; sp.scale.set(w, w, 1); }
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
-  decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
+  decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
   stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }

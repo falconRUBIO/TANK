@@ -2,7 +2,7 @@
 // shadowed and animated (tail bend, fin flutter) in the scene, steered in 3D.
 import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
-import { mulberry32 } from '../color.js';
+import { genesOf } from '../game/genes.js';
 import { patch } from './env.js';
 
 const VOX = 0.052, GLOBAL = 1.05;
@@ -37,8 +37,8 @@ export class Fish3D {
       this.mesh.setColorAt(i, col);
     });
     // every fish is its own: a small hue, saturation, brightness and size shift from its seed (neutral whites and eyes stay put)
-    { const vr = mulberry32(((seed | 0) * 2654435761 + 977) >>> 0), dh = (vr() - 0.5) * 0.08, ds = 0.88 + vr() * 0.24, dl = 0.95 + vr() * 0.1, hsl = {};
-      this.size = 0.93 + vr() * 0.14;
+    { const gn = opts.genes ?? genesOf(seed), dh = gn.dh, ds = gn.ds, dl = gn.dl, hsl = {};
+      this.size = gn.size;
       this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
     const nrm = new Float32Array(n * 3);

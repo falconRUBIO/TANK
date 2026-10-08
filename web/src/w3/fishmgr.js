@@ -48,7 +48,7 @@ export class Fishes {
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
-        f = new Fish3D(sp, d.seed, { name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
+        f = new Fish3D(sp, d.seed, { genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
         f.fid = d.id; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
@@ -81,9 +81,51 @@ export class Fishes {
       if (sp.visible) { if (sp.userData.mood !== mood) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
     }
   }
+  // Watching: what the fish are really doing, reported once and only when it matters. The server checks every report.
+  // A phone only counts what it actually sees, and only while the game is open and visible.
+  said(f, key, extra = {}, cool = 600) {
+    const k = f.fid + key + (extra.with ?? '') + (extra.spot ?? ''), now = performance.now() / 1000; this.cool ||= new Map();
+    if (now - (this.cool.get(k) ?? -1e9) < cool) return; this.cool.set(k, now); this.onObserve?.({ key, fish: f.fid, ...extra });
+  }
+  wants(f, key, other) {
+    const kind = this.dailyKind?.(), sightFor = { together: 'together', visit: 'visit', regular: 'visit', object: 'visit', hideaway: 'visit', bubbles: 'bubbles' }[key];
+    const known = key === 'together' ? other && f.disc?.['together:' + other.fid] : f.disc?.[key];
+    return !known || (sightFor && sightFor === kind);
+  }
+  observe(dt, t) {
+    if (document.hidden || !this.onObserve) return; dt = Math.min(dt, 0.1); const spots = this.spots?.() ?? [], live = this.list.filter((f) => !f.dead && !f.visitor && !f.weak);
+    const phase = this.phase?.() ?? 'day';
+    for (const f of live) {
+      const tr = f.profile?.traits ?? [], has = (x) => tr.includes(x), d = (f.dw ||= { near: {} });
+      d.glass = f.pos.z > 2.2 ? (d.glass ?? 0) + dt : Math.max(0, (d.glass ?? 0) - dt * 2); if ((has('Brave') || has('Social')) && d.glass > 20 && this.wants(f, 'glass')) this.said(f, 'glass');
+      d.surface = f.pos.y > 11 ? (d.surface ?? 0) + dt : Math.max(0, (d.surface ?? 0) - dt * 2); if (has('Greedy') && d.surface > 20 && this.wants(f, 'surface')) this.said(f, 'surface');
+      d.rest = this.night && f.pos.y < 3 && f.vel.length() < 0.4 ? (d.rest ?? 0) + dt : Math.max(0, (d.rest ?? 0) - dt * 2); if (d.rest > 20 && this.wants(f, 'night_rest')) this.said(f, 'night_rest');
+      for (const sp of spots) {
+        const n = (d.near[sp.id] ||= { t: 0, visits: 0 }), dx = f.pos.x - sp.x, dz = (f.pos.z - sp.z) * 1.3, near = Math.hypot(dx, dz) < 1.35 && f.pos.y < sp.h + 1.2;
+        if (near) {
+          n.t += dt; const behind = f.pos.z < sp.z - 0.2;
+          if (has('Shy') && behind && n.t > 10 && this.wants(f, 'hideaway')) this.said(f, 'hideaway', { spot: sp.id });
+          if (has('Curious') && n.t > 5 && this.wants(f, 'object')) this.said(f, 'object', { spot: sp.id });
+        } else if (n.t > 0) {
+          if (n.t >= 3) { n.visits++; if (n.visits >= 3 && this.wants(f, 'regular')) this.said(f, 'regular', { spot: sp.id }); else if (this.wants(f, 'visit')) this.said(f, 'visit', { spot: sp.id }, 90); }
+          n.t = 0;
+        }
+      }
+      if (has('Playful') && Math.hypot(f.pos.x - this.bubbleAt.x, (f.pos.z - this.bubbleAt.z) * 1.3) < 1.3 && f.pos.y < 9 && this.hasBubbler?.()) { d.bub = (d.bub ?? 0) + dt; if (d.bub > 6 && this.wants(f, 'bubbles')) this.said(f, 'bubbles'); } else d.bub = Math.max(0, (d.bub ?? 0) - dt);
+      // routine: the same part of the tank in two different parts of the day, remembered between visits
+      const reg = (f.pos.x < -1.3 ? 0 : f.pos.x > 1.3 ? 2 : 1) * 2 + (f.pos.y > 7 ? 1 : 0); this.routine ||= this.loadRoutine(); const rr = ((this.routine[f.fid] ||= {})[phase] ||= {}); rr[reg] = (rr[reg] ?? 0) + dt; this.rdirty = true;
+      if (!d.rchk || t - d.rchk > 20) { d.rchk = t; const seenIn = Object.values(this.routine[f.fid] ?? {}).filter((m) => Object.values(m).some((v) => v >= 40)); const hasTwo = [0, 1, 2, 3, 4, 5].some((r) => Object.values(this.routine[f.fid] ?? {}).filter((m) => (m[r] ?? 0) >= 40).length >= 2); if (hasTwo && seenIn.length && this.wants(f, 'routine')) this.said(f, 'routine'); }
+    }
+    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+      const a = live[i], b = live[j], k = a.fid < b.fid ? a.fid + b.fid : b.fid + a.fid; this.pt ||= {}; const close = a.pos.distanceTo(b.pos) < 1.7 && a.id !== 'neon' && !(a.species.school && a.id === b.id);
+      this.pt[k] = close ? (this.pt[k] ?? 0) + dt : 0; if (this.pt[k] > 8 && (this.wants(a, 'together', b) || this.wants(b, 'together', a))) { this.said(a, 'together', { with: b.fid }); this.pt[k] = -20; }
+    }
+    if (this.rdirty && t - (this.rsave ?? 0) > 25) { this.rsave = t; this.rdirty = false; try { localStorage.setItem('ourtank.routine', JSON.stringify(this.routine)); } catch { /* storage unavailable */ } }
+  }
+  loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
   // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
   relate(f, d) {
-    f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
+    f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
   }
   // fish that are going without care look pale and tired, and keep low
