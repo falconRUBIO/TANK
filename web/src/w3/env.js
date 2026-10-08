@@ -91,7 +91,7 @@ export function buildEnvironment() {
   // ── ruins: staggered blocks, a keystone arch, mossy caps ──
   const blocks = [];
   const moss = [];
-  const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.6 + rng() * 0.28, mossy });
+  const B = (x, y, z, w, h, d, ry = 0, rz = 0, mossy = rng() < 0.85) => blocks.push({ x, y, z, w, h, d, ry, rz, k: 0.5 + rng() * 0.26, mossy });
   const carve = [];
   const pillar = (cx, cz, w, d, top, ch = 0.46, jag = 0.5, ornate = false) => {
     let y = 0, c = 0;
