@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { start } from './server.mjs';
 import { ALPHABET, tickTank } from './logic.mjs';
+import { DECOR_DEF } from '../web/src/game/rules.js';
 
 let pass = 0; let L_tick = () => null;
 const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
@@ -178,17 +179,17 @@ await t('a purchase takes shells once, shows for everyone, and a replay is ignor
   const st = await waitFor(wb2 ?? wsA, (m) => m.t === 'state' && m.tank.decor.length === w.decor.length); assert.ok(st);
 });
 await t('two players spending the last shells at once: exactly one purchase succeeds', async () => {
-  setW(tank.id, { shells: 8, simTs: Date.now() });
+  setW(tank.id, { shells: 10, simTs: Date.now() });
   const wsB = await open(b.token);
   const [r1, r2] = await Promise.all([ackOf(wsA, { t: 'buyFish', species: 'goldfish', name: 'Gus', idem: 'r1' }), ackOf(wsB, { t: 'buyFish', species: 'goldfish', name: 'Gil', idem: 'r2' })]);
   assert.equal([r1, r2].filter((r) => r.ok).length, 1); assert.equal(getW(tank.id).shells, 0); wsB.close();
 });
 await t('buying a school adds four fish; selling decor refunds half; capacity is enforced', async () => {
   setW(tank.id, { shells: 200, level: 1, simTs: Date.now() });
-  const n0 = getW(tank.id).fish.length;
-  assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'neon', idem: 's1' })).ok, true); assert.equal(getW(tank.id).fish.length, n0 + 4);
+  const n0 = getW(tank.id).fish.length, o0 = getW(tank.id).orders.length;
+  assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'neon', idem: 's1' })).ok, true); assert.equal(getW(tank.id).fish.length, n0); assert.equal(getW(tank.id).orders.length, o0 + 1); setW(tank.id, { orders: getW(tank.id).orders.map((o) => ({ ...o, arrivesAt: 0 })) }); L_tick(); assert.equal(getW(tank.id).fish.length, n0 + 4 + o0);
   const d = getW(tank.id).decor.at(-1); const s0 = getW(tank.id).shells;
-  assert.equal((await ackOf(wsA, { t: 'sellDecor', id: d.id, idem: 's2' })).ok, true); assert.equal(getW(tank.id).shells, s0 + 3);
+  assert.equal((await ackOf(wsA, { t: 'sellDecor', id: d.id, idem: 's2' })).ok, true); assert.equal(getW(tank.id).shells, s0 + Math.floor(DECOR_DEF[d.type].price / 2));
   setW(tank.id, { level: 1, shells: 500, simTs: Date.now() });
   let last; for (let i = 0; i < 4; i++) last = await ackOf(wsA, { t: 'buyFish', species: 'goldfish', idem: 'cap' + i });
   assert.ok(['TANK_FULL'].includes(last.reason) || last.ok);
@@ -197,6 +198,20 @@ await t('players can leave short notes in the journal', async () => {
   const r = await ackOf(wsA, { t: 'note', text: 'Pip likes the <b>arch</b>', idem: 'n1' }); assert.equal(r.ok, true);
   const j = S.db.prepare("SELECT text FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 1").get(tank.id); assert.ok(j.text.includes('Pip likes') && !j.text.includes('<'), j.text);
   assert.equal((await ackOf(wsA, { t: 'note', text: '   ', idem: 'n2' })).ok, false);
+});
+await t('anyone can collect what washed in, once, and the tank hears about it', async () => {
+  setW(tank.id, { drift: { id: 'g99', kind: 'pearl', amount: 4, x: 0, z: 1 }, driftAt: Date.now() + 1e9, simTs: Date.now() }); const s0 = getW(tank.id).shells;
+  const wsB2 = await open(b.token); const r = await ackOf(wsA, { t: 'collect', id: 'g99', idem: 'c1' }); assert.equal(r.delta, 4); assert.equal(getW(tank.id).shells, s0 + 4);
+  assert.equal((await ackOf(wsA, { t: 'collect', id: 'g99', idem: 'c2' })).applied, false); assert.equal((await ackOf(wsB2, { t: 'collect', id: 'g99', idem: 'c3' })).applied, false); wsB2.close();
+});
+await t('petting records which player a fish is closest to', async () => {
+  const id = getW(tank.id).fish[0].id; setW(tank.id, { simTs: Date.now() }); await ackOf(wsA, { t: 'pet', id, idem: 'pt1' }); const f = getW(tank.id).fish[0]; assert.equal(f.bond[a.userId], 1);
+});
+await t('nudges only reach a real friend, only when something needs doing, and not twice in a row', async () => {
+  const wsB3 = await open(b.token); await new Promise((r) => setTimeout(r, 100)); setW(tank.id, { hunger: 0.8, simTs: Date.now() });
+  wsA.send(JSON.stringify({ t: 'nudge', to: b.userId })); const n = await waitFor(wsB3, (m) => m.t === 'nudge'); assert.equal(n.why, 'feed'); assert.equal(n.from.length > 0, true);
+  wsA.send(JSON.stringify({ t: 'nudge', to: b.userId })); assert.equal((await waitFor(wsA, (m) => m.t === 'nudged' && m.ok === false)).reason, 'TOO_SOON');
+  const out = await mkUser('Outsider'); wsA.send(JSON.stringify({ t: 'nudge', to: out.userId })); assert.ok(await waitFor(wsA, (m) => m.t === 'nudged' && m.reason === 'NOT_A_FRIEND')); wsB3.close();
 });
 await t('dev actions are refused unless the server runs in dev mode', async () => { assert.equal((await ackOf(wsA, { t: 'dev', what: 'shells', idem: 'dv' })).reason, 'FORBIDDEN'); });
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.freePlant, 1); });

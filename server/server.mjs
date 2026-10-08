@@ -111,6 +111,15 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
+        if (m.t === 'nudge') {
+          const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
+          if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
+          if (!lim.hit(`n:${ws.userId}:${to}`, 1, 2 * 3600e3)) return send(ws, { t: 'nudged', ok: false, reason: 'TOO_SOON' });
+          const { w } = L.loadWorld(db, mine.id); const why = w.hunger > 0.5 ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null;
+          if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
+          for (const o of rooms.get(mine.id) ?? []) if (o.userId === to) send(o, { t: 'nudge', from: ws.user.name, why });
+          return send(ws, { t: 'nudged', ok: true });
+        }
         if (m.t === 'chat') {
           if (!lim.hit('c:' + ws.userId, 6, 10e3)) return send(ws, { t: 'error', code: 'RATE_LIMIT' });
           const { tankId, msg } = L.addMessage(db, ws.user, m.text);

@@ -1,36 +1,42 @@
 // OUR TANK game rules. Pure functions with no browser or server dependencies, so the exact same code
 // runs on the server (authoritative, shared tank) and in the browser (solo tank).
 export const SPECIES_DEF = {
-  goldfish:  { label: 'Goldfish',   price: 8,  level: 1, count: 1, blurb: 'Curious and bold. Loves flakes.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
-  neon:      { label: 'Neon Tetra', price: 14, level: 1, count: 4, blurb: 'A glowing school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
-  cory:      { label: 'Corydoras',  price: 12, level: 2, count: 1, blurb: 'Tidy bottom dweller.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
-  blue:      { label: 'Blue Ram',   price: 18, level: 2, count: 1, blurb: 'A shy jewel of the tank.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
-  guppy:     { label: 'Guppy',      price: 12, level: 2, count: 2, blurb: 'A cheerful pair with big tails.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
-  angelfish: { label: 'Angelfish',  price: 26, level: 3, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
-  betta:     { label: 'Betta',      price: 34, level: 4, count: 1, blurb: 'Flowing fins, quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
+  goldfish:  { label: 'Goldfish',   price: 10,  level: 1, wait: 10, count: 1, blurb: 'Curious and bold. Loves flakes.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
+  neon:      { label: 'Neon Tetra', price: 20, level: 1, wait: 20, count: 4, blurb: 'A glowing school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
+  cory:      { label: 'Corydoras',  price: 18, level: 2, wait: 60, count: 1, blurb: 'Tidy bottom dweller.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
+  blue:      { label: 'Blue Ram',   price: 28, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the tank.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
+  guppy:     { label: 'Guppy',      price: 18, level: 2, wait: 25, count: 2, blurb: 'A cheerful pair with big tails.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
+  angelfish: { label: 'Angelfish',  price: 40, level: 3, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
+  platy:     { label: 'Platy',      price: 24, level: 3, wait: 40, count: 2, blurb: 'Colourful, easygoing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
+  danio:     { label: 'Zebra Danio',price: 32, level: 4, wait: 60, count: 4, blurb: 'A striped school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
+  betta:     { label: 'Betta',      price: 52, level: 4, wait: 240, count: 1, blurb: 'Flowing fins, quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
 export const DECOR_DEF = {
-  grass:    { label: 'Tall Grass',    cat: 'PLANTS',     price: 4,  level: 1, blurb: 'Soft blades that sway.' },
-  fern:     { label: 'Fern',          cat: 'PLANTS',     price: 5,  level: 1, blurb: 'A lime frond with tiny leaves.' },
-  sword:    { label: 'Sword Plant',   cat: 'PLANTS',     price: 5,  level: 1, blurb: 'Broad green leaves.' },
-  red:      { label: 'Red Plume',     cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A bright pop of colour.' },
-  rock:     { label: 'Pebble Rock',   cat: 'ROCKS',      price: 4,  level: 1, blurb: 'Small and mossy.' },
-  boulder:  { label: 'Boulder',       cat: 'ROCKS',      price: 8,  level: 1, blurb: 'A big rock to hide behind.' },
-  starfish: { label: 'Starfish',      cat: 'SPECIAL',    price: 3,  level: 1, blurb: 'A cheerful little star.' },
-  wood:     { label: 'Driftwood',     cat: 'WOOD',       price: 12, level: 2, blurb: 'An arch to swim around.' },
-  pillar:   { label: 'Old Pillar',    cat: 'STRUCTURES', price: 10, level: 2, blurb: 'A broken column.' },
-  lantern:  { label: 'Stone Lantern', cat: 'STRUCTURES', price: 14, level: 2, blurb: 'Glows warm at dusk.' },
-  chest:    { label: 'Treasure Chest',cat: 'SPECIAL',    price: 16, level: 2, blurb: 'Lid open, gold inside.' },
-  torii:    { label: 'Torii Gate',    cat: 'STRUCTURES', price: 22, level: 3, blurb: 'A red gate to swim through.' },
-  moss:     { label: 'Moss Ball',     cat: 'PLANTS',     price: 4,  level: 1, blurb: 'A soft green cushion.' },
-  kelp:     { label: 'Giant Kelp',    cat: 'PLANTS',     price: 9,  level: 3, blurb: 'Tall ribbons in the current.' },
-  bubbler:  { label: 'Bubbler',       cat: 'SPECIAL',    price: 10, level: 2, blurb: 'A stream of bubbles. Playful fish love it.' },
-  shell:    { label: 'Pearl Clam',    cat: 'SPECIAL',    price: 9,  level: 2, blurb: 'A clam with a tiny pearl.' },
-  skull:    { label: 'Mossy Skull',   cat: 'SPECIAL',    price: 6,  level: 2, blurb: 'Spooky, but very cute.' },
-  arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 18, level: 4, blurb: 'A little arch to swim through.' },
+  grass:    { label: 'Tall Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
+  fern:     { label: 'Fern',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
+  sword:    { label: 'Sword Plant',   cat: 'PLANTS',     price: 7,  level: 1, blurb: 'Broad green leaves.' },
+  red:      { label: 'Red Plume',     cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A bright pop of colour.' },
+  rock:     { label: 'Pebble Rock',   cat: 'ROCKS',      price: 6,  level: 1, blurb: 'Small and mossy.' },
+  boulder:  { label: 'Boulder',       cat: 'ROCKS',      price: 12,  level: 1, blurb: 'A big rock to hide behind.' },
+  starfish: { label: 'Starfish',      cat: 'SPECIAL',    price: 4,  level: 1, blurb: 'A cheerful little star.' },
+  wood:     { label: 'Driftwood',     cat: 'WOOD',       price: 18, level: 2, blurb: 'An arch to swim around.' },
+  pillar:   { label: 'Old Pillar',    cat: 'STRUCTURES', price: 15, level: 2, blurb: 'A broken column.' },
+  lantern:  { label: 'Stone Lantern', cat: 'STRUCTURES', price: 20, level: 2, blurb: 'Glows warm at dusk.' },
+  chest:    { label: 'Treasure Chest',cat: 'SPECIAL',    price: 24, level: 2, blurb: 'Lid open, gold inside.' },
+  torii:    { label: 'Torii Gate',    cat: 'STRUCTURES', price: 34, level: 3, blurb: 'A red gate to swim through.' },
+  moss:     { label: 'Moss Ball',     cat: 'PLANTS',     price: 6,  level: 1, blurb: 'A soft green cushion.' },
+  kelp:     { label: 'Giant Kelp',    cat: 'PLANTS',     price: 14,  level: 3, blurb: 'Tall ribbons in the current.' },
+  bubbler:  { label: 'Bubbler',       cat: 'SPECIAL',    price: 16, level: 2, blurb: 'A stream of bubbles. Playful fish love it.' },
+  shell:    { label: 'Pearl Clam',    cat: 'SPECIAL',    price: 14,  level: 2, blurb: 'A clam with a tiny pearl.' },
+  skull:    { label: 'Mossy Skull',   cat: 'SPECIAL',    price: 10,  level: 2, blurb: 'Spooky, but very cute.' },
+  anchor:   { label: 'Old Anchor',    cat: 'SPECIAL',    price: 24, level: 5, blurb: 'Rusty, mossy, and full of stories.' },
+  bamboo:   { label: 'Bamboo',        cat: 'PLANTS',     price: 18, level: 5, blurb: 'Tall green stalks that creak softly.' },
+  bridge:   { label: 'Little Bridge', cat: 'STRUCTURES', price: 44, level: 6, blurb: 'A wooden arch to swim under.' },
+  crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 56, level: 7, blurb: 'A cluster that glows blue in the dark.' },
+  arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
-export const LEVEL_AT = [0, 14, 30, 50, 75, 105, 140, 180];                     // score needed for level 1..5
-export const MAX_DECOR = 40;
+export const LEVEL_AT = [0, 14, 36, 66, 100, 140, 184, 226];                     // score needed for level 1..5
+export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-1.0, 3.3] };
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
 const HR = 1 / (5 * 3600), WR = 1 / (48 * 3600), GR = 1 / (30 * 3600);   // per second
@@ -45,8 +51,9 @@ export function nextStage(fish, now = Date.now()) {
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
 }
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
+export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
 export const capacity = (level) => 4 + 3 * level;
-export function scoreOf(t, now = Date.now()) { return t.fish.length * 3 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 3; }
+export function scoreOf(t, now = Date.now()) { return t.fish.length * 2 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 2 + ((t.seen?.fish.length ?? 0) + (t.seen?.decor.length ?? 0)) + 3 * (t.wishIdx ?? 0); }
 export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].traits, a = pool[seed % pool.length], b = pool[(seed * 7 + 3) % pool.length]; return a === b ? [a] : [a, b]; }
 
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
@@ -96,20 +103,64 @@ function tendFish(t, dt, now) {
   }
 }
 
+// Older saves and fresh worlds both go through this, so every field below always exists.
+export function norm(t, now = Date.now()) {
+  t.flags ||= { tut: 0 }; t.orders ||= []; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
+  return t;
+}
+const hash32 = (n) => { let h = (n | 0) ^ 0x9e3779b9; h = Math.imul(h ^ (h >>> 16), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return (h ^ (h >>> 16)) >>> 0; };
+export const WISHES = [
+  { text: 'Have three fish swimming together', done: (t) => t.fish.length >= 3, reward: 4 },
+  { text: 'Place six decorations', done: (t) => t.decor.length >= 6, reward: 4 },
+  { text: 'Reach tank level 3', done: (t) => t.level >= 3, reward: 5 },
+  { text: 'Keep every fish happy (80%+)', done: (t) => t.fish.length >= 2 && t.fish.every((f) => (f.happy ?? 0.7) >= 0.8), reward: 5 },
+  { text: 'Have three kinds of fish', done: (t) => new Set(t.fish.map((f) => f.species)).size >= 3, reward: 6 },
+  { text: 'Raise a fully grown fish', done: (t) => t.fish.some((f) => f.stage === 'adult'), reward: 6 },
+  { text: 'Fill the tank with twelve fish', done: (t) => t.fish.length >= 12, reward: 8 },
+  { text: 'Reach tank level 6', done: (t) => t.level >= 6, reward: 10 },
+  { text: 'Discover 20 things for the collection book', done: (t) => t.seen.fish.length + t.seen.decor.length >= 20, reward: 12 },
+];
+export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
+function makeDrift(t, now) {
+  const seq = (t.seq = (t.seq ?? 10) + 1), r = hash32(Math.floor(now / 6e4) * 31 + seq) % 100;
+  const kind = r < 62 ? 'shells' : r < 85 ? 'treat' : 'pearl', amount = kind === 'shells' ? 1 + (r % 3) : kind === 'pearl' ? 4 : 0;
+  const h = hash32(seq * 77 + 5); return { id: 'g' + seq, kind, amount, x: +(-3.4 + (h % 68) / 10).toFixed(2), z: +(0.4 + ((h >> 8) % 26) / 10).toFixed(2) };
+}
+function makeFish(t, o, now, idx) {
+  const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75 }); t.fish.push(f);
+  if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
+}
+function deliver(t, now, ev) {
+  for (const o of [...t.orders]) {
+    if (o.arrivesAt > now) continue;
+    t.orders.splice(t.orders.indexOf(o), 1); const d = SPECIES_DEF[o.species], made = [];
+    for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i));
+    ev.push({ journal: d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
+  }
+}
+function milestones(t, now, ev) {
+  const n = t.seen.fish.length + t.seen.decor.length, due = Math.floor(n / 5);
+  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `The collection book has ${t.flags.collMs * 5} entries.`, toast: `Collection: ${t.flags.collMs * 5} found! +3 shells` }); }
+  const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
+}
+
 export function newWorld(now = Date.now(), seed = 1) {
   return {
-    shells: 10, hunger: 0.55, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0 },
+    shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0 },
     fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05 }],
     decor: [
       { id: 'd1', type: 'grass', x: -3.6, z: 2.6, ry: 0 }, { id: 'd2', type: 'grass', x: 3.4, z: 1.8, ry: 0 },
       { id: 'd3', type: 'fern', x: -4.2, z: 1.0, ry: 0 }, { id: 'd4', type: 'rock', x: 1.2, z: 2.4, ry: 0.4 },
     ],
+    seen: { fish: ['goldfish'], decor: ['grass', 'fern', 'rock'] },
   };
 }
 
 // Time passing. Bounded, so a long absence never punishes: hunger tops out at 85%, water bottoms at 45%.
 export function advance(t, now = Date.now()) {
-  const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
+  norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   if (dt >= 1) {
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR);
@@ -120,24 +171,27 @@ export function advance(t, now = Date.now()) {
     const s = stageOf(f, now);
     if (s !== f.stage) {
       f.stage = s;
-      if (s === 'juvenile') { t.shells += 2; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +2 shells`, grew: f.id }); }
-      if (s === 'adult') { t.shells += 5; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +5 shells`, grew: f.id }); }
+      if (s === 'juvenile') { t.shells += 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }); }
+      if (s === 'adult') { t.shells += 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id }); }
     }
   }
+  deliver(t, now, ev);
+  if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
   if (dt >= 1) discover(t, now, ev);
   levelCheck(t, now, ev);
   return ev;
 }
 function levelCheck(t, now, ev) {
+  milestones(t, now, ev);
   const lv = levelFor(scoreOf(t, now));
-  if (lv > t.level) { t.level = lv; t.shells += 10; ev.push({ journal: `Our tank reached level ${lv}.`, toast: `Tank level ${lv}! +10 shells`, levelUp: lv }); }
+  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; ev.push({ journal: `Our tank reached level ${lv}.`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
 }
 const nextId = (t, p) => p + (t.seq = (t.seq ?? 10) + 1);
 const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);
 const num = (v) => (Number.isFinite(+v) ? +v : NaN);
 
 // Apply one player action. Mutates `t`; returns { ok, reason?, events[], delta? }.
-export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false } = {}) {
+export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false, uid = 'me' } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
@@ -157,7 +211,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
-      t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 4 === 0, gain = find ? 3 : 1; t.shells += gain;
+      t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? 3 : 1; t.shells += gain;
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
       if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: 'You found a pearl! +2 bonus shells', found: true });
       return ok({ applied: true, delta: gain });
@@ -165,17 +219,14 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'buyFish': {
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
-      if (t.fish.length + d.count > capacity(t.level)) return fail('TANK_FULL');
+      if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
       if (t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= d.price;
-      const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name), made = [];
-      for (let i = 0; i < d.count; i++) {
-        const seed = base + i * 3, fname = d.count === 1 ? (nm || NAMES[(t.seq + i) % NAMES.length]) : `${nm || d.label.split(' ')[0]} ${i + 1}`;
-        const tr = traitsFor(a.species, seed), f = ensureFish({ id: nextId(t, 'f'), name: fname, species: a.species, seed, born: now, stage: 'baby', traits: tr, happy: 0.75 }); t.fish.push(f); made.push(f);
-      }
-      events.push({ journal: d.count === 1 ? `${name} brought home ${made[0].name}, a new ${d.label.toLowerCase()}.` : `${name} introduced a school of ${d.label.toLowerCase()}s.`, activity: { type: 'fish', text: `${name} added a new fish.` }, arrival: made.map((f) => f.id) });
-      levelCheck(t, now, events);
-      return ok({ ids: made.map((f) => f.id) });
+      const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      events.push({ journal: `${name} ordered ${d.count === 1 ? (nm || 'a new fish') + ' the ' + d.label.toLowerCase() : 'a school of ' + d.label.toLowerCase() + 's'}.`, activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
+      deliver(t, now, events); levelCheck(t, now, events);
+      return ok({ ordered: true, wait: d.wait });
     }
     case 'nameFish': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND');
@@ -191,7 +242,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const free = a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS';                      // the tutorial's free plant
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       if (free) t.flags.freePlant = 0; else t.shells -= d.price;
-      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2) }; t.decor.push(item);
+      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2) }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       events.push({ journal: t.decor.length % 4 === 0 || d.price >= 14 ? `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` : undefined, activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
       levelCheck(t, now, events);
       return ok({ id: item.id });
@@ -210,6 +261,21 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; if (step === 3 && t.flags.freePlant === undefined) t.flags.freePlant = 1; }
       return ok();
     }
+    case 'collect': {
+      const g = t.drift; if (!g || g.id !== a.id) return ok({ applied: false, delta: 0 });
+      t.drift = null; t.driftAt = now + 6 * 3600e3;
+      if (g.kind === 'treat') { for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); events.push({ journal: `${name} found a bottle of fish treats washed in.`, toast: 'Fish treats! Everyone feels happier.' }); return ok({ applied: true, delta: 0, kind: 'treat' }); }
+      t.shells += g.amount; if (g.kind === 'pearl') events.push({ journal: `${name} found a pearl washed in.`, toast: `A pearl! +${g.amount} shells` });
+      else events.push({ toast: `Something washed in: +${g.amount} shells` });
+      levelCheck(t, now, events); return ok({ applied: true, delta: g.amount, kind: g.kind });
+    }
+    case 'pet': {
+      const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
+      if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
+      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03);
+      f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
+      return ok({ applied: true, delta: 0, bond: f.bond[u] });
+    }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
       events.push({ journal: `${name}: “${txt}”` }); return ok();
@@ -217,6 +283,8 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'dev': {
       if (!dev) return fail('FORBIDDEN');
       if (a.what === 'shells') t.shells += 50;
+      if (a.what === 'rush') { for (const o of t.orders) o.arrivesAt = now; events.push(...advance(t, now)); }
+      if (a.what === 'drift') { t.driftAt = now; events.push(...advance(t, now)); }
       if (a.what === 'day') { for (const f of t.fish) f.born -= DAY; t.hunger = Math.min(0.85, t.hunger + 0.3); t.water = Math.max(0.45, t.water - 0.2); t.glass = Math.min(0.8, t.glass + 0.3); events.push(...advance(t, now)); }
       return ok();
     }

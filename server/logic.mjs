@@ -132,12 +132,13 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, arrival: e.arrival, wish: e.wish });
+      else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival });
     }
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'tut', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
@@ -147,11 +148,11 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false } = 
     const { w } = loadWorld(db, t0.id), out = [];
     const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, action.t, now, key);
     if (ins.changes === 0) { const ev = R.advance(w, now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: [] }; }
-    const r = R.applyAction(w, action, { name: user.name, now, dev });
+    const r = R.applyAction(w, action, { name: user.name, now, dev, uid: user.id });
     if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
     for (const e of r.events) {
-      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, found: e.found });
-      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery });
+      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, found: e.found, arrival: e.arrival, wish: e.wish });
+      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, wish: e.wish });
       if (e.activity) out.push({ activity: addActivity(db, t0.id, user.id, e.activity.type, e.activity.text, now) });
     }
     saveWorld(db, t0.id, w);
