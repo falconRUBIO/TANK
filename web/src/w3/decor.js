@@ -232,11 +232,12 @@ export function buildDecor(seed = 21) {
 
   // ── plants: dense layered cut-outs, placed like the reference (ferns hugging the left, tall grass through the middle, red plume by the lantern) ──
   const L = (x0, x1, z0, z1, n) => Array.from({ length: n }, () => ({ x: x0 + rng() * (x1 - x0), z: z0 + rng() * (z1 - z0) }));
-  group.add(plantMesh(fernTex(), [...L(-5.3, -4.0, 0.2, 1.9, 7), ...L(-4.0, -3.0, 1.8, 2.6, 2), ...L(1.2, 2.6, 1.4, 2.3, 2)], rng, { w: 2.5, hMin: 3, hMax: 4.8 }));
-  group.add(plantMesh(grassTex(0), [...L(-5, -0.5, -2.4, -1.8, 3), ...L(0.2, 4.8, -2.4, -0.4, 5), ...L(3.6, 4.9, 0.3, 1.8, 4), ...L(-5.2, -4.4, 0.4, 1.4, 3)], rng, { w: 1.9, hMin: 3.4, hMax: 5.4 }));
-  group.add(plantMesh(grassTex(1), [...L(0.3, 2.8, 0.6, 1.6, 3), ...L(-1, 0.5, 2.6, 3.4, 2), ...L(1.8, 4, 2.4, 3.3, 3), ...L(-5, -4, 1.8, 2.8, 2)], rng, { w: 1.6, hMin: 1.4, hMax: 3 }));
-  group.add(plantMesh(swordTex(), [{ x: -0.6, z: 1.9 }, { x: 2.4, z: 1.0 }, { x: -3.2, z: 2.6 }, { x: 0.6, z: -1.6 }], rng, { w: 2.1, hMin: 1.8, hMax: 2.7 }));
-  group.add(plantMesh(redTex(), [{ x: 2.0, z: 0.3 }, { x: 1.5, z: -0.7 }, { x: 2.4, z: -0.4 }, { x: 1.7, z: 0.9 }], rng, { w: 1.7, hMin: 2.6, hMax: 3.8 }));
+  // a few tidy clumps in clear places: ferns at the far left, grass beside the ruin and by the lantern, nothing in the middle
+  group.add(plantMesh(fernTex(), [{ x: -4.5, z: 1.0 }, { x: -3.9, z: 1.5 }, { x: -4.9, z: 0.3 }, { x: 1.7, z: 1.9 }], rng, { w: 2.4, hMin: 2.8, hMax: 3.8 }));
+  group.add(plantMesh(grassTex(0), [{ x: 0.7, z: -1.9 }, { x: 4.6, z: 0.9 }, { x: 3.7, z: -0.3 }, { x: -2.2, z: -2.4 }], rng, { w: 1.7, hMin: 3, hMax: 4.4 }));
+  group.add(plantMesh(grassTex(1), [{ x: -1.0, z: 2.6 }, { x: 2.4, z: 2.8 }], rng, { w: 1.5, hMin: 1.4, hMax: 2.2 }));
+  group.add(plantMesh(swordTex(), [{ x: -3.2, z: 2.4 }, { x: 2.3, z: 1.2 }], rng, { w: 2.1, hMin: 1.8, hMax: 2.7 }));
+  group.add(plantMesh(redTex(), [{ x: 2.0, z: 0.3 }, { x: 2.5, z: -0.4 }], rng, { w: 1.7, hMin: 2.6, hMax: 3.8 }));
 
   // ── the big ruin, built from chunky voxels so it matches the rest: crenellated top, round arch, mossy courses ──
   const WX = -1.9, WZ = -1.4;

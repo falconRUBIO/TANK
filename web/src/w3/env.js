@@ -169,11 +169,8 @@ export function buildEnvironment() {
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
   const kelp = new Blades();
-  for (let i = 0; i < 26; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
+  for (let i = 0; i < 7; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
   root.add(kelp.mesh(leafMat()));
-  const fg = new Blades();
-  for (let i = 0; i < 8; i++) { const sideX = rng() < 0.5 ? -1 : 1; fg.add({ x: sideX * (3.6 + rng() * 2.0), y: -0.2, z: 3.2 + rng() * 1.6, h: 3.5 + rng() * 4, w: 0.16 + rng() * 0.1, dir: rng() * 6.28, lean: -sideX * 0.4 * rng(), curl: 0.6, seg: 8, base: [10, 24, 16], tip: [34, 58, 34] }); }
-  root.add(fg.mesh(leafMat()));
   
 
   const decor = buildDecor();
