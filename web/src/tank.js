@@ -1,148 +1,119 @@
-// Tank preview: low-res pixel scene (fixed side view, parallax layers, light rays) with
-// steering-driven fish that turn through the voxel yaw frames.
+// Main loop: layered pixel scene + steering fish -> WebGL lighting.
 import { Fish } from './voxel.js';
 import { SPECIES } from './species.js';
-import { mulberry32, fbm, mix, hex } from './color.js';
+import { mulberry32 } from './color.js';
+import { W, H, GROUND, paintWater, paintBackStatic, paintFrontStatic, drawPlants } from './scene.js';
+import { Lighting } from './light.js';
 
-const W = 195, H = 400;                    // internal pixel resolution (scaled up by CSS)
-const cv = document.getElementById('tank');
-cv.width = W; cv.height = H;
-const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
 const rng = mulberry32(42);
+const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; return [c, g]; };
+const [cvC, gC] = mk(), [cvA, gA] = mk();
 
-// ── static backdrop, rendered once to an offscreen canvas ──
-function pix(ctx, x, y, c, a = 1) { ctx.fillStyle = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`; ctx.fillRect(x, y, 1, 1); }
-function makeLayer(draw) { const c = document.createElement('canvas'); c.width = W; c.height = H; draw(c.getContext('2d')); return c; }
-const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const water = paintWater(), back = paintBackStatic(), front = paintFrontStatic();
 
-const water = makeLayer((c) => {
-  const top = hex(0x3f7aa0), mid = hex(0x1f4766), deep = hex(0x0f2438);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const t = y / H, d = BAYER[(y & 3) * 4 + (x & 3)] / 16 - 0.5;
-    const k = Math.min(1, Math.max(0, t * 1.15 + d * 0.06));
-    pix(c, x, y, k < 0.5 ? mix(top, mid, k * 2) : mix(mid, deep, (k - 0.5) * 2));
-  }
-});
+// ── time of day presets ──
+const TOD = {
+  morning:   { sun: [W * 0.22, -100], sunCol: [0.80, 0.92, 1.0], sunI: 0.95, beamI: 0.5, causI: 0.9, amb: [0.42, 0.56, 0.72], fog: [0.17, 0.37, 0.52], fogI: 1, lampI: 0.0, lampCol: [1, 0.62, 0.28], night: 0, bloom: 0.5, exposure: 0.95, tint: [0.97, 1.0, 1.04] },
+  afternoon: { sun: [W * 0.60, -120], sunCol: [1.0, 0.86, 0.58], sunI: 1.25, beamI: 0.62, causI: 1.15, amb: [0.40, 0.54, 0.70], fog: [0.15, 0.33, 0.48], fogI: 1, lampI: 0.12, lampCol: [1, 0.62, 0.28], night: 0, bloom: 0.55, exposure: 0.98, tint: [1.02, 1.0, 0.98] },
+  evening:   { sun: [W * 0.95, -35], sunCol: [1.0, 0.52, 0.26], sunI: 1.05, beamI: 0.6, causI: 0.8, amb: [0.42, 0.34, 0.5], fog: [0.24, 0.17, 0.33], fogI: 1, lampI: 1.0, lampCol: [1, 0.62, 0.28], night: 0.25, bloom: 0.7, exposure: 0.95, tint: [1.04, 0.98, 1.0] },
+  night:     { sun: [W * 0.45, -120], sunCol: [0.45, 0.58, 1.0], sunI: 0.22, beamI: 0.28, causI: 0.55, amb: [0.17, 0.26, 0.45], fog: [0.03, 0.07, 0.15], fogI: 1, lampI: 2.6, lampCol: [1, 0.66, 0.32], night: 1, bloom: 1.0, exposure: 1.18, tint: [0.96, 1.0, 1.06] },
+};
+const cur = structuredClone(TOD.afternoon);
+let target = 'afternoon';
+const qs = new URLSearchParams(location.search);
+if (TOD[qs.get('tod')]) { target = qs.get('tod'); Object.assign(cur, structuredClone(TOD[target])); }
+const lerp = (a, b, k) => (Array.isArray(a) ? a.map((v, i) => lerp(v, b[i], k)) : a + (b - a) * k);
+export function setTod(name) { if (TOD[name]) { target = name; document.querySelectorAll('[data-tod]').forEach((b) => b.classList.toggle('on', b.dataset.tod === name)); } }
+window.__setTod = setTod;
 
-function ruin(ctx, x0, base, w, h, col, seed) {
-  const r = mulberry32(seed);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const px = x0 + x, py = base - y;
-    const arch = Math.hypot(x - w / 2, (y - h * 0.45) * 0.9) < w * 0.22 && y < h * 0.7;
-    if (arch) continue;
-    const inCol = x < w * 0.2 || x > w * 0.8;
-    const lintel = y > h * 0.68 && y < h * 0.88;
-    if (!(inCol || lintel || y < h * 0.12)) continue;
-    const brick = (Math.floor((y + (Math.floor(x / 7) & 1) * 2) / 5) + Math.floor(x / 7)) & 1;
-    const n = fbm(x * 0.3, y * 0.3, seed) ;
-    let c = mix(col, [20, 40, 60], 0.15 + brick * 0.12);
-    if (n > 0.62) c = mix(c, hex(0x4f7d3c), 0.55);   // moss
-    pix(ctx, px, py, c);
-  }
-}
-const farRuins = makeLayer((c) => {
-  ruin(c, 100, 330, 80, 150, hex(0x2d4b63), 3); ruin(c, -8, 340, 60, 110, hex(0x2a465d), 9);
-});
-const midRuins = makeLayer((c) => { ruin(c, 10, 345, 96, 150, hex(0x56706f), 5); });
-
-function drawPlants(ctx, t, layer) {
-  const defs = layer === 'back'
-    ? [[22, 340, 70, hex(0x3f6e3a)], [120, 345, 90, hex(0x35603a)], [170, 340, 60, hex(0x3f6e3a)]]
-    : [[8, 392, 80, hex(0x62a03c)], [48, 396, 50, hex(0x7bb53e)], [150, 394, 95, hex(0x6aa83a)], [185, 398, 55, hex(0xb83a35)], [172, 396, 60, hex(0xc4423b)]];
-  defs.forEach(([x, y, hgt, col], pi) => {
-    for (let b = 0; b < 5; b++) {
-      const lean = (b - 2) * 5, ph = pi * 1.7 + b;
-      for (let s = 0; s < hgt; s++) {
-        const k = s / hgt;
-        const sway = Math.sin(t * 0.9 + ph + k * 2.4) * 5 * k * k;
-        const px = Math.round(x + lean * k + sway + b * 1.5), py = Math.round(y - s);
-        const lit = (s % 7 < 3) ? 0.2 : 0;
-        const c = mix(col, [255, 240, 150], lit * k + 0.12);
-        pix(ctx, px, py, mix(c, [10, 30, 50], 0.5 * (1 - k) * (layer === 'back' ? 0.9 : 0.2)));
-        if (layer === 'front' || s % 3 === 0) pix(ctx, px + 1, py, mix(c, [10, 30, 50], 0.35));
-      }
-    }
-  });
-}
-
-const ground = makeLayer((c) => {
-  for (let y = 360; y < H; y++) for (let x = 0; x < W; x++) {
-    const hgt = 372 + Math.sin(x * 0.07) * 3 + fbm(x * 0.12, 2, 1) * 4;
-    if (y < hgt) continue;
-    const n = fbm(x * 0.5, y * 0.5, 7);
-    let col = mix(hex(0xb8a78b), hex(0x7e6f55), (y - hgt) / 28);
-    if (n > 0.66) col = mix(col, hex(0x44504f), 0.7); else if (n < 0.34) col = mix(col, hex(0xe0cfa8), 0.5);
-    pix(c, x, y, mix(col, [14, 36, 58], 0.35));
-  }
-});
+const canvas = document.getElementById('tank');
+const light = new Lighting(canvas, W, H, 3);
+cur.lamp = back.lamp;
 
 // ── fish ──
-const fishes = [];
-function addFish(id, seed, x, y, scale, depth, speed) {
-  const f = new Fish(SPECIES[id], seed);
-  fishes.push({ f, x, y, vx: speed * (rng() < 0.5 ? -1 : 1), vy: 0, tx: x, ty: y, scale, depth, speed, phase: rng() * 6, face: 0, turn: 0, dir: 1, retarget: 0 });
+const sil = new WeakMap();
+function silhouette(fr, depth) {
+  let s = sil.get(fr);
+  if (!s) { s = document.createElement('canvas'); s.width = fr.width; s.height = fr.height; const g = s.getContext('2d'); g.drawImage(fr, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = `rgb(0,${depth * 255 | 0},0)`; g.fillRect(0, 0, s.width, s.height); sil.set(fr, s); }
+  return s;
 }
-addFish('goldfish', 1, 80, 180, 1, 1, 14);
-addFish('blue', 2, 140, 130, 1, 0.9, 12);
-addFish('angelfish', 3, 150, 250, 1, 0.8, 9);
-for (let i = 0; i < 4; i++) addFish('neon', 4 + i, 70 + i * 8, 230 + (i % 2) * 8, 1, 1, 17);
-addFish('cory', 9, 90, 350, 1, 1, 8);
-addFish('goldfish', 5, 60, 290, 0.78, 1, 12);
+const fishes = [];
+function addFish(id, seed, x, y, scale, speed, band) {
+  const f = new Fish(SPECIES[id], seed);
+  fishes.push({ f, x, y, vx: speed * (rng() < 0.5 ? -1 : 1), vy: 0, tx: x, ty: y, scale, speed, phase: rng() * 6, face: 0, retarget: 0, band, id });
+}
+addFish('goldfish', 1, 100, 190, 1, 14, [60, 280]);
+addFish('blue', 2, 150, 140, 1, 12, [50, 250]);
+addFish('angelfish', 3, 130, 240, 1, 9, [80, 300]);
+const school = [];
+for (let i = 0; i < 5; i++) addFish('neon', 4 + i, 80 + i * 7, 215 + (i % 2) * 7, 1, 17, [150, 290]);
+addFish('cory', 9, 100, GROUND + 12, 1, 8, [GROUND + 8, GROUND + 20]);
+addFish('goldfish', 5, 60, 290, 0.8, 12, [100, 300]);
 
-function steer(o, dt, t) {
-  const bottom = o.f.species.id === 'cory';
+function steer(o, dt) {
   o.retarget -= dt;
   if (o.retarget <= 0 || Math.hypot(o.tx - o.x, o.ty - o.y) < 8) {
-    o.tx = 22 + rng() * (W - 44);
-    o.ty = bottom ? 352 + rng() * 14 : 70 + rng() * 250;
+    o.tx = 26 + rng() * (W - 52); o.ty = o.band[0] + rng() * (o.band[1] - o.band[0]);
     o.retarget = 3 + rng() * 5;
   }
+  // neon tetras school loosely toward the group's centre
+  if (o.id === 'neon') { const n = fishes.filter((f) => f.id === 'neon'); const cx = n.reduce((s, f) => s + f.x, 0) / n.length, cy = n.reduce((s, f) => s + f.y, 0) / n.length; o.tx = o.tx * 0.995 + cx * 0.005; o.ty = o.ty * 0.995 + cy * 0.005; }
   const dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy) || 1;
   const sp = o.speed * (d < 30 ? 0.4 + d / 50 : 1);
   o.vx += (dx / d * sp - o.vx) * Math.min(1, dt * 1.6);
   o.vy += (dy / d * sp * 0.5 - o.vy) * Math.min(1, dt * 1.6);
   o.x += o.vx * dt; o.y += o.vy * dt;
-  // facing: flip through the voxel yaw frames instead of snapping
   const want = o.vx >= 0 ? 0 : Math.PI;
-  if (Math.abs(o.vx) > 2) {
-    let diff = want - o.face;
-    if (Math.abs(diff) > 1e-3) { o.face += Math.sign(diff) * Math.min(Math.abs(diff), dt * 5.5); }
-  }
+  if (Math.abs(o.vx) > 2) { const diff = want - o.face; if (Math.abs(diff) > 1e-3) o.face += Math.sign(diff) * Math.min(Math.abs(diff), dt * 8); }
   o.phase += dt * (2.5 + Math.hypot(o.vx, o.vy) * 0.28);
+}
+
+// ── bubbles from the air stone ──
+const bubbles = [];
+function bubbleStep(dt, t) {
+  if (Math.random() < dt * 3) bubbles.push({ x: 96 + Math.random() * 4, y: GROUND + 14, r: Math.random() < 0.3 ? 2 : 1, s: 16 + Math.random() * 16, ph: Math.random() * 6 });
+  for (const b of bubbles) { b.y -= b.s * dt; b.x += Math.sin(t * 3 + b.ph) * 4 * dt; }
+  while (bubbles.length && bubbles[0].y < 6) bubbles.shift();
+}
+function drawBubbles() {
+  for (const b of bubbles) {
+    const x = Math.round(b.x), y = Math.round(b.y);
+    gC.fillStyle = 'rgb(190,225,245)'; gA.fillStyle = 'rgb(0,100,60)';
+    if (b.r === 1) { gC.fillRect(x, y, 2, 2); gA.fillRect(x, y, 2, 2); gC.fillStyle = 'rgb(255,255,255)'; gC.fillRect(x, y, 1, 1); }
+    else { gC.fillRect(x - 1, y, 4, 3); gC.fillRect(x, y - 1, 2, 5); gA.fillRect(x - 1, y - 1, 4, 5); gC.fillStyle = 'rgb(255,255,255)'; gC.fillRect(x, y, 1, 1); }
+  }
 }
 
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
-  g.clearRect(0, 0, W, H);
-  g.drawImage(water, 0, 0);
-  g.globalAlpha = 0.9; g.drawImage(farRuins, 0, 0); g.globalAlpha = 1;
-  // light rays
-  g.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 5; i++) {
-    const x0 = 30 + i * 38 + Math.sin(t * 0.25 + i) * 6;
-    g.fillStyle = `rgba(241,213,154,${0.035 + 0.015 * Math.sin(t * 0.5 + i * 2)})`;
-    g.beginPath(); g.moveTo(x0, 0); g.lineTo(x0 + 14, 0); g.lineTo(x0 - 40 + i * 6, 330); g.lineTo(x0 - 70 + i * 6, 330); g.fill();
-  }
-  g.globalCompositeOperation = 'source-over';
-  g.drawImage(midRuins, 0, 0);
-  drawPlants(g, t, 'back');
-  g.drawImage(ground, 0, 0);
-  // fish sorted by depth
-  fishes.forEach((o) => steer(o, dt, t));
+  // ease lighting toward the target preset
+  const tg = TOD[target], k = Math.min(1, dt * 2.2);
+  for (const key of Object.keys(tg)) cur[key] = lerp(cur[key], tg[key], k);
+
+  gC.clearRect(0, 0, W, H); gA.clearRect(0, 0, W, H);
+  gC.drawImage(water.color, 0, 0); gA.drawImage(water.aux, 0, 0);
+  gC.drawImage(back.color, 0, 0); gA.drawImage(back.aux, 0, 0);
+  drawPlants(gC, gA, t, 'back');
+  fishes.forEach((o) => steer(o, dt));
   for (const o of fishes) {
-    const sp = o.f.frame({ yaw: o.face, pitch: Math.max(-0.45, Math.min(0.45, -Math.atan2(o.vy, Math.abs(o.vx) + 6) * (o.vx >= 0 ? -1 : 1) * -1)), phase: o.phase, scale: o.scale });
-    g.drawImage(sp, Math.round(o.x - sp.width / 2), Math.round(o.y - sp.height / 2));
+    const fr = o.f.frame({ yaw: o.face, pitch: -Math.max(-0.45, Math.min(0.45, Math.atan2(o.vy, Math.abs(o.vx) + 6))) * (o.vx >= 0 ? 1 : -1) * -1, phase: o.phase, scale: o.scale });
+    const px = Math.round(o.x - fr.width / 2), py = Math.round(o.y - fr.height / 2);
+    gC.drawImage(fr, px, py); gA.drawImage(silhouette(fr, 0.32), px, py);
   }
-  drawPlants(g, t, 'front');
-  // surface shimmer + particles
-  g.fillStyle = 'rgba(200,235,255,0.25)';
-  for (let x = 0; x < W; x += 3) { const y = 3 + Math.round(Math.sin(x * 0.2 + t * 1.5) * 1.5 + Math.sin(x * 0.07 - t)); g.fillRect(x, y, 2, 1); }
-  for (let i = 0; i < 40; i++) {
-    const px = (i * 53.7 + Math.sin(t * 0.2 + i) * 6) % W, py = (i * 91.3 + t * (2 + (i % 3))) % H;
-    g.fillStyle = 'rgba(210,235,255,0.35)'; g.fillRect(Math.round(px), Math.round(py), 1, 1);
+  bubbleStep(dt, t); drawBubbles();
+  drawPlants(gC, gA, t, 'front');
+  gC.drawImage(front.color, 0, 0); gA.drawImage(front.aux, 0, 0);
+  // marine snow
+  for (let i = 0; i < 46; i++) {
+    const px = ((i * 53.7 + Math.sin(t * 0.2 + i) * 7) % W + W) % W, py = (i * 91.3 + t * (2 + (i % 3))) % H;
+    gC.fillStyle = 'rgb(200,225,240)'; gC.fillRect(Math.round(px), Math.round(py), 1, 1);
+    gA.fillStyle = 'rgb(0,90,30)'; gA.fillRect(Math.round(px), Math.round(py), 1, 1);
   }
+  light.render(cvC, cvA, cur, t);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => setTod(b.dataset.tod)));
+setTod(target);
 window.__tank = { fishes };

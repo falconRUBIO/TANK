@@ -3,8 +3,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Our Tank</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b1522;overflow:hidden}
-  #wrap{height:100%;display:flex;align-items:center;justify-content:center}
-  canvas{height:100%;max-width:100%;aspect-ratio:195/400;image-rendering:pixelated;background:#0f2438}
-</style></head><body><div id="wrap"><canvas id="tank"></canvas></div>
-<script type="module" src="src/tank.js"></script></body></html>
+  :root{--bg:#0a1220;--panel:#0f1a2c;--line:#1d2c44;--ink:#dbe8f7;--dim:#7e93ad;--gold:#e6c36a}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#050a12;color:var(--ink);font:14px -apple-system,system-ui,"SF Pro Text",sans-serif;overflow:hidden}
+  #app{height:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+  header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;justify-content:space-between}
+  h1{margin:0;font-size:15px;letter-spacing:.14em;font-weight:600}
+  .pill{margin-top:6px;display:inline-flex;gap:6px;align-items:center;font:11px ui-monospace,Menlo,monospace;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:#0c1626}
+  .avs{display:flex;gap:6px}.av{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);position:relative;background:#16263c}
+  .av i{position:absolute;right:-2px;bottom:-2px;width:8px;height:8px;border-radius:50%;background:#41d37e;border:2px solid var(--bg)}
+  main{flex:1;min-height:0;position:relative;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%;display:block}
+  .tod{position:absolute;left:50%;transform:translateX(-50%);top:10px;display:flex;gap:4px;padding:4px;background:rgba(8,14,26,.72);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:999px}
+  .tod button{all:unset;font:11px ui-monospace,Menlo,monospace;color:var(--dim);padding:6px 10px;border-radius:999px;cursor:pointer}
+  .tod button.on{background:rgba(255,255,255,.12);color:var(--ink)}
+  nav{display:flex;justify-content:space-around;padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);border-top:1px solid var(--line);background:var(--panel)}
+  nav div{font-size:10px;color:var(--dim);text-align:center;width:60px}nav div.on{color:var(--ink)}
+  nav svg{display:block;margin:0 auto 3px;width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6}
+</style></head><body><div id="app">
+<header><div><h1>OUR TANK</h1><div class="pill">DAY 023 · <span id="todl">Afternoon</span></div></div>
+<div class="avs"><div class="av"><i></i></div><div class="av"><i></i></div><div class="av"><i></i></div></div></header>
+<main><canvas id="tank"></canvas>
+<div class="tod"><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
+<nav><div class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
+<div><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>
+<div><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/></svg>Decorate</div>
+<div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>Friends</div>
+<div><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v13H6a2 2 0 01-2-2zM20 5h-7"/></svg>Journal</div></nav></div>
+<script type="module" src="src/tank.js"></script>
+<script>document.querySelectorAll('[data-tod]').forEach(b=>b.addEventListener('click',()=>document.getElementById('todl').textContent=b.textContent))</script>
+<script>const q=new URLSearchParams(location.search).get('tod');if(q){document.getElementById('todl').textContent=q[0].toUpperCase()+q.slice(1)}</script></body></html>
