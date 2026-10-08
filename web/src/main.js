@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, fishPrice, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -87,7 +87,7 @@ let placing = null, resumeRearrange = false;           // placing: { type, id, f
 function startPlace(type, id = null) {
   const wasRearranging = rearrange; cancelModes(); ui.open('tank'); resumeRearrange = !!id && wasRearranging;
   $('prot').hidden = true; $('pok').hidden = false; $('pcan').textContent = 'Cancel';
-  const s = game.state, free = !id && s.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS', d = DECOR_DEF[type];
+  const s = game.state, free = !id && isFree(s, type), d = DECOR_DEF[type];
   const it = id ? s.decor.find((x) => x.id === id) : null;
   placing = { type, id, free }; decor.start({ type, id, x: it?.x ?? 0, z: it?.z ?? 1.6, ry: it?.ry ?? 0 });
   $('placehint').textContent = id ? "Slide to move it" : "Slide left or right";

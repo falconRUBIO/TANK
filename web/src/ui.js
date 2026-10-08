@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -67,14 +67,14 @@ export function initUI({ game, social, cb }) {
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
     if (!fishCat) for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
     return out.map((c) => {
-      const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && s.flags.freePlant > 0 && c.cat === 'PLANTS';
+      const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
       return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}"><b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
     const s = S(); if (!selected) return `<div class="detail dim">Pick something to see what it does.</div>`;
     const [kind, id] = selected.split(':'), d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return '';
-    const free = kind === 'decor' && s.flags.freePlant > 0 && d.cat === 'PLANTS', priceNow = kind === 'fish' ? fishPrice(id) : d.price;
+    const free = kind === 'decor' && isFree(s, id), priceNow = kind === 'fish' ? fishPrice(id) : d.price;
     let note = '', can = true;
     if (s.level < d.level) { note = `Unlocks at tank level ${d.level}`; can = false; }
     else if (!free && s.shells < priceNow) { note = `${priceNow - s.shells} more shell${priceNow - s.shells === 1 ? '' : 's'} needed`; can = false; }

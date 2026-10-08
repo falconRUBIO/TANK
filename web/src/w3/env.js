@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mulberry32, fbm, mix, hex } from '../color.js';
 import { stoneTex, woodTex, gravelTex } from './textures.js';
-import { buildDecor } from './decor.js';
+import { Solids } from './decor.js';
 
 import { swayTime } from './voxshade.js';
 export { swayTime };
@@ -84,6 +84,26 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
   g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 
+// a soft, sweet backdrop: layered pastel sand dunes with round coral domes and little stars, all unlit so the water tint does the shading
+function buildBackdrop() {
+  const g = new THREE.Group(), r = mulberry32(31);
+  const layers = [[-7, 0xf6b8c8, 2.4, 0.2], [-12, 0xc9b6f0, 3.6, 1.4], [-18, 0x9fd0f2, 4.8, 2.6], [-26, 0x86e0d0, 6.0, 3.8]];
+  const domeCols = [0xff9ec4, 0xffd36e, 0xb89cff, 0x7fe3c8, 0xff9a7a];
+  const dome = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff }), 90);
+  const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? 0.42 : 1; i ? star.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : star.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  const stars = new THREE.InstancedMesh(new THREE.ShapeGeometry(star), new THREE.MeshBasicMaterial({ color: 0xffffff }), 40);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(); let nd = 0, ns = 0;
+  layers.forEach(([z, col, amp, base], li) => {
+    const sh = new THREE.Shape(), top = (x) => base + amp * (Math.sin(x * 0.13 + li * 1.7) * 0.5 + Math.sin(x * 0.29 + li * 3.1) * 0.3 + 0.55);
+    sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 1.5) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); m.position.z = z; g.add(m);
+    for (let i = 0; i < 18 && nd < 90; i++) { const x = -40 + r() * 80, sc = 0.5 + r() * 1.1 + li * 0.25; m4.compose(new THREE.Vector3(x, top(x) - 0.1, z + 0.2), q.identity(), new THREE.Vector3(sc, sc * (0.8 + r() * 0.5), sc)); dome.setMatrixAt(nd, m4); dome.setColorAt(nd++, new THREE.Color(domeCols[(r() * domeCols.length) | 0])); }
+    for (let i = 0; i < 6 && ns < 40; i++) { const x = -34 + r() * 68, sc = 0.45 + r() * 0.5 + li * 0.15; m4.compose(new THREE.Vector3(x, top(x) + 0.35 + r() * 0.5, z + 0.3), q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), (r() - 0.5) * 0.8), new THREE.Vector3(sc, sc, 1)); stars.setMatrixAt(ns, m4); stars.setColorAt(ns++, new THREE.Color(r() < 0.5 ? 0xffe27a : 0xffb0d0)); }
+  });
+  dome.count = nd; stars.count = ns; dome.frustumCulled = stars.frustumCulled = false; g.add(dome, stars);
+  return g;
+}
+
 export function buildEnvironment() {
   const root = new THREE.Group();
   const rng = mulberry32(7);
@@ -114,7 +134,6 @@ export function buildEnvironment() {
       y += ch; c++;
     }
   };
-  for (let i = 0; i < 16; i++) B(-4.4 + rng() * 9, 0.14 + rng() * 0.1, -2.5 + rng() * 4, 0.3 + rng() * 0.5, 0.25 + rng() * 0.2, 0.3 + rng() * 0.4, rng() * 3, 0, rng() < 0.4); // rubble
   const blockMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stoneA, blocks.length);
   const mossMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), patch(new THREE.MeshStandardMaterial({ color: C(86, 150, 52), roughness: 1 })), blocks.length);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), s = new THREE.Vector3();
@@ -141,8 +160,6 @@ export function buildEnvironment() {
     for (let i = 1; i < 8; i++) { const a = Math.PI - (i / 8) * Math.PI; fb(cx + Math.cos(a) * R, spring + Math.sin(a) * R, cz, 0.7, 0.9, w, a - Math.PI / 2 + Math.PI); }
     for (let x = cx - span / 2 - w; x <= cx + span / 2 + w; x += 0.85) if (rng() < 0.85) fb(x + 0.4, spring + R + 0.75, cz, 0.85, 0.6, w * 1.1);
   };
-  farArch(-5.4, -9.5, 2.6, 4.2, 1.4); farArch(0.5, -11.5, 3.0, 5.0, 1.6); farArch(6.2, -10, 2.4, 4.6, 1.4);
-  farPier(-8.6, -9, 1.5, 9, 0.7); farPier(9.6, -11, 1.8, 11, 0.7); farPier(3.4, -13, 1.6, 8, 0.7); farPier(-2.6, -13.5, 1.4, 7, 0.7);
   far.count = fc; far.frustumCulled = false; root.add(far);
 
   // ── gravel bed ──
@@ -169,13 +186,7 @@ export function buildEnvironment() {
 
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
-  const kelp = new Blades();
-  for (let i = 0; i < 12; i++) kelp.add({ x: -7 + rng() * 14, y: 0, z: -5 - rng() * 4, h: 5 + rng() * 8, w: 0.12 + rng() * 0.1, dir: rng() * 6.28, lean: (rng() - 0.5) * 0.4, curl: 0.4, seg: 10, base: [24, 70, 62], tip: [58, 124, 96] });
-  root.add(kelp.mesh(leafMat()));
-  
+  root.add(buildBackdrop());
 
-  const decor = buildDecor();
-  root.add(decor.group);
-  const AX = decor.archX;
-  return { root, archX: AX, colliders: decor.solids };
+  return { root, archX: 0, colliders: new Solids() };
 }
