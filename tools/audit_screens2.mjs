@@ -10,7 +10,7 @@ const step = async (name, fn) => { try { await fn(); } catch (e) { errors.push(n
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 // tutorial steps
-for (const n of [0, 1, 2, 3, 4]) await step('tut' + n, async () => { await p.evaluate((n) => { const g = window.__game; g.state.flags.tut = n; g.emit('state'); }, n); await shot('01_tut' + n, 1800); });
+for (const n of [2, 3, 4]) await step('tut' + n, async () => { await p.evaluate((n) => { const g = window.__game; g.state.flags.tut = n; g.emit('state'); }, n); await shot('01_tut' + n, 1800); });
 await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.shells = 400; s.level = 8; s.fish.forEach((f) => (f.stage = 'adult')); g.emit('state'); });
 await step('octopus', async () => { await p.evaluate(async () => { const g = window.__game; const mk = (id, name, species, traits) => ({ id, name, species, seed: 3, born: Date.now() - 9e8, stage: 'adult', traits, happy: 0.8, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }); g.state.fish.push(mk('fo', 'Mimi', 'octopus', ['Curious', 'Clever']), mk('fs', 'Sunny', 'seahorse', ['Shy', 'Calm'])); g.emit('state'); }); await p.waitForTimeout(3500); await p.evaluate(() => window.__focus(window.__fishes.list.findIndex((f) => f.species.id === 'octopus'))); await shot('02_octopus_card', 6000); });
 await step('more', async () => { await p.evaluate(() => { const b = [...document.querySelectorAll('#card button, #card .fold')].find((x) => /More about/.test(x.textContent)); b?.click(); }); await shot('03_card_more', 1500); });
