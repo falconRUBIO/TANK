@@ -4,3 +4,6 @@ node_modules/
 *.db-shm
 .proposal/
 .simcache/
+
+# screenshots written by tools/e2e.mjs
+/e[0-9]_*.png
