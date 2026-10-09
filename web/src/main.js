@@ -148,10 +148,6 @@ function trickBlock(rec) {
   const learned = (rec.tricks ?? []), opts = trickOptions(game.state, rec), done = learned.length ? `<div class="notes">Tricks: ${learned.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}</div>` : '';
   return learned.map((k) => `<button class="lnk" data-show="${k}">Show trick</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach a trick (${o.have}/${o.need})</button>`).join('');
 }
-async function noteFish(f) {
-  const txt = await ui.dialog({ title: `NOTE FOR ${f.name.toUpperCase()}`, text: 'Anyone in the tank can read it on the fish card. 40 characters.', input: { value: '' }, ok: 'Leave note', cancel: 'Cancel' }); if (!txt) return;
-  const r = await game.dispatch({ t: 'fishNote', id: f.fid, text: txt }); if (!r.ok) fail(r); else { sfx('tap'); showCard(f); }
-}
 // how well the tank suits this fish, a wish it has, and notes people left it
 function comfortBlock(rec) {
   const c = comfortOf(game.state, rec), w = game.state.want?.fish === rec.id ? game.state.want : null, notes = (rec.notes ?? []).map((n) => `<i>${esc(n.name)}:</i> ${esc(n.text)}`).join('<br>');
@@ -289,11 +285,10 @@ function showCard(f) {
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">Play with ${f.name}</button>
-    <div class="btnrow">${trickBlock(rec)}<button class="lnk" id="note">Leave a note</button>${fam}</div>${more}
+    <div class="btnrow">${trickBlock(rec)}${fam}</div>${more}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
-  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); $('note').onclick = () => noteFish(f);
-  card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {

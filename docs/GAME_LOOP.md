@@ -67,7 +67,7 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 - **Fish wishes.** One fish at a time quietly wants something that fits its personality: more plants to hide among (Shy), something to explore (Curious), driftwood (Lazy), a bubbler or other fun thing (Playful), rocks to perch on (Brave), company (Social), a game, a clear view, fresher water or a proper meal. Only offered when it can be granted now. Granting it pays +2 shells, cheers the fish and is journalled. A wish fades after a day without penalty, and the next waits six hours. It shows in the hint pill, the Today tab and the fish card.
 - **Comfort.** Each fish card says Cosy, Comfortable or Could be better, with the one or two most useful changes. The Today tab shows the tank average.
 - **Plants grow.** Plants grow over a week. After three days they can be trimmed from the Care tab for +1 shell each, and then start again.
-- **Notes.** Anyone can leave a 40 character note on a fish card (last three kept, also in the journal).
+- **Notes.** Retired from the fish card: the journal note and the chat already cover it, and fewer chores keep the tank calm. Old notes are kept.
 - **Landmarks and a shared project.** Little Lighthouse (150 shells, level 7) and Coral Spire (250, level 8). The Today tab shows how much of the next one the tank has saved.
 - **Today tab.** The one thing worth doing now, the fish wish, comfort, the shared project, today's wish, what is coming up and how shells are earned.
 

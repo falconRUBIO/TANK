@@ -15,12 +15,12 @@ const S = () => p.evaluate(() => JSON.parse(JSON.stringify(window.__game.state))
 ck('the opening offers four free fish, goldfish preselected', intro?.cards === 4 && intro?.preselected === 'goldfish', JSON.stringify(intro));
 ck('the chosen fish is what arrives, with the chosen name', (await S()).fish[0].species === 'seahorse' && (await S()).fish[0].name === 'Pip', JSON.stringify((await S()).fish.map((f) => [f.species, f.name])));
 // the check-in tab
-ck('six tabs in the bottom bar', (await p.$$('nav [data-tab]')).length === 6);
-await p.click('nav [data-tab=today]'); await p.waitForTimeout(500);
+ck('four tabs in the bottom bar', (await p.$$('nav [data-tab]')).length === 4);
+await p.click('nav [data-tab=care]', { force: true }); await p.waitForTimeout(500);
 const txt = await p.evaluate(() => document.getElementById('sheet')?.innerText ?? document.querySelector('.sheet')?.innerText ?? '');
 ck('Today shows what to do, what is coming up and how shells are earned', /WORTH DOING NOW/i.test(txt) && /How do I earn shells\?/i.test(txt), txt.slice(0, 80).replace(/\n/g, ' | '));
 ck('it names a daily wish or the coming-up list', /COMING UP/i.test(txt));
-await p.click('nav [data-tab=today]'); await p.waitForTimeout(300);
+await p.click('nav [data-tab=care]', { force: true }); await p.waitForTimeout(300);
 // an order that is due must arrive on a connected phone and the countdown must move
 await p.evaluate(() => window.__game.dispatch({ t: 'buyFish', species: 'goldfish', name: 'Test', seed: 7 }));
 await p.waitForTimeout(800); let s = await S(); ck('the order is on its way', s.orders.length === 1, s.orders.length);

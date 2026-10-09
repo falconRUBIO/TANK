@@ -24,7 +24,7 @@
   .tod button{all:unset;font:11px ui-monospace,Menlo,monospace;color:var(--dim);padding:6px 10px;border-radius:999px;cursor:pointer}
   .tod button.on{background:rgba(255,255,255,.12);color:var(--ink)}
   nav{position:absolute;z-index:6;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 8px);display:flex;justify-content:space-around;padding:7px 6px;border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(10,18,32,.72);backdrop-filter:blur(14px)}
-  nav div{font-size:10px;color:var(--dim);text-align:center;width:60px}nav div.on{color:var(--ink)}
+  nav div{font-size:11px;color:var(--dim);text-align:center;width:76px}nav div.on{color:var(--ink)}
   nav svg{display:block;margin:0 auto 3px;width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6}
   #card{position:absolute;left:12px;right:12px;bottom:84px;padding:14px 16px 14px;background:rgba(10,18,32,.9);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.09);border-radius:16px;transform:translateY(300%);opacity:0;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s;pointer-events:none}
   #card.on{transform:none;opacity:1;pointer-events:auto}
@@ -48,7 +48,7 @@
   #sheet.on{transform:none}#sheet h3{margin:0 0 12px;font-size:15px;letter-spacing:.06em;text-align:center}
   #sheet .x{all:unset;position:absolute;right:16px;top:12px;font-size:22px;color:var(--dim);cursor:pointer}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 8px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12px;text-align:center}
+  .tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12px;text-align:center}
   .tile span{font-size:26px}.tile:active{border-color:var(--gold)}
   .dim{color:var(--dim);font-size:12px;margin:12px 0 0;text-align:center}
   .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.slot{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px}
@@ -185,11 +185,11 @@
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
 <nav><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
-<div data-tab="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Today</div>
+
 <div data-tab="care"><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>
 <div data-tab="decorate"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7z"/></svg>Decorate</div>
 <div data-tab="friends"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>Friends</div>
-<div data-tab="journal"><svg viewBox="0 0 24 24"><path d="M4 5h7a2 2 0 012 2v13H6a2 2 0 01-2-2zM20 5h-7"/></svg>Journal</div></nav></div>
+</nav></div>
 <div id="welcome"></div>
 <div id="modal"></div>
 <div id="loading"><div class="lc"><div class="fishy">🐠</div><b>OUR TANK</b><small id="ltxt">Filling the tank…</small></div></div>

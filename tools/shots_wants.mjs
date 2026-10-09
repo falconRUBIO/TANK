@@ -15,7 +15,7 @@ await p.evaluate(async () => { const g = window.__game, s = g.state; await g.dis
 await p.waitForTimeout(2500); await p.screenshot({ path: out + '/tank.png' });
 await p.click('nav [data-tab=care]'); await p.waitForTimeout(500); await p.click('.foodrow [data-food=treats]'); await p.waitForTimeout(300); await p.screenshot({ path: out + '/care.png' }); await p.click('[data-act=feed]'); await p.waitForTimeout(800); await p.screenshot({ path: out + '/feed.png' });
 await p.evaluate(() => window.__setTod?.('night')); await p.waitForTimeout(5000); await p.screenshot({ path: out + '/night.png' }); await p.evaluate(() => window.__setTod?.('afternoon')); await p.waitForTimeout(500);
-await p.click('nav [data-tab=today]'); await p.waitForTimeout(700); await p.screenshot({ path: out + '/today.png' });
+await p.click('nav [data-tab=care]'); await p.waitForTimeout(700); await p.screenshot({ path: out + '/today.png' });
 await p.click('nav [data-tab=care]'); await p.waitForTimeout(500); await p.screenshot({ path: out + '/care.png' });
 await p.click('nav [data-tab=care]'); await p.waitForTimeout(400);
 await p.evaluate(() => window.__focus?.(0)); await p.waitForTimeout(800); await p.screenshot({ path: out + '/card.png' });
