@@ -207,7 +207,7 @@ await t('players can leave short notes in the journal', async () => {
   const j = S.db.prepare("SELECT text FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 1").get(tank.id); assert.ok(j.text.includes('Pip likes') && !j.text.includes('<'), j.text);
   assert.equal((await ackOf(wsA, { t: 'note', text: '   ', idem: 'n2' })).ok, false);
 });
-await t('anyone can collect what washed in, once, and the tank hears about it', async () => {
+await t('anyone can collect what turned up in the tank, once, and the tank hears about it', async () => {
   setW(tank.id, { drift: { id: 'g99', kind: 'pearl', amount: 4, x: 0, z: 1 }, driftAt: Date.now() + 1e9, simTs: Date.now() }); const s0 = getW(tank.id).shells;
   const wsB2 = await open(b.token); const r = await ackOf(wsA, { t: 'collect', id: 'g99', idem: 'c1' }); assert.equal(r.delta, 4); assert.equal(getW(tank.id).shells, s0 + 4);
   assert.equal((await ackOf(wsA, { t: 'collect', id: 'g99', idem: 'c2' })).applied, false); assert.equal((await ackOf(wsB2, { t: 'collect', id: 'g99', idem: 'c3' })).applied, false); wsB2.close();

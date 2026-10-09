@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE } from './game/rules.js';
+import { CRAB_PRICE, driftBlame } from './game/rules.js';
 import { SOCIAL, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -46,8 +46,8 @@ export function initUI({ game, social, cb }) {
     const fl = (s.floaters ?? [])[0]; if (fl) return { text: `${fl.name} has passed away. Tap to lay them to rest.`, tab: '' };
     const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: `${weak.name} is in a critical state. Feed the tank and freshen the water.`, tab: 'care' };
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
-    if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle washed in for you. Tap it.', tab: '' };
-    if (s.drift) return { text: 'Something washed in. Tap it in the tank.', tab: '' };
+    if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
+    if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in Decorate.', tab: 'decorate' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
@@ -206,7 +206,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
-      const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It washes into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
+      const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It drops into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
       const r = await game.dispatch({ t: 'bottle', to: b.dataset.bottle, note }); if (r.ok) { sfx('tap'); toast('Bottle sent'); } else toast(REASONS[r.reason] ?? 'Could not send that.');
     }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));

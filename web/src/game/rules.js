@@ -69,7 +69,7 @@ export function nextStage(fish, now = Date.now()) {
 // What is coming, in plain words, for the end of the first session: a reason to come back that is actually true.
 export function firstPromises(t, now = Date.now()) {
   const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(`${f.name} grows up in ${n.label}.`);
-  if (!t.drift && t.driftAt > now) out.push('Something will wash in on the tide within a few hours.');
+  if (!t.drift && t.driftAt > now) out.push('Something will turn up in the tank within a few hours.');
   if (t.visitAt && t.visitAt > now && t.visitAt - now < 30 * HOUR) out.push('A rare visitor may drop by tomorrow.');
   out.push('Tomorrow the tank has a new request for you.'); return out.slice(0, 4);
 }
@@ -238,10 +238,30 @@ export const WISHES = [
   { text: 'Reach tank level 8', done: (t) => t.level >= 8, reward: 15 },        // last: a wish that needs level 8 must not stand in front of wishes that count toward it
 ];
 export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
+// It is a tank, not the sea: whatever turns up was brought by something that lives in it, or dropped in from above.
+function culprit(t, h) {
+  const live = (t.fish ?? []).filter((f) => !f.dead), pool = [['lid', 2], ['filter', 2], ['stone', 1], ['rock', 1]];
+  for (const f of live) pool.push([f.species === 'octopus' ? 'oct:' + f.name : 'fish:' + f.name, f.species === 'octopus' ? 4 : 1]);
+  let n = h % pool.reduce((a, [, w]) => a + w, 0);
+  for (const [k, w] of pool) { if ((n -= w) < 0) { const [kind, name] = k.split(':'); return name ? { k: kind, n: name } : { k: kind }; } }
+  return { k: 'lid' };
+}
+// The one-line story of how a find got there. `h` picks between a few wordings so it does not read the same every time.
+export function driftBlame(g, h = 0) {
+  const b = g?.by, n = b?.n ?? 'A fish', pick = (a) => a[(h + (g?.id?.length ?? 0)) % a.length];
+  switch (b?.k) {
+    case 'oct': return pick([`${n} dragged it out of its den.`, `${n} brought it back from behind the filter.`, `${n} was hiding it under an arm.`]);
+    case 'fish': return pick([`${n} nosed it loose from the plants.`, `${n} dug it out of the sand.`, `${n} pushed it up from the gravel.`]);
+    case 'filter': return pick(['The filter coughed it up.', 'The filter bubbled it loose.']);
+    case 'stone': return 'The air stone knocked it loose.';
+    case 'rock': return 'It tumbled out from behind a rock.';
+    default: return pick(['It dropped in through the lid.', 'It slipped in from above.']);
+  }
+}
 function makeDrift(t, now) {
   const seq = (t.seq = (t.seq ?? 10) + 1), r = hash32(Math.floor(now / 6e4) * 31 + seq) % 100;
   const full = skyOf(now).event?.key === 'fullmoon', kind = full ? (r < 55 ? 'pearl' : 'shells') : r < 62 ? 'shells' : r < 85 ? 'treat' : 'pearl', amount = kind === 'shells' ? 1 + (r % 3) : kind === 'pearl' ? 4 : 0;
-  const h = hash32(seq * 77 + 5); return { id: 'g' + seq, kind, amount, x: +(-3.4 + (h % 68) / 10).toFixed(2), z: +(0.4 + ((h >> 8) % 26) / 10).toFixed(2) };
+  const h = hash32(seq * 77 + 5); return { id: 'g' + seq, kind, amount, by: culprit(t, h), x: +(-3.4 + (h % 68) / 10).toFixed(2), z: +(0.4 + ((h >> 8) % 26) / 10).toFixed(2) };
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
@@ -595,7 +615,7 @@ export function nextUp(t, now = Date.now()) {
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`]);
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, 'An egg hatches']);
   for (const f of t.fish) { const n = nextStage(f, now); if (n) c.push([n.ms, `${f.name} grows up`]); }
-  if (t.drift == null && t.driftAt > now) c.push([t.driftAt - now, 'Something washes in on the tide']);
+  if (t.drift == null && t.driftAt > now) c.push([t.driftAt - now, 'Something turns up in the tank']);
   if (!t.visitor && t.visitAt > now && (t.flags.tut ?? 0) >= 5) c.push([t.visitAt - now, 'A rare visitor may drop by']);
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
@@ -692,9 +712,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     case 'collect': {
       const g = t.drift; if (!g || g.id !== a.id) return ok({ applied: false, delta: 0 });
       t.drift = null; t.driftAt = now + 6 * 3600e3;
-      if (g.kind === 'treat') { for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); events.push({ activity: { type: 'gift', text: `${name} found fish treats washed in.` }, toast: 'Fish treats! Everyone feels happier.' }); return ok({ applied: true, delta: 0, kind: 'treat' }); }
-      t.shells += g.amount; if (g.kind === 'pearl') events.push({ journal: `${name} found a pearl washed in.`, toast: `A pearl! +${g.amount} shells` });
-      else events.push({ toast: `Something washed in: +${g.amount} shells` });
+      if (g.kind === 'treat') { for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); events.push({ activity: { type: 'gift', text: `${name} found fish treats. ${driftBlame(g)}` }, toast: 'Fish treats! Everyone feels happier.' }); return ok({ applied: true, delta: 0, kind: 'treat' }); }
+      t.shells += g.amount; if (g.kind === 'pearl') events.push({ journal: `${name} found a pearl. ${driftBlame(g)}`, toast: `A pearl! +${g.amount} shells` });
+      else events.push({ toast: `${driftBlame(g)} +${g.amount} shells` });
       levelCheck(t, now, events); return ok({ applied: true, delta: g.amount, kind: g.kind });
     }
     case 'pet': {

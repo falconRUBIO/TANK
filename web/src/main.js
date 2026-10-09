@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -223,7 +223,7 @@ async function renameFish(f) {
   const r = await game.dispatch({ t: 'nameFish', id: f.fid, name: nm }); if (!r.ok) fail(r); else showCard(f);
 }
 
-// ── washed-in gift: a little bobbing find that never expires; tap it to pick it up ──
+// ── a find in the tank (brought by something living there, or dropped in): a little bobbing find that never expires; tap it to pick it up ──
 const driftTex = {};
 function driftTexture(kind) {
   if (driftTex[kind]) return driftTex[kind];
@@ -552,7 +552,7 @@ async function welcomeBack() {
   const mine = game.you?.userId, rank = (t) => (/hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
   const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
-  if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle washed in for you.'); else if (s.drift) lines.push('Something washed in. Tap it in the tank.');
+  if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);
   if (!lines.length) return;

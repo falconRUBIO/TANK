@@ -21,7 +21,7 @@ ok('growth countdown reads in hours then days', () => { const f = { born: 0 }; a
 ok('a new fish is ordered, takes its delivery time, then arrives and fills a seat', () => { const t = R.newWorld(0); t.shells = 50; const r = R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'Gus' }, { now: 1000 });
   assert.ok(r.ok && t.fish.length === 1 && t.orders.length === 1 && R.pending(t) === 1); const ev = R.advance(t, 1000 + 11 * 60e3); assert.equal(t.fish.length, 2); assert.equal(t.orders.length, 0); assert.ok(ev.some((e) => e.arrival?.length === 1)); assert.ok(t.seen.fish.includes('goldfish')); });
 ok('ordered fish count against capacity', () => { const t = R.newWorld(0); t.shells = 500; t.level = 1; let last; for (let i = 0; i < 9; i++) last = R.applyAction(t, { t: 'buyFish', species: 'goldfish' }, { now: 1000 + i }); assert.equal(last.reason, 'TANK_FULL'); });
-ok('something washes in, anyone can collect it once, and the next one waits', () => { const t = R.newWorld(0); R.advance(t, 30 * 60e3); assert.ok(t.drift); const g = t.drift, s0 = t.shells;
+ok('something turns up in the tank, anyone can collect it once, and the next one waits', () => { const t = R.newWorld(0); R.advance(t, 30 * 60e3); assert.ok(t.drift); const g = t.drift, s0 = t.shells;
   const r = R.applyAction(t, { t: 'collect', id: g.id }, { now: 31 * 60e3 }); assert.ok(r.ok && r.applied); assert.ok(g.kind === 'treat' || t.shells > s0); assert.equal(t.drift, null);
   assert.equal(R.applyAction(t, { t: 'collect', id: g.id }, { now: 32 * 60e3 }).applied, false); R.advance(t, 3 * 3600e3); assert.equal(t.drift, null); R.advance(t, 7 * 3600e3); assert.ok(t.drift); });
 ok('gifts never pile up: one waits at a time', () => { const t = R.newWorld(0); R.advance(t, 30 * 60e3); const id = t.drift.id; R.advance(t, 30 * 3600e3); assert.equal(t.drift.id, id); });
@@ -374,10 +374,15 @@ ok('one request a day: a fish\'s own wish or the daily wish, never both, and eit
   const nx = mkw('want'); R.advance(nx, 10 * H + 5); R.advance(nx, 10 * H + D); assert.ok(nx.req.day === 1, 'a new day decides again');
   assert.equal(R.WANT_REWARD, 4);
 });
-ok('the first session ends with real promises, and a full moon brings pearls on the tide', () => {
+ok('a find is blamed on something that lives in the tank, never the sea; an octopus gets the blame when there is one', () => {
+  const t = R.newWorld(0); R.advance(t, 30 * 60e3); assert.ok(t.drift?.by?.k); const line = R.driftBlame(t.drift); assert.ok(line.length > 8); assert.ok(!/wash|tide|ocean|sea/i.test(line), line);
+  const seen = new Set(); for (let i = 0; i < 80; i++) { const w = R.newWorld(0); w.fish.push({ id: 'o', species: 'octopus', name: 'Mimi', dead: false }); w.seq = 20 + i; R.advance(w, 30 * 60e3 + i * 7e6); if (w.drift) seen.add(w.drift.by.k); }
+  assert.ok(seen.has('oct') && seen.size >= 3, [...seen].join());
+});
+ok('the first session ends with real promises, and a full moon brings pearls in the tank', () => {
   const t = R.newWorld(0, 1); R.norm(t, 0); t.flags.tut = 4; t.fish = [R.ensureFish({ id: 'f0', name: 'Pip', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Calm'] })]; t.simTs = 0;
   R.applyAction(t, { t: 'tut', step: 5 }, { now: 1000, name: 'A', uid: 'u1', solo: true }); assert.equal(t.flags.promised, 1000); assert.ok(t.driftAt > 1000 + 3 * 3600e3 && t.driftAt < 1000 + 9 * 3600e3, 'a gift is on its way within hours');
-  const lines = R.firstPromises(t, 2000); assert.ok(lines.some((x) => /Pip grows up/.test(x)) && lines.some((x) => /wash in/.test(x)) && lines.some((x) => /request/.test(x)), lines.join(' | '));
+  const lines = R.firstPromises(t, 2000); assert.ok(lines.some((x) => /Pip grows up/.test(x)) && lines.some((x) => /turn up in the tank/.test(x)) && lines.some((x) => /request/.test(x)), lines.join(' | '));
   const again = t.driftAt; R.applyAction(t, { t: 'tut', step: 5 }, { now: 9e6, name: 'A', uid: 'u1', solo: true }); assert.equal(t.driftAt, again, 'promised only once');
   const full = Date.UTC(2024, 0, 25, 18), dark = Date.UTC(2024, 0, 11, 12); assert.equal(S.skyOf(full).event?.key, 'fullmoon'); assert.equal(S.skyOf(dark).event?.key, 'darkmoon'); assert.ok(S.moonPhase(full) > 0.47 && S.moonPhase(full) < 0.53);
   assert.equal(S.skyOf(full).moon, 'Full moon'); assert.equal(S.skyOf(Date.UTC(2024, 0, 18, 12)).event?.key === 'fullmoon', false);

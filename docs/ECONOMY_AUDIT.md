@@ -24,7 +24,7 @@ Everything below is read from the code (`web/src/game/rules.js`) or produced by 
 ### Things that arrive
 | Source | Pays | Pace |
 |---|---|---|
-| Washed-in gift | 62%: 1 to 3 shells, 15%: a 4-shell pearl, 23%: fish treats (no shells); average about 1.8 | one every 6 hours, waits forever, only one at a time |
+| Gift in the tank | 62%: 1 to 3 shells, 15%: a 4-shell pearl, 23%: fish treats (no shells); average about 1.8 | one every 6 hours, waits forever, only one at a time |
 | Rare visitor greeted | +4 | one every 9 to 15 hours, stays 3 hours |
 | Friend's bottle opened | +4 (the sender paid 2) | one per sender per 6 hours |
 | **Daily wish** (shared, optional) | +3 | once a day, never penalised |

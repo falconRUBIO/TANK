@@ -8,7 +8,7 @@ Three friends share one aquarium on a phone. Calm, no ads, no purchases, no stre
    - Feed: tap the water to drop food. +1 shell, only if the fish are actually hungry.
    - Wipe the glass: swipe it clean. +1 shell; every fifth wipe finds a pearl for +3.
    - Change the water: one tap. +2 shells, only when the water is cloudy.
-3. Collect what is waiting: a washed-in gift, a friend's bottle, a rare visitor.
+3. Collect what is waiting: a gift left in the tank, a friend's bottle, a rare visitor.
 4. Spend shells (fish, decorations), arrange the tank, or just watch. Tap a fish to see its card and play with it by dragging a finger along the glass (the fish follows it; five seconds builds a bond).
 
 ## 2. Time passes while you are away (hours)
@@ -17,7 +17,7 @@ Three friends share one aquarium on a phone. Calm, no ads, no purchases, no stre
 | Hunger rises to its cap | about 6 hours |
 | Algae on the glass | about 30 hours |
 | Cloudy water | about 48 hours |
-| Washed-in gift (1 to 3 shells, a 4-shell pearl, or fish treats; waits forever) | every 6 hours |
+| Gift in the tank (1 to 3 shells, a 4-shell pearl, or fish treats; waits forever) | every 6 hours |
 | Ordered fish arrives | 10 min to 4 hours, by species |
 | Rare visitor (Moon Betta, Sun Angelfish, Rose Corydoras; greet for +4 and a book entry) | every 9 to 15 hours, stays 3 hours |
 | Egg (two adults of one species; hatches in 4 hours into a blend of both) | every 16 to 28 hours |
@@ -112,8 +112,8 @@ Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `S
 - **Animals:** seahorse pairs greet each other at a plant now and then (more in the morning), circling and glowing; the octopus's arms close around the jar and climb it; the cardinalfish is a silver, black-barred Banggai-style fish and the mandarin dragonet is long and low with a big sail and blue, teal and orange swirls.
 
 ## 7g. The loop, finished
-- **A promise at the end of the first session.** Finishing the tutorial now ends with a "Coming up" card (the first fish's growth time, a gift on the tide within hours, a rare visitor tomorrow, tomorrow's request), and really schedules the gift and visitor (`firstPromises`, the `tut` action). Shared tanks are then offered one gentle nudge a day.
-- **A sky above the tank** (`web/src/game/sky.js`), from the real date: the moon in its true phase glimmers at the top of the water; a full moon lights the night silver and brings pearls on the tide; a new moon makes the plankton blaze; the night after the post-full-moon week is coral spawning (pink plankton); one day in eight it rains and the curious fish drift up. Nothing is required and nothing is a streak. `?sky=fullmoon|darkmoon|spawn|rain` forces one for testing.
+- **A promise at the end of the first session.** Finishing the tutorial now ends with a "Coming up" card (the first fish's growth time, a gift turning up in the tank within hours, a rare visitor tomorrow, tomorrow's request), and really schedules the gift and visitor (`firstPromises`, the `tut` action). Shared tanks are then offered one gentle nudge a day.
+- **A sky above the tank** (`web/src/game/sky.js`), from the real date: the moon in its true phase glimmers at the top of the water; a full moon lights the night silver and brings pearls in the tank; a new moon makes the plankton blaze; the night after the post-full-moon week is coral spawning (pink plankton); one day in eight it rains and the curious fish drift up. Nothing is required and nothing is a streak. `?sky=fullmoon|darkmoon|spawn|rain` forces one for testing.
 - **Reef themes** (`THEMES`): Kelp Forest, Coral Garden, Sunken Ruins, Lantern Cove. Enough matching pieces lift every fish a little, draw that theme's own rare visitor, and pay 3 shells the first time.
 - **Social:** a fish can be bought as a gift for a friend (they become its first caretaker); two caretakers feeding within a minute of each other cheer the fish (once every three hours); when a friend arrives you get a hello and their favourite fish swims to the glass.
 - **Sound:** soft generative music (a slow pentatonic scale that changes with the time of day, with an echo and far-off bubbles), switchable in Settings.
