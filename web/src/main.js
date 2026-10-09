@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -315,8 +315,8 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const f = s.fish[0], nm = await ui.dialog({ title: 'MEET YOUR FIRST FISH', text: 'A little goldfish just moved in. It will be shared by everyone in your tank. What is its name?', input: { value: f.name }, ok: 'This is my fish' });
-        if (nm && nm !== f.name) await game.dispatch({ t: 'nameFish', id: f.id, name: nm });
+        const f = s.fish[0], pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Choose your first fish. It is free, and everyone in the tank will care for it. Then give it a name.', species: FIRST_FISH, name: f.name });
+        const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
         ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0].name} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
@@ -442,8 +442,8 @@ async function welcomeBack() {
 async function firstFishPrompt() {
   const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
   const s = game.state; if (!s || s.flags.firsts?.[me] || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
-  const nm = await ui.dialog({ title: 'YOUR FIRST FISH', text: 'A little goldfish of your own is ready to join the tank. Everyone can care for it, but you brought it in. What is its name?', input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0], placeholder: 'Name' }, ok: 'Bring it in' });
-  if (!nm) return; const r = await game.dispatch({ t: 'firstFish', name: nm, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
+  const pk = await ui.pickFish({ title: 'YOUR FIRST FISH', text: 'Choose a free fish of your own to bring into the tank. Everyone can care for it, but you brought it in. Then name it.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+  const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
 }
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];

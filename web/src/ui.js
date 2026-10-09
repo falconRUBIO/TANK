@@ -229,6 +229,16 @@ export function initUI({ game, social, cb }) {
       const no = $('mno'); if (no) no.onclick = () => done(null);
     });
   }
+  // The opening of a tank: choose the free first fish, then name it, all in one card. Goldfish is preselected so it can be accepted straight away.
+  function pickFish({ title, text, species, name }) {
+    return new Promise((res) => {
+      let cur = species[0]; modal.innerHTML = `<div class="box pick"><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="pickrow">${species.map((k) => `<button class="pk ${k === cur ? 'on' : ''}" data-k="${k}"><img alt="" src="${fishThumb(k)}"><b>${esc(SPECIES_DEF[k].label)}</b><small>${esc(SPECIES_DEF[k].blurb)}</small></button>`).join('')}</div><input id="mi" maxlength="14" value="${esc(name)}" placeholder="Name your fish"><div id="me" class="err"></div><button class="big" id="mok">Bring it home</button></div>`;
+      modal.classList.add('on'); const inp = $('mi');
+      modal.querySelectorAll('.pk').forEach((b) => { b.onclick = () => { cur = b.dataset.k; modal.querySelectorAll('.pk').forEach((x) => x.classList.toggle('on', x === b)); sfx('tap'); }; });
+      $('mok').onclick = () => { const v = inp.value.trim(); if (!v) { $('me').textContent = 'Please type a name.'; return; } modal.classList.remove('on'); res({ species: cur, name: v }); };
+      inp.onkeydown = (e) => { if (e.key === 'Enter') $('mok').click(); };
+    });
+  }
   // coach card for the tutorial
   const coach = $('coach');
   function showCoach({ title, text, button = null, onButton = null, skip = null }) {
@@ -239,5 +249,5 @@ export function initUI({ game, social, cb }) {
   const flag = (tabName, on) => document.querySelectorAll('nav [data-tab]').forEach((n) => { if (n.dataset.tab === tabName) n.classList.toggle('dot2', on && tab !== tabName); });
   const pulse = (tabName) => document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('pulse', n.dataset.tab === tabName));
 
-  return { toast, open, showBook: () => { book = true; open('journal'); }, flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { pickFish, toast, open, showBook: () => { book = true; open('journal'); }, flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

@@ -2,7 +2,7 @@
 // swaying plants, gravel and a stone lantern. Plants share one time uniform for vertex sway.
 import * as THREE from 'three';
 import { mulberry32, fbm, mix, hex } from '../color.js';
-import { stoneTex, woodTex, gravelTex } from './textures.js';
+import { stoneTex, woodTex, gravelTex, floorTex } from './textures.js';
 import { Solids } from './decor.js';
 
 import { swayTime } from './voxshade.js';
@@ -155,38 +155,46 @@ export function buildEnvironment() {
   far.count = fc; far.frustumCulled = false; root.add(far);
 
   let floorMesh = null, pebblesMesh = null;
-  // ── gravel bed ──
-  {
-    const g = new THREE.PlaneGeometry(30, 30, 64, 64); g.rotateX(-Math.PI / 2);
-    const p = g.attributes.position, cols = [];
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), z = p.getZ(i);
-      const h = fbm(x * 0.35, z * 0.35, 8) * 0.34 + Math.max(0, (-z - 3) * 0.12) + Math.max(0, (Math.abs(x) - 6) * 0.1);
-      p.setY(i, h - 0.1);
-      const k = 0.78 + fbm(x * 1.2, z * 1.2, 3) * 0.4; cols.push(k, k, k);
+  // ── the bottom: each style has its own shape, texture and scatter, not just a colour ──
+  const BOTTOM = {
+    sand:   { amp: 0.16, ripple: 0.05, rf: 2.6, n: 70, geo: 'ico', size: [0.03, 0.08], cols: [[236, 220, 176], [214, 190, 140], [248, 238, 210]] },
+    pearl:  { amp: 0.05, ripple: 0, rf: 0, n: 720, geo: 'sphere', size: [0.09, 0.2], cols: [[255, 252, 250], [255, 214, 230], [214, 208, 255], [236, 244, 255]] },
+    gravel: { amp: 0.34, ripple: 0, rf: 0, n: 420, geo: 'ico', size: [0.05, 0.25], cols: [[112, 104, 94], [232, 214, 176], [156, 120, 84], [128, 138, 134]] },
+    black:  { amp: 0.22, ripple: 0.09, rf: 3.4, n: 150, geo: 'ico', size: [0.06, 0.3], cols: [[30, 28, 38], [48, 46, 60], [22, 22, 30], [150, 156, 214]] },
+    coral:  { amp: 0.28, ripple: 0, rf: 0, n: 320, geo: 'cone', size: [0.12, 0.3], cols: [[255, 150, 170], [255, 196, 170], [255, 232, 224], [232, 120, 150]] },
+  };
+  const bottomH = (sp, x, z) => fbm(x * 0.35, z * 0.35, 8) * sp.amp + (sp.ripple ? Math.sin(x * sp.rf + fbm(x * 0.3, z * 0.5, 2) * 4 + z * 0.8) * sp.ripple : 0) + Math.max(0, (-z - 3) * 0.12) + Math.max(0, (Math.abs(x) - 6) * 0.1);
+  const GEO = { ico: new THREE.IcosahedronGeometry(0.5, 0), sphere: new THREE.SphereGeometry(0.5, 8, 6), cone: new THREE.ConeGeometry(0.5, 1, 5) };
+  const bedGeo = new THREE.PlaneGeometry(30, 30, 64, 64); bedGeo.rotateX(-Math.PI / 2); bedGeo.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(bedGeo.attributes.position.count * 3), 3));
+  const fl = new THREE.Mesh(bedGeo, patch(new THREE.MeshStandardMaterial({ map: floorTex('sand'), vertexColors: true, roughness: 1 })));
+  fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl); floorMesh = fl;
+  const pebbles = new THREE.InstancedMesh(GEO.ico, patch(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.9 })), 720);
+  pebblesMesh = pebbles; pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
+  let bottomKey = null;
+  const buildBottom = (key) => {
+    const sp = BOTTOM[key] ?? BOTTOM.sand; if (bottomKey === key) return; bottomKey = key;
+    const p = bedGeo.attributes.position, col = bedGeo.attributes.color;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, bottomH(sp, x, z) - 0.1); const k = 0.8 + fbm(x * 1.2, z * 1.2, 3) * 0.4; col.setXYZ(i, k, k, k); }
+    p.needsUpdate = true; col.needsUpdate = true; bedGeo.computeVertexNormals(); floorMesh.material.map = floorTex(key); floorMesh.material.needsUpdate = true;
+    const r = mulberry32(key.length * 13 + 5); pebbles.geometry = GEO[sp.geo]; pebbles.count = sp.n;
+    for (let i = 0; i < sp.n; i++) {
+      const x = (r() - 0.5) * 12, z = -4 + r() * 6.4, sc = sp.size[0] + r() * r() * (sp.size[1] - sp.size[0]), tall = sp.geo === 'cone' ? 2.4 + r() * 1.6 : 1;
+      m4.compose(v.set(x, 0.05 + bottomH(sp, x, z + 2.5) - 0.1 + sc * 0.2, z), q.setFromEuler(sp.geo === 'cone' ? e.set((r() - 0.5) * 0.5, r() * 6, (r() - 0.5) * 0.5) : e.set(r() * 3, r() * 3, r() * 3)), sp.geo === 'cone' ? s.set(sc, sc * tall, sc) : s.set(sc * 1.4, sc, sc * 1.2)); pebbles.setMatrixAt(i, m4);
+      pebbles.setColorAt(i, C(...sp.cols[(r() * sp.cols.length) | 0]));
     }
-    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); g.computeVertexNormals();
-    const fl = new THREE.Mesh(g, patch(new THREE.MeshStandardMaterial({ map: gravelTex(), vertexColors: true, roughness: 1 })));
-    fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl); floorMesh = fl;
-    const pebbles = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5, 0), patch(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.9 })), 420);
-    for (let i = 0; i < 420; i++) {
-      const x = (rng() - 0.5) * 12, z = -4 + rng() * 6.4, sc = 0.05 + rng() * rng() * 0.2;
-      m4.compose(v.set(x, 0.05 + fbm(x * 0.35, (z + 2.5) * 0.35, 8) * 0.34 - 0.1 + sc * 0.2, z), q.setFromEuler(e.set(rng() * 3, rng() * 3, rng() * 3)), s.set(sc * 1.4, sc, sc * 1.2)); pebbles.setMatrixAt(i, m4);
-      const k = rng(); pebbles.setColorAt(i, k < 0.3 ? C(112, 104, 94) : k < 0.55 ? C(232, 214, 176) : k < 0.8 ? C(156, 120, 84) : C(128, 138, 134));
-    }
-    pebblesMesh = pebbles; pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
-  }
+    pebbles.instanceMatrix.needsUpdate = true; if (pebbles.instanceColor) pebbles.instanceColor.needsUpdate = true;
+  };
+  buildBottom('sand');
 
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
   const backdrop = buildBackdrop(); root.add(backdrop);
 
-  const FLOOR = { sand: [0xffffff, 0xffffff], pearl: [0xffdde8, 0xfff0f6], gravel: [0x8aa2c8, 0xb8c4d8], black: [0x5e5a6c, 0x8a8698], coral: [0xff9fb4, 0xffd0dc] };
   const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0] };
   const WATER = new THREE.Color(0x8fb4c8); let backKey = 'candy', backLight = 1;
   const paintBack = () => (BACK[backKey] ?? BACK.candy).forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(WATER, 0.45 + i * 0.1).multiplyScalar(backLight); });
   const setStyle = (floor = 'sand', back = 'candy') => {
-    const f = FLOOR[floor] ?? FLOOR.sand; floorMesh?.material.color.setHex(f[0]); pebblesMesh?.material.color.setHex(f[1]);
+    buildBottom(BOTTOM[floor] ? floor : 'sand');
     backKey = back; paintBack();
   };
   const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };

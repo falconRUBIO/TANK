@@ -62,6 +62,8 @@ export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= nee
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
+// The first fish is free and chosen: one of these, named by the player who brings it in.
+export const FIRST_FISH = ['goldfish', 'guppy', 'neon', 'cory'];
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
 export const FLOORS = { sand: 'Sand', pearl: 'Pearl', gravel: 'Gravel', black: 'Black sand', coral: 'Pink coral' };
 export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', mint: 'Mint' };
@@ -557,8 +559,16 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'firstFish': {                                            // every caretaker gets a free first fish of their own
       if (members && !members.some((m) => m.id === uid)) return fail('FORBIDDEN');
       t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');
-      const f = makeFish(t, { species: 'goldfish', name: cleanName(a.name), seed: Math.abs(Math.floor(num(a.seed) || now)) % 100000, owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
+      const f = makeFish(t, { species: FIRST_FISH.includes(a.species) ? a.species : 'goldfish', name: cleanName(a.name), seed: Math.abs(Math.floor(num(a.seed) || now)) % 100000, owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their first fish.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} added their first fish.` } }); levelCheck(t, now, events); return ok({ id: f.id });
+    }
+    case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
+      if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
+      const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
+      const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
+      Object.assign(f, { species: a.species, seed, name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);
+      t.seen.fish = [a.species]; t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
+      events.push({ journal: `${name} brought in ${f.name}, the first fish.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
     }
     case 'observe': {                                              // a phone that is watching reports what its fish are really doing
       const key = String(a.key ?? ''), f = t.fish.find((x) => x.id === a.fish); let did = false;

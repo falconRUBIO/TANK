@@ -82,3 +82,17 @@ export class CausticMap {
     this.g.putImageData(this.img, 0, 0); this.tex.needsUpdate = true;
   }
 }
+
+// One floor texture per bottom style, so they differ in pattern as well as colour (64px pixel-art like the rest).
+const floorCache = {};
+export function floorTex(style) {
+  if (floorCache[style]) return floorCache[style];
+  const spec = {
+    sand: { base: [[232, 210, 160], [206, 180, 124]], rep: [7, 4], draw: (g, S, r) => { for (let y = 0; y < S; y += 5) { g.fillStyle = 'rgba(150,118,70,.22)'; for (let x = 0; x < S; x++) g.fillRect(x, y + Math.round(Math.sin(x * 0.35 + y) * 1.2), 1, 1); } for (let i = 0; i < 60; i++) { g.fillStyle = 'rgba(255,248,224,.55)'; g.fillRect((r() * S) | 0, (r() * S) | 0, 1, 1); } } },
+    pearl: { base: [[214, 202, 232], [186, 174, 214]], rep: [6, 4], draw: (g, S, r) => { for (let i = 0; i < 90; i++) { const x = (r() * S) | 0, y = (r() * S) | 0, k = r(); g.fillStyle = k < 0.4 ? 'rgba(255,255,255,.7)' : k < 0.7 ? 'rgba(255,200,222,.55)' : 'rgba(200,196,255,.5)'; g.fillRect(x, y, 2, 2); } } },
+    gravel: { base: [[170, 164, 156], [124, 118, 110]], rep: [8, 5], draw: (g, S, r) => { for (let i = 0; i < 300; i++) { const x = (r() * S) | 0, y = (r() * S) | 0, k = r(); g.fillStyle = k < 0.3 ? 'rgb(86,82,78)' : k < 0.55 ? 'rgb(206,198,184)' : k < 0.8 ? 'rgb(140,112,86)' : 'rgb(112,120,118)'; g.fillRect(x, y, 2, 2); g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(x, y, 1, 1); } } },
+    black: { base: [[58, 56, 66], [32, 30, 40]], rep: [8, 5], draw: (g, S, r) => { for (let y = 2; y < S; y += 6) { g.fillStyle = 'rgba(120,116,140,.25)'; for (let x = 0; x < S; x++) g.fillRect(x, y + Math.round(Math.sin(x * 0.5 + y * 2) * 1.5), 1, 1); } for (let i = 0; i < 40; i++) { g.fillStyle = 'rgba(210,214,255,.85)'; g.fillRect((r() * S) | 0, (r() * S) | 0, 1, 1); } } },
+    coral: { base: [[226, 120, 148], [186, 86, 118]], rep: [6, 4], draw: (g, S, r) => { for (let i = 0; i < 70; i++) { const x = (r() * S) | 0, y = (r() * S) | 0; g.fillStyle = 'rgba(120,50,80,.45)'; g.fillRect(x, y, 2, 2); g.fillStyle = 'rgba(255,236,226,.6)'; g.fillRect(x - 1, y - 1, 1, 1); } for (let i = 0; i < 30; i++) { g.fillStyle = 'rgba(255,214,150,.6)'; g.fillRect((r() * S) | 0, (r() * S) | 0, 3, 1); } } },
+  }[style] ?? null; if (!spec) return gravelTex();
+  return (floorCache[style] = makeTex(64, (g, S) => { const r = mulberry32(style.length * 7 + 5); for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) px(g, x, y, mix(spec.base[0], spec.base[1], fbm(x * 0.1, y * 0.1, 4))); spec.draw(g, S, r); }, { repeat: spec.rep }));
+}
