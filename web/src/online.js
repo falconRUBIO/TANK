@@ -4,9 +4,14 @@ import { drawAvatar, SKINS, HAIRS, HATS } from './ui.js';
 const KEY = 'ourtank.session';
 const qs = new URLSearchParams(location.search);
 export const base = qs.get('api') || (location.protocol.startsWith('http') ? location.origin : '');
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
-const store = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* storage unavailable */ } };
-let session = load();
+// The sign-in is kept in two places (storage and a long-lived cookie) so losing one does not lose the tank.
+const ck = () => { try { const m = document.cookie.match(/(?:^|; )ourtank_s=([^;]+)/); return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch { return null; } };
+const load = () => { let a = null; try { a = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { /* none */ } return a?.token ? a : ck(); };
+const store = (o) => {
+  try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* storage unavailable */ }
+  try { document.cookie = 'ourtank_s=' + encodeURIComponent(JSON.stringify({ token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named })) + '; max-age=31536000; path=/; samesite=lax'; } catch { /* cookies unavailable */ }
+};
+let session = load(); if (session?.token) store(session);
 
 export async function api(path, body, method = body ? 'POST' : 'GET') {
   const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', ...(session?.token ? { authorization: 'Bearer ' + session.token } : {}) }, body: body ? JSON.stringify(body) : undefined });
@@ -90,7 +95,7 @@ export function runOnboarding() {
           if (kind === 'restore') { const t = await api('/api/import', backup); codeScreen(t); }
           else if (kind === 'create') { const t = await api('/api/tanks', { name: s.querySelector('#tn').value }); codeScreen(t); }
           else { const r = await api('/api/join', { code: joinCode }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
-        } catch (e) { if (e.code === 'FULL') fullScreen(); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
+        } catch (e) { if (e.code === 'FULL') fullScreen(joinCode, lastPreview); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
       };
     };
     const recoverScreen = (err = '') => {
@@ -112,7 +117,20 @@ export function runOnboarding() {
       s.querySelector('#sh').onclick = async () => { const data = { title: 'OUR TANK', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
       s.querySelector('#en').onclick = async () => { const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank }); };
     };
-    const fullScreen = () => { const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has three caretakers.</p><button class="big" id="bk">BACK</button>`); s.querySelector('#bk').onclick = welcome; };
+    let lastPreview = [];
+    const fullScreen = (code, members = []) => {
+      const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has three caretakers.${code ? ' Are you one of them?' : ''}</p>${code ? '<button class="big" id="me">I\'M ALREADY IN THIS TANK</button>' : ''}<button class="big alt" id="bk">BACK</button>`);
+      s.querySelector('#bk').onclick = welcome; if (code) s.querySelector('#me').onclick = () => claimScreen(code, members);
+    };
+    // Lost the saved sign-in (crash, reinstall)? Pick which caretaker you are and take the seat back with the tank code.
+    const claimScreen = (code, members, err = '') => {
+      const s = screen(`<h2>WHO ARE YOU?</h2><p>Pick yourself to get back into the tank.</p><div class="claim"></div><div class="err" id="er">${err}</div><button class="lnk" id="rk">Use a recovery key instead</button><button class="lnk" id="bk">Back</button>`);
+      const host = s.querySelector('.claim');
+      members.forEach((m) => { const b = document.createElement('button'); b.className = 'big alt'; const c = document.createElement('canvas'); drawAvatar(c, m.avatar); b.append(c, Object.assign(document.createElement('span'), { textContent: ' ' + m.name }));
+        b.onclick = async () => { try { const r = await api('/api/claim', { code, slot: m.slot }); session = { token: r.token, userId: r.userId }; store(session); const me = await api('/api/me'); try { session.recoveryKey = (await api('/api/recovery', {})).key; store(session); } catch { /* optional */ } done({ mode: 'net', user: me.user, tank: me.tank }); } catch (e) { claimScreen(code, members, e.message); } };
+        host.append(b); });
+      s.querySelector('#rk').onclick = () => recoverScreen(); s.querySelector('#bk').onclick = welcome;
+    };
     const joinScreen = (err, prefill = '') => {
       const s = screen(`<h2>JOIN YOUR FRIENDS</h2><p>Enter your six-character code.</p><input id="cd" class="codein" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="······" value="${prefill}">
         <div class="err" id="er">${err === 'notfound' ? 'TANK NOT FOUND — Check the code and try again.' : ''}</div><div id="pv"></div><button class="big" id="go" disabled>FIND TANK</button><button class="lnk" id="bk">Back</button>`);
@@ -124,10 +142,11 @@ export function runOnboarding() {
         try {
           await ensureUser('Guest');
           const p = await api('/api/join/preview', { code: inp.value });
-          if (p.full) return fullScreen();
+          lastPreview = p.members; if (p.full) return fullScreen(inp.value, p.members);
           const pv = s.querySelector('#pv'); pv.innerHTML = `<div class="pvt"><b>${p.name.replace(/[<>&]/g, '')}</b><div class="mem"></div></div>`;
           p.members.forEach((m) => { const c = document.createElement('canvas'); drawAvatar(c, m.avatar); c.title = m.name; pv.querySelector('.mem').append(c, Object.assign(document.createElement('span'), { textContent: m.name })); });
           go.textContent = 'JOIN THIS TANK'; go.onclick = () => profile('join', inp.value);
+          if (!pv.querySelector('.again')) pv.append(Object.assign(document.createElement('button'), { className: 'lnk again', textContent: "I'm already in this tank", onclick: () => claimScreen(inp.value, p.members) }));
         } catch (e) { er.textContent = e.code === 'NOT_FOUND' ? 'TANK NOT FOUND — Check the code and try again.' : e.message; }
       };
       if (prefill.length === 6) go.click();

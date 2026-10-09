@@ -392,6 +392,13 @@ await t('gifts and fed-together reach the server: a fish bought for a friend bel
   setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); await ackOf(wsX, { t: 'feed', x: 0, idem: 'tg-1' }); setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); const y = await ackOf(wsY, { t: 'feed', x: 1, idem: 'tg-2' });
   assert.ok((y.events ?? []).some((e) => e.together) || getW(tank.id).flags.togetherAt, 'fed together'); const at = getW(tank.id).flags.togetherAt; setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); await ackOf(wsX, { t: 'feed', x: 0, idem: 'tg-3' }); assert.equal(getW(tank.id).flags.togetherAt, at, 'once per few hours');
 });
+await t('a phone that lost its sign-in takes its seat back with the tank code', async () => {
+  const a = await mkUser('Lost'), tk = (await call('/api/tanks', { name: 'Seat' }, a.token)).body;
+  const pv = (await call('/api/join/preview', { code: tk.code }, a.token)).body; const slot = pv.members[0].slot;
+  const r = await call('/api/claim', { code: tk.code.toLowerCase(), slot }); assert.equal(r.status, 200); assert.equal(r.body.userId, a.userId);
+  assert.equal((await call('/api/me', null, a.token)).status, 401); const me = await call('/api/me', null, r.body.token); assert.equal(me.body.tank.id, tk.id);
+  assert.equal((await call('/api/claim', { code: tk.code, slot: 2 })).status, 404); assert.equal((await call('/api/claim', { code: 'ZZZZZZ', slot })).status, 404);
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

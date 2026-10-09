@@ -114,6 +114,18 @@ export function previewJoin(db, code) {
   const m = members(db, t.id);
   return { name: t.name, members: m.map(({ name, avatar, slot }) => ({ name, avatar, slot })), full: m.length >= MAX_MEMBERS };
 }
+// A phone that lost its saved sign-in (crash, reinstall, cleared site data) can take its seat back with the tank code alone.
+// Whoever holds the code could already ask for an empty seat, so this adds no new trust; the old token is retired.
+export function claimSeat(db, code, slot, isOnline = () => false) {
+  const t = db.prepare('SELECT id FROM tanks WHERE code=?').get(normalizeCode(code));
+  if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);
+  const m = db.prepare('SELECT user_id FROM members WHERE tank_id=? AND slot=?').get(t.id, Number(slot));
+  if (!m) throw new GameError('NO_SEAT', 'That seat is empty.', 404);
+  if (isOnline(t.id, m.user_id)) throw new GameError('SEAT_ACTIVE', 'That caretaker is in the tank right now. Ask them, or use a recovery key.', 409);
+  const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), m.user_id);
+  const u = db.prepare('SELECT name FROM users WHERE id=?').get(m.user_id); addJournal(db, t.id, `${u.name} signed back in.`, m.user_id);
+  return { userId: m.user_id, token };
+}
 export function joinTank(db, user, code) {
   const t = db.prepare('SELECT id,name FROM tanks WHERE code=?').get(normalizeCode(code));
   if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);

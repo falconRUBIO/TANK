@@ -84,6 +84,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!lim.hit('r:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
         return json(res, 200, L.recover(db, (await readBody(req)).key));
       }
+      if (req.method === 'POST' && p === '/api/claim') {
+        if (!lim.hit('c:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
+        const b = await readBody(req);
+        const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid));
+        const t = L.tankOf(db, r.userId); if (t) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) });
+        return json(res, 200, r);
+      }
       const user = authed(req);
       if (!user) throw new L.GameError('UNAUTHORIZED', 'Sign in required.', 401);
       if (req.method === 'GET' && p === '/api/me') { const t = L.tankOf(db, user.id); return json(res, 200, { user, tank: t ? { id: t.id, name: t.name, code: t.code, slot: t.slot } : null }); }
