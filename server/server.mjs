@@ -205,10 +205,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const { t: type, idem, ...rest } = m;
           if (type === 'observe' && !lim.hit('ob:' + ws.userId, 24, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
           const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an });
-          send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id });
+          send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait });
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
           if (r.ok && !r.dup) {
-            if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0 });
+            if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0, food: r.food ?? 'flakes' });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
             if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`).catch(() => {});

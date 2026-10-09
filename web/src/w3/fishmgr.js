@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
 import { mulberry32 } from '../color.js';
-import { SPECIES_DEF, STAGE_SCALE, AIL_TIRED, AIL_WARN, stageOf, needsOf } from '../game/rules.js';
+import { SPECIES_DEF, STAGE_SCALE, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
@@ -30,6 +30,7 @@ export class Fishes {
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200);
     this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.castShadow = true; scene.add(this.mesh);
     this.cols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
+    this.foodCols = { pellets: [0x8a5a2a, 0x9c6a34, 0x7a4c24, 0xa87a44].map((c) => new THREE.Color(c)), treats: [0xff6fa8, 0xff9ac0, 0xe8508a, 0xffc2d8].map((c) => new THREE.Color(c)) };
     this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot; this.onSprite = null; this.onSpriteGone = null; this.clock = 0;
     SPECIES.neon.school = true; SPECIES.danio.school = true;
     this.bm = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.7, depthWrite: false }), 160);
@@ -37,7 +38,7 @@ export class Fishes {
   }
   profileOf(f, st) {
     const tr = f.traits ?? [], n = needsOf(f, st);
-    return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: SPOTS[tr[0]] ?? 'Open water', food: 'Flakes', needs: [n.fed, n.happy, n.energy, n.health], mood: n.mood, vigor: n.vigor };
+    return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: SPOTS[tr[0]] ?? 'Open water', food: FOODS[favFoodOf(f)].label, needs: [n.fed, n.happy, n.energy, n.health], mood: n.mood, vigor: n.vigor };
   }
   // make the scene match the game's fish list
   sync(state, { arrivals = [] } = {}) {
@@ -158,6 +159,7 @@ export class Fishes {
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
       const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(13.5, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
       f.idle = 0;
+      if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
       // identity: a fish swims out to the glass for its own caretaker, goes back to its favourite spot, stays near its best friend, and has a corner of the tank it prefers
       if (f.mine && r() < (has('Shy') ? 0.1 : 0.25)) return T(-1.5 + r() * 3, 4 + r() * 6, 2.5 + r() * 0.4, 4);
@@ -189,11 +191,19 @@ export class Fishes {
       if (has('Calm')) f.retarget += 3;
     };
   }
+  // Show a trick: a scripted route through or around a decoration, then back to normal wandering.
+  perform(f, kind, spotId) {
+    const s = (this.spots?.() ?? []).find((x) => x.id === spotId); if (!s || f.dead) return false; const y = 0.9 + s.h * 0.35, z = s.z + 0.15;
+    f.script = kind === 'bubbles'
+      ? [{ x: s.x, y: 1.4, z }, { x: s.x, y: 8, z }, { x: s.x + 0.9, y: 5, z }, { x: s.x - 0.4, y: 8.5, z }, { x: s.x, y: 2, z }]
+      : [{ x: s.x - 2.4, y, z }, { x: s.x, y, z, rt: 1.1 }, { x: s.x + 2.4, y, z }, { x: s.x, y, z, rt: 1.1 }, { x: s.x - 2.4, y: y + 0.6, z }];
+    f.pick(this.rng); return true;
+  }
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
-  drop(x, n = 7) {
+  drop(x, n = 7, kind = 'flakes') {
     for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
-    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, 15 + this.rng() * 0.5, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: this.cols[(this.rng() * 4) | 0] });
+    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, 15 + this.rng() * 0.5, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
   }
   update(dt, t) {
     for (const f of this.flakes) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }

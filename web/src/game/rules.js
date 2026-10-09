@@ -92,6 +92,9 @@ export function needsOf(f, t, now = Date.now()) {
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
 }
+// Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favourite.
+export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 } };
+export const favFoodOf = (f) => ((f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favourite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
 export function favouriteOf(f, t) {
@@ -110,6 +113,7 @@ export const DISCOVERIES = {
   object: { label: 'Investigates objects', traits: ['Curious'], needsDecor: true, line: (f, x) => `${f.name} has started investigating the ${x.decor}.` },
   together: { label: 'Swims with a friend', traits: null, pair: true, line: (f, x) => `${f.name} and ${x.other} have begun swimming together.` },
   bubbles: { label: 'Plays in the bubbles', traits: ['Playful'], needsBubbler: true, line: (f) => `${f.name} has found the bubbles and plays in them.` },
+  food: { label: 'Loves its favourite food', serverOnly: true, line: (f, x) => `${f.name} loves ${x.food}.` },
   routine: { label: 'Has a daily routine', traits: null, line: (f) => `${f.name} has settled into a daily routine.` },
 };
 export const FRIEND_REWARD = 3, AGE_REWARDS = [[14, 5], [30, 8]], FIRST_HATCH_REWARD = 5;
@@ -135,7 +139,7 @@ export const FED_GRACE = 30 * 3600e3;
 export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
 function memorialOf(t, f, now) {
   const ms = [`Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favourite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favourite spot');
-  const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
+  const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); for (const k of f.tricks ?? []) ms.push(`Learned to ${TRICKS[k]?.label ?? k}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
   return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, disc: Object.keys(f.disc ?? {}), rested: null };
 }
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
@@ -266,7 +270,7 @@ export const WANTS = {
   play: { traits: ['Playful', 'Social', 'Curious', 'Brave'], ok: () => true, done: (t, f, g) => g?.type === 'pet' && g.id === f.id, text: (f) => `${f.name} wants to play. Open its card and play with it.`, gift: 'a game' },
   view: { traits: ['Brave'], ok: (t) => t.glass > 0.3, done: (t, f, g) => g?.type === 'glass', text: (f) => `${f.name} wants a clear view of you. Wipe the glass.`, gift: 'a clear view' },
   fresh: { traits: ['Calm', 'Shy'], ok: (t) => t.water < 0.7, done: (t, f, g) => g?.type === 'water', text: (f) => `${f.name} would love fresher water.`, gift: 'fresher water' },
-  meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3, done: (t, f, g) => g?.type === 'feed', text: (f) => `${f.name} is hungry for a proper meal.`, gift: 'a good meal' },
+  meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3 && t.shells >= FOODS.treats.price, done: (t, f, g) => g?.type === 'feed' && g.food === 'treats', text: (f) => `${f.name} wants a treat. Choose Treats when you feed.`, gift: 'a treat' },
 };
 function rollWant(t, now, ev) {
   if (t.want && now - t.want.since > WANT_TTL) { t.want = null; t.wantAt = now + WANT_GAP / 2; }          // it fades quietly
@@ -283,6 +287,16 @@ function checkWant(t, now, ev, grant = null) {
   if (!f || !d) { t.want = null; return; } if (!d.done(t, f, grant)) return;
   t.want = null; t.wantAt = now + WANT_GAP; t.shells += WANT_REWARD; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.wishes = (f.wishes ?? 0) + 1;
   ev.push({ journal: `${f.name} got ${d.gift}, just as it had hoped.`, toast: `${f.name} is delighted. +${WANT_REWARD} shells`, wishDone: f.id });
+}
+
+// ── tricks: a fish that trusts you can be taught to do something with a decoration ──
+export const TRICKS = { gate: { label: 'swim through the gate', types: ['arch', 'torii', 'wood', 'bridge'] }, bubbles: { label: 'ride the bubbles', types: ['bubbler'] } };
+export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND = 3;
+export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x, 0);
+// what this fish can be taught right now: it has to be past the baby stage, trust someone, and the tank needs the decoration
+export function trickOptions(t, f, now = Date.now()) {
+  if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND) return [];
+  return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: t.decor.find((x) => d.types.includes(x.type))?.id ?? null, have: f.skill?.[k] ?? 0, need: TRAIN_NEED })).filter((o) => o.spot);
 }
 
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
@@ -425,13 +439,17 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   switch (a.t) {
     case 'feed': {
+      const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
       t.lastFed = now;                                                // any feeding, paid or not, counts as the fish being looked after
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
-      const pay = t.hunger > 0.25 ? 1 : 0;
-      t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
-      if (pay) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed' }); }
-      events.push({ activity: { type: 'feed', text: `${name} fed the fish.` } });
-      return ok({ applied: true, delta: pay });
+      if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
+      const needed = t.hunger > 0.25, pay = needed && food === 'flakes' ? 1 : 0;
+      t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
+      if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
+      if (food !== 'flakes') for (const f of t.fish) { const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
+      if (needed) checkWant(t, now, events, { type: 'feed', food });
+      events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
+      return ok({ applied: true, delta: pay - price, food });
     }
     case 'water': {
       if (t.water >= 0.7) return ok({ applied: false, delta: 0 });
@@ -524,6 +542,13 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       f.notes = [...(f.notes ?? []), { by: uid, name, text: txt, at: now }].slice(-3);
       events.push({ journal: `${name} left ${f.name} a note: “${txt}”`, activity: { type: 'fish', text: `${name} left a note for ${f.name}.` } }); return ok();
     }
+    case 'train': {                                                 // practise a trick; five good sessions and it is learned for good
+      const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const opt = trickOptions(t, f, now).find((o) => o.key === a.trick); if (!opt) return fail('CANT_TRAIN');
+      if (now - (f.trainAt ?? 0) < TRAIN_GAP) return ok({ applied: false, delta: 0, wait: TRAIN_GAP - (now - f.trainAt) });
+      f.trainAt = now; f.skill = { ...(f.skill ?? {}), [a.trick]: (f.skill?.[a.trick] ?? 0) + 1 }; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.02); progress(t, 'play', events, name);
+      if (f.skill[a.trick] >= TRAIN_NEED) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: TRAIN_NEED }); }
+      return ok({ applied: true, delta: 0, n: f.skill[a.trick] });
+    }
     case 'style': {
       const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';
       if (!FLOORS[fl] || !BACKDROPS[bd]) return fail('BAD_NAME');
@@ -541,7 +566,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const sights = { watch: ['watch'], inspect: ['greet'], together: ['together', ...(f && other && (f.pal === other.id || other.pal === f.id) ? ['friends'] : [])], visit: ['visit'], regular: ['visit', ...(f?.found?.includes('spot') && spotOk ? ['favourite'] : [])], object: ['visit', ...(f && (f.traits ?? []).includes('Curious') && spotOk ? ['investigate'] : [])], hideaway: ['visit'], bubbles: ['bubbles'] }[key] ?? [];
       for (const kind of sights) if (progress(t, kind, events, name, kind === 'greet' ? String(a.fish ?? '') : null)) did = true;
       const d = DISCOVERIES[key];
-      if (d && d.line && f && !(f.stage === 'baby' && now - f.born < 3600e3)) {
+      if (d && d.line && !d.serverOnly && f && !(f.stage === 'baby' && now - f.born < 3600e3)) {
         const tr = f.traits ?? [], decor = a.spot ? t.decor.find((x) => x.id === a.spot) : null, other = d.pair ? t.fish.find((x) => x.id === a.with && x.id !== f.id) : null;
         const okTrait = !d.traits || d.traits.some((x) => tr.includes(x)), okDecor = !d.needsDecor || decor, okPair = !d.pair || other, okBubble = !d.needsBubbler || t.decor.some((x) => x.type === 'bubbler');
         if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other })) did = true;

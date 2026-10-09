@@ -1,12 +1,13 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
+import { Glow } from './w3/fx.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
 import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle } from './online.js';
@@ -19,7 +20,7 @@ window.__game = game;
 
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
-stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker);
+const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
 fishes.hasBubbler = () => !!decor.bubbleSpot();
@@ -56,15 +57,19 @@ function flyShells(n, from = [window.innerWidth / 2, window.innerHeight * 0.55])
 const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.delta > 1 ? 's' : ''}`); flyShells(r.delta); } };
 
 // feeding
-function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; feedbar.classList.add('on'); feedLabel(); }
+let feedFood = 'flakes';
+function foodChips() { document.querySelectorAll('#foods [data-food]').forEach((b) => { const k = b.dataset.food; b.classList.toggle('on', k === feedFood); b.classList.toggle('no', (game.state?.shells ?? 0) < FOODS[k].price); }); }
+document.querySelectorAll('#foods [data-food]').forEach((b) => { b.onclick = () => { const k = b.dataset.food; if ((game.state?.shells ?? 0) < FOODS[k].price) { ui.toast('Not enough shells for that food'); return; } feedFood = k; foodChips(); sfx('tap'); }; });
+function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; feedbar.classList.add('on'); feedLabel(); foodChips(); }
 function endFeed() { feedMode = false; feedbar.classList.remove('on'); }
 function feedLabel() { $('feedleft').textContent = `${3 - feedDrops} drop${3 - feedDrops === 1 ? '' : 's'} left`; }
 $('feeddone').onclick = endFeed;
 async function dropFood(x) {
   if (game.state.hunger < 0.08) { ui.toast('The fish are full for now'); endFeed(); return; }
-  fishes.drop(x); sfx('splash'); haptic(8);
+  if ((game.state.shells ?? 0) < FOODS[feedFood].price) { feedFood = 'flakes'; foodChips(); ui.toast('Back to flakes. Not enough shells.'); }
+  fishes.drop(x, 7, feedFood); sfx('splash'); haptic(8);
   feedDrops++; feedIdle = 0; feedLabel(); if (feedDrops >= 3) endFeed();
-  const r = await game.dispatch({ t: 'feed', x }); if (!r.ok) return fail(r);
+  const r = await game.dispatch({ t: 'feed', x, food: feedFood }); if (!r.ok) return fail(r); foodChips();
   if (r.delta > 0) shellToast(r); tut.onFeed();
 }
 // glass cleaning
@@ -136,6 +141,16 @@ async function adopt(species) {
 }
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+async function trainFish(f, key, spot) {
+  const r = await game.dispatch({ t: 'train', id: f.fid, trick: key }); if (!r.ok) return fail(r);
+  if (!r.applied) { ui.toast(`${f.name} needs a rest. Try again in ${Math.max(1, Math.ceil((r.wait ?? 0) / 60e3))} min.`); return; }
+  setFocus(null); fishes.perform(f, key, spot); sfx('tap'); if (!r.learned) ui.toast(`${f.name} practised: ${r.n} of 5`);
+}
+function showTrick(f, key) { const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; } setFocus(null); fishes.perform(f, key, o.id); }
+function trickBlock(rec) {
+  const learned = (rec.tricks ?? []), opts = trickOptions(game.state, rec), done = learned.length ? `<div class="notes">Tricks: ${learned.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}</div>` : '';
+  return done + learned.map((k) => `<button class="lnk" data-show="${k}">Show: ${TRICKS[k]?.label}</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach: ${o.label} (${o.have}/${o.need})</button>`).join('');
+}
 async function noteFish(f) {
   const txt = await ui.dialog({ title: `NOTE FOR ${f.name.toUpperCase()}`, text: 'Anyone in the tank can read it on the fish card. 40 characters.', input: { value: '' }, ok: 'Leave note', cancel: 'Cancel' }); if (!txt) return;
   const r = await game.dispatch({ t: 'fishNote', id: f.fid, text: txt }); if (!r.ok) fail(r); else { sfx('tap'); showCard(f); }
@@ -273,9 +288,10 @@ function showCard(f) {
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
     <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button><button class="lnk fam" id="fam">Family</button>
-    ${comfortBlock(rec)}<button class="lnk" id="note">Leave a note</button>
+    ${comfortBlock(rec)}${trickBlock(rec)}<button class="lnk" id="note">Leave a note</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); $('fam').onclick = () => showFamily(rec); $('note').onclick = () => noteFish(f);
+  card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -361,7 +377,7 @@ game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('level'); haptic(25); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('arrive'); spotlightFish(id, 3000, 600); flyShells(2, [window.innerWidth / 2, window.innerHeight * 0.4]); } });
-game.on('remoteFeed', (x, by) => { fishes.drop(x); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
+game.on('remoteFeed', (x, by, food) => { fishes.drop(x, 7, food); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
 game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
@@ -403,7 +419,7 @@ function frame(now) {
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
-  stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }
@@ -456,8 +472,9 @@ async function boot() {
   // the light follows the phone's clock and drifts on its own while you play; the picker only exists for ?tod= or ?dev testing
   const phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
   if (qs.get('tod') || qs.has('dev')) document.querySelector('.tod').hidden = false;
-  fishes.setNight((qs.get('tod') ?? phase()) === 'night');
-  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); } }, 30000); }
+  document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { glow.setPhase(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
+  fishes.setNight((qs.get('tod') ?? phase()) === 'night'); glow.setPhase(qs.get('tod') ?? phase());
+  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); glow.setPhase(n); } }, 30000); }
   welcomeBack(); firstFishPrompt(); requestAnimationFrame(frame);
 }
 window.__booted = false;

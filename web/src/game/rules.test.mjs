@@ -108,7 +108,7 @@ ok('discoveries come from real behaviour: right trait, real decoration, once per
   assert.equal(ob({ key: 'bubbles', fish: 'a' }).applied, false, 'no bubbler, no bubble play'); assert.equal(ob({ key: 'glass', fish: 'b' }).applied, true); assert.equal(ob({ key: 'made-up', fish: 'a' }).applied, false);
   assert.equal(ob({ key: 'together', fish: 'a', with: 'b' }).applied, true); assert.equal(ob({ key: 'together', fish: 'a', with: 'a' }).applied, false, 'not with itself');
   assert.ok(t.fish[0].disc.hideaway && t.fish[0].disc['together:b'] && t.fish[1].disc.glass); const r = ob({ key: 'routine', fish: 'a' }); assert.ok(r.events.some((e) => /routine/.test(e.journal ?? '') && e.noticed));
-  assert.equal(Object.keys(R.DISCOVERIES).length, 14);
+  assert.equal(Object.keys(R.DISCOVERIES).length, 15); assert.equal(ob({ key: 'food', fish: 'a' }).applied, false, 'a phone cannot report what only the server can see');
 });
 ok('one shared daily wish: feasible, replaced each day, paid once, never punishing', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: -D, stage: 'baby', traits: ['Calm'] })];
@@ -264,5 +264,24 @@ ok('landmarks are real purchases with levels, and old saves are untouched by the
   assert.ok(R.DECOR_DEF.lighthouse.price === 150 && R.DECOR_DEF.lighthouse.level === 7 && R.DECOR_DEF.spire.price === 250 && R.DECOR_DEF.spire.level === 8);
   const t = quiet(2); t.level = 7; t.shells = 400; assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 250); t.level = 7; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
   const old = R.newWorld(0); delete old.want; delete old.wantAt; R.norm(old, 0); assert.equal(old.want, null); assert.ok(old.wantAt > 0);
+});
+ok('food choice: flakes are free and pay as before, pellets and treats cost shells and cheer fish, favourites are noticed once', () => {
+  const t = quiet(3); t.fish[0].traits = ['Greedy']; t.fish[1].traits = ['Shy']; t.fish[2].traits = ['Brave']; t.fish.forEach((f) => { f.happy = 0.5; }); t.hunger = 0.8; t.shells = 20; t.simTs = 0; t.level = 8; t.wishIdx = 12; t.seen.fish = ['goldfish']; t.flags.collMs = 99;
+  assert.equal(R.favFoodOf(t.fish[0]), 'treats'); assert.equal(R.favFoodOf(t.fish[1]), 'pellets'); assert.equal(R.favFoodOf(t.fish[2]), 'flakes');
+  const fl = R.applyAction(t, { t: 'feed' }, { now: 10, name: 'A', uid: 'u1' }); assert.equal(fl.delta, 1, 'flakes: +1 as always'); assert.equal(t.shells, 21);
+  const pe = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 20, name: 'A', uid: 'u1' }); assert.equal(pe.delta, -2); assert.equal(t.shells, 19); assert.ok(t.fish[1].happy > t.fish[0].happy, 'the pellet lover is happiest');
+  assert.ok(pe.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'noticed'); t.hunger = 0.8; const again = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 30, name: 'A', uid: 'u1' }); assert.ok(!again.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'only once');
+  t.hunger = 0.8; t.shells = 3; const poor = R.applyAction(t, { t: 'feed', food: 'treats' }, { now: 40, name: 'A', uid: 'u1' }); assert.equal(poor.ok, false); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(t.shells, 3, 'nothing taken');
+  const junk = R.applyAction(t, { t: 'feed', food: 'gold' }, { now: 50, name: 'A', uid: 'u1' }); assert.ok(junk.ok, 'unknown food is treated as flakes');
+  const w = quiet(2, { traits: ['Greedy'] }); w.level = 8; w.wishIdx = 12; w.hunger = 0.8; w.shells = 20; w.want = { id: 'w3', fish: 'f0', kind: 'meal', text: '', since: 0 }; R.applyAction(w, { t: 'feed' }, { now: 5, name: 'A', uid: 'u1' }); assert.ok(w.want, 'flakes do not grant a wish for a treat'); w.hunger = 0.8; const g = R.applyAction(w, { t: 'feed', food: 'treats' }, { now: 6, name: 'A', uid: 'u1' }); assert.ok(g.events.some((e) => e.wishDone) && !w.want);
+});
+ok('tricks: need trust, a growing fish and the right decoration; five sessions 20 minutes apart; learned once, paid once', () => {
+  const D = 864e5, M = 60e3, t = quiet(2); t.level = 8; t.wishIdx = 12; t.fish[0].born = -3 * D; t.fish[0].stage = 'adult'; t.simTs = 0; const go = (now, extra = {}) => R.applyAction(t, { t: 'train', id: 'f0', trick: 'gate', ...extra }, { now, name: 'Alex', uid: 'u1' });
+  assert.equal(go(1).reason, 'CANT_TRAIN', 'no trust, no gate'); t.fish[0].bond = { u1: 3 }; assert.equal(go(2).reason, 'CANT_TRAIN', 'no decoration to practise with');
+  t.decor = [{ id: 'g1', type: 'torii', x: 0, z: 1, ry: 0 }]; assert.equal(R.trickOptions(t, t.fish[0], 3 * D).map((o) => o.key).join(), 'gate'); assert.equal(R.trickOptions(t, t.fish[1], 3 * D).length, 0, 'a baby with no bond cannot');
+  const base = 5 * D; let r = go(base); assert.ok(r.applied && r.n === 1); assert.equal(go(base + 5 * M).applied, false, 'too soon'); assert.equal(t.fish[0].skill.gate, 1);
+  for (let i = 1; i < 4; i++) go(base + i * 21 * M); r = go(base + 4 * 21 * M); assert.equal(r.learned, 'gate'); assert.equal(r.delta, R.TRICK_REWARD); assert.deepEqual(t.fish[0].tricks, ['gate']);
+  assert.equal(go(base + 10 * 21 * M).reason, 'CANT_TRAIN', 'already learned'); assert.equal(R.trickOptions(t, t.fish[0], 6 * D).length, 0);
+  t.fish[0].ail = 0; t.createdAt = -20 * D; const m = (() => { t.fish[0].ail = 5 * 86400 + 5; t.fish[0].health = 0.2; t.hunger = 0.85; t.water = 0.45; t.fish.push(R.ensureFish({ id: 'f9', name: 'Z', species: 'goldfish', seed: 3, born: -D, stage: 'adult', traits: ['Calm'] })); t.simTs = 10 * D; R.advance(t, 10 * D + 3600e3); return t.memorial.find((x) => x.id === 'f0'); })(); assert.ok(m && m.milestones.some((x) => /gate/.test(x)), JSON.stringify(m));
 });
 console.log(`All ${n} rule tests passed`);

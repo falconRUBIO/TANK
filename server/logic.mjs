@@ -139,7 +139,7 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

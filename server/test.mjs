@@ -347,6 +347,14 @@ await t('economy integrity: milestones and the daily wish pay once even when car
   assert.equal(buys.filter((m) => m.ok).length, 1, 'exactly one purchase succeeds'); assert.equal(getW(tk.id).shells, 0); assert.equal(getW(tk.id).orders.length, 1);
   wx.close(); wy.close(); wz.close();
 });
+await t('food choice on the server: paid foods cost shells, a poor tank cannot buy them, and everyone sees what was dropped', async () => {
+  const { tk, x, y } = globalThis.regress, wx = await open(x.token), wy = await open(y.token); const w0 = getW(tk.id);
+  setW(tk.id, { shells: 10, hunger: 0.8, simTs: Date.now() - 1000, level: 8, wishIdx: 12, flags: { ...w0.flags, tut: 5, weeks: 99 }, orders: [], visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15 });
+  const a = await ackOf(wx, { t: 'feed', x: 0.5, food: 'pellets', idem: 'fd-1' }); assert.ok(a.ok && a.delta === -2, JSON.stringify(a));
+  const seen = await waitFor(wy, (m) => m.t === 'feed' && m.food === 'pellets'); assert.equal(seen.food, 'pellets');
+  setW(tk.id, { shells: 1, hunger: 0.8, simTs: Date.now() - 500 }); const poor = await ackOf(wx, { t: 'feed', x: 0, food: 'treats', idem: 'fd-2' }); assert.equal(poor.ok, false); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(getW(tk.id).shells, 1);
+  wx.close(); wy.close();
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();

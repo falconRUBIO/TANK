@@ -91,3 +91,24 @@ export class Bubbles {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 }
+
+// Evening and night: slow glowing plankton drift through the tank. Purely ambient; it fades in at dusk and out at dawn.
+export class Glow {
+  constructor(n = 46) {
+    this.n = n; this.level = 0; this.want = 0;
+    this.mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0x9fffe8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }), n);
+    this.mesh.frustumCulled = false; this.mesh.visible = false; this.mesh.renderOrder = 7;
+    this.p = Array.from({ length: n }, () => ({ x: -4.2 + Math.random() * 8.4, y: 0.8 + Math.random() * 12, z: -1.2 + Math.random() * 3.6, ph: Math.random() * 6, sp: 0.15 + Math.random() * 0.3, r: 0.035 + Math.random() * 0.05 }));
+    this.m = new THREE.Matrix4();
+  }
+  setPhase(phase) { this.want = phase === 'night' ? 1 : phase === 'evening' ? 0.6 : 0; }
+  update(dt, t) {
+    this.level += (this.want - this.level) * Math.min(1, dt * 0.6); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return;
+    this.mesh.material.opacity = 0.85 * this.level;
+    this.p.forEach((q, i) => {
+      q.y += Math.sin(t * q.sp + q.ph) * 0.12 * dt + q.sp * 0.1 * dt; if (q.y > 13.5) q.y = 0.8; const s = q.r * (0.7 + 0.5 * Math.sin(t * 1.3 + q.ph));
+      this.m.makeScale(s, s, s); this.m.setPosition(q.x + Math.sin(t * 0.4 + q.ph) * 0.5, q.y, q.z + Math.cos(t * 0.3 + q.ph) * 0.3); this.mesh.setMatrixAt(i, this.m);
+    });
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}

@@ -60,7 +60,7 @@ export class Game {
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members');
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); }
-    else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by); }
+    else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food); }
     else if (m.t === 'event') {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }

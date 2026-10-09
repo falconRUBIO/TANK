@@ -30,7 +30,7 @@ export class DecorMgr {
   // plants slowly grow between trims
   grow(state, now = Date.now()) { for (const d of state.decor) { const it = this.items.get(d.id); if (!it || this.preview?.id === d.id) continue; const k = growthOf(state, d, now); if (Math.abs((it.grown ?? 1) - k) > 0.005) { it.grown = k; it.group.scale.setScalar(k); } } }
   // where decorations stand, for fish that like to hide behind or inspect them
-  spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, x: it.at.x, z: it.at.z, h: PICK[it.type]?.[1] ?? 1 }); return o; }
+  spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, type: it.type, x: it.at.x, z: it.at.z, h: PICK[it.type]?.[1] ?? 1 }); return o; }
   // world position of the first lantern, for the lamp light
   lamp() { for (const it of this.items.values()) if (it.lamp && it !== this.preview?.item) { const p = it.lamp.clone(); p.applyMatrix4(it.group.matrixWorld.identity().compose(it.group.position, new THREE.Quaternion().setFromEuler(it.group.rotation), new THREE.Vector3(1, 1, 1))); return p; } return null; }
 
