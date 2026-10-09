@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
+import { buildJar, updateJar } from './jar.js';
 import { mulberry32 } from '../color.js';
 import { SPECIES_DEF, DECOR_DEF, STAGE_SCALE, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
@@ -60,6 +61,7 @@ export class Fishes {
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
+    this.syncJars(state);
     for (const x of state.floaters ?? []) {
       seen.add(x.id); let f = this.byId.get(x.id);
       if (!f) { f = new Fish3D(SPECIES[x.species], x.seed, { name: x.name, speed: 0.5, scale: 1, band: BANDS.goldfish }); f.fid = x.id; f.setGrowth(STAGE_SCALE[x.stage] ?? 1); f.pos.set((this.rng() - 0.5) * 6, 12.7, 1.2); this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }
@@ -127,6 +129,7 @@ export class Fishes {
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
   // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
   relate(f, d) {
+    if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
   }
@@ -205,7 +208,25 @@ export class Fishes {
     for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
     for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, 15 + this.rng() * 0.5, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
   }
+  // puzzle jars: one appears on the sand for each octopus that has been given one, and opens when it is solved
+  syncJars(state) {
+    this.jars ||= new Map();
+    for (const d of state.fish) {
+      const f = this.byId.get(d.id), jar = this.jars.get(d.id);
+      if (d.puzzle) {
+        if (!jar) { const j = buildJar(); let h = 0; for (const ch of d.id) h = (h * 31 + ch.charCodeAt(0)) | 0; j.pos = { x: ((Math.abs(h) % 50) / 10) - 2.5, z: 1.3 + ((Math.abs(h) >> 6) % 8) / 10 }; j.root.position.set(j.pos.x, 0.12, j.pos.z); j.root.scale.setScalar(1.15); this.scene.add(j.root); this.onSprite?.(j.root); this.jars.set(d.id, j); this.burst(new THREE.Vector3(j.pos.x, 0.8, j.pos.z)); }
+        if (f) f.jarAt = this.jars.get(d.id).pos;
+      } else {
+        if (f) f.jarAt = null;
+        if (jar && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; this.burst(new THREE.Vector3(jar.pos.x, 1.2, jar.pos.z)); }
+      }
+    }
+    for (const [id, jar] of [...this.jars]) if (!state.fish.some((d) => d.id === id) && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; }
+  }
+  investigate(spot) { for (const f of this.list) if (f.species.move === 'jet' && !f.dead && !f.jarAt) f.inspect = { x: spot.x, z: spot.z }; }
+  squirt(f) { for (let k = 0; k < 6; k++) setTimeout(() => { if (f.dead) return; this.burst(f.pos.clone().add(new THREE.Vector3(0, 0.5 + k * 0.05, 0.6 + k * 0.55))); }, k * 80); f.flush = Math.max(f.flush ?? 0, 0.6); }
   update(dt, t) {
+    if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
     for (const f of this.flakes) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
     this.flakes = this.flakes.filter((f) => !f.eaten && f.age < 30);
     this.mesh.count = this.flakes.length;

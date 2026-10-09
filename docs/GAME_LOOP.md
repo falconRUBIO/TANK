@@ -88,3 +88,12 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 2. After the first few days, the daily wish and discoveries give a visit a small goal beyond care. Is that enough, given levels are slow (about 12 days to level 5)?
 3. Is the shared shell wallet right for three players, or should contributions be visible?
 4. Do the discoveries, daily wish and family trees make players care about individual fish, or do they read as extra chores?
+
+## 7d. The octopus is the clever one
+Based on what is known about real octopuses (individual recognition of people, prey puzzles such as screw-top jars, curiosity about new objects, camouflage and colour change, a tendency to squirt water at things and people they dislike). In the game:
+- **Puzzle jar** (Care tile or the fish card, 3 shells, one per octopus every 3 hours): a jar with a crab appears on the sand and the octopus goes to work on it. The first jar takes 150 seconds; then 75, 35, and 15 from the fourth on, because it remembers how. The first solve pays 3 shells; every solve makes it happier and raises its bond with whoever gave the jar. The game finishes the jar on its own, so closing the app costs nothing.
+- **Quick learner:** tricks take 2 lessons instead of 5.
+- **Knows people:** an octopus that has bonded with you swims to the glass and waves; one you have never looked after keeps to the rocks and hides.
+- **Curious:** it goes to inspect any new decoration.
+- **Colour:** it fades into the sand when resting (more when shy) and flushes bright after something exciting.
+- **Cheeky:** tapping it sometimes earns a squirt of bubbles.

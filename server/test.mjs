@@ -375,6 +375,16 @@ await t('your data is yours: backup downloads, restores into a new tank, and del
   assert.equal(S.db.prepare('SELECT COUNT(*) n FROM users WHERE id=?').get(u2.userId).n, 0);
 });
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
+await t('the octopus puzzle jar: costs shells once, cannot be doubled by two caretakers, and is solved on its own with the event delivered', async () => {
+  const { tk, x, y } = globalThis.regress, now = Date.now(), wx = await open(x.token), wy = await open(y.token), w0 = getW(tk.id), tpl = w0.fish[0];
+  const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 5 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: [], disc: {}, bond: {}, petAt: {}, puzzle: null };
+  setW(tk.id, { fish: [oct], decor: [], orders: [], eggs: [], floaters: [], shells: 20, simTs: Date.now() - 2000, hunger: 0.3, water: 0.9, glass: 0, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15 });
+  const [a, b] = await Promise.all([ackOf(wx, { t: 'puzzle', id: 'oc1', idem: 'pz-1' }), ackOf(wy, { t: 'puzzle', id: 'oc1', idem: 'pz-2' })]);
+  assert.ok(a.ok && b.ok); assert.equal([a, b].filter((r) => r.applied).length, 1, 'only one jar is given'); assert.equal(getW(tk.id).shells, 20 - 3, 'paid once');
+  assert.ok(getW(tk.id).fish[0].puzzle?.until > Date.now(), 'the jar is being worked on');
+  const w = getW(tk.id); w.fish[0].puzzle.until = Date.now() - 1; setW(tk.id, { fish: w.fish, simTs: Date.now() - 2000 });
+  await ackOf(wx, { t: 'feed', x: 0, idem: 'pz-3' }); const f = getW(tk.id).fish[0]; assert.equal(f.puzzle, null); assert.equal(f.solved, 1);
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

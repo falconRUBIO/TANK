@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
+import { canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -134,7 +134,7 @@ export function initUI({ game, social, cb }) {
   };
   const foodRow = () => { const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
-    care: () => `<h3>Care</h3>${meters()}${foodRow()}<div class="grid3">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${tile('🐟', 'Fish', 'fish', `${S().fish.length} in the tank`)}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${tile('📷', 'Photo', 'photo')}</div><h4>Today</h4>${todayHtml()}`,
+    care: () => `<h3>Care</h3>${meters()}${foodRow()}<div class="grid3">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${tile('🐟', 'Fish', 'fish', `${S().fish.length} in the tank`)}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🦀', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${tile('📷', 'Photo', 'photo')}</div><h4>Today</h4>${todayHtml()}`,
     decorate: () => `<h3>Decorate</h3>${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {

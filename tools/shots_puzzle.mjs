@@ -1,0 +1,24 @@
+// The octopus and its puzzle jar: given, worked on, opened; then greeting the glass and camouflage. OUT=dir node tools/shots_puzzle.mjs
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'node:fs';
+const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/octo'; fs.mkdirSync(out, { recursive: true });
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errors.push(m.text().slice(0, 160)); });
+await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
+await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.shells = 40; s.fish.length = 0; s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 5 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You', bond: { me: 4 } }); g.emit('state'); });
+await p.waitForTimeout(3000);
+await p.evaluate(() => { document.querySelectorAll('#goal,#coach,.coach,#toast').forEach((e) => (e.style.display = 'none')); });
+const r = await p.evaluate(async () => { const g = window.__game; return g.dispatch({ t: 'puzzle', id: 'x1' }); }); console.log('puzzle', JSON.stringify(r));
+await p.waitForTimeout(2500); await p.evaluate(() => { window.__cam = [0, 3.2, 13, 0, 1.4, 1.2]; });
+await p.waitForTimeout(1500); await p.screenshot({ path: out + '/puz_1_jar.png' });
+await p.evaluate(() => { const f = window.__fishes.list[0], j = [...window.__fishes.jars.values()][0]; f.pos.set(j.pos.x - 0.9, 0.6, j.pos.z + 0.7); f.vel.set(0, 0, 0); f.st = { s: 'work', t: 1e9, mode: 'jar', n: 0, pulse: 0 }; window.__cam = [j.pos.x, 2.6, 8, j.pos.x, 0.9, j.pos.z]; });
+await p.waitForTimeout(3500); await p.screenshot({ path: out + '/puz_2_work.png' });
+await p.evaluate(() => { const s = window.__game.state; s.fish[0].puzzle.until = Date.now() - 1; window.__game.emit('state'); });
+await p.waitForTimeout(1800); await p.screenshot({ path: out + '/puz_3_open.png' });
+await p.waitForTimeout(3500); await p.screenshot({ path: out + '/puz_4_after.png' });
+await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(0, 0.6, 2.3); f.st = { s: 'work', t: 8, mode: 'greet', n: 0, pulse: 0 }; window.__cam = [0, 2.4, 9, 0, 1.0, 2]; });
+await p.waitForTimeout(3500); await p.screenshot({ path: out + '/puz_5_greet.png' });
+await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(-1, 0.6, 1); f.st = { s: 'rest', t: 30, n: 0, pulse: 0 }; f.restFor = 10; f.shy = true; window.__cam = [-1, 2.4, 9, -1, 1.0, 1]; });
+await p.waitForTimeout(7000); await p.screenshot({ path: out + '/puz_6_camo.png' });
+console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

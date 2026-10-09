@@ -563,6 +563,8 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const sm = Math.max(0, (t - 0.6) / 0.4), curl = sm * sm * 7.5 * a.curl * (0.85 + 0.15 * Math.sin(ph * 0.5 + a.ph));
   let r = OCT.ax + 1.5 + a.L * Math.pow(t, 0.92), lat = Math.sin(t * 3.4 + a.ph) * 2.6 * t + Math.sin(ph * 0.9 + a.ph + t * 3) * 0.9 * t;
   let y = OCT.floor + 1.2 + (OCT.ay - OCT.floor) * Math.exp(-t * 6.2) + curl;
+  if (S.work) { const w = S.work; lat += Math.sin(ph * 2 + a.ph + t * 4) * 2.6 * w * t; y += (0.5 + 0.5 * Math.sin(ph * 1.4 + a.ph)) * 3.4 * w * t; r *= 1 - 0.38 * w * (0.4 + 0.6 * Math.abs(Math.sin(a.ph))); }   // working on something: arms pulled in, probing and wrapping
+  if (S.greet && c > -0.2) { const g = S.greet; y += g * t * t * 14 * (0.7 + 0.3 * Math.sin(a.ph)); lat += Math.sin(ph * 2.2 + a.ph) * 2.2 * g * t; }                                       // the arms that face the glass lift and wave
   const walk = S.crawl ? Math.sin(ph * 1.5 - t * 3.4 + a.ph) : 0;                  // a wave runs down each arm as it pulls
   if (S.crawl) { y += Math.max(0, walk) * 3.4 * S.crawl * Math.min(1, t * 2.4); r += walk * 1.6 * S.crawl * t; }
   const rx = OCT.ax + c * r - s * lat, rz = s * r + c * lat;

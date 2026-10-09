@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -138,10 +138,22 @@ async function adopt(species) {
 }
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+async function givePuzzle(id) {
+  const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { ui.toast('Only a grown octopus can have a puzzle jar'); return; }
+  const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
+  if (r.busy) { ui.toast(`${o.name} is still working on the jar`); return; }
+  if (!r.applied) { const h = Math.max(1, Math.ceil((r.wait ?? 0) / 3600e3)); ui.toast(`${o.name} needs a rest. Try again in about ${h} hour${h > 1 ? 's' : ''}.`); return; }
+  sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 4200, 1600);
+}
+function brainBlock(rec) {
+  if (!isSmart(rec)) return '';
+  const n = rec.solved ?? 0, can = canPuzzle(rec);
+  return `<div class="notes">A very clever animal: learns a trick in ${trainNeed(rec)} lessons, remembers who looks after it, and changes colour with its mood.${n ? ` Puzzle jars solved: ${n}, best ${rec.bestSecs} seconds.` : ''}</div>${can ? `<button class="lnk" id="puz">${rec.puzzle ? 'Working on a jar…' : `Give a puzzle jar · ${PUZZLE_COST} 🐚`}</button>` : ''}`;
+}
 async function trainFish(f, key, spot) {
   const r = await game.dispatch({ t: 'train', id: f.fid, trick: key }); if (!r.ok) return fail(r);
   if (!r.applied) { ui.toast(`${f.name} needs a rest. Try again in ${Math.max(1, Math.ceil((r.wait ?? 0) / 60e3))} min.`); return; }
-  setFocus(null); fishes.perform(f, key, spot); sfx('tap'); if (!r.learned) ui.toast(`${f.name} practised: ${r.n} of 5`);
+  setFocus(null); fishes.perform(f, key, spot); sfx('tap'); if (!r.learned) ui.toast(`${f.name} practised: ${r.n} of ${r.need ?? 5}`);
 }
 function showTrick(f, key) { const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; } setFocus(null); fishes.perform(f, key, o.id); }
 function trickBlock(rec) {
@@ -270,7 +282,7 @@ function showDeadCard(f) {
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${x.name}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
     <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${who}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
     <button class="pet rest" id="rest">LAY TO REST</button>`;
-  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null);
+  card.classList.add('on'); { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => setFocus(null);
   $('rest').onclick = async () => { $('rest').disabled = true; const r = await game.dispatch({ t: 'scoop', id: f.fid }); setFocus(null); if (!r.ok) return fail(r); if (r.applied) { sfx('tap'); haptic(10); } };
 }
 function showCard(f) {
@@ -285,12 +297,12 @@ function showCard(f) {
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">Play with ${f.name}</button>
-    <div class="btnrow">${trickBlock(rec)}${fam}</div>${more}
+    <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
-function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
+function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead && Math.random() < 0.3) { fishes.squirt(f); sfx('splash'); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
@@ -363,11 +375,12 @@ function spotlightFish(id, ms = 3600, delay = 700) {
 }
 // ── wiring the game to the scene and the interface ──
 const pendingArrivals = new Set();
-let lastLamp = null;
+let lastLamp = null, seenDecor = null;
 function syncWorld() {
   const s = game.state; if (!s) return;
   fishes.me = game.you?.userId ?? 'me'; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
   decor.sync(s.decor, s);
+  { const ids = new Set(s.decor.map((d) => d.id)); if (seenDecor) for (const d of s.decor) if (!seenDecor.has(d.id)) { const sp = decor.spots().find((x) => x.id === d.id); if (sp) fishes.investigate(sp); } seenDecor = ids; }       // an octopus goes to look at anything new
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
   env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); syncExtras(); ui?.refresh(); tut.run();
@@ -384,6 +397,7 @@ game.on('levelup', (lv) => {
 game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
+game.on('puzzle', (id) => { const f = fishes.byId.get(id); sfx('level'); haptic(16); if (f) { fishes.burst(f.pos); f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('level'); haptic(25); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('arrive'); spotlightFish(id, 3000, 600); flyShells(2, [window.innerWidth / 2, window.innerHeight * 0.4]); } });
 game.on('remoteFeed', (x, by, food) => { fishes.drop(x, 7, food); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
@@ -468,7 +482,7 @@ async function boot() {
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
-    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants }[a]?.()),
+    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },

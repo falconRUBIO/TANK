@@ -227,6 +227,15 @@ const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.
 const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
 export const parentsOf = (f) => f.parents ?? [];
 export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }
+function puzzles(t, now, ev) {
+  for (const f of t.fish) {
+    const p = f.puzzle; if (!p || now < p.until) continue;
+    f.puzzle = null; f.solved = (f.solved ?? 0) + 1; f.bestSecs = Math.min(f.bestSecs ?? 1e9, p.secs); f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15);
+    if (p.by) { f.bond ||= {}; f.bond[p.by] = (f.bond[p.by] ?? 0) + 1; }
+    const first = f.solved === 1; if (first) t.shells += PUZZLE_FIRST_REWARD;
+    ev.push({ journal: first ? `${f.name} worked out the puzzle jar.` : f.solved === 4 ? `${f.name} opens the puzzle jar in ${p.secs} seconds now.` : `${f.name} opened the puzzle jar in ${p.secs} seconds.`, puzzle: f.id, ...(first ? { toast: `${f.name} worked out the jar! +${PUZZLE_FIRST_REWARD} shells`, milestone: f.id } : {}) });
+  }
+}
 function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
@@ -304,11 +313,18 @@ function checkWant(t, now, ev, grant = null) {
 // ── tricks: a fish that trusts you can be taught to do something with a decoration ──
 export const TRICKS = { gate: { label: 'swim through the gate', types: ['arch', 'torii', 'wood', 'bridge'] }, bubbles: { label: 'ride the bubbles', types: ['bubbler'] } };
 export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND = 3;
+// The octopus is the clever one: it learns a trick in two lessons instead of five, remembers whoever looks after it, and can be given a puzzle jar
+// with a crab inside. The first jar takes minutes to work out; every one after is quicker, down to seconds, because it remembers how.
+export const isSmart = (f) => f?.species === 'octopus';
+export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
+export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
+export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
+export const canPuzzle = (f, now = Date.now()) => isSmart(f) && stageOf(f, now) !== 'baby';
 export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x, 0);
 // what this fish can be taught right now: it has to be past the baby stage, trust someone, and the tank needs the decoration
 export function trickOptions(t, f, now = Date.now()) {
   if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND) return [];
-  return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: t.decor.find((x) => d.types.includes(x.type))?.id ?? null, have: f.skill?.[k] ?? 0, need: TRAIN_NEED })).filter((o) => o.spot);
+  return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: t.decor.find((x) => d.types.includes(x.type))?.id ?? null, have: f.skill?.[k] ?? 0, need: trainNeed(f) })).filter((o) => o.spot);
 }
 
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
@@ -443,7 +459,7 @@ export function advance(t, now = Date.now()) {
   ageMilestones(t, now, ev);
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
-  visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now); rollWant(t, now, ev);
+  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now); rollWant(t, now, ev);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
@@ -581,8 +597,17 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const opt = trickOptions(t, f, now).find((o) => o.key === a.trick); if (!opt) return fail('CANT_TRAIN');
       if (now - (f.trainAt ?? 0) < TRAIN_GAP) return ok({ applied: false, delta: 0, wait: TRAIN_GAP - (now - f.trainAt) });
       f.trainAt = now; f.skill = { ...(f.skill ?? {}), [a.trick]: (f.skill?.[a.trick] ?? 0) + 1 }; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.02); progress(t, 'play', events, name); dayCheck(t, now, events, 'bond');
-      if (f.skill[a.trick] >= TRAIN_NEED) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: TRAIN_NEED }); }
-      return ok({ applied: true, delta: 0, n: f.skill[a.trick] });
+      if (f.skill[a.trick] >= trainNeed(f)) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: trainNeed(f) }); }
+      return ok({ applied: true, delta: 0, n: f.skill[a.trick], need: trainNeed(f) });
+    }
+    case 'puzzle': {                                                // a puzzle jar for the octopus; it works on it for a while and the game finishes it on its own
+      const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); if (!canPuzzle(f, now)) return fail('CANT_TRAIN');
+      if (f.puzzle) return ok({ applied: false, delta: 0, busy: true, until: f.puzzle.until });
+      if (f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) return ok({ applied: false, delta: 0, wait: PUZZLE_GAP - (now - f.puzzleAt) });
+      if (t.shells < PUZZLE_COST) return fail('NOT_ENOUGH_SHELLS');
+      t.shells -= PUZZLE_COST; f.puzzleAt = now; const secs = puzzleSecs(f); f.puzzle = { at: now, until: now + secs * 1000, secs, by: uid ?? null };
+      dayCheck(t, now, events, 'bond'); events.push({ activity: { type: 'fish', text: `${name} gave ${f.name} a puzzle jar.` } });
+      return ok({ applied: true, delta: -PUZZLE_COST, secs, until: f.puzzle.until });
     }
     case 'style': {
       const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';

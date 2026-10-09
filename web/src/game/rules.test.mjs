@@ -333,4 +333,22 @@ ok('looks are bought once with shells and then kept; free ones stay free; a tank
   const old = R.newWorld(0); old.style = { floor: 'black', backdrop: 'lagoon' }; delete old.flags.styles; R.norm(old, 0); assert.ok(R.styleOwned(old, 'floor', 'black') && R.styleOwned(old, 'backdrop', 'lagoon'), 'an old tank keeps its look');
   assert.equal(R.PERFECT_DAY_REWARD, 3);
 });
+ok('the octopus is clever: tricks in two lessons, a puzzle jar it solves faster every time, and it remembers who helped', () => {
+  const D = 864e5, t = quiet(2); t.level = 8; t.shells = 50; const oc = t.fish[0]; oc.species = 'octopus'; oc.born = -5 * D; oc.stage = 'adult'; t.fish[1].born = -5 * D; t.fish[1].stage = 'adult';
+  assert.equal(R.trainNeed(oc), 2); assert.equal(R.trainNeed(t.fish[1]), R.TRAIN_NEED);
+  const go = (a, now, who = 'u1') => R.applyAction(t, a, { now, name: 'Alex', uid: who });
+  assert.equal(go({ t: 'puzzle', id: 'f1' }, 1000).ok, false, 'only the octopus gets one');
+  let now = 1000; const secs = [];
+  for (let i = 0; i < 5; i++) {
+    const r = go({ t: 'puzzle', id: 'f0' }, now); assert.ok(r.ok && r.applied, 'jar ' + i); assert.equal(r.delta, -R.PUZZLE_COST); secs.push(r.secs);
+    assert.equal(go({ t: 'puzzle', id: 'f0' }, now + 1000).busy, true, 'one at a time');
+    R.advance(t, now + 5 * 1000); assert.ok(oc.puzzle, 'still working');
+    const s0 = t.shells; const ev = R.advance(t, now + (r.secs + 2) * 1000); assert.equal(oc.puzzle, null); assert.ok(ev.some((e) => e.puzzle === 'f0'), 'solved event');
+    if (i === 0) assert.equal(t.shells, s0 + R.PUZZLE_FIRST_REWARD, 'the first jar pays once'); else assert.equal(t.shells, s0);
+    now += R.PUZZLE_GAP + 10 * 60e3;
+  }
+  assert.deepEqual(secs, [150, 75, 35, 15, 15], 'it gets quicker, then stays quick'); assert.equal(oc.solved, 5); assert.equal(oc.bestSecs, 15); assert.ok((oc.bond.u1 ?? 0) >= 5, 'it remembers who gave it the jar');
+  const early = go({ t: 'puzzle', id: 'f0' }, now - R.PUZZLE_GAP + 60e3); assert.ok(early.ok && !early.applied && early.wait > 0, 'a rest between jars');
+  t.shells = 0; assert.equal(go({ t: 'puzzle', id: 'f0' }, now + R.PUZZLE_GAP * 2).reason, 'NOT_ENOUGH_SHELLS');
+});
 console.log(`All ${n} rule tests passed`);
