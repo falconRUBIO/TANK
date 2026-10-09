@@ -140,7 +140,7 @@ ok('care is credited to the caretakers who helped a fish grow, without ranking a
 
 console.log('Economy refinement');
 const tend = (t, to) => { for (let x = t.simTs + 6 * 3600e3; x < to; x += 6 * 3600e3) { t.hunger = 0.1; t.water = 1; t.glass = 0; R.advance(t, x); } t.hunger = 0.1; t.water = 1; t.glass = 0; return R.advance(t, to); };
-const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
+const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; if (!o.wants) t.flags.noWants = true; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
 ok('level 8 can be reached: the wish chain no longer waits on level 8 and the best possible score clears the threshold with room to spare', () => {
   const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /level 8/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/level 8/i.test(w.text)), 'no earlier wish depends on level 8');
   // the highest score reachable before level 8: a full level-7 tank (25 fish, all adults), 60 decorations, a complete book, every wish except the level-8 one
@@ -228,19 +228,19 @@ ok('a long absence is judged the same whether or not the server ticked while eve
 
 console.log('Fish wishes, comfort, plants, notes');
 ok('a fish wish is offered only when it can be granted, one at a time, and fades without penalty', () => {
-  const H = 3600e3, t = quiet(3, { traits: ['Shy'] }); t.wantAt = 0; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 10 * H; t.fish.forEach((f) => { f.born = 0; });
+  const H = 3600e3, t = quiet(3, { traits: ['Shy'], wants: true }); t.wantAt = 0; t.req = { day: 0, kind: 'want', wantDone: false }; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 10 * H; t.fish.forEach((f) => { f.born = 0; });
   let ev = R.advance(t, 10 * H + 5); assert.ok(t.want, 'a wish appears'); assert.equal(t.want.kind, 'hide'); assert.ok(ev.some((e) => e.want)); const first = t.want.id;
   R.advance(t, 11 * H); assert.equal(t.want.id, first, 'only one wish at a time');
   const s0 = t.shells; R.advance(t, 40 * H); assert.ok(!t.want || t.want.id !== first, 'it fades after a day'); assert.ok(t.shells >= s0, 'no penalty');
-  const lone = quiet(1, { traits: ['Calm'] }); lone.wantAt = 0; lone.hunger = 0.1; lone.water = 1; lone.glass = 0; lone.fish[0].born = 0; lone.simTs = 10 * H; R.advance(lone, 10 * H + 5); assert.equal(lone.want, null, 'a calm fish with fresh water has nothing to wish for');
+  const lone = quiet(1, { traits: ['Calm'], wants: true }); lone.wantAt = 0; lone.hunger = 0.1; lone.water = 1; lone.glass = 0; lone.fish[0].born = 0; lone.simTs = 10 * H; R.advance(lone, 10 * H + 5); assert.equal(lone.want, null, 'a calm fish with fresh water has nothing to wish for');
 });
 ok('granting a fish wish pays once, cheers the fish, and is journalled', () => {
-  const H = 3600e3, t = quiet(3, { traits: ['Shy'] }); t.fish.forEach((f) => { f.born = 0; }); t.shells = 100; t.want = { id: 'w1', fish: 'f0', kind: 'hide', text: '', since: 0 }; t.simTs = 10 * H; t.flags.tut = 5;
+  const H = 3600e3, t = quiet(3, { traits: ['Shy'], wants: true }); t.fish.forEach((f) => { f.born = 0; }); t.shells = 100; t.want = { id: 'w1', fish: 'f0', kind: 'hide', text: '', since: 0 }; t.simTs = 10 * H; t.flags.tut = 5;
   const happy0 = t.fish[0].happy; let ev = [], s0 = t.shells;
   for (let i = 0; i < 4; i++) { const r = R.applyAction(t, { t: 'buyDecor', type: 'grass', x: i - 2, z: 1, ry: 0 }, { now: 10 * H + i * 1000, name: 'Alex', uid: 'u1' }); ev.push(...r.events); }
   const granted = ev.filter((e) => e.wishDone); assert.equal(granted.length, 1, 'once'); assert.equal(t.want, null); assert.ok(t.fish[0].happy > happy0); assert.equal(t.fish[0].wishes, 1); assert.match(granted[0].journal, /just as it had hoped/);
-  assert.match(granted[0].toast, /\+2 shells/); assert.ok(s0 > 0); assert.ok(t.wantAt >= 10 * H + R.WANT_GAP, 'the next one waits');
-  const p = quiet(2, { traits: ['Playful'] }); p.fish.forEach((f) => { f.born = 0; }); p.want = { id: 'w2', fish: 'f1', kind: 'play', text: '', since: 0 }; p.simTs = 5 * H;
+  assert.match(granted[0].toast, /\+4 shells/); assert.ok(s0 > 0); assert.ok(t.wantAt >= 10 * H + R.WANT_GAP, 'the next one waits');
+  const p = quiet(2, { traits: ['Playful'], wants: true }); p.fish.forEach((f) => { f.born = 0; }); p.want = { id: 'w2', fish: 'f1', kind: 'play', text: '', since: 0 }; p.simTs = 5 * H;
   R.applyAction(p, { t: 'pet', id: 'f0' }, { now: 5 * H + 1, name: 'A', uid: 'u1' }); assert.ok(p.want, 'playing with a different fish does not count'); const r = R.applyAction(p, { t: 'pet', id: 'f1' }, { now: 5 * H + 2, name: 'A', uid: 'u1' }); assert.ok(r.events.some((e) => e.wishDone) && !p.want);
 });
 ok('comfort tells the truth about the tank and names what to change', () => {
@@ -273,7 +273,7 @@ ok('food choice: flakes are free and pay as before, pellets and treats cost shel
   assert.ok(pe.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'noticed'); t.hunger = 0.8; const again = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 30, name: 'A', uid: 'u1' }); assert.ok(!again.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'only once');
   t.hunger = 0.8; t.shells = 3; const poor = R.applyAction(t, { t: 'feed', food: 'treats' }, { now: 40, name: 'A', uid: 'u1' }); assert.equal(poor.ok, false); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(t.shells, 3, 'nothing taken');
   const junk = R.applyAction(t, { t: 'feed', food: 'gold' }, { now: 50, name: 'A', uid: 'u1' }); assert.ok(junk.ok, 'unknown food is treated as flakes');
-  const w = quiet(2, { traits: ['Greedy'] }); w.level = 8; w.wishIdx = 12; w.hunger = 0.8; w.shells = 20; w.want = { id: 'w3', fish: 'f0', kind: 'meal', text: '', since: 0 }; R.applyAction(w, { t: 'feed' }, { now: 5, name: 'A', uid: 'u1' }); assert.ok(w.want, 'flakes do not grant a wish for a treat'); w.hunger = 0.8; const g = R.applyAction(w, { t: 'feed', food: 'treats' }, { now: 6, name: 'A', uid: 'u1' }); assert.ok(g.events.some((e) => e.wishDone) && !w.want);
+  const w = quiet(2, { traits: ['Greedy'], wants: true }); w.level = 8; w.wishIdx = 12; w.hunger = 0.8; w.shells = 20; w.want = { id: 'w3', fish: 'f0', kind: 'meal', text: '', since: 0 }; R.applyAction(w, { t: 'feed' }, { now: 5, name: 'A', uid: 'u1' }); assert.ok(w.want, 'flakes do not grant a wish for a treat'); w.hunger = 0.8; const g = R.applyAction(w, { t: 'feed', food: 'treats' }, { now: 6, name: 'A', uid: 'u1' }); assert.ok(g.events.some((e) => e.wishDone) && !w.want);
 });
 ok('tricks: need trust, a growing fish and the right decoration; five sessions 20 minutes apart; learned once, paid once', () => {
   const D = 864e5, M = 60e3, t = quiet(2); t.level = 8; t.wishIdx = 12; t.fish[0].born = -3 * D; t.fish[0].stage = 'adult'; t.simTs = 0; const go = (now, extra = {}) => R.applyAction(t, { t: 'train', id: 'f0', trick: 'gate', ...extra }, { now, name: 'Alex', uid: 'u1' });
@@ -363,5 +363,14 @@ ok('every fish has a real nature: bullies upset shy fish (less so with hiding pl
   assert.match(R.adoptAdvice(calm, 'guppy') ?? '', /bully/i); assert.match(R.adoptAdvice(calm, 'cory') ?? '', /only one/i); assert.equal(R.adoptAdvice(quiet(0), 'guppy'), null); assert.match(R.adoptAdvice(calm, 'octopus') ?? '', /wary/i);
   const f = t.fish[1]; f.happy = 0.5; const before = R.socialOf(t, f).penalty; assert.ok(before > 0);
   for (const sp of Object.keys(R.SPECIES_DEF).filter((k) => !R.SPECIES_DEF[k].visitor)) assert.ok(R.SOCIAL[sp]?.nature && R.SOCIAL[sp].line, 'every shop fish has a nature: ' + sp);
+});
+ok('one request a day: a fish\'s own wish or the daily wish, never both, and either one counts toward a perfect day', () => {
+  const H = 3600e3, D = 864e5; const mkw = (kind) => { const t = quiet(3, { traits: ['Shy'], wants: true }); t.fish.forEach((f) => { f.born = -5 * D; }); t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 10 * H; t.wantAt = 0; t.req = { day: 0, kind, wantDone: false }; return t; };
+  const w = mkw('want'); R.advance(w, 10 * H + 5); assert.ok(w.want, 'a fish wish today'); assert.equal(w.daily, null, 'and no daily wish beside it'); assert.equal(R.dayTicks(w, 10 * H + 5).wish, false);
+  const d = mkw('daily'); R.advance(d, 10 * H + 5); assert.equal(d.want, null, 'on a daily-wish day no fish wish appears'); assert.ok(d.daily, 'the daily wish is there');
+  const g = mkw('want'); R.advance(g, 10 * H + 5); for (let i = 0; i < 4; i++) R.applyAction(g, { t: 'buyDecor', type: 'grass', x: i - 2, z: 1, ry: 0 }, { now: 10 * H + 1000 * (i + 1), name: 'A', uid: 'u1' });
+  assert.equal(g.want, null); assert.equal(g.req.wantDone, true); assert.equal(R.dayTicks(g, 10 * H + 9000).wish, true, 'a granted fish wish is the day\'s wish'); R.advance(g, 12 * H); assert.equal(g.want, null, 'no second request that day');
+  const nx = mkw('want'); R.advance(nx, 10 * H + 5); R.advance(nx, 10 * H + D); assert.ok(nx.req.day === 1, 'a new day decides again');
+  assert.equal(R.WANT_REWARD, 4);
 });
 console.log(`All ${n} rule tests passed`);

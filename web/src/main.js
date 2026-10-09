@@ -245,16 +245,33 @@ async function finishPlay() {
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
   showCard(f);
 }
-// photo mode: the clean tank frame, no interface
+// postcard: the clean tank frame with a one-line caption about something that really happened, ready to send to a friend
+const HIGHLIGHT = /hatch|grew|grow|adult|learned|puzzle|jar|worked out|perfect|level|friends|first|visiting|birthday|days old|week/i;
+function postcardCaption() {
+  const s = game.state, recent = (game.journal ?? []).slice().reverse().find((e) => Date.now() - e.ts < 3 * 864e5 && HIGHLIGHT.test(e.text) && !/began/.test(e.text));
+  if (recent) return recent.text;
+  const f = s.fish.slice().sort((a, b) => (b.wishes ?? 0) + (b.solved ?? 0) - ((a.wishes ?? 0) + (a.solved ?? 0)))[0];
+  return f ? `${f.name} the ${SPECIES_DEF[f.species]?.label ?? 'fish'}, ${s.fish.length} friend${s.fish.length === 1 ? '' : 's'} in the tank.` : 'A quiet day in the tank.';
+}
+function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
 async function takePhoto() {
   const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #feedbar, #placebar, #toast, #glass')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
-  const blob = await new Promise((r) => canvas.toBlob(r, 'image/png')); hidden.forEach((e, i) => (e.style.visibility = prev[i]));
+  const out = document.createElement('canvas'), W = canvas.width, H = canvas.height, k = 2; out.width = W * k; out.height = H * k; const g = out.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(canvas, 0, 0, W * k, H * k);
+  hidden.forEach((e, i) => (e.style.visibility = prev[i]));
+  // a soft band at the bottom with the caption, the tank's name and the day
+  const bandH = 150 * k, gr = g.createLinearGradient(0, H * k - bandH - 40 * k, 0, H * k); gr.addColorStop(0, 'rgba(4,14,28,0)'); gr.addColorStop(0.35, 'rgba(4,14,28,.72)'); gr.addColorStop(1, 'rgba(4,14,28,.9)'); g.fillStyle = gr; g.fillRect(0, H * k - bandH - 40 * k, W * k, bandH + 40 * k);
+  g.fillStyle = '#f4ecd0'; g.font = `600 ${15 * k}px ui-monospace, Menlo, monospace`; g.textBaseline = 'alphabetic';
+  const lines = wrapText(g, postcardCaption(), W * k - 44 * k); lines.forEach((l, i) => g.fillText(l, 22 * k, H * k - bandH + (24 + i * 22) * k));
+  g.fillStyle = '#e6c36a'; g.font = `600 ${11 * k}px ui-monospace, Menlo, monospace`; g.fillText(game.shared ? `${String(game.tankName).toUpperCase()}  ·  DAY ${game.day}` : `DAY ${game.day}`, 22 * k, H * k - 22 * k);
+  g.fillStyle = 'rgba(244,236,208,.55)'; g.textAlign = 'right'; g.fillText('OUR TANK', W * k - 22 * k, H * k - 22 * k); g.textAlign = 'left';
+  const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
-  try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'OUR TANK' }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ui.toast('Picture saved');
+  try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'OUR TANK', text: postcardCaption() }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ui.toast('Postcard saved');
 }
+window.__postcard = postcardCaption;
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
 const card = $('card'), look = new THREE.Vector3(0, 5.3, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
@@ -466,10 +483,14 @@ async function welcomeBack() {
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
-  const mine = game.you?.userId, lines = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).slice(-3).map((e) => e.text);
-  const g = game.state.drift; if (g) lines.push('Something washed in. Tap it in the tank.'); const o = game.state.orders ?? []; if (o.length) lines.push(`${o.length} delivery on the way.`);
+  const mine = game.you?.userId, rank = (t) => (/hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
+  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 4).sort((a, b) => a.i - b.i).map((x) => x.t);
+  const s = game.state, lines = [...news];
+  if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle washed in for you.'); else if (s.drift) lines.push('Something washed in. Tap it in the tank.');
+  if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
+  const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);
   if (!lines.length) return;
-  await new Promise((r) => setTimeout(r, 900)); await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank' });
+  await new Promise((r) => setTimeout(r, 900)); const r = await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank', cancel: 'Send a postcard of the tank' }); if (r === null) takePhoto();
 }
 
 // every caretaker brings in a first fish of their own (the creator's is Pip)

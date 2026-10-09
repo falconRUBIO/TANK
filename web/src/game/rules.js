@@ -185,7 +185,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   t.lastFed ??= t.simTs ?? now;
   { const ow = (t.flags.styles ||= { floor: {}, backdrop: {} }); ow.floor ||= {}; ow.backdrop ||= {}; ow.floor[t.style?.floor ?? 'sand'] = true; ow.backdrop[t.style?.backdrop ?? 'candy'] = true; }      // a look a tank already uses stays its own
@@ -279,7 +279,7 @@ const STORY = {
 // ── fish wishes ──
 // One fish at a time quietly wants something that fits its personality. Granting it pays a little, cheers the fish, and is written to the journal.
 // A wish is only offered if it can be granted now, never expires with a penalty (it just fades after a day), and a new one waits a few hours.
-export const WANT_REWARD = 2, WANT_GAP = 6 * 3600e3, WANT_TTL = 24 * 3600e3;
+export const WANT_REWARD = 4, WANT_GAP = 6 * 3600e3, WANT_TTL = 24 * 3600e3;
 const catOpen = (t, cat) => Object.values(DECOR_DEF).some((d) => d.cat === cat && d.level <= t.level && d.price > 0);
 const likeWant = (trait, cat, n, text, gift) => ({ traits: [trait], ok: (t) => count(t, cat) < n && catOpen(t, cat), done: (t) => count(t, cat) >= n, text, gift });
 export const WANTS = {
@@ -294,21 +294,30 @@ export const WANTS = {
   fresh: { traits: ['Calm', 'Shy'], ok: (t) => t.water < 0.7, done: (t, f, g) => g?.type === 'water', text: (f) => `${f.name} would love fresher water.`, gift: 'fresher water' },
   meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3 && t.shells >= FOODS.treats.price, done: (t, f, g) => g?.type === 'feed' && g.food === 'treats', text: (f) => `${f.name} wants a treat. Choose Treats when you feed.`, gift: 'a treat' },
 };
+// ── one request a day ──
+// Each tank-day has exactly one request: either a fish's own wish (when one can be granted) or the tank's daily wish. Never both, so there is one thing to look at.
+const wantCands = (t, now) => { const cand = []; if (t.flags.noWants) return cand; for (const f of t.fish) { if (now - f.born < 3600e3 || (f.ail ?? 0) >= AIL_TIRED) continue; for (const [k, w] of Object.entries(WANTS)) if (w.traits.some((x) => (f.traits ?? []).includes(x)) && w.ok(t, f)) cand.push([f, k]); } return cand; };
+export function requestKind(t, now) {
+  const day = Math.floor(now / DAY);
+  if (!t.req || t.req.day !== day) { t.req = { day, kind: null, wantDone: false }; t.wantAt = Math.min(t.wantAt ?? now, now); }
+  if (!t.req.kind) t.req.kind = t.daily && t.daily.day === day ? 'daily' : wantCands(t, now).length && hash32(day * 53 + ((t.createdAt ?? 0) % 977)) % 100 < 45 ? 'want' : 'daily';
+  return t.req.kind;
+}
 function rollWant(t, now, ev) {
-  if (t.want && now - t.want.since > WANT_TTL) { t.want = null; t.wantAt = now + WANT_GAP / 2; }          // it fades quietly
+  if (t.want && (Math.floor(t.want.since / DAY) !== Math.floor(now / DAY) || now - t.want.since > WANT_TTL)) { t.want = null; t.wantAt = now; }          // it fades quietly at the end of the day
   if (t.want || (t.flags.tut ?? 0) < 5 || now < (t.wantAt ?? 0)) return;
-  const cand = []; for (const f of t.fish) { if (now - f.born < 3600e3 || (f.ail ?? 0) >= AIL_TIRED) continue; for (const [k, w] of Object.entries(WANTS)) if (w.traits.some((x) => (f.traits ?? []).includes(x)) && w.ok(t, f)) cand.push([f, k]); }
-  if (!cand.length) { t.wantAt = now + 2 * 3600e3; return; }
+  if (requestKind(t, now) !== 'want' || t.req.wantDone) return;
+  const cand = wantCands(t, now); if (!cand.length) { t.req.kind = 'daily'; return; }
   const [f, kind] = cand[hash32(Math.floor(now / 6e4) * 13 + (t.seq ?? 0)) % cand.length], seq = (t.seq = (t.seq ?? 10) + 1);
   t.want = { id: 'w' + seq, fish: f.id, kind, text: WANTS[kind].text(f), since: now };
-  ev.push({ toast: `${f.name} has a wish. See the Today tab.`, want: f.id });
+  ev.push({ toast: `${f.name} has a request. See the Care tab.`, want: f.id });
 }
 // `grant` says what just happened ({ type: 'pet' | 'feed' | 'glass' | 'water', id }); wishes about the tank's contents are also checked on every change.
 function checkWant(t, now, ev, grant = null) {
   const w = t.want; if (!w) return; const f = t.fish.find((x) => x.id === w.fish), d = WANTS[w.kind];
   if (!f || !d) { t.want = null; return; } if (!d.done(t, f, grant)) return;
-  t.want = null; t.wantAt = now + WANT_GAP; t.shells += WANT_REWARD; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.wishes = (f.wishes ?? 0) + 1;
-  ev.push({ journal: `${f.name} got ${d.gift}, just as it had hoped.`, toast: `${f.name} is delighted. +${WANT_REWARD} shells`, wishDone: f.id });
+  t.want = null; t.wantAt = now + WANT_GAP; if (t.req) t.req.wantDone = true; t.shells += WANT_REWARD; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.wishes = (f.wishes ?? 0) + 1;
+  ev.push({ journal: `${f.name} got ${d.gift}, just as it had hoped.`, toast: `${f.name} is delighted. +${WANT_REWARD} shells`, wishDone: f.id }); dayCheck(t, now, ev);
 }
 
 // ── tricks: a fish that trusts you can be taught to do something with a decoration ──
@@ -426,6 +435,7 @@ export const DAILY_REWARD = DAILY_TIER.easy;
 const DISTINCT = ['greet', 'play3', 'care2'];                      // these count different fish or different kinds of care, never the same one twice
 function rollDaily(t, now) {
   const day = Math.floor(now / DAY); if ((t.flags.tut ?? 0) < 5) return;
+  if (requestKind(t, now) === 'want') { t.daily = null; return; }                       // today's request is a fish's own wish
   if (t.daily && t.daily.day === day && (t.daily.done || t.daily.have > 0 || DAILY[t.daily.kind]?.ok(t, now))) return;      // a wish already under way is kept even if the need has since been met
   const roll = hash32(day * 17 + (t.createdAt % 991)) % 100, want = roll < 50 ? 'easy' : roll < 85 ? 'normal' : 'special';
   const feasible = Object.keys(DAILY).filter((k) => DAILY[k].ok(t, now) && k !== t.daily?.kind), pool = [want, 'normal', 'easy'].map((tier) => feasible.filter((k) => DAILY[k].tier === tier)).find((p) => p.length) ?? [];
@@ -438,7 +448,7 @@ function rollDaily(t, now) {
 export const PERFECT_DAY_REWARD = 3;
 export const lookedAfter = (t) => t.fish.length > 0 && t.hunger <= 0.45 && t.water >= 0.7 && t.glass <= 0.45;
 export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
-export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
+export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
 function dayCheck(t, now, ev, key = null) {
   if ((t.flags.tut ?? 0) < 5 || !t.fish.length) return; const l = dayLogOf(t, now);
   if (key === 'care' && lookedAfter(t)) l.care = true; if (key === 'bond') l.bond = true;
@@ -514,7 +524,7 @@ export function advance(t, now = Date.now()) {
   ageMilestones(t, now, ev);
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
-  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now); rollWant(t, now, ev);
+  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollWant(t, now, ev); rollDaily(t, now);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
