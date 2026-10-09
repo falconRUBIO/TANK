@@ -112,7 +112,7 @@ addEventListener('pointerup', async () => {
   if (left / (d.length / 16) * 6 < 0.06) { cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
-const wc = makeWaterChange({ canvas: $('wc'), tank: stg.canvas, camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx });
+const wc = makeWaterChange({ canvas: $('wc'), tank: stg.canvas, camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx, haptic });
 async function changeWater() {
   if (wc.active) return;
   if (game.state.water >= 0.7) { ui.toast('The water is already fresh'); return; }
@@ -511,7 +511,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
-  stg.applyTod(dt); if (wc.active) wc.frame(dt);
+  stg.applyTod(dt);
   if (focus) {
     // frame the fish in the open water between the top bar and the profile card
     const H = window.innerHeight, cardTop = card.classList.contains('on') ? card.getBoundingClientRect().top : H - 150, topPx = 64, cy = topPx + Math.max(150, cardTop - topPx - 8) / 2;
@@ -536,7 +536,7 @@ function frame(now) {
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }
-  stg.renderer.info.reset(); composer.render();
+  if (wc.active) wc.frame(dt); stg.renderer.info.reset(); composer.render();
   if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }
   requestAnimationFrame(frame);
 }

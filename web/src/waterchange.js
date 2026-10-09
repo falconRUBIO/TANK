@@ -9,7 +9,7 @@ const soft = (t) => t * t * (3 - 2 * t);
 const rgb = (c, a = 1, k = 1) => `rgba(${clamp(c[0] * k, 0, 255) | 0},${clamp(c[1] * k, 0, 255) | 0},${clamp(c[2] * k, 0, 255) | 0},${a})`;
 const OCTO = [212, 84, 44];
 
-export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, tank }) {
+export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, haptic = () => {}, tank }) {
   canvas.width = W * RES; canvas.height = H * RES; const g = canvas.getContext('2d');
   const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true }); probe.canvas.width = probe.canvas.height = 5;
   const v = new THREE.Vector3();
@@ -55,7 +55,7 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, tank }) {
   const PUFF = (x, y, n = 3) => { for (let j = 0; j < n; j++) puffs.push({ x, y, r: 6 + j * 5, l: 1 - j * 0.15, ring: 1 }); };
   function plan() {
     const list = fishes.list.filter((f) => !f.dead && !f.visitor && f.group.visible !== false).slice(0, 8);
-    return list.map((f, i) => { const at = px(f.pos); return { f, id: f.species.id, at, col: f.species.id === 'octopus' ? OCTO : colorAt(at), len: clamp(f.radius * 2 * pxPerUnit(f.pos), 40, 92), ph: i * 1.7, home: at, x: 40 + ((i * 97 + 53) % (W - 80)) }; });
+    return list.map((f, i) => { const at = px(f.pos); return { f, id: f.species.id, at, col: f.species.id === 'octopus' ? OCTO : colorAt(at), len: clamp(f.radius * 2 * pxPerUnit(f.pos), 40, 92), ph: i * 1.7, home: at, x: 70 + ((i * 97 + 53) % (W - 140)) }; });
   }
 
   function start({ dirt0 = 1, dispatch, done }) {
@@ -84,9 +84,13 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, tank }) {
       const a = soft(seg(wl - r.full, 0, 50)); g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); for (let x = W; x >= 0; x -= 6) g.lineTo(x, Math.min(H, surfaceY(x))); g.closePath();
       const ag = g.createLinearGradient(0, 0, 0, Math.min(H, wl)); ag.addColorStop(0, `rgba(238,244,240,${0.5 * a})`); ag.addColorStop(1, `rgba(214,230,226,${0.62 * a})`); g.fillStyle = ag; g.fill();
       g.fillStyle = `rgba(255,255,255,${0.2 * a})`; g.fillRect(14, 0, 5, Math.min(H, wl)); g.fillRect(W - 20, 0, 3, Math.min(H, wl));
-      // a grimy tide line and streaks stay on the glass where the dirty water was
-      if (r.dirt0 > 0 && drain > 0 && r.level < 0.995) { g.fillStyle = `rgba(110,98,46,${0.34 * r.dirt0 * (1 - fill)})`; g.fillRect(0, r.full, W, 3); for (let i = 0; i < 9; i++) g.fillRect(24 + i * 44 + (i * 13) % 17, r.full, 2, Math.max(0, wl - r.full) * (0.4 + ((i * 37) % 60) / 100)); }
+      // grime clings to the glass where the dirty water stood: a tide line, a thin film and a few slow drips that end in a bead
+      if (r.dirt0 > 0 && drain > 0 && r.level < 0.995) {
+        const ga = r.dirt0 * (1 - fill), band = Math.max(0, wl - r.full); g.fillStyle = `rgba(112,100,48,${0.09 * ga})`; g.fillRect(0, r.full, W, band); g.fillStyle = `rgba(110,98,46,${0.3 * ga})`; g.fillRect(0, r.full, W, 2.5);
+        for (let i = 0; i < 12; i++) { const x = 18 + i * 33 + (i * 13) % 11, len = band * (0.35 + ((i * 37) % 55) / 100), y0 = r.full + 2; const gr = g.createLinearGradient(0, y0, 0, y0 + len); gr.addColorStop(0, `rgba(112,100,48,${0.28 * ga})`); gr.addColorStop(1, `rgba(112,100,48,${0.12 * ga})`); g.fillStyle = gr; g.beginPath(); g.moveTo(x - 1.4, y0); g.lineTo(x + 1.4, y0); g.lineTo(x + 0.7, y0 + len); g.lineTo(x - 0.7, y0 + len); g.fill(); g.fillStyle = `rgba(112,100,48,${0.3 * ga})`; g.beginPath(); g.arc(x, y0 + len, 2.2, 0, 6.3); g.fill(); }
+      }
     }
+    if (r.level < 0.25) { const fa = soft(seg(0.25 - r.level, 0, 0.2)) * r.dirt0 * (1 - fill); const fg = g.createLinearGradient(0, H * 0.7, 0, H); fg.addColorStop(0, 'rgba(90,76,34,0)'); fg.addColorStop(1, `rgba(90,76,34,${0.4 * fa})`); g.fillStyle = fg; g.fillRect(0, H * 0.7, W, H * 0.3); g.fillStyle = `rgba(190,170,110,${0.18 * fa})`; for (let i = 0; i < 5; i++) { g.beginPath(); g.ellipse(60 + i * 70 + (i * 29) % 30, H - 60 - (i % 3) * 36, 34, 7, 0, 0, 6.3); g.fill(); } }
     // the water
     if (wl < H) {
       g.beginPath(); g.moveTo(0, H); for (let x = 0; x <= W; x += 6) g.lineTo(x, surfaceY(x)); g.lineTo(W, H); g.closePath();
@@ -105,22 +109,23 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, tank }) {
         const sp = Math.sin(Math.PI * fill); for (let i = 0; i < 22; i++) { g.fillStyle = `rgba(255,255,255,${0.7 * sp * rnd()})`; g.fillRect(rnd() * W, lerp(wl, H, rnd()), 2, 2); }
       }
     }
+    { const sw = seg(t, T.fill - 0.9, T.fill + 0.3); if (sw > 0 && sw < 1) { const x = lerp(-80, W + 80, ease(sw)), gl = g.createLinearGradient(x - 70, 0, x + 70, 0); gl.addColorStop(0, 'rgba(255,255,255,0)'); gl.addColorStop(0.5, `rgba(235,252,255,${0.32 * Math.sin(Math.PI * sw)})`); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; g.fillRect(x - 70, r.full, 140, H - r.full); } }
     // the fish, drawn while they are out of the 3D tank
     r.fish.forEach((a, i) => {
-      const wag = Math.sin(t * 12 + a.ph) * 0.12;
+      const wag = Math.sin(t * 12 + a.ph) * 0.12, top = Math.max(r.full + 26, 96);
       if (t < a.tUp) { r.shown.delete(i); return; }
       r.shown.add(i);
-      if (t < a.tOut) { const k = ease(seg(t, a.tUp, a.tOut)), x = lerp(a.at[0], a.x, k) + Math.sin(k * 9 + a.ph) * 10 * (1 - k), y = lerp(a.at[1], r.full + 26, k); fish2D(a, x, y, 1, t, a.x > a.at[0] ? 1 : -1, -0.9 * Math.sin(k * Math.PI) * 0.7 + wag); }          // swims up to the surface
-      else if (t < a.tGone) { const k = seg(t, a.tOut, a.tGone), x = a.x + k * 20, y = r.full + 26 - Math.sin(k * Math.PI * 0.5) * 120 - k * k * 80; fish2D(a, x, y, 1, t, 1, -1.1 + k * 0.4); if (!a.leapt) { a.leapt = true; sfx('splash'); PUFF(a.x, r.full + 28, 2); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: r.full + 28, vx: (rnd() - 0.5) * 120, vy: -120 - rnd() * 90, l: 0.8, s: 1.6 }); } }
+      if (t < a.tOut) { const k = ease(seg(t, a.tUp, a.tOut)), x = lerp(a.at[0], a.x, k) + Math.sin(k * 9 + a.ph) * 10 * (1 - k), y = lerp(a.at[1], top, k); fish2D(a, x, y, 1, t, a.x > a.at[0] ? 1 : -1, -0.9 * Math.sin(k * Math.PI) * 0.7 + wag); }          // swims up to the surface
+      else if (t < a.tGone) { const k = seg(t, a.tOut, a.tGone), x = a.x + k * 26, y = top - Math.sin(k * Math.PI * 0.5) * 150 - k * k * 60; fish2D(a, x, y, 1, t, 1, -1.15 + k * 0.5); if (!a.leapt) { a.leapt = true; sfx('splash'); haptic(8); PUFF(a.x, top + 4, 2); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: top + 4, vx: (rnd() - 0.5) * 120, vy: -120 - rnd() * 90, l: 0.8, s: 1.6 }); } }
       else if (t < a.tDrop) return;
-      else if (t < a.tLand) { const k = seg(t, a.tDrop, a.tLand), x = a.x, y = lerp(-70, r.full + 28, k * k); fish2D(a, x, y, 1, t, 1, 1.2 - k * 0.3); }                                                    // dropped back in from the top
-      else if (t < a.tHome) { if (!a.landed) { a.landed = true; sfx('splash'); PUFF(a.x, r.full + 30, 3); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: r.full + 30, vx: (rnd() - 0.5) * 110, vy: -90 - rnd() * 80, l: 0.7, s: 1.5 }); } const k = ease(seg(t, a.tLand, a.tHome)); fish2D(a, lerp(a.x, a.home[0], k), lerp(r.full + 30, a.home[1], k), 1, t, a.home[0] > a.x ? 1 : -1, wag); }
+      else if (t < a.tLand) { const k = seg(t, a.tDrop, a.tLand), x = a.x, y = lerp(-70, r.full + 40, k * k); fish2D(a, x, y, 1, t, 1, 1.2 - k * 0.3); }                                                    // dropped back in from the top
+      else if (t < a.tHome) { if (!a.landed) { a.landed = true; sfx('splash'); PUFF(a.x, r.full + 42, 3); haptic(8); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: r.full + 42, vx: (rnd() - 0.5) * 110, vy: -90 - rnd() * 80, l: 0.7, s: 1.5 }); } const k = ease(seg(t, a.tLand, a.tHome)); fish2D(a, lerp(a.x, a.home[0], k), lerp(r.full + 42, a.home[1], k), 1, t, a.home[0] > a.x ? 1 : -1, wag); }
       else r.shown.delete(i);
     });
     // water thrown up by the fish
     for (let i = drops.length - 1; i >= 0; i--) { const d = drops[i]; d.vy += 520 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.l -= dt * 1.2; if (d.l <= 0 || d.y > H) { drops.splice(i, 1); continue; } g.fillStyle = 'rgba(200,235,250,.85)'; g.beginPath(); g.arc(d.x, d.y, d.s, 0, 6.3); g.fill(); }
     for (let i = puffs.length - 1; i >= 0; i--) { const p = puffs[i]; p.l -= dt * 1.6; if (p.l <= 0) { puffs.splice(i, 1); continue; } g.strokeStyle = `rgba(235,252,255,${p.l})`; g.lineWidth = 1.2; g.beginPath(); g.ellipse(p.x, p.y, p.r + (1 - p.l) * 22, (p.r + (1 - p.l) * 22) * 0.3, 0, 0, 6.3); g.stroke(); }
-    r.fish.forEach((a, i) => { a.f.group.visible = !r.shown.has(i); });
+    r.fish.forEach((a, i) => { a.f.group.visible = !r.shown.has(i); if (a.f.emote && r.shown.has(i)) { a.f.emote.visible = false; a.f.emote.material.opacity = 0; } });
     // the real change happens as the clean water starts to come in
     if (t >= T.fill0 && !r.dispatched) { r.dispatched = true; Promise.resolve(r.dispatch()).then((ok) => { if (ok === false) r.ok = false; }); }
     if (t >= T.end || (!r.ok && t > T.drain)) { finish(); return false; }
