@@ -58,7 +58,7 @@ export class Fish3D {
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
     this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave) this.mobile.push(i); });
-    this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.camoK = 0; this.camoApplied = 0; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; }
+    this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; }
     this.setPose(0, true);
     this.group = new THREE.Group(); this.group.add(this.mesh);
     // state
@@ -136,12 +136,16 @@ export class Fish3D {
     }
     this.camoTex = tex;
   }
+  camoEase(k) { return k * k * (3 - 2 * k); }
   applyCamo() {
-    const a = this.mesh.instanceColor.array, b = this.baseCol, k = this.camoK, f = this.flush; this.camoApplied = k; this.flushApplied = f > 0;
+    const a = this.mesh.instanceColor.array, b = this.baseCol, f = this.flush, raw = this.camoK, k = this.camoEase(Math.max(0, Math.min(1, raw / 0.94))) * 0.94; this.camoApplied = raw; this.flushApplied = f > 0;
+    if (this.camoMix < 1) this.camoMix = Math.min(1, (performance.now() - (this.camoMixT ?? 0)) / 1400);                    // moving to a different ground while camouflaged: the pattern cross-fades, it does not jump
+    const pv = this.camoMix < 1 ? this.camoPrev : null, mx = this.camoEase(this.camoMix ?? 1);
     if (k > 0.02 && !this.camoTex && this.camoSpec) this.buildCamo(this.camoSpec); const tex = k > 0.02 ? this.camoTex : null;
     for (let i = 0; i < this.vox.length; i++) {
       const o = i * 3, v = this.vox[i]; if (v.tag === 'eye') { a[o] = b[o]; a[o + 1] = b[o + 1]; a[o + 2] = b[o + 2]; continue; }
-      const tr = tex ? tex[o] : b[o], tg = tex ? tex[o + 1] : b[o + 1], tb = tex ? tex[o + 2] : b[o + 2], lift = 1 + 0.4 * f;
+      let tr = tex ? tex[o] : b[o], tg = tex ? tex[o + 1] : b[o + 1], tb = tex ? tex[o + 2] : b[o + 2]; if (pv && tex) { tr = pv[o] + (tr - pv[o]) * mx; tg = pv[o + 1] + (tg - pv[o + 1]) * mx; tb = pv[o + 2] + (tb - pv[o + 2]) * mx; }
+      const lift = 1 + 0.4 * f;
       a[o] = Math.min(1, (b[o] + (tr - b[o]) * k) * lift); a[o + 1] = Math.min(1, (b[o + 1] + (tg - b[o + 1]) * k) * (1 + 0.15 * f)); a[o + 2] = Math.min(1, (b[o + 2] + (tb - b[o + 2]) * k) * (1 + 0.1 * f));
     }
     this.mesh.instanceColor.needsUpdate = true;
@@ -238,9 +242,9 @@ export class Fish3D {
     if (S.s === 'rest' && this.camoNext <= 0) { this.camoNext = 14 + rng() * 26; this.camoHold = 9 + rng() * 14; }
     const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend;                                // sometimes it settles beside the new thing and takes on its look
     const camoT = (S.s === 'rest' && !this.flush && (this.shy || this.camoHold > 0 || this.restFor > 12)) || hiding ? 0.94 : 0;
-    this.camoK += (camoT - this.camoK) * Math.min(1, dt * (camoT ? 1.6 : 2.6)); this.camoT0 += dt;
-    if (this.camoT0 > 0.2 && this.camoK > 0.03) { const g = Fish3D.groundAt?.(this.pos.x, this.pos.z); if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoTex = null; this.camoApplied = -1; } }
-    if (this.camoT0 > 0.1 && !this.pale && (Math.abs(this.camoK - this.camoApplied) > 0.04 || this.flush > 0 || this.flushApplied)) { this.camoT0 = 0; this.applyCamo(); }
+    this.camoK += Math.max(-dt * 0.7, Math.min(dt * 0.4, camoT - this.camoK)); this.camoT0 += dt;      // a slow, steady fade: about 2.3 seconds in, 1.4 out, eased when drawn
+    if (this.camoT0 > 0.2 && this.camoK > 0.03) { const g = Fish3D.groundAt?.(this.pos.x, this.pos.z); if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoPrev = this.camoK > 0.1 ? this.camoTex : null; this.camoMix = this.camoPrev ? 0 : 1; this.camoMixT = performance.now(); this.camoTex = null; this.camoApplied = -1; } }
+    if (this.camoT0 > 0.05 && !this.pale && (Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1)) { this.camoT0 = 0; this.applyCamo(); }
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > 1 / 20) { this.accum = 0; this.setPose(this.phase); }
   }
