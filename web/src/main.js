@@ -7,7 +7,7 @@ import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
-import { Glow } from './w3/fx.js';
+import { Glow, Sightings } from './w3/fx.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
 import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle } from './online.js';
@@ -20,6 +20,7 @@ window.__game = game;
 
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
+const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
 const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
@@ -303,11 +304,23 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
   const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
+  if (!f && !focus) lure = { t0: performance.now(), x: ev.clientX, y: ev.clientY, on: false };
 });
+// hold a finger in the water: the bold and the curious come to see it. Nothing is earned; the fish simply like you.
+let lure = null; const lureAt = new THREE.Vector3(), lurePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.6);
+function lureTick() {
+  if (!lure || play || placing || rearrange || feedMode || cleanMode || focus || performance.now() - lure.t0 < 380) return;
+  if (!rayFrom({ clientX: lure.x, clientY: lure.y }).ray.intersectPlane(lurePlane, lureAt)) return;
+  if (!lure.on) { lure.on = true; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
+  let n = 0; for (const f of fishes.list) {
+    if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.pos.distanceTo(lureAt) > 7) continue;
+    const a = (f.seed ?? n) * 2.4 + n * 1.7; n++; f.target.set(Math.max(-4, Math.min(4, lureAt.x + Math.cos(a) * 0.9)), Math.max(0.9, Math.min(13, lureAt.y + Math.sin(a) * 0.7)), 2.3); f.retarget = 0.6;
+  }
+}
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
-canvas.addEventListener('pointermove', (ev) => { if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
-addEventListener('pointerup', () => { dragging = false; });
+canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
+addEventListener('pointerup', () => { dragging = false; lure = null; }); addEventListener('pointercancel', () => { lure = null; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });
 
 // ── tutorial: name the fish, feed it, meet friends, place a free plant ──
@@ -420,7 +433,7 @@ function frame(now) {
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
-  glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  lureTick(); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play; sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }

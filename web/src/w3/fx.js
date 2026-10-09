@@ -112,3 +112,63 @@ export class Glow {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 }
+
+// Rare passers-by in the deep water behind the tank. Nothing is paid and nothing is logged: some days you simply see a manta glide through.
+// Each one crosses the far water once, slowly, and is gone; the next is several minutes away, so they stay special.
+const flat = (c, o = {}) => new THREE.MeshLambertMaterial({ color: c, flatShading: true, fog: true, ...o });
+function buildWhale() {                          // a whale shark: huge, slow and gentle, readable from the side
+  const root = new THREE.Group(), body = new THREE.Group(), m = flat(0x3b5d7a), belly = flat(0xcfdde6), spot = new THREE.MeshBasicMaterial({ color: 0xeaf4fa, fog: true });
+  const trunk = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), m); trunk.scale.set(3.3, 0.85, 0.95); body.add(trunk);
+  const under = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45), belly); under.scale.set(3.28, 0.84, 0.94); under.position.y = -0.03; body.add(under);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(1, 7, 5), m); head.scale.set(1.1, 0.5, 1.15); head.position.set(3.0, -0.15, 0); body.add(head);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 4, 3), flat(0x0b1620)); eye.position.set(3.35, 0.0, 0.62); body.add(eye); const eye2 = eye.clone(); eye2.position.z = -0.62; body.add(eye2);
+  const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.1, 4), m); dorsal.position.set(0.7, 1.0, 0); dorsal.rotation.z = 0.35; body.add(dorsal);
+  for (const z of [1, -1]) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.5, 4), m); f.position.set(1.7, -0.55, z * 0.9); f.rotation.set(z * 1.1, 0, 1.15); body.add(f); }
+  const tail = new THREE.Group(); tail.position.set(-3.1, 0, 0); body.add(tail);
+  const up = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.9, 4), m); up.position.set(-0.55, 0.65, 0); up.rotation.z = 0.7; tail.add(up);
+  const lo = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.2, 4), m); lo.position.set(-0.4, -0.5, 0); lo.rotation.z = 2.5; tail.add(lo);
+  const peduncle = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.3, 5), m); peduncle.rotation.z = Math.PI / 2; peduncle.position.set(-0.3, 0, 0); tail.add(peduncle);
+  for (let i = 0; i < 26; i++) for (const z of [1, -1]) { const x = -2.6 + (i * 0.215) % 5.2 + ((i * 7) % 3) * 0.05, y = 0.2 + ((i * 5) % 6) * 0.1, d = Math.sqrt(Math.max(0.05, 1 - (x / 3.3) ** 2 - (y / 0.85) ** 2)) * 0.95; const sp = new THREE.Mesh(new THREE.CircleGeometry(0.075 + (i % 3) * 0.02, 5), spot); sp.position.set(x, y - 0.1, z * d * 1.01); sp.rotation.y = z > 0 ? 0 : Math.PI; body.add(sp); }
+  root.add(body); body.scale.setScalar(0.72);
+  return { root, speed: 1.3, y: [6, 10], rise: 0, yaw: (d) => (d > 0 ? 0 : Math.PI), roll: () => 0, update(t) { tail.rotation.y = Math.sin(t * 1.4) * 0.35; body.rotation.y = Math.sin(t * 1.4 - 0.6) * 0.05; body.rotation.z = Math.sin(t * 0.5) * 0.03; } };
+}
+function buildJelly() {
+  const root = new THREE.Group(), glowy = new THREE.MeshBasicMaterial({ color: 0xff9ad0, transparent: true, opacity: 0.55, fog: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  const bell = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), glowy); root.add(bell);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffe4f2, transparent: true, opacity: 0.7, fog: true, depthWrite: false })); core.position.y = 0.12; core.scale.y = 0.6; root.add(core);
+  const tents = []; for (let i = 0; i < 6; i++) { const a = i / 6 * 6.28, t = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 1.5, 3), glowy); t.position.set(Math.cos(a) * 0.38, -0.8, Math.sin(a) * 0.38); root.add(t); tents.push(t); }
+  return { root, speed: 0.55, y: [4, 11], rise: 0.35, yaw: () => 0, roll: () => 0, update(t) { const p = Math.sin(t * 1.9); bell.scale.set(1 + p * 0.1, 1 - p * 0.14, 1 + p * 0.1); tents.forEach((q, i) => { q.rotation.z = Math.sin(t * 2.2 + i) * 0.14; q.scale.y = 1 + p * 0.1; }); } };
+}
+function buildTurtle() {
+  const root = new THREE.Group(), shell = flat(0x5d7a4a), skin = flat(0x93a86a), pat = flat(0x3f5a36);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.95, 7, 5), shell); body.scale.set(1.15, 0.5, 1.4); root.add(body);
+  const ridge = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), pat); ridge.scale.set(1.1, 0.45, 1.4); ridge.position.y = 0.38; root.add(ridge);
+  const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), skin); head.scale.set(0.9, 0.8, 1.2); head.position.set(0, 0.05, 1.55); root.add(head);
+  const fl = []; for (const [x, z, s] of [[-1, 0.7, 1], [1, 0.7, 1], [-1, -0.8, 0.6], [1, -0.8, 0.6]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.3 * s, 0.07, 0.5 * s), skin); f.geometry.translate(x * 0.65 * s, 0, 0); f.position.set(x * 0.8, -0.1, z); root.add(f); fl.push([f, x]); }
+  return { root, speed: 0.75, y: [3, 8], rise: 0.0, yaw: (d) => d * Math.PI / 2, roll: () => 0, update(t) { fl.forEach(([f, x], i) => { f.rotation.z = x * Math.sin(t * 1.3 + (i > 1 ? 0.8 : 0)) * 0.5; }); root.rotation.z = Math.sin(t * 0.6) * 0.05; } };
+}
+function buildShoal() {
+  const root = new THREE.Group(), n = 26, geo = new THREE.ConeGeometry(0.11, 0.5, 4); geo.rotateZ(-Math.PI / 2);
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xdfeef8, fog: true }), n); mesh.frustumCulled = false; root.add(mesh);
+  const q = Array.from({ length: n }, (_, i) => ({ dx: (Math.random() - 0.5) * 3.6, dy: (Math.random() - 0.5) * 1.6, dz: (Math.random() - 0.5) * 1.4, ph: Math.random() * 6 + i })), m = new THREE.Matrix4();
+  return { root, speed: 2.4, y: [4, 11], rise: 0, yaw: (d) => (d > 0 ? 0 : Math.PI), roll: () => 0, update(t) { q.forEach((p, i) => { m.makeRotationZ(Math.sin(t * 6 + p.ph) * 0.12); m.setPosition(p.dx + Math.sin(t * 0.9 + p.ph) * 0.5, p.dy + Math.cos(t * 1.1 + p.ph) * 0.35, p.dz); mesh.setMatrixAt(i, m); }); mesh.instanceMatrix.needsUpdate = true; } };
+}
+const SIGHTS = { whale: [buildWhale, 2], jelly: [buildJelly, 4], turtle: [buildTurtle, 2], shoal: [buildShoal, 4] };
+export class Sightings {
+  constructor(scene) { this.scene = scene; this.cur = null; this.wait = 70 + Math.random() * 120; this.enabled = false; this.last = null; }
+  spawn(kind) {
+    if (this.cur) return false;
+    const names = Object.keys(SIGHTS); kind ||= (() => { const pool = names.filter((k) => k !== this.last).flatMap((k) => Array(SIGHTS[k][1]).fill(k)); return pool[(Math.random() * pool.length) | 0]; })();
+    const s = SIGHTS[kind][0](); s.kind = kind; this.last = kind; const dir = Math.random() < 0.5 ? -1 : 1;
+    s.dir = dir; s.x = -dir * 13; s.y0 = s.y[0] + Math.random() * (s.y[1] - s.y[0]); s.z = -7.5 - Math.random() * 3; s.age = 0; s.root.rotation.y = s.yaw(dir); s.root.rotation.z = s.roll(dir);
+    s.root.position.set(s.x, s.y0, s.z); this.scene.add(s.root); this.hide?.push(s.root); this.cur = s; return true;
+  }
+  clear() { const s = this.cur; if (!s) return; this.scene.remove(s.root); const hi = this.hide?.indexOf(s.root) ?? -1; if (hi >= 0) this.hide.splice(hi, 1); s.root.traverse((o) => { o.geometry?.dispose?.(); }); this.cur = null; }
+  update(dt, t, phase) {
+    if (!this.cur) { if (!this.enabled) return; this.wait -= dt; if (this.wait <= 0) { this.spawn(); this.wait = 200 + Math.random() * 280; } return; }
+    const s = this.cur; s.age += dt; s.update(t);
+    if (s.kind === 'jelly') { s.root.position.x += s.dir * s.speed * dt * 0.6; s.root.position.y += s.rise * dt * 0.5; } else s.root.position.x += s.dir * s.speed * dt;
+    s.root.position.y += Math.sin(t * 0.5) * 0.004;
+    if (Math.abs(s.root.position.x) > 14.5 || s.age > 90 || s.root.position.y > 15) { this.scene.remove(s.root); const hi = this.hide?.indexOf(s.root) ?? -1; if (hi >= 0) this.hide.splice(hi, 1); s.root.traverse((o) => { o.geometry?.dispose?.(); }); this.cur = null; }
+  }
+}
