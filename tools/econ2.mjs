@@ -29,6 +29,7 @@ export const SCENARIOS = {
   E: { label: 'E. High frequency (6 visits/day each)', players: [6, 6, 6] },
   Es: { label: 'E2. High frequency + bottle swapping at every chance', players: [6, 6, 6], bottles: 'max' },
   S: { label: 'S. Casual single caretaker (1 visit/day)', players: [1] },
+  St: { label: 'S2. Casual single caretaker, server ticking every 5 min (push on)', players: [1], tick: 5 },
 };
 const GAPS = { 1: [10], 2: [8, 16], 3: [8, 13, 20], 6: [8, 11, 14, 18, 21, 23] };
 const NAMES3 = ['Alex', 'Sam', 'Riley'];

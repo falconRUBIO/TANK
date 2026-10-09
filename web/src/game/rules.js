@@ -128,6 +128,8 @@ function discover(t, now, ev) {
 // Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
 // Days 1-2 normal. Day 3 (2d) sluggish and paler, growth pauses. Day 4 (3d) critical: slow, less appetite, a warning goes out.
 // Day 5 (4d-5d) death is possible if the fish's own health stays critically low. Guard rails: no deaths in a new tank's first three days, at most one a day, the last fish never dies.
+// A fish counts as going hungry only once it has gone this long without any feeding. Hunger itself rises to its cap within hours, so judging by the hunger bar alone would call a once-a-day caretaker neglectful.
+export const FED_GRACE = 30 * 3600e3;
 export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
 function memorialOf(t, f, now) {
   const ms = [`Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favourite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favourite spot');
@@ -138,9 +140,9 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
   for (const f of [...t.fish]) {
     ensureFish(f); const n = needsOf(f, t, now);
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
-    const steps = Math.max(1, Math.min(96, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
+    const steps = Math.max(1, Math.min(480, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
-      const fr = (k + 0.5) / steps, hun = h0 + (t.hunger - h0) * fr, wat = w0 + (t.water - w0) * fr, fedK = 1 - hun * (1 + f.appetite), bad = fedK < 0.2 || wat < 0.5;
+      const el = ((k + 0.5) / steps) * dt, hun = Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = fedK < 0.2 && at - (t.lastFed ?? -Infinity) > FED_GRACE, bad = hungry || wat < 0.5;
       f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); if (bad && f.ail >= AIL_TIRED) f.born += stepMs;      // growth pauses once a fish is run down
     }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));
@@ -167,6 +169,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
 export function norm(t, now = Date.now()) {
   t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
+  t.lastFed ??= t.simTs ?? now;
   if (!t.flags.msV) {                                   // a tank saved before fish milestones existed: record what its fish already reached, pay nothing retroactively
     t.flags.msV = 1;
     for (const f of t.fish) { f.found ||= []; for (const [d] of AGE_REWARDS) if ((now - f.born) / DAY >= d && !f.found.includes('age' + d)) f.found.push('age' + d); }
@@ -200,7 +203,7 @@ function makeFish(t, o, now, idx) {
   const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null }); t.fish.push(f);
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
-const HOUR = 3600e3;
+const HOUR = 3600e3, BOTTLE_PAY = 2;      // a bottle pays what it cost to send, so swapping bottles cannot make shells
 // A snapshot of a fish for its family record, so a family tree survives its members: identity, look, generation and its own parents' names.
 const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.seed, traits: f.traits ?? [], genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 0, owner: f.owner ?? null, ownerName: f.ownerName ?? null, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
 const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
@@ -366,6 +369,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   switch (a.t) {
     case 'feed': {
+      t.lastFed = now;                                                // any feeding, paid or not, counts as the fish being looked after
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       const pay = t.hunger > 0.25 ? 1 : 0;
       t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
@@ -494,8 +498,8 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'openBottle': {
       const b = t.bottles.find((x) => x.id === a.id && x.to === uid); if (!b) return ok({ applied: false, delta: 0 });
-      t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += 4;
-      events.push({ activity: { type: 'bottle', text: `${name} opened a bottle from ${b.fromName}.` }, toast: `${b.fromName}: “${b.note}” +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4, from: b.fromName, note: b.note });
+      t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += BOTTLE_PAY;
+      events.push({ activity: { type: 'bottle', text: `${name} opened a bottle from ${b.fromName}.` }, toast: `${b.fromName}: “${b.note}” +${BOTTLE_PAY} shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: BOTTLE_PAY, from: b.fromName, note: b.note });
     }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');

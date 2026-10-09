@@ -26,7 +26,7 @@ Three friends share one aquarium on a phone. Calm, no ads, no purchases, no stre
 Light follows the phone's clock (morning, afternoon, evening, night). At night most fish drift low and slow.
 
 ## 3. Stakes: neglect and death
-A fish that is starving or in foul water accumulates neglect time. Care wins it back twice as fast.
+A fish accumulates neglect time when the tank has gone 30 hours without any feeding, or when the water is foul. A caretaker who feeds once a day never builds any. Care wins it back twice as fast.
 - Days 1 to 2: normal, needs decline gradually.
 - Day 3: sluggish and paler; growth pauses.
 - Day 4: critical: slow, little appetite, a warning goes out.
@@ -52,7 +52,7 @@ A fish that is starving or in foul water accumulates neglect time. Care wins it 
 
 ## 6. Three players
 - Up to three caretakers share everything: fish, decorations, shells, journal, chat. Join by a 6-character code or link; a fourth person sees "This tank is full".
-- Nudge a friend when the tank needs something. Send a message in a bottle (40 characters, 2 shells to send, +4 shells for whoever opens it; one per 6 hours). Chat. Activity list.
+- Nudge a friend when the tank needs something. Send a message in a bottle (40 characters, 2 shells to send, +2 shells for whoever opens it; one per 6 hours). Chat. Activity list.
 - Opt-in push notifications (needs keys on the server): rare visitor, an arrival or hatch, a critical-state warning, a nudge, a bottle. Maximum two a day per person, never 22:00 to 08:00 local time, never while the game is open.
 
 ## 7. Added since the first version of this document

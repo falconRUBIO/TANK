@@ -1,6 +1,6 @@
 # OUR TANK: economy and progression refinement (audit)
 
-Scope of this change: level 8 progression, fish milestone rewards, daily wish tiers, three-player economy testing. Fish prices, decoration prices, the starting 10 shells, mortality timing, care rewards and every other value were left alone, except the items listed under "Exact changes".
+Scope of this change: level 8 progression, fish milestone rewards, daily wish tiers, three-player economy testing, plus three decisions you delegated (bottle pay, mortality consistency, daily reset). Fish prices, decoration prices, the starting 10 shells, care rewards and every other value were left alone, except the items listed under "Exact changes" and section 9.
 
 **How to read the numbers.** Every simulation figure below comes from a bot (`tools/econ2.mjs`), not from people. It visits on a fixed schedule, always cares, buys goal-first and completes the daily wish every day. Real players will miss wishes, forget visits and buy less efficiently. Nothing here is retention data. Full tables: `docs/ECONOMY_SIM_RESULTS.md`.
 
@@ -96,37 +96,39 @@ Five seeds per cell. Baseline = the rules before this work; current = after. "Ea
 
 Day 30 and day 90 (full day 7/14/60 tables in `docs/ECONOMY_SIM_RESULTS.md`):
 
-| Scenario | Rules | Day | Earned/day | Spent/day | Balance | Per visit | Level | Score | Deaths |
-|---|---|---|---|---|---|---|---|---|---|
-| A: one of three, 3/day | baseline | 90 | 28.9 | 8.4 | 1856 | 9.6 | 7 | 220 | 0 |
-| | current | 90 | 35.1 | 8.8 | 2378 | 11.7 | 8 | 236 | 0 |
-| B: all three, 3/day each | baseline | 90 | 49.7 | 14.7 | 3156 | 5.5 | 7 | 221 | 0 |
-| | current | 90 | 56.1 | 15.1 | 3705 | 6.2 | 8 | 241 | 0 |
-| C: 3/day, 1/day, every 3 days | baseline | 90 | 41.1 | 13.2 | 2519 | 9.5 | 7 | 221 | 0 |
-| | current | 90 | 47.2 | 13.7 | 3028 | 10.9 | 8 | 241 | 0 |
-| D: all away days 20 to 27 (server idle) | baseline | 90 | 46.3 | 14.3 | 2894 | 5.6 | 7 | 221 | **0** |
-| | current | 90 | 52.7 | 14.6 | 3440 | 6.4 | 8 | 241 | **0** |
-| D2: same, server ticking (push on) | baseline | 90 | 44.4 | 14.2 | 2725 | 5.3 | 7 | 221 | **3** |
-| | current | 90 | 51.0 | 14.5 | 3295 | 6.2 | 8 | 241 | **3** |
-| E: all three, 6/day each | baseline | 90 | 53.9 | 14.9 | 3519 | 3.0 | 7 | 221 | 0 |
-| | current | 90 | 60.7 | 15.0 | 4116 | 3.4 | 8 | 241 | 0 |
-| E2: E plus bottle swapping at every chance | baseline | 90 | 113.8 | 44.9 | 6208 | 6.3 | 7 | 221 | 0 |
-| | current | 90 | 84.5 | 27.2 | 5167 | 4.7 | 8 | 242 | 0 |
-| S: casual, 1/day | baseline | 90 | 18.1 | 8.5 | 874 | 18.1 | 7 | 202 | 0 |
-| | current | 90 | 24.4 | 8.8 | 1416 | 24.4 | 8 | 235 | 0 |
+| Scenario | Rules | Earned/day | Spent/day | Balance | Per visit | Level | Score | Deaths |
+|---|---|---|---|---|---|---|---|---|
+| A: one of three, 3/day | baseline | 28.9 | 8.4 | 1856 | 9.6 | 7 | 220 | 0 |
+|  | current | 35.1 | 8.8 | 2378 | 11.7 | 8 | 236 | 0 |
+| B: all three, 3/day each | baseline | 49.7 | 14.7 | 3156 | 5.5 | 7 | 221 | 0 |
+|  | current | 50.2 | 14.9 | 3185 | 5.6 | 8 | 239 | 0 |
+| C: 3/day, 1/day, every 3 days | baseline | 41.1 | 13.2 | 2519 | 9.5 | 7 | 221 | 0 |
+|  | current | 42.3 | 13.5 | 2607 | 9.8 | 8 | 238 | 0 |
+| D: all away days 20 to 27 (server idle) | baseline | 46.3 | 14.3 | 2894 | 5.6 | 7 | 221 | 0 |
+|  | current | 47.1 | 14.5 | 2953 | 5.7 | 8 | 239 | 1 |
+| D2: same, server ticking (push on) | baseline | 44.4 | 14.2 | 2725 | 5.3 | 7 | 221 | 3 |
+|  | current | 45.5 | 14.4 | 2804 | 5.5 | 8 | 236 | 2 |
+| E: all three, 6/day each | baseline | 53.9 | 14.9 | 3519 | 3.0 | 7 | 221 | 0 |
+|  | current | 54.7 | 15.1 | 3571 | 3.0 | 8 | 241 | 0 |
+| E2: E plus bottle swapping at every chance | baseline | 113.8 | 44.9 | 6208 | 6.3 | 7 | 221 | 0 |
+|  | current | 66.5 | 27.1 | 3562 | 3.7 | 8 | 239 | 0 |
+| S: casual, 1/day | baseline | 18.1 | 8.5 | 874 | 18.1 | 7 | 202 | 0 |
+|  | current | 24.4 | 8.8 | 1416 | 24.4 | 8 | 235 | 0 |
+| S2: casual, 1/day, server ticking (push on) | baseline | 17.7 | 11.8 | 546 | 17.7 | 7 | 216 | 58 |
+|  | current | 21.4 | 8.7 | 1156 | 21.4 | 8 | 235 | 0 |
 
-Level 8 (days, mean of 5 seeds): baseline never reached it in any scenario. Current: A 19.5, B 14.4, C 16.1, E 13.5, S 28.3.
+Level 8 (days, mean of 5 seeds): baseline never reached it in any scenario. Current: A 19.5, B 15.9, C 18.1, E 13.8, S 28.3.
 
 **Does progression improve?** Yes at the top: level 8 becomes reachable and the casual player is no longer stuck at wish 4 (score 202 to 235). Early levels are slightly faster (level 5 about 0.2 to 1.4 days sooner) because the happiness wish no longer blocks.
 
-**Currency inflation: yes, and it is worse.** Income rose 12% to 35% (milestones about 4 shells/day for a full tank of 28 fish, daily wishes about +1.6/day). Spending did not move (9 to 15/day). Day 90 balances are 1,400 to 4,100 unspent. This is the problem Phase 5 (late-game spending) was meant to solve, and it was not part of this directive.
+**Currency inflation: yes, and it is worse.** Income rose about 1% to 35% (milestones about 4 shells/day for a full tank of 28 fish, daily wishes about +1.6/day; heavy bottle swappers earn less because bottles no longer mint shells). Spending did not move (9 to 15/day). Day 90 balances are 1,400 to 4,100 unspent. This is the problem Phase 5 (late-game spending) was meant to solve, and it was not part of this directive.
 
-**Does a second and third caretaker multiply income?** Not linearly. Care income depends on how often the tank is hungry, dirty or cloudy, not on who acts. Three players at 3 visits each earn 1.6x one player at 3 visits (56 vs 35 per day), and most of that gap is bottles (12/day) plus more feeding windows. Per visit income falls from 11.7 to 6.2. Three heavy players do not triple the economy.
+**Does a second and third caretaker multiply income?** Not linearly. Care income depends on how often the tank is hungry, dirty or cloudy, not on who acts. Three players at 3 visits each earn 1.4x one player at 3 visits (50 vs 35 per day), mostly from more feeding windows and bottles (6/day). Per visit income falls from 11.7 to 5.6. Three heavy players do not triple the economy.
 
-**Per-source findings (current rules, scenario B):** bottles 12.0/day, feeding 10.1, rare visitors 6.7, gifts 5.3, daily wish 4.6, 14/30-day milestones 4.0, water 4.0, glass 2.8, play 1.9, tank wishes 1.2.
+**Per-source findings (current rules, scenario B):** feeding 10.1/day, rare visitors 6.7, bottles 6.0, gifts 5.5, daily wish 4.6, 14/30-day milestones 4.0, water 4.0, glass 2.8, play 1.9, tank wishes 1.1.
 
 **Exploits looked for:**
-- **Bottle loop (found, partly fixed).** The 6-hour limit per sender was checked against bottles still in the tank, so opening a bottle reset the wait and a pair could swap bottles every visit: +72 shells/day for three heavy players. I fixed this: the sender's last send time is now remembered (`flags.bottleAt`), restoring the documented one per 6 hours. The same scenario now earns 36/day from bottles. The design still nets +2 shells per bottle (costs 2, pays 4), so three players can still mint about 18/day at maximum cadence. Not changed; see item 9.
+- **Bottle loop (found, fixed in two steps).** The 6-hour limit per sender was checked against bottles still in the tank, so opening a bottle reset the wait and a pair could swap bottles every visit: +72 shells/day for three heavy players. The sender's last send time is now remembered (`flags.bottleAt`), and the opener now earns what the sender paid (2), so a bottle is a gift between friends, not income. The same scenario now earns 36 from bottles but spends 18, so net zero; total income for it fell from 114 to 67 a day.
 - Feeding, glass, water: capped by regrowth. At 6 visits/day x 3 players, feeding is 13.5/day. No duplication found.
 - Gifts: one every 6 hours, single slot. No loop found.
 - Milestones: per fish, flagged on the fish. No duplication found, including simultaneous claims.
@@ -140,7 +142,7 @@ Level 8 (days, mean of 5 seeds): baseline never reached it in any scenario. Curr
 - Casual score at day 90: 202 to 235.
 - Daily wish average: 3.0 to 4.6/day in the bot (which always finishes it; real completion will be lower).
 - Fish milestones per fish at day 90: 25 recorded to 84 recorded.
-- Max bottle income at heavy cadence: 72/day to 36/day.
+- Net shells minted by bottle swapping at heavy cadence: about +36/day to 0.
 
 ## 7. Multiplayer concurrency tests [T]
 
@@ -163,19 +165,21 @@ Note one visible effect on old tanks: wish 4 now completes more easily, and leve
 ## 9. Remaining economy problems
 
 1. **No late-game shell sink [N].** Balances reach thousands. Not addressed here. `docs/ECONOMY_AUDIT.md` and the earlier review list options (permanent decorations, atmosphere, consumables). A sink should come before more income sources.
-2. **Mortality depends on whether the server is ticking [not changed, needs your decision].** After a 7-day absence by all three players, the simulation shows **0 deaths if nobody is online and push is off**, but **3 deaths if the server ticks every 5 minutes** (push on). The cause: when the server sees one long gap it estimates neglect by interpolating hunger and water across the whole gap, so a week away counts as under 2 days of neglect (1.8) instead of 5. This predates this work and I did not touch it ("do not change mortality timing"). It means the five-day rule is applied differently depending on settings. A fix (step through long gaps) would make absence deaths consistent but would also make real absences more punishing, which is your call.
-3. **Bottles still mint shells [N].** +2 net per bottle. Recommend opener pays 2 (equal to the cost) or the reward is capped per day.
-4. **Rare visitors are guaranteed for light players.** A visitor appears when the tank is next opened, so a once-a-day player greets one nearly every day (about 4 shells/day, the largest non-care income for casual players). With push on, visitors can be missed and this halves. Not changed.
-5. **Milestones add inflation.** About 4 shells/day for a full tank (28 fish x 13 over 90 days). If you prefer less, lower the 14-day or 30-day rewards. I kept the values you specified.
-6. **Care reward farming ceiling is unchanged** by instruction: feed up to 13.5/day at 6 visits x 3 players. Care is still a large share of income for frequent visitors (about 30% at 3 visits x 3 players), and milestones plus the richer wishes now add about 6 shells/day for a full tank.
-7. **The bot completes every daily wish.** Real completion will be lower, so the true wish income is below 4.6/day.
-8. **Friendship is trait-based, not proximity-based** (section 3).
+2. **Mortality was unfair to daily players, and differed by server setup [T, decided and changed].** Looking closer than before, the simulation showed the bigger problem: with push notifications on (the server ticks every 5 minutes), a caretaker who visits once a day lost **58 fish in 90 days** under the old rules, and 3 visits a day lost 19 in one scenario. The cause is that fish were called neglected whenever the hunger bar was high, and the bar refills to its cap within five hours, so even a daily feeding looked like neglect most of the day. This contradicts the stated rule that one caretaker keeping up care keeps everyone's fish healthy. With push off, long gaps were instead judged by interpolating across the whole gap, so a 7-day absence counted as under 2 days (0 deaths). I changed two things and nothing else about death (five days of neglect, low health, 3 safe days, one death per 24 hours, last fish safe, floating fish, memorials all unchanged):
+   - A fish counts as going hungry only once the tank has gone **30 hours without any feeding** (`FED_GRACE`, `lastFed`). Daily feeders are never neglectful.
+   - Long gaps are judged along the real curve (hunger fills in hours, water falls slowly), so a long absence counts the same whether or not the server was ticking.
+   Result: once-a-day caretaker with push on: 58 deaths to **0**; every normal scenario: 0 deaths; all three away 7 days: **1 death** on return with the server idle, 2 with it ticking (was 0 or 3). The first death can come about 6 days after the last feeding. Tested: rule tests (43) and server tests (51) pass, and a new test asserts a long gap is judged the same lazily and ticked and three days away costs nothing. Old saves start with `lastFed` set to their last update.
+3. **Rare visitors are guaranteed for light players.** A visitor appears when the tank is next opened, so a once-a-day player greets one nearly every day (about 4 shells/day, the largest non-care income for casual players). With push on, visitors can be missed and this halves. Not changed.
+4. **Milestones add inflation.** About 4 shells/day for a full tank (28 fish x 13 over 90 days). If you prefer less, lower the 14-day or 30-day rewards. I kept the values you specified.
+5. **Care reward farming ceiling is unchanged** by instruction: feed up to 13.5/day at 6 visits x 3 players. Care is still a large share of income for frequent visitors (about 30% at 3 visits x 3 players), and milestones plus the richer wishes now add about 6 shells/day for a full tank.
+6. **The bot completes every daily wish.** Real completion will be lower, so the true wish income is below 4.6/day.
+7. **Friendship is trait-based, not proximity-based** (section 3).
 
 ## 10. Recommended next development phase
 
-1. Put the current build on real phones and watch whether the three special wishes can be completed (the phone detectors for friends, favourite spot and investigate), and whether the daily reset at UTC midnight feels wrong in your time zone. If it does, move the reset to a stored per-tank local hour.
-2. Decide the mortality question (item 2 above). It affects trust: the same absence kills fish on one server setup and not on another.
-3. Add a few permanent, optional shell sinks with a visual or behavioural payoff, then decide on bottle pay.
+1. Put the current build on real phones and watch whether the three special wishes can be completed (the phone detectors for friends, favourite spot and investigate), and whether the daily reset at UTC midnight feels wrong in your time zone. I kept UTC midnight (one clock for all three players, nothing personal stored); a per-tank local hour is the alternative if it feels wrong.
+2. Watch real fish deaths on real tanks for the first weeks (the dashboard counts `fish_died`), since the mortality calibration changed.
+3. Add a few permanent, optional shell sinks with a visual or behavioural payoff, and revisit shell income once real numbers exist.
 4. Collect real numbers (the analytics dashboard already counts `fish_milestone`, daily wishes, level-ups, shells earned and spent) and re-run `tools/econ2.mjs` with the visit patterns you actually see before changing any more values.
 5. Hold levels 9 to 12 until real tanks reach level 8.
 
@@ -183,8 +187,8 @@ Note one visible effect on old tanks: wish 4 now completes more easily, and leve
 
 ## Tested versus not tested
 
-**Implemented and tested:** level 8 wish order, happiness wish, threshold 220; four fish milestones; daily wish tiers and feasibility; bottle cooldown fix; old-save loading; simulated concurrency; analytics event; UI reward text.
+**Implemented and tested:** level 8 wish order, happiness wish, threshold 220; four fish milestones; daily wish tiers and feasibility; bottle cooldown fix and bottle pay 2; mortality hunger grace and long-gap accounting; old-save loading; simulated concurrency; analytics event; UI reward text.
 **Implemented but not fully tested:** the phone-side observation for the three new special wishes (rules side tested; real-device behaviour not); the new reward text in the hint pill (covered by the browser playthrough only for existing wishes).
-**Proposed, not implemented:** shell sinks, bottle pay change, mortality catch-up fix, per-tank local daily reset, pairing friendship to observed proximity.
+**Proposed, not implemented:** shell sinks, per-tank local daily reset, pairing friendship to observed proximity.
 
 Tools: `tools/econ2.mjs` (simulator), `tools/baseline/` (frozen pre-change rules for comparison), `tools/compat.mjs` (save compatibility).

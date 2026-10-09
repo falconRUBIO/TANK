@@ -60,7 +60,7 @@ ok('a bottle goes to one friend, costs two shells, once per six hours, and pays 
   assert.ok(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'love the tank' }, { uid: 'u1', name: 'Alex', members, now }).ok); assert.equal(t.shells, 18);
   assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'again' }, { uid: 'u1', name: 'Alex', members, now: now + 1000 }).reason, 'TOO_SOON');
   const id = t.bottles[0].id; assert.equal(R.applyAction(t, { t: 'openBottle', id }, { uid: 'u1', now: now + 2000 }).applied, false);
-  const r = R.applyAction(t, { t: 'openBottle', id }, { uid: 'u2', name: 'Sam', now: now + 3000 }); assert.ok(r.applied); assert.equal(t.shells, 22); assert.equal(t.bottles.length, 0);
+  const r = R.applyAction(t, { t: 'openBottle', id }, { uid: 'u2', name: 'Sam', now: now + 3000 }); assert.ok(r.applied); assert.equal(t.shells, 20); assert.equal(t.bottles.length, 0);
 });
 ok('neglect is slow, warned about, shared out fairly: a fish floats after five days, never all at once, never the last, never in a new tank', () => {
   const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: -9 * D, stage: 'adult', traits: ['Greedy'] })); return t; };
@@ -139,6 +139,7 @@ ok('care is credited to the caretakers who helped a fish grow, without ranking a
 });
 
 console.log('Economy refinement');
+const tend = (t, to) => { for (let x = t.simTs + 6 * 3600e3; x < to; x += 6 * 3600e3) { t.hunger = 0.1; t.water = 1; t.glass = 0; R.advance(t, x); } t.hunger = 0.1; t.water = 1; t.glass = 0; return R.advance(t, to); };
 const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
 ok('level 8 can be reached: the wish chain no longer waits on level 8 and the best possible score clears the threshold with room to spare', () => {
   const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /level 8/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/level 8/i.test(w.text)), 'no earlier wish depends on level 8');
@@ -151,10 +152,10 @@ ok('the happiness wish is reachable by a short visit: the average counts, not ev
 });
 ok('14 and 30 day milestones: earned by growing up here, paid once, journalled, kept in the memorial, never from buying a mature fish', () => {
   const D = 864e5, t = quiet(2); t.fish[0].found = ['x']; t.fish[1].found = [];
-  let ev = R.advance(t, 13.9 * D); assert.ok(!t.fish[0].found.includes('age14'), 'not before 14 days'); const s0 = t.shells; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 13.9 * D;
-  ev = R.advance(t, 14.1 * D); assert.equal(t.fish.filter((f) => f.found.includes('age14')).length, 2); assert.equal(t.shells - s0, 10 + 0 * 1, 'two fish, +5 each'); assert.ok(ev.filter((e) => e.milestone).length === 2 && ev.every((e) => !e.milestone || /14 days old/.test(e.journal)));
-  const s1 = t.shells; R.advance(t, 14.5 * D); R.advance(t, 20 * D); assert.equal(t.shells - s1, 0, 'once only'); t.simTs = 29.9 * D; ev = R.advance(t, 30.1 * D); assert.ok(t.fish.every((f) => f.found.includes('age30'))); assert.ok(t.shells - s1 >= 16, '+8 each');
-  const late = R.advance(t, 40 * D); assert.ok(!late.some((e) => e.milestone), 'no repeat'); assert.equal(t.fish[0].found.filter((x) => x === 'age14').length, 1, 'recorded once');
+  let ev = tend(t, 13.9 * D); assert.ok(!t.fish[0].found.includes('age14'), 'not before 14 days'); const s0 = t.shells; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 13.9 * D;
+  ev = tend(t, 14.1 * D); assert.equal(t.fish.filter((f) => f.found.includes('age14')).length, 2); assert.equal(t.shells - s0, 10 + 0 * 1, 'two fish, +5 each'); assert.ok(ev.filter((e) => e.milestone).length === 2 && ev.every((e) => !e.milestone || /14 days old/.test(e.journal)));
+  const s1 = t.shells; tend(t, 20 * D); assert.equal(t.shells - s1, 0, 'once only'); ev = tend(t, 30.1 * D); assert.ok(t.fish.every((f) => f.found.includes('age30'))); assert.ok(t.shells - s1 >= 16, '+8 each');
+  const late = tend(t, 40 * D); assert.ok(!late.some((e) => e.milestone), 'no repeat'); assert.equal(t.fish[0].found.filter((x) => x === 'age14').length, 1, 'recorded once');
   // a purchased fish arrives as a baby, so buying can never skip the wait
   const b = quiet(1); b.shells = 100; R.applyAction(b, { t: 'buyFish', species: 'goldfish', name: 'New', seed: 4 }, { now: 100 * D, dev: true }); R.advance(b, 100 * D + 11 * 60e3); const nf = b.fish.find((f) => f.name === 'New'); assert.ok(nf && nf.stage === 'baby' && !nf.found.includes('age14'));
   // growth pauses while a fish is run down, so neglected days do not count toward its age
@@ -216,5 +217,12 @@ ok('regression: opening a bottle does not reset the sender\'s six-hour wait (the
   assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'again' }, { uid: 'u1', name: 'Alex', members, now: at + 2000 }).reason, 'TOO_SOON');
   assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'later' }, { uid: 'u1', name: 'Alex', members, now: at + 6 * 3600e3 + 10 }).ok, true);
   assert.equal(R.applyAction(t, { t: 'bottle', to: 'u1', note: 'other player' }, { uid: 'u2', name: 'Sam', members, now: at + 3000 }).ok, true, 'each sender has their own wait');
+});
+ok('a long absence is judged the same whether or not the server ticked while everyone was away', () => {
+  const D = 864e5, mk = () => { const t = quiet(6); t.createdAt = -30 * D; t.flags.mortality = true; for (const f of t.fish) { f.born = -10 * D; f.stage = 'adult'; } t.hunger = 0.2; t.water = 1; t.glass = 0; t.simTs = 0; return t; };
+  const lazy = mk(), ticked = mk(); R.advance(lazy, 7 * D); for (let x = 5 * 60e3; x <= 7 * D; x += 5 * 60e3) R.advance(ticked, x);
+  const worst = (t) => Math.max(...t.fish.map((f) => f.ail ?? 0)) / 86400; assert.ok(worst(lazy) >= 4.5 && worst(ticked) >= 4.5, `neglect days: lazy ${worst(lazy)}, ticked ${worst(ticked)}`);
+  assert.ok(lazy.memorial.length >= 1 && lazy.memorial.length <= 1 + ticked.memorial.length, 'a catch-up can lose at most one fish at once (24 hour rule), and some fish are lost');
+  const grace = mk(); R.advance(grace, 3 * D); assert.equal(grace.memorial.length, 0, 'three days away costs nothing'); assert.ok(grace.fish.every((f) => (f.ail ?? 0) < 4 * 86400));
 });
 console.log(`All ${n} rule tests passed`);
