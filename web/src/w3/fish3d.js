@@ -131,7 +131,7 @@ export class Fish3D {
       const v = this.vox[i], o = i * 3, p = vnoise(v.x * sc * 0.55 + 7, v.y * sc * 0.55, v.z * sc * 0.55 + 3), q = h3(v.x, v.y, v.z);
       let idx = Math.min(cols.length - 1, Math.floor(p * cols.length * 1.15)); if (q > 0.9) idx = (idx + 1) % cols.length;           // a few grains of another colour, like the ground itself
       const c = cols[idx], l = b[o] * 0.3 + b[o + 1] * 0.59 + b[o + 2] * 0.11, m = 0.36 + 0.34 * l + (q - 0.5) * 0.1;   // fish are lit brighter than the floor, so the target is darkened to look the same once rendered
-      const r = (c[0] / 255) * m, g = (c[1] / 255) * m, bl = (c[2] / 255) * m, gr = (r + g + bl) / 3;      // the lights wash colour out of a fish, so push the saturation back up
+      const r = Math.max(0, (c[0] / 255) * m - 0.1), g = Math.max(0, (c[1] / 255) * m - 0.1), bl = Math.max(0, (c[2] / 255) * m - 0.1), gr = (r + g + bl) / 3;      // the lights add a glow of their own, so dark surfaces need an even darker fish      // the lights wash colour out of a fish, so push the saturation back up
       tex[o] = Math.max(0, gr + (r - gr) * 1.45); tex[o + 1] = Math.max(0, gr + (g - gr) * 1.45); tex[o + 2] = Math.max(0, gr + (bl - gr) * 1.45);
     }
     this.camoTex = tex;
@@ -250,13 +250,16 @@ export class Fish3D {
     const wantPitch = S.s === 'jet' ? Math.max(-0.9, Math.min(0.9, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) || 1))) : 0; this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3); this.roll += (0 - this.roll) * Math.min(1, dt * 3);
     this.phase += dt * (S.s === 'crawl' ? 5 : S.s === 'jet' ? 2.5 : S.s === 'rest' ? 1.4 : S.s === 'work' ? 3.2 : 2.0);
     this.flush = Math.max(0, this.flush - dt * 0.35);
-    // camouflage: resting, it often takes on the colour and pattern of whatever it is sitting on (sand, gravel, a rock, a plant); now and then it does it just because it feels like it
-    this.camoNext = (this.camoNext ?? 5 + rng() * 10) - (S.s === 'rest' ? dt : 0); this.camoHold = Math.max(0, (this.camoHold ?? 0) - dt);
-    if (S.s === 'rest' && this.camoNext <= 0) { this.camoNext = 14 + rng() * 26; this.camoHold = 9 + rng() * 14; }
-    const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend;                                // sometimes it settles beside the new thing and takes on its look
-    const camoT = (S.s === 'rest' && !this.flush && (this.shy || this.camoHold > 0 || this.restFor > 12)) || hiding ? 0.94 : 0;
+    // camouflage has a reason: it blends in with what it is touching or sitting on. When it settles down against an object (a rock, a plant, a pillar, hiding in it) or on the sand,
+    // it decides whether to bother (more often when shy or tucked into something, less often on open sand); it never does it while moving, working or greeting.
+    this.camoSense = (this.camoSense ?? 0) - dt; if (this.camoSense <= 0) { this.camoSense = 0.25; this.ground = S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect') ? Fish3D.groundAt?.(this.pos.x, this.pos.z) ?? null : null; }
+    const gnd = this.ground, ctx = gnd ? gnd.ctx : null;
+    if (ctx !== this.camoCtx) { this.camoCtx = ctx; this.ctxT = 0; if (ctx) { const onObject = gnd.kind === 'decor'; this.camoWill = rng() < (this.shy ? 0.92 : onObject ? 0.8 : 0.5); this.camoDelay = 1.2 + rng() * 2.6; } else this.camoWill = false; }   // a new place: choose whether to blend in here
+    this.ctxT = (this.ctxT ?? 0) + dt;
+    const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend && gnd?.kind === 'decor';             // sometimes it settles beside the new thing and takes on its look
+    const camoT = (S.s === 'rest' && !this.flush && this.camoWill && this.ctxT > this.camoDelay && gnd) || hiding ? 0.94 : 0;
     this.camoK += Math.max(-dt * 0.7, Math.min(dt * 0.4, camoT - this.camoK)); this.camoT0 += dt;      // a slow, steady fade: about 2.3 seconds in, 1.4 out, eased when drawn
-    if (this.camoT0 > 0.2 && this.camoK > 0.03) { const g = Fish3D.groundAt?.(this.pos.x, this.pos.z); if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoPrev = this.camoK > 0.1 ? this.camoTex : null; this.camoMix = this.camoPrev ? 0 : 1; this.camoMixT = performance.now(); this.camoTex = null; this.camoApplied = -1; } }
+    if (this.camoT0 > 0.05 && this.camoK > 0.03) { const g = this.ground; if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoPrev = this.camoK > 0.1 ? this.camoTex : null; this.camoMix = this.camoPrev ? 0 : 1; this.camoMixT = performance.now(); this.camoTex = null; this.camoApplied = -1; } }
     if (this.camoT0 > 0.05 && !this.pale && (Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1)) { this.camoT0 = 0; this.applyCamo(); }
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > 1 / 20) { this.accum = 0; this.setPose(this.phase); }

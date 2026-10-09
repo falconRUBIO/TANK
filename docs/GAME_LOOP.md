@@ -95,7 +95,7 @@ Based on what is known about real octopuses (individual recognition of people, p
 - **Quick learner:** tricks take 2 lessons instead of 5.
 - **Knows people:** an octopus that has bonded with you swims to the glass and waves; one you have never looked after keeps to the rocks and hides.
 - **Curious:** it goes to inspect any new decoration.
-- **Colour:** it fades into the sand when resting (more when shy) and flushes bright after something exciting.
+- **Colour:** camouflage has a reason. When it settles against an object (a rock, plant, pillar, or hiding in one) or onto the sand, it decides whether to blend in (about 80% on an object, 50% on open sand, over 90% when shy), waits a moment, then fades into that surface's colour and pattern. It never does it while moving or working, it decides again each time it settles somewhere new, and it flushes bright after something exciting.
 - **Cheeky:** tapping it sometimes earns a squirt of bubbles.
 
 ## 7e. Every fish has a nature, and the tank notices
