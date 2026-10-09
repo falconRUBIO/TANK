@@ -153,7 +153,7 @@ export function initUI({ game, social, cb }) {
       if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
       if (sub === 'book') return `<h3>Collection</h3>${seg}${bookHtml()}`;
       if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div></div>
-        <p class="dim">You are playing solo. Host the game online and two friends can join with a six-character code to care for the same tank.</p>`;
+        <p class="dim">You are playing on your own. Open the game on the server to start a shared tank; two friends can then join with its six-character code.</p>`;
       const wish = WISHES[S().wishIdx];
       const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
       const THANKABLE = ['feed', 'glass', 'water', 'decor', 'fish', 'visitor', 'bottle', 'gift'];
