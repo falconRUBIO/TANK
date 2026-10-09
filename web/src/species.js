@@ -346,9 +346,9 @@ const guppy = {
         const b = body(x, y, z);
         if (b) { const { t, dy } = b; let c = mix(bellyC, bodyC, clamp((dy + 1) * 0.6 + 0.1)); if (t < 0.4) c = mix(c, tailC, 0.5 + (0.4 - t)); if (t > 0.45 && t < 0.6 && dy > -0.2 && dy < 0.5) c = mix(c, [255, 255, 255], 0.4); return { c }; }
         const dT = 8 - x;
-        if (dT >= 0 && dT <= 18 && Math.abs(z) <= (dT < 3 ? 1 : 0)) {          // big fan tail with a spotted edge
-          const hh = 2.5 + dT * 0.85;
-          if (Math.abs(y) <= hh) { const spot = ((Math.floor(dT / 3) + Math.floor(y / 3)) & 1) === 0; const rim = dT > 15 || Math.abs(y) > hh - 1.5; return { c: mix(tailC, rim ? [255, 240, 200] : bodyC, 0.2 + (spot ? 0 : 0.08)), wave: 0.7 }; }
+        if (dT >= 0 && dT <= 13 && Math.abs(z) <= (dT < 3 ? 1 : 0)) {          // fan tail
+          const hh = 2.4 + dT * 0.6;
+          if (Math.abs(y) <= hh) { const spot = ((Math.floor(dT / 3) + Math.floor(y / 3)) & 1) === 0; const rim = dT > 11 || Math.abs(y) > hh - 1.5; return { c: mix(tailC, rim ? [255, 240, 200] : bodyC, 0.2 + (spot ? 0 : 0.08)), wave: 0.7 }; }
         }
         const bt = (x) => clamp((x - X0) / L);
         if (z === 0 && x >= 15 && x <= 22 && y >= hy(bt(x)) - 1 && y <= hy(bt(x)) + 4 * (1 - Math.abs(x - 18.5) / 4)) return { c: mix(tailC, bodyC, 0.4), wave: 0.3 };
@@ -442,7 +442,7 @@ const cardinal = { ...guppy, id: 'platy', label: 'Cardinalfish', length: 30, pal
 
 // ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
 const seahorse = {
-  id: 'seahorse', label: 'Seahorse', length: 54, vox: 0.044,
+  id: 'seahorse', label: 'Seahorse', move: 'hover', length: 54, vox: 0.044,
   make(seed = 1) {
     const rng = mulberry32(seed * 5099 + 17), pals = [[[250, 170, 50], [255, 224, 150], [196, 100, 30]], [[238, 96, 90], [255, 200, 180], [170, 50, 60]], [[230, 200, 60], [255, 244, 170], [160, 130, 30]], [[170, 120, 220], [236, 214, 255], [110, 70, 170]]];
     const [bodyC, bellyC, ridgeC] = pals[Math.floor(rng() * pals.length)];
@@ -477,7 +477,7 @@ const seahorse = {
 
 // ───────────────────────── Octopus: round head forward, eight trailing arms ─────────────────────────
 const octopus = {
-  id: 'octopus', label: 'Octopus', length: 60, vox: 0.045,
+  id: 'octopus', label: 'Octopus', move: 'jet', length: 60, vox: 0.06,
   make(seed = 1) {
     const rng = mulberry32(seed * 7907 + 3), pals = [[[226, 92, 78], [255, 190, 170]], [[170, 90, 200], [236, 190, 255]], [[60, 150, 200], [180, 236, 255]], [[230, 140, 60], [255, 220, 170]]];
     const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90];
@@ -492,13 +492,13 @@ const octopus = {
         if (mantle(x, y, z)) {
           if (z !== 0 && Math.abs(x - 11) <= 1 && Math.abs(y - 8) <= 2 && !mantle(x, y, z + (z < 0 ? -1 : 1))) return Math.abs(x - 11) < 1 && Math.abs(y - 9) < 1 ? { c: [255, 255, 255], em: 2 } : { c: [12, 12, 20], em: 1 };
           const n = fbm(x * 0.22 + off[0], y * 0.22 + off[1], Math.abs(z) * 0.22 + off[2]); let c = mix(skinC, pale, clamp((-(y - 7) / 11) * 0.5 + 0.1)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.35); if (n < 0.34) c = mix(c, [90, 30, 40], 0.35);
-          return { c };
+          return { c, tag: 'mantle' };
         }
-        if (eyeAt(x, y, z) && !mantle(x, y, z)) return { c: mix(skinC, pale, 0.4) };
+        if (eyeAt(x, y, z) && !mantle(x, y, z)) return { c: mix(skinC, pale, 0.4), tag: 'mantle' };
         if (x < 6 && y < 4) for (const a of arms) {
           // each arm is a tapering tube following its own wavy path
-          const tt = clamp((-2 - x) / a.len); if (x > -1) { if (Math.hypot(y + 4, z - a.z0) < 3.4 && x > -2.5) return { c: skinC }; continue; }
-          const q = armAt(a, tt), rr = 4.2 - tt * 2.8; if (Math.hypot(y - q.y, z - q.z) <= Math.max(1.2, rr)) return { c: y < q.y - rr * 0.35 ? mix(pale, [255, 200, 210], 0.4) : mix(skinC, pale, tt * 0.3), wave: 0.4 + tt * 2.2 };
+          const tt = clamp((-2 - x) / a.len); if (x > -1) { if (Math.hypot(y + 4, z - a.z0) < 3.4 && x > -2.5) return { c: skinC, tag: 'arm' }; continue; }
+          const q = armAt(a, tt), rr = 4.2 - tt * 2.8; if (Math.hypot(y - q.y, z - q.z) <= Math.max(1.2, rr)) return { c: y < q.y - rr * 0.35 ? mix(pale, [255, 200, 210], 0.4) : mix(skinC, pale, tt * 0.3), wave: 0.4 + tt * 2.2, tag: 'arm' };
         }
         return null;
       },

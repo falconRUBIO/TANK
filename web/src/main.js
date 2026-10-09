@@ -145,7 +145,7 @@ async function trainFish(f, key, spot) {
 function showTrick(f, key) { const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; } setFocus(null); fishes.perform(f, key, o.id); }
 function trickBlock(rec) {
   const learned = (rec.tricks ?? []), opts = trickOptions(game.state, rec), done = learned.length ? `<div class="notes">Tricks: ${learned.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}</div>` : '';
-  return done + learned.map((k) => `<button class="lnk" data-show="${k}">Show: ${TRICKS[k]?.label}</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach: ${o.label} (${o.have}/${o.need})</button>`).join('');
+  return learned.map((k) => `<button class="lnk" data-show="${k}">Show trick</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach a trick (${o.have}/${o.need})</button>`).join('');
 }
 async function noteFish(f) {
   const txt = await ui.dialog({ title: `NOTE FOR ${f.name.toUpperCase()}`, text: 'Anyone in the tank can read it on the fish card. 40 characters.', input: { value: '' }, ok: 'Leave note', cancel: 'Cancel' }); if (!txt) return;
@@ -281,11 +281,16 @@ function showCard(f) {
   if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
+  const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
+  const warn = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '';
+  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p><dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl></div></details>`;
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
-    <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button>${(rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : ''}
-    ${comfortBlock(rec)}${trickBlock(rec)}<button class="lnk" id="note">Leave a note</button>
+    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
+    <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
+    ${comfortBlock(rec)}<button class="pet" id="pet">Play with ${f.name}</button>
+    <div class="btnrow">${trickBlock(rec)}<button class="lnk" id="note">Leave a note</button>${fam}</div>${more}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
+  card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); $('note').onclick = () => noteFish(f);
   card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
