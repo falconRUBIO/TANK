@@ -114,13 +114,12 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx }) {
     // net choreography: out of the corner, through each fish, over to the bowl, dip, and away
     const n = r.fish.length, hold = [bx + 6, by - 8], corner = [W + 90, -40];
     if (t >= T.dirty - 0.1 && t < T.scoop + 0.5) {
-      const pts = [corner, ...r.fish.map((a) => [a.at[0], a.at[1] - 4]), hold, hold, corner], durs = [...r.fish.map(() => 0.55), 0.5, 1.0, 0.45, 0.5];
-      if (!n) durs.splice(0, durs.length, 0.5, 0.5, 0.5);
+      const pts = [corner, ...r.fish.map((a) => [a.at[0], a.at[1] - 4]), hold, hold, corner], durs = [...r.fish.map(() => 0.55), 0.9, 0.8, 0.5];
       const w = path(pts, durs, t - (T.dirty - 0.1)); if (w) {
         for (let i = 0; i < n; i++) if (w.leg > i && !r.hidden.has(i)) { r.hidden.add(i); sfx('splash'); }
-        const loaded = w.leg <= n ? r.fish.slice(0, Math.max(0, Math.min(n, w.leg))) : w.leg === n + 1 ? r.fish : [];
-        net(w.x, w.y + (w.leg === n + 1 ? Math.sin(w.f * Math.PI) * 14 : 0), -0.6, loaded.filter((_, i) => !r.dipped || i < 0), t);
-        if (w.leg === n + 2 && !r.dipped) { r.dipped = true; sfx('splash'); }
+        if (w.leg === n + 1 && w.f > 0.5 && !r.dipped) { r.dipped = true; sfx('splash'); }
+        const loaded = w.leg <= n ? r.fish.slice(0, w.leg) : w.leg === n + 1 && !r.dipped ? r.fish : [];
+        net(w.x, w.y + (w.leg === n + 1 ? Math.sin(w.f * Math.PI) * 14 : 0), -0.6, loaded, t);
       }
     }
     // clean water poured from the bucket
