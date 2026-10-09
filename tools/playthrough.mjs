@@ -43,7 +43,7 @@ const s3 = await S(); ck('after the wait the baby fish arrives', s3.fish.length 
 ck('the new fish appears in the tank', (await p.evaluate(() => window.__tank.fishes.length)) === 2);
 console.log('Loop');
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'drift' }, { dev: true })); await p.waitForTimeout(500);
-const sd = await S(); ck('something washes in and shows up', !!sd.drift && /washed in/.test(await p.textContent('#goal')), JSON.stringify(sd.drift));
+const sd = await S(); ck('something turns up in the tank, with someone to blame, and shows up', !!sd.drift?.by && /Tap it in the tank/.test(await p.textContent('#goal')), JSON.stringify(sd.drift));
 const sh0 = sd.shells; await p.evaluate(() => window.__game.dispatch({ t: 'collect', id: window.__game.state.drift.id })); const sd2 = await S(); ck('collecting the gift pays out and clears it', !sd2.drift && (sd.drift.kind === 'treat' || sd2.shells > sh0), `${sh0}→${sd2.shells}`);
 await p.evaluate(() => { const f = window.__tank.fishes[0]; window.__ui.open('tank'); }); 
 const pr = await p.evaluate(async () => { const g = window.__game, id = g.state.fish[0].id; const a = await g.dispatch({ t: 'pet', id }); const b = await g.dispatch({ t: 'pet', id }); return [a.applied, b.applied]; }); ck('petting works once, then the fish needs a moment', pr[0] === true && pr[1] === false, JSON.stringify(pr));
@@ -82,7 +82,7 @@ const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]
 await p.evaluate(() => window.__ui.open('tank'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });
-await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=water]'); await p.waitForTimeout(700); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
+await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { window.__wcScale = 8; }); await p.click('[data-act=water]'); await p.waitForFunction(() => !window.__wc.active && window.__wc.t < 0, null, { timeout: 90000 }); await p.waitForTimeout(500); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
 const s6 = await S(); ck('progress survives a reload', s6.fish.length === nFish && s6.decor.length >= 10 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
 await p.waitForSelector('#reunion.on', { timeout: 20000 });
