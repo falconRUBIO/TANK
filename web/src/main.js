@@ -112,7 +112,7 @@ addEventListener('pointerup', async () => {
   if (left / (d.length / 16) * 6 < 0.06) { cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
-const wc = makeWaterChange({ canvas: $('wc'), tank: stg.canvas, camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx, haptic });
+const wc = makeWaterChange({ canvas: $('wc'), camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx, haptic });
 async function changeWater() {
   if (wc.active) return;
   if (game.state.water >= 0.7) { ui.toast('The water is already fresh'); return; }
@@ -536,7 +536,7 @@ function frame(now) {
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }
-  if (wc.active) wc.frame(dt); stg.renderer.info.reset(); composer.render();
+  if (wc.active) wc.frame(dt * (window.__wcScale ?? 1)); stg.renderer.info.reset(); composer.render();
   if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }
   requestAnimationFrame(frame);
 }
