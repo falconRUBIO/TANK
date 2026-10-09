@@ -13,7 +13,7 @@ await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 't
   g.emit('state'); });
 await p.evaluate(async () => { const g = window.__game, s = g.state; await g.dispatch({ t: 'buyDecor', type: 'torii', x: 0.4, z: 0.9, ry: 0 }); s.fish[0].bond = { me: 6 }; s.fish[0].born = Date.now() - 4 * 864e5; s.fish[0].stage = 'adult'; g.emit('state'); });
 await p.waitForTimeout(2500); await p.screenshot({ path: out + '/tank.png' });
-await p.click('nav [data-tab=care]'); await p.waitForTimeout(500); await p.click('[data-act=feed]'); await p.waitForTimeout(500); await p.click('#foods [data-food=treats]'); await p.waitForTimeout(300); await p.screenshot({ path: out + '/feed.png' }); await p.click('#feeddone'); await p.waitForTimeout(300);
+await p.click('nav [data-tab=care]'); await p.waitForTimeout(500); await p.click('.foodrow [data-food=treats]'); await p.waitForTimeout(300); await p.screenshot({ path: out + '/care.png' }); await p.click('[data-act=feed]'); await p.waitForTimeout(800); await p.screenshot({ path: out + '/feed.png' });
 await p.evaluate(() => window.__setTod?.('night')); await p.waitForTimeout(5000); await p.screenshot({ path: out + '/night.png' }); await p.evaluate(() => window.__setTod?.('afternoon')); await p.waitForTimeout(500);
 await p.click('nav [data-tab=today]'); await p.waitForTimeout(700); await p.screenshot({ path: out + '/today.png' });
 await p.click('nav [data-tab=care]'); await p.waitForTimeout(500); await p.screenshot({ path: out + '/care.png' });

@@ -14,7 +14,7 @@ console.log('Tutorial');
 ck('first run asks you to name your fish', (await p.textContent('#modal h2')) === 'MEET YOUR FIRST FISH');
 await p.fill('#mi', 'Pip'); await p.click('#mok');
 ck('then prompts to feed', await waitCoach('TIME FOR A SNACK'));
-await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feed]'); ck('feed bar appears', await p.evaluate(() => document.getElementById('feedbar').classList.contains('on')));
+await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feed]'); ck('the care menu closes and no other menu is left over', await p.evaluate(() => !document.getElementById('sheet').classList.contains('on') && !document.getElementById('feedbar')));
 const s0 = await S(); await p.waitForTimeout(600); await p.mouse.click(200, 300); await p.waitForTimeout(250); ck('shells fly up to the counter', (await p.$$('.flyshell')).length > 0); await p.waitForTimeout(200);
 const s1 = await S(); ck('feeding pays a shell and lowers hunger', s1.shells === s0.shells + 1 && s1.hunger < s0.hunger, `${s0.shells}→${s1.shells}`);
 ck('tutorial moves on to friends', await waitCoach('BETTER TOGETHER')); await p.click('#cbtn');

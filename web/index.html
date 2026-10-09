@@ -81,10 +81,6 @@
   canvas.pv{width:84px;height:84px;image-rendering:pixelated;border-radius:14px;border:1px solid var(--line)}
   .sw{display:flex;gap:6px}.sw button{all:unset;width:24px;height:24px;border-radius:7px;border:2px solid transparent;cursor:pointer;box-sizing:border-box}.sw button.sel{border-color:#fff}.sw .none{border:2px dashed #3a5070}.sw .none.sel{border-color:#fff}
   .pvt{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0c1626}.mem{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;font-size:12px}.mem canvas{width:34px;height:34px;image-rendering:pixelated;border-radius:8px}
-  #feedbar{position:absolute;left:12px;right:12px;bottom:84px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 10px 14px;background:rgba(10,18,32,.92);border:1px solid #2a4468;border-radius:14px;font-size:13px;transform:translateY(300%);opacity:0;transition:transform .3s,opacity .3s;pointer-events:none;backdrop-filter:blur(10px)}
-  #feedbar{flex-wrap:wrap}#foods{display:flex;gap:6px;width:100%}#feedbar #foods button{all:unset;cursor:pointer;flex:1;text-align:center;background:#16263d;color:var(--dim);font:600 11px ui-monospace,Menlo,monospace;padding:7px 4px;border-radius:9px;border:1px solid #2a4468}#feedbar #foods button.on{background:#2c6ab0;color:#fff;border-color:#5a96d8}#feedbar #foods button.no{opacity:.4}
-  #feedbar.on{transform:none;opacity:1;pointer-events:auto}#feedbar b{color:var(--gold);font-weight:600}
-  #feedbar button{all:unset;cursor:pointer;background:#2c6ab0;color:#fff;font-weight:600;font-size:12px;padding:7px 14px;border-radius:9px;letter-spacing:.06em}
   header{padding:calc(env(safe-area-inset-top) + 8px) 14px 4px}
   .hl{min-width:0}.hr{display:flex;align-items:center;gap:8px}
   #gear{all:unset;cursor:pointer;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--dim);border:1px solid var(--line);background:#101c2e}
@@ -129,6 +125,7 @@
   @media (prefers-reduced-motion:reduce){.fishy,nav div.pulse{animation:none}}
   .orders,.wish{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12.5px}
   .orders small,.wish small{display:block;color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-bottom:5px}
+  .foodrow{display:flex;align-items:center;gap:6px;margin:0 0 10px}.foodrow small{color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-right:2px}.foodrow button{all:unset;cursor:pointer;flex:1;text-align:center;background:#16263d;color:var(--dim);font:600 11px ui-monospace,Menlo,monospace;padding:8px 4px;border-radius:9px;border:1px solid #2a4468}.foodrow button.on{background:#2c6ab0;color:#fff;border-color:#5a96d8}.foodrow button.no{opacity:.4}
   .pj{height:6px;border-radius:3px;background:#0b1626;margin-top:7px;overflow:hidden}.pj i{display:block;height:100%;background:var(--gold);border-radius:3px}
   .cmf{margin:8px 0 2px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#101f33;font-size:12px}.cmf b{color:var(--gold)}.cmf small{display:block;color:var(--dim);margin-top:3px}.notes{margin:6px 0;font-size:12px;color:var(--dim)}.notes i{color:var(--ink);font-style:normal}
   button.wish{display:block;width:100%;text-align:left;color:inherit;font:inherit;font-size:12.5px;cursor:pointer}button.wish b{float:right;color:var(--gold)}
@@ -163,7 +160,7 @@
   #sub .lv{display:none}
   #goal{pointer-events:auto;flex:none;max-width:100%;text-align:center;padding:8px 16px;border-radius:999px;font-size:12.5px;color:var(--ink);background:rgba(14,24,40,.55);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
   #goal:empty{display:none}
-  main:has(#card.on,#sheet.on,#feedbar.on,#placebar.on,#coach.on) + #sub{opacity:0;pointer-events:none}
+  main:has(#card.on,#sheet.on,#placebar.on,#coach.on) + #sub{opacity:0;pointer-events:none}
   #toast{top:var(--top)}#coach{top:var(--top)}#placebar{top:var(--top)}.tod{top:var(--top)}
   .lvrow{display:flex;align-items:center;gap:10px;margin:-2px 0 12px;font-size:12px;color:var(--dim)}.lvrow b{color:var(--gold);font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.06em}.lvrow i{flex:1;height:5px;border-radius:3px;background:#17304f;overflow:hidden}.lvrow i b{display:block;height:100%;background:linear-gradient(90deg,#e6c36a,#f4dd9a)}
 .mem{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.mem span,.mem button{all:unset;cursor:pointer;font-size:12px;padding:5px 10px;border-radius:999px;background:#17202e;color:#a9b4c4;border:1px solid #243247}
@@ -178,7 +175,7 @@
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
 <main><canvas id="tank"></canvas>
 <canvas id="glass"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
-<div id="feedbar"><div id="foods"><button data-food="flakes" class="on">Flakes · free</button><button data-food="pellets">Pellets · 2 🐚</button><button data-food="treats">Treats · 4 🐚</button></div><span>🫙 Tap the water to drop food · <b id="feedleft"></b></span><button id="feeddone">Done</button></div><div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
+<div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
 <nav><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>

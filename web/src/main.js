@@ -44,7 +44,7 @@ const social = {
 };
 
 let feedMode = false, cleanMode = false, feedDrops = 0, feedIdle = 0, rearrange = false, focus = null;
-const feedbar = $('feedbar'), placebar = $('placebar');
+const placebar = $('placebar');
 const fail = (r) => { sfx('error'); ui.toast(REASONS[r.reason] ?? 'That did not work. Try again.'); };
 function flyShells(n, from = [window.innerWidth / 2, window.innerHeight * 0.55]) {
   const to = $('shells').getBoundingClientRect(); sfx('coin'); haptic(8);
@@ -57,19 +57,15 @@ function flyShells(n, from = [window.innerWidth / 2, window.innerHeight * 0.55])
 const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.delta > 1 ? 's' : ''}`); flyShells(r.delta); } };
 
 // feeding
-let feedFood = 'flakes';
-function foodChips() { document.querySelectorAll('#foods [data-food]').forEach((b) => { const k = b.dataset.food; b.classList.toggle('on', k === feedFood); b.classList.toggle('no', (game.state?.shells ?? 0) < FOODS[k].price); }); }
-document.querySelectorAll('#foods [data-food]').forEach((b) => { b.onclick = () => { const k = b.dataset.food; if ((game.state?.shells ?? 0) < FOODS[k].price) { ui.toast('Not enough shells for that food'); return; } feedFood = k; foodChips(); sfx('tap'); }; });
-function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; feedbar.classList.add('on'); feedLabel(); foodChips(); }
-function endFeed() { feedMode = false; feedbar.classList.remove('on'); }
-function feedLabel() { $('feedleft').textContent = `${3 - feedDrops} drop${3 - feedDrops === 1 ? '' : 's'} left`; }
-$('feeddone').onclick = endFeed;
+// The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and only the tank is left: tap the water.
+function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; ui.toast(`Tap the water to drop ${FOODS[game.feedFood ?? 'flakes'].label.toLowerCase()}`, 3500); }
+function endFeed() { feedMode = false; }
 async function dropFood(x) {
   if (game.state.hunger < 0.08) { ui.toast('The fish are full for now'); endFeed(); return; }
-  if ((game.state.shells ?? 0) < FOODS[feedFood].price) { feedFood = 'flakes'; foodChips(); ui.toast('Back to flakes. Not enough shells.'); }
-  fishes.drop(x, 7, feedFood); sfx('splash'); haptic(8);
-  feedDrops++; feedIdle = 0; feedLabel(); if (feedDrops >= 3) endFeed();
-  const r = await game.dispatch({ t: 'feed', x, food: feedFood }); if (!r.ok) return fail(r); foodChips();
+  if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
+  const food = game.feedFood ?? 'flakes'; fishes.drop(x, 7, food); sfx('splash'); haptic(8);
+  feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
+  const r = await game.dispatch({ t: 'feed', x, food }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
 }
 // glass cleaning
