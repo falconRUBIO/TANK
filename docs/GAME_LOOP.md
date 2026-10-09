@@ -71,6 +71,13 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 - **Landmarks and a shared project.** Little Lighthouse (150 shells, level 7) and Coral Spire (250, level 8). The Today tab shows how much of the next one the tank has saved.
 - **Today tab.** The one thing worth doing now, the fish wish, comfort, the shared project, today's wish, what is coming up and how shells are earned.
 
+## 7c. Saltwater, daily care and looks
+- **Saltwater only.** Free first fish: Clownfish, Seahorse, Octopus or Blue Chromis (a new tank starts empty and you choose in the opening). Shop: Damselfish, Yellow Goby, Royal Gramma, Cardinalfish, Emperor Angelfish, Pink Anthias, Mandarin Dragonet, plus Seahorse and Octopus. Rare visitors: Ghost Dragonet, Golden Angelfish, Rose Goby. Decorations are reef themed (sea fan, gorgonian, sea whip, anemone, brain and table coral).
+- **Own gaits.** Seahorses hover upright and hold on to plants; octopuses rest with arms flat, crawl, and jet in pulses.
+- **Daily care.** Today shows three ticks (tank looked after, today's wish, a fish got attention). All three pays +3 once per UTC day. No streaks.
+- **Tank mood** (Thriving, Doing well, Needs care, Neglected) and a "looks tired" notice two days before a fish is critical.
+- **Looks are bought.** Floors 20 to 40 shells and backdrops 25 shells, once; sand and Candy are free.
+
 ## 7b. Not built yet
 - Progression beyond level 8 (a proposal is in `docs/PROGRESSION_9_12.md`).
 - A first-generation family tree picture beyond the text dialog.

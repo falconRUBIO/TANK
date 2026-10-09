@@ -60,18 +60,49 @@ export function tankOf(db, userId) {
 }
 
 // ── tanks & invitations ──
-export function createTank(db, user, name) {
+export function createTank(db, user, name, startWorld = null) {
   if (tankOf(db, user.id)) throw new GameError('ALREADY_IN_TANK', 'You already belong to a tank.', 409);
   const now = Date.now(), id = crypto.randomUUID(), tn = clean(name, 24) || 'Our Tank';
   return tx(db, () => {
     for (let i = 0; i < 40; i++) {
       const code = randomCode();
-      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify((() => { return R.newWorld(now, crypto.randomInt(1000), { empty: true }); })())); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(startWorld ?? R.newWorld(now, crypto.randomInt(1000), { empty: true }))); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
       db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,1,?,?)').run(id, user.id, now, now);
       addJournal(db, id, 'Our tank began.', user.id, now);
       return { id, code, name: tn, slot: 1 };
     }
     throw new GameError('CODE_EXHAUSTED', 'Could not allocate a code.', 503);
+  });
+}
+// ── backups and deleting your data ──
+// A backup is the tank's saved state as plain JSON: fish, decorations, shells and history. Nothing personal beyond the names the players chose.
+export function exportTank(db, user) {
+  const t = tankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+  const { w } = loadWorld(db, t.id); const world = JSON.parse(JSON.stringify(w)); for (const f of [...(world.fish ?? []), ...(world.floaters ?? []), ...(world.memorial ?? [])]) { if ('owner' in f) f.owner = null; } world.bottles = []; world.care = {};
+  const ids = new Set(members(db, t.id).map((m) => m.id)), scrub = (o) => { if (Array.isArray(o)) { o.forEach((x, i) => { if (typeof x === 'string' && ids.has(x)) o[i] = null; else scrub(x); }); } else if (o && typeof o === 'object') { for (const k of Object.keys(o)) { if (ids.has(k)) delete o[k]; else if (typeof o[k] === 'string' && ids.has(o[k])) o[k] = null; else scrub(o[k]); } } };
+  scrub(world);
+  const journal = db.prepare('SELECT day,text,ts FROM journal WHERE tank_id=? ORDER BY ts DESC LIMIT 300').all(t.id).reverse();
+  return { app: 'our-tank', version: 1, exportedAt: Date.now(), tank: { name: t.name }, world, journal };
+}
+// Restoring makes a brand new tank for someone who has none, from a backup. Everything is validated and bounded, so a hand-edited file cannot break a tank.
+export function importTank(db, user, data) {
+  if (data?.app !== 'our-tank' || typeof data.world !== 'object' || !data.world) throw new GameError('BAD_BACKUP', 'That does not look like a tank backup.', 400);
+  const w = data.world, num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
+  if (!Array.isArray(w.fish) || w.fish.length > 60 || !Array.isArray(w.decor ?? []) || (w.decor ?? []).length > R.MAX_DECOR) throw new GameError('BAD_BACKUP', 'That backup is not valid.', 400);
+  const now = Date.now(); const world = R.norm(JSON.parse(JSON.stringify(w)), now);
+  world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: null, name: String(f.name ?? 'Fish').slice(0, 14) }));
+  world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = []; world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
+  world.flags = { ...(world.flags ?? {}), firsts: { [user.id]: true }, intro: world.flags?.intro ?? now };
+  const made = createTank(db, user, data.tank?.name, world); return { ...made, fish: world.fish.length };
+}
+// Everything about a player is removed. A tank with nobody left in it is removed too.
+export function deleteUser(db, user) {
+  return tx(db, () => {
+    const t = tankOf(db, user.id); let tankGone = false;
+    if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
+    for (const tb of ['push_subs', 'push_log']) { try { db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); } catch { /* table shape differs */ } }
+    try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
+    db.prepare('DELETE FROM users WHERE id=?').run(user.id); return { ok: true, tankId: t?.id ?? null, tankGone };
   });
 }
 const members = (db, tankId) => db.prepare('SELECT u.id,u.name,u.avatar,m.slot,m.last_seen FROM members m JOIN users u ON u.id=m.user_id WHERE m.tank_id=? ORDER BY m.slot').all(tankId).map((r) => ({ id: r.id, name: r.name, avatar: JSON.parse(r.avatar), slot: r.slot, lastSeen: r.last_seen }));

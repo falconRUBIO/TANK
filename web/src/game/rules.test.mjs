@@ -323,4 +323,14 @@ ok('tank mood reads the real state, and a fish that is going without care says s
   assert.equal(said.length, 3, 'each fish is told about once'); assert.ok(w.fish.every((f) => f.tiredSaid));
   const before = w.fish[0].ail; w.hunger = 0.85; R.applyAction(w, { t: 'feed' }, { now: 96 * 3600e3 + 1, name: 'A', uid: 'u1' }); R.applyAction(w, { t: 'water' }, { now: 96 * 3600e3 + 2, name: 'A', uid: 'u1' }); R.advance(w, 100 * 3600e3); assert.ok(w.fish[0].ail < before, 'care wins the time back');
 });
+ok('looks are bought once with shells and then kept; free ones stay free; a tank keeps the look it already uses', () => {
+  const t = quiet(1); t.shells = 50; t.flags.styles = undefined; R.norm(t, 0); const go = (a) => R.applyAction(t, { t: 'style', ...a }, { now: 10, name: 'A', uid: 'u1' });
+  assert.ok(R.styleOwned(t, 'floor', 'sand') && R.styleOwned(t, 'backdrop', 'candy') && !R.styleOwned(t, 'floor', 'coral'));
+  const r = go({ floor: 'coral' }); assert.equal(r.ok, true); assert.equal(r.delta, -R.STYLE_PRICE.floor.coral); assert.equal(t.shells, 50 - 40); assert.equal(t.style.floor, 'coral');
+  const back = go({ floor: 'sand' }); assert.equal(back.delta, 0, 'free look'); const again = go({ floor: 'coral' }); assert.equal(again.delta, 0, 'already owned, not charged twice'); assert.equal(t.shells, 10);
+  const poor = go({ backdrop: 'sunset', floor: 'black' }); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(t.style.backdrop, 'candy', 'nothing changed'); assert.equal(t.shells, 10);
+  assert.equal(go({ floor: 'nonsense' }).ok, false);
+  const old = R.newWorld(0); old.style = { floor: 'black', backdrop: 'lagoon' }; delete old.flags.styles; R.norm(old, 0); assert.ok(R.styleOwned(old, 'floor', 'black') && R.styleOwned(old, 'backdrop', 'lagoon'), 'an old tank keeps its look');
+  assert.equal(R.PERFECT_DAY_REWARD, 3);
+});
 console.log(`All ${n} rule tests passed`);

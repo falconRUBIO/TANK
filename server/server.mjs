@@ -69,7 +69,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const ip = (req) => req.socket.remoteAddress ?? '?';
 
   const json = (res, status, body) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
-  const readBody = (req) => new Promise((ok, no) => { let b = ''; req.on('data', (c) => { b += c; if (b.length > 8192) { no(new L.GameError('TOO_BIG', 'Request too large.', 413)); req.destroy(); } }); req.on('end', () => { try { ok(b ? JSON.parse(b) : {}); } catch { no(new L.GameError('BAD_JSON', 'Invalid JSON.')); } }); });
+  const readBody = (req, limit = 8192) => new Promise((ok, no) => { let b = ''; req.on('data', (c) => { b += c; if (b.length > limit) { no(new L.GameError('TOO_BIG', 'Request too large.', 413)); req.destroy(); } }); req.on('end', () => { try { ok(b ? JSON.parse(b) : {}); } catch { no(new L.GameError('BAD_JSON', 'Invalid JSON.')); } }); });
   const authed = (req) => L.authUser(db, (req.headers.authorization ?? '').replace(/^Bearer /, ''));
 
   async function api(req, res, url) {
@@ -119,6 +119,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const t = L.tankOf(db, user.id); const r = L.leaveTank(db, user);
         for (const w of [...(rooms.get(r.tankId) ?? [])]) if (w.userId === user.id) { w.close(); } broadcast(r.tankId, { t: 'members', members: L.listMembers(db, r.tankId) }); return json(res, 200, { ok: true });
       }
+      if (req.method === 'GET' && p === '/api/export') { if (!lim.hit('x:' + user.id, 20, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); res.setHeader?.('Content-Disposition', 'attachment; filename="our-tank-backup.json"'); return json(res, 200, L.exportTank(db, user)); }
+      if (req.method === 'POST' && p === '/api/import') { if (!lim.hit('i:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); return json(res, 200, L.importTank(db, user, await readBody(req, 600000))); }
+      if (req.method === 'DELETE' && p === '/api/me') { const t = L.tankOf(db, user.id); const r = L.deleteUser(db, user); if (t) { for (const w of [...(rooms.get(t.id) ?? [])]) if (w.userId === user.id) w.close(); if (!r.tankGone) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) }); } return json(res, 200, { ok: true }); }
       if (req.method === 'POST' && p === '/api/tanks/code') return json(res, 200, { code: L.regenerateCode(db, user) });
       throw new L.GameError('NOT_FOUND', 'No such endpoint.', 404);
     } catch (e) {

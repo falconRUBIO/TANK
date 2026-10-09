@@ -66,3 +66,9 @@ The server records anonymous events (a random player id, a random tank id, an ev
 
 ## If a tank or recovery key "disappears"
 That means the server started with an empty database. On Render the database must live on the persistent disk: the service needs a disk mounted at `/data` and the environment variable `DB=/data/ourtank.db` (the blueprint in `render.yaml` does both, and needs a paid plan). Without a disk every deploy or restart wipes all tanks and recovery keys. The server log prints the database path and the number of players it found at start, and warns when it is not on `/data`; the developer page (`/admin`) shows "Data since", which should not reset after a deploy.
+
+## Your data
+Settings has **Backup of this tank** (downloads a JSON file with no account ids), **Delete my data** (removes the player; an empty tank goes with its last player) and a link to `/privacy.html`. On the welcome screen, **Restore a backup** makes a new tank from a backup file (validated and bounded). The server endpoints are `GET /api/export`, `POST /api/import` and `DELETE /api/me`.
+
+## Looks cost a few shells
+Sand and the Candy backdrop are free; other floors (20 to 40) and backdrops (25) are bought once with shells and kept by the tank. A tank that already uses a look keeps it.

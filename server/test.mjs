@@ -363,6 +363,17 @@ await t('food choice on the server: paid foods cost shells, a poor tank cannot b
   setW(tk.id, { shells: 1, hunger: 0.8, simTs: Date.now() - 500 }); const poor = await ackOf(wx, { t: 'feed', x: 0, food: 'treats', idem: 'fd-2' }); assert.equal(poor.ok, false); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(getW(tk.id).shells, 1);
   wx.close(); wy.close();
 });
+await t('your data is yours: backup downloads, restores into a new tank, and deleting removes the player and an empty tank', async () => {
+  const u1 = await mkUser('Backup'), tk1 = (await call('/api/tanks', { name: 'Backup Reef' }, u1.token)).body, ws1 = await open(u1.token);
+  assert.equal((await ackOf(ws1, { t: 'chooseFirst', species: 'seahorse', name: 'Nori', seed: 4, idem: 'bk-1' })).ok, true); setW(tk1.id, { shells: 77 }); ws1.close();
+  const ex = await call('/api/export', null, u1.token); assert.equal(ex.status, 200); assert.equal(ex.body.app, 'our-tank'); assert.equal(ex.body.world.shells, 77); assert.equal(ex.body.world.fish[0].name, 'Nori'); assert.equal(ex.body.world.fish[0].owner, null, 'no ids in a backup'); assert.ok(!JSON.stringify(ex.body).includes(u1.userId), 'no user id anywhere');
+  assert.equal((await call('/api/export', null, 'x'.repeat(64))).status, 401);
+  const u2 = await mkUser('Restorer'); assert.equal((await call('/api/import', { app: 'nope' }, u2.token)).status, 400); assert.equal((await call('/api/import', { app: 'our-tank', world: { fish: new Array(70).fill({}) } }, u2.token)).status, 400, 'too many fish');
+  const r = await call('/api/import', ex.body, u2.token); assert.equal(r.status, 200, JSON.stringify(r.body)); const w2 = getW(r.body.id); assert.equal(w2.shells, 77); assert.equal(w2.fish[0].name, 'Nori'); assert.equal(w2.fish[0].species, 'seahorse'); assert.ok(w2.flags.firsts[u2.userId]); assert.equal((await call('/api/import', ex.body, u2.token)).status, 409, 'already in a tank');
+  const bad = JSON.parse(JSON.stringify(ex.body)); bad.world.fish[0].species = 'dragon'; bad.world.shells = 1e12; const u3 = await mkUser('Careful'); const rb = await call('/api/import', bad, u3.token); assert.equal(rb.status, 200); const w3 = getW(rb.body.id); assert.equal(w3.fish.length, 0, 'unknown species dropped'); assert.ok(w3.shells <= 1e6, 'shells bounded');
+  const del = await fetch(base + '/api/me', { method: 'DELETE', headers: { authorization: 'Bearer ' + u2.token } }); assert.equal(del.status, 200); assert.equal((await call('/api/me', null, u2.token)).status, 401, 'the player is gone'); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM tanks WHERE id=?').get(r.body.id).n, 0, 'an empty tank goes with its last player');
+  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM users WHERE id=?').get(u2.userId).n, 0);
+});
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 wsA.close();
 wa.close(); await S.close();

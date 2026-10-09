@@ -70,15 +70,16 @@ export function runOnboarding() {
     const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey }; store(session); };
     const welcome = () => {
       const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>OUR TANK</h1><p>A little world to share.</p>
-        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button>`);
+        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button><button class="lnk" data-a="restore">Restore a backup</button>`);
+      s.querySelector('[data-a=restore]').onclick = () => { const f = document.createElement('input'); f.type = 'file'; f.accept = 'application/json,.json'; f.onchange = async () => { try { const data = JSON.parse(await f.files[0].text()); profile('restore', null, data); } catch { welcome(); } }; f.click(); };
       s.querySelector('[data-a=recover]').onclick = () => recoverScreen();
       s.querySelector('[data-a=create]').onclick = () => profile('create'); s.querySelector('[data-a=join]').onclick = () => joinScreen();
       s.querySelector('[data-a=solo]').onclick = () => done({ mode: 'local' });
     };
-    const profile = (kind, joinCode) => {
-      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : 'YOU'}</h2><label>Your name<input id="nm" maxlength="16" placeholder="Name" autocomplete="off"></label>
+    const profile = (kind, joinCode, backup = null) => {
+      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : kind === 'restore' ? 'RESTORE YOUR TANK' : 'YOU'}</h2><label>Your name<input id="nm" maxlength="16" placeholder="Name" autocomplete="off"></label>
         <div class="ap"></div>${kind === 'create' ? '<label>Tank name<input id="tn" maxlength="24" value="Our Tank" autocomplete="off"></label>' : ''}
-        <div class="err" id="er"></div><button class="big" id="go">${kind === 'create' ? 'CREATE' : 'JOIN THE TANK'}</button><button class="lnk" id="bk">Back</button>`);
+        <div class="err" id="er"></div><button class="big" id="go">${kind === 'create' ? 'CREATE' : kind === 'restore' ? 'RESTORE' : 'JOIN THE TANK'}</button><button class="lnk" id="bk">Back</button>`);
       avatarPicker(s.querySelector('.ap'), avatar);
       s.querySelector('#bk').onclick = welcome;
       s.querySelector('#go').onclick = async () => {
@@ -86,7 +87,8 @@ export function runOnboarding() {
         try {
           if (session?.token) await api('/api/profile', { name, avatar }); else await ensureUser(name);
           if (session && !session.named) { await api('/api/profile', { name, avatar }); session.named = true; store(session); }
-          if (kind === 'create') { const t = await api('/api/tanks', { name: s.querySelector('#tn').value }); codeScreen(t); }
+          if (kind === 'restore') { const t = await api('/api/import', backup); codeScreen(t); }
+          else if (kind === 'create') { const t = await api('/api/tanks', { name: s.querySelector('#tn').value }); codeScreen(t); }
           else { const r = await api('/api/join', { code: joinCode }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
         } catch (e) { if (e.code === 'FULL') fullScreen(); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
       };
