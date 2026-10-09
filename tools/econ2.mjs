@@ -79,6 +79,10 @@ export async function run(which, sc, DAYS = 90, seed = 1, level8 = null) {
     for (let i = 0; i < 3; i++) if (t.hunger > 0.3) act({ t: 'feed' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
     for (const f of [...t.fish].sort((a, b) => (a.bond?.[uid] ?? 0) - (b.bond?.[uid] ?? 0)).slice(0, 3)) act({ t: 'pet', id: f.id });
     dailyWish(R, t, act);
+    if (R.WANTS && t.want) { const w = t.want, cat = { hide: 'PLANTS', explore: 'STRUCTURES', rest: 'WOOD', fun: 'SPECIAL', perch: 'ROCKS' }[w.kind];       // grant a fish wish the way a caring player would
+      if (cat && t.decor.length < R.MAX_DECOR) { const it = Object.entries(R.DECOR_DEF).filter(([, d]) => d.cat === cat && d.level <= t.level).sort((x, y) => x[1].price - y[1].price)[0]; if (it && t.shells >= it[1].price) act({ t: 'buyDecor', type: it[0], x: ((t.decor.length * 1.3) % 8) - 4, z: 1 + (t.decor.length % 3), ry: 0 }); }
+      else if (w.kind === 'play') act({ t: 'pet', id: w.fish }); }
+    if (R.readyToTrim) act({ t: 'trim' });
     if (sc.players.length > 1 && (sc.bottles === 'max' || e.first)) { const to = members[(e.p + 1) % members.length]; act({ t: 'bottle', to: to.id, note: 'hi' }); }
     spend(R, t, act, bought, now, log);
     R.advance(t, now + 1000);

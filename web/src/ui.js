@@ -1,5 +1,5 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage } from './game/rules.js';
+import { SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn } from './audio.js';
@@ -23,7 +23,7 @@ export function initUI({ game, social, cb }) {
   let tab = 'tank', book = false, tt, cat = 'ALL', selected = null, rearrange = false;
   const toast = (m, ms = 2400) => { toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('on'), ms); };
   const S = () => game.state;
-  const eta = (ms) => { if (ms <= 0) return 'any moment now'; const m = Math.max(1, Math.ceil(ms / 60e3)); return m >= 90 ? Math.round(m / 60) + 'h' : m + ' min'; };
+  const eta = (ms) => { if (ms <= 0) return 'any moment now'; const m = Math.max(1, Math.ceil(ms / 60e3)); return m >= 2880 ? Math.round(m / 1440) + ' days' : m >= 90 ? Math.round(m / 60) + 'h' : m + ' min'; };
   const tile = (icon, label, act, sub = '') => `<button class="tile" data-act="${act}"><span>${icon}</span>${label}${sub ? `<small>${sub}</small>` : ''}</button>`;
 
   // ── header ──
@@ -47,6 +47,7 @@ export function initUI({ game, social, cb }) {
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };
+    if (s.want) return { text: s.want.text, tab: '' };
     const o = (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)[0];
     if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - Date.now())}`, tab: '' };
     const eg = (s.eggs ?? [])[0]; if (eg) return { text: `An egg is about to hatch in ${eta(eg.hatchAt - Date.now())}`, tab: '' };
@@ -104,23 +105,29 @@ export function initUI({ game, social, cb }) {
   const journalHtml = () => `${memorialHtml()}<form class="send note"><input maxlength="90" placeholder="Add a note to the journal" autocomplete="off"><button>Add</button></form><div class="jl">${game.journal.slice().reverse().map((e) => `<div class="je"><small>DAY ${String(e.day).padStart(3, '0')}</small><span>${esc(e.text)}</span></div>`).join('')}</div>`;
   const styleHtml = () => { const st = S().style ?? { floor: 'sand', backdrop: 'candy' }, row = (label, key, opts) => `<div class="sty"><small>${label}</small><div>${Object.entries(opts).map(([k, v]) => `<button class="chipb ${st[key] === k ? 'on' : ''}" data-style="${key}:${k}">${v}</button>`).join('')}</div></div>`; return `<div class="styles">${row('FLOOR', 'floor', FLOORS)}${row('BACKDROP', 'backdrop', BACKDROPS)}</div>`; };
   // A check-in page: the one thing worth doing now, what is coming up, and how shells are earned.
+  const wantHtml = () => { const w = S().want; if (!w) return ''; return `<div class="wish"><small>${esc((S().fish.find((f) => f.id === w.fish)?.name ?? 'A FISH').toUpperCase())} HAS A WISH · +${WANT_REWARD} 🐚</small><span>${esc(w.text)}</span></div>`; };
+  const comfortHtml = () => { const s = S(); if (!s.fish.length) return ''; const all = s.fish.map((f) => ({ f, c: comfortOf(s, f) })), avg = Math.round(all.reduce((n, x) => n + x.c.score, 0) / all.length), worst = all.slice().sort((a, b) => a.c.score - b.c.score)[0];
+    return `<div class="orders"><small>TANK COMFORT</small><div><span>${avg >= 80 ? 'Cosy' : avg >= 55 ? 'Comfortable' : 'Could be better'}</span><b>${avg}%</b></div>${worst.c.tips[0] ? `<div><span class="dim">${esc(worst.c.tips[0])}</span></div>` : ''}</div>`; };
+  const projectHtml = () => { const s = S(), goal = Object.entries(DECOR_DEF).filter(([k, d]) => d.price >= 100 && d.level <= s.level + 1 && !s.decor.some((x) => x.type === k)).sort((a, b) => a[1].price - b[1].price)[0]; if (!goal) return '';
+    const [k, d] = goal, pct = Math.min(100, Math.round((s.shells / d.price) * 100)), locked = d.level > s.level; return `<div class="wish"><small>SHARED PROJECT</small><span>${esc(d.label)}: ${locked ? 'unlocks at level ' + d.level : `${s.shells} of ${d.price} 🐚 saved`}</span><div class="pj"><i style="width:${locked ? 0 : pct}%"></i></div></div>`; };
   const todayHtml = () => {
     const s = S(), now = Date.now(), g = goalText(), up = [];
     for (const o of (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)) up.push([`📦 ${esc(o.name || SPECIES_DEF[o.species].label)} arrives`, eta(o.arrivesAt - now)]);
     for (const e of (s.eggs ?? [])) up.push(['🥚 An egg hatches', eta(e.hatchAt - now)]);
     const grow = s.fish.map((f) => ({ f, n: nextStage(f, now) })).filter((x) => x.n).sort((a, b) => a.n.ms - b.n.ms)[0]; if (grow) up.push([`🌱 ${esc(grow.f.name)} grows up`, eta(grow.n.ms)]);
     const age = s.fish.map((f) => ({ f, d: (now - f.born) / 864e5 })).filter((x) => x.d < 30).map((x) => ({ ...x, to: x.d < 14 ? 14 : 30 })).sort((a, b) => (a.to - a.d) - (b.to - b.d))[0]; if (age) up.push([`🎂 ${esc(age.f.name)} turns ${age.to} days`, eta((age.to - age.d) * 864e5)]);
+    const ready = readyToTrim(s, now).length; if (ready) up.push([`🌿 ${ready} plant${ready > 1 ? 's' : ''} ready to trim`, `+${ready}`]);
     const sc = scoreOf(s), nx = LEVEL_AT[s.level]; if (nx) up.push([`⭐ Level ${s.level + 1}`, `${sc}/${nx}`]);
     const wish = WISHES[s.wishIdx]; if (wish) up.push([`✨ Tank wish: ${esc(wish.text)}`, `+${wish.reward}`]);
     const earn = [['Feed hungry fish', '+1 each'], ['Wipe the glass', '+1 (a pearl every 5th: +3)'], ['Change cloudy water', '+2'], ['Say hello to a rare visitor', '+4'], ['Collect things that wash in', '+1 to +4'], ["Today's wish", '+3, +5 or +8'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
     return `<h3>Today</h3><button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>
-      ${dailyHtml()}${up.length ? `<div class="orders"><small>COMING UP</small>${up.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>` : ''}
+      ${wantHtml()}${comfortHtml()}${projectHtml()}${dailyHtml()}${up.length ? `<div class="orders"><small>COMING UP</small>${up.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>` : ''}
       <div class="orders"><small>HOW SHELLS ARE EARNED</small>${earn.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>
       <p class="dim">Fish bring the most. Looking after them, watching them, and letting them grow up pays more than rushing around.</p>`;
   };
   const views = {
     today: todayHtml,
-    care: () => `<h3>Care</h3>${lvRow()}${meters()}${growLine()}${dailyHtml()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
+    care: () => `<h3>Care</h3>${lvRow()}${meters()}${growLine()}${dailyHtml()}${ordersHtml()}<div class="grid2">${tile('🫙', 'Feed', 'feed', 'Tap the water to drop food')}${tile('🧽', 'Clean Glass', 'clean', 'Swipe away algae')}${tile('💧', 'Water Change', 'water')}${tile('🐟', 'Meet the fish', 'fish', `${S().fish.length} in the tank`)}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready · +1 each`) : ''}${tile('📷', 'Photo', 'photo', 'Save a picture of the tank')}${tile('📖', 'Collection', 'book', `${S().seen.fish.length + S().seen.decor.length}/${COLLECTION_SIZE()} found`)}</div>${wishHtml()}`,
     decorate: () => `<h3>Decorate</h3>${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {

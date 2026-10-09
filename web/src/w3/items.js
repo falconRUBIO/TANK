@@ -32,6 +32,27 @@ const B = {
     }
     g.add(v.mesh(true)); return [];
   },
+  lighthouse: (g) => {
+    const u = 0.1, v = new Vox(u), stone = (i, j, k) => mix([112, 112, 100], [166, 158, 134], hash(i, j, k, 3)), H = 36;
+    v.ellipsoid(0, 0, 0, 9, 3.5, 9, stone, 5, 0.22);
+    for (let j = 3; j <= H; j++) { const r = Math.round(5 - (2 * (j - 3)) / (H - 3)), red = Math.floor((j - 3) / 6) % 2 === 0;
+      for (let i = -r; i <= r; i++) for (let k = -r; k <= r; k++) { if (i * i + k * k > r * r + r * 0.8) continue; v.set(i, j, k, red ? mix([206, 58, 48], [236, 92, 74], hash(i, j, k, 2) * 0.8) : mix([232, 228, 214], [250, 246, 236], hash(i, j, k, 4) * 0.8)); } }
+    for (let i = -5; i <= 5; i++) for (let k = -5; k <= 5; k++) if (i * i + k * k <= 26) v.set(i, H + 1, k, [58, 58, 66]);
+    for (let a = 0; a < 6.28; a += 0.3) v.set(Math.round(Math.cos(a) * 5), H + 2, Math.round(Math.sin(a) * 5), [70, 70, 80]);
+    for (let j = H + 3; j <= H + 7; j++) { const r = Math.max(0, Math.round(4.2 - (j - H - 3) * 0.95)); for (let i = -r; i <= r; i++) for (let k = -r; k <= r; k++) if (i * i + k * k <= r * r + 1) v.set(i, j + 3, k, mix([190, 52, 44], [226, 80, 66], hash(i, j, k, 6))); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.05; g.add(m);
+    const ly = 0.05 + (H + 3.5) * u, win = new THREE.Mesh(new THREE.BoxGeometry(5 * u, 3 * u, 5 * u), GLOW); win.position.set(0, ly, 0); g.add(win);
+    g.userData.lamp = new THREE.Vector3(0, ly, 0.6); return [{ v, x: 0, y: 0.05, z: 0, ry: 0 }];
+  },
+  spire: (g, seed) => {
+    const u = 0.1, v = new Vox(u), r = mulberry32((seed | 0) + 3), pink = (i, j, k) => mix([226, 108, 144], [255, 176, 170], hash(i, j, k, 5)), H = 48;
+    v.ellipsoid(0, 2, 0, 11, 4, 11, (i, j, k) => mix([200, 92, 128], [240, 140, 150], hash(i, j, k, 7)), 3, 0.3);
+    for (let j = 3; j <= H; j++) { const rad = Math.max(1, Math.round(7.5 * (1 - j / (H + 6)) + Math.sin(j * 0.5) * 0.7));
+      for (let i = -rad; i <= rad; i++) for (let k = -rad; k <= rad; k++) if (i * i + k * k <= rad * rad + 1) v.set(i, j, k, j > H - 4 ? mix([255, 200, 120], [255, 230, 160], hash(i, j, k, 8)) : pink(i, j, k)); }
+    for (let n = 0; n < 7; n++) { const ang = n * 0.9 + r(), h0 = 10 + n * 5, len = 6 + ((r() * 5) | 0);
+      for (let q = 1; q <= len; q++) { const ci = Math.round(Math.cos(ang) * (4 + q)), ck = Math.round(Math.sin(ang) * (4 + q)), cj = h0 + Math.round(q * 0.7); for (let di = -1; di <= 1; di++) for (let dk = -1; dk <= 1; dk++) for (let dj = -1; dj <= 1; dj++) if (Math.abs(di) + Math.abs(dk) + Math.abs(dj) <= 2) v.set(ci + di, cj + dj, ck + dk, mix([240, 130, 150], [255, 190, 160], hash(ci, cj, ck, 9))); } }
+    topLit(v); const m = v.mesh(); m.position.y = 0.05; g.add(m); return [{ v, x: 0, y: 0.05, z: 0, ry: 0 }];
+  },
   anchor: (g) => {
     const u = 0.075, v = new Vox(u), iron = (i, j, k) => mix([58, 66, 70], [96, 104, 100], hash(i, j, k, 3));
     for (let j = 0; j <= 30; j++) for (let k = -1; k <= 1; k++) for (const i of [-1, 0, 1]) v.set(i, j, k, iron(i, j, k));

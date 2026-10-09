@@ -39,6 +39,8 @@ export const DECOR_DEF = {
   bamboo:   { label: 'Bamboo',        cat: 'PLANTS',     price: 18, level: 5, blurb: 'Tall green stalks that creak softly.' },
   bridge:   { label: 'Little Bridge', cat: 'STRUCTURES', price: 44, level: 6, blurb: 'A wooden arch to swim under.' },
   crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 56, level: 7, blurb: 'A cluster that glows blue in the dark.' },
+  lighthouse: { label: 'Little Lighthouse', cat: 'STRUCTURES', price: 150, level: 7, blurb: 'A landmark the whole tank saves for. Its lamp glows at night.' },
+  spire:    { label: 'Coral Spire',   cat: 'SPECIAL',    price: 250, level: 8, blurb: 'The biggest piece in the tank. A towering reef of pink coral.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
 export const LEVEL_AT = [0, 14, 36, 66, 100, 140, 184, 220];                     // score needed for level 1..5
@@ -167,7 +169,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0;
+  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null;
   t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
   t.lastFed ??= t.simTs ?? now;
   if (!t.flags.msV) {                                   // a tank saved before fish milestones existed: record what its fish already reached, pay nothing retroactively
@@ -248,6 +250,59 @@ const STORY = {
   Calm: (f) => `${f.name} drifted around without a care.`,
   Greedy: (f) => `${f.name} waited near the surface, just in case.`,
 };
+// ── fish wishes ──
+// One fish at a time quietly wants something that fits its personality. Granting it pays a little, cheers the fish, and is written to the journal.
+// A wish is only offered if it can be granted now, never expires with a penalty (it just fades after a day), and a new one waits a few hours.
+export const WANT_REWARD = 2, WANT_GAP = 6 * 3600e3, WANT_TTL = 24 * 3600e3;
+const catOpen = (t, cat) => Object.values(DECOR_DEF).some((d) => d.cat === cat && d.level <= t.level && d.price > 0);
+const likeWant = (trait, cat, n, text, gift) => ({ traits: [trait], ok: (t) => count(t, cat) < n && catOpen(t, cat), done: (t) => count(t, cat) >= n, text, gift });
+export const WANTS = {
+  hide: likeWant('Shy', 'PLANTS', 4, (f) => `${f.name} wants more plants to hide among (4 in all).`, 'plants to hide among'),
+  explore: likeWant('Curious', 'STRUCTURES', 1, (f) => `${f.name} wants something to explore, like a pillar, lantern or arch.`, 'something to explore'),
+  rest: likeWant('Lazy', 'WOOD', 1, (f) => `${f.name} wants driftwood to rest beside.`, 'driftwood to rest beside'),
+  fun: likeWant('Playful', 'SPECIAL', 1, (f) => `${f.name} wants something fun to play with, like a bubbler.`, 'something fun to play with'),
+  perch: likeWant('Brave', 'ROCKS', 2, (f) => `${f.name} wants a couple of rocks to perch on.`, 'rocks to perch on'),
+  company: { traits: ['Social'], ok: (t) => t.fish.length < 4 && t.fish.length + pending(t) < capacity(t.level) - 1 && t.fish.length + pending(t) < 4, done: (t) => t.fish.length >= 4, text: (f) => `${f.name} wants more company (4 fish in all).`, gift: 'more company' },
+  play: { traits: ['Playful', 'Social', 'Curious', 'Brave'], ok: () => true, done: (t, f, g) => g?.type === 'pet' && g.id === f.id, text: (f) => `${f.name} wants to play. Open its card and play with it.`, gift: 'a game' },
+  view: { traits: ['Brave'], ok: (t) => t.glass > 0.3, done: (t, f, g) => g?.type === 'glass', text: (f) => `${f.name} wants a clear view of you. Wipe the glass.`, gift: 'a clear view' },
+  fresh: { traits: ['Calm', 'Shy'], ok: (t) => t.water < 0.7, done: (t, f, g) => g?.type === 'water', text: (f) => `${f.name} would love fresher water.`, gift: 'fresher water' },
+  meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3, done: (t, f, g) => g?.type === 'feed', text: (f) => `${f.name} is hungry for a proper meal.`, gift: 'a good meal' },
+};
+function rollWant(t, now, ev) {
+  if (t.want && now - t.want.since > WANT_TTL) { t.want = null; t.wantAt = now + WANT_GAP / 2; }          // it fades quietly
+  if (t.want || (t.flags.tut ?? 0) < 5 || now < (t.wantAt ?? 0)) return;
+  const cand = []; for (const f of t.fish) { if (now - f.born < 3600e3 || (f.ail ?? 0) >= AIL_TIRED) continue; for (const [k, w] of Object.entries(WANTS)) if (w.traits.some((x) => (f.traits ?? []).includes(x)) && w.ok(t, f)) cand.push([f, k]); }
+  if (!cand.length) { t.wantAt = now + 2 * 3600e3; return; }
+  const [f, kind] = cand[hash32(Math.floor(now / 6e4) * 13 + (t.seq ?? 0)) % cand.length], seq = (t.seq = (t.seq ?? 10) + 1);
+  t.want = { id: 'w' + seq, fish: f.id, kind, text: WANTS[kind].text(f), since: now };
+  ev.push({ toast: `${f.name} has a wish. See the Today tab.`, want: f.id });
+}
+// `grant` says what just happened ({ type: 'pet' | 'feed' | 'glass' | 'water', id }); wishes about the tank's contents are also checked on every change.
+function checkWant(t, now, ev, grant = null) {
+  const w = t.want; if (!w) return; const f = t.fish.find((x) => x.id === w.fish), d = WANTS[w.kind];
+  if (!f || !d) { t.want = null; return; } if (!d.done(t, f, grant)) return;
+  t.want = null; t.wantAt = now + WANT_GAP; t.shells += WANT_REWARD; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.wishes = (f.wishes ?? 0) + 1;
+  ev.push({ journal: `${f.name} got ${d.gift}, just as it had hoped.`, toast: `${f.name} is delighted. +${WANT_REWARD} shells`, wishDone: f.id });
+}
+
+// ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
+export function comfortOf(t, f) {
+  let pts = 0, max = 0; const tips = [];
+  const add = (w, v, tip) => { v = Math.max(0, Math.min(1, v)); max += w; pts += w * v; if (v < 0.99) tips.push([w * (1 - v), tip]); };
+  add(3, t.water >= 0.7 ? 1 : (t.water - 0.45) / 0.25, 'The water needs a change.'); add(2, 1 - Math.max(0, (t.glass - 0.3) / 0.5), 'The glass needs a wipe.'); add(2, 1 - Math.max(0, (t.hunger - 0.45) / 0.4), 'A meal would help.');
+  for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp) add(2, count(t, sp[0]) / sp[1], `${f.name} would feel more at home with ${sp[2]} (${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]}).`); }
+  if ((f.traits ?? []).includes('Social')) add(1.5, (t.fish.length - 1) / 3, `${f.name} would like more company.`);
+  add(1, new Set(t.decor.map((d) => d.type)).size / 5, 'A few different decorations would make the tank richer.');
+  const score = Math.round((100 * pts) / max); tips.sort((a, b) => b[0] - a[0]);
+  return { score, label: score >= 80 ? 'Cosy' : score >= 55 ? 'Comfortable' : 'Could be better', tips: tips.slice(0, 2).map((x) => x[1]) };
+}
+
+// ── plants grow and can be trimmed ──
+export const TRIM_AFTER = 3 * 864e5, GROWN_AFTER = 7 * 864e5;
+export const plantAge = (t, d, now) => now - (d.trimAt ?? d.at ?? t.createdAt ?? now);
+export const readyToTrim = (t, now) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS' && plantAge(t, d, now) >= TRIM_AFTER);
+export const growthOf = (t, d, now) => (DECOR_DEF[d.type]?.cat === 'PLANTS' ? 1 + 0.45 * Math.min(1, Math.max(0, plantAge(t, d, now)) / GROWN_AFTER) : 1);
+
 // One small shared wish a day, per tank. It resets at UTC midnight on the server clock, so every caretaker sees the same wish whatever their time zone.
 // Optional, replaced (never carried over) the next day, never penalised, paid once to the shared wallet. Three tiers: easy 3, normal 5, special 8.
 // A wish is only chosen if the tank can do it right now, so a lone fish is never asked for a friendship and a spotless tank is never asked for care.
@@ -339,10 +394,11 @@ export function advance(t, now = Date.now()) {
   ageMilestones(t, now, ev);
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
-  visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now);
+  visitors(t, now, ev); eggs(t, now, ev); rollDaily(t, now); rollWant(t, now, ev);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
+  checkWant(t, now, ev);
   levelCheck(t, now, ev);
   return ev;
 }
@@ -373,20 +429,20 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       const pay = t.hunger > 0.25 ? 1 : 0;
       t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
-      if (pay) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
+      if (pay) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed' }); }
       events.push({ activity: { type: 'feed', text: `${name} fed the fish.` } });
       return ok({ applied: true, delta: pay });
     }
     case 'water': {
       if (t.water >= 0.7) return ok({ applied: false, delta: 0 });
-      t.water = 1; t.shells += 2; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water');
+      t.water = 1; t.shells += 2; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water'); checkWant(t, now, events, { type: 'water' });
       events.push({ activity: { type: 'water', text: `${name} changed the water.` } });
       return ok({ applied: true, delta: 2 });
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
       t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? 3 : 1; t.shells += gain;
-      careBy(t, uid, name, now); if (gain) { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); }
+      careBy(t, uid, name, now); if (gain) { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); }
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
       if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: 'You found a pearl! +2 bonus shells', found: true });
       return ok({ applied: true, delta: gain });
@@ -418,10 +474,10 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const gift = a.free && (t.flags.starter?.[a.type] ?? 0) > 0, free = gift || (a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS');   // the starter pack, or the tutorial's free plant
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
-      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2) }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
+      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
-      levelCheck(t, now, events);
+      checkWant(t, now, events); levelCheck(t, now, events);
       return ok({ id: item.id });
     }
     case 'moveDecor': {
@@ -454,9 +510,19 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
       if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
-      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id);
+      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id });
       f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
+    }
+    case 'trim': {                                                  // snip every grown plant (or one): a small reward, and it starts growing again
+      const ready = readyToTrim(t, now).filter((d) => !a.id || d.id === a.id); if (!ready.length) return ok({ applied: false, delta: 0 });
+      for (const d of ready) d.trimAt = now; t.shells += ready.length; careBy(t, uid, name, now);
+      events.push({ activity: { type: 'decor', text: `${name} trimmed the plants.` }, toast: `Plants trimmed. +${ready.length} shell${ready.length > 1 ? 's' : ''}` }); return ok({ applied: true, delta: ready.length, n: ready.length });
+    }
+    case 'fishNote': {                                              // a short note any caretaker can leave on a fish's card
+      const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40); if (!txt) return fail('BAD_NAME');
+      f.notes = [...(f.notes ?? []), { by: uid, name, text: txt, at: now }].slice(-3);
+      events.push({ journal: `${name} left ${f.name} a note: “${txt}”`, activity: { type: 'fish', text: `${name} left a note for ${f.name}.` } }); return ok();
     }
     case 'style': {
       const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';

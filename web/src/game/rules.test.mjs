@@ -225,4 +225,44 @@ ok('a long absence is judged the same whether or not the server ticked while eve
   assert.ok(lazy.memorial.length >= 1 && lazy.memorial.length <= 1 + ticked.memorial.length, 'a catch-up can lose at most one fish at once (24 hour rule), and some fish are lost');
   const grace = mk(); R.advance(grace, 3 * D); assert.equal(grace.memorial.length, 0, 'three days away costs nothing'); assert.ok(grace.fish.every((f) => (f.ail ?? 0) < 4 * 86400));
 });
+
+console.log('Fish wishes, comfort, plants, notes');
+ok('a fish wish is offered only when it can be granted, one at a time, and fades without penalty', () => {
+  const H = 3600e3, t = quiet(3, { traits: ['Shy'] }); t.wantAt = 0; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 10 * H; t.fish.forEach((f) => { f.born = 0; });
+  let ev = R.advance(t, 10 * H + 5); assert.ok(t.want, 'a wish appears'); assert.equal(t.want.kind, 'hide'); assert.ok(ev.some((e) => e.want)); const first = t.want.id;
+  R.advance(t, 11 * H); assert.equal(t.want.id, first, 'only one wish at a time');
+  const s0 = t.shells; R.advance(t, 40 * H); assert.ok(!t.want || t.want.id !== first, 'it fades after a day'); assert.ok(t.shells >= s0, 'no penalty');
+  const lone = quiet(1, { traits: ['Calm'] }); lone.wantAt = 0; lone.hunger = 0.1; lone.water = 1; lone.glass = 0; lone.fish[0].born = 0; lone.simTs = 10 * H; R.advance(lone, 10 * H + 5); assert.equal(lone.want, null, 'a calm fish with fresh water has nothing to wish for');
+});
+ok('granting a fish wish pays once, cheers the fish, and is journalled', () => {
+  const H = 3600e3, t = quiet(3, { traits: ['Shy'] }); t.fish.forEach((f) => { f.born = 0; }); t.shells = 100; t.want = { id: 'w1', fish: 'f0', kind: 'hide', text: '', since: 0 }; t.simTs = 10 * H; t.flags.tut = 5;
+  const happy0 = t.fish[0].happy; let ev = [], s0 = t.shells;
+  for (let i = 0; i < 4; i++) { const r = R.applyAction(t, { t: 'buyDecor', type: 'grass', x: i - 2, z: 1, ry: 0 }, { now: 10 * H + i * 1000, name: 'Alex', uid: 'u1' }); ev.push(...r.events); }
+  const granted = ev.filter((e) => e.wishDone); assert.equal(granted.length, 1, 'once'); assert.equal(t.want, null); assert.ok(t.fish[0].happy > happy0); assert.equal(t.fish[0].wishes, 1); assert.match(granted[0].journal, /just as it had hoped/);
+  assert.match(granted[0].toast, /\+2 shells/); assert.ok(s0 > 0); assert.ok(t.wantAt >= 10 * H + R.WANT_GAP, 'the next one waits');
+  const p = quiet(2, { traits: ['Playful'] }); p.fish.forEach((f) => { f.born = 0; }); p.want = { id: 'w2', fish: 'f1', kind: 'play', text: '', since: 0 }; p.simTs = 5 * H;
+  R.applyAction(p, { t: 'pet', id: 'f0' }, { now: 5 * H + 1, name: 'A', uid: 'u1' }); assert.ok(p.want, 'playing with a different fish does not count'); const r = R.applyAction(p, { t: 'pet', id: 'f1' }, { now: 5 * H + 2, name: 'A', uid: 'u1' }); assert.ok(r.events.some((e) => e.wishDone) && !p.want);
+});
+ok('comfort tells the truth about the tank and names what to change', () => {
+  const t = quiet(2, { traits: ['Shy'] }); t.water = 1; t.glass = 0; t.hunger = 0.1; const bare = R.comfortOf(t, t.fish[0]);
+  t.decor = Array.from({ length: 4 }, (_, i) => ({ id: 'p' + i, type: ['grass', 'fern', 'sword', 'red'][i], x: i, z: 1, ry: 0 })); const lush = R.comfortOf(t, t.fish[0]); assert.ok(lush.score > bare.score, `${lush.score} > ${bare.score}`); assert.match(bare.tips.join(' '), /plants/i);
+  t.water = 0.46; t.glass = 0.8; t.hunger = 0.85; const grim = R.comfortOf(t, t.fish[0]); assert.ok(grim.score < lush.score - 20 && grim.label === 'Could be better'); assert.ok(grim.tips.length >= 1 && grim.tips.length <= 2);
+});
+ok('plants grow over days and can be trimmed for a shell each, then start again', () => {
+  const D = 864e5, t = quiet(2); t.decor = [{ id: 'p1', type: 'fern', x: 0, z: 1, ry: 0, at: 0 }, { id: 'r1', type: 'rock', x: 1, z: 1, ry: 0, at: 0 }, { id: 'p2', type: 'grass', x: 2, z: 1, ry: 0, at: 2 * D }]; t.simTs = 4 * D;
+  assert.equal(R.readyToTrim(t, 4 * D).length, 1, 'only the old plant, not rocks or young plants'); assert.ok(R.growthOf(t, t.decor[0], 4 * D) > 1.15 && R.growthOf(t, t.decor[1], 4 * D) === 1);
+  const s0 = t.shells, r = R.applyAction(t, { t: 'trim' }, { now: 4 * D, name: 'Sam', uid: 'u2' }); assert.equal(r.n, 1); assert.equal(t.shells - s0 >= 1, true); assert.ok(R.growthOf(t, t.decor[0], 4 * D) === 1, 'back to small');
+  const s1 = t.shells; const again = R.applyAction(t, { t: 'trim' }, { now: 4 * D + 1000, name: 'Sam', uid: 'u2' }); assert.equal(again.applied, false); assert.equal(t.shells, s1, 'not twice');
+  assert.equal(R.readyToTrim(t, 8 * D).length, 2, 'they grow back'); const old = quiet(1); old.decor = [{ id: 'x', type: 'fern', x: 0, z: 1, ry: 0 }]; old.createdAt = 0; assert.equal(R.readyToTrim(old, 5 * D).length, 1, 'plants from older saves count from the tank start');
+});
+ok('notes on a fish: short, kept (last three), journalled, and checked', () => {
+  const t = quiet(2); const a = (text, now = 1000) => R.applyAction(t, { t: 'fishNote', id: 'f0', text }, { now, name: 'Alex', uid: 'u1' });
+  assert.equal(a('   ').ok, false); assert.equal(R.applyAction(t, { t: 'fishNote', id: 'nope', text: 'hi' }, { now: 1, name: 'A', uid: 'u1' }).ok, false);
+  const r = a('hello <b>Pip</b>'); assert.ok(r.ok && r.events.some((e) => /left Pip|left F0/.test(e.journal))); a('two', 2000); a('three', 3000); a('four', 4000); assert.equal(t.fish[0].notes.length, 3); assert.equal(t.fish[0].notes[2].text, 'four'); assert.ok(!/[<>]/.test(t.fish[0].notes[0].text)); assert.ok(a('x'.repeat(100), 5000).ok && t.fish[0].notes.at(-1).text.length === 40);
+});
+ok('landmarks are real purchases with levels, and old saves are untouched by the new fields', () => {
+  assert.ok(R.DECOR_DEF.lighthouse.price === 150 && R.DECOR_DEF.lighthouse.level === 7 && R.DECOR_DEF.spire.price === 250 && R.DECOR_DEF.spire.level === 8);
+  const t = quiet(2); t.level = 7; t.shells = 400; assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 250); t.level = 7; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
+  const old = R.newWorld(0); delete old.want; delete old.wantAt; R.norm(old, 0); assert.equal(old.want, null); assert.ok(old.wantAt > 0);
+});
 console.log(`All ${n} rule tests passed`);

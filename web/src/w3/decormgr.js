@@ -2,10 +2,10 @@
 // and feeds the fish collision grid.
 import * as THREE from 'three';
 import { buildItem, stampItem, itemOverlaps, placeGroup, disposeItem } from './items.js';
-import { BOUNDS } from '../game/rules.js';
+import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
 
-const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6] };
+const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8] };
 export const LANES = [0.3, 1.5, 2.7];
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 
@@ -15,7 +15,7 @@ export class DecorMgr {
     this.marker = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.75, 24), new THREE.MeshBasicMaterial({ color: 0x66e08a, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
     this.marker.rotation.x = -Math.PI / 2; this.marker.visible = false; this.marker.renderOrder = 8; scene.add(this.marker);
   }
-  sync(list) {
+  sync(list, state = null) {
     const seen = new Set();
     for (const d of list) {
       seen.add(d.id); const have = this.items.get(d.id);
@@ -24,8 +24,11 @@ export class DecorMgr {
       else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); }
     }
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
+    if (state) this.grow(state);
     for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
   }
+  // plants slowly grow between trims
+  grow(state, now = Date.now()) { for (const d of state.decor) { const it = this.items.get(d.id); if (!it || this.preview?.id === d.id) continue; const k = growthOf(state, d, now); if (Math.abs((it.grown ?? 1) - k) > 0.005) { it.grown = k; it.group.scale.setScalar(k); } } }
   // where decorations stand, for fish that like to hide behind or inspect them
   spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, x: it.at.x, z: it.at.z, h: PICK[it.type]?.[1] ?? 1 }); return o; }
   // world position of the first lantern, for the lamp light

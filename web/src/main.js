@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -110,8 +110,8 @@ $('pok').onclick = async () => {
   const out = decor.commit(); if (!out) { sfx('error'); return; }
   const pl = placing; endPlace();
   const r = await game.dispatch(pl.id ? { t: 'moveDecor', id: pl.id, x: out.x, z: out.z, ry: out.ry } : { t: 'buyDecor', type: pl.type, x: out.x, z: out.z, ry: out.ry, free: pl.free });
-  if (!r.ok) { fail(r); decor.sync(game.state.decor); return; }
-  sfx('place'); haptic(14); if (!pl.id && !pl.free) ui.toast(`${DECOR_DEF[pl.type].label} placed`); decor.sync(game.state.decor); ui.updateHeader();
+  if (!r.ok) { fail(r); decor.sync(game.state.decor, game.state); return; }
+  sfx('place'); haptic(14); if (!pl.id && !pl.free) ui.toast(`${DECOR_DEF[pl.type].label} placed`); decor.sync(game.state.decor, game.state); ui.updateHeader();
 };
 $('psell').onclick = async () => {
   const pl = placing; if (!pl?.id) return; decor.cancel(); endPlace();
@@ -133,6 +133,17 @@ async function adopt(species) {
   const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0 });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
+}
+const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+async function noteFish(f) {
+  const txt = await ui.dialog({ title: `NOTE FOR ${f.name.toUpperCase()}`, text: 'Anyone in the tank can read it on the fish card. 40 characters.', input: { value: '' }, ok: 'Leave note', cancel: 'Cancel' }); if (!txt) return;
+  const r = await game.dispatch({ t: 'fishNote', id: f.fid, text: txt }); if (!r.ok) fail(r); else { sfx('tap'); showCard(f); }
+}
+// how well the tank suits this fish, a wish it has, and notes people left it
+function comfortBlock(rec) {
+  const c = comfortOf(game.state, rec), w = game.state.want?.fish === rec.id ? game.state.want : null, notes = (rec.notes ?? []).map((n) => `<i>${esc(n.name)}:</i> ${esc(n.text)}`).join('<br>');
+  return `<div class="cmf">Comfort: <b>${c.label}</b> · ${c.score}%${c.tips[0] ? `<small>${esc(c.tips[0])}</small>` : ''}${w ? `<small>✨ ${esc(w.text)}</small>` : ''}</div>${notes ? `<div class="notes">${notes}</div>` : ''}`;
 }
 async function renameFish(f) {
   const nm = await ui.dialog({ title: 'RENAME', input: { value: f.name }, ok: 'Save', cancel: 'Cancel' }); if (!nm) return;
@@ -262,8 +273,9 @@ function showCard(f) {
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div><p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>
     <dl><dt>Age</dt><dd>${p.age}</dd>${nx ? `<dt>Grows up in</dt><dd>${nx.label}</dd>` : ''}<dt>Favorite spot</dt><dd>${p.spot}</dd><dt>Favorite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${rec.ail >= AIL_WARN ? '<dt>Health</dt><dd>Critical. Slow, and eating little. Needs food and clean water.</dd>' : rec.ail >= AIL_TIRED ? '<dt>Health</dt><dd>Sluggish and paler. Care would help.</dd>' : ''}${bondLine(rec)}</dl><button class="pet" id="pet">Play with ${f.name}</button><button class="lnk fam" id="fam">Family</button>
+    ${comfortBlock(rec)}<button class="lnk" id="note">Leave a note</button>
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
-  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); $('fam').onclick = () => showFamily(rec);
+  card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); $('fam').onclick = () => showFamily(rec); $('note').onclick = () => noteFish(f);
 }
 function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -330,11 +342,12 @@ let lastLamp = null;
 function syncWorld() {
   const s = game.state; if (!s) return;
   fishes.me = game.you?.userId ?? 'me'; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
-  decor.sync(s.decor);
+  decor.sync(s.decor, s);
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
   if (lp) { lamp.position.copy(lp); halo.position.set(lp.x, lp.y, lp.z + 0.8); pool.position.set(lp.x - 0.4, 0.14, lp.z - 0.2); }
   env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); syncExtras(); ui?.refresh(); tut.run();
 }
+setInterval(() => { if (game.state) decor.grow(game.state); }, 30000);
 let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
@@ -430,7 +443,7 @@ async function boot() {
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
-    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater }[a]?.()),
+    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
