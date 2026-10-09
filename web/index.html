@@ -41,6 +41,7 @@
   dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0 0 10px;font-size:12.5px}dt{color:var(--dim)}dd{margin:0;text-align:right}
   .needs{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.nb{font-size:11px;color:var(--dim)}.nb i{display:block;height:5px;border-radius:3px;background:#17253b;margin-top:3px;overflow:hidden}.nb b{display:block;height:100%;background:linear-gradient(90deg,#3d9be0,#7fd0ff);border-radius:3px}
   .av{overflow:visible}
+  canvas#wc{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center bottom;pointer-events:none;image-rendering:pixelated}
   canvas#glass{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center bottom;pointer-events:none;touch-action:none}
   #toast{position:absolute;left:50%;top:58px;transform:translate(-50%,-8px);opacity:0;transition:.3s;background:rgba(10,18,32,.85);border:1px solid rgba(255,255,255,.1);padding:7px 14px;border-radius:999px;font:12px ui-monospace,Menlo,monospace;color:var(--ink);white-space:nowrap;pointer-events:none;backdrop-filter:blur(8px)}
   #toast.on{opacity:1;transform:translate(-50%,0)}
@@ -272,7 +273,7 @@
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
 <main><canvas id="tank"></canvas>
-<canvas id="glass"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
+<canvas id="glass"></canvas><canvas id="wc"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
 <div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div><div id="reunion"></div><div id="settle"></div>
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>

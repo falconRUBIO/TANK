@@ -12,6 +12,7 @@ import { skyOf } from './game/sky.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
 import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle } from './online.js';
+import { makeWaterChange } from './waterchange.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
 
 const { stage, canvas, IW, IH, camera, scene, composer, bokeh, grade, TOD, cur, env, lamp, halo, pool, qs, LITE } = stg;
@@ -111,7 +112,16 @@ addEventListener('pointerup', async () => {
   if (left / (d.length / 16) * 6 < 0.06) { cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
-async function changeWater() { if (game.state.water >= 0.7) { ui.toast('The water is already fresh'); return; } ui.toast('Changing the water…'); sfx('splash'); const r = await game.dispatch({ t: 'water' }); if (r.ok) shellToast(r); else fail(r); }
+const wc = makeWaterChange({ canvas: $('wc'), camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx });
+async function changeWater() {
+  if (wc.active) return;
+  if (game.state.water >= 0.7) { ui.toast('The water is already fresh'); return; }
+  cancelModes(); setFocus(null);
+  const act = async () => { const r = await game.dispatch({ t: 'water' }); if (r.ok) shellToast(r); else fail(r); return r.ok; };
+  if (REDUCED) { sfx('splash'); await act(); return; }
+  ui.toast('Time for fresh water'); haptic(12);
+  wc.start({ dirt0: Math.min(1, 0.6 + (1 - game.state.water) * 1.2), dispatch: act });
+}
 
 // ── placement & rearranging ──
 const ray = new THREE.Raycaster(), floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
@@ -501,7 +511,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
-  stg.applyTod(dt);
+  stg.applyTod(dt); if (wc.active) wc.frame(dt);
   if (focus) {
     // frame the fish in the open water between the top bar and the profile card
     const H = window.innerHeight, cardTop = card.classList.contains('on') ? card.getBoundingClientRect().top : H - 150, topPx = 64, cy = topPx + Math.max(150, cardTop - topPx - 8) / 2;
@@ -608,6 +618,7 @@ async function boot() {
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__fishes = fishes;
+window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
