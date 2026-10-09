@@ -7,6 +7,6 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.water = 0.35; g.emit('state'); document.querySelectorAll('#goal,#coach,.coach,#toast').forEach((e) => e.remove()); window.__wcScale = 0.12; window.__changeWater(); });
-for (const t of [2.2, 3.4, 4.4, 5.4, 6.0, 6.5, 7.0, 7.6]) { await p.waitForFunction((t) => window.__wc.t >= t || window.__wc.t < 0, t, { timeout: 120000, polling: 50 }); await p.screenshot({ path: `${out}/t${String(t).replace('.', '_')}.png` }); }
+for (const t of [3.0, 3.8, 4.6, 5.6, 6.2, 6.8, 7.4]) { await p.waitForFunction((t) => window.__wc.t >= t || window.__wc.t < 0, t, { timeout: 120000, polling: 50 }); await p.screenshot({ path: `${out}/t${String(t).replace('.', '_')}.png` }); }
 await p.waitForFunction(() => !window.__wc.active, null, { timeout: 60000 }); console.log('water after', await p.evaluate(() => window.__game.state.water));
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();
