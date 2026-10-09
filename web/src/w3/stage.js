@@ -128,6 +128,7 @@ export function applyTod(dt) {
     else if (Array.isArray(T[key])) cur[key] = cur[key].map((v, i) => v + (T[key][i] - v) * k);
     else cur[key] += (T[key] - cur[key]) * k;
   }
+  env.setLight(0.3 + 0.7 * Math.max(0, Math.min(1, (cur.hemiI - 0.8) / 0.7)));
   sun.color.copy(cur.sunCol); sun.intensity = cur.sunI; sun.position.set(...cur.sunPos);
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI; amb.intensity = cur.ambI;
   const murk = stage.murk; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;

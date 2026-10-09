@@ -84,23 +84,15 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
   g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 
-// a soft, sweet backdrop: layered pastel sand dunes with round coral domes and little stars, all unlit so the water tint does the shading
+// A calm backdrop: a few soft, low dunes in muted colours that fade with the time of day. No shapes on top, nothing busy.
 function buildBackdrop() {
-  const g = new THREE.Group(), r = mulberry32(31);
-  const layers = [[-7, 0xf6b8c8, 2.4, 0.2], [-12, 0xc9b6f0, 3.6, 1.4], [-18, 0x9fd0f2, 4.8, 2.6], [-26, 0x86e0d0, 6.0, 3.8]]; g.userData.mats = [];
-  const domeCols = [0xff9ec4, 0xffd36e, 0xb89cff, 0x7fe3c8, 0xff9a7a];
-  const dome = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff }), 90);
-  const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? 0.42 : 1; i ? star.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : star.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-  const stars = new THREE.InstancedMesh(new THREE.ShapeGeometry(star), new THREE.MeshBasicMaterial({ color: 0xffffff }), 40);
-  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(); let nd = 0, ns = 0;
+  const g = new THREE.Group(); g.userData.mats = [];
+  const layers = [[-9, 0xf6b8c8, 1.5, 0.2], [-16, 0xc9b6f0, 2.2, 1.2], [-24, 0x9fd0f2, 3.0, 2.2]];
   layers.forEach(([z, col, amp, base], li) => {
-    const sh = new THREE.Shape(), top = (x) => base + amp * (Math.sin(x * 0.13 + li * 1.7) * 0.5 + Math.sin(x * 0.29 + li * 3.1) * 0.3 + 0.55);
-    sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 1.5) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
+    const sh = new THREE.Shape(), top = (x) => base + amp * (Math.sin(x * 0.09 + li * 1.7) * 0.5 + Math.sin(x * 0.17 + li * 3.1) * 0.2 + 0.6);
+    sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 2) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); g.userData.mats.push(m.material); m.position.z = z; g.add(m);
-    for (let i = 0; i < 18 && nd < 90; i++) { const x = -40 + r() * 80, sc = 0.5 + r() * 1.1 + li * 0.25; m4.compose(new THREE.Vector3(x, top(x) - 0.1, z + 0.2), q.identity(), new THREE.Vector3(sc, sc * (0.8 + r() * 0.5), sc)); dome.setMatrixAt(nd, m4); dome.setColorAt(nd++, new THREE.Color(domeCols[(r() * domeCols.length) | 0])); }
-    for (let i = 0; i < 6 && ns < 40; i++) { const x = -34 + r() * 68, sc = 0.45 + r() * 0.5 + li * 0.15; m4.compose(new THREE.Vector3(x, top(x) + 0.35 + r() * 0.5, z + 0.3), q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), (r() - 0.5) * 0.8), new THREE.Vector3(sc, sc, 1)); stars.setMatrixAt(ns, m4); stars.setColorAt(ns++, new THREE.Color(r() < 0.5 ? 0xffe27a : 0xffb0d0)); }
   });
-  dome.count = nd; stars.count = ns; dome.frustumCulled = stars.frustumCulled = false; g.add(dome, stars);
   return g;
 }
 
@@ -190,10 +182,13 @@ export function buildEnvironment() {
   const backdrop = buildBackdrop(); root.add(backdrop);
 
   const FLOOR = { sand: [0xffffff, 0xffffff], pearl: [0xffdde8, 0xfff0f6], gravel: [0x8aa2c8, 0xb8c4d8], black: [0x5e5a6c, 0x8a8698], coral: [0xff9fb4, 0xffd0dc] };
-  const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2, 0x86e0d0], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0, 0x8a86e0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0, 0x8a9ae8], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0, 0xc0b0f0] };
+  const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0] };
+  const WATER = new THREE.Color(0x8fb4c8); let backKey = 'candy', backLight = 1;
+  const paintBack = () => (BACK[backKey] ?? BACK.candy).forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(WATER, 0.45 + i * 0.1).multiplyScalar(backLight); });
   const setStyle = (floor = 'sand', back = 'candy') => {
     const f = FLOOR[floor] ?? FLOOR.sand; floorMesh?.material.color.setHex(f[0]); pebblesMesh?.material.color.setHex(f[1]);
-    (BACK[back] ?? BACK.candy).forEach((c, i) => backdrop.userData.mats[i]?.color.setHex(c));
+    backKey = back; paintBack();
   };
-  return { root, archX: 0, colliders: new Solids(), setStyle };
+  const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };
+  return { root, archX: 0, colliders: new Solids(), setStyle, setLight };
 }
