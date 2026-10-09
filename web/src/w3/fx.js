@@ -113,8 +113,8 @@ export class Glow {
   }
 }
 
-// Rare passers-by in the deep water behind the tank. Nothing is paid and nothing is logged: some days you simply see a manta glide through.
-// Each one crosses the far water once, slowly, and is gone; the next is several minutes away, so they stay special.
+// Memories of the open sea. The fish are in a tank, so nothing real can swim past: these are the saltwater fish remembering (or dreaming of) the ocean.
+// They drift through the far water as pale, ghostly shapes, once, slowly, and fade out; the next is minutes away, and they come more often at dusk. Nothing is paid or logged.
 const flat = (c, o = {}) => new THREE.MeshLambertMaterial({ color: c, flatShading: true, fog: true, ...o });
 function buildWhale() {                          // a whale shark: huge, slow and gentle, readable from the side
   const root = new THREE.Group(), body = new THREE.Group(), m = flat(0x3b5d7a), belly = flat(0xcfdde6), spot = new THREE.MeshBasicMaterial({ color: 0xeaf4fa, fog: true });
@@ -161,12 +161,16 @@ export class Sightings {
     const names = Object.keys(SIGHTS); kind ||= (() => { const pool = names.filter((k) => k !== this.last).flatMap((k) => Array(SIGHTS[k][1]).fill(k)); return pool[(Math.random() * pool.length) | 0]; })();
     const s = SIGHTS[kind][0](); s.kind = kind; this.last = kind; const dir = Math.random() < 0.5 ? -1 : 1;
     s.dir = dir; s.x = -dir * 13; s.y0 = s.y[0] + Math.random() * (s.y[1] - s.y[0]); s.z = -7.5 - Math.random() * 3; s.age = 0; s.root.rotation.y = s.yaw(dir); s.root.rotation.z = s.roll(dir);
-    s.root.position.set(s.x, s.y0, s.z); this.scene.add(s.root); this.hide?.push(s.root); this.cur = s; return true;
+    this.ghostify(s); s.root.position.set(s.x, s.y0, s.z); this.scene.add(s.root); this.hide?.push(s.root); this.cur = s; return true;
+  }
+  ghostify(s) {                                   // pale, see-through and a little blue: a remembered thing, not a real one
+    const tint = new THREE.Color(0xbfe4ff); s.mats = [];
+    s.root.traverse((o) => { if (!o.isMesh) return; const m = o.material.clone(); if (m.color) m.color.lerp(tint, 0.55); m.transparent = true; m.depthWrite = false; m.fog = false; m.userData.base = m.blending === THREE.AdditiveBlending ? 0.4 : 0.42; m.opacity = 0; o.material = m; s.mats.push(m); });
   }
   clear() { const s = this.cur; if (!s) return; this.scene.remove(s.root); const hi = this.hide?.indexOf(s.root) ?? -1; if (hi >= 0) this.hide.splice(hi, 1); s.root.traverse((o) => { o.geometry?.dispose?.(); }); this.cur = null; }
   update(dt, t, phase) {
-    if (!this.cur) { if (!this.enabled) return; this.wait -= dt; if (this.wait <= 0) { this.spawn(); this.wait = 200 + Math.random() * 280; } return; }
-    const s = this.cur; s.age += dt; s.update(t);
+    if (!this.cur) { if (!this.enabled) return; this.wait -= dt * (this.dusk ? 1.8 : 1); if (this.wait <= 0) { this.spawn(); this.onSpawn?.(this.cur?.kind); this.wait = 200 + Math.random() * 280; } return; }
+    const s = this.cur; s.age += dt; s.update(t); const fade = Math.min(1, s.age / 3.5, Math.max(0, (13.5 - Math.abs(s.root.position.x)) / 4)), sh = 0.88 + 0.12 * Math.sin(t * 1.1); for (const m of s.mats) m.opacity = m.userData.base * fade * sh;
     if (s.kind === 'jelly') { s.root.position.x += s.dir * s.speed * dt * 0.6; s.root.position.y += s.rise * dt * 0.5; } else s.root.position.x += s.dir * s.speed * dt;
     s.root.position.y += Math.sin(t * 0.5) * 0.004;
     if (Math.abs(s.root.position.x) > 14.5 || s.age > 90 || s.root.position.y > 15) { this.scene.remove(s.root); const hi = this.hide?.indexOf(s.root) ?? -1; if (hi >= 0) this.hide.splice(hi, 1); s.root.traverse((o) => { o.geometry?.dispose?.(); }); this.cur = null; }

@@ -8,7 +8,7 @@ await p.goto(base + '/?q=1&dev=1&tod=' + (process.env.TOD || 'afternoon')); awai
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(() => { document.querySelectorAll('#tip,.tip,#goal').forEach((e) => (e.style.display = 'none')); });
 for (const k of ['whale', 'jelly', 'turtle', 'shoal']) {
-  await p.evaluate((k) => { window.__sight(k); const s = window.__sights.cur; s.root.position.x = k === 'shoal' ? -1 : 0; if (k === 'jelly') s.root.position.y = 7; }, k);
+  await p.evaluate((k) => { window.__sight(k); const s = window.__sights.cur; s.age = 10; s.root.position.x = k === 'shoal' ? -1 : 0; if (k === 'jelly') s.root.position.y = 7; }, k);
   await p.waitForTimeout(1800); await p.screenshot({ path: `${out}/sight_${k}.png` });
 }
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

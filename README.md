@@ -74,4 +74,4 @@ Settings has **Backup of this tank** (downloads a JSON file with no account ids)
 Sand and the Candy backdrop are free; other floors (20 to 40) and backdrops (25) are bought once with shells and kept by the tank. A tank that already uses a look keeps it.
 
 ## Quiet surprises
-Nothing here pays shells or writes to the journal. Every few minutes, once the tutorial is done, something passes through the deep water behind the tank (a whale shark, a jellyfish, a turtle or a silver shoal), and holding a finger in the water calls the bold and curious fish over to look. `tools/shots_sights.mjs` parks each sighting mid-water for screenshots.
+Nothing here pays shells or writes to the journal. Every few minutes, once the tutorial is done, something passes through the deep water behind the tank (a whale shark, a jellyfish, a turtle or a silver shoal, drawn as pale ghosts: the fish remembering the ocean), and holding a finger in the water calls the bold and curious fish over to look. `tools/shots_sights.mjs` parks each sighting mid-water for screenshots.
