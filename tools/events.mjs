@@ -39,6 +39,6 @@ await p.evaluate((n) => { const i = window.__tank.fishes.findIndex((f) => f.name
 ck('the Family button shows parents and generation', /Parents/.test(await p.textContent('#modal').catch(() => '')), (await p.textContent('#modal').catch(() => '')).slice(0, 120)); await p.click('#mok').catch(() => {}); await p.evaluate(() => window.__focus(null));
 // welcome back
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => window.__game.save());
-await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#modal.on', { timeout: 30000 }).catch(() => {});
-const txt = await p.textContent('#modal'); ck('welcome back mentions the gift', /washed in/i.test(txt), txt.slice(0, 160));
+await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#reunion.on', { timeout: 30000 }).catch(() => {});
+const txt = await p.textContent('#reunion'); ck('welcome back mentions the gift', /washed in/i.test(txt), txt.slice(0, 160));
 ck('no page errors', errs.length === 0, errs.join(' | ')); await b.close(); console.log(fails ? fails + ' FAILED' : 'events passed'); console.log('FINISHED');

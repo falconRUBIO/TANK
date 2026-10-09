@@ -12,7 +12,7 @@ import { lanternGlow } from './items.js';
 import { Shafts, waterSurface, Snow, Bubbles } from './fx.js';
 import { CausticMap } from './textures.js';
 
-export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0 };
+export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0, settle: 0, settleK: 0 };
 export const IW = 405, IH = 720;                 // internal resolution (nearest-upscaled by CSS)
 export const canvas = document.getElementById('tank');
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -137,7 +137,7 @@ export function applyTod(dt) {
   rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
-  renderer.toneMappingExposure = cur.exposure; bloom.strength = cur.bloom;
+  stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK); bloom.strength = cur.bloom;
   grade.uniforms.uTint.value.copy(cur.tint);
 
 }

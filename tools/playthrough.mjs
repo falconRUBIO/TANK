@@ -85,9 +85,8 @@ await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water =
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=water]'); await p.waitForTimeout(700); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
 const s6 = await S(); ck('progress survives a reload', s6.fish.length === nFish && s6.decor.length >= 10 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
-await p.waitForSelector('#modal.on', { timeout: 15000 });
-ck('coming back shows what happened while away', (await p.textContent('#modal h2')) === 'WHILE YOU WERE AWAY' && (await p.$$eval('#modal li', (n) => n.length)) <= 5, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | '));
-await p.click('#mok');
+await p.waitForSelector('#reunion.on', { timeout: 20000 });
+ck('coming back shows what happened while away, inside the tank', /WELCOME BACK/.test(await p.textContent('#reunion')) && !(await p.evaluate(() => document.getElementById('modal').classList.contains('on'))) && (await p.$$eval('#reunion p', (n) => n.length)) <= 4, (await p.$$eval('#reunion p', (n) => n.map((x) => x.textContent))).join(' | '));
 console.log(errors.length ? 'Errors: ' + errors.slice(0, 5).join(' | ') : 'No page errors');
 if (errors.length) fails++;
 await b.close(); console.log(fails ? `\n${fails} FAILED` : '\nPlaythrough passed'); process.exit(fails ? 1 : 0);

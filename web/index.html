@@ -262,12 +262,17 @@
   #card .grab{all:unset;position:absolute;left:0;right:0;top:0;height:30px;cursor:pointer;display:flex;justify-content:center;align-items:flex-start;padding-top:9px}#card .grab::before{content:"";width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.5)}
   #card h2{margin-top:10px}#card.peek .x{top:16px}
   #toast.gold{box-shadow:var(--lg-rim),0 0 22px rgba(255,214,120,.55),var(--lg-drop);color:#fff7dd}
+  ul.story{margin:8px 0 0;padding:0;list-style:none;font-size:12px;border-left:2px solid rgba(255,255,255,.25)}ul.story li{margin:0 0 6px;padding-left:10px;color:#e6f1fb}ul.story li i{display:block;font-style:normal;color:#b9cde0;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+  #reunion,#settle{position:absolute;z-index:6;left:14px;right:14px;top:var(--top,58px);padding:14px 16px;border-radius:26px;background:var(--lg-bg);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-rim),var(--lg-drop);color:#f2f9ff;opacity:0;transform:translateY(-10px);pointer-events:none;transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+  #reunion.on,#settle.on{opacity:1;transform:none;pointer-events:auto}#reunion b,#settle b{display:block;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.16em;color:#ffe4a0;margin-bottom:6px}#reunion p,#settle p{margin:3px 0;font-size:13.5px;line-height:1.35}#reunion .lk{all:unset;cursor:pointer;margin-top:6px;font-size:12px;color:#cfe6ff;text-decoration:underline}
+  #settle{top:auto;bottom:96px;text-align:center}#settle p{color:#e6f1fb}
+  #card{max-height:calc(100% - 150px);overflow-y:auto;overscroll-behavior:contain}#card.on.peek{overflow:hidden}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
 <main><canvas id="tank"></canvas>
 <canvas id="glass"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
-<div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div>
+<div id="coach"></div><div id="card"></div><div id="sheet"></div><div id="toast"></div><div id="reunion"></div><div id="settle"></div>
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
 <div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button></div>
 <nav><i class="lens" aria-hidden="true"></i><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>

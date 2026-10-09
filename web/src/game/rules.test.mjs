@@ -410,4 +410,11 @@ ok('a crab treat: only for a grown octopus, costs shells, cheers it, grows its h
   assert.ok(go(1000 + R.CRAB_GAP + 5).applied); t.shells = 0; assert.equal(go(1000 + 3 * R.CRAB_GAP).reason, 'NOT_ENOUGH_SHELLS');
   assert.equal(R.hoardOf(oc, 0), 5 + 2, 'five days old plus two crabs'); assert.equal(R.hoardOf(t.fish[1], 0), 0); oc.solved = 30; assert.equal(R.hoardOf(oc, 0), 14, 'capped');
 });
+ok('each fish keeps its own story, the memorial keeps it too, and the end of a day says what comes next', () => {
+  const D = 864e5, t = quiet(2); t.level = 8; t.fish[0].species = 'octopus'; t.fish[0].born = -5 * D; t.fish[0].stage = 'adult'; t.fish[1].born = 0; t.shells = 30; t.simTs = 0;
+  R.applyAction(t, { t: 'puzzle', id: 'f0' }, { now: 1000, name: 'A', uid: 'u1' }); R.advance(t, 1000 + 200e3); const s = t.fish[0].story ?? []; assert.ok(s.some((x) => /puzzle jar/.test(x.text)), JSON.stringify(s));
+  R.advance(t, 1000 + 210e3); assert.equal(t.fish[0].story.filter((x) => /puzzle jar/.test(x.text)).length, 1, 'no repeats');
+  R.advance(t, 2 * D); assert.ok((t.fish[1].story ?? []).some((x) => /growing up|adult|grew/i.test(x.text)), JSON.stringify(t.fish[1].story));
+  const m = R.nextUp(t, 2 * D); assert.match(m, /(\.|tomorrow)$/); const e = quiet(1); e.orders = [{ id: 'o1', species: 'cory', name: 'Gob', arrivesAt: 5 * 3600e3 }]; assert.match(R.nextUp(e, 0), /Gob arrives in about 5 hours/);
+});
 console.log(`All ${n} rule tests passed`);
