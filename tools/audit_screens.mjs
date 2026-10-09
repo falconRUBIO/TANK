@@ -14,7 +14,7 @@ await p.click('[data-cat=FISH]').catch(() => {}); await p.waitForTimeout(2500); 
 await p.click('nav [data-tab=tank]', { force: true }); await p.waitForTimeout(800);
 await p.click('#gear').catch(() => {}); await shot('07_gear'); await p.click('#sheet .x').catch(() => {}); await p.waitForTimeout(600);
 await p.click('#shells').catch(() => {}); await shot('08_shell_guide'); await p.click('#mok').catch(() => {}); await p.waitForTimeout(500);
-await p.evaluate(() => window.__focus?.(0)); await p.waitForTimeout(1500); await shot('09_fish_card');
+await p.evaluate(() => window.__focus?.(0)); await p.waitForTimeout(7000); await shot('09_fish_card');
 await p.evaluate(() => window.__focus?.(null));
 await p.evaluate(() => { const g = window.__game; g.emit('toast', 'A long toast to check how it sits above the bar and below the status area, wrapping on two lines.'); }); await shot('10_toast_long');
 await p.evaluate(() => { const g = window.__game; g.emit('chapter', { key: 'x', title: 'A Week Together', text: 'Seven days. This is starting to feel like home.' }); }); await shot('11_chapter');

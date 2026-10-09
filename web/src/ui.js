@@ -287,8 +287,9 @@ export function initUI({ game, social, cb }) {
   // a quiet message that lives in the tank (not a popup that has to be dismissed): it fades in, waits a few seconds, and fades out; a tap clears it early
   const shelf = (id, html, ms, onLink) => { const el = $(id); clearTimeout(el._t); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); };
   const reunion = (lines, onPostcard) => shelf('reunion', `<b>WELCOME BACK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<button class="lk">Send a postcard of the tank</button>`, 11000, onPostcard);
-  const settle = (lines) => shelf('settle', `<b>THAT IS EVERYTHING FOR TODAY</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000);
-  const chapter = (c) => shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000);
-  const farewell = (name) => shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000);
+  const settle = (lines) => { $('settle').classList.remove('top'); shelf('settle', `<b>THAT IS EVERYTHING FOR TODAY</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000); };
+  const place = () => $('settle').classList.toggle('top', sheet.classList.contains('on'));        // never sit on top of an open menu: use the top of the screen then
+  const chapter = (c) => { place(); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
+  const farewell = (name) => { place(); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
   return { chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

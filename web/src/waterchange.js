@@ -92,8 +92,8 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, haptic = (
       if (t < a.tOut) { const k = ease(seg(t, a.tUp, a.tOut)); place3D(a, lerp(a.at[0], a.x, k) + Math.sin(k * 9 + a.ph) * 10 * (1 - k), lerp(a.at[1], top, k), 0.2 + 0.95 * Math.sin(k * Math.PI), face); }
       else if (t < a.tGone) { const k = seg(t, a.tOut, a.tGone); place3D(a, a.x + k * 26 * face, top - Math.sin(k * Math.PI * 0.5) * 170 - k * k * 60, 1.05 - k * 0.4, face); if (!a.leapt) { a.leapt = true; sfx('splash'); haptic(8); PUFF(a.x, top + 4, 2); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: top + 4, vx: (rnd() - 0.5) * 120, vy: -120 - rnd() * 90, l: 0.8, s: 1.6 }); } }
       else if (t < a.tDrop) { r.shown.add(i); a.f.group.visible = false; if (a.f.emote) { a.f.emote.visible = false; a.f.emote.material.opacity = 0; } }
-      else if (t < a.tLand) { const k = seg(t, a.tDrop, a.tLand); place3D(a, a.x, lerp(-90, r.full + 40, k * k), -1.1, face); }
-      else if (t < a.tHome) { if (!a.landed) { a.landed = true; sfx('splash'); haptic(8); PUFF(a.x, r.full + 42, 3); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: r.full + 42, vx: (rnd() - 0.5) * 110, vy: -90 - rnd() * 80, l: 0.7, s: 1.5 }); } const k = ease(seg(t, a.tLand, a.tHome)); place3D(a, lerp(a.x, a.home[0], k), lerp(r.full + 42, a.home[1], k), -0.5 * (1 - k), a.home[0] > a.x ? 1 : -1); }
+      else if (t < a.tLand) { const k = seg(t, a.tDrop, a.tLand); place3D(a, a.x, lerp(-90, Math.max(r.full + 42, 104), k * k), -1.1, face); }
+      else if (t < a.tHome) { if (!a.landed) { a.landed = true; sfx('splash'); haptic(8); PUFF(a.x, Math.max(r.full + 42, 104), 3); for (let j = 0; j < 8; j++) drops.push({ x: a.x, y: Math.max(r.full + 42, 104), vx: (rnd() - 0.5) * 110, vy: -90 - rnd() * 80, l: 0.7, s: 1.5 }); } const k = ease(seg(t, a.tLand, a.tHome)); place3D(a, lerp(a.x, a.home[0], k), lerp(Math.max(r.full + 42, 104), a.home[1], k), -0.5 * (1 - k), a.home[0] > a.x ? 1 : -1); }
       else r.shown.delete(i);
     });
     // water thrown up by the fish
