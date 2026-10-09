@@ -351,4 +351,17 @@ ok('the octopus is clever: tricks in two lessons, a puzzle jar it solves faster 
   const early = go({ t: 'puzzle', id: 'f0' }, now - R.PUZZLE_GAP + 60e3); assert.ok(early.ok && !early.applied && early.wait > 0, 'a rest between jars');
   t.shells = 0; assert.equal(go({ t: 'puzzle', id: 'f0' }, now + R.PUZZLE_GAP * 2).reason, 'NOT_ENOUGH_SHELLS');
 });
+ok('every fish has a real nature: bullies upset shy fish (less so with hiding places), rivals squabble, a shoal wants company, friends are noticed, and advice comes before adopting', () => {
+  const mk = (id, species, name = id) => R.ensureFish({ id, name, species, seed: 3, born: -5 * 864e5, stage: 'adult', traits: ['Calm'], owner: 'u1' });
+  const t = quiet(0); t.fish = [mk('d1', 'guppy', 'Dot'), mk('g1', 'blue', 'Gem'), mk('n1', 'neon', 'Nia')];
+  const gem = t.fish[1], dot = t.fish[0], s0 = R.socialOf(t, gem); assert.ok(s0.penalty > 0.2 && /bullies/.test(s0.notes[0]), 'the damselfish bullies the shy gramma');
+  assert.equal(R.socialOf(t, dot).penalty, 0, 'the bully itself is not bullied'); assert.ok(R.socialOf(t, t.fish[2]).needs.some((x) => /own kind/.test(x)), 'a lone chromis wants a shoal');
+  for (let i = 0; i < 4; i++) t.decor.push({ id: 'p' + i, type: i < 2 ? 'grass' : 'rock', x: i, z: 1, ry: 0, at: 0 }); const s1 = R.socialOf(t, gem); assert.ok(s1.penalty < s0.penalty, 'hiding places ease the bullying');
+  t.fish.push(mk('g2', 'blue', 'Gus')); assert.ok(R.socialOf(t, gem).notes.some((x) => /squabble/.test(x)), 'two grammas squabble');
+  assert.ok(R.comfortOf(t, gem).tips.length > 0 && R.comfortOf(t, gem).score < 100); assert.notEqual(R.harmonyOf(t).key, 'harmony');
+  const calm = quiet(0); calm.fish = [mk('c1', 'goldfish', 'Cleo'), mk('c2', 'cory', 'Gob')]; assert.equal(R.harmonyOf(calm).key, 'harmony'); assert.ok(R.socialOf(calm, calm.fish[0]).good.length >= 1, 'friends are noticed');
+  assert.match(R.adoptAdvice(calm, 'guppy') ?? '', /bully/i); assert.match(R.adoptAdvice(calm, 'cory') ?? '', /only one/i); assert.equal(R.adoptAdvice(quiet(0), 'guppy'), null); assert.match(R.adoptAdvice(calm, 'octopus') ?? '', /wary/i);
+  const f = t.fish[1]; f.happy = 0.5; const before = R.socialOf(t, f).penalty; assert.ok(before > 0);
+  for (const sp of Object.keys(R.SPECIES_DEF).filter((k) => !R.SPECIES_DEF[k].visitor)) assert.ok(R.SOCIAL[sp]?.nature && R.SOCIAL[sp].line, 'every shop fish has a nature: ' + sp);
+});
 console.log(`All ${n} rule tests passed`);

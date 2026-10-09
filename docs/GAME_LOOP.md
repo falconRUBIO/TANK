@@ -97,3 +97,10 @@ Based on what is known about real octopuses (individual recognition of people, p
 - **Curious:** it goes to inspect any new decoration.
 - **Colour:** it fades into the sand when resting (more when shy) and flushes bright after something exciting.
 - **Cheeky:** tapping it sometimes earns a squirt of bubbles.
+
+## 7e. Every fish has a nature, and the tank notices
+Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `SOCIAL` in `web/src/game/rules.js`):
+- **Clownfish** friendly, nestle in an anemone. **Royal gramma** territorial about its cave and only one per tank; rests upside down under ledges. **Emperor angelfish** bossy, can bully small fish. **Blue chromis** and **pink anthias** shoal and want three or more. **Yellow goby** keeps watch low on the sand, one per tank. **Damselfish** aggressive and territorial. **Cardinalfish** calm, hides in shade by day. **Mandarin dragonet** slow and gentle, picks over the rocks, one per tank. **Seahorse** pairs for life, holds on to plants, easily crowded out. **Octopus** clever; small fish stay wary.
+- `socialOf` gives a fish its strain (bullies, rivals, a predator, eased by hiding places), what it needs (a shoal, a partner, a home) and its friendships. It feeds the comfort tips, a small happiness effect (at most -0.12 or +0.05) and the card. `harmonyOf` gives the whole tank a chip on the Care tab. `adoptAdvice` warns, softly, before adopting a clashing fish.
+- In the tank: bullies chase the timid, small fish keep clear of a moving octopus, rivals turn away from each other, the clownfish lives by its anemone, the gramma claims a cave and often rests upside down, the cardinalfish hides in shade by day, the goby and dragonet stay low by the rocks. Curious fish go to look at anything new you place.
+- Nothing here can hurt a fish by itself: mortality is still only about neglect.

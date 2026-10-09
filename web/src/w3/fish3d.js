@@ -15,9 +15,13 @@ voxShading(mat);
 const dummy = new THREE.Matrix4();
 const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3(), _o = new THREE.Vector3();
 const col = new THREE.Color();
+const h3 = (x, y, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 1274126177); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const vnoise = (x, y, z) => { const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), fx = x - xi, fy = y - yi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz), L = (a, b, t) => a + (b - a) * t;
+  return L(L(L(h3(xi, yi, zi), h3(xi + 1, yi, zi), u), L(h3(xi, yi + 1, zi), h3(xi + 1, yi + 1, zi), u), v), L(L(h3(xi, yi, zi + 1), h3(xi + 1, yi, zi + 1), u), L(h3(xi, yi + 1, zi + 1), h3(xi + 1, yi + 1, zi + 1), u), v), w); };
 
 export class Fish3D {
-  static world = { push: null };            // decoration colliders, set by the scene
+  static world = { push: null };
+  static groundAt = null;                   // set by the scene: what the ground looks like at x,z, as { key, cols, scale }            // decoration colliders, set by the scene
   constructor(species, seed, opts = {}) {
     this.species = species; this.id = species.id;
     const model = buildModel(species.make(seed));
@@ -120,12 +124,25 @@ export class Fish3D {
     this.retarget = 3 + rng() * 5;
   }
   // an octopus changes colour to suit its mood: it fades into the sand and rocks when resting or shy, and flushes bright when something exciting has just happened
+  // the colour and pattern of the ground under it, one target colour per voxel (a patchy value noise over the ground's own palette, kept shaded by the octopus's own form)
+  buildCamo(spec) {
+    const n = this.vox.length, tex = new Float32Array(n * 3), cols = spec.cols, sc = spec.scale, b = this.baseCol;
+    for (let i = 0; i < n; i++) {
+      const v = this.vox[i], o = i * 3, p = vnoise(v.x * sc * 0.55 + 7, v.y * sc * 0.55, v.z * sc * 0.55 + 3), q = h3(v.x, v.y, v.z);
+      let idx = Math.min(cols.length - 1, Math.floor(p * cols.length * 1.15)); if (q > 0.9) idx = (idx + 1) % cols.length;           // a few grains of another colour, like the ground itself
+      const c = cols[idx], l = b[o] * 0.3 + b[o + 1] * 0.59 + b[o + 2] * 0.11, m = 0.36 + 0.34 * l + (q - 0.5) * 0.1;   // fish are lit brighter than the floor, so the target is darkened to look the same once rendered
+      const r = (c[0] / 255) * m, g = (c[1] / 255) * m, bl = (c[2] / 255) * m, gr = (r + g + bl) / 3;      // the lights wash colour out of a fish, so push the saturation back up
+      tex[o] = Math.max(0, gr + (r - gr) * 1.45); tex[o + 1] = Math.max(0, gr + (g - gr) * 1.45); tex[o + 2] = Math.max(0, gr + (bl - gr) * 1.45);
+    }
+    this.camoTex = tex;
+  }
   applyCamo() {
     const a = this.mesh.instanceColor.array, b = this.baseCol, k = this.camoK, f = this.flush; this.camoApplied = k; this.flushApplied = f > 0;
+    if (k > 0.02 && !this.camoTex && this.camoSpec) this.buildCamo(this.camoSpec); const tex = k > 0.02 ? this.camoTex : null;
     for (let i = 0; i < this.vox.length; i++) {
       const o = i * 3, v = this.vox[i]; if (v.tag === 'eye') { a[o] = b[o]; a[o + 1] = b[o + 1]; a[o + 2] = b[o + 2]; continue; }
-      const l = b[o] * 0.3 + b[o + 1] * 0.59 + b[o + 2] * 0.11, m = 0.8 + 0.5 * l + ((Math.sin(i * 7.31) * 43758.5) % 1) * 0.12, r = 0.62 * m, g = 0.54 * m, bl = 0.36 * m;
-      const lift = 1 + 0.4 * f; a[o] = Math.min(1, (b[o] + (r - b[o]) * k) * lift); a[o + 1] = Math.min(1, (b[o + 1] + (g - b[o + 1]) * k) * (1 + 0.15 * f)); a[o + 2] = Math.min(1, (b[o + 2] + (bl - b[o + 2]) * k) * (1 + 0.1 * f));
+      const tr = tex ? tex[o] : b[o], tg = tex ? tex[o + 1] : b[o + 1], tb = tex ? tex[o + 2] : b[o + 2], lift = 1 + 0.4 * f;
+      a[o] = Math.min(1, (b[o] + (tr - b[o]) * k) * lift); a[o + 1] = Math.min(1, (b[o + 1] + (tg - b[o + 1]) * k) * (1 + 0.15 * f)); a[o + 2] = Math.min(1, (b[o + 2] + (tb - b[o + 2]) * k) * (1 + 0.1 * f));
     }
     this.mesh.instanceColor.needsUpdate = true;
   }
@@ -198,7 +215,7 @@ export class Fish3D {
     } else if (S.s === 'crawl') {
       this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);
       const to = this.target.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1; to.multiplyScalar((0.5 * this.speed * mul) / d); this.vel.lerp(to, Math.min(1, dt * 1.6));
-      if (S.t <= 0 || d < 0.35) { if (S.mode && d < 1.2) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 5 : 1e9; } else { if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 4 + rng() * 8; } }
+      if (S.t <= 0 || d < 0.35) { if (S.mode && d < 1.2) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : 1e9; if (S.mode === 'inspect') this.inspectBlend = rng() < 0.45; } else { if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 4 + rng() * 8; } }
     } else if (S.s === 'jet') {
       this.restK += (0 - this.restK) * Math.min(1, dt * 4); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 4);
       S.pulse -= dt;
@@ -215,8 +232,15 @@ export class Fish3D {
     const sp = this.face(dt, S.s === 'jet' ? 3 : 1.6);
     const wantPitch = S.s === 'jet' ? Math.max(-0.9, Math.min(0.9, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) || 1))) : 0; this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3); this.roll += (0 - this.roll) * Math.min(1, dt * 3);
     this.phase += dt * (S.s === 'crawl' ? 5 : S.s === 'jet' ? 2.5 : S.s === 'rest' ? 1.4 : S.s === 'work' ? 3.2 : 2.0);
-    this.flush = Math.max(0, this.flush - dt * 0.35); const camoT = S.s === 'rest' && this.restFor > 5 && !this.flush ? (this.shy ? 0.88 : 0.55) : 0; this.camoK += (camoT - this.camoK) * Math.min(1, dt * 0.7); this.camoT0 += dt;
-    if (this.camoT0 > 0.2 && !this.pale && (Math.abs(this.camoK - this.camoApplied) > 0.04 || this.flush > 0 || this.flushApplied)) { this.camoT0 = 0; this.applyCamo(); }
+    this.flush = Math.max(0, this.flush - dt * 0.35);
+    // camouflage: resting, it often takes on the colour and pattern of whatever it is sitting on (sand, gravel, a rock, a plant); now and then it does it just because it feels like it
+    this.camoNext = (this.camoNext ?? 5 + rng() * 10) - (S.s === 'rest' ? dt : 0); this.camoHold = Math.max(0, (this.camoHold ?? 0) - dt);
+    if (S.s === 'rest' && this.camoNext <= 0) { this.camoNext = 14 + rng() * 26; this.camoHold = 9 + rng() * 14; }
+    const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend;                                // sometimes it settles beside the new thing and takes on its look
+    const camoT = (S.s === 'rest' && !this.flush && (this.shy || this.camoHold > 0 || this.restFor > 12)) || hiding ? 0.94 : 0;
+    this.camoK += (camoT - this.camoK) * Math.min(1, dt * (camoT ? 1.6 : 2.6)); this.camoT0 += dt;
+    if (this.camoT0 > 0.2 && this.camoK > 0.03) { const g = Fish3D.groundAt?.(this.pos.x, this.pos.z); if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoTex = null; this.camoApplied = -1; } }
+    if (this.camoT0 > 0.1 && !this.pale && (Math.abs(this.camoK - this.camoApplied) > 0.04 || this.flush > 0 || this.flushApplied)) { this.camoT0 = 0; this.applyCamo(); }
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > 1 / 20) { this.accum = 0; this.setPose(this.phase); }
   }
@@ -270,8 +294,9 @@ export class Fish3D {
       this.heading += dy * Math.min(1, dt * 2.2);
       const wantPitch = Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));
       this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3);
-      this.roll += (-dy * 0.5 - this.roll) * Math.min(1, dt * 4);
+      this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }
+    if (this.invert || Math.abs(this.roll) > 1.2) this.roll += ((this.invert ? Math.PI : 0) - this.roll) * Math.min(1, dt * 2.5);
     this.phase += dt * (3.0 + sp * 5.5);
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
