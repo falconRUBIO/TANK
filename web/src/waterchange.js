@@ -58,10 +58,11 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, haptic = (
       const a = soft(seg(wl - r.full, 0, 50)); g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); for (let x = W; x >= 0; x -= 6) g.lineTo(x, Math.min(H, surfaceY(x))); g.closePath();
       const ag = g.createLinearGradient(0, 0, 0, Math.min(H, wl)); ag.addColorStop(0, `rgba(238,244,240,${0.5 * a})`); ag.addColorStop(1, `rgba(214,230,226,${0.62 * a})`); g.fillStyle = ag; g.fill();
       g.fillStyle = `rgba(255,255,255,${0.2 * a})`; g.fillRect(14, 0, 5, Math.min(H, wl)); g.fillRect(W - 20, 0, 3, Math.min(H, wl));
-      // grime clings to the glass where the dirty water stood: a tide line, a thin film and a few slow drips that end in a bead
+      // a soft film of grime is left on the glass where the dirty water stood: a faded tide line and a few smudges, no hard lines
       if (r.dirt0 > 0 && drain > 0 && r.level < 0.995) {
-        const ga = r.dirt0 * (1 - fill), band = Math.max(0, wl - r.full); g.fillStyle = `rgba(112,100,48,${0.09 * ga})`; g.fillRect(0, r.full, W, band); g.fillStyle = `rgba(110,98,46,${0.3 * ga})`; g.fillRect(0, r.full, W, 2.5);
-        for (let i = 0; i < 7; i++) { const x = 30 + i * 56 + (i * 13) % 17, len = Math.min(band * 0.5, 34 + ((i * 37) % 55)), y0 = r.full + 2; const gr = g.createLinearGradient(0, y0, 0, y0 + len); gr.addColorStop(0, `rgba(112,100,48,${0.2 * ga})`); gr.addColorStop(1, `rgba(112,100,48,${0.08 * ga})`); g.fillStyle = gr; g.beginPath(); g.moveTo(x - 1.4, y0); g.lineTo(x + 1.4, y0); g.lineTo(x + 0.7, y0 + len); g.lineTo(x - 0.7, y0 + len); g.fill(); g.fillStyle = `rgba(112,100,48,${0.3 * ga})`; g.beginPath(); g.arc(x, y0 + len, 2.2, 0, 6.3); g.fill(); }
+        const ga = r.dirt0 * (1 - fill), band = Math.max(0, wl - r.full);
+        const fg = g.createLinearGradient(0, r.full, 0, r.full + band); fg.addColorStop(0, `rgba(112,100,48,${0.2 * ga})`); fg.addColorStop(0.35, `rgba(112,100,48,${0.08 * ga})`); fg.addColorStop(1, `rgba(112,100,48,${0.03 * ga})`); g.fillStyle = fg; g.fillRect(0, r.full, W, band);
+        for (let i = 0; i < 6; i++) { const x = 40 + i * 64 + (i * 29) % 23, y = r.full + 30 + ((i * 53) % 90) * Math.min(1, band / 160), rr = 34 + (i * 17) % 26; if (y > wl) continue; const sg = g.createRadialGradient(x, y, 0, x, y, rr); sg.addColorStop(0, `rgba(112,100,48,${0.14 * ga})`); sg.addColorStop(1, 'rgba(112,100,48,0)'); g.fillStyle = sg; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
       }
     }
     if (r.level < 0.25) { const fa = soft(seg(0.25 - r.level, 0, 0.2)) * r.dirt0 * (1 - fill); const fg = g.createLinearGradient(0, H * 0.7, 0, H); fg.addColorStop(0, 'rgba(90,76,34,0)'); fg.addColorStop(1, `rgba(90,76,34,${0.4 * fa})`); g.fillStyle = fg; g.fillRect(0, H * 0.7, W, H * 0.3); g.fillStyle = `rgba(190,170,110,${0.18 * fa})`; for (let i = 0; i < 5; i++) { g.beginPath(); g.ellipse(60 + i * 70 + (i * 29) % 30, H - 60 - (i % 3) * 36, 34, 7, 0, 0, 6.3); g.fill(); } }
