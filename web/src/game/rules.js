@@ -160,7 +160,8 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
     // health follows how long the fish has really been neglected: it sinks toward critical over days, and climbs back quickly with care
     const ht = t.water > 0.5 && n.fed > 0.2 ? 1 : Math.max(0.2, 0.4 + 0.6 * Math.min(t.water, n.fed + 0.2) - 0.45 * Math.min(1, f.ail / AIL_DIE));
     f.health = Math.max(0.2, Math.min(1, f.health + (ht - f.health) * Math.min(1, dt / (ht < f.health ? 5400 : 1800))));
-    if (f.ail < AIL_TIRED) f.warned = false;
+    if (f.ail < AIL_TIRED) { f.warned = false; f.tiredSaid = false; }
+    else if (!f.tiredSaid) { f.tiredSaid = true; ev.push({ journal: `${f.name} looks tired. It needs food and clean water.`, toast: `${f.name} looks tired. A little care would help.`, tired: f.id }); }
     else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is in a critical state. It needs food and clean water.`, toast: `${f.name} is in a critical state. The tank needs care.`, warn: f.id }); }
     // death follows the fish's real condition: five days of neglect AND health that has stayed critically low, then the guard rails
     if (f.ail >= AIL_DIE && f.health <= 0.4 && t.flags.mortality !== false) {
@@ -353,12 +354,34 @@ function rollDaily(t, now) {
   const pick = pool.length ? pool[hash32(day * 31 + (t.createdAt % 997)) % pool.length] : null; if (!pick) { t.daily = null; return; }
   t.daily = { day, kind: pick, tier: DAILY[pick].tier, reward: DAILY_TIER[DAILY[pick].tier], text: DAILY[pick].text, need: DAILY[pick].need, have: 0, ids: [], done: false };
 }
+// ── a day's care, at a glance ──
+// Three small things every day: the tank is looked after, today's wish is done, and a fish got some attention. All three pays a small bonus once.
+// It is per tank-day (UTC, like the daily wish), shared by everyone, and missing it costs nothing: there is no streak.
+export const PERFECT_DAY_REWARD = 5;
+export const lookedAfter = (t) => t.fish.length > 0 && t.hunger <= 0.45 && t.water >= 0.7 && t.glass <= 0.45;
+export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
+export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
+function dayCheck(t, now, ev, key = null) {
+  if ((t.flags.tut ?? 0) < 5 || !t.fish.length) return; const l = dayLogOf(t, now);
+  if (key === 'care' && lookedAfter(t)) l.care = true; if (key === 'bond') l.bond = true;
+  const k = dayTicks(t, now); if (k.care && k.wish && k.bond && !l.paid) { l.paid = true; t.shells += PERFECT_DAY_REWARD; ev.push({ journal: 'A perfect day: the tank is looked after, the wish is done and a fish got some attention.', toast: `A perfect day! +${PERFECT_DAY_REWARD} shells`, perfectDay: true }); }
+}
+// How the tank is doing right now, in one word and one sentence.
+export function tankMood(t, now = Date.now()) {
+  if (!t.fish.length) return { key: 'empty', label: 'Quiet', note: 'No fish yet.' };
+  const worst = Math.max(...t.fish.map((f) => f.ail ?? 0)), happy = t.fish.reduce((n, f) => n + (f.happy ?? 0.7), 0) / t.fish.length;
+  if (worst >= AIL_WARN) return { key: 'neglected', label: 'Neglected', note: 'A fish is in a critical state. Feed the tank and change the water.' };
+  if (worst >= AIL_TIRED || !(t.hunger <= 0.7 && t.water >= 0.5)) return { key: 'attention', label: 'Needs care', note: t.hunger > 0.7 ? 'The fish are hungry.' : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
+  if (lookedAfter(t) && happy >= 0.75) return { key: 'thriving', label: 'Thriving', note: 'Clean, fed and happy.' };
+  return { key: 'good', label: 'Doing well', note: 'Nothing urgent.' };
+}
+let NOW = 0;                                                         // the clock of the call in progress, so a wish finished deep inside it knows what day it is
 function progress(t, kind, ev, who, id = null) {
   const d = t.daily; if (!d || d.done || d.kind !== kind) return false;
   if (DISTINCT.includes(kind)) { if (!id || d.ids.includes(id)) return false; d.ids.push(id); d.have = d.ids.length; } else d.have++;
   if (d.have < d.need) return true;
   const pay = d.reward ?? DAILY_REWARD;
-  d.done = true; d.by = who; t.shells += pay; ev.push({ activity: { type: 'wish', text: `${who} completed today's wish.` }, toast: `Today's wish is done. +${pay} shells`, dailyDone: true }); return true;
+  d.done = true; d.by = who; t.shells += pay; ev.push({ activity: { type: 'wish', text: `${who} completed today's wish.` }, toast: `Today's wish is done. +${pay} shells`, dailyDone: true }); dayCheck(t, NOW, ev); return true;
 }
 // who has been looking after the tank lately, so a growing fish can thank the right people
 function careBy(t, uid, name, now) { (t.care ||= {})[uid] = { name, ts: now }; }
@@ -393,7 +416,7 @@ export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
 
 // Time passing. Bounded, so a long absence never punishes: hunger tops out at 85%, water bottoms at 45%.
 export function advance(t, now = Date.now()) {
-  norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
+  NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water;
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
@@ -452,20 +475,20 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
       if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
-      if (needed) checkWant(t, now, events, { type: 'feed', food });
+      if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care');
       events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
       return ok({ applied: true, delta: pay - price, food });
     }
     case 'water': {
       if (t.water >= 0.7) return ok({ applied: false, delta: 0 });
-      t.water = 1; t.shells += 2; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water'); checkWant(t, now, events, { type: 'water' });
+      t.water = 1; t.shells += 2; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water'); checkWant(t, now, events, { type: 'water' }); dayCheck(t, now, events, 'care');
       events.push({ activity: { type: 'water', text: `${name} changed the water.` } });
       return ok({ applied: true, delta: 2 });
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
       t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? 3 : 1; t.shells += gain;
-      careBy(t, uid, name, now); if (gain) { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); }
+      careBy(t, uid, name, now); if (gain) { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); dayCheck(t, now, events, 'care'); }
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
       if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: 'You found a pearl! +2 bonus shells', found: true });
       return ok({ applied: true, delta: gain });
@@ -533,7 +556,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
       if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
-      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id });
+      f.petAt[u] = now; f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id }); dayCheck(t, now, events, 'bond');
       f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
     }
@@ -544,13 +567,13 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'fishNote': {                                              // a short note any caretaker can leave on a fish's card
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40); if (!txt) return fail('BAD_NAME');
-      f.notes = [...(f.notes ?? []), { by: uid, name, text: txt, at: now }].slice(-3);
+      f.notes = [...(f.notes ?? []), { by: uid, name, text: txt, at: now }].slice(-3); dayCheck(t, now, events, 'bond');
       events.push({ journal: `${name} left ${f.name} a note: “${txt}”`, activity: { type: 'fish', text: `${name} left a note for ${f.name}.` } }); return ok();
     }
     case 'train': {                                                 // practise a trick; five good sessions and it is learned for good
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const opt = trickOptions(t, f, now).find((o) => o.key === a.trick); if (!opt) return fail('CANT_TRAIN');
       if (now - (f.trainAt ?? 0) < TRAIN_GAP) return ok({ applied: false, delta: 0, wait: TRAIN_GAP - (now - f.trainAt) });
-      f.trainAt = now; f.skill = { ...(f.skill ?? {}), [a.trick]: (f.skill?.[a.trick] ?? 0) + 1 }; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.02); progress(t, 'play', events, name);
+      f.trainAt = now; f.skill = { ...(f.skill ?? {}), [a.trick]: (f.skill?.[a.trick] ?? 0) + 1 }; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.02); progress(t, 'play', events, name); dayCheck(t, now, events, 'bond');
       if (f.skill[a.trick] >= TRAIN_NEED) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: TRAIN_NEED }); }
       return ok({ applied: true, delta: 0, n: f.skill[a.trick] });
     }

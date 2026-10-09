@@ -302,4 +302,25 @@ ok('a brand new tank has no fish until its first caretaker chooses one, which th
   const m = R.newWorld(0, 1, { empty: true }); R.norm(m, 0); assert.equal(R.applyAction(m, { t: 'chooseFirst', species: 'octopus', name: 'X' }, { now: 1, name: 'Z', uid: 'stranger', members: [{ id: 'u1', name: 'Alex' }] }).reason, 'FORBIDDEN', 'only a member can choose');
   const e = R.newWorld(0, 1, { empty: true }); R.norm(e, 0); for (const k of [1, 2, 3, 7]) R.advance(e, k * 864e5); assert.equal(e.memorial.length, 0); assert.equal(e.want, null, 'no wishes without fish');
 });
+ok('a perfect day: tank looked after, wish done, a fish given attention; paid once to the shared wallet, per UTC day, no streak, no penalty', () => {
+  const D = 864e5, t = quiet(3); t.level = 8; t.wishIdx = 12; t.seen.fish = ['goldfish']; t.flags.collMs = 99; t.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; f.happy = 0.9; });
+  const day = 9; t.simTs = day * D; t.hunger = 0.7; t.water = 0.6; t.glass = 0.5; t.daily = { day, kind: 'play', tier: 'easy', reward: 3, text: '', need: 1, have: 0, ids: [], done: false };
+  const go = (a, at, uid = 'u1') => R.applyAction(t, a, { now: day * D + at, name: uid === 'u1' ? 'Alex' : 'Sam', uid }).events;
+  assert.deepEqual({ ...R.dayTicks(t, day * D + 10), paid: false }, { care: false, wish: false, bond: false, paid: false });
+  let ev = go({ t: 'feed' }, 1000); ev.push(...go({ t: 'feed' }, 1100)); assert.ok(!R.dayTicks(t, day * D + 1200).care, 'fed but the water is still cloudy');
+  ev.push(...go({ t: 'water' }, 1300)); ev.push(...go({ t: 'glass' }, 1400)); assert.ok(R.dayTicks(t, day * D + 1500).care, 'now the tank is looked after');
+  assert.ok(!ev.some((e) => e.perfectDay), 'not yet'); ev = go({ t: 'pet', id: 'f0' }, 2000, 'u2'); assert.ok(ev.some((e) => e.dailyDone), 'playing is also today\'s wish'); assert.ok(ev.some((e) => e.perfectDay && /perfect day/i.test(e.journal)), 'three ticks, from two different caretakers');
+  const paid = ev.filter((e) => e.perfectDay).length; assert.equal(paid, 1); const s1 = t.shells; go({ t: 'pet', id: 'f1' }, 3000); go({ t: 'fishNote', id: 'f0', text: 'hi' }, 3100); assert.equal(R.dayTicks(t, day * D + 3200).paid, true); assert.equal(t.shells, s1, 'once a day');
+  // the next day starts fresh, with no memory of a streak, and a missed day costs nothing
+  const next = (day + 1) * D + 500; R.advance(t, next); assert.deepEqual(R.dayTicks(t, next).care, false); assert.equal(R.dayTicks(t, next).paid, false); const s2 = t.shells; R.advance(t, (day + 3) * D); assert.ok(t.shells >= s2, 'missing a day takes nothing away');
+  // a tank with no feasible wish does not block it
+  const q = quiet(1); q.daily = null; assert.equal(R.dayTicks(q, 5 * D).wish, true);
+});
+ok('tank mood reads the real state, and a fish that is going without care says so a day or two before it is critical', () => {
+  const D = 864e5, t = quiet(3); t.fish.forEach((f) => { f.happy = 0.9; }); t.hunger = 0.2; t.water = 1; t.glass = 0.1; assert.equal(R.tankMood(t).key, 'thriving');
+  t.hunger = 0.6; assert.equal(R.tankMood(t).key, 'good'); t.hunger = 0.8; assert.equal(R.tankMood(t).key, 'attention'); t.hunger = 0.2; t.fish[0].ail = R.AIL_WARN + 5; assert.equal(R.tankMood(t).key, 'neglected'); assert.equal(R.tankMood(R.newWorld(0, 1, { empty: true })).key, 'empty');
+  const w = quiet(3); w.createdAt = -30 * D; w.hunger = 0.85; w.water = 0.45; w.simTs = 0; w.lastFed = -10 * D; const said = []; for (let h = 1; h <= 96; h++) said.push(...R.advance(w, h * 3600e3).filter((e) => e.tired));
+  assert.equal(said.length, 3, 'each fish is told about once'); assert.ok(w.fish.every((f) => f.tiredSaid));
+  const before = w.fish[0].ail; w.hunger = 0.85; R.applyAction(w, { t: 'feed' }, { now: 96 * 3600e3 + 1, name: 'A', uid: 'u1' }); R.applyAction(w, { t: 'water' }, { now: 96 * 3600e3 + 2, name: 'A', uid: 'u1' }); R.advance(w, 100 * 3600e3); assert.ok(w.fish[0].ail < before, 'care wins the time back');
+});
 console.log(`All ${n} rule tests passed`);

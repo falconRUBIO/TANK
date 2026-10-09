@@ -348,7 +348,7 @@ await t('economy integrity: milestones and the daily wish pay once even when car
   // thirty days: a second milestone for the same fish, once
   setW(tk.id, { fish: getW(tk.id).fish.map((f) => ({ ...f, born: now - 30 * DAY - 60e3 })), simTs: Date.now() - 2000 }); const before = getW(tk.id).shells;
   await Promise.all([ackOf(wx, { t: 'feed', x: 0, idem: 'ei-6' }), ackOf(wy, { t: 'feed', x: 0, idem: 'ei-7' }), ackOf(wz, { t: 'feed', x: 0, idem: 'ei-8' })]);
-  w = getW(tk.id); assert.equal(w.fish.filter((f) => f.found.includes('age30')).length, 3); assert.ok(w.shells - before >= 24 && w.shells - before <= 24 + 3, 'three 30-day milestones (+8 each) paid once, plus at most the feeding shells');
+  w = getW(tk.id); assert.equal(w.fish.filter((f) => f.found.includes('age30')).length, 3); assert.ok(w.shells - before >= 24 && w.shells - before <= 24 + 3 + 5, 'three 30-day milestones (+8 each) paid once, plus at most the feeding shells and a perfect-day bonus');
   // one wallet: two caretakers try to buy with shells for only one fish
   setW(tk.id, { shells: 10, orders: [], fish: w.fish.slice(0, 1), simTs: Date.now() - 1000, flags: { ...w.flags, firsts: { ...w.flags.firsts } } });
   const buys = await Promise.all([ackOf(wx, { t: 'buyFish', species: 'goldfish', name: 'A', seed: 1, idem: 'ei-9' }), ackOf(wy, { t: 'buyFish', species: 'goldfish', name: 'B', seed: 2, idem: 'ei-10' })]);
