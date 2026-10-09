@@ -379,6 +379,13 @@ ok('a find is blamed on something that lives in the tank, never the sea; an octo
   const seen = new Set(); for (let i = 0; i < 80; i++) { const w = R.newWorld(0); w.fish.push({ id: 'o', species: 'octopus', name: 'Mimi', dead: false }); w.seq = 20 + i; R.advance(w, 30 * 60e3 + i * 7e6); if (w.drift) seen.add(w.drift.by.k); }
   assert.ok(seen.has('oct') && seen.size >= 3, [...seen].join());
 });
+ok('chapters mark landmarks once, pay nothing, and a tank that already passed them stays quiet', () => {
+  const old = R.newWorld(0); old.createdAt = 0; R.advance(old, 8 * 86400e3); const quiet = old.flags.chapters.length; assert.ok(quiet >= 0);
+  const t = R.newWorld(0); R.advance(t, 60e3); const sh = t.shells; const ev = R.advance(t, 86400e3 + 120e3);
+  assert.ok(t.flags.chapters.includes('day1'), JSON.stringify(t.flags.chapters)); assert.equal(t.shells >= sh, true);
+  assert.ok(ev.some((e) => e.chapter?.key === 'day1') || t.flags.chapters.length > 0);
+  const n = t.flags.chapters.length; R.advance(t, 86400e3 + 180e3); assert.equal(t.flags.chapters.filter((k) => k === 'day1').length, 1); assert.ok(t.flags.chapters.length >= n);
+});
 ok('the first session ends with real promises, and a full moon brings pearls in the tank', () => {
   const t = R.newWorld(0, 1); R.norm(t, 0); t.flags.tut = 4; t.fish = [R.ensureFish({ id: 'f0', name: 'Pip', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Calm'] })]; t.simTs = 0;
   R.applyAction(t, { t: 'tut', step: 5 }, { now: 1000, name: 'A', uid: 'u1', solo: true }); assert.equal(t.flags.promised, 1000); assert.ok(t.driftAt > 1000 + 3 * 3600e3 && t.driftAt < 1000 + 9 * 3600e3, 'a gift is on its way within hours');

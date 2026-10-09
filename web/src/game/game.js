@@ -36,7 +36,7 @@ export class Game {
       if (e.noticed) this.emit('noticed', e.noticed);
       if (e.levelUp) this.emit('levelup', e.levelUp);
       if (e.puzzle) this.emit('puzzle', e.puzzle); if (e.crab) this.emit('crab', e.crab); if (e.together) this.emit('together'); if (e.theme) this.emit('theme', e.theme); if (e.grew) this.emit('grew', e.grew); if (e.discovery) this.emit('discovery', e.discovery);
-      if (e.arrival) this.emit('arrival', e.arrival);
+      if (e.arrival) this.emit('arrival', e.arrival); if (e.chapter) this.emit('chapter', e.chapter); if (e.died) this.emit('died', e.died);
       if (e.placed) this.emit('placed', e.placed);
     }
   }

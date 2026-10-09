@@ -480,6 +480,11 @@ game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ f
 game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
+game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+game.on('died', (id) => {                         // a quiet beat, not an alarm: the light dims, the others slow down and stay near
+  const f = fishes.byId.get(id), name = f?.name ?? 'A fish'; ui?.farewell(name); stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 9000);
+  for (const o of fishes.list) if (o !== f && !o.dead) { o.mul = 0.6; setTimeout(() => { if (o.mul === 0.6) o.mul = 1; }, 9000); }
+});
 game.on('theme', () => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); });
 let seenOnline = null;
 game.on('members', () => {                                                    // a friend arrives: a greeting, and their favourite fish swims over to the glass

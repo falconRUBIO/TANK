@@ -538,7 +538,24 @@ function deliver(t, now, ev) {
     ev.push({ journal: o.giftFrom ? `${made[0].name} the ${d.label.toLowerCase()} has arrived, a gift from ${o.giftFrom} to ${o.ownerName}.` : d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
   }
 }
+// Chapters: quiet landmarks in the life of a tank. They pay nothing, so they cannot be farmed; they are a page in the journal and a moment to notice.
+export const CHAPTERS = [
+  { key: 'day1', title: 'Day One', text: 'A whole day of fish and water. The tank has found its rhythm.', when: (t, now) => now - t.createdAt >= 86400e3 },
+  { key: 'crew', title: 'A Small Crew', text: 'Three fish now share the water.', when: (t) => t.fish.length >= 3 },
+  { key: 'week', title: 'A Week Together', text: 'Seven days. This is starting to feel like home.', when: (t, now) => now - t.createdAt >= 7 * 86400e3 },
+  { key: 'octo', title: 'Eight Arms Aboard', text: 'An octopus lives here now, and it has opinions.', when: (t) => t.fish.some((f) => f.species === 'octopus') },
+  { key: 'reef', title: 'A Little Reef', text: 'Five kinds of fish. It is getting crowded in a good way.', when: (t) => new Set(t.fish.map((f) => f.species)).size >= 5 },
+  { key: 'grown', title: 'All Grown Up', text: 'A fish has grown up in your care.', when: (t) => t.fish.some((f) => f.stage === 'adult') },
+  { key: 'busy', title: 'A Busy Tank', text: 'Ten fish. Someone is always up to something.', when: (t) => t.fish.length >= 10 },
+  { key: 'month', title: 'A Month of Water', text: 'Thirty days of looking after each other.', when: (t, now) => now - t.createdAt >= 30 * 86400e3 },
+];
+function chapters(t, now, ev) {
+  const done = (t.flags.chapters ||= []);
+  if (!t.flags.chV) { t.flags.chV = 1; for (const c of CHAPTERS) if (c.when(t, now) && !done.includes(c.key)) done.push(c.key); return; }          // a tank saved before chapters existed: record what is already true, say nothing
+  for (const c of CHAPTERS) if (!done.includes(c.key) && c.when(t, now)) { done.push(c.key); ev.push({ journal: `Chapter: ${c.title}. ${c.text}`, chapter: { key: c.key, title: c.title, text: c.text } }); }
+}
 function milestones(t, now, ev) {
+  chapters(t, now, ev);
   const n = t.seen.fish.length + t.seen.decor.length, due = Math.floor(n / 5);
   while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `The collection book has ${t.flags.collMs * 5} entries.`, toast: `Collection: ${t.flags.collMs * 5} found! +3 shells` }); }
   const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
