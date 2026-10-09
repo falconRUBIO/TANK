@@ -112,7 +112,8 @@ export function runOnboarding() {
     };
     const codeScreen = (t) => {
       const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with two friends. They can join in seconds.</p>
-        <div class="rkbox"><small>RECOVERY KEY · save it somewhere safe</small><b>${session?.recoveryKey ?? ''}</b></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
+        <div class="rkbox" id="rk"><small>RECOVERY KEY · tap to copy, then save it somewhere safe</small><b>${session?.recoveryKey ?? ''}</b></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
+      s.querySelector('#rk').onclick = async () => { const k = session?.recoveryKey; if (!k) return; const sm = s.querySelector('#rk small'); try { await navigator.clipboard.writeText(k); sm.textContent = 'KEY COPIED ✓ · keep it somewhere safe'; } catch { sm.textContent = 'SELECT THE KEY AND COPY IT'; } };
       s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
       s.querySelector('#sh').onclick = async () => { const data = { title: 'OUR TANK', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
       s.querySelector('#en').onclick = async () => { const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank }); };
