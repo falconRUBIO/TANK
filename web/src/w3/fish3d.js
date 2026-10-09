@@ -32,7 +32,7 @@ export class Fish3D {
     this.mesh.castShadow = this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
     const jr = (i) => 0.94 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.1;
     this.vox.forEach((v, i) => {
-      const k = jr(i), glow = v.em > 1 ? 1.2 : v.em ? 1.0 : 1;
+      const k = jr(i) * (1 + 0.1 * Math.max(0, -v.ny) - 0.07 * Math.max(0, v.ny)), glow = v.em > 1 ? 1.2 : v.em ? 1.0 : 1;      // counter-shading: backs a touch darker, bellies lighter
       col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });

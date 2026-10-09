@@ -427,18 +427,93 @@ const betta = {
 const lum = (c) => (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11) / 255;
 const skin = (base, id, label, fn, extra = {}) => ({ ...base, ...extra, id, label, make(seed = 1) { const m = base.make.call(base, seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? (r.em && r.em > 0 && r.em < 3 && lum(r.c) < 0.12 || r.em > 1 ? r : { ...r, c: fn(r.c, x, y, z, seed, r) }) : r; } }; } });
 const ramp3 = (c, lo, hi) => mix(lo, hi, clamp(lum(c) * 1.25));
-const clownfish = skin(goldfish, 'goldfish', 'Clownfish', (c, x) => {
-  for (const [a, b] of [[40, 43], [26, 29], [13, 14]]) { if (x >= a && x <= b) return [250, 248, 240]; if (x === a - 1 || x === b + 1) return [26, 20, 24]; }
-  return ramp3(c, [226, 74, 10], [255, 150, 36]);
+
+// ── A parametric reef-fish builder: oval body, proper tail (round or forked), dorsal / anal / pectoral fins, eye with ring, and a paint rule per species. ──
+const reef = (o) => ({
+  id: o.id, label: o.label, length: o.length ?? 50, vox: o.vox ?? 0.045, move: o.move,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 6469 + o.id.length * 31), P = o.pals ? o.pals[Math.floor(rng() * o.pals.length)] : null;
+    const X0 = 10, L = o.L, hy = prof(o.hy), hz = prof(o.hz), body = mkBody(X0, L, hy, hz, () => 0), eye = mkEye(body, Math.round(X0 + o.eye[0] * L), o.eye[1], o.ring ?? null, o.ringR ?? 2.4, o.eyeR ?? 1);
+    const bt = (x) => clamp((x - X0) / L), T = o.tail, len = T.len;
+    const paint = (c) => o.paint({ ...c, P, seed, rng }), fin = (u, c) => o.fin({ ...c, u, P, seed });
+    return {
+      bounds: { x: [X0 - len - 4, X0 + L + 6], y: [-(Math.max(...o.hy.map((p) => p[1])) + 14), Math.max(...o.hy.map((p) => p[1])) + 14], z: [-9, 9] }, center: [X0 + L * 0.42, 0],
+      bend: { pivot: X0 + L * 0.35, len: L * 0.4 + len, amp: o.amp ?? 0.5, bob: 0.7 },
+      sample(x, y, z) {
+        const e = eye(x, y, z); if (e) return e;
+        const b = body(x, y, z);
+        if (b) return { c: paint({ t: b.t, dy: b.dy, dz: b.dz, x, y, z }), em: 0 };
+        // ── tail ──
+        const dT = X0 - x;
+        if (dT >= 0 && dT <= len && Math.abs(z) <= (dT < 3 ? 1 : 0)) {
+          const u = dT / len; let hh;
+          if (T.kind === 'fork') { hh = hy(0) + (T.spread - hy(0)) * Math.pow(u, 0.85); if (u > T.notch && Math.abs(y) < (u - T.notch) * T.depth) return null; }
+          else { const r = Math.sin(Math.min(1, u * 1.15) * Math.PI / 2); hh = hy(0) + (T.spread - hy(0)) * r; if (u > 0.86) hh *= 1 - (u - 0.86) / 0.14 * 0.8; }
+          if (Math.abs(y) <= hh) return { c: fin(u, { part: 'tail', y: y / hh, x }), wave: 0.5 + u * 0.5 };
+        }
+        // ── dorsal fin(s): optional spiny front ──
+        for (const d of o.dorsal ?? []) {
+          const x0 = X0 + d.a * L, x1 = X0 + d.b * L; if (z !== 0 || x < x0 || x > x1) continue;
+          const s2 = (x - x0) / (x1 - x0), top = hy(bt(x)), h = d.h * (d.shape === 'sail' ? Math.sin(Math.PI * Math.pow(s2, 0.7)) : (0.45 + 0.55 * Math.sin(Math.PI * Math.min(1, s2 * 1.1)))) * (d.spiny && Math.floor(x) % 3 === 0 ? 1.18 : 1);
+          if (y >= top - 1 && y <= top + h) return { c: fin(clamp((y - top) / Math.max(1, h)), { part: 'dorsal', x }), wave: 0.25 };
+        }
+        // ── anal fin + pelvic ──
+        const A = o.anal; if (A && z === 0) { const x0 = X0 + A.a * L, x1 = X0 + A.b * L; if (x >= x0 && x <= x1) { const s2 = (x - x0) / (x1 - x0), bot = -hy(bt(x)), h = A.h * Math.sin(Math.PI * Math.pow(s2, 0.8)); if (y <= bot + 1 && y >= bot - h) return { c: fin(clamp((bot - y) / Math.max(1, h)), { part: 'anal', x }), wave: 0.25 }; } }
+        if (o.pelvic && Math.abs(z) === 2 && x >= X0 + o.pelvic[0] * L && x <= X0 + o.pelvic[1] * L) { const bot = -hy(bt(x)); if (y <= bot + 1 && y >= bot - 4) return { c: fin(0.6, { part: 'pelvic', x }), flap: 0.8 }; }
+        // ── pectoral fin hugging the flank ──
+        if (o.pec && Math.abs(z) >= 1) { const px = X0 + o.pec[0] * L, w = hz(bt(x)), edge = Math.round(w * 0.88) + 1; if (Math.abs(z) === edge && x >= px - 3 && x <= px + 3 && Math.abs(y - o.pec[1]) <= 2.5 - Math.abs(x - px) * 0.3) return { c: fin(0.5, { part: 'pec', x }), flap: 1.2 }; }
+        return null;
+      },
+    };
+  },
+});
+const lerpc = (a, b, k) => mix(a, b, clamp(k));
+const clownfish = reef({
+  id: 'goldfish', label: 'Clownfish', L: 28, vox: 0.05, length: 52, eye: [0.8, 2], ring: [255, 190, 90], ringR: 2.2, amp: 0.45,
+  hy: [[0, 3], [0.1, 5.4], [0.3, 8.6], [0.55, 9.4], [0.8, 7.6], [0.95, 5], [1, 3]], hz: [[0, 1.6], [0.3, 4], [0.6, 5.2], [0.9, 3.6], [1, 2]],
+  tail: { kind: 'round', len: 11, spread: 7.5 }, dorsal: [{ a: 0.2, b: 0.9, h: 4.6, spiny: true }], anal: { a: 0.3, b: 0.58, h: 3.6 }, pelvic: [0.45, 0.6], pec: [0.62, -1],
+  paint: ({ t, dy }) => { const band = (a, b) => t >= a && t <= b, edge = (a, b) => t >= a - 0.028 && t <= b + 0.028;
+    if (band(0.69, 0.76) || band(0.38, 0.47) || band(0.08, 0.13)) return [252, 250, 244];
+    if (edge(0.69, 0.76) || edge(0.38, 0.47) || edge(0.08, 0.13)) return [28, 20, 22];
+    return lerpc([232, 76, 10], [255, 156, 40], (-dy + 0.4) * 0.8); },
+  fin: (c) => { if (c.u > 0.9) return [24, 18, 22]; if (c.u > 0.8) return [250, 246, 238]; return lerpc([240, 92, 12], [255, 150, 36], c.u); },
+});
+const gramma = reef({
+  id: 'blue', label: 'Royal Gramma', L: 32, vox: 0.045, length: 54, eye: [0.84, 2], ring: [255, 226, 90], ringR: 2.2, amp: 0.4,
+  hy: [[0, 2.4], [0.15, 4.6], [0.4, 7], [0.65, 7.6], [0.9, 5.4], [1, 3]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.6], [0.9, 3.2], [1, 1.8]],
+  tail: { kind: 'round', len: 9, spread: 6.4 }, dorsal: [{ a: 0.18, b: 0.95, h: 4.2, shape: 'sail' }], anal: { a: 0.35, b: 0.7, h: 3.2 }, pelvic: [0.5, 0.65], pec: [0.66, -1],
+  paint: ({ t, dy, y }) => { const k = clamp((t - 0.46) / 0.14); const purple = lerpc([120, 30, 180], [214, 104, 238], (-dy + 0.5) * 0.7), yellow = lerpc([255, 188, 24], [255, 238, 120], (-dy + 0.4) * 0.8); let c = lerpc(yellow, purple, k); if (t > 0.78 && t < 0.9 && Math.abs(y - 2) <= 1.6) c = [20, 16, 40]; return c; },
+  fin: (c) => lerpc(c.x > 10 + 0.5 * 32 ? [150, 50, 210] : [255, 200, 40], c.x > 10 + 0.5 * 32 ? [220, 120, 240] : [255, 232, 110], c.u),
+});
+const damsel = reef({
+  id: 'guppy', label: 'Damselfish', L: 22, vox: 0.045, length: 46, eye: [0.78, 2], ring: [255, 224, 120], ringR: 2.2, amp: 0.55,
+  pals: [[[24, 96, 255], [150, 220, 255], [255, 214, 58]], [[255, 214, 40], [255, 246, 160], [40, 100, 240]]],
+  hy: [[0, 2.6], [0.15, 5], [0.4, 8], [0.65, 8.6], [0.9, 6], [1, 3.6]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.4], [0.9, 3], [1, 1.8]],
+  tail: { kind: 'fork', len: 10, spread: 8.5, notch: 0.5, depth: 1.5 }, dorsal: [{ a: 0.12, b: 0.92, h: 5.2, spiny: true }], anal: { a: 0.3, b: 0.6, h: 3.4 }, pelvic: [0.4, 0.55], pec: [0.62, -1],
+  paint: ({ dy, P }) => lerpc(P[0], P[1], (-dy - 0.1) * 0.9), fin: ({ u, P, part }) => (part === 'tail' ? lerpc(P[2], [255, 255, 255], u * 0.25) : part === 'pec' || part === 'pelvic' ? lerpc(P[1], [255, 255, 255], 0.3) : lerpc(P[0], P[2], 0.25 + u * 0.4)),
+});
+const cardinal = reef({
+  id: 'platy', label: 'Cardinalfish', L: 22, vox: 0.045, length: 44, eye: [0.8, 2], ring: [255, 236, 170], ringR: 2.7, eyeR: 1, amp: 0.5,
+  pals: [[[226, 56, 40], [255, 168, 130], [40, 10, 16]], [[248, 196, 184], [255, 246, 238], [196, 44, 44]]],
+  hy: [[0, 2.4], [0.15, 4.8], [0.4, 7.4], [0.65, 7.8], [0.9, 5.8], [1, 3.4]], hz: [[0, 1.4], [0.3, 3.2], [0.6, 4.2], [0.9, 3], [1, 1.8]],
+  tail: { kind: 'round', len: 8, spread: 6 }, dorsal: [{ a: 0.2, b: 0.44, h: 3.6 }, { a: 0.56, b: 0.86, h: 3.4 }], anal: { a: 0.42, b: 0.78, h: 3 }, pelvic: [0.4, 0.55], pec: [0.62, -1],
+  paint: ({ t, dy, P }) => { if (t > 0.74 && t < 0.82) return P[2]; if (t < 0.14 && t > 0.06) return P[2]; return lerpc(P[0], P[1], (-dy - 0.2) * 0.9); }, fin: ({ u, P, part }) => (part === 'pec' || part === 'pelvic' ? lerpc(P[1], [255, 255, 255], 0.3) : lerpc(P[0], P[1], u * 0.5)),
+});
+const anthias = reef({
+  id: 'danio', label: 'Pink Anthias', L: 26, vox: 0.042, length: 48, eye: [0.84, 1], ring: [255, 224, 150], ringR: 2.2, amp: 0.6,
+  hy: [[0, 2], [0.15, 3.8], [0.45, 5.6], [0.8, 4.6], [1, 2.8]], hz: [[0, 1.2], [0.4, 3], [0.8, 2.6], [1, 1.4]],
+  tail: { kind: 'fork', len: 13, spread: 10, notch: 0.4, depth: 1.9 }, dorsal: [{ a: 0.2, b: 0.92, h: 6.2, spiny: true }], anal: { a: 0.35, b: 0.7, h: 3.6 }, pelvic: [0.45, 0.6], pec: [0.66, -1],
+  paint: ({ t, dy }) => (t > 0.7 && dy > -0.2 && dy < 0.5 ? lerpc([255, 190, 90], [255, 140, 120], (0.9 - t) * 4) : lerpc([255, 86, 150], [255, 196, 186], (-dy + 0.3) * 0.9)), fin: ({ u }) => lerpc([255, 100, 160], [255, 214, 120], u),
+});
+const goby = reef({
+  id: 'cory', label: 'Yellow Goby', L: 28, vox: 0.045, length: 48, eye: [0.82, 3], ring: [255, 150, 40], ringR: 2.2, amp: 0.4, move: undefined,
+  hy: [[0, 1.8], [0.2, 3.6], [0.5, 4.6], [0.8, 4.4], [1, 3.4]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.2], [0.9, 3.6], [1, 2.4]],
+  tail: { kind: 'round', len: 8, spread: 5, }, dorsal: [{ a: 0.28, b: 0.5, h: 5, spiny: true }, { a: 0.54, b: 0.86, h: 4 }], anal: { a: 0.5, b: 0.8, h: 3 }, pelvic: [0.5, 0.66], pec: [0.68, -1],
+  paint: ({ t, dy, x, y, z }) => (((x * 3 + y * 5 + z * 7) % 17 + 17) % 17 === 0 ? [90, 220, 240] : lerpc([232, 168, 20], [255, 236, 110], (-dy + 0.3) * 0.9)), fin: ({ u }) => lerpc([240, 190, 40], [255, 240, 150], u),
 });
 const chromis = skin(neon, 'neon', 'Blue Chromis', (c) => ramp3(c, [24, 84, 210], [140, 236, 230]));
-const goby = skin(cory, 'cory', 'Yellow Goby', (c, x, y, z) => (((x * 3 + y * 5 + z * 7) % 13 + 13) % 13 === 0 ? [40, 200, 230] : ramp3(c, [200, 140, 20], [255, 232, 96])));
-const gramma = skin(bluefish, 'blue', 'Royal Gramma', (c, x) => (x > 28 ? ramp3(c, [118, 30, 176], [214, 100, 236]) : ramp3(c, [250, 176, 20], [255, 238, 120])));
-const emperor = skin(angelfish, 'angelfish', 'Emperor Angelfish', (c, x, y) => (((Math.floor((x * 0.8 + y * 0.55) / 2.2) & 1) === 0) ? ramp3(c, [20, 60, 190], [70, 130, 255]) : ramp3(c, [240, 190, 30], [255, 232, 90])));
-const anthias = skin(danio, 'danio', 'Pink Anthias', (c) => ramp3(c, [196, 36, 118], [255, 190, 120]));
+const emperor = skin(angelfish, 'angelfish', 'Emperor Angelfish', (c, x, y) => (((Math.floor((x * 0.9 + y * 0.7) / 4.6) & 1) === 0) ? ramp3(c, [20, 56, 190], [70, 130, 255]) : ramp3(c, [244, 196, 30], [255, 236, 96])));
 const mandarin = skin(betta, 'betta', 'Mandarin Dragonet', (c, x, y, z, seed) => { const n = fbm(x * 0.3 + seed, y * 0.3, Math.abs(z) * 0.3 + 7); return n > 0.56 ? [255, 132, 28] : n > 0.43 ? mix([255, 206, 70], c, 0.15) : mix([30, 108, 232], c, 0.2); });
-const damsel = { ...guppy, id: 'guppy', label: 'Damselfish', pals: [[hex(0x2a70ff), hex(0x9ad8ff), hex(0xffd53a)], [hex(0xffd82a), hex(0xfff4a0), hex(0x2a5ae0)]] };
-const cardinal = { ...guppy, id: 'platy', label: 'Cardinalfish', length: 30, pals: [[hex(0xe83a2a), hex(0xffa080), hex(0x5a1a2a)], [hex(0xf2742a), hex(0xffe0a0), hex(0x2a2a3a)]] };
 
 // ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
 const seahorse = {
@@ -481,9 +556,9 @@ const octopus = {
   make(seed = 1) {
     const rng = mulberry32(seed * 7907 + 3), pals = [[[226, 92, 78], [255, 190, 170]], [[170, 90, 200], [236, 190, 255]], [[60, 150, 200], [180, 236, 255]], [[230, 140, 60], [255, 220, 170]]];
     const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90];
-    const arms = Array.from({ length: 8 }, (_, i) => { const f = i / 7; return { z0: -3.6 + f * 7.2, ph: rng() * 6, len: 20 + rng() * 6, sw: 1.8 + rng() * 1.4, drop: 5 + f * 22 }; });
-    const armAt = (a, t) => ({ x: -1 - t * a.len, y: -4 - t * a.drop + Math.sin(t * 5 + a.ph) * a.sw * t, z: a.z0 * (1 + t * 1.2) + Math.sin(t * 4 + a.ph * 1.7) * 1.2 * t });
-    const mantle = (x, y, z) => ((x - 3) / 11) ** 2 + ((y - 7) / 11) ** 2 + (z / 8.5) ** 2 <= 1;
+    const arms = Array.from({ length: 8 }, (_, i) => { const f = i / 7; return { z0: -3.6 + f * 7.2, ph: rng() * 6, len: 16 + rng() * 14, sw: 1.8 + rng() * 1.8, drop: 3 + f * 26 }; });
+    const armAt = (a, t) => ({ x: -1 - t * a.len, y: -4 - t * a.drop + Math.sin(t * 5 + a.ph) * a.sw * t + Math.pow(t, 3) * 7, z: a.z0 * (1 + t * 1.2) + Math.sin(t * 4 + a.ph * 1.7) * 1.2 * t });
+    const mantle = (x, y, z) => ((x - 3) / 12) ** 2 + ((y - 7) / 12) ** 2 + (z / 9.5) ** 2 <= 1;
     const eyeAt = (x, y, z) => Math.abs(x - 12) <= 1.5 && Math.abs(y - 7) <= 2 && Math.abs(z) >= 5 && Math.abs(z) <= 8;
     return {
       bounds: { x: [-30, 16], y: [-34, 20], z: [-12, 12] }, center: [-6, -2],

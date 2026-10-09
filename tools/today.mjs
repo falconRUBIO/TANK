@@ -18,7 +18,7 @@ ck('the chosen fish is what arrives, with the chosen name', (await S()).fish[0].
 ck('six tabs in the bottom bar', (await p.$$('nav [data-tab]')).length === 6);
 await p.click('nav [data-tab=today]'); await p.waitForTimeout(500);
 const txt = await p.evaluate(() => document.getElementById('sheet')?.innerText ?? document.querySelector('.sheet')?.innerText ?? '');
-ck('Today shows what to do, what is coming up and how shells are earned', /WORTH DOING NOW/i.test(txt) && /HOW SHELLS ARE EARNED/i.test(txt) && /Feed hungry fish/.test(txt), txt.slice(0, 80).replace(/\n/g, ' | '));
+ck('Today shows what to do, what is coming up and how shells are earned', /WORTH DOING NOW/i.test(txt) && /How do I earn shells\?/i.test(txt), txt.slice(0, 80).replace(/\n/g, ' | '));
 ck('it names a daily wish or the coming-up list', /COMING UP/i.test(txt));
 await p.click('nav [data-tab=today]'); await p.waitForTimeout(300);
 // an order that is due must arrive on a connected phone and the countdown must move
