@@ -166,6 +166,7 @@ export class Fishes {
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
       // the goby keeps watch low on the sand, and the dragonet picks over the rocks all day
+      if (this.rain && (has('Curious') || has('Playful')) && !f.weak && r() < 0.4) return T(-3 + r() * 6, 11 + r() * 2, 0.8 + r() * 1.2, 3 + r() * 3);       // on a rainy day the curious ones drift up to look
       f.invert = false; const sk = f.sk, spot = (cats, types) => { const c = spots.filter((x) => (types && types.includes(x.type)) || (cats && cats.includes(DECOR_DEF[x.type]?.cat))); return c.length ? c[(f.seed ?? 0) % c.length] : null; };
       if (sk === 'goldfish') { const a = spot(null, ['anemone']); if (a && r() < 0.7) return T(a.x + (r() - 0.5) * 1.1, 1.0 + a.h * 0.5 + r() * 0.7, a.z + 0.5 + r() * 0.3, 3 + r() * 3); }
       if (sk === 'blue') { const c = spot(['ROCKS', 'STRUCTURES']); if (c && r() < 0.65) { f.invert = r() < 0.7; return T(c.x + (r() - 0.5) * 0.8, f.invert ? 0.9 + c.h * 0.75 : 1.0 + c.h * 0.4, c.z + 0.6, 5 + r() * 5); } }

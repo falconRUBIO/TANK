@@ -1,17 +1,18 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
-import { Glow, Sightings } from './w3/fx.js';
+import { Glow, Sightings, Rain } from './w3/fx.js';
+import { skyOf } from './game/sky.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI } from './ui.js';
 import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle } from './online.js';
-import { sfx, haptic } from './audio.js';
+import { sfx, haptic, setMusicPhase } from './audio.js';
 
 const { stage, canvas, IW, IH, camera, scene, composer, bokeh, grade, TOD, cur, env, lamp, halo, pool, qs, LITE } = stg;
 const $ = (id) => document.getElementById(id);
@@ -22,6 +23,21 @@ window.__game = game;
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
 const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; sights.onSpawn = () => { try { if (localStorage.getItem('ourtank.memory')) return; localStorage.setItem('ourtank.memory', '1'); } catch { /* shown again next time */ } ui?.toast('The fish are remembering the open sea…', 5200); }; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
 const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
+const rain = new Rain(); stg.scene.add(rain.mesh); stg.hideForDepth.push(rain.mesh);
+// the moon, in its real phase, glimmering at the top of the water at dusk and after dark
+const moonTexture = (ph) => { const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d'), r = 36; g.translate(48, 48); g.fillStyle = 'rgba(190,205,235,.2)'; g.beginPath(); g.arc(0, 0, r, 0, 6.3); g.fill();
+  const waxing = ph < 0.5, p2 = waxing ? ph : 1 - ph, k = Math.cos(p2 * 2 * Math.PI); if (!waxing) g.scale(-1, 1);              // the lit side is the right while it waxes, the left while it wanes
+  g.fillStyle = '#f3f0dc'; g.beginPath(); g.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false); g.ellipse(0, 0, Math.max(0.5, Math.abs(k) * r), r, 0, Math.PI / 2, -Math.PI / 2, k > 0); g.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+const moon = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, opacity: 0 })); moon.scale.set(1.5, 1.5, 1); moon.position.set(2.9, 12.4, -4); moon.renderOrder = 4; scene.add(moon); stg.hideForDepth.push(moon);
+const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(220,232,255,.55)'); gr.addColorStop(1, 'rgba(220,232,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); moonHalo.scale.set(5, 5, 1); moonHalo.position.copy(moon.position); moonHalo.renderOrder = 3; scene.add(moonHalo); stg.hideForDepth.push(moonHalo);
+let skyNow = null, moonK = 0, moonWant = 0;
+function applySky(phaseName) {
+  const sk = skyOf(Date.now()), ev = qs.get('sky') || (sk.event?.key ?? null); const dark = phaseName === 'night' || phaseName === 'evening';
+  moon.material.map = moonTexture(sk.phase); moon.material.needsUpdate = true; moonWant = phaseName === 'night' ? 1 : phaseName === 'evening' ? 0.55 : 0; skyNow = sk;
+  stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0; glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain'; fishes.rain = ev === 'rain';
+}
+const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
 { const SURF = { ROCKS: { cols: [[122, 120, 116], [96, 94, 94], [150, 146, 138], [110, 104, 98]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
@@ -135,7 +151,8 @@ async function adopt(species) {
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `Four ${d.label.toLowerCase()}s swim together. Choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
   { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'GOOD TO KNOW', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
-  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0 });
+  let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'WHO IS IT FOR?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
+  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
 }
@@ -376,7 +393,7 @@ const tut = (() => {
       } else if (step === 3) {
         ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open Decorate, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
-        ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Care for the fish to earn shells. Next: add a plant in Decorate, then adopt a friend. Every kind of fish has its own nature: some are shy, some bossy, some need company, and the octopus is very clever. Tap a fish to find out who gets along.', button: 'Start', onButton: () => { set(5); ui.hideCoach(); } });
+        ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Care for the fish to earn shells. Every kind of fish has its own nature: some are shy, some bossy, some need company, and the octopus is very clever. Tap a fish to find out who gets along.', button: 'Show me what is coming', onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'COMING UP', lines: firstPromises(game.state, Date.now()), ok: 'See you soon' }); if (game.shared) offerNudges(); } });
       }
     } finally { busy = false; setTimeout(run, 0); }
   }
@@ -422,6 +439,15 @@ game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = f
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); sfx('level'); haptic(16); if (f) { fishes.burst(f.pos); f.flush = 1; spotlightFish(id, 3600, 1200); } });
+game.on('together', () => { sfx('arrive'); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
+game.on('theme', () => { sfx('level'); haptic(14); fishes.burst(new THREE.Vector3(0, 5, 1.2)); });
+let seenOnline = null;
+game.on('members', () => {                                                    // a friend arrives: a greeting, and their favourite fish swims over to the glass
+  if (!game.shared) return; const now = new Set(game.online ?? []); if (seenOnline) for (const id of now) if (!seenOnline.has(id) && id !== game.you?.userId) {
+    const m = game.members?.find((x) => x.id === id); if (!m) continue; ui?.toast(`${m.name} is in the tank`, 3200); sfx('arrive');
+    const fav = game.state?.fish.map((f) => ({ f, b: f.bond?.[id] ?? 0 })).sort((a, b) => b.b - a.b)[0]; const fish = fav && fav.b > 0 ? fishes.byId.get(fav.f.id) : null; if (fish) { fish.target.set((Math.random() - 0.5) * 2.5, Math.max(1, Math.min(9, fish.pos.y)), 2.5); fish.retarget = 5; fishes.burst(fish.pos); }
+  } seenOnline = now;
+});
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('level'); haptic(25); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { fishes.burst(f.pos); sfx('arrive'); spotlightFish(id, 3000, 600); flyShells(2, [window.innerWidth / 2, window.innerHeight * 0.4]); } });
 game.on('remoteFeed', (x, by, food) => { fishes.drop(x, 7, food); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
@@ -466,7 +492,7 @@ function frame(now) {
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
-  stg.env.tick(t); lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play; sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play; sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }
@@ -493,6 +519,13 @@ async function welcomeBack() {
   await new Promise((r) => setTimeout(r, 900)); const r = await ui.dialog({ title: 'WHILE YOU WERE AWAY', lines, ok: 'Back to the tank', cancel: 'Send a postcard of the tank' }); if (r === null) takePhoto();
 }
 
+// one gentle, opt-in nudge a day, only for something that really happened (never "come back!")
+async function offerNudges() {
+  try { if (localStorage.getItem('ourtank.nudgeAsked')) return; localStorage.setItem('ourtank.nudgeAsked', '1'); } catch { /* ask next time */ }
+  let st; try { st = await pushState(); } catch { return; } if (st !== 'off') { if (st === 'install') ui.toast('Add the game to your Home Screen to get gentle nudges', 5200); return; }
+  const yes = await ui.dialog({ title: 'A GENTLE NUDGE?', text: 'At most one a day, and only when something really happened: an egg hatched, a rare visitor, a puzzle solved. Never a reminder to come back.', ok: 'Yes, nudge me', cancel: 'Not now' });
+  if (yes) { try { const r = await pushToggle(true); ui.toast(r === 'on' ? 'Nudges are on' : 'Nudges are blocked in your browser settings'); } catch { ui.toast('Could not turn nudges on'); } }
+}
 // every caretaker brings in a first fish of their own (the creator's is Pip)
 async function firstFishPrompt() {
   const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
@@ -524,10 +557,9 @@ async function boot() {
   // lighting follows the clock unless you picked a time yourself (?tod=… or the pill)
   // the light follows the phone's clock and drifts on its own while you play; the picker only exists for ?tod= or ?dev testing
   const phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
-  if (qs.get('tod') || qs.has('dev')) document.querySelector('.tod').hidden = false;
-  document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { glow.setPhase(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
-  fishes.setNight((qs.get('tod') ?? phase()) === 'night'); glow.setPhase(qs.get('tod') ?? phase());
-  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); glow.setPhase(n); } }, 30000); }
+  document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { tune(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
+  fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
+  if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
   welcomeBack(); firstFishPrompt(); requestAnimationFrame(frame);
 }
 window.__booted = false;

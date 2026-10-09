@@ -26,7 +26,7 @@ await p.waitForTimeout(700); await p.mouse.click(120, 600); await p.waitForTimeo
 const valid = await p.evaluate(() => !document.getElementById('pok').disabled); ck('a clear spot is valid', valid);
 const before = (await S()); await p.click('#pok'); await p.waitForTimeout(300); const after = await S();
 ck('placing adds the plant for free', after.decor.length === before.decor.length + 1 && after.shells === before.shells, `${before.decor.length}→${after.decor.length}`);
-ck('tutorial ends with a start button', await waitCoach('YOU ARE ALL SET')); await p.click('#cbtn'); await p.waitForTimeout(300);
+ck('tutorial ends with a start button', await waitCoach('YOU ARE ALL SET')); await p.click('#cbtn'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 }); ck('and says what is coming next', /COMING UP/.test(await p.textContent('#modal h2')) && (await p.$$eval('#modal li', (n) => n.length)) >= 2, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | ')); await p.click('#mok'); await p.waitForTimeout(300);
 ck('tutorial saved as finished', (await S()).flags.tut === 5);
 
 console.log('Shopping');

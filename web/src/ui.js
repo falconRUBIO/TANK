@@ -1,8 +1,9 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
-import { SOCIAL, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
+import { skyOf } from './game/sky.js';
+import { SOCIAL, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
-import { sfx, setSound, soundOn } from './audio.js';
+import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 
 export const SKINS = ['#f1c8a0', '#d9a273', '#b06a42', '#8a5a3a', '#5a3a28'];
 export const HAIRS = ['#222222', '#5a3ad0', '#a0522d', '#d8a830', '#c0362c', '#2f8f6a'];
@@ -105,6 +106,7 @@ export function initUI({ game, social, cb }) {
   };
   const memorialHtml = () => { const m = S().memorial ?? []; return m.length ? `<h4>Remembered</h4><div class="mem">${m.map((x, i) => [x, i]).reverse().map(([x, i]) => `<button data-mem="${i}">${esc(x.name)} · ${esc(SPECIES_DEF[x.species]?.label ?? x.species)}</button>`).join('')}</div>` : ''; };
   const journalHtml = () => `${memorialHtml()}<form class="send note"><input maxlength="90" placeholder="Add a note to the journal" autocomplete="off"><button>Add</button></form><div class="jl">${game.journal.slice().reverse().map((e) => `<div class="je"><small>DAY ${String(e.day).padStart(3, '0')}</small><span>${esc(e.text)}</span></div>`).join('')}</div>`;
+  const themesHtml = () => { const ths = themesOf(S()), n = ths.filter((x) => x.active).length; return fold('themes', `<span>REEF THEMES · ${n} of ${ths.length}</span>`, `<div class="themes"><div>${ths.map((th) => `<span class="theme ${th.active ? 'on' : ''}" title="${esc(th.blurb)}">${esc(th.label)} <b>${th.have}/${th.need}</b></span>`).join('')}</div><p class="dim">Pieces that belong together make the fish happier and draw their own rare visitor.</p></div>`); };
   const styleHtml = () => { const st = S().style ?? { floor: 'sand', backdrop: 'candy' }, row = (label, key, opts) => `<div class="sty"><small>${label}</small><div>${Object.entries(opts).map(([k, v]) => `<button class="chipb ${st[key] === k ? 'on' : ''}" data-style="${key}:${k}">${v}${styleOwned(S(), key, k) ? '' : ` · ${STYLE_PRICE[key][k]} 🐚`}</button>`).join('')}</div></div>`; return `<div class="styles">${row('FLOOR', 'floor', FLOORS)}${row('BACKDROP', 'backdrop', BACKDROPS)}</div>`; };
   // A check-in page: the one thing worth doing now, what is coming up, and how shells are earned.
   // Collapsible sections remember whether they are open, so a refresh does not snap them shut.
@@ -128,7 +130,7 @@ export function initUI({ game, social, cb }) {
     const row = ([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`, first = up.slice(0, 3), rest = up.slice(3);
     const k = dayTicks(s, now), m = tankMood(s, now), n = [k.care, k.wish, k.bond].filter(Boolean).length, tick = (v) => (v ? '✓' : '○');
     const careCard = s.fish.length ? `<div class="orders daycare ${k.paid ? 'done' : ''}"><small>TODAY'S CARE · ${n} OF 3${k.paid ? ' · PERFECT DAY' : ''}</small><div><span>${tick(k.care)} Tank looked after</span><b>${k.care ? '' : 'feed · water · glass'}</b></div><div><span>${tick(k.wish)} Today's request</span><b></b></div><div><span>${tick(k.bond)} A fish got attention</span><b>${k.bond ? '' : 'play · teach · pet'}</b></div>${k.paid ? '' : `<div class="dim"><span>All three: +${PERFECT_DAY_REWARD} 🐚. Missing a day costs nothing.</span></div>`}</div>` : '';
-    return `${lvRow()}<div class="moodchip ${m.key}"><b>${m.label}</b> · ${esc(m.note)}</div>${s.fish.length > 1 ? (() => { const hm = harmonyOf(s); return `<div class="moodchip harm ${hm.key}"><b>Harmony: ${hm.label}</b> · ${esc(hm.note)}</div>`; })() : ''}${careCard}<button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>
+    return `${lvRow()}<div class="moodchip ${m.key}"><b>${m.label}</b> · ${esc(m.note)}</div>${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${s.fish.length > 1 ? (() => { const hm = harmonyOf(s); return `<div class="moodchip harm ${hm.key}"><b>Harmony: ${hm.label}</b> · ${esc(hm.note)}</div>`; })() : ''}${careCard}<button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>
       ${S().want ? wantHtml() : dailyHtml()}${first.length ? `<div class="orders"><small>COMING UP</small>${first.map(row).join('')}</div>` : ''}
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
       ${fold('earn', '<span>How do I earn shells?</span>', `<div class="orders flat">${earn.map(row).join('')}</div><p class="dim">Looking after your fish, and watching them grow, pays the most.</p>`)}`;
@@ -136,7 +138,7 @@ export function initUI({ game, social, cb }) {
   const foodRow = () => { const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
     care: () => `<h3>Care</h3>${meters()}${foodRow()}<div class="grid3">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${tile('🐟', 'Fish', 'fish', `${S().fish.length} in the tank`)}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🦀', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${tile('📷', 'Postcard', 'photo')}</div><h4>Today</h4>${todayHtml()}`,
-    decorate: () => `<h3>Decorate</h3>${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
+    decorate: () => `<h3>Decorate</h3>${themesHtml()}${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
       const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
@@ -156,6 +158,7 @@ export function initUI({ game, social, cb }) {
     },
     settings: () => `<h3>Settings</h3><div class="set">
       <label class="row2"><span>Sound</span><button class="tog ${soundOn() ? 'on' : ''}" id="snd">${soundOn() ? 'On' : 'Off'}</button></label>
+      <label class="row2"><span>Music</span><button class="tog ${musicOn() ? 'on' : ''}" id="mus">${musicOn() ? 'On' : 'Off'}</button></label>
       <label class="row2"><span>Graphics</span><button class="tog" id="gfx">${['Low', 'Medium', 'High'][cb.quality()]}</button></label>
       ${game.shared ? `<label class="row2"><span>Notifications</span><button class="tog" id="pushbtn">…</button></label>` : ''}
       ${game.shared ? '' : '<label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label>'}
@@ -178,7 +181,7 @@ export function initUI({ game, social, cb }) {
     const buy = $('buy'); if (buy) buy.onclick = () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
-    bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
+    bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('mus', () => { setMusic(!musicOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
     const pb = $('pushbtn'); if (pb) {
       const label = { on: 'On', off: 'Off', blocked: 'Blocked in browser settings', install: 'Add to Home Screen first', unsupported: 'Not supported here', unavailable: 'Not set up on this server' };
       const paint2 = (st) => { pb.textContent = label[st] ?? st; pb.classList.toggle('on', st === 'on'); pb.dataset.st = st; pb.disabled = !['on', 'off'].includes(st); };
@@ -201,10 +204,14 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     if (tab === 'decorate' || (tab === 'friends' && sub === 'book')) thumbs();
   }
+  // the glass lens under the chosen tab slides to it
+  function placeLens() { const nav = document.querySelector('nav'), lens = nav?.querySelector('.lens'), on = nav?.querySelector('div.on'); if (!lens || !on) return; lens.style.width = on.offsetWidth + 'px'; lens.style.transform = `translateX(${on.offsetLeft}px)`; lens.classList.add('on'); }
+  addEventListener('resize', () => placeLens()); setTimeout(placeLens, 60); document.fonts?.ready?.then(() => placeLens());
   function open(t, quiet = false) {
     if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; }
     tab = t; if (!quiet) sfx('open');
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
+    placeLens();
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); return; }
     sheet.innerHTML = `<button class="x">×</button>` + views[t](); sheet.classList.add('on');
@@ -240,6 +247,14 @@ export function initUI({ game, social, cb }) {
       const no = $('mno'); if (no) no.onclick = () => done(null);
     });
   }
+  // a small chooser: one tap on one of a few options (or Not now)
+  function choose({ title, text = '', options, cancel = 'Not now' }) {
+    return new Promise((res) => {
+      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}<div class="chooser">${options.map((o, i) => `<button class="big ${i ? 'alt' : ''}" data-i="${i}">${esc(o.label)}</button>`).join('')}</div>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
+      modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); res(v); };
+      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => done(options[+b.dataset.i].value); }); const no = $('mno'); if (no) no.onclick = () => done(undefined);
+    });
+  }
   // The opening of a tank: choose the free first fish, then name it, all in one card. The first one is preselected so it can be accepted straight away.
   function pickFish({ title, text, species, name }) {
     return new Promise((res) => {
@@ -260,5 +275,5 @@ export function initUI({ game, social, cb }) {
   const flag = (tabName, on) => document.querySelectorAll('nav [data-tab]').forEach((n) => { if (n.dataset.tab === tabName) n.classList.toggle('dot2', on && tab !== tabName); });
   const pulse = (tabName) => document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('pulse', n.dataset.tab === tabName));
 
-  return { pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

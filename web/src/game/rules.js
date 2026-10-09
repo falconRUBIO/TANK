@@ -1,5 +1,6 @@
 // OUR TANK game rules. Pure functions with no browser or server dependencies, so the exact same code
 // runs on the server (authoritative, shared tank) and in the browser (solo tank).
+import { skyOf } from './sky.js';
 import { genesOf, blendGenes, seededRandom } from './genes.js';
 export { genesOf };
 export const SPECIES_DEF = {
@@ -63,6 +64,13 @@ export function nextStage(fish, now = Date.now()) {
   const ms = (s === 'baby' ? 1 : 3) * DAY - age, h = Math.ceil(ms / 36e5);
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
 }
+// What is coming, in plain words, for the end of the first session: a reason to come back that is actually true.
+export function firstPromises(t, now = Date.now()) {
+  const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(`${f.name} grows up in ${n.label}.`);
+  if (!t.drift && t.driftAt > now) out.push('Something will wash in on the tide within a few hours.');
+  if (t.visitAt && t.visitAt > now && t.visitAt - now < 30 * HOUR) out.push('A rare visitor may drop by tomorrow.');
+  out.push('Tomorrow the tank has a new request for you.'); return out.slice(0, 4);
+}
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
@@ -85,6 +93,22 @@ const APPETITE = { Greedy: 0.3, Playful: 0.1, Social: 0.05, Curious: 0.05, Lazy:
 export const appetiteOf = (traits = [], seed = 0) => Math.max(-0.25, Math.min(0.35, (traits.reduce((a, x) => a + (APPETITE[x] ?? 0), 0)) + ((seed % 7) - 3) * 0.02));
 export function ensureFish(f) { if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
 const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).length;
+
+// ── reef themes ──
+// Pieces that belong together make a place the fish love. A theme is active once the tank holds enough of its pieces; it lifts every fish a little, draws its own kind of
+// rare visitor, and pays a few shells the first time it is completed. Duplicates count, so a themed corner can be built from cheap pieces or grand ones.
+export const THEMES = {
+  kelp:    { label: 'Kelp Forest',   types: ['kelp', 'grass', 'sword', 'bamboo'],                         need: 4, visitor: 'rosecory', blurb: 'Sea grass, kelp and tall weeds sway together.' },
+  coral:   { label: 'Coral Garden',  types: ['anemone', 'red', 'fern', 'moss', 'brain', 'table', 'spire'], need: 4, visitor: 'moonbetta', blurb: 'Anemones, sea fans and coral heads make a garden.' },
+  ruins:   { label: 'Sunken Ruins',  types: ['pillar', 'arch', 'torii', 'bridge', 'skull', 'anchor', 'chest'], need: 3, visitor: 'sunangel', blurb: 'Old stone and lost things make a place to explore.' },
+  lanterns:{ label: 'Lantern Cove',  types: ['lantern', 'crystal', 'lighthouse', 'bubbler'],               need: 2, visitor: null,      blurb: 'Glowing things turn the night into a cove.' },
+};
+export const THEME_REWARD = 3;
+export function themesOf(t) { return Object.entries(THEMES).map(([key, th]) => { const have = t.decor.filter((d) => th.types.includes(d.type)).length; return { key, label: th.label, blurb: th.blurb, have: Math.min(have, th.need), need: th.need, active: have >= th.need, visitor: th.visitor }; }); }
+function themeCheck(t, now, ev) {
+  if ((t.flags.tut ?? 0) < 5) return; t.flags.themes ||= {};
+  for (const th of themesOf(t)) if (th.active && !t.flags.themes[th.key]) { t.flags.themes[th.key] = now; t.shells += THEME_REWARD; ev.push({ journal: `${th.label}: the fish have found their place.`, toast: `${th.label}! The fish love it. +${THEME_REWARD} shells`, theme: th.key }); }
+}
 function likes(f, t) {
   let l = 0; const tr = f.traits ?? [];
   if (tr.includes('Shy') && count(t, 'PLANTS') >= 4) l += 0.12;
@@ -93,7 +117,7 @@ function likes(f, t) {
   if (tr.includes('Lazy') && count(t, 'WOOD') >= 1) l += 0.1;
   if (tr.includes('Social') && t.fish.length >= 4) l += 0.08;
   if (tr.includes('Brave') && count(t, 'ROCKS') >= 2) l += 0.06;
-  const so = socialOf(t, f); l += Math.min(0.05, so.good.length * 0.02) - Math.min(0.12, so.penalty * 0.25);
+  const so = socialOf(t, f); l += Math.min(0.05, so.good.length * 0.02) - Math.min(0.12, so.penalty * 0.25) + Math.min(0.06, themesOf(t).filter((x) => x.active).length * 0.03);
   return Math.min(0.25, l + Math.min(0.1, t.decor.length * 0.006));
 }
 export function needsOf(f, t, now = Date.now()) {
@@ -214,7 +238,7 @@ export const WISHES = [
 export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
 function makeDrift(t, now) {
   const seq = (t.seq = (t.seq ?? 10) + 1), r = hash32(Math.floor(now / 6e4) * 31 + seq) % 100;
-  const kind = r < 62 ? 'shells' : r < 85 ? 'treat' : 'pearl', amount = kind === 'shells' ? 1 + (r % 3) : kind === 'pearl' ? 4 : 0;
+  const full = skyOf(now).event?.key === 'fullmoon', kind = full ? (r < 55 ? 'pearl' : 'shells') : r < 62 ? 'shells' : r < 85 ? 'treat' : 'pearl', amount = kind === 'shells' ? 1 + (r % 3) : kind === 'pearl' ? 4 : 0;
   const h = hash32(seq * 77 + 5); return { id: 'g' + seq, kind, amount, x: +(-3.4 + (h % 68) / 10).toFixed(2), z: +(0.4 + ((h >> 8) % 26) / 10).toFixed(2) };
 }
 function makeFish(t, o, now, idx) {
@@ -240,7 +264,7 @@ function puzzles(t, now, ev) {
 function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
-  const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), pool = fresh.length ? fresh : all;
+  const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
   t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR };
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
@@ -483,7 +507,7 @@ function deliver(t, now, ev) {
     if (o.arrivesAt > now) continue;
     t.orders.splice(t.orders.indexOf(o), 1); const d = SPECIES_DEF[o.species], made = [];
     for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i));
-    ev.push({ journal: d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
+    ev.push({ journal: o.giftFrom ? `${made[0].name} the ${d.label.toLowerCase()} has arrived, a gift from ${o.giftFrom} to ${o.ownerName}.` : d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
   }
 }
 function milestones(t, now, ev) {
@@ -524,7 +548,7 @@ export function advance(t, now = Date.now()) {
   ageMilestones(t, now, ev);
   deliver(t, now, ev);
   if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
-  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollWant(t, now, ev); rollDaily(t, now);
+  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollWant(t, now, ev); rollDaily(t, now); themeCheck(t, now, ev);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
   if (dt >= 1) discover(t, now, ev);
@@ -557,6 +581,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'feed': {
       const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
       t.lastFed = now;                                                // any feeding, paid or not, counts as the fish being looked after
+      { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       const needed = t.hunger > 0.25, pay = needed && food === 'flakes' ? 1 : 0;
@@ -589,8 +614,9 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
-      t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, owner: uid, ownerName: name, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
-      events.push({ activity: { type: 'fish', text: `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
+      const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, name: nm, seed: base, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      events.push({ activity: { type: 'fish', text: to ? `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.` : `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
     }
@@ -611,7 +637,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
-      checkWant(t, now, events); levelCheck(t, now, events);
+      themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
       return ok({ id: item.id });
     }
     case 'moveDecor': {
@@ -626,6 +652,7 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
       if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
       const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; }
+      if (step >= 5 && !t.flags.promised) { t.flags.promised = now; t.driftAt = now + (4 + (hash32(now / 6e4) % 4)) * HOUR; t.visitAt = Math.min(t.visitAt ?? Infinity, now + 22 * HOUR); }      // the first session ends with real things on their way
       return ok();
     }
     case 'scoop': {

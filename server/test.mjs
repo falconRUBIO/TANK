@@ -239,7 +239,7 @@ await t('static files are compressed, cached by ETag and the database backs itse
   const home = await fetch(base + '/', { headers: { 'accept-encoding': 'gzip' } }); assert.equal(home.headers.get('content-encoding'), 'gzip');
   assert.doesNotThrow(() => S.backup());
 });
-await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the daily cap are respected', async () => {
+await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the one-a-day cap are respected', async () => {
   const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
   const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;
   const bad = await call('/api/push/subscribe', { subscription: { endpoint: 'http://nope', keys: {} }, offset: 0 }, x.token); assert.equal(bad.status, 400);
@@ -249,10 +249,9 @@ await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the
   const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
   pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /rare visitor/i); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the same event is not announced twice');
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2);
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'two a day at most');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'one a day at most');
   const night = new Date(); night.setUTCHours(3, 0, 0, 0); S.db.prepare('DELETE FROM push_log').run(); S.db.prepare('UPDATE push_subs SET offset_min=0').run();
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 1, 'quiet hours');
   await call('/api/push/unsubscribe', { endpoint: sub.endpoint }, x.token); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM push_subs WHERE user_id=?').get(x.userId).n, 0);
 });
 await t('every caretaker gets one free first fish of their own, with their name on it', async () => {
@@ -384,6 +383,14 @@ await t('the octopus puzzle jar: costs shells once, cannot be doubled by two car
   assert.ok(getW(tk.id).fish[0].puzzle?.until > Date.now(), 'the jar is being worked on');
   const w = getW(tk.id); w.fish[0].puzzle.until = Date.now() - 1; setW(tk.id, { fish: w.fish, simTs: Date.now() - 2000 });
   await ackOf(wx, { t: 'feed', x: 0, idem: 'pz-3' }); const f = getW(tk.id).fish[0]; assert.equal(f.puzzle, null); assert.equal(f.solved, 1);
+});
+await t('gifts and fed-together reach the server: a fish bought for a friend belongs to them, and two caretakers feeding together cheer the fish once', async () => {
+  const w0 = getW(tank.id), now = Date.now(); setW(tank.id, { shells: 120, level: 8, orders: [], eggs: [], simTs: now - 1000, hunger: 0.8, flags: { ...w0.flags, tut: 5, togetherAt: null, tg: 1 }, lastFeedBy: null, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, driftAt: 1e15, drift: null });
+  const wsX = await open(a.token), wsY = await open(b.token);
+  const r = await ackOf(wsX, { t: 'buyFish', species: 'cory', name: 'Gifty', seed: 5, to: b.userId, idem: 'gift-1' }); assert.equal(r.ok, true); const o = getW(tank.id).orders.at(-1); assert.equal(o.owner, b.userId); assert.equal(o.giftFrom, a.name ?? o.giftFrom); assert.ok(o.giftFrom);
+  const bad = await ackOf(wsX, { t: 'buyFish', species: 'cory', name: 'Nope', seed: 5, to: 'someone-else', idem: 'gift-2' }); assert.equal(bad.ok, true); assert.equal(getW(tank.id).orders.at(-1).owner, a.userId, 'not a member, so it is not a gift');
+  setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); await ackOf(wsX, { t: 'feed', x: 0, idem: 'tg-1' }); setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); const y = await ackOf(wsY, { t: 'feed', x: 1, idem: 'tg-2' });
+  assert.ok((y.events ?? []).some((e) => e.together) || getW(tank.id).flags.togetherAt, 'fed together'); const at = getW(tank.id).flags.togetherAt; setW(tank.id, { hunger: 0.8, simTs: Date.now() - 1000 }); await ackOf(wsX, { t: 'feed', x: 0, idem: 'tg-3' }); assert.equal(getW(tank.id).flags.togetherAt, at, 'once per few hours');
 });
 wsA.close();
 wa.close(); await S.close();

@@ -163,7 +163,7 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died, milestone: e.milestone, puzzle: e.puzzle, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died, milestone: e.milestone, puzzle: e.puzzle, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
       else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival, want: e.want });
       if (e.activity) out.push({ activity: addActivity(db, tankId, null, e.activity.type, e.activity.text, now) });
     }
@@ -183,7 +183,7 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false, ana
     const shellsBefore = w.shells, r = R.applyAction(w, action, { name: user.name, now, dev, uid: user.id, members: members(db, t0.id) });
     if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
     for (const e of r.events) {
-      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, found: e.found, arrival: e.arrival, wish: e.wish, died: e.died, warn: e.warn, milestone: e.milestone, puzzle: e.puzzle, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
+      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, found: e.found, arrival: e.arrival, wish: e.wish, died: e.died, warn: e.warn, milestone: e.milestone, puzzle: e.puzzle, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
       else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, wish: e.wish, dailyDone: e.dailyDone, want: e.want });
       if (e.activity) out.push({ activity: addActivity(db, t0.id, e.activity.noUser ? null : user.id, e.activity.type, e.activity.text, now) });
     }

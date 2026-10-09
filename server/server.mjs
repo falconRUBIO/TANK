@@ -176,7 +176,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
           for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why });
           an.record(ws.userId, mine.id, 'nudge_sent');
-          if (!there.length) push.notify(to, `${ws.user.name} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`).catch(() => {});
+          if (!there.length) push.notify(to, `${ws.user.name} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`, { cap: 2 }).catch(() => {});
           return send(ws, { t: 'nudged', ok: true });
         }
         if (m.t === 'thank') {
@@ -214,7 +214,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0, food: r.food ?? 'flakes' });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
-            if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`).catch(() => {});
+            if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`, { cap: 2 }).catch(() => {});
           } else if (!r.ok) send(ws, { t: 'state', tank: L.publicTank(r.world) });
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
@@ -232,7 +232,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     for (const { id } of tanks) {
       if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
       try {
-        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.arrival);
+        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew);
         if (!hit) continue;
         for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something happened in your tank'), { now });
       } catch (e) { console.error('push sweep failed', e); }

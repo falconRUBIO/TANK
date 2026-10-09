@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
+import * as S from './sky.js';
 const DAY = 864e5; let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ✓', name); };
 console.log('Rules');
 ok('fish get hungry at their own pace', () => { const t = R.newWorld(0); t.fish.push(R.ensureFish({ id: 'g', name: 'Greedy', species: 'goldfish', seed: 3, born: 0, stage: 'baby', traits: ['Greedy'] }), R.ensureFish({ id: 'l', name: 'Lazy', species: 'goldfish', seed: 3, born: 0, stage: 'baby', traits: ['Lazy'] })); t.hunger = 0.5;
@@ -372,5 +373,32 @@ ok('one request a day: a fish\'s own wish or the daily wish, never both, and eit
   assert.equal(g.want, null); assert.equal(g.req.wantDone, true); assert.equal(R.dayTicks(g, 10 * H + 9000).wish, true, 'a granted fish wish is the day\'s wish'); R.advance(g, 12 * H); assert.equal(g.want, null, 'no second request that day');
   const nx = mkw('want'); R.advance(nx, 10 * H + 5); R.advance(nx, 10 * H + D); assert.ok(nx.req.day === 1, 'a new day decides again');
   assert.equal(R.WANT_REWARD, 4);
+});
+ok('the first session ends with real promises, and a full moon brings pearls on the tide', () => {
+  const t = R.newWorld(0, 1); R.norm(t, 0); t.flags.tut = 4; t.fish = [R.ensureFish({ id: 'f0', name: 'Pip', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Calm'] })]; t.simTs = 0;
+  R.applyAction(t, { t: 'tut', step: 5 }, { now: 1000, name: 'A', uid: 'u1', solo: true }); assert.equal(t.flags.promised, 1000); assert.ok(t.driftAt > 1000 + 3 * 3600e3 && t.driftAt < 1000 + 9 * 3600e3, 'a gift is on its way within hours');
+  const lines = R.firstPromises(t, 2000); assert.ok(lines.some((x) => /Pip grows up/.test(x)) && lines.some((x) => /wash in/.test(x)) && lines.some((x) => /request/.test(x)), lines.join(' | '));
+  const again = t.driftAt; R.applyAction(t, { t: 'tut', step: 5 }, { now: 9e6, name: 'A', uid: 'u1', solo: true }); assert.equal(t.driftAt, again, 'promised only once');
+  const full = Date.UTC(2024, 0, 25, 18), dark = Date.UTC(2024, 0, 11, 12); assert.equal(S.skyOf(full).event?.key, 'fullmoon'); assert.equal(S.skyOf(dark).event?.key, 'darkmoon'); assert.ok(S.moonPhase(full) > 0.47 && S.moonPhase(full) < 0.53);
+  assert.equal(S.skyOf(full).moon, 'Full moon'); assert.equal(S.skyOf(Date.UTC(2024, 0, 18, 12)).event?.key === 'fullmoon', false);
+  let pearls = 0, plain = 0; for (let i = 0; i < 30; i++) { const a = R.newWorld(0, 1); R.norm(a, 0); a.flags.tut = 5; a.driftAt = full; R.advance(a, full + 1000 * (i + 1)); if (a.drift?.kind === 'pearl') pearls++; const b = R.newWorld(0, 1); R.norm(b, 0); b.flags.tut = 5; b.driftAt = full - 20 * 864e5; R.advance(b, full - 20 * 864e5 + 1000 * (i + 1)); if (b.drift?.kind === 'pearl') plain++; }
+  assert.ok(pearls > plain, `more pearls on a full moon (${pearls} vs ${plain})`);
+});
+ok('reef themes: pieces that belong together lift the fish, pay once, and draw their own visitor', () => {
+  const t = quiet(2); t.level = 8; t.shells = 500; const base = R.themesOf(t); assert.ok(base.every((x) => !x.active));
+  const buy = (type, i) => R.applyAction(t, { t: 'buyDecor', type, x: i * 0.6 - 2, z: 1, ry: 0 }, { now: 100 + i, name: 'A', uid: 'u1' });
+  let evs = []; for (const [i, ty] of ['grass', 'kelp', 'sword', 'bamboo'].entries()) evs.push(...buy(ty, i).events);
+  assert.ok(R.themesOf(t).find((x) => x.key === 'kelp').active); assert.equal(evs.filter((e) => e.theme === 'kelp').length, 1, 'announced once'); const s1 = t.shells; evs = buy('grass', 5).events; assert.ok(!evs.some((e) => e.theme), 'not again'); assert.equal(s1 - t.shells, R.DECOR_DEF.grass.price, 'only the piece is paid for');
+  const f = t.fish[0]; const th = R.themesOf(t).filter((x) => x.active).length; assert.equal(th, 1);
+  const u = quiet(2); u.level = 8; u.flags.themes = { kelp: 1 }; u.decor = ['grass', 'kelp', 'sword', 'bamboo'].map((ty, i) => ({ id: 'd' + i, type: ty, x: i, z: 1, ry: 0, at: 0 })); u.visitAt = 0; u.seen.fish = []; R.advance(u, 3 * 3600e3 + 5); assert.equal(u.visitor?.species, 'rosecory', 'the kelp forest draws its visitor');
+});
+ok('gifts and togetherness: a fish can be bought for a friend, and two caretakers feeding within a minute delight the fish', () => {
+  const t = quiet(1); t.level = 8; t.shells = 200; const members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }];
+  const r = R.applyAction(t, { t: 'buyFish', species: 'cory', name: 'Gob', seed: 4, to: 'u2' }, { now: 5000, name: 'Alex', uid: 'u1', members }); assert.ok(r.ok); assert.equal(t.orders.at(-1).owner, 'u2'); assert.equal(t.orders.at(-1).ownerName, 'Sam'); assert.equal(t.orders.at(-1).giftFrom, 'Alex');
+  const ev = R.advance(t, 5000 + 24 * 3600e3); const arrived = ev.find((e) => e.arrival); assert.match(arrived.journal, /gift from Alex to Sam/); const gob = t.fish.find((f) => f.name === 'Gob'); assert.equal(gob.owner, 'u2');
+  const bad = R.applyAction(t, { t: 'buyFish', species: 'cory', name: 'Nope', seed: 4, to: 'u9' }, { now: 6000 + 24 * 3600e3, name: 'Alex', uid: 'u1', members }); assert.equal(t.orders.at(-1).owner, 'u1', 'a stranger cannot be given a fish');
+  const g = quiet(2); g.hunger = 0.8; g.simTs = 0; const happy0 = g.fish[0].happy; const f1 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 1000, name: 'Alex', uid: 'u1' }); assert.ok(!f1.events.some((e) => e.together), 'one person alone is not together');
+  g.hunger = 0.8; const f2 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 30e3, name: 'Sam', uid: 'u2' }); assert.ok(f2.events.some((e) => e.together), 'two people together'); assert.ok(g.fish[0].happy > happy0);
+  g.hunger = 0.8; const f3 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 50e3, name: 'Alex', uid: 'u1' }); assert.ok(!f3.events.some((e) => e.together), 'not again for a while');
 });
 console.log(`All ${n} rule tests passed`);

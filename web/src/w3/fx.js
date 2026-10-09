@@ -101,12 +101,14 @@ export class Glow {
     this.p = Array.from({ length: n }, () => ({ x: -4.2 + Math.random() * 8.4, y: 0.8 + Math.random() * 12, z: -1.2 + Math.random() * 3.6, ph: Math.random() * 6, sp: 0.15 + Math.random() * 0.3, r: 0.035 + Math.random() * 0.05 }));
     this.m = new THREE.Matrix4();
   }
-  setPhase(phase) { this.want = phase === 'night' ? 1 : phase === 'evening' ? 0.6 : 0; }
+  setPhase(phase) { this.ph = phase; this.refresh(); }
+  setSky(key) { this.sky = key; this.mesh.material.color.set(key === 'spawn' ? 0xffa6d8 : 0x9fffe8); this.boost = key === 'darkmoon' ? 1.8 : key === 'spawn' ? 1.35 : 1; this.refresh(); }     // a new moon makes the plankton blaze; spawning night turns them pink
+  refresh() { const base = this.ph === 'night' ? 1 : this.ph === 'evening' ? 0.6 : 0; this.want = this.sky === 'spawn' && base > 0 ? Math.max(base, 0.85) : base; }
   update(dt, t) {
     this.level += (this.want - this.level) * Math.min(1, dt * 0.6); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return;
-    this.mesh.material.opacity = 0.85 * this.level;
+    this.mesh.material.opacity = Math.min(1, 0.85 * this.level * (this.boost ?? 1));
     this.p.forEach((q, i) => {
-      q.y += Math.sin(t * q.sp + q.ph) * 0.12 * dt + q.sp * 0.1 * dt; if (q.y > 13.5) q.y = 0.8; const s = q.r * (0.7 + 0.5 * Math.sin(t * 1.3 + q.ph));
+      q.y += Math.sin(t * q.sp + q.ph) * 0.12 * dt + q.sp * 0.1 * dt; if (q.y > 13.5) q.y = 0.8; const s = q.r * (this.boost ?? 1) * (0.7 + 0.5 * Math.sin(t * 1.3 + q.ph));
       this.m.makeScale(s, s, s); this.m.setPosition(q.x + Math.sin(t * 0.4 + q.ph) * 0.5, q.y, q.z + Math.cos(t * 0.3 + q.ph) * 0.3); this.mesh.setMatrixAt(i, this.m);
     });
     this.mesh.instanceMatrix.needsUpdate = true;
@@ -174,5 +176,20 @@ export class Sightings {
     if (s.kind === 'jelly') { s.root.position.x += s.dir * s.speed * dt * 0.6; s.root.position.y += s.rise * dt * 0.5; } else s.root.position.x += s.dir * s.speed * dt;
     s.root.position.y += Math.sin(t * 0.5) * 0.004;
     if (Math.abs(s.root.position.x) > 14.5 || s.age > 90 || s.root.position.y > 15) { this.scene.remove(s.root); const hi = this.hide?.indexOf(s.root) ?? -1; if (hi >= 0) this.hide.splice(hi, 1); s.root.traverse((o) => { o.geometry?.dispose?.(); }); this.cur = null; }
+  }
+}
+
+// Rain on the surface: thin streaks fall from the top of the water and fade. Purely a mood; the curious fish rise to look.
+export class Rain {
+  constructor(n = 70) {
+    this.n = n; this.on = false; this.level = 0;
+    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.022, 0.6, 0.022), new THREE.MeshBasicMaterial({ color: 0xd6ecff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }), n);
+    this.mesh.frustumCulled = false; this.mesh.visible = false; this.mesh.renderOrder = 7;
+    this.p = Array.from({ length: n }, () => ({ x: -5 + Math.random() * 10, y: 11 + Math.random() * 5, z: -2 + Math.random() * 5, v: 9 + Math.random() * 6 })); this.m = new THREE.Matrix4();
+  }
+  update(dt) {
+    this.level += ((this.on ? 1 : 0) - this.level) * Math.min(1, dt * 0.8); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return; this.mesh.material.opacity = 0.5 * this.level;
+    this.p.forEach((q, i) => { q.y -= q.v * dt; if (q.y < 9.2) { q.y = 15.8; q.x = -5 + Math.random() * 10; q.z = -2 + Math.random() * 5; } this.m.setPosition(q.x, q.y, q.z); this.mesh.setMatrixAt(i, this.m); });
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 }

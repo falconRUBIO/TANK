@@ -12,7 +12,7 @@ import { lanternGlow } from './items.js';
 import { Shafts, waterSurface, Snow, Bubbles } from './fx.js';
 import { CausticMap } from './textures.js';
 
-export const stage = { murk: 0, quality: 2, lantern: 0 };
+export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0 };
 export const IW = 405, IH = 720;                 // internal resolution (nearest-upscaled by CSS)
 export const canvas = document.getElementById('tank');
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -130,7 +130,8 @@ export function applyTod(dt) {
   }
   env.setLight(0.3 + 0.7 * Math.max(0, Math.min(1, (cur.hemiI - 0.8) / 0.7)));
   sun.color.copy(cur.sunCol); sun.intensity = cur.sunI; sun.position.set(...cur.sunPos);
-  hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI; amb.intensity = cur.ambI;
+  if (target === 'night' && stage.moonlit) { sun.intensity *= 1 + 0.7 * stage.moonlit; sun.color.lerp(tmpC.set(0xcfe0ff), 0.45 * stage.moonlit); }       // a full moon lights the night water silver
+  hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI * (target === 'night' ? 1 + 0.4 * stage.moonlit : 1); amb.intensity = cur.ambI;
   const murk = stage.murk; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
   rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;

@@ -1,5 +1,5 @@
 // Web Push for the few things worth a nudge: a rare visitor arrived, a fish or egg arrived, a friend nudged you or sent a bottle.
-// Opt-in per phone, at most two a day per person, and never between 22:00 and 08:00 their time. Off unless VAPID keys are set.
+// Opt-in per phone, at most one a day per person (two if a friend writes to you), and never between 22:00 and 08:00 their time. Off unless VAPID keys are set.
 import webpush from 'web-push';
 
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
@@ -18,11 +18,11 @@ export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
     unsubscribe(userId, endpoint) { db.prepare('DELETE FROM push_subs WHERE user_id=? AND endpoint=?').run(userId, String(endpoint ?? '')); },
     hasSubs(userId) { return !!db.prepare('SELECT 1 FROM push_subs WHERE user_id=?').get(userId); },
     // returns true when something was actually sent
-    async notify(userId, body, { now = Date.now(), url = '/' } = {}) {
+    async notify(userId, body, { now = Date.now(), url = '/', cap = 1 } = {}) {
       if (!enabled) return false;
       const subs = db.prepare('SELECT * FROM push_subs WHERE user_id=?').all(userId); if (!subs.length) return false;
       const h = localHour(now, subs[0].offset_min); if (h < 8 || h >= 22) return false;
-      if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= 2) return false;
+      if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= cap) return false;
       let sent = false;
       for (const s of subs) {
         try { await deliver({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify({ title: 'OUR TANK', body: String(body).slice(0, 120), url })); sent = true; }
