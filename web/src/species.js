@@ -663,6 +663,7 @@ const octopus = {
         if (k) {
           const tt = k.at, under = k.dy < -k.rad * 0.35, sucker = under && tt > 0.1 && (Math.round(tt * 26) % 2 === 0);
           let c = under ? mix(pale, [255, 196, 206], 0.35) : mix([skinC[0] * 0.82, skinC[1] * 0.78, skinC[2] * 0.8], pale, tt * 0.2);
+          if (tt < 0.3) c = mix(c, mix(mix(skinC, [240, 150, 120], 0.3), pale, 0.35), 1 - tt / 0.3);                // where the arms join the head they blend into the webbing, not a dark collar
           if (sucker) c = Math.round(tt * 24) % 4 === 0 ? [255, 248, 242] : mix(c, [255, 206, 212], 0.65); if (tt > 0.93) c = mix(c, pale, 0.4);
           return { c, tag: 'arm', arm: k.arm, at: tt, off: k.off };
         }
