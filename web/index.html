@@ -261,6 +261,7 @@
   #card{transition:transform .45s cubic-bezier(.3,1.15,.4,1),opacity .35s}#card.on.peek{transform:translateY(calc(100% - 66px));overflow:hidden}
   #card .grab{all:unset;position:absolute;left:0;right:0;top:0;height:30px;cursor:pointer;display:flex;justify-content:center;align-items:flex-start;padding-top:9px}#card .grab::before{content:"";width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.5)}
   #card h2{margin-top:10px}#card.peek .x{top:16px}
+  #toast.gold{box-shadow:var(--lg-rim),0 0 22px rgba(255,214,120,.55),var(--lg-drop);color:#fff7dd}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

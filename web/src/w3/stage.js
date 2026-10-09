@@ -145,7 +145,7 @@ export function applyTod(dt) {
 // quality: auto-drops depth of field / resolution if the device can't hold ~30fps (?q=2 pins full quality)
 let slow = 0; const born = performance.now(); stage.quality = qs.get('q') ? +qs.get('q') : 2;
 export function setQuality(q) {
-  stage.quality = q; bokeh.enabled = q >= 2;
+  stage.quality = q; bokeh.enabled = q >= 2; Fish3D.poseScale = [2.2, 1.5, 1][Math.max(0, Math.min(2, q))];
   const w = q >= 1 ? IW : 360, h = q >= 1 ? IH : 640;
   renderer.setSize(w, h, false); composer.setSize(w, h); grade.uniforms.uRes.value.set(w, h);
 }

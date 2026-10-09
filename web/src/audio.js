@@ -57,6 +57,7 @@ function noise(t0, dur, freq, vol) {
   s.connect(f); f.connect(g); g.connect(master); s.start(ctx.currentTime + t0);
 }
 const SFX = {
+  reward: () => { [659, 880, 1175].forEach((f, i) => { tone(f, i * 0.09, 0.9, { vol: 0.07, type: 'sine' }); tone(f * 2, i * 0.09 + 0.02, 0.6, { vol: 0.025, type: 'sine' }); }); noise(0, 0.5, 5200, 0.015); },
   tap: () => tone(620, 0, 0.07, { vol: 0.08, to: 880 }),
   open: () => tone(440, 0, 0.1, { vol: 0.07, to: 660 }),
   splash: () => { noise(0, 0.35, 1800, 0.18); tone(300, 0, 0.18, { vol: 0.07, to: 120 }); },

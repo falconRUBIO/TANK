@@ -21,6 +21,7 @@ const vnoise = (x, y, z) => { const xi = Math.floor(x), yi = Math.floor(y), zi =
 
 export class Fish3D {
   static world = { push: null };
+  static poseScale = 1;                     // 1 at full quality; larger on slower phones, so the rig is posed less often
   static topY = 13.2;                       // the highest a fish may go: below the status bar and the phone's safe area, so nothing swims out of view
   static groundAt = null;                   // set by the scene: what the ground looks like at x,z, as { key, cols, scale }            // decoration colliders, set by the scene
   constructor(species, seed, opts = {}) {
@@ -149,7 +150,7 @@ export class Fish3D {
     const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp); G.p[0] += (T[0] - tip[0]) * Math.min(1, dt * 6); G.p[1] += (T[1] - tip[1]) * Math.min(1, dt * 6); G.p[2] += (T[2] - tip[2]) * Math.min(1, dt * 6);
     if (t > 1.3 && h.mesh) {                                                                                 // the crab is in the arm's grip
       h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch); h.mesh.rotation.z = Math.min(0.7, (t - 1.3) * 0.6);
-      if (t > 2.8) h.mesh.scale.setScalar(Math.max(0.01, 1.25 * (1 - (t - 2.8) / 0.5)));
+      if (t > 2.8) h.mesh.scale.setScalar(Math.max(0.01, 1.7 * (1 - (t - 2.8) / 0.5)));
     }
     if (t >= 3.65) { S.t = 0; }
   }
@@ -380,7 +381,7 @@ export class Fish3D {
     const moodMoved = ['scared', 'annoyed', 'hunting', 'fond'].some((k) => Math.abs(this.mw[k] - this.mwA[k]) > 0.02 || (k === 'hunting' && this.mw.hunting > 0.03));
     if (this.camoT0 > (this.sleepK > 0.05 ? 0.3 : 0.05) && !this.pale && (this.sleepK > 0.02 || this.sleepWas || Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1 || moodMoved)) { this.camoT0 = 0; this.sleepWas = this.sleepK > 0.02; this.applyCamo(); }
     this.group.position.copy(this.pos); this.group.position.y += this.lift; this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
-    this.accum += dt; if (this.accum > 1 / 20) { this.accum = 0; this.setPose(this.phase); }
+    this.accum += dt; if (this.accum > (1 / 20) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.35 : 1)) { this.accum = 0; this.setPose(this.phase); }
   }
   update(dt, rng, others) {
     if (this.dead) return this.deadUpdate(dt);

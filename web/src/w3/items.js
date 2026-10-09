@@ -110,14 +110,22 @@ const B = {
     topLit(bot); const m = bot.mesh(); m.position.y = 0.05; g.add(m);
     const lm = top.mesh(); lm.position.set(0, 0.05 + 0.1, -0.25); lm.rotation.x = -1.0; g.add(lm); return [{ v: bot, x: 0, y: 0.05, z: 0, ry: 0 }];
   },
-  coconut: (g) => {                     // a coconut half-shell, hollow side down: a dome with a rough hairy husk and a dark rim
-    const u = 0.06, v = new Vox(u), R = 9; for (let i = -R; i <= R; i++) for (let k = -R; k <= R; k++) for (let j = 0; j <= 8; j++) { const d = (i * i + k * k) / (R * R) + (j * j) / 72; if (d > 1 || d < 0.62 && j < 6 && (i * i + k * k) / (R * R) < 0.5) continue; const hair = hash(i, j, k, 6) > 0.5; v.set(i, j, k, j < 1 ? [66, 44, 28] : hair ? [122, 82, 52] : [98, 64, 40]); }
-    topLit(v); const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
+  coconut: (g) => {                     // half a coconut lying on its side with the opening towards you: a hairy brown husk, a pale flesh rim and a dark hollow
+    const u = 0.06, v = new Vox(u), R = 8;
+    for (let i = -R; i <= R; i++) for (let j = 0; j <= R; j++) for (let k = -2; k <= R; k++) {
+      const d = Math.hypot(i, j, k); if (d > R + 0.5) continue; const hollow = d < R - 2.6 && k >= 0;                            // axis along +z, so the open face looks at the camera
+      if (hollow) continue; const rim = k <= 1 && d > R - 2.6 && k >= 0, outer = d > R - 1.2;
+      if (k < 0 && d > R - 0.5) continue;
+      v.set(i, j, k, rim ? [196, 180, 150] : outer ? (hash(i, j, k, 6) > 0.45 ? [44, 26, 16] : [62, 38, 24]) : [38, 24, 18]);
+    }
+    for (let i = -R; i <= R; i++) for (let j = 0; j <= R; j++) { const d = Math.hypot(i, j, 0); if (d < R - 3 && d > 0) v.set(i, j, -1 + 0, [30, 22, 18]); }
+    for (let i = -4; i <= 4; i++) for (let j = 0; j <= 4; j++) if (Math.hypot(i, j) < 4.4 && Math.hypot(i, j) > 2.6) v.set(i, j, 3 - Math.floor(Math.hypot(i, j) / 2), [214, 204, 178]);             // the white flesh lining the hollow
+    const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
   },
   pot: (g) => {                         // a clay pot lying on its side, mouth towards the front, big enough to curl up inside
     const u = 0.06, v = new Vox(u); const rad = (i) => 7 - Math.abs(i - 1) * 0.28 + (i < -3 ? (i + 3) * 0.6 : 0);
-    for (let i = -9; i <= 8; i++) { const r = Math.max(2.5, rad(i)); for (let j = 0; j <= 14; j++) for (let k = -8; k <= 8; k++) { const d = Math.hypot(j - 7, k), inner = i > 3 && d < r - 2 || (i > -2 && d < r - 2.4); if (d > r || inner) continue; v.set(i, j, k, hash(i, j, k, 3) > 0.7 ? [196, 112, 70] : [176, 94, 58]); } }
-    for (let k = -7; k <= 7; k++) for (let j = 0; j <= 14; j++) { const d = Math.hypot(j - 7, k); if (d <= 7 && d > 5.3 && hash(j, k, 1, 4) > 0.2) v.set(9, j, k, [150, 74, 46]); }
+    for (let i = -9; i <= 8; i++) { const r = Math.max(2.5, rad(i)); for (let j = 0; j <= 14; j++) for (let k = -8; k <= 8; k++) { const d = Math.hypot(j - 7, k), inner = i > 3 && d < r - 2 || (i > -2 && d < r - 2.4); if (d > r || inner) continue; v.set(i, j, k, hash(i, j, k, 3) > 0.7 ? [150, 78, 48] : [128, 62, 40]); } }
+    for (let k = -7; k <= 7; k++) for (let j = 0; j <= 14; j++) { const d = Math.hypot(j - 7, k); if (d <= 7 && d > 5.3 && hash(j, k, 1, 4) > 0.2) v.set(9, j, k, [104, 50, 34]); }
     topLit(v); const m = v.mesh(); m.position.y = 0.04; m.rotation.y = -Math.PI / 2; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: -Math.PI / 2 }];
   },
   skull: (g) => {
