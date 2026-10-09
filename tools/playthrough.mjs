@@ -33,7 +33,7 @@ console.log('Shopping');
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:red"]');
 const sh = (await S()).shells; ck('a plant costs shells', (await p.textContent('#buy')).includes('10'));
 await p.click('#buy'); await p.evaluate(() => { const d = window.__tank.decor; for (const [x, z] of [[2.2, 2.8], [-2.6, 2.9], [0.4, 3.0], [3.4, 2.6]]) { d.move(x, z); if (d.preview.valid) break; } document.getElementById('pok').disabled = !window.__tank.decor.preview.valid; }); await p.click('#pok'); await p.waitForTimeout(300);
-const s2 = await S(); ck('buying a plant spends shells', s2.shells === sh - 10, `${sh}→${s2.shells}`);
+const s2 = await S(); ck('buying a plant spends shells (the plant wish may refund part)', s2.shells <= sh - 7 && s2.shells >= sh - 10, `${sh}→${s2.shells}`);
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:torii"]');
 ck('locked items explain themselves', (await p.textContent('.detail .note')).includes('level 3') && await p.evaluate(() => document.getElementById('buy').disabled));
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'shells' }, { dev: true })); await p.waitForTimeout(200);

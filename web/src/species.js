@@ -348,7 +348,7 @@ const guppy = {
         const dT = 8 - x;
         if (dT >= 0 && dT <= 18 && Math.abs(z) <= (dT < 3 ? 1 : 0)) {          // big fan tail with a spotted edge
           const hh = 2.5 + dT * 0.85;
-          if (Math.abs(y) <= hh) { const spot = ((Math.floor(dT / 3) + Math.floor(y / 3)) & 1) === 0; const rim = dT > 15 || Math.abs(y) > hh - 1.5; return { c: mix(tailC, rim ? [255, 240, 200] : bodyC, spot ? 0.15 : 0.5), wave: 0.7 }; }
+          if (Math.abs(y) <= hh) { const spot = ((Math.floor(dT / 3) + Math.floor(y / 3)) & 1) === 0; const rim = dT > 15 || Math.abs(y) > hh - 1.5; return { c: mix(tailC, rim ? [255, 240, 200] : bodyC, 0.2 + (spot ? 0 : 0.08)), wave: 0.7 }; }
         }
         const bt = (x) => clamp((x - X0) / L);
         if (z === 0 && x >= 15 && x <= 22 && y >= hy(bt(x)) - 1 && y <= hy(bt(x)) + 4 * (1 - Math.abs(x - 18.5) / 4)) return { c: mix(tailC, bodyC, 0.4), wave: 0.3 };
@@ -421,10 +421,95 @@ const betta = {
   },
 };
 
+// ───────────────────────── Saltwater roster ─────────────────────────
+// Internal ids (goldfish, neon, cory …) are what saves and orders store, so they stay; what the player sees is the saltwater fish below.
+// `skin` re-paints an existing body with a colour rule that also knows where the voxel is (x along the body, y up).
+const lum = (c) => (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11) / 255;
+const skin = (base, id, label, fn, extra = {}) => ({ ...base, ...extra, id, label, make(seed = 1) { const m = base.make.call(base, seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? (r.em && r.em > 0 && r.em < 3 && lum(r.c) < 0.12 || r.em > 1 ? r : { ...r, c: fn(r.c, x, y, z, seed, r) }) : r; } }; } });
+const ramp3 = (c, lo, hi) => mix(lo, hi, clamp(lum(c) * 1.25));
+const clownfish = skin(goldfish, 'goldfish', 'Clownfish', (c, x) => {
+  for (const [a, b] of [[40, 43], [26, 29], [13, 14]]) { if (x >= a && x <= b) return [250, 248, 240]; if (x === a - 1 || x === b + 1) return [26, 20, 24]; }
+  return ramp3(c, [226, 74, 10], [255, 150, 36]);
+});
+const chromis = skin(neon, 'neon', 'Blue Chromis', (c) => ramp3(c, [24, 84, 210], [140, 236, 230]));
+const goby = skin(cory, 'cory', 'Yellow Goby', (c, x, y, z) => (((x * 3 + y * 5 + z * 7) % 13 + 13) % 13 === 0 ? [40, 200, 230] : ramp3(c, [200, 140, 20], [255, 232, 96])));
+const gramma = skin(bluefish, 'blue', 'Royal Gramma', (c, x) => (x > 28 ? ramp3(c, [118, 30, 176], [214, 100, 236]) : ramp3(c, [250, 176, 20], [255, 238, 120])));
+const emperor = skin(angelfish, 'angelfish', 'Emperor Angelfish', (c, x, y) => (((Math.floor((x * 0.8 + y * 0.55) / 2.2) & 1) === 0) ? ramp3(c, [20, 60, 190], [70, 130, 255]) : ramp3(c, [240, 190, 30], [255, 232, 90])));
+const anthias = skin(danio, 'danio', 'Pink Anthias', (c) => ramp3(c, [196, 36, 118], [255, 190, 120]));
+const mandarin = skin(betta, 'betta', 'Mandarin Dragonet', (c, x, y, z, seed) => { const n = fbm(x * 0.3 + seed, y * 0.3, Math.abs(z) * 0.3 + 7); return n > 0.56 ? [255, 132, 28] : n > 0.43 ? mix([255, 206, 70], c, 0.15) : mix([30, 108, 232], c, 0.2); });
+const damsel = { ...guppy, id: 'guppy', label: 'Damselfish', pals: [[hex(0x2a70ff), hex(0x9ad8ff), hex(0xffd53a)], [hex(0xffd82a), hex(0xfff4a0), hex(0x2a5ae0)]] };
+const cardinal = { ...guppy, id: 'platy', label: 'Cardinalfish', length: 30, pals: [[hex(0xe83a2a), hex(0xffa080), hex(0x5a1a2a)], [hex(0xf2742a), hex(0xffe0a0), hex(0x2a2a3a)]] };
+
+// ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
+const seahorse = {
+  id: 'seahorse', label: 'Seahorse', length: 54, vox: 0.044,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 5099 + 17), pals = [[[250, 170, 50], [255, 224, 150], [196, 100, 30]], [[238, 96, 90], [255, 200, 180], [170, 50, 60]], [[230, 200, 60], [255, 244, 170], [160, 130, 30]], [[170, 120, 220], [236, 214, 255], [110, 70, 170]]];
+    const [bodyC, bellyC, ridgeC] = pals[Math.floor(rng() * pals.length)];
+    const P = [[7, 21], [5, 15], [4, 8], [3, 1], [2, -6], [1, -12], [2, -17], [5, -19], [8, -17], [8, -13]];
+    const path = []; for (let i = 0; i < P.length - 1; i++) for (let k = 0; k < 10; k++) { const t = k / 10; path.push([P[i][0] + (P[i + 1][0] - P[i][0]) * t, P[i][1] + (P[i + 1][1] - P[i][1]) * t, (i + t) / (P.length - 1)]); }
+    path.push([...P[P.length - 1], 1]);
+    const rad = prof([[0, 4.6], [0.08, 4.2], [0.16, 3.0], [0.3, 6.2], [0.45, 6.0], [0.6, 3.6], [0.8, 2.2], [1, 1.1]]);
+    const near = (x, y) => { let best = 1e9, bs = 0, bx = 0; for (const q of path) { const d = Math.hypot(x - q[0], y - q[1]); if (d < best) { best = d; bs = q[2]; bx = q[0]; } } return { d: best, s: bs, cx: bx }; };
+    return {
+      bounds: { x: [-14, 24], y: [-26, 30], z: [-9, 9] }, center: [4, 2],
+      sample(x, y, z) {
+        const { d, s, cx } = near(x, y), r = rad(s), inBody = (d / r) ** 2 + (z / (r * 0.8)) ** 2 <= 1;
+        // snout: a short tube pointing forward from the head
+        if (!inBody && x > 8 && x < 18 && Math.hypot(y - (21 - (x - 8) * 0.1), z) <= 1.7 - (x - 8) * 0.04) return { c: mix(bodyC, bellyC, 0.4) };
+        // eye: a dark square with a glint on the outer shell of the head
+        if (inBody && s < 0.1 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 1 && Math.abs(y - 22) <= 1) return x === 7 && y === 23 ? { c: [255, 255, 255], em: 2 } : { c: [14, 12, 20], em: 1 };
+        if (inBody) {
+          let c = x > cx ? mix(bodyC, bellyC, 0.75) : bodyC; const ring = Math.floor((s * 36 + 0.3) % 2) === 0;
+          if (s > 0.18 && ring) c = mix(c, ridgeC, 0.45); if (s < 0.1 && y > 24 && x < 6) c = ridgeC;                // little crown
+          if (fbm(x * 0.4 + seed, y * 0.4, z * 0.4) > 0.68) c = mix(c, [255, 244, 210], 0.4);
+          return { c, wave: s > 0.7 ? 0.25 : 0 };
+        }
+        // dorsal fin: a thin fluttering plate behind the back
+        if (z === 0 && s > 0.27 && s < 0.5 && x < cx - r + 1 && x > cx - r - 5 * Math.sin((Math.PI * (s - 0.27)) / 0.23)) return { c: mix([255, 244, 220], bodyC, 0.2), wave: 1.1 };
+        // tiny pectoral fin by the cheek
+        if (Math.abs(z) === 2 && s > 0.12 && s < 0.2 && x < cx && x > cx - 4 && d < r + 3) return { c: [255, 240, 214], flap: 1.5 };
+        return null;
+      },
+    };
+  },
+};
+
+// ───────────────────────── Octopus: round head forward, eight trailing arms ─────────────────────────
+const octopus = {
+  id: 'octopus', label: 'Octopus', length: 60, vox: 0.045,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 7907 + 3), pals = [[[226, 92, 78], [255, 190, 170]], [[170, 90, 200], [236, 190, 255]], [[60, 150, 200], [180, 236, 255]], [[230, 140, 60], [255, 220, 170]]];
+    const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90];
+    const arms = Array.from({ length: 8 }, (_, i) => { const f = i / 7; return { z0: -3.6 + f * 7.2, ph: rng() * 6, len: 20 + rng() * 6, sw: 1.8 + rng() * 1.4, drop: 5 + f * 22 }; });
+    const armAt = (a, t) => ({ x: -1 - t * a.len, y: -4 - t * a.drop + Math.sin(t * 5 + a.ph) * a.sw * t, z: a.z0 * (1 + t * 1.2) + Math.sin(t * 4 + a.ph * 1.7) * 1.2 * t });
+    const mantle = (x, y, z) => ((x - 3) / 11) ** 2 + ((y - 7) / 11) ** 2 + (z / 8.5) ** 2 <= 1;
+    const eyeAt = (x, y, z) => Math.abs(x - 12) <= 1.5 && Math.abs(y - 7) <= 2 && Math.abs(z) >= 5 && Math.abs(z) <= 8;
+    return {
+      bounds: { x: [-30, 16], y: [-34, 20], z: [-12, 12] }, center: [-6, -2],
+      bend: { pivot: -4, len: 24, amp: 0.2, bob: 1.4 },
+      sample(x, y, z) {
+        if (mantle(x, y, z)) {
+          if (z !== 0 && Math.abs(x - 11) <= 1 && Math.abs(y - 8) <= 2 && !mantle(x, y, z + (z < 0 ? -1 : 1))) return Math.abs(x - 11) < 1 && Math.abs(y - 9) < 1 ? { c: [255, 255, 255], em: 2 } : { c: [12, 12, 20], em: 1 };
+          const n = fbm(x * 0.22 + off[0], y * 0.22 + off[1], Math.abs(z) * 0.22 + off[2]); let c = mix(skinC, pale, clamp((-(y - 7) / 11) * 0.5 + 0.1)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.35); if (n < 0.34) c = mix(c, [90, 30, 40], 0.35);
+          return { c };
+        }
+        if (eyeAt(x, y, z) && !mantle(x, y, z)) return { c: mix(skinC, pale, 0.4) };
+        if (x < 6 && y < 4) for (const a of arms) {
+          // each arm is a tapering tube following its own wavy path
+          const tt = clamp((-2 - x) / a.len); if (x > -1) { if (Math.hypot(y + 4, z - a.z0) < 3.4 && x > -2.5) return { c: skinC }; continue; }
+          const q = armAt(a, tt), rr = 4.2 - tt * 2.8; if (Math.hypot(y - q.y, z - q.z) <= Math.max(1.2, rr)) return { c: y < q.y - rr * 0.35 ? mix(pale, [255, 200, 210], 0.4) : mix(skinC, pale, tt * 0.3), wave: 0.4 + tt * 2.2 };
+        }
+        return null;
+      },
+    };
+  },
+};
+
 // rare visitors: recoloured cousins of the shop fish
 const recolor = (base, id, label, fn) => ({ ...base, id, label, make(seed = 1) { const m = base.make(seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? { ...r, c: fn(r.c), em: r.em } : r; } }; } });
-const moonbetta = recolor(betta, 'moonbetta', 'Moon Betta', (c) => mix(c, [214, 228, 255], 0.62));
-const sunangel = recolor(angelfish, 'sunangel', 'Sun Angelfish', (c) => [Math.min(255, c[0] * 0.7 + 110), Math.min(255, c[1] * 0.75 + 70), Math.max(0, c[2] * 0.35)]);
-const rosecory = recolor(cory, 'rosecory', 'Rose Corydoras', (c) => mix(c, [255, 150, 190], 0.5));
+const moonbetta = recolor(mandarin, 'moonbetta', 'Ghost Dragonet', (c) => mix(c, [214, 228, 255], 0.62));
+const sunangel = recolor(emperor, 'sunangel', 'Golden Angelfish', (c) => [Math.min(255, c[0] * 0.5 + 150), Math.min(255, c[1] * 0.6 + 100), Math.max(0, c[2] * 0.25)]);
+const rosecory = recolor(goby, 'rosecory', 'Rose Goby', (c) => mix(c, [255, 150, 190], 0.6));
 
-export const SPECIES = { goldfish, blue: bluefish, angelfish, neon, cory, guppy, platy, danio, betta, moonbetta, sunangel, rosecory };
+export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, moonbetta, sunangel, rosecory };

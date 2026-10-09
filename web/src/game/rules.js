@@ -3,20 +3,22 @@
 import { genesOf, blendGenes, seededRandom } from './genes.js';
 export { genesOf };
 export const SPECIES_DEF = {
-  goldfish:  { label: 'Goldfish',   price: 10,  level: 1, wait: 10, count: 1, blurb: 'Curious and bold. Loves flakes.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
-  neon:      { label: 'Neon Tetra', price: 20, level: 1, wait: 20, count: 4, blurb: 'A glowing school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
-  cory:      { label: 'Corydoras',  price: 18, level: 2, wait: 60, count: 1, blurb: 'Tidy bottom dweller.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
-  blue:      { label: 'Blue Ram',   price: 28, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the tank.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
-  guppy:     { label: 'Guppy',      price: 18, level: 2, wait: 25, count: 2, blurb: 'A cheerful pair with big tails.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
-  angelfish: { label: 'Angelfish',  price: 40, level: 3, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
-  platy:     { label: 'Platy',      price: 24, level: 3, wait: 40, count: 2, blurb: 'Colourful, easygoing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
-  danio:     { label: 'Zebra Danio',price: 32, level: 4, wait: 60, count: 4, blurb: 'A striped school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
-  betta:     { label: 'Betta',      price: 52, level: 4, wait: 240, count: 1, blurb: 'Flowing fins, quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
+  goldfish:  { label: 'Clownfish',  price: 10,  level: 1, wait: 10, count: 1, blurb: 'Bold and curious. Loves a hiding place.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
+  neon:      { label: 'Blue Chromis', price: 20, level: 1, wait: 20, count: 4, blurb: 'A shimmering school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
+  cory:      { label: 'Yellow Goby', price: 18, level: 2, wait: 60, count: 1, blurb: 'A tidy little reef sitter.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
+  blue:      { label: 'Royal Gramma', price: 28, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the reef.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
+  guppy:     { label: 'Damselfish', price: 18, level: 2, wait: 25, count: 2, blurb: 'A feisty, colourful pair.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
+  angelfish: { label: 'Emperor Angelfish', price: 40, level: 3, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
+  platy:     { label: 'Cardinalfish', price: 24, level: 3, wait: 40, count: 2, blurb: 'A gentle, glowing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
+  danio:     { label: 'Pink Anthias', price: 32, level: 4, wait: 60, count: 4, blurb: 'A pink school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
+  betta:     { label: 'Mandarin Dragonet', price: 52, level: 4, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
+SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
+SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Clever, curious and always exploring.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
-SPECIES_DEF.moonbetta = { label: 'Moon Betta', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
-SPECIES_DEF.sunangel = { label: 'Sun Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
-SPECIES_DEF.rosecory = { label: 'Rose Corydoras', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pink bottom dweller passing through.', traits: ['Social', 'Lazy'], speed: 0.6, visitor: true };
+SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
+SPECIES_DEF.sunangel = { label: 'Golden Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
+SPECIES_DEF.rosecory = { label: 'Rose Goby', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pink bottom dweller passing through.', traits: ['Social', 'Lazy'], speed: 0.6, visitor: true };
 export const DECOR_DEF = {
   grass:    { label: 'Tall Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
   fern:     { label: 'Fern',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
@@ -63,7 +65,7 @@ export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= nee
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
 // The first fish is free and chosen: one of these, named by the player who brings it in.
-export const FIRST_FISH = ['goldfish', 'guppy', 'neon', 'cory'];
+export const FIRST_FISH = ['goldfish', 'seahorse', 'octopus', 'neon'];
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
 export const FLOORS = { sand: 'Sand', pearl: 'Pearl', gravel: 'Gravel', black: 'Black sand', coral: 'Pink coral' };
 export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', mint: 'Mint' };

@@ -229,7 +229,7 @@ export function initUI({ game, social, cb }) {
       const no = $('mno'); if (no) no.onclick = () => done(null);
     });
   }
-  // The opening of a tank: choose the free first fish, then name it, all in one card. Goldfish is preselected so it can be accepted straight away.
+  // The opening of a tank: choose the free first fish, then name it, all in one card. The first one is preselected so it can be accepted straight away.
   function pickFish({ title, text, species, name }) {
     return new Promise((res) => {
       let cur = species[0]; modal.innerHTML = `<div class="box pick"><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="pickrow">${species.map((k) => `<button class="pk ${k === cur ? 'on' : ''}" data-k="${k}"><img alt="" src="${fishThumb(k)}"><b>${esc(SPECIES_DEF[k].label)}</b><small>${esc(SPECIES_DEF[k].blurb)}</small></button>`).join('')}</div><input id="mi" maxlength="14" value="${esc(name)}" placeholder="Name your fish"><div id="me" class="err"></div><button class="big" id="mok">Bring it home</button></div>`;

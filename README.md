@@ -4,7 +4,7 @@ Three friends, one living aquarium. Chunky voxel fish and decorations, modern li
 
 ## The game
 
-- **Start:** an empty tank with one goldfish and a starter pack of free items. Name your fish, feed it, meet your friends, place something. Four short tips, skippable.
+- **Start:** an empty tank where you choose your free first fish (clownfish, seahorse, octopus or blue chromis), name it, and a starter pack of free items. Feed it, meet your friends, place something. Four short tips, skippable.
 - **Care:** feed (tap the water to drop food, three drops per feeding), wipe algae off the glass, change the water. You earn **shells** only when the tank actually needs the care. No streaks, no timers you must obey, no ads, no purchases.
 - **Grow:** adopt fish (goldfish, neon school, guppies, corydoras, blue ram, angelfish, betta) and place decorations (18 items: plants, kelp, rocks, driftwood, lantern, chest, bubbler, clam, skull, torii gate, stone arch…). Fish grow baby → juvenile → adult over real days and the tank levels up (8 levels), unlocking new species, items and room.
 - **Every fish has its own needs:** it gets hungry at its own pace (greedy fish sooner, lazy fish later), its happiness depends on clean water and on things it likes in the tank (shy fish like plants, curious fish like structures, playful fish like bubbles…), and its health slips if it is neglected. Tap a fish to see its mood.

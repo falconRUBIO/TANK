@@ -28,7 +28,7 @@ await d({ t: 'dev', what: 'egg' }); const eg = await p.evaluate(() => window.__g
 g = await goal(); ck('the countdown mentions the egg', /egg/i.test(g) || /arrives in/.test(g), g);
 await d({ t: 'dev', what: 'hatch' }); const hatched = await p.evaluate(() => [window.__game.state.eggs.length, window.__game.state.fish.length]); ck('the egg hatches into a new fish', hatched[0] === 0, JSON.stringify(hatched));
 // daily wish, discoveries, family
-const dw = await p.evaluate(() => window.__game.state.daily); ck('there is one shared daily wish (it may already be done by earlier steps)', !!dw && ['watch', 'greet', 'together', 'visit', 'bubbles', 'care', 'plant'].includes(dw.kind) && dw.text.length > 3, JSON.stringify([dw?.kind, dw?.text, dw?.done]));
+const dw = await p.evaluate(() => window.__game.state.daily); ck('there is one shared daily wish (it may already be done by earlier steps)', !!dw && typeof dw.kind === 'string' && [3, 5, 8].includes(dw.reward) && dw.text.length > 3, JSON.stringify([dw?.kind, dw?.text, dw?.done]));
 const modalsBefore = await p.evaluate(() => document.getElementById('modal').classList.contains('on'));
 const ob = await p.evaluate(() => { const g = window.__game, f = g.state.fish.find((x) => (x.traits ?? []).some((t) => ['Brave', 'Social'].includes(t))); return f ? g.dispatch({ t: 'observe', key: 'glass', fish: f.id }).then((r) => [r.applied, f.name]) : null; });
 await p.waitForTimeout(500); ck('a real observation becomes a quiet discovery (a toast, no pop-up)', ob && ob[0] === true && !modalsBefore && !(await p.evaluate(() => document.getElementById('modal').classList.contains('on'))), JSON.stringify(ob) + ' ' + await p.textContent('#toast'));
