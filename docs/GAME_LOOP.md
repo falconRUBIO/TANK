@@ -119,3 +119,10 @@ Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `S
 - **Sound:** soft generative music (a slow pentatonic scale that changes with the time of day, with an echo and far-off bubbles), switchable in Settings.
 - **Nudges:** at most one a day (two if a friend writes to you), 08:00 to 22:00 only, and only for something that happened: a rare visitor, a hatch or arrival, a solved jar, a milestone, a fish in trouble.
 - **Look:** the bottom bar, the top buttons, toasts, coach cards, the menu sheet, the fish card and every popup share one Liquid Glass style; the time-of-day switcher is gone (the light follows the phone's clock).
+
+## 7h. The octopus feels real
+- **Arms with minds:** while he rests, one arm at a time probes the floor beside him or reaches toward a fish swimming past (`minds` in `fish3d.js`, applied in the arm rig in `species.js`).
+- **Presses on the glass:** hold a finger on the water and the octopus comes to the glass and spreads his arms flat against it where you are touching.
+- **Moods in his skin:** startled (a fast fish too close, or a sudden poke) he goes pale and jets away; poked four times in a row he turns dark and squirts; hunting, dark clouds ripple down his body; with someone he knows a dark bar crosses his eye. Camouflage also roughens the skin (bumps).
+- **A den and a collection:** he adopts a rock or structure as a den, goes home to it, and fetches shells for a growing collection at its entrance (it grows with his age, solved jars and crabs eaten; crab shells show red).
+- **Crab treats** (Care tile, 4 shells, one every two hours per octopus): a crab sinks to the floor, he hunts it, and he is very happy.

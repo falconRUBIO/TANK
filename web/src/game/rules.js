@@ -354,6 +354,9 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
 export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
 export const canPuzzle = (f, now = Date.now()) => isSmart(f) && stageOf(f, now) !== 'baby';
+// A crab treat: the octopus eats crabs, not flakes. It costs shells, makes the octopus very happy, and every crab (and every day, and every jar) adds to its hoard of shells at its den.
+export const CRAB_PRICE = 4, CRAB_GAP = 2 * 3600e3;
+export const hoardOf = (f, now = Date.now()) => (isSmart(f) ? Math.min(14, Math.floor(Math.max(0, now - f.born) / (2 * 864e5)) + (f.solved ?? 0) + (f.crabs ?? 0)) : 0);
 export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x, 0);
 // what this fish can be taught right now: it has to be past the baby stage, trust someone, and the tank needs the decoration
 export function trickOptions(t, f, now = Date.now()) {
@@ -700,6 +703,15 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
       t.shells -= PUZZLE_COST; f.puzzleAt = now; const secs = puzzleSecs(f); f.puzzle = { at: now, until: now + secs * 1000, secs, by: uid ?? null };
       dayCheck(t, now, events, 'bond'); events.push({ activity: { type: 'fish', text: `${name} gave ${f.name} a puzzle jar.` } });
       return ok({ applied: true, delta: -PUZZLE_COST, secs, until: f.puzzle.until });
+    }
+    case 'crab': {                                                  // a crab for the octopus (shells go in, a happy octopus and a bigger hoard come out)
+      const os = t.fish.filter((f) => canPuzzle(f, now)); if (!os.length) return fail('CANT_TRAIN');
+      const f = (a.id ? os.find((x) => x.id === a.id) : os.slice().sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND');
+      if (f.crabAt != null && now - f.crabAt < CRAB_GAP) return ok({ applied: false, delta: 0, wait: CRAB_GAP - (now - f.crabAt), id: f.id });
+      if (t.shells < CRAB_PRICE) return fail('NOT_ENOUGH_SHELLS');
+      t.shells -= CRAB_PRICE; f.crabAt = now; f.crabs = (f.crabs ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1;
+      dayCheck(t, now, events, 'bond'); events.push({ journal: f.crabs === 1 ? `${f.name} caught its first crab.` : null, activity: { type: 'fish', text: `${name} gave ${f.name} a crab.` }, crab: f.id }); if (!events.at(-1).journal) delete events.at(-1).journal;
+      return ok({ applied: true, delta: -CRAB_PRICE, id: f.id });
     }
     case 'style': {
       const fl = a.floor ?? t.style?.floor ?? 'sand', bd = a.backdrop ?? t.style?.backdrop ?? 'candy';

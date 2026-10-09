@@ -158,6 +158,12 @@ async function adopt(species) {
 }
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+async function giveCrab() {
+  const o = game.state.fish.find((f) => canPuzzle(f) && !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { ui.toast('Only a grown octopus eats crabs'); return; }
+  const r = await game.dispatch({ t: 'crab', id: o.id }); if (!r.ok) return fail(r);
+  if (!r.applied) { const m = Math.max(1, Math.ceil((r.wait ?? 0) / 60e3)); ui.toast(`${o.name} is full. Try again in about ${m >= 90 ? Math.round(m / 60) + ' hours' : m + ' minutes'}.`); return; }
+  sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 5200, 1500);
+}
 async function givePuzzle(id) {
   const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { ui.toast('Only a grown octopus can have a puzzle jar'); return; }
   const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
@@ -343,7 +349,7 @@ function showCard(f) {
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null); $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
-function setFocus(f) { if (play) return; if (focus) focus.mul = 1; focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead && Math.random() < 0.3) { fishes.squirt(f); sfx('splash'); } } else card.classList.remove('on'); }
+function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
@@ -360,8 +366,9 @@ function lureTick() {
   if (!lure || play || placing || rearrange || feedMode || cleanMode || focus || performance.now() - lure.t0 < 380) return;
   if (!rayFrom({ clientX: lure.x, clientY: lure.y }).ray.intersectPlane(lurePlane, lureAt)) return;
   if (!lure.on) { lure.on = true; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
+  for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600 };       // an octopus comes to press its arms against the glass where your finger is
   let n = 0; for (const f of fishes.list) {
-    if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.pos.distanceTo(lureAt) > 7) continue;
+    if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.species.move === 'jet' || f.pos.distanceTo(lureAt) > 7) continue;
     const a = (f.seed ?? n) * 2.4 + n * 1.7; n++; f.target.set(Math.max(-4, Math.min(4, lureAt.x + Math.cos(a) * 0.9)), Math.max(0.9, Math.min(13, lureAt.y + Math.sin(a) * 0.7)), 2.3); f.retarget = 0.6;
   }
 }
@@ -438,6 +445,7 @@ game.on('levelup', (lv) => {
 game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why) => { sfx('arrive'); ui?.toast(`${from} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
+game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); sfx('level'); haptic(16); if (f) { fishes.burst(f.pos); f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { sfx('arrive'); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 game.on('theme', () => { sfx('level'); haptic(14); fishes.burst(new THREE.Vector3(0, 5, 1.2)); });
@@ -543,7 +551,7 @@ async function boot() {
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
-    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle() }[a]?.()),
+    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },

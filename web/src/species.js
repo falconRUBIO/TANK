@@ -564,7 +564,7 @@ const seahorse = {
 // Each arm is a rigged tube: a centre line pose(arm, t, state) plus every voxel's offset from it, so the arms can fan out and curl at rest,
 // walk along the floor, and stream back together in a jet, each with its own phase. The same pose() builds the rest model and moves it.
 const OCT = { ax: 3, ay: -3, floor: -9.5, rad0: 3.4, rad1: 1.1 };
-const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
+const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ i, th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
 const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const c = Math.cos(a.th), s = Math.sin(a.th), ph = S.ph ?? 0, rest = Math.max(0, Math.min(1, (S.rest ?? 1) + (S.crawl ?? 0) * 0.85));
   // resting: fan outward along the floor with a lazy lateral S-curve and a curled tip
@@ -582,6 +582,7 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   }
   if (S.work) { const w = S.work; lat += Math.sin(ph * 2 + a.ph + t * 4) * 2.6 * w * t; y += (0.5 + 0.5 * Math.sin(ph * 1.4 + a.ph)) * 3.4 * w * t; r *= 1 - 0.38 * w * (0.4 + 0.6 * Math.abs(Math.sin(a.ph))); }   // working on something: arms pulled in, probing and wrapping
   if (S.greet && c > -0.2) { const g = S.greet; y += g * t * t * 14 * (0.7 + 0.3 * Math.sin(a.ph)); lat += Math.sin(ph * 2.2 + a.ph) * 2.2 * g * t; }                                       // the arms that face the glass lift and wave
+  if (S.glass > 0.02) { const gk = S.glass; y = OCT.floor + 1.2 + (y - OCT.floor - 1.2) * (1 - 0.85 * gk); lat += Math.sin(ph * 1.6 + a.ph) * 0.9 * gk * t; r *= 1 + 0.05 * Math.sin(ph * 1.2 + a.ph) * gk; }   // pressed flat on the glass, the suckers shifting a little
   const walk = S.crawl ? Math.sin(ph * 1.5 - t * 3.4 + a.ph) : 0;                  // a wave runs down each arm as it pulls
   if (S.crawl) { y += Math.max(0, walk) * 3.4 * S.crawl * Math.min(1, t * 2.4); r += walk * 1.6 * S.crawl * t; }
   const rx = OCT.ax + c * r - s * lat, rz = s * r + c * lat;
@@ -590,6 +591,11 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
   o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest;
   if (wrapW > 0) { o[0] += (wx - o[0]) * wrapW; o[1] += (wy - o[1]) * wrapW; o[2] += (wz - o[2]) * wrapW; }
+  const mind = S.minds?.[a.i];
+  if (mind && mind.k > 0.01) {                                                                 // this arm is exploring on its own: its tip goes where it is curious about, the rest of the arm follows
+    const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), dx = mind.x - tip[0], dy = mind.y - tip[1], dz = mind.z - tip[2], L = Math.hypot(dx, dy, dz) || 1, cap = Math.min(1, 24 / L), q = Math.max(0, (t - 0.2) / 0.8), w = mind.k * q * q * (3 - 2 * q);
+    o[0] += dx * cap * w; o[1] += dy * cap * w + Math.sin(Math.PI * t) * 3.4 * mind.k * (1 - rest * 0.3) * (1 - (S.glass ?? 0)); o[2] += dz * cap * w;
+  }
   return o;
 };
 const octopus = {

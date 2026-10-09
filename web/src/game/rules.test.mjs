@@ -401,4 +401,13 @@ ok('gifts and togetherness: a fish can be bought for a friend, and two caretaker
   g.hunger = 0.8; const f2 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 30e3, name: 'Sam', uid: 'u2' }); assert.ok(f2.events.some((e) => e.together), 'two people together'); assert.ok(g.fish[0].happy > happy0);
   g.hunger = 0.8; const f3 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 50e3, name: 'Alex', uid: 'u1' }); assert.ok(!f3.events.some((e) => e.together), 'not again for a while');
 });
+ok('a crab treat: only for a grown octopus, costs shells, cheers it, grows its hoard, and has a rest between crabs', () => {
+  const D = 864e5, t = quiet(2); t.shells = 20; const oc = t.fish[0]; oc.species = 'octopus'; oc.born = -10 * D; oc.stage = 'adult'; t.fish[1].born = -10 * D; t.fish[1].stage = 'adult';
+  const go = (now, id) => R.applyAction(t, { t: 'crab', id }, { now, name: 'Alex', uid: 'u1' });
+  const none = quiet(1); none.shells = 20; assert.equal(R.applyAction(none, { t: 'crab' }, { now: 1, name: 'A', uid: 'u1' }).ok, false, 'no octopus, no crab');
+  const r = go(1000); assert.ok(r.ok && r.applied && r.id === 'f0'); assert.equal(t.shells, 20 - R.CRAB_PRICE); assert.equal(oc.crabs, 1); assert.ok(oc.happy > 0.7 && oc.bond.u1 === 1); assert.ok(r.events.some((e) => e.crab === 'f0'));
+  const again = go(2000); assert.ok(again.ok && !again.applied && again.wait > 0 && t.shells === 20 - R.CRAB_PRICE, 'a rest between crabs');
+  assert.ok(go(1000 + R.CRAB_GAP + 5).applied); t.shells = 0; assert.equal(go(1000 + 3 * R.CRAB_GAP).reason, 'NOT_ENOUGH_SHELLS');
+  assert.equal(R.hoardOf(oc, 0), 5 + 2, 'five days old plus two crabs'); assert.equal(R.hoardOf(t.fish[1], 0), 0); oc.solved = 30; assert.equal(R.hoardOf(oc, 0), 14, 'capped');
+});
 console.log(`All ${n} rule tests passed`);
