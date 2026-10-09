@@ -18,7 +18,8 @@ export function drawAvatar(c, { skin = '#b06a42', hair = '#222222', hat = null, 
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ago = (ts) => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago'; };
-const CATS = ['ALL', 'PLANTS', 'ROCKS', 'WOOD', 'STRUCTURES', 'SPECIAL', 'FISH'];
+const CATS = ['ALL', 'PLANTS', 'ROCKS', 'WOOD', 'STRUCTURES', 'SPECIAL', 'FISH', 'FLOOR', 'BACKDROP'];
+const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'linear-gradient(#f2eaf8,#cfc4e6)', gravel: 'linear-gradient(#a49c8c,#6e685c)', black: 'linear-gradient(#3a3a4a,#1c1c26)', coral: 'linear-gradient(#f6b0be,#e2788e)' }, backdrop: { candy: 'linear-gradient(#f6b8c8,#c9b6f0,#9fd0f2)', lagoon: 'linear-gradient(#7fd8d0,#5fb8d8,#6a9ae0)', sunset: 'linear-gradient(#ffc79a,#ff9eb4,#c08ae0)', mint: 'linear-gradient(#b8f0c8,#8adcc8,#9ac8f0)' } };
 
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
@@ -45,7 +46,6 @@ export function initUI({ game, social, cb }) {
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle washed in for you. Tap it.', tab: '' };
     if (s.drift) return { text: 'Something washed in. Tap it in the tank.', tab: '' };
-    if (!s.decor.length && !s.orders.length) return { text: 'Empty tank. Open Decorate to add a plant.', tab: 'decorate' };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };
@@ -76,14 +76,18 @@ export function initUI({ game, social, cb }) {
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'ALL', fishCat = cat === 'FISH';
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
-    if (!fishCat) for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
+    if (!fishCat && cat !== 'FLOOR' && cat !== 'BACKDROP') for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
+    for (const [kind, names] of [['floor', FLOORS], ['backdrop', BACKDROPS]]) if (showAll || cat === kind.toUpperCase()) for (const [id, label] of Object.entries(names)) { const own = styleOwned(s, kind, id), cur = (s.style ?? {})[kind] === id; out.push({ kind, id, label: kind === 'floor' ? label + ' floor' : label + ' backdrop', price: STYLE_PRICE[kind][id], own, cur, level: 1, blurb: kind === 'floor' ? 'Changes the sand and the stones on the bottom of the tank.' : 'Changes the colours of the far water.', cat: kind.toUpperCase() }); }
     return out.map((c) => {
+      if (c.kind === 'floor' || c.kind === 'backdrop') { const key = c.kind + ':' + c.id; return `<button class="card ${selected === key ? 'sel' : ''}" data-k="${key}"><div class="sw" style="background:${SWATCH[c.kind][c.id]}"></div><b>${esc(c.label)}</b><span class="pr">${c.cur ? 'IN USE' : c.own || !c.price ? 'OWNED' : '🐚 ' + c.price}</span></button>`; }
       const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
       return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}"><b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
-    const s = S(); if (!selected) return `<div class="detail dim">Pick something to see what it does.</div>`;
+    const s = S(); if (!selected) return '';
+    { const [k0, id0] = selected.split(':'); if (k0 === 'floor' || k0 === 'backdrop') { const label = (k0 === 'floor' ? FLOORS : BACKDROPS)[id0], own = styleOwned(s, k0, id0), price = STYLE_PRICE[k0][id0], cur = (s.style ?? {})[k0] === id0, can = !cur && (own || !price || s.shells >= price);
+      return `<div class="detail"><div><h4>${esc(label)} ${k0}</h4><p>${k0 === 'floor' ? 'Changes the sand and the stones on the bottom of the tank.' : 'Changes the colours of the far water.'}</p>${!own && price && s.shells < price ? `<small class="note">${price - s.shells} more shells needed</small>` : ''}</div><button class="big gold" id="buy" ${can ? '' : 'disabled'}>${cur ? 'IN USE' : own || !price ? 'USE' : 'BUY · 🐚 ' + price}</button></div>`; } }
     const [kind, id] = selected.split(':'), d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return '';
     const free = kind === 'decor' && isFree(s, id), priceNow = kind === 'fish' ? fishPrice(id) : d.price;
     let note = '', can = true;
@@ -127,19 +131,19 @@ export function initUI({ game, social, cb }) {
     const ready = readyToTrim(s, now).length; if (ready) up.push([`🌿 ${ready} plant${ready > 1 ? 's' : ''} ready to trim`, `+${ready}`]);
     const sc = scoreOf(s), nx = LEVEL_AT[s.level]; if (nx) up.push([`⭐ Level ${s.level + 1}`, `${sc}/${nx}`]);
     const wish = WISHES[s.wishIdx]; if (wish) up.push([`✨ Tank wish: ${esc(wish.text)}`, `+${wish.reward}`]);
-    const earn = [['Feed hungry fish', '+1 each'], ['Wipe the glass', '+1 (a pearl every 5th: +3)'], ['Change cloudy water', '+2'], ['Say hello to a rare visitor', '+4'], ['Collect things that wash in', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
     const row = ([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`, first = up.slice(0, 3), rest = up.slice(3);
     const k = dayTicks(s, now), m = tankMood(s, now), n = [k.care, k.wish, k.bond].filter(Boolean).length, tick = (v) => (v ? '✓' : '○');
     const careCard = s.fish.length ? `<div class="orders daycare ${k.paid ? 'done' : ''}"><small>TODAY'S CARE · ${n} OF 3${k.paid ? ' · PERFECT DAY' : ''}</small><div><span>${tick(k.care)} Tank looked after</span><b>${k.care ? '' : 'feed · water · glass'}</b></div><div><span>${tick(k.wish)} Today's request</span><b></b></div><div><span>${tick(k.bond)} A fish got attention</span><b>${k.bond ? '' : 'play · teach · pet'}</b></div>${k.paid ? '' : `<div class="dim"><span>All three: +${PERFECT_DAY_REWARD} 🐚. Missing a day costs nothing.</span></div>`}</div>` : '';
     return `${lvRow()}<div class="moodchip ${m.key}"><b>${m.label}</b> · ${esc(m.note)}</div>${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${s.fish.length > 1 ? (() => { const hm = harmonyOf(s); return `<div class="moodchip harm ${hm.key}"><b>Harmony: ${hm.label}</b> · ${esc(hm.note)}</div>`; })() : ''}${careCard}<button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>
       ${S().want ? wantHtml() : dailyHtml()}${first.length ? `<div class="orders"><small>COMING UP</small>${first.map(row).join('')}</div>` : ''}
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
-      ${fold('earn', '<span>How do I earn shells?</span>', `<div class="orders flat">${earn.map(row).join('')}</div><p class="dim">Looking after your fish, and watching them grow, pays the most.</p>`)}`;
+      `;
   };
+  const EARN = [['Feed hungry fish', '+1 each'], ['Wipe the glass', '+1 (a pearl every 5th: +3)'], ['Change cloudy water', '+2'], ['Say hello to a rare visitor', '+4'], ['Collect things that wash in', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
   const foodRow = () => { const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
     care: () => `<h3>Care</h3>${meters()}${foodRow()}<div class="grid3">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${tile('🐟', 'Fish', 'fish', `${S().fish.length} in the tank`)}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const rest = o.crabAt != null && Date.now() - o.crabAt < 2 * 3600e3; return tile('🦀', 'Crab treat', 'crab', rest ? `${esc(o.name)} is full` : `for ${esc(o.name)} · ${CRAB_PRICE} 🐚`); })()}${tile('📷', 'Postcard', 'photo')}</div><h4>Today</h4>${todayHtml()}`,
-    decorate: () => `<h3>Decorate</h3>${themesHtml()}${styleHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
+    decorate: () => `<h3>Decorate</h3>${themesHtml()}<div class="shophead"><div class="cats">${CATS.map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
       const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
@@ -179,7 +183,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     sheet.querySelectorAll('.card').forEach((b) => (b.onclick = () => { selected = b.dataset.k; sfx('tap'); const y = sheet.scrollTop; open('decorate', true); sheet.scrollTop = y; }));
-    const buy = $('buy'); if (buy) buy.onclick = () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else cb.startPlace(id); };
+    const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
     bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('mus', () => { setMusic(!musicOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
@@ -221,6 +225,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('.foodrow [data-food]').forEach((b) => { b.onclick = () => { const k = b.dataset.food; if (S().shells < FOODS[k].price) { toast('Not enough shells for that food'); return; } game.feedFood = k; sfx('tap'); sheet.querySelectorAll('.foodrow [data-food]').forEach((x) => x.classList.toggle('on', x.dataset.food === k)); }; }); paint();
   }
   document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => open(n.dataset.tab === tab ? 'tank' : n.dataset.tab)));
+  $('pill').onclick = (e) => { if (e.target.closest('#conn')) return; sfx('tap'); dialog({ title: 'HOW SHELLS ARE EARNED', text: 'Looking after your fish, and watching them grow, pays the most.', lines: EARN.map(([a, b]) => `${a}: ${b}`), ok: 'Got it' }); };
   $('gear').onclick = () => open(tab === 'settings' ? 'tank' : 'settings');
 
   // header portraits

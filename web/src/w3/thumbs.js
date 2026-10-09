@@ -5,7 +5,7 @@ import { buildItem } from './items.js';
 import { Fish } from '../voxel.js';
 import { SPECIES } from '../species.js';
 
-const VIEW = { grass: [1.2, 1.7], fern: [1.3, 1.7], sword: [0.9, 1.3], red: [1.0, 1.5], rock: [0.3, 0.7], boulder: [0.5, 1.1], starfish: [0.1, 0.5], wood: [1.4, 2.2], pillar: [1.6, 2.0], lantern: [1.3, 1.6], chest: [0.5, 0.9], torii: [1.4, 2.4], bamboo: [1.8, 2.6], anchor: [1.2, 1.6], bridge: [1.0, 3.0], crystal: [1.2, 1.8], moss: [0.3, 0.6], kelp: [1.8, 2.4], bubbler: [0.5, 0.9], shell: [0.3, 0.7], skull: [0.5, 0.7], arch: [1.7, 2.2], lighthouse: [1.4, 3.6], spire: [1.4, 3.6], brain: [0.4, 0.9], table: [0.5, 1.0], anemone: [0.6, 1.2] };
+const VIEW = { grass: [1.2, 1.7], fern: [1.3, 1.7], sword: [0.9, 1.3], red: [1.0, 1.5], rock: [0.3, 0.7], boulder: [0.5, 1.1], starfish: [0.1, 0.5], wood: [1.4, 2.2], pillar: [1.6, 2.0], lantern: [1.3, 1.6], chest: [0.5, 0.9], torii: [1.4, 2.4], bamboo: [1.8, 2.6], anchor: [1.2, 1.6], bridge: [1.0, 3.0], crystal: [1.2, 1.8], moss: [0.3, 0.6], kelp: [1.8, 2.4], bubbler: [0.5, 0.9], shell: [0.3, 0.7], skull: [0.5, 0.7], arch: [1.7, 2.2], lighthouse: [1.4, 3.6], spire: [1.4, 3.6], brain: [0.4, 0.9], table: [0.5, 1.0], anemone: [0.6, 1.2], coconut: [0.4, 0.8], pot: [0.6, 0.9] };
 const cache = new Map(); let rr = null, sc = null, cam = null;
 function setup() {
   const cv = document.createElement('canvas'); cv.width = cv.height = 160;

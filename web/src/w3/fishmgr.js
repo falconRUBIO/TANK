@@ -153,7 +153,7 @@ export class Fishes {
     f.tmul *= this.night ? 0.8 : 1;
   }
   // after dark most fish drift low and slow; the shy ones come out into open water
-  setNight(on) { this.night = !!on; for (const f of this.list) if (!f.dead) f.tmul = this.mulFor(f); }
+  setNight(on) { this.night = !!on; for (const f of this.list) { f.isNight = !!on; if (!f.dead) f.tmul = this.mulFor(f); } }
   // personality: traits decide how a fish moves, where it goes and who it goes with
   wrapPick(f, d) {
     const base = f.pick.bind(f), tr = d.traits ?? [], has = (t) => tr.includes(t), school = !!f.species.school;
@@ -162,7 +162,7 @@ export class Fishes {
     f.isShy = has('Shy');
     f.pick = (r) => {
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
-      const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(13.5, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
+      const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
       f.idle = 0;
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
@@ -217,21 +217,25 @@ export class Fishes {
 
   drop(x, n = 7, kind = 'flakes') {
     for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
-    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, 15 + this.rng() * 0.5, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
+    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, Fish3D.topY + 0.2 + this.rng() * 0.4, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
   }
   // an octopus's den (a rock or structure it has taken to), its collection of shells at the entrance, and the shell it carries home now and then
   syncDen(f, d) {
-    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), den = spots.length ? spots[(d.seed ?? 0) % spots.length] : null;
+    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), pref = spots.filter((x) => x.type === 'pot' || x.type === 'coconut'), den = pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null;
     f.den = den ? { x: den.x, z: den.z, id: den.id } : null;
     const key = f.den ? `${f.den.id}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
-    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onEat = (h) => this.eatCrab(h); }
+    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
   }
   looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it
   dropCrab(fid) {
-    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const x = Math.max(-3.4, Math.min(3.4, f.pos.x + (this.rng() - 0.5) * 3)), z = 1.0 + this.rng() * 1.2, m = buildCrab(); m.scale.setScalar(1.15); m.position.set(x, 15, z); this.scene.add(m);
-    const hnt = { x, z, mesh: m, y: 15 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
+    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const x = Math.max(-3.4, Math.min(3.4, f.pos.x + (this.rng() - 0.5) * 3)), z = 1.0 + this.rng() * 1.2, m = buildCrab(); m.scale.setScalar(1.15); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
+    const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
+  }
+  // a cloud of ink: dark puffs that swell and thin out over a few seconds
+  ink(p) {
+    for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 + this.rng() * 0.2, 1), new THREE.MeshBasicMaterial({ color: 0x1a1428, transparent: true, opacity: 0.55, depthWrite: false })); m.position.set(p.x + (this.rng() - 0.5) * 0.8, p.y + (this.rng() - 0.3) * 0.6, p.z + (this.rng() - 0.5) * 0.6); this.scene.add(m); this.onSprite?.(m); (this.inks ||= []).push({ m, age: -i * 0.06, vx: (this.rng() - 0.5) * 0.5, vy: 0.1 + this.rng() * 0.25 }); }
   }
   eatCrab(hnt) { this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); }
   // puzzle jars: one appears on the sand for each octopus that has been given one, and opens when it is solved
@@ -250,6 +254,9 @@ export class Fishes {
     for (const [id, jar] of [...this.jars]) if (!state.fish.some((d) => d.id === id) && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; }
   }
   investigate(spot) {
+    for (const f of this.list) if (!f.dead && !f.visitor && f.species.move === 'hover' && !f.greet) {                    // a seahorse drifts over to look, then holds still beside it for a while
+      f.target.set(Math.max(-3.8, Math.min(3.8, spot.x + (this.rng() - 0.5) * 0.5)), 1.1 + (spot.h ?? 1) * (0.35 + this.rng() * 0.3), spot.z + 0.6); f.idle = 8 + this.rng() * 6; f.retarget = f.idle + 2; f.seeking = false; this.burst(new THREE.Vector3(spot.x, 1.5, spot.z + 0.4));
+    }
     for (const f of this.list) if (!f.dead && !f.visitor && f.species.move !== 'jet' && f.species.move !== 'hover' && !f.script?.length && (f.profile?.traits ?? []).includes('Curious') && this.rng() < 0.6) {
       const y = 1.5 + (spot.h ?? 1) * 0.45; f.script = [{ x: spot.x - 0.9, y, z: spot.z + 1.2, rt: 2.4 }, { x: spot.x + 0.9, y: y + 0.4, z: spot.z + 1.2, rt: 2.2 }, { x: spot.x, y: y + 0.2, z: spot.z + 1.5, rt: 1.6 }]; f.pick(this.rng);
     } for (const f of this.list) if (f.species.move === 'jet' && !f.dead && !f.jarAt) f.inspect = { x: spot.x, z: spot.z }; }       // the octopus goes to look at anything new; other curious fish are handled in wrapPick
@@ -257,7 +264,7 @@ export class Fishes {
   // living with each other: bullies chase the timid, a predator makes small fish keep their distance, and territorial rivals turn on each other
   socialTick(dt) {
     this.stT = (this.stT ?? 0) - dt; if (this.stT > 0) return; this.stT = 0.6;
-    const L = this.list.filter((f) => !f.dead && !f.visitor && SOCIAL[f.sk]), away = (o, from, d = 2.6) => { const v = o.pos.clone().sub(from); v.y *= 0.3; if (v.lengthSq() < 1e-4) v.set(1, 0, 0); v.normalize().multiplyScalar(d); o.target.set(Math.max(-4, Math.min(4, o.pos.x + v.x)), Math.max(0.9, Math.min(13, o.pos.y + v.y)), Math.max(-2, Math.min(2.8, o.pos.z + v.z))); o.retarget = 1.1; o.fleeT = 1.4; };
+    const L = this.list.filter((f) => !f.dead && !f.visitor && SOCIAL[f.sk]), away = (o, from, d = 2.6) => { const v = o.pos.clone().sub(from); v.y *= 0.3; if (v.lengthSq() < 1e-4) v.set(1, 0, 0); v.normalize().multiplyScalar(d); o.target.set(Math.max(-4, Math.min(4, o.pos.x + v.x)), Math.max(0.9, Math.min(Fish3D.topY - 0.3, o.pos.y + v.y)), Math.max(-2, Math.min(2.8, o.pos.z + v.z))); o.retarget = 1.1; o.fleeT = 1.4; };
     for (const b of L) {
       const B = SOCIAL[b.sk]; b.chaseCool = (b.chaseCool ?? 0) - 0.6;
       if (B.bully && b.chaseCool <= 0 && b.species.move !== 'hover') {
@@ -280,6 +287,8 @@ export class Fishes {
   }
   update(dt, t) {
     this.socialTick(dt); this.seahorseTick(dt, t);
+    for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; const q = k.age / 4; k.m.scale.setScalar(1 + q * 3.2); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = 0.55 * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
+    if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < 4) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     for (const c of this.crabs ?? []) { if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; } else c.mesh.position.x = c.x + Math.sin(t * 4 + c.z) * 0.04; }
     if (this.loose?.length) { const now = performance.now(); this.loose = this.loose.filter((l) => { if (now < l.until) return true; this.scene.remove(l.m); return false; }); }
     if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }

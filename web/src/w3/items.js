@@ -110,6 +110,16 @@ const B = {
     topLit(bot); const m = bot.mesh(); m.position.y = 0.05; g.add(m);
     const lm = top.mesh(); lm.position.set(0, 0.05 + 0.1, -0.25); lm.rotation.x = -1.0; g.add(lm); return [{ v: bot, x: 0, y: 0.05, z: 0, ry: 0 }];
   },
+  coconut: (g) => {                     // a coconut half-shell, hollow side down: a dome with a rough hairy husk and a dark rim
+    const u = 0.06, v = new Vox(u), R = 9; for (let i = -R; i <= R; i++) for (let k = -R; k <= R; k++) for (let j = 0; j <= 8; j++) { const d = (i * i + k * k) / (R * R) + (j * j) / 72; if (d > 1 || d < 0.62 && j < 6 && (i * i + k * k) / (R * R) < 0.5) continue; const hair = hash(i, j, k, 6) > 0.5; v.set(i, j, k, j < 1 ? [66, 44, 28] : hair ? [122, 82, 52] : [98, 64, 40]); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
+  },
+  pot: (g) => {                         // a clay pot lying on its side, mouth towards the front, big enough to curl up inside
+    const u = 0.06, v = new Vox(u); const rad = (i) => 7 - Math.abs(i - 1) * 0.28 + (i < -3 ? (i + 3) * 0.6 : 0);
+    for (let i = -9; i <= 8; i++) { const r = Math.max(2.5, rad(i)); for (let j = 0; j <= 14; j++) for (let k = -8; k <= 8; k++) { const d = Math.hypot(j - 7, k), inner = i > 3 && d < r - 2 || (i > -2 && d < r - 2.4); if (d > r || inner) continue; v.set(i, j, k, hash(i, j, k, 3) > 0.7 ? [196, 112, 70] : [176, 94, 58]); } }
+    for (let k = -7; k <= 7; k++) for (let j = 0; j <= 14; j++) { const d = Math.hypot(j - 7, k); if (d <= 7 && d > 5.3 && hash(j, k, 1, 4) > 0.2) v.set(9, j, k, [150, 74, 46]); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.04; m.rotation.y = -Math.PI / 2; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: -Math.PI / 2 }];
+  },
   skull: (g) => {
     const u = 0.065, v = new Vox(u), bone = (i, j, k) => mix([214, 206, 184], [240, 232, 208], hash(i, j, k, 2));
     v.ellipsoid(0, 7, 0, 6, 5.5, 5.2, bone, 3, 0.1); v.fill(-3, 1, -3, 3, 3, 3, bone); for (let i = -3; i <= 3; i += 2) v.set(i, 1, 3, [90, 84, 70]);

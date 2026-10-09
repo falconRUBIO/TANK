@@ -47,6 +47,8 @@ export const DECOR_DEF = {
   anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 16, level: 2, blurb: 'Soft tentacles that sway. A clownfish favourite.' },
   brain:    { label: 'Brain Coral',   cat: 'ROCKS',      price: 14, level: 2, blurb: 'A ridged dome of coral.' },
   table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 20, level: 3, blurb: 'A wide shelf to hover under.' },
+  coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A hollow half-shell. Octopuses like to hide under one.' },
+  pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
 export const LEVEL_AT = [0, 14, 36, 66, 100, 140, 184, 220];                     // score needed for level 1..5
@@ -100,7 +102,7 @@ const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).
 export const THEMES = {
   kelp:    { label: 'Kelp Forest',   types: ['kelp', 'grass', 'sword', 'bamboo'],                         need: 4, visitor: 'rosecory', blurb: 'Sea grass, kelp and tall weeds sway together.' },
   coral:   { label: 'Coral Garden',  types: ['anemone', 'red', 'fern', 'moss', 'brain', 'table', 'spire'], need: 4, visitor: 'moonbetta', blurb: 'Anemones, sea fans and coral heads make a garden.' },
-  ruins:   { label: 'Sunken Ruins',  types: ['pillar', 'arch', 'torii', 'bridge', 'skull', 'anchor', 'chest'], need: 3, visitor: 'sunangel', blurb: 'Old stone and lost things make a place to explore.' },
+  ruins:   { label: 'Sunken Ruins',  types: ['pot', 'coconut', 'pillar', 'arch', 'torii', 'bridge', 'skull', 'anchor', 'chest'], need: 3, visitor: 'sunangel', blurb: 'Old stone and lost things make a place to explore.' },
   lanterns:{ label: 'Lantern Cove',  types: ['lantern', 'crystal', 'lighthouse', 'bubbler'],               need: 2, visitor: null,      blurb: 'Glowing things turn the night into a cove.' },
 };
 export const THEME_REWARD = 3;

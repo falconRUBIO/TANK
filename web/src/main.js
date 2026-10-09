@@ -106,6 +106,14 @@ async function changeWater() { if (game.state.water >= 0.7) { ui.toast('The wate
 
 // ── placement & rearranging ──
 const ray = new THREE.Raycaster(), floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
+// the top of the water that is really visible: below the header buttons and the phone's safe area. Fish never go above it, and food starts there.
+function fitTop() {
+  const r = canvas.getBoundingClientRect(); if (!r.height) return; const sc = Math.max(r.width / IW, r.height / IH), dh = IH * sc, hb = document.querySelector('header')?.getBoundingClientRect().bottom ?? 60;
+  const c = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far); c.position.set(0, 4.6, 30); c.lookAt(0, 5.3, 0); c.updateMatrixWorld(); c.updateProjectionMatrix();
+  const v = (hb + 34 - r.top - (r.height - dh)) / dh, rr = new THREE.Raycaster(); rr.setFromCamera(new THREE.Vector2(0, -(v * 2 - 1)), c); const pl = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.6), out = new THREE.Vector3();
+  if (rr.ray.intersectPlane(pl, out)) Fish3D.topY = Math.max(8, Math.min(14.5, out.y));
+}
+addEventListener('resize', fitTop); addEventListener('orientationchange', fitTop); setTimeout(fitTop, 400); setTimeout(fitTop, 2500);
 function rayFrom(ev) {
   const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc;
   const u = (ev.clientX - r.left - (r.width - dw) * 0.5) / dw, v = (ev.clientY - r.top - (r.height - dh) * 1.0) / dh;
