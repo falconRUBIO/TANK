@@ -239,9 +239,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     for (const { id } of tanks) {
       if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
       try {
-        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew);
+        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew) ?? r.events.find((e) => e.found);
         if (!hit) continue;
-        for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something happened in your tank'), { now });
+        for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now });
       } catch (e) { console.error('push sweep failed', e); }
     }
   };

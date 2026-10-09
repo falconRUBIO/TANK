@@ -564,6 +564,7 @@ async function welcomeBack() {
   await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
+  ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
   sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto);
 }
 

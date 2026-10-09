@@ -24,7 +24,11 @@ const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'line
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
   let tab = 'tank', sub = 'friends', tt, cat = 'ALL', selected = null, rearrange = false;
-  const toast = (m, ms = 2400) => { toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('on'), ms); };
+  // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
+  const tq = []; let showing = 0;
+  const nextToast = () => { const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
+  const toast = (m, ms = 2400) => { if (tq.some((x) => x.m === m) || (showing && toastEl.textContent === m && toastEl.classList.contains('on'))) return; tq.push({ m, ms }); while (tq.length > 4) tq.splice(1, 1); if (!showing) nextToast(); };
+  const clearToasts = () => { tq.length = 0; showing = 0; clearTimeout(tt); toastEl.classList.remove('on'); };
   const S = () => game.state;
   // the game opens up gradually: a new tank shows only feeding, fish and a few decorations; food choices, themes, comfort, the daily checklist, floors and postcards appear once the tank has grown a little
   const adv = () => { const s = S(); return !!s && (s.level >= 2 || s.fish.length >= 2); };
@@ -291,5 +295,5 @@ export function initUI({ game, social, cb }) {
   const place = () => $('settle').classList.toggle('top', sheet.classList.contains('on'));        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
   const farewell = (name) => { place(); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

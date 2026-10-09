@@ -592,7 +592,7 @@ function _advance(t, now = Date.now()) {
   }
   ageMilestones(t, now, ev);
   deliver(t, now, ev);
-  if (!t.drift && now >= t.driftAt) t.drift = makeDrift(t, now);
+  if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); }
   puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollWant(t, now, ev); rollDaily(t, now); themeCheck(t, now, ev);
   const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
   if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }

@@ -379,6 +379,11 @@ ok('a find is blamed on something that lives in the tank, never the sea; an octo
   const seen = new Set(); for (let i = 0; i < 80; i++) { const w = R.newWorld(0); w.fish.push({ id: 'o', species: 'octopus', name: 'Mimi', dead: false }); w.seq = 20 + i; R.advance(w, 30 * 60e3 + i * 7e6); if (w.drift) seen.add(w.drift.by.k); }
   assert.ok(seen.has('oct') && seen.size >= 3, [...seen].join());
 });
+ok('a find announces itself once with its culprit, so a push can say who brought it', () => {
+  const t = R.newWorld(0); const ev = R.advance(t, 30 * 60e3); const f = ev.find((e) => e.found);
+  assert.ok(f && f.found === t.drift.id && /Tap it/.test(f.toast) && !/wash|tide/i.test(f.toast), JSON.stringify(f));
+  assert.equal(R.advance(t, 31 * 60e3).filter((e) => e.found).length, 0);
+});
 ok('chapters mark landmarks once, pay nothing, and a tank that already passed them stays quiet', () => {
   const old = R.newWorld(0); old.createdAt = 0; R.advance(old, 8 * 86400e3); const quiet = old.flags.chapters.length; assert.ok(quiet >= 0);
   const t = R.newWorld(0); R.advance(t, 60e3); const sh = t.shells; const ev = R.advance(t, 86400e3 + 120e3);
