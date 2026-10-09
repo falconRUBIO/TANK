@@ -222,7 +222,7 @@ export class Fishes {
     for (const d of state.fish) {
       const f = this.byId.get(d.id), jar = this.jars.get(d.id);
       if (d.puzzle) {
-        if (!jar) { const j = buildJar(); let h = 0; for (const ch of d.id) h = (h * 31 + ch.charCodeAt(0)) | 0; j.pos = { x: ((Math.abs(h) % 50) / 10) - 2.5, z: 1.3 + ((Math.abs(h) >> 6) % 8) / 10 }; j.root.position.set(j.pos.x, 0.12, j.pos.z); j.root.scale.setScalar(1.15); this.scene.add(j.root); this.onSprite?.(j.root); this.jars.set(d.id, j); this.burst(new THREE.Vector3(j.pos.x, 0.8, j.pos.z)); }
+        if (!jar) { const j = buildJar(); let h = 0; for (const ch of d.id) h = (h * 31 + ch.charCodeAt(0)) | 0; j.pos = { x: ((Math.abs(h) % 50) / 10) - 2.5, z: 1.3 + ((Math.abs(h) >> 6) % 8) / 10 }; j.root.position.set(j.pos.x, 0.12, j.pos.z); j.root.scale.setScalar(0.95); this.scene.add(j.root); this.onSprite?.(j.root); this.jars.set(d.id, j); this.burst(new THREE.Vector3(j.pos.x, 0.8, j.pos.z)); }
         if (f) f.jarAt = this.jars.get(d.id).pos;
       } else {
         if (f) f.jarAt = null;
@@ -250,8 +250,17 @@ export class Fishes {
       if (B.sameFoe) for (const o of L) if (o !== b && o.sk === b.sk && b.pos.distanceTo(o.pos) < 1.6 && o.species.move !== 'hover') away(o, b.pos, 2.0);
     }
   }
+  // seahorses greet their partner: now and then (more in the morning) two of them meet at a plant, circle each other glowing, and part
+  seahorseTick(dt, t) {
+    this.shT = (this.shT ?? 30 + this.rng() * 40) - dt; if (this.shT > 0) return;
+    const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2) return;
+    const [a, b] = hs, spots = (this.spots?.() ?? []).filter((x) => DECOR_DEF[x.type]?.cat === 'PLANTS'), mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
+    let sp = null, bd = 1e9; for (const x of spots) { const d = Math.hypot(x.x - mid.x, x.z - mid.z); if (d < bd) { bd = d; sp = x; } }
+    const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = sp ? 1.6 + sp.h * 0.6 : Math.max(2.5, Math.min(8, mid.y));
+    a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
+  }
   update(dt, t) {
-    this.socialTick(dt);
+    this.socialTick(dt); this.seahorseTick(dt, t);
     if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
     for (const f of this.flakes) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
     this.flakes = this.flakes.filter((f) => !f.eaten && f.age < 30);

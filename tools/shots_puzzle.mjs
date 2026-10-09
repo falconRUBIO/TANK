@@ -12,8 +12,8 @@ await p.evaluate(() => { document.querySelectorAll('#goal,#coach,.coach,#toast')
 const r = await p.evaluate(async () => { const g = window.__game; return g.dispatch({ t: 'puzzle', id: 'x1' }); }); console.log('puzzle', JSON.stringify(r));
 await p.waitForTimeout(2500); await p.evaluate(() => { window.__cam = [0, 3.2, 13, 0, 1.4, 1.2]; });
 await p.waitForTimeout(1500); await p.screenshot({ path: out + '/puz_1_jar.png' });
-await p.evaluate(() => { const f = window.__fishes.list[0], j = [...window.__fishes.jars.values()][0]; f.pos.set(j.pos.x - 0.9, 0.6, j.pos.z + 0.7); f.vel.set(0, 0, 0); f.st = { s: 'work', t: 1e9, mode: 'jar', n: 0, pulse: 0 }; window.__cam = [j.pos.x, 2.6, 8, j.pos.x, 0.9, j.pos.z]; });
-await p.waitForTimeout(3500); await p.screenshot({ path: out + '/puz_2_work.png' });
+await p.evaluate(() => { const f = window.__fishes.list[0], j = [...window.__fishes.jars.values()][0]; f.pos.set(j.pos.x - 0.55, 0.6, j.pos.z + 0.7); f.vel.set(0, 0, 0); f.st = { s: 'work', t: 1e9, mode: 'jar', n: 0, pulse: 0 }; f.workK = 1; f.restK = 0.7; f.heading = 0; window.__cam = [j.pos.x - 0.3, 2.4, 9, j.pos.x - 0.3, 0.9, j.pos.z]; });
+await p.waitForTimeout(3500); console.log('rs', await p.evaluate(() => { const f = window.__fishes.list[0]; return JSON.stringify([f.rs, f.workK, f.st, f.scale]); })); await p.screenshot({ path: out + '/puz_2_work.png' });
 await p.evaluate(() => { const s = window.__game.state; s.fish[0].puzzle.until = Date.now() - 1; window.__game.emit('state'); });
 await p.waitForTimeout(1800); await p.screenshot({ path: out + '/puz_3_open.png' });
 await p.waitForTimeout(3500); await p.screenshot({ path: out + '/puz_4_after.png' });

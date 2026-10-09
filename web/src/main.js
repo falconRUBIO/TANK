@@ -484,7 +484,7 @@ async function welcomeBack() {
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
   const mine = game.you?.userId, rank = (t) => (/hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
-  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 4).sort((a, b) => a.i - b.i).map((x) => x.t);
+  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle washed in for you.'); else if (s.drift) lines.push('Something washed in. Tap it in the tank.');
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);

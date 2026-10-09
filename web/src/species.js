@@ -492,12 +492,13 @@ const damsel = reef({
   tail: { kind: 'fork', len: 10, spread: 8.5, notch: 0.5, depth: 1.5 }, dorsal: [{ a: 0.12, b: 0.92, h: 5.2, spiny: true }], anal: { a: 0.3, b: 0.6, h: 3.4 }, pelvic: [0.4, 0.55], pec: [0.62, -1],
   paint: ({ dy, P }) => lerpc(P[0], P[1], (-dy - 0.1) * 0.9), fin: ({ u, P, part }) => (part === 'tail' ? lerpc(P[2], [255, 255, 255], u * 0.25) : part === 'pec' || part === 'pelvic' ? lerpc(P[1], [255, 255, 255], 0.3) : lerpc(P[0], P[2], 0.25 + u * 0.4)),
 });
-const cardinal = reef({
-  id: 'platy', label: 'Cardinalfish', L: 22, vox: 0.045, length: 44, eye: [0.8, 2], ring: [255, 236, 170], ringR: 2.7, eyeR: 1, amp: 0.5,
-  pals: [[[226, 56, 40], [255, 168, 130], [40, 10, 16]], [[248, 196, 184], [255, 246, 238], [196, 44, 44]]],
-  hy: [[0, 2.4], [0.15, 4.8], [0.4, 7.4], [0.65, 7.8], [0.9, 5.8], [1, 3.4]], hz: [[0, 1.4], [0.3, 3.2], [0.6, 4.2], [0.9, 3], [1, 1.8]],
-  tail: { kind: 'round', len: 8, spread: 6 }, dorsal: [{ a: 0.2, b: 0.44, h: 3.6 }, { a: 0.56, b: 0.86, h: 3.4 }], anal: { a: 0.42, b: 0.78, h: 3 }, pelvic: [0.4, 0.55], pec: [0.62, -1],
-  paint: ({ t, dy, P }) => { if (t > 0.74 && t < 0.82) return P[2]; if (t < 0.14 && t > 0.06) return P[2]; return lerpc(P[0], P[1], (-dy - 0.2) * 0.9); }, fin: ({ u, P, part }) => (part === 'pec' || part === 'pelvic' ? lerpc(P[1], [255, 255, 255], 0.3) : lerpc(P[0], P[1], u * 0.5)),
+const cardinal = reef({                       // a Banggai-style cardinalfish: silver, three bold black bars, a big pale eye, long trailing fins with white spots
+  id: 'platy', label: 'Cardinalfish', L: 22, vox: 0.045, length: 44, eye: [0.82, 2], ring: [232, 238, 244], ringR: 3.0, eyeR: 1.3, amp: 0.55,
+  pals: [[[188, 200, 212], [248, 250, 255], [18, 20, 28]], [[222, 190, 146], [255, 244, 222], [44, 28, 22]]],
+  hy: [[0, 2.2], [0.15, 4.6], [0.4, 7.6], [0.65, 8.0], [0.9, 6.0], [1, 3.6]], hz: [[0, 1.3], [0.3, 3.0], [0.6, 4.0], [0.9, 3], [1, 1.8]],
+  tail: { kind: 'fork', len: 11, spread: 8.5, notch: 0.35, depth: 2.2 }, dorsal: [{ a: 0.3, b: 0.5, h: 4.6, spiny: true }, { a: 0.52, b: 0.9, h: 8 }], anal: { a: 0.4, b: 0.84, h: 7 }, pelvic: [0.4, 0.56], pec: [0.62, -1],
+  paint: ({ t, dy, x, y, z, P }) => { if ((t > 0.74 && t < 0.86) || (t > 0.38 && t < 0.47) || (t > 0.02 && t < 0.1)) return P[2]; if (((x * 3 + y * 5 + z * 7) % 11 + 11) % 11 === 0) return [255, 255, 255]; return lerpc(P[0], P[1], (-dy + 0.15) * 0.9); },
+  fin: ({ u, x, part, P }) => { if (part === 'pec' || part === 'pelvic') return lerpc(P[1], [255, 255, 255], 0.4); if (u > 0.82) return lerpc(P[1], P[2], (u - 0.82) / 0.18); return ((Math.floor(x * 1.7) + Math.floor(u * 9)) % 5 === 0) ? [255, 255, 255] : lerpc(P[0], P[1], 0.45); },
 });
 const anthias = reef({
   id: 'danio', label: 'Pink Anthias', L: 26, vox: 0.042, length: 48, eye: [0.84, 1], ring: [255, 224, 150], ringR: 2.2, amp: 0.6,
@@ -513,7 +514,14 @@ const goby = reef({
 });
 const chromis = skin(neon, 'neon', 'Blue Chromis', (c) => ramp3(c, [24, 84, 210], [140, 236, 230]));
 const emperor = skin(angelfish, 'angelfish', 'Emperor Angelfish', (c, x, y) => (((Math.floor((x * 0.9 + y * 0.7) / 4.6) & 1) === 0) ? ramp3(c, [20, 56, 190], [70, 130, 255]) : ramp3(c, [244, 196, 30], [255, 236, 96])));
-const mandarin = skin(betta, 'betta', 'Mandarin Dragonet', (c, x, y, z, seed) => { const n = fbm(x * 0.3 + seed, y * 0.3, Math.abs(z) * 0.3 + 7); return n > 0.56 ? [255, 132, 28] : n > 0.43 ? mix([255, 206, 70], c, 0.15) : mix([30, 108, 232], c, 0.2); });
+const swirl = (x, y, z, seed) => { const n = fbm(x * 0.1 + seed, y * 0.16, Math.abs(z) * 0.1 + 7), w = Math.sin(n * 8.5 + y * 0.22); return w > 0.38 ? [255, 118, 24] : w > 0.14 ? [255, 190, 54] : w > -0.3 ? [50, 190, 204] : [28, 108, 236]; };
+const mandarin = reef({                         // a mandarin dragonet: long and low with a big sail of a first dorsal, swirled in blue, orange, yellow and green
+  id: 'betta', label: 'Mandarin Dragonet', L: 30, vox: 0.046, length: 50, eye: [0.84, 3], ring: [255, 206, 90], ringR: 2.3, eyeR: 1.1, amp: 0.4,
+  hy: [[0, 1.8], [0.15, 3.6], [0.4, 5.2], [0.75, 5.2], [1, 3.4]], hz: [[0, 1.2], [0.3, 3.0], [0.6, 4.0], [0.9, 3.2], [1, 1.8]],
+  tail: { kind: 'round', len: 9, spread: 6 }, dorsal: [{ a: 0.34, b: 0.54, h: 11, shape: 'sail' }, { a: 0.54, b: 0.9, h: 4.2 }], anal: { a: 0.5, b: 0.84, h: 2.6 }, pelvic: [0.5, 0.66], pec: [0.62, -1],
+  paint: ({ x, y, z, dy, seed }) => (dy < -0.62 ? [236, 232, 196] : swirl(x, y, z, seed)),
+  fin: ({ u, x, part }) => (part === 'pec' || part === 'pelvic' ? [150, 218, 244] : part === 'dorsal' ? (u < 0.3 ? [255, 132, 28] : u < 0.62 ? [36, 116, 236] : [255, 170, 40]) : u > 0.55 ? [30, 110, 236] : [255, 150, 40]),
+});
 
 // ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
 const seahorse = {
@@ -563,6 +571,15 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const sm = Math.max(0, (t - 0.6) / 0.4), curl = sm * sm * 7.5 * a.curl * (0.85 + 0.15 * Math.sin(ph * 0.5 + a.ph));
   let r = OCT.ax + 1.5 + a.L * Math.pow(t, 0.92), lat = Math.sin(t * 3.4 + a.ph) * 2.6 * t + Math.sin(ph * 0.9 + a.ph + t * 3) * 0.9 * t;
   let y = OCT.floor + 1.2 + (OCT.ay - OCT.floor) * Math.exp(-t * 6.2) + curl;
+  let wrapW = 0, wx = 0, wy = 0, wz = 0;
+  if (S.work > 0.4 && S.jr) {                                                                  // working a jar: the arms that face it reach out, close on it and spiral up around it
+    const phi = Math.atan2(S.jz, S.jx - OCT.ax), df = Math.abs(Math.atan2(Math.sin(a.th - phi), Math.cos(a.th - phi)));
+    if (df < 1.3) {
+      wrapW = Math.min(1, (1 - df / 1.3) * 1.9) * Math.min(1, (S.work - 0.4) / 0.4); const side = Math.sin(a.th - phi) >= 0 ? 1 : -1, R = S.jr + 1.0, th0 = Math.atan2(OCT.ax * 0 + (s * 4.5 - S.jz), (OCT.ax + c * 4.5) - S.jx);
+      if (t < 0.45) { const q = t / 0.45, ex = S.jx + Math.cos(th0) * R, ez = S.jz + Math.sin(th0) * R; wx = OCT.ax + c * 4.5 + (ex - (OCT.ax + c * 4.5)) * q; wz = s * 4.5 + (ez - s * 4.5) * q; wy = OCT.floor + 2 + Math.sin(q * Math.PI) * 2; }
+      else { const u = (t - 0.45) / 0.55, ang = th0 + side * u * 1.9 + Math.sin(ph * 2 + a.ph) * 0.12; wx = S.jx + Math.cos(ang) * R; wz = S.jz + Math.sin(ang) * R; wy = OCT.floor + 2.2 + u * 10 + Math.sin(ph * 3 + a.ph) * 0.4; }
+    }
+  }
   if (S.work) { const w = S.work; lat += Math.sin(ph * 2 + a.ph + t * 4) * 2.6 * w * t; y += (0.5 + 0.5 * Math.sin(ph * 1.4 + a.ph)) * 3.4 * w * t; r *= 1 - 0.38 * w * (0.4 + 0.6 * Math.abs(Math.sin(a.ph))); }   // working on something: arms pulled in, probing and wrapping
   if (S.greet && c > -0.2) { const g = S.greet; y += g * t * t * 14 * (0.7 + 0.3 * Math.sin(a.ph)); lat += Math.sin(ph * 2.2 + a.ph) * 2.2 * g * t; }                                       // the arms that face the glass lift and wave
   const walk = S.crawl ? Math.sin(ph * 1.5 - t * 3.4 + a.ph) : 0;                  // a wave runs down each arm as it pulls
@@ -571,7 +588,9 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   // jetting: every arm gathers back behind the body and flutters
   const jd = [c * 0.18 - 0.9, s * 1.05], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
   const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
-  o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest; return o;
+  o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest;
+  if (wrapW > 0) { o[0] += (wx - o[0]) * wrapW; o[1] += (wy - o[1]) * wrapW; o[2] += (wz - o[2]) * wrapW; }
+  return o;
 };
 const octopus = {
   id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.06,

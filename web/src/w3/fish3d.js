@@ -58,7 +58,7 @@ export class Fish3D {
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
     this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave) this.mobile.push(i); });
-    this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; }
+    this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null; this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; }
     this.setPose(0, true);
     this.group = new THREE.Group(); this.group.add(this.mesh);
     // state
@@ -150,6 +150,8 @@ export class Fish3D {
     }
     this.mesh.instanceColor.needsUpdate = true;
   }
+  // a warm, bright flush (a greeting seahorse changes colour when it meets its partner)
+  applyGlow() { if (this.pale) return; const a = this.mesh.instanceColor.array, b = this.baseCol, k = this.glowK; for (let i = 0; i < a.length; i += 3) { a[i] = Math.min(1, b[i] * (1 + 0.5 * k) + 0.1 * k); a[i + 1] = Math.min(1, b[i + 1] * (1 + 0.35 * k) + 0.05 * k); a[i + 2] = Math.min(1, b[i + 2] * (1 + 0.1 * k)); } this.mesh.instanceColor.needsUpdate = true; }
   // sickness and death drain the colour
   setPale(k) {
     if (k === this.pale) return; this.pale = k; const a = this.mesh.instanceColor.array, b = this.baseCol;
@@ -174,6 +176,16 @@ export class Fish3D {
   // Seahorse: an upright, weak swimmer. It hovers with its dorsal fin blurring, drifts in short steps, bobs gently, never pitches, and likes to hold on to a plant or decoration for a long while.
   hoverUpdate(dt, rng, others) {
     this.tt = (this.tt ?? 0) + dt; const t = this.tt; this.retarget -= dt; this.idle = (this.idle ?? 0) - dt;
+    const G = this.greet;
+    if (G) {                                                                         // the morning greeting: two partners meet at a plant and circle each other, glowing, then part
+      G.t -= dt; G.ang += dt * 0.85 * G.side; const wantX = G.cx + Math.cos(G.ang) * G.r, wantZ = G.cz + Math.sin(G.ang) * G.r * 0.7, wantY = G.y + Math.sin(t * 1.4 + G.side) * 0.12;
+      this.pos.x += (wantX - this.pos.x) * Math.min(1, dt * 1.6); this.pos.y += (wantY - this.pos.y) * Math.min(1, dt * 1.6); this.pos.z += (wantZ - this.pos.z) * Math.min(1, dt * 1.6);
+      let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.5); this.vel.multiplyScalar(Math.exp(-3 * dt));
+      this.glowK += ((G.t > 1.2 ? 1 : 0) - this.glowK) * Math.min(1, dt * 1.2);
+      if (G.t <= 0) { this.greet = null; this.idle = 4 + rng() * 4; this.retarget = 6; this.pickHover(rng); }
+    } else this.glowK += (0 - this.glowK) * Math.min(1, dt * 1.2);
+    if (Math.abs(this.glowK - (this.glowApplied ?? 0)) > 0.03) { this.glowApplied = this.glowK; this.applyGlow(); }
+    if (G) { this.pitch += (Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.phase += dt * 14; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); } return; }
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || this.pos.distanceTo(this.target) < 0.3)) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
     const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : 0.5) * (holding ? 0.06 : 1);
@@ -199,8 +211,9 @@ export class Fish3D {
     if (this.seeking && S.s !== 'jet') { S.s = 'jet'; S.n = 2; S.t = 6; S.pulse = 0; }
     // its mind: a puzzle jar to work on, something new to inspect, or someone it knows to greet at the glass
     const want = this.jarAt ? 'jar' : this.inspect ? 'inspect' : null;
-    if (want && S.mode !== want && S.s !== 'jet' && !this.seeking) { S.mode = want; S.s = 'crawl'; S.t = 16; const p = want === 'jar' ? this.jarAt : this.inspect; this.target.set(p.x - 0.7, floor, p.z + 0.9); }
+    if (want && S.mode !== want && S.s !== 'jet' && !this.seeking) { S.mode = want; S.s = 'crawl'; S.t = 16; const p = want === 'jar' ? this.jarAt : this.inspect; this.target.set(p.x - (want === 'jar' ? 0.55 : 0.7), floor, p.z + (want === 'jar' ? 0.7 : 0.9)); }
     if (!want && S.mode && S.mode !== 'greet') { if (S.mode === 'jar' && S.s === 'work') { this.flush = 1; S.s = 'jet'; S.n = 1; S.pulse = 0; S.t = 5; this.target.set(this.pos.x + (this.pos.x > 0 ? -1 : 1) * 1.5, this.pos.y + 2.5, this.pos.z); } else if (S.s === 'work' || S.s === 'crawl') { S.s = 'rest'; S.t = 3; } S.mode = null; }
+    if (S.mode === 'jar' && this.jarAt) { const sc = this.scale || 0.06, dx = this.jarAt.x - this.pos.x, dz = this.jarAt.z - this.pos.z, ch = Math.cos(this.heading), sh = Math.sin(this.heading); this.rs.jx = (dx * ch - dz * sh) / sc; this.rs.jz = (dx * sh + dz * ch) / sc; this.rs.jr = 0.58 / sc; } else this.rs.jr = 0;
     if (S.s !== 'work') { this.workK += (0 - this.workK) * Math.min(1, dt * 3); this.greetK += (0 - this.greetK) * Math.min(1, dt * 3); }
     if (S.s === 'rest') this.restFor += dt; else this.restFor = 0;
     if (S.s === 'work') {

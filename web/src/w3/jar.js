@@ -1,7 +1,7 @@
 // The puzzle jar: a screw-top glass jar with a crab inside, set on the sand for the octopus to work open. Built from simple lit shapes.
 import * as THREE from 'three';
 
-const glass = new THREE.MeshStandardMaterial({ color: 0xcfeaf4, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.4, depthWrite: false });
+const glass = new THREE.MeshStandardMaterial({ color: 0xbfe2f2, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.5, depthWrite: false });
 const brass = new THREE.MeshStandardMaterial({ color: 0xb5823f, roughness: 0.5, metalness: 0.4, flatShading: true });
 const shell = new THREE.MeshStandardMaterial({ color: 0xe0503a, roughness: 0.7, flatShading: true });
 const eyeM = new THREE.MeshBasicMaterial({ color: 0x14141c });
