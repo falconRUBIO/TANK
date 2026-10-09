@@ -551,29 +551,68 @@ const seahorse = {
 };
 
 // ───────────────────────── Octopus: round head forward, eight trailing arms ─────────────────────────
+// ── Octopus ──
+// A rounded mantle leaning back over a head with two big side eyes, and eight tapering arms that radiate from under the head.
+// Each arm is a rigged tube: a centre line pose(arm, t, state) plus every voxel's offset from it, so the arms can fan out and curl at rest,
+// walk along the floor, and stream back together in a jet, each with its own phase. The same pose() builds the rest model and moves it.
+const OCT = { ax: 3, ay: -3, floor: -9.5, rad0: 3.4, rad1: 1.1 };
+const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
+const octoPose = (a, t, S, o = [0, 0, 0]) => {
+  const c = Math.cos(a.th), s = Math.sin(a.th), ph = S.ph ?? 0, rest = Math.max(0, Math.min(1, (S.rest ?? 1) + (S.crawl ?? 0) * 0.85));
+  // resting: fan outward along the floor with a lazy lateral S-curve and a curled tip
+  const sm = Math.max(0, (t - 0.6) / 0.4), curl = sm * sm * 7.5 * a.curl * (0.85 + 0.15 * Math.sin(ph * 0.5 + a.ph));
+  let r = OCT.ax + 1.5 + a.L * Math.pow(t, 0.92), lat = Math.sin(t * 3.4 + a.ph) * 2.6 * t + Math.sin(ph * 0.9 + a.ph + t * 3) * 0.9 * t;
+  let y = OCT.floor + 1.2 + (OCT.ay - OCT.floor) * Math.exp(-t * 6.2) + curl;
+  const walk = S.crawl ? Math.sin(ph * 1.5 - t * 3.4 + a.ph) : 0;                  // a wave runs down each arm as it pulls
+  if (S.crawl) { y += Math.max(0, walk) * 3.4 * S.crawl * Math.min(1, t * 2.4); r += walk * 1.6 * S.crawl * t; }
+  const rx = OCT.ax + c * r - s * lat, rz = s * r + c * lat;
+  // jetting: every arm gathers back behind the body and flutters
+  const jd = [c * 0.18 - 0.9, s * 0.75], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
+  const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * 2.6 + fl + (S.sq ?? 0) * -t * 1.5;
+  o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest; return o;
+};
 const octopus = {
-  id: 'octopus', label: 'Octopus', move: 'jet', length: 60, vox: 0.06,
+  id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.06,
   make(seed = 1) {
     const rng = mulberry32(seed * 7907 + 3), pals = [[[226, 92, 78], [255, 190, 170]], [[170, 90, 200], [236, 190, 255]], [[60, 150, 200], [180, 236, 255]], [[230, 140, 60], [255, 220, 170]]];
-    const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90];
-    const arms = Array.from({ length: 8 }, (_, i) => { const f = i / 7; return { z0: -3.6 + f * 7.2, ph: rng() * 6, len: 16 + rng() * 14, sw: 1.8 + rng() * 1.8, drop: 3 + f * 26 }; });
-    const armAt = (a, t) => ({ x: -1 - t * a.len, y: -4 - t * a.drop + Math.sin(t * 5 + a.ph) * a.sw * t + Math.pow(t, 3) * 7, z: a.z0 * (1 + t * 1.2) + Math.sin(t * 4 + a.ph * 1.7) * 1.2 * t });
-    const mantle = (x, y, z) => ((x - 3) / 12) ** 2 + ((y - 7) / 12) ** 2 + (z / 9.5) ** 2 <= 1;
-    const eyeAt = (x, y, z) => Math.abs(x - 12) <= 1.5 && Math.abs(y - 7) <= 2 && Math.abs(z) >= 5 && Math.abs(z) <= 8;
+    const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);
+    // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its centre line (so it can be re-posed)
+    const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
+    arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
+      const t = k / 90, rad = OCT.rad0 + (OCT.rad1 - OCT.rad0) * t, R = Math.ceil(rad); octoPose(a, t, REST, P);
+      for (let dx = -R; dx <= R; dx++) for (let dy = -R; dy <= R; dy++) for (let dz = -R; dz <= R; dz++) {
+        const x = Math.round(P[0]) + dx, y = Math.round(P[1]) + dy, z = Math.round(P[2]) + dz, d = Math.hypot(x - P[0], y - P[1], z - P[2]);
+        if (d > rad) continue; const key = x + ',' + y + ',' + z, q = d / rad, old = armV.get(key);
+        if (!old || q < old.q) armV.set(key, { arm: i, at: t, q, off: [x - P[0], y - P[1], z - P[2]], dy: y - P[1], rad });
+      } } });
+    const mantleX = (y) => -5 - (y - 7) * 0.35;
+    const mantle = (x, y, z) => ((x - mantleX(y)) / 9.5) ** 2 + ((y - 7) / 11.5) ** 2 + (z / 8.5) ** 2 <= 1;
+    const head = (x, y, z) => ((x - 3) / 9) ** 2 + ((y - 0.5) / 7) ** 2 + (z / 8.4) ** 2 <= 1;
+    const eyeAt = (x, y, z) => Math.hypot(x - 6.5, y - 3, Math.abs(z) - 7) <= 2.7;
     return {
-      bounds: { x: [-30, 16], y: [-34, 20], z: [-12, 12] }, center: [-6, -2],
-      bend: { pivot: -4, len: 24, amp: 0.2, bob: 1.4 },
+      bounds: { x: [-36, 20], y: [-14, 24], z: [-32, 32] }, center: [0, 0], mantleC: [-3, 6],
+      rig: { arms, pose: octoPose, tipPhase: (x) => x },
+      bend: null,
       sample(x, y, z) {
-        if (mantle(x, y, z)) {
-          if (z !== 0 && Math.abs(x - 11) <= 1 && Math.abs(y - 8) <= 2 && !mantle(x, y, z + (z < 0 ? -1 : 1))) return Math.abs(x - 11) < 1 && Math.abs(y - 9) < 1 ? { c: [255, 255, 255], em: 2 } : { c: [12, 12, 20], em: 1 };
-          const n = fbm(x * 0.22 + off[0], y * 0.22 + off[1], Math.abs(z) * 0.22 + off[2]); let c = mix(skinC, pale, clamp((-(y - 7) / 11) * 0.5 + 0.1)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.35); if (n < 0.34) c = mix(c, [90, 30, 40], 0.35);
-          return { c, tag: 'mantle' };
+        if (eyeAt(x, y, z)) {                                                // a protruding eye: gold ring, black horizontal pupil, tiny glint
+          const az = Math.abs(z), ex = x - 6.5, ey = y - 3;
+          if (az >= 8.6 && Math.abs(ex - 0.8) <= 1.5 && Math.abs(ey) <= 0.6) return { c: [10, 10, 18], em: 1, tag: 'eye' };
+          if (az >= 8.4 && ex > 0.2 && ey > 0.9 && ey < 1.9 && ex < 1.6) return { c: [255, 255, 255], em: 2, tag: 'eye' };
+          return { c: az >= 8.2 ? [236, 178, 70] : mix(skinC, pale, 0.2), tag: 'eye' };
         }
-        if (eyeAt(x, y, z) && !mantle(x, y, z)) return { c: mix(skinC, pale, 0.4), tag: 'mantle' };
-        if (x < 6 && y < 4) for (const a of arms) {
-          // each arm is a tapering tube following its own wavy path
-          const tt = clamp((-2 - x) / a.len); if (x > -1) { if (Math.hypot(y + 4, z - a.z0) < 3.4 && x > -2.5) return { c: skinC, tag: 'arm' }; continue; }
-          const q = armAt(a, tt), rr = 4.2 - tt * 2.8; if (Math.hypot(y - q.y, z - q.z) <= Math.max(1.2, rr)) return { c: y < q.y - rr * 0.35 ? mix(pale, [255, 200, 210], 0.4) : mix(skinC, pale, tt * 0.3), wave: 0.4 + tt * 2.2, tag: 'arm' };
+        const inM = mantle(x, y, z), inH = head(x, y, z);
+        if (inM || inH) {
+          const n = fbm(x * 0.2 + off[0], y * 0.2 + off[1], Math.abs(z) * 0.2 + off[2]), spot = fbm(x * 0.7 + off[1], y * 0.7, Math.abs(z) * 0.7 + off[0]);
+          let c = mix(skinC, pale, clamp((-(y - 4) / 14) * 0.55 + 0.05)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.3); if (n < 0.34) c = mix(c, [96, 34, 46], 0.35);
+          if (spot > 0.66) c = mix(c, [255, 232, 214], 0.45);                  // pale papillae
+          return { c, tag: inM && !inH ? 'mantle' : 'head' };
+        }
+        const k = armV.get(x + ',' + y + ',' + z);
+        if (k) {
+          const tt = k.at, under = k.dy < -k.rad * 0.35, sucker = under && tt > 0.1 && (Math.round(tt * 26) % 2 === 0);
+          let c = under ? mix(pale, [255, 196, 206], 0.35) : mix(skinC, pale, tt * 0.25);
+          if (sucker) c = mix(c, [255, 240, 236], 0.55); if (tt > 0.93) c = mix(c, pale, 0.4);
+          return { c, tag: 'arm', arm: k.arm, at: tt, off: k.off };
         }
         return null;
       },

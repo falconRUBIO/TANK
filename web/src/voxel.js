@@ -16,7 +16,7 @@ export function buildModel(sp) {
     const s = sp.sample(x, y, z);
     if (!s) continue;
     occ[idx(x, y, z)] = 1;
-    list.push({ x, y, z, tag: s.tag, c: s.c, em: s.em || 0, flap: s.flap || 0, wave: s.wave || 0, nx: 0, ny: 0, nz: 1, thin: false });
+    list.push({ x, y, z, tag: s.tag, c: s.c, em: s.em || 0, flap: s.flap || 0, wave: s.wave || 0, arm: s.arm ?? -1, at: s.at ?? 0, off: s.off, nx: 0, ny: 0, nz: 1, thin: false });
   }
   // Smooth normals from a 5x5x5 occupancy gradient so bodies shade like rounded forms.
   const R = 2;
