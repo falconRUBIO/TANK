@@ -21,8 +21,13 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, tank }) {
 
   // the colour of a fish, read from what is on screen right now
   function colorAt(p) {
-    try { probe.clearRect(0, 0, 5, 5); probe.drawImage(tank, Math.round(p[0] * tank.width / W) - 2, Math.round(p[1] * tank.height / H) - 2, 5, 5, 0, 0, 5, 5); const d = probe.getImageData(0, 0, 5, 5).data; let r = 0, gg = 0, b = 0; for (let i = 0; i < 100; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; }
-      const c = [r / 25, gg / 25, b / 25], m = (c[0] + c[1] + c[2]) / 3; return c.map((x) => clamp(m + (x - m) * 1.5 + 8, 30, 255)); } catch { return [255, 150, 60]; }
+    try {
+      const N = 13; probe.canvas.width = probe.canvas.height = N; probe.drawImage(tank, Math.round(p[0] * tank.width / W) - 6, Math.round(p[1] * tank.height / H) - 6, N, N, 0, 0, N, N);
+      const d = probe.getImageData(0, 0, N, N).data, px2 = [];
+      for (let i = 0; i < d.length; i += 4) { const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); px2.push([mx - mn, d[i], d[i + 1], d[i + 2]]); }
+      px2.sort((a, b) => b[0] - a[0]); const top = px2.slice(0, 14); let r = 0, gg = 0, b = 0; for (const q of top) { r += q[1]; gg += q[2]; b += q[3]; }
+      const c = [r / top.length, gg / top.length, b / top.length], m = (c[0] + c[1] + c[2]) / 3; return c.map((x) => clamp(m + (x - m) * 1.35 + 6, 30, 255));
+    } catch { return [255, 150, 60]; }
   }
 
   // ── the fish, drawn flat and soft while it is out of the 3D tank
