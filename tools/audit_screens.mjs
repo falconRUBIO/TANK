@@ -12,8 +12,8 @@ await p.evaluate(() => { const g = window.__game; g.state.flags.tut = 5; g.state
 for (const t of ['care', 'decorate', 'friends']) { await p.click(`nav [data-tab=${t}]`, { force: true }); await shot('05_tab_' + t); }
 await p.click('[data-cat=FISH]').catch(() => {}); await p.waitForTimeout(2500); await shot('06_shop_fish');
 await p.click('nav [data-tab=tank]', { force: true }); await p.waitForTimeout(800);
-await p.click('#gear').catch(() => {}); await shot('07_gear'); await p.keyboard.press('Escape'); await p.mouse.click(195, 300).catch(() => {});
-await p.click('#shells').catch(() => {}); await shot('08_shell_guide'); await p.keyboard.press('Escape'); await p.click('#mok').catch(() => {});
+await p.click('#gear').catch(() => {}); await shot('07_gear'); await p.click('#sheet .x').catch(() => {}); await p.waitForTimeout(600);
+await p.click('#shells').catch(() => {}); await shot('08_shell_guide'); await p.click('#mok').catch(() => {}); await p.waitForTimeout(500);
 await p.evaluate(() => window.__focus?.(0)); await p.waitForTimeout(1500); await shot('09_fish_card');
 await p.evaluate(() => window.__focus?.(null));
 await p.evaluate(() => { const g = window.__game; g.emit('toast', 'A long toast to check how it sits above the bar and below the status area, wrapping on two lines.'); }); await shot('10_toast_long');
