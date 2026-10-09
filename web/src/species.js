@@ -635,6 +635,11 @@ const octopus = {
           c = mix(c, [c[0] * 0.66, c[1] * 0.6, c[2] * 0.62], clamp((y - 1) / 13) * 0.6);   // a darker back, so it stands out against pale sand
           return { c, tag: inM && !inH ? 'mantle' : 'head' };
         }
+        // the underside of the head: a skirt of web where the arms join, a ring of lips and the dark parrot-like beak at the centre, and a short siphon tube on one side
+        { const dx = x - 3, rr = Math.hypot(dx, z);
+          if (y <= -6 && y >= -7 && rr <= 2.6 - (y === -7 ? 0.5 : 0)) { if (rr <= 1.5 && (y <= -7 || dx >= 0.6)) return { c: dx >= 0.8 && y <= -7 ? [26, 14, 16] : [58, 34, 30], tag: 'beak', em: 1 }; return { c: mix([214, 112, 104], pale, 0.1 + 0.1 * Math.sin(Math.atan2(z, dx) * 6)), tag: 'web' }; }                 // lips around a dark beak
+          const rmax = 7.4 - (-4 - y) * 1.6; if (y <= -4 && y >= -7 && rr <= rmax) { const n2 = fbm(x * 0.5 + off[0], y * 0.5, z * 0.5 + off[2]); return { c: mix(mix(skinC, [240, 150, 120], 0.3), [255, 220, 200], n2 > 0.62 ? 0.25 : 0), tag: 'web' }; }                                    // webbing between the arm bases
+          if (x >= 8 && x <= 13 && Math.hypot(y - (-2.4 - (x - 8) * 0.2), z + 4.2) <= 1.6 - (x - 8) * 0.06) return { c: x >= 12 ? mix(skinC, pale, 0.15) : mix(skinC, pale, 0.3), tag: 'head' }; }
         const k = armV.get(x + ',' + y + ',' + z);
         if (k) {
           const tt = k.at, under = k.dy < -k.rad * 0.35, sucker = under && tt > 0.1 && (Math.round(tt * 26) % 2 === 0);
