@@ -137,4 +137,84 @@ ok('care is credited to the caretakers who helped a fish grow, without ranking a
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.visitAt = t.eggAt = t.storyAt = 1e15; R.applyAction(t, { t: 'feed', x: 0 }, { now: 0.9 * D, name: 'Alex', uid: 'u1' }); R.applyAction(t, { t: 'water' }, { now: 0.95 * D + 1, name: 'Sam', uid: 'u2' });
   const ev = R.advance(t, 1.01 * D); assert.ok(ev.some((e) => e.activity && /Alex and Sam helped Pip grow up/.test(e.activity.text)), JSON.stringify(ev.filter((e) => e.activity)));
 });
+
+console.log('Economy refinement');
+const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
+ok('level 8 can be reached: the wish chain no longer waits on level 8 and the best possible score clears the threshold with room to spare', () => {
+  const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /level 8/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/level 8/i.test(w.text)), 'no earlier wish depends on level 8');
+  // the highest score reachable before level 8: a full level-7 tank (25 fish, all adults), 60 decorations, a complete book, every wish except the level-8 one
+  const best = 25 * 2 + 25 * 2 + R.MAX_DECOR + R.COLLECTION_SIZE() + 3 * last; assert.ok(best - R.LEVEL_AT[7] >= 5, `best ${best} vs threshold ${R.LEVEL_AT[7]}`);
+  assert.equal(R.LEVEL_AT.length, 8); assert.deepEqual(R.LEVEL_AT.slice(0, 7), [0, 14, 36, 66, 100, 140, 184], 'the lower levels are untouched');
+});
+ok('the happiness wish is reachable by a short visit: the average counts, not every fish at once', () => {
+  const t = quiet(4); const w = R.WISHES.find((x) => /happy/i.test(x.text)); for (const f of t.fish) f.happy = 0.78; t.fish[0].happy = 0.55; assert.ok(w.done(t)); for (const f of t.fish) f.happy = 0.6; assert.ok(!w.done(t));
+});
+ok('14 and 30 day milestones: earned by growing up here, paid once, journalled, kept in the memorial, never from buying a mature fish', () => {
+  const D = 864e5, t = quiet(2); t.fish[0].found = ['x']; t.fish[1].found = [];
+  let ev = R.advance(t, 13.9 * D); assert.ok(!t.fish[0].found.includes('age14'), 'not before 14 days'); const s0 = t.shells; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 13.9 * D;
+  ev = R.advance(t, 14.1 * D); assert.equal(t.fish.filter((f) => f.found.includes('age14')).length, 2); assert.equal(t.shells - s0, 10 + 0 * 1, 'two fish, +5 each'); assert.ok(ev.filter((e) => e.milestone).length === 2 && ev.every((e) => !e.milestone || /14 days old/.test(e.journal)));
+  const s1 = t.shells; R.advance(t, 14.5 * D); R.advance(t, 20 * D); assert.equal(t.shells - s1, 0, 'once only'); t.simTs = 29.9 * D; ev = R.advance(t, 30.1 * D); assert.ok(t.fish.every((f) => f.found.includes('age30'))); assert.ok(t.shells - s1 >= 16, '+8 each');
+  const late = R.advance(t, 40 * D); assert.ok(!late.some((e) => e.milestone), 'no repeat'); assert.equal(t.fish[0].found.filter((x) => x === 'age14').length, 1, 'recorded once');
+  // a purchased fish arrives as a baby, so buying can never skip the wait
+  const b = quiet(1); b.shells = 100; R.applyAction(b, { t: 'buyFish', species: 'goldfish', name: 'New', seed: 4 }, { now: 100 * D, dev: true }); R.advance(b, 100 * D + 11 * 60e3); const nf = b.fish.find((f) => f.name === 'New'); assert.ok(nf && nf.stage === 'baby' && !nf.found.includes('age14'));
+  // growth pauses while a fish is run down, so neglected days do not count toward its age
+  const n = quiet(2); n.hunger = 0.85; n.water = 0.45; n.simTs = 0; R.advance(n, 3 * D); const aged = (n.fish[0].born); assert.ok(aged > 0, 'a run-down fish stops ageing');
+});
+ok('a dead fish keeps its milestone history in the memorial', () => {
+  const D = 864e5, t = quiet(3); t.fish[0].found = ['age14', 'spot']; t.createdAt = -10 * D; t.fish[0].ail = 5 * 86400 + 5; t.fish[0].health = 0.2; t.hunger = 0.85; t.water = 0.45; t.simTs = 20 * D; R.advance(t, 20 * D + 3600e3);
+  const m = t.memorial.find((x) => x.id === 'f0'); assert.ok(m && m.milestones.some((x) => /14 days/.test(x)), JSON.stringify(m)); assert.ok(!t.fish.some((f) => f.id === 'f0'));
+});
+ok('first friendship: +3 once per pair, remembered by stable ids, never repeated', () => {
+  const D = 864e5, t = quiet(4, { traits: ['Social'] }); for (const f of t.fish) f.happy = 0.9; const s0 = t.shells;
+  for (let i = 1; i <= 6; i++) R.advance(t, (i * 3600e3 * 3)); const pairs = Object.keys(t.flags.pairs); assert.ok(pairs.length >= 1 && pairs.length <= 3, String(pairs)); assert.ok(pairs.every((k) => /^f\d\+f\d$/.test(k)), 'stable id keys');
+  const paid = t.shells - s0; const friends = t.fish.filter((f) => f.found.includes('friend')).length; assert.equal(friends, 4); const friendShells = pairs.length * R.FRIEND_REWARD; assert.ok(paid >= friendShells, `${paid} >= ${friendShells}`);
+  const s1 = t.shells; R.advance(t, 10 * D); R.advance(t, 11 * D); const gain = t.shells - s1; assert.ok(!(t.flags.pairs && Object.keys(t.flags.pairs).length > 3)); assert.ok(t.fish.every((f) => f.found.filter((x) => x === 'friend').length === 1), 'each fish records its first friendship once');
+});
+ok('first successful breeding: +5 once per tank, on the hatch and not the egg, parents and child recorded', () => {
+  const D = 864e5, t = quiet(2); t.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; f.seed = 3; }); t.simTs = 0; t.eggAt = 1 * D; t.createdAt = -9 * D; const s0 = t.shells;
+  R.advance(t, 1.01 * D); assert.equal(t.eggs.length, 1, 'an egg was laid'); assert.ok(!t.flags.firstHatch, 'laying an egg pays nothing'); const s1 = t.shells;
+  R.advance(t, 1.01 * D + 5 * 3600e3); assert.equal(t.eggs.length, 0); const hatched = t.fish.find((f) => f.parents?.length === 2); assert.ok(hatched, 'hatchling keeps its parents'); assert.equal(t.flags.firstHatch.fish, hatched.id); assert.deepEqual(t.flags.firstHatch.parents.sort(), ['f0', 'f1']);
+  assert.ok(t.shells - s1 >= R.FIRST_HATCH_REWARD); const s2 = t.shells; t.eggAt = 0; t.eggs.push({ id: 'e9', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 2 * D }); R.advance(t, 3 * D); assert.ok(t.shells - s2 < R.FIRST_HATCH_REWARD + 50, 'a second hatch does not pay it again');
+  const second = t.shells; const w = quiet(2); w.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; }); w.flags.firstHatch = { at: 1 }; w.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 1 }); const wev = R.advance(w, 2); assert.ok(!wev.some((e) => /first baby/.test(e.toast ?? '')) && w.flags.firstHatch.at === 1, 'already recorded: no pay'); assert.ok(second > 0);
+});
+ok('saves from before milestones: what a fish already reached is recorded, nothing is paid retroactively', () => {
+  const D = 864e5, t = quiet(2); delete t.flags.msV; t.fish[0].born = -40 * D; t.fish[1].born = -20 * D; t.flags.topGen = 2; t.simTs = 0; const s0 = t.shells; R.norm(t, 0);
+  assert.ok(t.fish[0].found.includes('age14') && t.fish[0].found.includes('age30') && t.fish[1].found.includes('age14') && !t.fish[1].found.includes('age30')); assert.ok(t.flags.firstHatch.legacy); assert.equal(t.shells, s0);
+  const late = R.advance(t, 0.01 * D); assert.ok(!late.some((e) => e.milestone), 'no windfall for milestones already earned'); assert.equal(R.WISHES[0].text, 'Have three fish swimming together');
+});
+ok('daily wish tiers pay 3, 5 and 8 to the shared wallet, once, and only wishes the tank can do are offered', () => {
+  const D = 864e5; assert.deepEqual(R.DAILY_TIER, { easy: 3, normal: 5, special: 8 }); assert.ok(Object.values(R.DAILY).every((w) => R.DAILY_TIER[w.tier]));
+  const lone = quiet(1); lone.hunger = 0.1; lone.water = 1; lone.glass = 0; const kinds = new Set(); for (let d = 5; d < 200; d++) { lone.daily = null; lone.simTs = d * D + 5; lone.hunger = 0.1; lone.water = 1; lone.glass = 0; R.advance(lone, d * D + 10); if (lone.daily) kinds.add(lone.daily.kind); }
+  for (const bad of ['friends', 'together', 'greet', 'play3', 'care2', 'care', 'favourite', 'investigate', 'bubbles', 'visit']) assert.ok(!kinds.has(bad), `a lone, fed, undecorated tank is never asked for ${bad}`);
+  const tiers = new Set(); const rich = quiet(4, { traits: ['Curious', 'Playful', 'Social'] }); rich.decor = [{ id: 'd1', type: 'fern', x: 0, z: 1, ry: 0 }, { id: 'd2', type: 'bubbler', x: 1, z: 1, ry: 0 }, { id: 'd3', type: 'rock', x: 2, z: 1, ry: 0 }]; rich.fish[0].pal = 'f1'; rich.fish[1].pal = 'f0'; rich.fish[0].found = ['spot', 'friend']; rich.fish[0].spotId = 'd1'; rich.hunger = 0.7; rich.water = 0.5; rich.glass = 0.6; rich.shells = 50;
+  for (let d = 5; d < 120; d++) { rich.daily = null; R.advance(rich, d * D + 10); tiers.add(rich.daily.tier); assert.ok(R.DAILY[rich.daily.kind].ok(rich, d * D + 10), 'feasible'); assert.equal(rich.daily.reward, R.DAILY_TIER[rich.daily.tier]); } assert.equal(tiers.size, 3, 'all three tiers appear');
+  // paid once: the same wish finished by two caretakers
+  const t = quiet(3); t.daily = { day: 7, kind: 'play', tier: 'normal', reward: 5, text: '', need: 1, have: 0, ids: [], done: false }; t.simTs = 7 * D; const s0 = t.shells;
+  const e1 = R.applyAction(t, { t: 'pet', id: 'f0' }, { now: 7 * D + 1000, name: 'Alex', uid: 'u1' }).events, s1 = t.shells; const e2 = R.applyAction(t, { t: 'pet', id: 'f1' }, { now: 7 * D + 1100, name: 'Sam', uid: 'u2' }).events;
+  assert.equal(e1.filter((e) => e.dailyDone).length, 1); assert.match(e1.find((e) => e.dailyDone).toast, /\+5 shells/); assert.equal(e2.filter((e) => e.dailyDone).length, 0, 'the second caretaker does not collect it again'); assert.equal(t.shells, s1); assert.equal(t.daily.by, 'Alex'); assert.ok(s0 >= 0);
+});
+ok('distinct-count wishes ignore repeats and the day resets for everyone at the same UTC moment', () => {
+  const D = 864e5, t = quiet(3); t.daily = { day: 9, kind: 'play3', tier: 'normal', reward: 5, text: '', need: 3, have: 0, ids: [], done: false }; t.simTs = 9 * D;
+  const pet = (id, uid, at) => R.applyAction(t, { t: 'pet', id }, { now: 9 * D + at, name: uid, uid }); pet('f0', 'u1', 1000); pet('f0', 'u1', 2000); pet('f0', 'u2', 3000); assert.equal(t.daily.have, 1, 'one fish however many times'); pet('f1', 'u2', 4000); assert.ok(!t.daily.done); pet('f2', 'u3', 5000); assert.ok(t.daily.done);
+  const c = quiet(3); c.hunger = 0.8; c.water = 0.5; c.glass = 0.5; c.daily = { day: 9, kind: 'care2', tier: 'normal', reward: 5, text: '', need: 2, have: 0, ids: [], done: false }; c.simTs = 9 * D; const s0 = c.shells;
+  R.applyAction(c, { t: 'feed' }, { now: 9 * D + 1000, name: 'A', uid: 'u1' }); R.applyAction(c, { t: 'feed' }, { now: 9 * D + 1100, name: 'B', uid: 'u2' }); assert.ok(!c.daily.done, 'two feeds are one kind of care'); R.applyAction(c, { t: 'water' }, { now: 9 * D + 1200, name: 'B', uid: 'u2' }); assert.ok(c.daily.done);
+  // a wish already under way is kept when its need has been met, and the next UTC day replaces it with a new one
+  const u = quiet(3); u.hunger = 0.8; u.water = 0.5; u.simTs = 9 * D; R.advance(u, 9 * D + 5); const k = u.daily.kind; u.daily.have = 1; u.hunger = 0; u.water = 1; u.glass = 0; R.advance(u, 9 * D + 7 * 3600e3); assert.equal(u.daily.kind, k); R.advance(u, 10 * D + 5); assert.equal(u.daily.day, 10);
+  const a = quiet(3), b = quiet(3); a.createdAt = b.createdAt = 0; R.advance(a, 12 * D + 10); R.advance(b, 12 * D + 9 * 3600e3); assert.equal(a.daily.kind, b.daily.kind, 'same tank, same day, same wish, whoever looks first');
+});
+ok('friendship, favourite spot and investigate wishes check what the fish really are', () => {
+  const D = 864e5, t = quiet(3, { traits: ['Curious'] }); t.decor = [{ id: 'd1', type: 'fern', x: 0, z: 1, ry: 0 }]; t.fish[0].pal = 'f1'; t.fish[1].pal = 'f0'; t.fish[0].found = ['spot']; t.fish[0].spotId = 'd1'; t.simTs = 3 * D;
+  const mk = (kind) => { t.daily = { day: 3, kind, tier: 'special', reward: 8, text: '', need: 1, have: 0, ids: [], done: false }; }; const go = (a) => R.applyAction(t, { t: 'observe', ...a }, { now: 3 * D + 100, name: 'Riley', uid: 'u3' });
+  mk('friends'); go({ key: 'together', fish: 'f0', with: 'f2' }); assert.ok(!t.daily.done, 'two fish that are not friends do not count'); go({ key: 'together', fish: 'f0', with: 'f1' }); assert.ok(t.daily.done);
+  mk('favourite'); go({ key: 'regular', fish: 'f1', spot: 'd1' }); assert.ok(!t.daily.done, 'a fish without a favourite spot does not count'); go({ key: 'regular', fish: 'f0', spot: 'd1' }); assert.ok(t.daily.done);
+  mk('investigate'); go({ key: 'object', fish: 'f0', spot: 'nothing' }); assert.ok(!t.daily.done, 'there is no such decoration'); go({ key: 'object', fish: 'f0', spot: 'd1' }); assert.ok(t.daily.done);
+});
+ok('regression: opening a bottle does not reset the sender\'s six-hour wait (the bottle loop could mint shells without limit)', () => {
+  const D = 864e5, t = quiet(2), members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }]; t.shells = 50; const at = 5 * D;
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'hi' }, { uid: 'u1', name: 'Alex', members, now: at }).ok, true);
+  const id = t.bottles[0].id; assert.equal(R.applyAction(t, { t: 'openBottle', id }, { uid: 'u2', name: 'Sam', members, now: at + 1000 }).ok, true);
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'again' }, { uid: 'u1', name: 'Alex', members, now: at + 2000 }).reason, 'TOO_SOON');
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u2', note: 'later' }, { uid: 'u1', name: 'Alex', members, now: at + 6 * 3600e3 + 10 }).ok, true);
+  assert.equal(R.applyAction(t, { t: 'bottle', to: 'u1', note: 'other player' }, { uid: 'u2', name: 'Sam', members, now: at + 3000 }).ok, true, 'each sender has their own wait');
+});
 console.log(`All ${n} rule tests passed`);

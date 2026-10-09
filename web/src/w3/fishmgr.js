@@ -88,9 +88,9 @@ export class Fishes {
     if (now - (this.cool.get(k) ?? -1e9) < cool) return; this.cool.set(k, now); this.onObserve?.({ key, fish: f.fid, ...extra });
   }
   wants(f, key, other) {
-    const kind = this.dailyKind?.(), sightFor = { together: 'together', visit: 'visit', regular: 'visit', object: 'visit', hideaway: 'visit', bubbles: 'bubbles' }[key];
+    const kind = this.dailyKind?.(), sightFor = { together: ['together', 'friends'], visit: ['visit'], regular: ['visit', 'favourite'], object: ['visit', 'investigate'], hideaway: ['visit'], bubbles: ['bubbles'] }[key];
     const known = key === 'together' ? other && f.disc?.['together:' + other.fid] : f.disc?.[key];
-    return !known || (sightFor && sightFor === kind);
+    return !known || (sightFor && sightFor.includes(kind));
   }
   observe(dt, t) {
     if (document.hidden || !this.onObserve) return; dt = Math.min(dt, 0.1); const spots = this.spots?.() ?? [], live = this.list.filter((f) => !f.dead && !f.visitor && !f.weak);
