@@ -112,7 +112,7 @@ addEventListener('pointerup', async () => {
   if (left / (d.length / 16) * 6 < 0.06) { cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
-const wc = makeWaterChange({ canvas: $('wc'), camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx });
+const wc = makeWaterChange({ canvas: $('wc'), tank: stg.canvas, camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx });
 async function changeWater() {
   if (wc.active) return;
   if (game.state.water >= 0.7) { ui.toast('The water is already fresh'); return; }
