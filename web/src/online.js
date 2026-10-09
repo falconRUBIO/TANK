@@ -170,6 +170,7 @@ export async function pushState() {
   const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription();
   return sub && Notification.permission === 'granted' ? 'on' : 'off';
 }
+export const pushTest = () => api('/api/push/test', {});
 export async function pushToggle(on) {
   const reg = await navigator.serviceWorker.ready;
   if (!on) { const sub = await reg.pushManager.getSubscription(); if (sub) { await api('/api/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); } return 'off'; }

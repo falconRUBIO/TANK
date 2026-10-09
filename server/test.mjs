@@ -399,6 +399,15 @@ await t('a phone that lost its sign-in takes its seat back with the tank code', 
   assert.equal((await call('/api/me', null, a.token)).status, 401); const me = await call('/api/me', null, r.body.token); assert.equal(me.body.tank.id, tk.id);
   assert.equal((await call('/api/claim', { code: tk.code, slot: 2 })).status, 404); assert.equal((await call('/api/claim', { code: 'ZZZZZZ', slot })).status, 404);
 });
+await t('push: the server makes and keeps its own keys, and a test notification reaches the phone even at night', async () => {
+  const { vapidFor } = await import('./push.mjs'); const { openDb } = await import('./db.mjs'); const d = openDb(':memory:');
+  const k1 = vapidFor(d, {}), k2 = vapidFor(d, {}); assert.ok(k1.publicKey && k1.privateKey); assert.equal(k1.publicKey, k2.publicKey, 'kept, not remade');
+  assert.equal(vapidFor(d, { VAPID_PUBLIC: 'A', VAPID_PRIVATE: 'B' }).publicKey, 'A');
+  const u = await mkUser('Tester'); assert.equal((await call('/api/push/test', {}, u.token)).body.sent, false, 'no subscription, nothing sent');
+  const sub = { endpoint: 'https://push.example/test1', keys: { p256dh: 'k1', auth: 'k2' } };
+  await call('/api/push/subscribe', { subscription: sub, offset: 0 }, u.token); S.db.prepare('UPDATE push_subs SET offset_min=? WHERE user_id=?').run(((3 - new Date().getUTCHours()) * 60 + 1440) % 1440 - 0, u.userId);
+  pushed.length = 0; const r = await call('/api/push/test', {}, u.token); assert.equal(r.body.sent, true); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /test/i);
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

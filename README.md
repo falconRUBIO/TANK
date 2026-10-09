@@ -50,9 +50,11 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 - Every action carries an idempotency key, so a retry or a double tap never pays or charges twice. Two players spending the last shells at the same time: exactly one purchase succeeds.
 - Identity is an anonymous account token kept in the browser (only its hash is stored).
 
-## Notifications (optional)
+## Notifications
 
-Off until the server has a key pair. Generate one with `npx web-push generate-vapid-keys`, then set three environment variables on the server: `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` (a `mailto:` address you own). Players then get a Notifications switch in Settings. On iPhone it only appears after the game is added to the Home Screen (Share, then Add to Home Screen). Rules: opt in per phone, at most two a day per person, nothing between 22:00 and 08:00 their local time, and only for a rare visitor, a fish or egg arriving, a nudge or a bottle (never for a thank-you or a death).
+They work with no setup: the server makes its own key pair the first time it starts and keeps it in the database (set `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` yourself only if you want to bring your own). Keep the disk attached, or phones will have to switch notifications back on after a redeploy. Players get a Notifications switch in Settings, plus a "Send a test" button to check that they arrive. At most one a day, never between 22:00 and 08:00 their time, never a "come back" reminder.
+
+On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Our Tank from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later.
 
 ## Usage tracking and the developer view
 
