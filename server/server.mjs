@@ -32,12 +32,13 @@ function sendStatic(req, res, file) {
 
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 function dashboardHtml(st) {
+  const dataSince = st.meta?.dataSince ?? '', dbPathShown = st.meta?.db ?? '';
   const row = (k, v) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`, p = st.players, tk = st.tanks;
   const series = (a) => a.length ? a.slice(-14).map((d) => `${d.day.slice(5)}: ${d.n}`).join(' · ') : 'no data yet';
   const ret = (r) => (r.pct == null ? 'not enough data' : `${r.pct}% (${r.returned} of ${r.eligible})`);
   return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OUR TANK developer view</title>
 <style>body{font:14px -apple-system,system-ui,sans-serif;background:#0a1220;color:#dbe8f7;margin:0;padding:20px;max-width:760px;margin-inline:auto}h1{font-size:18px;letter-spacing:.1em}h2{font-size:12px;letter-spacing:.14em;color:#7e93ad;margin:26px 0 8px}table{width:100%;border-collapse:collapse}td{padding:6px 8px;border-bottom:1px solid #1d2c44}td:last-child{text-align:right;font-variant-numeric:tabular-nums}p{color:#7e93ad;font-size:12px}</style>
-<h1>OUR TANK · developer view</h1><p>Last ${st.window.days} days from ${esc(st.window.from)} · ${st.window.events} events · random ids only, no names or message text.</p>
+<h1>OUR TANK · developer view</h1><p>Data since: ${esc(dataSince)} · database file: ${esc(dbPathShown)} (if "data since" keeps resetting to the last deploy, the disk is not attached)</p><p>Last ${st.window.days} days from ${esc(st.window.from)} · ${st.window.events} events · random ids only, no names or message text.</p>
 <h2>PLAYERS (individual)</h2><table>${row('Distinct players', p.distinctPlayers)}${row('Sessions', p.sessions)}${row('Average session', p.avgSessionSeconds + ' s')}${row('Visits per player per active day', p.visitsPerPlayerPerActiveDay)}${row('Median hours between visits', p.medianHoursBetweenVisits)}${row('Actions per session', p.actionsPerSession)}${row('Sessions with care', p.sessionsWithCarePct + '%')}${row('Sessions with fish interaction', p.sessionsWithFishInteractionPct + '%')}${row('Sessions with decoration', p.sessionsWithDecorationPct + '%')}${row('Sessions with social interaction', p.sessionsWithSocialPct + '%')}${row('Retention, day 1', ret(p.retention.day1))}${row('Retention, day 7', ret(p.retention.day7))}${row('Retention, day 30', ret(p.retention.day30))}</table>
 <p>Daily active players: ${esc(series(p.dailyActive))}</p>
 <h2>TANKS (shared)</h2><table>${row('Tanks in total', tk.tanksTotal)}${row('Avg active caretakers per tank per day', tk.avgActiveCaretakersPerTankDay)}${row('Tank-days with 2+ players', tk.tankDaysWithTwoOrMorePlayersPct + '%')}${row('Discoveries unlocked', tk.discoveries)}${row('Daily wishes completed', tk.dailyWishesCompleted)}${row('Friend interactions', tk.friendInteractions)}${row('Fish deaths', tk.fishDeaths)}${row('Level distribution', Object.entries(tk.levelDistribution).map(([l, n]) => `L${l}: ${n}`).join(' · ') || 'none')}</table>
@@ -134,7 +135,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (!key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
       const st = an.stats(Date.now(), +url.searchParams.get('days') || 30);
       if (url.pathname === '/admin/stats') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify(st, null, 1)); }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); return res.end(dashboardHtml(st));
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); const first = db.prepare('SELECT MIN(created_at) f FROM users').get().f; return res.end(dashboardHtml({ ...st, meta: { dataSince: first ? new Date(first).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'no players yet', db: dbPath } }));
     }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel = decodeURIComponent(url.pathname);
@@ -254,5 +255,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const s = await start({ port: +process.env.PORT || 8080, dbPath: process.env.DB || 'ourtank.db' });
   console.log(`OUR TANK listening on http://localhost:${s.port}`);
+  const dbFile = path.resolve(process.env.DB || 'ourtank.db'), users = s.db.prepare('SELECT COUNT(*) n, MIN(created_at) first FROM users').get();
+  console.log(`database: ${dbFile} (${users.n} players${users.first ? ', oldest from ' + new Date(users.first).toISOString() : ', empty'})`);
+  if (process.env.RENDER && !dbFile.startsWith('/data/')) console.warn('WARNING: the database is not on the persistent disk (/data). Tanks and recovery keys will be lost on every deploy or restart. Set DB=/data/ourtank.db and attach a disk mounted at /data.');
+  else if (process.env.RENDER && !fs.existsSync('/data/.persist-check')) { try { fs.writeFileSync('/data/.persist-check', String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
   for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('shutting down'); try { s.backup(); await s.close(); } finally { process.exit(0); } });
 }

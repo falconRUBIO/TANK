@@ -25,10 +25,12 @@ export class Live {
     const url = (base || location.origin).replace(/^http/, 'ws') + '/ws?token=' + session.token;
     const ws = (this.ws = new WebSocket(url));
     ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
-    ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
+    ws.onmessage = (e) => { this.lastMsg = Date.now(); const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
     ws.onclose = () => { this.onStatus(false); if (!this.closed) setTimeout(() => this.open(), Math.min(8000, 800 * 2 ** this.retry++)); };
     ws.onerror = () => ws.close();
   }
+  // A phone that was asleep can hold a dead connection that still looks open. Start a fresh one; the server answers with the current tank.
+  resync() { const old = this.ws; old.onclose = null; try { old.close(); } catch { /* already closed */ } this.onStatus(false); this.retry = 0; this.open(); }
   action(t, extra = {}) { const m = { t, idem: crypto.randomUUID().slice(0, 18), ...extra }; this.pending.set(m.idem, m); if (this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); return m.idem; }
   send(m) { if (this.ws.readyState === 1) { this.ws.send(JSON.stringify(m)); return true; } return false; }
   chat(text) { if (this.ws.readyState === 1) this.ws.send(JSON.stringify({ t: 'chat', text })); }

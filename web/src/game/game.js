@@ -42,7 +42,18 @@ export class Game {
   }
 
   // ── shared ──
-  attachNet(live, { user, tank }) { this.mode = 'net'; this.live = live; this.you = { userId: user.id }; this.code = tank.code; this.tankName = tank.name; }
+  attachNet(live, { user, tank }) {
+    this.mode = 'net'; this.live = live; this.you = { userId: user.id }; this.code = tank.code; this.tankName = tank.name;
+    // Shared tanks are decided by the server, but the screen still has to move: countdowns tick every second, and a phone that slept (or missed
+    // something due) asks for a fresh copy instead of staring at "1 min" forever.
+    const tries = {}; let lastSync = Date.now(); const resync = () => { if (Date.now() - lastSync < 8000) return; lastSync = Date.now(); live.resync(); };
+    this.tick = setInterval(() => {
+      this.emit('tick'); const s = this.state; if (!s || document.hidden) return;
+      const due = Math.min(...(s.orders ?? []).map((o) => o.arrivesAt), ...(s.eggs ?? []).map((e) => e.hatchAt), Infinity);
+      if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 3) resync();      // a phone clock far ahead of the server must not reconnect forever
+    }, 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
+  }
   onNet(m) {
     if (m.t === 'snapshot') {
       const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);

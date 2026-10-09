@@ -63,3 +63,6 @@ The server records anonymous events (a random player id, a random tank id, an ev
 - No App Store build. iPhone haptics are not available to web apps (Android vibrates).
 - Recovery: every account has a recovery key (shown when you create a tank, and under Settings). Typing it on a new phone signs you back in and retires the old phone's token. Without the key, clearing browser data loses the identity.
 - One server instance. The database keeps a rolling backup next to it (`ourtank.db.backup`, every six hours and on shutdown).
+
+## If a tank or recovery key "disappears"
+That means the server started with an empty database. On Render the database must live on the persistent disk: the service needs a disk mounted at `/data` and the environment variable `DB=/data/ourtank.db` (the blueprint in `render.yaml` does both, and needs a paid plan). Without a disk every deploy or restart wipes all tanks and recovery keys. The server log prints the database path and the number of players it found at start, and warns when it is not on `/data`; the developer page (`/admin`) shows "Data since", which should not reset after a deploy.
