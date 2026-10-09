@@ -565,6 +565,7 @@ const seahorse = {
 // walk along the floor, and stream back together in a jet, each with its own phase. The same pose() builds the rest model and moves it.
 const OCT = { ax: 3, ay: -3, floor: -9.5, rad0: 3.4, rad1: 1.1 };
 const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ i, th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
+const GAIT = [0, 0.5, 0.25, 0.75, 0.5, 0, 0.75, 0.25];
 const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const c = Math.cos(a.th), s = Math.sin(a.th), ph = S.ph ?? 0, rest = Math.max(0, Math.min(1, (S.rest ?? 1) + (S.crawl ?? 0) * 0.85));
   // resting: fan outward along the floor with a lazy lateral S-curve and a curled tip
@@ -583,9 +584,15 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   if (S.work) { const w = S.work; lat += Math.sin(ph * 2 + a.ph + t * 4) * 2.6 * w * t; y += (0.5 + 0.5 * Math.sin(ph * 1.4 + a.ph)) * 3.4 * w * t; r *= 1 - 0.38 * w * (0.4 + 0.6 * Math.abs(Math.sin(a.ph))); }   // working on something: arms pulled in, probing and wrapping
   if (S.greet && c > -0.2) { const g = S.greet; y += g * t * t * 14 * (0.7 + 0.3 * Math.sin(a.ph)); lat += Math.sin(ph * 2.2 + a.ph) * 2.2 * g * t; }                                       // the arms that face the glass lift and wave
   if (S.glass > 0.02) { const gk = S.glass; y = OCT.floor + 1.2 + (y - OCT.floor - 1.2) * (1 - 0.85 * gk); lat += Math.sin(ph * 1.6 + a.ph) * 0.9 * gk * t; r *= 1 + 0.05 * Math.sin(ph * 1.2 + a.ph) * gk; }   // pressed flat on the glass, the suckers shifting a little
-  const walk = S.crawl ? Math.sin(ph * 1.5 - t * 3.4 + a.ph) : 0;                  // a wave runs down each arm as it pulls
-  if (S.crawl) { y += Math.max(0, walk) * 3.4 * S.crawl * Math.min(1, t * 2.4); r += walk * 1.6 * S.crawl * t; }
-  const rx = OCT.ax + c * r - s * lat, rz = s * r + c * lat;
+  // walking is a gait, not a wave: each arm plants its tip on the floor (it sticks, and the body moves over it), then peels up, curls and swings forward to plant again; the arms are out of step
+  // with each other, the front ones reach and pull, the rear ones mostly drag, and each octopus has its own stride
+  let gx = 0;
+  if (S.crawl > 0.02) {
+    const u = (ph * 0.15 + GAIT[a.i] + (a.ph * 0.02)) % 1, STANCE = 0.6, stride = (c > -0.3 ? 9 : 5.5) * (S.stride ?? 1); let dx, lift = 0;
+    if (u < STANCE) dx = stride * (0.5 - u / STANCE); else { const q = (u - STANCE) / (1 - STANCE), e = q * q * (3 - 2 * q); dx = -stride / 2 + stride * e; lift = Math.sin(Math.PI * q) * (c > -0.3 ? 6 : 3.4); }
+    const w = Math.pow(t, 1.3) * S.crawl; gx = dx * w; y += lift * w * (1 + 0.6 * t) + (lift > 0 ? Math.pow(t, 3) * lift * 0.5 : 0) * S.crawl;      // the tip curls up as the arm lifts
+  }
+  const rx = OCT.ax + c * r - s * lat + gx, rz = s * r + c * lat;
   // jetting: every arm gathers back behind the body and flutters
   const jd = [c * 0.18 - 0.9, s * 1.05], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
   const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
@@ -595,6 +602,11 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   if (mind && mind.k > 0.01) {                                                                 // this arm is exploring on its own: its tip goes where it is curious about, the rest of the arm follows
     const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), dx = mind.x - tip[0], dy = mind.y - tip[1], dz = mind.z - tip[2], L = Math.hypot(dx, dy, dz) || 1, cap = Math.min(1, 24 / L), q = Math.max(0, (t - 0.2) / 0.8), w = mind.k * q * q * (3 - 2 * q);
     o[0] += dx * cap * w; o[1] += dy * cap * w + Math.sin(Math.PI * t) * 3.4 * mind.k * (1 - rest * 0.3) * (1 - (S.glass ?? 0)); o[2] += dz * cap * w;
+  }
+  const G = S.grab;                                                                            // catching something: the nearest arm reaches it, its neighbours cup in beside it
+  if (G && G.w > 0.01) {
+    let T = null, wt = 0; if (a.i === G.arm) { T = G.p; wt = 1; } else if (a.i === G.n1 || a.i === G.n2) { T = [G.p[0] - 0.6, G.p[1] + 0.4, G.p[2] + (a.i === G.n1 ? 2.6 : -2.6)]; wt = 0.55; }
+    if (T) { const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), q = Math.max(0, (t - 0.12) / 0.88), w = G.w * wt * q * q * (3 - 2 * q); o[0] += (T[0] - tip[0]) * w; o[1] += (T[1] - tip[1]) * w; o[2] += (T[2] - tip[2]) * w; }
   }
   return o;
 };

@@ -63,7 +63,7 @@ export class Fish3D {
     this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null;
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
-    this.sleepK = 0; this.blinkK = 0; this.blinkNext = 3 + Math.random() * 5; this.wakeT = 0; this.isNight = false; this.mw = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.mwA = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.scareT = 0; this.annoyT = 0; this.pokes = 0; this.pokeT = 0; this.bump = 0; this.fondFocus = false; this.carryMesh = null;
+    this.stride = 0.85 + (((seed | 0) % 7) / 7) * 0.4; this.rs.stride = this.stride; this.gr = null; this.sleepK = 0; this.blinkK = 0; this.blinkNext = 3 + Math.random() * 5; this.wakeT = 0; this.isNight = false; this.mw = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.mwA = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.scareT = 0; this.annoyT = 0; this.pokes = 0; this.pokeT = 0; this.bump = 0; this.fondFocus = false; this.carryMesh = null;
     { let sy = 0, n = 0; for (const v of this.vox) { if (v.tag === 'eye') { sy += v.y; n++; } v.pap = species.move === 'jet' && h3(v.x * 3, v.y * 5 + 1, v.z * 7) > 0.7; } this.eyeY = n ? sy / n : 0; } this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; }
     this.setPose(0, true);
     this.group = new THREE.Group(); this.group.add(this.mesh);
@@ -92,7 +92,7 @@ export class Fish3D {
       if (jet && v.tag === 'eye') { const lid = Math.max(this.sleepK * 0.92, this.blinkK); if (lid > 0.02) y = this.eyeY + (y - this.eyeY) * (1 - 0.88 * lid); }
       if (jet) {                                                           // octopus: arms spread flat at rest and stream back tight in a jet, the mantle squeezes with each pulse
         if (v.arm >= 0 && this.rig) {                                      // a rigged arm: its centre line is posed for the current state and the voxel keeps its offset from it
-          const S = this.rs; S.rest = this.restK; S.crawl = this.crawlK; S.sq = this.sq; S.ph = phase; S.work = this.workK; S.greet = this.greetK; S.glass = this.glassNear; this.rig.pose(this.rig.arms[v.arm], v.at, S, this.rp);
+          const S = this.rs; S.rest = this.restK; S.crawl = this.crawlK; S.sq = this.sq; S.ph = phase; S.work = this.workK; S.greet = this.greetK; S.glass = this.glassNear; S.stride = this.stride; this.rig.pose(this.rig.arms[v.arm], v.at, S, this.rp);
           const k = 1 - 0.2 * this.sq; x = this.rp[0] + v.off[0] * k; y = this.rp[1] + v.off[1] * k; z = this.rp[2] + v.off[2] * k;
         }
         else if (v.tag === 'arm') { z *= 1 + 0.75 * this.restK + 0.35 * this.crawlK - 0.62 * this.sq; y = y * (1 - 0.42 * this.restK - 0.2 * this.crawlK - 0.3 * this.sq) - 1.2 * this.restK; if (this.crawlK) y += Math.sin(phase * 1.3 + z * 0.5) * 0.9 * this.crawlK * (v.wave || 0); }
@@ -130,6 +130,27 @@ export class Fish3D {
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0]));
     for (let tries = 0; tries < 10 && Fish3D.world.push; tries++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
     this.retarget = 3 + rng() * 5;
+  }
+  // catching a crab: the nearest arm reaches out, closes on it, carries it under the head to the beak, and it is eaten. The arm tip is steered toward each stage's target,
+  // and the crab rides on the real tip of the arm.
+  updateGrab(dt, S) {
+    const h = this.hunt, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), rig = this.rig; if (!h || !rig) return;
+    const dx = h.x - this.pos.x, dz = h.z - this.pos.z, C = [(dx * ch - dz * sh) / sc, (0.2 - this.pos.y) / sc, (dx * sh + dz * ch) / sc], M = [4, -6.6, 0];
+    let G = this.rs.grab; if (!G) {
+      const ang = Math.atan2(C[2], C[0] - 3); let best = 0, bd = 9; rig.arms.forEach((a, i) => { const d = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (d < bd) { bd = d; best = i; } });
+      const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0 };
+    }
+    if (h.y > 0.25) { G.t = 0; G.w = 0; return; }                                                            // wait for the crab to land
+    G.t += dt; const t = G.t, e = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+    let T; if (t < 1.1) { const q = e(t / 1.1); T = [G.p0[0] + (C[0] - G.p0[0]) * q, G.p0[1] + (C[1] - G.p0[1]) * q + Math.sin(q * Math.PI) * 3, G.p0[2] + (C[2] - G.p0[2]) * q]; }
+    else if (t < 1.5) T = C; else if (t < 2.8) { const q = e((t - 1.5) / 1.3); T = [C[0] + (M[0] - C[0]) * q, C[1] + (M[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (M[2] - C[2]) * q]; } else T = M;
+    G.w = Math.min(1, t / 0.3) * (t > 3.3 ? Math.max(0, 1 - (t - 3.3) / 0.35) : 1);
+    const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp); G.p[0] += (T[0] - tip[0]) * Math.min(1, dt * 6); G.p[1] += (T[1] - tip[1]) * Math.min(1, dt * 6); G.p[2] += (T[2] - tip[2]) * Math.min(1, dt * 6);
+    if (t > 1.3 && h.mesh) {                                                                                 // the crab is in the arm's grip
+      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch); h.mesh.rotation.z = Math.min(0.7, (t - 1.3) * 0.6);
+      if (t > 2.8) h.mesh.scale.setScalar(Math.max(0.01, 1.15 * (1 - (t - 2.8) / 0.5)));
+    }
+    if (t >= 3.65) { S.t = 0; }
   }
   // being poked: a few taps in a row and he gets annoyed (dark skin, a squirt); something sudden makes him startle, pale, and jet away
   poke() { this.wakeT = 6; this.pokes++; this.pokeT = 12; if (this.pokes >= 4) { this.pokes = 0; this.annoyT = 8; return true; } return false; }
@@ -246,6 +267,7 @@ export class Fish3D {
       to.multiplyScalar(Math.min(2.4, 0.5 + d * 0.9) / d); this.vel.lerp(to, Math.min(1, dt * 2.2)); this.restK += (1 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 3);
       this.glassNear += ((1 - Math.max(0, Math.min(1, (d - 0.15) / 2.2))) - this.glassNear) * Math.min(1, dt * 3); if (d < 0.35) this.vel.multiplyScalar(Math.exp(-6 * dt));
     } else this.glassNear *= Math.exp(-dt * 2.5);
+    if (S.s === 'work' && S.mode === 'hunt' && this.hunt) this.updateGrab(dt, S); else if (this.rs.grab) { this.rs.grab = null; this.gr = null; }
     if (S.s === 'work') {
       const jar = S.mode === 'jar' ? this.jarAt : S.mode === 'hunt' ? this.hunt : S.mode === 'inspect' ? this.inspect : null;
       this.vel.multiplyScalar(Math.exp(-4 * dt)); this.restK += (0.7 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
@@ -271,7 +293,7 @@ export class Fish3D {
         if (S.mode === 'den') { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 12; }
         else if (S.mode === 'carry1') { S.mode = 'carry2'; if (this.carryMesh) this.carryMesh.visible = true; S.t = 14; this.target.set(this.den.x + (rng() - 0.5) * 0.7, floor, this.den.z + 0.95); }
         else if (S.mode === 'carry2') { S.mode = null; if (this.carryMesh) this.carryMesh.visible = false; this.onDrop?.(this.pos); S.s = 'rest'; S.t = 6 + rng() * 8; }
-        else if (S.mode && d < 1.2) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1.8 : 1e9; if (S.mode === 'inspect') this.inspectBlend = rng() < 0.45; }
+        else if (S.mode && d < 1.2) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1e9 : 1e9; if (S.mode === 'inspect') this.inspectBlend = rng() < 0.45; }
         else { if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 4 + rng() * 8; }
       }
     } else if (S.s === 'jet') {
