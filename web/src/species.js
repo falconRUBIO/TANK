@@ -567,8 +567,8 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   if (S.crawl) { y += Math.max(0, walk) * 3.4 * S.crawl * Math.min(1, t * 2.4); r += walk * 1.6 * S.crawl * t; }
   const rx = OCT.ax + c * r - s * lat, rz = s * r + c * lat;
   // jetting: every arm gathers back behind the body and flutters
-  const jd = [c * 0.18 - 0.9, s * 0.75], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
-  const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * 2.6 + fl + (S.sq ?? 0) * -t * 1.5;
+  const jd = [c * 0.18 - 0.9, s * 1.05], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
+  const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
   o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest; return o;
 };
 const octopus = {
@@ -587,7 +587,7 @@ const octopus = {
       } } });
     const mantleX = (y) => -5 - (y - 7) * 0.35;
     const mantle = (x, y, z) => ((x - mantleX(y)) / 9.5) ** 2 + ((y - 7) / 11.5) ** 2 + (z / 8.5) ** 2 <= 1;
-    const head = (x, y, z) => ((x - 3) / 9) ** 2 + ((y - 0.5) / 7) ** 2 + (z / 8.4) ** 2 <= 1;
+    const head = (x, y, z) => { const lo = Math.max(0, (-1.5 - y) / 5), w = Math.max(0.25, 1 - lo * lo * 0.75); return ((x - 3) / (9 * w)) ** 2 + ((y - 0.5) / 7) ** 2 + (z / (8.4 * w)) ** 2 <= 1; };   // the underside tapers to a neck, so nothing flat hangs out when the arms are away
     const eyeAt = (x, y, z) => Math.hypot(x - 6.5, y - 3, Math.abs(z) - 7) <= 2.7;
     return {
       bounds: { x: [-36, 20], y: [-14, 24], z: [-32, 32] }, center: [0, 0], mantleC: [-3, 6],
@@ -605,12 +605,13 @@ const octopus = {
           const n = fbm(x * 0.2 + off[0], y * 0.2 + off[1], Math.abs(z) * 0.2 + off[2]), spot = fbm(x * 0.7 + off[1], y * 0.7, Math.abs(z) * 0.7 + off[0]);
           let c = mix(skinC, pale, clamp((-(y - 4) / 14) * 0.55 + 0.05)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.3); if (n < 0.34) c = mix(c, [96, 34, 46], 0.35);
           if (spot > 0.66) c = mix(c, [255, 232, 214], 0.45);                  // pale papillae
+          c = mix(c, [c[0] * 0.66, c[1] * 0.6, c[2] * 0.62], clamp((y - 1) / 13) * 0.6);   // a darker back, so it stands out against pale sand
           return { c, tag: inM && !inH ? 'mantle' : 'head' };
         }
         const k = armV.get(x + ',' + y + ',' + z);
         if (k) {
           const tt = k.at, under = k.dy < -k.rad * 0.35, sucker = under && tt > 0.1 && (Math.round(tt * 26) % 2 === 0);
-          let c = under ? mix(pale, [255, 196, 206], 0.35) : mix(skinC, pale, tt * 0.25);
+          let c = under ? mix(pale, [255, 196, 206], 0.35) : mix([skinC[0] * 0.82, skinC[1] * 0.78, skinC[2] * 0.8], pale, tt * 0.2);
           if (sucker) c = mix(c, [255, 240, 236], 0.55); if (tt > 0.93) c = mix(c, pale, 0.4);
           return { c, tag: 'arm', arm: k.arm, at: tt, off: k.off };
         }
