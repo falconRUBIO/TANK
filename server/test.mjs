@@ -10,7 +10,7 @@ const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
 const pushed = [];
-const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
+const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000, actionsPer10s: 500 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
 const base = `http://localhost:${S.port}`;
 L_tick = () => tickTank(S.db, tank.id);
 const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
@@ -149,6 +149,13 @@ await t('reconnecting restores the same authoritative state', async () => {
   wb.close(); await new Promise((r) => setTimeout(r, 50)); const wb2 = await open(b.token); const s = await waitFor(wb2, (m) => m.t === 'snapshot');
   assert.equal(s.tank.shells, getW(tank.id).shells); assert.ok(s.journal.length >= 2); wb2.close();
 });
+await t('a brand new tank is empty; its creator chooses and names the first fish, which arrives and is theirs', async () => {
+  let w = getW(tank.id); assert.equal(w.fish.length, 0, 'no fish in a new tank'); assert.deepEqual(w.seen.fish, []);
+  const wa = await open(a.token), send = async (m) => { wa.send(JSON.stringify(m)); return waitFor(wa, (x) => x.t === 'ack' && x.idem === m.idem); };
+  const r = await send({ t: 'chooseFirst', species: 'goldfish', name: 'Pip', seed: 3, idem: 'cf1' }); assert.equal(r.ok, true);
+  w = getW(tank.id); assert.equal(w.fish.length, 1); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.fish[0].owner, a.userId); assert.equal(w.fish[0].ownerName, 'Alex'); assert.ok(w.flags.firsts[a.userId]);
+  assert.equal((await send({ t: 'chooseFirst', species: 'octopus', name: 'Two', idem: 'cf2' })).reason, 'ALREADY_HAVE', 'once'); wa.close();
+});
 await t('while players are connected the tank grows up and everyone is told', async () => {
   const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 1.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
   const r = L_tick(); assert.ok(r.events.some((e) => e.grew === pip.id), JSON.stringify(r.events.map((e) => e.journal?.text)));
@@ -160,7 +167,7 @@ await t('absence is bounded: 10 days away never starves the tank', async () => {
 });
 
 console.log('Shop & progression');
-await t('a new tank starts with Pip, no decor yet and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
+await t('a new tank has the chosen first fish, no decor yet and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
 const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {
@@ -262,6 +269,7 @@ await t('three caretakers, one tank: seats, first fish ownership, and the world 
   const tk = (await call('/api/tanks', { name: 'Regress' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200); assert.equal((await call('/api/join', { code: tk.code }, z.token)).status, 200);
   assert.equal((await call('/api/join', { code: tk.code }, q.token)).status, 409, 'a fourth is refused');
   setW(tk.id, { level: 5 }); const wx = await open(x.token), wy = await open(y.token), wz = await open(z.token);
+  assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'goldfish', name: 'Pip', seed: 5, idem: 'r-x0' })).ok, true, 'the creator chooses first');
   assert.equal((await ackOf(wy, { t: 'firstFish', name: 'YuiFish', seed: 11, idem: 'r-y1' })).ok, true); assert.equal((await ackOf(wz, { t: 'firstFish', name: 'ZedFish', seed: 12, idem: 'r-z1' })).ok, true);
   assert.equal((await ackOf(wy, { t: 'firstFish', name: 'Again', seed: 13, idem: 'r-y2' })).reason, 'ALREADY_HAVE');
   const w = getW(tk.id); const owners = Object.fromEntries(w.fish.map((f) => [f.name, f.owner])); assert.equal(owners.Pip, x.userId); assert.equal(owners.YuiFish, y.userId); assert.equal(owners.ZedFish, z.userId); assert.equal(w.fish.find((f) => f.name === 'ZedFish').ownerName, 'Zed');

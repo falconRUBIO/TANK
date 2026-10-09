@@ -381,12 +381,13 @@ function milestones(t, now, ev) {
   const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
 }
 
-export function newWorld(now = Date.now(), seed = 1) {
+// `empty` is a brand new tank: no fish at all until its first caretaker chooses one in the opening.
+export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
   return {
-    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, firsts: { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
-    fish: [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }],
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
+    fish: empty ? [] : [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }],
     decor: [],
-    seen: { fish: ['goldfish'], decor: [] },
+    seen: { fish: empty ? [] : ['goldfish'], decor: [] },
   };
 }
 
@@ -566,6 +567,10 @@ export function applyAction(t, a, { name = 'Someone', now = Date.now(), dev = fa
     }
     case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
+      if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
+        const made = makeFish(t, { species: a.species, name: cleanName(a.name), seed: Math.abs(Math.floor(num(a.seed) || now)) % 100000, owner: uid, ownerName: name }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
+        events.push({ journal: `${name} brought in ${made.name}, the first fish.`, toast: `${made.name} has arrived!`, arrival: [made.id] }); return ok({ id: made.id });
+      }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
       Object.assign(f, { species: a.species, seed, name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);

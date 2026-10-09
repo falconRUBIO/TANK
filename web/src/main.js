@@ -320,11 +320,11 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const f = s.fish[0], pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Choose your first fish. It is free, and everyone in the tank will care for it. Then give it a name.', species: FIRST_FISH, name: f.name });
+        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Choose your first fish. It is free, and everyone in the tank will care for it. Then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
-        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0].name} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
+        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your fish'} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so two friends can join.` : 'Up to three friends can care for one tank. They join with a six-character code once the game is hosted online.';
@@ -339,7 +339,7 @@ const tut = (() => {
   const skip = () => { set(5); ui.hideCoach(); ui.pulse(null); };
   return {
     run,
-    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { ui.toast(`${game.state.fish[0].name} loved it!`); setTimeout(() => set(2), 1400); } },
+    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { ui.toast(`${game.state.fish[0]?.name ?? 'Your fish'} loved it!`); setTimeout(() => set(2), 1400); } },
     onPlaced: () => { if ((game.state.flags.tut ?? 0) === 3) setTimeout(() => set(4), 900); },
     replay: async () => { await game.dispatch({ t: 'tut', reset: true, step: 0 }); last = -1; run(); },
   };

@@ -52,7 +52,8 @@ export class Fish3D {
     this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
-    this.vox.forEach((v, i) => { if ((this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave) this.mobile.push(i); });
+    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave) this.mobile.push(i); });
+    this.sq = 0; this.restK = 0; this.crawlK = 0; this.mcx = 3 - this.cx; this.mcy = 7 - (this.sp.center?.[1] ?? 0);
     this.setPose(0, true);
     this.group = new THREE.Group(); this.group.add(this.mesh);
     // state
@@ -65,7 +66,7 @@ export class Fish3D {
   setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * 0.3); this.setPose(this.phase, true); }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
-    const b = this.sp.bend, s = this.scale, arr = this.mesh.instanceMatrix.array;
+    const b = this.sp.bend, s = this.scale, arr = this.mesh.instanceMatrix.array, jet = this.species.move === 'jet';
     const list = all ? null : this.mobile;
     const n = all ? this.vox.length : list.length;
     for (let j = 0; j < n; j++) {
@@ -77,6 +78,10 @@ export class Fish3D {
       }
       if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
       if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
+      if (jet) {                                                           // octopus: arms spread flat at rest and stream back tight in a jet, the mantle squeezes with each pulse
+        if (v.tag === 'arm') { z *= 1 + 0.75 * this.restK + 0.35 * this.crawlK - 0.62 * this.sq; y = y * (1 - 0.42 * this.restK - 0.2 * this.crawlK - 0.3 * this.sq) - 1.2 * this.restK; if (this.crawlK) y += Math.sin(phase * 1.3 + z * 0.5) * 0.9 * this.crawlK * (v.wave || 0); }
+        else { const k = 1 - 0.15 * this.sq + 0.025 * Math.sin((this.tt ?? 0) * 1.8); x = this.mcx + (x - this.mcx) * (1 + 0.06 * this.sq); y = this.mcy + (y - this.mcy) * k * (1 - 0.1 * this.restK); z *= k; }
+      }
       const o = i * 16;
       arr[o] = s; arr[o + 5] = s; arr[o + 10] = s; arr[o + 15] = 1;
       arr[o + 12] = x * s; arr[o + 13] = y * s; arr[o + 14] = z * s;
@@ -121,8 +126,72 @@ export class Fish3D {
     this.roll += (Math.PI - this.roll) * Math.min(1, dt * 1.6); this.pitch += (Math.sin(this.tt * 0.7) * 0.06 - this.pitch) * Math.min(1, dt); this.vel.set(0, 0, 0);
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
   }
+  // ── shared helpers for the two non-fish gaits ──
+  face(dt, turn) { const sp = Math.hypot(this.vel.x, this.vel.z); if (sp > 0.06) { let dy = Math.atan2(-this.vel.z, this.vel.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * turn); } return sp; }
+  settle() { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX')); this.accum += 1 / 60; }
+  separate(others, gain = 2.4) {
+    for (const o of others) {
+      if (o === this) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 0.9;
+      if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.05; this.vel.z += (dz / dd) * k * 0.035; }
+    }
+  }
+  // Seahorse: an upright, weak swimmer. It hovers with its dorsal fin blurring, drifts in short steps, bobs gently, never pitches, and likes to hold on to a plant or decoration for a long while.
+  hoverUpdate(dt, rng, others) {
+    this.tt = (this.tt ?? 0) + dt; const t = this.tt; this.retarget -= dt; this.idle = (this.idle ?? 0) - dt;
+    if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || this.pos.distanceTo(this.target) < 0.3)) this.pickHover(rng);
+    const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
+    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : 0.5) * (holding ? 0.06 : 1);
+    to.multiplyScalar((base / d) * Math.min(1, d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);
+    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    this.pos.addScaledVector(this.vel, dt); this.resolve(others);
+    const sp = this.face(dt, 0.9);
+    this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
+    this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
+    this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
+    this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
+  }
+  pickHover(rng) {
+    const spots = this.getSpots?.() ?? [], b = this.band;
+    if (spots.length && rng() < 0.6) { const s = spots[(rng() * spots.length) | 0]; this.target.set(s.x + (rng() - 0.5) * 0.5, 1.1 + s.h * (0.3 + rng() * 0.4), s.z + 0.55); this.idle = 7 + rng() * 9; this.retarget = this.idle + 3; return; }   // hold on and rest
+    this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 1.5 + rng() * 3; this.retarget = 4 + rng() * 4;
+    for (let k = 0; k < 8 && Fish3D.world.push; k++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
+  }
+  // Octopus: rests on the bottom with its arms spread flat, crawls along it, and now and then jets through the water in pulses (mantle squeezes, arms stream back) before drifting down again.
+  jetUpdate(dt, rng, others) {
+    this.tt = (this.tt ?? 0) + dt; const mul = (this.mul ?? 1) * (this.vigor ?? 1) * (this.tmul ?? 1); const S = (this.st ||= { s: 'rest', t: 1 + rng() * 3, n: 0, pulse: 0 }); S.t -= dt;
+    const floor = 0.55, onFloor = this.pos.y < floor + 0.5;
+    if (this.seeking && S.s !== 'jet') { S.s = 'jet'; S.n = 2; S.t = 6; S.pulse = 0; }
+    if (S.s === 'rest') {
+      this.vel.multiplyScalar(Math.exp(-3 * dt)); this.restK += (1 - this.restK) * Math.min(1, dt * 1.5); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
+      if (!onFloor) this.vel.y -= 0.5 * dt;
+      if (S.t <= 0) { if (rng() < 0.5) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, s = spots.length && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; this.target.set(s ? s.x + (rng() - 0.5) * 1.2 : b.x[0] + rng() * (b.x[1] - b.x[0]), floor, s ? s.z + 0.8 : b.z[0] + rng() * (b.z[1] - b.z[0])); } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), 3 + rng() * 6, b.z[0] + rng() * (b.z[1] - b.z[0])); } }
+    } else if (S.s === 'crawl') {
+      this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);
+      const to = this.target.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1; to.multiplyScalar((0.5 * this.speed * mul) / d); this.vel.lerp(to, Math.min(1, dt * 1.6));
+      if (S.t <= 0 || d < 0.35) { S.s = 'rest'; S.t = 4 + rng() * 8; }
+    } else if (S.s === 'jet') {
+      this.restK += (0 - this.restK) * Math.min(1, dt * 4); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 4);
+      S.pulse -= dt;
+      if (S.pulse <= 0 && S.n > 0) { S.n--; S.pulse = 1.5 + rng() * 0.7; const dir = this.target.clone().sub(this.pos); dir.y += 0.6; dir.normalize(); this.vel.addScaledVector(dir, 2.6 * this.speed * Math.max(0.5, mul)); this.sq = 1; }
+      this.vel.multiplyScalar(Math.exp(-1.25 * dt)); if (!this.seeking) this.vel.y -= 0.12 * dt;
+      if (this.seeking) { const to = this.target.clone().sub(this.pos); if (to.length() > 0.2) this.vel.addScaledVector(to.normalize(), 0.8 * dt * this.speed); }
+      if (S.n <= 0 && S.pulse <= -0.6 && !this.seeking) { S.s = 'drift'; S.t = 6; }
+    } else {                                                                  // drift: arms trail and it sinks back toward the bottom
+      this.restK += (0.2 - this.restK) * Math.min(1, dt * 1.5); this.vel.multiplyScalar(Math.exp(-1.0 * dt)); this.vel.y -= 0.35 * dt;
+      if (this.pos.y < floor + 0.4 || S.t <= 0) { S.s = 'rest'; S.t = 4 + rng() * 8; }
+    }
+    this.sq = Math.max(0, this.sq - dt * 2.4); this.separate(others, 3);
+    this.pos.addScaledVector(this.vel, dt); this.resolve(others); if (this.pos.y < floor) { this.pos.y = floor; if (this.vel.y < 0) this.vel.y = 0; }
+    const sp = this.face(dt, S.s === 'jet' ? 3 : 1.6);
+    const wantPitch = S.s === 'jet' ? Math.max(-0.9, Math.min(0.9, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) || 1))) : 0; this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3); this.roll += (0 - this.roll) * Math.min(1, dt * 3);
+    this.phase += dt * (S.s === 'crawl' ? 5 : S.s === 'jet' ? 2.5 : S.s === 'rest' ? 1.4 : 2.0);
+    this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
+    this.accum += dt; if (this.accum > 1 / 20) { this.accum = 0; this.setPose(this.phase); }
+  }
   update(dt, rng, others) {
     if (this.dead) return this.deadUpdate(dt);
+    if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
+    if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;

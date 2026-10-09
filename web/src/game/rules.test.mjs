@@ -292,4 +292,14 @@ ok('the opening of a tank: choose and name the free first fish, once, only the o
   const j = R.newWorld(0); R.norm(j, 0); j.flags.firsts = { me: true }; j.fish.push(R.ensureFish({ id: 'x', name: 'x', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: [] })); assert.equal(R.applyAction(j, { t: 'chooseFirst', species: 'seahorse' }, { now: 5, name: 'A', uid: 'me' }).reason, 'FORBIDDEN', 'not once the tank has other fish');
   const m = R.newWorld(0); R.norm(m, 0); const fr = R.applyAction(m, { t: 'firstFish', species: 'neon', name: 'Dot', seed: 5 }, { now: 5, name: 'Sam', uid: 'u2', members: [{ id: 'u2', name: 'Sam' }, { id: 'me', name: 'A' }] }); assert.ok(fr.ok); assert.equal(m.fish.find((x) => x.id === fr.id).species, 'neon'); const bad = R.newWorld(0); R.norm(bad, 0); const b2 = R.applyAction(bad, { t: 'firstFish', species: 'betta', name: 'Z', seed: 5 }, { now: 5, name: 'Sam', uid: 'u2' }); assert.equal(bad.fish.find((x) => x.id === b2.id).species, 'goldfish', 'a joiner cannot pick outside the starter list');
 });
+ok('a brand new tank has no fish until its first caretaker chooses one, which then arrives', () => {
+  const t = R.newWorld(0, 1, { empty: true }); R.norm(t, 0); assert.equal(t.fish.length, 0); assert.deepEqual(t.seen.fish, []); assert.deepEqual(t.flags.firsts, {});
+  assert.equal(R.advance(t, 5 * 3600e3).length >= 0, true, 'an empty tank just sits there'); assert.equal(t.fish.length, 0);
+  const r = R.applyAction(t, { t: 'chooseFirst', species: 'seahorse', name: 'Nori', seed: 9 }, { now: 6 * 3600e3, name: 'Alex', uid: 'u1' }); assert.ok(r.ok); assert.equal(t.fish.length, 1); const f = t.fish[0];
+  assert.equal(f.species, 'seahorse'); assert.equal(f.name, 'Nori'); assert.equal(f.owner, 'u1'); assert.equal(f.ownerName, 'Alex'); assert.equal(f.born, 6 * 3600e3); assert.ok(r.events.some((e) => e.arrival?.includes(f.id)) && r.events.some((e) => /first fish/.test(e.journal ?? '')));
+  assert.deepEqual(t.seen.fish, ['seahorse']); assert.ok(t.flags.intro && t.flags.firsts.u1);
+  assert.equal(R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Again' }, { now: 7 * 3600e3, name: 'Alex', uid: 'u1' }).reason, 'ALREADY_HAVE', 'only once');
+  const m = R.newWorld(0, 1, { empty: true }); R.norm(m, 0); assert.equal(R.applyAction(m, { t: 'chooseFirst', species: 'octopus', name: 'X' }, { now: 1, name: 'Z', uid: 'stranger', members: [{ id: 'u1', name: 'Alex' }] }).reason, 'FORBIDDEN', 'only a member can choose');
+  const e = R.newWorld(0, 1, { empty: true }); R.norm(e, 0); for (const k of [1, 2, 3, 7]) R.advance(e, k * 864e5); assert.equal(e.memorial.length, 0); assert.equal(e.want, null, 'no wishes without fish');
+});
 console.log(`All ${n} rule tests passed`);

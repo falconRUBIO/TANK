@@ -61,7 +61,7 @@ class Limiter {
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null } = {}) {
   const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
   const push = makePush(db, pushOpts ?? { publicKey: process.env.VAPID_PUBLIC, privateKey: process.env.VAPID_PRIVATE, subject: process.env.VAPID_SUBJECT });
-  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, ...limits };
+  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -201,7 +201,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           return broadcast(tankId, { t: 'chat', msg });
         }
         if (L.ACTIONS.has(m.t)) {
-          if (!lim.hit('a:' + ws.userId, 30, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
+          if (!lim.hit('a:' + ws.userId, cfg.actionsPer10s, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
           const { t: type, idem, ...rest } = m;
           if (type === 'observe' && !lim.hit('ob:' + ws.userId, 24, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
           const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an });

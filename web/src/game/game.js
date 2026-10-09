@@ -18,7 +18,7 @@ export class Game {
     this.mode = 'local';
     let sv = null; try { sv = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { /* corrupt or blocked storage */ }
     if (sv?.state) { this.state = sv.state; this.journal = sv.journal || []; this.activity = sv.activity || []; }
-    else { this.state = R.newWorld(Date.now(), (Math.random() * 1000) | 0); this.journal = []; this.addJournal('Our tank began.'); }
+    else { this.state = R.newWorld(Date.now(), (Math.random() * 1000) | 0, { empty: true }); this.journal = []; this.addJournal('Our tank began.'); }
     const before = this.state.shells; const ev = R.advance(this.state, Date.now()); this.consume(ev, 'You');
     if (this.state.shells !== before) this.emit('shells');
     this.tick = setInterval(() => { const e = R.advance(this.state, Date.now()); this.consume(e, 'You'); this.emit('tick'); }, 1000);
