@@ -75,3 +75,6 @@ Sand and the Candy backdrop are free; other floors (20 to 40) and backdrops (25)
 
 ## Quiet surprises
 Nothing here pays shells or writes to the journal. Every few minutes, once the tutorial is done, something passes through the deep water behind the tank (a whale shark, a jellyfish, a turtle or a silver shoal, drawn as pale ghosts: the fish remembering the ocean), and holding a finger in the water calls the bold and curious fish over to look. `tools/shots_sights.mjs` parks each sighting mid-water for screenshots.
+
+## Look
+The far water has two layers of hazy, swaying kelp blades and rock outcrops behind the dunes (`buildBackdrop` in `web/src/w3/env.js`, tinted by the chosen backdrop and time of day). The menus share one skin: pixel-notched, water-tinted panels (the block at the end of the style sheet in `web/index.html`). `tools/shots_look.mjs` captures the tank at each time of day.

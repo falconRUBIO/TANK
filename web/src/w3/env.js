@@ -93,6 +93,25 @@ function buildBackdrop() {
     sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 2) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); g.userData.mats.push(m.material); m.position.z = z; g.add(m);
   });
+  // far kelp and rock outcrops: hazy, low-contrast shapes that give the empty water depth without busying it
+  const lens = (yn) => 0.22 + 0.9 * Math.sin(Math.PI * Math.min(1, yn * 0.92 + 0.06)) ** 0.8;       // a blade: slim at the root, full in the middle, pointed at the tip
+  const kelp = [], seg = 12, rr = mulberry32(31);
+  const stalk = (x, z, h, w, layer) => {
+    const geo = new THREE.PlaneGeometry(w, h, 1, seg), pos = geo.attributes.position, base = Float32Array.from(pos.array);
+    for (let i = 0; i < pos.count; i++) { const yn = (base[i * 3 + 1] + h / 2) / h; pos.setX(i, base[i * 3] * lens(yn)); pos.setY(i, base[i * 3 + 1] + h / 2); }
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x2a8a8a, transparent: true, opacity: layer ? 0.42 : 0.55, depthWrite: false, side: THREE.DoubleSide })); m.position.set(x, -1.2, z); m.renderOrder = -5 + layer; g.add(m);
+    kelp.push({ geo, base, h, ph: rr() * 6, amp: 0.8 + rr() * 0.7, m, layer }); g.userData.kelp.push(m.material);
+  };
+  g.userData.kelp = []; g.userData.rock = [];
+  for (const x of [-6.4, -4.8, -3.6, 3.7, 5.1, 6.6]) stalk(x + (rr() - 0.5) * 0.6, -11.5, 6 + rr() * 6, 0.42 + rr() * 0.18, 0);
+  for (const x of [-8.4, -6.6, -4.2, -1.4, 1.8, 4.4, 6.4, 8.6]) stalk(x + (rr() - 0.5) * 0.8, -17.5, 8 + rr() * 6, 0.62 + rr() * 0.22, 1);
+  for (const [cx, s2] of [[-8.5, 1], [9.2, -1]]) {
+    const sh = new THREE.Shape(); sh.moveTo(cx - 3.5, -4); const pts = [[-2.4, 3.2], [-1.6, 6.5], [-0.8, 5], [0, 9.5], [0.9, 6.2], [1.7, 7.4], [2.6, 3.4], [3.4, 1.4]]; for (const [px, py] of pts) sh.lineTo(cx + px * s2, py); sh.lineTo(cx + 3.6, -4); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0x6a7ec8, transparent: true, opacity: 0.6, depthWrite: false })); m.position.z = -21; m.renderOrder = -6; g.add(m); g.userData.rock.push(m.material);
+  }
+  g.userData.tick = (t) => {
+    for (const k of kelp) { const pos = k.geo.attributes.position; for (let i = 0; i < pos.count; i++) { const yn = k.base[i * 3 + 1] / k.h + 0.5, sw = Math.sin(t * 0.55 + k.ph + yn * 2.4) * k.amp * yn * yn * 1.1 + Math.sin(t * 0.3 + k.ph * 2) * 0.25 * yn; const wx = k.base[i * 3] * lens(yn); pos.setX(i, wx + sw); } pos.needsUpdate = true; }
+  };
   return g;
 }
 
@@ -191,12 +210,16 @@ export function buildEnvironment() {
   const backdrop = buildBackdrop(); root.add(backdrop);
 
   const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0] };
-  const WATER = new THREE.Color(0x8fb4c8); let backKey = 'candy', backLight = 1;
-  const paintBack = () => (BACK[backKey] ?? BACK.candy).forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(WATER, 0.45 + i * 0.1).multiplyScalar(backLight); });
+  const WATER = new THREE.Color(0x8fb4c8), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
+  const paintBack = () => {
+    const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(WATER, 0.45 + i * 0.1).multiplyScalar(backLight); });
+    backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.62).lerp(WATER, i < 6 ? 0.18 : 0.42).multiplyScalar(backLight * (i < 6 ? 0.92 : 1)));
+    backdrop.userData.rock.forEach((m) => m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9));
+  };
   const setStyle = (floor = 'sand', back = 'candy') => {
     buildBottom(BOTTOM[floor] ? floor : 'sand');
     backKey = back; paintBack();
   };
   const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };
-  return { root, archX: 0, colliders: new Solids(), setStyle, setLight };
+  return { root, archX: 0, colliders: new Solids(), setStyle, setLight, tick: (t) => backdrop.userData.tick(t) };
 }
