@@ -567,7 +567,7 @@ const OCT = { ax: 3, ay: -3, floor: -9.5, rad0: 3.4, rad1: 1.1 };
 const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ i, th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
 const GAIT = [0, 0.5, 0.25, 0.75, 0.5, 0, 0.75, 0.25];
 const octoPose = (a, t, S, o = [0, 0, 0]) => {
-  const c = Math.cos(a.th), s = Math.sin(a.th), ph = S.ph ?? 0, rest = Math.max(0, Math.min(1, (S.rest ?? 1) + (S.crawl ?? 0) * 0.85));
+  const c = Math.cos(a.th), s = Math.sin(a.th), ph = S.ph ?? 0, rear = c < -0.55; let rest = Math.max(0, Math.min(1, (S.rest ?? 1) + (S.crawl ?? 0) * 0.85)); if (S.dash > 0.02) rest = rear ? 1 : rest * (1 - S.dash);        // dashing on two back arms: the rest stream behind
   // resting: fan outward along the floor with a lazy lateral S-curve and a curled tip
   const sm = Math.max(0, (t - 0.6) / 0.4), curl = sm * sm * 7.5 * a.curl * (0.85 + 0.15 * Math.sin(ph * 0.5 + a.ph));
   let r = OCT.ax + 1.5 + a.L * Math.pow(t, 0.92), lat = Math.sin(t * 3.4 + a.ph) * 2.6 * t + Math.sin(ph * 0.9 + a.ph + t * 3) * 0.9 * t;
@@ -583,19 +583,20 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   }
   if (S.work) { const w = S.work; lat += Math.sin(ph * 2 + a.ph + t * 4) * 2.6 * w * t; y += (0.5 + 0.5 * Math.sin(ph * 1.4 + a.ph)) * 3.4 * w * t; r *= 1 - 0.38 * w * (0.4 + 0.6 * Math.abs(Math.sin(a.ph))); }   // working on something: arms pulled in, probing and wrapping
   if (S.greet && c > -0.2) { const g = S.greet; y += g * t * t * 14 * (0.7 + 0.3 * Math.sin(a.ph)); lat += Math.sin(ph * 2.2 + a.ph) * 2.2 * g * t; }                                       // the arms that face the glass lift and wave
+  if (S.land > 0.02) { r *= 1 + 0.2 * S.land * t; y -= 1.5 * S.land * Math.min(1, t * 3); lat += Math.sin(ph * 3 + a.ph) * 1.4 * S.land * t; }                  // landing: the arms spread wide to catch him
   if (S.glass > 0.02) { const gk = S.glass; y = OCT.floor + 1.2 + (y - OCT.floor - 1.2) * (1 - 0.85 * gk); lat += Math.sin(ph * 1.6 + a.ph) * 0.9 * gk * t; r *= 1 + 0.05 * Math.sin(ph * 1.2 + a.ph) * gk; }   // pressed flat on the glass, the suckers shifting a little
   // walking is a gait, not a wave: each arm plants its tip on the floor (it sticks, and the body moves over it), then peels up, curls and swings forward to plant again; the arms are out of step
   // with each other, the front ones reach and pull, the rear ones mostly drag, and each octopus has its own stride
   let gx = 0;
   if (S.crawl > 0.02) {
-    const u = (ph * 0.15 + GAIT[a.i] + (a.ph * 0.02)) % 1, STANCE = 0.6, stride = (c > -0.3 ? 9 : 5.5) * (S.stride ?? 1); let dx, lift = 0;
-    if (u < STANCE) dx = stride * (0.5 - u / STANCE); else { const q = (u - STANCE) / (1 - STANCE), e = q * q * (3 - 2 * q); dx = -stride / 2 + stride * e; lift = Math.sin(Math.PI * q) * (c > -0.3 ? 6 : 3.4); }
+    const dsh = S.dash > 0.02 && rear, u = (ph * (dsh ? 0.2 : 0.15) + GAIT[a.i] + (a.ph * 0.02)) % 1, STANCE = dsh ? 0.5 : 0.6, stride = (dsh ? 17 : c > -0.3 ? 9 : 5.5) * (S.stride ?? 1); let dx, lift = 0;
+    if (u < STANCE) dx = stride * (0.5 - u / STANCE); else { const q = (u - STANCE) / (1 - STANCE), e = q * q * (3 - 2 * q); dx = -stride / 2 + stride * e; lift = Math.sin(Math.PI * q) * (dsh ? 9 : c > -0.3 ? 6 : 3.4); }
     const w = Math.pow(t, 1.3) * S.crawl; gx = dx * w; y += lift * w * (1 + 0.6 * t) + (lift > 0 ? Math.pow(t, 3) * lift * 0.5 : 0) * S.crawl;      // the tip curls up as the arm lifts
   }
   const rx = OCT.ax + c * r - s * lat + gx, rz = s * r + c * lat;
   // jetting: every arm gathers back behind the body and flutters
-  const jd = [c * 0.18 - 0.9, s * 1.05], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * 2 + a.ph) * 1.2 * t;
-  const jr = OCT.ax + 3 + a.L * 1.12 * t, jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
+  const jd = [c * 0.18 - 0.9, s * 1.05], jl = Math.hypot(jd[0], jd[1]), fl = Math.sin(t * 5 - ph * (2 - 0.9 * (S.cruise ?? 0)) + a.ph) * 1.2 * (1 + 1.5 * (S.cruise ?? 0) - 0.6 * (S.glide ?? 0)) * t;
+  const gl = S.glide ?? 0, cr = S.cruise ?? 0, jr = OCT.ax + 3 + a.L * (1.12 + 0.24 * gl) * t * (1 + 0.05 * cr * Math.sin(ph * 2 + t * 4)), jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
   o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest;
   if (wrapW > 0) { o[0] += (wx - o[0]) * wrapW; o[1] += (wy - o[1]) * wrapW; o[2] += (wz - o[2]) * wrapW; }
   const mind = S.minds?.[a.i];
@@ -603,6 +604,7 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
     const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), dx = mind.x - tip[0], dy = mind.y - tip[1], dz = mind.z - tip[2], L = Math.hypot(dx, dy, dz) || 1, cap = Math.min(1, 24 / L), q = Math.max(0, (t - 0.2) / 0.8), w = mind.k * q * q * (3 - 2 * q);
     o[0] += dx * cap * w; o[1] += dy * cap * w + Math.sin(Math.PI * t) * 3.4 * mind.k * (1 - rest * 0.3) * (1 - (S.glass ?? 0)); o[2] += dz * cap * w;
   }
+  if (t > 0.22 && o[1] > -5.2) { const hx = o[0] - 3, hr = Math.hypot(hx, o[2]); if (hr < 6.4) { const k = 6.4 / Math.max(hr, 0.01); o[0] = 3 + hx * k; o[2] *= k; } }          // an arm never passes through the body
   const G = S.grab;                                                                            // catching something: the nearest arm reaches it, its neighbours cup in beside it
   if (G && G.w > 0.01) {
     let T = null, wt = 0; if (a.i === G.arm) { T = G.p; wt = 1; } else if (a.i === G.n1 || a.i === G.n2) { T = [G.p[0] - 0.6, G.p[1] + 0.4, G.p[2] + (a.i === G.n1 ? 2.6 : -2.6)]; wt = 0.55; }
@@ -635,7 +637,7 @@ const octopus = {
       sample(x, y, z) {
         if (eyeAt(x, y, z)) {                                                // a protruding eye: gold ring, black horizontal pupil, tiny glint
           const az = Math.abs(z), ex = x - 6.5, ey = y - 3;
-          if (az >= 8.6 && Math.abs(ex - 0.8) <= 1.5 && Math.abs(ey) <= 0.6) return { c: [10, 10, 18], em: 1, tag: 'eye' };
+          if (az >= 8.6 && Math.abs(ex - 0.8) <= 1.5 && Math.abs(ey) <= 0.6) return { c: [10, 10, 18], em: 1, tag: 'eye', pupil: 1 };
           if (az >= 8.4 && ex > 0.2 && ey > 0.9 && ey < 1.9 && ex < 1.6) return { c: [255, 255, 255], em: 2, tag: 'eye' };
           return { c: az >= 8.2 ? [236, 178, 70] : mix(skinC, pale, 0.2), tag: 'eye' };
         }
@@ -647,16 +649,21 @@ const octopus = {
           c = mix(c, [c[0] * 0.66, c[1] * 0.6, c[2] * 0.62], clamp((y - 1) / 13) * 0.6);   // a darker back, so it stands out against pale sand
           return { c, tag: inM && !inH ? 'mantle' : 'head' };
         }
-        // the underside of the head: a skirt of web where the arms join, a ring of lips and the dark parrot-like beak at the centre, and a short siphon tube on one side
-        { const dx = x - 3, rr = Math.hypot(dx, z);
-          if (y <= -6 && y >= -7 && rr <= 2.6 - (y === -7 ? 0.5 : 0)) { if (rr <= 1.5 && (y <= -7 || dx >= 0.6)) return { c: dx >= 0.8 && y <= -7 ? [26, 14, 16] : [58, 34, 30], tag: 'beak', em: 1 }; return { c: mix([214, 112, 104], pale, 0.1 + 0.1 * Math.sin(Math.atan2(z, dx) * 6)), tag: 'web' }; }                 // lips around a dark beak
-          const rmax = 7.4 - (-4 - y) * 1.6; if (y <= -4 && y >= -7 && rr <= rmax) { const n2 = fbm(x * 0.5 + off[0], y * 0.5, z * 0.5 + off[2]); return { c: mix(mix(skinC, [240, 150, 120], 0.3), [255, 220, 200], n2 > 0.62 ? 0.25 : 0), tag: 'web' }; }                                    // webbing between the arm bases
-          if (x >= 8 && x <= 13 && Math.hypot(y - (-2.4 - (x - 8) * 0.2), z + 4.2) <= 1.6 - (x - 8) * 0.06) return { c: x >= 12 ? mix(skinC, pale, 0.15) : mix(skinC, pale, 0.3), tag: 'head' }; }
+        // the underside of the head: a solid funnel of web that runs from the head down to the mouth (so nothing hollow shows between the arms), a ring of lips, and a small tan beak at the centre
+        const kArm = armV.get(x + ',' + y + ',' + z);
+        { const dx = x - 3, rr = Math.hypot(dx, z), ang = Math.atan2(z, dx);
+          if (y <= -6 && y >= -8 && rr <= 3.0 - (y === -8 ? 1.0 : 0)) {                                                 // the mouth: lips around a small beak
+            if (rr <= 1.35 && y <= -7) return { c: rr <= 0.7 ? [92, 54, 40] : [150, 98, 70], tag: 'beak', beak: 1 };      // beak: dark tip, tan sides
+            if (rr <= 1.9 && y === -6) return { c: [226, 120, 118], tag: 'web' };                                          // pink mouth rim
+            return { c: mix([232, 134, 120], pale, 0.12 + 0.12 * Math.sin(ang * 7)), tag: 'web' };                       // lips with little folds
+          }
+          const rmax = 8.6 - (-4 - y) * 1.55; if (!kArm && y <= -3 && y >= -7 && rr <= rmax) { const n2 = fbm(x * 0.5 + off[0], y * 0.5, z * 0.5 + off[2]); return { c: mix(mix(skinC, [240, 150, 120], 0.3), [255, 220, 200], n2 > 0.62 ? 0.25 : 0), tag: 'web' }; }   // webbing between the arm bases
+          if (!kArm && x >= 8 && x <= 13 && Math.hypot(y - (-2.4 - (x - 8) * 0.2), z + 4.2) <= 1.6 - (x - 8) * 0.06) return { c: x >= 12 ? mix(skinC, pale, 0.15) : mix(skinC, pale, 0.3), tag: 'head' }; }
         const k = armV.get(x + ',' + y + ',' + z);
         if (k) {
           const tt = k.at, under = k.dy < -k.rad * 0.35, sucker = under && tt > 0.1 && (Math.round(tt * 26) % 2 === 0);
           let c = under ? mix(pale, [255, 196, 206], 0.35) : mix([skinC[0] * 0.82, skinC[1] * 0.78, skinC[2] * 0.8], pale, tt * 0.2);
-          if (sucker) c = mix(c, [255, 240, 236], 0.55); if (tt > 0.93) c = mix(c, pale, 0.4);
+          if (sucker) c = Math.round(tt * 24) % 4 === 0 ? [255, 248, 242] : mix(c, [255, 206, 212], 0.65); if (tt > 0.93) c = mix(c, pale, 0.4);
           return { c, tag: 'arm', arm: k.arm, at: tt, off: k.off };
         }
         return null;
