@@ -478,11 +478,11 @@ export function adoptAdvice(t, species) {
   return msgs.length ? msgs.join(' ') : null;
 }
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
-export function comfortOf(t, f) {
+export function comfortOf(t, f, now = Date.now()) {
   let pts = 0, max = 0; const tips = [];
   const add = (w, v, tip) => { v = Math.max(0, Math.min(1, v)); max += w; pts += w * v; if (v < 0.99) tips.push([w * (1 - v), tip]); };
   add(3, t.water >= 0.7 ? 1 : (t.water - 0.45) / 0.25, 'The water needs a change.'); add(2, 1 - Math.max(0, (t.glass - 0.3) / 0.5), 'The glass needs a wipe.'); add(2, 1 - Math.max(0, (t.hunger - 0.45) / 0.4), 'A meal would help.');
-  if (f.species === 'octopus') { const dens = t.decor.filter((d) => ['pot', 'coconut', 'boulder', 'rock', 'brain', 'table', 'arch', 'pillar'].includes(d.type)).length; add(2.5, dens / 2, `${f.name} wants somewhere to make a den: a clay pot, a coconut shell or a couple of rocks (${Math.min(dens, 2)} of 2).`); add(1.5, (f.crabs ?? 0) > 0 || (f.solved ?? 0) > 0 ? 1 : 0, `${f.name} would enjoy a crab treat or a puzzle jar.`); }
+  if (f.species === 'octopus') { const dens = f.home || t.decor.some((d) => d.type === 'pot' || d.type === 'coconut') ? 2 : t.decor.filter((d) => ['boulder', 'rock', 'brain', 'table', 'arch', 'pillar', 'skull', 'chest'].includes(d.type)).length; add(2.5, dens / 2, `${f.name} wants somewhere to make a den: a clay pot, a coconut shell or a couple of rocks (${Math.min(dens, 2)} of 2).`); { const baby = stageOf(f, now) === 'baby', fed = f.fedAt != null && now - f.fedAt < 8 * HOUR; add(1.5, (f.crabs ?? 0) > 0 || (f.solved ?? 0) > 0 || fed || baby ? 1 : 0, `${f.name} would enjoy a crab treat or a puzzle jar.`); } }      // never asks for what it cannot have yet: a baby is not offered jars, and a crab it just ate counts
   else for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp) add(2, count(t, sp[0]) / sp[1], `${f.name} would feel more at home with ${sp[2]} (${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]}).`); }
   if ((f.traits ?? []).includes('Social') && f.species !== 'octopus') add(1.5, (t.fish.length - 1) / 3, `${f.name} would like more company.`);
   { const so = socialOf(t, f); if (so.penalty) add(2.5, 1 - Math.min(1, so.penalty), so.notes[0]); for (const nd of so.needs.slice(0, 1)) add(1.2, 0.3, nd); }

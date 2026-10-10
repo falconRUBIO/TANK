@@ -217,7 +217,7 @@ async function givePuzzle(id) {
 function brainBlock(rec) {
   if (!isSmart(rec)) return '';
   const n = rec.solved ?? 0, can = canPuzzle(rec);
-  return `<div class="notes">A very clever animal: learns a trick in ${trainNeed(rec)} lessons, remembers who looks after it, and changes colour with its mood.${n ? ` Puzzle jars solved: ${n}, best ${rec.bestSecs} seconds.` : ''}</div>${can ? `<button class="lnk" id="puz">${rec.puzzle ? 'Working on a jar…' : `Give a puzzle jar · ${PUZZLE_COST} 🐚`}</button>` : ''}`;
+  return `${can ? '' : `<div class="notes">Puzzle jars come once ${esc(rec.name)} grows up.</div>`}${can ? `<button class="lnk" id="puz">${rec.puzzle ? 'Working on a jar…' : `Give a puzzle jar · ${PUZZLE_COST} 🐚`}</button>` : ''}`;
 }
 async function trainFish(f, key, spot) {
   const r = await game.dispatch({ t: 'train', id: f.fid, trick: key }); if (!r.ok) return fail(r);
@@ -388,6 +388,31 @@ function octoLine(m, f) {
   if (m.type === 'collector') return kind ? `Fetches shells and stones for ${kind} and rearranges them when nobody is looking.` : 'Fetches shells and stones, and is looking for a den to keep them by.';
   return m.line;
 }
+// a few true things worth knowing: what this animal has done in the tank, and one fact about its kind that changes from day to day
+const SPECIES_FACTS = {
+  goldfish: ['Clownfish are all born male; the biggest one in a group becomes the female.', 'A coat of slime lets a clownfish live among an anemone\'s stings without being hurt.'],
+  neon: ['Blue chromis shoal by the hundred over branching coral and vanish into it when danger comes.', 'Chromis change from blue to green depending on how the light hits their scales.'],
+  cory: ['A yellow goby can spend its whole life perched on one branch of coral.', 'Gobies are one of the largest families of fish, with over 2,000 kinds.'],
+  blue: ['Royal grammas often hang upside down under ledges, belly to the rock.', 'A royal gramma builds a nest of algae for its eggs.'],
+  guppy: ['Damselfish farm little lawns of algae and chase off anything that comes near.', 'Some damselfish make clicking sounds to warn others away.'],
+  angelfish: ['A young emperor angelfish is ringed in blue and white; it changes completely into stripes as it grows up.', 'Emperor angelfish can make a loud knocking sound when they are startled.'],
+  platy: ['Male cardinalfish carry the eggs in their mouths until they hatch.', 'Cardinalfish rest in groups by day and hunt at night.'],
+  danio: ['Anthias live in groups led by one male; if he is lost, the biggest female becomes the new male.', 'An anthias shoal moves like a single orange-pink cloud.'],
+  betta: ['Mandarin dragonets have no scales; a bitter slime protects them instead.', 'Mandarins dance in pairs at dusk, rising together off the reef.'],
+  seahorse: ['A father seahorse carries the babies in a pouch until they are born.', 'A seahorse can move each eye on its own, looking two ways at once.', 'Seahorses have no stomach, so they eat almost all day.'],
+  octopus: ['An octopus has three hearts and blue blood.', 'Two-thirds of an octopus\'s nerve cells are in its arms; each arm can taste and decide a little on its own.', 'An octopus can squeeze through any gap bigger than its beak.', 'Octopuses can taste with their suckers.'],
+};
+function didYouKnow(rec, f) {
+  const out = [], b = (n, s1, s2) => `${n} ${n === 1 ? s1 : s2}`;
+  if (rec.crabs) out.push(`🦀 Has caught <b>${b(rec.crabs, 'crab', 'crabs')}</b> here.`);
+  if (rec.solved) out.push(`🧩 Has solved <b>${b(rec.solved, 'puzzle jar', 'puzzle jars')}</b>, the fastest in ${rec.bestSecs} seconds.`);
+  if (rec.moved) out.push(`🪨 Has rearranged the tank <b>${b(rec.moved, 'time', 'times')}</b>.`);
+  if (f?.fears?.length) out.push('😶 Keeps away from a spot where something startled it.');
+  if (rec.tricks?.length) out.push(`🎓 Knows ${rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}.`);
+  const kids = childrenOf(game.state, rec.id).length; if (kids) out.push(`🥚 Has ${b(kids, 'youngster', 'youngsters')} in the tank.`);
+  const fx = SPECIES_FACTS[rec.species]; if (fx?.length) out.push(`💡 ${fx[(Math.floor(Date.now() / 864e5) + (rec.seed ?? 0)) % fx.length]}`);
+  return out.slice(0, 4);
+}
 function bondLine(rec) {
   const you = game.shared ? game.you?.userId : 'me', b = rec.bond ?? {}, known = (id) => id === you || !game.shared || game.members?.some((m) => m.id === id);      // only people still in the tank
   const ids = Object.keys(b).filter(known); if (!ids.length) return '';
@@ -420,13 +445,21 @@ function showCard(f) {
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
-  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName || rec.owner ? `<dt>Caretaker</dt><dd>${!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')}</dd>` : ''}${rec.species === 'octopus' ? `<dt>Fed</dt><dd>${Math.round((1 - octoHunger(rec)) * 100)}%${game.shared && rec.owner && rec.owner !== game.you?.userId ? ` · only ${esc(rec.ownerName ?? 'its caretaker')} can feed it` : ''}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
-  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><button class="more" id="more">More info ›</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${(rec.species === 'octopus' ? octoChips(octoMind(rec)) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(octoLine(m, f))}</p>${f.favThing ? `<p class="mind now">Favourite thing in the tank: ${esc(f.favThing)}.</p>` : ''}${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
-    <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
-    ${comfortBlock(rec)}<button class="pet" id="pet">${f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`}</button>
-    <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}
-    <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
+  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>${esc(f.name)}'s story</span></summary><div>${rec.species === 'octopus' ? '' : `<p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>`}${socialLines(rec)}<dl>${rec.species === 'octopus' && game.shared && rec.owner && rec.owner !== game.you?.userId ? `<dt>Who feeds it</dt><dd>Only ${esc(rec.ownerName ?? 'its caretaker')}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}</dl>${storyBlock(rec) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}</div></details>`;
+  const octo = rec.species === 'octopus', mind = octo ? octoMind(rec) : null, tile = (k, v, wide = false) => (v ? `<div class="ft ${wide ? 'w' : ''}"><small>${k}</small><b>${v}</b></div>` : '');
+  const days = Math.max(1, Math.round((Date.now() - (rec.born ?? Date.now())) / 864e5)), denTxt = octo ? (f.den?.home ? (f.den.kind === 'pot' ? 'A clay pot' : 'A coconut shell') : f.den?.kind === 'rocks' ? 'A rock shelter it built' : f.den ? (DECOR_DEF[f.den.kind]?.label ?? 'A den') : 'Looking for one') : null;
+  const owner = rec.ownerName || rec.owner ? (!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')) : null, close = bondLine(rec).replace(/^.*<dd>|<\/dd>$/g, '');
+  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><button class="more" id="more">More info ›</button>
+    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
+    <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div></div>
+    ${octo ? `<p class="mind"><b>${mind.label}</b> ${esc(octoLine(mind, f))}</p>` : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}</p>`}
+    ${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
+    <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
+    <h4>At a glance</h4><div class="facts">${tile('Age', `${p.age}${nx ? ` · grows up in ${nx.label}` : ''}`, true)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Favourite food', p.food)}${tile(octo ? 'Home' : 'Favourite spot', octo ? denTxt : p.spot)}${tile('Favourite thing', octo ? f.favThing : null)}${tile('Caretaker', owner)}${tile('Closest to', close)}</div>
+    ${comfortBlock(rec)}
+    ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}
+    <button class="pet" id="pet">${octo ? `Let ${esc(f.name)} follow your finger` : `Play with ${esc(f.name)}`}</button>
+    <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
@@ -737,7 +770,7 @@ async function boot() {
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
-    gift: () => offerGift(),
+    gift: () => offerGift(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => { try { const k = await ensureRecoveryKey(); await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Write it down. Typing it on a new phone signs you back in to your tank.', lines: [k], ok: 'Done' }); } catch (e) { ui.toast(e.message); } },
     backupText: async () => { const d = await api('/api/export'), text = await backupToText(d); try { await navigator.clipboard.writeText(text); ui?.toast('Backup copied. Paste it into Notes or a message to yourself.', 4200); } catch { await ui.dialog({ title: 'YOUR BACKUP', text: 'Select all of this text, copy it, and keep it somewhere safe.', ok: 'Done', input: { max: 400000, placeholder: '', value: text } }); } },
     backup: async () => { try { const d = await api('/api/export'), url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'our-tank-backup.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); ui.toast('Backup saved'); } catch (e) { ui.toast(e.message || 'Could not make a backup'); } },

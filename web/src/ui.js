@@ -319,7 +319,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('details.fold').forEach((d) => d.addEventListener('toggle', () => { d.open ? game.folds.add(d.dataset.fold) : game.folds.delete(d.dataset.fold); }));
     sheet.querySelectorAll('.foodrow [data-food]').forEach((b) => { b.onclick = () => { const k = b.dataset.food; if (S().shells < FOODS[k].price) { toast('Not enough shells for that food'); return; } game.feedFood = k; sfx('tap'); sheet.querySelectorAll('.foodrow [data-food]').forEach((x) => x.classList.toggle('on', x.dataset.food === k)); }; }); paint();
   }
-  document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => open(n.dataset.tab === tab ? 'tank' : n.dataset.tab)));
+  document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => { if ($('card').classList.contains('on')) { cb.closeCard?.(); return; } open(n.dataset.tab === tab ? 'tank' : n.dataset.tab); }));      // with a fish's card open, the bar first closes it, never piles a sheet on top
   $('pill').onclick = (e) => { if (e.target.closest('#conn')) return; sfx('tap'); dialog({ title: 'HOW SHELLS ARE EARNED', text: 'Looking after your fish, and watching them grow, pays the most.', lines: EARN.map(([a, b]) => `${a}: ${b}`), ok: 'Got it' }); };
   $('gear').onclick = () => open('settings');
   $('bell').onclick = () => open(tab === 'notices' ? 'tank' : 'notices'); bell();
