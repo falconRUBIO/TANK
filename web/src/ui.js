@@ -52,7 +52,7 @@ export function initUI({ game, social, cb }) {
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
-    if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you. Tap to collect.', tab: '', gift: true };
+    if (!(game.giftTried && Date.now() - game.giftTried < 20 * 3600e3) && giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you. Tap to collect.', tab: '', gift: true };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in Decorate.', tab: 'decorate' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
