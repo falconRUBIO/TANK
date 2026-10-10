@@ -239,18 +239,28 @@ export function initUI({ game, social, cb }) {
   // the glass lens under the chosen tab slides to it
   function placeLens() { const nav = document.querySelector('nav'), lens = nav?.querySelector('.lens'), on = nav?.querySelector('div.on'); if (!lens || !on) return; lens.style.width = on.offsetWidth + 'px'; lens.style.transform = `translateX(${on.offsetLeft}px)`; lens.classList.add('on'); }
   addEventListener('resize', () => placeLens()); setTimeout(placeLens, 60); document.fonts?.ready?.then(() => placeLens());
-  // drag a menu's grab bar downward to close it; a plain tap on the sheet's bar also closes
-  { let d = null;
-    document.addEventListener('pointerdown', (e) => {
-      const g = e.target.closest?.('#sheet .x, #card .grab'); if (!g) return;
-      const box = g.closest('#sheet, #card'); d = { g, box, y: e.clientY, dy: 0, pid: e.pointerId }; try { g.setPointerCapture(e.pointerId); } catch {}
-    });
-    document.addEventListener('pointermove', (e) => { if (!d || e.pointerId !== d.pid) return; d.dy = Math.max(0, e.clientY - d.y); if (d.dy > 6) { d.box.classList.add('drag'); d.box.style.transform = `translateY(${d.dy}px)`; d.box.style.opacity = String(Math.max(0.3, 1 - d.dy / 400)); d.moved = true; } });
-    const end = (e) => { if (!d || e.pointerId !== d.pid) return; const { box, g, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.transform = box.style.opacity = '';
-      if (dy > 70) { sfx('open'); (box.querySelector('.x') ?? g).click(); } else if (moved) { g._drag = true; setTimeout(() => { g._drag = false; }, 50); } };
-    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
-    // a drag must not also count as a tap on the bar
-    document.addEventListener('click', (e) => { const g = e.target.closest?.('#card .grab, #sheet .x'); if (g && g._drag) { e.stopImmediatePropagation(); e.preventDefault(); g._drag = false; } }, true);
+  // one sheet, one page: pull anywhere on a menu to close it. Scrolling works as usual; once the list is at its top, pulling further down drags the
+  // whole sheet with the finger, and letting go past a short distance closes it (a short pull springs back). A tap on the handle closes too.
+  { let d = null; const boxes = () => [...document.querySelectorAll('#sheet.on, #card.on')];
+    const begin = (box, y) => { d = { box, y, dy: 0, moved: false, pulling: false }; };
+    const move = (y, ev) => {
+      if (!d) return; const box = d.box, dy = y - d.y;
+      if (!d.pulling) { if (dy > 4 && box.scrollTop <= 0) { d.pulling = true; d.y = y - 4; } else if (dy < -4 || box.scrollTop > 0) { d = null; return; } else return; }     // at the top and pulling down: the sheet comes with the finger
+      ev?.cancelable && ev.preventDefault(); d.dy = Math.max(0, y - d.y); d.moved = d.dy > 6;
+      box.classList.add('drag'); box.style.transform = `translateY(${d.dy}px)`; box.style.opacity = String(Math.max(0.35, 1 - d.dy / 420));
+    };
+    const end = () => {
+      if (!d) return; const { box, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.transform = box.style.opacity = '';
+      if (dy > 72) { sfx('open'); (box.querySelector('.x') ?? box.querySelector('.grab'))?.click(); } else if (moved) { box._drag = true; setTimeout(() => { box._drag = false; }, 60); }
+    };
+    document.addEventListener('touchstart', (e) => { const box = e.target.closest?.('#sheet.on, #card.on'); if (box && !e.target.closest('input,textarea,select')) begin(box, e.touches[0].clientY); }, { passive: true });
+    document.addEventListener('touchmove', (e) => { if (d) move(e.touches[0].clientY, e); }, { passive: false });
+    document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+    document.addEventListener('mousedown', (e) => { const box = e.target.closest?.('#sheet.on, #card.on'); if (box && e.button === 0 && !e.target.closest('input,textarea,select,button:not(.x):not(.grab)')) begin(box, e.clientY); });
+    document.addEventListener('mousemove', (e) => { if (d) move(e.clientY, e); }); document.addEventListener('mouseup', end);
+    // a pull must not also count as a tap on whatever the finger started on
+    document.addEventListener('click', (e) => { const box = e.target.closest?.('#sheet, #card'); if (box && box._drag) { e.stopImmediatePropagation(); e.preventDefault(); box._drag = false; } }, true);
+    boxes();
   }
   function open(t, quiet = false) {
     if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; }

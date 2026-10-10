@@ -330,11 +330,13 @@
   #sheet form.send button{border-radius:999px;border:1px solid var(--lg-line);background:rgba(255,255,255,.2);color:#fff;padding:0 18px;font-weight:600}
   #sheet .msg{background:rgba(255,255,255,.09);border-radius:16px;padding:9px 13px;margin:0 0 6px;font-size:14px}
   /* pull-down header: a grab bar instead of an X; drag down (or tap) to close */
-  #sheet .x{all:unset;display:block;position:sticky!important;float:none!important;top:0!important;z-index:6;width:calc(100% + 36px)!important;height:30px!important;margin:0 -18px!important;border-radius:0!important;background:linear-gradient(180deg,rgba(18,40,66,.98) 70%,rgba(18,40,66,0))!important;box-shadow:none!important;font-size:0!important;cursor:grab;touch-action:none;flex:none}
-  #sheet .x::before{content:"";position:absolute;left:50%;top:10px;width:42px;height:5px;margin-left:-21px;border-radius:3px;background:rgba(255,255,255,.42)}
-  #sheet > h3{top:22px!important;padding-top:6px!important;padding-left:18px!important;padding-right:18px!important}
+  /* the handle and the title are one header; the list scrolls under it, and the whole sheet follows a pull once the list is at its top */
+  #sheet .x{all:unset;display:block;position:sticky!important;float:none!important;top:0!important;z-index:6;width:calc(100% + 36px)!important;height:22px!important;margin:0 -18px!important;border-radius:0!important;background:rgba(18,40,66,.98)!important;box-shadow:none!important;font-size:0!important;cursor:grab;flex:none}
+  #sheet .x::before{content:"";position:absolute;left:50%;top:9px;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(255,255,255,.38)}
+  #sheet > h3{top:22px!important;margin-top:0!important;padding:4px 18px 12px!important;background:rgba(18,40,66,.98)!important;border-bottom:1px solid rgba(255,255,255,.08)}
+  #sheet{overscroll-behavior:contain}
   #card .x{display:none!important}
-  #card .grab{height:34px!important;touch-action:none;z-index:6}#card .grab::before{background:rgba(255,255,255,.42)!important}
+  #card .grab{height:34px!important;z-index:6}#card .grab::before{background:rgba(255,255,255,.42)!important}
   #card h2{padding-top:12px;padding-right:0!important}
   #card .mind{margin:6px 0 2px;font-size:13px;line-height:1.45;color:var(--dim)}#card .mind.now{margin-top:0;font-style:italic;color:var(--dim)}#card .mind b{color:#fff;font-weight:600;margin-right:4px}
   #sheet.drag,#card.drag{transition:none!important}
