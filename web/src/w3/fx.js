@@ -158,11 +158,11 @@ function buildShoal() {
 const SIGHTS = { whale: [buildWhale, 2], jelly: [buildJelly, 4], turtle: [buildTurtle, 2], shoal: [buildShoal, 4] };
 export class Sightings {
   constructor(scene) { this.scene = scene; this.cur = null; this.wait = 70 + Math.random() * 120; this.enabled = false; this.last = null; }
-  spawn(kind) {
+  spawn(kind, o = {}) {
     if (this.cur) return false;
     const names = Object.keys(SIGHTS); kind ||= (() => { const pool = names.filter((k) => k !== this.last).flatMap((k) => Array(SIGHTS[k][1]).fill(k)); return pool[(Math.random() * pool.length) | 0]; })();
-    const s = SIGHTS[kind][0](); s.kind = kind; this.last = kind; const dir = Math.random() < 0.5 ? -1 : 1;
-    s.dir = dir; s.x = -dir * 13; s.y0 = s.y[0] + Math.random() * (s.y[1] - s.y[0]); s.z = -7.5 - Math.random() * 3; s.age = 0; s.root.rotation.y = s.yaw(dir); s.root.rotation.z = s.roll(dir);
+    const s = SIGHTS[kind][0](); s.kind = kind; this.last = kind; const dir = o.dir ?? (Math.random() < 0.5 ? -1 : 1);
+    s.dir = dir; s.x = -dir * 13; s.y0 = o.y0 ?? s.y[0] + Math.random() * (s.y[1] - s.y[0]); s.z = o.z ?? -7.5 - Math.random() * 3; s.look = { dir, y0: s.y0, z: s.z }; s.age = 0; s.root.rotation.y = s.yaw(dir); s.root.rotation.z = s.roll(dir);
     this.ghostify(s); s.root.position.set(s.x, s.y0, s.z); this.scene.add(s.root); this.hide?.push(s.root); this.cur = s; return true;
   }
   ghostify(s) {                                   // pale, see-through and a little blue: a remembered thing, not a real one

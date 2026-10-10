@@ -64,6 +64,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
+  // One phone per tank is the director: its fish positions and memories are what everyone sees. The one that has been connected longest; when it leaves, the next takes over.
+  const directorOf = (tankId) => [...(rooms.get(tankId) ?? [])].sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || a.joinedAt - b.joinedAt)[0];
+  const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
   const broadcast = (tankId, o) => { for (const w of rooms.get(tankId) ?? []) send(w, o); };
   const ip = (req) => req.socket.remoteAddress ?? '?';
@@ -172,14 +175,29 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   wss.on('connection', (ws) => {
     const tank = L.tankOf(db, ws.userId); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
-    rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
+    ws.joinedAt = Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
     send(ws, { t: 'snapshot', ...L.snapshot(db, ws.user, online(tank.id)) });
-    broadcast(tank.id, { t: 'presence', online: online(tank.id) });
+    broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
     ws.on('message', (raw) => {
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
+        if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); } return; }
+        if (m.t === 'snap') {
+          if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
+          const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4) }));
+          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, { t: 'snap', fish });
+          return;
+        }
+        if (m.t === 'fx') {
+          const kind = m.kind === 'water' || m.kind === 'sight' ? m.kind : null; if (!kind || !lim.hit('fx:' + ws.userId + kind, kind === 'water' ? 1 : 4, kind === 'water' ? 20e3 : 60e3)) return;
+          if (kind === 'sight' && ws !== directorOf(ws.tankId)) return;
+          const n = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : 0), out = { t: 'fx', kind, by: ws.userId };
+          if (kind === 'sight') Object.assign(out, { what: String(m.what ?? '').slice(0, 20), dir: m.dir < 0 ? -1 : 1, y0: n(m.y0, -5, 25), z: n(m.z, -20, 5) });
+          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, out);
+          return;
+        }
         if (m.t === 'nudge') {
           const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
           if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
@@ -232,7 +250,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
     });
-    ws.on('close', () => { const nowT = Date.now(); if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); });
+    ws.on('close', () => { const nowT = Date.now(); if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref();
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank

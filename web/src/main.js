@@ -22,7 +22,7 @@ window.__game = game;
 
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
-const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; sights.onSpawn = () => { try { if (localStorage.getItem('ourtank.memory')) return; localStorage.setItem('ourtank.memory', '1'); } catch { /* shown again next time */ } ui?.toast('The fish are remembering the open sea…', 5200); }; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
+const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; sights.onSpawn = () => { if (game.shared && sights.cur) game.live?.send({ t: 'fx', kind: 'sight', what: sights.cur.kind, ...sights.cur.look }); try { if (localStorage.getItem('ourtank.memory')) return; localStorage.setItem('ourtank.memory', '1'); } catch { /* shown again next time */ } ui?.toast('The fish are remembering the open sea…', 5200); }; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
 const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
 const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 const rain = new Rain(); stg.scene.add(rain.mesh); stg.hideForDepth.push(rain.mesh);
@@ -120,7 +120,7 @@ async function changeWater() {
   const act = async () => { const r = await game.dispatch({ t: 'water' }); if (r.ok) shellToast(r); else fail(r); return r.ok; };
   if (REDUCED) { sfx('splash'); await act(); return; }
   ui.toast('Time for fresh water'); haptic(12);
-  wc.start({ dirt0: Math.min(1, 0.6 + (1 - game.state.water) * 1.2), dispatch: act });
+  if (wc.start({ dirt0: Math.min(1, 0.6 + (1 - game.state.water) * 1.2), dispatch: act }) && game.shared) game.live?.send({ t: 'fx', kind: 'water' });
 }
 
 // ── placement & rearranging ──
@@ -509,6 +509,31 @@ function watchTick(dt) {
   watchT += Math.min(dt, 0.1); if (watchT >= 15) { watchT = -1e9; game.observe({ key: 'watch' }); }
 }
 document.addEventListener('visibilitychange', () => game.track(document.hidden ? 'hidden' : 'visible'));
+// ── one tank, several phones: a single phone (the director) decides where the fish go and when a memory passes; the others follow it ──
+const netFish = new Map(); let lastSnapSent = 0;
+function isDirector() { return !game.shared || game.director === true; }
+const r2 = (v) => Math.round(v * 100) / 100;
+game.on('snap', (list) => { const at = performance.now(); for (const f of list) { let e = netFish.get(f.i); if (!e) netFish.set(f.i, (e = {})); Object.assign(e, f, { at }); } });
+game.on('role', (d) => { if (d) netFish.clear(); });
+game.on('fx', (m) => {
+  if (m.kind === 'water') { if (!wc.active && !REDUCED && !document.hidden) { setFocus(null); wc.start({ dirt0: 1, dispatch: () => true }); } }      // a friend is changing the water: watch it happen
+  else if (m.kind === 'sight' && !isDirector()) sights.spawn(m.what, { dir: m.dir, y0: m.y0, z: m.z });
+});
+function netSync(dt, now) {
+  if (!game.shared || wc.active) return;
+  if (isDirector()) {
+    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll) })) }); }
+    return;
+  }
+  const k = 1 - Math.exp(-dt * 9), t = performance.now();
+  for (const f of fishes.list) {
+    const e = netFish.get(f.fid); if (!e || t - e.at > 3000 || (play && play.fish === f)) continue;                       // no news from the director: this phone's own fish carry on
+    if (Math.hypot(e.x - f.pos.x, e.y - f.pos.y, e.z - f.pos.z) > 4) f.pos.set(e.x, e.y, e.z); else { f.pos.x += (e.x - f.pos.x) * k; f.pos.y += (e.y - f.pos.y) * k; f.pos.z += (e.z - f.pos.z) * k; }
+    const dh = ((e.h - f.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI; f.heading += dh * k; f.pitch += (e.p - f.pitch) * k; f.roll += (e.r - f.roll) * k;
+    f.group.position.copy(f.pos); f.group.quaternion.setFromEuler(new THREE.Euler(f.roll, f.heading, f.pitch, 'YZX'));
+  }
+}
+
 // ── frame loop ──
 let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = performance.now(), first = true;
 const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:60;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
@@ -542,8 +567,8 @@ function frameBody(now) {
   for (const sp of eggSprites.values()) { const w = 1 + Math.sin(t * 3 + sp.position.x) * 0.05; sp.scale.set(w, w, 1); }
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
-  decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
-  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED; sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); netSync(dt, now);
+  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); return true; }

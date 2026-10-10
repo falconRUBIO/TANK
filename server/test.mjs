@@ -408,6 +408,19 @@ await t('push: the server makes and keeps its own keys, and a test notification 
   await call('/api/push/subscribe', { subscription: sub, offset: 0 }, u.token); S.db.prepare('UPDATE push_subs SET offset_min=? WHERE user_id=?').run(((3 - new Date().getUTCHours()) * 60 + 1440) % 1440 - 0, u.userId);
   pushed.length = 0; const r = await call('/api/push/test', {}, u.token); assert.equal(r.body.sent, true); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /test/i);
 });
+await t('two phones in one tank agree on a director, who alone sends fish positions and memories; a water change is mirrored', async () => {
+  const x = await mkUser('Dir'), y = await mkUser('Fol'), tk = (await call('/api/tanks', { name: 'Sync' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
+  const wx = await open(x.token), wy = await open(y.token), last = (w) => [...w.msgs].reverse().find((m) => m.t === 'role');
+  await waitFor(wy, (m) => m.t === 'role'); await waitFor(wx, (m) => m.t === 'role' && m.director === true);
+  assert.equal(last(wx).director, true, 'the phone that has been here longest directs'); assert.equal(last(wy).director, false);
+  wx.send(JSON.stringify({ t: 'snap', fish: [{ i: 'f1', x: 1.5, y: 6, z: 1, h: 0.5, p: 0, r: 0 }] })); const sn = await waitFor(wy, (m) => m.t === 'snap'); assert.equal(sn.fish[0].x, 1.5);
+  wx.msgs.length = 0; wy.send(JSON.stringify({ t: 'snap', fish: [{ i: 'f1', x: -3, y: 6, z: 1, h: 0, p: 0, r: 0 }] })); await new Promise((r) => setTimeout(r, 150)); assert.equal(wx.msgs.filter((m) => m.t === 'snap').length, 0, 'a follower cannot move the fish');
+  wy.send(JSON.stringify({ t: 'fx', kind: 'water' })); const fx = await waitFor(wx, (m) => m.t === 'fx' && m.kind === 'water'); assert.equal(fx.by, y.userId);
+  wy.send(JSON.stringify({ t: 'fx', kind: 'sight', what: 'whale', dir: 1, y0: 5, z: -8 })); await new Promise((r) => setTimeout(r, 150)); assert.equal(wx.msgs.filter((m) => m.t === 'fx' && m.kind === 'sight').length, 0, 'only the director sends memories');
+  wx.send(JSON.stringify({ t: 'fx', kind: 'sight', what: 'whale', dir: -1, y0: 5, z: -8 })); const sg = await waitFor(wy, (m) => m.t === 'fx' && m.kind === 'sight'); assert.equal(sg.what, 'whale'); assert.equal(sg.dir, -1);
+  wy.msgs.length = 0; wx.send(JSON.stringify({ t: 'vis', hidden: true })); await waitFor(wy, (m) => m.t === 'role' && m.director === true);
+  wy.msgs.length = 0; wx.close(); await new Promise((r) => setTimeout(r, 150)); assert.equal(last(wy)?.director ?? true, true, 'and when the director leaves, the other takes over'); wy.close();
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

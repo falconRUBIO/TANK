@@ -52,7 +52,7 @@ export class Game {
       const due = Math.min(...(s.orders ?? []).map((o) => o.arrivesAt), ...(s.eggs ?? []).map((e) => e.hatchAt), Infinity);
       if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 3) resync();      // a phone clock far ahead of the server must not reconnect forever
     }, 1000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
+    document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
   }
   onNet(m) {
     if (m.t === 'snapshot') {
@@ -67,7 +67,10 @@ export class Game {
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
       if (m.toast && (mine || m.grew || m.discovery)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery);
       if (m.arrival) this.emit('arrival', m.arrival); if (m.placed) this.emit('placed', m.placed);
-    } else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
+    } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
+    else if (m.t === 'snap') this.emit('snap', m.fish);
+    else if (m.t === 'fx') this.emit('fx', m);
+    else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }
     else if (m.t === 'chat') { this.messages.push(m.msg); this.emit('chat', m.msg); }
     else if (m.t === 'nudge') this.emit('nudged', m.from, m.why);
