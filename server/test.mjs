@@ -490,6 +490,19 @@ await t('the GitHub copy: compressed, updated in place with the right sha, resto
   const f2 = pth.join(dir, 'new.db'); assert.equal(await restoreIfEmpty(off, f2, () => {}), true); const { DatabaseSync } = await import('node:sqlite'); const d = new DatabaseSync(f2, { readOnly: true }); assert.ok(d.prepare('SELECT COUNT(*) n FROM users').get().n > 0); d.close();
   assert.ok(offsiteFromEnv({ GITHUB_BACKUP_TOKEN: 't', GITHUB_BACKUP_REPO: 'a/b' })?.describe.includes('github.com/a/b')); assert.equal(offsiteFromEnv({}), null);
 });
+await t('a server never overwrites a newer copy sent by another server (the redeploy handover), and loads it instead', async () => {
+  const { makeUploader } = await import('./offsite.mjs'); const fs = await import('node:fs'), os = await import('node:os'), pth = await import('node:path');
+  const dir = fs.mkdtempSync(pth.join(os.tmpdir(), 'hand-')), live = pth.join(dir, 'live.db'); S.db.exec(`VACUUM INTO '${live}'`);
+  let remote = 'old', sent = 0, staleSeen = null;
+  const off = { object: 'ourtank.db', minGapMs: 0, stamp: async () => remote, put: async (b, name) => { if (!name) { sent++; remote = 'mine' + sent; return remote; } return null; } };
+  const held = makeUploader(off, () => live, () => {}, { expect: 'old', holdUntil: Date.now() + 60e3, onStale: (s) => (staleSeen = s) });
+  assert.equal(await held.run(), false, 'nothing is sent during the handover'); assert.equal(await held.check(), false, 'the copy has not changed yet');
+  remote = 'from-the-old-server'; assert.equal(await held.check(), true, 'the newer copy is noticed'); assert.equal(staleSeen, 'from-the-old-server');
+  assert.equal(await held.run(true), false, 'and not overwritten, even when stopping'); assert.equal(sent, 0);
+  remote = 'old'; const up = makeUploader(off, () => live, () => {}, { expect: 'old' }); assert.equal(await up.run(), true); assert.equal(sent, 1);
+  S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('h', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
+  assert.equal(await up.run(), true, 'its own copy is what it expects, so it keeps sending'); assert.equal(sent, 2);
+});
 await t('a backup can be copied as text and pasted back, and the phone-side helpers fail quietly where there is no browser storage', async () => {
   const k = await import('../web/src/keep.js'); const sample = { app: 'our-tank', tank: { name: 'Text' }, world: { fish: Array.from({ length: 40 }, (_, i) => ({ id: 'f' + i, name: 'Fish ' + i, species: 'neon' })), decor: [] } };
   const text = await k.backupToText(sample); assert.match(text, /^OURTANK1:/); assert.ok(text.length < JSON.stringify(sample).length, 'compressed');

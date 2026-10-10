@@ -33,6 +33,7 @@ function sendStatic(req, res, file) {
 }
 
 let offsiteInfo = () => null;      // set when the server is started from the command line with a bucket
+let diskKept = null;                // on Render: whether /data already held a marker from an earlier start (a real, kept disk)
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 function dashboardHtml(st) {
   const dataSince = st.meta?.dataSince ?? '', dbPathShown = st.meta?.db ?? '';
@@ -106,7 +107,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (!user) throw new L.GameError('UNAUTHORIZED', 'Sign in required.', 401);
       if (req.method === 'GET' && p === '/api/storage') {
         // is this tank safe from the server losing its disk? an offsite copy that has been sent, or a disk that is kept, means yes
-        const o = offsiteInfo(), disk = dbPath !== ':memory:' && (dbPath.startsWith('/data/') || (!process.env.RENDER && !process.env.FLY_APP_NAME));
+        const o = offsiteInfo(), disk = dbPath !== ':memory:' && (diskKept ?? (dbPath.startsWith('/data/') || (!process.env.RENDER && !process.env.FLY_APP_NAME)));
         const level = o?.on && o.at && !o.err ? 'safe' : o?.on ? 'waiting' : disk ? 'safe' : 'risk';
         return json(res, 200, { level, offsite: !!o?.on, disk, lastCopy: o?.at || null, error: o?.err || null });
       }
@@ -308,24 +309,46 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
     port: server.address().port, db, backup, push, pushSweep,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); }),
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
   })));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  // If a bucket is set, the whole database is copied there every few minutes and just before the server stops, and put back when the server starts with nothing.
-  const off = offsiteFromEnv();
-  let restoreFailed = false;
-  if (off) { for (let i = 0; i < 6; i++) { try { await restoreIfEmpty(off, path.resolve(process.env.DB || 'ourtank.db')); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
-  const s = await start({ port: +process.env.PORT || 8080, dbPath: process.env.DB || 'ourtank.db' });
-  let uploader = null;
-  if (off) { uploader = makeUploader(off, () => { s.backup(); const f = path.resolve(process.env.DB || 'ourtank.db') + '.backup'; return fs.existsSync(f) ? f : null; }); if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); } setTimeout(() => uploader.run(), 20e3).unref(); setInterval(() => uploader.run(), 5 * 60e3).unref(); console.log('offsite backup: on, ' + off.describe); }
-  else if (process.env.RENDER) console.warn('No offsite backup is set (S3_ENDPOINT, S3_BUCKET, S3_KEY, S3_SECRET). Without a persistent disk or an offsite copy, every redeploy erases all tanks.');
-  offsiteInfo = () => (uploader ? { on: true, ...uploader.status } : { on: false });
-  console.log(`OUR TANK listening on http://localhost:${s.port}`);
-  const dbFile = path.resolve(process.env.DB || 'ourtank.db'), users = s.db.prepare('SELECT COUNT(*) n, MIN(created_at) first FROM users').get();
-  console.log(`database: ${dbFile} (${users.n} players${users.first ? ', oldest from ' + new Date(users.first).toISOString() : ', empty'})`);
-  if (process.env.RENDER && !dbFile.startsWith('/data/')) console.warn('WARNING: the database is not on the persistent disk (/data). Tanks and recovery keys will be lost on every deploy or restart. Set DB=/data/ourtank.db and attach a disk mounted at /data.');
-  else if (process.env.RENDER && !fs.existsSync('/data/.persist-check')) { try { fs.writeFileSync('/data/.persist-check', String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
-  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('shutting down'); try { s.backup(); if (uploader) await Promise.race([uploader.run(true), new Promise((r) => setTimeout(r, 9000))]); await s.close(); } finally { process.exit(0); } });
+  // If a bucket or a GitHub repository is set, the whole database is copied there every few minutes and just before the server stops, and put back when the server starts with nothing.
+  // A redeploy starts the new server before the old one stops, and the old one sends its last copy after that. So a new server waits a few minutes
+  // before sending anything, and if a newer copy turns up meanwhile (or ever), it loads that copy instead of overwriting it.
+  const off = offsiteFromEnv(), dbFile = path.resolve(process.env.DB || 'ourtank.db'), port = +process.env.PORT || 8080, HANDOVER = +(process.env.HANDOVER_MS || 180e3);
+  let s = null, uploader = null, timers = [], reloading = false, stopping = false;
+  if (process.env.RENDER) { const f = '/data/.persist-check'; diskKept = fs.existsSync(f); try { if (!diskKept) fs.writeFileSync(f, String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
+  const boot = async () => {
+    let restoreFailed = false, stamp;
+    if (off) { for (let i = 0; i < 6; i++) { try { stamp = await off.stamp(); await restoreIfEmpty(off, dbFile); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
+    s = await start({ port, dbPath: process.env.DB || 'ourtank.db' });
+    if (off) {
+      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: () => { reload(); } });
+      if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }
+      const watch = setInterval(() => { if (!uploader.status.holding) clearInterval(watch); else uploader.check(); }, 15e3); watch.unref();
+      const first = setTimeout(() => uploader.run(), HANDOVER + 5e3); first.unref();
+      const every = setInterval(() => uploader.run(), 5 * 60e3); every.unref();
+      timers = [watch, first, every];
+      console.log('offsite backup: on, ' + off.describe);
+    } else if (process.env.RENDER) console.warn('No offsite backup is set (GITHUB_BACKUP_TOKEN and GITHUB_BACKUP_REPO, or the S3_ variables). Without a persistent disk or an offsite copy, every redeploy erases all tanks.');
+    offsiteInfo = () => (uploader ? { on: true, ...uploader.status } : { on: false });
+    console.log(`OUR TANK listening on http://localhost:${s.port}`);
+    const users = s.db.prepare('SELECT COUNT(*) n, MIN(created_at) first FROM users').get();
+    console.log(`database: ${dbFile} (${users.n} players${users.first ? ', oldest from ' + new Date(users.first).toISOString() : ', empty'})`);
+    if (process.env.RENDER && !dbFile.startsWith('/data/')) console.warn('WARNING: the database is not on the persistent disk (/data). Without an offsite copy, tanks and recovery keys are lost on every deploy or restart.');
+  };
+  // a newer copy exists: drop this server's stale database and start again from that copy (players reconnect on their own)
+  const reload = async () => {
+    if (reloading || stopping) return; reloading = true;
+    try {
+      console.log('offsite backup: loading the newer copy');
+      for (const t of timers) { clearInterval(t); clearTimeout(t); } uploader = null; offsiteInfo = () => ({ on: true, at: 0, err: '', holding: true });
+      await s.close(); for (const x of ['', '-wal', '-shm', '.backup']) fs.rmSync(dbFile + x, { force: true });
+      await boot();
+    } catch (e) { console.error('reload failed', e); process.exit(1); } finally { reloading = false; }
+  };
+  await boot();
+  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { if (stopping) return; stopping = true; console.log('shutting down'); try { while (reloading) await new Promise((r) => setTimeout(r, 200)); s.backup(); if (uploader) await Promise.race([uploader.run(true), new Promise((r) => setTimeout(r, 9000))]); await s.close(); } finally { process.exit(0); } });
 }

@@ -27,7 +27,9 @@ export function makeOffsite({ endpoint, bucket, accessKey, secret, region = 'aut
   return {
     describe: `${url.host}/${bucket}/${object}`,
     object,
-    async put(buf, name) { const r = await call('PUT', buf, name); if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status); },
+    async put(buf, name) { const r = await call('PUT', buf, name); if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status); return r.headers?.get?.('etag') ?? null; },
+    // what is there now (its ETag), or null when nothing is: lets a server notice that someone else sent a newer copy
+    async stamp(name) { const r = await call('HEAD', null, name); if (r.status === 404) return null; if (!r.ok) throw new Error('offsite lookup failed: HTTP ' + r.status); return r.headers?.get?.('etag') ?? null; },
     async get(name) { const r = await call('GET', null, name); if (r.status === 404) return null; if (!r.ok) throw new Error('offsite download failed: HTTP ' + r.status); return Buffer.from(await r.arrayBuffer()); },
   };
 }
@@ -43,6 +45,11 @@ export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourt
       if (cur.ok) sha = (await cur.json()).sha; else if (cur.status !== 404) throw new Error('offsite lookup failed: HTTP ' + cur.status);
       const r = await fetchImpl(api(file(name)), { method: 'PUT', headers: { ...hdr('application/vnd.github+json'), 'content-type': 'application/json' }, signal: AbortSignal.timeout(30000), body: JSON.stringify({ message: 'tank backup', branch, content: zlib.gzipSync(buf).toString('base64'), ...(sha ? { sha } : {}) }) });
       if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status);
+      try { return (await r.json())?.content?.sha ?? null; } catch { return null; }
+    },
+    async stamp(name = object) {
+      const r = await fetchImpl(`${api(file(name))}?ref=${branch}`, { headers: hdr('application/vnd.github+json'), signal: AbortSignal.timeout(20000) });
+      if (r.status === 404) return null; if (!r.ok) throw new Error('offsite lookup failed: HTTP ' + r.status); return (await r.json()).sha ?? null;
     },
     async get(name = object) {
       const r = await fetchImpl(`${api(file(name))}?ref=${branch}`, { headers: hdr('application/vnd.github.raw+json'), signal: AbortSignal.timeout(20000) });
@@ -79,22 +86,37 @@ export async function restoreIfEmpty(off, file, log = console.log) {
   log('offsite backup: nothing to restore yet'); return false;
 }
 // Uploads when something changed since last time; the caller makes the consistent snapshot file.
-export function makeUploader(off, snapshot, log = console.log) {
-  let last = '', at = 0, err = '', lastDated = 0, blocked = false;
+// expect: what this server believes the copy out there is (what it restored, or what it last sent). If the copy changed behind its back,
+// another server wrote it (on a redeploy the old server sends its last copy after the new one has started), so this one is the stale one:
+// it never overwrites that copy, it calls onStale so the newer copy can be loaded. holdUntil: no ordinary uploads before then (the handover).
+export function makeUploader(off, snapshot, log = console.log, { expect, holdUntil = 0, onStale = null } = {}) {
+  let last = '', at = 0, err = '', lastDated = 0, blocked = false, stale = false;
+  const checks = expect !== undefined && typeof off.stamp === 'function';
+  const fresh = async () => {
+    if (!checks) return true;
+    const cur = await off.stamp(); if (cur === expect) return true;
+    stale = true; log('offsite backup: a newer copy was sent by another server; this one will not overwrite it'); try { onStale?.(cur); } catch (e) { log('offsite backup: reload failed: ' + e.message); }
+    return false;
+  };
   return {
     block() { blocked = true; },
+    // during the handover: has the copy out there changed since this server started?
+    async check() { if (blocked || stale) return false; try { return !(await fresh()); } catch (e) { err = String(e.message); return false; } },
     async run(force = false) {
-      if (blocked) return false;
+      if (blocked || stale) return false;
+      if (!force && Date.now() < holdUntil) return false;
       if (!force && off.minGapMs && Date.now() - at < off.minGapMs) return false;
       try {
         const file = snapshot(); if (!file) return false;
         if (isEmptyDb(file)) { log('offsite backup: the database has no players, not sending it over a good copy'); return false; }      // an empty server must never replace a real tank
         const buf = fs.readFileSync(file), h = sha(buf); if (h === last) return false;
-        await off.put(buf); last = h; at = Date.now(); err = '';
+        if (!(await fresh())) return false;
+        const got = await off.put(buf); last = h; at = Date.now(); err = '';
+        if (checks) expect = got ?? await off.stamp();
         if (at - lastDated > 3600e3) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; }                                  // one dated copy a day is always there too, overwritten hourly
         log(`offsite backup: uploaded ${buf.length} bytes`); return true;
       } catch (e) { err = String(e.message); log('offsite backup failed: ' + err); return false; }
     },
-    get status() { return { at, err, blocked }; },
+    get status() { return { at, err, blocked, stale, holding: Date.now() < holdUntil }; },
   };
 }

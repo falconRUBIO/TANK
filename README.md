@@ -66,6 +66,7 @@ A host whose disk is wiped on every deploy or restart (Render's free plan) forge
 2. Settings, Developer settings, Personal access tokens, Fine-grained tokens, Generate new token. Name it `our-tank`, choose the longest expiry, Repository access: Only select repositories, pick `ourtank-data`. Under Permissions, Repository permissions, set **Contents** to Read and write. Generate and copy the token (shown once). Put a reminder in your calendar to make a new one before it expires.
 3. In Render, Environment: `GITHUB_BACKUP_TOKEN` = the token, `GITHUB_BACKUP_REPO` = `yourname/ourtank-data`. Save.
 4. `/admin` shows "Offsite copy: on". Copies are compressed and sent at most every 25 minutes and always when the server stops, so a tank made in the last half hour before a crash can be lost; Settings, "Tank storage" shows Protected once the first copy is sent. It stores all accounts and tanks in that private repo.
+5. Redeploys are safe: Render starts the new server before it stops the old one, so a new server sends nothing for its first three minutes, and if the old server's last copy arrives meanwhile it loads that copy instead of overwriting it. `node tools/backup_drill.mjs` rehearses a wiped-disk restart and an overlapping redeploy against a stand-in for GitHub.
 
 **B. A persistent disk.** On a paid Render plan, mount a disk at `/data` and set `DB=/data/ourtank.db` (the included `render.yaml` does this).
 
