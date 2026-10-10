@@ -4,6 +4,7 @@ import fs from 'node:fs';
 const OUT = process.env.OUT || '/tmp/look'; fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^A GIFT FOR YOU|^LEVEL/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 500));
 await p.goto('http://localhost:8123/?q=2&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state && window.__fishes?.list?.length, null, { timeout: 120000 }); await p.waitForTimeout(1500);
 await p.evaluate(async () => {

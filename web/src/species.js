@@ -442,32 +442,38 @@ const reef = (o) => ({
       sample(x, y, z) {
         const e = eye(x, y, z); if (e) return e;
         const b = body(x, y, z);
-        if (b) return { c: paint({ t: b.t, dy: b.dy, dz: b.dz, x, y, z }), em: 0 };
+        if (b) { const pc = paint({ t: b.t, dy: b.dy, dz: b.dz, x, y, z }); return { c: o.flat ? pc : scaleTex(pc, x, y, z, b.dy), em: 0 }; }
         // ── tail ──
         const dT = X0 - x;
         if (dT >= 0 && dT <= len && Math.abs(z) <= (dT < 3 ? 1 : 0)) {
           const u = dT / len; let hh;
           if (T.kind === 'fork') { hh = hy(0) + (T.spread - hy(0)) * Math.pow(u, 0.85); if (u > T.notch && Math.abs(y) < (u - T.notch) * T.depth) return null; }
           else { const r = Math.sin(Math.min(1, u * 1.15) * Math.PI / 2); hh = hy(0) + (T.spread - hy(0)) * r; if (u > 0.86) hh *= 1 - (u - 0.86) / 0.14 * 0.8; }
-          if (Math.abs(y) <= hh) return { c: fin(u, { part: 'tail', y: y / hh, x }), wave: 0.5 + u * 0.5 };
+          if (Math.abs(y) <= hh) return { c: finTex(fin(u, { part: 'tail', y: y / hh, x }), u, x, y), wave: 0.5 + u * 0.5 };
         }
         // ── dorsal fin(s): optional spiny front ──
         for (const d of o.dorsal ?? []) {
           const x0 = X0 + d.a * L, x1 = X0 + d.b * L; if (z !== 0 || x < x0 || x > x1) continue;
           const s2 = (x - x0) / (x1 - x0), top = hy(bt(x)), h = d.h * (d.shape === 'sail' ? Math.sin(Math.PI * Math.pow(s2, 0.7)) : (0.45 + 0.55 * Math.sin(Math.PI * Math.min(1, s2 * 1.1)))) * (d.spiny && Math.floor(x) % 3 === 0 ? 1.18 : 1);
-          if (y >= top - 1 && y <= top + h) return { c: fin(clamp((y - top) / Math.max(1, h)), { part: 'dorsal', x }), wave: 0.25 };
+          if (y >= top - 1 && y <= top + h) { const u = clamp((y - top) / Math.max(1, h)); return { c: finTex(fin(u, { part: 'dorsal', x }), u, y, x), wave: 0.25 }; }
         }
         // ── anal fin + pelvic ──
         const A = o.anal; if (A && z === 0) { const x0 = X0 + A.a * L, x1 = X0 + A.b * L; if (x >= x0 && x <= x1) { const s2 = (x - x0) / (x1 - x0), bot = -hy(bt(x)), h = A.h * Math.sin(Math.PI * Math.pow(s2, 0.8)); if (y <= bot + 1 && y >= bot - h) return { c: fin(clamp((bot - y) / Math.max(1, h)), { part: 'anal', x }), wave: 0.25 }; } }
-        if (o.pelvic && Math.abs(z) === 2 && x >= X0 + o.pelvic[0] * L && x <= X0 + o.pelvic[1] * L) { const bot = -hy(bt(x)); if (y <= bot + 1 && y >= bot - 4) return { c: fin(0.6, { part: 'pelvic', x }), flap: 0.8 }; }
+        if (o.pelvic && Math.abs(z) === 1) { const x1 = X0 + o.pelvic[1] * L, q = x1 - x, bot = -hy(bt(x1)); if (q >= 0 && q <= 4 && y <= bot && y >= bot - 1 - q * 0.7 && y <= bot - q * 0.35) return { c: fin(0.55, { part: 'pelvic', x }), flap: 0.8 }; }
         // ── pectoral fin hugging the flank ──
-        if (o.pec && Math.abs(z) >= 1) { const px = X0 + o.pec[0] * L, w = hz(bt(x)), edge = Math.round(w * 0.88) + 1; if (Math.abs(z) === edge && x >= px - 3 && x <= px + 3 && Math.abs(y - o.pec[1]) <= 2.5 - Math.abs(x - px) * 0.3) return { c: fin(0.5, { part: 'pec', x }), flap: 1.2 }; }
+        if (o.pec && Math.abs(z) >= 1) { const px = X0 + o.pec[0] * L, w = hz(bt(x)), edge = Math.round(w * 0.88) + 1; const q = px - x; if (Math.abs(z) === edge && q >= -1 && q <= 4 && Math.abs(y - o.pec[1] + q * 0.25) <= 0.6 + q * 0.45) return { c: finTex(fin(0.35 + q * 0.08, { part: 'pec', x }), 0.35 + q * 0.08, x, y), flap: 1.2 }; }
         return null;
       },
     };
   },
 });
 const lerpc = (a, b, k) => mix(a, b, clamp(k));
+const vh = (x, y, z) => { let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const scaleTex = (c, x, y, z, dy) => {                                          // scales: offset rows, each scale a touch brighter at its edge; a shaded back and a lit belly
+  const row = ((y % 2) + 2) % 2, scale = ((x + row * 2) % 4 + 4) % 4 === 0 ? 1.07 : 1, k = (0.95 + vh(x, y, z) * 0.09) * scale * (1 - Math.max(0, dy) * 0.12) * (1 + Math.max(0, -dy - 0.4) * 0.12);
+  return [Math.min(255, c[0] * k), Math.min(255, c[1] * k), Math.min(255, c[2] * k)];
+};
+const finTex = (c, u, x, y) => { const ray = ((Math.round(y * 0.9 + x * 0.15) % 2) + 2) % 2 ? 0.9 : 1.04, edge = u > 0.82 ? 1 + (u - 0.82) * 1.6 : 1; return [Math.min(255, c[0] * ray * edge), Math.min(255, c[1] * ray * edge), Math.min(255, c[2] * ray * edge)]; };
 const clownfish = reef({
   id: 'goldfish', label: 'Clownfish', L: 28, vox: 0.05, length: 52, eye: [0.8, 2], ring: [255, 190, 90], ringR: 2.2, amp: 0.45,
   hy: [[0, 3], [0.1, 5.4], [0.3, 8.6], [0.55, 9.4], [0.8, 7.6], [0.95, 5], [1, 3]], hz: [[0, 1.6], [0.3, 4], [0.6, 5.2], [0.9, 3.6], [1, 2]],
@@ -475,7 +481,7 @@ const clownfish = reef({
   paint: ({ t, dy }) => { const band = (a, b) => t >= a && t <= b, edge = (a, b) => t >= a - 0.028 && t <= b + 0.028;
     if (band(0.69, 0.76) || band(0.38, 0.47) || band(0.08, 0.13)) return [252, 250, 244];
     if (edge(0.69, 0.76) || edge(0.38, 0.47) || edge(0.08, 0.13)) return [28, 20, 22];
-    return lerpc([232, 76, 10], [255, 156, 40], (-dy + 0.4) * 0.8); },
+    return lerpc([226, 66, 6], [255, 140, 24], (-dy + 0.4) * 0.8); },
   fin: (c) => { if (c.u > 0.9) return [24, 18, 22]; if (c.u > 0.8) return [250, 246, 238]; return lerpc([240, 92, 12], [255, 150, 36], c.u); },
 });
 const gramma = reef({
@@ -487,34 +493,53 @@ const gramma = reef({
 });
 const damsel = reef({
   id: 'guppy', label: 'Damselfish', L: 22, vox: 0.045, length: 46, eye: [0.78, 2], ring: [255, 224, 120], ringR: 2.2, amp: 0.55,
-  pals: [[[24, 96, 255], [150, 220, 255], [255, 214, 58]], [[255, 214, 40], [255, 246, 160], [40, 100, 240]]],
+  pals: [[[16, 70, 230], [70, 170, 255], [255, 206, 30]], [[14, 60, 200], [40, 140, 250], [255, 214, 40]], [[255, 196, 20], [255, 232, 110], [24, 90, 230]]],      // yellowtail blue, all-blue with a yellow tail, and a lemon damsel
   hy: [[0, 2.6], [0.15, 5], [0.4, 8], [0.65, 8.6], [0.9, 6], [1, 3.6]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.4], [0.9, 3], [1, 1.8]],
   tail: { kind: 'fork', len: 10, spread: 8.5, notch: 0.5, depth: 1.5 }, dorsal: [{ a: 0.12, b: 0.92, h: 5.2, spiny: true }], anal: { a: 0.3, b: 0.6, h: 3.4 }, pelvic: [0.4, 0.55], pec: [0.62, -1],
-  paint: ({ dy, P }) => lerpc(P[0], P[1], (-dy - 0.1) * 0.9), fin: ({ u, P, part }) => (part === 'tail' ? lerpc(P[2], [255, 255, 255], u * 0.25) : part === 'pec' || part === 'pelvic' ? lerpc(P[1], [255, 255, 255], 0.3) : lerpc(P[0], P[2], 0.25 + u * 0.4)),
+  paint: ({ dy, t, P }) => { const c = lerpc(P[0], P[1], (-dy - 0.1) * 0.8); return t < 0.18 ? lerpc(c, P[2], (0.18 - t) * 6) : c; }, fin: ({ u, P, part }) => (part === 'tail' ? lerpc(P[2], [255, 248, 200], u * 0.2) : part === 'pec' || part === 'pelvic' ? lerpc(P[1], [220, 236, 255], 0.35) : u > 0.85 ? lerpc(P[1], [190, 230, 255], 0.5) : lerpc(P[0], P[1], 0.2 + u * 0.3)),
 });
 const cardinal = reef({                       // a Banggai-style cardinalfish: silver, three bold black bars, a big pale eye, long trailing fins with white spots
   id: 'platy', label: 'Cardinalfish', L: 22, vox: 0.045, length: 44, eye: [0.82, 2], ring: [232, 238, 244], ringR: 3.0, eyeR: 1.3, amp: 0.55,
-  pals: [[[188, 200, 212], [248, 250, 255], [18, 20, 28]], [[222, 190, 146], [255, 244, 222], [44, 28, 22]]],
+  pals: [[[112, 124, 142], [206, 214, 228], [10, 10, 18]], [[150, 120, 84], [222, 200, 166], [30, 18, 12]]],
   hy: [[0, 2.2], [0.15, 4.6], [0.4, 7.6], [0.65, 8.0], [0.9, 6.0], [1, 3.6]], hz: [[0, 1.3], [0.3, 3.0], [0.6, 4.0], [0.9, 3], [1, 1.8]],
   tail: { kind: 'fork', len: 11, spread: 8.5, notch: 0.35, depth: 2.2 }, dorsal: [{ a: 0.3, b: 0.5, h: 4.6, spiny: true }, { a: 0.52, b: 0.9, h: 8 }], anal: { a: 0.4, b: 0.84, h: 7 }, pelvic: [0.4, 0.56], pec: [0.62, -1],
-  paint: ({ t, dy, x, y, z, P }) => { if ((t > 0.74 && t < 0.86) || (t > 0.38 && t < 0.47) || (t > 0.02 && t < 0.1)) return P[2]; if (((x * 3 + y * 5 + z * 7) % 11 + 11) % 11 === 0) return [255, 255, 255]; return lerpc(P[0], P[1], (-dy + 0.15) * 0.9); },
+  paint: ({ t, dy, x, y, z, P }) => { if ((t > 0.72 && t < 0.86) || (t > 0.36 && t < 0.49) || (t > 0.0 && t < 0.11)) return P[2]; if (((x * 3 + y * 5 + z * 7) % 11 + 11) % 11 === 0) return [255, 255, 255]; return lerpc(P[0], P[1], (-dy + 0.15) * 0.9); },
   fin: ({ u, x, part, P }) => { if (part === 'pec' || part === 'pelvic') return lerpc(P[1], [255, 255, 255], 0.4); if (u > 0.82) return lerpc(P[1], P[2], (u - 0.82) / 0.18); return ((Math.floor(x * 1.7) + Math.floor(u * 9)) % 5 === 0) ? [255, 255, 255] : lerpc(P[0], P[1], 0.45); },
 });
 const anthias = reef({
   id: 'danio', label: 'Pink Anthias', L: 26, vox: 0.042, length: 48, eye: [0.84, 1], ring: [255, 224, 150], ringR: 2.2, amp: 0.6,
   hy: [[0, 2], [0.15, 3.8], [0.45, 5.6], [0.8, 4.6], [1, 2.8]], hz: [[0, 1.2], [0.4, 3], [0.8, 2.6], [1, 1.4]],
   tail: { kind: 'fork', len: 13, spread: 10, notch: 0.4, depth: 1.9 }, dorsal: [{ a: 0.2, b: 0.92, h: 6.2, spiny: true }], anal: { a: 0.35, b: 0.7, h: 3.6 }, pelvic: [0.45, 0.6], pec: [0.66, -1],
-  paint: ({ t, dy }) => (t > 0.7 && dy > -0.2 && dy < 0.5 ? lerpc([255, 190, 90], [255, 140, 120], (0.9 - t) * 4) : lerpc([255, 86, 150], [255, 196, 186], (-dy + 0.3) * 0.9)), fin: ({ u }) => lerpc([255, 100, 160], [255, 214, 120], u),
+  paint: ({ t, dy, y }) => (t > 0.66 && Math.abs(y + 1) <= 1 ? [255, 176, 40] : dy < -0.55 ? lerpc([220, 150, 230], [244, 196, 240], -dy - 0.55) : lerpc([248, 64, 120], [255, 132, 140], (-dy + 0.2) * 0.8)), fin: ({ u, part }) => (part === 'tail' ? (u > 0.75 ? [255, 70, 130] : lerpc([255, 90, 140], [255, 170, 60], u)) : part === 'pec' || part === 'pelvic' ? [255, 190, 210] : lerpc([255, 80, 140], [255, 196, 60], u)),      // magenta-orange, a yellow stripe from the eye, a lavender belly
 });
 const goby = reef({
   id: 'cory', label: 'Yellow Goby', L: 28, vox: 0.045, length: 48, eye: [0.82, 3], ring: [255, 150, 40], ringR: 2.2, amp: 0.4, move: undefined,
   hy: [[0, 1.8], [0.2, 3.6], [0.5, 4.6], [0.8, 4.4], [1, 3.4]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.2], [0.9, 3.6], [1, 2.4]],
   tail: { kind: 'round', len: 8, spread: 5, }, dorsal: [{ a: 0.28, b: 0.5, h: 5, spiny: true }, { a: 0.54, b: 0.86, h: 4 }], anal: { a: 0.5, b: 0.8, h: 3 }, pelvic: [0.5, 0.66], pec: [0.68, -1],
-  paint: ({ t, dy, x, y, z }) => (((x * 3 + y * 5 + z * 7) % 17 + 17) % 17 === 0 ? [90, 220, 240] : lerpc([232, 168, 20], [255, 236, 110], (-dy + 0.3) * 0.9)), fin: ({ u }) => lerpc([240, 190, 40], [255, 240, 150], u),
+  paint: ({ t, dy, x, y, z }) => ((t > 0.68 && ((x * 3 + y * 5 + z * 7) % 7 + 7) % 7 === 0) || ((x * 3 + y * 5 + z * 7) % 19 + 19) % 19 === 0 ? [70, 200, 255] : dy < -0.6 ? [255, 236, 150] : lerpc([238, 158, 0], [255, 214, 40], (-dy + 0.3) * 0.9)), fin: ({ u }) => lerpc([236, 168, 10], [255, 226, 90], u),      // a rich lemon goby with blue spots across the head
 });
-const chromis = skin(neon, 'neon', 'Blue Chromis', (c) => ramp3(c, [24, 84, 210], [140, 236, 230]));
-const emperor = skin(angelfish, 'angelfish', 'Emperor Angelfish', (c, x, y) => (((Math.floor((x * 0.9 + y * 0.7) / 4.6) & 1) === 0) ? ramp3(c, [20, 56, 190], [70, 130, 255]) : ramp3(c, [244, 196, 30], [255, 236, 96])));
-const swirl = (x, y, z, seed) => { const n = fbm(x * 0.1 + seed, y * 0.16, Math.abs(z) * 0.1 + 7), w = Math.sin(n * 8.5 + y * 0.22); return w > 0.38 ? [255, 118, 24] : w > 0.14 ? [255, 190, 54] : w > -0.3 ? [50, 190, 204] : [28, 108, 236]; };
+const chromis = reef({                          // blue-green chromis: a neat oval body, a deeply forked tail, iridescent blue-green with a pale belly
+  id: 'neon', label: 'Blue Chromis', L: 20, vox: 0.042, length: 38, eye: [0.82, 1], ring: [140, 220, 255], ringR: 2.0, amp: 0.6,
+  hy: [[0, 1.8], [0.15, 3.6], [0.45, 5.4], [0.75, 5.0], [0.95, 3.2], [1, 2]], hz: [[0, 1.2], [0.35, 2.8], [0.7, 2.8], [1, 1.4]],
+  tail: { kind: 'fork', len: 10, spread: 7.5, notch: 0.3, depth: 2.2 }, dorsal: [{ a: 0.2, b: 0.86, h: 3.6, spiny: true }], anal: { a: 0.32, b: 0.62, h: 3 }, pelvic: [0.5, 0.62], pec: [0.66, -0.5],
+  paint: ({ dy, x, y, z }) => (dy < -0.6 ? [150, 214, 224] : vh(x, y, z) > 0.88 ? [110, 230, 250] : lerpc([10, 84, 176], [24, 170, 196], (-dy + 0.3) * 0.9)),
+  fin: ({ u, part }) => (part === 'tail' ? (u > 0.8 ? [14, 70, 160] : lerpc([30, 150, 200], [20, 100, 190], u)) : part === 'pec' || part === 'pelvic' ? [90, 190, 220] : lerpc([16, 110, 190], [70, 190, 230], u)),
+});
+const emperor = reef({                          // adult emperor angelfish: a tall oval, royal blue with fine yellow stripes, a black mask over the eye edged in pale blue, a dark gill bar, a white mouth, a golden tail
+  id: 'angelfish', label: 'Emperor Angelfish', L: 32, vox: 0.042, length: 60, eye: [0.82, 3], ring: [40, 90, 200], ringR: 2.2, amp: 0.4,
+  hy: [[0, 3], [0.12, 7], [0.35, 11.5], [0.6, 12], [0.82, 9.5], [0.95, 5.5], [1, 3]], hz: [[0, 1.4], [0.3, 3.4], [0.6, 4.2], [0.9, 3], [1, 1.6]],
+  tail: { kind: 'round', len: 9, spread: 7 }, dorsal: [{ a: 0.12, b: 0.86, h: 5, spiny: true }], anal: { a: 0.1, b: 0.6, h: 5 }, pelvic: [0.5, 0.64], pec: [0.62, -1],
+  paint: ({ t, dy, x, y }) => {
+    if (t > 0.92 && y < 1.5) return [246, 246, 250];                                               // white mouth
+    if (t > 0.77 && t <= 0.9 && y > -2.5) return Math.abs(y - 3) > 3.4 || t < 0.79 || t > 0.88 ? [120, 190, 255] : [10, 12, 30];   // the mask, edged in blue
+    if (t > 0.7 && t <= 0.77) return [20, 24, 70];                                                   // the dark bar behind the gill
+    if (t > 0.86) return lerpc([140, 190, 240], [210, 230, 250], (-dy + 0.5) * 0.8);                 // pale blue face
+    const stripe = ((Math.floor(y * 0.62 + x * 0.12) % 2) + 2) % 2 === 0;
+    return stripe ? lerpc([255, 206, 30], [255, 232, 90], -dy * 0.5) : lerpc([18, 46, 170], [40, 96, 220], (-dy + 0.4) * 0.6);
+  },
+  fin: ({ u, part, x }) => (part === 'tail' ? lerpc([255, 190, 20], [255, 222, 70], u) : part === 'pec' ? [24, 40, 110] : part === 'dorsal' ? (u > 0.82 ? [220, 236, 255] : ((Math.floor(x * 0.6) % 2) === 0 ? [255, 200, 40] : [24, 60, 190])) : u > 0.8 ? [120, 190, 255] : [20, 50, 170]),
+});
+const swirl = (x, y, z, seed) => { const n = fbm(x * 0.1 + seed, y * 0.16, Math.abs(z) * 0.1 + 7), w = Math.sin(n * 8.5 + y * 0.22); return w > 0.38 ? [236, 92, 8] : w > 0.14 ? [255, 160, 24] : w > -0.3 ? [16, 156, 186] : [14, 70, 206]; };
 const mandarin = reef({                         // a mandarin dragonet: long and low with a big sail of a first dorsal, swirled in blue, orange, yellow and green
   id: 'betta', label: 'Mandarin Dragonet', L: 30, vox: 0.046, length: 50, eye: [0.84, 3], ring: [255, 206, 90], ringR: 2.3, eyeR: 1.1, amp: 0.4,
   hy: [[0, 1.8], [0.15, 3.6], [0.4, 5.2], [0.75, 5.2], [1, 3.4]], hz: [[0, 1.2], [0.3, 3.0], [0.6, 4.0], [0.9, 3.2], [1, 1.8]],
@@ -527,8 +552,8 @@ const mandarin = reef({                         // a mandarin dragonet: long and
 const seahorse = {
   id: 'seahorse', label: 'Seahorse', move: 'hover', length: 54, vox: 0.044,
   make(seed = 1) {
-    const rng = mulberry32(seed * 5099 + 17), pals = [[[250, 170, 50], [255, 224, 150], [196, 100, 30]], [[238, 96, 90], [255, 200, 180], [170, 50, 60]], [[230, 200, 60], [255, 244, 170], [160, 130, 30]], [[170, 120, 220], [236, 214, 255], [110, 70, 170]]];
-    const [bodyC, bellyC, ridgeC] = pals[Math.floor(rng() * pals.length)];
+    const rng = mulberry32(seed * 5099 + 17), pals = [[[240, 140, 20], [255, 206, 120], [168, 70, 10]], [[220, 60, 60], [255, 170, 150], [140, 26, 40]], [[232, 186, 20], [255, 236, 140], [150, 110, 10]], [[140, 80, 200], [214, 180, 248], [80, 40, 140]]];
+    const [bodyC, bellyC, ridgeC] = pals[Math.floor(rng() * pals.length)];      // orange, red, yellow or violet: each with a paler belly and darker rings
     const P = [[7, 21], [5, 15], [4, 8], [3, 1], [2, -6], [1, -12], [2, -17], [5, -19], [8, -17], [8, -13]];
     const path = []; for (let i = 0; i < P.length - 1; i++) for (let k = 0; k < 10; k++) { const t = k / 10; path.push([P[i][0] + (P[i + 1][0] - P[i][0]) * t, P[i][1] + (P[i + 1][1] - P[i][1]) * t, (i + t) / (P.length - 1)]); }
     path.push([...P[P.length - 1], 1]);
@@ -539,13 +564,14 @@ const seahorse = {
       sample(x, y, z) {
         const { d, s, cx } = near(x, y), r = rad(s), inBody = (d / r) ** 2 + (z / (r * 0.8)) ** 2 <= 1;
         // snout: a short tube pointing forward from the head
-        if (!inBody && x > 8 && x < 18 && Math.hypot(y - (21 - (x - 8) * 0.1), z) <= 1.7 - (x - 8) * 0.04) return { c: mix(bodyC, bellyC, 0.4) };
+        if (!inBody && x > 8 && x < 18 && Math.hypot(y - (21 - (x - 8) * 0.1), z) <= 1.7 - (x - 8) * 0.04) return { c: x > 15 ? ridgeC : mix(bodyC, bellyC, 0.4) };
+        if (!inBody && z === 0 && s > 0.2 && s < 0.85 && x < cx && Math.floor((s * 36 + 0.3) % 2) === 0 && d < r + 1.4) return { c: ridgeC };        // a small spine on each ring along the back
         // eye: a dark square with a glint on the outer shell of the head
-        if (inBody && s < 0.1 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 1 && Math.abs(y - 22) <= 1) return x === 7 && y === 23 ? { c: [255, 255, 255], em: 2 } : { c: [14, 12, 20], em: 1 };
+        if (inBody && s < 0.12 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 2 && Math.abs(y - 22) <= 2) { const ed = Math.max(Math.abs(x - 8), Math.abs(y - 22)); return ed === 2 ? { c: [255, 210, 90], em: 1 } : x === 7 && y === 23 ? { c: [255, 255, 255], em: 2 } : { c: [14, 12, 20], em: 1 }; }
         if (inBody) {
           let c = x > cx ? mix(bodyC, bellyC, 0.75) : bodyC; const ring = Math.floor((s * 36 + 0.3) % 2) === 0;
-          if (s > 0.18 && ring) c = mix(c, ridgeC, 0.45); if (s < 0.1 && y > 24 && x < 6) c = ridgeC;                // little crown
-          if (fbm(x * 0.4 + seed, y * 0.4, z * 0.4) > 0.68) c = mix(c, [255, 244, 210], 0.4);
+          if (s > 0.18 && ring) c = mix(c, ridgeC, 0.6); if (s < 0.1 && y > 24 && x < 6) c = ridgeC;                // ringed body, little crown
+          if (fbm(x * 0.4 + seed, y * 0.4, z * 0.4) > 0.7) c = mix(c, [255, 248, 230], 0.55); else if (fbm(x * 0.9 + 3, y * 0.9, z * 0.9 + seed) > 0.74) c = mix(c, ridgeC, 0.5);      // pale freckles and dark specks
           return { c, wave: s > 0.7 ? 0.25 : 0 };
         }
         // dorsal fin: a thin fluttering plate behind the back
