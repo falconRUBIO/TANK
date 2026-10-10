@@ -847,7 +847,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       return ok({ applied: true, delta: -PUZZLE_COST, secs, until: f.puzzle.until });
     }
     case 'crab': {                                                  // a crab for the octopus (shells go in, a happy octopus and a bigger hoard come out)
-      const os = t.fish.filter((f) => canPuzzle(f, now)); if (!os.length) return fail('CANT_TRAIN');
+      const os = t.fish.filter((f) => isSmart(f) && !f.dead); if (!os.length) return fail('CANT_TRAIN');      // any octopus, baby or grown, can have a crab treat
       const f = (a.id ? os.find((x) => x.id === a.id) : os.filter((x) => canFeedOcto(x, uid, !solo)).sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
       if (f.crabAt != null && now - f.crabAt < CRAB_GAP) return ok({ applied: false, delta: 0, wait: CRAB_GAP - (now - f.crabAt), id: f.id });
       if (t.shells < CRAB_PRICE) return fail('NOT_ENOUGH_SHELLS');

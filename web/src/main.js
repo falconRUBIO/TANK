@@ -202,7 +202,7 @@ async function adopt(species) {
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
 async function giveCrab() {
-  const me = game.you?.userId, mine = game.state.fish.filter((f) => canPuzzle(f) && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
+  const me = game.you?.userId, mine = game.state.fish.filter((f) => f.species === 'octopus' && !f.dead && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
   const r = await game.dispatch({ t: 'crab', id: o.id }); if (!r.ok) return fail(r);
   if (!r.applied) { const m = Math.max(1, Math.ceil((r.wait ?? 0) / 60e3)); ui.toast(`${o.name} is full. Try again in about ${m >= 90 ? Math.round(m / 60) + ' hours' : m + ' minutes'}.`); return; }
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 5200, 1500);
@@ -219,7 +219,7 @@ function brainBlock(rec) {
   if (!isSmart(rec)) return '';
   const can = canPuzzle(rec), nx = nextStage(rec), mine = canFeedOcto(rec, game.you?.userId, game.shared), restJar = rec.puzzleAt != null && Date.now() - rec.puzzleAt < 3 * 3600e3, restCrab = rec.crabAt != null && Date.now() - rec.crabAt < 2 * 3600e3;
   const jar = rec.puzzle ? '<button class="act2" disabled>🧩 Working on a jar…</button>' : !can ? `<button class="act2" disabled>🧩 Puzzle jar<small>when grown up${nx ? ` · ${nx.label}` : ''}</small></button>` : restJar ? '<button class="act2" disabled>🧩 Puzzle jar<small>resting</small></button>' : `<button class="act2" id="puz">🧩 Puzzle jar<small>${PUZZLE_COST} 🐚</small></button>`;
-  const crab = !mine ? '' : !can ? `<button class="act2" disabled>🦀 Crab treat<small>when grown up</small></button>` : restCrab ? '<button class="act2" disabled>🦀 Crab treat<small>full for now</small></button>' : `<button class="act2" id="crabt">🦀 Crab treat<small>${CRAB_PRICE} 🐚</small></button>`;
+  const crab = !mine ? '' : restCrab ? `<button class="act2" disabled>🦀 Crab treat<small>had one · again in ${(() => { const m = Math.max(1, Math.ceil((2 * 3600e3 - (Date.now() - rec.crabAt)) / 60e3)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; })()}</small></button>` : `<button class="act2" id="crabt">🦀 Crab treat<small>a special crab · ${CRAB_PRICE} 🐚</small></button>`;
   return `<div class="acts2">${jar}${crab}</div>`;
 }
 async function trainFish(f, key, spot) {
