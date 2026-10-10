@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 import * as S from './sky.js';
 const DAY = 864e5; let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ✓', name); };
 console.log('Rules');
@@ -390,6 +393,29 @@ ok('a fish order still arrives when something unrelated in the tank is broken', 
   t.fish.push({ id: 'broken', name: 'Odd', species: 'a-species-that-no-longer-exists', born: now - 9e8, stage: 'baby', traits: null }); t.drift = { id: 'g1', kind: 'shells', amount: 1, by: { k: 'fish', n: null } };
   const before = t.fish.length; const origErr = console.error; console.error = () => {}; try { R.advance(t, now + 3 * 3600e3); } finally { console.error = origErr; }
   assert.ok(t.fish.length > before, 'the ordered fish arrived'); assert.equal(t.orders.length, 0);
+});
+ok('tanks saved by older versions of the game still load and keep running: nothing throws, nothing stalls, every fish is valid', () => {
+  const dir = path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..', '..', '..', 'server', 'fixtures');
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')); assert.ok(files.length >= 5, 'sample tanks from older versions are present');
+  const origErr = console.error; const errs = []; console.error = (...a) => errs.push(a.join(' '));
+  try {
+    for (const f of files) {
+      const { world, now: saved, from } = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); const t = JSON.parse(JSON.stringify(world)); let now = saved + 3600e3;
+      for (let i = 0; i < 6; i++) { now += 12 * 3600e3; R.advance(t, now); }
+      for (const a of [{ t: 'feed', x: 0 }, { t: 'glass' }, { t: 'water' }, { t: 'dailyGift', tz: 0 }, { t: 'buyFish', species: 'neon', name: 'New' }, { t: 'buyDecor', type: 'grass', x: 0, z: 1.5, ry: 0 }]) R.applyAction(t, a, { now, uid: 'me', name: 'Me', dev: true });
+      R.advance(t, now + 4 * 3600e3 * 12);
+      assert.ok(Number.isFinite(t.shells) && t.shells >= 0, from + ': shells'); assert.ok(t.level >= 1 && t.level <= 8, from + ': level');
+      for (const fish of t.fish) { assert.ok(R.SPECIES_DEF[fish.species] && Array.isArray(fish.traits) && typeof fish.id === 'string' && typeof fish.name === 'string', from + ': a fish is valid'); }
+      assert.equal(new Set(t.fish.map((x) => x.id)).size, t.fish.length, from + ': fish ids are unique'); assert.equal(t.orders.filter((o) => o.arrivesAt < now - 6 * 3600e3).length, 0, from + ': no order is stuck');
+    }
+  } finally { console.error = origErr; }
+  assert.deepEqual(errs.filter((e) => /time step failed/.test(e)), [], 'no time step failed on an old tank');
+  assert.deepEqual(R.timeStepErrors(), []);
+});
+ok('a damaged tank is repaired when it loads: a broken fish, a stale order and nonsense numbers', () => {
+  const now = Date.now(), t = R.newWorld(now, 3); t.shells = NaN; t.level = 99; t.hunger = undefined;
+  t.fish.push({ id: 'x', name: '', species: 'gone', traits: null }, { id: 5, species: 'neon', traits: 'oops', born: 'yesterday' }, null); t.orders = [{ species: 'nope', arrivesAt: 1 }, { species: 'neon', arrivesAt: NaN }, null]; t.decor = [{ type: 'nope', id: 'd' }, null];
+  R.advance(t, now + 3600e3); assert.ok(Number.isFinite(t.shells)); assert.ok(t.level <= 8); assert.ok(t.fish.every((f) => R.SPECIES_DEF[f.species] && Array.isArray(f.traits) && typeof f.id === 'string')); assert.equal(t.orders.length, 0); assert.equal(t.decor.length, 0); assert.equal(t.schema, 1);
 });
 ok('the daily gift: once per caretaker per day, no streak, no double claim by changing the clock, shared wallet', () => {
   const t = R.newWorld(0); R.advance(t, 60e3); R.applyAction(t, { t: 'tut', step: 5 }, { now: 120e3 });

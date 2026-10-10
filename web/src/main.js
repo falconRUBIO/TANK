@@ -280,21 +280,29 @@ async function greetVisitor(f) {
 // playing: fish follow a fingertip along the glass. Five seconds of it builds the bond.
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
-  if (play) return; play = { fish: f, until: performance.now() + 5500, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek');
+  if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek');
   $('pet').disabled = true; $('pet').textContent = `${f.name} is watching your finger…`; ui.toast(`Drag your finger along the glass`, 3000);
 }
 function playPoint(ev) {
-  if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; const p = play.fish; p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1; if (p.species.move === 'jet') p.glassAt = { x: playHit.x, y: playHit.y, until: performance.now() + 900 };
+  if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; play.until = Math.min(play.max, Math.max(play.until, performance.now() + 2600));       // playing goes on for as long as the finger keeps moving const p = play.fish; p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1; if (p.species.move === 'jet') p.glassAt = { x: playHit.x, y: playHit.y, until: performance.now() + 900 };
   if (play.last) play.moved += Math.hypot(playHit.x - play.last.x, playHit.y - play.last.y); play.last = { x: playHit.x, y: playHit.y };
 }
+// The card stays tucked away while there is any touching going on, and only opens again once the finger has been still for a moment.
+let lastTouch = 0;
+for (const ev of ['pointerdown', 'pointermove', 'pointerup']) addEventListener(ev, () => { lastTouch = performance.now(); }, true);
+function reopenWhenIdle(f, tries = 0) {
+  if (play || focus !== f) { if (focus !== f) card.classList.remove('peek'); return; }
+  if (performance.now() - lastTouch > 1600 || tries > 30) { showCard(f); return; }
+  setTimeout(() => reopenWhenIdle(f, tries + 1), 400);
+}
 async function finishPlay() {
-  const { fish: f, moved } = play; play = null; f.mul = 0.35; f.glassAt = null; card.classList.remove('peek'); if ($('pet')) { $('pet').disabled = false; $('pet').textContent = f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`; }
-  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); return; }
-  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) return fail(r);
-  if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); return; }
+  const { fish: f, moved } = play; play = null; f.mul = 0.35; f.glassAt = null; if ($('pet')) { $('pet').disabled = false; $('pet').textContent = f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`; }
+  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); reopenWhenIdle(f); return; }
+  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f); return fail(r); }
+  if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); reopenWhenIdle(f); return; }
   fishes.burst(f.pos); sfx('arrive'); haptic(10); f.vigor = Math.max(f.vigor, 1.1);
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
-  showCard(f);
+  reopenWhenIdle(f);
 }
 // postcard: the clean tank frame with a one-line caption about something that really happened, ready to send to a friend
 const HIGHLIGHT = /hatch|grew|grow|adult|learned|puzzle|jar|worked out|perfect|level|friends|first|visiting|birthday|days old|week/i;
@@ -390,9 +398,13 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
-  const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; } if (f) setFocus(f === focus ? null : f); else if (focus) setFocus(null);
-  if (!f && !focus) lure = { t0: performance.now(), x: ev.clientX, y: ev.clientY, on: false };
+  // A quick tap on a fish opens its card when the finger lifts. Pressing and dragging is for luring the fish, so it never opens a card, and neither does a touch right after luring (the fish gather under the finger).
+  const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; }
+  const now = performance.now(), fresh = { t0: now, x: ev.clientX, y: ev.clientY, on: false };
+  if (f) { if (now - lureEnd > 1500) tapCand = { f, x: ev.clientX, y: ev.clientY, t: now }; lure = fresh; return; }
+  if (focus) setFocus(null); else lure = fresh;
 });
+let tapCand = null, lureEnd = 0;
 // hold a finger in the water: the bold and the curious come to see it. Nothing is earned; the fish simply like you.
 let lure = null; const lureAt = new THREE.Vector3(), lurePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.6);
 function lureTick() {
@@ -408,7 +420,11 @@ function lureTick() {
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
 canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
-addEventListener('pointerup', () => { dragging = false; lure = null; }); addEventListener('pointercancel', () => { lure = null; });
+addEventListener('pointerup', (ev) => {
+  dragging = false; const c = tapCand; tapCand = null;
+  if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) setFocus(c.f === focus ? null : c.f);
+  if (lure?.on) lureEnd = performance.now(); lure = null;
+}); addEventListener('pointercancel', () => { lure = null; tapCand = null; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });
 
 // ── tutorial: name the fish, feed it, meet friends, place a free plant ──
