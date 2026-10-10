@@ -102,16 +102,19 @@ export function initUI({ game, social, cb }) {
       ? `<div class="slot"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
       : `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>Slot ${n}</small></div>`; }).join('');
   };
+  // what counts as new: unlocked by the tank's latest level-up (never at level 1, where everything is new) and not yet in the tank
+  const isNew = (s, c) => (c.kind === 'fish' || c.kind === 'decor') && s.level > 1 && c.level === s.level && !(c.kind === 'fish' ? s.fish.some((f) => f.species === c.id) || (s.orders ?? []).some((o) => o.species === c.id) : s.decor.some((d) => d.type === c.id));
+  const newCount = () => { const s = S(); if (!s || s.level < 2) return 0; return Object.entries(SPECIES_DEF).filter(([id, d]) => !d.visitor && isNew(s, { kind: 'fish', id, level: d.level })).length + Object.entries(DECOR_DEF).filter(([id, d]) => isNew(s, { kind: 'decor', id, level: d.level })).length; };
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
     if (!fishCat && cat !== 'FLOOR' && cat !== 'BACKDROP') for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
     for (const [kind, names] of [['floor', FLOORS], ['backdrop', BACKDROPS]]) if (showAll || cat === kind.toUpperCase()) for (const [id, label] of Object.entries(names)) { const own = styleOwned(s, kind, id), cur = (s.style ?? {})[kind] === id; out.push({ kind, id, label: kind === 'floor' ? label + ' floor' : label + ' backdrop', price: STYLE_PRICE[kind][id], own, cur, level: 1, blurb: kind === 'floor' ? 'Changes the sand and the stones on the bottom of the tank.' : 'Changes the colours of the far water.', cat: kind.toUpperCase() }); }
-    if (showAll) { const lv = S().level; out.sort((a, b) => ((a.level > lv) - (b.level > lv)) || (b.level - a.level) || (a.price - b.price)); }                   // NEW: what the tank just unlocked sits at the top, what is still locked at the bottom
+    if (showAll) { const keep = out.filter((c) => isNew(s, c)); out.length = 0; out.push(...keep.sort((a, b) => a.price - b.price)); if (!out.length) return `<p class="dim newnone">Nothing new right now. Each time the tank levels up, the fish and decorations it unlocks wait here until you have them.</p>`; }      // NEW: only what the last level-up unlocked and you do not have yet
     return out.map((c) => {
       if (c.kind === 'floor' || c.kind === 'backdrop') { const key = c.kind + ':' + c.id; return `<button class="card ${selected === key ? 'sel' : ''}" data-k="${key}"><div class="sw" style="background:${SWATCH[c.kind][c.id]}"></div><b>${esc(c.label)}</b><span class="pr">${c.cur ? 'IN USE' : c.own || !c.price ? 'OWNED' : '🐚 ' + c.price}</span></button>`; }
       const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
-      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && c.level === S().level && S().level > 1 ? '<em class="newtag">NEW</em>' : ''}<b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
+      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}<b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
@@ -184,7 +187,7 @@ export function initUI({ game, social, cb }) {
   const views = {
     care: () => `<h3>Care</h3><div class="grid2 acts">${tile('🫙', 'Feed', 'feeddrawer', feedOpen ? 'choose below' : '')}${feedOpen ? feedDrawer() : ''}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)); if (!o) return ''; const rest = o.crabAt != null && Date.now() - o.crabAt < 2 * 3600e3; return tile('🦀', 'Crab treat', 'crab', rest ? `${esc(o.name)} is full` : `for ${esc(o.name)} · ${CRAB_PRICE} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
-    decorate: () => `<h3>Shop</h3>${themesHtml()}<div class="shophead"><div class="cats">${CATS.filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
+    decorate: () => `<h3>Shop</h3>${themesHtml()}<div class="shophead"><div class="cats">${CATS.filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
       const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection'], ['settings', 'Settings']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
@@ -280,10 +283,10 @@ export function initUI({ game, social, cb }) {
       if (!d) return; const box = d.box, dy = y - d.y;
       if (!d.pulling) { if (dy > 4 && box.scrollTop <= 0) { d.pulling = true; d.y = y - 4; } else if (dy < -4 || box.scrollTop > 0) { d = null; return; } else return; }     // at the top and pulling down: the sheet comes with the finger
       ev?.cancelable && ev.preventDefault(); d.dy = Math.max(0, y - d.y); d.moved = d.dy > 6;
-      box.classList.add('drag'); box.style.transform = `translateY(${d.dy}px)`; box.style.opacity = String(Math.max(0.35, 1 - d.dy / 420));
+      box.classList.add('drag'); box.style.setProperty('--pull', d.dy + 'px');
     };
     const end = () => {
-      if (!d) return; const { box, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.transform = box.style.opacity = '';
+      if (!d) return; const { box, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.removeProperty('--pull');
       if (dy > 72) { sfx('open'); (box.querySelector('.x') ?? box.querySelector('.grab'))?.click(); } else if (moved) { box._drag = true; setTimeout(() => { box._drag = false; }, 60); }
     };
     document.addEventListener('touchstart', (e) => { const box = e.target.closest?.('#sheet.on, #card.on'); if (box && !e.target.closest('input,textarea,select')) begin(box, e.touches[0].clientY); }, { passive: true });
@@ -297,6 +300,7 @@ export function initUI({ game, social, cb }) {
   }
   function open(t, quiet = false) {
     if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
+    if (t === 'decorate' && tab !== 'decorate' && !quiet) { if (newCount()) cat = 'NEW'; else if (cat === 'NEW') cat = 'FISH'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
