@@ -96,22 +96,24 @@ export class Bubbles {
 export class Glow {
   constructor(n = 46) {
     this.n = n; this.level = 0; this.want = 0;
-    this.mesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0x9fffe8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }), n);
+    // soft round motes, not hard diamonds: a radial sprite drawn once, additive, small, attenuated with distance
+    const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+    const tex = new THREE.CanvasTexture(c); this.pos = new Float32Array(n * 3); const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+    this.mesh = new THREE.Points(geo, new THREE.PointsMaterial({ map: tex, color: 0x9fffe8, size: 0.26, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
     this.mesh.frustumCulled = false; this.mesh.visible = false; this.mesh.renderOrder = 7;
     this.p = Array.from({ length: n }, () => ({ x: -4.2 + Math.random() * 8.4, y: 0.8 + Math.random() * 12, z: -1.2 + Math.random() * 3.6, ph: Math.random() * 6, sp: 0.15 + Math.random() * 0.3, r: 0.035 + Math.random() * 0.05 }));
-    this.m = new THREE.Matrix4();
   }
   setPhase(phase) { this.ph = phase; this.refresh(); }
   setSky(key) { this.sky = key; this.mesh.material.color.set(key === 'spawn' ? 0xffa6d8 : 0x9fffe8); this.boost = key === 'darkmoon' ? 1.8 : key === 'spawn' ? 1.35 : 1; this.refresh(); }     // a new moon makes the plankton blaze; spawning night turns them pink
   refresh() { const base = this.ph === 'night' ? 1 : this.ph === 'evening' ? 0.6 : 0; this.want = this.sky === 'spawn' && base > 0 ? Math.max(base, 0.85) : base; }
   update(dt, t) {
     this.level += (this.want - this.level) * Math.min(1, dt * 0.6); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return;
-    this.mesh.material.opacity = Math.min(1, 0.85 * this.level * (this.boost ?? 1));
+    this.mesh.material.opacity = Math.min(1, 0.55 * this.level * (this.boost ?? 1)); this.mesh.material.size = 0.22 + 0.08 * Math.min(1.8, this.boost ?? 1);
     this.p.forEach((q, i) => {
-      q.y += Math.sin(t * q.sp + q.ph) * 0.12 * dt + q.sp * 0.1 * dt; if (q.y > 13.5) q.y = 0.8; const s = q.r * (this.boost ?? 1) * (0.7 + 0.5 * Math.sin(t * 1.3 + q.ph));
-      this.m.makeScale(s, s, s); this.m.setPosition(q.x + Math.sin(t * 0.4 + q.ph) * 0.5, q.y, q.z + Math.cos(t * 0.3 + q.ph) * 0.3); this.mesh.setMatrixAt(i, this.m);
+      q.y += Math.sin(t * q.sp + q.ph) * 0.12 * dt + q.sp * 0.1 * dt; if (q.y > 13.5) q.y = 0.8;
+      this.pos[i * 3] = q.x + Math.sin(t * 0.4 + q.ph) * 0.5; this.pos[i * 3 + 1] = q.y; this.pos[i * 3 + 2] = q.z + Math.cos(t * 0.3 + q.ph) * 0.3;
     });
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.mesh.geometry.attributes.position.needsUpdate = true;
   }
 }
 
