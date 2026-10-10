@@ -9,9 +9,9 @@ const d = (a) => p.evaluate((a) => window.__game.dispatch(a, { dev: true }), a);
 await d({ t: 'tut', step: 5 }); await p.evaluate(() => document.getElementById('coach').classList.remove('on'));
 const goal = async () => { await p.waitForTimeout(1200); return p.textContent('#goal'); };
 let g = await goal(); ck('no "empty tank" prompt any more', !/Empty tank/.test(g), g);
+await d({ t: 'dailyGift', tz: 0 });      // collect the daily gift first: its hint comes before the others
 await d({ t: 'buyDecor', type: 'grass', x: 0, z: 1.5, ry: 0 }); await d({ t: 'dev', what: 'shells' }); await d({ t: 'feed', x: 0 }); await d({ t: 'feed', x: 1 });
 g = await goal(); ck('first steps: with a plant and shells it suggests a new fish', /adopt|Feed|hungry|spend|shells/i.test(g), g);
-await d({ t: 'dailyGift', tz: 0 });      // collect the daily gift first: its hint comes before the countdowns
 await d({ t: 'buyFish', species: 'goldfish', name: 'Pal', seed: 2 }); g = await goal(); ck('first steps: a pending delivery shows its countdown', /Pal arrives in/.test(g), g);
 for (let i = 0; i < 3; i++) await d({ t: 'dev', what: 'shells' });
 for (let i = 0; i < 4; i++) { await d({ t: 'buyFish', species: 'goldfish', name: 'G' + i, seed: i, rush: true }); }
