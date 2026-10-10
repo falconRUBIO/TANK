@@ -50,6 +50,21 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 - Every action carries an idempotency key, so a retry or a double tap never pays or charges twice. Two players spending the last shells at the same time: exactly one purchase succeeds.
 - Identity is an anonymous account token kept in the browser (only its hash is stored).
 
+## Keeping tanks across redeploys (do one of these)
+
+A host whose disk is wiped on every deploy or restart (Render's free plan) forgets every tank, and the codes stop working. Pick one:
+
+**A. An offsite copy (free).** The server copies its whole database to a bucket every five minutes and just before it stops, and puts it back when it starts with nothing. Any S3-compatible bucket works. With Backblaze B2 (free 10 GB, no card needed):
+1. Create a Backblaze account, then Buckets, Create a Bucket (keep it private), for example `our-tank-data`.
+2. App Keys, Add a New Application Key, limited to that bucket with read and write. Copy the keyID and the applicationKey now; the key is shown once.
+3. On the bucket page note its Endpoint, like `s3.us-west-004.backblazeb2.com`. The region is the middle part, `us-west-004`.
+4. In Render, open the service, Environment, and add: `S3_ENDPOINT` = `https://s3.us-west-004.backblazeb2.com`, `S3_BUCKET` = your bucket name, `S3_KEY` = the keyID, `S3_SECRET` = the applicationKey, `S3_REGION` = `us-west-004`. Save, and let it redeploy.
+5. Open `/admin`: "Offsite copy" should say on, with the time of the last copy. Cloudflare R2 and Supabase Storage work the same way.
+
+**B. A persistent disk.** On a paid Render plan, mount a disk at `/data` and set `DB=/data/ourtank.db` (the included `render.yaml` does this).
+
+Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway.
+
 ## Notifications
 
 They work with no setup: the server makes its own key pair the first time it starts and keeps it in the database (set `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` yourself only if you want to bring your own). Keep the disk attached, or phones will have to switch notifications back on after a redeploy. Players get a Notifications switch in Settings, plus a "Send a test" button to check that they arrive. At most one a day, never between 22:00 and 08:00 their time, never a "come back" reminder.

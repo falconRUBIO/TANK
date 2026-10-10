@@ -8,3 +8,9 @@ services:
     disk: { name: ourtank-data, mountPath: /data, sizeGB: 1 }
     envVars:
       - { key: DB, value: /data/ourtank.db }
+      # Offsite copy of the database (any S3-compatible bucket: Backblaze B2, Cloudflare R2, Supabase Storage). Keeps tanks across redeploys even without a disk.
+      - { key: S3_ENDPOINT, sync: false }
+      - { key: S3_BUCKET, sync: false }
+      - { key: S3_KEY, sync: false }
+      - { key: S3_SECRET, sync: false }
+      - { key: S3_REGION, sync: false }

@@ -408,6 +408,16 @@ await t('push: the server makes and keeps its own keys, and a test notification 
   await call('/api/push/subscribe', { subscription: sub, offset: 0 }, u.token); S.db.prepare('UPDATE push_subs SET offset_min=? WHERE user_id=?').run(((3 - new Date().getUTCHours()) * 60 + 1440) % 1440 - 0, u.userId);
   pushed.length = 0; const r = await call('/api/push/test', {}, u.token); assert.equal(r.body.sent, true); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /test/i);
 });
+await t('offsite copies: the request signature matches Amazon\'s published example, and an empty server restores from the bucket', async () => {
+  const { signV4, makeOffsite, restoreIfEmpty, makeUploader, isEmptyDb } = await import('./offsite.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const pth = await import('node:path');
+  const auth = signV4({ method: 'GET', host: 'examplebucket.s3.amazonaws.com', path: '/test.txt', headers: { range: 'bytes=0-9', 'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'x-amz-date': '20130524T000000Z' }, payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', amzDate: '20130524T000000Z', region: 'us-east-1', accessKey: 'AKIAIOSFODNN7EXAMPLE', secret: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY' });
+  assert.match(auth, /Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41$/);
+  const store = new Map(), fake = async (url, o) => { const k = new URL(url).pathname; if (o.method === 'PUT') { assert.match(o.headers.authorization, /^AWS4-HMAC-SHA256 Credential=K\//); store.set(k, Buffer.from(o.body)); return { ok: true, status: 200 }; } return store.has(k) ? { ok: true, status: 200, arrayBuffer: async () => store.get(k) } : { ok: false, status: 404 }; };
+  const off = makeOffsite({ endpoint: 'https://s3.example.test', bucket: 'bk', accessKey: 'K', secret: 'S' }, fake); const dir = fs.mkdtempSync(pth.join(os.tmpdir(), 'off-')), file = pth.join(dir, 'a.db');
+  assert.equal(isEmptyDb(file), true); assert.equal(await restoreIfEmpty(off, file, () => {}), false, 'nothing in the bucket yet');
+  const live = pth.join(dir, 'live.db'); S.db.exec(`VACUUM INTO '${live}'`); const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.equal(await up.run(), false, 'unchanged, not sent again');
+  assert.equal(await restoreIfEmpty(off, file, () => {}), true); assert.equal(isEmptyDb(file), false); assert.equal(await restoreIfEmpty(off, file, () => {}), false, 'a database with players is never overwritten');
+});
 await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
   const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;
   const x = await mkUser('Own2'), y = await mkUser('Fri'), want = 'HEA2ED';
