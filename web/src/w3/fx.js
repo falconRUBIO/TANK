@@ -68,7 +68,7 @@ export class Snow {
     const g = new THREE.BufferGeometry(); this.p = new Float32Array(n * 3); this.s = new Float32Array(n);
     for (let i = 0; i < n; i++) { this.p[i * 3] = (Math.random() - 0.5) * 11; this.p[i * 3 + 1] = Math.random() * 16; this.p[i * 3 + 2] = -4 + Math.random() * 7; this.s[i] = 0.1 + Math.random() * 0.3; }
     g.setAttribute('position', new THREE.BufferAttribute(this.p, 3));
-    this.pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.055, color: 0xcfe8f5, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true }));
+    this.pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.055, color: 0x9fc0d4, transparent: true, opacity: 0.4, depthWrite: false, sizeAttenuation: true }));
     this.pts.frustumCulled = false; this.n = n;
   }
   update(dt, t) { for (let i = 0; i < this.n; i++) { this.p[i * 3 + 1] -= this.s[i] * dt * 0.5; this.p[i * 3] += Math.sin(t * 0.3 + i) * dt * 0.05; if (this.p[i * 3 + 1] < 0) this.p[i * 3 + 1] = 16; } this.pts.geometry.attributes.position.needsUpdate = true; }
