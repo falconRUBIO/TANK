@@ -281,14 +281,14 @@
   /* menus sit above the bottom bar (and the home-indicator area), and a close button stays where it is while the menu scrolls */
   :root{--bar:calc(env(safe-area-inset-bottom,0px) + 82px)}
   #card{bottom:var(--bar)}#sheet{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}#settle:not(.top){bottom:calc(var(--bar) + 12px)}
-  #sheet .x,#card .x{position:sticky!important;float:right;top:8px!important;right:auto!important;margin:-2px -4px 0 8px;z-index:5;flex:none}
+  #sheet .x,#card .x{position:sticky!important;float:right;top:8px!important;right:auto!important;margin:-2px 0 0 8px;z-index:5;flex:none}
   #card.peek .x{top:8px!important}
-  #foodbar{position:absolute;left:50%;bottom:calc(var(--bar) + 6px);transform:translate(-50%,16px);z-index:7;display:flex;gap:8px;padding:8px;border-radius:26px;background:var(--lg-bg);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-rim),var(--lg-drop);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:calc(100% - 20px)}
+  #foodbar{position:absolute;left:50%;bottom:calc(var(--bar) + 6px);transform:translate(-50%,16px);z-index:7;display:flex;gap:6px;padding:7px;width:calc(100% - 20px);box-sizing:border-box;border-radius:26px;background:var(--lg-bg);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-rim),var(--lg-drop);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:calc(100% - 20px)}
   #foodbar.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-  #foodbar button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:68px;padding:8px 12px;border-radius:18px;background:var(--lg-inner);border:1px solid var(--lg-line);color:#eaf4ff;font:600 13px -apple-system,system-ui,sans-serif;text-align:center}
+  #foodbar button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;min-width:0;padding:8px 6px;border-radius:18px;background:var(--lg-inner);border:1px solid var(--lg-line);color:#eaf4ff;font:600 13px -apple-system,system-ui,sans-serif;text-align:center}
   #foodbar button small{font:11px ui-monospace,Menlo,monospace;color:#b7cde6}
   #foodbar button.on{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.55)}#foodbar button:disabled{opacity:.4}
-  #foodbar button.done{background:linear-gradient(180deg,#d9b457,#b98f2a);color:#251a00;align-self:center;min-width:56px;padding:10px 14px}
+  #foodbar button.done{background:linear-gradient(180deg,#d9b457,#b98f2a);color:#251a00;align-self:center;flex:none;min-width:0;padding:12px 16px}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
