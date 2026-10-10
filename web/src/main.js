@@ -295,7 +295,7 @@ async function greetVisitor(f) {
 let cardOpen = null;                                                     // which fish's card is expanded; a card opens folded, showing the fish above it
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
-  if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek');
+  if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek'); $('fishpill').hidden = true;
   $('pet').disabled = true; $('pet').textContent = `${f.name} is watching your finger…`; ui.toast(`Drag your finger along the glass`, 3000);
 }
 function playPoint(ev) {
@@ -330,7 +330,7 @@ function postcardCaption() {
 }
 function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
 async function takePhoto() {
-  const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
+  const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #fishpill, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
   // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
   const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 290, PH = M + IH2 + FOOT;
@@ -417,9 +417,10 @@ function showCard(f) {
     <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
-  card.classList.add('on'); card.classList.toggle('peek', cardOpen !== f.fid); const setMore = () => { $('more').textContent = card.classList.contains('peek') ? 'More info ›' : 'Less ‹'; }; setMore(); $('more').onclick = () => { if (play) return; card.classList.toggle('peek'); cardOpen = card.classList.contains('peek') ? null : f.fid; setMore(); sfx('tap'); }; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => setFocus(null); $('grab').onclick = () => { if (!play) { card.classList.toggle('peek'); cardOpen = card.classList.contains('peek') ? null : f.fid; setMore(); } }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
-function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
+function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }

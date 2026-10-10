@@ -28,7 +28,8 @@ export function initUI({ game, social, cb }) {
   let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false;
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
-  const nextToast = () => { const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
+  const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
+  const nextToast = () => { if (cardUp() && tq.length) { showing = 1; toastEl.classList.remove('on'); clearTimeout(tt); tt = setTimeout(nextToast, 700); return; } const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
   const toast = (m, ms = 2400) => { notice(m, { kind: 'toast' }); if (tq.some((x) => x.m === m) || (showing && toastEl.textContent === m && toastEl.classList.contains('on'))) return; tq.push({ m, ms }); while (tq.length > 4) tq.splice(1, 1); if (!showing) nextToast(); };
   const clearToasts = () => { tq.length = 0; showing = 0; clearTimeout(tt); toastEl.classList.remove('on'); };
   const S = () => game.state;
@@ -43,10 +44,10 @@ export function initUI({ game, social, cb }) {
   const unread = () => notices.filter((n) => n.ts > readAt).length;
   const bell = () => { const b = $('bell'); if (!b) return; const n = unread(); b.classList.toggle('new', n > 0); b.querySelector('i').textContent = n > 9 ? '9+' : n ? String(n) : ''; };
   const noticesHtml = () => {
-    if (!notices.length) return '<p class="dim">Nothing yet. Hints, messages and chapters will be kept here.</p>';
+    if (!notices.length) return '<p class="dim">Nothing yet. Hints, messages and moments in the tank will be kept here.</p>';
     const day = (ts) => { const d = Math.floor(ts / 864e5), t = Math.floor(Date.now() / 864e5); return d === t ? 'Today' : d === t - 1 ? 'Yesterday' : new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
     let last = '', out = '';
-    for (const n of notices) { const d = day(n.ts); if (d !== last) { last = d; out += `<h4>${d}</h4>`; } out += `<button class="act nt ${n.ts > readAt ? 'new' : ''}" data-nt="${notices.indexOf(n)}"><span>${esc(n.text)}</span><small>${new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}${n.tab ? ' ›' : ''}</small></button>`; }
+    for (const n of notices) { const d = day(n.ts); if (d !== last) { last = d; out += `<h4>${d}</h4>`; } out += `<button class="je nt ${n.ts > readAt ? 'new' : ''} ${n.tab || n.gift ? 'go' : ''}" data-nt="${notices.indexOf(n)}"><small>${new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</small><span>${esc(n.text)}</span></button>`; }
     return out;
   };
   // the game opens up gradually: a new tank shows only feeding, fish and a few decorations; food choices, themes, comfort, the daily checklist, floors and postcards appear once the tank has grown a little
@@ -182,11 +183,12 @@ export function initUI({ game, social, cb }) {
   const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.octo ? hasOcto(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
     care: () => `<h3>Care</h3><div class="grid2 acts">${tile('🫙', 'Feed', 'feeddrawer', feedOpen ? 'choose below' : '')}${feedOpen ? feedDrawer() : ''}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)); if (!o) return ''; const rest = o.crabAt != null && Date.now() - o.crabAt < 2 * 3600e3; return tile('🦀', 'Crab treat', 'crab', rest ? `${esc(o.name)} is full` : `for ${esc(o.name)} · ${CRAB_PRICE} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
-    notices: () => `<h3>Notices</h3><div class="group">${noticesHtml()}</div>`,
+    notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
     decorate: () => `<h3>Shop</h3>${themesHtml()}<div class="shophead"><div class="cats">${CATS.filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
-      const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
+      const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection'], ['settings', 'Settings']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
+      if (sub === 'settings') return views.settings().replace('<h3>Settings</h3>', '<h3>Settings</h3>' + seg);
       if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
       if (sub === 'book') return `<h3>Collection</h3>${seg}${bookHtml()}`;
       if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
@@ -240,7 +242,7 @@ export function initUI({ game, social, cb }) {
     const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
-    bind('rearr', async () => { await game.dispatch({ t: 'tankPref', rearrange: !!game.state.flags?.noRearrange }); open('settings', true); }); bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('mus', () => { setMusic(!musicOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
+    bind('rearr', async () => { await game.dispatch({ t: 'tankPref', rearrange: !!game.state.flags?.noRearrange }); open('friends', true); }); bind('snd', () => { setSound(!soundOn()); open('friends', true); }); bind('mus', () => { setMusic(!musicOn()); open('friends', true); }); bind('gfx', () => { cb.cycleQuality(); open('friends', true); });
     const phc = $('phc'); if (phc) phc.textContent = game.copyAt ? 'Saved ' + (Date.now() - game.copyAt < 120000 ? 'just now' : new Date(game.copyAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })) : 'Saving…';
     const stor = $('stor'); if (stor) cb.storage().then((r) => { stor.textContent = r.level === 'safe' ? 'Protected ✓' : r.level === 'waiting' ? 'Starting up…' : 'Not protected: it can vanish when the server restarts'; stor.style.color = r.level === 'risk' ? '#ff9a8a' : r.level === 'safe' ? '#8fe0a8' : ''; }).catch(() => { stor.textContent = 'Unknown'; });
     const pb = $('pushbtn'); if (pb) {
@@ -252,7 +254,7 @@ export function initUI({ game, social, cb }) {
     bind('pushtest', async () => { const b = $('pushtest'); b.disabled = true; try { const r = await cb.pushTest(); toast(r.sent ? 'Sent. It should arrive in a moment.' : 'Nothing was sent. Turn notifications off and on again.'); } catch (e) { toast(e.message || 'Could not send a test'); } b.disabled = false; });
     bind('bkcopy', () => cb.backupText());
     bind('rkey', () => cb.recoveryKey()); bind('bkup', () => cb.backup()); bind('delme', () => cb.deleteMe()); bind('leave', () => cb.leaveTank()); bind('tutr', () => { open('tank'); cb.replayTutorial(); }); bind('reset', (ev) => { if (ev.target.dataset.sure) game.reset(); else { ev.target.dataset.sure = 1; ev.target.textContent = 'Tap again to erase'; } });
-    bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('settings', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
+    bind('dshell', () => game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }).then(() => open('friends', true))); bind('dday', () => game.dispatch({ t: 'dev', what: 'day' }, { dev: true }).then(() => toast('A day passes…')));
     sheet.querySelectorAll('[data-style]').forEach((b) => (b.onclick = async () => { const [k, v] = b.dataset.style.split(':'); sfx('tap'); const y = sheet.scrollTop; const r = await game.dispatch({ t: 'style', [k]: v }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; }));
     sheet.querySelectorAll('[data-mem]').forEach((b) => (b.onclick = () => {
       const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -294,7 +296,7 @@ export function initUI({ game, social, cb }) {
     boxes();
   }
   function open(t, quiet = false) {
-    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; }
+    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
@@ -307,7 +309,7 @@ export function initUI({ game, social, cb }) {
   }
   document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => open(n.dataset.tab === tab ? 'tank' : n.dataset.tab)));
   $('pill').onclick = (e) => { if (e.target.closest('#conn')) return; sfx('tap'); dialog({ title: 'HOW SHELLS ARE EARNED', text: 'Looking after your fish, and watching them grow, pays the most.', lines: EARN.map(([a, b]) => `${a}: ${b}`), ok: 'Got it' }); };
-  $('gear').onclick = () => open(tab === 'settings' ? 'tank' : 'settings');
+  $('gear').onclick = () => open('settings');
   $('bell').onclick = () => open(tab === 'notices' ? 'tank' : 'notices'); bell();
 
   // header portraits
@@ -367,7 +369,8 @@ export function initUI({ game, social, cb }) {
   const pulse = (tabName) => document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('pulse', n.dataset.tab === tabName));
 
   // a quiet message that lives in the tank (not a popup that has to be dismissed): it fades in, waits a few seconds, and fades out; a tap clears it early
-  const shelf = (id, html, ms, onLink) => { const el = $(id); clearTimeout(el._t); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); };
+  const shelf = (id, html, ms, onLink, tries = 0) => { if ($('coach')?.classList.contains('on') && tries < 40) { setTimeout(() => shelf(id, html, ms, onLink, tries + 1), 800); return; }      // a tip on screen goes first; the card waits its turn
+    const el = $(id); clearTimeout(el._t); for (const o of ['settle', 'reunion']) if (o !== id) $(o).classList.remove('on'); toastEl.classList.remove('on'); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); };
   const reunion = (lines, onPostcard) => { for (const l of lines) notice(l, { kind: 'card' }); return shelf('reunion', `<b>WELCOME BACK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<button class="lk">Send a postcard of the tank</button>`, 11000, onPostcard); };
   const settle = (lines) => { $('settle').classList.add('top'); for (const l of lines) notice(l, { kind: 'card' }); shelf('settle', `<b>COMING UP</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000); };
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then

@@ -110,17 +110,19 @@ const B = {
     topLit(bot); const m = bot.mesh(); m.position.y = 0.05; g.add(m);
     const lm = top.mesh(); lm.position.set(0, 0.05 + 0.1, -0.25); lm.rotation.x = -1.0; g.add(lm); return [{ v: bot, x: 0, y: 0.05, z: 0, ry: 0 }];
   },
-  coconut: (g) => {                     // half a coconut lying on its side with the opening towards you: a hairy brown husk, a pale flesh rim and a dark hollow
-    const u = 0.21, v = new Vox(u), R = 8;
-    for (let i = -R; i <= R; i++) for (let j = 0; j <= R; j++) for (let k = -2; k <= R; k++) {
-      const d = Math.hypot(i, j, k); if (d > R + 0.5) continue; const hollow = d < R - 2.6 && k >= 0;                            // axis along +z, so the open face looks at the camera
-      if (hollow) continue; const rim = k <= 1 && d > R - 2.6 && k >= 0, outer = d > R - 1.2;
-      if (k < 0 && d > R - 0.5) continue;
-      v.set(i, j, k, rim ? [196, 180, 150] : outer ? (hash(i, j, k, 6) > 0.45 ? [44, 26, 16] : [62, 38, 24]) : [38, 24, 18]);
+  coconut: (g, seed = 1) => {           // half a coconut lying on its side, the cut face (and its hollow) turned towards you: a dark fibrous husk with the three eyes at its far end, a ragged rim of white flesh, a deep hollow
+    const u = 0.105, v = new Vox(u), R = 13, r = mulberry32(seed * 23 + 5), hole = R - 3.2, sink = 3;
+    const fibre = (i, j, k) => { const a = Math.atan2(j, i), band = Math.round(a * 10 + k * 0.06), h = hash(band, Math.round(k * 0.35), 0, 3), n = hash(i, j, k, 4); return h > 0.74 ? [112, 74, 40] : h > 0.36 ? (n > 0.5 ? [80, 50, 27] : [70, 43, 23]) : [50, 30, 16]; };
+    for (let i = -R - 1; i <= R + 1; i++) for (let j = -R + sink; j <= R + 1; j++) for (let k = -R - 1; k <= 1; k++) {
+      const d = Math.hypot(i, j, k); if (d > R + 0.5 + (k < -2 && hash(i, j, k, 8) > 0.92 ? 1 : 0)) continue;     // a few stray fibres stand out from the husk
+      if (d < hole) continue;                                                                                       // the hollow
+      if (k >= 0) { if (k === 1 && hash(i, j, 0, 11) > 0.55) continue; v.set(i, j, k, d < hole + 1.6 ? (hash(i, j, 1, 12) > 0.8 ? [255, 250, 238] : [240, 232, 210]) : hash(i, j, k, 12) > 0.5 ? [150, 112, 72] : [126, 90, 56]); continue; }   // the cut rim: white flesh, then the husk in section, broken in places
+      if (d < hole + 1.6) { v.set(i, j, k, hash(i, j, k, 13) > 0.85 ? [250, 244, 228] : [228, 218, 192]); continue; }   // the flesh lining the hollow
+      v.set(i, j, k, d > R - 1.5 ? fibre(i, j, k) : [44, 28, 16]);
     }
-    for (let i = -R; i <= R; i++) for (let j = 0; j <= R; j++) { const d = Math.hypot(i, j, 0); if (d < R - 3 && d > 0) v.set(i, j, -1 + 0, [30, 22, 18]); }
-    for (let i = -4; i <= 4; i++) for (let j = 0; j <= 4; j++) if (Math.hypot(i, j) < 4.4 && Math.hypot(i, j) > 2.6) v.set(i, j, 3 - Math.floor(Math.hypot(i, j) / 2), [214, 204, 178]);             // the white flesh lining the hollow
-    const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
+    for (const [ei, ej] of [[-2.6, 2.2], [2.6, 2.2], [0, 5.4]]) for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const q = Math.hypot(i, j); if (q > 1.8) continue; const x = Math.round(ei) + i, y = Math.round(ej) + j, z = -Math.round(Math.sqrt(Math.max(0, R * R - x * x - y * y))); v.set(x, y, z, q < 0.9 ? [14, 9, 5] : [30, 20, 11]); }     // the three eyes, on the far end
+    for (let n = 0; n < 12; n++) { const i = Math.round((r() - 0.5) * 16), k = -Math.round(1 + r() * 9), j = Math.round(Math.sqrt(Math.max(0, R * R - i * i - k * k))); if (j > 5) { v.set(i, j + 1, k, [96, 140, 60]); if (r() < 0.5) v.set(i + 1, j + 1, k, [122, 164, 76]); } }      // a little algae along the top
+    const y0 = (R - sink) * u; const m = v.mesh(); m.position.y = y0; g.add(m); return [{ v, x: 0, y: y0, z: 0, ry: 0 }];      // it rests on the sand with the bottom of the husk just buried
   },
   pot: (g) => {                         // a clay pot lying on its side, mouth towards the front, big enough to curl up inside
     const u = 0.12, v = new Vox(u); const rad = (i) => 7 - Math.abs(i - 1) * 0.28 + (i < -3 ? (i + 3) * 0.6 : 0);
