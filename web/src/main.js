@@ -189,7 +189,7 @@ function setRearrange(on, silent = false) {
 // ── adopting fish ──
 async function adopt(species) {
   const d = SPECIES_DEF[species], s = game.state;
-  const about = `${d.blurb}${SOCIAL[species] ? ' ' + SOCIAL[species].line : ''}`;
+  const about = `${d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}`;
   const names = d.count === 1 ? await ui.dialog({ title: `NAME YOUR ${d.label.toUpperCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
