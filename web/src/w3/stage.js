@@ -53,7 +53,7 @@ export const halo = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), glowMat())
 export const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), glowMat()); pool.rotation.x = -Math.PI / 2; pool.position.set(0, -20, 0); pool.renderOrder = 3; scene.add(pool);
 export const shafts = new Shafts(); shafts.rebuild();   // god-ray streaks removed from the scene (too much); class kept for later
 export const surf = waterSurface(); scene.add(surf.mesh);
-export const snow = new Snow(); scene.add(snow.pts);
+export const snow = new Snow(); scene.add(snow.pts); { const m = snow.pts.material; if (m) { if (m.size) m.size *= 0.7; if (m.opacity != null) m.opacity *= 0.75; } }      // marine snow: small and soft, never a sparkle
 export const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -0.8, 16); scene.add(bubbles.mesh, bubbles2.mesh);
 
 // ── post: bloom -> tonemap -> PS1 15-bit dither + grade ──

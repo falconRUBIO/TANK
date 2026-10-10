@@ -176,7 +176,7 @@ export function buildEnvironment() {
   let floorMesh = null, pebblesMesh = null;
   // ── the bottom: each style has its own shape, texture and scatter, not just a colour ──
   const BOTTOM = {
-    sand:   { amp: 0.16, ripple: 0.05, rf: 2.6, n: 70, geo: 'ico', size: [0.03, 0.08], cols: [[236, 220, 176], [214, 190, 140], [248, 238, 210]] },
+    sand:   { amp: 0.16, ripple: 0.085, rf: 2.6, n: 90, geo: 'ico', size: [0.03, 0.08], cols: [[236, 220, 176], [214, 190, 140], [248, 238, 210]] },
     pearl:  { amp: 0.05, ripple: 0, rf: 0, n: 720, geo: 'sphere', size: [0.09, 0.2], cols: [[255, 252, 250], [255, 214, 230], [214, 208, 255], [236, 244, 255]] },
     gravel: { amp: 0.34, ripple: 0, rf: 0, n: 420, geo: 'ico', size: [0.05, 0.25], cols: [[112, 104, 94], [232, 214, 176], [156, 120, 84], [128, 138, 134]] },
     black:  { amp: 0.22, ripple: 0.09, rf: 3.4, n: 150, geo: 'ico', size: [0.06, 0.3], cols: [[30, 28, 38], [48, 46, 60], [22, 22, 30], [150, 156, 214]] },

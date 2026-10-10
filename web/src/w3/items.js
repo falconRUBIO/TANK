@@ -147,10 +147,14 @@ const B = {
   red: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'red', { h: 34 + ((r() * 10) | 0) }); g.add(v.mesh(true)); return []; },
   rock: (g, seed) => { const v = rock(0.55, 0.36, 0.5, seed % 9 + 1); const m = v.mesh(); m.position.y = 0.1; g.add(m); return [{ v, x: 0, y: 0.1, z: 0, ry: 0 }]; },
   boulder: (g, seed) => { const v = rock(1.2, 0.78, 0.9, seed % 9 + 1); const m = v.mesh(); m.position.y = 0.2; g.add(m); return [{ v, x: 0, y: 0.2, z: 0, ry: 0 }]; },
-  starfish: (g) => {
-    const v = new Vox(0.075);
-    for (let a = 0; a < 5; a++) { const an = a * 1.2566; for (let s = 0; s <= 5; s++) { const i = Math.round(Math.cos(an) * s), k = Math.round(Math.sin(an) * s); v.set(i, 0, k, mix([240, 122, 52], [252, 170, 90], s / 5)); if (s < 3) v.set(i, 1, k, [244, 130, 60]); if (s === 4) v.set(i, 1, k, [255, 214, 150], 1.2); } }
-    const m = v.mesh(); m.position.y = 0.06; g.add(m); return [];
+  starfish: (g, seed = 1) => {                       // a proper sea star: five tapering arms with a ridge of pale knobs, a raised centre, a cream underside, in orange or violet
+    const u = 0.09, v = new Vox(u), r = mulberry32(seed * 17 + 3), violet = r() < 0.3, hi = violet ? [150, 90, 200] : [244, 110, 44], lo = violet ? [96, 54, 140] : [196, 70, 30], knob = violet ? [228, 206, 255] : [255, 222, 160], under = [250, 232, 200], tilt = (r() - 0.5) * 0.5;
+    for (let a = 0; a < 5; a++) { const an = a * 1.2566 + tilt + (r() - 0.5) * 0.15, L = 8 + Math.round(r() * 2);
+      for (let s = 0; s <= L; s++) { const t = s / L, w = Math.max(0.6, 2.4 * (1 - t) + 0.3), cx = Math.cos(an) * s, cz = Math.sin(an) * s;
+        for (let i = Math.floor(cx - w); i <= Math.ceil(cx + w); i++) for (let k = Math.floor(cz - w); k <= Math.ceil(cz + w); k++) { const d = Math.hypot(i - cx, k - cz); if (d > w) continue;
+          const c = mix(lo, hi, 0.35 + 0.65 * (1 - d / w)); v.set(i, 0, k, under); v.set(i, 1, k, c); if (d < w * 0.5 && t < 0.92) v.set(i, 2, k, c); if (d < 0.6 && s % 2 === 0 && t > 0.1) v.set(i, 3, k, knob, 1.15); } } }
+    for (let i = -2; i <= 2; i++) for (let k = -2; k <= 2; k++) if (Math.hypot(i, k) <= 2.2) { v.set(i, 2, k, hi); v.set(i, 3, k, Math.hypot(i, k) < 1.2 ? knob : hi); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.03; m.rotation.y = r() * 6.28; g.add(m); return [];
   },
   wood: (g) => {
     const u = 0.1, v = new Vox(u);
