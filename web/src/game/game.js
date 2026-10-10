@@ -83,7 +83,7 @@ export class Game {
       if (m.toast && (mine || m.grew || m.discovery)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery);
       if (m.arrival) this.emit('arrival', m.arrival); if (m.placed) this.emit('placed', m.placed);
     } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
-    else if (m.t === 'snap') this.emit('snap', m.fish);
+    else if (m.t === 'snap') this.emit('snap', m.fish, m.crabs, m.ts);
     else if (m.t === 'fx') this.emit('fx', m);
     else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }

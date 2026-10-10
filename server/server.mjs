@@ -204,8 +204,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); } return; }
         if (m.t === 'snap') {
           if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
-          const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4) }));
-          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, { t: 'snap', fish });
+          const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 16).map((v) => n(v, 4)) } : {}) }));
+          const crabs = Array.isArray(m.crabs) ? m.crabs.slice(0, 8).filter(Array.isArray).map((c) => c.slice(0, 5).map((v) => n(v, 60))) : [];
+          const ts = Number.isFinite(+m.ts) ? Math.max(0, Math.min(1e7, +m.ts)) : null;
+          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, { t: 'snap', fish, crabs, ts });
           return;
         }
         if (m.t === 'fx') {

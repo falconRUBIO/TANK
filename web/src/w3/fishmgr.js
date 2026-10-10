@@ -26,6 +26,8 @@ function emoteTexture(mood) {
   g.font = '24px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, 24, 22);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return (emoteTex[mood] = t);
 }
+const r2 = (v) => Math.round(v * 100) / 100;
+const spot = (v) => { const q = Math.sin(v * 127.1 + 311.7) * 43758.5453; return q - Math.floor(q); };          // a repeatable 0..1 from a number
 export class Fishes {
   constructor(scene) {
     this.scene = scene; this.list = []; this.byId = new Map(); this.rng = mulberry32(11); this.flakes = [];
@@ -338,13 +340,13 @@ export class Fishes {
   looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it
   dropCrab(fid) {
-    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const x = Math.max(-3.4, Math.min(3.4, f.pos.x + (this.rng() - 0.5) * 3)), z = 1.0 + this.rng() * 1.2, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
+    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; n = (f.crabN = (f.crabN ?? 0) + 1), key = [...fid].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) % 9973 + n * 17, x = Math.max(-3.4, Math.min(3.4, f.pos.x + (spot(key) - 0.5) * 3)), z = 1.0 + spot(key + 0.5) * 1.2, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
   }
   // a crab dropped in at feeding time: it sinks where you tapped, and the octopus that is free (or the hungriest) goes after it
   dropCrabAt(x, fid = null) {
     const os = this.list.filter((f) => f.species.move === 'jet' && !f.dead && !f.visitor); if (!os.length) return;
-    const f = (fid && os.find((o) => o.fid === fid)) ?? os.find((o) => !o.hunt) ?? os[0]; let z = 1.0 + this.rng() * 1.0;
+    const f = (fid && os.find((o) => o.fid === fid)) ?? os.find((o) => !o.hunt) ?? os[0]; let z = 1.0 + spot(x * 7.31) * 1.0;      // where it lands follows from where it was dropped, so every phone agrees
     for (const o of os) { const dx = x - o.pos.x, d = Math.hypot(dx, z - o.pos.z); if (d < 2.0) { const side = dx !== 0 ? Math.sign(dx) : (o.pos.x > 0 ? -1 : 1); x = o.pos.x + side * 2.0; if (Math.abs(x) > 3.6) x = o.pos.x - side * 2.0; } }      // it lands clear of any octopus (to one side), never through one
     x = Math.max(-3.6, Math.min(3.6, x)); z = Math.max(0.3, Math.min(2.4, z));
     const m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
@@ -357,7 +359,23 @@ export class Fishes {
   puff(p, d) { const q = new THREE.Vector3(p.x - d.x * 0.6, p.y - d.y * 0.6 + 0.1, p.z - d.z * 0.6); for (let i = 0; i < 6 && this.bursts.length < 150; i++) this.bursts.push({ pos: q.clone().add(new THREE.Vector3((this.rng() - 0.5) * 0.5, (this.rng() - 0.5) * 0.4, (this.rng() - 0.5) * 0.5)), v: 0.5 + this.rng() * 0.9, age: 0, r: 0.04 + this.rng() * 0.05 }); }
   // a crab already on the sand (it climbed out of a jar), for the octopus to catch
   crabOut(x, z) { const m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, 0.13, z); m.rotation.y = this.rng() * 6; this.scene.add(m); const hnt = { x, z, mesh: m, y: 0.13 }; (this.crabs ||= []).push(hnt); return hnt; }
-  eatCrab(hnt) { this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); const f = this.list.find((o) => o.hunts?.length && (o.hunt === hnt || !o.hunt)); if (f) { setTimeout(() => { if (!f.hunt && f.hunts?.length) f.hunt = f.hunts.shift(); }, 1500); } }
+  // several phones, one tank: the lead phone tells the others where its crabs are; they move theirs to match, add any they are missing and drop any extra
+  crabSnap() { return (this.crabs ?? []).filter((c) => !c.held).slice(0, 8).map((c) => [r2(c.x), r2(c.y), r2(c.z), r2(c.mesh.rotation.y), c.pinned ? 1 : 0]); }
+  netCrabs(list) {
+    const now = performance.now(); this.eatenAt = (this.eatenAt ?? []).filter((e) => now - e.t < 6000);
+    const mine = (this.crabs ?? []).filter((c) => !c.held), used = new Set();
+    for (const [x, y, z, ry, pin] of list) {
+      let best = null, bd = 3; for (const c of mine) { if (used.has(c)) continue; const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } }
+      if (!best) {
+        if (this.eatenAt.some((e) => Math.hypot(e.x - x, e.z - z) < 2.2)) continue;                     // this phone has just seen that one eaten
+        const m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, y, z); m.rotation.y = ry; this.scene.add(m); best = { x, y, z, mesh: m, born: now }; (this.crabs ||= []).push(best);
+        const o = this.list.filter((f) => f.species.move === 'jet' && !f.dead && !f.visitor && !f.hunt).sort((a, b) => Math.hypot(a.pos.x - x, a.pos.z - z) - Math.hypot(b.pos.x - x, b.pos.z - z))[0]; if (o) o.hunt = best;
+      }
+      used.add(best); best.net = { x, y, z, ry, pin, at: now };
+    }
+    for (const c of mine) if (!used.has(c) && !c.pinned && now - (c.born ?? 0) > 1500 && (!c.net || now - c.net.at > 600)) { for (const f of this.list) { if (f.hunt === c) f.hunt = null; if (f.hunts) f.hunts = f.hunts.filter((h) => h !== c); } this.scene.remove(c.mesh); this.crabs = this.crabs.filter((x) => x !== c); }
+  }
+  eatCrab(hnt) { (this.eatenAt ||= []).push({ x: hnt.x, z: hnt.z, t: performance.now() }); this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); const f = this.list.find((o) => o.hunts?.length && (o.hunt === hnt || !o.hunt)); if (f) { setTimeout(() => { if (!f.hunt && f.hunts?.length) f.hunt = f.hunts.shift(); }, 1500); } }
   // puzzle jars: one appears on the sand for each octopus that has been given one, and opens when it is solved
   syncJars(state) {
     this.jars ||= new Map();
@@ -414,6 +432,7 @@ export class Fishes {
     for (const c of this.crabs ?? []) {
       const R = (c.run ||= { dodges: 0, burst: 0, vx: 0, vz: 0, down: 0, face: this.rng() * 6.28 }), hunter = this.list.find((o) => o.hunt === c);
       c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue;
+      if (c.net && performance.now() - c.net.at < 1200) { const k = Math.min(1, dt * 9), N = c.net; c.x += (N.x - c.x) * k; c.y += (N.y - c.y) * k; c.z += (N.z - c.z) * k; c.mesh.position.set(c.x, c.y, c.z); let dr = N.ry - c.mesh.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y += dr * k; continue; }
       if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
       R.down += dt; R.burst -= dt;
       if (hunter && !c.pinned && R.burst <= -0.5 && R.dodges < 2 && R.down < 9) { const dx = c.x - hunter.pos.x, dz = c.z - hunter.pos.z, d = Math.hypot(dx, dz); if (d < 2.1) { const a = Math.atan2(dz, dx) + (this.rng() < 0.5 ? 1 : -1) * (0.6 + this.rng() * 0.6), sp = 1.5; R.vx = Math.cos(a) * sp; R.vz = Math.sin(a) * sp * 0.55; R.burst = 0.75; R.dodges++; R.face = a; } }
