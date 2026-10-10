@@ -17,9 +17,10 @@ for (const mode of ['graceful stop (SIGTERM, as on a redeploy)', 'crash (SIGKILL
   if (mode.startsWith('graceful')) { s1.p.kill('SIGTERM'); await new Promise((r) => setTimeout(r, 2500)); } else { await new Promise((r) => setTimeout(r, 24000)); s1.p.kill('SIGKILL'); await new Promise((r) => setTimeout(r, 500)); }
   ck('the bucket holds a copy', [...store.values()].some((b) => b.length > 1000), [...store.values()].map((b) => b.length + ' bytes').join());
   const s2 = await up('/tmp/k2.db');                                              // a new server with an empty disk
+  const oldMe = await call('/api/me', null, ana.token); ck("Ana's old sign-in token still works on the new server", oldMe.status === 200 && oldMe.body.tank?.code === tank.code);
   const rec = await call('/api/recover', { key: ana.recoveryKey.toLowerCase() }); ck("Ana's original recovery key signs in", rec.status === 200 && rec.body.userId === ana.userId);
   const me = await call('/api/me', null, rec.body.token); ck('and lands in her tank, same code', me.body.tank?.code === tank.code, me.body.tank?.code);
-  ck("Ana's old sign-in token still works too", (await call('/api/me', null, ana.token)).status === 200);
+  ck('using the recovery key retires the old token, as designed', (await call('/api/me', null, ana.token)).status === 401);
   const rec2 = await call('/api/recover', { key: benKey2 }); ck("Ben's later key works", rec2.status === 200 && rec2.body.userId === ben.userId);
   const bm = await call('/api/me', null, rec2.body.token); ck("Ben is still in Ana's tank", bm.body.tank?.code === tank.code);
   const prev = await call('/api/join/preview', { code: tank.code }, rec.body.token); ck('the tank code still finds the tank with both members', prev.status === 200 && prev.body.members.length === 2, prev.body.members?.map((m) => m.name).join(', '));
