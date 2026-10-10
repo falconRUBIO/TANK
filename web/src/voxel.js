@@ -115,9 +115,9 @@ export function toCanvas(spr) {
 }
 
 export class Fish {
-  constructor(species, seed) {
+  constructor(species, seed, look = null) {
     this.species = species; this.seed = seed;
-    this.model = buildModel(species.make(seed));
+    this.model = buildModel(species.make(seed, look));
     this.frames = new Map();
   }
   get size() { return this.model.size; }

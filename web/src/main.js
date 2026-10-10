@@ -458,8 +458,8 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Choose your first fish. It is free, and everyone in the tank will care for it. Then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
-        const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
+        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Every tank starts with an octopus. Choose the colour of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
         ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your fish'} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
@@ -660,8 +660,8 @@ function maybeSettle() {
 async function firstFishPrompt() {
   const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
   const s = game.state; if (!s || s.flags.firsts?.[me] || s.flags.healed || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
-  const pk = await ui.pickFish({ title: 'YOUR FIRST FISH', text: 'Choose a free fish of your own to bring into the tank. Everyone can care for it, but you brought it in. Then name it.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
-  const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
+  const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its colour, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+  const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
 }
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];

@@ -23,9 +23,9 @@ export function decorThumb(type) {
     rr.render(sc, cam); const url = rr.domElement.toDataURL(); sc.remove(it.group); cache.set(key, url); return url;
   } catch (e) { console.warn('thumbnail failed', type, e); cache.set(key, ''); return ''; }
 }
-export function fishThumb(id) {
-  const key = 'f:' + id; if (cache.has(key)) return cache.get(key);
-  const fr = new Fish(SPECIES[id], 2).frame({ yaw: 0 }), c = document.createElement('canvas'); c.width = c.height = 160;
+export function fishThumb(id, pal = null) {
+  const key = 'f:' + id + (pal != null ? ':' + pal : ''); if (cache.has(key)) return cache.get(key);
+  const fr = new Fish(SPECIES[id], 2, pal != null ? { pal } : null).frame({ yaw: 0 }), c = document.createElement('canvas'); c.width = c.height = 160;
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false; const k = Math.floor(150 / Math.max(fr.width, fr.height) * 1.0) || 1;
   g.drawImage(fr, (160 - fr.width * k) / 2, (160 - fr.height * k) / 2, fr.width * k, fr.height * k); const url = c.toDataURL(); cache.set(key, url); return url;
 }

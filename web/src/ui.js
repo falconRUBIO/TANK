@@ -5,6 +5,7 @@ import { SOCIAL, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECI
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
+import { OCTO_COLORS } from './species.js';
 
 export const SKINS = ['#f1c8a0', '#d9a273', '#b06a42', '#8a5a3a', '#5a3a28'];
 export const HAIRS = ['#222222', '#5a3ad0', '#a0522d', '#d8a830', '#c0362c', '#2f8f6a'];
@@ -301,10 +302,13 @@ export function initUI({ game, social, cb }) {
   // The opening of a tank: choose the free first fish, then name it, all in one card. The first one is preselected so it can be accepted straight away.
   function pickFish({ title, text, species, name }) {
     return new Promise((res) => {
-      let cur = species[0]; modal.innerHTML = `<div class="box pick"><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="pickrow">${species.map((k) => `<button class="pk ${k === cur ? 'on' : ''}" data-k="${k}"><img alt="" src="${fishThumb(k)}"><b>${esc(SPECIES_DEF[k].label)}</b><small>${esc(SPECIES_DEF[k].blurb)}</small></button>`).join('')}</div><p class="pkdesc" id="pkd"></p><input id="mi" maxlength="14" value="${esc(name)}" placeholder="Name your fish"><div id="me" class="err"></div><button class="big" id="mok">Bring it home</button></div>`; const describe = () => { const S2 = SOCIAL[cur]; $('pkd').innerHTML = S2 ? `<b>${esc(S2.kind)}.</b> ${esc(S2.nature)}<br><small>${esc(S2.line)}</small>` : ''; }; describe();
+      // one species to choose from means it is the octopus: the choice is its colour
+      let cur = species[0], pal = (Math.random() * OCTO_COLORS.length) | 0; const colours = species.length === 1 && species[0] === 'octopus';
+      const row = colours ? OCTO_COLORS.map((c, i) => `<button class="pk pc ${i === pal ? 'on' : ''}" data-pal="${i}"><img alt="" src="${fishThumb('octopus', i)}"><b>${esc(c.label)}</b></button>`).join('') : species.map((k) => `<button class="pk ${k === cur ? 'on' : ''}" data-k="${k}"><img alt="" src="${fishThumb(k)}"><b>${esc(SPECIES_DEF[k].label)}</b><small>${esc(SPECIES_DEF[k].blurb)}</small></button>`).join('');
+      modal.innerHTML = `<div class="box pick"><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="pickrow ${colours ? 'pcs' : ''}">${row}</div><p class="pkdesc" id="pkd"></p><input id="mi" maxlength="14" value="${esc(name)}" placeholder="${colours ? 'Name your octopus' : 'Name your fish'}"><div id="me" class="err"></div><button class="big" id="mok">Bring it home</button></div>`; const describe = () => { const S2 = SOCIAL[cur]; $('pkd').innerHTML = S2 ? `<b>${esc(S2.kind)}.</b> ${esc(S2.nature)}<br><small>${esc(S2.line)}</small>` : ''; }; describe();
       modal.classList.add('on'); const inp = $('mi');
-      modal.querySelectorAll('.pk').forEach((b) => { b.onclick = () => { cur = b.dataset.k; modal.querySelectorAll('.pk').forEach((x) => x.classList.toggle('on', x === b)); describe(); sfx('tap'); }; });
-      $('mok').onclick = () => { const v = inp.value.trim(); if (!v) { $('me').textContent = 'Please type a name.'; return; } modal.classList.remove('on'); res({ species: cur, name: v }); };
+      modal.querySelectorAll('.pk').forEach((b) => { b.onclick = () => { if (b.dataset.pal != null) pal = +b.dataset.pal; else cur = b.dataset.k; modal.querySelectorAll('.pk').forEach((x) => x.classList.toggle('on', x === b)); describe(); sfx('tap'); }; });
+      $('mok').onclick = () => { const v = inp.value.trim(); if (!v) { $('me').textContent = 'Please type a name.'; return; } modal.classList.remove('on'); res({ species: cur, name: v, pal: colours ? pal : undefined }); };
       inp.onkeydown = (e) => { if (e.key === 'Enter') $('mok').click(); };
     });
   }

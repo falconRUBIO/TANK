@@ -168,8 +168,8 @@ await t('reconnecting restores the same authoritative state', async () => {
 await t('a brand new tank is empty; its creator chooses and names the first fish, which arrives and is theirs', async () => {
   let w = getW(tank.id); assert.equal(w.fish.length, 0, 'no fish in a new tank'); assert.deepEqual(w.seen.fish, []);
   const wa = await open(a.token), send = async (m) => { wa.send(JSON.stringify(m)); return waitFor(wa, (x) => x.t === 'ack' && x.idem === m.idem); };
-  const r = await send({ t: 'chooseFirst', species: 'goldfish', name: 'Pip', seed: 3, idem: 'cf1' }); assert.equal(r.ok, true);
-  w = getW(tank.id); assert.equal(w.fish.length, 1); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.fish[0].owner, a.userId); assert.equal(w.fish[0].ownerName, 'Alex'); assert.ok(w.flags.firsts[a.userId]);
+  const r = await send({ t: 'chooseFirst', species: 'octopus', name: 'Pip', seed: 3, pal: 2, idem: 'cf1' }); assert.equal(r.ok, true);
+  w = getW(tank.id); assert.equal(w.fish.length, 1); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.fish[0].pal, 2); assert.equal(w.fish[0].owner, a.userId); assert.equal(w.fish[0].ownerName, 'Alex'); assert.ok(w.flags.firsts[a.userId]);
   assert.equal((await send({ t: 'chooseFirst', species: 'octopus', name: 'Two', idem: 'cf2' })).reason, 'ALREADY_HAVE', 'once'); wa.close();
 });
 await t('while players are connected the tank grows up and everyone is told', async () => {
@@ -285,7 +285,7 @@ await t('four caretakers, one tank: seats, first fish ownership, and the world s
   const tk = (await call('/api/tanks', { name: 'Regress' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200); assert.equal((await call('/api/join', { code: tk.code }, z.token)).status, 200);
   assert.equal((await call('/api/join', { code: tk.code }, q.token)).status, 200, 'a fourth takes the last seat'); assert.equal((await call('/api/join', { code: tk.code }, v.token)).status, 409, 'a fifth is refused');
   setW(tk.id, { level: 5 }); const wx = await open(x.token), wy = await open(y.token), wz = await open(z.token);
-  assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'goldfish', name: 'Pip', seed: 5, idem: 'r-x0' })).ok, true, 'the creator chooses first');
+  assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'octopus', name: 'Pip', seed: 5, idem: 'r-x0' })).ok, true, 'the creator chooses first');
   assert.equal((await ackOf(wy, { t: 'firstFish', name: 'YuiFish', seed: 11, idem: 'r-y1' })).ok, true); assert.equal((await ackOf(wz, { t: 'firstFish', name: 'ZedFish', seed: 12, idem: 'r-z1' })).ok, true);
   assert.equal((await ackOf(wy, { t: 'firstFish', name: 'Again', seed: 13, idem: 'r-y2' })).reason, 'ALREADY_HAVE');
   const w = getW(tk.id); const owners = Object.fromEntries(w.fish.map((f) => [f.name, f.owner])); assert.equal(owners.Pip, x.userId); assert.equal(owners.YuiFish, y.userId); assert.equal(owners.ZedFish, z.userId); assert.equal(w.fish.find((f) => f.name === 'ZedFish').ownerName, 'Zed');
@@ -382,11 +382,11 @@ await t('food choice on the server: paid foods cost shells, a poor tank cannot b
 });
 await t('your data is yours: backup downloads, restores into a new tank, and deleting removes the player and an empty tank', async () => {
   const u1 = await mkUser('Backup'), tk1 = (await call('/api/tanks', { name: 'Backup Reef' }, u1.token)).body, ws1 = await open(u1.token);
-  assert.equal((await ackOf(ws1, { t: 'chooseFirst', species: 'seahorse', name: 'Nori', seed: 4, idem: 'bk-1' })).ok, true); setW(tk1.id, { shells: 77 }); ws1.close();
+  assert.equal((await ackOf(ws1, { t: 'chooseFirst', species: 'octopus', name: 'Nori', seed: 4, idem: 'bk-1' })).ok, true); setW(tk1.id, { shells: 77 }); ws1.close();
   const ex = await call('/api/export', null, u1.token); assert.equal(ex.status, 200); assert.equal(ex.body.app, 'our-tank'); assert.equal(ex.body.world.shells, 77); assert.equal(ex.body.world.fish[0].name, 'Nori'); assert.equal(ex.body.world.fish[0].owner, null, 'no ids in a backup'); assert.ok(!JSON.stringify(ex.body).includes(u1.userId), 'no user id anywhere');
   assert.equal((await call('/api/export', null, 'x'.repeat(64))).status, 401);
   const u2 = await mkUser('Restorer'); assert.equal((await call('/api/import', { app: 'nope' }, u2.token)).status, 400); assert.equal((await call('/api/import', { app: 'our-tank', world: { fish: new Array(70).fill({}) } }, u2.token)).status, 400, 'too many fish');
-  const r = await call('/api/import', ex.body, u2.token); assert.equal(r.status, 200, JSON.stringify(r.body)); const w2 = getW(r.body.id); assert.equal(w2.shells, 77); assert.equal(w2.fish[0].name, 'Nori'); assert.equal(w2.fish[0].species, 'seahorse'); assert.ok(w2.flags.firsts[u2.userId]); assert.equal((await call('/api/import', ex.body, u2.token)).status, 409, 'already in a tank');
+  const r = await call('/api/import', ex.body, u2.token); assert.equal(r.status, 200, JSON.stringify(r.body)); const w2 = getW(r.body.id); assert.equal(w2.shells, 77); assert.equal(w2.fish[0].name, 'Nori'); assert.equal(w2.fish[0].species, 'octopus'); assert.ok(w2.flags.firsts[u2.userId]); assert.equal((await call('/api/import', ex.body, u2.token)).status, 409, 'already in a tank');
   const bad = JSON.parse(JSON.stringify(ex.body)); bad.world.fish[0].species = 'dragon'; bad.world.shells = 1e12; const u3 = await mkUser('Careful'); const rb = await call('/api/import', bad, u3.token); assert.equal(rb.status, 200); const w3 = getW(rb.body.id); assert.equal(w3.fish.length, 0, 'unknown species dropped'); assert.ok(w3.shells <= 1e6, 'shells bounded');
   const del = await fetch(base + '/api/me', { method: 'DELETE', headers: { authorization: 'Bearer ' + u2.token } }); assert.equal(del.status, 200); assert.equal((await call('/api/me', null, u2.token)).status, 401, 'the player is gone'); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM tanks WHERE id=?').get(r.body.id).n, 0, 'an empty tank goes with its last player');
   assert.equal(S.db.prepare('SELECT COUNT(*) n FROM users WHERE id=?').get(u2.userId).n, 0);

@@ -26,7 +26,7 @@ export class Fish3D {
   static groundAt = null;                   // set by the scene: what the ground looks like at x,z, as { key, cols, scale }            // decoration colliders, set by the scene
   constructor(species, seed, opts = {}) {
     this.species = species; this.id = species.id;
-    const model = buildModel(species.make(seed));
+    const model = buildModel(species.make(seed, opts.look ?? null));
     const key = (x, y, z) => `${x},${y},${z}`;
     const occ = new Set(model.list.map((v) => key(v.x, v.y, v.z)));
     // drop voxels buried on all six sides – they can never be seen

@@ -614,11 +614,17 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   }
   return o;
 };
+// the colours an octopus can be: the first four were always there (older octopuses were dealt one by their seed), and a new caretaker picks one for theirs
+export const OCTO_COLORS = [
+  { id: 'coral', label: 'Coral', skin: [226, 92, 78], pale: [255, 190, 170] }, { id: 'violet', label: 'Violet', skin: [170, 90, 200], pale: [236, 190, 255] },
+  { id: 'ocean', label: 'Ocean', skin: [60, 150, 200], pale: [180, 236, 255] }, { id: 'amber', label: 'Amber', skin: [230, 140, 60], pale: [255, 220, 170] },
+  { id: 'kelp', label: 'Kelp', skin: [72, 160, 110], pale: [196, 240, 210] }, { id: 'ink', label: 'Ink', skin: [78, 74, 112], pale: [196, 190, 228] },
+];
 const octopus = {
   id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.06,
-  make(seed = 1) {
-    const rng = mulberry32(seed * 7907 + 3), pals = [[[226, 92, 78], [255, 190, 170]], [[170, 90, 200], [236, 190, 255]], [[60, 150, 200], [180, 236, 255]], [[230, 140, 60], [255, 220, 170]]];
-    const [skinC, pale] = pals[Math.floor(rng() * pals.length)], off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);
+  make(seed = 1, look = null) {
+    const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
+    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);
     // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its centre line (so it can be re-posed)
     const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
     arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
