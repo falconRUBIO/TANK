@@ -112,7 +112,7 @@ await t('a feed is validated by the server and seen by the other players', async
   wa.send(JSON.stringify({ t: 'feed', x: 1.5, idem: 'f1' }));
   const ack = await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'f1'); assert.equal(ack.ok, true); assert.equal(ack.delta, 1);
   const f = await waitFor(wb, (m) => m.t === 'feed'); assert.equal(f.x, 1.5); await waitFor(wc, (m) => m.t === 'feed');
-  const st = await waitFor(wb, (m) => m.t === 'state'); assert.equal(st.tank.shells, 11);
+  const st = await waitFor(wb, (m) => m.t === 'state' && m.tank.shells === 11); assert.equal(st.tank.shells, 11);
 });
 await t('replaying the same idempotency key never pays twice', async () => {
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' })); wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' }));
@@ -431,6 +431,11 @@ await t('the daily gift reaches the server: accepted, paid to the shared wallet 
   setW(tank.id, { flags: { ...getW(tank.id).flags, tut: 5, gift: {} }, fish: getW(tank.id).fish.length ? getW(tank.id).fish : [{ id: 'fg', name: 'Gift', species: 'goldfish', seed: 1, born: Date.now(), stage: 'baby', traits: [], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now() });
   const s0 = getW(tank.id).shells, r1 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg1' }); assert.equal(r1.ok, true); assert.equal(r1.delta, 2); assert.ok(getW(tank.id).shells >= s0 + 2);
   const r2 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg2' }); assert.equal(r2.delta, 0);
+});
+await t('a phone that connects catches the tank up for everyone: the phone already there is sent the same tank', async () => {
+  const x = await mkUser('Old'), y = await mkUser('New'), tk = (await call('/api/tanks', { name: 'Same' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
+  const wx = await open(x.token); await waitFor(wx, (m) => m.t === 'snapshot'); wx.msgs.length = 0;
+  setW(tk.id, { shells: 77 }); const wy = await open(y.token); const got = await waitFor(wx, (m) => m.t === 'state' && m.tank.shells === 77); assert.equal(got.tank.shells, 77); wx.close(); wy.close();
 });
 await t('two phones in one tank agree on a director, who alone sends fish positions and memories; a water change is mirrored', async () => {
   const x = await mkUser('Dir'), y = await mkUser('Fol'), tk = (await call('/api/tanks', { name: 'Sync' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);

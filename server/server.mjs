@@ -67,6 +67,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
   // One phone per tank is the director: its fish positions and memories are what everyone sees. The one that has been connected longest; when it leaves, the next takes over.
+  // the parts of a tank that people notice change; a tank whose key changed between checks is sent to everyone again
+  const stateKeys = new Map();
+  const stateKey = (w) => [w.shells, w.level, (w.fish ?? []).map((f) => f.id + f.stage).join(), (w.decor ?? []).length, w.drift?.id, (w.bottles ?? []).length, (w.orders ?? []).length, (w.eggs ?? []).length, w.visitor?.species, JSON.stringify(w.flags ?? {}), w.wishIdx, (w.floaters ?? []).length, JSON.stringify(w.style ?? {})].join('|');
   const directorOf = (tankId) => [...(rooms.get(tankId) ?? [])].sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || a.joinedAt - b.joinedAt)[0];
   const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -180,6 +183,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     ws.joinedAt = Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
     send(ws, { t: 'snapshot', ...L.snapshot(db, ws.user, online(tank.id)) });
+    // catching the tank up for the newcomer can change it (growth, a reward): everyone already here must see the same tank
+    { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
     ws.on('message', (raw) => {
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
@@ -278,7 +283,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (!set.size) continue;
       try {
         const r = L.tickTank(db, tankId); an.fromTick(tankId, r.events);
-        if (r.events.length) { broadcast(tankId, { t: 'state', tank: L.publicTank(r.world) }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
+        const pub = L.publicTank(r.world), key = stateKey(pub), changed = stateKeys.has(tankId) && stateKeys.get(tankId) !== key; stateKeys.set(tankId, key);
+        if (r.events.length || changed) { broadcast(tankId, { t: 'state', tank: pub }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
       } catch (e) { console.error('tick failed', e); }
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();

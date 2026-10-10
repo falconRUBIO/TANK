@@ -274,6 +274,9 @@
   .scr .again{display:block;margin:12px auto 4px;background:none!important;border:0!important;color:#9fc4ee;text-decoration:underline;font-size:13px}
   .rkbox{cursor:pointer}
   #settle.top{top:var(--top,58px);bottom:auto}
+  /* the hint pill lives at the top, under the shells counter; messages appear just below it */
+  #sub{bottom:auto;top:var(--top)}#toast{top:calc(var(--top) + 46px);font:12.5px -apple-system,system-ui,sans-serif}
+  main:has(#card.on,#sheet.on,#placebar.on,#coach.on,#reunion.on,#settle.on) + #sub{opacity:0;pointer-events:none}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
