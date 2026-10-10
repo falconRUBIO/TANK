@@ -135,19 +135,24 @@ export class Fishes {
     if (!this.decor) return;
     for (const f of this.list) {
       const T = f.task;
-      if (T?.stage === 'haul') this.decor.haulMove(T.id, f.pos.x + T.ux * 0.75, f.pos.z + T.uz * 0.75, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : 0.1, T.kind === 'home' ? Math.PI : null);
-      if (f.species.id !== 'octopus' || !f.den?.home) continue;
+      if (T?.stage === 'haul') this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : 0.1, T.kind === 'home' ? Math.PI : null);
+      if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
-      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z)) < 0.5, g = it.group.position;
+      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z + 0.45)) < 0.5, g = it.group.position;
       g.y += ((under ? 0.04 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0) - g.y) * Math.min(1, dt * 2);          // it holds the shell up over itself
     }
   }
+  // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
+  beginTask(f, pl) {
+    const at = this.decor.atOf(pl.id), type = (this.spots?.() ?? []).find((q) => q.id === pl.id)?.type, r = this.decor.reach(type), off = r + 0.8 * (f.radius ?? 2) + (f.cr ?? 0.6), hold = Math.max(0.5, r * 0.55), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1;
+    f.task = { ...pl, type, off, hold, stage: 'go', ux: (pl.gx - at.x) / L, uz: (pl.gz - at.z) / L, t0: performance.now() }; f.task.ax = at.x - f.task.ux * off; f.task.az = at.z - f.task.uz * off; f.startTask(f.task);
+  }
   taskEvent(f, ev) {
     const T = f.task, dc = this.decor; if (!T || !dc) return false;
-    if (ev === 'grab') { const at = dc.atOf(T.id); if (!at || Math.hypot(at.x - f.pos.x, at.z - f.pos.z) > 1.6 || !dc.haulBegin(T.id)) { f.task = null; return false; } T.stage = 'haul'; return true; }
+    if (ev === 'grab') { const at = dc.atOf(T.id); if (!at || Math.hypot(at.x - f.pos.x, at.z - f.pos.z) > T.off + 1.0 || !dc.haulBegin(T.id)) { f.task = null; return false; } T.stage = 'haul'; return true; }
     if (ev === 'drop') {
-      const good = Math.hypot(T.gx - (f.pos.x + T.ux * 0.75), T.gz - (f.pos.z + T.uz * 0.75)) < 1.0;
-      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? Math.PI : null); T.stage = 'placed'; f.movedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', ry: T.kind === 'home' ? Math.PI : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); f.task = null; }
+      const good = Math.hypot(T.gx - (f.pos.x + T.ux * T.hold), T.gz - (f.pos.z + T.uz * T.hold)) < 1.0;
+      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? Math.PI : null); T.stage = 'placed'; f.movedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', ry: T.kind === 'home' ? Math.PI : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); (f.failed ||= []).push({ x: T.gx, z: T.gz }); if (f.failed.length > 6) f.failed.shift(); f.task = null; }
       return good;
     }
     if (ev === 'abort') { if (T.stage === 'haul') dc.haulCancel(T.id); f.task = null; return false; }
@@ -159,19 +164,27 @@ export class Fishes {
     const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
     const mine = new Set(this.list.map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
     const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
-    const home = !f.homeId && spots.filter((q) => q.type === 'coconut' && !mine.has(q.id) && !(q.id === f.den?.id && false))[0];
+    const bad = (x, z) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9);
+    const home = !f.homeId && spots.filter((q) => (q.type === 'coconut' || q.type === 'pot') && !mine.has(q.id)).sort((a, b) => (a.type === 'coconut' ? 0 : 1) - (b.type === 'coconut' ? 0 : 1))[0];
     if (home && rnd() < 0.7) {                                                                                  // a coconut and nowhere to live: carry it to a quiet corner
       const at = dc.atOf(home.id), want = f.fav ? [f.fav.x, f.fav.z] : null;
-      for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = 0.2 + rnd() * 1.3; if (Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
+      for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = 0.2 + rnd() * 1.3; if (!bad(x, z) && Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
       return null;
     }
-    const movers = spots.filter((q) => ['rock', 'shell', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
-    if (!movers.length) return null; const m = movers[(rnd() * movers.length) | 0], homeSpot = f.den;
+    const movers = spots.filter((q) => ['rock', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
+    if (!movers.length) return null;
+    if (!f.homeId && f.den?.kind !== 'rocks' && movers.length >= 2 && M.tidy > 0.3) {                                                // no shell or pot to live in: it gathers rocks into a shelter at its favourite spot
+      const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(0.3, Math.min(1.9, c.z));
+      const there = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) < 1.5), away = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) >= 1.5).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
+      for (const m of away.slice(0, 3)) for (let i = 0; i < 10; i++) { const a = (there.length + i) * 2.1 + rnd() * 0.6; let x = cx + Math.cos(a) * 1.1, z = cz + Math.sin(a) * 0.75; const L = Math.hypot(x - m.x, z - m.z); if (L > MOVE_MAX) { x = m.x + ((x - m.x) / L) * (MOVE_MAX - 0.4); z = m.z + ((z - m.z) / L) * (MOVE_MAX - 0.4); }      // too far for one trip: bring it part of the way
+        if (!bad(x, z) && Math.hypot(x - m.x, z - m.z) > 0.6 && free(m.id, x, z)) return { kind: 'build', id: m.id, gx: x, gz: z }; }
+    }
+    const m = movers[(rnd() * movers.length) | 0], homeSpot = f.den;
     for (let i = 0; i < 12; i++) {
       let x, z;
       if (homeSpot && M.tidy > 0.45) { const sx = rnd() < 0.5 ? -1 : 1; x = homeSpot.x + sx * (0.85 + rnd() * 0.3); z = homeSpot.z - 0.1 + rnd() * 0.5; }                // a wall beside its den
       else { const a = rnd() * 6.28, r = 1 + rnd() * 1.4; x = m.x + Math.cos(a) * r; z = m.z + Math.sin(a) * r * 0.5; }                           // shoves it about to see what happens
-      if (Math.hypot(x - m.x, z - m.z) > 0.6 && Math.hypot(x - m.x, z - m.z) <= MOVE_MAX && free(m.id, x, z)) return { kind: 'push', id: m.id, gx: x, gz: z };
+      if (!bad(x, z) && Math.hypot(x - m.x, z - m.z) > 0.6 && Math.hypot(x - m.x, z - m.z) <= MOVE_MAX && free(m.id, x, z)) return { kind: 'push', id: m.id, gx: x, gz: z };
     }
     return null;
   }
@@ -196,7 +209,7 @@ export class Fishes {
       else if (f.audience >= 1 && f.bondMe >= 1) th = 'Knows you are here.';
       else if (f.bored > 0.5) th = M.cur > 0.6 ? 'Restless. Nothing new in a while.' : 'A little bored.';
       else if (f.fearNear) th = 'Avoiding a spot that scared it.';
-      else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = f.den.home ? 'Home under its coconut shell.' : 'Home in its den.';
+      else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = f.den.home ? (f.den.kind === 'pot' ? 'Curled up in its pot.' : 'Tucked into its coconut shell.') : f.den.kind === 'rocks' ? 'Home in the rock shelter it built.' : 'Home in its den.';
       f.thought = th;
       { const lk = f.likes && Object.entries(f.likes).sort((a, b) => b[1] - a[1])[0]; const sp = lk && lk[1] >= 3 ? (f.getSpots?.() ?? []).find((x) => x.id === lk[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
       if (M.type === 'showoff' && f.audience >= 1 && f.bondMe >= 1 && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.1) f.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.5 + this.rng() * 3, until: performance.now() + 5000 };       // an audience it knows: it goes and shows off at the glass
@@ -205,10 +218,10 @@ export class Fishes {
         else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
         break;
       }
-      if (f.task) th = f.task.kind === 'home' ? 'Carrying a coconut shell to a quiet corner.' : 'Moving a stone where it wants it.';
+      if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : 'Moving a stone where it wants it.';
       f.thought = th;
       if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.012 + 0.03 * M.tidy + 0.015 * M.cur) {
-        const pl = this.planMove(f, M); if (pl) { const at = this.decor.atOf(pl.id), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1; f.task = { ...pl, stage: 'go', ux: (pl.gx - at.x) / L, uz: (pl.gz - at.z) / L, t0: performance.now() }; f.task.ax = at.x - f.task.ux * 0.75; f.task.az = at.z - f.task.uz * 0.75; f.startTask(f.task); }
+        const pl = this.planMove(f, M); if (pl) this.beginTask(f, pl);
       }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
       if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
@@ -312,9 +325,13 @@ export class Fishes {
   }
   // an octopus's den (a rock or structure it has taken to), its collection of shells at the entrance, and the shell it carries home now and then
   syncDen(f, d) {
-    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), pref = spots.filter((x) => x.id === d.home || false).concat(spots.filter((x) => x.type === 'pot' || x.type === 'coconut')), den = pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null;
-    f.den = den ? { x: den.x, z: den.z, id: den.id, home: !!d.home && den.id === d.home } : null;
-    const key = f.den ? `${f.den.id}|${f.hoard}|${d.crabs ?? 0}` : '';
+    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), home = spots.find((x) => x.id === d.home);
+    const rocks = spots.filter((x) => ['rock', 'skull'].includes(x.type)), near = (q) => rocks.filter((r) => r !== q && Math.hypot(r.x - q.x, r.z - q.z) < 2.4), built = rocks.map((q) => [q, near(q)]).filter(([, n]) => n.length >= 1).sort((a, b) => b[1].length - a[1].length)[0];
+    const pref = spots.filter((x) => x.type === 'pot' || x.type === 'coconut'), den = home ?? (built ? null : pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null);
+    if (home) f.den = { x: home.x, z: home.z, id: home.id, home: true, kind: home.type };
+    else if (built) { const all = [built[0], ...built[1]], cx = all.reduce((a, q) => a + q.x, 0) / all.length, cz = all.reduce((a, q) => a + q.z, 0) / all.length; f.den = { x: cx, z: cz, id: built[0].id, home: false, kind: 'rocks', n: all.length }; }
+    else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
+    const key = f.den ? `${f.den.id}|${f.den.kind}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
     if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onPush = (p, d) => this.puff(p, d); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
   }

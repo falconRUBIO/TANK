@@ -5,7 +5,7 @@ import { buildItem, stampItem, itemOverlaps, placeGroup, disposeItem } from './i
 import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
 
-const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.3, 1.1], pot: [1.0, 0.9] };
+const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.7, 1.5], pot: [1.7, 1.4] };
 export const LANES = [0.3, 1.5, 2.7];
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 
@@ -76,6 +76,7 @@ export class DecorMgr {
   haulCancel(id) { const it = this.items.get(id); if (!it?.haul) return; const o = it.haul; it.haul = null; placeGroup(it, o.x, o.z, it.at.ry); stampItem(it, this.solids, o.x, o.z, it.at.ry, 1); }
   // is there room for this item at x,z (ignoring itself)?
   roomFor(id, x, z) { const it = this.items.get(id); if (!it) return false; const hauled = !!it.haul; if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); const n = itemOverlaps(it, this.solids, x, z, it.at.ry); if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, 1); return n === 0; }
+  reach(type) { return PICK[type]?.[0] ?? 0.7; }          // how far a thing of this type spreads from its centre
   atOf(id) { const it = this.items.get(id); return it ? { x: it.at.x, z: it.at.z } : null; }
   // returns the final placement, leaving the item to be created/updated by sync() when the game state changes
   commit() {

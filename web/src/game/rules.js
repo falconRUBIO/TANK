@@ -385,7 +385,7 @@ export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND
 export const isSmart = (f) => f?.species === 'octopus';
 // An octopus can shift small things about: rocks, shells, a clay pot, a coconut shell. It can carry a coconut shell to a quiet corner and live under it.
 // Only the small pieces move, only a little at a time, and each octopus does it at most once every 20 minutes. A tank can switch it off.
-export const MOVABLE = ['rock', 'coconut', 'pot', 'shell', 'skull'];
+export const MOVABLE = ['rock', 'coconut', 'pot', 'skull'];
 export const MOVE_GAP = 20 * 60e3, MOVE_MAX = 4.5;
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
