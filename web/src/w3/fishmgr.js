@@ -6,7 +6,7 @@ import { Fish3D } from './fish3d.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
-import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
+import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
@@ -44,6 +44,7 @@ export class Fishes {
   }
   // make the scene match the game's fish list
   sync(state, { arrivals = [] } = {}) {
+    this.moveOn = !state.flags?.noRearrange;
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
     { const sig = (state.decor?.length ?? 0) + ':' + state.fish.length + ':' + ((state.glass ?? 0) > 0.5 ? 1 : 0); if (sig !== this.sig) { if (this.sig != null) this.changedAt = performance.now(); this.sig = sig; } }
     const seen = new Set();
@@ -129,6 +130,51 @@ export class Fishes {
     }
     if (this.rdirty && t - (this.rsave ?? 0) > 25) { this.rsave = t; this.rdirty = false; try { localStorage.setItem('ourtank.routine', JSON.stringify(this.routine)); } catch { /* storage unavailable */ } }
   }
+  // ── moving things about: an octopus drags a rock or shell to where it wants it, or lifts a coconut shell and carries it off to live under ──
+  haulTick(dt, t) {
+    if (!this.decor) return;
+    for (const f of this.list) {
+      const T = f.task;
+      if (T?.stage === 'haul') this.decor.haulMove(T.id, f.pos.x + T.ux * 0.75, f.pos.z + T.uz * 0.75, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : 0.1, T.kind === 'home' ? Math.PI : null);
+      if (f.species.id !== 'octopus' || !f.den?.home) continue;
+      const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
+      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z)) < 0.5, g = it.group.position;
+      g.y += ((under ? 0.04 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0) - g.y) * Math.min(1, dt * 2);          // it holds the shell up over itself
+    }
+  }
+  taskEvent(f, ev) {
+    const T = f.task, dc = this.decor; if (!T || !dc) return false;
+    if (ev === 'grab') { const at = dc.atOf(T.id); if (!at || Math.hypot(at.x - f.pos.x, at.z - f.pos.z) > 1.6 || !dc.haulBegin(T.id)) { f.task = null; return false; } T.stage = 'haul'; return true; }
+    if (ev === 'drop') {
+      const good = Math.hypot(T.gx - (f.pos.x + T.ux * 0.75), T.gz - (f.pos.z + T.uz * 0.75)) < 1.0;
+      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? Math.PI : null); T.stage = 'placed'; f.movedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', ry: T.kind === 'home' ? Math.PI : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); f.task = null; }
+      return good;
+    }
+    if (ev === 'abort') { if (T.stage === 'haul') dc.haulCancel(T.id); f.task = null; return false; }
+    if (ev === 'home') { f.task = null; return true; }
+    return false;
+  }
+  // an octopus makes up its mind to rearrange something: only the phone in charge of the fish decides, and the move is reported to the game when it is done
+  planMove(f, M) {
+    const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
+    const mine = new Set(this.list.map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
+    const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
+    const home = !f.homeId && spots.filter((q) => q.type === 'coconut' && !mine.has(q.id) && !(q.id === f.den?.id && false))[0];
+    if (home && rnd() < 0.7) {                                                                                  // a coconut and nowhere to live: carry it to a quiet corner
+      const at = dc.atOf(home.id), want = f.fav ? [f.fav.x, f.fav.z] : null;
+      for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = 0.2 + rnd() * 1.3; if (Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
+      return null;
+    }
+    const movers = spots.filter((q) => ['rock', 'shell', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
+    if (!movers.length) return null; const m = movers[(rnd() * movers.length) | 0], homeSpot = f.den;
+    for (let i = 0; i < 12; i++) {
+      let x, z;
+      if (homeSpot && M.tidy > 0.45) { const sx = rnd() < 0.5 ? -1 : 1; x = homeSpot.x + sx * (0.85 + rnd() * 0.3); z = homeSpot.z - 0.1 + rnd() * 0.5; }                // a wall beside its den
+      else { const a = rnd() * 6.28, r = 1 + rnd() * 1.4; x = m.x + Math.cos(a) * r; z = m.z + Math.sin(a) * r * 0.5; }                           // shoves it about to see what happens
+      if (Math.hypot(x - m.x, z - m.z) > 0.6 && Math.hypot(x - m.x, z - m.z) <= MOVE_MAX && free(m.id, x, z)) return { kind: 'push', id: m.id, gx: x, gz: z };
+    }
+    return null;
+  }
   loadOcto() { try { return JSON.parse(localStorage.getItem('ourtank.octo') || '{}'); } catch { return {}; } }
   // What each octopus makes of the world around it, thought over once a second: sulks in dirty water, notices who is watching, gets restless when nothing changes,
   // and (the tricksters) goes to see what a nearby fish will do when startled. The fish act on these in jetUpdate.
@@ -150,7 +196,7 @@ export class Fishes {
       else if (f.audience >= 1 && f.bondMe >= 1) th = 'Knows you are here.';
       else if (f.bored > 0.5) th = M.cur > 0.6 ? 'Restless. Nothing new in a while.' : 'A little bored.';
       else if (f.fearNear) th = 'Avoiding a spot that scared it.';
-      else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = 'Home in its den.';
+      else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = f.den.home ? 'Home under its coconut shell.' : 'Home in its den.';
       f.thought = th;
       { const lk = f.likes && Object.entries(f.likes).sort((a, b) => b[1] - a[1])[0]; const sp = lk && lk[1] >= 3 ? (f.getSpots?.() ?? []).find((x) => x.id === lk[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
       if (M.type === 'showoff' && f.audience >= 1 && f.bondMe >= 1 && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.1) f.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.5 + this.rng() * 3, until: performance.now() + 5000 };       // an audience it knows: it goes and shows off at the glass
@@ -159,7 +205,11 @@ export class Fishes {
         else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
         break;
       }
+      if (f.task) th = f.task.kind === 'home' ? 'Carrying a coconut shell to a quiet corner.' : 'Moving a stone where it wants it.';
       f.thought = th;
+      if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.012 + 0.03 * M.tidy + 0.015 * M.cur) {
+        const pl = this.planMove(f, M); if (pl) { const at = this.decor.atOf(pl.id), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1; f.task = { ...pl, stage: 'go', ux: (pl.gx - at.x) / L, uz: (pl.gz - at.z) / L, t0: performance.now() }; f.task.ax = at.x - f.task.ux * 0.75; f.task.az = at.z - f.task.uz * 0.75; f.startTask(f.task); }
+      }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
       if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
       if ((f.fav || f.likes) && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: f.fav ? +f.fav.x.toFixed(2) : undefined, z: f.fav ? +f.fav.z.toFixed(2) : undefined, likes: f.likes }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
@@ -170,6 +220,7 @@ export class Fishes {
   relate(f, d) {
     if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
+    if (d.species === 'octopus') { f.movedAt = d.movedAt ?? 0; f.homeId = d.home ?? null; f.adultish = stageOf(d) !== 'baby'; f.onTask = (fish, ev) => this.taskEvent(fish, ev); }
     if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; } } }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
@@ -261,8 +312,8 @@ export class Fishes {
   }
   // an octopus's den (a rock or structure it has taken to), its collection of shells at the entrance, and the shell it carries home now and then
   syncDen(f, d) {
-    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), pref = spots.filter((x) => x.type === 'pot' || x.type === 'coconut'), den = pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null;
-    f.den = den ? { x: den.x, z: den.z, id: den.id } : null;
+    f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), pref = spots.filter((x) => x.id === d.home || false).concat(spots.filter((x) => x.type === 'pot' || x.type === 'coconut')), den = pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null;
+    f.den = den ? { x: den.x, z: den.z, id: den.id, home: !!d.home && den.id === d.home } : null;
     const key = f.den ? `${f.den.id}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
     if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onPush = (p, d) => this.puff(p, d); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
@@ -327,7 +378,7 @@ export class Fishes {
     a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
   }
   update(dt, t) {
-    this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt);
+    this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; const q = k.age / 4; k.m.scale.setScalar(1 + q * 3.2); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = 0.55 * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < 4) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     for (const c of this.crabs ?? []) { c.mesh.userData.tick?.(t * (c.held ? 1.6 : 1), c.held ? 1 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue; if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; } else c.mesh.position.x = c.x + Math.sin(t * 4 + c.z) * 0.04; }

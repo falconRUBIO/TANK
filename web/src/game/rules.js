@@ -47,7 +47,7 @@ export const DECOR_DEF = {
   anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 16, level: 2, blurb: 'Soft tentacles that sway. A clownfish favourite.' },
   brain:    { label: 'Brain Coral',   cat: 'ROCKS',      price: 14, level: 2, blurb: 'A ridged dome of coral.' },
   table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 20, level: 3, blurb: 'A wide shelf to hover under.' },
-  coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A hollow half-shell. Octopuses like to hide under one.' },
+  coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A big hollow half-shell. An octopus may carry it off and move in.' },
   pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
@@ -383,6 +383,11 @@ export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND
 // The octopus is the clever one: it learns a trick in two lessons instead of five, remembers whoever looks after it, and can be given a puzzle jar
 // with a crab inside. The first jar takes minutes to work out; every one after is quicker, down to seconds, because it remembers how.
 export const isSmart = (f) => f?.species === 'octopus';
+// An octopus can shift small things about: rocks, shells, a clay pot, a coconut shell. It can carry a coconut shell to a quiet corner and live under it.
+// Only the small pieces move, only a little at a time, and each octopus does it at most once every 20 minutes. A tank can switch it off.
+export const MOVABLE = ['rock', 'coconut', 'pot', 'shell', 'skull'];
+export const MOVE_GAP = 20 * 60e3, MOVE_MAX = 4.5;
+export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
 export const OCTO_TYPES = [
@@ -747,6 +752,19 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
       return ok({ id: item.id });
     }
+    case 'octoMove': {                                              // an octopus shifts a small decoration (the phone that is watching reports it)
+      if (t.flags.noRearrange) return fail('OFF');
+      const f = t.fish.find((x) => x.id === a.fish && x.species === 'octopus'); if (!f || f.dead || stageOf(f, now) === 'baby') return fail('NOT_FOUND');
+      const it = t.decor.find((x) => x.id === a.id); if (!it || !MOVABLE.includes(it.type)) return fail('NOT_FOUND');
+      if (f.movedAt != null && now - f.movedAt < MOVE_GAP) return ok({ applied: false });
+      const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
+      if (Math.hypot(x - it.x, z - it.z) > MOVE_MAX) return fail('OUT_OF_BOUNDS');
+      it.x = +x.toFixed(2); it.z = +z.toFixed(2); f.movedAt = now; f.moved = (f.moved ?? 0) + 1;
+      const home = a.home === true && ['coconut', 'pot'].includes(it.type); if (home) { f.home = it.id; it.ry = +(num(a.ry) || 0).toFixed(2); }
+      events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
+      return ok({ applied: true });
+    }
+    case 'tankPref': { if (typeof a.rearrange === 'boolean') { if (a.rearrange) delete t.flags.noRearrange; else t.flags.noRearrange = true; } return ok(); }
     case 'moveDecor': {
       const it = t.decor.find((x) => x.id === a.id); if (!it) return fail('NOT_FOUND');
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
@@ -754,7 +772,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     }
     case 'sellDecor': {
       const i = t.decor.findIndex((x) => x.id === a.id); if (i < 0) return fail('NOT_FOUND');
-      const d = DECOR_DEF[t.decor[i].type]; t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
+      const d = DECOR_DEF[t.decor[i].type]; for (const f of t.fish) if (f.home === t.decor[i].id) delete f.home; t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
       if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }

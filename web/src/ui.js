@@ -180,6 +180,7 @@ export function initUI({ game, social, cb }) {
         <label class="row2" id="pushtestrow" hidden><span>Check that they arrive</span><button class="tog" id="pushtest">Send a test</button></label>
       </div>` : `<h4>Help</h4><div class="group"><label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label></div>`}
       <h4>Your tank</h4><div class="group">
+        ${game.state.fish.some((f) => f.species === 'octopus') ? `<label class="row2"><span>Octopus moves things</span><button class="tog ${game.state.flags?.noRearrange ? '' : 'on'}" id="rearr">${game.state.flags?.noRearrange ? 'Off' : 'On'}</button></label>` : ''}
         ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div>
         <div class="row2"><span>Tank storage</span><b id="stor">checking…</b></div>
         <div class="row2"><span>Copy on this phone</span><b id="phc">…</b></div>
@@ -205,7 +206,7 @@ export function initUI({ game, social, cb }) {
     const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
-    bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('mus', () => { setMusic(!musicOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
+    bind('rearr', async () => { await game.dispatch({ t: 'tankPref', rearrange: !!game.state.flags?.noRearrange }); open('settings', true); }); bind('snd', () => { setSound(!soundOn()); open('settings', true); }); bind('mus', () => { setMusic(!musicOn()); open('settings', true); }); bind('gfx', () => { cb.cycleQuality(); open('settings', true); });
     const phc = $('phc'); if (phc) phc.textContent = game.copyAt ? 'Saved ' + (Date.now() - game.copyAt < 120000 ? 'just now' : new Date(game.copyAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })) : 'Saving…';
     const stor = $('stor'); if (stor) cb.storage().then((r) => { stor.textContent = r.level === 'safe' ? 'Protected ✓' : r.level === 'waiting' ? 'Starting up…' : 'Not protected: it can vanish when the server restarts'; stor.style.color = r.level === 'risk' ? '#ff9a8a' : r.level === 'safe' ? '#8fe0a8' : ''; }).catch(() => { stor.textContent = 'Unknown'; });
     const pb = $('pushbtn'); if (pb) {

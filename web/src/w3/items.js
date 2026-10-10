@@ -111,7 +111,7 @@ const B = {
     const lm = top.mesh(); lm.position.set(0, 0.05 + 0.1, -0.25); lm.rotation.x = -1.0; g.add(lm); return [{ v: bot, x: 0, y: 0.05, z: 0, ry: 0 }];
   },
   coconut: (g) => {                     // half a coconut lying on its side with the opening towards you: a hairy brown husk, a pale flesh rim and a dark hollow
-    const u = 0.06, v = new Vox(u), R = 8;
+    const u = 0.16, v = new Vox(u), R = 8;
     for (let i = -R; i <= R; i++) for (let j = 0; j <= R; j++) for (let k = -2; k <= R; k++) {
       const d = Math.hypot(i, j, k); if (d > R + 0.5) continue; const hollow = d < R - 2.6 && k >= 0;                            // axis along +z, so the open face looks at the camera
       if (hollow) continue; const rim = k <= 1 && d > R - 2.6 && k >= 0, outer = d > R - 1.2;

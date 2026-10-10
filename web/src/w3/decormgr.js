@@ -5,7 +5,7 @@ import { buildItem, stampItem, itemOverlaps, placeGroup, disposeItem } from './i
 import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
 
-const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [0.7, 0.7], pot: [1.0, 0.9] };
+const PICK = { grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [0.5, 0.1], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.3, 1.1], pot: [1.0, 0.9] };
 export const LANES = [0.3, 1.5, 2.7];
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 
@@ -19,9 +19,9 @@ export class DecorMgr {
     const seen = new Set();
     for (const d of list) {
       seen.add(d.id); const have = this.items.get(d.id);
-      if (this.preview?.id === d.id) continue;                       // being moved right now
+      if (this.preview?.id === d.id || have?.haul) continue;        // being moved right now (by a player, or carried by an octopus)
       if (!have) { const it = buildItem(d.type, seedOf(d.id)); it.id = d.id; it.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(it, d.x, d.z, d.ry); stampItem(it, this.solids, d.x, d.z, d.ry, 1); this.scene.add(it.group); this.items.set(d.id, it); if (d.type === 'bubbler') { const b = new Bubbles(d.x, d.z, 14); b.mesh.position.y = 0.4; b.baseY = 0.4; this.scene.add(b.mesh); this.streams.set(d.id, b); } }
-      else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); }
+      else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); const from = have.group.position.clone(); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); if (Math.hypot(from.x - d.x, from.z - d.z) > 0.15) have.slide = { from, t: 0 }; }
     }
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
     if (state) this.grow(state);
@@ -67,7 +67,16 @@ export class DecorMgr {
     this.marker.scale.setScalar(Math.max(0.8, (PICK[p.type]?.[0] ?? 1)));
   }
   bubbleSpot() { for (const [id] of this.streams) { const it = this.items.get(id); if (it) return new THREE.Vector3(it.at.x, 0, it.at.z); } return null; }
-  tick(t, dt = 0.016) { for (const b of this.streams.values()) b.update(dt, t); const p = this.preview; if (p) { p.item.group.position.y = 0.12 + Math.sin(t * 4) * 0.05; } }
+  tick(t, dt = 0.016) { for (const b of this.streams.values()) b.update(dt, t);
+    for (const it of this.items.values()) if (it.slide) { const sl = it.slide; sl.t += dt / 2.2; const k = Math.min(1, sl.t), e = k * k * (3 - 2 * k), g = it.group.position; if (k >= 1) { it.slide = null; continue; } g.x = sl.from.x + (it.at.x - sl.from.x) * e; g.z = sl.from.z + (it.at.z - sl.from.z) * e; g.y = Math.sin(k * Math.PI) * 0.12; } const p = this.preview; if (p) { p.item.group.position.y = 0.12 + Math.sin(t * 4) * 0.05; } }
+  // ── carried by an octopus: lifted out of the collision grid, moved each frame, then set down (or put back if it is interrupted) ──
+  haulBegin(id) { const it = this.items.get(id); if (!it || it.haul || this.preview?.id === id) return false; stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); it.haul = { x: it.at.x, z: it.at.z }; it.slide = null; return true; }
+  haulMove(id, x, z, lift = 0, ry = null) { const it = this.items.get(id); if (!it?.haul) return; it.group.position.set(x, lift, z); if (ry != null) { let d = ry - it.group.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); it.group.rotation.y += d * 0.03; } }
+  haulEnd(id, x, z, ry = null) { const it = this.items.get(id); if (!it?.haul) return; it.haul = null; it.at = { ...it.at, x, z, ry: ry ?? it.at.ry }; placeGroup(it, x, z, it.at.ry); stampItem(it, this.solids, x, z, it.at.ry, 1); }
+  haulCancel(id) { const it = this.items.get(id); if (!it?.haul) return; const o = it.haul; it.haul = null; placeGroup(it, o.x, o.z, it.at.ry); stampItem(it, this.solids, o.x, o.z, it.at.ry, 1); }
+  // is there room for this item at x,z (ignoring itself)?
+  roomFor(id, x, z) { const it = this.items.get(id); if (!it) return false; const hauled = !!it.haul; if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); const n = itemOverlaps(it, this.solids, x, z, it.at.ry); if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, 1); return n === 0; }
+  atOf(id) { const it = this.items.get(id); return it ? { x: it.at.x, z: it.at.z } : null; }
   // returns the final placement, leaving the item to be created/updated by sync() when the game state changes
   commit() {
     const p = this.preview; if (!p || !p.valid) return null;
