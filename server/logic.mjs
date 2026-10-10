@@ -100,7 +100,7 @@ export function importTank(db, user, data) {
   world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); const was = data.heal && typeof data.was === 'string' ? data.was : null;
   world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: data.heal ? f.owner ?? null : null, name: String(f.name ?? 'Fish').slice(0, 14) }));
   if (was) remapUser(world, was, user.id);
-  world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = []; world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
+  world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = keepOrders(w.orders, world, data.heal, user.id, now, was); world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
   world.flags = { ...(world.flags ?? {}), firsts: { ...(data.heal ? world.flags?.firsts ?? {} : {}), [user.id]: true }, intro: world.flags?.intro ?? now };
   // a tank put back after the server lost its data keeps its old code, so the friends who still have it can walk straight back in
   const want = data.heal ? normalizeCode(data.code) : null, healCode = want && want.length === 6 && [...want].every((ch) => ALPHABET.includes(ch)) ? want : null;
@@ -140,11 +140,25 @@ export function claimSeat(db, code, slot, isOnline = () => false) {
 }
 // When a tank is put back after the server lost its data, the people in it come back as new accounts. Everything the tank remembered about the old
 // account (their own octopus, the bond fish have with them, today's gift and their first fish) is moved to the new one, so nothing is paid twice or lost.
+// Fish already paid for and on their way are kept when a tank is put back (they used to be dropped, so the shells were spent and the fish never came).
+// Each one is checked: a real species, room for it, and it arrives no later than a full wait from now (one that was due arrives straight away).
+function keepOrders(list, world, heal, uid, now, was = null) {
+  const out = []; let room = R.capacity(world.level) - world.fish.length;
+  for (const o of Array.isArray(list) ? list.slice(0, 12) : []) {
+    const d = R.SPECIES_DEF[o?.species]; if (!d || d.count > room) continue; room -= d.count;
+    const at = Number.isFinite(+o.arrivesAt) ? +o.arrivesAt : now;
+    out.push({ id: typeof o.id === 'string' ? o.id.slice(0, 24) : 'o' + now + out.length, species: o.species, name: clean(o.name, 14) || null, seed: Math.abs(Math.floor(+o.seed || now)) % 100000,
+      by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && o.owner !== was ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null,
+      at: Number.isFinite(+o.at) ? +o.at : now, arrivesAt: Math.max(now, Math.min(at, now + d.wait * 60e3)) });
+  }
+  return out;
+}
 export function remapUser(w, was, now) {
   if (!w || !was || !now || was === now) return false; let n = 0;
   const mv = (o) => { if (o && Object.prototype.hasOwnProperty.call(o, was)) { if (o[now] == null) o[now] = o[was]; delete o[was]; n++; } };
   mv(w.flags?.gift); mv(w.flags?.firsts); mv(w.flags?.daily); mv(w.flags?.care);
   for (const f of [...(w.fish ?? []), ...(w.floaters ?? []), ...(w.memorial ?? [])]) { if (f.owner === was) { f.owner = now; n++; } mv(f.bond); mv(f.petAt); }
+  for (const o of w.orders ?? []) if (o.owner === was) { o.owner = now; n++; }
   for (const b of w.bottles ?? []) { if (b.to === was) b.to = now; if (b.from === was) b.from = now; }
   return n > 0;
 }

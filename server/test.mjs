@@ -272,6 +272,19 @@ await t('a tank put back after the server lost its data keeps who owns what: the
   const w = getW(r.body.id); assert.equal(w.fish[0].owner, a2.userId, 'the octopus is still yours'); assert.ok(w.flags.gift[a2.userId], 'today\'s gift is remembered');
   const ws2 = await open(a2.token), g2 = await ackOf(ws2, { t: 'dailyGift', tz: 0, idem: 'hl-3' }); assert.equal(g2.delta, 0, 'not paid again'); ws2.close();
 });
+await t('a fish already paid for still arrives after the server lost the tank and the phone put it back', async () => {
+  const a1 = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Order' }, a1.token)).body, ws = await open(a1.token);
+  assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'po-1' })).ok, true); const w0 = getW(tk.id); setW(tk.id, { flags: { ...w0.flags, tut: 5 }, shells: 50 });
+  const b = await ackOf(ws, { t: 'buyFish', species: 'goldfish', name: 'Nemo', idem: 'po-2' }); assert.equal(b.ok, true, JSON.stringify(b)); ws.close();
+  const copy = JSON.parse(JSON.stringify(getW(tk.id))); assert.equal(copy.orders.length, 1); const paid = copy.shells;
+  S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id);
+  const a2 = await mkUser('Ana'), r = await call('/api/import', { app: 'our-tank', tank: { name: 'Order' }, world: copy, code: tk.code, heal: true, was: a1.userId }, a2.token); assert.equal(r.status, 200, JSON.stringify(r.body));
+  let w = getW(r.body.id); assert.equal(w.orders.length, 1, 'the order is kept'); assert.equal(w.orders[0].owner, a2.userId, 'and it is still yours'); assert.equal(w.shells, paid, 'nothing is charged twice');
+  assert.ok(w.orders[0].arrivesAt <= Date.now() + 10 * 60e3 + 1000, 'it never waits longer than a full wait');
+  w.orders[0].arrivesAt = Date.now() - 1; setW(r.body.id, { orders: w.orders }); const ws2 = await open(a2.token); await new Promise((ok) => setTimeout(ok, 200));
+  await ackOf(ws2, { t: 'observe', idem: 'po-3' }).catch(() => null); ws2.close(); w = getW(r.body.id);
+  assert.ok(w.fish.some((f) => f.name === 'Nemo'), 'and it arrives'); assert.equal(w.orders.length, 0);
+});
 await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
   const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
