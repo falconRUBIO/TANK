@@ -15,6 +15,8 @@ const out = await p.evaluate(async () => {
   s.water = 1; g.emit('state'); F.changedAt = performance.now() - 40 * 6e4; F.aw = 0; run(30); res.bored = oct.map((f) => `${f.mind.label}: bored ${f.bored.toFixed(2)} ${f.thought || '-'}`);
   F.people = ['x']; oct.forEach((f) => { f.bondMe = 2; f.bondIds = ['x']; }); F.aw = 0; run(30); res.watched = oct.map((f) => `${f.mind.label}: audience ${f.audience} ${f.thought || '-'}`);
   oct.forEach((f) => { f.startle(null); }); run(300); res.fears = oct.map((f) => f.fears?.length ?? 0);
+  oct[0].likes = { x: 3 }; const d = s.decor?.[0]; if (d) oct[0].likes = { [d.id]: 5 };
+  oct[1].pos.copy(oct[2].pos); oct[1].mind.soc = 0.1; oct[2].mind.soc = 0.9; F.aw = 0; run(30); res.pair = [oct[1].thought, oct[2].thought, oct[0].favThing];
   return res;
 });
 console.log(JSON.stringify(out, null, 1)); console.log(errors.length ? 'page errors: ' + errors.slice(0, 5).join('; ') : 'No page errors'); await b.close();

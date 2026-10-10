@@ -152,9 +152,17 @@ export class Fishes {
       else if (f.fearNear) th = 'Avoiding a spot that scared it.';
       else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = 'Home in its den.';
       f.thought = th;
+      { const lk = f.likes && Object.entries(f.likes).sort((a, b) => b[1] - a[1])[0]; const sp = lk && lk[1] >= 3 ? (f.getSpots?.() ?? []).find((x) => x.id === lk[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
+      if (M.type === 'showoff' && f.audience >= 1 && f.bondMe >= 1 && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.1) f.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.5 + this.rng() * 3, until: performance.now() + 5000 };       // an audience it knows: it goes and shows off at the glass
+      for (const o of this.list) if (o !== f && o.species.id === 'octopus' && !o.dead && o.mind && Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 2.4) {
+        if (M.soc < 0.4 && S?.s !== 'jet') { f.annoyT = Math.max(f.annoyT, 3); f.fearNear = false; if (S?.s === 'rest' && !S.mode) { S.s = 'crawl'; S.t = 6; f.target.set(Math.max(-3.5, Math.min(3.5, f.pos.x + (f.pos.x >= o.pos.x ? 2.6 : -2.6))), 0.55, f.pos.z); } th = `Keeping its distance from ${o.name}.`; }
+        else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
+        break;
+      }
+      f.thought = th;
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
       if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
-      if (f.fav && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: +f.fav.x.toFixed(2), z: +f.fav.z.toFixed(2) }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
+      if ((f.fav || f.likes) && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: f.fav ? +f.fav.x.toFixed(2) : undefined, z: f.fav ? +f.fav.z.toFixed(2) : undefined, likes: f.likes }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
     }
   }
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
@@ -162,7 +170,7 @@ export class Fishes {
   relate(f, d) {
     if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
-    if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav) { const sv = this.loadOcto()[d.id]; if (sv) f.fav = { x: sv.x, z: sv.z, n: 8 }; } }
+    if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; } } }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
