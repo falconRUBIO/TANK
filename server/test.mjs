@@ -243,8 +243,9 @@ await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the
   const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
   const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;
   const bad = await call('/api/push/subscribe', { subscription: { endpoint: 'http://nope', keys: {} }, offset: 0 }, x.token); assert.equal(bad.status, 400);
+  const evil = await call('/api/push/subscribe', { subscription: { endpoint: 'https://internal.example.local/hook', keys: { p256dh: 'a', auth: 'b' } }, offset: 0 }, x.token); assert.equal(evil.status, 400, 'only the phone platforms push services are accepted');
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;      // a phone whose local time is about noon right now
-  const sub = { endpoint: 'https://push.example/abc', keys: { p256dh: 'k1', auth: 'k2' } };
+  const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'k1', auth: 'k2' } };
   assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
   const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
   pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /rare visitor/i); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
@@ -405,7 +406,7 @@ await t('push: the server makes and keeps its own keys, and a test notification 
   const k1 = vapidFor(d, {}), k2 = vapidFor(d, {}); assert.ok(k1.publicKey && k1.privateKey); assert.equal(k1.publicKey, k2.publicKey, 'kept, not remade');
   assert.equal(vapidFor(d, { VAPID_PUBLIC: 'A', VAPID_PRIVATE: 'B' }).publicKey, 'A');
   const u = await mkUser('Tester'); assert.equal((await call('/api/push/test', {}, u.token)).body.sent, false, 'no subscription, nothing sent');
-  const sub = { endpoint: 'https://push.example/test1', keys: { p256dh: 'k1', auth: 'k2' } };
+  const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/test1', keys: { p256dh: 'k1', auth: 'k2' } };
   await call('/api/push/subscribe', { subscription: sub, offset: 0 }, u.token); S.db.prepare('UPDATE push_subs SET offset_min=? WHERE user_id=?').run(((3 - new Date().getUTCHours()) * 60 + 1440) % 1440 - 0, u.userId);
   pushed.length = 0; const r = await call('/api/push/test', {}, u.token); assert.equal(r.body.sent, true); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /test/i);
 });
@@ -450,6 +451,11 @@ await t('a backup can be copied as text and pasted back, and the phone-side help
   const text = await k.backupToText(sample); assert.match(text, /^OURTANK1:/); assert.ok(text.length < JSON.stringify(sample).length, 'compressed');
   assert.deepEqual(await k.backupFromText('  some words before\n' + text.replace(/(.{60})/g, '$1\n') + ' and after'), sample, 'survives being wrapped by a messaging app');
   await assert.rejects(() => k.backupFromText('hello'), /backup/); assert.equal(await k.idbGet('x'), undefined); assert.equal(await k.idbPut('x', 1), undefined);
+});
+await t('the sign-in can travel in the connection protocol instead of the address, and a wrong one is refused', async () => {
+  const u = await mkUser('Proto'); await call('/api/tanks', { name: 'Proto' }, u.token);
+  const ok = await new Promise((res) => { const w = new WebSocket(`ws://localhost:${S.port}/ws`, ['ourtank.' + u.token]); w.on('message', (d) => { if (JSON.parse(d.toString()).t === 'snapshot') { w.close(); res(true); } }); w.on('error', () => res(false)); w.on('unexpected-response', () => res(false)); });
+  assert.equal(ok, true); const bad = await new Promise((res) => { const w = new WebSocket(`ws://localhost:${S.port}/ws`, ['ourtank.wrong']); w.on('open', () => { w.close(); res(true); }); w.on('error', () => res(false)); w.on('unexpected-response', () => res(false)); }); assert.equal(bad, false);
 });
 await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
   const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;

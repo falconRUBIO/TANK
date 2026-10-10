@@ -11,6 +11,8 @@ export function vapidFor(db, env = process.env) {
   if (!publicKey || !privateKey) { ({ publicKey, privateKey } = webpush.generateVAPIDKeys()); const put = db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)'); put.run('vapid_public', publicKey); put.run('vapid_private', privateKey); }
   return { publicKey, privateKey, subject: env.VAPID_SUBJECT || (env.RENDER_EXTERNAL_URL && /^https:\/\//.test(env.RENDER_EXTERNAL_URL) ? env.RENDER_EXTERNAL_URL : 'mailto:admin@example.com') };
 }
+// Phones only ever hand out an address at their own platform's push service. Anything else would make the server send requests wherever a stranger points it.
+const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)(:443)?\//;
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
   const enabled = !!(sender || (publicKey && privateKey));
   if (!sender && enabled) webpush.setVapidDetails(subject || 'mailto:admin@example.com', publicKey, privateKey);
@@ -20,7 +22,7 @@ export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
     enabled, key: enabled ? publicKey ?? null : null,
     subscribe(userId, sub, offset = 0) {
       const ep = String(sub?.endpoint ?? ''), p = String(sub?.keys?.p256dh ?? ''), a = String(sub?.keys?.auth ?? '');
-      if (!/^https:\/\/.{8,480}$/.test(ep) || !p || !a || p.length > 200 || a.length > 100) return false;
+      if (!/^https:\/\/.{8,480}$/.test(ep) || !PUSH_HOSTS.test(ep) || !p || !a || p.length > 200 || a.length > 100) return false;
       db.prepare('INSERT OR REPLACE INTO push_subs (endpoint,user_id,p256dh,auth,offset_min,created_at) VALUES (?,?,?,?,?,?)').run(ep, userId, p, a, Math.max(-840, Math.min(840, Math.round(+offset) || 0)), Date.now());
       return true;
     },

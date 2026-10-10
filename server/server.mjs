@@ -97,6 +97,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (req.method === 'POST' && p === '/api/claim') {
         if (!lim.hit('c:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
         const b = await readBody(req);
+        const tk = db.prepare('SELECT id FROM tanks WHERE code=?').get(L.normalizeCode(b.code)); if (tk && !lim.hit('ct:' + tk.id, 4, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many seat claims for this tank. Try again later.', 429);      // however many places they come from, a tank's seats can only be taken a few times an hour
         const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid));
         const t = L.tankOf(db, r.userId); if (t) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) });
         return json(res, 200, r);
@@ -177,11 +178,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     return sendStatic(req, res, file);
   });
 
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, handleProtocols: (protocols) => [...protocols].find((x) => x.startsWith('ourtank.')) ?? false });
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname !== '/ws') return socket.destroy();
-    const user = L.authUser(db, url.searchParams.get('token'));
+    // the sign-in travels in the connection's protocol header, not in the address (addresses end up in logs); the address form still works for older phones
+    const proto = String(req.headers['sec-websocket-protocol'] ?? '').split(',').map((x) => x.trim()).find((x) => x.startsWith('ourtank.')), user = L.authUser(db, proto ? proto.slice(8) : url.searchParams.get('token'));
     if (!user || !L.tankOf(db, user.id)) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return socket.destroy(); }
     wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; wss.emit('connection', ws, req); });
   });

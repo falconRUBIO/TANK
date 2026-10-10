@@ -11,7 +11,7 @@ const load = () => { let a = null; try { a = JSON.parse(localStorage.getItem(KEY
 const store = (o) => {
   try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* storage unavailable */ }
   idbPut('ourtank.session', { token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named });
-  try { document.cookie = 'ourtank_s=' + encodeURIComponent(JSON.stringify({ token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named })) + '; max-age=31536000; path=/; samesite=lax'; } catch { /* cookies unavailable */ }
+  try { document.cookie = 'ourtank_s=' + encodeURIComponent(JSON.stringify({ token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named })) + '; max-age=31536000; path=/; samesite=lax' + (location.protocol === 'https:' ? '; secure' : ''); } catch { /* cookies unavailable */ }
 };
 let session = load(); if (session?.token) store(session);
 
@@ -33,8 +33,8 @@ export class Live {
   }
   open() {
     this.closed = false;
-    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws?token=' + session.token;
-    const ws = (this.ws = new WebSocket(url));
+    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws';
+    const ws = (this.ws = new WebSocket(url, ['ourtank.' + session.token]));
     ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
     ws.onmessage = (e) => { this.lastMsg = Date.now(); const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
     ws.onclose = () => {
