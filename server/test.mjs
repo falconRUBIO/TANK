@@ -445,6 +445,12 @@ await t('the GitHub copy: compressed, updated in place with the right sha, resto
   const f2 = pth.join(dir, 'new.db'); assert.equal(await restoreIfEmpty(off, f2, () => {}), true); const { DatabaseSync } = await import('node:sqlite'); const d = new DatabaseSync(f2, { readOnly: true }); assert.ok(d.prepare('SELECT COUNT(*) n FROM users').get().n > 0); d.close();
   assert.ok(offsiteFromEnv({ GITHUB_BACKUP_TOKEN: 't', GITHUB_BACKUP_REPO: 'a/b' })?.describe.includes('github.com/a/b')); assert.equal(offsiteFromEnv({}), null);
 });
+await t('a backup can be copied as text and pasted back, and the phone-side helpers fail quietly where there is no browser storage', async () => {
+  const k = await import('../web/src/keep.js'); const sample = { app: 'our-tank', tank: { name: 'Text' }, world: { fish: Array.from({ length: 40 }, (_, i) => ({ id: 'f' + i, name: 'Fish ' + i, species: 'neon' })), decor: [] } };
+  const text = await k.backupToText(sample); assert.match(text, /^OURTANK1:/); assert.ok(text.length < JSON.stringify(sample).length, 'compressed');
+  assert.deepEqual(await k.backupFromText('  some words before\n' + text.replace(/(.{60})/g, '$1\n') + ' and after'), sample, 'survives being wrapped by a messaging app');
+  await assert.rejects(() => k.backupFromText('hello'), /backup/); assert.equal(await k.idbGet('x'), undefined); assert.equal(await k.idbPut('x', 1), undefined);
+});
 await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
   const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;
   const x = await mkUser('Own2'), y = await mkUser('Fri'), want = 'HEA2ED';

@@ -1,5 +1,6 @@
 // Client networking + onboarding (create / join a tank). Falls back to offline play if no server answers.
 import { drawAvatar, SKINS, HAIRS, HATS } from './ui.js';
+import { idbPut, idbGet, backupFromText } from './keep.js';
 
 const KEY = 'ourtank.session';
 const qs = new URLSearchParams(location.search);
@@ -9,6 +10,7 @@ const ck = () => { try { const m = document.cookie.match(/(?:^|; )ourtank_s=([^;
 const load = () => { let a = null; try { a = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { /* none */ } return a?.token ? a : ck(); };
 const store = (o) => {
   try { localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* storage unavailable */ }
+  idbPut('ourtank.session', { token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named });
   try { document.cookie = 'ourtank_s=' + encodeURIComponent(JSON.stringify({ token: o.token, userId: o.userId, recoveryKey: o.recoveryKey, named: o.named })) + '; max-age=31536000; path=/; samesite=lax'; } catch { /* cookies unavailable */ }
 };
 let session = load(); if (session?.token) store(session);
@@ -69,7 +71,8 @@ export function runOnboarding() {
     const pk = (a) => a[(Math.random() * a.length) | 0];
     const avatar = { skin: pk(SKINS), hair: pk(HAIRS), hat: pk(HATS) };
 
-    // returning player with a saved identity
+    // returning player with a saved identity (also looked for in the second place it is kept)
+    if (!session?.token) { const kept = await idbGet('ourtank.session'); if (kept?.token) { session = kept; store(session); } }
     if (session?.token) {
       try { const me = await api('/api/me'); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank }); }
       catch (e) {
@@ -82,7 +85,8 @@ export function runOnboarding() {
     const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey }; store(session); };
     const welcome = () => {
       const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>OUR TANK</h1><p>A little world to share.</p>
-        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button><button class="lnk" data-a="restore">Restore a backup</button>`);
+        <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button><button class="lnk" data-a="restore">Restore a backup file</button><button class="lnk" data-a="paste">Restore from pasted backup text</button>`);
+      s.querySelector('[data-a=paste]').onclick = () => pasteScreen();
       s.querySelector('[data-a=restore]').onclick = () => { const f = document.createElement('input'); f.type = 'file'; f.accept = 'application/json,.json'; f.onchange = async () => { try { const data = JSON.parse(await f.files[0].text()); profile('restore', null, data); } catch { welcome(); } }; f.click(); };
       s.querySelector('[data-a=recover]').onclick = () => recoverScreen();
       s.querySelector('[data-a=create]').onclick = () => profile('create'); s.querySelector('[data-a=join]').onclick = () => joinScreen();
@@ -104,6 +108,12 @@ export function runOnboarding() {
           else { const r = await api('/api/join', { code: joinCode }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
         } catch (e) { if (e.code === 'FULL') fullScreen(joinCode, lastPreview); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
       };
+    };
+    const pasteScreen = (err = '') => {
+      const s = screen(`<h2>PASTE YOUR BACKUP</h2><p>Paste the backup text you copied from Settings. It starts with OURTANK.</p><textarea id="bt" rows="5" style="width:100%;box-sizing:border-box;border-radius:14px;padding:10px;background:#0c1626;color:#dbe8f7;border:1px solid #2a3b55;font:12px ui-monospace,Menlo,monospace" placeholder="OURTANK1:..."></textarea>
+        <div class="err" id="er">${err}</div><button class="big" id="go">RESTORE</button><button class="lnk" id="bk">Back</button>`);
+      s.querySelector('#bk').onclick = welcome;
+      s.querySelector('#go').onclick = async () => { try { const data = await backupFromText(s.querySelector('#bt').value); profile('restore', null, data); } catch (e) { s.querySelector('#er').textContent = e.message || 'That did not work.'; } };
     };
     const recoverScreen = (err = '') => {
       const s = screen(`<h2>WELCOME BACK</h2><p>Type the recovery key you saved when you started.</p><input id="rk" class="rk" maxlength="19" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
@@ -171,6 +181,7 @@ export function runOnboarding() {
 // if a friend's phone got there first, just join it. Either way nobody has to type anything.
 async function healTank() {
   let c = null; try { c = JSON.parse(localStorage.getItem('ourtank.cache') || 'null'); } catch { /* none */ }
+  if (!c?.world) c = await idbGet('ourtank.cache');
   if (!c?.code || !c.world || !c.user || (session?.userId && c.userId !== session.userId)) return null;
   const r = await api('/api/users', { name: c.user.name || 'Guest', avatar: c.user.avatar });
   session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey, named: true }; store(session);

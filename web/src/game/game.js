@@ -1,6 +1,7 @@
 // One game object for the UI and the scene. Solo play runs the shared rules in the browser and saves to
 // localStorage; shared tanks send the same actions to the server, which runs the same rules.
 import * as R from './rules.js';
+import { idbPut, askToKeep } from '../keep.js';
 
 const KEY = 'ourtank.world2';
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -61,7 +62,9 @@ export class Game {
     if (!force && this._copyAt > Date.now() - 1500) { if (!this._copyT) this._copyT = setTimeout(() => { this._copyT = null; this.keepCopy(); }, 1700); return; }      // saved at most every few seconds, but the latest change is never skipped
     this._copyAt = Date.now();
     const me = (this.members ?? []).find((x) => x.id === this.you.userId);
-    try { localStorage.setItem('ourtank.cache', JSON.stringify({ v: 1, userId: this.you.userId, code: this.code, name: this.tankName, user: me ? { name: me.name, avatar: me.avatar } : null, world: this.state, savedAt: Date.now() })); } catch { /* storage full or unavailable */ }
+    const copy = { v: 1, userId: this.you.userId, code: this.code, name: this.tankName, user: me ? { name: me.name, avatar: me.avatar } : null, world: JSON.parse(JSON.stringify(this.state)), savedAt: Date.now() }; this.copyAt = copy.savedAt;
+    try { localStorage.setItem('ourtank.cache', JSON.stringify(copy)); } catch { /* storage full or unavailable */ }
+    idbPut('ourtank.cache', copy); askToKeep();                                         // a second place, and a request that the browser keep both
   }
   onNet(m) {
     if (m.t === 'snapshot') {
