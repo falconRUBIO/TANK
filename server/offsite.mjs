@@ -17,16 +17,17 @@ export function signV4({ method, host, path, query = '', headers, payloadHash, a
 }
 
 export function makeOffsite({ endpoint, bucket, accessKey, secret, region = 'auto', object = 'ourtank.db' }, fetchImpl = fetch) {
-  const url = new URL(endpoint), path = `/${bucket}/${object}`;
-  const call = async (method, body = null) => {
-    const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, ''), payloadHash = sha(body ?? ''), headers = { 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate };
+  const url = new URL(endpoint);
+  const call = async (method, body = null, name = object) => {
+    const path = `/${bucket}/${name}`, amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, ''), payloadHash = sha(body ?? ''), headers = { 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate };
     const authorization = signV4({ method, host: url.host, path, headers, payloadHash, amzDate, region, accessKey, secret });
     return fetchImpl(url.origin + path.split('/').map(enc).join('/'), { method, headers: { ...headers, authorization }, body, signal: AbortSignal.timeout(20000) });
   };
   return {
     describe: `${url.host}/${bucket}/${object}`,
-    async put(buf) { const r = await call('PUT', buf); if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status); },
-    async get() { const r = await call('GET'); if (r.status === 404) return null; if (!r.ok) throw new Error('offsite download failed: HTTP ' + r.status); return Buffer.from(await r.arrayBuffer()); },
+    object,
+    async put(buf, name) { const r = await call('PUT', buf, name); if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status); },
+    async get(name) { const r = await call('GET', null, name); if (r.status === 404) return null; if (!r.ok) throw new Error('offsite download failed: HTTP ' + r.status); return Buffer.from(await r.arrayBuffer()); },
   };
 }
 
@@ -40,14 +41,37 @@ export function isEmptyDb(file) {
   if (!fs.existsSync(file)) return true;
   try { const d = new DatabaseSync(file, { readOnly: true }); try { return d.prepare('SELECT COUNT(*) n FROM users').get().n === 0; } finally { d.close(); } } catch { return true; }
 }
+const dated = (off, day) => off.object.replace(/\.db$/, '') + '-' + day + '.db';
+const dayStr = (ms) => new Date(ms).toISOString().slice(0, 10);
+// Puts the newest copy that actually has players in it back. A network error is thrown (so the caller knows it could not look), "nothing there" is not.
 export async function restoreIfEmpty(off, file, log = console.log) {
   if (!isEmptyDb(file)) return false;
-  const buf = await off.get(); if (!buf || buf.length < 100) { log('offsite backup: nothing to restore yet'); return false; }
-  for (const x of ['', '-wal', '-shm']) fs.rmSync(file + x, { force: true });
-  fs.writeFileSync(file, buf); log(`offsite backup: restored ${buf.length} bytes from ${off.describe}`); return true;
+  const now = Date.now(), names = [off.object, dated(off, dayStr(now)), dated(off, dayStr(now - 864e5)), dated(off, dayStr(now - 2 * 864e5))];
+  for (const name of names) {
+    const buf = await off.get(name); if (!buf || buf.length < 100) continue;
+    const tmp = file + '.restore.tmp'; fs.writeFileSync(tmp, buf);
+    if (isEmptyDb(tmp)) { fs.rmSync(tmp, { force: true }); log(`offsite backup: ${name} has no players in it, trying an older one`); continue; }
+    for (const x of ['', '-wal', '-shm']) fs.rmSync(file + x, { force: true });
+    fs.renameSync(tmp, file); log(`offsite backup: restored ${buf.length} bytes from ${off.describe} (${name})`); return true;
+  }
+  log('offsite backup: nothing to restore yet'); return false;
 }
 // Uploads when something changed since last time; the caller makes the consistent snapshot file.
 export function makeUploader(off, snapshot, log = console.log) {
-  let last = '', at = 0, err = '';
-  return { async run() { try { const file = snapshot(); if (!file) return false; const buf = fs.readFileSync(file), h = sha(buf); if (h === last) return false; await off.put(buf); last = h; at = Date.now(); err = ''; log(`offsite backup: uploaded ${buf.length} bytes`); return true; } catch (e) { err = String(e.message); log('offsite backup failed: ' + err); return false; } }, get status() { return { at, err }; } };
+  let last = '', at = 0, err = '', lastDated = 0, blocked = false;
+  return {
+    block() { blocked = true; },
+    async run() {
+      if (blocked) return false;
+      try {
+        const file = snapshot(); if (!file) return false;
+        if (isEmptyDb(file)) { log('offsite backup: the database has no players, not sending it over a good copy'); return false; }      // an empty server must never replace a real tank
+        const buf = fs.readFileSync(file), h = sha(buf); if (h === last) return false;
+        await off.put(buf); last = h; at = Date.now(); err = '';
+        if (at - lastDated > 3600e3) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; }                                  // one dated copy a day is always there too, overwritten hourly
+        log(`offsite backup: uploaded ${buf.length} bytes`); return true;
+      } catch (e) { err = String(e.message); log('offsite backup failed: ' + err); return false; }
+    },
+    get status() { return { at, err, blocked }; },
+  };
 }

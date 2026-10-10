@@ -304,10 +304,11 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // If a bucket is set, the whole database is copied there every few minutes and just before the server stops, and put back when the server starts with nothing.
   const off = offsiteFromEnv();
-  if (off) { try { await restoreIfEmpty(off, path.resolve(process.env.DB || 'ourtank.db')); } catch (e) { console.error('offsite restore failed:', e.message); } }
+  let restoreFailed = false;
+  if (off) { for (let i = 0; i < 6; i++) { try { await restoreIfEmpty(off, path.resolve(process.env.DB || 'ourtank.db')); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
   const s = await start({ port: +process.env.PORT || 8080, dbPath: process.env.DB || 'ourtank.db' });
   let uploader = null;
-  if (off) { uploader = makeUploader(off, () => { s.backup(); const f = path.resolve(process.env.DB || 'ourtank.db') + '.backup'; return fs.existsSync(f) ? f : null; }); setTimeout(() => uploader.run(), 20e3).unref(); setInterval(() => uploader.run(), 5 * 60e3).unref(); console.log('offsite backup: on, ' + off.describe); }
+  if (off) { uploader = makeUploader(off, () => { s.backup(); const f = path.resolve(process.env.DB || 'ourtank.db') + '.backup'; return fs.existsSync(f) ? f : null; }); if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); } setTimeout(() => uploader.run(), 20e3).unref(); setInterval(() => uploader.run(), 5 * 60e3).unref(); console.log('offsite backup: on, ' + off.describe); }
   else if (process.env.RENDER) console.warn('No offsite backup is set (S3_ENDPOINT, S3_BUCKET, S3_KEY, S3_SECRET). Without a persistent disk or an offsite copy, every redeploy erases all tanks.');
   offsiteInfo = () => (uploader ? { on: true, ...uploader.status } : { on: false });
   console.log(`OUR TANK listening on http://localhost:${s.port}`);

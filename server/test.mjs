@@ -417,6 +417,14 @@ await t('offsite copies: the request signature matches Amazon\'s published examp
   assert.equal(isEmptyDb(file), true); assert.equal(await restoreIfEmpty(off, file, () => {}), false, 'nothing in the bucket yet');
   const live = pth.join(dir, 'live.db'); S.db.exec(`VACUUM INTO '${live}'`); const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.equal(await up.run(), false, 'unchanged, not sent again');
   assert.equal(await restoreIfEmpty(off, file, () => {}), true); assert.equal(isEmptyDb(file), false); assert.equal(await restoreIfEmpty(off, file, () => {}), false, 'a database with players is never overwritten');
+  assert.ok([...store.keys()].some((k) => /ourtank-\d{4}-\d\d-\d\d\.db$/.test(k)), 'a dated copy is kept too');
+  // an empty server must never replace the good copy, and a damaged main copy falls back to a dated one
+  const { DatabaseSync } = await import('node:sqlite'); const emptyFile = pth.join(dir, 'empty.db'); const e = new DatabaseSync(emptyFile); e.exec('CREATE TABLE users (id TEXT)'); e.close();
+  const before = store.get('/bk/ourtank.db').length; const up2 = makeUploader(off, () => emptyFile, () => {}); assert.equal(await up2.run(), false); assert.equal(store.get('/bk/ourtank.db').length, before, 'the good copy was not replaced');
+  const dkey = [...store.keys()].find((k) => /ourtank-\d{4}/.test(k)); store.set('/bk/ourtank.db', Buffer.from('garbage that is not a database')); const file2 = pth.join(dir, 'b.db');
+  assert.equal(await restoreIfEmpty(off, file2, () => {}), true, 'the main copy was damaged: the dated one is used'); assert.equal(isEmptyDb(file2), false); assert.ok(dkey);
+  const bad = makeOffsite({ endpoint: 'https://s3.example.test', bucket: 'bk', accessKey: 'K', secret: 'S' }, async () => { throw new Error('network down'); }); await assert.rejects(() => restoreIfEmpty(bad, pth.join(dir, 'c.db'), () => {}), /network down/);
+  const up3 = makeUploader(off, () => live, () => {}); up3.block(); assert.equal(await up3.run(), false, 'uploads stay blocked after a failed restore');
 });
 await t('the storage check says whether the tank is safe from the server losing its disk', async () => {
   const u = await mkUser('Stor'); const r = await call('/api/storage', null, u.token); assert.equal(r.status, 200); assert.ok(['safe', 'waiting', 'risk'].includes(r.body.level));

@@ -52,12 +52,13 @@ export class Game {
       const due = Math.min(...(s.orders ?? []).map((o) => o.arrivesAt), ...(s.eggs ?? []).map((e) => e.hatchAt), Infinity);
       if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 40) resync();      // keeps asking while something is overdue (about every 8 seconds), but a phone clock far ahead of the server cannot reconnect forever
     }, 1000);
-    document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
+    addEventListener('pagehide', () => this.keepCopy(true));
+    document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (document.hidden) this.keepCopy(true); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
   }
   // The phone keeps its own copy of the shared tank. If the server ever loses its data (a restart on a host with no permanent disk), the copy puts the tank back under the same code.
-  keepCopy() {
+  keepCopy(force = false) {
     if (this.mode !== 'net' || !this.state || !this.you) return;
-    if (this._copyAt > Date.now() - 4000) { if (!this._copyT) this._copyT = setTimeout(() => { this._copyT = null; this.keepCopy(); }, 4200); return; }      // saved at most every few seconds, but the latest change is never skipped
+    if (!force && this._copyAt > Date.now() - 1500) { if (!this._copyT) this._copyT = setTimeout(() => { this._copyT = null; this.keepCopy(); }, 1700); return; }      // saved at most every few seconds, but the latest change is never skipped
     this._copyAt = Date.now();
     const me = (this.members ?? []).find((x) => x.id === this.you.userId);
     try { localStorage.setItem('ourtank.cache', JSON.stringify({ v: 1, userId: this.you.userId, code: this.code, name: this.tankName, user: me ? { name: me.name, avatar: me.avatar } : null, world: this.state, savedAt: Date.now() })); } catch { /* storage full or unavailable */ }
