@@ -145,7 +145,7 @@ export function runOnboarding() {
     };
     let lastPreview = [];
     const fullScreen = (code, members = []) => {
-      const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has three caretakers.${code ? ' Are you one of them?' : ''}</p>${code ? '<button class="big" id="me">I\'M ALREADY IN THIS TANK</button>' : ''}<button class="big alt" id="bk">BACK</button>`);
+      const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has four caretakers.${code ? ' Are you one of them?' : ''}</p>${code ? '<button class="big" id="me">I\'M ALREADY IN THIS TANK</button>' : ''}<button class="big alt" id="bk">BACK</button>`);
       s.querySelector('#bk').onclick = welcome; if (code) s.querySelector('#me').onclick = () => claimScreen(code, members);
     };
     // Lost the saved sign-in (crash, reinstall)? Pick which caretaker you are and take the seat back with the tank code.

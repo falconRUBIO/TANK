@@ -4,7 +4,7 @@ import { tx } from './db.mjs';
 import * as R from '../web/src/game/rules.js';
 
 export const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';   // 31 chars, no 0/O/1/I/L
-export const MAX_MEMBERS = 3;
+export const MAX_MEMBERS = 4;
 const HR = 1 / (5 * 3600), WR = 1 / (48 * 3600), GR = 1 / (30 * 3600);   // per second
 export class GameError extends Error { constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; } }
 
@@ -136,8 +136,8 @@ export function joinTank(db, user, code) {
     const mine = db.prepare('SELECT tank_id,slot FROM members WHERE user_id=?').get(user.id);
     if (mine) { if (mine.tank_id === t.id) return { id: t.id, slot: mine.slot, already: true }; throw new GameError('ALREADY_IN_TANK', 'You already belong to another tank.', 409); }
     const used = new Set(db.prepare('SELECT slot FROM members WHERE tank_id=?').all(t.id).map((r) => r.slot));
-    const slot = [1, 2, 3].find((s) => !used.has(s));
-    if (!slot) throw new GameError('FULL', 'This aquarium already has three caretakers.', 409);
+    const slot = [1, 2, 3, 4].find((s) => !used.has(s));
+    if (!slot) throw new GameError('FULL', 'This aquarium already has four caretakers.', 409);
     const now = Date.now();
     db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,?,?,?)').run(t.id, user.id, slot, now, now);
     addJournal(db, t.id, `${user.name} joined the tank.`, user.id, now);

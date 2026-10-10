@@ -3,7 +3,7 @@
 Everything below is read from the code (`web/src/game/rules.js`) or produced by running the real rules in a simulator (`tools/econ.mjs`, `tools/farm.mjs`). **No real players have played yet, so every pacing figure is simulated, not measured.**
 
 ## 1. The currency
-- One currency, **shells**, shared by everyone in the tank (one wallet, three caretakers). There are no individual wallets, no premium currency, no real-money purchases, no ads.
+- One currency, **shells**, shared by everyone in the tank (one wallet, up to four caretakers). There are no individual wallets, no premium currency, no real-money purchases, no ads.
 - Shells only buy things *inside* the game. The game earns the developer nothing; the only real cost is hosting (about a few dollars a month on Render).
 
 ## 2. What you start with

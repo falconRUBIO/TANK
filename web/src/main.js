@@ -465,7 +465,7 @@ const tut = (() => {
         ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your fish'} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
-        const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so two friends can join.` : 'Up to three friends can care for one tank. They join with a six-character code when you play on the server.';
+        const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so three friends can join.` : 'Up to four friends can care for one tank. They join with a six-character code when you play on the server.';
         ui.showCoach({ title: 'BETTER TOGETHER', text: share, button: 'Got it', onButton: () => set(3), skip: skip });
       } else if (step === 3) {
         ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open Decorate, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');

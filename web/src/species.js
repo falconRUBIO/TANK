@@ -629,7 +629,7 @@ const octopus = {
       } } });
     const mantleX = (y) => -5 - (y - 7) * 0.35;
     const fM = (x, y, z) => ((x - mantleX(y)) / 9.5) ** 2 + ((y - 7) / 11.5) ** 2 + (z / 8.5) ** 2;
-    const fH = (x, y, z) => { const lo = Math.max(0, (-1.5 - y) / 5), w = Math.max(0.25, 1 - lo * lo * 0.75); return ((x - 3) / (9 * w)) ** 2 + ((y - 0.5) / 7) ** 2 + (z / (8.4 * w)) ** 2; };   // the underside tapers to a neck, so nothing flat hangs out when the arms are away
+    const fH = (x, y, z) => { const lo = Math.max(0, (-2.5 - y) / 5), w = Math.max(0.55, 1 - lo * lo * 0.5); return ((x - 3) / (9 * w)) ** 2 + ((y - 0.5) / 7) ** 2 + (z / (8.4 * w)) ** 2; };   // the underside tapers to a neck, so nothing flat hangs out when the arms are away
     // mantle and head are blended like two blobs of one body (a metaball union), so the crease where they meet underneath is filled in
     const body = (x, y, z) => { const m = fM(x, y, z), h = fH(x, y, z); return m <= 1 || h <= 1 || 1 / (m * m) + 1 / (h * h) >= 1 ? (m < h ? 'mantle' : 'head') : null; };
     const eyeAt = (x, y, z) => Math.hypot(x - 6.5, y - 3, Math.abs(z) - 7) <= 2.7;

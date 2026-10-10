@@ -1,6 +1,6 @@
 # OUR TANK: the game loop as built
 
-Three friends share one aquarium on a phone. Calm, no ads, no purchases, no streaks. All numbers below come from the code; the pacing numbers are from a bot simulation, not from real players yet.
+Four friends share one aquarium on a phone. Calm, no ads, no purchases, no streaks. All numbers below come from the code; the pacing numbers are from a bot simulation, not from real players yet.
 
 ## 1. One visit (1 to 3 minutes)
 1. Open the tank. A small hint pill names the single most useful thing: feed, wipe the glass, change the water, collect a gift, greet a visitor, open a bottle, or "an egg is about to hatch".
@@ -51,7 +51,7 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 - The fish card shows traits, age, time to next growth stage, favourite spot, original caretaker and who it is closest to.
 
 ## 6. Three players
-- Up to three caretakers share everything: fish, decorations, shells, journal, chat. Join by a 6-character code or link; a fourth person sees "This tank is full".
+- Up to four caretakers share everything: fish, decorations, shells, journal, chat. Join by a 6-character code or link; a fifth person sees "This tank is full".
 - Nudge a friend when the tank needs something. Send a message in a bottle (40 characters, 2 shells to send, +2 shells for whoever opens it; one per 6 hours). Chat. Activity list.
 - Opt-in push notifications (needs keys on the server): rare visitor, an arrival or hatch, a critical-state warning, a nudge, a bottle. Maximum two a day per person, never 22:00 to 08:00 local time, never while the game is open.
 
@@ -86,7 +86,7 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 ## 8. Questions for the reviewer
 1. Is five days of neglect before death possible the right weight for a casual shared game, or too harsh for friends who stop opening it?
 2. After the first few days, the daily wish and discoveries give a visit a small goal beyond care. Is that enough, given levels are slow (about 12 days to level 5)?
-3. Is the shared shell wallet right for three players, or should contributions be visible?
+3. Is the shared shell wallet right for four players, or should contributions be visible?
 4. Do the discoveries, daily wish and family trees make players care about individual fish, or do they read as extra chores?
 
 ## 7d. The octopus is the clever one

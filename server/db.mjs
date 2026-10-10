@@ -1,5 +1,5 @@
-// SQLite schema. The three-caretaker limit is enforced by the database itself:
-// slot is CHECKed to 1..3 and UNIQUE per tank, so a fourth member row can never exist.
+// SQLite schema. The four-caretaker limit is enforced by the database itself:
+// slot is CHECKed to 1..4 and UNIQUE per tank, so a fifth member row can never exist.
 import { DatabaseSync } from 'node:sqlite';
 
 export function openDb(path = 'ourtank.db') {
@@ -19,7 +19,7 @@ export function openDb(path = 'ourtank.db') {
     );
     CREATE TABLE IF NOT EXISTS members (
       tank_id TEXT NOT NULL REFERENCES tanks(id), user_id TEXT NOT NULL REFERENCES users(id),
-      slot INTEGER NOT NULL CHECK (slot BETWEEN 1 AND 3), joined_at INTEGER NOT NULL, last_seen INTEGER NOT NULL,
+      slot INTEGER NOT NULL CHECK (slot BETWEEN 1 AND 4), joined_at INTEGER NOT NULL, last_seen INTEGER NOT NULL,
       PRIMARY KEY (tank_id, user_id), UNIQUE (tank_id, slot), UNIQUE (user_id)
     );
     CREATE TABLE IF NOT EXISTS journal (
@@ -46,6 +46,14 @@ export function openDb(path = 'ourtank.db') {
       amount INTEGER NOT NULL, ts INTEGER NOT NULL, idem TEXT NOT NULL, UNIQUE (tank_id, user_id, idem)
     );
   `);
+  // tanks used to hold three; a database made then still carries CHECK (slot BETWEEN 1 AND 3), which SQLite cannot alter in place, so the table is rebuilt once
+  const mdef = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='members'").get()?.sql ?? '';
+  if (/BETWEEN 1 AND 3/.test(mdef)) db.exec(`
+    BEGIN; CREATE TABLE members_v4 (
+      tank_id TEXT NOT NULL REFERENCES tanks(id), user_id TEXT NOT NULL REFERENCES users(id),
+      slot INTEGER NOT NULL CHECK (slot BETWEEN 1 AND 4), joined_at INTEGER NOT NULL, last_seen INTEGER NOT NULL,
+      PRIMARY KEY (tank_id, user_id), UNIQUE (tank_id, slot), UNIQUE (user_id)
+    ); INSERT INTO members_v4 SELECT tank_id, user_id, slot, joined_at, last_seen FROM members; DROP TABLE members; ALTER TABLE members_v4 RENAME TO members; COMMIT;`);
   try { db.exec('ALTER TABLE tanks ADD COLUMN world TEXT'); } catch { /* column already there */ }
   try { db.exec('ALTER TABLE users ADD COLUMN recovery_hash TEXT'); } catch { /* column already there */ }
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_recovery ON users(recovery_hash) WHERE recovery_hash IS NOT NULL');

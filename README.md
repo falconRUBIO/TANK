@@ -1,6 +1,6 @@
 # OUR TANK
 
-Three friends, one living aquarium. Chunky voxel fish and decorations, modern lighting, and a calm loop built for short visits. Runs in any phone browser and installs to the home screen (it is a web app, not an App Store binary).
+Four friends, one living aquarium. Chunky voxel fish and decorations, modern lighting, and a calm loop built for short visits. Runs in any phone browser and installs to the home screen (it is a web app, not an App Store binary).
 
 ## The game
 
@@ -10,7 +10,7 @@ Three friends, one living aquarium. Chunky voxel fish and decorations, modern li
 - **Every fish has its own needs:** it gets hungry at its own pace (greedy fish sooner, lazy fish later), its happiness depends on clean water and on things it likes in the tank (shy fish like plants, curious fish like structures, playful fish like bubbles…), and its health slips if it is neglected. Tap a fish to see its mood.
 - **Neglect has a cost.** A fish that goes hungry or sits in foul water slowly weakens. After two days it turns pale, slows down and a warning goes out; after five days it dies and floats belly-up at the surface until someone taps it to lay it to rest (a floating fish also fouls the water faster). Any real care wins the time back twice as fast. Guard rails keep it fair in a shared tank: no deaths in a tank's first three days, at most one death a day, and the last fish never dies. Lost fish are listed under Remembered in the Journal.
 - **Playing with a fish:** tap a fish, then Play, and drag your finger along the glass. It follows. Five seconds builds your bond with it.
-- **Together:** up to **three** caretakers share one tank with a six-character code or invite link. Everything is shared: fish, decorations, shells, journal, chat.
+- **Together:** up to **four** caretakers share one tank with a six-character code or invite link. Everything is shared: fish, decorations, shells, journal, chat.
 - **Things that bring you back, without streaks:** gifts turn up in the tank (an octopus, a fish or the filter gets the blame) and wait for you forever; new fish arrive after a short wait; one fish a day is a quarter cheaper; rare visitors (Moon Betta, Sun Angelfish, Rose Corydoras) drop by for a few hours and are added to the collection book when you say hello; two adult fish of one species sometimes lay an egg that hatches into a blend of both; the journal tells small true stories about your fish; friends can wash a message in a bottle into the tank for each other; the tank has a birthday every week.
 - **Personalities are behaviour:** shy fish hide behind plants and bolt when others come close, brave fish swim to the glass, curious fish inspect decorations, social fish stick to a buddy, playful fish chase bubbles, lazy fish rest low, greedy fish wait by the surface. After dark most fish drift low and slow. Every fish is a little different in colour and size.
 - **Make it yours:** pick the floor (sand, pearl, gravel, black sand, pink coral) and the backdrop. The light follows your phone's clock.
@@ -45,7 +45,7 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 
 ## Rules the server enforces
 
-- Exactly three seats per tank (`CHECK slot 1..3` + `UNIQUE(tank, slot)`, claimed inside one write transaction). A fourth player gets "This tank is full".
+- Exactly four seats per tank (`CHECK slot 1..4` + `UNIQUE(tank, slot)`, claimed inside one write transaction). A fifth player gets "This tank is full". A database made when tanks held three is rebuilt to four seats the first time the new server opens it.
 - Codes: 6 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ`, random, unique, regenerable by any member. A code only lets you ask for a seat; attempts are rate limited.
 - Every action carries an idempotency key, so a retry or a double tap never pays or charges twice. Two players spending the last shells at the same time: exactly one purchase succeeds.
 - Identity is an anonymous account token kept in the browser (only its hash is stored).

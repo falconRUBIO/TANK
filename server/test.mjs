@@ -42,21 +42,37 @@ await t('players 2 and 3 get the next slots; a duplicate join is a no-op', async
   assert.equal(r2.body.slot, 2); assert.equal(r3.body.slot, 3);
   const again = await call('/api/join', { code: tank.code }, b.token); assert.equal(again.status, 200); assert.equal(again.body.already, true);
 });
-await t('a fourth player is refused (FULL) and does not replace anyone', async () => {
-  const r = await call('/api/join', { code: tank.code }, d.token); assert.equal(r.status, 409); assert.equal(r.body.error, 'FULL');
-  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(tank.id).n, 3);
-  assert.equal((await call('/api/join/preview', { code: tank.code }, d.token)).body.full, true);
+await t('a fourth player takes the last seat; a fifth is refused (FULL) and does not replace anyone', async () => {
+  const r4 = await call('/api/join', { code: tank.code }, d.token); assert.equal(r4.status, 200); assert.equal(r4.body.slot, 4);
+  const e = await mkUser('Eve'), r = await call('/api/join', { code: tank.code }, e.token); assert.equal(r.status, 409); assert.equal(r.body.error, 'FULL');
+  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(tank.id).n, 4);
+  assert.equal((await call('/api/join/preview', { code: tank.code }, e.token)).body.full, true);
+  S.db.prepare('DELETE FROM members WHERE user_id=?').run(d.userId);                                   // the later tests expect Dee outside the tank
 });
-await t('the database itself rejects a 4th member row', () => {
-  assert.throws(() => S.db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,4,0,0)').run(tank.id, d.userId), /CHECK|constraint/i);
-  assert.throws(() => S.db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,2,0,0)').run(tank.id, d.userId), /UNIQUE|constraint/i);
+await t('the database itself rejects a 5th member row', async () => {
+  const e = await mkUser('Eve2');
+  assert.throws(() => S.db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,5,0,0)').run(tank.id, e.userId), /CHECK|constraint/i);
+  assert.throws(() => S.db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,2,0,0)').run(tank.id, e.userId), /UNIQUE|constraint/i);
 });
-await t('10 simultaneous joins fill exactly the 2 free seats', async () => {
+await t('a database made when tanks held three is widened to four on open', async () => {
+  const { DatabaseSync } = await import('node:sqlite'); const fs = await import('node:fs'); const path = '/tmp/ourtank-old-' + process.pid + '.db'; try { fs.unlinkSync(path); } catch {}
+  const old = new DatabaseSync(path);
+  old.exec(`CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL);
+    CREATE TABLE tanks (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, tz TEXT NOT NULL DEFAULT 'UTC', level INTEGER NOT NULL DEFAULT 1, shells INTEGER NOT NULL DEFAULT 0, hunger REAL NOT NULL DEFAULT 0.6, water REAL NOT NULL DEFAULT 1, glass REAL NOT NULL DEFAULT 0, sim_ts INTEGER NOT NULL);
+    CREATE TABLE members (tank_id TEXT NOT NULL REFERENCES tanks(id), user_id TEXT NOT NULL REFERENCES users(id), slot INTEGER NOT NULL CHECK (slot BETWEEN 1 AND 3), joined_at INTEGER NOT NULL, last_seen INTEGER NOT NULL, PRIMARY KEY (tank_id, user_id), UNIQUE (tank_id, slot), UNIQUE (user_id));
+    INSERT INTO users VALUES ('u1','A','{}','h1',0),('u4','D','{}','h4',0); INSERT INTO tanks (id,name,code,created_at,sim_ts) VALUES ('t1','Old','ABCDEF',0,0); INSERT INTO members VALUES ('t1','u1',1,0,0);`);
+  old.close();
+  const { openDb } = await import('./db.mjs'); const db = openDb(path);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM members').get().n, 1, 'rows survive');
+  db.prepare('INSERT INTO members VALUES (?,?,4,0,0)').run('t1', 'u4'); assert.equal(db.prepare('SELECT slot FROM members WHERE user_id=?').get('u4').slot, 4);
+  assert.throws(() => db.prepare('INSERT INTO members VALUES (?,?,5,0,0)').run('t1', 'u1'), /CHECK|constraint/i); db.close(); fs.unlinkSync(path);
+});
+await t('10 simultaneous joins fill exactly the 3 free seats', async () => {
   const owner = await mkUser('Owner'); const tk = (await call('/api/tanks', { name: 'Race' }, owner.token)).body;
   const us = await Promise.all(Array.from({ length: 10 }, (_, i) => mkUser('U' + i)));
   const rs = await Promise.all(us.map((u) => call('/api/join', { code: tk.code }, u.token)));
-  assert.equal(rs.filter((r) => r.status === 200).length, 2); assert.equal(rs.filter((r) => r.body.error === 'FULL').length, 8);
-  const slots = S.db.prepare('SELECT slot FROM members WHERE tank_id=? ORDER BY slot').all(tk.id).map((r) => r.slot); assert.deepEqual(slots, [1, 2, 3]);
+  assert.equal(rs.filter((r) => r.status === 200).length, 3); assert.equal(rs.filter((r) => r.body.error === 'FULL').length, 7);
+  const slots = S.db.prepare('SELECT slot FROM members WHERE tank_id=? ORDER BY slot').all(tk.id).map((r) => r.slot); assert.deepEqual(slots, [1, 2, 3, 4]);
 });
 await t('only a member can regenerate the code; the old code stops working', async () => {
   assert.equal((await call('/api/tanks/code', {}, d.token)).status, 404);
@@ -264,10 +280,10 @@ await t('every caretaker gets one free first fish of their own, with their name 
   assert.equal((await ackOf(wsB5, { t: 'firstFish', name: 'Twice', seed: 8, idem: 'ff2' })).reason, 'ALREADY_HAVE'); wsB5.close();
 });
 console.log('Phase 0 regression: mortality, multiplayer and persistence');
-await t('three caretakers, one tank: seats, first fish ownership, and the world survives a reload from the database', async () => {
-  const x = await mkUser('Xan'), y = await mkUser('Yui'), z = await mkUser('Zed'), q = await mkUser('Quincy');
+await t('four caretakers, one tank: seats, first fish ownership, and the world survives a reload from the database', async () => {
+  const x = await mkUser('Xan'), y = await mkUser('Yui'), z = await mkUser('Zed'), q = await mkUser('Quincy'), v = await mkUser('Vale');
   const tk = (await call('/api/tanks', { name: 'Regress' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200); assert.equal((await call('/api/join', { code: tk.code }, z.token)).status, 200);
-  assert.equal((await call('/api/join', { code: tk.code }, q.token)).status, 409, 'a fourth is refused');
+  assert.equal((await call('/api/join', { code: tk.code }, q.token)).status, 200, 'a fourth takes the last seat'); assert.equal((await call('/api/join', { code: tk.code }, v.token)).status, 409, 'a fifth is refused');
   setW(tk.id, { level: 5 }); const wx = await open(x.token), wy = await open(y.token), wz = await open(z.token);
   assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'goldfish', name: 'Pip', seed: 5, idem: 'r-x0' })).ok, true, 'the creator chooses first');
   assert.equal((await ackOf(wy, { t: 'firstFish', name: 'YuiFish', seed: 11, idem: 'r-y1' })).ok, true); assert.equal((await ackOf(wz, { t: 'firstFish', name: 'ZedFish', seed: 12, idem: 'r-z1' })).ok, true);
