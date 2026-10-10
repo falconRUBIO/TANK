@@ -8,7 +8,7 @@ let fails = 0; const ck = (name, ok, extra = '') => { console.log(ok ? '  ✓' :
 const S = () => p.evaluate(() => JSON.parse(JSON.stringify(window.__game.state)));
 const coach = () => p.evaluate(() => document.getElementById('coach').classList.contains('on') ? document.querySelector('#coach b').textContent : '');
 const waitCoach = async (t) => { for (let i = 0; i < 40; i++) { if ((await coach()) === t) return true; await p.waitForTimeout(150); } return false; };
-await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^LEVEL \d/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 700));
+await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^LEVEL \d|^A GIFT FOR YOU/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 700));
 await p.goto(base + '/?lite=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 });
 console.log('Tutorial');
 ck('first run offers an octopus in six colours and a name', (await p.textContent('#modal h2')) === 'WELCOME TO YOUR TANK' && (await p.$$('#modal .pk.pc')).length === 6);
@@ -18,7 +18,7 @@ await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=
 const s0 = await S(); await p.waitForTimeout(600); await p.mouse.click(200, 300); await p.waitForTimeout(250); ck('shells fly up to the counter', (await p.$$('.flyshell')).length > 0); await p.waitForTimeout(200);
 const s1 = await S(); ck('feeding pays a shell and the octopus is less hungry', s1.shells === s0.shells + 1 && s1.fish[0].hunger < s0.fish[0].hunger, `${s0.shells}→${s1.shells}, hunger ${s0.fish[0].hunger}→${s1.fish[0].hunger}`);
 ck('the first session ends right after the first feed, with a start button', await waitCoach('YOU ARE ALL SET')); await p.click('#cbtn'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 }); ck('and says what is coming next', /COMING UP/.test(await p.textContent('#modal h2')) && (await p.$$eval('#modal li', (n) => n.length)) >= 2, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | ')); await p.click('#mok'); await p.waitForTimeout(300);
-await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:fern"]');
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('[data-cat=PLANTS]'); await p.click('[data-cat=PLANTS]'); await p.waitForSelector('.card[data-k="decor:fern"]'); await p.click('.card[data-k="decor:fern"]');
 ck('the plant is free', (await p.textContent('#buy')).includes('FREE'));
 await p.click('#buy'); ck('placement bar opens', await p.evaluate(() => document.getElementById('placebar').classList.contains('on')));
 await p.waitForTimeout(700); await p.mouse.click(120, 600); await p.waitForTimeout(150);
@@ -28,11 +28,11 @@ ck('placing adds the plant for free', after.decor.length === before.decor.length
 ck('tutorial saved as finished', (await S()).flags.tut === 5);
 
 console.log('Shopping');
-await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:red"]');
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('[data-cat=PLANTS]'); await p.click('[data-cat=PLANTS]'); await p.waitForSelector('.card[data-k="decor:red"]'); await p.click('.card[data-k="decor:red"]');
 const sh = (await S()).shells; ck('a plant costs shells', (await p.textContent('#buy')).includes('10'));
 await p.click('#buy'); await p.evaluate(() => { const d = window.__tank.decor; for (const [x, z] of [[2.2, 2.8], [-2.6, 2.9], [0.4, 3.0], [3.4, 2.6]]) { d.move(x, z); if (d.preview.valid) break; } document.getElementById('pok').disabled = !window.__tank.decor.preview.valid; }); await p.click('#pok'); await p.waitForTimeout(300);
 const s2 = await S(); ck('buying a plant spends shells (the plant wish may refund part)', s2.shells <= sh - 7 && s2.shells >= sh - 10, `${sh}→${s2.shells}`);
-await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:torii"]');
+await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('[data-cat=STRUCTURES]'); await p.click('[data-cat=STRUCTURES]'); await p.waitForSelector('.card[data-k="decor:torii"]'); await p.click('.card[data-k="decor:torii"]');
 ck('locked items explain themselves', (await p.textContent('.detail .note')).includes('level 3') && await p.evaluate(() => document.getElementById('buy').disabled));
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'shells' }, { dev: true })); await p.waitForTimeout(200);
 await p.click('[data-cat=FISH]'); await p.click('.card[data-k="fish:goldfish"]'); ck('fish are adoptable', !(await p.evaluate(() => document.getElementById('buy').disabled)));

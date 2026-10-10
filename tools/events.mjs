@@ -4,6 +4,7 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', (e) => errs.push(e.message));
 let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
+await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^A GIFT FOR YOU/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 700));
 await p.goto('http://localhost:8123/?lite=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 60000 }); await p.click('#mok'); await p.waitForTimeout(600);
 const d = (a) => p.evaluate((a) => window.__game.dispatch(a, { dev: true }), a);
 await d({ t: 'tut', step: 5 }); await p.evaluate(() => document.getElementById('coach').classList.remove('on'));

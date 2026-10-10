@@ -72,7 +72,7 @@ export function initUI({ game, social, cb }) {
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
-    if (!(game.giftTried && Date.now() - game.giftTried < 20 * 3600e3) && giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you. Tap to collect.', tab: '', gift: true };
+    if (!(game.giftTried && Date.now() - game.giftTried < 20 * 3600e3) && giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you.', tab: '', gift: true };
     { const me = game.you?.userId, oc = s.fish.filter((f) => canFeedOcto(f, me, game.shared) && octoHunger(f) > 0.5).sort((a, b) => octoHunger(b) - octoHunger(a))[0]; if (oc) return { text: `${oc.name} is hungry. Drop it a crab from Care.`, tab: 'care' }; }
     if (s.hunger > 0.5 && hasFishOnly(s)) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in Decorate.', tab: 'decorate' };
@@ -330,8 +330,19 @@ export function initUI({ game, social, cb }) {
 
   // ── modal: a small in-page dialog (no browser prompts) ──
   const modal = $('modal');
+  // a reward worth a moment: a card in the middle of the screen that says what it is and why, with a burst of shells, and one button to claim it
+  // one pop-up at a time: a new one waits until the one on screen is closed, so nothing is ever replaced half-way
+  const modalFree = () => new Promise((res) => { const w = () => (modal.classList.contains('on') ? setTimeout(w, 300) : res()); w(); });
+  function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
+    return modalFree().then(() => new Promise((res) => {
+      const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${(i / 18) * 360}deg;--d:${70 + (i % 3) * 26}px;--t:${0.9 + (i % 4) * 0.12}s">${i % 3 ? '✦' : '🐚'}</i>`).join('');
+      modal.innerHTML = `<div class="box party"><div class="burst">${bits}</div><div class="big-ic">${icon}</div><h2>${esc(title)}</h2>${amount ? `<div class="amt">+${amount} <small>${esc(what)}</small></div>` : ''}${why ? `<p>${esc(why)}</p>` : ''}<button class="big gold" id="mok">${esc(ok)}</button></div>`;
+      modal.classList.add('on', 'party'); sfx('arrive');
+      $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); };
+    }));
+  }
   function dialog({ title, text = '', lines = null, input = null, ok = 'OK', cancel = null, danger = false }) {
-    return new Promise((res) => {
+    return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${lines ? `<ul class="away">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}${input ? `<input id="mi" maxlength="${input.max ?? 14}" value="${esc(input.value ?? '')}" placeholder="${esc(input.placeholder ?? '')}" autocomplete="off">` : ''}<div class="err" id="me"></div>
         <button class="big ${danger ? 'warn' : ''}" id="mok">${esc(ok)}</button>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
       modal.classList.add('on'); const inp = $('mi'); if (inp) { inp.focus(); inp.select(); }
@@ -339,7 +350,7 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = () => { if (input) { const v = inp.value.trim(); if (!v) { $('me').textContent = 'Please type a name.'; return; } done(v); } else done(true); };
       if (inp) inp.onkeydown = (e) => { if (e.key === 'Enter') $('mok').click(); };
       const no = $('mno'); if (no) no.onclick = () => done(null);
-    });
+    }));
   }
   // a small chooser: one tap on one of a few options (or Not now)
   function choose({ title, text = '', options, cancel = 'Not now' }) {
@@ -380,5 +391,5 @@ export function initUI({ game, social, cb }) {
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

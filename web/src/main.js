@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -534,7 +534,25 @@ function syncWorld() {
   env.setStyle(s.style?.floor, s.style?.backdrop); syncGlass(); syncDrift(); syncExtras(); ui?.refresh(); tut.run();
 }
 setInterval(() => { if (game.state) decor.grow(game.state); }, 30000);
-let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
+// the daily gift: it is offered once, as a small celebration in the middle of the screen, when the tank is open and nothing else is going on
+let giftBusy = false, giftOffered = 0;
+async function offerGift() {
+  if (giftBusy) return; giftBusy = true; giftOffered = Date.now();
+  try {
+    const n = game.shared ? game.members?.length ?? 1 : 1;
+    await ui.celebrate({ title: 'A GIFT FOR YOU', amount: DAILY_GIFT, why: n > 1 ? `Every caretaker gets a small gift each day for the shared wallet. Thank you for looking after the tank.` : 'A small gift each day for looking after the tank. Spend it on fish and decorations.', ok: 'Claim' });
+    const r = await game.dispatch({ t: 'dailyGift', tz: -new Date().getTimezoneOffset() }); game.giftTried = Date.now();
+    if (r.ok && (r.delta ?? 0) > 0) { sfx('reward'); moment({ shells: r.delta, from: [window.innerWidth / 2, window.innerHeight * 0.45] }); } else if (r.ok) ui?.toast("Today's gift is already collected", 3000); else fail(r);
+    ui?.updateHeader();
+  } finally { giftBusy = false; }
+}
+function maybeGift() {
+  const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
+  if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
+  if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) setTimeout(() => { if (!$('modal').classList.contains('on')) offerGift(); }, 1200);
+  else giftOffered = Date.now();
+}
+let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
   moment({ at: new THREE.Vector3(0, 6, 1), haptics: 30 });
@@ -708,8 +726,7 @@ async function boot() {
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
-    gift: async () => { const r = await game.dispatch({ t: 'dailyGift', tz: -new Date().getTimezoneOffset() }); if (r.ok && !((r.delta ?? 0) > 0)) { game.giftTried = Date.now(); ui?.toast("Today's gift is already collected", 3000); }       // the server says there is nothing to collect: stop offering it, whatever this phone thought
-  if (r.ok && (r.delta ?? 0) > 0) { game.giftTried = Date.now(); ui?.toast(`A little gift for you: +${r.delta} shells`, 3200); moment({ shells: r.delta, from: (() => { const b = $('goal').getBoundingClientRect(); return [b.left + b.width / 2, b.top]; })() }); } else if (!r.ok) fail(r); ui?.updateHeader(); },
+    gift: () => offerGift(),
     photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => { try { const k = await ensureRecoveryKey(); await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Write it down. Typing it on a new phone signs you back in to your tank.', lines: [k], ok: 'Done' }); } catch (e) { ui.toast(e.message); } },
     backupText: async () => { const d = await api('/api/export'), text = await backupToText(d); try { await navigator.clipboard.writeText(text); ui?.toast('Backup copied. Paste it into Notes or a message to yourself.', 4200); } catch { await ui.dialog({ title: 'YOUR BACKUP', text: 'Select all of this text, copy it, and keep it somewhere safe.', ok: 'Done', input: { max: 400000, placeholder: '', value: text } }); } },
     backup: async () => { try { const d = await api('/api/export'), url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'our-tank-backup.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); ui.toast('Backup saved'); } catch (e) { ui.toast(e.message || 'Could not make a backup'); } },

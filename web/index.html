@@ -110,6 +110,11 @@
   .set{display:flex;flex-direction:column;gap:10px}.row2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#0e1b2e;font-size:13px}
   .tog{all:unset;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:8px;background:#17304f;color:#a9c8ee;border:1px solid #244368}.tog.on{background:#2c6ab0;color:#fff}.tog.warn{background:#4a2020;color:#f0a090;border-color:#6a2a2a}
   #modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(5,10,18,.55)}#modal.on{display:flex}
+  #modal .box.party{position:relative;overflow:visible;padding:30px 24px 22px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}#modal .party .big-ic{font-size:54px;line-height:1;margin-top:-6px;animation:bob 1.6s ease-in-out infinite}#modal .party h2{color:#ffe4a0}
+  #modal .party .amt{font:800 40px -apple-system,system-ui,sans-serif;color:#fff;text-shadow:0 2px 14px rgba(255,214,107,.6)}#modal .party .amt small{font-size:16px;font-weight:600;color:#ffe4a0}
+  #modal .party .burst{position:absolute;left:50%;top:62px;width:0;height:0;pointer-events:none}#modal .party .burst i{position:absolute;font-style:normal;font-size:14px;color:#ffd66b;opacity:0;animation:burst var(--t) cubic-bezier(.2,.8,.3,1) .1s forwards;transform:rotate(var(--a)) translateY(0)}
+  #modal .big.gold{background:linear-gradient(180deg,#ffe08a,#e6a93a)!important;color:#3a2405!important;font-weight:800}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}@keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}@keyframes burst{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(.6)}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(-1 * var(--d))) scale(1.1)}}
   #modal .box{width:min(330px,88vw);display:flex;flex-direction:column;gap:12px;text-align:center;padding:20px;border:1px solid #2a4468;border-radius:18px;background:#0c1829}
   #modal ul.away{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;text-align:left}#modal ul.away li{padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#0e1b2e;font-size:13px}
   .pickrow.pcs{grid-template-columns:repeat(3,1fr)}.pickrow.pcs .pk img{width:64px;height:64px}
