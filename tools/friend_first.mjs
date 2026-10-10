@@ -1,0 +1,20 @@
+// A friend's first minute: opens the invite link on a phone, joins, and ends up in the tank. Screenshots at each step. Needs a server on :8124 (DEV=1).
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'node:fs';
+import * as R from '../web/src/game/rules.js';
+const base = 'http://localhost:8124', out = process.env.OUT || '/tmp/friend'; fs.mkdirSync(out, { recursive: true });
+const api = async (path, body, token) => (await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) })).json();
+const av = { skin: '#e8b890', hair: '#5a3ad0', hat: null };
+const A = await api('/api/users', { name: 'Ana', avatar: av }); const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags.tut = 5; world.level = 3; world.shells = 40;
+['goldfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: A.userId })));
+await api('/api/profile', { name: 'Ana', avatar: av }, A.token); const tank = await api('/api/import', { app: 'our-tank', tank: { name: 'The Reef' }, world }, A.token);
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const t0 = Date.now(), errors = []; p.on('pageerror', (e) => errors.push(e.message));
+const shot = async (n, ms = 700) => { await p.waitForTimeout(ms); await p.screenshot({ path: `${out}/${n}.png` }); console.log(String(Math.round((Date.now() - t0) / 1000)).padStart(3) + 's', n); };
+await p.goto(base + '/join/' + tank.code + '?q=1'); await p.waitForSelector('#welcome.on', { timeout: 60000 }); await shot('1_join_link', 1500);
+await p.waitForSelector('#go:not([disabled])', { timeout: 20000 }).catch(() => {}); await shot('2_preview');
+await p.click('#go'); await shot('3_profile'); await p.fill('#nm', 'Zach'); await p.click('#go');
+await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 180000 }); await shot('4_in_the_tank', 2500);
+await p.waitForTimeout(6000); await shot('5_after_6s', 500);
+console.log('modal open:', await p.evaluate(() => document.getElementById('modal').classList.contains('on')), '| hint:', await p.textContent('#goal'), '| members:', await p.evaluate(() => window.__game.members.map((m) => m.name).join()));
+console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();
