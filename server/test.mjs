@@ -333,7 +333,7 @@ await t('analytics: sessions and actions are recorded without personal data, pla
   const types = S.db.prepare('SELECT type FROM events').all().map((r) => r.type); for (const e of ['session_started', 'session_ended', 'fish_fed', 'fish_inspected', 'journal_opened', 'shells_earned']) assert.ok(types.includes(e), 'missing ' + e); assert.ok(!types.includes('not_allowed'));
   const cols = S.db.prepare('PRAGMA table_info(events)').all().map((c) => c.name).join(); assert.equal(cols, 'id,ts,user_id,tank_id,type,n', 'no names, no ips');
   process.env.ADMIN_KEY = 'secret-key-1'; const bad = await fetch(base + '/admin/stats?key=nope'); assert.equal(bad.status, 404); const none = await fetch(base + '/admin/stats'); assert.equal(none.status, 404);
-  { const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.ok(html.includes('RECENT TANKS') && html.includes(tank.code), 'the developer page lists recent tanks with their codes'); }
+  { const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.ok(html.includes('RECENT TANKS') && html.includes(S.db.prepare('SELECT code FROM tanks ORDER BY created_at DESC LIMIT 1').get().code), 'the developer page lists recent tanks with their codes'); }
   const good = await fetch(base + '/admin/stats?key=secret-key-1'); assert.equal(good.status, 200); const st = await good.json(); assert.ok(st.players.distinctPlayers >= 2); assert.ok(st.tanks.activeTanksPerDay.length >= 1); assert.ok(st.interactions.mostUsed.length >= 1);
   assert.ok(st.tanks.avgActiveCaretakersPerTankDay >= 1); const page = await fetch(base + '/admin?key=secret-key-1'); assert.match(await page.text(), /PLAYERS \(individual\)[\s\S]*TANKS \(shared\)/); delete process.env.ADMIN_KEY;
 });
