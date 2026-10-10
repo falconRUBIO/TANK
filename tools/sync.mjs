@@ -23,6 +23,7 @@ for (let i = 0; i < 5; i++) {
   const oct = sa.find((f) => f.sp === 'octopus'), octB = sb.find((f) => f.id === oct?.id); console.log(`  octopus: A (${oct?.x.toFixed(2)}, ${oct?.y.toFixed(2)}) B (${octB?.x.toFixed(2)}, ${octB?.y.toFixed(2)})`);
   console.log(`sample ${i}: ${sa.length} / ${sb.length} fish, biggest difference ${worst.toFixed(2)} tank units`); await new Promise((r) => setTimeout(r, 3000));
 }
-const hash = (p) => p.evaluate(() => { const s = JSON.stringify(window.__game.state, Object.keys(window.__game.state).sort()); let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return h + ' (' + s.length + ' chars)'; });
-console.log('whole tank state, A:', await hash(pa), ' B:', await hash(pb));
+const dump = (p) => p.evaluate(() => JSON.parse(JSON.stringify(window.__game.state)));
+const [da, db2] = await Promise.all([dump(pa), dump(pb)]);
+for (const k of new Set([...Object.keys(da), ...Object.keys(db2)])) { const x = JSON.stringify(da[k]), y = JSON.stringify(db2[k]); if (x !== y) console.log('differs:', k, '| A:', String(x).slice(0, 110), '| B:', String(y).slice(0, 110)); }
 await b.close();
