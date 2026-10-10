@@ -12,8 +12,8 @@ await p.evaluate(async () => {
   g.emit('state'); await new Promise((r) => setTimeout(r, 1200)); document.querySelector('#goal')?.remove(); document.querySelector('#sub')?.remove();
   const o = window.__fishes.list[0]; window.__o = o; o.update = () => {}; o.pos.set(0, 5, 1); o.heading = 0; o.camoK = 0; o.setPale?.(0);
 });
-const POSES = { rest: { restK: 1, crawlK: 0 }, crawl: { restK: 0.25, crawlK: 1 }, jet: { restK: 0, crawlK: 0, sq: 0.6, glideK: 0.7 }, work: { restK: 0.7, workK: 1 } };
-const VIEWS = { side: [0, 5, 13, 0, 4.6, 1], front: [12, 5, 3, 0, 4.6, 1], below: [4, 0.4, 11, 0, 4.4, 1], behind: [-12, 5, 4, 0, 4.6, 1] };
+const POSES = process.env.POSES ? JSON.parse(process.env.POSES) : { rest: { restK: 1, crawlK: 0 }, crawl: { restK: 0.25, crawlK: 1 }, jet: { restK: 0, crawlK: 0, sq: 0.6, glideK: 0.7 }, work: { restK: 0.7, workK: 1 } };
+const VIEWS = process.env.VIEWS ? JSON.parse(process.env.VIEWS) : { side: [0, 5, 13, 0, 4.6, 1], front: [12, 5, 3, 0, 4.6, 1], below: [4, 0.4, 11, 0, 4.4, 1], behind: [-12, 5, 4, 0, 4.6, 1] };
 for (const [pn, pose] of Object.entries(POSES)) for (const [vn, cam] of Object.entries(VIEWS)) {
   await p.evaluate(({ pose, cam }) => { const o = window.__o; Object.assign(o, { restK: 0, crawlK: 0, sq: 0, glideK: 0, workK: 0, greetK: 0, dashK: 0, landK: 0, glassNear: 0 }, pose); o.phase = 1.3; o.setPose(o.phase, true); o.settle?.(); o.group.position.copy(o.pos); window.__cam = cam; }, { pose, cam });
   await p.waitForTimeout(1600); await p.screenshot({ path: `${OUT}/${pn}_${vn}.png`, clip: { x: 0, y: 120, width: 390, height: 520 } });
