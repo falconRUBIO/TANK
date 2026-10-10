@@ -150,7 +150,7 @@ export function initUI({ game, social, cb }) {
   const EARN = [['Feed hungry fish', '+1 each'], ['Wipe the glass', '+1 (a pearl every 5th: +3)'], ['Change cloudy water', '+2'], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
   const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
-    care: () => `<h3>Care</h3>${meters()}<div class="grid3">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const rest = o.crabAt != null && Date.now() - o.crabAt < 2 * 3600e3; return tile('🦀', 'Crab treat', 'crab', rest ? `${esc(o.name)} is full` : `for ${esc(o.name)} · ${CRAB_PRICE} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Today</h4>${todayHtml()}`,
+    care: () => `<h3>Care</h3><div class="grid2 acts">${tile('🫙', 'Feed', 'feed')}${tile('🧽', 'Clean glass', 'clean')}${tile('💧', 'Change water', 'water')}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is resting` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${(() => { const o = S().fish.find((f) => canPuzzle(f)); if (!o) return ''; const rest = o.crabAt != null && Date.now() - o.crabAt < 2 * 3600e3; return tile('🦀', 'Crab treat', 'crab', rest ? `${esc(o.name)} is full` : `for ${esc(o.name)} · ${CRAB_PRICE} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
     decorate: () => `<h3>Decorate</h3>${themesHtml()}<div class="shophead"><div class="cats">${CATS.filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('')}</div></div>
       <div class="cards">${shopCards()}</div>${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
     friends: () => {
@@ -170,15 +170,26 @@ export function initUI({ game, social, cb }) {
         <form class="send"><input maxlength="140" placeholder="Send a message" autocomplete="off"><button>Send</button></form>`;
     },
     settings: () => `<h3>Settings</h3><div class="set">
-      <label class="row2"><span>Sound</span><button class="tog ${soundOn() ? 'on' : ''}" id="snd">${soundOn() ? 'On' : 'Off'}</button></label>
-      <label class="row2"><span>Music</span><button class="tog ${musicOn() ? 'on' : ''}" id="mus">${musicOn() ? 'On' : 'Off'}</button></label>
-      <label class="row2"><span>Graphics</span><button class="tog" id="gfx">${['Low', 'Medium', 'High'][cb.quality()]}</button></label>
-      ${game.shared ? `<label class="row2"><span>Notifications</span><button class="tog" id="pushbtn">…</button></label><label class="row2" id="pushtestrow" hidden><span>Check that they reach this phone</span><button class="tog" id="pushtest">Send a test</button></label>` : ''}
-      ${game.shared ? '' : '<label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label>'}
-      ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div><div class="row2"><span>Tank storage</span><b id="stor">checking…</b></div><div class="row2"><span>Copy kept on this phone</span><b id="phc">…</b></div><label class="row2"><span>Recovery key</span><button class="tog" id="rkey">Show</button></label><label class="row2"><span>Backup of this tank</span><span><button class="tog" id="bkup">Download</button> <button class="tog" id="bkcopy">Copy as text</button></span></label><label class="row2"><span>Leave this tank</span><button class="tog warn" id="leave">Leave</button></label>` : `<label class="row2"><span>Start over</span><button class="tog warn" id="reset">Reset tank</button></label>`}
-      ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div>` : ''}
-      ${game.shared ? `<label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label>` : ''}
-      <p class="dim">OUR TANK · three friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></p></div>`,
+      <h4>Sound and look</h4><div class="group">
+        <label class="row2"><span>Sound</span><button class="tog ${soundOn() ? 'on' : ''}" id="snd">${soundOn() ? 'On' : 'Off'}</button></label>
+        <label class="row2"><span>Music</span><button class="tog ${musicOn() ? 'on' : ''}" id="mus">${musicOn() ? 'On' : 'Off'}</button></label>
+        <label class="row2"><span>Graphics</span><button class="tog" id="gfx">${['Low', 'Medium', 'High'][cb.quality()]}</button></label>
+      </div>
+      ${game.shared ? `<h4>Notifications</h4><div class="group">
+        <label class="row2"><span>Notifications</span><button class="tog" id="pushbtn">…</button></label>
+        <label class="row2" id="pushtestrow" hidden><span>Check that they arrive</span><button class="tog" id="pushtest">Send a test</button></label>
+      </div>` : `<h4>Help</h4><div class="group"><label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label></div>`}
+      <h4>Your tank</h4><div class="group">
+        ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div>
+        <div class="row2"><span>Tank storage</span><b id="stor">checking…</b></div>
+        <div class="row2"><span>Copy on this phone</span><b id="phc">…</b></div>
+        <label class="row2"><span>Recovery key</span><button class="tog" id="rkey">Show</button></label>
+        <label class="row2"><span>Backup</span><span><button class="tog" id="bkup">Download</button> <button class="tog" id="bkcopy">Copy as text</button></span></label>
+        <label class="row2"><span>Leave this tank</span><button class="tog warn" id="leave">Leave</button></label>` : `<label class="row2"><span>Start over</span><button class="tog warn" id="reset">Reset tank</button></label>`}
+      </div>
+      ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
+      ${game.shared ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
+      <p class="dim foot">OUR TANK · three friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></p></div>`,
   };
   function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; im.src = k === 'fish' ? fishThumb(id) : decorThumb(id); }, i * 16)); }
   function paint() {

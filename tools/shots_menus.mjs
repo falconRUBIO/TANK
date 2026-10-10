@@ -14,4 +14,7 @@ await p.click('#foodbar [data-food=pellets]'); await shot('3_pellets', 600);
 await p.click('#foodbar [data-done]'); await p.click('nav [data-tab=decorate]', { force: true }); await shot('4_decorate');
 await p.evaluate(() => { document.querySelector('#sheet').scrollTop = 600; }); await shot('5_decorate_scrolled', 600);
 await p.click('nav [data-tab=friends]', { force: true }); await shot('6_friends');
+await p.click('#sheet .x').catch(() => {}); await p.waitForTimeout(500); await p.click('#gear'); await shot('7_settings', 900);
+await p.evaluate(() => { document.querySelector('#sheet').scrollTop = 9999; }); await shot('8_settings_end', 600);
+await p.click('#sheet .x').catch(() => {}); await p.waitForTimeout(400); await p.click('nav [data-tab=friends]', { force: true }); await p.evaluate(() => window.__ui.open('journal')); await shot('9_journal', 900); await p.evaluate(() => window.__ui.open('book')); await shot('10_collection', 900);
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

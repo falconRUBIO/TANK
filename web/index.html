@@ -289,6 +289,45 @@
   #foodbar button small{font:11px ui-monospace,Menlo,monospace;color:#b7cde6}
   #foodbar button.on{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.55)}#foodbar button:disabled{opacity:.4}
   #foodbar button.done{background:linear-gradient(180deg,#d9b457,#b98f2a);color:#251a00;align-self:center;flex:none;min-width:0;padding:12px 16px}
+
+  /* ── design pass: one scale for text and space, grouped lists, and a title that stays put ── */
+  :root{--g1:6px;--g2:10px;--g3:14px;--g4:18px;--g5:26px;--rad:20px}
+  #sheet{padding:0 18px calc(env(safe-area-inset-bottom,0px) + 100px)!important;line-height:1.4}
+  #sheet > h3{position:sticky;top:0;z-index:4;margin:0 -18px 14px;padding:22px 60px 14px;text-align:center;font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,rgba(18,40,66,.97) 62%,rgba(18,40,66,0))}
+  #sheet .x,#card .x{top:10px!important;width:32px;height:32px;margin:12px 0 0 8px}
+  #sheet h4{margin:24px 4px 10px;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c5d8ea}
+  #sheet h4:first-of-type{margin-top:6px}
+  #sheet .set{gap:0}
+  #sheet .group{background:rgba(255,255,255,.09);border:1px solid var(--lg-line);border-radius:var(--rad);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+  #sheet .group .row2{background:none;border:0;border-radius:0;box-shadow:none;padding:13px 16px;min-height:52px;font-size:15px;border-bottom:1px solid rgba(255,255,255,.1);color:#f2f9ff}
+  #sheet .group .row2:last-child{border-bottom:0}#sheet .group .row2 b{font-weight:600;font-size:14px;color:#dbe9f6;text-align:right}
+  #sheet .set .foot{margin:20px 6px 4px;font-size:12px;line-height:1.5;text-align:center;color:#a9c0d6}
+  #sheet .tog{padding:7px 14px;font-size:13px;min-height:34px}
+  #sheet .grid2.acts{gap:var(--g2)}
+  #sheet .grid2.acts .tile{min-height:88px;gap:6px;padding:14px 8px;border-radius:var(--rad);font-size:14px;font-weight:600;justify-content:center}
+  #sheet .grid2.acts .tile span{font-size:26px;line-height:1}#sheet .grid2.acts .tile small{font-size:12px;font-weight:400;color:#c5d8ea}
+  #sheet .needs.wide{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;padding:2px 4px}
+  #sheet .nb span{font-size:12px;margin-bottom:5px;display:block;color:#d3e3f2}#sheet .nb i{height:8px}
+  #sheet :is(.orders,.wish,.moodchip,.fold,.theme,.slot){border-radius:var(--rad);padding:13px 16px;margin:0 0 var(--g2);font-size:14px}
+  #sheet .slots{gap:var(--g2);margin-bottom:var(--g3)}#sheet .slot{padding:14px 8px}
+  #sheet .seg{gap:var(--g1);margin:0 0 var(--g3)}#sheet .seg button,#sheet .cat{padding:9px 14px;font-size:13px}
+  #sheet .cats{gap:var(--g1)}
+  #sheet .code{border-radius:var(--rad);padding:14px 16px;margin:0 0 var(--g3)}
+  #sheet p.dim{margin:var(--g3) 4px;font-size:13px;line-height:1.5}
+  #sheet .act{padding:11px 4px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+  #sheet .chat,#sheet form.send{margin-top:var(--g2)}
+  #card{padding:18px 18px 18px}#card h2{font-size:22px;margin:4px 0 2px;padding-right:44px}
+  #card .fold,#card .cmf{margin:var(--g2) 0}#card dl{gap:8px 14px}
+  #modal .box{padding:24px 22px}#modal .box h2{font-size:13px;letter-spacing:.18em;margin:0 0 12px}#modal .box p{font-size:15px;line-height:1.5}
+
+  #sheet a{color:#a9d0ff;text-underline-offset:3px}
+  #sheet .je{background:rgba(255,255,255,.09);border:1px solid var(--lg-line);border-radius:var(--rad);padding:12px 16px;margin:0 0 var(--g2);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  #sheet .je small{display:block;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#c5d8ea;margin-bottom:3px}#sheet .je span{font-size:15px;line-height:1.4;color:#f2f9ff}
+  #sheet form.send{display:flex;gap:var(--g2);margin:0 0 var(--g3)}
+  #sheet form.send input{flex:1;min-width:0;background:rgba(255,255,255,.1);border:1px solid var(--lg-line);border-radius:999px;padding:12px 16px;color:#fff;font-size:15px}
+  #sheet form.send input::placeholder{color:#b7cde6}
+  #sheet form.send button{border-radius:999px;border:1px solid var(--lg-line);background:rgba(255,255,255,.2);color:#fff;padding:0 18px;font-weight:600}
+  #sheet .msg{background:rgba(255,255,255,.09);border-radius:16px;padding:9px 13px;margin:0 0 6px;font-size:14px}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
