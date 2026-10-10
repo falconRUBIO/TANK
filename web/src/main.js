@@ -299,7 +299,8 @@ function playWith(f) {
   $('pet').disabled = true; $('pet').textContent = `${f.name} is watching your finger…`; ui.toast(`Drag your finger along the glass`, 3000);
 }
 function playPoint(ev) {
-  if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; play.until = Math.min(play.max, Math.max(play.until, performance.now() + 2600));       // playing goes on for as long as the finger keeps moving const p = play.fish; p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1; if (p.species.move === 'jet') p.glassAt = { x: playHit.x, y: playHit.y, until: performance.now() + 900 };
+  if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; play.until = Math.min(play.max, Math.max(play.until, performance.now() + 2600)); const p = play.fish;       // playing goes on for as long as the finger keeps moving
+  p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1; p.dartT = 0.5; if (p.species.move === 'jet') p.glassAt = { x: playHit.x, y: playHit.y, until: performance.now() + 900 };
   if (play.last) play.moved += Math.hypot(playHit.x - play.last.x, playHit.y - play.last.y); play.last = { x: playHit.x, y: playHit.y };
 }
 // The card stays tucked away while there is any touching going on, and only opens again once the finger has been still for a moment.
@@ -434,25 +435,46 @@ canvas.addEventListener('pointerdown', (ev) => {
 });
 let tapCand = null, lureEnd = 0;
 // hold a finger in the water: the bold and the curious come to see it. Nothing is earned; the fish simply like you.
-let lure = null; const lureAt = new THREE.Vector3(), lurePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.6);
-function lureTick() {
+let lure = null; const lureAt = new THREE.Vector3(), lurePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.6), lureFx = new WeakMap();
+// A finger held on the glass. Each fish decides for itself: a curious or brave one notices quickly, a calm one takes a moment, a shy or tired one keeps away.
+// It darts over in a burst, settles a little way off (its own spot around the finger, not on it), hangs there with small fidgets and the odd nip at the glass,
+// nudges along in discrete moves only when the finger has really moved, and loses interest after a while before maybe coming back. Nothing slides.
+function lureTick(dt) {
   if (!lure || play || placing || rearrange || feedMode || cleanMode || focus || performance.now() - lure.t0 < 380) return;
   if (!rayFrom({ clientX: lure.x, clientY: lure.y }).ray.intersectPlane(lurePlane, lureAt)) return;
-  if (!lure.on) { lure.on = true; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
+  if (!lure.on) { lure.on = true; lure.last = lureAt.clone(); lure.moved = 0; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
+  lure.moved += lureAt.distanceTo(lure.last); lure.last.copy(lureAt);                      // how much the finger has travelled: movement re-excites a fish that has drifted off
   for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600 };       // an octopus comes to press its arms against the glass where your finger is
-  let n = 0; for (const f of fishes.list) {
-    if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.species.move === 'jet' || f.pos.distanceTo(lureAt) > 7) continue;
-    const a = (f.seed ?? n) * 2.4 + n * 1.7; n++; f.target.set(Math.max(-4, Math.min(4, lureAt.x + Math.cos(a) * 0.9)), Math.max(0.9, Math.min(13, lureAt.y + Math.sin(a) * 0.7)), 2.3); f.retarget = 0.6;
+  let n = 0;
+  for (const f of fishes.list) {
+    if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.species.move === 'jet') continue;
+    const tr = f.profile?.traits ?? [], curious = tr.includes('Curious'), brave = tr.includes('Brave'), playful = tr.includes('Playful'), lazy = tr.includes('Lazy');
+    let L = lureFx.get(f); if (!L) { L = { s: 'idle', t: 0, ang: ((f.seed ?? n) * 2.4 + n * 1.7), r: 0.7 + ((f.seed ?? 0) % 5) * 0.12, seen: 0 }; lureFx.set(f, L); } n++;
+    const d = f.pos.distanceTo(lureAt), near = d < 7 + (curious ? 2 : 0); L.t += dt;
+    const spot = (jx = 0, jy = 0) => f.target.set(Math.max(-4, Math.min(4, lureAt.x + Math.cos(L.ang) * L.r + jx)), Math.max(0.9, Math.min(13, lureAt.y + Math.sin(L.ang) * L.r * 0.7 + jy)), 2.3);
+    if (L.s === 'idle') {                                                                 // has not noticed yet: a reaction time by temperament, and the finger has to be within range
+      if (!near || L.cool > performance.now()) continue;
+      if (L.t > (brave || curious ? 0.15 : lazy ? 1.1 : 0.5) + ((f.seed ?? 0) % 7) * 0.08) { L.s = 'dart'; L.t = 0; L.seen++; spot(); f.retarget = 2.5; f.dartT = 0.9 + Math.min(1.2, d * 0.15); f.lureCalm = 0; }
+    } else if (L.s === 'dart') {                                                          // a burst over, then it settles
+      if (d < L.r + 0.5 || L.t > 2.6) { L.s = 'hang'; L.t = 0; L.hold = 3.5 + (curious ? 4 : 0) + (playful ? 2 : 0) + ((f.seed ?? 0) % 4); L.fidget = 0.6; f.lureCalm = 1; f.retarget = 9; }
+      else if (lure.moved > 1.2) { lure.moved = 0; spot(); f.retarget = 2.5; }
+    } else if (L.s === 'hang') {                                                          // hanging around: small fidgets, a nip at the glass now and then, a nudge when the finger moves
+      L.fidget -= dt;
+      if (lure.moved > 0.9) { lure.moved = 0; L.ang += (Math.random() - 0.5) * 1.2; spot(); f.retarget = 2; f.dartT = 0.35; }
+      else if (L.fidget <= 0) { L.fidget = 0.7 + Math.random() * 0.9; const nip = Math.random() < (playful ? 0.4 : 0.18); if (nip) { f.target.set(lureAt.x + (Math.random() - 0.5) * 0.3, lureAt.y + (Math.random() - 0.5) * 0.3, 2.6); f.dartT = 0.3; } else spot((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.4); f.retarget = 2; }
+      if (L.t > L.hold) { L.s = 'idle'; L.t = 0; L.cool = performance.now() + (3000 + Math.random() * 5000) / (curious ? 2 : 1); f.lureCalm = 0; f.retarget = 0; }      // loses interest, wanders off, may come back later
+    }
   }
 }
+function lureRelease() { for (const f of fishes.list) { const L = lureFx.get(f); if (L && L.s !== 'idle') { L.s = 'idle'; L.t = 0; L.cool = performance.now() + 1500; f.lureCalm = 0; f.retarget = 0.4 + Math.random(); } } }
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
 canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', (ev) => {
   dragging = false; const c = tapCand; tapCand = null;
   if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) setFocus(c.f === focus ? null : c.f);
-  if (lure?.on) lureEnd = performance.now(); lure = null;
-}); addEventListener('pointercancel', () => { lure = null; tapCand = null; });
+  if (lure?.on) { lureEnd = performance.now(); lureRelease(); } lure = null;
+}); addEventListener('pointercancel', () => { if (lure?.on) lureRelease(); lure = null; tapCand = null; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });
 
 // ── tutorial: name the fish, feed it, meet friends, place a free plant ──
@@ -613,7 +635,7 @@ function frameBody(now) {
   if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); netSync(dt, now);
-  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); return true; }
@@ -710,6 +732,7 @@ fishes.decor = decor; fishes.canMove = () => isDirector() && !wc.active && !play
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
+window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   window.__eaten = 0; const oe = fishes.onEat; fishes.onEat = (f) => { window.__eaten++; oe?.(f); };
   let inside = 0, samples = 0, worstFish = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();

@@ -424,10 +424,10 @@ export class Fish3D {
     if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
     this.retarget -= dt;
-    if (!this.seeking && (this.retarget <= 0 || this.pos.distanceTo(this.target) < 0.5)) this.pick(rng);
+    if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm))) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
-    this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt;
-    desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
+    this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt; this.dartT = (this.dartT ?? 0) - dt;
+    desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.55 : this.lureCalm ? 0.45 : 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
@@ -459,7 +459,7 @@ export class Fish3D {
       this.cool -= dt;
     }
     this.vel.lerp(desired, Math.min(1, dt * 1.5));
-    const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.5 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length();
