@@ -355,7 +355,7 @@
   /* hints come and go at the top; nothing waits at the bottom */
   #goal{opacity:0;transition:opacity .35s;pointer-events:none}#goal.on{opacity:1;pointer-events:auto}#settle{top:var(--top,58px)!important;bottom:auto!important}
   /* the fish card opens folded: name and mood, and More info to expand; the tank keeps the fish in view above it */
-  #card.on.peek{transform:translateY(calc(100% - 74px))}#card .more{all:unset;cursor:pointer;position:absolute;right:16px;top:30px;font:600 12.5px -apple-system,system-ui,sans-serif;color:#eaf4ff;padding:7px 12px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);z-index:7}#card h2{padding-right:120px!important}
+  #card.on.peek{transform:none!important;max-height:150px!important;overflow:hidden!important}#card .more{all:unset;cursor:pointer;position:absolute;right:16px;top:30px;font:600 12.5px -apple-system,system-ui,sans-serif;color:#eaf4ff;padding:7px 12px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);z-index:7}#card h2{padding-right:120px!important}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
