@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE, driftBlame } from './game/rules.js';
+import { CRAB_PRICE, driftBlame, giftReady } from './game/rules.js';
 import { SOCIAL, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -41,7 +41,7 @@ export function initUI({ game, social, cb }) {
     $('shells').textContent = '🐚 ' + s.shells; $('day').textContent = 'DAY ' + String(game.day).padStart(3, '0');
     const score = scoreOf(s), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, pct = b ? Math.round(((score - a) / (b - a)) * 100) : 100;
     $('lvl').textContent = 'LV ' + lv; $('lvbar').style.width = Math.max(4, Math.min(100, pct)) + '%'; $('lvbar').parentElement.title = b ? `${score}/${b} to level ${lv + 1}` : 'Max level';
-    const g = goalText(); $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || '';
+    const g = goalText(); $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : '';
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
   }
   function goalText() {
@@ -52,6 +52,7 @@ export function initUI({ game, social, cb }) {
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
+    if (giftReady(s, game.you?.userId ?? 'me', Date.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you. Tap to collect.', tab: '', gift: true };
     if (s.hunger > 0.5) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
     if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in Decorate.', tab: 'decorate' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
@@ -70,7 +71,7 @@ export function initUI({ game, social, cb }) {
     const w = WISHES[s.wishIdx]; if (w) return { text: `Tank wish: ${w.text}`, tab: '' };
     const b = LEVEL_AT[s.level]; return { text: b ? `Earn shells by caring · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
   }
-  $('goal').onclick = () => { const t = $('goal').dataset.tab; if (t) open(t); };
+  $('goal').onclick = () => { if ($('goal').dataset.gift) { cb.gift(); return; } const t = $('goal').dataset.tab; if (t) open(t); };
 
   // ── sheets ──
   const meters = () => { const s = S(); const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`; return `<div class="needs wide">${bar('Fed', 1 - s.hunger)}${bar('Water', s.water)}${bar('Glass', 1 - s.glass)}${bar('Fish', Math.min(1, s.fish.length / capacity(s.level)))}</div>`; };

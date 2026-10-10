@@ -384,6 +384,16 @@ ok('a find announces itself once with its culprit, so a push can say who brought
   assert.ok(f && f.found === t.drift.id && /Tap it/.test(f.toast) && !/wash|tide/i.test(f.toast), JSON.stringify(f));
   assert.equal(R.advance(t, 31 * 60e3).filter((e) => e.found).length, 0);
 });
+ok('the daily gift: once per caretaker per day, no streak, no double claim by changing the clock, shared wallet', () => {
+  const t = R.newWorld(0); R.advance(t, 60e3); R.applyAction(t, { t: 'tut', step: 5 }, { now: 120e3 });
+  const day = 864e5, at = (d, h = 10) => d * day + h * 3600e3;
+  assert.equal(R.giftReady(t, 'a', at(1), 0), true); const s0 = t.shells; const r = R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now: at(1), uid: 'a' }); assert.equal(r.delta, R.DAILY_GIFT); assert.ok(t.shells >= s0 + R.DAILY_GIFT);
+  assert.equal(R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now: at(1, 20), uid: 'a' }).delta, 0, 'not twice in a day');
+  assert.equal(R.applyAction(t, { t: 'dailyGift', tz: 840 }, { now: at(1, 14), uid: 'a' }).delta, 0, 'changing the time zone does not give a second one');
+  assert.equal(R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now: at(1), uid: 'b' }).delta, R.DAILY_GIFT, 'a friend gets their own');
+  assert.equal(R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now: at(5), uid: 'a' }).delta, R.DAILY_GIFT, 'missing days costs nothing and nothing piles up');
+  assert.equal(R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now: at(5, 12), uid: 'a' }).delta, 0);
+});
 ok('chapters mark landmarks once, pay nothing, and a tank that already passed them stays quiet', () => {
   const old = R.newWorld(0); old.createdAt = 0; R.advance(old, 8 * 86400e3); const quiet = old.flags.chapters.length; assert.ok(quiet >= 0);
   const t = R.newWorld(0); R.advance(t, 60e3); const sh = t.shells; const ev = R.advance(t, 86400e3 + 120e3);

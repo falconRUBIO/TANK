@@ -10,6 +10,7 @@ const sim = (visitsPerDay) => {
   for (let day = 0; day < DAYS; day++) for (const hr of gaps) {
     now = day * DAY + hr * H + (day * 7919 % 31) * 60e3; const before = t.shells, act = (a) => { const r = R.applyAction(t, a, { now, name: 'Sim', uid: 'sim' }); return r; };
     act({ t: 'tut', step: 5 });
+    if (hr === gaps[0]) for (let c = 0; c < +(process.env.GIFT || 0); c++) R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now, name: 'Sim', uid: 'sim' + c });     // GIFT=n: n caretakers each collect the daily gift
     if (t.drift) act({ t: 'collect', id: t.drift.id });
     if (t.hunger > 0.3) act({ t: 'feed' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
     for (const f of t.fish.slice(0, 3)) act({ t: 'pet', id: f.id });

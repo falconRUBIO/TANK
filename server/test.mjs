@@ -427,6 +427,11 @@ await t('a tank the server lost is put back under its old code by whichever phon
   assert.equal(getW(r1.body.id).flags.healed > 0, true, 'a restored tank does not ask friends to choose a first fish again');
   const z = await mkUser('Odd'); assert.notEqual((await call('/api/import', { ...backup, code: 'I0O1LL', heal: true }, z.token)).body.code, 'I0O1LL', 'a code outside the alphabet is ignored');
 });
+await t('the daily gift reaches the server: accepted, paid to the shared wallet once, and a second try the same day pays nothing', async () => {
+  setW(tank.id, { flags: { ...getW(tank.id).flags, tut: 5, gift: {} }, fish: getW(tank.id).fish.length ? getW(tank.id).fish : [{ id: 'fg', name: 'Gift', species: 'goldfish', seed: 1, born: Date.now(), stage: 'baby', traits: [], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now() });
+  const s0 = getW(tank.id).shells, r1 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg1' }); assert.equal(r1.ok, true); assert.equal(r1.delta, 2); assert.ok(getW(tank.id).shells >= s0 + 2);
+  const r2 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg2' }); assert.equal(r2.delta, 0);
+});
 await t('two phones in one tank agree on a director, who alone sends fish positions and memories; a water change is mirrored', async () => {
   const x = await mkUser('Dir'), y = await mkUser('Fol'), tk = (await call('/api/tanks', { name: 'Sync' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
   const wx = await open(x.token), wy = await open(y.token), last = (w) => [...w.msgs].reverse().find((m) => m.t === 'role');

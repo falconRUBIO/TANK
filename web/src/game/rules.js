@@ -539,6 +539,13 @@ function deliver(t, now, ev) {
   }
 }
 // Chapters: quiet landmarks in the life of a tank. They pay nothing, so they cannot be farmed; they are a page in the journal and a moment to notice.
+// A small gift for every caretaker, once a day. No streak, nothing to catch up on: miss a day and nothing is lost or owed. It goes into the shared wallet.
+export const DAILY_GIFT = 2;
+const giftKey = (now, tz) => Math.floor((now + Math.max(-840, Math.min(840, Math.round(+tz) || 0)) * 60e3) / DAY);
+export function giftReady(t, uid, now = Date.now(), tz = 0) {
+  if ((t.flags?.tut ?? 0) < 5 || !t.fish?.length) return false;
+  const last = t.flags?.gift?.[uid]; return !last || (last.key !== giftKey(now, tz) && now - last.at >= 20 * HOUR);      // a new local day AND at least 20 hours, so changing the phone's clock or zone cannot claim twice
+}
 export const CHAPTERS = [
   { key: 'day1', title: 'Day One', text: 'A whole day of fish and water. The tank has found its rhythm.', when: (t, now) => now - t.createdAt >= 86400e3 },
   { key: 'crew', title: 'A Small Crew', text: 'Three fish now share the water.', when: (t) => t.fish.length >= 3 },
@@ -644,6 +651,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   switch (a.t) {
+    case 'dailyGift': {
+      if (!giftReady(t, uid, now, a.tz)) return ok({ applied: false, delta: 0 });
+      (t.flags.gift ||= {})[uid] = { key: giftKey(now, a.tz), at: now }; t.shells += DAILY_GIFT;
+      events.push({ toast: `A little gift for you: +${DAILY_GIFT} shells`, gift: true }); levelCheck(t, now, events); return ok({ applied: true, delta: DAILY_GIFT });
+    }
     case 'feed': {
       const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
       t.lastFed = now;                                                // any feeding, paid or not, counts as the fish being looked after
