@@ -76,7 +76,7 @@ export function renderSprite(model, { yaw = 0, pitch = 0, phase = 0, scale = 1 }
     if (Z <= zb[p]) continue;
     zb[p] = Z;
     let s = NX * LIGHT[0] + ny * LIGHT[1] + NZ * LIGHT[2];
-    s += (BAYER[(iy & 3) * 4 + (ix & 3)] / 16 - 0.5) * 0.07;
+    if (sp.dither !== false) s += (BAYER[(iy & 3) * 4 + (ix & 3)] / 16 - 0.5) * 0.07;      // people turn it off: on their broad shapes it reads as stray dots
     let lvl = s < -0.12 ? 0 : s < 0.28 ? 1 : s < 0.6 ? 2 : s < 0.86 ? 3 : 4;
     if (v.em) lvl = Math.max(lvl, v.em > 1 ? 3 : 2);
     const col = ramp(v.c)[lvl];

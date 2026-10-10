@@ -2,6 +2,8 @@
 import crypto from 'node:crypto';
 import { tx } from './db.mjs';
 import * as R from '../web/src/game/rules.js';
+import { normAvatar } from '../web/src/game/avatar.js';
+import { WORDS } from './words.mjs';
 
 export const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';   // 31 chars, no 0/O/1/I/L
 export const MAX_MEMBERS = 4;
@@ -12,16 +14,13 @@ export const normalizeCode = (c) => String(c ?? '').toUpperCase().replace(/[^A-Z
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n);
 const HEX = /^#[0-9a-fA-F]{6}$/;
-function cleanAvatar(a) {
-  const o = a && typeof a === 'object' ? a : {};
-  return { skin: HEX.test(o.skin) ? o.skin : '#b06a42', hair: HEX.test(o.hair) ? o.hair : '#222222', hat: HEX.test(o.hat) ? o.hat : null };
-}
+const cleanAvatar = (a) => normAvatar(a);
 export function randomCode() { let s = ''; for (let i = 0; i < 6; i++) s += ALPHABET[crypto.randomInt(ALPHABET.length)]; return s; }
 
 // ── identity ──
-const fmtKey = (k) => k.match(/.{4}/g).join('-');
 const keyHash = (k) => sha('rk:' + String(k ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
-function makeKey() { let s = ''; for (let i = 0; i < 16; i++) s += ALPHABET[crypto.randomInt(ALPHABET.length)]; return fmtKey(s); }
+// four easy words, like coral-otter-lemon-kite (older keys were sixteen letters and numbers; they still work, since both are compared without case or dashes)
+function makeKey() { return Array.from({ length: 4 }, () => WORDS[crypto.randomInt(WORDS.length)]).join('-'); }
 export function createUser(db, { name, avatar }) {
   const n = clean(name, 16); if (n.length < 1) throw new GameError('BAD_NAME', 'Please choose a name.');
   const token = crypto.randomBytes(32).toString('hex'), id = crypto.randomUUID();

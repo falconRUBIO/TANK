@@ -8,16 +8,9 @@ import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
 import { hasOcto, hasFishOnly, canFeedOcto, octoHunger } from './game/rules.js';
 
-export const SKINS = ['#f1c8a0', '#d9a273', '#b06a42', '#8a5a3a', '#5a3a28'];
-export const HAIRS = ['#222222', '#5a3ad0', '#a0522d', '#d8a830', '#c0362c', '#2f8f6a'];
-export const HATS = [null, '#56703a', '#c0362c', '#3a5ad0', '#d8a830', '#222222'];
-export function drawAvatar(c, { skin = '#b06a42', hair = '#222222', hat = null, eye = '#1a1a22' } = {}) {
-  const g = c.getContext('2d'); c.width = c.height = 16; g.imageSmoothingEnabled = false;
-  const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  r(0, 0, 16, 16, '#1c2b40'); r(3, 11, 10, 5, '#2e5a3a'); r(4, 4, 8, 8, skin); r(5, 12, 6, 1, skin);
-  if (hat) { r(3, 2, 10, 3, hat); r(2, 4, 12, 1, hat); } else { r(3, 2, 10, 3, hair); r(3, 4, 2, 5, hair); r(11, 4, 2, 5, hair); }
-  r(6, 7, 1, 2, eye); r(9, 7, 1, 2, eye); r(7, 10, 2, 1, '#6a2a22');
-}
+export { drawAvatar } from './people.js';
+import { drawAvatar, soloLook } from './people.js';
+import { lookEditor } from './lookeditor.js';
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ago = (ts) => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago'; };
 const CATS = ['NEW', 'PLANTS', 'ROCKS', 'WOOD', 'STRUCTURES', 'SPECIAL', 'FISH', 'FLOOR', 'BACKDROP'];
@@ -112,10 +105,24 @@ export function initUI({ game, social, cb }) {
   };
   const slotsHtml = () => {
     const s = game.members; if (!s) return '';
-    return [1, 2, 3].map((n) => { const m = s.find((x) => x.slot === n); return m
-      ? `<div class="slot"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
+    return [1, 2, 3, 4].map((n) => { const m = s.find((x) => x.slot === n); return m
+      ? `<div class="slot${m.id === game.you.userId ? ' me' : ''}"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '<button class="nudge" data-edit-me>Edit look</button>' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
       : `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>Slot ${n}</small></div>`; }).join('');
   };
+  // your look, edited from the Crew tab with the same editor as the first screen
+  let draft = null;
+  const myself = () => (game.shared ? game.members?.find((x) => x.id === game.you.userId) : null);
+  const lookHtml = () => { const me = myself(); return `<h3>Your look</h3><div class="ap"></div>${game.shared ? `<label class="lk-name"><span>Your name</span><input id="lkname" maxlength="16" autocomplete="off" value="${esc(me?.name ?? '')}"></label>` : ''}<div class="err" id="lkerr"></div><button class="big" id="lksave">Save</button><button class="lnk" id="lkback">Cancel</button>`; };
+  function bindLook() {
+    draft = { ...(game.shared ? myself()?.avatar ?? {} : soloLook()) }; lookEditor(sheet.querySelector('.ap'), draft);
+    $('lkback').onclick = () => { sub = 'friends'; open('friends', true); };
+    $('lksave').onclick = async () => {
+      const name = $('lkname') ? $('lkname').value.trim() : null; if ($('lkname') && !name) { $('lkerr').textContent = 'Please choose a name.'; return; }
+      $('lksave').disabled = true;
+      try { await cb.saveLook({ avatar: { ...draft }, name }); sfx('tap'); toast('Looking good'); sub = 'friends'; setMembers(); open('friends', true); }
+      catch (e) { $('lkerr').textContent = e.message || 'That did not save. Try again.'; $('lksave').disabled = false; }
+    };
+  }
   // what counts as new: unlocked by the tank's latest level-up (never at level 1, where everything is new) and not yet in the tank
   const isNew = (s, c) => (c.kind === 'fish' || c.kind === 'decor') && s.level > 1 && c.level === s.level && !(c.kind === 'fish' ? s.fish.some((f) => f.species === c.id) || (s.orders ?? []).some((o) => o.species === c.id) : s.decor.some((d) => d.type === c.id));
   const newCount = () => { const s = S(); if (!s || s.level < 2) return 0; return Object.entries(SPECIES_DEF).filter(([id, d]) => !d.visitor && isNew(s, { kind: 'fish', id, level: d.level })).length + Object.entries(DECOR_DEF).filter(([id, d]) => isNew(s, { kind: 'decor', id, level: d.level })).length; };
@@ -213,7 +220,8 @@ export function initUI({ game, social, cb }) {
       if (sub === 'settings') return views.settings().replace('<h3>Settings</h3>', '<h3>Settings</h3>' + seg);
       if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
       if (sub === 'book') return `<h3>Collection</h3>${seg}${bookHtml()}`;
-      if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
+      if (sub === 'look') return lookHtml();
+      if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot me"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
         <p class="dim">You are playing on your own. Open the game on the server to start a shared tank; three friends can then join with its six-character code.</p>`;
       const wish = WISHES[S().wishIdx];
       const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
@@ -250,7 +258,9 @@ export function initUI({ game, social, cb }) {
   };
   function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; im.src = k === 'fish' ? fishThumb(id) : decorThumb(id); }, i * 16)); }
   function paint() {
-    sheet.querySelectorAll('canvas.big').forEach((c) => { if (c.dataset.slot === 'me') drawAvatar(c, { skin: '#b06a42', hair: '#222', hat: '#56703a' }); else { const m = game.members?.find((x) => x.slot === +c.dataset.slot); if (m) drawAvatar(c, m.avatar); } });
+    sheet.querySelectorAll('canvas.big').forEach((c) => { if (c.dataset.slot === 'me') drawAvatar(c, soloLook()); else { const m = game.members?.find((x) => x.slot === +c.dataset.slot); if (m) drawAvatar(c, m.avatar); } });
+    sheet.querySelectorAll('[data-edit-me]').forEach((b) => (b.onclick = () => { sfx('tap'); sub = 'look'; open('friends', true); sheet.scrollTop = 0; }));
+    if (sub === 'look' && tab === 'friends' && sheet.querySelector('.ap') && !sheet.querySelector('.ap.pe')) bindLook();
     sheet.querySelectorAll('[data-invite]').forEach((e) => (e.onclick = () => social.invite()));
     sheet.querySelectorAll('[data-code]').forEach((b) => (b.onclick = () => ({ copy: () => social.copy(), share: () => social.share(), regen: () => social.regen() }[b.dataset.code]())));
     const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'); if (i.value.trim()) { social.chat(i.value); i.value = ''; } };
@@ -327,6 +337,7 @@ export function initUI({ game, social, cb }) {
     boxes();
   }
   function open(t, quiet = false) {
+    if (t !== 'friends' && sub === 'look') sub = 'friends';                    // the look editor is only ever open while you are on it
     if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
     if (t === 'decorate' && tab !== 'decorate' && !quiet) { if (newCount()) cat = 'NEW'; else if (cat === 'NEW') cat = 'FISH'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
@@ -348,13 +359,13 @@ export function initUI({ game, social, cb }) {
   function setMembers() {
     const box = $('avs'); if (!box) return; box.innerHTML = '';
     for (let n = 1; n <= 4; n++) {
-      const m = game.shared ? game.members?.find((x) => x.slot === n) : (n === 1 ? { avatar: { skin: '#b06a42', hair: '#222222', hat: '#56703a' }, id: 'me' } : null), d = document.createElement('div'); d.className = 'av' + (m ? '' : ' empty');
+      const m = game.shared ? game.members?.find((x) => x.slot === n) : (n === 1 ? { avatar: soloLook(), id: 'me' } : null), d = document.createElement('div'); d.className = 'av' + (m ? '' : ' empty');
       if (m) { const c = document.createElement('canvas'); c.className = 'av'; drawAvatar(c, m.avatar); d.append(c); const i = document.createElement('i'); if (game.shared && !game.online.includes(m.id)) i.className = 'off'; d.append(i); d.onclick = () => open('friends'); }
       else { d.textContent = '+'; d.onclick = () => open('friends'); }
       box.append(d);
     }
   }
-  function refresh() { setMembers(); updateHeader(); if (['friends', 'journal', 'care', 'today'].includes(tab)) { const y = sheet.scrollTop; open(tab, true); sheet.scrollTop = y; } else if (tab === 'decorate') { const y = sheet.scrollTop; open(tab, true); sheet.scrollTop = y; } }
+  function refresh() { setMembers(); updateHeader(); if (tab === 'friends' && sub === 'look') return; if (['friends', 'journal', 'care', 'today'].includes(tab)) { const y = sheet.scrollTop; open(tab, true); sheet.scrollTop = y; } else if (tab === 'decorate') { const y = sheet.scrollTop; open(tab, true); sheet.scrollTop = y; } }
 
   // ── modal: a small in-page dialog (no browser prompts) ──
   const modal = $('modal');

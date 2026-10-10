@@ -1,5 +1,7 @@
 // Client networking + onboarding (create / join a tank). Falls back to offline play if no server answers.
-import { drawAvatar, SKINS, HAIRS, HATS } from './ui.js';
+import { drawAvatar } from './people.js';
+import { lookEditor } from './lookeditor.js';
+import { randomAvatar } from './game/avatar.js';
 import { idbPut, idbGet, backupFromText } from './keep.js';
 
 const KEY = 'ourtank.session';
@@ -54,17 +56,6 @@ export class Live {
 // ── onboarding ──
 const $ = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; };
 const CODE = /^[A-Za-z0-9]{6}$/;
-function avatarPicker(host, state) {
-  host.innerHTML = `<canvas class="pv"></canvas><div class="sw" data-k="skin"></div><div class="sw" data-k="hair"></div><div class="sw" data-k="hat"></div>`;
-  const pv = host.querySelector('.pv'); const paint = () => drawAvatar(pv, state);
-  const opts = { skin: SKINS, hair: HAIRS, hat: HATS };
-  for (const k of Object.keys(opts)) {
-    const row = host.querySelector(`[data-k=${k}]`);
-    opts[k].forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.style.background = c || 'transparent'; if (!c) b.className = 'none'; b.onclick = () => { state[k] = c; row.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b)); paint(); }; if (c === state[k]) b.className += ' sel'; row.append(b); });
-  }
-  paint();
-}
-
 export function runOnboarding() {
   return new Promise(async (resolve) => {
     const root = document.getElementById('welcome');
@@ -72,8 +63,7 @@ export function runOnboarding() {
     const link = (code) => `${location.origin}/join/${code}`;
     const shareText = (code) => `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${code}`;
     const screen = (html) => { root.innerHTML = ''; const s = $(`<div class="scr">${html}</div>`); root.append(s); root.classList.add('on'); return s; };
-    const pk = (a) => a[(Math.random() * a.length) | 0];
-    const avatar = { skin: pk(SKINS), hair: pk(HAIRS), hat: pk(HATS) };
+    const avatar = randomAvatar();
 
     // returning player with a saved identity (also looked for in the second place it is kept)
     if (!session?.token) { const kept = await idbGet('ourtank.session'); if (kept?.token) { session = kept; store(session); } }
@@ -97,10 +87,11 @@ export function runOnboarding() {
       s.querySelector('[data-a=solo]').onclick = () => done({ mode: 'local' });
     };
     const profile = (kind, joinCode, backup = null) => {
-      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : kind === 'restore' ? 'RESTORE YOUR TANK' : 'WHO ARE YOU?'}</h2><p class="dim" style="margin:0 0 6px">${kind === 'join' ? 'This is how your friends will see you.' : ''}</p><label>Your name<input id="nm" maxlength="16" placeholder="What should your friends call you?" autocomplete="off"></label>
-        <div class="ap"></div>${kind === 'create' ? '<label>Tank name<input id="tn" maxlength="24" value="Our Tank" autocomplete="off"></label>' : ''}
+      const s = screen(`<h2>${kind === 'create' ? 'MAKE YOUR PERSON' : kind === 'restore' ? 'RESTORE YOUR TANK' : 'WHO ARE YOU?'}</h2><p class="sub">This is how your crew will see you. You can change it later in Crew.</p>
+        <div class="ap"></div><label>Your name<input id="nm" maxlength="16" placeholder="What should your friends call you?" autocomplete="off"></label>
+        ${kind === 'create' ? '<label>Tank name<input id="tn" maxlength="24" value="Our Tank" autocomplete="off"></label>' : ''}
         <div class="err" id="er"></div><button class="big" id="go">${kind === 'create' ? 'CREATE' : kind === 'restore' ? 'RESTORE' : 'JOIN THE TANK'}</button><button class="lnk" id="bk">Back</button>`);
-      avatarPicker(s.querySelector('.ap'), avatar);
+      lookEditor(s.querySelector('.ap'), avatar);
       s.querySelector('#bk').onclick = welcome;
       s.querySelector('#go').onclick = async () => {
         const name = s.querySelector('#nm').value.trim(), er = s.querySelector('#er'); if (!name) { er.textContent = 'Please choose a name.'; return; }
@@ -120,13 +111,13 @@ export function runOnboarding() {
       s.querySelector('#go').onclick = async () => { try { const data = await backupFromText(s.querySelector('#bt').value); profile('restore', null, data); } catch (e) { s.querySelector('#er').textContent = e.message || 'That did not work.'; } };
     };
     const recoverScreen = (err = '') => {
-      const s = screen(`<h2>WELCOME BACK</h2><p>Type the recovery key you saved when you started.</p><input id="rk" class="rk" maxlength="19" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX">
+      const s = screen(`<h2>WELCOME BACK</h2><p>Type your recovery key: the four words you saved when you started (an older key of letters and numbers works too).</p><input id="rk" class="rk" maxlength="60" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="word word word word">
         <div class="err" id="er">${err}</div><button class="big" id="go">SIGN IN</button><button class="lnk" id="bk">Back</button>`);
       s.querySelector('#bk').onclick = welcome;
       s.querySelector('#go').onclick = async () => {
         const er = s.querySelector('#er'); er.textContent = '';
         try {
-          const r = await api('/api/recover', { key: s.querySelector('#rk').value }); session = { token: r.token, userId: r.userId, recoveryKey: s.querySelector('#rk').value.toUpperCase().trim() }; store(session);
+          const r = await api('/api/recover', { key: s.querySelector('#rk').value }); session = { token: r.token, userId: r.userId, recoveryKey: s.querySelector('#rk').value.trim().replace(/\s+/g, '-') }; store(session);
           const me = await api('/api/me'); if (me.tank) done({ mode: 'net', user: me.user, tank: me.tank }); else welcome();
         } catch (e) {
           // the server no longer knows this key (it lost its data) but this phone still has a copy of the tank: put it back
@@ -136,8 +127,8 @@ export function runOnboarding() {
       };
     };
     const codeScreen = (t) => {
-      const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with two friends. They can join in seconds.</p>
-        <div class="rkbox" id="rk"><small>RECOVERY KEY · tap to copy, then save it somewhere safe</small><b>${session?.recoveryKey ?? ''}</b></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
+      const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with up to three friends. They can join in seconds.</p>
+        <div class="rkbox" id="rk"><small>YOUR RECOVERY KEY · tap to copy</small><b>${session?.recoveryKey ?? ''}</b><span>Four words that sign you back in on a new phone. Keep them somewhere safe.</span></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
       s.querySelector('#rk').onclick = async () => { const k = session?.recoveryKey; if (!k) return; const sm = s.querySelector('#rk small'); try { await navigator.clipboard.writeText(k); sm.textContent = 'KEY COPIED ✓ · keep it somewhere safe'; } catch { sm.textContent = 'SELECT THE KEY AND COPY IT'; } };
       s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
       s.querySelector('#sh').onclick = async () => { const data = { title: 'OUR TANK', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
@@ -197,6 +188,8 @@ async function healTank() {
   return me;
 }
 export const getSession = () => session;
+// a fresh key of four words replaces the old one (the old one stops working)
+export async function newRecoveryKey() { const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
 export async function ensureRecoveryKey() { if (session?.recoveryKey) return session.recoveryKey; const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
 export async function leaveTankNow() { await api('/api/tanks/leave', {}); try { localStorage.removeItem('ourtank.seen.' + session.userId); } catch { /* ignore */ } }
 

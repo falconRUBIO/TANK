@@ -11,7 +11,8 @@ import { Glow, Sightings, Rain } from './w3/fx.js';
 import { skyOf } from './game/sky.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
-import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest } from './online.js';
+import { soloLook, saveSoloLook } from './people.js';
+import { runOnboarding, Live, api, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest } from './online.js';
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
@@ -353,7 +354,7 @@ async function takePhoto() {
   const lines = wrapText(g, postcardCaption(), IW2 - 20).slice(0, 3); lines.forEach((l, i) => g.fillText(l, M + 10, fy + i * 58));
   // a little rule, then the tank's name and the day, the people in it, and the mark
   const ry = PH - 96; g.strokeStyle = 'rgba(120,96,50,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + 10, ry - 34); g.lineTo(PW - M - 10, ry - 34); g.stroke();
-  let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: { skin: '#b06a42', hair: '#222222', hat: '#56703a' } }]).slice(0, 3)) { const c = document.createElement('canvas'); c.width = c.height = 64; try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; g.drawImage(c, ax, ry - 20, 64, 64); } catch { /* no avatar */ } ax += 74; }
+  let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
   const dateStr = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }); g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
   g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 OUR TANK', PW - M - 10, ry + 22); g.textAlign = 'left';
@@ -780,7 +781,21 @@ async function boot() {
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
     gift: () => offerGift(), closeCard: () => { sfx('tap'); setFocus(null); },
-    photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => { try { const k = await ensureRecoveryKey(); await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Write it down. Typing it on a new phone signs you back in to your tank.', lines: [k], ok: 'Done' }); } catch (e) { ui.toast(e.message); } },
+    photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => {
+      try {
+        const k = await ensureRecoveryKey(), old = /^[A-Z0-9]{4}-[A-Z0-9]{4}/i.test(k) && !/^[a-z]+-[a-z]+-[a-z]+-[a-z]+$/.test(k);
+        if (!old) { await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Four words that sign you back in to your tank on a new phone. Write them down somewhere safe.', lines: [k], ok: 'Done' }); return; }
+        // an older key of letters and numbers: it still works, and can be swapped for four easy words
+        const swap = await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'This older key still works. Want an easier one? You get four simple words instead, and this key stops working.', lines: [k], ok: 'Get four words', cancel: 'Keep this one' });
+        if (!swap) return; const n = await newRecoveryKey();
+        await ui.dialog({ title: 'YOUR NEW KEY', text: 'Write these four words down. The old key no longer works.', lines: [n], ok: 'Done' });
+      } catch (e) { ui.toast(e.message); }
+    },
+    saveLook: async ({ avatar, name }) => {
+      if (!game.shared) { saveSoloLook(avatar); return; }
+      const me = game.members?.find((x) => x.id === game.you.userId); const r = await api('/api/profile', { name: name || me?.name || 'Guest', avatar });
+      if (me) { me.avatar = r.avatar ?? avatar; if (r.name) me.name = r.name; }
+    },
     backupText: async () => { const d = await api('/api/export'), text = await backupToText(d); try { await navigator.clipboard.writeText(text); ui?.toast('Backup copied. Paste it into Notes or a message to yourself.', 4200); } catch { await ui.dialog({ title: 'YOUR BACKUP', text: 'Select all of this text, copy it, and keep it somewhere safe.', ok: 'Done', input: { max: 400000, placeholder: '', value: text } }); } },
     backup: async () => { try { const d = await api('/api/export'), url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'our-tank-backup.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); ui.toast('Backup saved'); } catch (e) { ui.toast(e.message || 'Could not make a backup'); } },
     deleteMe: async () => { const yes = await ui.dialog({ title: 'DELETE MY DATA?', text: 'This removes you from the tank and deletes your account. If you are the last player, the tank is deleted too. It cannot be undone. Download a backup first if you might want it back.', ok: 'Delete everything', cancel: 'Keep', danger: true }); if (!yes) return; try { await api('/api/me', null, 'DELETE'); try { localStorage.clear(); } catch { /* storage unavailable */ } location.href = '/'; } catch (e) { ui.toast(e.message || 'Could not delete'); } },

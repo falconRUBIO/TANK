@@ -99,10 +99,12 @@ await t('static files cannot escape the web folder, and /healthz answers', async
   assert.equal((await fetch(base + '/healthz')).status, 200); assert.equal((await fetch(base + '/join/ABC123')).status, 200);
 });
 await t('a recovery key signs you back in on a new phone and retires the old token', async () => {
-  const u = await mkUser('Rec'); assert.match(u.recoveryKey, /^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
-  const r = await call('/api/recover', { key: u.recoveryKey.toLowerCase().replace(/-/g, ' ') }); assert.equal(r.status, 200); assert.equal(r.body.userId, u.userId); assert.notEqual(r.body.token, u.token);
+  const u = await mkUser('Rec'); assert.match(u.recoveryKey, /^[a-z]+(-[a-z]+){3}$/, 'four words');
+  const r = await call('/api/recover', { key: '  ' + u.recoveryKey.toUpperCase().replace(/-/g, ' ') + ' ' }); assert.equal(r.status, 200); assert.equal(r.body.userId, u.userId); assert.notEqual(r.body.token, u.token);
   assert.equal((await call('/api/me', null, u.token)).status, 401); assert.equal((await call('/api/me', null, r.body.token)).status, 200);
   assert.equal((await call('/api/recover', { key: 'AAAA-BBBB-CCCC-DDDD' })).status, 404);
+  const old = await mkUser('Old'), crypto = await import('node:crypto'); S.db.prepare('UPDATE users SET recovery_hash=? WHERE id=?').run(crypto.createHash('sha256').update('rk:' + 'ABCD2345EFGH6789').digest('hex'), old.userId);
+  assert.equal((await call('/api/recover', { key: 'abcd-2345-efgh-6789' })).body.userId, old.userId, 'a key in the old style still works');
   const k2 = (await call('/api/recovery', {}, r.body.token)).body.key; assert.notEqual(k2, u.recoveryKey); assert.equal((await call('/api/recover', { key: u.recoveryKey })).status, 404);
 });
 await t('recovery attempts are rate limited', async () => {
