@@ -41,13 +41,13 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 - Shop: 9 fish species (goldfish 10, neon school of 4 at 20, corydoras 18, guppy pair 18, blue ram 28, platy pair 24, angelfish 40, danio school of 4 at 32, betta 52) and 22 decorations (4 to 56 shells). Each fish has a wait before it arrives. One fish a day is 25% off.
 - Collection book: 34 entries (fish, decorations, rare visitors); +3 shells for every 5 found.
 - Tank wishes (shared goals, in order): 12 of them, from "three fish swimming together" (+4) to "find everything in the book" (+25).
-- The tank starts empty except for one goldfish and a free starter pack of five decorations. Floor (5 choices) and backdrop (4 choices) are picked in the Decorate tab.
+- The tank starts empty except for the caretaker's own octopus (colour chosen in the opening) and a free starter pack of five decorations. Floor (5 choices) and backdrop (4 choices) are picked in the Decorate tab.
 - Nothing beyond level 8 exists yet (see `docs/PROGRESSION_9_12.md`).
 
 ## 5. Fish as individuals
 - Each fish has one or two traits (Shy, Brave, Curious, Social, Playful, Lazy, Calm, Greedy) that drive real movement: shy fish hide behind plants and bolt when others come close; brave fish swim to the glass; curious fish inspect decorations and other fish; social fish keep a buddy; playful fish chase bubbles; lazy fish rest low; greedy fish wait near the surface.
 - Every fish also gets a small colour and size variation from its seed, a home corner of the tank, a favourite decoration it returns to (found after living here a while), a best friend it stays near, and a caretaker.
-- A fish swims out to the glass more often for its own caretaker (the person who brought it in, or who has bonded with it most). Each caretaker gets one free first fish of their own (the creator's is the starter goldfish).
+- A fish swims out to the glass more often for its own caretaker (the person who brought it in, or who has bonded with it most). Each caretaker gets one octopus of their own, in a colour they pick (the creator's is the starter goldfish).
 - The fish card shows traits, age, time to next growth stage, favourite spot, original caretaker and who it is closest to.
 
 ## 6. Three players
@@ -72,7 +72,7 @@ A fish accumulates neglect time when the tank has gone 30 hours without any feed
 - **Today tab.** The one thing worth doing now, the fish wish, comfort, the shared project, today's wish, what is coming up and how shells are earned.
 
 ## 7c. Saltwater, daily care and looks
-- **Saltwater only.** Free first fish: Clownfish, Seahorse, Octopus or Blue Chromis (a new tank starts empty and you choose in the opening). Shop: Damselfish, Yellow Goby, Royal Gramma, Cardinalfish, Emperor Angelfish, Pink Anthias, Mandarin Dragonet, plus Seahorse and Octopus. Rare visitors: Ghost Dragonet, Golden Angelfish, Rose Goby. Decorations are reef themed (sea fan, gorgonian, sea whip, anemone, brain and table coral).
+- **Saltwater only.** The first animal is always an octopus, in one of six colours (a new tank starts empty and you choose in the opening). An octopus eats crabs (free, from Feed), never flakes. Shop: Damselfish, Yellow Goby, Royal Gramma, Cardinalfish, Emperor Angelfish, Pink Anthias, Mandarin Dragonet, plus Seahorse and Octopus. Rare visitors: Ghost Dragonet, Golden Angelfish, Rose Goby. Decorations are reef themed (sea fan, gorgonian, sea whip, anemone, brain and table coral).
 - **Own gaits.** Seahorses hover upright and hold on to plants; octopuses rest with arms flat, crawl, and jet in pulses.
 - **Daily care.** Today shows three ticks (tank looked after, today's wish, a fish got attention). All three pays +3 once per UTC day. No streaks.
 - **Tank mood** (Thriving, Doing well, Needs care, Neglected) and a "looks tired" notice two days before a fish is critical.

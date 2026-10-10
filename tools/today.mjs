@@ -9,11 +9,11 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.addInitScript((s) => localStorage.setItem('ourtank.session', JSON.stringify(s)), { token: u.token, userId: u.userId });
 await p.goto(base + '/?lite=1&dev=1'); await p.waitForFunction(() => window.__game?.state, null, { timeout: 30000 }); await p.waitForTimeout(1500);
 let intro = null;
-for (let i = 0; i < 4; i++) { if (await p.$('#modal.on .pk')) { intro = { cards: (await p.$$('#modal .pk')).length, preselected: await p.evaluate(() => document.querySelector('#modal .pk.on')?.dataset.k) }; await p.click('#modal .pk[data-k=seahorse]'); }
+for (let i = 0; i < 4; i++) { if (await p.$('#modal.on .pk')) { intro = { cards: (await p.$$('#modal .pk')).length, preselected: await p.evaluate(() => document.querySelector('#modal .pk.on')?.dataset.pal) }; await p.click('#modal .pk[data-pal="2"]'); }
   if (await p.$('#modal.on')) { await p.evaluate(() => { const i = document.querySelector('#modal input'); if (i) { i.value = 'Pip'; i.dispatchEvent(new Event('input')); } document.getElementById('mok')?.click(); }); await p.waitForTimeout(700); } }
 const S = () => p.evaluate(() => JSON.parse(JSON.stringify(window.__game.state)));
-ck('the opening offers four free fish, goldfish preselected', intro?.cards === 4 && intro?.preselected === 'goldfish', JSON.stringify(intro));
-ck('the chosen fish is what arrives, with the chosen name', (await S()).fish[0].species === 'seahorse' && (await S()).fish[0].name === 'Pip', JSON.stringify((await S()).fish.map((f) => [f.species, f.name])));
+ck('the opening offers an octopus in six colours with one preselected', intro?.cards === 6 && intro?.preselected != null, JSON.stringify(intro));
+ck('the chosen fish is what arrives, with the chosen name', (await S()).fish[0].species === 'octopus' && (await S()).fish[0].pal === 2 && (await S()).fish[0].name === 'Pip', JSON.stringify((await S()).fish.map((f) => [f.species, f.name])));
 // the check-in tab
 ck('four tabs in the bottom bar', (await p.$$('nav [data-tab]')).length === 4);
 await p.click('nav [data-tab=care]', { force: true }); await p.waitForTimeout(500);
