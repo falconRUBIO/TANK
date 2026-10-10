@@ -378,10 +378,20 @@ function showFamily(rec) {
   lines.push(kids.length ? `Children: ${kids.map((k) => k.name + (k.alive ? '' : ' (passed away)')).join(', ')}` : 'Children: none yet');
   ui.dialog({ title: `${rec.name.toUpperCase()}'S FAMILY`, lines, ok: 'Close' });
 }
+// an octopus's chips are read from its temperament, strongest first: what you see on the card is what it does in the tank
+function octoChips(m) { const c = [[m.cur, 'Curious'], [m.bold, 'Bold'], [1 - m.bold, 'Shy'], [m.soc, 'Social'], [1 - m.soc, 'Loner'], [m.tidy, 'Tidy']].filter(([v]) => v >= 0.62).sort((a, b) => b[0] - a[0]).map(([, l]) => l); return c.length ? c.slice(0, 2) : ['Easygoing']; }
+// its line, true to the tank it is in: one that loves its den says so only once it has one, and says what it is looking for until then
+function octoLine(m, f) {
+  const den = f?.den, kind = den?.home ? (den.kind === 'pot' ? 'its clay pot' : 'its coconut shell') : den?.kind === 'rocks' ? 'the rock shelter it built' : den ? 'its den' : null;
+  if (m.type === 'homebody') return kind ? `Loves ${kind}. It likes familiar things and will not be hurried out of them.` : 'A home-lover with no home yet. A coconut shell, a clay pot or a few rocks would do.';
+  if (m.type === 'collector') return kind ? `Fetches shells and stones for ${kind} and rearranges them when nobody is looking.` : 'Fetches shells and stones, and is looking for a den to keep them by.';
+  return m.line;
+}
 function bondLine(rec) {
-  const b = rec.bond ?? {}, ids = Object.keys(b); if (!ids.length) return '';
-  const top = ids.sort((x, y) => b[y] - b[x])[0], you = game.shared ? game.you?.userId : 'me', mine = b[you] ?? 0;
-  const who = top === you ? 'You' : game.members?.find((m) => m.id === top)?.name ?? 'Someone';
+  const you = game.shared ? game.you?.userId : 'me', b = rec.bond ?? {}, known = (id) => id === you || !game.shared || game.members?.some((m) => m.id === id);      // only people still in the tank
+  const ids = Object.keys(b).filter(known); if (!ids.length) return '';
+  const top = ids.sort((x, y) => b[y] - b[x])[0], mine = b[you] ?? 0;
+  const who = top === you || !game.shared ? 'You' : game.members?.find((m) => m.id === top)?.name ?? 'You';
   return `<dt>Closest to</dt><dd>${mine >= 10 && top === you ? 'You' : who}${b[top] >= 10 ? ' ♥' : ''}</dd>`;
 }
 function showDeadCard(f) {
@@ -409,9 +419,9 @@ function showCard(f) {
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
-  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${rec.species === 'octopus' ? `<dt>Fed</dt><dd>${Math.round((1 - octoHunger(rec)) * 100)}%${game.shared && rec.owner && rec.owner !== game.you?.userId ? ` · only ${esc(rec.ownerName ?? 'its caretaker')} can feed it` : ''}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
+  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName || rec.owner ? `<dt>Caretaker</dt><dd>${!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')}</dd>` : ''}${rec.species === 'octopus' ? `<dt>Fed</dt><dd>${Math.round((1 - octoHunger(rec)) * 100)}%${game.shared && rec.owner && rec.owner !== game.you?.userId ? ` · only ${esc(rec.ownerName ?? 'its caretaker')} can feed it` : ''}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><button class="more" id="more">More info ›</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>${f.favThing ? `<p class="mind now">Favourite thing in the tank: ${esc(f.favThing)}.</p>` : ''}${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
+    <div class="chips">${(rec.species === 'octopus' ? octoChips(octoMind(rec)) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(octoLine(m, f))}</p>${f.favThing ? `<p class="mind now">Favourite thing in the tank: ${esc(f.favThing)}.</p>` : ''}${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">${f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`}</button>
     <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}

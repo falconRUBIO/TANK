@@ -327,7 +327,7 @@ export class Fishes {
   syncDen(f, d) {
     f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), home = spots.find((x) => x.id === d.home);
     const rocks = spots.filter((x) => ['rock', 'skull'].includes(x.type)), near = (q) => rocks.filter((r) => r !== q && Math.hypot(r.x - q.x, r.z - q.z) < 2.4), built = rocks.map((q) => [q, near(q)]).filter(([, n]) => n.length >= 1).sort((a, b) => b[1].length - a[1].length)[0];
-    const pref = spots.filter((x) => x.type === 'pot' || x.type === 'coconut'), den = home ?? (built ? null : pref.length ? pref[(d.seed ?? 0) % pref.length] : spots.length ? spots[(d.seed ?? 0) % spots.length] : null);
+    const pref = spots.filter((x) => x.type === 'pot' || x.type === 'coconut'), cover = spots.filter((x) => ['boulder', 'table', 'arch', 'brain', 'chest'].includes(x.type)), den = home ?? (built ? null : pref.length ? pref[(d.seed ?? 0) % pref.length] : cover.length ? cover[(d.seed ?? 0) % cover.length] : null);      // a den needs real cover: a single small rock is not one
     if (home) f.den = { x: home.x, z: home.z, id: home.id, home: true, kind: home.type };
     else if (built) { const all = [built[0], ...built[1]], cx = all.reduce((a, q) => a + q.x, 0) / all.length, cz = all.reduce((a, q) => a + q.z, 0) / all.length; f.den = { x: cx, z: cz, id: built[0].id, home: false, kind: 'rocks', n: all.length }; }
     else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
