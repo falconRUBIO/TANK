@@ -202,7 +202,7 @@ async function adopt(species) {
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
 async function giveCrab() {
-  const o = game.state.fish.find((f) => canPuzzle(f) && !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { ui.toast('Only a grown octopus eats crabs'); return; }
+  const me = game.you?.userId, mine = game.state.fish.filter((f) => canPuzzle(f) && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
   const r = await game.dispatch({ t: 'crab', id: o.id }); if (!r.ok) return fail(r);
   if (!r.applied) { const m = Math.max(1, Math.ceil((r.wait ?? 0) / 60e3)); ui.toast(`${o.name} is full. Try again in about ${m >= 90 ? Math.round(m / 60) + ' hours' : m + ' minutes'}.`); return; }
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 5200, 1500);
