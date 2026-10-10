@@ -1,0 +1,17 @@
+// The care menu, the feed menu, a scrolled sheet with its close button, for layout review. OUT=dir node tools/shots_menus.mjs
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+import fs from 'node:fs';
+const out = process.env.OUT || '/tmp/menus'; fs.mkdirSync(out, { recursive: true });
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
+await p.evaluate(() => { const g = window.__game; g.state.flags.tut = 5; g.state.level = 4; g.state.shells = 40; g.state.hunger = 0.8; g.emit('state'); });
+const shot = async (n, ms = 900) => { await p.waitForTimeout(ms); await p.screenshot({ path: `${out}/${n}.png` }); };
+await p.click('nav [data-tab=care]', { force: true }); await shot('1_care');
+await p.click('[data-act=feed]'); await shot('2_feed_menu', 1500);
+await p.click('#foodbar [data-food=pellets]'); await shot('3_pellets', 600);
+await p.click('#foodbar [data-done]'); await p.click('nav [data-tab=decorate]', { force: true }); await shot('4_decorate');
+await p.evaluate(() => { document.querySelector('#sheet').scrollTop = 600; }); await shot('5_decorate_scrolled', 600);
+await p.click('nav [data-tab=friends]', { force: true }); await shot('6_friends');
+console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

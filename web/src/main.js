@@ -10,7 +10,7 @@ import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
 import { skyOf } from './game/sky.js';
 import { lanternGlow } from './w3/items.js';
-import { initUI } from './ui.js';
+import { initUI, drawAvatar } from './ui.js';
 import { runOnboarding, Live, api, ensureRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest } from './online.js';
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
@@ -59,7 +59,7 @@ let net = null, ui = null;
 const copyText = async (t, ok) => { try { await navigator.clipboard.writeText(t); ui.toast(ok); } catch { ui.toast(t); } };
 const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone';
 const social = {
-  chat: (t) => net?.chat(t), invite: () => ui.open('friends'),
+  chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
   share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'MAKE A NEW CODE?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
@@ -88,8 +88,16 @@ const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.d
 
 // feeding
 // The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and only the tank is left: tap the water.
-function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; ui.toast(`Tap the water to drop ${FOODS[game.feedFood ?? 'flakes'].label.toLowerCase()}`, 3500); }
-function endFeed() { feedMode = false; }
+// Feeding: tapping Feed shows what can be fed just above the bar, then a tap on the water drops it.
+function renderFoodbar() {
+  const bar = $('foodbar'), shells = game.state.shells, cur = game.feedFood ?? 'flakes';
+  bar.innerHTML = Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''}" ${shells < d.price ? 'disabled' : ''}><span>${d.label}</span><small>${d.price ? d.price + ' 🐚' : 'free'}</small></button>`).join('') + '<button data-done class="done">Done</button>';
+  bar.classList.add('on');
+  bar.querySelectorAll('[data-food]').forEach((b) => { b.onclick = () => { game.feedFood = b.dataset.food; sfx('tap'); renderFoodbar(); ui.toast(`Tap the water to drop ${FOODS[b.dataset.food].label.toLowerCase()}`, 2400); }; });
+  bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
+}
+function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); ui.toast(`Tap the water to drop ${FOODS[game.feedFood ?? 'flakes'].label.toLowerCase()}`, 3500); }
+function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   if (game.state.hunger < 0.08) { ui.toast('The fish are full for now'); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
@@ -314,16 +322,29 @@ function postcardCaption() {
 }
 function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
 async function takePhoto() {
-  const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #feedbar, #placebar, #toast, #glass')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
+  const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
-  const out = document.createElement('canvas'), W = canvas.width, H = canvas.height, k = 2; out.width = W * k; out.height = H * k; const g = out.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(canvas, 0, 0, W * k, H * k);
+  // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
+  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = Math.max(0, Math.round(SH * 0.17)), IH2 = Math.round(IW2 * crop / SW), FOOT = 330, PH = M + IH2 + FOOT;
+  const shot = document.createElement('canvas'); shot.width = SW; shot.height = SH; shot.getContext('2d').drawImage(canvas, 0, 0, SW, SH);
   hidden.forEach((e, i) => (e.style.visibility = prev[i]));
-  // a soft band at the bottom with the caption, the tank's name and the day
-  const bandH = 150 * k, gr = g.createLinearGradient(0, H * k - bandH - 40 * k, 0, H * k); gr.addColorStop(0, 'rgba(4,14,28,0)'); gr.addColorStop(0.35, 'rgba(4,14,28,.72)'); gr.addColorStop(1, 'rgba(4,14,28,.9)'); g.fillStyle = gr; g.fillRect(0, H * k - bandH - 40 * k, W * k, bandH + 40 * k);
-  g.fillStyle = '#f4ecd0'; g.font = `600 ${15 * k}px ui-monospace, Menlo, monospace`; g.textBaseline = 'alphabetic';
-  const lines = wrapText(g, postcardCaption(), W * k - 44 * k); lines.forEach((l, i) => g.fillText(l, 22 * k, H * k - bandH + (24 + i * 22) * k));
-  g.fillStyle = '#e6c36a'; g.font = `600 ${11 * k}px ui-monospace, Menlo, monospace`; g.fillText(game.shared ? `${String(game.tankName).toUpperCase()}  ·  DAY ${game.day}` : `DAY ${game.day}`, 22 * k, H * k - 22 * k);
-  g.fillStyle = 'rgba(244,236,208,.55)'; g.textAlign = 'right'; g.fillText('OUR TANK', W * k - 22 * k, H * k - 22 * k); g.textAlign = 'left';
+  const out = document.createElement('canvas'); out.width = PW; out.height = PH; const g = out.getContext('2d'); g.textBaseline = 'alphabetic';
+  const paper = g.createLinearGradient(0, 0, 0, PH); paper.addColorStop(0, '#f8f1de'); paper.addColorStop(1, '#efe5cb'); g.fillStyle = paper; g.fillRect(0, 0, PW, PH);
+  g.strokeStyle = 'rgba(120,96,50,.25)'; g.lineWidth = 3; g.strokeRect(14, 14, PW - 28, PH - 28);
+  // the photo, softly rounded with a gentle vignette
+  g.save(); g.beginPath(); g.roundRect(M, M, IW2, IH2, 26); g.clip(); g.imageSmoothingEnabled = false; g.drawImage(shot, 0, cy, SW, crop, M, M, IW2, IH2); g.imageSmoothingEnabled = true;
+  const vg = g.createRadialGradient(PW / 2, M + IH2 * 0.48, IH2 * 0.3, PW / 2, M + IH2 * 0.48, IH2 * 0.85); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,10,24,.38)'); g.fillStyle = vg; g.fillRect(M, M, IW2, IH2);
+  const sheen = g.createLinearGradient(0, M, 0, M + IH2 * 0.25); sheen.addColorStop(0, 'rgba(255,255,255,.12)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = sheen; g.fillRect(M, M, IW2, IH2 * 0.25); g.restore();
+  g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 2; g.beginPath(); g.roundRect(M, M, IW2, IH2, 26); g.stroke();
+  // the caption in a soft serif, wrapped
+  const fy = M + IH2 + 70; g.fillStyle = '#3b2f1a'; g.font = 'italic 600 46px ui-serif, "New York", Georgia, serif';
+  const lines = wrapText(g, postcardCaption(), IW2 - 20).slice(0, 3); lines.forEach((l, i) => g.fillText(l, M + 10, fy + i * 58));
+  // a little rule, then the tank's name and the day, the people in it, and the mark
+  const ry = PH - 96; g.strokeStyle = 'rgba(120,96,50,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + 10, ry - 34); g.lineTo(PW - M - 10, ry - 34); g.stroke();
+  let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: { skin: '#b06a42', hair: '#222222', hat: '#56703a' } }]).slice(0, 3)) { const c = document.createElement('canvas'); c.width = c.height = 64; try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; g.drawImage(c, ax, ry - 20, 64, 64); } catch { /* no avatar */ } ax += 74; }
+  g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
+  const dateStr = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }); g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
+  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 OUR TANK', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
@@ -589,6 +610,7 @@ function frameBody(now) {
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { $('loading').classList.add('off'); return true; }
+  { const air = wc.active && wc.level < 0.97; stg.bubbles.mesh.visible = stg.bubbles2.mesh.visible = !air; for (const b of decor.streams.values()) b.mesh.visible = !air; fishes.bm.visible = !air; }      // no bubbles rise through air: they stop while the water is out and start again when it is back
   if (wc.active) { try { wc.frame(dt * (window.__wcScale ?? 1)); } catch (e) { console.error('water change error', e); wc.finish(); } }
   stg.renderer.info.reset(); composer.render();
   if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }

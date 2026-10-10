@@ -109,5 +109,5 @@ export function makeWaterChange({ canvas, camera, fishes, surfY, sfx, haptic = (
     if (!run) return; const r = run; run = null; drops.length = puffs.length = 0; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height); r.fish.forEach((a) => { a.f.group.visible = true; });
     if (!r.dispatched) Promise.resolve(r.dispatch()); r.done?.(r.ok);
   }
-  return { start, frame, get active() { return !!run; }, get t() { return run ? run.t : -1; }, finish };
+  return { start, frame, get active() { return !!run; }, get t() { return run ? run.t : -1; }, get level() { return run ? run.level : 1; }, finish };
 }
