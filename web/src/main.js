@@ -292,6 +292,7 @@ async function greetVisitor(f) {
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }
 // playing: fish follow a fingertip along the glass. Five seconds of it builds the bond.
+let cardOpen = null;                                                     // which fish's card is expanded; a card opens folded, showing the fish above it
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
   if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek');
@@ -409,14 +410,14 @@ function showCard(f) {
   const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
   game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${rec.species === 'octopus' ? `<dt>Fed</dt><dd>${Math.round((1 - octoHunger(rec)) * 100)}%${game.shared && rec.owner && rec.owner !== game.you?.userId ? ` · only ${esc(rec.ownerName ?? 'its caretaker')} can feed it` : ''}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
-  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
+  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><button class="more" id="more">More info ›</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>${f.favThing ? `<p class="mind now">Favourite thing in the tank: ${esc(f.favThing)}.</p>` : ''}${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">${f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`}</button>
     <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
-  card.classList.add('on'); card.classList.remove('peek'); { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => setFocus(null); $('grab').onclick = () => { if (!play) card.classList.toggle('peek'); }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  card.classList.add('on'); card.classList.toggle('peek', cardOpen !== f.fid); const setMore = () => { $('more').textContent = card.classList.contains('peek') ? 'More info ›' : 'Less ‹'; }; setMore(); $('more').onclick = () => { if (play) return; card.classList.toggle('peek'); cardOpen = card.classList.contains('peek') ? null : f.fid; setMore(); sfx('tap'); }; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => setFocus(null); $('grab').onclick = () => { if (!play) { card.classList.toggle('peek'); cardOpen = card.classList.contains('peek') ? null : f.fid; setMore(); } }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -682,7 +683,7 @@ function maybeSettle() {
   const k = dayTicks(s, Date.now()); if (!(k.care && k.wish)) return; const key = 'ourtank.settled.' + (game.shared ? game.you?.userId : 'solo'), day = String(Math.floor(Date.now() / 864e5));
   try { if (localStorage.getItem(key) === day) return; localStorage.setItem(key, day); } catch { return; }
   stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 22000);
-  ui.settle(['Everyone is fed, the water is clean and today\'s request is done.', nextUp(s, Date.now())]);
+  ui.settle([nextUp(s, Date.now())]);
 }
 // every caretaker brings in a first fish of their own (the creator's is Pip)
 async function firstFishPrompt() {
