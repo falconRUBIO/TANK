@@ -97,7 +97,7 @@ export function runOnboarding() {
       s.querySelector('[data-a=solo]').onclick = () => done({ mode: 'local' });
     };
     const profile = (kind, joinCode, backup = null) => {
-      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : kind === 'restore' ? 'RESTORE YOUR TANK' : 'YOU'}</h2><label>Your name<input id="nm" maxlength="16" placeholder="Name" autocomplete="off"></label>
+      const s = screen(`<h2>${kind === 'create' ? 'NEW TANK' : kind === 'restore' ? 'RESTORE YOUR TANK' : 'WHO ARE YOU?'}</h2><p class="dim" style="margin:0 0 6px">${kind === 'join' ? 'This is how your friends will see you.' : ''}</p><label>Your name<input id="nm" maxlength="16" placeholder="What should your friends call you?" autocomplete="off"></label>
         <div class="ap"></div>${kind === 'create' ? '<label>Tank name<input id="tn" maxlength="24" value="Our Tank" autocomplete="off"></label>' : ''}
         <div class="err" id="er"></div><button class="big" id="go">${kind === 'create' ? 'CREATE' : kind === 'restore' ? 'RESTORE' : 'JOIN THE TANK'}</button><button class="lnk" id="bk">Back</button>`);
       avatarPicker(s.querySelector('.ap'), avatar);
@@ -172,6 +172,7 @@ export function runOnboarding() {
           const pv = s.querySelector('#pv'); pv.innerHTML = `<div class="pvt"><b>${p.name.replace(/[<>&]/g, '')}</b><div class="mem"></div></div>`;
           p.members.forEach((m) => { const c = document.createElement('canvas'); drawAvatar(c, m.avatar); c.title = m.name; pv.querySelector('.mem').append(c, Object.assign(document.createElement('span'), { textContent: m.name })); });
           go.textContent = 'JOIN THIS TANK'; go.onclick = () => profile('join', inp.value);
+          if (prefill) { s.querySelector('h2').textContent = "YOU'RE INVITED"; const names = p.members.map((m) => m.name.replace(/[<>&]/g, '')).join(' and '); s.querySelector('p').textContent = `${names} ${p.members.length > 1 ? 'are' : 'is'} waiting in ${p.name.replace(/[<>&]/g, '')}.`; s.querySelector('#cd').style.opacity = '0.55'; }
           if (!pv.querySelector('.again')) pv.append(Object.assign(document.createElement('button'), { className: 'lnk again', textContent: "I'm already in this tank", onclick: () => claimScreen(inp.value, p.members) }));
         } catch (e) { er.textContent = e.code === 'NOT_FOUND' ? 'TANK NOT FOUND — Check the code and try again.' : e.message; }
       };
