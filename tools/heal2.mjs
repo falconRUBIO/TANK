@@ -24,16 +24,16 @@ const pa = await phone(A), pb = await phone(B);
 await new Promise((r) => setTimeout(r, 7000));                      // let both phones save their copies
 const info = (p) => p.evaluate(() => ({ code: window.__game.code, fish: window.__game.state.fish.map((f) => f.name).join(), members: window.__game.members.map((m) => m.name).join() }));
 console.log('before:', JSON.stringify(await info(pa)));
-// the server forgets everything
+// Ben loses his sign-in everywhere (the tank copy stays), then the server forgets everything
+await pb.evaluate(() => { localStorage.removeItem('ourtank.session'); document.cookie = 'ourtank_s=; max-age=0; path=/'; return new Promise((res) => { const r = indexedDB.open('ourtank', 1); r.onsuccess = () => { const tx = r.result.transaction('kv', 'readwrite'); tx.objectStore('kv').delete('ourtank.session'); tx.oncomplete = () => res(); }; r.onerror = () => res(); }); });
 await stop(); await start('/tmp/h2b.db');
 // 1. Ana's ordinary storage is wiped (as if cleared); only the second store is left
 await pa.evaluate(() => { localStorage.clear(); document.cookie = 'ourtank_s=; max-age=0; path=/'; });
 await pa.reload(); await pa.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 180000 }).catch(() => {}); await new Promise((r) => setTimeout(r, 3000));
 const ia = await pa.evaluate(() => window.__game?.code ? { code: window.__game.code, fish: window.__game.state.fish.map((f) => f.name).join() } : null);
 ck("1. Ana's phone (ordinary storage wiped) got the tank back under the same code", ia?.code === tank.code && /Coral/.test(ia?.fish), JSON.stringify(ia));
-// 2. Ben lost his sign-in everywhere but the tank copy is still on the phone: he types his recovery key
-await pb.evaluate(() => { localStorage.removeItem('ourtank.session'); document.cookie = 'ourtank_s=; max-age=0; path=/'; return new Promise((res) => { const r = indexedDB.open('ourtank', 1); r.onsuccess = () => { const tx = r.result.transaction('kv', 'readwrite'); tx.objectStore('kv').delete('ourtank.session'); tx.oncomplete = () => res(); }; r.onerror = () => res(); }); });
-await pb.reload(); await pb.waitForSelector('#welcome.on [data-a=recover]', { timeout: 60000 }); await pb.click('[data-a=recover]'); await pb.fill('#rk', B.recoveryKey); await pb.click('#go');
+// 2. (continued) Ben's page notices the server forgot him, reloads, and finds no sign-in: he types his recovery key
+await pb.waitForSelector('#welcome.on [data-a=recover]', { timeout: 120000 }); await pb.click('[data-a=recover]'); await pb.fill('#rk', B.recoveryKey); await pb.click('#go');
 await pb.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 60000 }).catch(() => {}); await new Promise((r) => setTimeout(r, 3000));
 const ib = await pb.evaluate(() => window.__game?.code ? { code: window.__game.code, fish: window.__game.state.fish.map((f) => f.name).join(), members: window.__game.members.map((m) => m.name).join() } : null);
 ck("2. Ben (signed out, key not known to the new server) got the same tank by his phone's copy", ib?.code === tank.code && /Spark/.test(ib?.fish ?? ''), JSON.stringify(ib));
