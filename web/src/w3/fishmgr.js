@@ -402,7 +402,7 @@ export class Fishes {
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < 4) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     for (const c of this.crabs ?? []) { c.mesh.userData.tick?.(t * (c.held ? 1.6 : 1), c.held ? 1 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue; if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; } else c.mesh.position.x = c.x + Math.sin(t * 4 + c.z) * 0.04; }
     if (this.loose?.length) { const now = performance.now(); this.loose = this.loose.filter((l) => { if (now < l.until) return true; this.scene.remove(l.m); return false; }); }
-    if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
+    if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6, f?.rs?.grab?.kind === 'jar' ? f.rs.grab.twist : null); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
     for (const f of this.flakes) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
     this.flakes = this.flakes.filter((f) => !f.eaten && f.age < 30);
     this.mesh.count = this.flakes.length;

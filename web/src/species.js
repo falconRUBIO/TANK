@@ -628,6 +628,13 @@ const octopus = {
         if (d > rad) continue; const key = x + ',' + y + ',' + z, q = d / rad, old = armV.get(key);
         if (!old || q < old.q) armV.set(key, { arm: i, at: t, q, off: [x - P[0], y - P[1], z - P[2]], dy: y - P[1], lat: -Math.sin(a.th) * (x - P[0]) + Math.cos(a.th) * (z - P[2]), rad });
       } } });
+    // webbing between neighbouring arms: a thin skin spanning the first part of each pair of arms, rigged to both so it stretches as they fan out and folds as they gather
+    const webV = new Map(), Q = [0, 0, 0], order = arms.map((a, i) => i).sort((i, j) => arms[i].th - arms[j].th);
+    for (let n = 0; n < 8; n++) { const A = arms[order[n]], B = arms[order[(n + 1) % 8]];
+      for (let k = 2; k <= 9; k++) { const t = k / 22, reach = 1 - (k - 2) / 8; octoPose(A, t, REST, P); octoPose(B, t, REST, Q); const d = Math.hypot(Q[0] - P[0], Q[1] - P[1], Q[2] - P[2]), steps = Math.max(2, Math.round(d));
+        for (let m = 0; m <= steps; m++) { const u = m / steps, sag = Math.sin(Math.PI * u) * (1.2 + 2.0 * (1 - reach)); if (Math.abs(u - 0.5) > 0.5 * reach + 0.08) continue;       // the skin reaches less far out along the arms than it does at the base
+          const x = Math.round(P[0] + (Q[0] - P[0]) * u), y = Math.round(P[1] + (Q[1] - P[1]) * u - sag), z = Math.round(P[2] + (Q[2] - P[2]) * u), key = x + ',' + y + ',' + z;
+          if (!armV.has(key) && !webV.has(key)) webV.set(key, { a: order[n], b: order[(n + 1) % 8], at: t, u, sag }); } } }
     const mantleX = (y) => -5 - (y - 7) * 0.35;
     const fM = (x, y, z) => ((x - mantleX(y)) / 9.5) ** 2 + ((y - 7) / 11.5) ** 2 + (z / 8.5) ** 2;
     const fH = (x, y, z) => { const lo = Math.max(0, (-2.5 - y) / 5), w = Math.max(0.55, 1 - lo * lo * 0.5); return ((x - 3) / (9 * w)) ** 2 + ((y - 0.5) / 7) ** 2 + (z / (8.4 * w)) ** 2; };   // the underside tapers to a neck, so nothing flat hangs out when the arms are away
@@ -663,6 +670,8 @@ const octopus = {
           }
           const rmax = 8.6 - (-4 - y) * 1.55; if (!kArm && y <= -3 && y >= -7 && rr <= rmax) { const n2 = fbm(x * 0.5 + off[0], y * 0.5, z * 0.5 + off[2]); return { c: mix(mix(skinC, [240, 150, 120], 0.3), [255, 220, 200], n2 > 0.62 ? 0.25 : 0), tag: 'web' }; }   // webbing between the arm bases
           if (!kArm && x >= 8 && x <= 13 && Math.hypot(y - (-2.4 - (x - 8) * 0.2), z + 4.2) <= 1.6 - (x - 8) * 0.06) return { c: x >= 12 ? mix(skinC, pale, 0.15) : mix(skinC, pale, 0.3), tag: 'head' }; }
+        const wr = webV.get(x + ',' + y + ',' + z);
+        if (wr) { const n2 = fbm(x * 0.5 + off[0], y * 0.5, z * 0.5 + off[2]); return { c: mix(mix(skinC, [240, 150, 120], 0.3), [255, 220, 200], 0.2 + (n2 > 0.62 ? 0.25 : 0)), tag: 'web', web: wr }; }
         const k = armV.get(x + ',' + y + ',' + z);
         if (k) {
           const tt = k.at, under = k.dy < -k.rad * 0.35, row = Math.abs(k.lat) > k.rad * 0.22 && Math.abs(k.lat) < k.rad * 0.85, sucker = under && row && tt > 0.08 && (Math.round(tt * 30 + (k.lat > 0 ? 0 : 1)) % 2 === 0);
