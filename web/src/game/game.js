@@ -56,7 +56,9 @@ export class Game {
   }
   // The phone keeps its own copy of the shared tank. If the server ever loses its data (a restart on a host with no permanent disk), the copy puts the tank back under the same code.
   keepCopy() {
-    if (this.mode !== 'net' || !this.state || !this.you || this._copyAt > Date.now() - 4000) return; this._copyAt = Date.now();
+    if (this.mode !== 'net' || !this.state || !this.you) return;
+    if (this._copyAt > Date.now() - 4000) { if (!this._copyT) this._copyT = setTimeout(() => { this._copyT = null; this.keepCopy(); }, 4200); return; }      // saved at most every few seconds, but the latest change is never skipped
+    this._copyAt = Date.now();
     const me = (this.members ?? []).find((x) => x.id === this.you.userId);
     try { localStorage.setItem('ourtank.cache', JSON.stringify({ v: 1, userId: this.you.userId, code: this.code, name: this.tankName, user: me ? { name: me.name, avatar: me.avatar } : null, world: this.state, savedAt: Date.now() })); } catch { /* storage full or unavailable */ }
   }
