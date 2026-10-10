@@ -117,6 +117,7 @@ export function initUI({ game, social, cb }) {
     }).join('');
   }
   function shopDetail() {
+    return '';                                   // a tap on a card acts straight away; there is no detail card any more
     const s = S(); if (!selected) return '';
     { const [k0, id0] = selected.split(':'); if (k0 === 'floor' || k0 === 'backdrop') { const label = (k0 === 'floor' ? FLOORS : BACKDROPS)[id0], own = styleOwned(s, k0, id0), price = STYLE_PRICE[k0][id0], cur = (s.style ?? {})[k0] === id0, can = !cur && (own || !price || s.shells >= price);
       return `<div class="detail"><div><h4>${esc(label)} ${k0}</h4><p>${k0 === 'floor' ? 'Changes the sand and the stones on the bottom of the tank.' : 'Changes the colours of the far water.'}</p>${!own && price && s.shells < price ? `<small class="note">${price - s.shells} more shells needed</small>` : ''}</div><button class="big gold" id="buy" ${can ? '' : 'disabled'}>${cur ? 'IN USE' : own || !price ? 'USE' : 'BUY · 🐚 ' + price}</button></div>`; } }
@@ -240,7 +241,15 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-feed]').forEach((b) => (b.onclick = () => { game.feedFood = b.dataset.feed; feedOpen = false; sfx('tap'); open('tank'); cb.act('feed'); }));
     sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'feeddrawer') { feedOpen = !feedOpen; open('care', true); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
-    sheet.querySelectorAll('.card').forEach((b) => (b.onclick = () => { selected = b.dataset.k; sfx('tap'); const y = sheet.scrollTop; open('decorate', true); sheet.scrollTop = y; }));
+    sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async () => {
+      const [kind, id] = b.dataset.k.split(':'), s = S(); sfx('tap');
+      if (kind === 'floor' || kind === 'backdrop') { const own = styleOwned(s, kind, id), price = STYLE_PRICE[kind][id]; if ((s.style ?? {})[kind] === id) { toast('Already in use'); return; } if (!own && price && s.shells < price) { toast(`${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; } const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; return; }
+      const d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return; const price = kind === 'fish' ? fishPrice(id) : d.price, free = kind === 'decor' && isFree(s, id);
+      if (s.level < d.level) { toast(`${d.label} unlocks at tank level ${d.level}`); return; }
+      if (!free && s.shells < price) { toast(`${d.label}: ${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; }
+      if (kind === 'fish') { if (s.fish.length + d.count > capacity(s.level)) { toast('No room for more fish yet. Level up to grow the tank.'); return; } cb.adopt(id); return; }
+      cb.startPlace(id);
+    }));
     const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
