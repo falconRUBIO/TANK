@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -208,16 +208,19 @@ async function giveCrab() {
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 5200, 1500);
 }
 async function givePuzzle(id) {
-  const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { ui.toast('Only a grown octopus can have a puzzle jar'); return; }
+  const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
   const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
   if (r.busy) { ui.toast(`${o.name} is still working on the jar`); return; }
   if (!r.applied) { const h = Math.max(1, Math.ceil((r.wait ?? 0) / 3600e3)); ui.toast(`${o.name} needs a rest. Try again in about ${h} hour${h > 1 ? 's' : ''}.`); return; }
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 4200, 1600);
 }
+// the octopus's own things, always shown so it is clear they exist: a puzzle jar (from when it grows up) and a crab treat (its caretaker's to give)
 function brainBlock(rec) {
   if (!isSmart(rec)) return '';
-  const n = rec.solved ?? 0, can = canPuzzle(rec);
-  return `${can ? '' : `<div class="notes">Puzzle jars come once ${esc(rec.name)} grows up.</div>`}${can ? `<button class="lnk" id="puz">${rec.puzzle ? 'Working on a jar…' : `Give a puzzle jar · ${PUZZLE_COST} 🐚`}</button>` : ''}`;
+  const can = canPuzzle(rec), nx = nextStage(rec), mine = canFeedOcto(rec, game.you?.userId, game.shared), restJar = rec.puzzleAt != null && Date.now() - rec.puzzleAt < 3 * 3600e3, restCrab = rec.crabAt != null && Date.now() - rec.crabAt < 2 * 3600e3;
+  const jar = rec.puzzle ? '<button class="act2" disabled>🧩 Working on a jar…</button>' : !can ? `<button class="act2" disabled>🧩 Puzzle jar<small>when grown up${nx ? ` · ${nx.label}` : ''}</small></button>` : restJar ? '<button class="act2" disabled>🧩 Puzzle jar<small>resting</small></button>' : `<button class="act2" id="puz">🧩 Puzzle jar<small>${PUZZLE_COST} 🐚</small></button>`;
+  const crab = !mine ? '' : !can ? `<button class="act2" disabled>🦀 Crab treat<small>when grown up</small></button>` : restCrab ? '<button class="act2" disabled>🦀 Crab treat<small>full for now</small></button>' : `<button class="act2" id="crabt">🦀 Crab treat<small>${CRAB_PRICE} 🐚</small></button>`;
+  return `<div class="acts2">${jar}${crab}</div>`;
 }
 async function trainFish(f, key, spot) {
   const r = await game.dispatch({ t: 'train', id: f.fid, trick: key }); if (!r.ok) return fail(r);
@@ -458,11 +461,11 @@ function showCard(f) {
     <h4>At a glance</h4><div class="facts">${tile('Age', `${p.age}${nx ? ` · grows up in ${nx.label}` : ''}`, true)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Favourite food', p.food)}${tile(octo ? 'Home' : 'Favourite spot', octo ? denTxt : p.spot)}${tile('Favourite thing', octo ? f.favThing : null)}${tile('Caretaker', owner)}${tile('Closest to', close)}</div>
     ${comfortBlock(rec)}
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}
-    <button class="pet" id="pet">${octo ? `Let ${esc(f.name)} follow your finger` : `Play with ${esc(f.name)}`}</button>
-    <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}`;
+    <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
+    ${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>${more}`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); giveCrab(); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -489,7 +492,7 @@ function lureTick(dt) {
   if (!rayFrom({ clientX: lure.x, clientY: lure.y }).ray.intersectPlane(lurePlane, lureAt)) return;
   if (!lure.on) { lure.on = true; lure.last = lureAt.clone(); lure.moved = 0; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
   lure.moved += lureAt.distanceTo(lure.last); lure.last.copy(lureAt);                      // how much the finger has travelled: movement re-excites a fish that has drifted off
-  for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600 };       // an octopus comes to press its arms against the glass where your finger is
+  for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) { f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600 }; if (f.glassNear > 0.7) { const k = (octoPlayed.get(f) ?? 0) + dt; octoPlayed.set(f, k); if (k > 2 && k - dt <= 2) playedWith(f); } }       // an octopus comes to press its arms against the glass where your finger is
   let n = 0;
   for (const f of fishes.list) {
     if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.species.move === 'jet') continue;
@@ -507,11 +510,17 @@ function lureTick(dt) {
       L.fidget -= dt;
       if (lure.moved > 0.9) { lure.moved = 0; L.ang += (Math.random() - 0.5) * 1.2; spot(); f.retarget = 2; f.dartT = 0.35; }
       else if (L.fidget <= 0) { L.fidget = 0.7 + Math.random() * 0.9; const nip = Math.random() < (playful ? 0.4 : 0.18); if (nip) { f.target.set(lureAt.x + (Math.random() - 0.5) * 0.3, lureAt.y + (Math.random() - 0.5) * 0.3, 2.6); f.dartT = 0.3; } else spot((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.4); f.retarget = 2; }
+      if (!L.played && L.t > 2.4) { L.played = true; playedWith(f); }
       if (L.t > L.hold) { L.s = 'idle'; L.t = 0; L.cool = performance.now() + (3000 + Math.random() * 5000) / (curious ? 2 : 1); f.lureCalm = 0; f.retarget = 0; }      // loses interest, wanders off, may come back later
     }
   }
 }
-function lureRelease() { for (const f of fishes.list) { const L = lureFx.get(f); if (L && L.s !== 'idle') { L.s = 'idle'; L.t = 0; L.cool = performance.now() + 1500; f.lureCalm = 0; f.retarget = 0.4 + Math.random(); } } }
+async function playedWith(f) {
+  if (!f || f.dead || f.visitor) return; const r = await game.dispatch({ t: 'pet', id: f.fid }).catch(() => null); if (!r?.ok || !r.applied) return;
+  fishes.burst(f.pos); sfx('arrive'); haptic(8); f.vigor = Math.max(f.vigor, 1.1); if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
+}
+const octoPlayed = new WeakMap();
+function lureRelease() { for (const f of fishes.list) { octoPlayed.delete(f); const L = lureFx.get(f); if (L) L.played = false; if (L && L.s !== 'idle') { L.s = 'idle'; L.t = 0; L.cool = performance.now() + 1500; f.lureCalm = 0; f.retarget = 0.4 + Math.random(); } } }
 let dragging = false;
 function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
 canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
