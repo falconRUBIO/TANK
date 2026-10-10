@@ -418,6 +418,10 @@ await t('offsite copies: the request signature matches Amazon\'s published examp
   const live = pth.join(dir, 'live.db'); S.db.exec(`VACUUM INTO '${live}'`); const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.equal(await up.run(), false, 'unchanged, not sent again');
   assert.equal(await restoreIfEmpty(off, file, () => {}), true); assert.equal(isEmptyDb(file), false); assert.equal(await restoreIfEmpty(off, file, () => {}), false, 'a database with players is never overwritten');
 });
+await t('the storage check says whether the tank is safe from the server losing its disk', async () => {
+  const u = await mkUser('Stor'); const r = await call('/api/storage', null, u.token); assert.equal(r.status, 200); assert.ok(['safe', 'waiting', 'risk'].includes(r.body.level));
+  assert.equal((await call('/api/storage')).status, 401);
+});
 await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
   const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;
   const x = await mkUser('Own2'), y = await mkUser('Fri'), want = 'HEA2ED';

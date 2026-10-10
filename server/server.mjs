@@ -102,6 +102,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       }
       const user = authed(req);
       if (!user) throw new L.GameError('UNAUTHORIZED', 'Sign in required.', 401);
+      if (req.method === 'GET' && p === '/api/storage') {
+        // is this tank safe from the server losing its disk? an offsite copy that has been sent, or a disk that is kept, means yes
+        const o = offsiteInfo(), disk = dbPath !== ':memory:' && (dbPath.startsWith('/data/') || (!process.env.RENDER && !process.env.FLY_APP_NAME));
+        const level = o?.on && o.at && !o.err ? 'safe' : o?.on ? 'waiting' : disk ? 'safe' : 'risk';
+        return json(res, 200, { level, offsite: !!o?.on, disk, lastCopy: o?.at || null, error: o?.err || null });
+      }
       if (req.method === 'GET' && p === '/api/me') { const t = L.tankOf(db, user.id); return json(res, 200, { user, tank: t ? { id: t.id, name: t.name, code: t.code, slot: t.slot } : null }); }
       if (req.method === 'POST' && p === '/api/profile') {
         if (!lim.hit('p:' + user.id, 20, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
