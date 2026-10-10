@@ -95,14 +95,13 @@ function myOctos() { const s = game.state, me = game.you?.userId; return s.fish.
 function foodsFor() { const s = game.state, octo = myOctos().length > 0, fish = hasFishOnly(s) || !hasOcto(s); return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : fish)); }
 function defaultFood() { const ks = foodsFor().map(([k]) => k); if (!ks.includes(game.feedFood ?? 'flakes')) game.feedFood = ks[0] ?? 'flakes'; return game.feedFood ?? 'flakes'; }
 const dropWord = (k) => (k === 'crab' ? `a crab for ${myOctos()[0]?.name ?? 'the octopus'}` : FOODS[k].label.toLowerCase());
+// the food was chosen in the Care drawer; while feeding, a small strip at the top says what a tap does, and the tank below is left clear
 function renderFoodbar() {
-  const bar = $('foodbar'), shells = game.state.shells, cur = defaultFood();
-  bar.innerHTML = foodsFor().map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''}" ${shells < d.price ? 'disabled' : ''}><span>${d.label}</span><small>${d.price ? d.price + ' 🐚' : 'free'}</small></button>`).join('') + '<button data-done class="done">Done</button>';
-  bar.classList.add('on');
-  bar.querySelectorAll('[data-food]').forEach((b) => { b.onclick = () => { game.feedFood = b.dataset.food; sfx('tap'); renderFoodbar(); ui.toast(`Tap the water to drop ${dropWord(b.dataset.food)}`, 2400); }; });
-  bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
+  const bar = $('foodbar'), k = defaultFood();
+  bar.innerHTML = `<span>${k === 'crab' ? '🦀' : '🫧'} Tap the water to drop ${esc(dropWord(k))}</span><button data-done class="done">Done</button>`;
+  bar.classList.add('on'); bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
 }
-function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => f.species === 'octopus' && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); ui.toast(`Tap the water to drop ${dropWord(defaultFood())}`, 3500); }
+function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => f.species === 'octopus' && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : null;

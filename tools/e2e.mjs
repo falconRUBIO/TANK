@@ -30,7 +30,7 @@ await first(B, 'Biscuit'); await first(C, 'Nori'); await A.waitForTimeout(1000);
 const own = await A.evaluate(() => window.__game.state.fish.map((f) => [f.name, f.ownerName]));
 step('first fish with owners: ' + JSON.stringify(own)); if (!(own.length === 3 && own.some((x) => x[0] === 'Biscuit' && x[1] === 'Sam') && own.some((x) => x[0] === 'Nori' && x[1] === 'Riley'))) { console.log('FAIL: first fish ownership'); process.exitCode = 1; }
 // shared live state
-await A.click('[data-tab=care]'); await A.click('[data-act=feed]'); await A.mouse.click(200, 300); await B.waitForTimeout(1500);
+await A.click('[data-tab=care]'); await A.click('[data-act=feeddrawer]'); await A.click('[data-feed]'); await A.mouse.click(200, 300); await B.waitForTimeout(1500);
 step('B saw toast: ' + JSON.stringify(await B.textContent('#toast')));
 step(`shells A / B / C: ${await A.textContent('#shells')} / ${await B.textContent('#shells')} / ${await C.textContent('#shells')}`);
 await B.click('[data-tab=friends]'); await B.fill('.send input', 'hi from Sam'); await B.press('.send input', 'Enter'); await A.waitForTimeout(1000);

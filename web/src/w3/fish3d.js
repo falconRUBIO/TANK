@@ -152,17 +152,20 @@ export class Fish3D {
       const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0 };
     }
     if (h.y > 0.25) { G.t = 0; G.w = 0; return; }                                                            // wait for the crab to land
+    if (G.t < 1.0 && !h.pinned && Math.hypot(h.x - this.pos.x, h.z - this.pos.z) > 1.7) { this.rs.grab = null; this.gr = null; G.w = 0; S.s = 'crawl'; S.t = 6; this.flush = Math.max(this.flush, 0.4); return; }      // the crab bolted before the arm closed: after it again
     G.t += dt; const t = G.t, e = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
-    let T; if (t < 1.1) { const q = e(t / 1.1); T = [G.p0[0] + (C[0] - G.p0[0]) * q, G.p0[1] + (C[1] - G.p0[1]) * q + Math.sin(q * Math.PI) * 3, G.p0[2] + (C[2] - G.p0[2]) * q]; }
-    else if (t < 1.5) T = C; else if (t < 2.8) { const q = e((t - 1.5) / 1.3); T = [C[0] + (M[0] - C[0]) * q, C[1] + (M[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (M[2] - C[2]) * q]; } else T = M;
-    G.w = Math.min(1, t / 0.3) * (t > 3.3 ? Math.max(0, 1 - (t - 3.3) / 0.35) : 1);
+    let T; if (t < 1.0) { const q = e(t / 1.0); T = [G.p0[0] + (C[0] - G.p0[0]) * q, G.p0[1] + (C[1] - G.p0[1]) * q + Math.sin(q * Math.PI) * 3, G.p0[2] + (C[2] - G.p0[2]) * q]; }
+    else if (t < 1.8) { T = [C[0] + Math.sin(t * 31) * 0.9, C[1] + Math.abs(Math.sin(t * 27)) * 0.6, C[2] + Math.cos(t * 29) * 0.9]; this.sq = Math.max(this.sq, 0.22 * Math.abs(Math.sin(t * 24))); this.flush = Math.max(this.flush, 0.6); }      // pinned: the crab kicks, the arm holds, the mantle pumps
+    else if (t < 3.1) { const q = e((t - 1.8) / 1.3); T = [C[0] + (M[0] - C[0]) * q, C[1] + (M[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (M[2] - C[2]) * q]; } else T = M;
+    G.w = Math.min(1, t / 0.3) * (t > 3.5 ? Math.max(0, 1 - (t - 3.5) / 0.35) : 1);
+    h.pinned = t >= 1.0;
     const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp); G.p[0] += (T[0] - tip[0]) * Math.min(1, dt * 6); G.p[1] += (T[1] - tip[1]) * Math.min(1, dt * 6); G.p[2] += (T[2] - tip[2]) * Math.min(1, dt * 6);
-    if (t > 1.3 && h.mesh) {                                                                                 // the crab is in the arm's grip
-      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch); h.mesh.rotation.z = Math.min(0.7, (t - 1.3) * 0.6);
-      if (t > 2.8) h.mesh.scale.setScalar(Math.max(0.01, 1.7 * (1 - (t - 2.8) / 0.5)));
+    if (t > 1.8 && h.mesh) {                                                                                 // lifted: the crab is in the arm's grip, carried to the mouth
+      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch); h.mesh.rotation.z = Math.min(0.7, (t - 1.8) * 0.6);
+      if (t > 3.1) h.mesh.scale.setScalar(Math.max(0.01, 1.7 * (1 - (t - 3.1) / 0.5)));
     }
-    this.chewK = t > 2.9 && t < 4.4 ? Math.min(1, (t - 2.9) / 0.2) * Math.min(1, (4.4 - t) / 0.3) : 0;      // a brief chew once the crab is at the mouth
-    if (t >= 4.5) { S.t = 0; }
+    this.chewK = t > 3.2 && t < 4.6 ? Math.min(1, (t - 3.2) / 0.2) * Math.min(1, (4.6 - t) / 0.3) : 0;      // a brief chew once the crab is at the mouth
+    if (t >= 4.8) { S.t = 0; }
   }
   // holding something: a shell carried home in the front arms, or one arm gripping the jar's lid and twisting it while the others steady the glass
   updateHold(dt, S, kind) {
@@ -332,15 +335,16 @@ export class Fish3D {
     } else if (S.s === 'crawl') {
       if (this.fears?.length && !S.fearChecked) { S.fearChecked = true; const nowt = performance.now(); this.fears = this.fears.filter((q) => nowt - q.t < 3e5); this.fearNear = false; for (const q of this.fears) if (Math.hypot(this.target.x - q.x, this.target.z - q.z) < 1.8 && S.mode !== 'den' && !(S.mode ?? '').startsWith('t')) { this.fearNear = true; const ax = this.target.x - q.x || 1, b = this.band; this.target.x = Math.max(b.x[0], Math.min(b.x[1], q.x + Math.sign(ax) * 2.4)); } }
       this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);
-      const to = this.target.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1; to.multiplyScalar((0.5 * this.speed * mul) / d); this.vel.lerp(to, Math.min(1, dt * 1.6));
-      if (S.t <= 0 || d < 0.35 || ((S.mode === 'den' || S.mode === 'tsettle') && this.den?.home && d < 0.9)) { S.fearChecked = false;
+      const to = this.target.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1; to.multiplyScalar((0.5 * this.speed * mul * (S.mode === 'hunt' ? (this.hunt?.run?.burst > 0 ? 2.1 : 1.5) : 1)) / d); this.vel.lerp(to, Math.min(1, dt * (S.mode === 'hunt' ? 2.6 : 1.6)));      // after a running crab it goes flat out
+      if (S.mode === 'hunt' && this.hunt) { const h = this.hunt; this.target.set(h.x - 0.4, floor, h.z - 1.0); if (h.run?.burst > 0) S.t = Math.max(S.t, 5); }      // the crab is moving: keep aiming behind it, and do not give up while it runs
+      if (S.t <= 0 || d < 0.35 || (S.mode === 'hunt' && d < 1.5) || ((S.mode === 'den' || S.mode === 'tsettle') && this.den?.home && d < 0.9)) { S.fearChecked = false;
         if (S.mode === 'den') { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 12; }
         else if (S.mode === 'tgo') { if (this.onTask?.(this, 'grab')) { const T = this.task; S.mode = 'thaul'; S.t = 25 + 16 * Math.hypot(T.gx - T.ax, T.gz - T.az); this.target.set(T.gx - T.ux * T.hold, floor, T.gz - T.uz * T.hold); } else { S.mode = null; S.s = 'rest'; S.t = 6; } }
         else if (S.mode === 'thaul') { const T = this.task, kind = T?.kind; if (this.onTask?.(this, 'drop') && kind === 'home') { S.mode = 'tsettle'; S.t = 14; this.target.set(T.gx, floor, T.gz + (T.type === 'pot' ? 0.5 : 0.45)); } else { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 8; this.flush = 0.5; } }
         else if (S.mode === 'tsettle') { this.onTask?.(this, 'home'); S.mode = null; S.s = 'rest'; S.t = 14 + rng() * 10; }
         else if (S.mode === 'carry1') { S.mode = 'carry2'; if (this.carryMesh) this.carryMesh.visible = true; S.t = 14; this.target.set(this.den.x + (rng() - 0.5) * 0.7, floor, this.den.z + 0.95); }
         else if (S.mode === 'carry2') { S.mode = null; if (this.carryMesh) this.carryMesh.visible = false; this.onDrop?.(this.pos); S.s = 'rest'; S.t = 6 + rng() * 8; }
-        else if (S.mode && d < 1.3) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1e9 : 1e9; if (S.mode === 'inspect') { this.inspectBlend = rng() < 0.45; const id = this.inspect?.id; if (id) { (this.likes ||= {})[id] = (this.likes[id] ?? 0) + 1; this.favDirty = true; } } }
+        else if (S.mode && d < (S.mode === 'hunt' ? 1.6 : 1.3)) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1e9 : 1e9; if (S.mode === 'inspect') { this.inspectBlend = rng() < 0.45; const id = this.inspect?.id; if (id) { (this.likes ||= {})[id] = (this.likes[id] ?? 0) + 1; this.favDirty = true; } } }
         else { if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 4 + rng() * 8; }
       }
     } else if (S.s === 'dash') {                                                // a sudden dash across the floor, rising on the two back arms with the rest streaming behind
