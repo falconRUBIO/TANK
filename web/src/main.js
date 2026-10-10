@@ -512,7 +512,13 @@ document.addEventListener('visibilitychange', () => game.track(document.hidden ?
 // ── frame loop ──
 let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = performance.now(), first = true;
 const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:60;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
+// One bad frame must never stop the game: the loop is always scheduled again, whatever happened inside it.
+let frameErrors = 0;
 function frame(now) {
+  let later = false; try { later = frameBody(now); } catch (e) { if (frameErrors++ < 5) console.error('frame error', e); }
+  if (later) setTimeout(() => requestAnimationFrame(frame), 120); else requestAnimationFrame(frame);
+}
+function frameBody(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
@@ -540,10 +546,11 @@ function frame(now) {
   stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED; sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality}\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
-  if (LITE) { $('loading').classList.add('off'); setTimeout(() => requestAnimationFrame(frame), 120); return; }
-  if (wc.active) wc.frame(dt * (window.__wcScale ?? 1)); stg.renderer.info.reset(); composer.render();
+  if (LITE) { $('loading').classList.add('off'); return true; }
+  if (wc.active) { try { wc.frame(dt * (window.__wcScale ?? 1)); } catch (e) { console.error('water change error', e); wc.finish(); } }
+  stg.renderer.info.reset(); composer.render();
   if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }
-  requestAnimationFrame(frame);
+  return false;
 }
 
 // ── coming back: show up to three things that really happened while you were away ──
