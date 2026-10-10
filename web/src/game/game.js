@@ -50,7 +50,7 @@ export class Game {
     this.tick = setInterval(() => {
       this.emit('tick'); const s = this.state; if (!s || document.hidden) return;
       const due = Math.min(...(s.orders ?? []).map((o) => o.arrivesAt), ...(s.eggs ?? []).map((e) => e.hatchAt), Infinity);
-      if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 3) resync();      // a phone clock far ahead of the server must not reconnect forever
+      if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 40) resync();      // keeps asking while something is overdue (about every 8 seconds), but a phone clock far ahead of the server cannot reconnect forever
     }, 1000);
     document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
   }

@@ -384,6 +384,13 @@ ok('a find announces itself once with its culprit, so a push can say who brought
   assert.ok(f && f.found === t.drift.id && /Tap it/.test(f.toast) && !/wash|tide/i.test(f.toast), JSON.stringify(f));
   assert.equal(R.advance(t, 31 * 60e3).filter((e) => e.found).length, 0);
 });
+ok('a fish order still arrives when something unrelated in the tank is broken', () => {
+  const now = Date.now(), t = R.newWorld(now, 3); t.flags.tut = 5; t.level = 8; t.shells = 500;
+  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'neon', name: 'Zed' }, { now, uid: 'zach', name: 'Zach' }).ok, true);
+  t.fish.push({ id: 'broken', name: 'Odd', species: 'a-species-that-no-longer-exists', born: now - 9e8, stage: 'baby', traits: null }); t.drift = { id: 'g1', kind: 'shells', amount: 1, by: { k: 'fish', n: null } };
+  const before = t.fish.length; const origErr = console.error; console.error = () => {}; try { R.advance(t, now + 3 * 3600e3); } finally { console.error = origErr; }
+  assert.ok(t.fish.length > before, 'the ordered fish arrived'); assert.equal(t.orders.length, 0);
+});
 ok('the daily gift: once per caretaker per day, no streak, no double claim by changing the clock, shared wallet', () => {
   const t = R.newWorld(0); R.advance(t, 60e3); R.applyAction(t, { t: 'tut', step: 5 }, { now: 120e3 });
   const day = 864e5, at = (d, h = 10) => d * day + h * 3600e3;

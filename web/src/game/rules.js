@@ -579,6 +579,10 @@ export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
 }
 
 // Time passing. Bounded, so a long absence never punishes: hunger tops out at 85%, water bottoms at 45%.
+// Every step of time passing runs on its own: if one of them ever hits something unexpected in a tank's data, the others still happen. A fish order must never wait forever because of an unrelated problem.
+const guard = (name, fn) => { try { fn(); } catch (e) { if (!guard.seen.has(name)) { guard.seen.add(name); console.error('time step failed:', name, e); } } };
+guard.seen = new Set();
+export const timeStepErrors = () => [...guard.seen];      // shown on the developer page so a stuck tank is easy to spot
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   if (dt >= 1) {
@@ -586,26 +590,27 @@ function _advance(t, now = Date.now()) {
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
-    tendFish(t, dt, now, ev, h0, w0); t.simTs = now;
+    guard('tend', () => tendFish(t, dt, now, ev, h0, w0)); t.simTs = now;
   }
-  for (const f of t.fish) {                                          // growth milestones
-    const s = stageOf(f, now);
-    if (s !== f.stage) {
-      f.stage = s;
-      const helpers = Object.values(t.care ?? {}).filter((c) => now - c.ts < 24 * HOUR).map((c) => c.name), crew = helpers.length ? { activity: { type: 'grow', text: `${helpers.join(' and ')} helped ${f.name} grow up.`, noUser: true } } : {};
-      if (s === 'juvenile') { t.shells += 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
-      if (s === 'adult') { t.shells += 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+  guard('growth', () => {
+    for (const f of t.fish) {                                          // growth milestones
+      const s = stageOf(f, now);
+      if (s !== f.stage) {
+        f.stage = s;
+        const helpers = Object.values(t.care ?? {}).filter((c) => now - c.ts < 24 * HOUR).map((c) => c.name), crew = helpers.length ? { activity: { type: 'grow', text: `${helpers.join(' and ')} helped ${f.name} grow up.`, noUser: true } } : {};
+        if (s === 'juvenile') { t.shells += 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+        if (s === 'adult') { t.shells += 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+      }
     }
-  }
-  ageMilestones(t, now, ev);
-  deliver(t, now, ev);
-  if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); }
-  puzzles(t, now, ev); visitors(t, now, ev); eggs(t, now, ev); rollWant(t, now, ev); rollDaily(t, now); themeCheck(t, now, ev);
-  const weeks = Math.floor((now - t.createdAt) / (7 * DAY));                // a birthday every week of the tank's life; missing a week costs nothing
-  if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); }
-  if (dt >= 1) discover(t, now, ev);
-  checkWant(t, now, ev);
-  levelCheck(t, now, ev);
+  });
+  guard('deliver', () => deliver(t, now, ev));
+  guard('age', () => ageMilestones(t, now, ev));
+  guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
+  guard('puzzles', () => puzzles(t, now, ev)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
+  if (dt >= 1) guard('discover', () => discover(t, now, ev));
+  guard('wish', () => checkWant(t, now, ev));
+  guard('level', () => levelCheck(t, now, ev));
   return ev;
 }
 // A fish earns these by growing up here: age counts from its arrival, and a run-down fish stops ageing (growth pauses), so only well-kept days count.
