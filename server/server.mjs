@@ -127,7 +127,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const b = await readBody(req);
         if (p.endsWith('preview')) return json(res, 200, L.previewJoin(db, b.code));
         const r = L.joinTank(db, user, b.code); if (!r.already) an.record(user.id, r.id, 'friend_joined');
-        if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); }
+        if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); const here = online(r.id); for (const m of snap) if (m.id !== user.id && !here.includes(m.id)) push.notify(m.id, `${user.name} joined your tank`, { cap: 2 }).catch(() => {}); }
         return json(res, 200, r);
       }
       if (req.method === 'POST' && p === '/api/push/test') {
@@ -219,12 +219,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
           if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
           if (!lim.hit(`n:${ws.userId}:${to}`, 1, 2 * 3600e3)) return send(ws, { t: 'nudged', ok: false, reason: 'TOO_SOON' });
-          const { w } = L.loadWorld(db, mine.id); const why = w.hunger > 0.5 ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null;
+          const { w } = L.loadWorld(db, mine.id); const theirOcto = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === to && (f.hunger ?? 0) > 0.5); const why = theirOcto ? 'octo' : (w.hunger > 0.5 && w.fish.some((f) => f.species !== 'octopus')) ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null; const octoName = theirOcto?.name;
           if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
           const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
-          for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why });
+          for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why, name: octoName });
           an.record(ws.userId, mine.id, 'nudge_sent');
-          if (!there.length) push.notify(to, `${ws.user.name} says ${({ feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`, { cap: 2 }).catch(() => {});
+          if (!there.length) push.notify(to, `${ws.user.name} says ${({ octo: `${octoName} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why]}`, { cap: 2 }).catch(() => {});
           return send(ws, { t: 'nudged', ok: true });
         }
         if (m.t === 'thank') {
@@ -280,9 +280,17 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     for (const { id } of tanks) {
       if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
       try {
-        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew) ?? r.events.find((e) => e.found);
-        if (!hit) continue;
-        for (const m of L.listMembers(db, id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now });
+        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.died) ?? r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew) ?? r.events.find((e) => e.found);
+        const members = L.listMembers(db, id);
+        if (hit) { for (const m of members) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now }); continue; }
+        // nothing happened, but something is overdue: each caretaker hears about their own octopus, everyone about the fish and the water (each at most once in 12 hours)
+        const w = r.world ?? L.loadWorld(db, id).w, recent = (k) => { const at = +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0); if (now - at < 12 * 3600e3) return true; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now)); return false; };
+        for (const m of members) {
+          const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
+          if (oc) { if (!recent(`push:octo:${oc.id}`)) await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now }); continue; }
+          const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45;
+          if ((fishHungry || foul) && !recent(`push:care:${id}:${m.id}`)) await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now });
+        }
       } catch (e) { console.error('push sweep failed', e); }
     }
   };

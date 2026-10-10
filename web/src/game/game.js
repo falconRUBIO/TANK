@@ -88,7 +88,7 @@ export class Game {
     else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }
     else if (m.t === 'members') { this.members = m.members; this.emit('members'); }
     else if (m.t === 'chat') { this.messages.push(m.msg); this.emit('chat', m.msg); }
-    else if (m.t === 'nudge') this.emit('nudged', m.from, m.why);
+    else if (m.t === 'nudge') this.emit('nudged', m.from, m.why, m.name);
     else if (m.t === 'thanks') this.emit('thanks', m.text);
     else if (m.t === 'thanked') { const w = this.thankWait?.get(m.ref); this.thankWait?.delete(m.ref); if (m.ok) this.thanked?.add(m.ref); w?.(m); }
     else if (m.t === 'nudged') { const w = this.nudgeWait; this.nudgeWait = null; w?.(m); }

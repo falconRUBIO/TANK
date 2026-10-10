@@ -255,6 +255,17 @@ await t('static files are compressed, cached by ETag and the database backs itse
   const home = await fetch(base + '/', { headers: { 'accept-encoding': 'gzip' } }); assert.equal(home.headers.get('content-encoding'), 'gzip');
   assert.doesNotThrow(() => S.backup());
 });
+await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
+  const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/octo1', keys: { p256dh: 'k1', auth: 'k2' } }; assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
+  pushed.length = 0; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200); await new Promise((r) => setTimeout(r, 50));
+  assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /Pal joined your tank/);
+  const ws = await open(x.token); assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'ph-1' })).ok, true); ws.close(); await new Promise((r) => setTimeout(r, 100));
+  const w = getW(tk.id); w.fish[0].hunger = 0.8; setW(tk.id, { fish: w.fish, simTs: Date.now() - 1000, flags: { ...w.flags, tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the owner is told: ' + JSON.stringify(pushed.map((q) => q.payload.body))); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
+  S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'not again within 12 hours even with the daily cap cleared');
+});
 await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the one-a-day cap are respected', async () => {
   const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
   const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;
