@@ -325,7 +325,7 @@ async function takePhoto() {
   const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
   // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
-  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = Math.max(0, Math.round(SH * 0.17)), IH2 = Math.round(IW2 * crop / SW), FOOT = 330, PH = M + IH2 + FOOT;
+  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 290, PH = M + IH2 + FOOT;
   const shot = document.createElement('canvas'); shot.width = SW; shot.height = SH; shot.getContext('2d').drawImage(canvas, 0, 0, SW, SH);
   hidden.forEach((e, i) => (e.style.visibility = prev[i]));
   const out = document.createElement('canvas'); out.width = PW; out.height = PH; const g = out.getContext('2d'); g.textBaseline = 'alphabetic';
