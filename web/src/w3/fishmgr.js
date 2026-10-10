@@ -336,7 +336,7 @@ export class Fishes {
     else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
     const key = f.den ? `${f.den.id}|${f.den.kind}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
-    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onPush = (p, d) => this.puff(p, d); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
+    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
   }
   looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it
@@ -352,6 +352,13 @@ export class Fishes {
     x = Math.max(-3.6, Math.min(3.6, x)); z = Math.max(0.3, Math.min(2.4, z));
     const m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); if (!f.hunt) f.hunt = hnt; else (f.hunts ||= []).push(hnt); this.burst(new THREE.Vector3(x, 14, z));
+  }
+  // a jet of ink squirted at a crab: puffs leave the siphon one after another, shoot toward it, slow down and bloom into a cloud around it
+  inkJet(a, b) {
+    const d = new THREE.Vector3().subVectors(b, a), L = d.length() || 1; d.divideScalar(L);
+    for (let i = 0; i < 14; i++) { const r = 0.08 + i * 0.012 + this.rng() * 0.04, m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), new THREE.MeshBasicMaterial({ color: 0x150f22, transparent: true, opacity: 0, depthWrite: false }));
+      m.position.copy(a); this.scene.add(m); this.onSprite?.(m); const sp = L * (3.7 + this.rng() * 0.5), j = () => (this.rng() - 0.5) * 0.5;
+      (this.inks ||= []).push({ m, age: -i * 0.035, vx: d.x * sp + j(), vy: d.y * sp + j() * 0.6 + 0.15, vz: d.z * sp + j(), drag: 3.4, life: 2.8 + this.rng() * 0.8, grow: 1.6, op: i < 5 ? 0.5 : 0.32 }); }      // a dense head to the jet, then a thin smoky haze that clears in a few seconds
   }
   // a cloud of ink: dark puffs that swell and thin out over a few seconds
   ink(p) {
@@ -427,17 +434,18 @@ export class Fishes {
   }
   update(dt, t) {
     this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt); this.haulTick(dt, t);
-    for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; const q = k.age / 4; k.m.scale.setScalar(1 + q * 3.2); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = 0.55 * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
-    if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < 4) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
+    for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
+    if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < (k.life ?? 4)) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     if (this.crabs?.length) { const old = this.crabs.filter((c) => !c.held && (c.age = (c.age ?? 0) + dt) > 150); for (const c of old) { for (const f of this.list) { if (f.hunt === c) f.hunt = null; if (f.hunts) f.hunts = f.hunts.filter((h) => h !== c); } this.eatCrab(c); } }
     // a crab on the sand is not easy prey: when the octopus closes in it scuttles off in a burst (away, and a little sideways), twice at most, then it tires and the octopus has it
     for (const c of this.crabs ?? []) {
       const R = (c.run ||= { dodges: 0, burst: 0, vx: 0, vz: 0, down: 0, face: this.rng() * 6.28 }), hunter = this.list.find((o) => o.hunt === c);
       c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue;
+      if (c.dazed > performance.now() && !c.pinned) { c.mesh.rotation.z = Math.sin(t * 7) * 0.1; c.mesh.rotation.y += dt * 0.6; } else if (!c.held && c.mesh.rotation.z && Math.abs(c.mesh.rotation.z) < 0.2) c.mesh.rotation.z *= 0.9;      // dazed in the ink: it reels on the spot
       if (c.net && performance.now() - c.net.at < 1200) { const k = Math.min(1, dt * 9), N = c.net; c.x += (N.x - c.x) * k; c.y += (N.y - c.y) * k; c.z += (N.z - c.z) * k; c.mesh.position.set(c.x, c.y, c.z); let dr = N.ry - c.mesh.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y += dr * k; continue; }
       if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
       R.down += dt; R.burst -= dt;
-      if (hunter && !c.pinned && R.burst <= -0.5 && R.dodges < 2 && R.down < 9) { const dx = c.x - hunter.pos.x, dz = c.z - hunter.pos.z, d = Math.hypot(dx, dz); if (d < 2.1) { const a = Math.atan2(dz, dx) + (this.rng() < 0.5 ? 1 : -1) * (0.6 + this.rng() * 0.6), sp = 1.5; R.vx = Math.cos(a) * sp; R.vz = Math.sin(a) * sp * 0.55; R.burst = 0.75; R.dodges++; R.face = a; } }
+      if (hunter && !c.pinned && !(c.dazed > performance.now()) && R.burst <= -0.5 && R.dodges < 2 && R.down < 9) { const dx = c.x - hunter.pos.x, dz = c.z - hunter.pos.z, d = Math.hypot(dx, dz); if (d < 2.1) { const a = Math.atan2(dz, dx) + (this.rng() < 0.5 ? 1 : -1) * (0.6 + this.rng() * 0.6), sp = 1.5; R.vx = Math.cos(a) * sp; R.vz = Math.sin(a) * sp * 0.55; R.burst = 0.75; R.dodges++; R.face = a; } }
       if (R.burst > 0 && !c.pinned) { c.x = Math.max(-3.6, Math.min(3.6, c.x + R.vx * dt)); c.z = Math.max(0.3, Math.min(2.4, c.z + R.vz * dt)); }
       let ry = c.mesh.rotation.y, dr = R.face - ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y = ry + dr * Math.min(1, dt * 8);
       c.mesh.position.set(c.x + (c.pinned ? Math.sin(t * 30) * 0.03 : R.burst > 0 ? 0 : Math.sin(t * 4 + c.z) * 0.04), c.y, c.z);
