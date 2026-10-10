@@ -346,6 +346,8 @@ export class Fishes {
     for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 + this.rng() * 0.2, 1), new THREE.MeshBasicMaterial({ color: 0x1a1428, transparent: true, opacity: 0.55, depthWrite: false })); m.position.set(p.x + (this.rng() - 0.5) * 0.8, p.y + (this.rng() - 0.3) * 0.6, p.z + (this.rng() - 0.5) * 0.6); this.scene.add(m); this.onSprite?.(m); (this.inks ||= []).push({ m, age: -i * 0.06, vx: (this.rng() - 0.5) * 0.5, vy: 0.1 + this.rng() * 0.25 }); }
   }
   puff(p, d) { const q = new THREE.Vector3(p.x - d.x * 0.6, p.y - d.y * 0.6 + 0.1, p.z - d.z * 0.6); for (let i = 0; i < 6 && this.bursts.length < 150; i++) this.bursts.push({ pos: q.clone().add(new THREE.Vector3((this.rng() - 0.5) * 0.5, (this.rng() - 0.5) * 0.4, (this.rng() - 0.5) * 0.5)), v: 0.5 + this.rng() * 0.9, age: 0, r: 0.04 + this.rng() * 0.05 }); }
+  // a crab already on the sand (it climbed out of a jar), for the octopus to catch
+  crabOut(x, z) { const m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, 0.13, z); m.rotation.y = this.rng() * 6; this.scene.add(m); const hnt = { x, z, mesh: m, y: 0.13 }; (this.crabs ||= []).push(hnt); return hnt; }
   eatCrab(hnt) { this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); }
   // puzzle jars: one appears on the sand for each octopus that has been given one, and opens when it is solved
   syncJars(state) {
@@ -357,7 +359,7 @@ export class Fishes {
         if (f) f.jarAt = this.jars.get(d.id).pos;
       } else {
         if (f) f.jarAt = null;
-        if (jar && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; this.burst(new THREE.Vector3(jar.pos.x, 1.2, jar.pos.z)); }
+        if (jar && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; this.burst(new THREE.Vector3(jar.pos.x, 1.2, jar.pos.z)); if (f && !f.dead && !f.hunt) f.hunt = this.crabOut(jar.pos.x + 0.65, jar.pos.z + 0.25); }      // the crab scuttles out of the open jar, and the octopus catches it: that was the point
       }
     }
     for (const [id, jar] of [...this.jars]) if (!state.fish.some((d) => d.id === id) && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; }

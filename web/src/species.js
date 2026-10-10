@@ -600,16 +600,17 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest;
   { const root = (a.root ||= [OCT.ax + c * (OCT.ax + 1.5), OCT.ay + 1.2, s * (OCT.ax + 1.5)]), w = Math.min(1, t / 0.2), e = w * w * (3 - 2 * w); o[0] = root[0] + (o[0] - root[0]) * e; o[1] = root[1] + (o[1] - root[1]) * e; o[2] = root[2] + (o[2] - root[2]) * e; }
   if (wrapW > 0) { o[0] += (wx - o[0]) * wrapW; o[1] += (wy - o[1]) * wrapW; o[2] += (wz - o[2]) * wrapW; }
+  const curTip = () => { if (a.ck !== S.ph || a.ckr !== rest) { a.ck = S.ph; a.ckr = rest; const g = S.grab, m = S.minds; S.grab = null; S.minds = null; a.cur = octoPose(a, 1, S, [0, 0, 0]); S.grab = g; S.minds = m; } return a.cur; };
   const mind = S.minds?.[a.i];
   if (mind && mind.k > 0.01) {                                                                 // this arm is exploring on its own: its tip goes where it is curious about, the rest of the arm follows
-    const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), dx = mind.x - tip[0], dy = mind.y - tip[1], dz = mind.z - tip[2], L = Math.hypot(dx, dy, dz) || 1, cap = Math.min(1, 24 / L), q = Math.max(0, (t - 0.2) / 0.8), w = mind.k * q * q * (3 - 2 * q);
+    const tip = curTip(), dx = mind.x - tip[0], dy = mind.y - tip[1], dz = mind.z - tip[2], L = Math.hypot(dx, dy, dz) || 1, cap = Math.min(1, 24 / L), q = Math.max(0, (t - 0.2) / 0.8), w = mind.k * q * q * (3 - 2 * q);
     o[0] += dx * cap * w; o[1] += dy * cap * w + Math.sin(Math.PI * t) * 3.4 * mind.k * (1 - rest * 0.3) * (1 - (S.glass ?? 0)); o[2] += dz * cap * w;
   }
   if (t > 0.22 && o[1] > -5.2) { const hx = o[0] - 3, hr = Math.hypot(hx, o[2]); if (hr < 6.4) { const k = 6.4 / Math.max(hr, 0.01); o[0] = 3 + hx * k; o[2] *= k; } }          // an arm never passes through the body
   const G = S.grab;                                                                            // catching something: the nearest arm reaches it, its neighbours cup in beside it
   if (G && G.w > 0.01) {
     let T = null, wt = 0; if (a.i === G.arm) { T = G.p; wt = 1; } else if (a.i === G.n1 || a.i === G.n2) { T = [G.p[0] - 0.6, G.p[1] + 0.4, G.p[2] + (a.i === G.n1 ? 2.6 : -2.6)]; wt = 0.55; }
-    if (T) { const tip = (a.tip ||= octoPose(a, 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0])), q = Math.max(0, (t - 0.12) / 0.88), w = G.w * wt * q * q * (3 - 2 * q); o[0] += (T[0] - tip[0]) * w; o[1] += (T[1] - tip[1]) * w; o[2] += (T[2] - tip[2]) * w; }
+    if (T) { const tip = curTip(), q = Math.max(0, (t - 0.12) / 0.88), w = G.w * wt * q * q * (3 - 2 * q); o[0] += (T[0] - tip[0]) * w; o[1] += (T[1] - tip[1]) * w; o[2] += (T[2] - tip[2]) * w; }
   }
   return o;
 };

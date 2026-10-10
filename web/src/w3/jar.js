@@ -49,6 +49,6 @@ export function updateJar(j, dt, t, working) {
   if (j.state === 'closed') { j.crab.userData.tick?.(t, working ? 1 : 0); j.crab.position.x = Math.sin(t * 1.3) * 0.1; j.crab.rotation.y = Math.sin(t * 0.9) * 0.5; j.body.rotation.z = working ? Math.sin(t * 17) * 0.035 : 0; j.lid.rotation.y = working ? Math.sin(t * 5) * 0.2 : 0; return; }
   j.t += dt; const k = j.t;
   j.lid.position.y = 1.14 + Math.min(1.4, k * 3.2) - Math.max(0, k - 0.5) * 0.2; j.lid.position.x = Math.min(0.9, k * 1.6); j.lid.rotation.z = -Math.min(1.4, k * 3);
-  j.crab.position.y = 0.2 + Math.min(1.3, Math.max(0, k - 0.2) * 1.4); j.crab.scale.setScalar(Math.max(0.01, 1 - Math.max(0, k - 0.9) * 1.1));
+  j.crab.position.y = 0.2 + Math.min(1.3, Math.max(0, k - 0.2) * 1.4); j.crab.scale.setScalar(Math.max(0.01, 1 - Math.max(0, k - 0.35) * 2.2));
   j.body.rotation.z = 0;
 }
