@@ -7,6 +7,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 120000 }); await p.waitForTimeout(2000);
 const scen = async (name, decor) => {
+  const watch = (async () => { for (let i = 0; i < 600; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__snapHaul).catch(() => false)) { await p.screenshot({ path: `${OUT}/${name}_haul.png` }); await p.evaluate(() => { window.__snapHaul = false; }); return; } } })();
   const out = await p.evaluate(async ({ decor }) => {
     const g = window.__game, F = window.__fishes, s = g.state; s.flags.tut = 5; s.level = 6; s.shells = 200; s.fish.length = 0; s.decor.length = 0; s.decor.push(...decor);
     s.fish.push({ id: 'o1', name: 'Inky', species: 'octopus', seed: 3, born: Date.now() - 9 * 864e5, stage: 'adult', traits: [], happy: 0.8, health: 1, appetite: 0, owner: null, bond: {} });
@@ -16,7 +17,7 @@ const scen = async (name, decor) => {
     for (let round = 0; round < 4; round++) {
       s.fish[0].movedAt = 0; o.movedAt = 0; o.task = null; let plan = null; for (let i = 0; i < 30 && !plan; i++) plan = F.planMove(o, o.mind); if (!plan) { res.log.push('no plan'); break; }
       F.beginTask(o, plan); const oc = o.onTask; o.onTask = (f, ev) => { const r = oc(f, ev); res.log.push(`${ev}->${r} at ${f.pos.x.toFixed(2)},${f.pos.z.toFixed(2)} off ${f.task?.off}`); return r; };
-      let steps = 0; while (o.task && steps < 4000) { run(1); steps++; }
+      let steps = 0; while (o.task && steps < 4000) { run(1); steps++; if (o.task?.stage === 'haul' && !window.__hauled && plan.kind === 'home') { for (let k = 0; k < 40; k++) run(1); window.__hauled = [o.pos.x, o.pos.z]; window.__cam = [o.pos.x + 0.5, 2.6, o.pos.z + 12, o.pos.x, 1.0, o.pos.z]; await new Promise((rs) => setTimeout(rs, 2500)); window.__snapHaul = true; await new Promise((rs) => { const w = () => (window.__snapHaul ? setTimeout(w, 200) : rs()); w(); }); } }
       await new Promise((r) => setTimeout(r, 600)); res.log.push(`${plan.kind} ${plan.id} -> ${plan.gx.toFixed(1)},${plan.gz.toFixed(1)} in ${steps} steps; den ${o.den?.kind}${o.den?.home ? ' (home)' : ''} n=${o.den?.n ?? ''}`);
       if (plan.kind === 'home' || o.den?.kind === 'rocks') break;
     }

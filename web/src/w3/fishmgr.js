@@ -138,13 +138,13 @@ export class Fishes {
       if (T?.stage === 'haul') this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : 0.1, T.kind === 'home' ? 0 : null);
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
-      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z + 0.45)) < 0.5, g = it.group.position;
+      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.3)) < 0.5, g = it.group.position;
       g.y += ((under ? 0.04 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0) - g.y) * Math.min(1, dt * 2);          // it holds the shell up over itself
     }
   }
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
   beginTask(f, pl) {
-    const at = this.decor.atOf(pl.id), type = (this.spots?.() ?? []).find((q) => q.id === pl.id)?.type, r = this.decor.reach(type), off = r + 0.8 * (f.radius ?? 2) + (f.cr ?? 0.6), hold = Math.max(0.5, r * 0.55), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1;
+    const at = this.decor.atOf(pl.id), type = (this.spots?.() ?? []).find((q) => q.id === pl.id)?.type, r = this.decor.reach(type), off = r + 0.8 * (f.radius ?? 2) + (f.cr ?? 0.6), hold = Math.max(0.5, r * 0.85), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1;
     f.task = { ...pl, type, off, hold, stage: 'go', ux: (pl.gx - at.x) / L, uz: (pl.gz - at.z) / L, t0: performance.now() }; f.task.ax = at.x - f.task.ux * off; f.task.az = at.z - f.task.uz * off; f.startTask(f.task);
   }
   taskEvent(f, ev) {
