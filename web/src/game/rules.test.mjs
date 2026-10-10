@@ -478,3 +478,10 @@ ok('each fish keeps its own story, the memorial keeps it too, and the end of a d
   const m = R.nextUp(t, 2 * D); assert.match(m, /(\.|tomorrow)$/); const e = quiet(1); e.orders = [{ id: 'o1', species: 'cory', name: 'Gob', arrivesAt: 5 * 3600e3 }]; assert.match(R.nextUp(e, 0), /Gob arrives in about 5 hours/);
 });
 console.log(`All ${n} rule tests passed`);
+
+// each octopus has a fixed, distinct temperament
+{
+  const { octoMind, OCTO_TYPES } = await import('./rules.js');
+  const seen = new Set(); for (let s = 0; s < 60; s++) { const a = octoMind({ seed: s }), b = octoMind({ seed: s }); assert.deepEqual(a, b); seen.add(a.type); for (const k of ['cur', 'bold', 'soc', 'tidy']) assert.ok(a[k] >= 0.05 && a[k] <= 1); }
+  assert.equal(seen.size, OCTO_TYPES.length, 'every type turns up');
+}

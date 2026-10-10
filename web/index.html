@@ -328,6 +328,15 @@
   #sheet form.send input::placeholder{color:#b7cde6}
   #sheet form.send button{border-radius:999px;border:1px solid var(--lg-line);background:rgba(255,255,255,.2);color:#fff;padding:0 18px;font-weight:600}
   #sheet .msg{background:rgba(255,255,255,.09);border-radius:16px;padding:9px 13px;margin:0 0 6px;font-size:14px}
+  /* pull-down header: a grab bar instead of an X; drag down (or tap) to close */
+  #sheet .x{all:unset;display:block;position:sticky!important;float:none!important;top:0!important;z-index:6;width:calc(100% + 36px)!important;height:30px!important;margin:0 -18px!important;border-radius:0!important;background:linear-gradient(180deg,rgba(18,40,66,.98) 70%,rgba(18,40,66,0))!important;box-shadow:none!important;font-size:0!important;cursor:grab;touch-action:none;flex:none}
+  #sheet .x::before{content:"";position:absolute;left:50%;top:10px;width:42px;height:5px;margin-left:-21px;border-radius:3px;background:rgba(255,255,255,.42)}
+  #sheet > h3{top:22px!important;padding-top:6px!important;padding-left:18px!important;padding-right:18px!important}
+  #card .x{display:none!important}
+  #card .grab{height:34px!important;touch-action:none;z-index:6}#card .grab::before{background:rgba(255,255,255,.42)!important}
+  #card h2{padding-top:12px;padding-right:0!important}
+  #card .mind{margin:6px 0 2px;font-size:13px;line-height:1.45;color:var(--dim)}#card .mind b{color:#fff;font-weight:600;margin-right:4px}
+  #sheet.drag,#card.drag{transition:none!important}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

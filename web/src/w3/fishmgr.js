@@ -6,7 +6,7 @@ import { Fish3D } from './fish3d.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
-import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
+import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
@@ -131,6 +131,7 @@ export class Fishes {
   // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
   relate(f, d) {
     if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
+    if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));

@@ -296,8 +296,12 @@ export class Fish3D {
     } else if (S.s === 'rest') {
       this.vel.multiplyScalar(Math.exp(-3 * dt)); this.restK += (1 - this.restK) * Math.min(1, dt * 1.5); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
       if (!onFloor) this.vel.y -= 0.5 * dt;
-      if (S.t <= 0 && this.bondMe >= 3 && !this.shy && rng() < 0.3) { S.mode = 'greet'; S.s = 'crawl'; S.t = 10; this.target.set((rng() - 0.5) * 3, floor, 2.4); }
-      else if (S.t <= 0 && this.den && this.hoard > 0 && !this.shy && rng() < 0.18) { S.mode = 'carry1'; S.s = 'crawl'; S.t = 12; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }     // fetch a shell for the collection
+      const M = this.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 }, near = S.t <= 0 && others.some((o) => o !== this && !o.dead && !o.visitor && o.pos.distanceTo(this.pos) < 1.5);
+      if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.16 * M.cur) { const sp = this.getSpots?.() ?? [], q = sp.length ? sp[(rng() * sp.length) | 0] : null; if (q) this.inspect = { x: q.x, z: q.z }; }                       // curious ones go and look at things on their own
+      else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.12 * M.soc) { const fs = others.filter((o) => o !== this && !o.dead && !o.visitor); if (fs.length) { const o = fs[(rng() * fs.length) | 0]; this.inspect = { x: o.pos.x, z: o.pos.z }; } }       // sociable ones go to see the other fish
+      if (near && M.soc < 0.4 && this.den && rng() < 0.5) { S.mode = 'den'; S.s = 'crawl'; S.t = 10; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }     // a loner leaves when it gets crowded
+      else if (S.t <= 0 && this.bondMe >= 3 && !this.shy && rng() < 0.12 + 0.35 * M.soc) { S.mode = 'greet'; S.s = 'crawl'; S.t = 10; this.target.set((rng() - 0.5) * 3, floor, 2.4); }
+      else if (S.t <= 0 && this.den && this.hoard > 0 && !this.shy && rng() < 0.05 + 0.3 * (this.mind?.tidy ?? 0.4)) { S.mode = 'carry1'; S.s = 'crawl'; S.t = 12; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }     // fetch a shell for the collection
       else if (S.t <= 0 && this.den && rng() < (this.shy ? 0.55 : 0.28)) { S.mode = 'den'; S.s = 'crawl'; S.t = 12; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }           // home to the den
       else if (S.t <= 0 && this.shy && rng() < 0.6) { S.s = 'crawl'; S.t = 6; const spots = this.getSpots?.() ?? [], s2 = spots.length ? spots[(rng() * spots.length) | 0] : null; this.target.set(s2 ? s2.x : -3 + rng() * 6, floor, s2 ? s2.z - 0.6 : -1.5); S.t = 5; }
       else if (S.t <= 0 && !this.shy && rng() < 0.07 + 0.1 * this.bold) { S.s = 'dash'; S.t = 4; const b = this.band; this.target.set(Math.max(b.x[0], Math.min(b.x[1], this.pos.x + (rng() < 0.5 ? -1 : 1) * (2 + rng() * 2))), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }
@@ -345,7 +349,7 @@ export class Fish3D {
     this.lookT -= dt; if (this.lookT <= 0) {
       this.lookT = 0.15; const ch = Math.cos(this.heading), sh = Math.sin(this.heading); let tx = null, tz = 0;
       const L = this.hunt ? { x: this.hunt.x, y: 0.2, z: this.hunt.z } : this.jarAt ? { x: this.jarAt.x, y: 0.8, z: this.jarAt.z } : this.glassAt && performance.now() < this.glassAt.until ? { x: this.glassAt.x, y: this.glassAt.y, z: 3 } : null;
-      let T = L; if (!T) { let bd = 4.5; for (const o of others) if (o !== this && !o.dead && !o.visitor) { const d = o.pos.distanceTo(this.pos); if (d < bd) { bd = d; T = o.pos; } } }
+      let T = L; if (!T) { let bd = 3 + 3.5 * (this.mind?.soc ?? 0.5); for (const o of others) if (o !== this && !o.dead && !o.visitor) { const d = o.pos.distanceTo(this.pos); if (d < bd) { bd = d; T = o.pos; } } }
       if (T) { const dx = T.x - this.pos.x, dz = T.z - this.pos.z, dy = (T.y ?? this.pos.y) - this.pos.y, dd = Math.hypot(dx, dy, dz) || 1; tx = (dx * ch - dz * sh) / dd; tz = dy / dd; }
       this.lookGoal = tx == null ? [0, 0] : [Math.max(-1, Math.min(1, tx)) * 1.3, Math.max(-1, Math.min(1, tz)) * 0.6];
     }

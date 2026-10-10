@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -403,7 +403,7 @@ function showCard(f) {
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
   game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>
+    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>`; })() : ''}
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">${f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`}</button>
     <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}

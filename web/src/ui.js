@@ -235,6 +235,19 @@ export function initUI({ game, social, cb }) {
   // the glass lens under the chosen tab slides to it
   function placeLens() { const nav = document.querySelector('nav'), lens = nav?.querySelector('.lens'), on = nav?.querySelector('div.on'); if (!lens || !on) return; lens.style.width = on.offsetWidth + 'px'; lens.style.transform = `translateX(${on.offsetLeft}px)`; lens.classList.add('on'); }
   addEventListener('resize', () => placeLens()); setTimeout(placeLens, 60); document.fonts?.ready?.then(() => placeLens());
+  // drag a menu's grab bar downward to close it; a plain tap on the sheet's bar also closes
+  { let d = null;
+    document.addEventListener('pointerdown', (e) => {
+      const g = e.target.closest?.('#sheet .x, #card .grab'); if (!g) return;
+      const box = g.closest('#sheet, #card'); d = { g, box, y: e.clientY, dy: 0, pid: e.pointerId }; try { g.setPointerCapture(e.pointerId); } catch {}
+    });
+    document.addEventListener('pointermove', (e) => { if (!d || e.pointerId !== d.pid) return; d.dy = Math.max(0, e.clientY - d.y); if (d.dy > 6) { d.box.classList.add('drag'); d.box.style.transform = `translateY(${d.dy}px)`; d.box.style.opacity = String(Math.max(0.3, 1 - d.dy / 400)); d.moved = true; } });
+    const end = (e) => { if (!d || e.pointerId !== d.pid) return; const { box, g, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.transform = box.style.opacity = '';
+      if (dy > 70) { sfx('open'); (box.querySelector('.x') ?? g).click(); } else if (moved) { g._drag = true; setTimeout(() => { g._drag = false; }, 50); } };
+    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+    // a drag must not also count as a tap on the bar
+    document.addEventListener('click', (e) => { const g = e.target.closest?.('#card .grab, #sheet .x'); if (g && g._drag) { e.stopImmediatePropagation(); e.preventDefault(); g._drag = false; } }, true);
+  }
   function open(t, quiet = false) {
     if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
