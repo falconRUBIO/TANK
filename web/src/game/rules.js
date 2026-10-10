@@ -132,7 +132,8 @@ export function needsOf(f, t, now = Date.now()) {
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
 }
 // Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favourite.
-export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 } };
+export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, crab: { label: 'Crab', price: 0, octo: true } };   // an octopus eats crabs, not flakes
+export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.dead), hasFishOnly = (t) => t.fish.some((f) => f.species !== 'octopus' && !f.dead);
 export const favFoodOf = (f) => ((f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favourite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
@@ -698,12 +699,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
-      const needed = t.hunger > 0.25, pay = needed && food === 'flakes' ? 1 : 0;
+      const needed = t.hunger > 0.25, pay = needed && price === 0 ? 1 : 0;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.015); t.shells += pay;
       if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
       if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care');
-      events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
+      events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : food === 'crab' ? `${name} fed the octopus a crab.` : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
       return ok({ applied: true, delta: pay - price, food });
     }
     case 'water': {

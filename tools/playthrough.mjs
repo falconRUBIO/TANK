@@ -11,7 +11,7 @@ const waitCoach = async (t) => { for (let i = 0; i < 40; i++) { if ((await coach
 await p.addInitScript(() => setInterval(() => { const m = document.getElementById('modal'); if (m && m.classList.contains('on') && /^LEVEL \d/.test(m.querySelector('h2')?.textContent || '')) document.getElementById('mok').click(); }, 700));
 await p.goto(base + '/?lite=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 });
 console.log('Tutorial');
-ck('first run offers four free fish and a name', (await p.textContent('#modal h2')) === 'WELCOME TO YOUR TANK' && (await p.$$('#modal .pk')).length === 4);
+ck('first run offers an octopus in six colours and a name', (await p.textContent('#modal h2')) === 'WELCOME TO YOUR TANK' && (await p.$$('#modal .pk.pc')).length === 6);
 await p.fill('#mi', 'Pip'); await p.click('#mok');
 ck('then prompts to feed', await waitCoach('TIME FOR A SNACK'));
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feed]'); ck('the care menu closes and no other menu is left over', await p.evaluate(() => !document.getElementById('sheet').classList.contains('on') && !document.getElementById('feedbar')));

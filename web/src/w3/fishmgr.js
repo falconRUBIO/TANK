@@ -341,6 +341,12 @@ export class Fishes {
     const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const x = Math.max(-3.4, Math.min(3.4, f.pos.x + (this.rng() - 0.5) * 3)), z = 1.0 + this.rng() * 1.2, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
   }
+  // a crab dropped in at feeding time: it sinks where you tapped, and the octopus that is free (or the hungriest) goes after it
+  dropCrabAt(x) {
+    const os = this.list.filter((f) => f.species.move === 'jet' && !f.dead && !f.visitor); if (!os.length) return;
+    const f = os.find((o) => !o.hunt) ?? os[0], z = 1.0 + this.rng() * 1.0, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
+    const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); if (!f.hunt) f.hunt = hnt; else (f.hunts ||= []).push(hnt); this.burst(new THREE.Vector3(x, 14, z));
+  }
   // a cloud of ink: dark puffs that swell and thin out over a few seconds
   ink(p) {
     for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 + this.rng() * 0.2, 1), new THREE.MeshBasicMaterial({ color: 0x1a1428, transparent: true, opacity: 0.55, depthWrite: false })); m.position.set(p.x + (this.rng() - 0.5) * 0.8, p.y + (this.rng() - 0.3) * 0.6, p.z + (this.rng() - 0.5) * 0.6); this.scene.add(m); this.onSprite?.(m); (this.inks ||= []).push({ m, age: -i * 0.06, vx: (this.rng() - 0.5) * 0.5, vy: 0.1 + this.rng() * 0.25 }); }
@@ -348,7 +354,7 @@ export class Fishes {
   puff(p, d) { const q = new THREE.Vector3(p.x - d.x * 0.6, p.y - d.y * 0.6 + 0.1, p.z - d.z * 0.6); for (let i = 0; i < 6 && this.bursts.length < 150; i++) this.bursts.push({ pos: q.clone().add(new THREE.Vector3((this.rng() - 0.5) * 0.5, (this.rng() - 0.5) * 0.4, (this.rng() - 0.5) * 0.5)), v: 0.5 + this.rng() * 0.9, age: 0, r: 0.04 + this.rng() * 0.05 }); }
   // a crab already on the sand (it climbed out of a jar), for the octopus to catch
   crabOut(x, z) { const m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, 0.13, z); m.rotation.y = this.rng() * 6; this.scene.add(m); const hnt = { x, z, mesh: m, y: 0.13 }; (this.crabs ||= []).push(hnt); return hnt; }
-  eatCrab(hnt) { this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); }
+  eatCrab(hnt) { this.scene.remove(hnt.mesh); this.crabs = (this.crabs ?? []).filter((c) => c !== hnt); this.burst(new THREE.Vector3(hnt.x, 0.7, hnt.z)); const f = this.list.find((o) => o.hunts?.length && (o.hunt === hnt || !o.hunt)); if (f) { setTimeout(() => { if (!f.hunt && f.hunts?.length) f.hunt = f.hunts.shift(); }, 1500); } }
   // puzzle jars: one appears on the sand for each octopus that has been given one, and opens when it is solved
   syncJars(state) {
     this.jars ||= new Map();
@@ -412,7 +418,7 @@ export class Fishes {
     const claims = new Map(), W = Fish3D.world, o = this.tmp;
     for (const f of this.list) { if (f.flake && !f.flake.eaten && this.flakes.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
     for (const f of this.list) {
-      if (f.visitor || f.dead) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }
+      if (f.visitor || f.dead || f.species.move === 'jet') { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // an octopus does not eat flakes
       const tr = f.profile?.traits ?? [], shy = tr.includes('Shy'), greedy = tr.includes('Greedy'), curious = tr.includes('Curious');
       f.hold = (f.hold ?? 0) - dt; f.think = (f.think ?? 0) - dt;
       let fl = f.flake;

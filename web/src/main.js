@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, hasOcto, hasFishOnly, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -89,19 +89,23 @@ const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.d
 // feeding
 // The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and only the tank is left: tap the water.
 // Feeding: tapping Feed shows what can be fed just above the bar, then a tap on the water drops it.
+// which foods make sense: crabs for an octopus, flakes and the rest for fish. A tank with only octopuses is offered crabs alone.
+function foodsFor() { const s = game.state, octo = hasOcto(s), fish = hasFishOnly(s) || !octo; return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : fish)); }
+function defaultFood() { const ks = foodsFor().map(([k]) => k); if (!ks.includes(game.feedFood ?? 'flakes')) game.feedFood = ks[0] ?? 'flakes'; return game.feedFood ?? 'flakes'; }
+const dropWord = (k) => (k === 'crab' ? 'a crab' : FOODS[k].label.toLowerCase());
 function renderFoodbar() {
-  const bar = $('foodbar'), shells = game.state.shells, cur = game.feedFood ?? 'flakes';
-  bar.innerHTML = Object.entries(FOODS).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''}" ${shells < d.price ? 'disabled' : ''}><span>${d.label}</span><small>${d.price ? d.price + ' 🐚' : 'free'}</small></button>`).join('') + '<button data-done class="done">Done</button>';
+  const bar = $('foodbar'), shells = game.state.shells, cur = defaultFood();
+  bar.innerHTML = foodsFor().map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''}" ${shells < d.price ? 'disabled' : ''}><span>${d.label}</span><small>${d.price ? d.price + ' 🐚' : 'free'}</small></button>`).join('') + '<button data-done class="done">Done</button>';
   bar.classList.add('on');
-  bar.querySelectorAll('[data-food]').forEach((b) => { b.onclick = () => { game.feedFood = b.dataset.food; sfx('tap'); renderFoodbar(); ui.toast(`Tap the water to drop ${FOODS[b.dataset.food].label.toLowerCase()}`, 2400); }; });
+  bar.querySelectorAll('[data-food]').forEach((b) => { b.onclick = () => { game.feedFood = b.dataset.food; sfx('tap'); renderFoodbar(); ui.toast(`Tap the water to drop ${dropWord(b.dataset.food)}`, 2400); }; });
   bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
 }
-function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); ui.toast(`Tap the water to drop ${FOODS[game.feedFood ?? 'flakes'].label.toLowerCase()}`, 3500); }
+function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); ui.toast(`Tap the water to drop ${dropWord(defaultFood())}`, 3500); }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   if (game.state.hunger < 0.08) { ui.toast('The fish are full for now'); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
-  const food = game.feedFood ?? 'flakes'; fishes.drop(x, 7, food); sfx('splash'); haptic(8);
+  const food = defaultFood(); if (food === 'crab') fishes.dropCrabAt(x); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
   feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
   const r = await game.dispatch({ t: 'feed', x, food }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
@@ -462,7 +466,7 @@ const tut = (() => {
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
-        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your fish'} is hungry. Open Care, tap Feed, then tap the water.`, skip: skip }); ui.pulse('care');
+        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then tap the water to drop ${s.fish[0]?.species === 'octopus' ? 'a crab' : 'food'}.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so three friends can join.` : 'Up to four friends can care for one tank. They join with a six-character code when you play on the server.';
