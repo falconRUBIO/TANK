@@ -505,7 +505,7 @@ const tut = (() => {
   const skip = () => { set(5); ui.hideCoach(); ui.pulse(null); };
   return {
     run,
-    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { ui.toast(`${game.state.fish[0]?.name ?? 'Your fish'} loved it!`); setTimeout(() => set(4), 1400); } },      // the first session is short: choose, feed, then what is coming. Friends and the free plant wait in the goal line until later
+    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { endFeed(); ui.toast(`${game.state.fish[0]?.name ?? 'Your fish'} loved it!`); setTimeout(() => set(4), 1400); } },      // the first feed is one crab; the strip steps aside for what comes next      // the first session is short: choose, feed, then what is coming. Friends and the free plant wait in the goal line until later
     onPlaced: () => { if ((game.state.flags.tut ?? 0) === 3) setTimeout(() => set(4), 900); },
     replay: async () => { await game.dispatch({ t: 'tut', reset: true, step: 0 }); last = -1; run(); },
   };
