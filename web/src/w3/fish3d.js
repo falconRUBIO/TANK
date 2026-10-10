@@ -168,9 +168,10 @@ export class Fish3D {
     if (kind === 'carry' && this.carryMesh) { this.carryMesh.visible = true; this.carryMesh.position.set(tip[0] * sc, tip[1] * sc, tip[2] * sc); }       // the shell sits in the arm
   }
   // being poked: a few taps in a row and he gets annoyed (dark skin, a squirt); something sudden makes him startle, pale, and jet away
-  poke() { this.wakeT = 6; this.pokes++; this.pokeT = 12; if (this.pokes >= 4) { this.pokes = 0; this.annoyT = 8; return true; } return false; }
+  poke() { this.wakeT = 6; this.pokes++; this.pokeT = 12; if (this.pokes >= 4) { this.pokes = 0; this.annoyT = 8; this.fearHere(); return true; } return false; }
+  fearHere() { (this.fears ||= []).push({ x: this.pos.x, z: this.pos.z, t: performance.now() }); if (this.fears.length > 4) this.fears.shift(); }
   startle(from) {
-    this.scareT = 2.6; this.wakeT = 8; if (this.onInk) this.onInk(this.pos); const S = this.st; if (S && (S.s === 'rest' || S.s === 'crawl') && !this.seeking) { S.s = 'jet'; S.n = 1; S.pulse = 0; S.t = 4; S.mode = null; const b = this.band; this.target.set(Math.max(-3.5, Math.min(3.5, this.pos.x + (from && from.x > this.pos.x ? -2.4 : 2.4))), Math.min(6, this.pos.y + 2.2), this.pos.z); this.sq = 1; }
+    this.fearHere(); this.scareT = 2.6; this.wakeT = 8; if (this.onInk) this.onInk(this.pos); const S = this.st; if (S && (S.s === 'rest' || S.s === 'crawl') && !this.seeking) { S.s = 'jet'; S.n = 1; S.pulse = 0; S.t = 4; S.mode = null; const b = this.band; this.target.set(Math.max(-3.5, Math.min(3.5, this.pos.x + (from && from.x > this.pos.x ? -2.4 : 2.4))), Math.min(6, this.pos.y + 2.2), this.pos.z); this.sq = 1; }
   }
   // an octopus changes colour to suit its mood: it fades into the sand and rocks when resting or shy, and flushes bright when something exciting has just happened
   // the colour and pattern of the ground under it, one target colour per voxel (a patchy value noise over the ground's own palette, kept shaded by the octopus's own form)
@@ -296,20 +297,25 @@ export class Fish3D {
     } else if (S.s === 'rest') {
       this.vel.multiplyScalar(Math.exp(-3 * dt)); this.restK += (1 - this.restK) * Math.min(1, dt * 1.5); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
       if (!onFloor) this.vel.y -= 0.5 * dt;
-      const M = this.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 }, near = S.t <= 0 && others.some((o) => o !== this && !o.dead && !o.visitor && o.pos.distanceTo(this.pos) < 1.5);
+      const M = { ...(this.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 }) }, sk = this.sulk ?? 0, bo = this.bored ?? 0, au = this.audience ?? 0; M.cur = Math.min(1, M.cur * (1 - sk) + 0.5 * bo); M.soc = M.soc * (1 - 0.5 * sk) + 0.25 * au;
+      if (onFloor && S.t > 6 && this.den == null) { const q = (this.fav ||= { x: this.pos.x, z: this.pos.z, n: 0 }); q.n = Math.min(40, q.n + dt); const w = Math.min(0.02, dt * 0.01); if (this.restFor > 8) { q.x += (this.pos.x - q.x) * w; q.z += (this.pos.z - q.z) * w; this.favDirty = true; } }
+      const near = S.t <= 0 && others.some((o) => o !== this && !o.dead && !o.visitor && o.pos.distanceTo(this.pos) < 1.5);
+      if (S.t <= 0 && this.isNight && this.den && !S.mode && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) > 1.4 && rng() < 0.7) { S.mode = 'den'; S.s = 'crawl'; S.t = 12; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }     // it turns in at its den for the night
+      else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && !this.den && this.fav && this.fav.n > 12 && Math.hypot(this.pos.x - this.fav.x, this.pos.z - this.fav.z) > 1.2 && rng() < 0.2) { S.s = 'crawl'; S.t = 8; this.target.set(this.fav.x, floor, this.fav.z); }     // no den yet: it goes back to its favourite spot
       if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.16 * M.cur) { const sp = this.getSpots?.() ?? [], q = sp.length ? sp[(rng() * sp.length) | 0] : null; if (q) this.inspect = { x: q.x, z: q.z }; }                       // curious ones go and look at things on their own
       else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.12 * M.soc) { const fs = others.filter((o) => o !== this && !o.dead && !o.visitor); if (fs.length) { const o = fs[(rng() * fs.length) | 0]; this.inspect = { x: o.pos.x, z: o.pos.z }; } }       // sociable ones go to see the other fish
       if (near && M.soc < 0.4 && this.den && rng() < 0.5) { S.mode = 'den'; S.s = 'crawl'; S.t = 10; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }     // a loner leaves when it gets crowded
-      else if (S.t <= 0 && this.bondMe >= 3 && !this.shy && rng() < 0.12 + 0.35 * M.soc) { S.mode = 'greet'; S.s = 'crawl'; S.t = 10; this.target.set((rng() - 0.5) * 3, floor, 2.4); }
+      else if (S.t <= 0 && (this.bondMe >= 3 || (au >= 1 && this.bondMe >= 1)) && !this.shy && rng() < 0.12 + 0.35 * M.soc + (this.mind?.type === 'showoff' ? 0.25 * au : 0)) { S.mode = 'greet'; S.s = 'crawl'; S.t = 10; this.target.set((rng() - 0.5) * 3, floor, 2.4); }
       else if (S.t <= 0 && this.den && this.hoard > 0 && !this.shy && rng() < 0.05 + 0.3 * (this.mind?.tidy ?? 0.4)) { S.mode = 'carry1'; S.s = 'crawl'; S.t = 12; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }     // fetch a shell for the collection
-      else if (S.t <= 0 && this.den && rng() < (this.shy ? 0.55 : 0.28)) { S.mode = 'den'; S.s = 'crawl'; S.t = 12; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }           // home to the den
+      else if (S.t <= 0 && this.den && rng() < (this.shy ? 0.55 : 0.28) + 0.4 * sk + (this.mind?.type === 'homebody' ? 0.15 : 0)) { S.mode = 'den'; S.s = 'crawl'; S.t = 12; this.target.set(this.den.x + (rng() - 0.5) * 0.6, floor, this.den.z + 0.85); }           // home to the den
       else if (S.t <= 0 && this.shy && rng() < 0.6) { S.s = 'crawl'; S.t = 6; const spots = this.getSpots?.() ?? [], s2 = spots.length ? spots[(rng() * spots.length) | 0] : null; this.target.set(s2 ? s2.x : -3 + rng() * 6, floor, s2 ? s2.z - 0.6 : -1.5); S.t = 5; }
-      else if (S.t <= 0 && !this.shy && rng() < 0.07 + 0.1 * this.bold) { S.s = 'dash'; S.t = 4; const b = this.band; this.target.set(Math.max(b.x[0], Math.min(b.x[1], this.pos.x + (rng() < 0.5 ? -1 : 1) * (2 + rng() * 2))), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }
+      else if (S.t <= 0 && !this.shy && rng() < (0.07 + 0.1 * this.bold + 0.12 * bo) * (1 - 0.8 * sk)) { S.s = 'dash'; S.t = 4; const b = this.band; this.target.set(Math.max(b.x[0], Math.min(b.x[1], this.pos.x + (rng() < 0.5 ? -1 : 1) * (2 + rng() * 2))), floor, b.z[0] + rng() * (b.z[1] - b.z[0])); }
       else if (S.t <= 0) { if (rng() < 0.5) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, s = spots.length && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; this.target.set(s ? s.x + (rng() - 0.5) * 1.2 : b.x[0] + rng() * (b.x[1] - b.x[0]), floor, s ? s.z + 0.8 : b.z[0] + rng() * (b.z[1] - b.z[0])); } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), 3 + rng() * 6, b.z[0] + rng() * (b.z[1] - b.z[0])); } }
     } else if (S.s === 'crawl') {
+      if (this.fears?.length && !S.fearChecked) { S.fearChecked = true; const nowt = performance.now(); this.fears = this.fears.filter((q) => nowt - q.t < 3e5); this.fearNear = false; for (const q of this.fears) if (Math.hypot(this.target.x - q.x, this.target.z - q.z) < 1.8 && S.mode !== 'den') { this.fearNear = true; const ax = this.target.x - q.x || 1, b = this.band; this.target.x = Math.max(b.x[0], Math.min(b.x[1], q.x + Math.sign(ax) * 2.4)); } }
       this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);
       const to = this.target.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1; to.multiplyScalar((0.5 * this.speed * mul) / d); this.vel.lerp(to, Math.min(1, dt * 1.6));
-      if (S.t <= 0 || d < 0.35) {
+      if (S.t <= 0 || d < 0.35) { S.fearChecked = false;
         if (S.mode === 'den') { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 12; }
         else if (S.mode === 'carry1') { S.mode = 'carry2'; if (this.carryMesh) this.carryMesh.visible = true; S.t = 14; this.target.set(this.den.x + (rng() - 0.5) * 0.7, floor, this.den.z + 0.95); }
         else if (S.mode === 'carry2') { S.mode = null; if (this.carryMesh) this.carryMesh.visible = false; this.onDrop?.(this.pos); S.s = 'rest'; S.t = 6 + rng() * 8; }
@@ -375,7 +381,7 @@ export class Fish3D {
     // it decides whether to bother (more often when shy or tucked into something, less often on open sand); it never does it while moving, working or greeting.
     this.camoSense = (this.camoSense ?? 0) - dt; if (this.camoSense <= 0) { this.camoSense = 0.25; this.ground = S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect') ? Fish3D.groundAt?.(this.pos.x, this.pos.z) ?? null : null; }
     const gnd = this.ground, ctx = gnd ? gnd.ctx : null;
-    if (ctx !== this.camoCtx) { this.camoCtx = ctx; this.ctxT = 0; if (ctx) { const onObject = gnd.kind === 'decor'; this.camoWill = rng() < (this.shy ? 0.92 : onObject ? 0.8 : 0.5); this.camoDelay = 1.2 + rng() * 2.6; } else this.camoWill = false; }   // a new place: choose whether to blend in here
+    if (ctx !== this.camoCtx) { this.camoCtx = ctx; this.ctxT = 0; if (ctx) { const onObject = gnd.kind === 'decor'; this.camoWill = rng() < (this.shy || (this.sulk ?? 0) > 0.5 ? 0.95 : onObject ? 0.8 : 0.5); this.camoDelay = 1.2 + rng() * 2.6; } else this.camoWill = false; }   // a new place: choose whether to blend in here
     this.ctxT = (this.ctxT ?? 0) + dt;
     const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend && gnd?.kind === 'decor';             // sometimes it settles beside the new thing and takes on its look
     const camoT = (S.s === 'rest' && !this.flush && this.camoWill && this.ctxT > this.camoDelay && gnd) || hiding ? 0.94 : 0;

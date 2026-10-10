@@ -44,6 +44,8 @@ export class Fishes {
   }
   // make the scene match the game's fish list
   sync(state, { arrivals = [] } = {}) {
+    this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
+    { const sig = (state.decor?.length ?? 0) + ':' + state.fish.length + ':' + ((state.glass ?? 0) > 0.5 ? 1 : 0); if (sig !== this.sig) { if (this.sig != null) this.changedAt = performance.now(); this.sig = sig; } }
     const seen = new Set();
     state.fish.forEach((d, idx) => {
       seen.add(d.id); const k = STAGE_SCALE[stageOf(d)];
@@ -127,11 +129,40 @@ export class Fishes {
     }
     if (this.rdirty && t - (this.rsave ?? 0) > 25) { this.rsave = t; this.rdirty = false; try { localStorage.setItem('ourtank.routine', JSON.stringify(this.routine)); } catch { /* storage unavailable */ } }
   }
+  loadOcto() { try { return JSON.parse(localStorage.getItem('ourtank.octo') || '{}'); } catch { return {}; } }
+  // What each octopus makes of the world around it, thought over once a second: sulks in dirty water, notices who is watching, gets restless when nothing changes,
+  // and (the tricksters) goes to see what a nearby fish will do when startled. The fish act on these in jetUpdate.
+  octoAware(dt) {
+    this.aw = (this.aw ?? 0) - dt; if (this.aw > 0) return; this.aw = 1;
+    const W = this.world ?? { water: 1, glass: 0, hunger: 0 }, people = new Set([this.me, ...(this.people ?? [])]), now = performance.now(), calm = (now - (this.changedAt ?? now)) / 6e4;
+    let save = false;
+    for (const f of this.list) {
+      if (f.species.id !== 'octopus' || f.dead || !f.mind) continue;
+      const M = f.mind;
+      f.sulk = Math.max(0, Math.min(1, Math.max((0.62 - W.water) / 0.3, (W.glass - 0.6) / 0.3, (W.hunger - 0.7) / 0.3)));
+      const bonded = (f.bondIds ?? []).some((i) => people.has(i)); f.audience = bonded ? 1 : people.size > 0 ? 0.35 : 0;
+      f.bored = Math.max(0, Math.min(1, (calm - 8 * (1.4 - M.cur)) / 20)) * (0.4 + 0.6 * M.cur);
+      const S = f.st; let th = '';
+      if (f.sulk > 0.5) th = W.water < 0.62 ? 'Sulking in the cloudy water.' : W.glass > 0.6 ? 'Cannot see out through the dirty glass.' : 'Hungry and a bit grumpy.';
+      else if (S?.s === 'work' && S.mode === 'greet') th = 'Come to say hello at the glass.';
+      else if (S?.s === 'work' && S.mode === 'inspect') th = f.inspect && this.list.some((o) => o !== f && !o.dead && Math.hypot(o.pos.x - f.inspect.x, o.pos.z - f.inspect.z) < 1.2) ? 'Watching a neighbour.' : 'Examining something with its arms.';
+      else if (f.sleepK > 0.6) th = 'Asleep. Its skin is dreaming.';
+      else if (f.audience >= 1 && f.bondMe >= 1) th = 'Knows you are here.';
+      else if (f.bored > 0.5) th = M.cur > 0.6 ? 'Restless. Nothing new in a while.' : 'A little bored.';
+      else if (f.fearNear) th = 'Avoiding a spot that scared it.';
+      else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = 'Home in its den.';
+      f.thought = th;
+      if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
+      if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
+      if (f.fav && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: +f.fav.x.toFixed(2), z: +f.fav.z.toFixed(2) }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
+    }
+  }
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
   // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
   relate(f, d) {
     if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
+    if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav) { const sv = this.loadOcto()[d.id]; if (sv) f.fav = { x: sv.x, z: sv.z, n: 8 }; } }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
@@ -288,7 +319,7 @@ export class Fishes {
     a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
   }
   update(dt, t) {
-    this.socialTick(dt); this.seahorseTick(dt, t);
+    this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; const q = k.age / 4; k.m.scale.setScalar(1 + q * 3.2); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = 0.55 * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < 4) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     for (const c of this.crabs ?? []) { c.mesh.userData.tick?.(t * (c.held ? 1.6 : 1), c.held ? 1 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue; if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; } else c.mesh.position.x = c.x + Math.sin(t * 4 + c.z) * 0.04; }

@@ -403,7 +403,7 @@ function showCard(f) {
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
   game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>`; })() : ''}
+    <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
     ${comfortBlock(rec)}<button class="pet" id="pet">${f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`}</button>
     <div class="btnrow">${trickBlock(rec)}${fam}</div>${brainBlock(rec)}${more}
@@ -496,7 +496,7 @@ const pendingArrivals = new Set();
 let lastLamp = null, seenDecor = null;
 function syncWorld() {
   const s = game.state; if (!s) return;
-  fishes.me = game.you?.userId ?? 'me'; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
+  fishes.me = game.you?.userId ?? 'me'; fishes.people = game.shared ? (game.online ?? []) : []; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
   decor.sync(s.decor, s);
   { const ids = new Set(s.decor.map((d) => d.id)); if (seenDecor) for (const d of s.decor) if (!seenDecor.has(d.id)) { const sp = decor.spots().find((x) => x.id === d.id); if (sp) fishes.investigate(sp); } seenDecor = ids; }       // an octopus goes to look at anything new
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
