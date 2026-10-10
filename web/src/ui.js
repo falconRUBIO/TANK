@@ -38,7 +38,7 @@ export function initUI({ game, social, cb }) {
   let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
   const noticeSave = () => { try { localStorage.setItem(NK, JSON.stringify(notices.slice(0, 80))); } catch { /* storage unavailable */ } };
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
-    if (!text || notices.some((n) => n.text === text && Date.now() - n.ts < 2 * 3600e3)) return;
+    if (!text || notices.slice(0, 40).some((n) => n.text === text && Date.now() - n.ts < 3 * 864e5)) return;      // the same message is kept once, not again every time the app opens
     notices.unshift({ ts: Date.now(), text, tab, gift, kind }); notices = notices.slice(0, 80); noticeSave(); bell();
   };
   const unread = () => notices.filter((n) => n.ts > readAt).length;

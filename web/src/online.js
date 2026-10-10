@@ -190,8 +190,8 @@ async function healTank() {
   if (!c?.code || !c.world || !c.user || (session?.userId && c.userId !== session.userId)) return null;
   const r = await api('/api/users', { name: c.user.name || 'Guest', avatar: c.user.avatar });
   session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey, named: true }; store(session);
-  try { await api('/api/import', { app: 'our-tank', tank: { name: c.name }, world: c.world, code: c.code, heal: true }); }
-  catch (e) { if (e.code === 'CODE_TAKEN') await api('/api/join', { code: c.code }); else throw e; }
+  try { await api('/api/import', { app: 'our-tank', tank: { name: c.name }, world: c.world, code: c.code, heal: true, was: c.userId }); }
+  catch (e) { if (e.code === 'CODE_TAKEN') await api('/api/join', { code: c.code, was: c.userId }); else throw e; }
   const me = await api('/api/me'); if (!me.tank) return null;
   try { localStorage.setItem('ourtank.cache', JSON.stringify({ ...c, userId: r.userId })); } catch { /* ignore */ }
   return me;

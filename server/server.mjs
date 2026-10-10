@@ -126,7 +126,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!lim.hit('j:' + ip(req), cfg.joinPerMin, 60e3) || !lim.hit('ju:' + user.id, cfg.joinPerMin, 60e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Wait a moment.', 429);
         const b = await readBody(req);
         if (p.endsWith('preview')) return json(res, 200, L.previewJoin(db, b.code));
-        const r = L.joinTank(db, user, b.code); if (!r.already) an.record(user.id, r.id, 'friend_joined');
+        const r = L.joinTank(db, user, b.code, typeof b.was === 'string' ? b.was : null); if (!r.already) an.record(user.id, r.id, 'friend_joined');
         if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); const here = online(r.id); for (const m of snap) if (m.id !== user.id && !here.includes(m.id)) push.notify(m.id, `${user.name} joined your tank`, { cap: 2 }).catch(() => {}); }
         return json(res, 200, r);
       }

@@ -97,9 +97,11 @@ export function importTank(db, user, data) {
   const w = data.world, num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
   if (!Array.isArray(w.fish) || w.fish.length > 60 || !Array.isArray(w.decor ?? []) || (w.decor ?? []).length > R.MAX_DECOR) throw new GameError('BAD_BACKUP', 'That backup is not valid.', 400);
   const now = Date.now(); const world = R.norm(JSON.parse(JSON.stringify(w)), now);
-  world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: null, name: String(f.name ?? 'Fish').slice(0, 14) }));
+  world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); const was = data.heal && typeof data.was === 'string' ? data.was : null;
+  world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: data.heal ? f.owner ?? null : null, name: String(f.name ?? 'Fish').slice(0, 14) }));
+  if (was) remapUser(world, was, user.id);
   world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = []; world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
-  world.flags = { ...(world.flags ?? {}), firsts: { [user.id]: true }, intro: world.flags?.intro ?? now };
+  world.flags = { ...(world.flags ?? {}), firsts: { ...(data.heal ? world.flags?.firsts ?? {} : {}), [user.id]: true }, intro: world.flags?.intro ?? now };
   // a tank put back after the server lost its data keeps its old code, so the friends who still have it can walk straight back in
   const want = data.heal ? normalizeCode(data.code) : null, healCode = want && want.length === 6 && [...want].every((ch) => ALPHABET.includes(ch)) ? want : null;
   if (healCode) world.flags.healed = now;
@@ -136,7 +138,17 @@ export function claimSeat(db, code, slot, isOnline = () => false) {
   const u = db.prepare('SELECT name FROM users WHERE id=?').get(m.user_id); addJournal(db, t.id, `${u.name} signed back in.`, m.user_id);
   return { userId: m.user_id, token };
 }
-export function joinTank(db, user, code) {
+// When a tank is put back after the server lost its data, the people in it come back as new accounts. Everything the tank remembered about the old
+// account (their own octopus, the bond fish have with them, today's gift and their first fish) is moved to the new one, so nothing is paid twice or lost.
+export function remapUser(w, was, now) {
+  if (!w || !was || !now || was === now) return false; let n = 0;
+  const mv = (o) => { if (o && Object.prototype.hasOwnProperty.call(o, was)) { if (o[now] == null) o[now] = o[was]; delete o[was]; n++; } };
+  mv(w.flags?.gift); mv(w.flags?.firsts); mv(w.flags?.daily); mv(w.flags?.care);
+  for (const f of [...(w.fish ?? []), ...(w.floaters ?? []), ...(w.memorial ?? [])]) { if (f.owner === was) { f.owner = now; n++; } mv(f.bond); mv(f.petAt); }
+  for (const b of w.bottles ?? []) { if (b.to === was) b.to = now; if (b.from === was) b.from = now; }
+  return n > 0;
+}
+export function joinTank(db, user, code, was = null) {
   const t = db.prepare('SELECT id,name FROM tanks WHERE code=?').get(normalizeCode(code));
   if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);
   return tx(db, () => {
@@ -147,7 +159,8 @@ export function joinTank(db, user, code) {
     if (!slot) throw new GameError('FULL', 'This aquarium already has four caretakers.', 409);
     const now = Date.now();
     db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,?,?,?)').run(t.id, user.id, slot, now, now);
-    addJournal(db, t.id, `${user.name} joined the tank.`, user.id, now);
+    if (was && typeof was === 'string' && was.length < 80) { const { w } = loadWorld(db, t.id); if (w.flags?.healed && now - w.flags.healed < 7 * 864e5 && !db.prepare('SELECT 1 FROM members WHERE tank_id=? AND user_id=?').get(t.id, was) && remapUser(w, was, user.id)) saveWorld(db, t.id, w); }      // a friend coming back into a tank that was put back
+    addJournal(db, t.id, `${user.name} ${was ? 'is back in' : 'joined'} the tank.`, user.id, now);
     return { id: t.id, slot, already: false };
   });
 }

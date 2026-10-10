@@ -262,6 +262,16 @@ await t('an octopus whose caretaker leaves stays in the tank and anyone may feed
   assert.equal((await call('/api/tanks/leave', {}, o.token)).status, 200); assert.equal(getW(tk.id).fish[0].owner, null, 'nobody owns it now');
   const w = getW(tk.id); w.fish[0].hunger = 0.8; setW(tk.id, { fish: w.fish }); const r = await ackOf(wf, { t: 'feed', food: 'crab', fish: fid, idem: 'or-3' }); assert.equal(r.ok && r.applied, true, JSON.stringify(r)); wf.close();
 });
+await t('a tank put back after the server lost its data keeps who owns what: the daily gift is not paid twice and the octopus stays yours', async () => {
+  const a1 = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Lost' }, a1.token)).body, ws = await open(a1.token);
+  assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'hl-1' })).ok, true); const w0 = getW(tk.id); setW(tk.id, { flags: { ...w0.flags, tut: 5 } });
+  const g1 = await ackOf(ws, { t: 'dailyGift', tz: 0, idem: 'hl-2' }); assert.equal(g1.delta, 2); ws.close();
+  const copy = JSON.parse(JSON.stringify(getW(tk.id)));
+  S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id);       // the server forgets the tank
+  const a2 = await mkUser('Ana'), r = await call('/api/import', { app: 'our-tank', tank: { name: 'Lost' }, world: copy, code: tk.code, heal: true, was: a1.userId }, a2.token); assert.equal(r.status, 200, JSON.stringify(r.body));
+  const w = getW(r.body.id); assert.equal(w.fish[0].owner, a2.userId, 'the octopus is still yours'); assert.ok(w.flags.gift[a2.userId], 'today\'s gift is remembered');
+  const ws2 = await open(a2.token), g2 = await ackOf(ws2, { t: 'dailyGift', tz: 0, idem: 'hl-3' }); assert.equal(g2.delta, 0, 'not paid again'); ws2.close();
+});
 await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
   const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
