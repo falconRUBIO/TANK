@@ -11,6 +11,7 @@ const goal = async () => { await p.waitForTimeout(1200); return p.textContent('#
 let g = await goal(); ck('no "empty tank" prompt any more', !/Empty tank/.test(g), g);
 await d({ t: 'buyDecor', type: 'grass', x: 0, z: 1.5, ry: 0 }); await d({ t: 'dev', what: 'shells' }); await d({ t: 'feed', x: 0 }); await d({ t: 'feed', x: 1 });
 g = await goal(); ck('first steps: with a plant and shells it suggests a new fish', /adopt|Feed|hungry|spend|shells/i.test(g), g);
+await d({ t: 'dailyGift', tz: 0 });      // collect the daily gift first: its hint comes before the countdowns
 await d({ t: 'buyFish', species: 'goldfish', name: 'Pal', seed: 2 }); g = await goal(); ck('first steps: a pending delivery shows its countdown', /Pal arrives in/.test(g), g);
 for (let i = 0; i < 3; i++) await d({ t: 'dev', what: 'shells' });
 for (let i = 0; i < 4; i++) { await d({ t: 'buyFish', species: 'goldfish', name: 'G' + i, seed: i, rush: true }); }
@@ -40,5 +41,5 @@ ck('the Family button shows parents and generation', /Parents/.test(await p.text
 // welcome back
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => window.__game.save());
 await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#reunion.on', { timeout: 30000 }).catch(() => {});
-const txt = await p.textContent('#reunion'); ck('welcome back mentions the gift', /washed in/i.test(txt), txt.slice(0, 160));
+const txt = await p.textContent('#reunion'); ck('welcome back mentions the find, with someone to blame', /Tap it in the tank|dragged|nosed|dug|pushed|filter|lid|air stone|rock/i.test(txt), txt.slice(0, 160));
 ck('no page errors', errs.length === 0, errs.join(' | ')); await b.close(); console.log(fails ? fails + ' FAILED' : 'events passed'); console.log('FINISHED');
