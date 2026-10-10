@@ -15,11 +15,11 @@ const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s 
 const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 export async function backupToText(obj) {
   const raw = new TextEncoder().encode(JSON.stringify(obj));
-  if (typeof CompressionStream === 'undefined') return 'OURTANK0:' + b64(raw);
-  const out = await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer(); return 'OURTANK1:' + b64(new Uint8Array(out));
+  if (typeof CompressionStream === 'undefined') return 'OURTANK0:' + b64(raw) + '~';
+  const out = await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer(); return 'OURTANK1:' + b64(new Uint8Array(out)) + '~';
 }
 export async function backupFromText(text) {
-  const t = String(text ?? '').replace(/\s+/g, ''), m = t.match(/OURTANK([01]):([A-Za-z0-9+/=]+)/); if (!m) throw new Error('That does not look like a tank backup.');
+  const t = String(text ?? '').replace(/\s+/g, ''), m = t.match(/OURTANK([01]):([A-Za-z0-9+/=]+)~/); if (!m) throw new Error('That does not look like a whole tank backup. Copy all of the text, up to the ~ at the end.');
   const u8 = unb64(m[2]); const raw = m[1] === '1' ? new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()) : u8;
   return JSON.parse(new TextDecoder().decode(raw));
 }
