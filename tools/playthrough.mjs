@@ -16,7 +16,7 @@ await p.fill('#mi', 'Pip'); await p.click('#mok');
 ck('then prompts to feed', await waitCoach('TIME FOR A SNACK'));
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feed]'); ck('the care menu closes and no other menu is left over', await p.evaluate(() => !document.getElementById('sheet').classList.contains('on') && !document.getElementById('feedbar')));
 const s0 = await S(); await p.waitForTimeout(600); await p.mouse.click(200, 300); await p.waitForTimeout(250); ck('shells fly up to the counter', (await p.$$('.flyshell')).length > 0); await p.waitForTimeout(200);
-const s1 = await S(); ck('feeding pays a shell and lowers hunger', s1.shells === s0.shells + 1 && s1.hunger < s0.hunger, `${s0.shells}→${s1.shells}`);
+const s1 = await S(); ck('feeding pays a shell and the octopus is less hungry', s1.shells === s0.shells + 1 && s1.fish[0].hunger < s0.fish[0].hunger, `${s0.shells}→${s1.shells}, hunger ${s0.fish[0].hunger}→${s1.fish[0].hunger}`);
 ck('the first session ends right after the first feed, with a start button', await waitCoach('YOU ARE ALL SET')); await p.click('#cbtn'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 }); ck('and says what is coming next', /COMING UP/.test(await p.textContent('#modal h2')) && (await p.$$eval('#modal li', (n) => n.length)) >= 2, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | ')); await p.click('#mok'); await p.waitForTimeout(300);
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('.card'); await p.click('.card[data-k="decor:fern"]');
 ck('the plant is free', (await p.textContent('#buy')).includes('FREE'));
@@ -70,7 +70,7 @@ ck('new species and decorations can be bought', bought.every(Boolean), JSON.stri
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'rush' }, { dev: true })); await p.waitForTimeout(1200); const nFish = (await S()).fish.length; const nf = await p.evaluate(() => [window.__tank.fishes.length, window.__tank.decor.items.size, window.__tank.decor.streams.size]);
 ck('and appear in the tank (bubbler makes a bubble stream)', nf[0] === nFish && nf[1] >= 10 && nf[2] === 1, JSON.stringify(nf));
 const sim = await p.evaluate(() => window.__sim(900)); ck('fish still avoid every new item', sim.pct < 0.5 && sim.worstFishOverlap < 0.4, JSON.stringify(sim));
-await p.evaluate(() => { const s = window.__game.state; for (const f of s.fish) { f.health = 0.45; } s.hunger = 0.85; window.__game.emit('state'); });
+await p.evaluate(() => { const s = window.__game.state; for (const f of s.fish) { f.health = 0.45; if (f.species === 'octopus') f.hunger = 0.85; } s.hunger = 0.85; window.__game.emit('state'); });
 const mood = await p.evaluate(() => window.__tank.fishes[0].profile.mood); ck('hungry fish show a hungry mood', mood === 'Hungry', mood);
 await p.evaluate(() => window.__game.dispatch({ t: 'note', text: 'Pip loves the bubbles' })); ck('journal notes work', (await p.evaluate(() => window.__game.journal.at(-1).text)).includes('Pip loves'));
 console.log('Life in the tank');
