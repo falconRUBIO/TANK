@@ -36,7 +36,7 @@ await p.waitForTimeout(500); ck('a real observation becomes a quiet discovery (a
 const dupe = await p.evaluate((n) => { const g = window.__game, f = g.state.fish.find((x) => x.name === n); return g.dispatch({ t: 'observe', key: 'glass', fish: f.id }).then((r) => r.applied); }, ob?.[1]); ck('the same discovery cannot be earned twice', dupe === false);
 await d({ t: 'dev', what: 'egg' }); await d({ t: 'dev', what: 'hatch' });
 const kid = await p.evaluate(() => { const f = window.__game.state.fish.find((x) => x.parents?.length === 2); return f ? { name: f.name, parents: f.parents.map((q) => q.name), gen: f.gen, hasGenes: !!f.genes } : null; }); ck('a hatchling remembers its parents and generation', !!kid && kid.gen === 1 && kid.hasGenes, JSON.stringify(kid));
-await p.evaluate((n) => { const i = window.__tank.fishes.findIndex((f) => f.name === n); window.__focus(i); }, kid?.name); await p.waitForSelector('#fam', { timeout: 15000 }).catch(() => {}); await p.click('#fam').catch(() => {}); await p.waitForTimeout(400);
+await p.evaluate((n) => { const i = window.__tank.fishes.findIndex((f) => f.name === n); window.__focus(i); }, kid?.name); await p.waitForTimeout(400); await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForSelector('#fam', { timeout: 15000 }).catch(() => {}); await p.click('#fam').catch(() => {}); await p.waitForTimeout(400);
 ck('the Family button shows parents and generation', /Parents/.test(await p.textContent('#modal').catch(() => '')), (await p.textContent('#modal').catch(() => '')).slice(0, 120)); await p.click('#mok').catch(() => {}); await p.evaluate(() => window.__focus(null));
 // welcome back
 await d({ t: 'dev', what: 'drift' }); await p.evaluate(() => window.__game.save());
