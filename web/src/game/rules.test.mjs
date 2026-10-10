@@ -516,3 +516,12 @@ console.log(`All ${n} rule tests passed`);
   const n = R.newWorld(0, 1, { empty: true }); R.norm(n, 0); R.applyAction(n, { t: 'chooseFirst', species: 'octopus', name: 'N', seed: 2 }, { now: 1000, name: 'Ana', uid: 'a', members: M }); n.water = 1; n.hunger = 0.1;
   for (let d = 1; d <= 3; d++) { n.hunger = 0.1; n.lastFed = 1000 + d * 864e5; R.advance(n, 1000 + d * 864e5); } assert.ok((n.fish[0].ail ?? 0) > 0, 'ail builds for an unfed octopus even when flakes keep the tank fed');
 }
+
+// a never-fed octopus is judged by its own hunger, not by flakes other people drop for the fish
+{
+  const M = [{ id: 'a', name: 'Ana' }, { id: 'b', name: 'Bo' }], t = R.newWorld(0, 1, { empty: true }); R.norm(t, 0);
+  R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3 }, { now: 1000, name: 'Ana', uid: 'a', members: M });
+  R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'Pip', rush: true }, { now: 1000, name: 'Bo', uid: 'b', members: M, dev: true }); t.shells = 99;
+  for (let h = 1; h <= 72; h++) { t.hunger = 0.1; t.lastFed = 1000 + h * 3600e3; R.advance(t, 1000 + h * 3600e3); }          // Bo keeps the fish fed every hour; nobody feeds Ink
+  const ink = t.fish.find((f) => f.name === 'Ink'); assert.ok((ink.ail ?? 0) >= R.AIL_TIRED, 'three days unfed: Ink is run down (' + ink.ail + ')');
+}

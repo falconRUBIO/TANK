@@ -192,7 +192,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
     const steps = Math.max(1, Math.min(480, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
-      const el = ((k + 0.5) / steps) * dt, hun = octo ? Math.min(octoHunger(f), fh0 + el * OHR) : Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = fedK < 0.2 && at - ((octo ? f.fedAt : null) ?? t.lastFed ?? -Infinity) > FED_GRACE, bad = hungry || wat < 0.5;
+      const el = ((k + 0.5) / steps) * dt, hun = octo ? Math.min(octoHunger(f), fh0 + el * OHR) : Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = fedK < 0.2 && at - (octo ? (f.fedAt ?? f.born) : (t.lastFed ?? -Infinity)) > FED_GRACE, bad = hungry || wat < 0.5;      // an octopus is judged by its own last crab (or its arrival), never by the tank's flakes
       f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); if (bad && f.ail >= AIL_TIRED) f.born += stepMs;      // growth pauses once a fish is run down
     }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));

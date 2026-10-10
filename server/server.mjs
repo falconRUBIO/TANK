@@ -284,12 +284,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const members = L.listMembers(db, id);
         if (hit) { for (const m of members) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now }); continue; }
         // nothing happened, but something is overdue: each caretaker hears about their own octopus, everyone about the fish and the water (each at most once in 12 hours)
-        const w = r.world ?? L.loadWorld(db, id).w, recent = (k) => { const at = +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0); if (now - at < 12 * 3600e3) return true; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now)); return false; };
+        const w = r.world ?? L.loadWorld(db, id).w, recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
         for (const m of members) {
           const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
-          if (oc) { if (!recent(`push:octo:${oc.id}`)) await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now }); continue; }
-          const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45;
-          if ((fishHungry || foul) && !recent(`push:care:${id}:${m.id}`)) await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now });
+          if (oc) { const k = `push:octo:${oc.id}`; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
+          const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45, k = `push:care:${id}:${m.id}`;
+          if ((fishHungry || foul) && !recent(k) && await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now })) mark(k);
         }
       } catch (e) { console.error('push sweep failed', e); }
     }
