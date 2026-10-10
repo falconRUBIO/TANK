@@ -431,6 +431,20 @@ await t('the storage check says whether the tank is safe from the server losing 
   const u = await mkUser('Stor'); const r = await call('/api/storage', null, u.token); assert.equal(r.status, 200); assert.ok(['safe', 'waiting', 'risk'].includes(r.body.level));
   assert.equal((await call('/api/storage')).status, 401);
 });
+await t('the GitHub copy: compressed, updated in place with the right sha, restored, and sent at most every 25 minutes (but always when stopping)', async () => {
+  const { makeGithubOffsite, makeUploader, restoreIfEmpty, offsiteFromEnv } = await import('./offsite.mjs'); const zlib = (await import('node:zlib')).default, fs = await import('node:fs'), os = await import('node:os'), pth = await import('node:path');
+  const files = new Map(), calls = []; let n = 0;
+  const fake = async (url, o = {}) => { const u = new URL(url), key = decodeURIComponent(u.pathname.replace('/repos/me/data/contents/', '')); calls.push((o.method ?? 'GET') + ' ' + key);
+    assert.equal(o.headers.authorization, 'Bearer tok'); if (o.method === 'PUT') { const b = JSON.parse(o.body), ex = files.get(key); assert.ok(!ex || b.sha === ex.sha, 'an update must carry the current sha'); files.set(key, { sha: 'sha' + ++n, bytes: Buffer.from(b.content, 'base64') }); return { ok: true, status: 200 }; }
+    const f = files.get(key); if (!f) return { ok: false, status: 404 }; return /raw/.test(o.headers.accept) ? { ok: true, status: 200, arrayBuffer: async () => f.bytes } : { ok: true, status: 200, json: async () => ({ sha: f.sha }) }; };
+  const off = makeGithubOffsite({ token: 'tok', repo: 'me/data' }, fake); const dir = fs.mkdtempSync(pth.join(os.tmpdir(), 'gh-')), live = pth.join(dir, 'live.db'); S.db.exec(`VACUUM INTO '${live}'`);
+  const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.ok(files.get('ourtank.db.gz').bytes.length < fs.readFileSync(live).length, 'stored compressed');
+  assert.equal(zlib.gunzipSync(files.get('ourtank.db.gz').bytes).length, fs.readFileSync(live).length);
+  S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('t', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
+  assert.equal(await up.run(), false, 'not again within 25 minutes'); assert.equal(await up.run(true), true, 'but always when the server is stopping'); assert.ok(calls.some((c) => c.startsWith('PUT ourtank-')), 'a dated copy too');
+  const f2 = pth.join(dir, 'new.db'); assert.equal(await restoreIfEmpty(off, f2, () => {}), true); const { DatabaseSync } = await import('node:sqlite'); const d = new DatabaseSync(f2, { readOnly: true }); assert.ok(d.prepare('SELECT COUNT(*) n FROM users').get().n > 0); d.close();
+  assert.ok(offsiteFromEnv({ GITHUB_BACKUP_TOKEN: 't', GITHUB_BACKUP_REPO: 'a/b' })?.describe.includes('github.com/a/b')); assert.equal(offsiteFromEnv({}), null);
+});
 await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
   const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;
   const x = await mkUser('Own2'), y = await mkUser('Fri'), want = 'HEA2ED';

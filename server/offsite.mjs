@@ -2,6 +2,7 @@
 // Any S3-compatible bucket works: Cloudflare R2, Backblaze B2, Supabase Storage, AWS S3. Off unless S3_ENDPOINT, S3_BUCKET, S3_KEY and S3_SECRET are set.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import { DatabaseSync } from 'node:sqlite';
 
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex'), hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();
@@ -31,7 +32,28 @@ export function makeOffsite({ endpoint, bucket, accessKey, secret, region = 'aut
   };
 }
 
+// The same kind of copy kept in a private GitHub repository (one file, compressed), for people who already have GitHub and would rather not open a bucket account.
+export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourtank.db' }, fetchImpl = fetch) {
+  const api = (name) => `https://api.github.com/repos/${repo}/contents/${name.split('/').map(enc).join('/')}`, file = (name) => name + '.gz';
+  const hdr = (accept) => ({ authorization: `Bearer ${token}`, accept, 'user-agent': 'our-tank-backup', 'x-github-api-version': '2022-11-28' });
+  return {
+    object, describe: `github.com/${repo}`, minGapMs: 25 * 60e3,
+    async put(buf, name = object) {
+      let sha; const cur = await fetchImpl(`${api(file(name))}?ref=${branch}`, { headers: hdr('application/vnd.github+json'), signal: AbortSignal.timeout(20000) });
+      if (cur.ok) sha = (await cur.json()).sha; else if (cur.status !== 404) throw new Error('offsite lookup failed: HTTP ' + cur.status);
+      const r = await fetchImpl(api(file(name)), { method: 'PUT', headers: { ...hdr('application/vnd.github+json'), 'content-type': 'application/json' }, signal: AbortSignal.timeout(30000), body: JSON.stringify({ message: 'tank backup', branch, content: zlib.gzipSync(buf).toString('base64'), ...(sha ? { sha } : {}) }) });
+      if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status);
+    },
+    async get(name = object) {
+      const r = await fetchImpl(`${api(file(name))}?ref=${branch}`, { headers: hdr('application/vnd.github.raw+json'), signal: AbortSignal.timeout(20000) });
+      if (r.status === 404) return null; if (!r.ok) throw new Error('offsite download failed: HTTP ' + r.status);
+      return zlib.gunzipSync(Buffer.from(await r.arrayBuffer()));
+    },
+  };
+}
+
 export function offsiteFromEnv(env = process.env) {
+  if (env.GITHUB_BACKUP_TOKEN && env.GITHUB_BACKUP_REPO) return makeGithubOffsite({ token: env.GITHUB_BACKUP_TOKEN, repo: env.GITHUB_BACKUP_REPO, branch: env.GITHUB_BACKUP_BRANCH || 'main', object: env.S3_OBJECT || 'ourtank.db' });
   const { S3_ENDPOINT: endpoint, S3_BUCKET: bucket, S3_KEY: accessKey, S3_SECRET: secret } = env;
   return endpoint && bucket && accessKey && secret ? makeOffsite({ endpoint, bucket, accessKey, secret, region: env.S3_REGION || 'auto', object: env.S3_OBJECT || 'ourtank.db' }) : null;
 }
@@ -61,8 +83,9 @@ export function makeUploader(off, snapshot, log = console.log) {
   let last = '', at = 0, err = '', lastDated = 0, blocked = false;
   return {
     block() { blocked = true; },
-    async run() {
+    async run(force = false) {
       if (blocked) return false;
+      if (!force && off.minGapMs && Date.now() - at < off.minGapMs) return false;
       try {
         const file = snapshot(); if (!file) return false;
         if (isEmptyDb(file)) { log('offsite backup: the database has no players, not sending it over a good copy'); return false; }      // an empty server must never replace a real tank

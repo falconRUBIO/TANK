@@ -114,7 +114,11 @@ export function runOnboarding() {
         try {
           const r = await api('/api/recover', { key: s.querySelector('#rk').value }); session = { token: r.token, userId: r.userId, recoveryKey: s.querySelector('#rk').value.toUpperCase().trim() }; store(session);
           const me = await api('/api/me'); if (me.tank) done({ mode: 'net', user: me.user, tank: me.tank }); else welcome();
-        } catch (e) { er.textContent = e.message; }
+        } catch (e) {
+          // the server no longer knows this key (it lost its data) but this phone still has a copy of the tank: put it back
+          if (e.code === 'BAD_KEY') { const h = await healTank().catch(() => null); if (h) return done({ mode: 'net', user: h.user, tank: h.tank, healed: true }); }
+          er.textContent = e.message;
+        }
       };
     };
     const codeScreen = (t) => {

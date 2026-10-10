@@ -14,3 +14,6 @@ services:
       - { key: S3_KEY, sync: false }
       - { key: S3_SECRET, sync: false }
       - { key: S3_REGION, sync: false }
+      # Or keep the copy in a private GitHub repository instead (token with Contents read/write on that one repo)
+      - { key: GITHUB_BACKUP_TOKEN, sync: false }
+      - { key: GITHUB_BACKUP_REPO, sync: false }

@@ -317,5 +317,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(`database: ${dbFile} (${users.n} players${users.first ? ', oldest from ' + new Date(users.first).toISOString() : ', empty'})`);
   if (process.env.RENDER && !dbFile.startsWith('/data/')) console.warn('WARNING: the database is not on the persistent disk (/data). Tanks and recovery keys will be lost on every deploy or restart. Set DB=/data/ourtank.db and attach a disk mounted at /data.');
   else if (process.env.RENDER && !fs.existsSync('/data/.persist-check')) { try { fs.writeFileSync('/data/.persist-check', String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
-  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('shutting down'); try { s.backup(); if (uploader) await Promise.race([uploader.run(), new Promise((r) => setTimeout(r, 9000))]); await s.close(); } finally { process.exit(0); } });
+  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, async () => { console.log('shutting down'); try { s.backup(); if (uploader) await Promise.race([uploader.run(true), new Promise((r) => setTimeout(r, 9000))]); await s.close(); } finally { process.exit(0); } });
 }

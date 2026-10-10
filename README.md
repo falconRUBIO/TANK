@@ -61,6 +61,12 @@ A host whose disk is wiped on every deploy or restart (Render's free plan) forge
 4. In Render, open the service, Environment, and add: `S3_ENDPOINT` = `https://s3.us-west-004.backblazeb2.com`, `S3_BUCKET` = your bucket name, `S3_KEY` = the keyID, `S3_SECRET` = the applicationKey, `S3_REGION` = `us-west-004`. Save, and let it redeploy.
 5. Open `/admin`: "Offsite copy" should say on, with the time of the last copy. Cloudflare R2 and Supabase Storage work the same way.
 
+**A2. The same, kept in your own GitHub (no new account).**
+1. On GitHub create a new **private** repository, for example `ourtank-data`, and tick "Add a README file".
+2. Settings, Developer settings, Personal access tokens, Fine-grained tokens, Generate new token. Name it `our-tank`, choose the longest expiry, Repository access: Only select repositories, pick `ourtank-data`. Under Permissions, Repository permissions, set **Contents** to Read and write. Generate and copy the token (shown once). Put a reminder in your calendar to make a new one before it expires.
+3. In Render, Environment: `GITHUB_BACKUP_TOKEN` = the token, `GITHUB_BACKUP_REPO` = `yourname/ourtank-data`. Save.
+4. `/admin` shows "Offsite copy: on". Copies are compressed and sent at most every 25 minutes and always when the server stops, so a tank made in the last half hour before a crash can be lost; Settings, "Tank storage" shows Protected once the first copy is sent. It stores all accounts and tanks in that private repo.
+
 **B. A persistent disk.** On a paid Render plan, mount a disk at `/data` and set `DB=/data/ourtank.db` (the included `render.yaml` does this).
 
 Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway.
