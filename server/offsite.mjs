@@ -33,8 +33,8 @@ export function makeOffsite({ endpoint, bucket, accessKey, secret, region = 'aut
 }
 
 // The same kind of copy kept in a private GitHub repository (one file, compressed), for people who already have GitHub and would rather not open a bucket account.
-export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourtank.db' }, fetchImpl = fetch) {
-  const api = (name) => `https://api.github.com/repos/${repo}/contents/${name.split('/').map(enc).join('/')}`, file = (name) => name + '.gz';
+export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourtank.db', apiBase = 'https://api.github.com' }, fetchImpl = fetch) {
+  const api = (name) => `${apiBase}/repos/${repo}/contents/${name.split('/').map(enc).join('/')}`, file = (name) => name + '.gz';
   const hdr = (accept) => ({ authorization: `Bearer ${token}`, accept, 'user-agent': 'our-tank-backup', 'x-github-api-version': '2022-11-28' });
   return {
     object, describe: `github.com/${repo}`, minGapMs: 25 * 60e3,
@@ -53,7 +53,7 @@ export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourt
 }
 
 export function offsiteFromEnv(env = process.env) {
-  if (env.GITHUB_BACKUP_TOKEN && env.GITHUB_BACKUP_REPO) return makeGithubOffsite({ token: env.GITHUB_BACKUP_TOKEN, repo: env.GITHUB_BACKUP_REPO, branch: env.GITHUB_BACKUP_BRANCH || 'main', object: env.S3_OBJECT || 'ourtank.db' });
+  if (env.GITHUB_BACKUP_TOKEN && env.GITHUB_BACKUP_REPO) return makeGithubOffsite({ token: env.GITHUB_BACKUP_TOKEN, repo: env.GITHUB_BACKUP_REPO, branch: env.GITHUB_BACKUP_BRANCH || 'main', apiBase: env.GITHUB_API || 'https://api.github.com', object: env.S3_OBJECT || 'ourtank.db' });
   const { S3_ENDPOINT: endpoint, S3_BUCKET: bucket, S3_KEY: accessKey, S3_SECRET: secret } = env;
   return endpoint && bucket && accessKey && secret ? makeOffsite({ endpoint, bucket, accessKey, secret, region: env.S3_REGION || 'auto', object: env.S3_OBJECT || 'ourtank.db' }) : null;
 }
