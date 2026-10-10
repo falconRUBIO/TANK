@@ -38,10 +38,17 @@ export function recover(db, key) {
   const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), u.id);
   return { userId: u.id, token };
 }
+// an octopus whose caretaker has gone stays in the tank and anyone left may feed it
+function orphanOctopuses(db, tankId, userId) {
+  const { w } = loadWorld(db, tankId); let changed = false;
+  for (const f of w.fish ?? []) if (f.species === 'octopus' && f.owner === userId) { f.owner = null; changed = true; }
+  if (changed) saveWorld(db, tankId, w);
+}
 export function leaveTank(db, user) {
   return tx(db, () => {
     const t = tankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
     db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); addJournal(db, t.id, `${user.name} left the tank.`, user.id);
+    orphanOctopuses(db, t.id, user.id);
     return { ok: true, tankId: t.id };
   });
 }
@@ -102,7 +109,7 @@ export function importTank(db, user, data) {
 export function deleteUser(db, user) {
   return tx(db, () => {
     const t = tankOf(db, user.id); let tankGone = false;
-    if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
+    if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); orphanOctopuses(db, t.id, user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
     for (const tb of ['push_subs', 'push_log']) { try { db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); } catch { /* table shape differs */ } }
     try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
     db.prepare('DELETE FROM users WHERE id=?').run(user.id); return { ok: true, tankId: t?.id ?? null, tankGone };

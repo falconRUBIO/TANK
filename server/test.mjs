@@ -255,6 +255,13 @@ await t('static files are compressed, cached by ETag and the database backs itse
   const home = await fetch(base + '/', { headers: { 'accept-encoding': 'gzip' } }); assert.equal(home.headers.get('content-encoding'), 'gzip');
   assert.doesNotThrow(() => S.backup());
 });
+await t('an octopus whose caretaker leaves stays in the tank and anyone may feed it', async () => {
+  const o = await mkUser('Owen'), f = await mkUser('Fay'), tk = (await call('/api/tanks', { name: 'Orphan' }, o.token)).body; assert.equal((await call('/api/join', { code: tk.code }, f.token)).status, 200);
+  const ws = await open(o.token); assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'or-1' })).ok, true); ws.close();
+  const fid = getW(tk.id).fish[0].id, wf = await open(f.token); assert.equal((await ackOf(wf, { t: 'feed', food: 'crab', fish: fid, idem: 'or-2' })).reason, 'NOT_YOURS');
+  assert.equal((await call('/api/tanks/leave', {}, o.token)).status, 200); assert.equal(getW(tk.id).fish[0].owner, null, 'nobody owns it now');
+  const w = getW(tk.id); w.fish[0].hunger = 0.8; setW(tk.id, { fish: w.fish }); const r = await ackOf(wf, { t: 'feed', food: 'crab', fish: fid, idem: 'or-3' }); assert.equal(r.ok && r.applied, true, JSON.stringify(r)); wf.close();
+});
 await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
   const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;

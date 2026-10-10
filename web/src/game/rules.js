@@ -346,7 +346,7 @@ const catOpen = (t, cat) => Object.values(DECOR_DEF).some((d) => d.cat === cat &
 const likeWant = (trait, cat, n, text, gift) => ({ traits: [trait], ok: (t) => count(t, cat) < n && catOpen(t, cat), done: (t) => count(t, cat) >= n, text, gift });
 export const WANTS = {
   den: { octopus: true, traits: [], ok: (t) => !t.decor.some((d) => ['pot', 'coconut'].includes(d.type)), done: (t) => t.decor.some((d) => ['pot', 'coconut'].includes(d.type)), text: (f) => `${f.name} wants a den to curl up in: a clay pot or a coconut shell.`, gift: 'a den to curl up in' },
-  crab: { octopus: true, traits: [], ok: (t, f) => stageOf(f) !== 'baby' && (f.crabAt == null || Date.now() - f.crabAt > 3 * 3600e3) && t.shells >= CRAB_PRICE, done: (t, f, g) => g?.type === 'crab' && g.id === f.id, text: (f) => `${f.name} is hungry for a crab. Its caretaker can drop one from Feed.`, gift: 'a crab' },
+  crab: { octopus: true, traits: [], ok: (t, f) => stageOf(f) !== 'baby' && (f.crabAt == null || Date.now() - f.crabAt > 3 * 3600e3) && octoHunger(f) > 0.3, done: (t, f, g) => g?.type === 'crab' && g.id === f.id, text: (f) => `${f.name} is hungry for a crab. Its caretaker can drop one from Feed.`, gift: 'a crab' },
   hide: likeWant('Shy', 'PLANTS', 4, (f) => `${f.name} wants more plants to hide among (4 in all).`, 'plants to hide among'),
   explore: likeWant('Curious', 'STRUCTURES', 1, (f) => `${f.name} wants something to explore, like a pillar, lantern or arch.`, 'something to explore'),
   rest: likeWant('Lazy', 'WOOD', 1, (f) => `${f.name} wants driftwood to rest beside.`, 'driftwood to rest beside'),
@@ -534,7 +534,7 @@ function rollDaily(t, now) {
 // Three small things every day: the tank is looked after, today's wish is done, and a fish got some attention. All three pays a small bonus once.
 // It is per tank-day (UTC, like the daily wish), shared by everyone, and missing it costs nothing: there is no streak.
 export const PERFECT_DAY_REWARD = 3;
-export const lookedAfter = (t) => t.fish.length > 0 && t.hunger <= 0.45 && t.water >= 0.7 && t.glass <= 0.45 && t.fish.every((f) => !isOcto(f) || f.dead || octoHunger(f) <= 0.55);
+export const lookedAfter = (t) => t.fish.length > 0 && (t.hunger <= 0.45 || !t.fish.some((f) => !isOcto(f))) && t.water >= 0.7 && t.glass <= 0.45;      // the tank itself; each octopus is its own caretaker's job and pays on its own
 export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
 export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
 function dayCheck(t, now, ev, key = null) {
