@@ -408,6 +408,15 @@ await t('push: the server makes and keeps its own keys, and a test notification 
   await call('/api/push/subscribe', { subscription: sub, offset: 0 }, u.token); S.db.prepare('UPDATE push_subs SET offset_min=? WHERE user_id=?').run(((3 - new Date().getUTCHours()) * 60 + 1440) % 1440 - 0, u.userId);
   pushed.length = 0; const r = await call('/api/push/test', {}, u.token); assert.equal(r.body.sent, true); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /test/i);
 });
+await t('a tank the server lost is put back under its old code by whichever phone gets there first; the other just joins it', async () => {
+  const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Healed' }, o.token)).body, backup = (await call('/api/export', null, o.token)).body;
+  const x = await mkUser('Own2'), y = await mkUser('Fri'), want = 'HEA2ED';
+  const r1 = await call('/api/import', { ...backup, code: want, heal: true }, x.token); assert.equal(r1.status, 200); assert.equal(r1.body.code, want);
+  const r2 = await call('/api/import', { ...backup, code: want, heal: true }, y.token); assert.equal(r2.status, 409); assert.equal(r2.body.error, 'CODE_TAKEN');
+  assert.equal((await call('/api/join', { code: want }, y.token)).status, 200); const me = await call('/api/me', null, y.token); assert.equal(me.body.tank.code, want);
+  assert.equal(getW(r1.body.id).flags.healed > 0, true, 'a restored tank does not ask friends to choose a first fish again');
+  const z = await mkUser('Odd'); assert.notEqual((await call('/api/import', { ...backup, code: 'I0O1LL', heal: true }, z.token)).body.code, 'I0O1LL', 'a code outside the alphabet is ignored');
+});
 await t('two phones in one tank agree on a director, who alone sends fish positions and memories; a water change is mirrored', async () => {
   const x = await mkUser('Dir'), y = await mkUser('Fol'), tk = (await call('/api/tanks', { name: 'Sync' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
   const wx = await open(x.token), wy = await open(y.token), last = (w) => [...w.msgs].reverse().find((m) => m.t === 'role');

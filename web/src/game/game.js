@@ -54,12 +54,18 @@ export class Game {
     }, 1000);
     document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
   }
+  // The phone keeps its own copy of the shared tank. If the server ever loses its data (a restart on a host with no permanent disk), the copy puts the tank back under the same code.
+  keepCopy() {
+    if (this.mode !== 'net' || !this.state || !this.you || this._copyAt > Date.now() - 4000) return; this._copyAt = Date.now();
+    const me = (this.members ?? []).find((x) => x.id === this.you.userId);
+    try { localStorage.setItem('ourtank.cache', JSON.stringify({ v: 1, userId: this.you.userId, code: this.code, name: this.tankName, user: me ? { name: me.name, avatar: me.avatar } : null, world: this.state, savedAt: Date.now() })); } catch { /* storage full or unavailable */ }
+  }
   onNet(m) {
     if (m.t === 'snapshot') {
       const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
-      this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members');
+      this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
-    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); }
+    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); this.keepCopy(); }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food); }
     else if (m.t === 'event') {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }

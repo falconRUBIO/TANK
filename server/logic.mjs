@@ -60,13 +60,13 @@ export function tankOf(db, userId) {
 }
 
 // ── tanks & invitations ──
-export function createTank(db, user, name, startWorld = null) {
+export function createTank(db, user, name, startWorld = null, wantCode = null) {
   if (tankOf(db, user.id)) throw new GameError('ALREADY_IN_TANK', 'You already belong to a tank.', 409);
   const now = Date.now(), id = crypto.randomUUID(), tn = clean(name, 24) || 'Our Tank';
   return tx(db, () => {
     for (let i = 0; i < 40; i++) {
-      const code = randomCode();
-      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(startWorld ?? R.newWorld(now, crypto.randomInt(1000), { empty: true }))); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
+      const code = wantCode && i === 0 ? wantCode : randomCode();
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(startWorld ?? R.newWorld(now, crypto.randomInt(1000), { empty: true }))); } catch (e) { if (/UNIQUE/.test(String(e.message))) { if (wantCode && i === 0) throw new GameError('CODE_TAKEN', 'That tank already exists again.', 409); continue; } throw e; }
       db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,1,?,?)').run(id, user.id, now, now);
       addJournal(db, id, 'Our tank began.', user.id, now);
       return { id, code, name: tn, slot: 1 };
@@ -93,7 +93,10 @@ export function importTank(db, user, data) {
   world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: null, name: String(f.name ?? 'Fish').slice(0, 14) }));
   world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = []; world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
   world.flags = { ...(world.flags ?? {}), firsts: { [user.id]: true }, intro: world.flags?.intro ?? now };
-  const made = createTank(db, user, data.tank?.name, world); return { ...made, fish: world.fish.length };
+  // a tank put back after the server lost its data keeps its old code, so the friends who still have it can walk straight back in
+  const want = data.heal ? normalizeCode(data.code) : null, healCode = want && want.length === 6 && [...want].every((ch) => ALPHABET.includes(ch)) ? want : null;
+  if (healCode) world.flags.healed = now;
+  const made = createTank(db, user, data.tank?.name, world, healCode); return { ...made, fish: world.fish.length };
 }
 // Everything about a player is removed. A tank with nobody left in it is removed too.
 export function deleteUser(db, user) {

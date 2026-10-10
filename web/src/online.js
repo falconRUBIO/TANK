@@ -31,7 +31,10 @@ export class Live {
     const ws = (this.ws = new WebSocket(url));
     ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
     ws.onmessage = (e) => { this.lastMsg = Date.now(); const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
-    ws.onclose = () => { this.onStatus(false); if (!this.closed) setTimeout(() => this.open(), Math.min(8000, 800 * 2 ** this.retry++)); };
+    ws.onclose = () => {
+      this.onStatus(false);
+      if (!this.closed) { if (this.retry >= 2 && !this.checking) { this.checking = true; api('/api/me').then(() => { this.checking = false; }).catch((e) => { this.checking = false; if (e.status === 401) location.reload(); }); } setTimeout(() => this.open(), Math.min(8000, 800 * 2 ** this.retry++)); }       // signed out because the server lost its data: start over, which restores the tank
+    };
     ws.onerror = () => ws.close();
   }
   // A phone that was asleep can hold a dead connection that still looks open. Start a fresh one; the server answers with the current tank.
@@ -69,7 +72,11 @@ export function runOnboarding() {
     // returning player with a saved identity
     if (session?.token) {
       try { const me = await api('/api/me'); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank }); }
-      catch (e) { if (e.offline) return done({ mode: 'local' }); session = null; }
+      catch (e) {
+        if (e.offline) return done({ mode: 'local' });
+        if (e.status === 401) { const healed = await healTank().catch(() => null); if (healed) return done({ mode: 'net', user: healed.user, tank: healed.tank, healed: true }); }
+        session = null;
+      }
     } else if (!(await serverAvailable())) return done({ mode: 'local' });
 
     const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey }; store(session); };
@@ -155,6 +162,19 @@ export function runOnboarding() {
     const m = location.pathname.match(/^\/join\/([A-Za-z0-9]{6})$/);
     if (m) joinScreen('', m[1].toUpperCase()); else welcome();
   });
+}
+// The server forgot us (its data was lost). If this phone kept a copy of the tank, make a new account with the same name and put the tank back under its old code;
+// if a friend's phone got there first, just join it. Either way nobody has to type anything.
+async function healTank() {
+  let c = null; try { c = JSON.parse(localStorage.getItem('ourtank.cache') || 'null'); } catch { /* none */ }
+  if (!c?.code || !c.world || !c.user || (session?.userId && c.userId !== session.userId)) return null;
+  const r = await api('/api/users', { name: c.user.name || 'Guest', avatar: c.user.avatar });
+  session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey, named: true }; store(session);
+  try { await api('/api/import', { app: 'our-tank', tank: { name: c.name }, world: c.world, code: c.code, heal: true }); }
+  catch (e) { if (e.code === 'CODE_TAKEN') await api('/api/join', { code: c.code }); else throw e; }
+  const me = await api('/api/me'); if (!me.tank) return null;
+  try { localStorage.setItem('ourtank.cache', JSON.stringify({ ...c, userId: r.userId })); } catch { /* ignore */ }
+  return me;
 }
 export const getSession = () => session;
 export async function ensureRecoveryKey() { if (session?.recoveryKey) return session.recoveryKey; const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }

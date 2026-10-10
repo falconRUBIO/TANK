@@ -620,7 +620,7 @@ function maybeSettle() {
 // every caretaker brings in a first fish of their own (the creator's is Pip)
 async function firstFishPrompt() {
   const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
-  const s = game.state; if (!s || s.flags.firsts?.[me] || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
+  const s = game.state; if (!s || s.flags.firsts?.[me] || s.flags.healed || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
   const pk = await ui.pickFish({ title: 'YOUR FIRST FISH', text: 'Choose a free fish of your own to bring into the tank. Everyone can care for it, but you brought it in. Then name it.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
   const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
 }
@@ -628,7 +628,7 @@ async function firstFishPrompt() {
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
   if (window.__noGL) { $('ltxt').textContent = 'This browser cannot draw the tank. Try Safari or Chrome on a recent phone.'; return new Promise(() => {}); }
-  const r = await runOnboarding();
+  const r = await runOnboarding(); if (r.healed) setTimeout(() => ui?.toast('The server had been reset. Your tank is back, with the same code.', 5200), 3000);
   if (r.mode === 'net') {
     const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); });
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
