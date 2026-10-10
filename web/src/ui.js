@@ -94,7 +94,17 @@ export function initUI({ game, social, cb }) {
   $('goal').onclick = () => { if ($('goal').dataset.gift) { cb.gift(); return; } const t = $('goal').dataset.tab; if (t) open(t); };
 
   // ── sheets ──
-  const meters = () => { const s = S(); const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`; const me = game.you?.userId, octos = s.fish.filter((f) => f.species === 'octopus' && !f.dead).map((f) => bar(`${esc(f.name)}${game.shared && f.owner ? (f.owner === me ? ' (yours)' : ` (${esc(f.ownerName ?? 'a friend')}'s)`) : ''} fed`, 1 - octoHunger(f))).join(''); return `<div class="needs wide">${hasFishOnly(s) || !hasOcto(s) ? bar('Fed', 1 - s.hunger) : ''}${octos}${bar('Water', s.water)}${bar('Glass', 1 - s.glass)}${bar('Fish', Math.min(1, s.fish.length / capacity(s.level)))}</div>`; };
+  // the tank at a glance: one row per thing to look after, with a word for how it is, a coloured bar, and a line saying what to do and how quickly it changes
+  const meters = () => {
+    const s = S(), me = game.you?.userId, row = (icon, name, v, [word, lv], hint) => `<div class="meter ${lv}"><span class="mi">${icon}</span><div class="mb"><div class="mt"><b>${name}</b><em>${word}</em></div><i><b style="width:${Math.round(Math.max(0.02, Math.min(1, v)) * 100)}%"></b></i>${hint ? `<small>${hint}</small>` : ''}</div></div>`;
+    const lvl = (v, a, b, words) => (v >= a ? [words[0], 'ok'] : v >= b ? [words[1], 'mid'] : [words[2], 'low']), rows = [];
+    for (const f of s.fish.filter((x) => x.species === 'octopus' && !x.dead)) { const v = 1 - octoHunger(f), mine = canFeedOcto(f, me, game.shared); rows.push(row('🐙', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (v < 0.6 ? 'Drop a crab from Feed' : 'Empties in about 8 hours. Only you feed it.') : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
+    if (hasFishOnly(s)) { const v = 1 - s.hunger; rows.push(row('🐟', 'The fish', v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), v < 0.6 ? 'Feed them flakes from Feed' : 'Get hungry in about 5 hours')); }
+    rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? 'Time for a water change' : 'Turns cloudy over a couple of days'));
+    rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? 'Give it a wipe' : 'Algae builds up over about a day'));
+    const n = s.fish.length + (s.orders ?? []).reduce((a, o) => a + (SPECIES_DEF[o.species]?.count ?? 1), 0), cap = capacity(s.level);
+    return `<div class="meters">${rows.join('')}</div><p class="room">🐠 <b>${n} of ${cap}</b> places in the tank are taken${n < cap ? ` · room for ${cap - n} more` : ' · level up to make room'}</p>`;
+  };
   const slotsHtml = () => {
     const s = game.members; if (!s) return '';
     return [1, 2, 3].map((n) => { const m = s.find((x) => x.slot === n); return m

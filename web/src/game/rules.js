@@ -548,7 +548,10 @@ export function tankMood(t, now = Date.now()) {
   const worst = Math.max(...t.fish.map((f) => f.ail ?? 0)), happy = t.fish.reduce((n, f) => n + (f.happy ?? 0.7), 0) / t.fish.length;
   if (worst >= AIL_WARN) return { key: 'neglected', label: 'Neglected', note: 'A fish is in a critical state. Feed the tank and change the water.' };
   const hungryOcto = t.fish.find((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.75);
-  if (worst >= AIL_TIRED || hungryOcto || !(t.hunger <= 0.7 && t.water >= 0.5)) return { key: 'attention', label: 'Needs care', note: t.hunger > 0.7 ? 'The fish are hungry.' : hungryOcto ? `${hungryOcto.name} is hungry.` : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
+  const fishHungry = t.hunger > 0.7 && t.fish.some((f) => !isOcto(f) && !f.dead);      // the tank's hunger is the fish's; an octopus has its own
+  if (worst >= AIL_TIRED || hungryOcto || fishHungry || t.water < 0.5) return { key: 'attention', label: 'Needs care', note: fishHungry ? 'The fish are hungry.' : hungryOcto ? `${hungryOcto.name} is hungry.` : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
+  { const todo = [t.water < 0.7 && 'the water is turning cloudy', t.glass > 0.45 && 'algae is growing on the glass', t.fish.some((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.4) && `${t.fish.find((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.4).name} is getting peckish`, t.hunger > 0.45 && t.fish.some((f) => !isOcto(f) && !f.dead) && 'the fish are getting peckish'].filter(Boolean);
+    if (todo.length) return { key: 'good', label: 'Could use a hand', note: todo[0][0].toUpperCase() + todo.slice(0, 2).join(' and ').slice(1) + '.' }; }
   if (lookedAfter(t) && happy >= 0.75) return { key: 'thriving', label: 'Thriving', note: 'Clean, fed and happy.' };
   return { key: 'good', label: 'Doing well', note: 'Nothing urgent.' };
 }
