@@ -1,4 +1,4 @@
-// HTML chrome: header, bottom-sheet tabs (Care / Decorate / Friends / Journal / Settings), shop, modals, toasts.
+// HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { CRAB_PRICE, driftBlame, giftReady } from './game/rules.js';
 import { SOCIAL, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
@@ -35,7 +35,7 @@ export function initUI({ game, social, cb }) {
   const S = () => game.state;
   // ── notices: every hint, message and card is kept on this phone, newest first, with a bell that counts the new ones ──
   const NK = 'ourtank.notices', RK = 'ourtank.noticesRead';
-  let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]'); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
+  let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
   const noticeSave = () => { try { localStorage.setItem(NK, JSON.stringify(notices.slice(0, 80))); } catch { /* storage unavailable */ } };
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
     if (!text || notices.some((n) => n.text === text && Date.now() - n.ts < 2 * 3600e3)) return;
@@ -72,10 +72,9 @@ export function initUI({ game, social, cb }) {
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
-    if (!(game.giftTried && Date.now() - game.giftTried < 20 * 3600e3) && giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) return { text: 'A small gift is waiting for you.', tab: '', gift: true };
-    { const me = game.you?.userId, oc = s.fish.filter((f) => canFeedOcto(f, me, game.shared) && octoHunger(f) > 0.5).sort((a, b) => octoHunger(b) - octoHunger(a))[0]; if (oc) return { text: `${oc.name} is hungry. Drop it a crab from Care.`, tab: 'care' }; }
+        { const me = game.you?.userId, oc = s.fish.filter((f) => canFeedOcto(f, me, game.shared) && octoHunger(f) > 0.5).sort((a, b) => octoHunger(b) - octoHunger(a))[0]; if (oc) return { text: `${oc.name} is hungry. Drop it a crab from Care.`, tab: 'care' }; }
     if (s.hunger > 0.5 && hasFishOnly(s)) return { text: 'The fish are getting hungry. Feed them.', tab: 'care' };
-    if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in Decorate.', tab: 'decorate' };
+    if (Object.values(s.flags.starter ?? {}).some((n) => n > 0) && !s.decor.length) return { text: 'A free plant is waiting in the Shop.', tab: 'decorate' };
     if (s.glass > 0.45) return { text: 'Algae on the glass. Give it a wipe.', tab: 'care' };
     if (s.water < 0.6) return { text: 'The water could use a change.', tab: 'care' };
     if (s.want) return { text: s.want.text, tab: '' };
@@ -167,7 +166,7 @@ export function initUI({ game, social, cb }) {
     const row = ([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`, first = up.slice(0, 3), rest = up.slice(3);
     const k = dayTicks(s, now), m = tankMood(s, now), n = [k.care, k.wish, k.bond].filter(Boolean).length, tick = (v) => (v ? '✓' : '○');
     const careCard = s.fish.length && adv() ? `<div class="orders daycare ${k.paid ? 'done' : ''}"><small>TODAY'S CARE · ${n} OF 3${k.paid ? ' · PERFECT DAY' : ''}</small><div><span>${tick(k.care)} Tank looked after</span><b>${k.care ? '' : 'feed · water · glass'}</b></div><div><span>${tick(k.wish)} Today's request</span><b></b></div><div><span>${tick(k.bond)} A fish got attention</span><b>${k.bond ? '' : 'play · teach · pet'}</b></div>${k.paid ? '' : `<div class="dim"><span>All three: +${PERFECT_DAY_REWARD} 🐚. Missing a day costs nothing.</span></div>`}</div>` : '';
-    return `${lvRow()}<div class="moodchip ${m.key}"><b>${m.label}</b> · ${esc(m.note)}</div>${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${s.fish.length > 1 ? (() => { const hm = harmonyOf(s); return `<div class="moodchip harm ${hm.key}"><b>Harmony: ${hm.label}</b> · ${esc(hm.note)}</div>`; })() : ''}${careCard}<button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>
+    return `${lvRow()}<div class="moodchip ${m.key}"><b>${m.label}</b> · ${esc(m.note)}</div>${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${s.fish.length > 1 ? (() => { const hm = harmonyOf(s); return `<div class="moodchip harm ${hm.key}"><b>Harmony: ${hm.label}</b> · ${esc(hm.note)}</div>`; })() : ''}${careCard}${g.gift || !g.text ? '' : `<button class="wish daily" data-open="${g.tab || 'tank'}"><small>WORTH DOING NOW</small><span>${esc(g.text)}</span>${g.tab && g.tab !== 'tank' ? '<b>Go ›</b>' : ''}</button>`}
       ${S().want ? wantHtml() : dailyHtml()}${first.length ? `<div class="orders"><small>COMING UP</small>${first.map(row).join('')}</div>` : ''}
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
       `;

@@ -508,7 +508,7 @@ const tut = (() => {
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Friends tab so three friends can join.` : 'Up to four friends can care for one tank. They join with a six-character code when you play on the server.';
         ui.showCoach({ title: 'BETTER TOGETHER', text: share, button: 'Got it', onButton: () => set(3), skip: skip });
       } else if (step === 3) {
-        ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open Decorate, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
+        ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open the Shop, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
         ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Nicely done. Care for your fish and tap one any time to get to know it.', button: 'Show me what is coming', onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'COMING UP', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Friends tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
       }

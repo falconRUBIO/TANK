@@ -356,7 +356,7 @@
   #sheet{height:min(60vh,calc(100vh - var(--top) - var(--bar) - 56px))!important;max-height:none!important}
   #sheet:not(.on),#card:not(.on){transform:translateY(46px) scaleY(.86)!important;opacity:0!important;pointer-events:none!important}#sheet.on,#card.on{transform:translateY(var(--pull,0px))!important;opacity:1!important}
   #sheet.drag,#card.drag{transition:none!important}nav{z-index:9!important}
-  #sheet .x{background:transparent!important;backdrop-filter:none!important}#sheet > h3{background:var(--lg-bg)!important;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border-bottom:1px solid rgba(255,255,255,.12)}
+  #sheet .x{background:rgba(52,78,104,.9)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;backdrop-filter:blur(18px) saturate(1.4)!important}#sheet > h3{background:rgba(52,78,104,.9)!important;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border-bottom:1px solid rgba(255,255,255,.12)}
   #sheet .x,#sheet > h3{top:0!important}#sheet .x{position:absolute!important;height:18px!important;width:100%!important;margin:0!important;left:0;z-index:7;pointer-events:auto}#sheet .x::before{top:7px}#sheet > h3{padding-top:16px!important}
   #sheet .x{position:sticky!important;float:none;display:block}#sheet > h3{margin-top:-18px!important;padding-top:20px!important}
   /* the bell in the header and the notices page */
