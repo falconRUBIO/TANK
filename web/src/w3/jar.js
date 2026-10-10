@@ -17,9 +17,9 @@ export function buildCrab() {
   for (const sx of [-1, 1]) { body.fill(sx * 3 - 1, 9, 5, sx * 3, 11, 5, [236, 190, 170]); body.fill(sx * 3 - 1, 12, 5, sx * 3, 13, 6, [18, 14, 20]); body.set(sx * 3 - (sx > 0 ? 0 : 1), 13, 6, [255, 255, 255]); }       // eyes on stalks
   body.fill(-1, 3, 6, 1, 4, 7, [90, 30, 30]);                                                               // mouth
   topLit(body); const bm = body.mesh(); g.add(bm);
-  const legs = new Vox(U), leg = (sx, n) => { const z = -4 + n * 2.6, kx = sx * (11 + (n === 1 || n === 2 ? 1.5 : 0)), a = [sx * 8, 4, z], k = [kx, 8 - n * 0.3, z + 0.6], f = [sx * (15 + n * 0.5), 0, z + 1.6]; for (const [p, q] of [[a, k], [k, f]]) for (let t = 0; t <= 1.001; t += 0.07) { const x = Math.round(p[0] + (q[0] - p[0]) * t), y = Math.round(p[1] + (q[1] - p[1]) * t), zz = Math.round(p[2] + (q[2] - p[2]) * t); legs.set(x, y, zz, t < 0.2 ? shellLo : [184, 52, 38]); if (t > 0.9 && q === f) legs.set(x, y, zz, tip); } legs.set(Math.round(k[0]), Math.round(k[1]), Math.round(k[2]), shellHi); };
-  for (const sx of [-1, 1]) for (let n = 0; n < 4; n++) leg(sx, n);
-  const lm = legs.mesh(); g.add(lm);
+  const lm = new THREE.Group(), legMeshes = [], leg = (sx, n) => { const legs = new Vox(U); const z = -4 + n * 2.6, kx = sx * (11 + (n === 1 || n === 2 ? 1.5 : 0)), a = [sx * 8, 4, z], k = [kx, 8 - n * 0.3, z + 0.6], f = [sx * (15 + n * 0.5), 0, z + 1.6]; for (const [p, q] of [[a, k], [k, f]]) for (let t = 0; t <= 1.001; t += 0.07) { const x = Math.round(p[0] + (q[0] - p[0]) * t), y = Math.round(p[1] + (q[1] - p[1]) * t), zz = Math.round(p[2] + (q[2] - p[2]) * t); legs.set(x, y, zz, t < 0.2 ? shellLo : [184, 52, 38]); if (t > 0.9 && q === f) legs.set(x, y, zz, tip); } legs.set(Math.round(k[0]), Math.round(k[1]), Math.round(k[2]), shellHi);  const m = legs.mesh(); m.userData.p0 = m.position.clone(); lm.add(m); legMeshes.push(m); };
+  for (let n = 0; n < 4; n++) for (const sx of [-1, 1]) leg(sx, n);      // each leg is its own piece, so an octopus can pull them off one at a time
+  g.add(lm);
   const claws = [-1, 1].map((sx) => {                                                                       // each claw: an arm, a palm and two pincers (one fixed, one that snaps)
     const arm = new Vox(U), fix = new Vox(U), mov = new Vox(U), pivot = new THREE.Group(), hinge = new THREE.Group();
     for (let t = 0; t <= 1.001; t += 0.08) { const x = Math.round(sx * (7 + t * 3)), y = Math.round(5 + t * 4), z = Math.round(4 + t * 4); arm.fill(x - 1, y - 1, z - 1, x, y, z, t < 0.5 ? shellLo : shellHi); }
@@ -28,6 +28,7 @@ export function buildCrab() {
     mov.ellipsoid(0, 0, 3, 1.4, 1.3, 3.2, (i, j, k) => (k > 4 ? tip : shellHi), 10, 0.08);
     const am = arm.mesh(), fm = fix.mesh(), mm = mov.mesh(); pivot.add(am, fm); hinge.position.set(sx * 10.5 + sx * 1.2 * U / U * 0 + sx * 1.0 * 1, 0, 0); hinge.position.set((sx * 10.5 + sx * 1.2) * U, 9.5 * U + 0.0, 11.6 * U); mm.position.set(0, 0, 0); hinge.add(mm); pivot.add(hinge); g.add(pivot); return { pivot, hinge, sx };
   });
+  g.userData.parts = [...legMeshes, ...claws.map((c) => { c.pivot.userData.p0 = c.pivot.position.clone(); return c.pivot; })]; g.userData.body = bm;      // eaten in this order: legs, then claws, then the shell
   g.scale.setScalar(0.9); g.userData.tick = (t, scare = 0) => {
     const f = 1 + scare * 2.4;
     claws.forEach((c, i) => { c.hinge.rotation.x = -(0.15 + 0.45 * (0.5 + 0.5 * Math.sin(t * 3.2 * f + i * 1.9))) * (1 + scare * 0.5); c.hinge.rotation.y = -c.sx * 0.12; c.pivot.rotation.x = -0.08 * Math.sin(t * 2.1 * f + i); });

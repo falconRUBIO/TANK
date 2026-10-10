@@ -19,6 +19,7 @@ const h3 = (x, y, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0,
 const vnoise = (x, y, z) => { const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), fx = x - xi, fy = y - yi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz), L = (a, b, t) => a + (b - a) * t;
   return L(L(L(h3(xi, yi, zi), h3(xi + 1, yi, zi), u), L(h3(xi, yi + 1, zi), h3(xi + 1, yi + 1, zi), u), v), L(L(h3(xi, yi, zi + 1), h3(xi + 1, yi, zi + 1), u), L(h3(xi, yi + 1, zi + 1), h3(xi + 1, yi + 1, zi + 1), u), v), w); };
 
+const _w1 = new THREE.Vector3(), _w2 = new THREE.Vector3();
 export class Fish3D {
   static world = { push: null };
   static poseScale = 1;                     // 1 at full quality; larger on slower phones, so the rig is posed less often
@@ -146,7 +147,8 @@ export class Fish3D {
   // and the crab rides on the real tip of the arm.
   updateGrab(dt, S) {
     const h = this.hunt, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), rig = this.rig; if (!h || !rig) return;
-    const dx = h.x - this.pos.x, dz = h.z - this.pos.z, C = [(dx * ch - dz * sh) / sc, (0.2 - this.pos.y) / sc, (dx * sh + dz * ch) / sc], M = [4, -6.6, 0];
+    const dx = h.x - this.pos.x, dz = h.z - this.pos.z, C = [(dx * ch - dz * sh) / sc, (0.2 - this.pos.y) / sc, (dx * sh + dz * ch) / sc], M = [4, -7.6, 0], H = [17, -6.5, 0];      // M: the beak, under the head. H: where the crab is held while it is taken apart
+    const parts = h.mesh?.userData?.parts ?? [], P0 = 3.4, STEP = 0.72, END = P0 + parts.length * STEP + 1.4;
     let G = this.rs.grab; if (!G) {
       const ang = Math.atan2(C[2], C[0] - 3); let best = 0, bd = 9; rig.arms.forEach((a, i) => { const d = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (d < bd) { bd = d; best = i; } });
       const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0 };
@@ -156,16 +158,32 @@ export class Fish3D {
     G.t += dt; const t = G.t, e = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
     let T; if (t < 1.0) { const q = e(t / 1.0); T = [G.p0[0] + (C[0] - G.p0[0]) * q, G.p0[1] + (C[1] - G.p0[1]) * q + Math.sin(q * Math.PI) * 3, G.p0[2] + (C[2] - G.p0[2]) * q]; }
     else if (t < 1.8) { T = [C[0] + Math.sin(t * 31) * 0.9, C[1] + Math.abs(Math.sin(t * 27)) * 0.6, C[2] + Math.cos(t * 29) * 0.9]; this.sq = Math.max(this.sq, 0.22 * Math.abs(Math.sin(t * 24))); this.flush = Math.max(this.flush, 0.6); }      // pinned: the crab kicks, the arm holds, the mantle pumps
-    else if (t < 3.1) { const q = e((t - 1.8) / 1.3); T = [C[0] + (M[0] - C[0]) * q, C[1] + (M[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (M[2] - C[2]) * q]; } else T = M;
-    G.w = Math.min(1, t / 0.3) * (t > 3.5 ? Math.max(0, 1 - (t - 3.5) / 0.35) : 1);
+    else if (t < 3.1) { const q = e((t - 1.8) / 1.3); T = [C[0] + (H[0] - C[0]) * q, C[1] + (H[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (H[2] - C[2]) * q]; } else T = [H[0] + Math.sin(t * 5) * 0.4, H[1] + Math.sin(t * 7) * 0.3, H[2]];   // then held out in front, below the eyes, never inside the body
+    G.w = Math.min(1, t / 0.3) * (t > END - 0.5 ? Math.max(0, 1 - (t - (END - 0.5)) / 0.4) : 1);
     h.pinned = t >= 1.0;
     const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp); G.p[0] += (T[0] - tip[0]) * Math.min(1, dt * 6); G.p[1] += (T[1] - tip[1]) * Math.min(1, dt * 6); G.p[2] += (T[2] - tip[2]) * Math.min(1, dt * 6);
-    if (t > 1.8 && h.mesh) {                                                                                 // lifted: the crab is in the arm's grip, carried to the mouth
-      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch); h.mesh.rotation.z = Math.min(0.7, (t - 1.8) * 0.6);
-      if (t > 3.1) h.mesh.scale.setScalar(Math.max(0.01, 1.7 * (1 - (t - 3.1) / 0.5)));
+    // eating: the crab is held out in front, and taken apart a leg at a time. Each piece is pulled off, carried under the head to the beak, and chewed; the claws go last, then the shell
+    const toWorld = (m, out) => { const x = m[0] * sc, z = m[2] * sc; return out.set(this.pos.x + x * ch + z * sh, this.pos.y + this.lift + m[1] * sc, this.pos.z - x * sh + z * ch); };
+    let chew = 0;
+    if (t > 1.8 && h.mesh) {                                                                                 // lifted: the crab rides in the arm's grip
+      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch);
+      h.mesh.rotation.z = Math.min(0.5, (t - 1.8) * 0.5); h.mesh.rotation.y = -this.heading + Math.PI / 2;     // its belly toward the octopus
+      const small = 1.7 - 0.6 * e((t - 1.8) / 1.3); if (t < END - 0.9) h.mesh.scale.setScalar(small);       // drawn in a little as it is lifted, so it fits in front of the head
+      if (t > P0 - 0.2) {
+        const mouth = toWorld(M, _w1); h.mesh.updateMatrixWorld(true);
+        parts.forEach((pt, i) => {
+          const t0 = P0 + i * STEP, q = (t - t0) / (STEP * 0.85); if (q < 0) return;
+          if (q >= 1) { pt.visible = false; return; }
+          const lp = pt.parent.worldToLocal(_w2.copy(mouth)), p0 = pt.userData.p0, k = e(q), tug = q < 0.25 ? Math.sin(q / 0.25 * Math.PI * 3) * 0.04 : 0;      // a few tugs, then it comes away
+          pt.position.set(p0.x + (lp.x - p0.x) * (q < 0.25 ? 0 : (k - 0.03) / 0.97) + tug, p0.y + (lp.y - p0.y) * (q < 0.25 ? 0 : k), p0.z + (lp.z - p0.z) * (q < 0.25 ? 0 : k));
+          pt.scale.setScalar(q < 0.6 ? 1 : Math.max(0.01, 1 - (q - 0.6) / 0.4)); chew = Math.max(chew, q > 0.6 ? Math.sin((q - 0.6) / 0.4 * Math.PI) : 0);
+        });
+        const tb = P0 + parts.length * STEP;                                                             // last, the shell itself
+        if (t > tb) { const q = Math.min(1, (t - tb) / 0.9), k = e(q); h.mesh.position.lerp(mouth, k); h.mesh.scale.setScalar(Math.max(0.01, small * (1 - Math.max(0, q - 0.5) / 0.5))); chew = Math.max(chew, q > 0.4 ? Math.sin(Math.min(1, (q - 0.4) / 0.6) * Math.PI) : 0); }
+      }
     }
-    this.chewK = t > 3.2 && t < 4.6 ? Math.min(1, (t - 3.2) / 0.2) * Math.min(1, (4.6 - t) / 0.3) : 0;      // a brief chew once the crab is at the mouth
-    if (t >= 4.8) { S.t = 0; }
+    this.chewK = Math.max(chew, t > P0 && t < END - 0.4 ? 0.25 + 0.15 * Math.sin(t * 9) : 0);                 // the beak keeps working while it eats
+    if (t >= END) { S.t = 0; }
   }
   // holding something: a shell carried home in the front arms, or one arm gripping the jar's lid and twisting it while the others steady the glass
   updateHold(dt, S, kind) {
