@@ -73,6 +73,8 @@ Phones also keep a copy of their tank and put it back under the same code if the
 
 ## Notifications
 
+What they say, when nobody has the tank open: a fish has died, a fish is in a critical state, a rare visitor, a solved puzzle jar, an arrival or a hatch, a growth milestone or a discovery. When nothing happened but care is overdue: your own octopus is hungry (only you are told), the fish are hungry or the water needs changing (everyone), each at most once in 12 hours. Also: a friend joined your tank, a nudge, a bottle. At most one a day per person (two when a friend writes to you), never between 22:00 and 08:00 local time.
+
 They work with no setup: the server makes its own key pair the first time it starts and keeps it in the database (set `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` yourself only if you want to bring your own). Keep the disk attached, or phones will have to switch notifications back on after a redeploy. Players get a Notifications switch in Settings, plus a "Send a test" button to check that they arrive. At most one a day, never between 22:00 and 08:00 their time, never a "come back" reminder.
 
 On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Our Tank from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later.

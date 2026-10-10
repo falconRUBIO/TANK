@@ -3,7 +3,7 @@
 import * as R from '../web/src/game/rules.js';
 const visits = +(process.argv[2] || 3), DAYS = +(process.argv[3] || 60), H = 3600e3, DAY = 864e5;
 const sim = (visitsPerDay) => {
-  const t = R.newWorld(0, 3); R.norm(t, 0); t.flags.tut = 5; let now = 0; const log = { level: {}, species: {}, shellsEarned: 0, fish: {}, wishes: {} }; let lastLevel = 1, lastWish = 0;
+  const t = R.newWorld(0, 3); R.norm(t, 0); t.flags.tut = 5; t.fish.push(R.ensureFish({ id: 'oct', name: 'Ink', species: 'octopus', seed: 3, born: 0, stage: 'baby', traits: ['Curious'], owner: 'sim', ownerName: 'Sim' })); let now = 0; const log = { level: {}, species: {}, shellsEarned: 0, fish: {}, wishes: {} }; let lastLevel = 1, lastWish = 0;
   const gaps = visitsPerDay === 1 ? [10] : visitsPerDay === 2 ? [8, 16] : visitsPerDay === 3 ? [8, 13, 20] : [8, 11, 14, 18, 21, 23];
   const want = () => [...Object.entries(R.SPECIES_DEF).map(([k, d]) => ({ kind: 'fish', k, ...d })), ...Object.entries(R.DECOR_DEF).map(([k, d]) => ({ kind: 'decor', k, ...d }))].filter((x) => x.level <= t.level).sort((a, b) => a.price - b.price);
   const bought = new Set();
@@ -12,7 +12,7 @@ const sim = (visitsPerDay) => {
     act({ t: 'tut', step: 5 });
     if (hr === gaps[0]) for (let c = 0; c < +(process.env.GIFT || 0); c++) R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now, name: 'Sim', uid: 'sim' + c });     // GIFT=n: n caretakers each collect the daily gift
     if (t.drift) act({ t: 'collect', id: t.drift.id });
-    if (t.hunger > 0.3) act({ t: 'feed' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
+    if (t.hunger > 0.3) act({ t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > 0.3) act({ t: 'feed', food: 'crab', fish: 'oct' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
     for (const f of t.fish.slice(0, 3)) act({ t: 'pet', id: f.id });
     // spend like a goal-driven player: new fish first (saving up for them), then new decorations, then more of what is already liked
     for (let guard = 0; guard < 8; guard++) {
