@@ -614,7 +614,8 @@ game.on('levelup', (lv) => {
   ui?.toast(`Tank level ${lv}!`, 3000);
   if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: `The tank is bigger. New in the shop:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 1200);
 });
-game.on('arrival', (ids) => { sfx('arrive'); for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
+game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arrival gets the screen to itself for a moment: tips and toasts wait
+  for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says ${({ octo: `${name ?? 'your octopus'} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('crab', (id) => { fishes.dropCrab(id); });
@@ -758,12 +759,21 @@ function maybeSettle() {
   stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 22000);
   ui.settle([nextUp(s, Date.now())]);
 }
-// every caretaker brings in a first fish of their own (the creator's is Pip)
+// every caretaker brings in an octopus of their own. It waits for a quiet moment (no popup, no card, the tank in view) and keeps waiting until it gets one:
+// it used to look once and give up if anything was open, and it never asked at all in a tank the server had put back, so a friend could join and never get one.
+let firstAsking = false;
 async function firstFishPrompt() {
-  const me = game.you?.userId; if (!game.shared || !me) return; await new Promise((r) => setTimeout(r, 2500));
-  const s = game.state; if (!s || s.flags.firsts?.[me] || s.flags.healed || $('modal').classList.contains('on') || (s.flags.tut ?? 0) < 5 && game.isTutOwner) return;
-  const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its colour, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
-  const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok) fail(r); else sfx('arrive');
+  const me = game.you?.userId; if (!game.shared || !me || firstAsking) return;
+  const s = game.state; if (!s) return;
+  const mine = s.fish.some((f) => f.owner === me && f.species === 'octopus' && !f.dead) || (s.orders ?? []).some((o) => o.owner === me && o.species === 'octopus');
+  if (s.flags.firsts?.[me] || mine) return;
+  if (game.isTutOwner && !s.fish.length) return;                                        // the creator's first octopus comes from the opening instead
+  if ($('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('settle')?.classList.contains('on') || focus || play || placing || (ui?.tab && ui.tab !== 'tank')) return;
+  firstAsking = true;
+  try {
+    const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its colour, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+    const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else if (r.ok) sfx('arrive');
+  } finally { firstAsking = false; }
 }
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
@@ -809,7 +819,7 @@ async function boot() {
   document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { tune(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
-  welcomeBack(); firstFishPrompt(); requestAnimationFrame(frame);
+  welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });

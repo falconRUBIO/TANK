@@ -13,7 +13,7 @@ await p.goto(base + '/?lite=1&dev=1'); await p.waitForSelector('#modal.on #mok',
 console.log('Tutorial');
 ck('first run offers an octopus in six colours and a name', (await p.textContent('#modal h2')) === 'WELCOME TO YOUR TANK' && (await p.$$('#modal .pk.pc')).length === 6);
 await p.fill('#mi', 'Pip'); await p.click('#mok');
-ck('then prompts to feed', await waitCoach('TIME FOR A SNACK'));
+ck('then prompts to feed, once the octopus has dropped in quietly', await (async () => { for (let i = 0; i < 100; i++) { if ((await coach()) === 'TIME FOR A SNACK') return true; await p.waitForTimeout(150); } return false; })());
 await p.click('nav [data-tab=care]', { force: true }); await p.click('[data-act=feeddrawer]'); await p.waitForSelector('.drawer [data-feed]'); await p.click('.drawer [data-feed]'); ck('the care menu closes and no other menu is left over', await p.evaluate(() => !document.getElementById('sheet').classList.contains('on') && !document.getElementById('feedbar')));
 const s0 = await S(); await p.waitForTimeout(600); await p.mouse.click(200, 300); await p.waitForTimeout(250); ck('shells fly up to the counter', (await p.$$('.flyshell')).length > 0); await p.waitForTimeout(200);
 const s1 = await S(); ck('feeding pays a shell and the octopus is less hungry', s1.shells === s0.shells + 1 && s1.fish[0].hunger < s0.fish[0].hunger, `${s0.shells}→${s1.shells}, hunger ${s0.fish[0].hunger}→${s1.fish[0].hunger}`);

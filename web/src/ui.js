@@ -22,7 +22,15 @@ export function initUI({ game, social, cb }) {
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
   const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
-  const nextToast = () => { if (cardUp() && tq.length) { showing = 1; toastEl.classList.remove('on'); clearTimeout(tt); tt = setTimeout(nextToast, 700); return; } const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
+  // hush: for a few seconds nothing pops up (a new octopus dropping in gets the screen to itself); whatever comes meanwhile waits its turn
+  let hushUntil = 0, hushT = 0, coachLater = null;
+  const hushed = () => performance.now() < hushUntil;
+  const hush = (ms) => {
+    hushUntil = Math.max(hushUntil, performance.now() + ms); toastEl.classList.remove('on'); clearTimeout(tt); showing = tq.length ? 1 : 0;
+    const coachEl = $('coach'); if (coachEl?.classList.contains('on') && coachEl._args) { coachLater = coachEl._args; coachEl.classList.remove('on'); }
+    clearTimeout(hushT); hushT = setTimeout(() => { if (coachLater) { const a = coachLater; coachLater = null; showCoach(a); } if (tq.length) nextToast(); else showing = 0; }, hushUntil - performance.now() + 50);
+  };
+  const nextToast = () => { if (hushed()) { showing = 1; clearTimeout(tt); tt = setTimeout(nextToast, hushUntil - performance.now() + 60); return; } if (cardUp() && tq.length) { showing = 1; toastEl.classList.remove('on'); clearTimeout(tt); tt = setTimeout(nextToast, 700); return; } const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
   const toast = (m, ms = 2400) => { notice(m, { kind: 'toast' }); if (tq.some((x) => x.m === m) || (showing && toastEl.textContent === m && toastEl.classList.contains('on'))) return; tq.push({ m, ms }); while (tq.length > 4) tq.splice(1, 1); if (!showing) nextToast(); };
   const clearToasts = () => { tq.length = 0; showing = 0; clearTimeout(tt); toastEl.classList.remove('on'); };
   const S = () => game.state;
@@ -414,21 +422,22 @@ export function initUI({ game, social, cb }) {
   }
   // coach card for the tutorial
   const coach = $('coach');
-  function showCoach({ title, text, button = null, onButton = null, skip = null }) {
+  function showCoach(args) {
+    const { title, text, button = null, onButton = null, skip = null } = args; coach._args = args; if (hushed()) { coachLater = args; coach.classList.remove('on'); return; }
     coach.innerHTML = `<b>${esc(title)}</b><p>${esc(text)}</p><div class="crow">${button ? `<button class="big sm" id="cbtn">${esc(button)}</button>` : ''}${skip ? `<button class="lnk" id="cskip">Skip tips</button>` : ''}</div>`;
     coach.classList.add('on'); if (button) $('cbtn').onclick = () => onButton?.(); if (skip) $('cskip').onclick = skip;
   }
-  const hideCoach = () => coach.classList.remove('on');
+  const hideCoach = () => { coachLater = null; coach.classList.remove('on'); };
   const flag = (tabName, on) => document.querySelectorAll('nav [data-tab]').forEach((n) => { if (n.dataset.tab === tabName) n.classList.toggle('dot2', on && tab !== tabName); });
   const pulse = (tabName) => document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('pulse', n.dataset.tab === tabName));
 
   // a quiet message that lives in the tank (not a popup that has to be dismissed): it fades in, waits a few seconds, and fades out; a tap clears it early
-  const shelf = (id, html, ms, onLink, tries = 0) => { if ($('coach')?.classList.contains('on') && tries < 40) { setTimeout(() => shelf(id, html, ms, onLink, tries + 1), 800); return; }      // a tip on screen goes first; the card waits its turn
+  const shelf = (id, html, ms, onLink, tries = 0) => { if (($('coach')?.classList.contains('on') || hushed()) && tries < 40) { setTimeout(() => shelf(id, html, ms, onLink, tries + 1), 800); return; }      // a tip on screen goes first; the card waits its turn
     const el = $(id); clearTimeout(el._t); for (const o of ['settle', 'reunion']) if (o !== id) $(o).classList.remove('on'); toastEl.classList.remove('on'); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); };
   const reunion = (lines, onPostcard) => { for (const l of lines) notice(l, { kind: 'card' }); return shelf('reunion', `<b>WELCOME BACK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<button class="lk">Send a postcard of the tank</button>`, 11000, onPostcard); };
   const settle = (lines) => { $('settle').classList.add('top'); for (const l of lines) notice(l, { kind: 'card' }); shelf('settle', `<b>COMING UP</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000); };
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }
