@@ -15,7 +15,7 @@ await start('/tmp/h2a.db');
 const av = { skin: '#e8b890', hair: '#5a3ad0', hat: null };
 const A = await api('/api/users', { name: 'Ana', avatar: av }), B = await api('/api/users', { name: 'Ben', avatar: av });
 const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags.tut = 5; world.level = 3; world.shells = 77;
-['clownfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: null })));
+['goldfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: null })));
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token);
 const tank = await api('/api/import', { app: 'our-tank', tank: { name: 'Hard' }, world }, A.token); await api('/api/join', { code: tank.code }, B.token);
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });

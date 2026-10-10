@@ -470,6 +470,25 @@ await t('a phone that connects catches the tank up for everyone: the phone alrea
   const wx = await open(x.token); await waitFor(wx, (m) => m.t === 'snapshot'); wx.msgs.length = 0;
   setW(tk.id, { shells: 77 }); const wy = await open(y.token); const got = await waitFor(wx, (m) => m.t === 'state' && m.tank.shells === 77); assert.equal(got.tank.shells, 77); wx.close(); wy.close();
 });
+await t('chaos: three phones act at random while connections drop and come back; in the end every phone agrees with the server', async () => {
+  const u = [await mkUser('C1'), await mkUser('C2'), await mkUser('C3')], tk = (await call('/api/tanks', { name: 'Chaos' }, u[0].token)).body; await call('/api/join', { code: tk.code }, u[1].token); await call('/api/join', { code: tk.code }, u[2].token);
+  setW(tk.id, { shells: 400, level: 8, flags: { ...getW(tk.id).flags, tut: 5, firsts: { [u[0].userId]: true, [u[1].userId]: true, [u[2].userId]: true } }, fish: [{ id: 'cf', name: 'Chaos', species: 'goldfish', seed: 1, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now(), hunger: 0.9, glass: 0.9, water: 0.4 });
+  const ph = u.map((x) => ({ x, ws: null, state: null })), conn = async (p) => { p.ws = await open(p.x.token); p.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'snapshot') p.state = m.tank; else if (m.t === 'state') p.state = m.tank; }); await waitFor(p.ws, (m) => m.t === 'snapshot'); };
+  for (const p of ph) await conn(p); let seq = 0, rngS = 12345; const rnd = () => ((rngS = (rngS * 16807) % 2147483647) / 2147483647);
+  const acts = [(i) => ({ t: 'feed', x: 0 }), (i) => ({ t: 'glass' }), (i) => ({ t: 'water' }), (i) => ({ t: 'pet', id: 'cf' }), (i) => ({ t: 'buyDecor', type: 'grass', x: (rnd() - 0.5) * 6, z: 1 + rnd(), ry: 0 }), (i) => ({ t: 'dailyGift', tz: 0 })];
+  for (let i = 0; i < 70; i++) {
+    const p = ph[(rnd() * 3) | 0]; if (rnd() < 0.15) { p.ws.close(); await new Promise((r) => setTimeout(r, 20)); await conn(p); }
+    const a = acts[(rnd() * acts.length) | 0](i); const idem = 'ch' + ++seq; p.ws.send(JSON.stringify({ ...a, idem })); if (rnd() < 0.2) p.ws.send(JSON.stringify({ ...a, idem }));      // sometimes the same message arrives twice
+    await new Promise((r) => setTimeout(r, 15));
+  }
+  await new Promise((r) => setTimeout(r, 500)); const w = getW(tk.id);
+  for (const p of ph) { assert.ok(p.state, 'phone has a tank'); assert.equal(p.state.shells, w.shells, 'shells agree'); assert.equal(p.state.level, w.level); assert.equal((p.state.decor ?? []).length, (w.decor ?? []).length, 'decor agrees'); assert.equal((p.state.fish ?? []).length, w.fish.length); assert.deepEqual(p.state.flags?.gift ?? {}, w.flags.gift ?? {}, 'gift claims agree'); }
+  assert.ok(Object.keys(w.flags.gift ?? {}).length <= 3 && Object.values(w.flags.gift ?? {}).length >= 0); for (const p of ph) p.ws.close();
+});
+await t('every tank message carries the server clock, and a ping is answered', async () => {
+  const w = await open(a.token); const snap = await waitFor(w, (m) => m.t === 'snapshot'); assert.ok(Math.abs(snap.now - Date.now()) < 5000, 'the snapshot has the server time');
+  w.send(JSON.stringify({ t: 'ping' })); await waitFor(w, (m) => m.t === 'pong'); w.close();
+});
 await t('two phones in one tank agree on a director, who alone sends fish positions and memories; a water change is mirrored', async () => {
   const x = await mkUser('Dir'), y = await mkUser('Fol'), tk = (await call('/api/tanks', { name: 'Sync' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
   const wx = await open(x.token), wy = await open(y.token), last = (w) => [...w.msgs].reverse().find((m) => m.t === 'role');

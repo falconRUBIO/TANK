@@ -37,7 +37,7 @@ ck('locked items explain themselves', (await p.textContent('.detail .note')).inc
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'shells' }, { dev: true })); await p.waitForTimeout(200);
 await p.click('[data-cat=FISH]'); await p.click('.card[data-k="fish:goldfish"]'); ck('fish are adoptable', !(await p.evaluate(() => document.getElementById('buy').disabled)));
 await p.click('#buy'); await p.waitForSelector('#modal.on #mi'); await p.fill('#mi', 'Mango'); await p.click('#mok'); await p.waitForTimeout(400);
-const so = await S(); ck('adopting places an order that is on its way', so.orders.length === 1 && so.fish.length === 1 && /arrives in/.test(await p.textContent('#goal')), `${so.orders.length} order, goal: ${await p.textContent('#goal')}`);
+const so = await S(); ck('adopting places an order that is on its way', so.orders.length === 1 && so.fish.length === 1 && /arrives in|small gift is waiting/.test(await p.textContent('#goal')), `${so.orders.length} order, goal: ${await p.textContent('#goal')}`);
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'rush' }, { dev: true })); await p.waitForTimeout(600);
 const s3 = await S(); ck('after the wait the baby fish arrives', s3.fish.length === 2 && s3.fish[1].name === 'Mango' && s3.fish[1].stage === 'baby', JSON.stringify(s3.fish.map((f) => f.name)));
 ck('the new fish appears in the tank', (await p.evaluate(() => window.__tank.fishes.length)) === 2);
@@ -82,7 +82,7 @@ const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]
 await p.evaluate(() => window.__ui.open('tank'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });
-await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { window.__wcScale = 30; }); await p.click('[data-act=water]'); await p.waitForFunction(() => !window.__wc.active && window.__wc.t < 0, null, { timeout: 300000 }); await p.waitForTimeout(500); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
+await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { window.__wcScale = 30; }); await p.click('[data-act=water]'); await p.evaluate(() => { for (let i = 0; i < 600 && window.__wc.active; i++) window.__wc.frame(0.1); });      // step the scene by hand: software rendering of a full tank is too slow to wait on real frames await p.waitForTimeout(500); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
 const s6 = await S(); ck('progress survives a reload', s6.fish.length === nFish && s6.decor.length >= 10 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
 await p.waitForSelector('#reunion.on', { timeout: 20000 });

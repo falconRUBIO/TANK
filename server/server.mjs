@@ -74,7 +74,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const stateKey = (w) => [w.shells, w.level, (w.fish ?? []).map((f) => f.id + f.stage).join(), (w.decor ?? []).length, w.drift?.id, (w.bottles ?? []).length, (w.orders ?? []).length, (w.eggs ?? []).length, w.visitor?.species, JSON.stringify(w.flags ?? {}), w.wishIdx, (w.floaters ?? []).length, JSON.stringify(w.style ?? {})].join('|');
   const directorOf = (tankId) => [...(rooms.get(tankId) ?? [])].sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || a.joinedAt - b.joinedAt)[0];
   const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
-  const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
+  const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o.t === 'snapshot' || o.t === 'state' ? { ...o, now: Date.now() } : o)); };        // the server's clock rides along so every phone counts down by the same time
   const broadcast = (tankId, o) => { for (const w of rooms.get(tankId) ?? []) send(w, o); };
   const ip = (req) => req.socket.remoteAddress ?? '?';
 

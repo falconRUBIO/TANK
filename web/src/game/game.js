@@ -10,7 +10,9 @@ export class Game {
   constructor() { this.state = null; this.journal = []; this.activity = []; this.members = null; this.messages = []; this.online = []; this.you = null; this.code = null; this.tankName = 'Our Tank'; this.mode = 'local'; this.h = {}; this.waiting = new Map(); this.connected = true; }
   on(evt, fn) { (this.h[evt] ||= []).push(fn); return this; }
   emit(evt, ...a) { for (const fn of this.h[evt] || []) { try { fn(...a); } catch (e) { console.error(e); } } }
-  get day() { return Math.floor((Date.now() - this.state.createdAt) / 864e5) + 1; }
+  // The shared tank's time is the server's, not this phone's: a phone clock that is minutes off must not make a delivery look late or early.
+  now() { return Date.now() + (this.skew ?? 0); }
+  get day() { return Math.floor((this.now() - this.state.createdAt) / 864e5) + 1; }
   get shared() { return this.mode === 'net'; }
   get isTutOwner() { return !this.shared || (this.members?.find((m) => m.id === this.you?.userId)?.slot ?? 1) === 1; }
 
@@ -51,7 +53,7 @@ export class Game {
     this.tick = setInterval(() => {
       this.emit('tick'); const s = this.state; if (!s || document.hidden) return;
       const due = Math.min(...(s.orders ?? []).map((o) => o.arrivesAt), ...(s.eggs ?? []).map((e) => e.hatchAt), Infinity);
-      if (due < Date.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 40) resync();      // keeps asking while something is overdue (about every 8 seconds), but a phone clock far ahead of the server cannot reconnect forever
+      if (due < this.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 40) resync();      // keeps asking while something is overdue (about every 8 seconds), but a phone clock far ahead of the server cannot reconnect forever
     }, 1000);
     addEventListener('pagehide', () => this.keepCopy(true));
     document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (document.hidden) this.keepCopy(true); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
@@ -67,6 +69,7 @@ export class Game {
     idbPut('ourtank.cache', copy); askToKeep();                                         // a second place, and a request that the browser keep both
   }
   onNet(m) {
+    if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
       const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members'); this.keepCopy();

@@ -7,7 +7,7 @@ const av = { skin: '#e8b890', hair: '#5a3ad0', hat: null };
 const A = await api('/api/users', { name: 'Ana', avatar: av }), B = await api('/api/users', { name: 'Ben', avatar: av });
 // a busy tank: ten fish of different kinds, including the octopus and a seahorse, plus decorations
 const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags.tut = 5; world.level = 8; world.shells = 500;
-['clownfish', 'octopus', 'seahorse', 'neon', 'guppy', 'betta', 'angelfish', 'cory', 'platy', 'blue'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: 'F' + (i + 1), species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious', 'Social'], happy: 0.8, health: 1, appetite: 0.05, owner: null })));
+['goldfish', 'octopus', 'seahorse', 'neon', 'guppy', 'betta', 'angelfish', 'cory', 'platy', 'blue'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: 'F' + (i + 1), species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious', 'Social'], happy: 0.8, health: 1, appetite: 0.05, owner: null })));
 const bk = { app: 'our-tank', tank: { name: 'Sync' }, world };
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token);
 const tank = await api('/api/import', bk, A.token); await api('/api/join', { code: tank.code }, B.token);

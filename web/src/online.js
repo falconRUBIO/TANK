@@ -26,7 +26,11 @@ export async function serverAvailable() { try { await api('/api/me'); return tru
 
 // ── realtime ──
 export class Live {
-  constructor(onMsg, onStatus) { this.onMsg = onMsg; this.onStatus = onStatus; this.pending = new Map(); this.retry = 0; this.open(); }
+  constructor(onMsg, onStatus) {
+    this.onMsg = onMsg; this.onStatus = onStatus; this.pending = new Map(); this.retry = 0; this.lastMsg = Date.now(); this.open();
+    // a connection can look open and be dead (a phone that changed network, a sleeping tab): ask now and then, and start over if nothing answers
+    setInterval(() => { if (document.hidden || !this.connected) return; const at = Date.now(); this.send({ t: 'ping' }); setTimeout(() => { if (this.lastMsg < at && this.ws.readyState === 1 && !document.hidden) this.resync(); }, 9000); }, 20000);
+  }
   open() {
     this.closed = false;
     const url = (base || location.origin).replace(/^http/, 'ws') + '/ws?token=' + session.token;
