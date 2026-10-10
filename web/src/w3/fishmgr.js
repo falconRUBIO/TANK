@@ -342,9 +342,9 @@ export class Fishes {
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
   }
   // a crab dropped in at feeding time: it sinks where you tapped, and the octopus that is free (or the hungriest) goes after it
-  dropCrabAt(x) {
+  dropCrabAt(x, fid = null) {
     const os = this.list.filter((f) => f.species.move === 'jet' && !f.dead && !f.visitor); if (!os.length) return;
-    const f = os.find((o) => !o.hunt) ?? os[0], z = 1.0 + this.rng() * 1.0, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
+    const f = (fid && os.find((o) => o.fid === fid)) ?? os.find((o) => !o.hunt) ?? os[0], z = 1.0 + this.rng() * 1.0, m = buildCrab(); m.scale.setScalar(1.7); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); if (!f.hunt) f.hunt = hnt; else (f.hunts ||= []).push(hnt); this.burst(new THREE.Vector3(x, 14, z));
   }
   // a cloud of ink: dark puffs that swell and thin out over a few seconds

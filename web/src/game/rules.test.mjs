@@ -496,3 +496,23 @@ console.log(`All ${n} rule tests passed`);
   { const t = W(); R.applyAction(t, { t: 'tankPref', rearrange: false }, { now: at }); assert.equal(mv(t, { id: 'r', x: 2, z: 1 }).ok, false); R.applyAction(t, { t: 'tankPref', rearrange: true }, { now: at }); assert.ok(mv(t, { id: 'r', x: 2, z: 1 }).applied); }
   { const t = W(); t.fish.find((f) => f.id === 'o').born = at; assert.equal(mv(t, { id: 'r', x: 2, z: 1 }).ok, false, 'a baby octopus cannot'); }
 }
+
+// each octopus has its own hunger, filled only by a crab from its own caretaker
+{
+  const t = R.newWorld(0, 1, { empty: true }); R.norm(t, 0); const M = [{ id: 'a', name: 'Ana' }, { id: 'b', name: 'Bo' }];
+  R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3 }, { now: 1000, name: 'Ana', uid: 'a', members: M });
+  R.applyAction(t, { t: 'firstFish', name: 'Dot', seed: 4 }, { now: 1000, name: 'Bo', uid: 'b', members: M });
+  const ink = t.fish.find((f) => f.name === 'Ink'), dot = t.fish.find((f) => f.name === 'Dot'); assert.equal(ink.hunger, 0.3);
+  R.advance(t, 1000 + 4 * 3600e3); assert.ok(ink.hunger > 0.75 && ink.hunger < 0.85, 'four hours on: ' + ink.hunger); assert.equal(R.needsOf(ink, t).mood, 'Hungry');
+  const no = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 4 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.equal(no.reason, 'NOT_YOURS', 'Bo cannot feed Ana\'s octopus');
+  const s0 = t.shells, ok1 = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 4 * 3600e3, name: 'Ana', uid: 'a', members: M }); assert.ok(ok1.ok && ok1.applied && ok1.delta === 1, JSON.stringify(ok1)); assert.ok(ink.hunger < 0.35); assert.equal(t.shells, s0 + 1);
+  assert.ok(dot.hunger > 0.75, 'Dot is still hungry: feeding Ink did nothing for it'); assert.equal(t.hunger < 0.9, true);
+  const pick = R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 4 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.ok(pick.ok && pick.fish === dot.id, 'with no fish named, a caretaker feeds their own');
+  assert.equal(R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 4 * 3600e3 + 1, name: 'Bo', uid: 'b', members: M }).applied, true); assert.equal(R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 4 * 3600e3 + 2, name: 'Bo', uid: 'b', members: M }).applied, false, 'full');
+  ink.born = 1000 - 10 * 864e5; t.shells = 50; assert.equal(R.applyAction(t, { t: 'crab', id: ink.id }, { now: 1000 + 4 * 3600e3, name: 'Bo', uid: 'b', members: M }).reason, 'NOT_YOURS', 'the crab treat too'); assert.ok(R.applyAction(t, { t: 'crab', id: ink.id }, { now: 1000 + 4 * 3600e3, name: 'Ana', uid: 'a', members: M }).applied);
+  const solo = R.newWorld(0, 1, { empty: true }); R.norm(solo, 0); R.applyAction(solo, { t: 'chooseFirst', species: 'octopus', name: 'S', seed: 1 }, { now: 1000, name: 'You', uid: 'me', solo: true });
+  solo.fish[0].owner = 'someone'; R.advance(solo, 1000 + 4 * 3600e3); assert.ok(R.applyAction(solo, { t: 'feed', food: 'crab' }, { now: 1000 + 4 * 3600e3, name: 'You', uid: 'me', solo: true }).applied, 'alone, you feed any octopus');
+  // neglect: an unfed octopus weakens on its own while the tank is otherwise fine
+  const n = R.newWorld(0, 1, { empty: true }); R.norm(n, 0); R.applyAction(n, { t: 'chooseFirst', species: 'octopus', name: 'N', seed: 2 }, { now: 1000, name: 'Ana', uid: 'a', members: M }); n.water = 1; n.hunger = 0.1;
+  for (let d = 1; d <= 3; d++) { n.hunger = 0.1; n.lastFed = 1000 + d * 864e5; R.advance(n, 1000 + d * 864e5); } assert.ok((n.fish[0].ail ?? 0) > 0, 'ail builds for an unfed octopus even when flakes keep the tank fed');
+}

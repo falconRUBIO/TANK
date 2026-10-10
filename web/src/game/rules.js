@@ -56,6 +56,10 @@ export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-1.0, 3.3] };
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
 const HR = 1 / (5 * 3600), WR = 1 / (48 * 3600), GR = 1 / (30 * 3600);   // per second
+export const OHR = 1 / (8 * 3600);                                        // an octopus has its own hunger: it goes from fed to starving in about eight hours, and only its own caretaker can feed it (a crab)
+export const isOcto = (f) => f?.species === 'octopus';
+export const octoHunger = (f) => (isOcto(f) ? Math.max(0, Math.min(1, f.hunger ?? 0.3)) : 0);
+export const canFeedOcto = (f, uid, shared = true) => isOcto(f) && !f.dead && (!shared || !f.owner || f.owner === uid);
 const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
@@ -95,7 +99,7 @@ export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].tra
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
 const APPETITE = { Greedy: 0.3, Playful: 0.1, Social: 0.05, Curious: 0.05, Lazy: -0.2, Calm: -0.1, Shy: -0.05, Brave: 0 };
 export const appetiteOf = (traits = [], seed = 0) => Math.max(-0.25, Math.min(0.35, (traits.reduce((a, x) => a + (APPETITE[x] ?? 0), 0)) + ((seed % 7) - 3) * 0.02));
-export function ensureFish(f) { if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
+export function ensureFish(f) { if (isOcto(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
 const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).length;
 
 // ── reef themes ──
@@ -126,7 +130,7 @@ function likes(f, t) {
 }
 export function needsOf(f, t, now = Date.now()) {
   ensureFish(f);
-  const fed = Math.max(0, Math.min(1, 1 - t.hunger * (1 + f.appetite))), h = new Date(now).getHours() + new Date(now).getMinutes() / 60;
+  const fed = Math.max(0, Math.min(1, 1 - (isOcto(f) ? octoHunger(f) : t.hunger) * (1 + f.appetite))), h = new Date(now).getHours() + new Date(now).getMinutes() / 60;
   const energy = Math.max(0.1, Math.min(1, 0.55 + 0.4 * Math.sin(((h - 6) / 24) * Math.PI * 2) + ((f.traits ?? []).includes('Lazy') ? -0.15 : 0) + ((f.traits ?? []).includes('Playful') ? 0.1 : 0)));
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
@@ -182,13 +186,13 @@ function memorialOf(t, f, now) {
   const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); for (const k of f.tricks ?? []) ms.push(`Learned to ${TRICKS[k]?.label ?? k}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
   return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, disc: Object.keys(f.disc ?? {}), rested: null };
 }
-function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water) {
+function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) {
   for (const f of [...t.fish]) {
-    ensureFish(f); const n = needsOf(f, t, now);
+    ensureFish(f); const n = needsOf(f, t, now), octo = isOcto(f), fh0 = oh0?.get(f.id) ?? octoHunger(f);
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
     const steps = Math.max(1, Math.min(480, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
-      const el = ((k + 0.5) / steps) * dt, hun = Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = fedK < 0.2 && at - (t.lastFed ?? -Infinity) > FED_GRACE, bad = hungry || wat < 0.5;
+      const el = ((k + 0.5) / steps) * dt, hun = octo ? Math.min(octoHunger(f), fh0 + el * OHR) : Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = fedK < 0.2 && at - ((octo ? f.fedAt : null) ?? t.lastFed ?? -Infinity) > FED_GRACE, bad = hungry || wat < 0.5;
       f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); if (bad && f.ail >= AIL_TIRED) f.born += stepMs;      // growth pauses once a fish is run down
     }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));
@@ -497,7 +501,7 @@ export const growthOf = (t, d, now) => (DECOR_DEF[d.type]?.cat === 'PLANTS' ? 1 
 // Optional, replaced (never carried over) the next day, never penalised, paid once to the shared wallet. Three tiers: easy 3, normal 5, special 8.
 // A wish is only chosen if the tank can do it right now, so a lone fish is never asked for a friendship and a spotless tank is never asked for care.
 const minorDecor = ['starfish', 'moss', 'shell'], seenDecor = (t) => t.decor.some((d) => !minorDecor.includes(d.type));
-const needs = (t) => [t.hunger > 0.3 && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
+const needs = (t) => [(t.hunger > 0.3 || t.fish.some((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.4)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
 const withSpot = (t) => t.fish.some((f) => f.found?.includes('spot') && t.decor.some((d) => d.id === f.spotId));
 export const DAILY = {
   watch: { tier: 'easy', text: 'Watch your fish swim for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
@@ -530,7 +534,7 @@ function rollDaily(t, now) {
 // Three small things every day: the tank is looked after, today's wish is done, and a fish got some attention. All three pays a small bonus once.
 // It is per tank-day (UTC, like the daily wish), shared by everyone, and missing it costs nothing: there is no streak.
 export const PERFECT_DAY_REWARD = 3;
-export const lookedAfter = (t) => t.fish.length > 0 && t.hunger <= 0.45 && t.water >= 0.7 && t.glass <= 0.45;
+export const lookedAfter = (t) => t.fish.length > 0 && t.hunger <= 0.45 && t.water >= 0.7 && t.glass <= 0.45 && t.fish.every((f) => !isOcto(f) || f.dead || octoHunger(f) <= 0.55);
 export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
 export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
 function dayCheck(t, now, ev, key = null) {
@@ -543,7 +547,8 @@ export function tankMood(t, now = Date.now()) {
   if (!t.fish.length) return { key: 'empty', label: 'Quiet', note: 'No fish yet.' };
   const worst = Math.max(...t.fish.map((f) => f.ail ?? 0)), happy = t.fish.reduce((n, f) => n + (f.happy ?? 0.7), 0) / t.fish.length;
   if (worst >= AIL_WARN) return { key: 'neglected', label: 'Neglected', note: 'A fish is in a critical state. Feed the tank and change the water.' };
-  if (worst >= AIL_TIRED || !(t.hunger <= 0.7 && t.water >= 0.5)) return { key: 'attention', label: 'Needs care', note: t.hunger > 0.7 ? 'The fish are hungry.' : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
+  const hungryOcto = t.fish.find((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.75);
+  if (worst >= AIL_TIRED || hungryOcto || !(t.hunger <= 0.7 && t.water >= 0.5)) return { key: 'attention', label: 'Needs care', note: t.hunger > 0.7 ? 'The fish are hungry.' : hungryOcto ? `${hungryOcto.name} is hungry.` : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
   if (lookedAfter(t) && happy >= 0.75) return { key: 'thriving', label: 'Thriving', note: 'Clean, fed and happy.' };
   return { key: 'good', label: 'Doing well', note: 'Nothing urgent.' };
 }
@@ -618,11 +623,12 @@ export const timeStepErrors = () => [...guard.seen];      // shown on the develo
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   if (dt >= 1) {
-    const h0 = t.hunger, w0 = t.water;
+    const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
+    for (const f of t.fish) if (isOcto(f)) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
-    guard('tend', () => tendFish(t, dt, now, ev, h0, w0)); t.simTs = now;
+    guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
   }
   guard('growth', () => {
     for (const f of t.fish) {                                          // growth milestones
@@ -695,6 +701,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     }
     case 'feed': {
       const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
+      if (food === 'crab') {                                            // a crab for an octopus: each octopus has its own hunger, and only its own caretaker feeds it
+        const mine = t.fish.filter((f) => canFeedOcto(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => octoHunger(y) - octoHunger(x))[0];
+        if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
+        ensureFish(f); t.lastFed = now; f.fedAt = now;
+        if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
+        const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
+        f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
+        if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); }
+        dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: `${name} fed ${f.name} a crab.` } });
+        return ok({ applied: true, delta: pay, food, fish: f.id });
+      }
       t.lastFed = now;                                                // any feeding, paid or not, counts as the fish being looked after
       { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
@@ -831,7 +848,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     }
     case 'crab': {                                                  // a crab for the octopus (shells go in, a happy octopus and a bigger hoard come out)
       const os = t.fish.filter((f) => canPuzzle(f, now)); if (!os.length) return fail('CANT_TRAIN');
-      const f = (a.id ? os.find((x) => x.id === a.id) : os.slice().sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND');
+      const f = (a.id ? os.find((x) => x.id === a.id) : os.filter((x) => canFeedOcto(x, uid, !solo)).sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
       if (f.crabAt != null && now - f.crabAt < CRAB_GAP) return ok({ applied: false, delta: 0, wait: CRAB_GAP - (now - f.crabAt), id: f.id });
       if (t.shells < CRAB_PRICE) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= CRAB_PRICE; f.crabAt = now; checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1;

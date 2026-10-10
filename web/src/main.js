@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, hasOcto, hasFishOnly, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -90,9 +90,11 @@ const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.d
 // The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and only the tank is left: tap the water.
 // Feeding: tapping Feed shows what can be fed just above the bar, then a tap on the water drops it.
 // which foods make sense: crabs for an octopus, flakes and the rest for fish. A tank with only octopuses is offered crabs alone.
-function foodsFor() { const s = game.state, octo = hasOcto(s), fish = hasFishOnly(s) || !octo; return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : fish)); }
+// the octopuses this caretaker may feed: their own (in a shared tank), or any in a solo tank; the hungriest first
+function myOctos() { const s = game.state, me = game.you?.userId; return s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)); }
+function foodsFor() { const s = game.state, octo = myOctos().length > 0, fish = hasFishOnly(s) || !hasOcto(s); return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : fish)); }
 function defaultFood() { const ks = foodsFor().map(([k]) => k); if (!ks.includes(game.feedFood ?? 'flakes')) game.feedFood = ks[0] ?? 'flakes'; return game.feedFood ?? 'flakes'; }
-const dropWord = (k) => (k === 'crab' ? 'a crab' : FOODS[k].label.toLowerCase());
+const dropWord = (k) => (k === 'crab' ? `a crab for ${myOctos()[0]?.name ?? 'the octopus'}` : FOODS[k].label.toLowerCase());
 function renderFoodbar() {
   const bar = $('foodbar'), shells = game.state.shells, cur = defaultFood();
   bar.innerHTML = foodsFor().map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''}" ${shells < d.price ? 'disabled' : ''}><span>${d.label}</span><small>${d.price ? d.price + ' 🐚' : 'free'}</small></button>`).join('') + '<button data-done class="done">Done</button>';
@@ -103,11 +105,12 @@ function renderFoodbar() {
 function startFeed() { cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); ui.toast(`Tap the water to drop ${dropWord(defaultFood())}`, 3500); }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
-  if (game.state.hunger < 0.08) { ui.toast('The fish are full for now'); endFeed(); return; }
+  const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : null;
+  if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { ui.toast(oc ? `${oc.name} is full for now` : 'The fish are full for now'); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
-  const food = defaultFood(); if (food === 'crab') fishes.dropCrabAt(x); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
+  if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
   feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
-  const r = await game.dispatch({ t: 'feed', x, food }); if (!r.ok) return fail(r);
+  const r = await game.dispatch({ t: 'feed', x, food, fish: oc?.id }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
 }
 // glass cleaning
@@ -405,7 +408,7 @@ function showCard(f) {
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
-  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
+  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>More about ${esc(f.name)}</span></summary><div><p class="why">${esc(SOCIAL[rec.species]?.nature ?? '')} ${rec.species === 'octopus' ? '' : p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>${socialLines(rec)}<dl><dt>Favourite food</dt><dd>${p.food}</dd>${rec.ownerName ? `<dt>Caretaker</dt><dd>${rec.ownerName}</dd>` : ''}${rec.species === 'octopus' ? `<dt>Fed</dt><dd>${Math.round((1 - octoHunger(rec)) * 100)}%${game.shared && rec.owner && rec.owner !== game.you?.userId ? ` · only ${esc(rec.ownerName ?? 'its caretaker')} can feed it` : ''}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}${bondLine(rec)}</dl>${storyBlock(rec)}</div></details>`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><h2>${f.name} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
     <div class="chips">${p.traits.map((t) => `<span>${t}</span>`).join('')}</div>${rec.species === 'octopus' ? (() => { const m = octoMind(rec); return `<p class="mind"><b>${m.label}</b> ${esc(m.line)}</p>${f.favThing ? `<p class="mind now">Favourite thing in the tank: ${esc(f.favThing)}.</p>` : ''}${f.thought ? `<p class="mind now">Right now: ${esc(f.thought)}</p>` : ''}`; })() : ''}
     <dl><dt>Age</dt><dd>${p.age}${nx ? ` · grows up in ${nx.label}` : ''}</dd><dt>Favourite spot</dt><dd>${p.spot}</dd></dl>${warn}
@@ -537,7 +540,7 @@ game.on('members', () => {                                                    //
 });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, haptics: 25 }); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, shells: 2 }); spotlightFish(id, 3000, 600); } });
-game.on('remoteFeed', (x, by, food) => { fishes.drop(x, 7, food); sfx('splash'); ui?.toast(`${nameOf(by)} fed the fish`); });
+game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dropCrabAt(x, fish); ui?.toast(`${nameOf(by)} fed ${game.state.fish.find((f) => f.id === fish)?.name ?? 'their octopus'} a crab`); } else { fishes.drop(x, 7, food); ui?.toast(`${nameOf(by)} fed the fish`); } sfx('splash'); });
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
 game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });

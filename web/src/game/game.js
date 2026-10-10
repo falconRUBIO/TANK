@@ -75,7 +75,7 @@ export class Game {
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); this.keepCopy(); }
-    else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food); }
+    else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food, m.fish); }
     else if (m.t === 'event') {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
@@ -121,4 +121,4 @@ export class Game {
     return new Promise((res) => { const t = setTimeout(() => { this.waiting.delete(idem); res({ ok: false, reason: 'TIMEOUT' }); }, 8000); this.waiting.set(idem, (m) => { clearTimeout(t); res(m); }); });
   }
 }
-export const REASONS = { NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.', TOO_SOON: 'Not yet. Give it a little while.', ALREADY: 'You already thanked them for that.', NOTHING_TO_THANK: 'That was a while ago.', NOTHING_NEEDED: 'The tank is fine right now, nothing to nudge about.', NOT_A_FRIEND: 'They are not in this tank.' };
+export const REASONS = { NOT_YOURS: 'Only its own caretaker can feed it.', NOT_ENOUGH_SHELLS: 'Not enough shells yet.', LEVEL_TOO_LOW: 'Reach a higher tank level to unlock this.', TANK_FULL: 'The tank has no room for more fish yet. Level up to grow it.', OUT_OF_BOUNDS: 'Place it on the sand inside the tank.', TANK_CROWDED: 'The tank is full of decorations.', OFFLINE: 'You are offline. Try again in a moment.', TIMEOUT: 'That took too long. Try again.', FORBIDDEN: 'Not allowed.', BAD_NAME: 'Please type a name.', RATE_LIMIT: 'Slow down a little.', TOO_SOON: 'Not yet. Give it a little while.', ALREADY: 'You already thanked them for that.', NOTHING_TO_THANK: 'That was a while ago.', NOTHING_NEEDED: 'The tank is fine right now, nothing to nudge about.', NOT_A_FRIEND: 'They are not in this tank.' };
