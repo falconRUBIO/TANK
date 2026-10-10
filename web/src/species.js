@@ -635,7 +635,7 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   if (t > 0.22 && o[1] > -5.2) { const hx = o[0] - 3, hr = Math.hypot(hx, o[2]); if (hr < 6.4) { const k = 6.4 / Math.max(hr, 0.01); o[0] = 3 + hx * k; o[2] *= k; } }          // an arm never passes through the body
   const G = S.grab;                                                                            // catching something: the nearest arm reaches it, its neighbours cup in beside it
   if (G && G.w > 0.01) {
-    let T = null, wt = 0; if (a.i === G.arm) { T = G.p; wt = 1; } else if (a.i === G.n1 || a.i === G.n2) { T = [G.p[0] - 0.6, G.p[1] + 0.4, G.p[2] + (a.i === G.n1 ? 2.6 : -2.6)]; wt = 0.55; }
+    let T = null, wt = 0; if (a.i === G.arm) { T = G.p; wt = 1; } else if (G.pk && a.i === G.pk.arm && G.pk.w > 0.01) { T = G.pk.p; wt = G.pk.w; } else if (a.i === G.n1 || a.i === G.n2) { T = [G.p[0] - 0.6, G.p[1] + 0.4, G.p[2] + (a.i === G.n1 ? 2.6 : -2.6)]; wt = 0.55; }      // pk: a second arm at work (plucking a leg off the crab and taking it to the beak)
     if (T) { const tip = curTip(), q = Math.max(0, (t - 0.12) / 0.88), w = G.w * wt * q * q * (3 - 2 * q); o[0] += (T[0] - tip[0]) * w; o[1] += (T[1] - tip[1]) * w; o[2] += (T[2] - tip[2]) * w; }
   }
   return o;

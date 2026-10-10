@@ -143,46 +143,69 @@ export class Fish3D {
     for (let tries = 0; tries < 10 && Fish3D.world.push; tries++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
     this.retarget = 3 + rng() * 5;
   }
-  // catching a crab: the nearest arm reaches out, closes on it, carries it under the head to the beak, and it is eaten. The arm tip is steered toward each stage's target,
-  // and the crab rides on the real tip of the arm.
+  // catching a crab, and eating it the way an octopus does. The nearest arm reaches out, pins it, and lifts it up in front of the face, clear of the body and the sand.
+  // Then the arms beside it take turns: one reaches over, tugs a leg until it comes away, and carries it on its tip to the beak under the head, where it is chewed
+  // (a puff of crumbs). The legs go first, then the claws. The empty shell is turned over and dropped on the sand beside it, the way octopuses leave shells outside their dens.
   updateGrab(dt, S) {
     const h = this.hunt, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), rig = this.rig; if (!h || !rig) return;
-    const dx = h.x - this.pos.x, dz = h.z - this.pos.z, C = [(dx * ch - dz * sh) / sc, (0.2 - this.pos.y) / sc, (dx * sh + dz * ch) / sc], M = [4, -7.6, 0], H = [17, -6.5, 0];      // M: the beak, under the head. H: where the crab is held while it is taken apart
-    const parts = h.mesh?.userData?.parts ?? [], P0 = 3.4, STEP = 0.72, END = P0 + parts.length * STEP + 1.4;
+    const dx = h.x - this.pos.x, dz = h.z - this.pos.z, C = [(dx * ch - dz * sh) / sc, (0.2 - this.pos.y) / sc, (dx * sh + dz * ch) / sc];
+    const H = [22, 4, 0], MD = [7.5, -8.6, 0], D = [23, -6.5, 5];               // H: held up in front of the eyes. MD: just under the beak. D: where the empty shell is left
+    const parts = h.mesh?.userData?.parts ?? [], P0 = 3.4, STEP = 0.95, TB = P0 + parts.length * STEP, END = TB + 2.0;
     let G = this.rs.grab; if (!G) {
       const ang = Math.atan2(C[2], C[0] - 3); let best = 0, bd = 9; rig.arms.forEach((a, i) => { const d = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (d < bd) { bd = d; best = i; } });
-      const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0 };
+      const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0, pk: null };
     }
     if (h.y > 0.25) { G.t = 0; G.w = 0; return; }                                                            // wait for the crab to land
     if (G.t < 1.0 && !h.pinned && Math.hypot(h.x - this.pos.x, h.z - this.pos.z) > 1.7) { this.rs.grab = null; this.gr = null; G.w = 0; S.s = 'crawl'; S.t = 6; this.flush = Math.max(this.flush, 0.4); return; }      // the crab bolted before the arm closed: after it again
     G.t += dt; const t = G.t, e = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+    if (t < 1.8) { const gap = Math.hypot(dx, dz), want = 12 * sc + 0.85 * (h.mesh?.scale?.x ?? 1.15) / 1.15; if (gap < want && gap > 1e-3) { const k = (want - gap) * Math.min(1, dt * 5); this.pos.x -= (dx / gap) * k; this.pos.z -= (dz / gap) * k; } }      // it keeps an arm's length: the crab is never under its head
+    const toWorld = (m, out) => { const x = m[0] * sc, z = m[2] * sc; return out.set(this.pos.x + x * ch + z * sh, this.pos.y + this.lift + m[1] * sc, this.pos.z - x * sh + z * ch); };
+    const toModel = (w) => { const ddx = w.x - this.pos.x, ddz = w.z - this.pos.z; return [(ddx * ch - ddz * sh) / sc, (w.y - this.pos.y - this.lift) / sc, (ddx * sh + ddz * ch) / sc]; };
+    // the holding arm
     let T; if (t < 1.0) { const q = e(t / 1.0); T = [G.p0[0] + (C[0] - G.p0[0]) * q, G.p0[1] + (C[1] - G.p0[1]) * q + Math.sin(q * Math.PI) * 3, G.p0[2] + (C[2] - G.p0[2]) * q]; }
     else if (t < 1.8) { T = [C[0] + Math.sin(t * 31) * 0.9, C[1] + Math.abs(Math.sin(t * 27)) * 0.6, C[2] + Math.cos(t * 29) * 0.9]; this.sq = Math.max(this.sq, 0.22 * Math.abs(Math.sin(t * 24))); this.flush = Math.max(this.flush, 0.6); }      // pinned: the crab kicks, the arm holds, the mantle pumps
-    else if (t < 3.1) { const q = e((t - 1.8) / 1.3); T = [C[0] + (H[0] - C[0]) * q, C[1] + (H[1] - C[1]) * q + Math.sin(q * Math.PI) * 4, C[2] + (H[2] - C[2]) * q]; } else T = [H[0] + Math.sin(t * 5) * 0.4, H[1] + Math.sin(t * 7) * 0.3, H[2]];   // then held out in front, below the eyes, never inside the body
-    G.w = Math.min(1, t / 0.3) * (t > END - 0.5 ? Math.max(0, 1 - (t - (END - 0.5)) / 0.4) : 1);
+    else if (t < 3.1) { const q = e((t - 1.8) / 1.3), out = Math.sin(q * Math.PI), r = Math.hypot(C[0] - 3, C[2]) || 1; T = [C[0] + (H[0] - C[0]) * q + ((C[0] - 3) / r) * out * 5, C[1] + (H[1] - C[1]) * q + out * 4, C[2] + (H[2] - C[2]) * q + (C[2] / r) * out * 5]; }      // lifted out and away from the body first, then up in front
+    else if (t < TB) T = [H[0] + Math.sin(t * 1.3) * 0.6, H[1] + Math.sin(t * 2.1) * 0.4, H[2] + Math.sin(t * 0.9) * 1.2];      // held up, turned a little this way and that
+    else { const q = e((t - TB) / 1.3); T = [H[0] + (D[0] - H[0]) * q, H[1] + (D[1] - H[1]) * q + Math.sin(q * Math.PI) * 2, H[2] + (D[2] - H[2]) * q]; }
+    G.w = Math.min(1, t / 0.3) * (t > END - 0.5 ? Math.max(0, 1 - (t - (END - 0.5)) / 0.45) : 1);
     h.pinned = t >= 1.0;
-    const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp); G.p[0] += (T[0] - tip[0]) * Math.min(1, dt * 6); G.p[1] += (T[1] - tip[1]) * Math.min(1, dt * 6); G.p[2] += (T[2] - tip[2]) * Math.min(1, dt * 6);
-    // eating: the crab is held out in front, and taken apart a leg at a time. Each piece is pulled off, carried under the head to the beak, and chewed; the claws go last, then the shell
-    const toWorld = (m, out) => { const x = m[0] * sc, z = m[2] * sc; return out.set(this.pos.x + x * ch + z * sh, this.pos.y + this.lift + m[1] * sc, this.pos.z - x * sh + z * ch); };
+    const S0 = this.rs, tip = rig.pose(rig.arms[G.arm], 1, S0, this.rp), steer = Math.min(1, dt * 6); G.p[0] += (T[0] - tip[0]) * steer; G.p[1] += (T[1] - tip[1]) * steer; G.p[2] += (T[2] - tip[2]) * steer;
     let chew = 0;
-    if (t > 1.8 && h.mesh) {                                                                                 // lifted: the crab rides in the arm's grip
-      h.y = 0.2; h.held = true; const x = tip[0] * sc, z = tip[2] * sc; h.mesh.position.set(this.pos.x + x * ch + z * sh, this.pos.y + tip[1] * sc + 0.05, this.pos.z - x * sh + z * ch);
-      h.mesh.rotation.z = Math.min(0.5, (t - 1.8) * 0.5); h.mesh.rotation.y = -this.heading + Math.PI / 2;     // its belly toward the octopus
-      const small = 1.7 - 0.6 * e((t - 1.8) / 1.3); if (t < END - 0.9) h.mesh.scale.setScalar(small);       // drawn in a little as it is lifted, so it fits in front of the head
-      if (t > P0 - 0.2) {
-        const mouth = toWorld(M, _w1); h.mesh.updateMatrixWorld(true);
-        parts.forEach((pt, i) => {
-          const t0 = P0 + i * STEP, q = (t - t0) / (STEP * 0.85); if (q < 0) return;
-          if (q >= 1) { pt.visible = false; return; }
-          const lp = pt.parent.worldToLocal(_w2.copy(mouth)), p0 = pt.userData.p0, k = e(q), tug = q < 0.25 ? Math.sin(q / 0.25 * Math.PI * 3) * 0.04 : 0;      // a few tugs, then it comes away
-          pt.position.set(p0.x + (lp.x - p0.x) * (q < 0.25 ? 0 : (k - 0.03) / 0.97) + tug, p0.y + (lp.y - p0.y) * (q < 0.25 ? 0 : k), p0.z + (lp.z - p0.z) * (q < 0.25 ? 0 : k));
-          pt.scale.setScalar(q < 0.6 ? 1 : Math.max(0.01, 1 - (q - 0.6) / 0.4)); chew = Math.max(chew, q > 0.6 ? Math.sin((q - 0.6) / 0.4 * Math.PI) : 0);
-        });
-        const tb = P0 + parts.length * STEP;                                                             // last, the shell itself
-        if (t > tb) { const q = Math.min(1, (t - tb) / 0.9), k = e(q); h.mesh.position.lerp(mouth, k); h.mesh.scale.setScalar(Math.max(0.01, small * (1 - Math.max(0, q - 0.5) / 0.5))); chew = Math.max(chew, q > 0.4 ? Math.sin(Math.min(1, (q - 0.4) / 0.6) * Math.PI) : 0); }
-      }
+    if (t > 1.8 && h.mesh && !h.dropped) {
+      h.y = 0.2; h.held = true; const was = (h.from ??= h.mesh.position.clone()), at = toWorld([tip[0], tip[1] + 1, tip[2]], _w1), kb = e((t - 1.8) / 0.5); h.mesh.position.copy(was).lerp(at, kb);      // taken smoothly from where it sat into the arm's grip
+      const s0 = (h.s0 ??= h.mesh.scale.x), small = s0 - (s0 - 0.95) * e((t - 1.8) / 1.3); h.mesh.scale.setScalar(small);       // drawn in a little as it is lifted
+      { const want = Math.atan2(ch, -sh) + Math.sin(t * 0.9) * 0.3, r0 = (h.ry0 ??= h.mesh.rotation.y), d = Math.atan2(Math.sin(want - r0), Math.cos(want - r0)); h.mesh.rotation.y = r0 + d * e((t - 2.25) / 0.85); h.mesh.rotation.x = 0; }      // turned so its claws point away from the octopus and its legs to either side, where the arms can reach them
+      h.mesh.rotation.z = t < TB ? Math.min(0.35, (t - 1.8) * 0.4) : 0.35 + (Math.PI - 0.35) * e((t - TB) / 1.1);   // the empty shell is turned over as it is put down
+      const rest = 0.13 + 0.2 * (1 - Math.cos(h.mesh.rotation.z)) * (h.mesh.scale.x / 0.95);                  // resting height: upside down, the dome is underneath, so it sits higher
+      if (t > TB) h.mesh.position.y = Math.max(h.mesh.position.y, rest + 0.25 * (1 - e((t - TB) / 1.3)));      // set down on the sand, never into it
+      if (t > TB + 1.3) { h.dropped = true; h.mesh.position.y = rest; h.x = h.mesh.position.x; h.z = h.mesh.position.z; }
     }
-    this.chewK = Math.max(chew, t > P0 && t < END - 0.4 ? 0.25 + 0.15 * Math.sin(t * 9) : 0);                 // the beak keeps working while it eats
+    // the plucking arms, one leg at a time
+    if (t > P0 - 0.1 && t < TB && h.mesh && parts.length) {
+      const i = Math.min(parts.length - 1, Math.floor((t - P0) / STEP)), pt = parts[i], q = (t - (P0 + i * STEP)) / STEP, arm = i % 2 ? G.n1 : G.n2;
+      if (!G.pk || G.pk.i !== i) { const p0 = rig.pose(rig.arms[arm], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G.pk = { i, arm, p: [...p0], w: 0 }; for (let k = 0; k < i; k++) parts[k].visible = false; }
+      h.mesh.updateMatrixWorld(true);
+      const U = pt.userData; if (!U.c) { const b = new THREE.Box3().setFromObject(pt), cw = b.getCenter(new THREE.Vector3()); U.c = pt.worldToLocal(cw.clone()); U.home = pt.position.clone(); }
+      const ptip = rig.pose(rig.arms[arm], 1, S0, [0, 0, 0]);
+      let Tk, attached = q < 0.46;
+      const partW = pt.localToWorld(_w2.copy(U.c)), partM = toModel(partW);
+      if (q < 0.32) { const k = e(q / 0.32); Tk = [G.pk.p[0] + (partM[0] - G.pk.p[0]) * k, G.pk.p[1] + (partM[1] + 2 - G.pk.p[1]) * k, G.pk.p[2] + (partM[2] - G.pk.p[2]) * k]; }
+      else if (q < 0.46) Tk = partM;
+      else if (q < 0.66) { const k = e((q - 0.46) / 0.2), W = [15, -8.2, partM[2] * 0.3]; Tk = [partM[0] + (W[0] - partM[0]) * k, partM[1] + (W[1] - partM[1]) * k, partM[2] + (W[2] - partM[2]) * k]; }      // down first, to the level of the beak, in front of the head
+      else if (q < 0.86) { const k = e((q - 0.66) / 0.2), W = [15, -8.2, partM[2] * 0.3]; Tk = [W[0] + (MD[0] - W[0]) * k, W[1] + (MD[1] - W[1]) * k, W[2] + (MD[2] - W[2]) * k]; }      // then in under it, to the beak
+      else Tk = MD;
+      G.pk.w = Math.min(1, q / 0.15) * (q > 0.9 ? Math.max(0, 1 - (q - 0.9) / 0.1) : 1);
+      const ks = Math.min(1, dt * 8); G.pk.p[0] += (Tk[0] - ptip[0]) * ks; G.pk.p[1] += (Tk[1] - ptip[1]) * ks; G.pk.p[2] += (Tk[2] - ptip[2]) * ks;
+      if (attached) { const tug = q > 0.32 ? Math.sin((q - 0.32) / 0.14 * Math.PI * 4) * 0.05 * (1 - (q - 0.32) / 0.14) : 0; pt.position.set(U.home.x + tug, U.home.y + tug * 0.5, U.home.z); pt.scale.setScalar(1); }    // a few tugs, then it comes away
+      else {                                                                                                // it rides on the tip of the plucking arm to the beak, and is gone
+        const s2 = q < 0.7 ? 1 : Math.max(0.01, 1 - (q - 0.7) / 0.22), lp = pt.parent.worldToLocal(toWorld(ptip, _w1)); pt.scale.setScalar(s2); pt.position.set(lp.x - U.c.x * s2, lp.y - U.c.y * s2, lp.z - U.c.z * s2);
+        if (q > 0.92) pt.visible = false;
+        if (q > 0.86 && !U.crumb) { U.crumb = true; this.onPush?.(toWorld(MD, _w1).clone(), new THREE.Vector3(0, -0.4, 0)); this.flush = Math.max(this.flush, 0.35); }
+        chew = Math.max(chew, q > 0.7 ? Math.sin(Math.min(1, (q - 0.7) / 0.3) * Math.PI) : 0);
+      }
+    } else if (G.pk) { G.pk.w = Math.max(0, G.pk.w - dt * 3); if (t >= TB) for (const pt of parts) pt.visible = false; }
+    this.chewK = Math.max(chew, t > P0 && t < TB + 0.4 ? 0.2 + 0.12 * Math.sin(t * 9) : 0);                  // the beak keeps working while it eats
+    if (t > P0 && t < TB) this.sq = Math.max(this.sq, 0.06 + 0.05 * Math.sin(t * 6));                          // a slow, contented pulse of the mantle
     if (t >= END) { S.t = 0; }
   }
   // holding something: a shell carried home in the front arms, or one arm gripping the jar's lid and twisting it while the others steady the glass
@@ -325,7 +348,7 @@ export class Fish3D {
     if (S.s === 'work') {
       const jar = S.mode === 'jar' ? this.jarAt : S.mode === 'hunt' ? this.hunt : S.mode === 'inspect' ? this.inspect : null;
       this.vel.multiplyScalar(Math.exp(-4 * dt)); this.restK += (0.7 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
-      if (S.mode === 'greet') this.greetK += (1 - this.greetK) * Math.min(1, dt * 2); else this.workK += ((S.mode === 'inspect' ? 0.65 : 1) - this.workK) * Math.min(1, dt * 2);
+      if (S.mode === 'greet') this.greetK += (1 - this.greetK) * Math.min(1, dt * 2); else this.workK += ((S.mode === 'inspect' ? 0.65 : S.mode === 'hunt' && (this.rs.grab?.t ?? 0) > 1.8 ? 0.3 : 1) - this.workK) * Math.min(1, dt * 2);      // eating, the other arms settle and only the working arms move
       if (jar) { let dy = Math.atan2(-(jar.z - this.pos.z), jar.x - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.2); }
       else if (S.mode === 'greet') { let dy = Math.atan2(-1, 0) * -1 - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 1.6); }          // faces the glass
       if (S.mode === 'hunt' && S.t <= 0 && this.hunt) { this.onEat?.(this.hunt); this.hunt = null; this.flush = 1; }
