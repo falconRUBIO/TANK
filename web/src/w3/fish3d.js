@@ -8,6 +8,13 @@ import { patch } from './env.js';
 const VOX = 0.052, GLOBAL = 1.05;
 // the octopus's repertoire when nothing much is going on: impressions of other creatures, games and ways of walking, each with the thought it shows on its card
 const PLANTS = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone']);
+// the colours of the plants it imitates, base to tip, as the tank draws them
+const PLANT_COLS = { grass: [[40, 112, 84], [150, 222, 150]], fern: [[124, 48, 156], [246, 140, 210]], sword: [[96, 104, 40], [196, 176, 80]], red: [[120, 30, 40], [236, 96, 90]], kelp: [[40, 108, 56], [150, 204, 84]], bamboo: [[70, 130, 60], [150, 206, 96]], anemone: [[176, 110, 134], [255, 214, 240]] };
+// how rough its skin goes for each impression: the spiky lionfish and the plant are all papillae, the snake and the jellyfish smooth
+// how wide a thing is where the arms take hold of it: round a plant's stem, a rock, the shell, a pillar
+const GRIP = { grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 0.8, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5, wood: 0.5, bubbler: 0.3, lighthouse: 0.4, table: 0.6, torii: 0.3, arch: 0.4, bridge: 0.5 };
+const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish: 0.08 };
+const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const ACT_TEXT = { flat: 'Flat as a sole, sliding over the sand.', bury: 'Dug into the sand, just its eyes showing.', lion: 'Spines out: pretending to be a lionfish.', snake: 'Two arms out, rippling like a sea snake.', jelly: 'Puffed up and drifting like a jellyfish.', kelp: 'Arms up, swaying like the plant beside it.', tour: 'Out for a swim round the tank.' };
 const GAITS = { stroll: { stride: 1, lift: 0, sp: 1, bob: 1 }, creep: { stride: 0.6, lift: 0, sp: 0.7, bob: 0.5 }, stilt: { stride: 1.35, lift: 0.22, sp: 1.15, bob: 1.6 }, bounce: { stride: 1.1, lift: 0.08, sp: 0.95, bob: 2.2 } };
 const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
@@ -91,12 +98,12 @@ export class Fish3D {
     if (jet && this.rig) {
       pc = this.pc ||= new Float32Array(8 * 1024 * 3); pcs = this.pcs ||= new Int32Array(8 * 1024); stamp = this.pstamp = (this.pstamp | 0) + 1; const rig = this.rig, rp = this.rp, S = this.rs;
       S.rest = this.restK; S.crawl = this.crawlK; S.sq = this.sq; S.ph = phase; S.work = this.workK; S.greet = this.greetK; S.glass = this.glassNear; S.stride = this.stride * (this.gait?.stride ?? 1); S.glide = this.glideK; S.cruise = this.cruiseK; S.land = this.landK; S.dash = this.dashK;
-      S.flat = this.flatK; S.lion = this.lionK; S.snake = this.snakeK; S.jelly = this.jellyK; S.kelp = this.kelpK; S.tt = this.tt ?? 0;
+      S.flat = this.flatK; S.lion = this.lionK; S.snake = this.snakeK; S.jelly = this.jellyK; S.kelp = this.kelpK; S.tt = this.tt ?? 0; S.sinkY = (0.5 * this.sink) / (this.scale || 0.06);
       poseAt = (arm, at) => { const key = arm * 1024 + Math.round(at * 990), k3 = key * 3; if (pcs[key] !== stamp) { rig.pose(rig.arms[arm], at, S, rp); pc[k3] = rp[0]; pc[k3 + 1] = rp[1]; pc[k3 + 2] = rp[2]; pcs[key] = stamp; } else { rp[0] = pc[k3]; rp[1] = pc[k3 + 1]; rp[2] = pc[k3 + 2]; } };
     }
     for (let j = 0; j < n; j++) {
       const i = all ? j : list[j], v = this.vox[i];
-      let x = v.x, y = v.y, z = v.z;
+      let x = v.x, y = v.y, z = v.z, grow = 1;
       if (b) {
         const piv = b.pivot - this.cx;
         if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
@@ -117,14 +124,17 @@ export class Fish3D {
         }
         else if (v.tag === 'arm') { z *= 1 + 0.75 * this.restK + 0.35 * this.crawlK - 0.62 * this.sq; y = y * (1 - 0.42 * this.restK - 0.2 * this.crawlK - 0.3 * this.sq) - 1.2 * this.restK; if (this.crawlK) y += Math.sin(phase * 1.3 + z * 0.5) * 0.9 * this.crawlK * (v.wave || 0); }
         else { const k = 1 - 0.15 * this.sq + (0.025 + 0.02 * this.restK) * Math.sin((this.tt ?? 0) * (1.8 - 0.9 * this.sleepK));      // he breathes, slower when asleep
-           const fK = (this.flatK ?? 0) + 0.6 * (this.snakeK ?? 0), pK = this.puffK ?? 0; x = this.mcx + (x - this.mcx) * (1 + 0.06 * this.sq + 0.13 * this.glideK + 0.3 * fK + 0.22 * pK); y = this.mcy + (y - this.mcy) * k * (1 - 0.1 * this.restK) * (1 - 0.05 * this.glideK) * (1 - 0.5 * fK + 0.22 * pK); z *= k * (1 - 0.05 * this.glideK) * (1 + 0.3 * fK + 0.22 * pK);      // flat as a sole, or puffed up like a jellyfish if (v.pap && this.bump > 0.03) { const bb = this.bump * 1.3; x += v.nx * bb; y += v.ny * bb; z += v.nz * bb; }
+           // puffed up like a jellyfish the body swells and each voxel grows with it, so no gaps open between them
+           const fK = Math.min(1, (this.flatK ?? 0) + 0.6 * (this.snakeK ?? 0)), pK = this.puffK ?? 0, sxk = 1 + 0.06 * this.sq + 0.13 * this.glideK + 0.22 * fK + 0.2 * pK, szk = k * (1 - 0.05 * this.glideK) * (1 + 0.22 * fK + 0.2 * pK);
+           x = this.mcx + (x - this.mcx) * sxk; y = this.mcy + (y - this.mcy) * k * (1 - 0.1 * this.restK) * (1 - 0.05 * this.glideK) * (1 + 0.2 * pK); z *= szk; grow = Math.max(sxk, szk, 1 + 0.2 * pK); if (v.pap && this.bump > 0.03) { const bb = this.bump * 1.3; x += v.nx * bb; y += v.ny * bb; z += v.nz * bb; }
            if (this.lean) { const dx = x, dy = y + 2, cl = Math.cos(this.lean), sl = Math.sin(this.lean); x = dx * cl - dy * sl; y = -2 + dx * sl + dy * cl; }                 // tips about the neck
+           if (fK > 0.01) { y = -2.5 + (y + 2.5) * (1 - 0.5 * fK) - 1.2 * fK; grow = Math.max(grow, 1 + 0.12 * fK); }      // flat as a sole: the mantle laid back along the sand and the whole body pressed down onto the roots of its arms, so the head stays joined to them
            if (this.yaw && v.tag !== 'mantle') { const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), dx = x; x = dx * cy - z * sy; z = dx * sy + z * cy; }                 // the head turns
            if (v.tag === 'web' || v.tag === 'beak') { const j = 1 - this.restK - 0.6 * this.crawlK; if (j > 0) { x -= 1.4 * j; y += 1.6 * j; z *= 1 - 0.12 * j; } if (this.chewK > 0.01) { const ch = this.chewK * Math.sin(this.tt * 16); if (v.tag === 'beak') { y += ch * 0.8; z += Math.sign(v.z || 1) * ch * 0.7; } else if (!v.web && v.y < -5) y += ch * 0.4; } }      // chewing: the beak works and the lips move with it      // jetting, the mouth and the web draw up into the head behind the streaming arms
            y += this.bob ?? 0; }
       }
-      const o = i * 16;
-      arr[o] = s; arr[o + 5] = s; arr[o + 10] = s; arr[o + 15] = 1;
+      const o = i * 16, sg = s * grow;
+      arr[o] = sg; arr[o + 5] = sg; arr[o + 10] = sg; arr[o + 15] = 1;
       arr[o + 12] = x * s; arr[o + 13] = y * s; arr[o + 14] = z * s;
     }
     this.mesh.instanceMatrix.needsUpdate = true;
@@ -138,7 +148,7 @@ export class Fish3D {
       let moved = false;
       for (const off of offs) {                                               // samples down the length of the body
         _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
-        const n = W.push(_p1, this.cr, _o) + (jet && W.soft && (this.pos.y < 1.3 || this.st?.s === 'drift') ? W.soft.push(_p1, this.cr * 0.8, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
+        const n = W.push(_p1, this.cr, _o) + (jet && W.soft && (this.pos.y < 1.3 || this.st?.s === 'drift') ? W.soft.push(_p1, this.cr * 0.6, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
         if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
       if (!moved) break;
@@ -249,7 +259,7 @@ export class Fish3D {
   poke() { this.wakeT = 6; this.pokes++; this.pokeT = 12; if (this.pokes >= 4) { this.pokes = 0; this.annoyT = 8; this.fearHere(); return true; } return false; }
   // where it settles at its den: inside the mouth of a coconut or pot it moved into, between the rocks of a shelter it built, or just in front of anything else
   // a spot on the floor an octopus can actually stand on: nothing solid there (plants included)
-  freeSpot(x, z) { const W = Fish3D.world; if (!W.push) return true; _p2.set(x, 0.55, z); _o.set(0, 0, 0); return !(W.push(_p2, this.cr + 0.1, _o) + (W.soft ? W.soft.push(_p2, this.cr * 0.7, _o) : 0)); }
+  freeSpot(x, z) { const W = Fish3D.world; if (!W.push) return true; _p2.set(x, 0.55, z); _o.set(0, 0, 0); return !(W.push(_p2, this.cr + 0.1, _o) + (W.soft ? W.soft.push(_p2, this.cr * 0.55, _o) : 0)); }
   clearWay(x, z) { const n = Math.ceil(Math.hypot(x - this.pos.x, z - this.pos.z) / 0.3); for (let i = 1; i <= n; i++) { const t = i / n; if (!this.freeSpot(this.pos.x + (x - this.pos.x) * t, this.pos.z + (z - this.pos.z) * t)) return false; } return true; }
   // where to crawl: the spot it had in mind if it is free, else somewhere near it that is, preferring one it can see a clear way to
   crawlGoal(x, z, rng, spread = 1.2) {
@@ -271,11 +281,14 @@ export class Fish3D {
   pickAct(S, rng, others, M, want = null) {
     const fish = others.filter((o) => o !== this && !o.dead && !o.visitor && o.species.move !== 'jet' && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < 4.5 && o.pos.y < 8);
     const plant = (this.getSpots?.() ?? []).find((q) => PLANTS.has(q.type) && Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 1.7);
+    const things = (this.getSpots?.() ?? []).filter((q) => GRIP[q.type] && Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 3.5);
     const onSand = this.ground ? this.ground.kind !== 'decor' : true, bold = this.bold, cur = M.cur ?? 0.5, soc = M.soc ?? 0.5, floor = 0.55, night = this.isNight ? 0.3 : 1;
-    const opts = [['flat', 0.06 * (0.6 + cur)], ['bury', onSand && this.restFor > 5 ? 0.06 : 0], ['lion', 0.05 * (0.5 + bold)], ['snake', 0.05], ['jelly', 0.05], ['kelp', plant ? 0.1 : 0], ['follow', fish.length ? 0.1 * (0.5 + soc) : 0], ['watch', fish.length ? 0.1 : 0], ['tour', 0.1 * (0.5 + bold)]];
+    const opts = [['flat', 0.06 * (0.6 + cur)], ['bury', onSand && this.restFor > 5 ? 0.06 : 0], ['lion', 0.05 * (0.5 + bold)], ['snake', 0.05], ['jelly', 0.05], ['kelp', plant ? 0.1 : 0], ['follow', fish.length ? 0.1 * (0.5 + soc) : 0], ['watch', fish.length ? 0.1 : 0], ['tour', 0.15 * (0.5 + bold)], ['grab', things.length ? 0.09 * (0.5 + cur) : 0]];
     let r = rng() / night, act = want; if (!act) for (const [k, w] of opts) { if (r < w) { act = k; break; } r -= w; }
     if (!act || (want && !opts.some(([k, w]) => k === want && w > 0))) return false;
     S.mode = null; S.n = 0; S.pulse = 0; S.detour = null; S.prog = null; S.tour = null; S.popped = false; S.digs = 0; this.act = act; this.actText = ACT_TEXT[act] ?? null;
+    // off to take hold of something: the inspect errand walks it there and wraps its arms round it
+    if (act === 'grab') { const q = things[(rng() * things.length) | 0]; this.inspect = { x: q.x, z: q.z, id: q.id, type: q.type, r: GRIP[q.type] }; this.actText = null; return true; }
     if (act === 'follow') { const o = fish[(rng() * fish.length) | 0]; this.follow = o; this.actText = `Tagging along behind ${o.name}.`; S.s = 'jet'; S.n = 1; S.t = 10 + rng() * 5; this.target.copy(o.pos); return true; }
     if (act === 'watch') { const o = fish.sort((a, b) => a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0]; this.watchFish = o; this.actText = `Watching ${o.name}.`; S.s = 'watch'; S.t = 5 + rng() * 4; return true; }
     if (act === 'tour') { const b = this.band, ys = 3 + rng() * 4; S.tour = [[-2.8 + rng(), ys, 1.2 + rng()], [2.8 - rng(), Math.min(Fish3D.topY - 2.5, ys + 1.5), 1.4 + rng()], [(rng() - 0.5) * 3, 2 + rng() * 2, b.z[0] + rng() * (b.z[1] - b.z[0])]]; if (rng() < 0.5) S.tour.reverse(); const f0 = S.tour.shift(); this.target.set(f0[0], f0[1], f0[2]); S.s = 'jet'; S.n = 2; S.t = 24; return true; }
@@ -289,12 +302,13 @@ export class Fish3D {
   // a fish has hung about too close for too long: it flings a puff of silt at it with the arms on that side, and the fish clears off
   throwAt(o, rng) {
     this.sq = Math.max(this.sq, 0.7); this.flush = Math.max(this.flush, 0.4); this.annoyT = 2; const d = _p2.copy(o.pos).sub(this.pos); d.y = Math.max(0, d.y); d.normalize();
-    const k = rng(), kind = this.hoard > 0 && k < 0.25 ? 'shell' : k < 0.65 ? 'silt' : 'water'; this.onThrow?.(this.pos.clone(), d.clone(), kind); o.fleeT = 1.4; o.target.set(Math.max(-4, Math.min(4, o.pos.x + d.x * 2.5)), Math.min(12, o.pos.y + 1), Math.max(0.3, Math.min(2.4, o.pos.z + d.z * 1.5))); o.retarget = 2;
+    const k = rng(), reach = Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < 2.0 && Math.abs(o.pos.y - this.pos.y) < 2.6, kind = reach && k < 0.7 ? 'smack' : this.hoard > 0 && k < 0.7 ? 'shell' : k < 0.85 ? 'silt' : 'water';
+    this.onThrow?.(this.pos.clone(), d.clone(), kind, o.pos.clone()); o.fleeT = kind === 'smack' ? 1.8 : 1.4; o.target.set(Math.max(-4, Math.min(4, o.pos.x + d.x * 2.5)), Math.min(12, o.pos.y + 1), Math.max(0.3, Math.min(2.4, o.pos.z + d.z * 1.5))); o.retarget = 2;
     const sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), dx = o.pos.x - this.pos.x, dz = o.pos.z - this.pos.z, dy = o.pos.y - this.pos.y, lx = (dx * ch - dz * sh) / sc, lz = (dx * sh + dz * ch) / sc, ang = Math.atan2(lz, lx - 3);
-    this.minds.forEach((m, i) => { const a = this.rig?.arms[i]; if (!a) return; const df = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (df < 0.9) { m.x = lx; m.y = dy / sc; m.z = lz; m.until = 1.1; m.next = 4 + rng() * 3; } });
-    this.actText = kind === 'shell' ? `Flung a shell at ${o.name}.` : kind === 'water' ? `Squirted water at ${o.name}.` : `Threw silt at ${o.name}.`; this.actFlash = 4;
+    let one = false; this.minds.map((m, i) => [m, Math.abs(Math.atan2(Math.sin((this.rig?.arms[i]?.th ?? 0) - ang), Math.cos((this.rig?.arms[i]?.th ?? 0) - ang)))]).sort((p, q) => p[1] - q[1]).forEach(([m, df]) => { if (kind === 'smack' ? one : df > 0.9) return; one = true; m.x = lx; m.y = dy / sc; m.z = lz; m.until = kind === 'smack' ? 0.45 : 1.1; m.fast = true; m.next = 4 + rng() * 3; });      // a smack is one arm, whipped out and back
+    this.actText = kind === 'smack' ? `Smacked ${o.name} with an arm.` : kind === 'shell' ? `Flung a shell at ${o.name}.` : kind === 'water' ? `Squirted water at ${o.name}.` : `Threw silt at ${o.name}.`; this.actFlash = 4;
   }
-  denGoal(rng) { const d = this.den; return d.home ? [d.x, d.z + (d.kind === 'pot' ? 0.5 : -0.25)] :      // in a coconut it sits well inside the hollow (the cut face is at the shell's centre line), its arms spilling out of the mouth
+  denGoal(rng) { const d = this.den; return d.home ? [d.x, d.z + (d.kind === 'pot' ? 0.5 : -0.2)] :      // in a coconut it sits well inside the hollow (the cut face is at the shell's centre line), its arms spilling out of the mouth
      d.kind === 'rocks' ? [d.x, d.z] : [d.x + (rng() - 0.5) * 0.6, d.z + 0.85]; }
   // going home: first to the open side of the shell or pot (its mouth faces the front), then straight in through it. Never through the wall.
   goDen(S, rng, t = 12) { S.mode = 'den'; S.s = 'crawl'; S.t = t; const [x, z] = this.denGoal(rng); if (this.den.home && Math.hypot(this.pos.x - x, this.pos.z - z) > 1.1) { S.mode = 'denfront'; S.t = t; this.target.set(x, 0.55, z + 1.25); } else this.target.set(x, 0.55, z); }
@@ -317,13 +331,56 @@ export class Fish3D {
     }
     this.camoTex = tex;
   }
+  // An impression is in the skin as well as the shape: one target colour per voxel, painted in the creature's own pattern and kept shaded by the octopus's form.
+  // u runs along the body from the front of the head (0) to the back of the mantle (1), and along each arm from its root (0) to its tip (1).
+  buildCostume(key, src) {
+    const n = this.vox.length, tex = new Float32Array(n * 3), b = this.baseCol; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, ls = 0;
+    for (let i = 0; i < n; i++) { const v = this.vox[i]; ls += b[i * 3] * 0.3 + b[i * 3 + 1] * 0.59 + b[i * 3 + 2] * 0.11; if (v.arm >= 0 || v.web) continue; x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+    const lavg = ls / n, fishMap = key === 'fish' && src?.vox ? this.fishColours(src) : null, plant = PLANT_COLS[src] ?? PLANT_COLS.kelp;
+    for (let i = 0; i < n; i++) {
+      const v = this.vox[i], o = i * 3, arm = v.arm >= 0 ? v.arm : v.web ? v.web.a : -1, onArm = arm >= 0, at = v.arm >= 0 ? v.at : v.web ? v.web.at * 0.4 : 0;
+      const u = onArm ? at : (x1 - v.x) / Math.max(1, x1 - x0), h = onArm ? 0.5 : (v.y - y0) / Math.max(1, y1 - y0), q = h3(v.x * 3 + 1, v.y * 5, v.z * 7 + 2);
+      let c;
+      if (key === 'sole') {                   // a banded sole: cream sand with dark chocolate bands across it and a dark-spotted fringe
+        const cream = [224, 202, 160], brown = [104, 72, 44], band = onArm ? Math.sin(at * Math.PI * 9) > 0.45 : Math.sin(u * Math.PI * 8 + h * 1.2) > 0.5;
+        c = band ? brown : cream; if (q > 0.86) c = [80, 56, 36]; if (onArm && at > 0.85) c = mixc(c, [240, 228, 200], 0.6);
+      } else if (key === 'lion') {            // a lionfish: maroon and cream stripes, slanted on the body, ringed along every spine, with pale tips
+        const maroon = [156, 36, 28], cream = [246, 232, 214], stripe = onArm ? Math.sin(at * Math.PI * 11) > 0 : Math.sin((v.x * 0.55 + v.y * 0.32) * 1.15) > 0.05;
+        c = stripe ? maroon : cream; if (!onArm && q > 0.9) c = [90, 20, 18]; if (onArm && at > 0.9) c = [255, 244, 236];
+      } else if (key === 'snake') {           // a banded sea snake: crisp black and cream rings down the two arms that show; the hidden body a dull sandy brown
+        const show = arm === 2 || arm === 6; c = onArm && show ? (Math.sin(at * Math.PI * 13) > 0 ? [20, 18, 26] : [196, 214, 240]) : onArm ? [150, 128, 96] : mixc([132, 110, 80], [176, 152, 112], q);
+        if (onArm && show && at > 0.94) c = [26, 24, 32];
+      } else if (key === 'jelly') {           // a jellyfish: a pale, milky bell with a lilac rim and white specks, the arms fading to pink at their tips
+        c = onArm ? mixc([250, 238, 246], [228, 164, 208], at) : mixc([196, 160, 226], [240, 226, 248], Math.min(1, h * 1.3)); if (!onArm && q > 0.88) c = [255, 255, 255];
+      } else if (key === 'kelp') {            // a plant: its own colours, darker at the base and brighter at the tips, with a few flecks
+        c = onArm ? mixc(plant[0], plant[1], Math.min(0.8, at * 0.9)) : mixc(plant[0], plant[1], 0.1 + 0.3 * h); if (q > 0.86) c = mixc(c, plant[0], 0.5);
+      } else if (fishMap) {                   // another fish: its colours and markings laid along the octopus, its head on the head, its tail down the arms
+        const fu = onArm ? 0.55 + 0.45 * at : u * 0.55, fh = onArm ? 0.5 : h; c = fishMap(fu, fh);
+      } else c = [b[o] * 255, b[o + 1] * 255, b[o + 2] * 255];
+      // keep the octopus's own shading so it still looks round; a named colour is darkened and its saturation pushed back up, since the tank's lights wash a fish out (a fish's own colours are already lit that way)
+      const l = b[o] * 0.3 + b[o + 1] * 0.59 + b[o + 2] * 0.11, sh = Math.max(0.55, Math.min(1.25, 0.9 + 0.7 * (l - lavg)));
+      let r = (c[0] / 255) * sh, g = (c[1] / 255) * sh, bl = (c[2] / 255) * sh;
+      if (!fishMap) { r = Math.max(0, r * 0.7 - 0.04); g = Math.max(0, g * 0.7 - 0.04); bl = Math.max(0, bl * 0.7 - 0.04); const gr = (r + g + bl) / 3; r = gr + (r - gr) * 1.4; g = gr + (g - gr) * 1.4; bl = gr + (bl - gr) * 1.4; }
+      tex[o] = Math.max(0, Math.min(1, r)); tex[o + 1] = Math.max(0, Math.min(1, g)); tex[o + 2] = Math.max(0, Math.min(1, bl));
+    }
+    return tex;
+  }
+  // a fish's colours as a map from (along its length 0 head to 1 tail, up its side 0 belly to 1 back) to the colour most of its voxels there have
+  fishColours(o) {
+    const NX = 20, NY = 4, vox = o.vox, b = o.baseCol; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const v of vox) { x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+    const bins = Array.from({ length: NX * NY }, () => new Map());
+    vox.forEach((v, i) => { const gx = Math.min(NX - 1, Math.floor(((x1 - v.x) / Math.max(1, x1 - x0)) * NX)), gy = Math.min(NY - 1, Math.floor(((v.y - y0) / Math.max(1, y1 - y0)) * NY)), r = b[i * 3], g = b[i * 3 + 1], bl = b[i * 3 + 2], key = ((r * 7) | 0) * 64 + ((g * 7) | 0) * 8 + ((bl * 7) | 0), m = bins[gx * NY + gy], e = m.get(key) ?? [0, 0, 0, 0]; e[0] += r; e[1] += g; e[2] += bl; e[3]++; m.set(key, e); });
+    const cell = bins.map((m) => { let best = null; for (const e of m.values()) if (!best || e[3] > best[3]) best = e; return best ? [best[0] / best[3] * 255, best[1] / best[3] * 255, best[2] / best[3] * 255] : null; });      // the commonest colour in each cell, so a white band stays white instead of blurring into its neighbours
+    return (fu, fh) => { const gx = Math.min(NX - 1, Math.floor(fu * NX)), gy = Math.min(NY - 1, Math.floor(fh * NY)); for (let d = 0; d < NX; d++) for (const s of [0, -1, 1]) { const x = gx + s * d, row = x >= 0 && x < NX ? x : -1; if (row < 0) continue; for (const y of [gy, 1, 2, 0, 3]) { const c = cell[row * NY + y]; if (c) return c; } } return [200, 120, 80]; };
+  }
   camoEase(k) { return k * k * (3 - 2 * k); }
   applyCamo() {
     const a = this.mesh.instanceColor.array, b = this.baseCol, f = this.flush, raw = this.camoK, k = this.camoEase(Math.max(0, Math.min(1, raw / 0.94))) * 0.94; this.camoApplied = raw; this.flushApplied = f > 0;
     if (this.camoMix < 1) this.camoMix = Math.min(1, (performance.now() - (this.camoMixT ?? 0)) / 1400);                    // moving to a different ground while camouflaged: the pattern cross-fades, it does not jump
     const pv = this.camoMix < 1 ? this.camoPrev : null, mx = this.camoEase(this.camoMix ?? 1);
     if (k > 0.02 && !this.camoTex && this.camoSpec) this.buildCamo(this.camoSpec); const tex = k > 0.02 ? this.camoTex : null;
-    const mw = this.mw, tnow = this.tt ?? 0, eb = mw.fond;
+    const mw = this.mw, tnow = this.tt ?? 0, eb = mw.fond, cq = this.camoEase(Math.max(0, Math.min(1, this.costumeK ?? 0))) * 0.96, ct = cq > 0.01 ? this.costumeTex : null; this.costumeApplied = this.costumeK ?? 0;
     for (const kk in this.mwA) this.mwA[kk] = mw[kk];
     for (let i = 0; i < this.vox.length; i++) {
       const o = i * 3, v = this.vox[i];
@@ -331,11 +388,12 @@ export class Fish3D {
       if (v.tag === 'eye') { const bar = eb > 0.01 && Math.abs(v.y - this.eyeY) <= 1.2 ? 1 - 0.92 * eb : 1; a[o] = b[o] * bar; a[o + 1] = b[o + 1] * bar; a[o + 2] = b[o + 2] * bar; continue; }       // someone it knows: a dark bar across the eye
       let tr = tex ? tex[o] : b[o], tg = tex ? tex[o + 1] : b[o + 1], tb = tex ? tex[o + 2] : b[o + 2]; if (pv && tex) { tr = pv[o] + (tr - pv[o]) * mx; tg = pv[o + 1] + (tg - pv[o + 1]) * mx; tb = pv[o + 2] + (tb - pv[o + 2]) * mx; }
       const lift = 1 + 0.4 * f; let R = (b[o] + (tr - b[o]) * k) * lift * (1 + 0.18 * f), G = (b[o + 1] + (tg - b[o + 1]) * k) * (1 + 0.15 * f), B = (b[o + 2] + (tb - b[o + 2]) * k) * (1 + 0.1 * f) * (1 - 0.18 * f);   // excited: bright and warm
+      if (ct) { R += (ct[o] - R) * cq; G += (ct[o + 1] - G) * cq; B += (ct[o + 2] - B) * cq; if (this.costume === 'jelly') { R += 0.06 * cq; G += 0.05 * cq; B += 0.07 * cq; } }      // in costume
       if (mw.scared > 0.01) { const q = 0.7 * mw.scared; R += (0.93 - R) * q; G += (0.91 - G) * q; B += (0.95 - B) * q; }                       // startled: drained to a pale white
       if (this.sleepK > 0.05) { const sk = this.sleepK, dr = 1 - 0.18 * sk + 0.22 * sk * Math.max(0, Math.sin(tnow * 1.1 + v.x * 0.35 + v.z * 0.3 + Math.sin(tnow * 0.4) * 2)); R *= dr; G *= dr * 0.97; B *= dr * 1.04; }                  // asleep: a little darker and paler, with slow ripples of colour like a dream
       if (mw.annoyed > 0.01) { const q = 1 - 0.45 * mw.annoyed; R = R * q + 0.05 * mw.annoyed; G *= q; B = B * q + 0.1 * mw.annoyed; }                  // annoyed: dark and purplish
       if (mw.hunting > 0.01) { const q = 1 + (0.62 + 0.38 * (0.5 + 0.5 * Math.sin(tnow * 3.4 + v.x * 0.3 - v.y * 0.12)) - 1) * mw.hunting; R *= q; G *= q; B *= q; }   // hunting: dark clouds ripple along the body
-      if (v.tag === 'mantle' || v.tag === 'head') { const sh = Math.max(0, Math.sin(v.x * 0.16 + v.y * 0.27 + v.nz * 1.4 + tnow * 0.55)) ** 6 * 0.11 * (1 - this.sleepK) * (1 - k); R += (0.78 - R) * sh; G += (0.96 - G) * sh; B += (1 - B) * sh; }       // a faint iridescent sheen drifting over the skin, gone when it is camouflaged
+      if (v.tag === 'mantle' || v.tag === 'head') { const sh = Math.max(0, Math.sin(v.x * 0.16 + v.y * 0.27 + v.nz * 1.4 + tnow * 0.55)) ** 6 * 0.11 * (1 - this.sleepK) * (1 - k) * (1 - cq); R += (0.78 - R) * sh; G += (0.96 - G) * sh; B += (1 - B) * sh; }       // a faint iridescent sheen drifting over the skin, gone when it is camouflaged
       a[o] = Math.min(1, R); a[o + 1] = Math.min(1, G); a[o + 2] = Math.min(1, B);
     }
     this.mesh.instanceColor.needsUpdate = true;
@@ -403,9 +461,13 @@ export class Fish3D {
     // its mind: a puzzle jar to work on, something new to inspect, or someone it knows to greet at the glass
     if (this.carryMesh && S.mode !== 'carry2') this.carryMesh.visible = false;
     const want = this.task ? null : this.jarAt ? 'jar' : this.hunt ? 'hunt' : this.inspect ? 'inspect' : null;
-    if (want && S.mode !== want && S.s !== 'jet' && !this.seeking) { S.mode = want; S.s = 'crawl'; S.t = 16; const p = want === 'jar' ? this.jarAt : want === 'hunt' ? this.hunt : this.inspect; const ax = Math.max(-3.6, Math.min(3.6, p.x - (want === 'jar' ? 0.3 : want === 'hunt' ? 0.4 : 0.7))), az = Math.max(0.3, Math.min(2.4, p.z - (want === 'jar' ? 1.4 : want === 'hunt' ? 1.0 : -0.9))); if (want === 'inspect') { const [gx, gz] = this.crawlGoal(ax, az, rng, 0.7); this.target.set(gx, floor, gz); } else this.target.set(ax, floor, az); }       // it settles behind the jar or the crab, facing the glass, and sits back so the arms do the reaching where you can see them
+    // to take hold of a thing it comes up beside it, so you see the arms close round it
+    if (want && S.mode !== want && S.s !== 'jet' && !this.seeking) { S.mode = want; S.s = 'crawl'; S.t = 16; const p = want === 'jar' ? this.jarAt : want === 'hunt' ? this.hunt : this.inspect; const grip = want === 'inspect' && p.r, gs = this.pos.x < p.x ? -1 : 1, ax = Math.max(-3.6, Math.min(3.6, grip ? p.x + gs * (p.r + 0.6) : p.x - (want === 'jar' ? 0.3 : want === 'hunt' ? 0.4 : 0.7))), az = Math.max(0.3, Math.min(2.6, grip ? p.z + 0.3 : p.z - (want === 'jar' ? 1.4 : want === 'hunt' ? 1.0 : -0.9))); if (want === 'inspect' && !grip) { const [gx, gz] = this.crawlGoal(ax, az, rng, 0.7); this.target.set(gx, floor, gz); }
+      // that side is blocked: the nearest open spot round it, the glass side preferred
+      else if (grip && !this.freeSpot(ax, az)) { let best = null, bd = 1e9; for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2, rr = p.r + 0.55 + (k % 2) * 0.25, x = p.x + Math.cos(a) * rr, z = p.z + Math.sin(a) * rr; if (Math.abs(x) > 3.7 || z < 0.25 || z > 2.7 || !this.freeSpot(x, z)) continue; const d = Math.hypot(x - this.pos.x, z - this.pos.z) - 0.6 * Math.sin(a); if (d < bd) { bd = d; best = [x, z]; } } if (best) this.target.set(best[0], floor, best[1]); } else this.target.set(ax, floor, az); }       // it settles behind the jar or the crab, facing the glass, and sits back so the arms do the reaching where you can see them
     if (!want && (S.mode === 'jar' || S.mode === 'hunt' || S.mode === 'inspect')) { if (S.mode === 'jar' && S.s === 'work') { this.flush = 1; S.s = 'jet'; S.n = 1; S.pulse = 0; S.t = 5; this.target.set(this.pos.x + (this.pos.x > 0 ? -1 : 1) * 1.5, this.pos.y + 2.5, this.pos.z); } else if (S.s === 'work' || S.s === 'crawl') { S.s = 'rest'; S.t = 3; } S.mode = null; }
-    if (S.mode === 'jar' && this.jarAt) { const sc = this.scale || 0.06, dx = this.jarAt.x - this.pos.x, dz = this.jarAt.z - this.pos.z, ch = Math.cos(this.heading), sh = Math.sin(this.heading); this.rs.jx = (dx * ch - dz * sh) / sc; this.rs.jz = (dx * sh + dz * ch) / sc; this.rs.jr = 0.58 / sc; } else this.rs.jr = 0;
+    const wrapAt = S.mode === 'jar' && this.jarAt ? this.jarAt : S.mode === 'inspect' && S.s === 'work' && this.inspect?.r ? this.inspect : null;      // a jar it is working on, or a thing it has hold of: the arms that face it close round it and climb it
+    if (wrapAt) { const sc = this.scale || 0.06, dx = wrapAt.x - this.pos.x, dz = wrapAt.z - this.pos.z, ch = Math.cos(this.heading), sh = Math.sin(this.heading); this.rs.jx = (dx * ch - dz * sh) / sc; this.rs.jz = (dx * sh + dz * ch) / sc; this.rs.jr = (wrapAt === this.jarAt ? 0.58 : wrapAt.r) / sc; } else this.rs.jr = 0;
     if (S.s !== 'work') { this.workK += (0 - this.workK) * Math.min(1, dt * 3); this.greetK += (0 - this.greetK) * Math.min(1, dt * 3); }
     if (S.s === 'rest') this.restFor += dt; else { this.restFor = 0; this.homing = false; }
     const gl = this.glassAt && performance.now() < this.glassAt.until ? this.glassAt : null; if (this.glassAt && !gl) this.glassAt = null;                               // a finger held on the glass: the octopus comes to press its arms against it
@@ -420,7 +482,7 @@ export class Fish3D {
     if (S.s === 'work') {
       const jar = S.mode === 'jar' ? this.jarAt : S.mode === 'hunt' ? this.hunt : S.mode === 'inspect' ? this.inspect : null;
       this.vel.multiplyScalar(Math.exp(-4 * dt)); this.restK += (0.7 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
-      if (S.mode === 'greet') this.greetK += (1 - this.greetK) * Math.min(1, dt * 2); else this.workK += ((S.mode === 'inspect' ? 0.65 : S.mode === 'hunt' && (this.rs.grab?.t ?? 0) > 1.8 ? 0.3 : 1) - this.workK) * Math.min(1, dt * 2);      // eating, the other arms settle and only the working arms move
+      if (S.mode === 'greet') this.greetK += (1 - this.greetK) * Math.min(1, dt * 2); else this.workK += ((S.mode === 'inspect' ? (this.inspect?.r ? 0.9 : 0.65) : S.mode === 'hunt' && (this.rs.grab?.t ?? 0) > 1.8 ? 0.3 : 1) - this.workK) * Math.min(1, dt * 2);      // eating, the other arms settle and only the working arms move
       if (jar) { let dy = Math.atan2(-(jar.z - this.pos.z), jar.x - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.2); }
       else if (S.mode === 'greet') { let dy = Math.atan2(-1, 0) * -1 - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 1.6); }          // faces the glass
       if (S.mode === 'hunt' && S.t <= 0 && this.hunt) { this.onEat?.(this.hunt); this.hunt = null; this.flush = 1; }
@@ -431,15 +493,16 @@ export class Fish3D {
       S.prog = null; S.detour = null; this.vel.multiplyScalar(Math.exp(-3 * dt)); this.restK += (1 - this.restK) * Math.min(1, dt * 1.5); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);
       if (!onFloor) this.vel.y -= 0.5 * dt;
       this.homing = false;
-      if (this.den?.home) { const [hx, hz] = this.denGoal(rng); if (Math.hypot(this.pos.x - hx, this.pos.z - hz) < 0.9) { let dy = Math.PI / 2 - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 1.2); this.homing = true; this.tuckWant = this.den.kind === 'pot' ? 0.44 : 0.3; this.pos.x += (hx - this.pos.x) * Math.min(1, dt * 1.5); this.pos.z += (hz - this.pos.z) * Math.min(1, dt * 1.5); this.vel.multiplyScalar(Math.exp(-6 * dt)); } }       // in its shell or pot it faces the room and squeezes itself in; soft-bodied, it is not pushed out by the walls
+      if (this.den?.home) { const [hx, hz] = this.denGoal(rng); if (Math.hypot(this.pos.x - hx, this.pos.z - hz) < 0.9) { let dy = Math.PI / 2 - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 1.2); this.homing = true; this.tuckWant = this.den.kind === 'pot' ? 0.44 : 0.4; this.pos.x += (hx - this.pos.x) * Math.min(1, dt * 1.5); this.pos.z += (hz - this.pos.z) * Math.min(1, dt * 1.5); this.vel.multiplyScalar(Math.exp(-6 * dt)); } }       // in its shell or pot it faces the room and squeezes itself in; soft-bodied, it is not pushed out by the walls
       const M = { ...(this.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 }) }, sk = this.sulk ?? 0, bo = this.bored ?? 0, au = this.audience ?? 0; M.cur = Math.min(1, M.cur * (1 - sk) + 0.5 * bo); M.soc = M.soc * (1 - 0.5 * sk) + 0.25 * au;
       if (onFloor && S.t > 6 && this.den == null) { const q = (this.fav ||= { x: this.pos.x, z: this.pos.z, n: 0 }); q.n = Math.min(40, q.n + dt); const w = Math.min(0.02, dt * 0.01); if (this.restFor > 8) { q.x += (this.pos.x - q.x) * w; q.z += (this.pos.z - q.z) * w; this.favDirty = true; } }
       const near = S.t <= 0 && others.some((o) => o !== this && !o.dead && !o.visitor && o.pos.distanceTo(this.pos) < 1.5);
-      S.gaitSet = false; this.glassCool = Math.max(0, (this.glassCool ?? 0) - dt);
+      S.gaitSet = false; this.glassCool = Math.max(0, (this.glassCool ?? 0) - dt); if (this.act === 'grab' && !this.inspect) this.act = null;
       if (S.t <= 0 && this.isNight && this.den && !S.mode && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) > 1.4 && rng() < 0.7) this.goDen(S, rng);     // it turns in at its den for the night
+      else if (S.t <= 0 && this.den?.home && !S.mode && !this.inspect && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) > 1.4 && rng() < 0.12 + 0.15 * (this.shy ? 1 : 0)) this.goDen(S, rng);
       else if (S.t <= 0 && !S.mode && !this.inspect && !this.glassAt && !this.homing && (this.tuckK ?? 0) < 0.1 && this.sleepK < 0.2 && this.lead !== false && this.pickAct(S, rng, others, M)) { /* an impression, a game or a look round: pickAct set it up */ }
       else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && !this.den && this.fav && this.fav.n > 12 && Math.hypot(this.pos.x - this.fav.x, this.pos.z - this.fav.z) > 1.2 && rng() < 0.2) { S.s = 'crawl'; S.t = 8; const [gx, gz] = this.crawlGoal(this.fav.x, this.fav.z, rng, 0.8); this.target.set(gx, floor, gz); }     // no den yet: it goes back to its favourite spot
-      else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.16 * M.cur) { const sp = this.getSpots?.() ?? [], fv = this.likes && rng() < 0.55 ? sp.find((x) => x.id === Object.entries(this.likes).sort((a, b) => b[1] - a[1])[0]?.[0]) : null, q = fv ?? (sp.length ? sp[(rng() * sp.length) | 0] : null); if (q) this.inspect = { x: q.x, z: q.z, id: q.id }; }                       // curious ones go and look at things on their own, and keep going back to a favourite
+      else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.22 * (0.4 + M.cur)) { const sp = this.getSpots?.() ?? [], fv = this.likes && rng() < 0.55 ? sp.find((x) => x.id === Object.entries(this.likes).sort((a, b) => b[1] - a[1])[0]?.[0]) : null, q = fv ?? (sp.length ? sp[(rng() * sp.length) | 0] : null); if (q) this.inspect = { x: q.x, z: q.z, id: q.id, type: q.type, r: GRIP[q.type] ?? 0.4 }; }                       // curious ones go and look at things on their own, and keep going back to a favourite
       else if (S.t <= 0 && !this.shy && !this.inspect && !S.mode && rng() < 0.12 * M.soc) { const fs = others.filter((o) => o !== this && !o.dead && !o.visitor); if (fs.length) { const o = fs[(rng() * fs.length) | 0]; this.inspect = { x: o.pos.x, z: o.pos.z }; } }       // sociable ones go to see the other fish
       else if (near && M.soc < 0.4 && this.den && rng() < 0.5) this.goDen(S, rng, 10);     // a loner leaves when it gets crowded
       else if (S.t <= 0 && (this.bondMe >= 3 || (au >= 1 && this.bondMe >= 1)) && !this.shy && rng() < 0.12 + 0.35 * M.soc + (this.mind?.type === 'showoff' ? 0.25 * au : 0)) { S.mode = 'greet'; S.s = 'crawl'; S.t = 10; const [gx, gz] = this.crawlGoal((rng() - 0.5) * 3, 2.4, rng, 1.0); this.target.set(gx, floor, gz); }
@@ -448,11 +511,11 @@ export class Fish3D {
       else if (S.t <= 0 && this.shy && rng() < 0.6) { S.s = 'crawl'; S.t = 6; const spots = this.getSpots?.() ?? [], s2 = spots.length ? spots[(rng() * spots.length) | 0] : null; const [gx, gz] = this.crawlGoal(s2 ? s2.x : -3 + rng() * 6, s2 ? s2.z - 0.6 : 0.3, rng); this.target.set(gx, floor, gz); S.t = 5; }
       else if (S.t <= 0 && !this.shy && rng() < (0.07 + 0.1 * this.bold + 0.12 * bo) * (1 - 0.8 * sk)) { S.s = 'dash'; S.t = 4; const b = this.band, [gx, gz] = this.crawlGoal(this.pos.x + (rng() < 0.5 ? -1 : 1) * (2 + rng() * 2), b.z[0] + rng() * (b.z[1] - b.z[0]), rng); this.target.set(gx, floor, gz); }
       else if (S.t <= 0 && !this.shy && !this.glassAt && (this.glassCool ?? 0) <= 0 && rng() < 0.02 + 0.05 * this.bold + 0.05 * bo) { this.glassAt = { x: (rng() - 0.5) * 5, y: 2.2 + rng() * 5, until: performance.now() + 7000 + rng() * 6000 }; this.glassCool = 60 + rng() * 90; }      // the bold ones jet up to the glass on their own and hang there, arms pressed to it
-      else if (S.t <= 0) { if (rng() < 0.5) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, s = spots.length && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; const [gx, gz] = this.crawlGoal(s ? s.x + (rng() - 0.5) * 1.2 : b.x[0] + rng() * (b.x[1] - b.x[0]), s ? s.z + 0.8 : b.z[0] + rng() * (b.z[1] - b.z[0]), rng); this.target.set(gx, floor, gz); } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), 3 + rng() * 6, b.z[0] + rng() * (b.z[1] - b.z[0])); } }
+      else if (S.t <= 0) { if (rng() < 0.42) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, s = spots.length && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; const [gx, gz] = this.crawlGoal(s ? s.x + (rng() - 0.5) * 1.2 : b.x[0] + rng() * (b.x[1] - b.x[0]), s ? s.z + 0.8 : b.z[0] + rng() * (b.z[1] - b.z[0]), rng); this.target.set(gx, floor, gz); } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const b = this.band; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), 3 + rng() * 6, b.z[0] + rng() * (b.z[1] - b.z[0])); } }
     } else if (S.s === 'crawl') {
       if (this.fears?.length && !S.fearChecked) { S.fearChecked = true; const nowt = performance.now(); this.fears = this.fears.filter((q) => nowt - q.t < 3e5); this.fearNear = false; for (const q of this.fears) if (Math.hypot(this.target.x - q.x, this.target.z - q.z) < 1.8 && S.mode !== 'den' && !(S.mode ?? '').startsWith('t')) { this.fearNear = true; const ax = this.target.x - q.x || 1, b = this.band; this.target.x = Math.max(b.x[0], Math.min(b.x[1], q.x + Math.sign(ax) * 2.4)); } }
       this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);
-      if (!S.gaitSet) { S.gaitSet = true; const r = rng(); this.gait = S.mode && S.mode[0] === 't' ? GAITS.stroll : r < 0.45 ? GAITS.stroll : r < 0.65 ? GAITS.creep : r < 0.83 ? GAITS.stilt : GAITS.bounce; }      // a stroll, a creep, up on stilts or a bouncing walk
+      if (!S.gaitSet) { S.gaitSet = true; const r = rng(); const far = Math.hypot(this.target.x - this.pos.x, this.target.z - this.pos.z) > 2.2; this.gait = S.mode && S.mode[0] === 't' ? GAITS.stroll : r < 0.38 ? GAITS.stroll : r < 0.56 ? (far ? GAITS.stilt : GAITS.creep) : r < 0.78 ? GAITS.stilt : GAITS.bounce; }      // a stroll, a creep, up on stilts or a bouncing walk
       if (S.detour) S.detour.left -= dt; const det = S.detour && S.detour.left > 0 ? S.detour : null, goal = det ? _g.set(det.x, floor, det.z) : this.target;      // a detour is a sidestep around something in the way
       const to = goal.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1, sp = 0.5 * this.speed * mul * (S.mode === 'hunt' ? (this.hunt?.run?.burst > 0 ? 2.1 : 1.5) : (this.gait?.sp ?? 1)); to.multiplyScalar(sp / d);
       // going in through the mouth of its den the walls are allowed to brush it; anywhere else it feels for what is ahead and slides along it rather than pushing into it
@@ -464,7 +527,7 @@ export class Fish3D {
         const ux = to.x / (sp || 1), uz = to.z / (sp || 1), reach = Math.min(this.cr + 0.55, d - 0.1), soft = W.soft;      // it feels no further than where it is going
         const feel = (a) => { const c = Math.cos(a), sn = Math.sin(a), wx = ux * c - uz * sn, wz = ux * sn + uz * c; _p1.set(this.pos.x + wx * reach, this.pos.y + 0.15, this.pos.z + wz * reach);
           if ((_p1.z < 0.15 && _p1.z < this.pos.z - 0.05) || (_p1.z > 3.15 && _p1.z > this.pos.z + 0.05) || (Math.abs(_p1.x) > 4.6 && Math.abs(_p1.x) > Math.abs(this.pos.x) + 0.05)) return 1;      // the edges of the open sand are walls too
-          _o.set(0, 0, 0); if (W.push(_p1, this.cr * 0.9, _o)) return 1; _o.set(0, 0, 0); return soft && soft.push(_p1, this.cr * 0.7, _o) ? 0.9 : 0; };
+          _o.set(0, 0, 0); if (W.push(_p1, this.cr * 0.9, _o)) return 1; _o.set(0, 0, 0); return soft && soft.push(_p1, this.cr * 0.55, _o) ? 0.9 : 0; };
         const ahead = feel(0);
         if (ahead > 0) {
           let best = 0, bestCost = 1e9; const bias = S.sideBias ?? 0, dbg = window.__dbgWh ? [] : null;
@@ -492,15 +555,15 @@ export class Fish3D {
           else if (!sliding) { const L = Math.hypot(this.target.x - this.pos.x, this.target.z - this.pos.z) || 1, px = -(this.target.z - this.pos.z) / L, pz = (this.target.x - this.pos.x) / L, sd = side || (rng() < 0.5 ? -1 : 1); S.detour = { x: Math.max(-3.5, Math.min(3.5, this.pos.x + px * sd * 1.5)), z: Math.max(0.2, Math.min(2.3, this.pos.z + pz * sd * 1.5)), left: 2.2 }; } } }
       if (S.mode === 'hunt' && this.hunt) { const h = this.hunt; this.target.set(Math.max(-3.6, Math.min(3.6, h.x - 0.4)), floor, Math.max(0.3, h.z - 1.0)); if (h.run?.burst > 0) S.t = Math.max(S.t, 5); }      // the crab is moving: keep aiming behind it, and do not give up while it runs
       if (S.t <= 0 && S.after && d > 0.6) { (this.failed ||= []).push({ x: S.after.x, z: S.after.z }); if (this.failed.length > 6) this.failed.shift(); S.after = null; }      // over the top and still not there in time: that spot is given up, and remembered
-      if (S.t <= 0 || d < 0.35 || (S.mode === 'hunt' && d < 1.5) || ((S.mode === 'den' || S.mode === 'tsettle') && this.den?.home && d < 0.9)) { S.fearChecked = false;
+      if (S.t <= 0 || d < 0.35 || (S.mode === 'hunt' && d < 1.5) || (S.mode === 'inspect' && this.inspect?.r && d < 0.65) || ((S.mode === 'den' || S.mode === 'tsettle') && this.den?.home && d < 0.9)) { S.fearChecked = false;
         if (S.mode === 'den') { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 12; }
         else if (S.mode === 'denfront') { S.mode = 'den'; S.s = 'crawl'; S.t = 8; const [hx, hz] = this.denGoal(rng); this.target.set(hx, 0.55, hz); }      // at the mouth: now in
         else if (S.mode === 'tgo') { if (this.onTask?.(this, 'grab')) { const T = this.task; S.mode = 'thaul'; S.t = 25 + 16 * Math.hypot(T.gx - T.ax, T.gz - T.az); this.target.set(T.gx - T.ux * T.hold, floor, T.gz - T.uz * T.hold); } else { S.mode = null; S.s = 'rest'; S.t = 6; } }
-        else if (S.mode === 'thaul') { const T = this.task, kind = T?.kind; if (this.onTask?.(this, 'drop') && kind === 'home') { S.mode = 'tsettle'; S.t = 14; this.target.set(T.gx, floor, T.gz + (T.type === 'pot' ? 0.5 : -0.25)); } else { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 8; this.flush = 0.5; } }
+        else if (S.mode === 'thaul') { const T = this.task, kind = T?.kind; if (this.onTask?.(this, 'drop') && kind === 'home') { S.mode = 'tsettle'; S.t = 14; this.target.set(T.gx, floor, T.gz + (T.type === 'pot' ? 0.5 : -0.2)); } else { S.mode = null; S.s = 'rest'; S.t = 10 + rng() * 8; this.flush = 0.5; } }
         else if (S.mode === 'tsettle') { this.onTask?.(this, 'home'); S.mode = null; S.s = 'rest'; S.t = 14 + rng() * 10; }
         else if (S.mode === 'carry1') { S.mode = 'carry2'; if (this.carryMesh) this.carryMesh.visible = true; S.t = 14; this.target.set(this.den.x + (rng() - 0.5) * 0.7, floor, this.den.z + 0.95); }
         else if (S.mode === 'carry2') { S.mode = null; if (this.carryMesh) this.carryMesh.visible = false; this.onDrop?.(this.pos); S.s = 'rest'; S.t = 6 + rng() * 8; }
-        else if (S.mode && d < (S.mode === 'hunt' ? 1.6 : 1.3)) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1e9 : 1e9; if (S.mode === 'inspect') { this.inspectBlend = rng() < 0.45; const id = this.inspect?.id; if (id) { (this.likes ||= {})[id] = (this.likes[id] ?? 0) + 1; this.favDirty = true; } } }
+        else if (S.mode && d < (S.mode === 'hunt' ? 1.6 : S.mode === 'inspect' && this.inspect?.r ? 0.8 : 1.3)) { S.s = 'work'; S.t = S.mode === 'greet' ? 6 : S.mode === 'inspect' ? 7 : S.mode === 'hunt' ? 1e9 : 1e9; if (S.mode === 'inspect') { this.inspectBlend = rng() < 0.45; const id = this.inspect?.id; if (id) { (this.likes ||= {})[id] = (this.likes[id] ?? 0) + 1; this.favDirty = true; } } }
         else { if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 4 + rng() * 8; }
       }
     } else if (S.s === 'dash') {                                                // a sudden dash across the floor, rising on the two back arms with the rest streaming behind
@@ -558,7 +621,7 @@ export class Fish3D {
     // a fish that hangs about within reach while it sits (resting, watching, lying flat or standing as a plant) gets something thrown at it
     this.throwCool = Math.max(0, this.throwCool - dt);
     if (S.s === 'rest' || S.s === 'watch' || S.s === 'kelp' || S.s === 'flat') { let near = null; for (const o of others) if (o !== this && !o.dead && !o.visitor && o.species.move !== 'jet' && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < 2.2 && Math.abs(o.pos.y - this.pos.y) < 3.2) { near = o; break; } this.nearFor = near ? this.nearFor + dt : 0;
-      if (near && this.nearFor > 1.5 && this.throwCool <= 0 && this.lead !== false && this.bold > 0.35 && this.sleepK < 0.2 && rng() < dt * 0.7) { this.throwCool = 90 + rng() * 120; this.nearFor = 0; this.throwAt(near, rng); } } else this.nearFor = 0;
+      if (near && this.nearFor > 1.5 && this.throwCool <= 0 && this.lead !== false && this.bold > 0.35 && this.sleepK < 0.2 && rng() < dt * 1.6) { this.throwCool = 90 + rng() * 120; this.nearFor = 0; this.throwAt(near, rng); } } else this.nearFor = 0;
     this.sq = Math.max(0, this.sq - dt * 2.4); this.separate(others, 3);
     { const px = this.px ?? this.pos.x, pz = this.pz ?? this.pos.z; this.pos.addScaledVector(this.vel, dt); this.resolve(others); if (this.pos.y < floor) { this.pos.y = floor; if (this.vel.y < 0) this.vel.y = 0; }
       this.realSp = (this.realSp ?? 0) + (Math.hypot(this.pos.x - px, this.pos.z - pz) / Math.max(dt, 1e-3) - (this.realSp ?? 0)) * Math.min(1, dt * 6); this.px = this.pos.x; this.pz = this.pos.z; }      // how fast it is really getting along the floor
@@ -569,11 +632,22 @@ export class Fish3D {
     this.flush = Math.max(0, this.flush - dt * 0.35);
     { const spd = this.vel.length(); this.glideK += ((S.s === 'jet' ? Math.max(0, Math.min(1, (spd - 0.5) / 1.5)) : 0) - this.glideK) * Math.min(1, dt * 3); this.cruiseK += ((((S.s === 'jet' || S.s === 'drift') && spd < 1.2 && this.pos.y > floor + 0.5) ? 1 - spd / 1.2 : 0) - this.cruiseK) * Math.min(1, dt * 2);
       this.landK = Math.max(0, this.landK - dt * 1.2); this.dashK += ((S.s === 'dash' ? 1 : 0) - this.dashK) * Math.min(1, dt * 3.5);
-      { const a = S.s; this.flatK += ((a === 'flat' || a === 'bury' ? 1 : 0) - this.flatK) * Math.min(1, dt * 1.5); this.lionK += ((a === 'lion' ? 1 : 0) - this.lionK) * Math.min(1, dt * 1.5); this.snakeK += ((a === 'snake' ? 1 : 0) - this.snakeK) * Math.min(1, dt * 1.5); this.jellyK += ((a === 'jelly' ? 1 : 0) - this.jellyK) * Math.min(1, dt * 1.2); this.kelpK += ((a === 'kelp' ? 1 : 0) - this.kelpK) * Math.min(1, dt * 1.2); this.puffK += ((a === 'jelly' || a === 'lion' ? 1 : 0) - this.puffK) * Math.min(1, dt * 1.5); if (a !== 'bury') this.sink += (0 - this.sink) * Math.min(1, dt * 3); }
+      { const a = S.s; this.flatK += ((a === 'flat' || a === 'bury' ? 1 : 0) - this.flatK) * Math.min(1, dt * 1.5); this.lionK += ((a === 'lion' ? 1 : 0) - this.lionK) * Math.min(1, dt * 1.5); this.snakeK += ((a === 'snake' ? 1 : 0) - this.snakeK) * Math.min(1, dt * 1.5); this.jellyK += ((a === 'jelly' ? 1 : 0) - this.jellyK) * Math.min(1, dt * 1.2); this.kelpK += ((a === 'kelp' ? 1 : 0) - this.kelpK) * Math.min(1, dt * 1.2); this.puffK += ((a === 'jelly' || a === 'lion' ? 1 : 0) - this.puffK) * Math.min(1, dt * 1.5); if (a === 'snake') this.sink += (1 - this.sink) * Math.min(1, dt * 1.2); else if (a !== 'bury') this.sink += (0 - this.sink) * Math.min(1, dt * 3); }
+      this.mimicK = (this.mimicK ?? 0) + ((this.follow && (S.s === 'jet' || S.s === 'drift') ? 1 : 0) - (this.mimicK ?? 0)) * Math.min(1, dt * 1.2);      // tagging along behind a fish, it takes on that fish's colours
+      { const sk = Math.min(1, this.sink * 3), cands = [['sole', this.flatK * (1 - sk)], ['lion', this.lionK], ['snake', this.snakeK], ['jelly', this.jellyK], ['kelp', this.kelpK], ['fish', this.mimicK]]; let best = null, bk = 0.05;
+        for (const [k, w] of cands) if (w > bk) { bk = w; best = k; }
+        if (best) {
+          let src = null; if (best === 'fish') { src = this.follow; if (!src) { let bd = 4; for (const o of others) if (o !== this && !o.dead && !o.visitor && o.species.move !== 'jet') { const d = o.pos.distanceTo(this.pos); if (d < bd) { bd = d; src = o; } } } }
+          else if (best === 'kelp') { let bd = 2.5; for (const q of this.getSpots?.() ?? []) if (PLANTS.has(q.type)) { const d = Math.hypot(q.x - this.pos.x, q.z - this.pos.z); if (d < bd) { bd = d; src = q.type; } } }
+          const key = best + ':' + (src?.fid ?? src ?? '');
+          if (key !== this.costumeKey && ((this.costumeK ?? 0) < 0.12 || !this.costumeTex) && (best !== 'fish' || src)) { this.costumeKey = key; this.costume = best; this.costumeTex = this.buildCostume(best, src); this.costumeBump = COSTUME_BUMP[best] ?? 0; }
+        }
+        const on = best && this.costumeKey?.startsWith(best + ':') ? Math.min(1, bk) : 0; this.costumeK = (this.costumeK ?? 0) + (on - (this.costumeK ?? 0)) * Math.min(1, dt * 1.4); }
       if (this.actFlash > 0) { this.actFlash -= dt; if (this.actFlash <= 0 && !this.act) this.actText = null; }
-      this.lift = 0.32 * this.dashK + (this.gait?.lift ?? 0) * this.crawlK - 0.5 * this.sink;
+      this.climbK = (this.climbK ?? 0) + ((S.s === 'work' && S.mode === 'inspect' && PLANTS.has(this.inspect?.type) ? 1 : 0) - (this.climbK ?? 0)) * Math.min(1, dt * 0.8);      // holding a plant's stem, it pulls itself up it a little
+      this.lift = 0.32 * this.dashK + (this.gait?.lift ?? 0) * this.crawlK - 0.5 * this.sink + 0.45 * this.climbK;
       // the mantle is rigged too: it tips back when it jets, slumps a little at rest, rises on a dash, bobs with each step, and the head turns a touch toward what it is looking at
-      const leanT = 0.16 * this.glideK - 0.05 * this.restK + 0.1 * this.dashK + 0.04 * Math.sin(this.tt * 0.7); this.lean = (this.lean ?? 0) + (leanT - (this.lean ?? 0)) * Math.min(1, dt * 3);
+      const leanT = 0.16 * this.glideK - 0.05 * this.restK + 0.1 * this.dashK + 0.04 * Math.sin(this.tt * 0.7) + 0.95 * this.flatK * (1 - Math.min(1, this.sink * 2)) + 0.5 * this.snakeK; this.lean = (this.lean ?? 0) + (leanT - (this.lean ?? 0)) * Math.min(1, dt * 3);
       this.yaw = (this.yaw ?? 0) + (this.lookX * 0.2 - (this.yaw ?? 0)) * Math.min(1, dt * 4); this.bob = Math.sin(this.phase * 0.15 * Math.PI * 4) * 0.45 * this.crawlK * (this.gait?.bob ?? 1); }
     // where he is looking: the crab, the jar, your finger, or a fish nearby; his pupils slide toward it (and drift back to centre when nothing interests him)
     this.lookT -= dt; if (this.lookT <= 0) {
@@ -591,7 +665,7 @@ export class Fish3D {
     // each arm has a mind of its own: now and then one probes the floor beside it, or reaches out toward a fish swimming past, while the rest of him sits still
     { const calm = (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect')) && this.restK > 0.5 && !this.pale, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading);
       this.minds.forEach((m, i) => {
-        m.next -= dt; if (m.until > 0 && calm) { m.until -= dt; m.k += (1 - m.k) * Math.min(1, dt * 3); } else { m.until = 0; m.k += (0 - m.k) * Math.min(1, dt * 2.2); } if (!calm || m.until > 0 || m.next > 0) return;
+        m.next -= dt; if (m.until > 0 && (calm || m.fast)) { m.until -= dt; m.k += (1 - m.k) * Math.min(1, dt * (m.fast ? 14 : 3)); } else { m.until = 0; m.fast = false; m.k += (0 - m.k) * Math.min(1, dt * 2.2); } if (!calm || m.until > 0 || m.next > 0) return;
         const a = this.rig.arms[i], r = rng(); let tgt = null;
         if (r > 0.72) for (const o of others) { if (o === this || o.dead) continue; const dx = o.pos.x - this.pos.x, dz = o.pos.z - this.pos.z, dy = o.pos.y - this.pos.y; if (Math.hypot(dx, dz) < 2.4 && Math.abs(dy) < 2.6) { tgt = [(dx * ch - dz * sh) / sc, dy / sc, (dx * sh + dz * ch) / sc]; break; } }
         if (!tgt && r > 0.18) { const ang = a.th + (rng() - 0.5) * 0.7, dd = 11 + rng() * 14; tgt = [3 + Math.cos(ang) * dd, -8.4, Math.sin(ang) * dd]; }
@@ -611,10 +685,10 @@ export class Fish3D {
     const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend && gnd?.kind === 'decor';             // sometimes it settles beside the new thing and takes on its look
     const camoT = ((S.s === 'rest' || S.s === 'flat' || S.s === 'bury') && !this.flush && this.camoWill && this.ctxT > this.camoDelay && gnd) || hiding ? 0.94 : 0;
     this.camoK += Math.max(-dt * 0.7, Math.min(dt * 0.4, camoT - this.camoK)); this.camoT0 += dt;
-    { const bt = (this.camoK / 0.94) * (gnd?.kind === 'decor' ? 1 : 0.6); this.bump += (bt - this.bump) * Math.min(1, dt * 2); }       // the skin roughens as it blends in      // a slow, steady fade: about 2.3 seconds in, 1.4 out, eased when drawn
+    { const ck = this.costumeK ?? 0, bt = (this.camoK / 0.94) * (gnd?.kind === 'decor' ? 1 : 0.6) * (1 - ck) + (this.costumeBump ?? 0) * ck; this.bump += (bt - this.bump) * Math.min(1, dt * 2); }       // the skin roughens as it blends in      // a slow, steady fade: about 2.3 seconds in, 1.4 out, eased when drawn
     if (this.camoT0 > 0.05 && this.camoK > 0.03) { const g = this.ground; if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoPrev = this.camoK > 0.1 ? this.camoTex : null; this.camoMix = this.camoPrev ? 0 : 1; this.camoMixT = performance.now(); this.camoTex = null; this.camoApplied = -1; } }
     const moodMoved = ['scared', 'annoyed', 'hunting', 'fond'].some((k) => Math.abs(this.mw[k] - this.mwA[k]) > 0.02 || (k === 'hunting' && this.mw.hunting > 0.03));
-    if (this.camoT0 > (this.sleepK > 0.05 ? 0.3 : 0.05) && !this.pale && (this.sleepK > 0.02 || this.sleepWas || Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1 || moodMoved || (this.camoT0 > 0.25 && this.camoK < 0.3))) { this.camoT0 = 0; this.sleepWas = this.sleepK > 0.02; this.applyCamo(); }
+    if (this.camoT0 > (this.sleepK > 0.05 ? 0.3 : 0.05) && !this.pale && (this.sleepK > 0.02 || this.sleepWas || Math.abs((this.costumeK ?? 0) - (this.costumeApplied ?? 0)) > 0.01 || Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1 || moodMoved || (this.camoT0 > 0.25 && this.camoK < 0.3))) { this.camoT0 = 0; this.sleepWas = this.sleepK > 0.02; this.applyCamo(); }
     { const tw = this.tuckWant ?? 0; this.tuckWant = 0; this.tuckK = (this.tuckK ?? 0) + (tw - (this.tuckK ?? 0)) * Math.min(1, dt * (tw ? 0.8 : 2.5)); const k = 1 - this.tuckK; this.group.scale.setScalar(k); this.lift -= 0.6 * (1 - k); }
     this.group.position.copy(this.pos); this.group.position.y += this.lift; this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > (1 / 20) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.35 : 1)) { this.accum = 0; this.setPose(this.phase); }

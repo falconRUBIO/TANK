@@ -143,8 +143,8 @@ export class Fishes {
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
       // the shell is lifted and tipped up at the front as the octopus goes in under it, then held just off the sand over itself, rocking a little as it breathes
-      const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.25)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
-      const wantY = entering ? 0.17 : under ? 0.05 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0, wantTilt = entering ? -0.34 : under ? -0.1 + Math.sin(t * 1.3) * 0.015 : 0, k = Math.min(1, dt * 2.5);
+      const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.2)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
+      const wantY = entering ? 0.2 : under ? 0.06 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0, wantTilt = entering ? -0.4 : under ? -0.13 + Math.sin(t * 1.3) * 0.015 : 0, k = Math.min(1, dt * 2.5);
       g.y += (wantY - g.y) * k; it.group.rotation.x += (wantTilt - it.group.rotation.x) * k;
     }
   }
@@ -225,6 +225,7 @@ export class Fishes {
       const S = f.st; let th = '';
       if (f.sulk > 0.5) th = W.water < 0.62 ? 'Sulking in the cloudy water.' : W.glass > 0.6 ? 'Cannot see out through the dirty glass.' : 'Hungry and a bit grumpy.';
       else if (S?.s === 'work' && S.mode === 'greet') th = 'Come to say hello at the glass.';
+      else if (S?.s === 'work' && S.mode === 'inspect' && f.inspect?.r && f.inspect.type) th = `Wrapping its arms round the ${(DECOR_DEF[f.inspect.type]?.label ?? 'thing').toLowerCase()}.`;
       else if (S?.s === 'work' && S.mode === 'inspect') th = f.inspect && this.list.some((o) => o !== f && !o.dead && Math.hypot(o.pos.x - f.inspect.x, o.pos.z - f.inspect.z) < 1.2) ? 'Watching a neighbour.' : 'Examining something with its arms.';
       else if (f.sleepK > 0.6) th = 'Asleep. Its skin is dreaming.';
       else if (f.audience >= 1 && f.bondMe >= 1) th = 'Knows you are here.';
@@ -356,7 +357,7 @@ export class Fishes {
     else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
     const key = f.den ? `${f.den.id}|${f.den.kind}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
-    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.onThrow = (p, d, kind) => (kind === 'shell' ? this.toss(p, d) : kind === 'water' ? this.waterJet(p, d) : this.silt(p, d)); f.onSand = (p, k) => this.sand(p, k); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
+    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.onThrow = (p, d, kind, at) => (kind === 'smack' ? this.burst(at) : kind === 'shell' ? this.toss(p, d) : kind === 'water' ? this.waterJet(p, d) : this.silt(p, d)); f.onSand = (p, k) => this.sand(p, k); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
   }
   looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it

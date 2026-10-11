@@ -27,7 +27,7 @@ let worstPlant = 1e9, inPlaceMax = 0, trips = [];
 for (const T of TRIPS) {
   const r = await p.evaluate(async ({ T, plants }) => {
     window.__dbgWh = true; let seed = 7; const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; const F = window.__fishes, f = F.list[0]; if (!f.freeSpot(T.to[0], T.to[1])) return { badGoal: true }; f.pos.set(T.from[0], 0.6, T.from[1]); f.vel.set(0, 0, 0); f.inspect = null; f.hunt = null; f.task = null; f.glassAt = null; f.failed = [];
-    f.st = { s: 'crawl', t: 40, n: 0, pulse: 0, mode: null }; f.target.set(T.to[0], 0.55, T.to[1]);
+    f.st = { s: 'crawl', t: 60, n: 0, pulse: 0, mode: null }; f.target.set(T.to[0], 0.55, T.to[1]);
     let t = 0, inPlace = 0, inPlaceMax = 0, plantMin = 1e9, reached = false, gaveUp = false, hopped = false, plantAt = null, path = [], last = [f.pos.x, f.pos.z];
     for (let i = 0; i < 1400; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, rng, F.list)); t += 0.05;
       const moved = Math.hypot(f.pos.x - last[0], f.pos.z - last[1]) / 0.05; last = [f.pos.x, f.pos.z];
@@ -53,4 +53,5 @@ ck('at least five of the seven goals are reached', trips.filter((t) => t.reached
 ck('it never walks in place for more than 1.5 s', inPlaceMax <= 1.5, `${inPlaceMax}s`);
 ck('on the floor, its body never passes through a plant stem', worstPlant >= 0.25, `nearest ${worstPlant}`);
 ck('no page errors', errors.length === 0, errors.join('; '));
+if (process.env.DEBUG) console.log('  decor at the end', JSON.stringify(await p.evaluate(() => window.__game.state.decor.map((d) => [d.type, d.x, d.z]))));
 console.log(fails ? `${fails} failed` : 'Obstacle checks passed'); await b.close(); process.exit(fails ? 1 : 0);
