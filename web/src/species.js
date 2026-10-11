@@ -625,6 +625,17 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   const gl = S.glide ?? 0, cr = S.cruise ?? 0, jr = OCT.ax + 3 + a.L * (1.12 + 0.24 * gl) * t * (1 + 0.05 * cr * Math.sin(ph * 2 + t * 4)), jx = OCT.ax + (jd[0] / jl) * jr * 0.98, jz = (jd[1] / jl) * jr + fl * 0.6 + s * t * t * 5, jy = OCT.ay + 1 - t * 5.5 + Math.sin(a.th * 2 + 0.6) * t * (2.6 + t * 2.4) + fl + (S.sq ?? 0) * -t * 1.5;
   o[0] = jx + (rx - jx) * rest; o[1] = jy + (y - jy) * rest; o[2] = jz + (rz - jz) * rest;
   { const root = (a.root ||= [OCT.ax + c * (OCT.ax + 1.5), OCT.ay + 1.2, s * (OCT.ax + 1.5)]), w = Math.min(1, t / 0.2), e = w * w * (3 - 2 * w); o[0] = root[0] + (o[0] - root[0]) * e; o[1] = root[1] + (o[1] - root[1]) * e; o[2] = root[2] + (o[2] - root[2]) * e; }
+  // its impressions: each is a whole-arm shape the usual pose is blended toward
+  const mf = S.flat ?? 0, li = S.lion ?? 0, sn = S.snake ?? 0, je = S.jelly ?? 0, ke = S.kelp ?? 0, mimic = mf + li + sn + je + ke;
+  if (mimic > 0.01) {
+    let mx = 0, my = 0, mz = 0;
+    if (mf) { const r = 4.5 + a.L * 1.12 * t, w = Math.sin(ph * 1.2 + a.ph + t * 5) * 1.6 * t; mx += mf * (OCT.ax + c * r - s * w); my += mf * (OCT.floor + 1.1 + Math.sin(ph * 0.8 + t * 4 + a.ph) * 0.4 * t); mz += mf * (s * r + c * w); }                  // a flatfish: every arm out flat along the sand, rippling at the edges
+    if (li) { const up = Math.sin(a.i * 2.4) * 0.6, r = 4.5 + a.L * 1.05 * t, rr = r * Math.sqrt(1 - up * up); mx += li * (OCT.ax + c * rr + Math.sin(ph * 3 + a.ph) * 0.4 * t); my += li * (OCT.ay + 1.2 + up * r); mz += li * (s * rr); }      // a lionfish: arms held stiffly out in every direction like spines
+    if (sn) { const two = a.i === 2 || a.i === 6; if (two) { const r = 4.5 + a.L * 1.3 * t, w = Math.sin(t * 7 - ph * 2.2) * 2.4 * t; mx += sn * (OCT.ax + c * r - s * w); my += sn * (OCT.floor + 1.1 + Math.abs(Math.sin(t * 7 - ph * 2.2)) * 0.6 * t); mz += sn * (s * r + c * w); } else { const r = 4.5 + a.L * 0.22 * t; mx += sn * (OCT.ax + c * r); my += sn * (OCT.floor + 1.0); mz += sn * (s * r); } }      // a sea snake: two arms stretched out opposite ways and rippling, the rest tucked under
+    if (je) { const sw = Math.sin(ph * 0.9 + a.ph + t * 2.2) * 2.2 * t; mx += je * (OCT.ax + 4.5 + a.L * 1.1 * t); my += je * (OCT.ay + 1.2 + c * (4.5 + sw) * 0.7); mz += je * (s * (4.5 + sw)); }      // a jellyfish: the body is tipped head-down, so arms reaching past the head trail straight down under the puffed bell
+    if (ke) { const sw = Math.sin(ph * 0.5 + a.ph + t * 2) * 3.2 * t, r = 3.5 + 3 * t; mx += ke * (OCT.ax + c * r + sw); my += ke * (OCT.ay + 1 + a.L * 1.05 * t); mz += ke * (s * r); }      // a plant: arms raised and swaying in the current beside the real one
+    const k = Math.min(1, mimic); o[0] += (mx / mimic - o[0]) * k; o[1] += (my / mimic - o[1]) * k; o[2] += (mz / mimic - o[2]) * k;
+  }
   if (wrapW > 0) { o[0] += (wx - o[0]) * wrapW; o[1] += (wy - o[1]) * wrapW; o[2] += (wz - o[2]) * wrapW; }
   const curTip = () => { if (a.ck !== S.ph || a.ckr !== rest) { a.ck = S.ph; a.ckr = rest; const g = S.grab, m = S.minds; S.grab = null; S.minds = null; a.cur = octoPose(a, 1, S, [0, 0, 0]); S.grab = g; S.minds = m; } return a.cur; };
   const mind = S.minds?.[a.i];

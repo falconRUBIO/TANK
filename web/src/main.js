@@ -667,7 +667,7 @@ const netFish = new Map(); let lastSnapSent = 0;
 function isDirector() { return !game.shared || game.director === true; }
 const r2 = (v) => Math.round(v * 100) / 100;
 // what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, colour, chewing…)
-const OPOSE = ['restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK'];
+const OPOSE = ['restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK', 'flatK', 'lionK', 'snakeK', 'jellyK', 'kelpK', 'puffK', 'sink'];
 game.on('snap', (list, crabs, ts) => { const at = performance.now(); for (const f of list) { let e = netFish.get(f.i); if (!e) netFish.set(f.i, (e = {})); const gap = Number.isFinite(ts) && Number.isFinite(e.ts) && ts > e.ts ? (ts - e.ts) / 1000 : (at - (e.at ?? 0)) / 1000;      // timed by the lead phone's clock, so a late or bunched message does not fake a burst of speed
  if (gap > 0.04 && gap < 1) { if (Number.isFinite(e.ph) && Number.isFinite(f.ph) && f.ph >= e.ph) e.rate = (f.ph - e.ph) / gap; const v = (a, b2) => (Number.isFinite(a) && Number.isFinite(b2) ? (b2 - a) / gap : 0); e.vx = v(e.x, f.x); e.vy = v(e.y, f.y); e.vz = v(e.z, f.z); e.vh = Number.isFinite(e.h) ? Math.atan2(Math.sin(f.h - e.h), Math.cos(f.h - e.h)) / gap : 0; } else { e.vx = e.vy = e.vz = e.vh = 0; } Object.assign(e, f, { at, ts }); } if (Array.isArray(crabs) && !isDirector()) fishes.netCrabs(crabs); });
 game.on('role', (d) => { if (d) netFish.clear(); });
