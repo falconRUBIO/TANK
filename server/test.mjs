@@ -107,6 +107,11 @@ await t('a recovery key signs you back in on a new phone and retires the old tok
   assert.equal((await call('/api/recover', { key: 'abcd-2345-efgh-6789' })).body.userId, old.userId, 'a key in the old style still works');
   const k2 = (await call('/api/recovery', {}, r.body.token)).body.key; assert.notEqual(k2, u.recoveryKey); assert.equal((await call('/api/recover', { key: u.recoveryKey })).status, 404);
 });
+await t('wrong recovery keys from everywhere together hit a ceiling, so a key cannot be guessed from many addresses', async () => {
+  const lim = await start({ port: 0, dbPath: ':memory:', limits: { recoverPerHour: 100, recoverFailsPerHour: 3 } }); const codes = [];
+  for (let i = 0; i < 5; i++) codes.push((await fetch(`http://localhost:${lim.port}/api/recover`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'wrong-wrong-wrong-' + i }) })).status);
+  assert.deepEqual(codes, [404, 404, 404, 429, 429]); await lim.close();
+});
 await t('recovery attempts are rate limited', async () => {
   const lim = await start({ port: 0, dbPath: ':memory:', limits: { recoverPerHour: 3 } }); const out = [];
   for (let i = 0; i < 5; i++) out.push((await fetch(`http://localhost:${lim.port}/api/recover`, { method: 'POST', body: JSON.stringify({ key: 'AAAA-BBBB-CCCC-DDDD' }) })).status);
@@ -321,7 +326,8 @@ await t('an octopus nobody in the crew looks after can be taken on by a caretake
   assert.equal((await ackOf(wb, { t: 'claimOcto', id: 'g2', idem: 'or-5' })).ok, false, 'only one each');
   assert.equal((await ackOf(wb, { t: 'releaseOcto', id: 'g2', idem: 'or-6' })).ok, true, 'the other is let go');
   w = getW(tk.id); assert.equal(w.fish.length, 2); assert.ok(!w.memorial?.some((m) => m.id === 'g2'), 'not a death');
-  setW(tk.id, { fish: [ghost('g3', 'Only')] }); assert.equal((await ackOf(wa, { t: 'releaseOcto', id: 'g3', idem: 'or-7' })).ok, false, 'never the last fish'); wa.close(); wb.close();
+  setW(tk.id, { fish: [ghost('g3', 'Only')] }); assert.equal((await ackOf(wa, { t: 'releaseOcto', id: 'g3', idem: 'or-7' })).ok, false, 'never the last fish');
+  setW(tk.id, { fish: [ghost('g3', 'Only'), { ...ghost('g4', 'Nobodys'), owner: null }] }); assert.equal((await ackOf(wa, { t: 'releaseOcto', id: 'g4', idem: 'or-8' })).ok, false, 'one that never had a caretaker (a restored tank) is not let go'); wa.close(); wb.close();
 });
 await t('push: a friend having the tank open does not stop the one who is away from hearing about it', async () => {
   const x = await mkUser('Away'), y = await mkUser('Here'), tk = (await call('/api/tanks', { name: 'Open' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200);

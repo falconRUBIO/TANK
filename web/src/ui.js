@@ -26,7 +26,8 @@ export function initUI({ game, social, cb }) {
   let hushUntil = 0, hushT = 0, coachLater = null;
   const hushed = () => performance.now() < hushUntil;
   const hush = (ms) => {
-    hushUntil = Math.max(hushUntil, performance.now() + ms); toastEl.classList.remove('on'); clearTimeout(tt); showing = tq.length ? 1 : 0;
+    hushUntil = Math.max(hushUntil, performance.now() + ms); if (toastEl.classList.contains('on') && toastEl.textContent) tq.unshift({ m: toastEl.textContent, ms: 2400 });      // the one on screen comes back after the quiet
+    toastEl.classList.remove('on'); clearTimeout(tt); showing = tq.length ? 1 : 0;
     const coachEl = $('coach'); if (coachEl?.classList.contains('on') && coachEl._args) { coachLater = coachEl._args; coachEl.classList.remove('on'); }
     clearTimeout(hushT); hushT = setTimeout(() => { if (coachLater) { const a = coachLater; coachLater = null; showCoach(a); } if (tq.length) nextToast(); else showing = 0; }, hushUntil - performance.now() + 50);
   };
@@ -39,12 +40,12 @@ export function initUI({ game, social, cb }) {
   let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
   const noticeSave = () => { try { localStorage.setItem(NK, JSON.stringify(notices.slice(0, 80))); } catch { /* storage unavailable */ } };
   // one line of news is kept once. A countdown ("arrives in 47 min", "wipe in about 9h") is the same notice ticking, so it is updated in place, quietly, rather than added again every minute
-  const noticeKey = (text) => text.replace(/\d+/g, '#');
+  const noticeKey = (text) => (/\b\d+\s*(min|h|hours?|minutes?|days?)\b/.test(text) ? text.replace(/\d+/g, '#') : text);      // only a countdown ticks; 'level 3' and 'level 4' are two different moments
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
     if (!text) return; const now = Date.now(), key = noticeKey(text);
     const same = notices.slice(0, 40).find((n) => n.text === text && now - n.ts < 3 * 864e5); if (same) return;
     const ticking = notices.slice(0, 40).find((n) => (n.key ?? noticeKey(n.text)) === key && key !== text && now - n.ts < 3 * 864e5);
-    if (ticking) { ticking.text = text; ticking.tab = tab; noticeSave(); refreshNotices(); return; }
+    if (ticking) { ticking.text = text; ticking.tab = tab; ticking.gift = gift; ticking.kind = kind; noticeSave(); refreshNotices(); return; }
     notices.unshift({ ts: now, text, tab, gift, kind, key }); notices = notices.slice(0, 80); noticeSave(); bell();
   };
   let refreshNotices = () => {};
@@ -68,6 +69,7 @@ export function initUI({ game, social, cb }) {
     // who is hungry, by name: your octopuses that are, and the fish if they are
     const who = [...ocs.filter((f) => octoHunger(f) > 0.25).map((f) => esc(f.name)), ...(fish && s.hunger > 0.25 ? ['the fish'] : [])], list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who.at(-1) : who[0] ?? '';
     const verb = who.length === 1 && who[0] !== 'the fish' ? 'is' : 'are', hungryTxt = list ? `${list.charAt(0).toUpperCase() + list.slice(1)} ${verb} hungry · feed now` : 'Hungry · feed now';
+    if (!oc && !fish) return { feed: ['Nothing to feed yet', 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] };
     return { feed: fNeed ? [hungryTxt, 'due'] : [`Full · hungry ${inH(Math.max(0, fH))}`, 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] }; };
 
   // ── header ──

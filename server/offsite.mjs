@@ -96,10 +96,11 @@ export function makeUploader(off, snapshot, log = console.log, { expect, holdUnt
     if (!checks) return true;
     const cur = await off.stamp(); if (cur === expect) return true;
     stale = true; log('offsite backup: a newer copy was sent by another server; this one will not overwrite it'); try { onStale?.(cur); } catch (e) { log('offsite backup: reload failed: ' + e.message); }
-    return false;
+    return !stale;
   };
   return {
     block() { blocked = true; },
+    adopt(cur) { expect = cur; stale = false; },      // carry on over whatever is there now
     // during the handover: has the copy out there changed since this server started?
     async check() { if (blocked || stale) return false; try { return !(await fresh()); } catch (e) { err = String(e.message); return false; } },
     async run(force = false) {

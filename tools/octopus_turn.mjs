@@ -1,6 +1,5 @@
 // An octopus with a coconut home shoves it along and turns it: the plan is made, the shell is dragged tipped on its side, set down turned, and the move reaches the game state.
 // Steps the simulation by hand. Needs the solo game on 8123. node tools/octopus_turn.mjs OUTDIR
-// an octopus with a coconut home shoves it along and turns it: the plan is made, the shell is dragged tipped on its side, set down turned, and the move reaches the game state (and so the other phones)
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 const out = process.argv[2] || '/tmp/turn'; (await import('node:fs')).mkdirSync(out, { recursive: true }); const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));

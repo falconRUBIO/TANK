@@ -55,10 +55,10 @@ function dashboardHtml(st) {
 // sliding-window rate limiter
 class Limiter {
   constructor() { this.h = new Map(); }
-  hit(key, max, windowMs) {
+  hit(key, max, windowMs, peek = false) {
     const now = Date.now(), arr = (this.h.get(key) ?? []).filter((t) => now - t < windowMs);
     if (arr.length >= max) { this.h.set(key, arr); return false; }
-    arr.push(now); this.h.set(key, arr); return true;
+    if (!peek) arr.push(now); this.h.set(key, arr); return true;      // peek: is there room, without taking any
   }
   sweep() { const now = Date.now(); for (const [k, a] of this.h) if (!a.length || now - a[a.length - 1] > 3600e3) this.h.delete(k); }
 }
@@ -66,7 +66,7 @@ class Limiter {
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null } = {}) {
   const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
   const push = makePush(db, pushOpts ?? vapidFor(db));
-  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, actionsPer10s: 30, ...limits };
+  const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
   const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
   // One phone per tank is the director: its fish positions and memories are what everyone sees. The one that has been connected longest; when it leaves, the next takes over.
@@ -93,7 +93,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       }
       if (req.method === 'POST' && p === '/api/recover') {
         if (!lim.hit('r:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
-        return json(res, 200, L.recover(db, (await readBody(req)).key));
+        if (!lim.hit('r:all', cfg.recoverFailsPerHour, 3600e3, true)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);      // and a ceiling on wrong keys across everyone, against guessing from many addresses
+        try { return json(res, 200, L.recover(db, (await readBody(req)).key)); } catch (e) { if (e?.code === 'BAD_KEY') lim.hit('r:all', cfg.recoverFailsPerHour, 3600e3); throw e; }
       }
       if (req.method === 'POST' && p === '/api/claim') {
         if (!lim.hit('c:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
@@ -107,7 +108,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (!user) throw new L.GameError('UNAUTHORIZED', 'Sign in required.', 401);
       if (req.method === 'GET' && p === '/api/storage') {
         // is this tank safe from the server losing its disk? an offsite copy that has been sent, or a disk that is kept, means yes
-        const o = offsiteInfo(), disk = dbPath !== ':memory:' && (diskKept ?? (dbPath.startsWith('/data/') || (!process.env.RENDER && !process.env.FLY_APP_NAME)));
+        const o = offsiteInfo(), disk = dbPath !== ':memory:' && (dbPath.startsWith('/data/') ? (diskKept ?? true) : (!process.env.RENDER && !process.env.FLY_APP_NAME));      // a kept disk only counts when the database is on it
         const level = o?.on && o.at && !o.err ? 'safe' : o?.on ? 'waiting' : disk ? 'safe' : 'risk';
         return json(res, 200, { level, offsite: !!o?.on, disk, lastCopy: o?.at || null, error: o?.err || null });
       }
@@ -278,10 +279,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
   // tanks nobody has open still move on: tell the people who opted in when something worth seeing happens (visitor, arrival, hatch)
   // what in a tick is worth telling someone who is not looking: a death first, then a fish in trouble, a visitor, a solved jar, an arrival, a milestone, a discovery
-  const hitOf = (events) => events.find((e) => e.died) ?? events.find((e) => e.warn) ?? events.find((e) => e.visitor) ?? events.find((e) => e.puzzle) ?? events.find((e) => e.arrival) ?? events.find((e) => e.milestone || e.grew) ?? events.find((e) => e.found || e.discovery) ?? null;
+  const hitOf = (events, major = false) => events.find((e) => e.died) ?? events.find((e) => e.warn) ?? events.find((e) => e.visitor) ?? events.find((e) => e.puzzle) ?? events.find((e) => e.arrival) ?? (major ? null : events.find((e) => e.milestone || e.grew) ?? events.find((e) => e.found || e.discovery) ?? null);
   const tellAway = async (tankId, hit, now = Date.now()) => { if (!hit || !push.enabled) return; const here = online(tankId); for (const m of L.listMembers(db, tankId)) if (!here.includes(m.id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now, cap: 2 }).catch(() => {}); };
+  let sweeping = false;
   const pushSweep = async (now = Date.now()) => {
-    if (!push.enabled) return;
+    if (!push.enabled || sweeping) return; sweeping = true; try { await sweepOnce(now); } finally { sweeping = false; }
+  };
+  const sweepOnce = async (now) => {
     const tanks = db.prepare('SELECT DISTINCT m.tank_id id FROM members m JOIN push_subs p ON p.user_id = m.user_id').all();
     for (const { id } of tanks) {
       try {
@@ -293,7 +297,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
         for (const m of away) {
           const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
-          if (oc) { const k = `push:octo:${id}:${oc.id}`; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
+          if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
           const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45, k = `push:care:${id}:${m.id}`;
           if ((fishHungry || foul) && !recent(k) && await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now })) mark(k);
         }
@@ -309,7 +313,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const r = L.tickTank(db, tankId); an.fromTick(tankId, r.events);
         const pub = L.publicTank(r.world), key = stateKey(pub), changed = stateKeys.has(tankId) && stateKeys.get(tankId) !== key; stateKeys.set(tankId, key);
         if (r.events.length || changed) { broadcast(tankId, { t: 'state', tank: pub }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
-        const hit = hitOf(r.events); if (hit) tellAway(tankId, hit).catch(() => {});      // and the caretakers who are not looking hear about it on their phones
+        const hit = hitOf(r.events, true); if (hit) tellAway(tankId, hit).catch(() => {});      // and the caretakers who are not looking hear the big news on their phones (growth and discoveries wait for the journal)
       } catch (e) { console.error('tick failed', e); }
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
@@ -325,14 +329,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // before sending anything, and if a newer copy turns up meanwhile (or ever), it loads that copy instead of overwriting it.
   const off = offsiteFromEnv(), dbFile = path.resolve(process.env.DB || 'ourtank.db'), port = +process.env.PORT || 8080, HANDOVER = +(process.env.HANDOVER_MS || 180e3);
   let s = null, uploader = null, timers = [], reloading = false, stopping = false;
-  if (process.env.RENDER) { const f = '/data/.persist-check'; diskKept = fs.existsSync(f); try { if (!diskKept) fs.writeFileSync(f, String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
+  if (process.env.RENDER && dbFile.startsWith('/data/')) { const f = '/data/.persist-check'; diskKept = fs.existsSync(f); try { if (!diskKept) fs.writeFileSync(f, String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
+  let bootAt = Date.now();
   const boot = async () => {
-    let restoreFailed = false, stamp;
+    bootAt = Date.now(); let restoreFailed = false, stamp;
     if (off) { for (let i = 0; i < 6; i++) { try { stamp = await off.stamp(); await restoreIfEmpty(off, dbFile); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
     s = await start({ port, dbPath: process.env.DB || 'ourtank.db' });
     setTimeout(() => s.pushSweep().catch(() => {}), 20e3).unref();      // a server woken by a request catches up on what happened while it slept
     if (off) {
-      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: () => { reload(); } });
+      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
       if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }
       const watch = setInterval(() => { if (!uploader.status.holding) clearInterval(watch); else uploader.check(); }, 15e3); watch.unref();
       const first = setTimeout(() => uploader.run(), HANDOVER + 5e3); first.unref();

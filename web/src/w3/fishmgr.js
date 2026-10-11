@@ -138,7 +138,7 @@ export class Fishes {
     if (!this.decor) return;
     for (const f of this.list) {
       const T = f.task;
-      if (T?.stage === 'haul') { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null);
+      if (T?.stage === 'haul') { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null, dt);
         const it = this.decor.items.get(T.id); if (it && T.kind === 'turn') { T.ht = (T.ht ?? 0) + dt; it.group.rotation.z += (0.42 * Math.sin(Math.min(1, T.ht / 5) * Math.PI) - it.group.rotation.z) * Math.min(1, dt * 3); } }      // tipped over on its side while it is shoved, then set back down
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
@@ -168,7 +168,7 @@ export class Fishes {
   // an octopus makes up its mind to rearrange something: only the phone in charge of the fish decides, and the move is reported to the game when it is done
   planMove(f, M) {
     const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
-    const mine = new Set(this.list.map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
+    const mine = new Set(this.list.filter((o) => !o.dead).map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
     const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
     const bad = (x, z) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9);
     const home = !f.homeId && spots.filter((q) => (q.type === 'coconut' || q.type === 'pot') && !mine.has(q.id)).sort((a, b) => (a.type === 'coconut' ? 0 : 1) - (b.type === 'coconut' ? 0 : 1))[0];
@@ -181,7 +181,7 @@ export class Fishes {
       const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 10; i++) {
         const sx = rnd() < 0.5 ? -1 : 1, x = Math.max(-3.4, Math.min(3.4, at.x + sx * (0.35 + rnd() * 0.55))), z = Math.max(0.3, Math.min(2.1, at.z + (rnd() - 0.5) * 0.4)), ry = (rnd() - 0.5) * 1.3;      // mostly sideways, so it can stand on the far side and shove
         const L = Math.hypot(x - at.x, z - at.z) || 1, stand = 1.2 + 0.45 * (f.radius ?? 2), sxp = at.x - ((x - at.x) / L) * stand, szp = at.z - ((z - at.z) / L) * stand;
-        if (L > 0.25 && Math.abs(sxp) < 3.7 && szp > 0.15 && szp < 2.5 && !bad(x, z) && free(f.homeId, x, z)) return { kind: 'turn', id: f.homeId, gx: x, gz: z, ry }; }
+        if (L > 0.25 && Math.abs(sxp) < 3.7 && szp > 0.15 && szp < 2.5 && !bad(x, z) && x > -3.7 && x < 3.7 && dc.roomFor(f.homeId, x, z, ry)) return { kind: 'turn', id: f.homeId, gx: x, gz: z, ry }; }
     }
     const movers = spots.filter((q) => ['rock', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
     if (!movers.length) return null;
@@ -230,7 +230,7 @@ export class Fishes {
         else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
         break;
       }
-      if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : 'Moving a stone where it wants it.';
+      if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : f.task.kind === 'turn' ? 'Shoving its shell about to see how it likes it there.' : 'Moving a stone where it wants it.';
       f.thought = th;
       if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.012 + 0.03 * M.tidy + 0.015 * M.cur) {
         const pl = this.planMove(f, M); if (pl) this.beginTask(f, pl);
@@ -339,7 +339,7 @@ export class Fishes {
   syncDen(f, d) {
     f.hoard = hoardOf(d, Date.now()); const spots = (this.spots?.() ?? []).filter((x) => ['ROCKS', 'STRUCTURES'].includes(DECOR_DEF[x.type]?.cat)), home = spots.find((x) => x.id === d.home);
     const rocks = spots.filter((x) => ['rock', 'skull'].includes(x.type)), near = (q) => rocks.filter((r) => r !== q && Math.hypot(r.x - q.x, r.z - q.z) < 2.4), built = rocks.map((q) => [q, near(q)]).filter(([, n]) => n.length >= 1).sort((a, b) => b[1].length - a[1].length)[0];
-    const taken = new Set(this.list.filter((o) => o !== f && o.species.move === 'jet').map((o) => o.homeId).filter(Boolean));      // another octopus lives there: not a den for this one, and no crowding round it
+    const taken = new Set(this.list.filter((o) => o !== f && o.species.move === 'jet' && !o.dead).map((o) => o.homeId).filter(Boolean));      // another octopus lives there: not a den for this one, and no crowding round it
     const pref = spots.filter((x) => (x.type === 'pot' || x.type === 'coconut') && !taken.has(x.id)), cover = spots.filter((x) => ['boulder', 'table', 'arch', 'brain', 'chest'].includes(x.type) && !taken.has(x.id)), den = home ?? (built ? null : pref.length ? pref[(d.seed ?? 0) % pref.length] : cover.length ? cover[(d.seed ?? 0) % cover.length] : null);      // a den needs real cover: a single small rock is not one
     if (home) f.den = { x: home.x, z: home.z, id: home.id, home: true, kind: home.type };
     else if (built) { const all = [built[0], ...built[1]], cx = all.reduce((a, q) => a + q.x, 0) / all.length, cz = all.reduce((a, q) => a + q.z, 0) / all.length; f.den = { x: cx, z: cz, id: built[0].id, home: false, kind: 'rocks', n: all.length }; }
@@ -382,7 +382,8 @@ export class Fishes {
   netCrabs(list) {
     const now = performance.now(); this.eatenAt = (this.eatenAt ?? []).filter((e) => now - e.t < 6000);
     const mine = (this.crabs ?? []).filter((c) => !c.held), used = new Set();
-    for (const [x, y, z, ry, pin] of list) {
+    for (const c0 of list) {
+      if (!Array.isArray(c0) || c0.length < 5 || !c0.slice(0, 4).every(Number.isFinite)) continue; const [x, y, z, ry, pin] = c0;
       let best = null, bd = 3; for (const c of mine) { if (used.has(c)) continue; const d = Math.hypot(c.x - x, c.z - z); if (d < bd) { bd = d; best = c; } }
       if (!best) {
         if (this.eatenAt.some((e) => Math.hypot(e.x - x, e.z - z) < 2.2)) continue;                     // this phone has just seen that one eaten

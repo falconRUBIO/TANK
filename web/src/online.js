@@ -66,6 +66,7 @@ export function runOnboarding() {
     const avatar = randomAvatar();
 
     // returning player with a saved identity (also looked for in the second place it is kept)
+    try { const kept = await idbGet(WAS); if (Array.isArray(kept) && kept.length && !formerIds().length) localStorage.setItem(WAS, JSON.stringify(kept.slice(-8))); } catch { /* storage unavailable */ }      // the former ids too are kept in two places
     if (!session?.token) { const kept = await idbGet('ourtank.session'); if (kept?.token) { session = kept; store(session); } }
     if (session?.token) {
       try { const me = await api('/api/me'); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank }); }
@@ -183,6 +184,7 @@ async function healTank() {
   let c = null; try { c = JSON.parse(localStorage.getItem('ourtank.cache') || 'null'); } catch { /* none */ }
   if (!c?.world) c = await idbGet('ourtank.cache');
   if (!c?.code || !c.world || !c.user) return null;
+  if (session?.userId && c.userId !== session.userId && !formerIds().includes(session.userId) && !formerIds().includes(c.userId)) return null;      // the copy belongs to someone else who used this phone
   rememberId(c.userId); if (session?.userId) rememberId(session.userId); const was = [...new Set([c.userId, session?.userId, ...formerIds()])].filter(Boolean);      // every id this phone has had: the server finds its octopus and gifts under any of them
   const r = await api('/api/users', { name: c.user.name || 'Guest', avatar: c.user.avatar });
   session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey, named: true }; store(session);
@@ -196,7 +198,7 @@ export const getSession = () => session;
 // a fresh key of four words replaces the old one (the old one stops working)
 export async function newRecoveryKey() { const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
 export async function ensureRecoveryKey() { if (session?.recoveryKey) return session.recoveryKey; const r = await api('/api/recovery', {}); session = { ...session, recoveryKey: r.key }; store(session); return r.key; }
-export async function leaveTankNow() { await api('/api/tanks/leave', {}); try { localStorage.removeItem('ourtank.seen.' + session.userId); } catch { /* ignore */ } }
+export async function leaveTankNow() { await api('/api/tanks/leave', {}); try { localStorage.removeItem(WAS); } catch { /* ignore */ } idbPut(WAS, []); try { localStorage.removeItem('ourtank.seen.' + session.userId); } catch { /* ignore */ } }
 
 // ── notifications (opt in; the server only sends a couple a day) ──
 const b64 = (s) => { const p = '='.repeat((4 - (s.length % 4)) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map((c) => c.charCodeAt(0))); };

@@ -391,7 +391,7 @@ export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND
 // with a crab inside. The first jar takes minutes to work out; every one after is quicker, down to seconds, because it remembers how.
 export const isSmart = (f) => f?.species === 'octopus';
 // An octopus can shift small things about: rocks, shells, a clay pot, a coconut shell. It can carry a coconut shell to a quiet corner and live under it.
-// Only the small pieces move, only a little at a time, and each octopus does it at most once every 20 minutes. A tank can switch it off.
+// Only the small pieces move, only a little at a time, and each octopus does it at most once every 10 minutes. A tank can switch it off.
 export const MOVABLE = ['rock', 'coconut', 'pot', 'skull'];
 export const MOVE_GAP = 10 * 60e3, MOVE_MAX = 4.5;
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
@@ -882,7 +882,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     }
     case 'releaseOcto': {                                          // it is let go: it slips over the back of the tank to the reef. Not a death, nothing is paid, and never the last fish
       if (!members) return fail('FORBIDDEN'); const f = t.fish.find((x) => x.id === a.id); if (!f || !isSmart(f) || f.dead) return fail('NOT_FOUND');
-      if (f.owner && members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');
+      if (!f.owner || members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');      // only one whose caretaker is gone; one that never had a caretaker (a tank restored from a file) is taken on, not let go
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null;
       events.push({ journal: `${f.name} was let go, and slipped away over the reef.`, toast: `${f.name} slipped away to the reef.`, activity: { type: 'fish', text: `${name} let ${f.name} go.` }, released: f.id }); return ok({ id: f.id });

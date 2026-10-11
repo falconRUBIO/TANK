@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -423,7 +423,9 @@ function orphanBlock(rec, f) {
   const crew = game.members ?? [], me = game.you?.userId; if (rec.owner && crew.some((m) => m.id === rec.owner)) return '';
   const haveOne = game.state.fish.some((x) => x.species === 'octopus' && !x.dead && x.owner === me) || (game.state.orders ?? []).some((o) => o.species === 'octopus' && o.owner === me);
   const alone = game.state.fish.filter((x) => !x.dead).length <= 1;
-  return `<div class="orphan"><p>🐙 No one in the crew looks after ${esc(f.name)} any more.</p><div class="btnrow">${haveOne ? '' : '<button class="lnk" id="claimo">Make it mine</button>'}${alone ? '' : '<button class="lnk warn" id="releaseo">Let it go</button>'}</div></div>`;
+  const stranded = !!rec.owner;                                                                 // a caretaker who is gone (or an identity the server lost); an octopus that never had one can only be taken on
+  if (!stranded && haveOne) return '';
+  return `<div class="orphan"><p>🐙 ${stranded ? `No one in the crew looks after ${esc(f.name)} any more.` : `${esc(f.name)} has no caretaker yet.`}</p><div class="btnrow">${haveOne ? '' : '<button class="lnk" id="claimo">Make it mine</button>'}${alone || !stranded ? '' : '<button class="lnk warn" id="releaseo">Let it go</button>'}</div></div>`;
 }
 function bondLine(rec) {
   const you = game.shared ? game.you?.userId : 'me', b = rec.bond ?? {}, known = (id) => id === you || !game.shared || game.members?.some((m) => m.id === id);      // only people still in the tank
@@ -763,7 +765,7 @@ async function welcomeBack() {
 async function offerNudges() {
   try { if (localStorage.getItem('ourtank.nudgeAsked')) return; localStorage.setItem('ourtank.nudgeAsked', '1'); } catch { /* ask next time */ }
   let st; try { st = await pushState(); } catch { return; } if (st !== 'off') { if (st === 'install') ui.toast('Add the game to your Home Screen to get gentle nudges', 5200); return; }
-  const yes = await ui.dialog({ title: 'A GENTLE NUDGE?', text: 'At most one a day, and only when something really happened: an egg hatched, a rare visitor, a puzzle solved. Never a reminder to come back.', ok: 'Yes, nudge me', cancel: 'Not now' });
+  const yes = await ui.dialog({ title: 'A GENTLE NUDGE?', text: 'At most a couple a day, and only when something really happened: an egg hatched, a rare visitor, a puzzle solved. Never a reminder to come back.', ok: 'Yes, nudge me', cancel: 'Not now' });
   if (yes) { try { const r = await pushToggle(true); ui.toast(r === 'on' ? 'Nudges are on' : 'Nudges are blocked in your browser settings'); } catch { ui.toast('Could not turn nudges on'); } }
 }
 // the end of a day: once the tank is looked after and today's request is done, the light softens and one quiet line says what comes next
@@ -778,10 +780,11 @@ function maybeSettle() {
 }
 // every caretaker brings in an octopus of their own. It waits for a quiet moment (no popup, no card, the tank in view) and keeps waiting until it gets one:
 // it used to look once and give up if anything was open, and it never asked at all in a tank the server had put back, so a friend could join and never get one.
-let firstAsking = false;
+let firstAsking = false, firstAskAfter = 0;
 async function firstFishPrompt() {
-  const me = game.you?.userId; if (!game.shared || !me || firstAsking) return;
+  const me = game.you?.userId; if (!game.shared || !me || firstAsking || performance.now() < firstAskAfter) return;
   const s = game.state; if (!s) return;
+  if (s.fish.length + (s.orders ?? []).reduce((n, o) => n + (SPECIES_DEF[o.species]?.count ?? 1), 0) + (s.eggs ?? []).length >= capacity(s.level)) return;      // no room yet: ask again when there is
   const mine = s.fish.some((f) => f.owner === me && f.species === 'octopus' && !f.dead) || (s.orders ?? []).some((o) => o.owner === me && o.species === 'octopus');
   if (s.flags.firsts?.[me] || mine) return;
   if (game.isTutOwner && !s.fish.length) return;                                        // the creator's first octopus comes from the opening instead
@@ -789,8 +792,8 @@ async function firstFishPrompt() {
   firstAsking = true;
   try {
     const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its colour, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
-    const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else if (r.ok) sfx('arrive');
-  } finally { firstAsking = false; }
+    const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') { fail(r); firstAskAfter = performance.now() + 10 * 60e3; } else if (r.ok) sfx('arrive');      // something went wrong: not again for a good while
+  } catch { firstAskAfter = performance.now() + 60e3; } finally { firstAsking = false; }
 }
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
