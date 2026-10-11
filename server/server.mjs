@@ -33,6 +33,8 @@ function sendStatic(req, res, file) {
 }
 
 let offsiteInfo = () => null;      // set when the server is started from the command line with a bucket
+const BIG = new Set(['chooseFirst', 'firstFish', 'buyFish', 'claimOcto', 'releaseOcto']);
+let offsiteSoon = () => {};        // a copy goes out shortly after something people would really miss: a tank made or joined, an octopus chosen, a fish bought
 let diskKept = null;                // on Render: whether /data already held a marker from an earlier start (a real, kept disk)
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 function dashboardHtml(st) {
@@ -100,7 +102,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!lim.hit('c:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
         const b = await readBody(req);
         const tk = db.prepare('SELECT id FROM tanks WHERE code=?').get(L.normalizeCode(b.code)); if (tk && !lim.hit('ct:' + tk.id, 4, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many seat claims for this tank. Try again later.', 429);      // however many places they come from, a tank's seats can only be taken a few times an hour
-        const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid));
+        const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid)); offsiteSoon();
         const t = L.tankOf(db, r.userId); if (t) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) });
         return json(res, 200, r);
       }
@@ -121,14 +123,14 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       }
       if (req.method === 'POST' && p === '/api/tanks') {
         if (!lim.hit('t:' + user.id, cfg.tankPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
-        const b = await readBody(req); return json(res, 200, L.createTank(db, user, b.name));
+        const b = await readBody(req); const made = L.createTank(db, user, b.name); offsiteSoon(); return json(res, 200, made);
       }
       if (req.method === 'POST' && (p === '/api/join/preview' || p === '/api/join')) {
         // an invitation code only grants the right to ask for a seat; it is rate-limited per IP and per user
         if (!lim.hit('j:' + ip(req), cfg.joinPerMin, 60e3) || !lim.hit('ju:' + user.id, cfg.joinPerMin, 60e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Wait a moment.', 429);
         const b = await readBody(req);
         if (p.endsWith('preview')) return json(res, 200, L.previewJoin(db, b.code));
-        const r = L.joinTank(db, user, b.code, L.formerIds(b.was)); if (!r.already) an.record(user.id, r.id, 'friend_joined');
+        const r = L.joinTank(db, user, b.code, L.formerIds(b.was)); if (!r.already) { an.record(user.id, r.id, 'friend_joined'); offsiteSoon(); }
         if (!r.already) { const snap = L.listMembers(db, r.id); broadcast(r.id, { t: 'members', members: snap }); const here = online(r.id); for (const m of snap) if (m.id !== user.id && !here.includes(m.id)) push.notify(m.id, `${user.name} joined your tank`, { cap: 2 }).catch(() => {}); }
         return json(res, 200, r);
       }
@@ -152,8 +154,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         for (const w of [...(rooms.get(r.tankId) ?? [])]) if (w.userId === user.id) { w.close(); } broadcast(r.tankId, { t: 'members', members: L.listMembers(db, r.tankId) }); return json(res, 200, { ok: true });
       }
       if (req.method === 'GET' && p === '/api/export') { if (!lim.hit('x:' + user.id, 20, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); res.setHeader?.('Content-Disposition', 'attachment; filename="our-tank-backup.json"'); return json(res, 200, L.exportTank(db, user)); }
-      if (req.method === 'POST' && p === '/api/import') { if (!lim.hit('i:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); return json(res, 200, L.importTank(db, user, await readBody(req, 600000))); }
-      if (req.method === 'DELETE' && p === '/api/me') { const t = L.tankOf(db, user.id); const r = L.deleteUser(db, user); if (t) { for (const w of [...(rooms.get(t.id) ?? [])]) if (w.userId === user.id) w.close(); if (!r.tankGone) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) }); } return json(res, 200, { ok: true }); }
+      if (req.method === 'POST' && p === '/api/import') { if (!lim.hit('i:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); const imported = L.importTank(db, user, await readBody(req)); offsiteSoon(); return json(res, 200, imported); }
+      if (req.method === 'DELETE' && p === '/api/me') { const t = L.tankOf(db, user.id); const r = L.deleteUser(db, user); offsiteSoon(); if (t) { for (const w of [...(rooms.get(t.id) ?? [])]) if (w.userId === user.id) w.close(); if (!r.tankGone) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) }); } return json(res, 200, { ok: true }); }
       if (req.method === 'POST' && p === '/api/tanks/code') return json(res, 200, { code: L.regenerateCode(db, user) });
       throw new L.GameError('NOT_FOUND', 'No such endpoint.', 404);
     } catch (e) {
@@ -263,6 +265,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait });
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
           if (r.ok && !r.dup) {
+            if (BIG.has(type)) offsiteSoon();
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0, food: r.food ?? 'flakes', fish: r.fish ?? null });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
@@ -340,6 +343,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
       if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }
       const watch = setInterval(() => { if (!uploader.status.holding) clearInterval(watch); else uploader.check(); }, 15e3); watch.unref();
+      let soonT = null; offsiteSoon = () => { clearTimeout(soonT); soonT = setTimeout(() => uploader?.run(false, true).catch(() => {}), 8000); soonT.unref(); };
       const first = setTimeout(() => uploader.run(), HANDOVER + 5e3); first.unref();
       const every = setInterval(() => uploader.run(), 5 * 60e3); every.unref();
       timers = [watch, first, every];
@@ -356,7 +360,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (reloading || stopping) return; reloading = true;
     try {
       console.log('offsite backup: loading the newer copy');
-      for (const t of timers) { clearInterval(t); clearTimeout(t); } uploader = null; offsiteInfo = () => ({ on: true, at: 0, err: '', holding: true });
+      for (const t of timers) { clearInterval(t); clearTimeout(t); } uploader = null; offsiteSoon = () => {}; offsiteInfo = () => ({ on: true, at: 0, err: '', holding: true });
       await s.close(); for (const x of ['', '-wal', '-shm', '.backup']) fs.rmSync(dbFile + x, { force: true });
       await boot();
     } catch (e) { console.error('reload failed', e); process.exit(1); } finally { reloading = false; }

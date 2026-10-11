@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage } from './game/rules.js';
+import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -837,6 +837,7 @@ async function boot() {
   // the light follows the phone's clock and drifts on its own while you play; the picker only exists for ?tod= or ?dev testing
   const phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night'; };
   document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { tune(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
+  if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
   welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);

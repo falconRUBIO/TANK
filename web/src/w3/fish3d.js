@@ -193,7 +193,7 @@ export class Fish3D {
     }
     // the plucking arms, one leg at a time
     if (t > P0 - 0.1 && t < TB && h.mesh && parts.length) {
-      const i = Math.min(parts.length - 1, Math.floor((t - P0) / STEP)), pt = parts[i], q = (t - (P0 + i * STEP)) / STEP, arm = i % 2 ? G.n1 : G.n2;
+      const i = Math.max(0, Math.min(parts.length - 1, Math.floor((t - P0) / STEP))), pt = parts[i], q = (t - (P0 + i * STEP)) / STEP, arm = i % 2 ? G.n1 : G.n2;
       if (!G.pk || G.pk.i !== i) { const p0 = rig.pose(rig.arms[arm], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G.pk = { i, arm, p: [...p0], w: 0 }; for (let k = 0; k < i; k++) parts[k].visible = false; }
       h.mesh.updateMatrixWorld(true);
       const U = pt.userData; if (!U.c) { const b = new THREE.Box3().setFromObject(pt), cw = b.getCenter(new THREE.Vector3()); U.c = pt.worldToLocal(cw.clone()); U.home = pt.position.clone(); }

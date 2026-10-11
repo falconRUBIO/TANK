@@ -554,7 +554,10 @@ await t('the GitHub copy: compressed, updated in place with the right sha, resto
   const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.ok(files.get('ourtank.db.gz').bytes.length < fs.readFileSync(live).length, 'stored compressed');
   assert.equal(zlib.gunzipSync(files.get('ourtank.db.gz').bytes).length, fs.readFileSync(live).length);
   S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('t', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
-  assert.equal(await up.run(), false, 'not again within 25 minutes'); assert.equal(await up.run(true), true, 'but always when the server is stopping'); assert.ok(calls.some((c) => c.startsWith('PUT ourtank-')), 'a dated copy too');
+  assert.equal(await up.run(), false, 'not again within 25 minutes'); assert.equal(await up.run(false, true), false, 'nor straight away even for something important (once a minute at most)');
+  S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('t2', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
+  { const held = makeUploader(off, () => live, () => {}, { holdUntil: Date.now() + 60e3 }); assert.equal(await held.run(false, true), false, 'and never during the handover'); }
+  assert.equal(await up.run(true), true, 'but always when the server is stopping'); assert.ok(calls.some((c) => c.startsWith('PUT ourtank-')), 'a dated copy too');
   const f2 = pth.join(dir, 'new.db'); assert.equal(await restoreIfEmpty(off, f2, () => {}), true); const { DatabaseSync } = await import('node:sqlite'); const d = new DatabaseSync(f2, { readOnly: true }); assert.ok(d.prepare('SELECT COUNT(*) n FROM users').get().n > 0); d.close();
   assert.ok(offsiteFromEnv({ GITHUB_BACKUP_TOKEN: 't', GITHUB_BACKUP_REPO: 'a/b' })?.describe.includes('github.com/a/b')); assert.equal(offsiteFromEnv({}), null);
 });

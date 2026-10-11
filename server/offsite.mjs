@@ -103,10 +103,12 @@ export function makeUploader(off, snapshot, log = console.log, { expect, holdUnt
     adopt(cur) { expect = cur; stale = false; },      // carry on over whatever is there now
     // during the handover: has the copy out there changed since this server started?
     async check() { if (blocked || stale) return false; try { return !(await fresh()); } catch (e) { err = String(e.message); return false; } },
-    async run(force = false) {
+    // force: now, whatever (the server is stopping). urgent: something worth keeping just happened, so skip the usual gap, but still not during the handover
+    async run(force = false, urgent = false) {
       if (blocked || stale) return false;
       if (!force && Date.now() < holdUntil) return false;
-      if (!force && off.minGapMs && Date.now() - at < off.minGapMs) return false;
+      if (!force && !urgent && off.minGapMs && Date.now() - at < off.minGapMs) return false;
+      if (urgent && !force && Date.now() - at < 60e3) return false;      // but never more than once a minute
       try {
         const file = snapshot(); if (!file) return false;
         if (isEmptyDb(file)) { log('offsite backup: the database has no players, not sending it over a good copy'); return false; }      // an empty server must never replace a real tank

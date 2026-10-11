@@ -128,9 +128,11 @@ function likes(f, t) {
   const so = socialOf(t, f); l += Math.min(0.05, so.good.length * 0.02) - Math.min(0.12, so.penalty * 0.25) + Math.min(0.06, themesOf(t).filter((x) => x.active).length * 0.03);
   return Math.min(0.25, l + Math.min(0.1, t.decor.length * 0.006));
 }
+let clockHour = null;
+export function setClockHour(h) { clockHour = Number.isFinite(h) ? h : null; }   // a forced time of day (?tod=) makes moods follow the light, not the phone's clock
 export function needsOf(f, t, now = Date.now()) {
   ensureFish(f);
-  const fed = Math.max(0, Math.min(1, 1 - (isOcto(f) ? octoHunger(f) : t.hunger) * (1 + f.appetite))), h = new Date(now).getHours() + new Date(now).getMinutes() / 60;
+  const fed = Math.max(0, Math.min(1, 1 - (isOcto(f) ? octoHunger(f) : t.hunger) * (1 + f.appetite))), h = clockHour ?? new Date(now).getHours() + new Date(now).getMinutes() / 60;
   const energy = Math.max(0.1, Math.min(1, 0.55 + 0.4 * Math.sin(((h - 6) / 24) * Math.PI * 2) + ((f.traits ?? []).includes('Lazy') ? -0.15 : 0) + ((f.traits ?? []).includes('Playful') ? 0.1 : 0)));
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
