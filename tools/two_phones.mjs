@@ -6,7 +6,7 @@ import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/two', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
-const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); return p; };
+const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const shot = (p, n) => p.screenshot({ path: `${out}/${n}.png` });
 const popups = (p) => p.evaluate(() => ['coach', 'toast', 'settle', 'reunion'].filter((id) => document.getElementById(id)?.classList.contains('on')));
 // the creator

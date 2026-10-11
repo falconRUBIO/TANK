@@ -2,7 +2,7 @@
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 const out = process.env.OUT || '/tmp/people_gallery.png';
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const p = await (await b.newContext({ viewport: { width: 1000, height: 900 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+const p = await (await b.newContext({ viewport: { width: 1000, height: 900 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 await p.goto('http://localhost:8124/privacy.html');
 await p.evaluate(async () => {
   const { drawAvatar } = await import('/src/people.js'); const A = await import('/src/game/avatar.js');

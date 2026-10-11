@@ -25,7 +25,7 @@ npm test           # 6 rule tests + 35 server tests
 ```
 
 Without the server (static hosting) the game runs solo and saves to the browser.
-Handy URL options: `?fps=1` frame-rate meter · `?q=0|1|2` pin graphics quality · `?tod=night` time of day · `?dev=1` test tools in Settings (+50 shells, skip a day).
+Handy URL options: `?fps=1` frame-rate meter (with the time the simulation takes per frame) · `?q=0|1|2` pin graphics quality · `?tod=night` time of day · `?dev=1` test tools in Settings (+50 shells, skip a day).
 
 ## Deploy (so friends can join over the internet)
 

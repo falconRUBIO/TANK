@@ -9,7 +9,7 @@ const A = await api('/api/users', { name: 'Ana', avatar: av }); const now = Date
 ['goldfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: A.userId })));
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token); const tank = await api('/api/import', { app: 'our-tank', tank: { name: 'The Reef' }, world }, A.token);
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const t0 = Date.now(), errors = []; p.on('pageerror', (e) => errors.push(e.message));
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const t0 = Date.now(), errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const shot = async (n, ms = 700) => { await p.waitForTimeout(ms); await p.screenshot({ path: `${out}/${n}.png` }); console.log(String(Math.round((Date.now() - t0) / 1000)).padStart(3) + 's', n); };
 await p.goto(base + '/join/' + tank.code + '?q=1'); await p.waitForSelector('#welcome.on', { timeout: 60000 }); await shot('1_join_link', 1500);
 await p.waitForSelector('#go:not([disabled])', { timeout: 20000 }).catch(() => {}); await shot('2_preview');

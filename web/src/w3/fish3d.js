@@ -82,6 +82,13 @@ export class Fish3D {
     const b = this.sp.bend, s = this.scale, arr = this.mesh.instanceMatrix.array, jet = this.species.move === 'jet';
     const list = all ? null : this.mobile;
     const n = all ? this.vox.length : list.length;
+    // an octopus arm is posed once per station along its centre line, not once per voxel: a few thousand voxels share a few hundred stations
+    let pc = null, pcs = null, stamp = 0, poseAt = null;
+    if (jet && this.rig) {
+      pc = this.pc ||= new Float32Array(8 * 1024 * 3); pcs = this.pcs ||= new Int32Array(8 * 1024); stamp = this.pstamp = (this.pstamp | 0) + 1; const rig = this.rig, rp = this.rp, S = this.rs;
+      S.rest = this.restK; S.crawl = this.crawlK; S.sq = this.sq; S.ph = phase; S.work = this.workK; S.greet = this.greetK; S.glass = this.glassNear; S.stride = this.stride; S.glide = this.glideK; S.cruise = this.cruiseK; S.land = this.landK; S.dash = this.dashK;
+      poseAt = (arm, at) => { const key = arm * 1024 + Math.round(at * 990), k3 = key * 3; if (pcs[key] !== stamp) { rig.pose(rig.arms[arm], at, S, rp); pc[k3] = rp[0]; pc[k3 + 1] = rp[1]; pc[k3 + 2] = rp[2]; pcs[key] = stamp; } else { rp[0] = pc[k3]; rp[1] = pc[k3 + 1]; rp[2] = pc[k3 + 2]; } };
+    }
     for (let j = 0; j < n; j++) {
       const i = all ? j : list[j], v = this.vox[i];
       let x = v.x, y = v.y, z = v.z;
@@ -95,11 +102,11 @@ export class Fish3D {
       if (jet && v.tag === 'eye') { const lid = Math.max(this.sleepK * 0.92, this.blinkK); if (lid > 0.02) y = this.eyeY + (y - this.eyeY) * (1 - 0.88 * lid); }
       if (jet) {                                                           // octopus: arms spread flat at rest and stream back tight in a jet, the mantle squeezes with each pulse
         if (v.arm >= 0 && this.rig) {                                      // a rigged arm: its centre line is posed for the current state and the voxel keeps its offset from it
-          const S = this.rs; S.rest = this.restK; S.crawl = this.crawlK; S.sq = this.sq; S.ph = phase; S.work = this.workK; S.greet = this.greetK; S.glass = this.glassNear; S.stride = this.stride; S.glide = this.glideK; S.cruise = this.cruiseK; S.land = this.landK; S.dash = this.dashK; this.rig.pose(this.rig.arms[v.arm], v.at, S, this.rp);
+          poseAt(v.arm, v.at);
           const k = 1 - 0.2 * this.sq; x = this.rp[0] + v.off[0] * k; y = this.rp[1] + v.off[1] * k; z = this.rp[2] + v.off[2] * k;
         }
         else if (v.web && this.rig) {                                      // webbing between two arms: it hangs between the two centre lines at the same point along each
-          const S = this.rs, w = v.web, A = this.rig.arms[w.a], B = this.rig.arms[w.b]; this.rig.pose(A, w.at, S, this.rp); const ax = this.rp[0], ay = this.rp[1], az = this.rp[2]; this.rig.pose(B, w.at, S, this.rp);
+          const w = v.web; poseAt(w.a, w.at); const ax = this.rp[0], ay = this.rp[1], az = this.rp[2]; poseAt(w.b, w.at);
           const gather = 1 - this.restK * 0.85 - this.crawlK * 0.3, sag = w.sag * (1 + 0.6 * Math.max(0, gather));
           x = ax + (this.rp[0] - ax) * w.u; y = ay + (this.rp[1] - ay) * w.u - sag; z = az + (this.rp[2] - az) * w.u;
         }

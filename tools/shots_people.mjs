@@ -5,7 +5,7 @@ import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/people', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = [];
-const mk = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2 }); await ctx.addInitScript(() => { setInterval(() => { const t = document.querySelector('#modal.on h2, #modal.on .title')?.textContent ?? ''; if (/GIFT|LEVEL/.test(t)) document.querySelector('#modal.on #mok')?.click(); }, 300); }); const p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); return p; };
+const mk = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2 }); await ctx.addInitScript(() => { setInterval(() => { const t = document.querySelector('#modal.on h2, #modal.on .title')?.textContent ?? ''; if (/GIFT|LEVEL/.test(t)) document.querySelector('#modal.on #mok')?.click(); }, 300); }); const p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const shot = async (pg, n, ms = 800) => { await pg.waitForTimeout(ms); await pg.screenshot({ path: `${out}/${n}.png` }); };
 const p = await mk();
 await p.goto(base + '/?q=1&tod=afternoon'); await p.waitForSelector('#welcome.on', { timeout: 60000 }); await shot(p, '01_welcome');

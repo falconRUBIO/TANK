@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/audit_onb', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const mk = async () => (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage();
-const p = await mk(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+const p = await mk(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const shot = async (pg, n) => { await pg.waitForTimeout(700); await pg.screenshot({ path: `${out}/${n}.png` }); };
 await p.goto(base + '/?q=1'); await p.waitForSelector('#welcome.on', { timeout: 60000 }); await shot(p, '01_welcome');
 await p.click('[data-a=create]'); await shot(p, '02_profile'); await p.fill('#nm', 'Ana'); await p.click('#go'); await p.waitForSelector('.codebig', { timeout: 30000 }); await shot(p, '03_code');

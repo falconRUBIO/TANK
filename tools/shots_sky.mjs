@@ -5,7 +5,7 @@ const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = [];
 for (const [name, tod, sky] of [['fullmoon', 'night', 'fullmoon'], ['darkmoon', 'night', 'darkmoon'], ['spawn', 'night', 'spawn'], ['rain', 'afternoon', 'rain']]) {
-  const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message));
+  const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
   await p.goto(`${base}/?q=1&dev=1&tod=${tod}&sky=${sky}`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
   await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
   await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'tut', step: 5 }); g.state.flags.tut = 5; g.emit('state'); document.querySelectorAll('#goal,#coach,.coach,#toast').forEach((e) => (e.style.display = 'none')); });
