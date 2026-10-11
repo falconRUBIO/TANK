@@ -21,6 +21,6 @@ for (const act of (process.env.ACTS ? process.env.ACTS.split(',') : ['flat', 'bu
     for (let i = 0; i < f.vox.length; i++) { v.set(arr[i * 16 + 12], arr[i * 16 + 13], arr[i * 16 + 14]).applyMatrix4(f.mesh.matrixWorld); const q = [v.x, v.y, v.z]; for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], q[k]); hi[k] = Math.max(hi[k], q[k]); } }
     return { c: lo.map((x, k) => (x + hi[k]) / 2), r: Math.max(...hi.map((x, k) => x - lo[k])) / 2 }; });
   const D = Math.max(4, box.r * 6.5), c = box.c;
-  for (const [name, dx, dy, dz] of [['front', 0, 0.35, 1], ['side', 0.85, 0.35, 0.5], ['top', 0.15, 1.1, 0.35]]) { const Lh = Math.hypot(dx, dy, dz); await p.evaluate(({ c, e }) => { window.__cam = [c[0] + e[0], c[1] + e[1], c[2] + e[2], c[0], c[1], c[2]]; }, { c, e: [dx / Lh * D, dy / Lh * D, dz / Lh * D] }); await p.waitForTimeout(450); await p.screenshot({ path: `${out}/${act}_${name}.png`, clip: { x: 0, y: 120, width: 390, height: 520 } }); }
+  for (const [name, dx, dy, dz] of [['front', 0, 0.35, 1], ['side', 0.85, 0.35, 0.5], ['top', 0.15, 1.1, 0.35], ['below', -0.5, -0.25, 1], ['back', -0.9, 0.1, -0.3]]) { const Lh = Math.hypot(dx, dy, dz); await p.evaluate(({ c, e }) => { window.__cam = [c[0] + e[0], c[1] + e[1], c[2] + e[2], c[0], c[1], c[2]]; }, { c, e: [dx / Lh * D, dy / Lh * D, dz / Lh * D] }); await p.waitForTimeout(450); await p.screenshot({ path: `${out}/${act}_${name}.png`, clip: { x: 0, y: 120, width: 390, height: 520 } }); }
 }
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();
