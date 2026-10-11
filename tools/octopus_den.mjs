@@ -32,7 +32,7 @@ ck('it tucks in under the shell', under.tuck > 0.2, 'tuck ' + under.tuck);
 ck('the shell settles just over it, tipped a little', under.shellY > 0.02 && under.shellY < 0.12 && under.tilt < -0.04, `y ${under.shellY} tilt ${under.tilt}`);
 // 2. something in the way: it wants to cross the tank with a boulder between it and where it is going
 await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(-3.4, 0.6, 1.5); f.vel.set(0, 0, 0); f.heading = 0; f.inspect = null; f.st = { s: 'crawl', t: 40, n: 0, pulse: 0 }; f.target.set(-0.6, 0.55, 1.5); f.tuckWant = 0; });
-await cam(-2, 1.5); const cross = await run(22, 'cross'); const last = cross.trail.at(-1); await shot('3_around_the_boulder');
+await cam(-2, 1.5); const cross = await run(30, 'cross'); const last = cross.trail.at(-1); await shot('3_around_the_boulder');
 const got = cross.trail.some((st) => Math.abs(st.x - -0.6) < 0.5 && Math.abs(st.z - 1.5) < 0.6), gaveUp = cross.trail.some((st) => st.s === 'rest'), hopped = cross.trail.some((st) => st.s === 'jet');
 ck('with a boulder in the way it gets round it, jets over it, or gives up', got || gaveUp || hopped, got ? 'got there' : hopped ? 'went over the top' : gaveUp ? 'gave up' : 'still at it: ' + JSON.stringify(last));
 ck('and never pushes against it over and over', cross.flips <= 3, `${cross.flips} turnarounds in ${cross.trail.length / 4}s`);

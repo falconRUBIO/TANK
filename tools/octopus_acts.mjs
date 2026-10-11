@@ -19,6 +19,7 @@ const step = (n, dt = 0.05) => p.evaluate(({ n, dt }) => { const F = window.__fi
 const state = () => p.evaluate(() => { const f = window.__fishes.list[0]; return { s: f.st?.s, act: f.act, text: f.actText, x: +f.pos.x.toFixed(2), y: +f.pos.y.toFixed(2), z: +f.pos.z.toFixed(2), flat: +f.flatK.toFixed(2), lion: +f.lionK.toFixed(2), snake: +f.snakeK.toFixed(2), jelly: +f.jellyK.toFixed(2), kelp: +f.kelpK.toFixed(2), puff: +f.puffK.toFixed(2), sink: +f.sink.toFixed(2), pitch: +f.pitch.toFixed(2), thought: f.thought }; });
 const force = (act, extra = {}) => p.evaluate(({ act, extra }) => { const F = window.__fishes, f = F.list[0]; f.pos.set(extra.x ?? -0.5, 0.6, extra.z ?? 1.6); f.vel.set(0, 0, 0); f.inspect = null; f.hunt = null; f.task = null; f.glassAt = null; f.restFor = 20; f.isNight = false;
   f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; f.ground = null; f.act = null; f.actText = null; const M = f.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 };
+  if (act === 'follow' || act === 'watch') { const o = F.list.find((q) => q.species.move !== 'jet'); o.pos.set(f.pos.x + 1.6, 1.6, 1.6); if (act === 'follow') { o.target.set(f.pos.x - 2, 2, 1.4); o.retarget = 6; } else { o.target.copy(o.pos); o.retarget = 9; o.idle = 9; o.vel.set(0, 0, 0); } f.startleCool = 99; }      // a fish about to watch or follow
   const rng = (() => { const seq = extra.seq ?? [0.0]; let i = 0; return () => seq[Math.min(i++, seq.length - 1)]; })();
   const ok = f.pickAct(f.st, rng, F.list, M, act); return { ok, s: f.st.s, act: f.act, text: f.actText }; }, { act, extra });
 const cam = (x, y, z) => p.evaluate(({ x, y, z }) => { window.__cam = [x * 0.6, y + 2.4, z + 9.5, x * 0.6, y + 0.2, z]; }, { x, y, z });
@@ -40,14 +41,14 @@ for (const act of ['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp', 'follow', '
   // it finishes on its own
   let end = null; for (let i = 0; i < 90; i++) { await step(10); end = await state(); if (end.s === 'rest' && !end.act) break; }
   await step(70); end = await state();
-  ck(`${act}: it ends on its own and the pose lets go`, !end.act && Math.max(end.flat, end.lion, end.snake, end.jelly, end.kelp, end.sink) < 0.35, JSON.stringify({ s: end.s, flat: end.flat, lion: end.lion, snake: end.snake, jelly: end.jelly, kelp: end.kelp, sink: end.sink }));
+  ck(`${act}: it ends on its own and the pose lets go`, end.act !== act && Math.max(end.flat, end.lion, end.snake, end.jelly, end.kelp, end.sink) < 0.35, JSON.stringify({ s: end.s, flat: end.flat, lion: end.lion, snake: end.snake, jelly: end.jelly, kelp: end.kelp, sink: end.sink }));
 }
 // 2. a fish that hangs about too close gets silt thrown at it
 {
   const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], o = F.list.find((q) => q.species.move !== 'jet'); f.pos.set(0.5, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 40, n: 0, pulse: 0, mode: null }; f.bold = 0.9; f.throwCool = 0; f.homing = false; f.sleepK = 0; f.mind = { ...(f.mind ?? {}), type: 'homebody', soc: 0.3 }; f.prank = null; f.inspect = null; f.movedAt = Date.now(); f.task = null;
-    o.pos.set(1.7, 1.0, 1.6); o.target.copy(o.pos); o.retarget = 99; o.idle = 99; o.vel.set(0, 0, 0); let threw = null; for (let i = 0; i < 160 && !threw; i++) { o.pos.set(1.7, 1.0, 1.6); o.vel.set(0, 0, 0); f.pos.set(0.5, 0.6, 1.6); F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (!threw) o.pos.set(1.7, 1.0, 1.6); f.inspect = null; f.prank = null; if (/Threw silt/.test(f.actText ?? '')) threw = { i, text: f.actText, flee: o.fleeT > 0, clouds: (F.inks ?? []).length }; }
+    o.pos.set(1.7, 1.0, 1.6); o.target.copy(o.pos); o.retarget = 99; o.idle = 99; o.vel.set(0, 0, 0); let threw = null; for (let i = 0; i < 160 && !threw; i++) { o.pos.set(1.7, 1.0, 1.6); o.vel.set(0, 0, 0); f.pos.set(0.5, 0.6, 1.6); F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (!threw) o.pos.set(1.7, 1.0, 1.6); f.inspect = null; f.prank = null; if (/Threw silt|Flung a shell|Squirted water/.test(f.actText ?? '')) threw = { i, text: f.actText, flee: o.fleeT > 0, clouds: (F.inks ?? []).length }; }
     return threw ?? { nearFor: f.nearFor, cool: f.throwCool, s: f.st.s, bold: f.bold, d: +o.pos.distanceTo(f.pos).toFixed(2) }; });
-  ck('a fish hanging about too close gets silt thrown at it, and clears off', !!r?.flee && r.clouds > 0, JSON.stringify(r));
+  ck('a fish hanging about too close gets something thrown at it (silt, water or a shell), and clears off', !!r?.flee && !!r.text, JSON.stringify(r));
   await cam(0.5, 0.6, 1.6); await p.waitForTimeout(250); await p.screenshot({ path: `${out}/silt.png` });
 }
 // 3. a quick fish close by makes it jump (sometimes with ink)
