@@ -647,7 +647,7 @@ export const OCTO_COLORS = [
   { id: 'kelp', label: 'Kelp', skin: [72, 160, 110], pale: [196, 240, 210] }, { id: 'ink', label: 'Ink', skin: [78, 74, 112], pale: [196, 190, 228] },
 ];
 const octopus = {
-  id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.06,
+  id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.057,
   make(seed = 1, look = null) {
     const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
     const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);

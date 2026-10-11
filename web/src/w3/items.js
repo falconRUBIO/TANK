@@ -111,7 +111,7 @@ const B = {
     const lm = top.mesh(); lm.position.set(0, 0.05 + 0.1, -0.25); lm.rotation.x = -1.0; g.add(lm); return [{ v: bot, x: 0, y: 0.05, z: 0, ry: 0 }];
   },
   coconut: (g, seed = 1) => {           // half a coconut lying on its side, the cut face (and its hollow) turned towards you: a dark fibrous husk with the three eyes at its far end, a ragged rim of white flesh, a deep hollow
-    const u = 0.105, v = new Vox(u), R = 13, r = mulberry32(seed * 23 + 5), hole = R - 3.2, sink = 3;
+    const u = 0.085, v = new Vox(u), R = 13, r = mulberry32(seed * 23 + 5), hole = R - 3.2, sink = 3;      // a shell an octopus can lift and tuck into, not a boulder
     const fibre = (i, j, k) => { const a = Math.atan2(j, i), band = Math.round(a * 10 + k * 0.06), h = hash(band, Math.round(k * 0.35), 0, 3), n = hash(i, j, k, 4); return h > 0.74 ? [112, 74, 40] : h > 0.36 ? (n > 0.5 ? [80, 50, 27] : [70, 43, 23]) : [50, 30, 16]; };
     for (let i = -R - 1; i <= R + 1; i++) for (let j = -R + sink; j <= R + 1; j++) for (let k = -R - 1; k <= 1; k++) {
       const d = Math.hypot(i, j, k); if (d > R + 0.5 + (k < -2 && hash(i, j, k, 8) > 0.92 ? 1 : 0)) continue;     // a few stray fibres stand out from the husk

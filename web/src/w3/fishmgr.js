@@ -10,7 +10,7 @@ import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [2.5, 9], z: [0.4, 1.8] }, octopus: { x: [-3.2, 3.4], y: [0.6, 3.2], z: [0.6, 2.0] },
+  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [2.5, 9], z: [0.4, 1.8] }, octopus: { x: [-3.2, 3.4], y: [0.6, 3.2], z: [0.3, 1.7] },
 };
 export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
@@ -141,8 +141,10 @@ export class Fishes {
       if (T?.stage === 'haul') this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : 0.1, T.kind === 'home' ? 0 : null);
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
-      const under = !f.dead && f.st?.s === 'rest' && Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.3)) < 0.5, g = it.group.position;
-      g.y += ((under ? 0.04 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0) - g.y) * Math.min(1, dt * 2);          // it holds the shell up over itself
+      // the shell is lifted and tipped up at the front as the octopus goes in under it, then held just off the sand over itself, rocking a little as it breathes
+      const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.25)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
+      const wantY = entering ? 0.17 : under ? 0.05 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0, wantTilt = entering ? -0.34 : under ? -0.1 + Math.sin(t * 1.3) * 0.015 : 0, k = Math.min(1, dt * 2.5);
+      g.y += (wantY - g.y) * k; it.group.rotation.x += (wantTilt - it.group.rotation.x) * k;
     }
   }
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)

@@ -853,8 +853,8 @@ window.__sim = (n, dt = 1 / 30, drops = []) => {
     for (const [at, x] of drops) if (i === at) fishes.drop(x);
     fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
     for (const f of fishes.list) {
-      const cp = Math.cos(f.pitch), R = f.radius;
-      for (const off of [-0.8, -0.4, 0, 0.4, 0.8]) { p.set(f.pos.x + cp * Math.cos(f.heading) * R * off, f.pos.y + Math.sin(f.pitch) * R * off, f.pos.z - cp * Math.sin(f.heading) * R * off); samples++; o.set(0, 0, 0); if (W.push(p, f.cr * 0.7, o)) inside++; }
+      const cp = Math.cos(f.pitch), R = f.radius, offs = f.species.move === 'jet' ? [-0.3, 0, 0.3] : [-0.8, -0.4, 0, 0.4, 0.8];      // an octopus is solid only in its mantle and head: its arms drape over things
+      for (const off of offs) { p.set(f.pos.x + cp * Math.cos(f.heading) * R * off, f.pos.y + Math.sin(f.pitch) * R * off, f.pos.z - cp * Math.sin(f.heading) * R * off); samples++; o.set(0, 0, 0); if (W.push(p, f.cr * 0.7, o)) inside++; }
       for (const q of fishes.list) if (q !== f) { const d = Math.hypot(f.pos.x - q.pos.x, f.pos.y - q.pos.y, (f.pos.z - q.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + q.radius)); worstFish = Math.max(worstFish, 1 - d / mn); }
     }
   }
