@@ -38,10 +38,16 @@ export function initUI({ game, social, cb }) {
   const NK = 'ourtank.notices', RK = 'ourtank.noticesRead';
   let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
   const noticeSave = () => { try { localStorage.setItem(NK, JSON.stringify(notices.slice(0, 80))); } catch { /* storage unavailable */ } };
+  // one line of news is kept once. A countdown ("arrives in 47 min", "wipe in about 9h") is the same notice ticking, so it is updated in place, quietly, rather than added again every minute
+  const noticeKey = (text) => text.replace(/\d+/g, '#');
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
-    if (!text || notices.slice(0, 40).some((n) => n.text === text && Date.now() - n.ts < 3 * 864e5)) return;      // the same message is kept once, not again every time the app opens
-    notices.unshift({ ts: Date.now(), text, tab, gift, kind }); notices = notices.slice(0, 80); noticeSave(); bell();
+    if (!text) return; const now = Date.now(), key = noticeKey(text);
+    const same = notices.slice(0, 40).find((n) => n.text === text && now - n.ts < 3 * 864e5); if (same) return;
+    const ticking = notices.slice(0, 40).find((n) => (n.key ?? noticeKey(n.text)) === key && key !== text && now - n.ts < 3 * 864e5);
+    if (ticking) { ticking.text = text; ticking.tab = tab; noticeSave(); refreshNotices(); return; }
+    notices.unshift({ ts: now, text, tab, gift, kind, key }); notices = notices.slice(0, 80); noticeSave(); bell();
   };
+  let refreshNotices = () => {};
   const unread = () => notices.filter((n) => n.ts > readAt).length;
   const bell = () => { const b = $('bell'); if (!b) return; const n = unread(); b.classList.toggle('new', n > 0); b.querySelector('i').textContent = n > 9 ? '9+' : n ? String(n) : ''; };
   const noticesHtml = () => {
@@ -358,6 +364,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('details.fold').forEach((d) => d.addEventListener('toggle', () => { d.open ? game.folds.add(d.dataset.fold) : game.folds.delete(d.dataset.fold); }));
     sheet.querySelectorAll('.foodrow [data-food]').forEach((b) => { b.onclick = () => { const k = b.dataset.food; if (S().shells < FOODS[k].price) { toast('Not enough shells for that food'); return; } game.feedFood = k; sfx('tap'); sheet.querySelectorAll('.foodrow [data-food]').forEach((x) => x.classList.toggle('on', x.dataset.food === k)); }; }); paint();
   }
+  refreshNotices = () => { if (tab !== 'notices') return; const y = sheet.scrollTop; open('notices', true); sheet.scrollTop = y; };      // the inbox is open while a countdown ticks: redraw it in place
   document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => { if ($('card').classList.contains('on')) { cb.closeCard?.(); return; } open(n.dataset.tab === tab ? 'tank' : n.dataset.tab); }));      // with a fish's card open, the bar first closes it, never piles a sheet on top
   $('pill').onclick = (e) => { if (e.target.closest('#conn')) return; sfx('tap'); dialog({ title: 'HOW SHELLS ARE EARNED', text: 'Looking after your fish, and watching them grow, pays the most.', lines: EARN.map(([a, b]) => `${a}: ${b}`), ok: 'Got it' }); };
   $('gear').onclick = () => open('settings');
