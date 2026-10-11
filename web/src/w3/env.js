@@ -222,5 +222,5 @@ export function buildEnvironment() {
   };
   const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };
   const SCALE = { sand: 0.9, pearl: 0.7, gravel: 0.5, black: 0.8, coral: 0.45 };
-  return { root, archX: 0, colliders: new Solids(), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
+  return { root, archX: 0, colliders: Object.assign(new Solids(), { soft: new Solids() }), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
 }

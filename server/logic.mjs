@@ -72,7 +72,7 @@ export function createTank(db, user, name, startWorld = null, wantCode = null) {
   return tx(db, () => {
     for (let i = 0; i < 40; i++) {
       const code = wantCode && i === 0 ? wantCode : randomCode();
-      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, now, now, JSON.stringify(startWorld ?? R.newWorld(now, crypto.randomInt(1000), { empty: true }))); } catch (e) { if (/UNIQUE/.test(String(e.message))) { if (wantCode && i === 0) throw new GameError('CODE_TAKEN', 'That tank already exists again.', 409); continue; } throw e; }
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world) VALUES (?,?,?,?,?,?)').run(id, tn, code, startWorld?.createdAt ?? now, now, JSON.stringify(startWorld ?? R.newWorld(now, crypto.randomInt(1000), { empty: true }))); } catch (e) { if (/UNIQUE/.test(String(e.message))) { if (wantCode && i === 0) throw new GameError('CODE_TAKEN', 'That tank already exists again.', 409); continue; } throw e; }
       db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,1,?,?)').run(id, user.id, now, now);
       addJournal(db, id, 'Our tank began.', user.id, now);
       return { id, code, name: tn, slot: 1 };
@@ -95,7 +95,7 @@ export function importTank(db, user, data) {
   if (data?.app !== 'our-tank' || typeof data.world !== 'object' || !data.world) throw new GameError('BAD_BACKUP', 'That does not look like a tank backup.', 400);
   const w = data.world, num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
   if (!Array.isArray(w.fish) || w.fish.length > 60 || !Array.isArray(w.decor ?? []) || (w.decor ?? []).length > R.MAX_DECOR) throw new GameError('BAD_BACKUP', 'That backup is not valid.', 400);
-  const now = Date.now(); const world = R.norm(JSON.parse(JSON.stringify(w)), now);
+  const now = Date.now(), copyTs = Number.isFinite(+w.simTs) ? +w.simTs : 0; const world = R.norm(JSON.parse(JSON.stringify(w)), now);
   world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); const was = data.heal ? formerIds(data.was) : null;
   world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: data.heal ? f.owner ?? null : null, name: String(f.name ?? 'Fish').slice(0, 14) }));
   if (was) remapUser(world, was, user.id);
@@ -106,10 +106,24 @@ export function importTank(db, user, data) {
   if (healCode) {
     // the code is already in use: a friend's phone put this tank back first. This phone must join that one, never start a second copy of the same tank
     const have = db.prepare('SELECT id FROM tanks WHERE code=?').get(healCode);
-    if (have) throw new GameError('CODE_TAKEN', 'This tank is already back. Join it with the same code.', 409);
-    world.flags.healed = now;
+    if (have) { const e = new GameError('CODE_TAKEN', 'This tank is already back. Join it with the same code.', 409); if (mergeCopy(db, have.id, world, copyTs, user, now)) e.merged = have.id; throw e; }
+    world.flags.healed = now; world.flags.healedFrom = copyTs;
   }
   const made = createTank(db, user, data.tank?.name, world, healCode); return { ...made, fish: world.fish.length };
+}
+// A second phone's copy of a tank that a friend's phone already put back: nothing only this copy knew is thrown away. Fish, decorations and orders it
+// has and the tank lacks are added (unless the tank remembers that fish dying); for what both have, the copy saved later wins; shells and level never go
+// down. The phone then joins the tank as usual, and its octopus and gifts are found under its old ids like any returning friend's.
+function mergeCopy(db, tankId, copy, copyTs, user, now) {
+  const { w } = loadWorld(db, tankId); if (!w.flags?.healed || now - w.flags.healed > 7 * 864e5) return false;
+  const fresher = copyTs > (w.flags.healedFrom ?? 0), gone = new Set([...(w.memorial ?? []), ...(w.floaters ?? [])].map((f) => f?.id)); let n = 0, room = R.capacity(w.level) - w.fish.length;
+  for (const f of copy.fish) { const i = w.fish.findIndex((g) => g.id === f.id); if (i >= 0) { if (fresher) { const g = w.fish[i]; w.fish[i] = { ...f, owner: g.owner ?? f.owner, ownerName: g.ownerName ?? f.ownerName, bond: g.bond ?? f.bond }; n++; } } else if (!gone.has(f.id) && room >= 1) { w.fish.push(f); room--; n++; } }      // whose a fish is, the tank already knows under the new accounts
+  w.decor ??= []; for (const d of copy.decor) { const i = w.decor.findIndex((g) => g.id === d.id); if (i >= 0) { if (fresher) w.decor[i] = d; } else if (w.decor.length < R.MAX_DECOR) { w.decor.push(d); n++; } }
+  w.orders ??= []; for (const o of copy.orders) if (!w.orders.some((q) => q.id === o.id) && !w.fish.some((f) => f.id === o.id)) { w.orders.push(o); n++; }
+  if (copy.shells > w.shells) { w.shells = copy.shells; n++; } if (copy.level > w.level) { w.level = copy.level; n++; }
+  for (const k of ['gift', 'firsts', 'daily', 'care']) if (copy.flags?.[k] && typeof copy.flags[k] === 'object') w.flags[k] = { ...copy.flags[k], ...(w.flags[k] ?? {}) };
+  if (n) { R.norm(w, now); saveWorld(db, tankId, w); addJournal(db, tankId, `What ${user.name}'s phone remembered of the tank was folded in.`, user.id, now); }
+  return n > 0;
 }
 // Everything about a player is removed. A tank with nobody left in it is removed too.
 export function deleteUser(db, user) {

@@ -33,8 +33,8 @@ ck('the shell settles just over it, tipped a little', under.shellY > 0.02 && und
 // 2. something in the way: it wants to cross the tank with a boulder between it and where it is going
 await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(-3.4, 0.6, 1.5); f.vel.set(0, 0, 0); f.heading = 0; f.inspect = null; f.st = { s: 'crawl', t: 40, n: 0, pulse: 0 }; f.target.set(-0.6, 0.55, 1.5); f.tuckWant = 0; });
 await cam(-2, 1.5); const cross = await run(22, 'cross'); const last = cross.trail.at(-1); await shot('3_around_the_boulder');
-const got = cross.trail.some((st) => Math.abs(st.x - -0.6) < 0.5 && Math.abs(st.z - 1.5) < 0.6), gaveUp = cross.trail.some((st) => st.s === 'rest');
-ck('with a boulder in the way it gets round it, or gives up', got || gaveUp, got ? 'got there' : gaveUp ? 'gave up' : 'still at it: ' + JSON.stringify(last));
+const got = cross.trail.some((st) => Math.abs(st.x - -0.6) < 0.5 && Math.abs(st.z - 1.5) < 0.6), gaveUp = cross.trail.some((st) => st.s === 'rest'), hopped = cross.trail.some((st) => st.s === 'jet');
+ck('with a boulder in the way it gets round it, jets over it, or gives up', got || gaveUp || hopped, got ? 'got there' : hopped ? 'went over the top' : gaveUp ? 'gave up' : 'still at it: ' + JSON.stringify(last));
 ck('and never pushes against it over and over', cross.flips <= 3, `${cross.flips} turnarounds in ${cross.trail.length / 4}s`);
 // 3. a crab behind the coconut: the hunt must not become a stutter against the shell
 await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0.4, 0.6, 2.4); f.vel.set(0, 0, 0); f.heading = Math.PI / 2; f.st = { s: 'rest', t: 999, n: 0, pulse: 0 }; F.dropCrab('x1'); const h = f.hunt; h.y = 0.13; h.x = 0.4; h.z = 0.35; h.mesh.position.set(h.x, 0.13, h.z); h.run = { dodges: 9, burst: -1, vx: 0, vz: 0, down: 99, face: 0 }; });

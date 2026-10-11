@@ -314,6 +314,27 @@ await t('the server forgets a tank and both phones put it back: one tank, not tw
     assert.equal(S.db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(tanks[0].id).n, 2);
   }
 });
+await t('the second phone to put a tank back folds in what only its copy knew: a fish bought later, a decoration, more shells; the copy saved later wins', async () => {
+  const a = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Shared' }, a.token)).body, b = await mkUser('Ben'); assert.equal((await call('/api/join', { code: tk.code }, b.token)).status, 200);
+  const wa = await open(a.token); assert.equal((await ackOf(wa, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'mg-1' })).ok, true); wa.close();
+  const w0 = getW(tk.id); setW(tk.id, { flags: { ...w0.flags, tut: 5 }, shells: 40 }); const now = Date.now();
+  const copyA = JSON.parse(JSON.stringify(getW(tk.id))); copyA.simTs = now - 3600e3;                                                   // Ana's phone saved an hour ago
+  const copyB = JSON.parse(JSON.stringify(getW(tk.id))); copyB.simTs = now - 60e3; copyB.shells = 55; copyB.fish[0].name = 'Inky';     // Ben's phone saved a minute ago, after a rename, a goldfish and a plant
+  copyB.fish.push({ ...copyB.fish[0], id: 'gold1', species: 'goldfish', name: 'Goldie', owner: null }); copyB.decor.push({ id: 'd-plant', type: 'grass', x: 1, z: 1, ry: 0 });
+  S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id); S.db.prepare('DELETE FROM users WHERE id IN (?,?)').run(a.userId, b.userId);
+  const a2 = await mkUser('Ana'); assert.equal((await call('/api/import', { app: 'our-tank', tank: { name: 'Shared' }, world: copyA, code: tk.code, heal: true, was: [a.userId] }, a2.token)).status, 200);
+  const b2 = await mkUser('Ben'); const r = await call('/api/import', { app: 'our-tank', tank: { name: 'Shared' }, world: copyB, code: tk.code, heal: true, was: [b.userId] }, b2.token);
+  assert.equal(r.status, 409); assert.equal(r.body.error, 'CODE_TAKEN'); assert.equal((await call('/api/join', { code: tk.code, was: [b.userId] }, b2.token)).status, 200);
+  const id = S.db.prepare('SELECT id FROM tanks WHERE code=?').get(tk.code).id, w = getW(id);
+  assert.equal(w.fish.length, 2, 'the goldfish only Ben\'s copy knew is there'); assert.ok(w.fish.some((f) => f.id === 'gold1'));
+  assert.equal(w.fish.find((f) => f.species === 'octopus').name, 'Inky', 'the later copy\'s name wins'); assert.equal(w.fish.find((f) => f.species === 'octopus').owner, a2.userId, 'and the octopus is still Ana\'s');
+  assert.ok(w.decor.some((d) => d.id === 'd-plant'), 'the plant is there'); assert.equal(w.shells, 55, 'shells never go down');
+  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM tanks WHERE code=?').get(tk.code).n, 1, 'still one tank');
+  // an older copy adds what it has and changes nothing the newer one knows better
+  const c = await mkUser('Cy'), copyC = JSON.parse(JSON.stringify(copyA)); copyC.simTs = now - 7200e3; copyC.shells = 999; copyC.fish[0].name = 'Stale'; copyC.decor.push({ id: 'd-rock', type: 'rock', x: -1, z: 1, ry: 0 });
+  const r3 = await call('/api/import', { app: 'our-tank', tank: { name: 'Shared' }, world: copyC, code: tk.code, heal: true, was: [] }, c.token); assert.equal(r3.status, 409);
+  const w3 = getW(id); assert.equal(w3.fish.find((f) => f.species === 'octopus').name, 'Inky', 'an older copy does not rename'); assert.ok(w3.decor.some((d) => d.id === 'd-rock'), 'but its rock is added'); assert.equal(w3.shells, 999, 'and shells never go down');
+});
 await t('an octopus nobody in the crew looks after can be taken on by a caretaker without one, or let go; never your own, never the last fish', async () => {
   const a = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Orphans' }, a.token)).body, b = await mkUser('Ben'); assert.equal((await call('/api/join', { code: tk.code }, b.token)).status, 200);
   const wa = await open(a.token); assert.equal((await ackOf(wa, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'or-1' })).ok, true);

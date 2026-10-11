@@ -12,7 +12,7 @@ import { skyOf } from './game/sky.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { soloLook, saveSoloLook } from './people.js';
-import { runOnboarding, Live, api, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest } from './online.js';
+import { runOnboarding, Live, api, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
@@ -778,7 +778,7 @@ let settleChecked = 0;
 function maybeSettle() {
   const s = game.state; if (!s || !s.fish.length || (s.flags.tut ?? 0) < 5 || performance.now() - settleChecked < 4000) return; settleChecked = performance.now();
   if (ui?.tab !== 'tank' || focus || play || $('modal').classList.contains('on') || $('reunion').classList.contains('on')) return;
-  const k = dayTicks(s, Date.now()); if (!(k.care && k.wish)) return; const key = 'ourtank.settled.' + (game.shared ? game.you?.userId : 'solo'), day = String(Math.floor(Date.now() / 864e5));
+  const k = dayTicks(s, game.now()); if (!(k.care && k.wish)) return; const key = 'ourtank.settled.' + (game.shared ? game.you?.userId : 'solo'), day = String(Math.floor(game.now() / 864e5));
   try { if (localStorage.getItem(key) === day) return; localStorage.setItem(key, day); } catch { return; }
   stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 22000);
   ui.settle([nextUp(s, Date.now())]);
@@ -846,6 +846,8 @@ async function boot() {
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
   welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);
+  // nudges: the subscription this phone holds is told to the server on every open (it may have been renewed, or the tank put back under new accounts) and whenever the browser renews it
+  if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });

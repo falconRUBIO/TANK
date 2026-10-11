@@ -13,6 +13,7 @@ Four friends, one living aquarium. Chunky voxel fish and decorations, modern lig
 - **Together:** up to **four** caretakers share one tank with a six-character code or invite link. Everything is shared: fish, decorations, shells, journal, chat.
 - **Things that bring you back, without streaks:** gifts turn up in the tank (an octopus, a fish or the filter gets the blame) and wait for you forever; new fish arrive after a short wait; one fish a day is a quarter cheaper; rare visitors (Moon Betta, Sun Angelfish, Rose Corydoras) drop by for a few hours and are added to the collection book when you say hello; two adult fish of one species sometimes lay an egg that hatches into a blend of both; the journal tells small true stories about your fish; friends can wash a message in a bottle into the tank for each other; the tank has a birthday every week.
 - **Personalities are behaviour:** shy fish hide behind plants and bolt when others come close, brave fish swim to the glass, curious fish inspect decorations, social fish stick to a buddy, playful fish chase bubbles, lazy fish rest low, greedy fish wait by the surface. After dark most fish drift low and slow. Every fish is a little different in colour and size.
+- **An octopus knows its way round the floor:** it feels ahead and to both sides and goes round rocks, shells and plant stems (fish still swim through the leaves), keeps to one side of a thing rather than dithering, picks a clear spot before it sets off, and when it is boxed in on foot it jets over the top and carries on from where it lands. Its arms only walk when its body is actually getting somewhere. `node tools/octopus_obstacles.mjs` rehearses seven trips across a cluttered floor.
 - **Make it yours:** pick the floor (sand, pearl, gravel, black sand, pink coral) and the backdrop. The light follows your phone's clock.
 - **While you are away** the tank keeps living: hunger rises, water clouds, algae grows, fish grow. It is capped so a holiday never hurts the fish.
 
@@ -70,7 +71,7 @@ A host whose disk is wiped on every deploy or restart (Render's free plan) forge
 
 **B. A persistent disk.** On a paid Render plan, mount a disk at `/data` and set `DB=/data/ourtank.db` (the included `render.yaml` does this).
 
-Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway. When several phones share one tank, the first to open the app puts it back and the others join that one (the server refuses to make a second copy under a code that is in use); each phone sends the ids it used to have, so everyone gets their own octopus and gifts back. `node tools/forget.mjs` rehearses this in two real browsers. If an octopus is ever left with no caretaker in the crew, its card offers "Make it mine" (to someone without one) and "Let it go".
+Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway. When several phones share one tank, the first to open the app puts it back and the others join that one (the server refuses to make a second copy under a code that is in use), and whatever only a later phone's copy knew is folded in: fish, decorations and orders it has are added, the copy saved later wins where both differ, and shells and level never go down; each phone sends the ids it used to have, so everyone gets their own octopus and gifts back. `node tools/forget.mjs` rehearses this in two real browsers. If an octopus is ever left with no caretaker in the crew, its card offers "Make it mine" (to someone without one) and "Let it go".
 
 ## Notifications
 
@@ -82,7 +83,7 @@ They go to the caretakers who do not have the tank open at that moment, includin
 
 They work with no setup: the server makes its own key pair the first time it starts and keeps it in the database (set `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` yourself only if you want to bring your own). Keep the disk attached, or phones will have to switch notifications back on after a redeploy. Players get a Notifications switch in Settings, plus a "Send a test" button to check that they arrive. At most two a day, never between 22:00 and 08:00 their time, never a "come back" reminder.
 
-On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Our Tank from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later.
+On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Our Tank from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later. The phone tells the server its subscription again every time the app opens and whenever the browser renews it, so nudges keep coming after a reinstall, a renewal or a tank put back under new accounts.
 
 ## Usage tracking and the developer view
 

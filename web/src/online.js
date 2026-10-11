@@ -211,6 +211,12 @@ export async function pushState() {
   return sub && Notification.permission === 'granted' ? 'on' : 'off';
 }
 export const pushTest = () => api('/api/push/test', {});
+// the subscription this phone holds is told to the server again: after a renewal, a reinstall, or a tank put back under new accounts, the server may not have it
+export async function pushRegister() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted') return false;
+  const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (!sub) return false;
+  await api('/api/push/subscribe', { subscription: sub.toJSON(), offset: -new Date().getTimezoneOffset() }); return true;
+}
 export async function pushToggle(on) {
   const reg = await navigator.serviceWorker.ready;
   if (!on) { const sub = await reg.pushManager.getSubscription(); if (sub) { await api('/api/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); } return 'off'; }

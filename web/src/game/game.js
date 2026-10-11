@@ -12,7 +12,7 @@ export class Game {
   emit(evt, ...a) { for (const fn of this.h[evt] || []) { try { fn(...a); } catch (e) { console.error(e); } } }
   // The shared tank's time is the server's, not this phone's: a phone clock that is minutes off must not make a delivery look late or early.
   now() { return Date.now() + (this.skew ?? 0); }
-  get day() { return Math.floor((this.now() - this.state.createdAt) / 864e5) + 1; }
+  get day() { return this.shared && this.srvDay ? this.srvDay : Math.floor((this.now() - this.state.createdAt) / 864e5) + 1; }      // in a shared tank the server says what day it is, the same for every phone
   get shared() { return this.mode === 'net'; }
   get isTutOwner() { return !this.shared || (this.members?.find((m) => m.id === this.you?.userId)?.slot ?? 1) === 1; }
 
@@ -71,10 +71,10 @@ export class Game {
   onNet(m) {
     if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
-      const { id, name, code, ...w } = m.tank; this.state = w; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
+      const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
-    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.emit('state'); this.keepCopy(); }
+    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food, m.fish); }
     else if (m.t === 'event') {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
