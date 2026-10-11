@@ -59,7 +59,7 @@ const CODE = /^[A-Za-z0-9]{6}$/;
 export function runOnboarding() {
   return new Promise(async (resolve) => {
     const root = document.getElementById('welcome');
-    const done = (r) => { root.classList.remove('on'); setTimeout(() => (root.innerHTML = ''), 400); resolve(r); };
+    const done = (r) => { if (r?.mode === 'net' && r.user?.id) rememberId(r.user.id); root.classList.remove('on'); setTimeout(() => (root.innerHTML = ''), 400); resolve(r); };      // who this phone is in its tank is remembered for good, for the day the server forgets
     const link = (code) => `${location.origin}/join/${code}`;
     const shareText = (code) => `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${code}`;
     const screen = (html) => { root.innerHTML = ''; const s = $(`<div class="scr">${html}</div>`); root.append(s); root.classList.add('on'); return s; };
@@ -100,7 +100,7 @@ export function runOnboarding() {
           if (session && !session.named) { await api('/api/profile', { name, avatar }); session.named = true; store(session); }
           if (kind === 'restore') { const t = await api('/api/import', backup); codeScreen(t); }
           else if (kind === 'create') { const t = await api('/api/tanks', { name: s.querySelector('#tn').value }); codeScreen(t); }
-          else { const r = await api('/api/join', { code: joinCode }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
+          else { const r = await api('/api/join', { code: joinCode, was: formerIds().filter((x) => x !== session?.userId) }); const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank, joined: r }); }
         } catch (e) { if (e.code === 'FULL') fullScreen(joinCode, lastPreview); else if (e.code === 'NOT_FOUND') joinScreen('notfound'); else er.textContent = e.message; }
       };
     };
@@ -175,14 +175,19 @@ export function runOnboarding() {
 }
 // The server forgot us (its data was lost). If this phone kept a copy of the tank, make a new account with the same name and put the tank back under its old code;
 // if a friend's phone got there first, just join it. Either way nobody has to type anything.
+// every id this phone has had in its tank: the server gives a healed tank's player a new one, and the old ones are how its octopus and gifts are found again
+const WAS = 'ourtank.was';
+export const formerIds = () => { try { const l = JSON.parse(localStorage.getItem(WAS) || '[]'); return Array.isArray(l) ? l.filter((x) => typeof x === 'string').slice(-8) : []; } catch { return []; } };
+const rememberId = (id) => { if (!id) return; const l = formerIds().filter((x) => x !== id); l.push(id); try { localStorage.setItem(WAS, JSON.stringify(l.slice(-8))); } catch { /* storage unavailable */ } idbPut(WAS, l.slice(-8)); };
 async function healTank() {
   let c = null; try { c = JSON.parse(localStorage.getItem('ourtank.cache') || 'null'); } catch { /* none */ }
   if (!c?.world) c = await idbGet('ourtank.cache');
-  if (!c?.code || !c.world || !c.user || (session?.userId && c.userId !== session.userId)) return null;
+  if (!c?.code || !c.world || !c.user) return null;
+  rememberId(c.userId); if (session?.userId) rememberId(session.userId); const was = [...new Set([c.userId, session?.userId, ...formerIds()])].filter(Boolean);      // every id this phone has had: the server finds its octopus and gifts under any of them
   const r = await api('/api/users', { name: c.user.name || 'Guest', avatar: c.user.avatar });
   session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey, named: true }; store(session);
-  try { await api('/api/import', { app: 'our-tank', tank: { name: c.name }, world: c.world, code: c.code, heal: true, was: c.userId }); }
-  catch (e) { if (e.code === 'CODE_TAKEN') await api('/api/join', { code: c.code, was: c.userId }); else throw e; }
+  try { await api('/api/import', { app: 'our-tank', tank: { name: c.name }, world: c.world, code: c.code, heal: true, was }); }
+  catch (e) { if (e.code === 'CODE_TAKEN') await api('/api/join', { code: c.code, was }); else throw e; }      // a friend's phone put it back first: this phone joins that one, and gets its own octopus and gifts back
   const me = await api('/api/me'); if (!me.tank) return null;
   try { localStorage.setItem('ourtank.cache', JSON.stringify({ ...c, userId: r.userId })); } catch { /* ignore */ }
   return me;

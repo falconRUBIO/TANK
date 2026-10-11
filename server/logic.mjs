@@ -96,14 +96,19 @@ export function importTank(db, user, data) {
   const w = data.world, num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
   if (!Array.isArray(w.fish) || w.fish.length > 60 || !Array.isArray(w.decor ?? []) || (w.decor ?? []).length > R.MAX_DECOR) throw new GameError('BAD_BACKUP', 'That backup is not valid.', 400);
   const now = Date.now(); const world = R.norm(JSON.parse(JSON.stringify(w)), now);
-  world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); const was = data.heal && typeof data.was === 'string' ? data.was : null;
+  world.shells = num(world.shells, 0, 1e6, 10); world.level = num(world.level, 1, 8, 1); const was = data.heal ? formerIds(data.was) : null;
   world.fish = world.fish.filter((f) => R.SPECIES_DEF[f?.species] && typeof f.id === 'string').map((f) => R.ensureFish({ ...f, owner: data.heal ? f.owner ?? null : null, name: String(f.name ?? 'Fish').slice(0, 14) }));
   if (was) remapUser(world, was, user.id);
   world.decor = (world.decor ?? []).filter((d) => R.DECOR_DEF[d?.type] && typeof d.id === 'string'); world.orders = keepOrders(w.orders, world, data.heal, user.id, now, was); world.eggs = (world.eggs ?? []).filter(() => false); world.bottles = []; world.drift = null; world.visitor = null; world.simTs = now;
   world.flags = { ...(world.flags ?? {}), firsts: { ...(data.heal ? world.flags?.firsts ?? {} : {}), [user.id]: true }, intro: world.flags?.intro ?? now };
   // a tank put back after the server lost its data keeps its old code, so the friends who still have it can walk straight back in
   const want = data.heal ? normalizeCode(data.code) : null, healCode = want && want.length === 6 && [...want].every((ch) => ALPHABET.includes(ch)) ? want : null;
-  if (healCode) world.flags.healed = now;
+  if (healCode) {
+    // the code is already in use: a friend's phone put this tank back first. This phone must join that one, never start a second copy of the same tank
+    const have = db.prepare('SELECT id FROM tanks WHERE code=?').get(healCode);
+    if (have) throw new GameError('CODE_TAKEN', 'This tank is already back. Join it with the same code.', 409);
+    world.flags.healed = now;
+  }
   const made = createTank(db, user, data.tank?.name, world, healCode); return { ...made, fish: world.fish.length };
 }
 // Everything about a player is removed. A tank with nobody left in it is removed too.
@@ -141,19 +146,25 @@ export function claimSeat(db, code, slot, isOnline = () => false) {
 // account (their own octopus, the bond fish have with them, today's gift and their first fish) is moved to the new one, so nothing is paid twice or lost.
 // Fish already paid for and on their way are kept when a tank is put back (they used to be dropped, so the shells were spent and the fish never came).
 // Each one is checked: a real species, room for it, and it arrives no later than a full wait from now (one that was due arrives straight away).
-function keepOrders(list, world, heal, uid, now, was = null) {
+function keepOrders(list, world, heal, uid, now, was = []) {
   const out = []; let room = R.capacity(world.level) - world.fish.length;
   for (const o of Array.isArray(list) ? list.slice(0, 12) : []) {
     const d = R.SPECIES_DEF[o?.species]; if (!d || d.count > room) continue; room -= d.count;
     const at = Number.isFinite(+o.arrivesAt) ? +o.arrivesAt : now;
     out.push({ id: typeof o.id === 'string' ? o.id.slice(0, 24) : 'o' + now + out.length, species: o.species, name: clean(o.name, 14) || null, seed: Math.abs(Math.floor(+o.seed || now)) % 100000,
-      by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && o.owner !== was ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null,
+      by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && !formerIds(was).includes(o.owner) ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null,
       at: Number.isFinite(+o.at) ? +o.at : now, arrivesAt: Math.max(now, Math.min(at, now + d.wait * 60e3)) });
   }
   return out;
 }
-export function remapUser(w, was, now) {
-  if (!w || !was || !now || was === now) return false; let n = 0;
+// the ids this player had before (a phone that healed a lost tank got a new id each time); one or several
+export const formerIds = (v) => (Array.isArray(v) ? v : [v]).filter((x) => typeof x === 'string' && x.length > 0 && x.length < 80).slice(0, 8);
+export function remapUser(w, wasIn, now) {
+  const list = formerIds(wasIn).filter((x) => x !== now); if (!w || !list.length || !now) return false; let n = 0;
+  for (const was of list) n += remapOne(w, was, now) ? 1 : 0; return n > 0;
+}
+function remapOne(w, was, now) {
+  let n = 0;
   const mv = (o) => { if (o && Object.prototype.hasOwnProperty.call(o, was)) { if (o[now] == null) o[now] = o[was]; delete o[was]; n++; } };
   mv(w.flags?.gift); mv(w.flags?.firsts); mv(w.flags?.daily); mv(w.flags?.care);
   for (const f of [...(w.fish ?? []), ...(w.floaters ?? []), ...(w.memorial ?? [])]) { if (f.owner === was) { f.owner = now; n++; } mv(f.bond); mv(f.petAt); }
@@ -172,8 +183,9 @@ export function joinTank(db, user, code, was = null) {
     if (!slot) throw new GameError('FULL', 'This aquarium already has four caretakers.', 409);
     const now = Date.now();
     db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,?,?,?)').run(t.id, user.id, slot, now, now);
-    if (was && typeof was === 'string' && was.length < 80) { const { w } = loadWorld(db, t.id); if (w.flags?.healed && now - w.flags.healed < 7 * 864e5 && !db.prepare('SELECT 1 FROM members WHERE tank_id=? AND user_id=?').get(t.id, was) && remapUser(w, was, user.id)) saveWorld(db, t.id, w); }      // a friend coming back into a tank that was put back
-    addJournal(db, t.id, `${user.name} ${was ? 'is back in' : 'joined'} the tank.`, user.id, now);
+    const former = formerIds(was).filter((id) => !db.prepare('SELECT 1 FROM members WHERE tank_id=? AND user_id=?').get(t.id, id));      // what this player used to be called here, if the server once lost the tank
+    if (former.length) { const { w } = loadWorld(db, t.id); if (w.flags?.healed && now - w.flags.healed < 7 * 864e5 && remapUser(w, former, user.id)) saveWorld(db, t.id, w); }      // a friend coming back into a tank that was put back
+    addJournal(db, t.id, `${user.name} ${former.length ? 'is back in' : 'joined'} the tank.`, user.id, now);
     return { id: t.id, slot, already: false };
   });
 }
@@ -218,7 +230,7 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'dev']);
+export const ACTIONS = new Set(['collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null } = {}) {
   const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

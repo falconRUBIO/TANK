@@ -872,6 +872,21 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their own octopus.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} brought in their octopus.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
+    // an octopus nobody in the crew looks after (its caretaker is gone, or the server once lost the tank and gave them a new identity)
+    case 'claimOcto': {                                            // a caretaker with no octopus of their own takes it on
+      if (!members) return fail('FORBIDDEN'); const f = t.fish.find((x) => x.id === a.id); if (!f || !isSmart(f) || f.dead) return fail('NOT_FOUND');
+      if (f.owner && members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');
+      if (t.fish.some((x) => isSmart(x) && !x.dead && x.owner === uid) || t.orders.some((o) => o.species === 'octopus' && o.owner === uid)) return fail('ALREADY_HAVE');
+      f.owner = uid; f.ownerName = name; (t.flags.firsts ||= {})[uid] = true; f.bond ||= {}; f.bond[uid] = Math.max(f.bond[uid] ?? 0, 1);
+      events.push({ journal: `${name} took ${f.name} under their wing.`, toast: `${f.name} is yours now.`, activity: { type: 'fish', text: `${name} is now looking after ${f.name}.` } }); return ok({ id: f.id });
+    }
+    case 'releaseOcto': {                                          // it is let go: it slips over the back of the tank to the reef. Not a death, nothing is paid, and never the last fish
+      if (!members) return fail('FORBIDDEN'); const f = t.fish.find((x) => x.id === a.id); if (!f || !isSmart(f) || f.dead) return fail('NOT_FOUND');
+      if (f.owner && members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');
+      if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
+      t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null;
+      events.push({ journal: `${f.name} was let go, and slipped away over the reef.`, toast: `${f.name} slipped away to the reef.`, activity: { type: 'fish', text: `${name} let ${f.name} go.` }, released: f.id }); return ok({ id: f.id });
+    }
     case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives

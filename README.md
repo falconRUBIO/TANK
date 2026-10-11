@@ -70,7 +70,7 @@ A host whose disk is wiped on every deploy or restart (Render's free plan) forge
 
 **B. A persistent disk.** On a paid Render plan, mount a disk at `/data` and set `DB=/data/ourtank.db` (the included `render.yaml` does this).
 
-Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway.
+Phones also keep a copy of their tank and put it back under the same code if the server ever loses it anyway. When several phones share one tank, the first to open the app puts it back and the others join that one (the server refuses to make a second copy under a code that is in use); each phone sends the ids it used to have, so everyone gets their own octopus and gifts back. `node tools/forget.mjs` rehearses this in two real browsers. If an octopus is ever left with no caretaker in the crew, its card offers "Make it mine" (to someone without one) and "Let it go".
 
 ## Notifications
 

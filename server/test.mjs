@@ -287,6 +287,42 @@ await t('a fish already paid for still arrives after the server lost the tank an
   await ackOf(ws2, { t: 'observe', idem: 'po-3' }).catch(() => null); ws2.close(); w = getW(r.body.id);
   assert.ok(w.fish.some((f) => f.name === 'Nemo'), 'and it arrives'); assert.equal(w.orders.length, 0);
 });
+await t('the server forgets a tank and both phones put it back: one tank, not two, with everybody\'s own octopus (whichever phone goes first)', async () => {
+  for (const friendFirst of [false, true]) {
+    const a = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Shared' }, a.token)).body, b = await mkUser('Ben');
+    assert.equal((await call('/api/join', { code: tk.code }, b.token)).status, 200);
+    const wa = await open(a.token), wb = await open(b.token);
+    assert.equal((await ackOf(wa, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'fk-1' + friendFirst })).ok, true); const w0 = getW(tk.id); setW(tk.id, { flags: { ...w0.flags, tut: 5 } });
+    assert.equal((await ackOf(wb, { t: 'firstFish', species: 'octopus', name: 'Dot', seed: 4, idem: 'fk-2' + friendFirst })).ok, true); wa.close(); wb.close();
+    const copyA = JSON.parse(JSON.stringify(getW(tk.id))), copyB = JSON.parse(JSON.stringify(getW(tk.id)));
+    assert.equal(copyA.fish.length, 2);
+    S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id); S.db.prepare('DELETE FROM users WHERE id IN (?,?)').run(a.userId, b.userId);      // the server forgets everything
+    const heal = async (name, copy, was) => { const u = await mkUser(name); const r = await call('/api/import', { app: 'our-tank', tank: { name: 'Shared' }, world: copy, code: tk.code, heal: true, was }, u.token); if (r.status === 409) { assert.equal(r.body.error, 'CODE_TAKEN'); assert.equal((await call('/api/join', { code: tk.code, was }, u.token)).status, 200); } else assert.equal(r.status, 200, JSON.stringify(r.body)); return u; };
+    const first = friendFirst ? ['Ben', copyB, [b.userId]] : ['Ana', copyA, [a.userId]], second = friendFirst ? ['Ana', copyA, [a.userId]] : ['Ben', copyB, [b.userId]];
+    const u1 = await heal(...first), u2 = await heal(...second), a2 = friendFirst ? u2 : u1, b2 = friendFirst ? u1 : u2;
+    const tanks = S.db.prepare('SELECT id, code FROM tanks WHERE code=?').all(tk.code); assert.equal(tanks.length, 1, 'one tank with the old code');
+    assert.equal(S.db.prepare('SELECT COUNT(*) n FROM tanks t WHERE EXISTS (SELECT 1 FROM members m WHERE m.tank_id=t.id AND m.user_id IN (?,?))').get(a2.userId, b2.userId).n, 1, 'both are in the same tank, no second copy');
+    const w = getW(tanks[0].id); assert.equal(w.fish.length, 2, 'two octopuses, no third');
+    assert.equal(w.fish.find((f) => f.name === 'Ink').owner, a2.userId, 'Ana has hers back'); assert.equal(w.fish.find((f) => f.name === 'Dot').owner, b2.userId, 'Ben has his back');
+    assert.ok(w.flags.firsts[a2.userId] && w.flags.firsts[b2.userId], 'neither is offered another one');
+    const wb2 = await open(b2.token); const again = await ackOf(wb2, { t: 'firstFish', species: 'octopus', name: 'Extra', seed: 5, idem: 'fk-3' + friendFirst }); assert.equal(again.ok, false); wb2.close();
+    assert.equal(S.db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(tanks[0].id).n, 2);
+  }
+});
+await t('an octopus nobody in the crew looks after can be taken on by a caretaker without one, or let go; never your own, never the last fish', async () => {
+  const a = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Orphans' }, a.token)).body, b = await mkUser('Ben'); assert.equal((await call('/api/join', { code: tk.code }, b.token)).status, 200);
+  const wa = await open(a.token); assert.equal((await ackOf(wa, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'or-1' })).ok, true);
+  const w0 = getW(tk.id), ghost = (id, name) => ({ ...w0.fish[0], id, name, owner: 'ghost-' + id, ownerName: 'Someone' });
+  setW(tk.id, { flags: { ...w0.flags, tut: 5 }, fish: [w0.fish[0], ghost('g1', 'Lost'), ghost('g2', 'Stray')] });
+  assert.equal((await ackOf(wa, { t: 'claimOcto', id: 'g1', idem: 'or-2' })).ok, false, 'Ana already has one');
+  assert.equal((await ackOf(wa, { t: 'releaseOcto', id: w0.fish[0].id, idem: 'or-3' })).ok, false, 'never your own');
+  const wb = await open(b.token); assert.equal((await ackOf(wb, { t: 'claimOcto', id: 'g1', idem: 'or-4' })).ok, true, 'Ben takes it on');
+  let w = getW(tk.id); assert.equal(w.fish.find((f) => f.id === 'g1').owner, b.userId); assert.ok(w.flags.firsts[b.userId]);
+  assert.equal((await ackOf(wb, { t: 'claimOcto', id: 'g2', idem: 'or-5' })).ok, false, 'only one each');
+  assert.equal((await ackOf(wb, { t: 'releaseOcto', id: 'g2', idem: 'or-6' })).ok, true, 'the other is let go');
+  w = getW(tk.id); assert.equal(w.fish.length, 2); assert.ok(!w.memorial?.some((m) => m.id === 'g2'), 'not a death');
+  setW(tk.id, { fish: [ghost('g3', 'Only')] }); assert.equal((await ackOf(wa, { t: 'releaseOcto', id: 'g3', idem: 'or-7' })).ok, false, 'never the last fish'); wa.close(); wb.close();
+});
 await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
   const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;

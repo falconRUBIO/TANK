@@ -417,6 +417,14 @@ function didYouKnow(rec, f) {
   const fx = SPECIES_FACTS[rec.species]; if (fx?.length) out.push(`💡 ${fx[(Math.floor(Date.now() / 864e5) + (rec.seed ?? 0)) % fx.length]}`);
   return out.slice(0, 4);
 }
+// an octopus nobody in the crew looks after (its caretaker left, or the server once lost the tank and gave them a new identity): someone can take it on, or let it go
+function orphanBlock(rec, f) {
+  if (rec.species !== 'octopus' || !game.shared || rec.dead) return '';
+  const crew = game.members ?? [], me = game.you?.userId; if (rec.owner && crew.some((m) => m.id === rec.owner)) return '';
+  const haveOne = game.state.fish.some((x) => x.species === 'octopus' && !x.dead && x.owner === me) || (game.state.orders ?? []).some((o) => o.species === 'octopus' && o.owner === me);
+  const alone = game.state.fish.filter((x) => !x.dead).length <= 1;
+  return `<div class="orphan"><p>🐙 No one in the crew looks after ${esc(f.name)} any more.</p><div class="btnrow">${haveOne ? '' : '<button class="lnk" id="claimo">Make it mine</button>'}${alone ? '' : '<button class="lnk warn" id="releaseo">Let it go</button>'}</div></div>`;
+}
 function bondLine(rec) {
   const you = game.shared ? game.you?.userId : 'me', b = rec.bond ?? {}, known = (id) => id === you || !game.shared || game.members?.some((m) => m.id === id);      // only people still in the tank
   const ids = Object.keys(b).filter(known); if (!ids.length) return '';
@@ -463,10 +471,12 @@ function showCard(f) {
     ${comfortBlock(rec)}
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
-    ${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>${more}`;
+    ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>${more}`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); giveCrab(); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec); card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); giveCrab(); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
+  if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'LET IT GO?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; } focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
