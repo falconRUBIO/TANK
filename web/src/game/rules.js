@@ -428,7 +428,7 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
 export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
 export const canPuzzle = (f, now = Date.now()) => isSmart(f) && stageOf(f, now) !== 'baby';
-// A crab treat: the octopus eats crabs, not flakes. It costs shells, makes the octopus very happy, and every crab (and every day, and every jar) adds to its hoard of shells at its den.
+// A crab treat (old phones only: the button is gone, a hungry octopus's crab from Feed does all this now): the octopus eats crabs, not flakes. It costs shells, makes the octopus very happy, and every crab (and every day, and every jar) adds to its hoard of shells at its den.
 export const CRAB_PRICE = 4, CRAB_GAP = 2 * 3600e3;
 export const hoardOf = (f, now = Date.now()) => (isSmart(f) ? Math.min(14, Math.floor(Math.max(0, now - f.born) / (2 * 864e5)) + (f.solved ?? 0) + (f.crabs ?? 0)) : 0);
 export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x, 0);
@@ -725,7 +725,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
-        if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); checkWant(t, now, events, { type: 'crab', id: f.id }); }
+        if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
         dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: `${name} fed ${f.name} a crab.` } });
         return ok({ applied: true, delta: pay, food, fish: f.id });
       }

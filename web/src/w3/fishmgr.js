@@ -82,13 +82,14 @@ export class Fishes {
     f.emote = sp; f.emoteSeed = Math.random() * 20; this.scene.add(sp); this.onSprite?.(sp);
   }
   // the mood bubble shows for a few seconds out of every ~14, so the tank stays calm
+  // (a bubble still fading out when the mood changes to one with no bubble keeps the old picture until it is gone)
   updateEmotes(t) {
     for (const f of this.list) {
       const sp = f.emote, mood = f.profile?.mood; if (!sp) continue; if (f.dead) { sp.visible = false; continue; }
       const phase = (t + f.emoteSeed) % 14, show = EMOTE[mood] && (phase < 3.4 || (mood === 'Hungry' && phase < 7)) && !f.group.parent?.userData?.hide;
       const want = show ? Math.min(1, Math.min(phase, 3.4 - phase + 0.4) * 2.5) : 0;
       sp.material.opacity += (want - sp.material.opacity) * 0.2; sp.visible = sp.material.opacity > 0.03;
-      if (sp.visible) { if (sp.userData.mood !== mood) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
+      if (sp.visible) { if (sp.userData.mood !== mood && EMOTE[mood]) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
     }
   }
   // Watching: what the fish are really doing, reported once and only when it matters. The server checks every report.

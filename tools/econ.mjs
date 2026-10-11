@@ -1,5 +1,6 @@
 // Plays a simulated week-after-week player through the real rules and reports pacing.
 //   node tools/econ.mjs [visitsPerDay=3] [days=60]
+//   TREATS=1 also gives the old crab treat at every chance (the button is gone; the action stays for old phones)
 import * as R from '../web/src/game/rules.js';
 const visits = +(process.argv[2] || 3), DAYS = +(process.argv[3] || 60), H = 3600e3, DAY = 864e5;
 const sim = (visitsPerDay) => {
@@ -12,7 +13,7 @@ const sim = (visitsPerDay) => {
     act({ t: 'tut', step: 5 });
     if (hr === gaps[0]) for (let c = 0; c < +(process.env.GIFT || 0); c++) R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now, name: 'Sim', uid: 'sim' + c });     // GIFT=n: n caretakers each collect the daily gift
     if (t.drift) act({ t: 'collect', id: t.drift.id });
-    if (t.hunger > 0.3) act({ t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > 0.3) act({ t: 'feed', food: 'crab', fish: 'oct' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
+    if (t.hunger > 0.3) act({ t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > 0.3) act({ t: 'feed', food: 'crab', fish: 'oct' }); if (process.env.TREATS) act({ t: 'crab', id: 'oct' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
     for (const f of t.fish.slice(0, 3)) act({ t: 'pet', id: f.id });
     // spend like a goal-driven player: new fish first (saving up for them), then new decorations, then more of what is already liked
     for (let guard = 0; guard < 8; guard++) {

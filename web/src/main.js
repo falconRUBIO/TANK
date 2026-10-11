@@ -106,7 +106,7 @@ function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find(
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : null;
-  if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { ui.toast(oc ? `${oc.name} is full for now` : 'The fish are full for now'); endFeed(); return; }
+  if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for a crab ${hrs((0.08 - octoHunger(oc)) * 8)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) * 5)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
   if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
   feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
@@ -202,6 +202,14 @@ async function adopt(species) {
 }
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+// a crab dropped just in front of the octopus, from its card: the same meal as from Feed, without hunting for the water
+async function feedCrabTo(id) {
+  const rec = game.state.fish.find((x) => x.id === id), f = fishes.byId.get(id); if (!rec || rec.dead) return;
+  if (octoHunger(rec) < 0.08) { ui.toast(`${rec.name} isn't hungry yet.`); return; }
+  const x = Math.max(-3.5, Math.min(3.5, (f?.pos.x ?? 0) + 0.5)); fishes.dropCrabAt(x, id); sfx('splash'); haptic(8);
+  const r = await game.dispatch({ t: 'feed', x, food: 'crab', fish: id }); if (!r.ok) return fail(r);
+  if (r.delta > 0) shellToast(r); tut.onFeed(); ui.refresh();
+}
 async function giveCrab() {
   const me = game.you?.userId, mine = game.state.fish.filter((f) => f.species === 'octopus' && !f.dead && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
   const r = await game.dispatch({ t: 'crab', id: o.id }); if (!r.ok) return fail(r);
@@ -219,8 +227,9 @@ async function givePuzzle(id) {
 function brainBlock(rec) {
   if (!isSmart(rec)) return '';
   const can = canPuzzle(rec), nx = nextStage(rec), mine = canFeedOcto(rec, game.you?.userId, game.shared), restJar = rec.puzzleAt != null && Date.now() - rec.puzzleAt < 3 * 3600e3, restCrab = rec.crabAt != null && Date.now() - rec.crabAt < 2 * 3600e3;
-  const jar = rec.puzzle ? '<button class="act2" disabled>🧩 Working on a jar…</button>' : !can ? `<button class="act2" disabled>🧩 Puzzle jar<small>when grown up${nx ? ` · ${nx.label}` : ''}</small></button>` : restJar ? '<button class="act2" disabled>🧩 Puzzle jar<small>resting</small></button>' : `<button class="act2" id="puz">🧩 Puzzle jar<small>${PUZZLE_COST} 🐚</small></button>`;
-  const crab = !mine ? '' : restCrab ? `<button class="act2" disabled>🦀 Crab treat<small>had one · again in ${(() => { const m = Math.max(1, Math.ceil((2 * 3600e3 - (Date.now() - rec.crabAt)) / 60e3)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; })()}</small></button>` : `<button class="act2" id="crabt">🦀 Crab treat<small>a special crab · ${CRAB_PRICE} 🐚</small></button>`;
+  const jar = rec.puzzle ? '<button class="act2" disabled>🧩 Working on a jar…</button>' : !can ? `<button class="act2" disabled>🧩 Puzzle jar<small>when grown up${nx ? ` · ${nx.label}` : ''}</small></button>` : restJar ? `<button class="act2" disabled>🧩 Puzzle jar<small>tired of puzzles · next in ${(() => { const m = Math.max(1, Math.ceil((3 * 3600e3 - (Date.now() - rec.puzzleAt)) / 60e3)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; })()}</small></button>` : `<button class="act2" id="puz">🧩 Puzzle jar<small>${PUZZLE_COST} 🐚</small></button>`;
+  // its crab, straight from its card: the old crab treat is gone, a hungry octopus's crab is its treat
+  const h = octoHunger(rec), crab = !mine ? '' : h < 0.08 ? `<button class="act2" disabled>🦀 Crab<small>not hungry yet · ${(() => { const m = Math.max(1, Math.round((0.08 - h) * 8 * 60)); return m >= 60 ? `in about ${Math.round(m / 60)}h` : `in ${m} min`; })()}</small></button>` : `<button class="act2 ${h > 0.25 ? 'due' : ''}" id="crabt">🦀 Feed ${esc(rec.name)} a crab<small>${h > 0.25 ? 'hungry now' : 'peckish'} · free</small></button>`;
   return `<div class="acts2">${jar}${crab}</div>`;
 }
 async function trainFish(f, key, spot) {
@@ -476,7 +485,7 @@ function showCard(f) {
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>${more}`;
   card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); giveCrab(); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'LET IT GO?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
@@ -752,8 +761,9 @@ async function welcomeBack() {
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
-  const mine = game.you?.userId, rank = (t) => (/hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
-  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
+  const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colours|smacked|squirted|friends now|has it in for|first crab/.test(t);
+  const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
+  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
@@ -810,6 +820,7 @@ async function boot() {
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
+    octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
     act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
@@ -855,6 +866,7 @@ window.__fishes = fishes; window.__decor = decor;
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
+window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
