@@ -1,0 +1,51 @@
+// Personality: each kind of octopus does what its kind likes, has a favourite trick, looks before it acts, takes a breath before it jets,
+// squints at a rival and goes wide-eyed when startled, looks out at you, and a trickster squirts water at the glass. Needs the solo game on 8123.
+// node tools/octopus_character.mjs
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; let fails = 0; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
+const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
+await p.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
+await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 6; s.fish.length = 0; const born = Date.now() - 12 * 864e5;
+  s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', movedAt: Date.now() });
+  s.fish.push({ id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1 }, { id: 'g2', name: 'Miso', species: 'blue', seed: 4, born, stage: 'adult', traits: ['Brave'], happy: 0.8, health: 1 });
+  s.decor.length = 0; s.decor.push({ id: 'p1', type: 'grass', x: -2.2, z: 1.2, ry: 0 }, { id: 'r1', type: 'rock', x: 0.6, z: 1.0, ry: 0 }); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
+await p.waitForTimeout(2500);
+// 1. each temperament spends its time differently: tally what each kind picks over many choices
+const tally = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], out = {}; const keep = f.mind;
+  for (const type of ['explorer', 'homebody', 'showoff', 'watcher', 'collector', 'trickster']) { f.mind = { ...keep, type, cur: 0.6, soc: 0.6 }; f.audience = 1; const c = {}; for (let i = 0; i < 1500; i++) { f.pos.set(-1.2, 0.6, 1.4); f.restFor = 10; f.ground = null; f.squirtCool = 0; f.act = null; f.follow = null; f.watchFish = null; f.inspect = null; f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; if (f.pickAct(f.st, Math.random, F.list, f.mind)) { const k = f.act ?? (f.inspect ? 'grab' : f.st.pend?.s) ?? '?'; c[k] = (c[k] ?? 0) + 1; } } out[type] = { top: Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 3).map((e) => e[0]), sig: f.signature(), c }; }
+  f.mind = keep; f.audience = 0; return out; });
+console.log('  trickster', JSON.stringify(tally.trickster.c)); for (const [t, v] of Object.entries(tally)) console.log(`  ${t.padEnd(9)} favourite trick ${String(v.sig).padEnd(7)} most often: ${v.top.join(', ')}`);
+ck('a homebody buries itself and plays plant more than a show-off does', (tally.homebody.c.bury ?? 0) > 2 * (tally.showoff.c.bury ?? 0) && (tally.homebody.c.kelp ?? 0) > (tally.showoff.c.kelp ?? 0));
+ck('a show-off does the lionfish more than a homebody does', (tally.showoff.c.lion ?? 0) > 2 * (tally.homebody.c.lion ?? 0));
+ck('a trickster squirts at you when someone is watching, a homebody hardly ever', (tally.trickster.c.squirt ?? 0) > 3 * (tally.homebody.c.squirt ?? 0) && (tally.trickster.c.squirt ?? 0) > 20, `${tally.trickster.c.squirt} vs ${tally.homebody.c.squirt ?? 0}`);
+ck('each one does its favourite trick clearly more than other kinds of octopus do that trick', Object.entries(tally).every(([t, v]) => { const others = Object.entries(tally).filter(([u]) => u !== t).map(([, w]) => w.c[v.sig] ?? 0), avg = others.reduce((a, c) => a + c, 0) / others.length; return v.sig && (v.c[v.sig] ?? 0) > 1.5 * avg; }), JSON.stringify(Object.fromEntries(Object.entries(tally).map(([k, v]) => [k, [v.sig, v.top]]))));
+const step = (n) => p.evaluate((n) => { const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); } }, n);
+// 2. a beat before it acts: it stops and looks at the fish it is about to follow, turning toward it, then goes
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], o = F.list[1]; f.pos.set(-1, 0.6, 1.6); f.heading = Math.PI; f.vel.set(0, 0, 0); o.pos.set(1.5, 2.5, 1.6); f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; f.act = null; f.pickAct(f.st, Math.random, F.list, f.mind, 'follow'); const s0 = f.st.s, h0 = f.heading;
+    let lookedAt = 0, went = null; for (let i = 0; i < 60; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.st.s === 'ponder') lookedAt = Math.max(lookedAt, f.lookX); if (f.st.s === 'jet' && went == null) went = i * 0.05; }
+    return { s0, lookedAt: +lookedAt.toFixed(2), turned: +(f.heading - h0).toFixed(2), went }; });
+  ck('before it acts it stops and looks at what it has in mind, then goes', r.s0 === 'ponder' && r.went != null && r.went >= 0.4 && Math.abs(r.turned) > 0.3, JSON.stringify(r)); }
+// 3. a breath before each stroke: the mantle fills, then squeezes
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0, 0.6, 1.6); f.follow = null; f.st = { s: 'jet', t: 9, n: 2, pulse: 0, mode: null }; f.target.set(f.pos.x + 3, 3, 1.6); f.heading = 0; let inhale = 0, sqAfter = 0; for (let i = 0; i < 40; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); inhale = Math.max(inhale, f.inhaleK ?? 0); if (inhale > 0.5) sqAfter = Math.max(sqAfter, f.sq); } return { inhale: +inhale.toFixed(2), sqAfter: +sqAfter.toFixed(2) }; });
+  ck('it draws a breath (the mantle swells) before each stroke, then squeezes', r.inhale > 0.5 && r.sqAfter > 0.8, JSON.stringify(r)); }
+// 4. grudges and friends: a fish that keeps startling it becomes its rival, and it squints at it; one it keeps following becomes its friend
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], a = F.list[1], c = F.list[2]; f.fishMemo = {}; f.buddy = null; f.rival = null; for (let i = 0; i < 2; i++) f.startle(c.pos, c); for (let i = 0; i < 3; i++) f.memo(a, 'f'); f.pos.set(0, 0.6, 1.6); f.st = { s: 'rest', t: 30, n: 0, pulse: 0, mode: null }; f.scareT = 0;
+    let sq = 0; for (let i = 0; i < 40; i++) { c.pos.set(1.0, 1.4, 1.6); F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); sq = Math.max(sq, f.squintK ?? 0); } return { buddy: f.buddy, rival: f.rival, a: a.fid, c: c.fid, squint: +sq.toFixed(2) }; });
+  ck('a fish that keeps startling it becomes its rival, one it keeps following becomes its friend', r.rival === r.c && r.buddy === r.a, JSON.stringify(r));
+  ck('it narrows its eyes when its rival comes near', r.squint > 0.4, `${r.squint}`);
+  const card = await p.evaluate(() => { window.__fishes.list[0].favDirty = true; return [window.__fishes.list[0].signatureText(), window.__fishes.byId.get(window.__fishes.list[0].buddy)?.name, window.__fishes.byId.get(window.__fishes.list[0].rival)?.name]; });
+  ck('its card can name its favourite trick, its friend and its rival', card.every(Boolean), JSON.stringify(card)); }
+// 5. startled: wide eyes
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0, 0.6, 1.6); f.st = { s: 'rest', t: 30, n: 0, pulse: 0, mode: null }; f.startle({ x: 1 }); let w = 0; for (let i = 0; i < 12; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); w = Math.max(w, f.wideK ?? 0); } return +w.toFixed(2); });
+  ck('startled, its eyes go wide', r > 0.5, `${r}`); }
+// 6. it looks out at you now and then
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0, 0.6, 1.6); f.gazeCool = 0; f.gazeT = 0; f.audience = 1; let looked = 0, lookY = 0; for (let i = 0; i < 1200 && !looked; i++) { f.st = { s: 'rest', t: 30, n: 0, pulse: 0, mode: null }; F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.gazeT > 0) { looked = i * 0.05; } } for (let i = 0; i < 8; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); } return { looked, text: f.actText, lookY: +f.lookY.toFixed(2) }; });
+  ck('now and then it turns its eyes on you, and says so', r.looked > 0 && /Looking right at you/.test(r.text ?? ''), JSON.stringify(r)); }
+// 7. the trickster's joke: it faces the glass and squirts water at you
+{ const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0, 0.6, 1.6); f.heading = 0; f.audience = 1; const keep = f.mind; f.mind = { ...keep, type: 'trickster' }; f.squirtCool = 0; f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; f.act = null; const ok = f.pickAct(f.st, Math.random, F.list, f.mind, 'squirt'); const b0 = F.bursts.length; let squirted = false, faced = 0;
+    for (let i = 0; i < 70; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.st.done && !squirted) { squirted = true; faced = f.heading; } } f.mind = keep; return { ok, squirted, faced: +faced.toFixed(2), bubbles: F.bursts.length - b0, text: f.actText }; });
+  ck('a trickster turns to the glass and squirts water at you', r.ok && r.squirted && Math.abs(Math.atan2(Math.sin(r.faced - Math.PI / 2), Math.cos(r.faced - Math.PI / 2))) < 0.4 && r.bubbles > 10, JSON.stringify(r)); }
+ck('no page errors', errors.length === 0, errors.join('; '));
+console.log(fails ? `${fails} failed` : 'Character checks passed'); await b.close(); process.exit(fails ? 1 : 0);

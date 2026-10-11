@@ -248,7 +248,7 @@ export class Fishes {
       }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
       if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
-      if ((f.fav || f.likes) && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: f.fav ? +f.fav.x.toFixed(2) : undefined, z: f.fav ? +f.fav.z.toFixed(2) : undefined, likes: f.likes }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
+      if ((f.fav || f.likes || f.fishMemo) && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: f.fav ? +f.fav.x.toFixed(2) : undefined, z: f.fav ? +f.fav.z.toFixed(2) : undefined, likes: f.likes, fish: f.fishMemo, buddy: f.buddy, rival: f.rival }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
     }
   }
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
@@ -257,7 +257,7 @@ export class Fishes {
     if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
     if (d.species === 'octopus') { f.movedAt = d.movedAt ?? 0; f.homeId = d.home ?? null; f.adultish = stageOf(d) !== 'baby'; f.onTask = (fish, ev) => this.taskEvent(fish, ev); }
-    if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; } } }
+    if (d.species === 'octopus') { f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; if (sv.fish) { f.fishMemo = sv.fish; f.buddy = sv.buddy ?? null; f.rival = sv.rival ?? null; } } } }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
@@ -455,7 +455,7 @@ export class Fishes {
         if (best && this.rng() < 0.55) { b.target.copy(best.pos); b.retarget = 0.9; b.fleeT = 1.0; b.chaseCool = 7 + this.rng() * 9; away(best, b.pos); }
       }
       if (b.species.move === 'jet') b.startleCool = Math.max(0, (b.startleCool ?? 0) - 0.6);
-      if (B.predator && b.species.move === 'jet' && b.lead !== false && b.scareT <= 0 && b.startleCool <= 0 && ['rest', 'crawl', 'flat', 'kelp', 'watch', 'snake'].includes(b.st?.s)) for (const o of L) if (o !== b && o.species.move !== 'hover' && o.vel.length() > 0.7 && Math.hypot(o.pos.x - b.pos.x, o.pos.z - b.pos.z) < 1.8 && Math.abs(o.pos.y - b.pos.y) < 2.4 && this.rng() < 0.4 + 0.5 * (1 - (b.bold ?? 0.5))) { b.startle(o.pos); b.startleCool = 35 + this.rng() * 30; break; }      // something quick and close makes it jump (the timid ones more easily), not more than once a minute
+      if (B.predator && b.species.move === 'jet' && b.lead !== false && b.scareT <= 0 && b.startleCool <= 0 && ['rest', 'crawl', 'flat', 'kelp', 'watch', 'snake'].includes(b.st?.s)) for (const o of L) if (o !== b && o.species.move !== 'hover' && o.vel.length() > 0.7 && Math.hypot(o.pos.x - b.pos.x, o.pos.z - b.pos.z) < 1.8 && Math.abs(o.pos.y - b.pos.y) < 2.4 && this.rng() < 0.4 + 0.5 * (1 - (b.bold ?? 0.5))) { b.startle(o.pos, o); b.startleCool = 35 + this.rng() * 30; break; }      // something quick and close makes it jump (the timid ones more easily), not more than once a minute
       if (B.predator && (b.st?.s === 'crawl' || b.st?.s === 'jet')) for (const o of L) { const O = SOCIAL[o.sk]; if (o !== b && O.size <= 1 && !O.bully && o.species.move !== 'hover' && o.pos.distanceTo(b.pos) < 1.9) away(o, b.pos, 2.2); }
       if (B.sameFoe) for (const o of L) if (o !== b && o.sk === b.sk && b.pos.distanceTo(o.pos) < 1.6 && o.species.move !== 'hover') away(o, b.pos, 2.0);
     }
