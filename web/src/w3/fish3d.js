@@ -313,10 +313,11 @@ export class Fish3D {
     let r = rng() / night, act = want; if (!act) for (const [k, w] of opts) { if (r < w) { act = k; break; } r -= w; }
     if (!act || (want && !opts.some(([k, w]) => k === want && w > 0))) return false;
     S.mode = null; S.n = 0; S.pulse = 0; S.detour = null; S.prog = null; S.tour = null; S.popped = false; S.digs = 0; this.act = act; this.actText = ACT_TEXT[act] ?? null;
+    if (['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp'].includes(act)) this.onMoment?.(act);
     // off to take hold of something: the inspect errand walks it there and wraps its arms round it
     if (act === 'grab') { const q = things[(rng() * things.length) | 0]; this.inspect = { x: q.x, z: q.z, id: q.id, type: q.type, r: GRIP[q.type] }; this.actText = null; S.t = 0; return this.ponder(S, rng, { x: q.x, y: 0.7, z: q.z }); }
     if (act === 'squirt') { this.squirtCool = 120 + rng() * 120; S.s = 'squirt'; S.t = 1.6; S.done = false; this.actText = 'Squirting water at you!'; return this.ponder(S, rng, { x: this.pos.x, y: 4.6, z: 30 }); }
-    if (act === 'follow') { const bud = fish.find((q) => q.fid === this.buddy), o = bud && rng() < 0.65 ? bud : fish[(rng() * fish.length) | 0]; this.follow = o; this.memo(o, 'f'); this.actText = `Tagging along behind ${o.name}.`; S.s = 'jet'; S.n = 1; S.t = 10 + rng() * 5; this.target.copy(o.pos); return this.ponder(S, rng, o.pos); }
+    if (act === 'follow') { const bud = fish.find((q) => q.fid === this.buddy), o = bud && rng() < 0.65 ? bud : fish[(rng() * fish.length) | 0]; this.follow = o; this.memo(o, 'f'); this.onMoment?.('fish', o); this.actText = `Tagging along behind ${o.name}.`; S.s = 'jet'; S.n = 1; S.t = 10 + rng() * 5; this.target.copy(o.pos); return this.ponder(S, rng, o.pos); }
     if (act === 'watch') { const bud = fish.find((q) => q.fid === this.buddy), o = bud && rng() < 0.6 ? bud : fish.sort((a, b) => a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0]; this.memo(o, 'f', 0.5); this.watchFish = o; this.actText = `Watching ${o.name}.`; S.s = 'watch'; S.t = 5 + rng() * 4; return this.ponder(S, rng, o.pos); }
     if (act === 'tour') { const b = this.band, ys = 3 + rng() * 4; S.tour = [[-2.8 + rng(), ys, 1.2 + rng()], [2.8 - rng(), Math.min(Fish3D.topY - 2.5, ys + 1.5), 1.4 + rng()], [(rng() - 0.5) * 3, 2 + rng() * 2, b.z[0] + rng() * (b.z[1] - b.z[0])]]; if (rng() < 0.5) S.tour.reverse(); const f0 = S.tour.shift(); this.target.set(f0[0], f0[1], f0[2]); S.s = 'jet'; S.n = 2; S.t = 24; return this.ponder(S, rng, this.target.clone()); }
     S.s = act; S.t = act === 'bury' ? 14 + rng() * 14 : act === 'flat' ? 9 + rng() * 6 : act === 'kelp' ? 10 + rng() * 6 : 7 + rng() * 5; S.t0 = S.t;
@@ -336,6 +337,7 @@ export class Fish3D {
     this.onThrow?.(this.pos.clone(), d.clone(), kind, o.pos.clone()); o.fleeT = kind === 'smack' ? 1.8 : 1.4; o.target.set(Math.max(-4, Math.min(4, o.pos.x + d.x * 2.5)), Math.min(12, o.pos.y + 1), Math.max(0.3, Math.min(2.4, o.pos.z + d.z * 1.5))); o.retarget = 2;
     const sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), dx = o.pos.x - this.pos.x, dz = o.pos.z - this.pos.z, dy = o.pos.y - this.pos.y, lx = (dx * ch - dz * sh) / sc, lz = (dx * sh + dz * ch) / sc, ang = Math.atan2(lz, lx - 3);
     let one = false; this.minds.map((m, i) => [m, Math.abs(Math.atan2(Math.sin((this.rig?.arms[i]?.th ?? 0) - ang), Math.cos((this.rig?.arms[i]?.th ?? 0) - ang)))]).sort((p, q) => p[1] - q[1]).forEach(([m, df]) => { if (kind === 'smack' ? one : df > 0.9) return; one = true; m.x = lx; m.y = dy / sc; m.z = lz; m.until = kind === 'smack' ? 0.45 : 1.1; m.fast = true; m.next = 4 + rng() * 3; });      // a smack is one arm, whipped out and back
+    if (kind === 'smack') this.onMoment?.('smack', o);
     this.actText = kind === 'smack' ? `Smacked ${o.name} with an arm.` : kind === 'shell' ? `Flung a shell at ${o.name}.` : kind === 'water' ? `Squirted water at ${o.name}.` : `Threw silt at ${o.name}.`; this.actFlash = 4;
   }
   denGoal(rng) { const d = this.den; return d.home ? [d.x, d.z + (d.kind === 'pot' ? 0.5 : -0.2)] :      // in a coconut it sits well inside the hollow (the cut face is at the shell's centre line), its arms spilling out of the mouth
@@ -415,7 +417,7 @@ export class Fish3D {
     for (let i = 0; i < this.vox.length; i++) {
       const o = i * 3, v = this.vox[i];
       if (v.tag === 'beak') { a[o] = b[o] * 1.1; a[o + 1] = b[o + 1] * 1.1; a[o + 2] = b[o + 2] * 1.1; continue; }
-      if (v.tag === 'eye') { const bar = eb > 0.01 && Math.abs(v.y - this.eyeY) <= 1.2 ? 1 - 0.92 * eb : 1; a[o] = b[o] * bar; a[o + 1] = b[o + 1] * bar; a[o + 2] = b[o + 2] * bar; continue; }       // someone it knows: a dark bar across the eye
+      if (v.tag === 'eye') { const bar = eb > 0.01 && Math.abs(v.y - this.eyeY) <= 1.2 ? 1 - 0.92 * eb : 1, ring = ct && !v.pupil && b[o] + b[o + 1] + b[o + 2] > 0.5 ? cq * 0.8 : 0; a[o] = (b[o] + ((ct?.[o] ?? 0) - b[o]) * ring) * bar; a[o + 1] = (b[o + 1] + ((ct?.[o + 1] ?? 0) - b[o + 1]) * ring) * bar; a[o + 2] = (b[o + 2] + ((ct?.[o + 2] ?? 0) - b[o + 2]) * ring) * bar; continue; }      // in disguise the rings of its eyes change too; the pupils stay dark       // someone it knows: a dark bar across the eye
       let tr = tex ? tex[o] : b[o], tg = tex ? tex[o + 1] : b[o + 1], tb = tex ? tex[o + 2] : b[o + 2]; if (pv && tex) { tr = pv[o] + (tr - pv[o]) * mx; tg = pv[o + 1] + (tg - pv[o + 1]) * mx; tb = pv[o + 2] + (tb - pv[o + 2]) * mx; }
       const lift = 1 + 0.4 * f; let R = (b[o] + (tr - b[o]) * k) * lift * (1 + 0.18 * f), G = (b[o + 1] + (tg - b[o + 1]) * k) * (1 + 0.15 * f), B = (b[o + 2] + (tb - b[o + 2]) * k) * (1 + 0.1 * f) * (1 - 0.18 * f);   // excited: bright and warm
       if (ct) { R += (ct[o] - R) * cq; G += (ct[o + 1] - G) * cq; B += (ct[o + 2] - B) * cq; if (this.costume === 'jelly') { R += 0.06 * cq; G += 0.05 * cq; B += 0.07 * cq; } }      // in costume
@@ -527,7 +529,7 @@ export class Fish3D {
       this.restK += (0.85 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 3); this.vel.multiplyScalar(Math.exp(-4 * dt));
       let dh = Math.PI / 2 - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 7);
       if (!S.done && S.t < 1.0) { this.inhaleK = Math.max(this.inhaleK ?? 0, 1); }
-      if (!S.done && S.t < 0.6) { S.done = true; this.sq = 1; this.flush = Math.max(this.flush, 0.5); this.onThrow?.(this.pos.clone(), _p2.set(0, 0.25, 1).normalize().clone(), 'water'); this.onThrow?.(this.pos.clone().add(_p2.set(0, 0.2, 1.4)), _p2.set(0, 0.3, 1).normalize().clone(), 'water'); this.actFlash = 4; }
+      if (!S.done && S.t < 0.6) { S.done = true; this.sq = 1; this.flush = Math.max(this.flush, 0.5); this.onThrow?.(this.pos.clone(), _p2.set(0, 0.25, 1).normalize().clone(), 'water'); this.onThrow?.(this.pos.clone().add(_p2.set(0, 0.2, 1.4)), _p2.set(0, 0.3, 1).normalize().clone(), 'water'); this.actFlash = 4; this.onMoment?.('squirt'); }
       if (S.t <= 0) this.endAct(S, rng);
     } else if (S.s === 'rest') {
       S.prog = null; S.detour = null; this.vel.multiplyScalar(Math.exp(-3 * dt)); this.restK += (1 - this.restK) * Math.min(1, dt * 1.5); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);

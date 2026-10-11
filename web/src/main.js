@@ -469,7 +469,7 @@ function showCard(f) {
     ${octo ? `<p class="mind"><b>${mind.label}</b> ${esc(octoLine(mind, f))}</p>` : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}</p>`}
     ${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
-    <h4>At a glance</h4><div class="facts">${tile('Age', `${p.age}${nx ? ` · grows up in ${nx.label}` : ''}`, true)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Favourite food', p.food)}${tile(octo ? 'Home' : 'Favourite spot', octo ? denTxt : p.spot)}${tile('Favourite thing', octo ? f.favThing : null)}${tile('Favourite trick', octo ? f.signatureText?.() : null)}${tile('Best friend', octo && f.buddy ? esc(fishes.byId.get(f.buddy)?.name ?? '') : null)}${tile('Rival', octo && f.rival ? esc(fishes.byId.get(f.rival)?.name ?? '') : null)}${tile('Caretaker', owner)}${tile('Closest to', close)}</div>
+    <h4>At a glance</h4><div class="facts">${tile('Age', `${p.age}${nx ? ` · grows up in ${nx.label}` : ''}`, true)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Favourite food', p.food)}${tile(octo ? 'Home' : 'Favourite spot', octo ? denTxt : p.spot)}${tile('Favourite thing', octo ? f.favThing : null)}${tile('Favourite trick', octo ? f.signatureText?.() : null)}${tile('Best friend', octo && (rec.buddy ?? f.buddy) ? esc(fishes.byId.get(rec.buddy ?? f.buddy)?.name ?? '') : null)}${tile('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${tile('Caretaker', owner)}${tile('Closest to', close)}</div>
     ${comfortBlock(rec)}
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
@@ -852,7 +852,7 @@ async function boot() {
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__fishes = fishes; window.__decor = decor;
-fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
+fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };

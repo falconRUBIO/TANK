@@ -15,7 +15,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; 
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(2500);
 const log = await p.evaluate(async (MIN) => {
-  const F = window.__fishes, f = F.list[0]; f.isNight = false; f.shy = false; f.restFor = 10;
+  const F = window.__fishes, f = F.byId.get('x1'); f.isNight = false; f.shy = false; f.restFor = 10;
   const n = { acts: {}, gaits: {}, tasks: {}, den: 0, startle: 0, throw: 0, jets: 0, hops: 0, inspect: 0, glass: 0 }, time = {}, texts = new Set();
   let lastGrip = false, last = null, lastG = null, lastS = null, tuckWas = 0, scareWas = 0, lastText = null, lastHop = 0, lastInspect = null, lastMode = null;
   const origBegin = F.beginTask.bind(F); F.beginTask = (ff, pl) => { n.tasks[pl.kind] = (n.tasks[pl.kind] ?? 0) + 1; return origBegin(ff, pl); };

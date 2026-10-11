@@ -16,8 +16,8 @@ await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; 
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(2500);
 const step = (n, dt = 0.05) => p.evaluate(({ n, dt }) => { const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(dt, (window.__t = (window.__t ?? 0) + dt)); F.list.forEach((x) => x.update(dt, Math.random, F.list)); } }, { n, dt });
-const state = () => p.evaluate(() => { const f = window.__fishes.list[0]; return { s: f.st?.s, act: f.act, text: f.actText, x: +f.pos.x.toFixed(2), y: +f.pos.y.toFixed(2), z: +f.pos.z.toFixed(2), flat: +f.flatK.toFixed(2), lion: +f.lionK.toFixed(2), snake: +f.snakeK.toFixed(2), jelly: +f.jellyK.toFixed(2), kelp: +f.kelpK.toFixed(2), puff: +f.puffK.toFixed(2), sink: +f.sink.toFixed(2), pitch: +f.pitch.toFixed(2), thought: f.thought }; });
-const force = (act, extra = {}) => p.evaluate(({ act, extra }) => { const F = window.__fishes, f = F.list[0]; f.pos.set(extra.x ?? -0.5, 0.6, extra.z ?? 1.6); f.vel.set(0, 0, 0); f.inspect = null; f.hunt = null; f.task = null; f.glassAt = null; f.restFor = 20; f.isNight = false;
+const state = () => p.evaluate(() => { const f = window.__fishes.byId.get('x1'); return { s: f.st?.s, act: f.act, text: f.actText, x: +f.pos.x.toFixed(2), y: +f.pos.y.toFixed(2), z: +f.pos.z.toFixed(2), flat: +f.flatK.toFixed(2), lion: +f.lionK.toFixed(2), snake: +f.snakeK.toFixed(2), jelly: +f.jellyK.toFixed(2), kelp: +f.kelpK.toFixed(2), puff: +f.puffK.toFixed(2), sink: +f.sink.toFixed(2), pitch: +f.pitch.toFixed(2), thought: f.thought }; });
+const force = (act, extra = {}) => p.evaluate(({ act, extra }) => { const F = window.__fishes, f = F.byId.get('x1'); f.pos.set(extra.x ?? -0.5, 0.6, extra.z ?? 1.6); f.vel.set(0, 0, 0); f.inspect = null; f.hunt = null; f.task = null; f.glassAt = null; f.restFor = 20; f.isNight = false;
   f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; f.ground = null; f.act = null; f.actText = null; const M = f.mind ?? { cur: 0.5, soc: 0.5, tidy: 0.5 };
   if (act === 'follow' || act === 'watch') { const o = F.list.find((q) => q.species.move !== 'jet'); o.pos.set(f.pos.x + 1.6, 1.6, 1.6); if (act === 'follow') { o.target.set(f.pos.x - 2, 2, 1.4); o.retarget = 6; } else { o.target.copy(o.pos); o.retarget = 9; o.idle = 9; o.vel.set(0, 0, 0); } f.startleCool = 99; }      // a fish about to watch or follow
   const rng = (() => { const seq = extra.seq ?? [0.0]; let i = 0; return () => seq[Math.min(i++, seq.length - 1)]; })();
@@ -37,7 +37,7 @@ for (const act of ['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp', 'follow', '
   if (act === 'jelly') ck('a jellyfish hangs upright, bell up, and rises', mid.pitch < -0.8 && mid.y > 1.0, `pitch ${mid.pitch} y ${mid.y}`);
   if (act === 'lion') ck('a lionfish holds up in the open water', mid.y > 1.6, `y ${mid.y}`);
   if (act === 'bury') { await step(80); const deep = await state(); ck('buried: it sinks until only the top shows', deep.sink > 0.6, `sink ${deep.sink}`); await cam(deep.x, deep.y, deep.z); await p.waitForTimeout(300); await p.screenshot({ path: `${out}/bury_deep.png` }); }
-  if (act === 'follow') { let near = 1e9; for (let i = 0; i < 16; i++) { await step(10); const st = await state(); const d = await p.evaluate(() => { const f = window.__fishes.list[0]; return f.follow ? +f.follow.pos.distanceTo(f.pos).toFixed(2) : null; }); if (d != null) near = Math.min(near, d); if (st.s !== 'jet') break; } ck('following, it gets within a couple of body lengths of the fish', near < 3.2, `nearest ${near}`); }
+  if (act === 'follow') { let near = 1e9; for (let i = 0; i < 16; i++) { await step(10); const st = await state(); const d = await p.evaluate(() => { const f = window.__fishes.byId.get('x1'); return f.follow ? +f.follow.pos.distanceTo(f.pos).toFixed(2) : null; }); if (d != null) near = Math.min(near, d); if (st.s !== 'jet') break; } ck('following, it gets within a couple of body lengths of the fish', near < 3.2, `nearest ${near}`); }
   // it finishes on its own
   let end = null; for (let i = 0; i < 90; i++) { await step(10); end = await state(); if (end.s === 'rest' && !end.act) break; }
   await step(70); end = await state();
@@ -45,7 +45,7 @@ for (const act of ['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp', 'follow', '
 }
 // 2. a fish that hangs about too close gets silt thrown at it
 {
-  const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], o = F.list.find((q) => q.species.move !== 'jet'); f.pos.set(0.5, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 40, n: 0, pulse: 0, mode: null }; f.bold = 0.9; f.throwCool = 0; f.homing = false; f.sleepK = 0; f.mind = { ...(f.mind ?? {}), type: 'homebody', soc: 0.3 }; f.prank = null; f.inspect = null; f.movedAt = Date.now(); f.task = null;
+  const r = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'), o = F.list.find((q) => q.species.move !== 'jet'); f.pos.set(0.5, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 40, n: 0, pulse: 0, mode: null }; f.bold = 0.9; f.throwCool = 0; f.homing = false; f.sleepK = 0; f.mind = { ...(f.mind ?? {}), type: 'homebody', soc: 0.3 }; f.prank = null; f.inspect = null; f.movedAt = Date.now(); f.task = null;
     o.pos.set(1.7, 1.0, 1.6); o.target.copy(o.pos); o.retarget = 99; o.idle = 99; o.vel.set(0, 0, 0); let threw = null; for (let i = 0; i < 160 && !threw; i++) { o.pos.set(1.7, 1.0, 1.6); o.vel.set(0, 0, 0); f.pos.set(0.5, 0.6, 1.6); F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (!threw) o.pos.set(1.7, 1.0, 1.6); f.inspect = null; f.prank = null; if (/Threw silt|Flung a shell|Squirted water|Smacked/.test(f.actText ?? '')) threw = { i, text: f.actText, flee: o.fleeT > 0, clouds: (F.inks ?? []).length }; }
     return threw ?? { nearFor: f.nearFor, cool: f.throwCool, s: f.st.s, bold: f.bold, d: +o.pos.distanceTo(f.pos).toFixed(2) }; });
   ck('a fish hanging about too close gets something thrown at it (silt, water or a shell), and clears off', !!r?.flee && !!r.text, JSON.stringify(r));
@@ -53,14 +53,14 @@ for (const act of ['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp', 'follow', '
 }
 // 3. a quick fish close by makes it jump (sometimes with ink)
 {
-  const r = await p.evaluate(() => { const F = window.__fishes, f = F.list[0], o = F.list.find((q) => q.name === 'Miso'); f.pos.set(-0.5, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 40, n: 0, pulse: 0, mode: null }; f.startleCool = 0; f.scareT = 0; f.bold = 0.2;
+  const r = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'), o = F.list.find((q) => q.name === 'Miso'); f.pos.set(-0.5, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 40, n: 0, pulse: 0, mode: null }; f.startleCool = 0; f.scareT = 0; f.bold = 0.2;
     let jumped = null; for (let i = 0; i < 80 && !jumped; i++) { o.pos.set(-0.5 + Math.sin(i * 0.3) * 0.9, 1.1, 1.7); o.target.set(o.pos.x + 6, 1.1, 1.7); o.retarget = 9; o.idle = 0; o.fleeT = 1; o.vel.set(1.6, 0, 0); if (f.scareT <= 0) f.pos.set(-0.5, 0.6, 1.6); F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.scareT > 0) jumped = { i, s: f.st.s }; }
     return jumped ?? { vel: +o.vel.length().toFixed(2), d: +o.pos.distanceTo(f.pos).toFixed(2), cool: f.startleCool, s: f.st.s }; });
   ck('a quick fish close by makes it jump', r?.s === 'jet' && r.i != null, JSON.stringify(r));
 }
 // 4. left alone for eight minutes of tank time, it does these things by itself
 {
-  const log = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 1, n: 0, pulse: 0, mode: null }; f.isNight = false; f.restFor = 10; f.shy = false; f.sleepK = 0;
+  const log = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); f.pos.set(0, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 1, n: 0, pulse: 0, mode: null }; f.isNight = false; f.restFor = 10; f.shy = false; f.sleepK = 0;
     const acts = {}, gaits = {}; let last = null, lastG = null; for (let i = 0; i < 9600; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); const a = f.act; if (a && a !== last) acts[a] = (acts[a] ?? 0) + 1; last = a; const g = f.st?.s === 'crawl' ? f.gait : null; if (g && g !== lastG) { const name = Object.keys({ stroll: 1, creep: 1, stilt: 1, bounce: 1 }).find((k) => g.stride === ({ stroll: 1, creep: 0.6, stilt: 1.35, bounce: 1.1 })[k]); gaits[name] = (gaits[name] ?? 0) + 1; } lastG = g; }
     return { acts, gaits }; });
   const kinds = Object.keys(log.acts), n = Object.values(log.acts).reduce((a, c) => a + c, 0);

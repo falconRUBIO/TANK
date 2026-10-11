@@ -497,6 +497,20 @@ console.log(`All ${n} rule tests passed`);
   { const t = W(); t.fish.find((f) => f.id === 'o').born = at; assert.equal(mv(t, { id: 'r', x: 2, z: 1 }).ok, false, 'a baby octopus cannot'); }
 }
 
+// an octopus's friend and rival are kept with the tank, and its memorable moments go in the journal, each kind only so often
+ok('an octopus remembers a friend and a rival for every phone, and its moments are written in the journal without spamming it', () => {
+  const t = R.newWorld(0); t.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'a', name: 'Pip', species: 'goldfish', seed: 1, born: 0, traits: [] }), R.ensureFish({ id: 'b', name: 'Miso', species: 'goldfish', seed: 2, born: 0, traits: [] }));
+  const go = (a, now = 10 * DAY) => R.applyAction(t, { fish: 'o', ...a }, { now, uid: 'me', name: 'Me' }), oc = () => t.fish.find((f) => f.id === 'o');
+  let r = go({ t: 'octoMemo', buddy: 'a', rival: 'b' }); assert.ok(r.ok); assert.equal(oc().buddy, 'a'); assert.equal(oc().rival, 'b'); assert.ok(r.events.some((e) => /Inky and Pip are friends/.test(e.journal ?? ''))); assert.ok(r.events.some((e) => /has it in for Miso/.test(e.journal ?? '')));
+  assert.equal(go({ t: 'octoMemo', buddy: 'a', rival: 'b' }).applied, false, 'nothing new, nothing written');
+  r = go({ t: 'octoMemo', buddy: 'b', rival: 'a' }, 10 * DAY + 60e3); assert.equal(oc().buddy, 'b', 'a change of heart is kept at once'); assert.equal(r.events.filter((e) => /friends|has it in/.test(e.journal ?? '')).length, 0, 'but not written in the journal again the same day');
+  assert.equal(go({ t: 'octoMemo', buddy: 'zz' }).ok, false, 'only real fish'); assert.equal(go({ t: 'octoMemo', buddy: 'o' }).ok, false, 'not itself'); assert.equal(go({ t: 'octoMemo', buddy: 'a', rival: 'a' }).ok, false, 'not both');
+  r = go({ t: 'octoMoment', kind: 'lion' }); assert.ok(r.events.some((e) => /lionfish/.test(e.journal ?? '')));
+  assert.equal(go({ t: 'octoMoment', kind: 'lion' }, 10 * DAY + 3600e3).applied, false, 'the same kind of moment is not written again the same day');
+  assert.equal(go({ t: 'octoMoment', kind: 'smack' }).ok, false, 'a smack needs a fish'); assert.ok(go({ t: 'octoMoment', kind: 'smack', other: 'b' }).events.some((e) => /smacked Miso/.test(e.journal ?? '')));
+  assert.equal(go({ t: 'octoMoment', kind: 'dance' }).ok, false, 'only known moments');
+});
+
 // each octopus has its own hunger, filled only by a crab from its own caretaker
 {
   const t = R.newWorld(0, 1, { empty: true }); R.norm(t, 0); const M = [{ id: 'a', name: 'Ana' }, { id: 'b', name: 'Bo' }];

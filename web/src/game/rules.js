@@ -396,6 +396,18 @@ export const isSmart = (f) => f?.species === 'octopus';
 // Only the small pieces move, only a little at a time, and each octopus does it at most once every 10 minutes. A tank can switch it off.
 export const MOVABLE = ['rock', 'coconut', 'pot', 'skull'];
 export const MOVE_GAP = 4 * 60e3, MOVE_MAX = 4.5;
+// the moments an octopus's journal remembers, and how often each kind may be written in
+export const OCTO_MOMENTS = {
+  squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
+  smack: { gap: 12 * 3600e3, other: true, text: (n, o) => `${n} smacked ${o} with an arm for coming too close.` },
+  lion: { gap: 3 * DAY, text: (n) => `${n} put its arms out stiff and passed for a lionfish.` },
+  jelly: { gap: 3 * DAY, text: (n) => `${n} puffed up and drifted about like a jellyfish.` },
+  snake: { gap: 3 * DAY, text: (n) => `${n} hid in the sand with two striped arms out, like a sea snake.` },
+  flat: { gap: 3 * DAY, text: (n) => `${n} lay flat as a sole and slid across the sand.` },
+  kelp: { gap: 3 * DAY, text: (n) => `${n} stood among the plants with its arms up, pretending to be one.` },
+  bury: { gap: 3 * DAY, text: (n) => `${n} dug itself into the sand until only its eyes showed.` },
+  fish: { gap: 3 * DAY, other: true, text: (n, o) => `${n} took on ${o}'s colours and followed it about.` },
+};
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -788,6 +800,22 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       const home = a.home === true && ['coconut', 'pot'].includes(it.type), own = f.home === it.id; if (home) f.home = it.id; if (home || own) it.ry = +Math.max(-1, Math.min(1, num(a.ry) || 0)).toFixed(2);      // its own shell it may also turn
       events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : own ? `${f.name} shoved its ${DECOR_DEF[it.type].label.toLowerCase()} about and turned it round.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
       return ok({ applied: true });
+    }
+    case 'octoMemo': {                                              // who an octopus gets on with and who it has it in for, kept with the tank so every phone shows the same
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead); if (!f) return fail('NOT_FOUND');
+      const fishOk = (id) => id == null || t.fish.some((x) => x.id === id && !x.dead && x.id !== f.id); if (!fishOk(a.buddy) || !fishOk(a.rival) || (a.buddy && a.buddy === a.rival)) return fail('NOT_FOUND');
+      const buddy = a.buddy ?? null, rival = a.rival ?? null; if ((f.buddy ?? null) === buddy && (f.rival ?? null) === rival) return ok({ applied: false });
+      const nameOf = (id) => t.fish.find((x) => x.id === id)?.name;
+      const say = (k, text) => { const m = (f.moments ||= {}); if (now - (m[k] ?? 0) >= DAY) { m[k] = now; events.push({ journal: text }); } };      // a change of heart is kept at once, but written in the journal at most once a day
+      if (buddy && buddy !== f.buddy) say('friend', `${f.name} and ${nameOf(buddy)} are friends now. It follows ${nameOf(buddy)} about.`);
+      if (rival && rival !== f.rival) say('rival', `${f.name} has it in for ${nameOf(rival)}.`);
+      if (buddy) f.buddy = buddy; else delete f.buddy; if (rival) f.rival = rival; else delete f.rival; return ok();
+    }
+    case 'octoMoment': {                                            // something worth remembering an octopus did, written in the journal now and then (each kind of moment at most so often)
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), m = OCTO_MOMENTS[a.kind]; if (!f || !m) return fail('NOT_FOUND');
+      const o = a.other ? t.fish.find((x) => x.id === a.other && !x.dead && x.id !== f.id) : null; if (m.other && !o) return fail('NOT_FOUND');
+      const at = (f.moments ||= {}); if (now - (at[a.kind] ?? 0) < m.gap) return ok({ applied: false });
+      at[a.kind] = now; events.push({ journal: m.text(f.name, o?.name) }); return ok();
     }
     case 'tankPref': { if (typeof a.rearrange === 'boolean') { if (a.rearrange) delete t.flags.noRearrange; else t.flags.noRearrange = true; } return ok(); }
     case 'moveDecor': {
