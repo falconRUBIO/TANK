@@ -72,8 +72,8 @@ export class DecorMgr {
   // ── carried by an octopus: lifted out of the collision grid, moved each frame, then set down (or put back if it is interrupted) ──
   haulBegin(id) { const it = this.items.get(id); if (!it || it.haul || this.preview?.id === id) return false; stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); it.haul = { x: it.at.x, z: it.at.z }; it.slide = null; return true; }
   haulMove(id, x, z, lift = 0, ry = null) { const it = this.items.get(id); if (!it?.haul) return; it.group.position.set(x, lift, z); if (ry != null) { let d = ry - it.group.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); it.group.rotation.y += d * 0.03; } }
-  haulEnd(id, x, z, ry = null) { const it = this.items.get(id); if (!it?.haul) return; it.haul = null; it.at = { ...it.at, x, z, ry: ry ?? it.at.ry }; placeGroup(it, x, z, it.at.ry); stampItem(it, this.solids, x, z, it.at.ry, 1); }
-  haulCancel(id) { const it = this.items.get(id); if (!it?.haul) return; const o = it.haul; it.haul = null; placeGroup(it, o.x, o.z, it.at.ry); stampItem(it, this.solids, o.x, o.z, it.at.ry, 1); }
+  haulEnd(id, x, z, ry = null) { const it = this.items.get(id); if (!it?.haul) return; it.haul = null; it.group.rotation.z = 0; it.at = { ...it.at, x, z, ry: ry ?? it.at.ry }; placeGroup(it, x, z, it.at.ry); stampItem(it, this.solids, x, z, it.at.ry, 1); }
+  haulCancel(id) { const it = this.items.get(id); if (!it?.haul) return; const o = it.haul; it.haul = null; it.group.rotation.z = 0; placeGroup(it, o.x, o.z, it.at.ry); stampItem(it, this.solids, o.x, o.z, it.at.ry, 1); }
   // is there room for this item at x,z (ignoring itself)?
   roomFor(id, x, z) { const it = this.items.get(id); if (!it) return false; const hauled = !!it.haul; if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); const n = itemOverlaps(it, this.solids, x, z, it.at.ry); if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, 1); return n === 0; }
   reach(type) { return PICK[type]?.[0] ?? 0.7; }          // how far a thing of this type spreads from its centre

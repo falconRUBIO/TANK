@@ -277,20 +277,23 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const backup = () => { if (dbPath === ':memory:') return; const tmp = dbPath + '.backup.tmp'; try { fs.rmSync(tmp, { force: true }); db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); fs.renameSync(tmp, dbPath + '.backup'); } catch (e) { console.error('backup failed', e.message); } };
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
   // tanks nobody has open still move on: tell the people who opted in when something worth seeing happens (visitor, arrival, hatch)
+  // what in a tick is worth telling someone who is not looking: a death first, then a fish in trouble, a visitor, a solved jar, an arrival, a milestone, a discovery
+  const hitOf = (events) => events.find((e) => e.died) ?? events.find((e) => e.warn) ?? events.find((e) => e.visitor) ?? events.find((e) => e.puzzle) ?? events.find((e) => e.arrival) ?? events.find((e) => e.milestone || e.grew) ?? events.find((e) => e.found || e.discovery) ?? null;
+  const tellAway = async (tankId, hit, now = Date.now()) => { if (!hit || !push.enabled) return; const here = online(tankId); for (const m of L.listMembers(db, tankId)) if (!here.includes(m.id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now, cap: 2 }).catch(() => {}); };
   const pushSweep = async (now = Date.now()) => {
     if (!push.enabled) return;
     const tanks = db.prepare('SELECT DISTINCT m.tank_id id FROM members m JOIN push_subs p ON p.user_id = m.user_id').all();
     for (const { id } of tanks) {
-      if ((rooms.get(id)?.size ?? 0) > 0) continue;                       // someone is watching live; they already see it
       try {
-        const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = r.events.find((e) => e.died) ?? r.events.find((e) => e.warn) ?? r.events.find((e) => e.visitor) ?? r.events.find((e) => e.puzzle) ?? r.events.find((e) => e.arrival) ?? r.events.find((e) => e.milestone || e.grew) ?? r.events.find((e) => e.found);
-        const members = L.listMembers(db, id);
-        if (hit) { for (const m of members) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now }); continue; }
+        const here = online(id), away = L.listMembers(db, id).filter((m) => !here.includes(m.id)); if (!away.length) continue;      // everyone is looking; they see it themselves
+        let w;
+        if (!here.length) { const r = L.tickTank(db, id, now); an.fromTick(id, r.events, now); const hit = hitOf(r.events); w = r.world; if (hit) { await tellAway(id, hit, now); continue; } }      // nobody has it open: time passes here, and news goes out
+        w ??= L.loadWorld(db, id).w;
         // nothing happened, but something is overdue: each caretaker hears about their own octopus, everyone about the fish and the water (each at most once in 12 hours)
-        const w = r.world ?? L.loadWorld(db, id).w, recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
-        for (const m of members) {
+        const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
+        for (const m of away) {
           const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
-          if (oc) { const k = `push:octo:${oc.id}`; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
+          if (oc) { const k = `push:octo:${id}:${oc.id}`; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
           const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45, k = `push:care:${id}:${m.id}`;
           if ((fishHungry || foul) && !recent(k) && await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now })) mark(k);
         }
@@ -306,6 +309,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const r = L.tickTank(db, tankId); an.fromTick(tankId, r.events);
         const pub = L.publicTank(r.world), key = stateKey(pub), changed = stateKeys.has(tankId) && stateKeys.get(tankId) !== key; stateKeys.set(tankId, key);
         if (r.events.length || changed) { broadcast(tankId, { t: 'state', tank: pub }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
+        const hit = hitOf(r.events); if (hit) tellAway(tankId, hit).catch(() => {});      // and the caretakers who are not looking hear about it on their phones
       } catch (e) { console.error('tick failed', e); }
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
@@ -326,6 +330,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     let restoreFailed = false, stamp;
     if (off) { for (let i = 0; i < 6; i++) { try { stamp = await off.stamp(); await restoreIfEmpty(off, dbFile); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
     s = await start({ port, dbPath: process.env.DB || 'ourtank.db' });
+    setTimeout(() => s.pushSweep().catch(() => {}), 20e3).unref();      // a server woken by a request catches up on what happened while it slept
     if (off) {
       uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: () => { reload(); } });
       if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }

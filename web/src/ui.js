@@ -63,9 +63,12 @@ export function initUI({ game, social, cb }) {
   const tile = (icon, label, act, sub = '', cls = '') => `<button class="tile ${cls}" data-act="${act}"><span>${icon}</span>${label}${sub ? `<small>${sub}</small>` : ''}</button>`;
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
   // each care tile says whether it is needed now, and if not, roughly when it will be, so nobody taps it for nothing
-  const careState = () => { const s = S(), me = game.you?.userId, oc = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a))[0], fish = hasFishOnly(s);
+  const careState = () => { const s = S(), me = game.you?.userId, ocs = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), oc = ocs[0], fish = hasFishOnly(s);
     const fNeed = (oc && octoHunger(oc) > 0.25) || (fish && s.hunger > 0.25), fH = Math.min(oc ? (0.25 - octoHunger(oc)) * 8 : 99, fish ? (0.25 - s.hunger) * 5 : 99);
-    return { feed: fNeed ? ['Hungry · feed now', 'due'] : [`Full · hungry ${inH(Math.max(0, fH))}`, 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] }; };
+    // who is hungry, by name: your octopuses that are, and the fish if they are
+    const who = [...ocs.filter((f) => octoHunger(f) > 0.25).map((f) => esc(f.name)), ...(fish && s.hunger > 0.25 ? ['the fish'] : [])], list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who.at(-1) : who[0] ?? '';
+    const verb = who.length === 1 && who[0] !== 'the fish' ? 'is' : 'are', hungryTxt = list ? `${list.charAt(0).toUpperCase() + list.slice(1)} ${verb} hungry · feed now` : 'Hungry · feed now';
+    return { feed: fNeed ? [hungryTxt, 'due'] : [`Full · hungry ${inH(Math.max(0, fH))}`, 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] }; };
 
   // ── header ──
   function updateHeader() {

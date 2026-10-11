@@ -10,7 +10,7 @@ const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
 const pushed = [];
-const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 40, userPerHour: 5000, tankPerHour: 5000, actionsPer10s: 500 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
+const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 400, userPerHour: 5000, tankPerHour: 5000, actionsPer10s: 500 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
 const base = `http://localhost:${S.port}`;
 L_tick = () => tickTank(S.db, tank.id);
 const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
@@ -323,6 +323,16 @@ await t('an octopus nobody in the crew looks after can be taken on by a caretake
   w = getW(tk.id); assert.equal(w.fish.length, 2); assert.ok(!w.memorial?.some((m) => m.id === 'g2'), 'not a death');
   setW(tk.id, { fish: [ghost('g3', 'Only')] }); assert.equal((await ackOf(wa, { t: 'releaseOcto', id: 'g3', idem: 'or-7' })).ok, false, 'never the last fish'); wa.close(); wb.close();
 });
+await t('push: a friend having the tank open does not stop the one who is away from hearing about it', async () => {
+  const x = await mkUser('Away'), y = await mkUser('Here'), tk = (await call('/api/tanks', { name: 'Open' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200);
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/away1', keys: { p256dh: 'k1', auth: 'k2' } }; assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
+  const wx = await open(x.token); assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'aw-1' })).ok, true); wx.close(); await new Promise((r) => setTimeout(r, 100));
+  const w = getW(tk.id); setW(tk.id, { flags: { ...w.flags, tut: 5 }, fish: w.fish.map((f) => ({ ...f, hunger: 0.9 })) });
+  const wy = await open(y.token);                                                                                     // the friend is looking at the tank right now
+  pushed.length = 0; await S.pushSweep(Date.now()); wy.close();
+  assert.equal(pushed.length, 1, 'the one who is away still hears'); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
+});
 await t('push: a caretaker hears that their own octopus is hungry (once in 12 hours), and a friend joining is announced', async () => {
   const x = await mkUser('Pushy2'), y = await mkUser('Pal'), tk = (await call('/api/tanks', { name: 'Hungry' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
@@ -345,9 +355,10 @@ await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the
   const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
   pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /rare visitor/i); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the same event is not announced twice');
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'one a day at most');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'news can come twice a day');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'but not three times');
   const night = new Date(); night.setUTCHours(3, 0, 0, 0); S.db.prepare('DELETE FROM push_log').run(); S.db.prepare('UPDATE push_subs SET offset_min=0').run();
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 1, 'quiet hours');
+  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
   await call('/api/push/unsubscribe', { endpoint: sub.endpoint }, x.token); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM push_subs WHERE user_id=?').get(x.userId).n, 0);
 });
 await t('every caretaker gets one free first fish of their own, with their name on it', async () => {

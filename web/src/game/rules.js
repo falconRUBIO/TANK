@@ -393,7 +393,7 @@ export const isSmart = (f) => f?.species === 'octopus';
 // An octopus can shift small things about: rocks, shells, a clay pot, a coconut shell. It can carry a coconut shell to a quiet corner and live under it.
 // Only the small pieces move, only a little at a time, and each octopus does it at most once every 20 minutes. A tank can switch it off.
 export const MOVABLE = ['rock', 'coconut', 'pot', 'skull'];
-export const MOVE_GAP = 20 * 60e3, MOVE_MAX = 4.5;
+export const MOVE_GAP = 10 * 60e3, MOVE_MAX = 4.5;
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -783,8 +783,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
       if (Math.hypot(x - it.x, z - it.z) > MOVE_MAX) return fail('OUT_OF_BOUNDS');
       it.x = +x.toFixed(2); it.z = +z.toFixed(2); f.movedAt = now; f.moved = (f.moved ?? 0) + 1;
-      const home = a.home === true && ['coconut', 'pot'].includes(it.type); if (home) { f.home = it.id; it.ry = +(num(a.ry) || 0).toFixed(2); }
-      events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
+      const home = a.home === true && ['coconut', 'pot'].includes(it.type), own = f.home === it.id; if (home) f.home = it.id; if (home || own) it.ry = +Math.max(-1, Math.min(1, num(a.ry) || 0)).toFixed(2);      // its own shell it may also turn
+      events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : own ? `${f.name} shoved its ${DECOR_DEF[it.type].label.toLowerCase()} about and turned it round.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
       return ok({ applied: true });
     }
     case 'tankPref': { if (typeof a.rearrange === 'boolean') { if (a.rearrange) delete t.flags.noRearrange; else t.flags.noRearrange = true; } return ok(); }

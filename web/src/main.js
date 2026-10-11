@@ -144,7 +144,7 @@ const ray = new THREE.Raycaster(), floor = new THREE.Plane(new THREE.Vector3(0, 
 // the top of the water that is really visible: below the header buttons and the phone's safe area. Fish never go above it, and food starts there.
 function fitTop() {
   const r = canvas.getBoundingClientRect(); if (!r.height) return; const sc = Math.max(r.width / IW, r.height / IH), dh = IH * sc, hb = document.querySelector('header')?.getBoundingClientRect().bottom ?? 60;
-  const c = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far); c.position.set(0, 4.6, 30); c.lookAt(0, 5.3, 0); c.updateMatrixWorld(); c.updateProjectionMatrix();
+  const c = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far); c.position.set(0, 4.6, stg.CAM_Z); c.lookAt(0, 5.3, 0); c.updateMatrixWorld(); c.updateProjectionMatrix();
   const v = (hb + 34 - r.top - (r.height - dh)) / dh, rr = new THREE.Raycaster(); rr.setFromCamera(new THREE.Vector2(0, -(v * 2 - 1)), c); const pl = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.6), out = new THREE.Vector3();
   if (rr.ray.intersectPlane(pl, out)) Fish3D.topY = Math.max(8, Math.min(14.5, out.y));
 }
@@ -712,8 +712,8 @@ function frameBody(now) {
     const d = Math.max(6, focus.radius * 8.6), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     camGoal.set(focus.pos.x + 0.3, focus.pos.y - shift + 0.12, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - shift, focus.pos.z);
   }
-  else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, 4.6 + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), 30); lookGoal.set(0, 5.3, 0); }
-  const fd = focus ? camera.position.distanceTo(focus.pos) : 30;
+  else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, 4.6 + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), stg.CAM_Z); lookGoal.set(0, 5.3, 0); }
+  const fd = focus ? camera.position.distanceTo(focus.pos) : stg.CAM_Z;
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
   bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);

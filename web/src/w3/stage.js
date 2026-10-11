@@ -22,7 +22,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.info.autoReset = false;      // count draw calls across every post-processing pass
 export const scene = new THREE.Scene();
 export const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
-camera.position.set(0, 4.6, 30); camera.lookAt(0, 5.3, 0);
+export const CAM_Z = 33;                               // a little further back than it was, so a full tank does not feel crammed
+camera.position.set(0, 4.6, CAM_Z); camera.lookAt(0, 5.3, 0);
 scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 
 // gradient water backdrop
