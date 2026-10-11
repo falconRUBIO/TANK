@@ -158,7 +158,7 @@ export class Fishes {
     if (ev === 'grab') { const at = dc.atOf(T.id); if (!at || Math.hypot(at.x - f.pos.x, at.z - f.pos.z) > T.off + 1.0 || !dc.haulBegin(T.id)) { f.task = null; return false; } T.stage = 'haul'; return true; }
     if (ev === 'drop') {
       const good = Math.hypot(T.gx - (f.pos.x + T.ux * T.hold), T.gz - (f.pos.z + T.uz * T.hold)) < 1.0;
-      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null); T.stage = 'placed'; f.movedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', turn: T.kind === 'turn', ry: T.kind === 'turn' ? +T.ry.toFixed(2) : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); (f.failed ||= []).push({ x: T.gx, z: T.gz }); if (f.failed.length > 6) f.failed.shift(); f.task = null; }
+      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null); T.stage = 'placed'; f.movedAt = Date.now(); if (T.kind === 'home') f.homeMovedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', turn: T.kind === 'turn', ry: T.kind === 'turn' ? +T.ry.toFixed(2) : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); (f.failed ||= []).push({ x: T.gx, z: T.gz }); if (f.failed.length > 6) f.failed.shift(); f.task = null; }
       return good;
     }
     if (ev === 'abort') { if (T.stage === 'haul') dc.haulCancel(T.id); f.task = null; return false; }
@@ -166,7 +166,7 @@ export class Fishes {
     return false;
   }
   // an octopus makes up its mind to rearrange something: only the phone in charge of the fish decides, and the move is reported to the game when it is done
-  planMove(f, M) {
+  planMove(f, M, { relocate = false } = {}) {
     const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
     const mine = new Set(this.list.filter((o) => !o.dead).map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
     const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
@@ -176,6 +176,9 @@ export class Fishes {
       const at = dc.atOf(home.id), want = f.fav ? [f.fav.x, f.fav.z] : null;
       for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = 0.2 + rnd() * 1.3; if (!bad(x, z) && Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
       return null;
+    }
+    if (f.homeId && (relocate || (rnd() < 0.2 && Date.now() - (f.homeMovedAt ?? 0) > 40 * 60e3))) {              // now and then it picks its whole shell up and carries it somewhere else to live under
+      const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = i < 6 ? sx * (1.2 + rnd() * 2.3) : -3.3 + rnd() * 6.6, z = 0.2 + rnd() * 1.4, d = Math.hypot(x - at.x, z - at.z); if (d > 1.4 && d <= MOVE_MAX - 0.3 && !bad(x, z) && free(f.homeId, x, z)) return { kind: 'home', id: f.homeId, gx: x, gz: z }; }
     }
     if (f.homeId && rnd() < 0.45) {                                                                             // its own shell is light: now and then it shoves it along a little and turns it this way or that
       const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 10; i++) {

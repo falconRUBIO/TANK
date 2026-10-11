@@ -82,7 +82,7 @@ const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]
 await p.evaluate(() => window.__ui.open('tank'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });
-await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { window.__wcScale = 30; }); await p.click('[data-act=water]'); await p.evaluate(() => { for (let i = 0; i < 600 && window.__wc.active; i++) window.__wc.frame(0.1); });      // step the scene by hand: software rendering of a full tank is too slow to wait on real frames await p.waitForTimeout(500); const wS = await S(); ck('water change pays when needed', wS.water > 0.99, 'water ' + wS.water + ' toast ' + await p.textContent('#toast'));
+await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { window.__wcScale = 30; }); await p.click('[data-act=water]'); await p.evaluate(() => { for (let i = 0; i < 600 && window.__wc.active; i++) window.__wc.frame(0.1); }); await p.waitForTimeout(500);      // step the scene by hand: software rendering of a full tank is too slow to wait on real frames
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
 const s6 = await S(); ck('progress survives a reload', s6.fish.length === nFish && s6.decor.length >= 10 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
 await p.waitForSelector('#reunion.on', { timeout: 20000 });

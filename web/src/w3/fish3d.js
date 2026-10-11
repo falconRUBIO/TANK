@@ -395,14 +395,23 @@ export class Fish3D {
       const to = goal.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1, sp = 0.5 * this.speed * mul * (S.mode === 'hunt' ? (this.hunt?.run?.burst > 0 ? 2.1 : 1.5) : 1); to.multiplyScalar(sp / d);
       // going in through the mouth of its den the walls are allowed to brush it; anywhere else it feels for what is ahead and slides along it rather than pushing into it
       this.homing = (S.mode === 'den' || S.mode === 'tsettle') && !!this.den?.home && d < 1.5;
-      const W = Fish3D.world; let side = 0;
+      const W = Fish3D.world; let side = 0, sliding = false;
       if (W.push && !this.homing && d > 0.5) { const ux = to.x / (sp || 1), uz = to.z / (sp || 1); _p1.set(this.pos.x + ux * (this.cr + 0.5), this.pos.y + 0.15, this.pos.z + uz * (this.cr + 0.5)); _o.set(0, 0, 0);
-        if (W.push(_p1, this.cr * 0.9, _o)) { _o.y = 0; const m = _o.length() || 1; to.x += (_o.x / m) * sp * 0.9; to.z += (_o.z / m) * sp * 0.9; side = Math.sign(_o.x * uz - _o.z * ux) || 1; } }
+        if (W.push(_p1, this.cr * 0.9, _o)) {                                                       // something ahead: slide round it sideways, keeping some way on, rather than being pushed straight back
+          _o.y = 0; const m = _o.length() || 1, ox = _o.x / m, oz = _o.z / m, along = ox * ux + oz * uz; let lx = ox - along * ux, lz = oz - along * uz; const lm = Math.hypot(lx, lz);
+          if (lm < 0.08) { side = S.sideBias ||= (rng() < 0.5 ? -1 : 1); lx = -uz * side; lz = ux * side; } else { lx /= lm; lz /= lm; side = Math.sign(lx * uz - lz * ux) || 1; }      // dead ahead: pick a side and stick to it
+          to.x = to.x * 0.55 + lx * sp * 0.9; to.z = to.z * 0.55 + lz * sp * 0.9; sliding = true; } }
       this.vel.lerp(to, Math.min(1, dt * (S.mode === 'hunt' ? 2.6 : 1.6)));      // after a running crab it goes flat out
+      if (this.pos.z < 0.15 && this.vel.z < 0) this.vel.z = 0; if (this.pos.z > 2.6 && this.vel.z > 0) this.vel.z = 0;      // the crawl stays on the open sand, never behind the scenery or into the glass
       // the watchdog: if it has barely moved for a couple of seconds, it is being held up by something. Sidestep once or twice; if that fails, give it up rather than push forever
       const dist = Math.hypot(this.target.x - this.pos.x, this.target.z - this.pos.z); if (S.prog && S.mode !== 'hunt' && Math.hypot(S.prog.tx - this.target.x, S.prog.tz - this.target.z) > 0.4) S.prog = null;      // a new goal is a fresh start (a running crab is not a new goal)
-      const pr = (S.prog ||= { d: dist, t: 0, n: 0, v: 0, tx: this.target.x, tz: this.target.z, x: this.pos.x, z: this.pos.z }); pr.t += dt; pr.v += Math.hypot(this.vel.x, this.vel.z) * dt;
-      if (pr.t > 2.5) { const hd = S.mode === 'hunt' && this.hunt ? Math.hypot(this.hunt.x - this.pos.x, this.hunt.z - this.pos.z) : null, gained = hd != null ? (this.hunt.run?.burst > 0 ? 1e9 : (pr.hd ?? hd) - hd) : pr.d - dist, tried = pr.v; pr.hd = hd;      // after a crab: nearer the crab counts, and while it is running away nothing is held against the hunter pr.d = dist; pr.t = 0; pr.v = 0; pr.x = this.pos.x; pr.z = this.pos.z;      // after a running crab, getting about at all is progress      // measured in the game's own time: how much nearer its goal it got, against how far it was actually trying to go
+      const pr = (S.prog ||= { d: dist, t: 0, n: 0, v: 0, tx: this.target.x, tz: this.target.z, x: this.pos.x, z: this.pos.z }); pr.t += dt; pr.v += Math.hypot(this.vel.x, this.vel.z) * dt; if (sliding) pr.slid = true;
+      if (pr.t > 2.5) {
+        // what counts as progress: nearer its goal; after a crab, nearer the crab, and nothing is held against it while the crab is running
+        const hd = S.mode === 'hunt' && this.hunt ? Math.hypot(this.hunt.x - this.pos.x, this.hunt.z - this.pos.z) : null;
+        let gained = hd != null ? (this.hunt.run?.burst > 0 ? 1e9 : (pr.hd ?? hd) - hd) : pr.d - dist; const tried = pr.v;
+        if ((sliding || pr.slid) && (pr.slidN = (pr.slidN ?? 0) + 1) <= 3) gained = Math.max(gained, Math.hypot(this.pos.x - pr.x, this.pos.z - pr.z)); else if (!(sliding || pr.slid)) pr.slidN = 0;      // working its way round something: getting about counts for a few seconds, then it has to be getting somewhere
+        pr.hd = hd; pr.d = dist; pr.t = 0; pr.v = 0; pr.x = this.pos.x; pr.z = this.pos.z; pr.slid = false;
         if (gained > 0.3 * Math.max(tried, 0.05)) pr.n = 0; else if (!this.homing && d > 0.5) { pr.n++;      // barely moving while trying to crawl counts as held up too
           if (pr.n >= 3) { pr.n = 0; S.detour = null; (this.failed ||= []).push({ x: this.target.x, z: this.target.z }); if (this.failed.length > 6) this.failed.shift(); if (S.mode === 'hunt') this.hunt = null; if (S.mode === 'tgo' || S.mode === 'thaul') this.onTask?.(this, 'abort'); if (S.mode === 'inspect') this.inspect = null; S.mode = null; S.s = 'rest'; S.t = 3 + rng() * 4; this.flush = Math.max(this.flush, 0.3); }
           else { const L = Math.hypot(this.target.x - this.pos.x, this.target.z - this.pos.z) || 1, px = -(this.target.z - this.pos.z) / L, pz = (this.target.x - this.pos.x) / L, sd = side || (rng() < 0.5 ? -1 : 1); S.detour = { x: Math.max(-3.5, Math.min(3.5, this.pos.x + px * sd * 1.5)), z: Math.max(0.2, Math.min(2.3, this.pos.z + pz * sd * 1.5)), left: 2.2 }; } } }
