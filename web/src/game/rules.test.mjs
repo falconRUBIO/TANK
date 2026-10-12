@@ -279,6 +279,12 @@ ok('food choice: flakes are free and pay as before, pellets and treats cost shel
   const junk = R.applyAction(t, { t: 'feed', food: 'gold' }, { now: 50, name: 'A', uid: 'u1' }); assert.ok(junk.ok, 'unknown food is treated as flakes');
   const w = quiet(2, { traits: ['Greedy'], wants: true }); w.level = 8; w.wishIdx = 12; w.hunger = 0.8; w.shells = 20; w.want = { id: 'w3', fish: 'f0', kind: 'meal', text: '', since: 0 }; R.applyAction(w, { t: 'feed' }, { now: 5, name: 'A', uid: 'u1' }); assert.ok(w.want, 'flakes do not grant a wish for a treat'); w.hunger = 0.8; const g = R.applyAction(w, { t: 'feed', food: 'treats' }, { now: 6, name: 'A', uid: 'u1' }); assert.ok(g.events.some((e) => e.wishDone) && !w.want);
 });
+ok('mysis shrimp: the seahorse food is free and pays like flakes, cheers only the seahorse, and is its favourite', () => {
+  const t = quiet(2); t.fish[1].species = 'seahorse'; t.fish.forEach((f) => { f.happy = 0.5; }); t.hunger = 0.8; t.shells = 20; t.level = 8;
+  assert.equal(R.FOODS.mysis.price, 0); assert.equal(R.favFoodOf(t.fish[1]), 'mysis'); assert.ok(R.hasSeahorse(t));
+  const r = R.applyAction(t, { t: 'feed', food: 'mysis' }, { now: 10, name: 'A', uid: 'u1' }); assert.equal(r.delta, 1, 'pays +1 when needed, exactly as flakes'); assert.equal(t.shells, 21); assert.ok(t.hunger < 0.8, 'fills the shared meal');
+  assert.ok(t.fish[1].happy > 0.55, 'the seahorse loves it'); assert.equal(t.fish[0].happy, 0.5, 'the other fish are not cheered'); assert.ok(r.events.some((e) => /F1 mysis shrimp/.test(e.activity?.text ?? '')), 'named in the activity');
+});
 ok('tricks: need trust, a growing fish and the right decoration; five sessions 20 minutes apart; learned once, paid once', () => {
   const D = 864e5, M = 60e3, t = quiet(2); t.level = 8; t.wishIdx = 12; t.fish[0].born = -3 * D; t.fish[0].stage = 'adult'; t.simTs = 0; const go = (now, extra = {}) => R.applyAction(t, { t: 'train', id: 'f0', trick: 'gate', ...extra }, { now, name: 'Alex', uid: 'u1' });
   assert.equal(go(1).reason, 'CANT_TRAIN', 'no trust, no gate'); t.fish[0].bond = { u1: 3 }; assert.equal(go(2).reason, 'CANT_TRAIN', 'no decoration to practise with');

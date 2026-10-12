@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -96,14 +96,15 @@ const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.d
 // Feeding: tapping Feed shows what can be fed just above the bar, then a tap on the water drops it.
 // which foods make sense: crabs for an octopus, flakes and the rest for fish. A tank with only octopuses is offered crabs alone.
 // the octopuses this caretaker may feed: their own (in a shared tank), or any in a solo tank; the hungriest first
-function myOctos() { const s = game.state, me = game.you?.userId; return s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)); }
-function foodsFor() { const s = game.state, octo = myOctos().length > 0, fish = hasFishOnly(s) || !hasOcto(s); return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : fish)); }
+function myOctos() { const s = game.state, me = game.you?.userId, l = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), pick = l.find((f) => f.id === game.feedFor); return pick ? [pick, ...l.filter((f) => f !== pick)] : l; }      // the one chosen in the menu first
+function foodsFor() { const s = game.state, octo = myOctos().length > 0, fish = hasFishOnly(s) || !hasOcto(s); return Object.entries(FOODS).filter(([, d]) => (d.octo ? octo : d.sea ? hasSeahorse(s) : fish)); }
 function defaultFood() { const ks = foodsFor().map(([k]) => k); if (!ks.includes(game.feedFood ?? 'flakes')) game.feedFood = ks[0] ?? 'flakes'; return game.feedFood ?? 'flakes'; }
-const dropWord = (k) => (k === 'crab' ? `a crab for ${myOctos()[0]?.name ?? 'the octopus'}` : FOODS[k].label.toLowerCase());
+const dropWord = (k) => { if (k === 'crab') return `a crab for ${myOctos()[0]?.name ?? 'the octopus'}`; if (k === 'mysis') { const hs = game.state.fish.filter((f) => f.species === 'seahorse' && !f.dead); return `mysis shrimp for ${hs.length === 1 ? hs[0].name : 'the seahorses'}`; } return FOODS[k].label.toLowerCase(); };
+const FOOD_ICON = { flakes: '🫧', pellets: '🟤', treats: '🍤', mysis: '🦐', crab: '🦀' };
 // the food was chosen in the Care drawer; while feeding, a small strip at the top says what a tap does, and the tank below is left clear
 function renderFoodbar() {
   const bar = $('foodbar'), k = defaultFood();
-  bar.innerHTML = `<span>${k === 'crab' ? '🦀' : '🫧'} Tap the water to drop ${esc(dropWord(k))}</span><button data-done class="done">Done</button>`;
+  bar.innerHTML = `<span>${FOOD_ICON[k] ?? '🫧'} Tap the water to drop ${esc(dropWord(k))}</span><button data-done class="done">Done</button>`;
   bar.classList.add('on'); bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
 }
 function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => f.species === 'octopus' && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); }
@@ -689,7 +690,7 @@ game.on('members', () => {                                                    //
 });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, haptics: 25 }); spotlightFish(id, 3200, 500); } });
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, shells: 2 }); spotlightFish(id, 3000, 600); } });
-game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dropCrabAt(x, fish); ui?.toast(`${nameOf(by)} fed ${game.state.fish.find((f) => f.id === fish)?.name ?? 'their octopus'} a crab`); } else { fishes.drop(x, 7, food); ui?.toast(`${nameOf(by)} fed the fish`); } sfx('splash'); });
+game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dropCrabAt(x, fish); ui?.toast(`${nameOf(by)} fed ${game.state.fish.find((f) => f.id === fish)?.name ?? 'their octopus'} a crab`); } else { fishes.drop(x, 7, food); ui?.toast(food === 'mysis' ? `${nameOf(by)} fed ${dropWord('mysis').replace('mysis shrimp for ', '')} mysis shrimp` : `${nameOf(by)} fed the fish`); } sfx('splash'); });
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
 game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });

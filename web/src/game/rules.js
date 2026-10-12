@@ -161,9 +161,12 @@ export function needsOf(f, t, now = Date.now()) {
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
 }
 // Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favourite.
-export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, crab: { label: 'Crab', price: 0, octo: true } };   // an octopus eats crabs, not flakes
+// an octopus eats crabs, not flakes. A seahorse eats tiny shrimp: mysis is what seahorses are fed, so it is on the menu whenever there is one.
+// It feeds the same shared meal as flakes and costs the same (nothing), so it changes nothing in the economy; only a seahorse is cheered by it.
+export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, mysis: { label: 'Mysis shrimp', price: 0, sea: true }, crab: { label: 'Crab', price: 0, octo: true } };
 export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.dead), hasFishOnly = (t) => t.fish.some((f) => f.species !== 'octopus' && !f.dead);
-export const favFoodOf = (f) => (f.species === 'octopus' ? 'crab' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
+export const hasSeahorse = (t) => t.fish.some((f) => f.species === 'seahorse' && !f.dead);
+export const favFoodOf = (f) => (f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favourite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
 export function favouriteOf(f, t) {
@@ -785,9 +788,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       const needed = t.hunger > 0.25, pay = needed && price === 0 ? 1 : 0;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
-      if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
+      if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
       if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care');
-      events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : food === 'crab' ? `${name} fed the octopus a crab.` : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
+      events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : food === 'crab' ? `${name} fed the octopus a crab.` : food === 'mysis' ? (() => { const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead); return `${name} fed ${hs.length === 1 ? hs[0].name : 'the seahorses'} mysis shrimp.`; })() : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
       return ok({ applied: true, delta: pay - price, food });
     }
     case 'water': {

@@ -41,7 +41,7 @@ export class Fishes {
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.04, 0.17), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: 0x552200, emissiveIntensity: 0.6 }), 200);
     this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.castShadow = true; scene.add(this.mesh);
     this.cols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
-    this.foodCols = { pellets: [0x8a5a2a, 0x9c6a34, 0x7a4c24, 0xa87a44].map((c) => new THREE.Color(c)), treats: [0xff6fa8, 0xff9ac0, 0xe8508a, 0xffc2d8].map((c) => new THREE.Color(c)) };
+    this.foodCols = { pellets: [0x8a5a2a, 0x9c6a34, 0x7a4c24, 0xa87a44].map((c) => new THREE.Color(c)), treats: [0xff6fa8, 0xff9ac0, 0xe8508a, 0xffc2d8].map((c) => new THREE.Color(c)), mysis: [0xf2c4b4, 0xe8a894, 0xf7d8cc, 0xd99080].map((c) => new THREE.Color(c)) };      // mysis: tiny pale pink shrimp
     this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot; this.onSprite = null; this.onSpriteGone = null; this.clock = 0;
     SPECIES.neon.school = true; SPECIES.danio.school = true;
     this.bm = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.7, depthWrite: false }), 160);
@@ -415,8 +415,8 @@ export class Fishes {
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
   drop(x, n = 7, kind = 'flakes') {
-    for (const f of this.list) if (this.rng() < 0.5) { f.flake = null; f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
-    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, Fish3D.topY + 0.2 + this.rng() * 0.4, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
+    for (const f of this.list) if (this.rng() < 0.5 || (kind === 'mysis' && f.sk === 'seahorse')) { f.flake = null;      /* a seahorse never misses its shrimp */ f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
+    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, Fish3D.topY + 0.2 + this.rng() * 0.4, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, kind, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
   }
   // an octopus's den (a rock or structure it has taken to), its collection of shells at the entrance, and the shell it carries home now and then
   syncDen(f, d) {
@@ -582,7 +582,7 @@ export class Fishes {
         for (const c of this.flakes) {
           if (c.eaten || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
           if (W.push) { o.set(0, 0, 0); if (W.push(c.pos, 0.25, o)) continue; }
-          const d = f.pos.distanceTo(c.pos); if (d > 9) continue;
+          const d = f.pos.distanceTo(c.pos); if (d > (c.kind === 'mysis' && f.sk === 'seahorse' ? 16 : 9)) continue;      // its own shrimp, a seahorse comes up for from anywhere
           const sc = d + ((claims.get(c) || 0) - (c === f.flake ? 1 : 0)) * (greedy ? 0.8 : 2.6) + this.rng() * 1.4 - (curious ? Math.max(0, 3 - c.age) * 0.6 : 0) - (c === f.flake ? 1 : 0);
           if (sc < bs) { bs = sc; best = c; }
         }
