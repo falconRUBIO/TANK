@@ -191,6 +191,7 @@ export const DISCOVERIES = {
   blend: { label: 'Colour matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the colour of the plant it was holding.` },
   favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favourite place to hold on.` },
   dance: { label: 'Greeting dance', kind: 'seahorse', quiet: true, line: (f) => `${f.name} met another seahorse and they circled each other, glowing.` },
+  tails: { label: 'Holding tails', kind: 'seahorse', quiet: true, line: (f) => `${f.name} curled its tail round another seahorse's and they drifted along together.` },
   camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the colour and the texture of its skin to match what was behind it.` },
   den: { label: 'Den dwelling', kind: 'octopus', quiet: true, line: (f) => `${f.name} tucked itself into its den.` },
   grab: { label: 'Arm exploration', kind: 'octopus', quiet: true, line: (f) => `${f.name} wrapped its arms round something to feel it all over.` },
@@ -202,7 +203,7 @@ export const DISCOVERIES = {
   highbank: { label: 'Climbing the high bank', kind: 'octopus', quiet: true, line: (f) => `${f.name} explored the high bank at the back of the tank.` },
 };
 // the behaviours each animal could show, in the order the profile lists them: its own species' first, then the ones its traits allow
-const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'food'] };
+const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'tails', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'food'] };
 export function behavioursFor(f) {
   const own = BEHAVIOURS[f?.species]; if (own) return own;
   const tr = f?.traits ?? []; return ['spot', 'friend', 'glass', 'surface', 'night_rest', 'hideaway', 'regular', 'object', 'together', 'bubbles', 'routine', 'food'].filter((k) => { const d = DISCOVERIES[k]; return !d.kind && (!d.traits || d.traits.some((x) => tr.includes(x))); });

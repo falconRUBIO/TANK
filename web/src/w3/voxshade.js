@@ -16,15 +16,18 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
         if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
     if (sway) sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `
       float swk = aSw.x * aSw.x; float swp = aSw.y;
-        vec4 mv = vec4(transformed, 1.0);
+        vec4 mv = vec4(transformed, 1.0), cv = vec4(0.0, 0.0, 0.0, 1.0);
         #ifdef USE_INSTANCING
-          mv = instanceMatrix * mv;
+          mv = instanceMatrix * mv; cv = instanceMatrix * cv;
         #endif
-        mv.x += (sin(uTime * 1.1 + swp + swk * 2.0) * 0.16 + sin(uTime * 2.3 + swp * 2.0) * 0.03) * swk;
-        mv.z += cos(uTime * 0.9 + swp) * 0.07 * swk;
-        vec4 wp = modelMatrix * mv; float bendK = smoothstep(0.0, 0.35, aSw.x);
-        for (int i = 0; i < ${PUSH_N}; i++) { vec4 q = uPush[i]; vec3 d = wp.xyz - q.xyz; float hd = length(d.xz); float rr = q.w * (1.0 - smoothstep(q.w * 0.8, q.w * 1.6, abs(d.y)));
-          if (hd < rr) wp.xz += (hd > 0.001 ? d.xz / hd : vec2(1.0, 0.0)) * (rr - hd) * bendK; }
+        vec2 sway = vec2((sin(uTime * 1.1 + swp + swk * 2.0) * 0.16 + sin(uTime * 2.3 + swp * 2.0) * 0.03) * swk, cos(uTime * 0.9 + swp) * 0.07 * swk);
+        mv.xz += sway; cv.xz += sway;
+        vec4 wp = modelMatrix * mv, cw = modelMatrix * cv; float bendK = smoothstep(0.0, 0.35, aSw.x);
+        // the push is worked out once for the whole voxel, from its centre, and the voxel moves as one: a leaf slides aside at its own size instead of stretching
+        vec2 bend = vec2(0.0);
+        for (int i = 0; i < ${PUSH_N}; i++) { vec4 q = uPush[i]; vec3 d = cw.xyz - q.xyz; float hd = length(d.xz); float rr = q.w * (1.0 - smoothstep(q.w * 0.8, q.w * 1.6, abs(d.y)));
+          if (hd < rr) bend += (hd > 0.001 ? d.xz / hd : vec2(1.0, 0.0)) * q.w * 0.45 * (1.0 - smoothstep(0.0, rr, hd)) * bendK; }      // a gentle lean that fades smoothly with distance, so neighbouring voxels move almost together and a blade stays in one piece
+        wp.xz += bend;
         vec4 mvPosition = viewMatrix * wp;
         gl_Position = projectionMatrix * mvPosition;`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uBoost; uniform float uBoostK;')

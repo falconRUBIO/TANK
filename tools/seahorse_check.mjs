@@ -42,5 +42,20 @@ ck('it never sinks into the sand', r.sunk === 0, `${r.sunk}`);
 const look = async (name, want) => { await p.evaluate((want) => { const F = window.__fishes, h = F.byId.get('h1'); for (let i = 0; i < 2400; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); const on = !!h.holdfast?.on; if (want === 'hold' ? on && h.holdfast.held > 3 : !on && h.vel.length() > 0.15) break; } window.__cam = [h.pos.x + 0.4, h.pos.y + 0.4, h.pos.z + 4.2, h.pos.x, h.pos.y - 0.1, h.pos.z]; }, want); await p.waitForTimeout(1200); await p.screenshot({ path: `${out}/${name}.png` }); };
 await look('holding', 'hold'); await look('swimming', 'swim');
 await p.evaluate(() => { window.__cam = null; }); await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/tank.png` });
+// holding tails: two that have shared the tank for days link tails now and then; one that arrived today does not
+const tl = await p.evaluate(async () => {
+  const F = window.__fishes, [a, b] = ['h1', 'h2'].map((id) => F.byId.get(id)), step = (n) => { for (let i = 0; i < n; i++) { const t = (window.__t = (window.__t ?? 0) + 0.05); F.update(0.05, t); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); F.observe(0.05, t); } };
+  a.unlink?.(); a.linkCool = 0; b.linkCool = 0; a.linkWith(b, { x: 0, y: 6, z: 1 }, 60); step(20 * 25);
+  const on = !!(a.link?.on && b.link?.on), gap = +a.pos.distanceTo(b.pos).toFixed(2), facing = Math.cos(a.heading) > 0.8 && Math.cos(b.heading) < -0.8 && a.pos.x < b.pos.x, curl = [a.curlK, b.curlK].map((v) => +v.toFixed(2)), thought = a.thought;
+  F.drop(0, 7); step(20 * 4); const parted = !a.link && !b.link;
+  // a newcomer: the same pair, but one of them only just arrived
+  a.unlink?.(); const was = b.bornAt; b.bornAt = Date.now() - 3600e3; a.linkCool = b.linkCool = 0; let linkedNew = 0; step(20 * 60 * 3); linkedNew = a.link || b.link ? 1 : 0; b.bornAt = was;
+  return { on, gap, facing, curl, thought, parted, linkedNew, r: +a.radius.toFixed(2) };
+});
+console.log('  tails:', JSON.stringify(tl));
+ck('two seahorses that know each other hold tails: they meet, face each other and curl up', tl.on && tl.facing && tl.curl.every((c) => c > 0.8) && /Holding tails/.test(tl.thought), JSON.stringify(tl));
+ck('side by side, not inside each other', tl.gap > tl.r * 0.45 && tl.gap < tl.r * 1.2, `${tl.gap} apart`);
+ck('food in the water and they let go', tl.parted);
+ck('one that only just arrived does not hold tails yet', tl.linkedNew === 0);
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Seahorse checks passed'); await b.close(); process.exit(fails ? 1 : 0);

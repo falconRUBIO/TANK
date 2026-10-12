@@ -62,7 +62,7 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
@@ -152,6 +152,14 @@ export class Fishes {
         if ((f.tintK ?? 0) > 0.15 && this.wants(f, 'blend')) this.said(f, 'blend');
         if (f.favHold && (f.heldFor?.[f.favHold] ?? 0) > 120 && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });
         const mate = live.find((o) => o !== f && o.species.id === 'seahorse' && o.pos.distanceTo(f.pos) < 1.5); d.dance = mate ? (d.dance ?? 0) + dt : 0; if (d.dance > 6 && this.wants(f, 'dance')) this.said(f, 'dance');
+        if (f.link?.on && f.link.o.link?.on) { d.tails = (d.tails ?? 0) + dt; if (d.tails > 5 && this.wants(f, 'tails')) this.said(f, 'tails'); }
+        // two seahorses that have shared the tank a while now and then link tails: never on their first day, more often the longer they have been together
+        if (lead && !f.link && !f.seeking && !f.greet && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
+          if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 5) continue;
+          const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, bond = Math.max(0, Math.min(1, (days - 1) / 4));
+          if (bond > 0 && Math.random() < dt * 0.012 * bond) { const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandH(m.x, m.z) + 2, Math.min(8, (f.pos.y + o.pos.y) / 2)); f.linkWith(o, m, 25 + Math.random() * 25); }
+          break;
+        }
       } else if (sp === 'octopus' && S) {
         const k = { flat: 'camo', kelp: 'camo', lion: 'mimic', snake: 'mimic', jelly: 'mimic', bury: 'bury', squirt: 'squirt' }[S.s === f.act ? f.act : ''];
         if (k && this.wants(f, k)) this.said(f, k);

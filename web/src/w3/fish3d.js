@@ -193,14 +193,14 @@ export class Fish3D {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
         if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
-        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 0.6 : 0.85), _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
+        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
         if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
       if (!moved) break;
     }
     if (jet) { const L = this.pos.distanceTo(_p2); if (L > 0.08) this.pos.lerpVectors(_p2, this.pos, 0.08 / L); if (this.pos.z < OCT_BACK && this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3) this.pos.z = OCT_BACK; }      // and on the sand it is never pushed off the back of the bank
     for (const o of others) {                                               // fish are solid too
-      if (o === this || (jet && o.species.move !== 'jet')) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
+      if (o === this || (jet && o.species.move !== 'jet') || this.link?.o === o) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
       const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.5, dd = Math.hypot(dx, dy, dz), min = Math.max(0.5, 0.42 * (this.radius + o.radius));
       if (dd < min * 0.92 && dd > 1e-3) { const k = (min * 0.92 - dd) / dd * (!jet && o.species.move === 'jet' ? 1 : 0.5); this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k / 1.5; }
     }
@@ -550,6 +550,8 @@ export class Fish3D {
     // each eye looks its own way, and both lock forward just before it strikes
     for (const k of ['eyeL', 'eyeR']) { const e = (this[k] ||= { x: 0, y: 0, tx: 0, ty: 0, t: 0 }); e.t -= dt; if (e.t <= 0) { e.t = 0.5 + rng() * 2.5; e.tx = Math.round((rng() - 0.5) * 2.2); e.ty = Math.round((rng() - 0.5) * 2.2); } if (this.aimT > 0) { e.tx = 1; e.ty = 0; } e.x += (e.tx - e.x) * Math.min(1, dt * 9); e.y += (e.ty - e.y) * Math.min(1, dt * 9); }
     this.aimT = Math.max(0, (this.aimT ?? 0) - dt);
+    this.linkCool = Math.max(0, (this.linkCool ?? 0) - dt);
+    if (this.link) { const L = this.link, o = L.o; L.t -= dt; if (o.dead || o.link?.o !== this || G || this.seeking || L.t <= 0) this.unlink(); else return this.linked(dt, L); }      // holding tails with a partner
     const H = this.holdfast;
     if (H && (G || this.seeking)) { this.letGo(); return false; }                     // food in the water, or a friend come to dance: off it goes
     if (!H) { if (!this.seeking && !G && (this.tintK ?? 0) > 0.01) this.setTint(Math.max(0, this.tintK - dt * 0.02)); return false; }
@@ -579,6 +581,35 @@ export class Fish3D {
     this.thought = this.snickSaid > 0 ? 'Snapped up a speck of plankton.' : this.aimT > 0 ? 'Both eyes on something drifting past.' : H.held < 8 ? `Holding on to the ${(LABEL[H.type] ?? H.type)} with its tail.` : (this.tintK ?? 0) > 0.15 ? `Blending in with the ${(LABEL[H.type] ?? H.type)}.` : 'Watching the water, one eye each way.';
     if (H.until <= 0) this.letGo();
     this.phase += dt * 10;                                                          // the dorsal fin still flutters
+    this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
+    this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
+    return true;
+  }
+  // two seahorses that have shared the tank a while sometimes link tails: they swim to a meeting point, face each other, curl their tails round each other's and drift together
+  linkWith(o, m, secs) { this.letGo(); o.letGo?.(); this.link = { o, m, t: secs, side: -1, on: false, ph: Math.random() * 6 }; o.link = { o: this, m, t: secs, side: 1, on: false, ph: this.link.ph }; }
+  unlink() { const o = this.link?.o; this.link = null; this.idle = 0; this.retarget = 0; this.thought = null; this.linkCool = 90; if (o?.link?.o === this) { o.link = null; o.idle = 0; o.retarget = 0; o.thought = null; o.linkCool = 90; } }
+  linked(dt, L) {
+    // side by side a body-width apart, facing each other, each leaning back a little so the curled tails swing in under them and twine together in the middle
+    const t = this.tt, S = Math.max(0.3, this.radius * 0.62), face = L.side < 0 ? 0 : Math.PI;
+    const mx = L.m.x + Math.sin(t * 0.2 + L.ph) * 0.25, my = L.m.y + Math.sin(t * 0.3 + L.ph) * 0.15, mz = L.m.z + Math.cos(t * 0.17 + L.ph) * 0.1;      // the pair drifts slowly together
+    const wx = mx + L.side * S / 2, wy = my + L.side * 0.05, wz = mz + L.side * 0.06, d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
+    let dh = face + Math.sin(t * 0.35 + L.ph + L.side) * 0.1 - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+    if (!L.on) {                                                                     // on its way to the meeting point: slow and upright, turning to face its partner as it arrives
+      this.target.set(wx, wy, wz); this.idle = 0; this.retarget = 40;
+      _p2.set(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z).multiplyScalar(Math.min(0.55, d * 1.2) / (d || 1)); this.vel.lerp(_p2, Math.min(1, dt * 2)); this.pos.addScaledVector(this.vel, dt);
+      if (d < 1.2) this.heading += dh * Math.min(1, dt * 2); else { let mh = Math.atan2(-this.vel.z, this.vel.x) - this.heading; mh = Math.atan2(Math.sin(mh), Math.cos(mh)); this.heading += mh * Math.min(1, dt * 1.5); }
+      this.curlK += (-0.4 - this.curlK) * Math.min(1, dt * 1.5); this.phase += dt * 12; this.pitch *= 0.9;
+      if (d < 0.2) { L.on = true; this.vel.set(0, 0, 0); }
+      if ((L.trip = (L.trip ?? 0) + dt) > 30) { this.unlink(); return false; }      // could not get there: another time
+      this.thought = `Swimming over to ${L.o.name ?? 'its partner'}.`;
+      this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
+      this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
+      return true;
+    }
+    this.heading += dh * Math.min(1, dt * 1.2); this.curlK += (1 - this.curlK) * Math.min(1, dt * 2.5);
+    this.pos.x += (wx - this.pos.x) * Math.min(1, dt * 4); this.pos.y += (wy - this.pos.y) * Math.min(1, dt * 4); this.pos.z += (wz - this.pos.z) * Math.min(1, dt * 4); this.vel.set(0, 0, 0);
+    this.pitch += (0.32 + Math.sin(t * 0.6 + L.ph) * 0.05 - this.pitch) * Math.min(1, dt * 2); this.roll += (Math.sin(t * 0.5 + L.side) * 0.03 - this.roll) * Math.min(1, dt * 2);
+    this.thought = `Holding tails with ${L.o.name ?? 'its partner'}.`; this.phase += dt * 8;
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
     return true;
