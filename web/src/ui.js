@@ -6,7 +6,7 @@ import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
-import { hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
+import { hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
 // how long until something is due, in plain words: "in about 5 hours", "tomorrow", "in about 2 days"
 const inTime = (ms) => { const h = ms / 3600e3; return h < 1 ? 'within the hour' : h < 20 ? `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}` : h < 36 ? 'in about a day' : `in about ${Math.round(h / 24)} days`; };
 
@@ -67,8 +67,8 @@ export function initUI({ game, social, cb }) {
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
   // the one thing that matters most right now, in a sentence at the top of Care (tap it to do it); when all is done, what the octopus is up to
   const careHead = () => { const s = S(), me = game.you?.userId, mine = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), oc = mine[0];
-    if (oc && dueIn(s, 'crab', oc) <= 0) return [`${esc(oc.name)} is hungry. Feed ${esc(oc.name)} a crab.`, 'feeddrawer'];
-    if (hasFishOnly(s) && dueIn(s, 'meal') <= 0) return ['The fish are hungry. Give them some flakes.', 'feeddrawer'];
+    { const H = feedModel().hungry, g = H[0]; if (g) { const meal = H.filter((x) => x.kind !== 'octo').map((x) => x.who), who = g.kind === 'octo' ? g.who : names(meal), them = g.kind === 'octo' || (meal.length === 1 && !/^the /.test(meal[0])) ? (g.kind === 'octo' ? g.who : meal[0]) : 'them', k = quickFood(g);      // one tap: the right food, straight to the water
+      return [`${who.charAt(0).toUpperCase() + who.slice(1)} ${g.kind === 'octo' || (meal.length === 1 && !/^the /.test(meal[0])) ? 'is' : 'are'} hungry. <b>Feed ${them} ${k === 'crab' ? 'a crab' : FOODS[k].label.toLowerCase()} ›</b>`, 'feednow', `data-food="${k}"${g.id ? ` data-for="${esc(g.id)}"` : ''}`]; } }
     if (s.water < 0.5) return ['The water is dirty. Change it.', 'water'];
     if (s.glass > 0.6) return ['There is algae on the glass. Give it a wipe.', 'clean'];
     if (s.water < 0.7) return ['The water is getting cloudy. A change would help.', 'water'];
@@ -242,31 +242,41 @@ export function initUI({ game, social, cb }) {
       `;
   };
   const EARN = [['Feed hungry fish or a hungry octopus', '+1 each'], ['Wipe the glass, every few days', `+${GLASS_PAY} (a pearl every 5th: +${PEARL_PAY})`], ['Change cloudy water, every few days', `+${WATER_PAY}`], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
-  let feedOpen = false;
-  // what this caretaker can feed right now, grouped by who eats it: their own octopus (a crab each), the seahorse (mysis shrimp, its own food) and the fish.
-  // Each group says how hungry it is, and each food says whose favourite it is. Pick a food, the menu closes, tap the water to drop it.
+  let feedOpen = null;      // null: the food list opens by itself when someone is hungry; tapping Feed opens or closes it by hand
+  // ── Feeding ── one model of who this caretaker can feed, used by the headline, the Feed button and the drawer, so they always agree.
+  // A group is one octopus (its own hunger, a crab each), the seahorses or the fish (the two share one mealtime). For each: how full it is,
+  // whether it can eat now, whether a free food would earn a shell (only when it is properly hungry), its foods and whose favourite each is,
+  // and, in a shared tank, who fed it last. The thresholds are the rules' own: a meal can be given from 8% hunger and pays from 25%.
   const ICON = { flakes: '🫧', pellets: '🟤', treats: '🍤', mysis: '🦐', crab: '🦀' };
-  const hungerOf = (h) => (h < 0.08 ? ['Full', 'full'] : h < 0.25 ? ['Peckish', 'ok'] : ['Hungry', 'hungry']);
   const names = (xs) => (xs.length > 2 ? `${xs.slice(0, 2).join(', ')} and ${xs.length - 2} more` : xs.join(' and '));
+  const soon = (sec) => { const h = sec / 3600; return h < 0.75 ? 'in a few minutes' : h < 1.5 ? 'in about an hour' : `in about ${Math.round(h)} hours`; };
+  const feedModel = () => {
+    const s = S(), me = game.you?.userId, live = s.fish.filter((f) => !f.dead), groups = [];
+    const state = (h, due, rate) => ({ h, eat: h >= 0.08, pays: h > 0.25, word: h < 0.08 ? 'Full' : h > 0.25 ? 'Hungry' : 'Peckish', cls: h < 0.08 ? 'full' : h > 0.25 ? 'hungry' : 'ok', pct: Math.round(100 * Math.max(0, 1 - Math.min(1, h / due))), canIn: h < 0.08 ? (0.08 - h) / rate : 0 });
+    const fedLine = (fb) => (game.shared && fb && Date.now() - fb.at < 12 * 3600e3 ? `${fb.uid === me ? 'You' : esc(fb.name ?? 'Someone')} fed them ${ago(fb.at)}` : '');
+    for (const o of live.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)))
+      groups.push({ id: o.id, kind: 'octo', thumb: fishThumb('octopus', o.pal ?? null), title: esc(o.name), who: esc(o.name), sub: 'Octopus · eats crabs', ...state(octoHunger(o), OCTO_DUE, OHR), foods: [{ k: 'crab', fav: '' }], note: 'The crab drops onto the sand for it to hunt.', fed: fedLine(o.fedBy) });
+    const horses = live.filter((f) => f.species === 'seahorse'), fish = live.filter((f) => f.species !== 'octopus' && f.species !== 'seahorse'), meal = state(s.hunger ?? 0, 0.3, HR), fed = fedLine(s.fedBy);
+    if (horses.length) groups.push({ id: null, kind: 'sea', thumb: fishThumb('seahorse'), title: esc(names(horses.map((f) => f.name))), who: horses.length === 1 ? esc(horses[0].name) : 'the seahorses', sub: 'Seahorse · eats tiny shrimp', ...meal, foods: [{ k: 'mysis', fav: 'its favourite' }], note: fish.length ? 'Eats at the same time as the fish, so any food fills it too.' : '', fed: fish.length ? '' : fed });
+    if (fish.length) { const fav = (k) => names(fish.filter((f) => favFoodOf(f) === k).map((f) => esc(f.name))); groups.push({ id: null, kind: 'fish', thumb: fishThumb(fish[0].species), title: fish.length === 1 ? esc(fish[0].name) : 'The fish', who: fish.length === 1 ? esc(fish[0].name) : 'the fish', sub: fish.length === 1 ? (SPECIES_DEF[fish[0].species]?.label ?? 'Fish') : esc(names(fish.map((f) => f.name))), ...meal, foods: ['flakes', 'pellets', 'treats'].map((k) => ({ k, fav: fav(k) })), note: '', fed }); }
+    const others = live.filter((f) => f.species === 'octopus' && !canFeedOcto(f, me, game.shared));
+    return { groups, others, hungry: groups.filter((g) => g.pays), canEat: groups.filter((g) => g.eat) };
+  };
+  // the one food to give straight from the headline: a crab for a hungry octopus, mysis if only seahorses are hungry, otherwise flakes
+  const quickFood = (g) => (g.kind === 'octo' ? 'crab' : g.kind === 'sea' && !feedModel().groups.some((x) => x.kind === 'fish') ? 'mysis' : 'flakes');
   const feedDrawer = () => {
-    const s = S(), me = game.you?.userId, live = s.fish.filter((f) => !f.dead), cur = game.feedFood, sh = s.shells;
-    const octos = live.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), others = live.filter((f) => f.species === 'octopus' && !canFeedOcto(f, me, game.shared));
-    const horses = live.filter((f) => f.species === 'seahorse'), fish = live.filter((f) => f.species !== 'octopus' && f.species !== 'seahorse');
-    const bar = (h, why) => { const [w, c] = hungerOf(h); return `<div class="fh ${c}"><i style="width:${Math.round(Math.max(0.04, 1 - h) * 100)}%"></i></div><em class="${c}">${w}${why ? ` · ${why}` : ''}</em>`; };
-    const food = (k, fav) => { const d = FOODS[k], poor = sh < d.price; return `<button class="fd ${cur === k ? 'on' : ''}" data-feed="${k}" ${poor ? 'disabled' : ''}><span>${ICON[k]}</span><b>${d.label}</b>${fav ? `<small>♥ ${fav}</small>` : ''}<i>${d.price ? `${d.price} 🐚` : 'free'}</i></button>`; };
-    const group = (thumb, title, kind, status, foods, note) => `<section class="fg"><div class="fgh"><img alt="" src="${thumb}"><div><b>${title}</b><small>${kind}</small></div>${status}</div><div class="fds">${foods}</div>${note ? `<p class="fnote">${note}</p>` : ''}</section>`;
-    const meal = s.hunger ?? 0, mealIn = meal < 0.08 ? `hungry ${inH(dueIn(s, 'meal') / 3600e3)}` : '';
-    const out = [];
-    for (const o of octos) { const h = octoHunger(o); out.push(group(fishThumb('octopus', o.pal ?? null), esc(o.name), 'Octopus · eats crabs', bar(h, h < 0.08 ? `hungry ${inH(dueIn(s, 'crab', o) / 3600e3)}` : ''), food('crab', null).replace('data-feed="crab"', `data-feed="crab" data-for="${esc(o.id)}"`), 'Drops onto the sand for it to hunt.')); }
-    if (horses.length) out.push(group(fishThumb('seahorse'), esc(names(horses.map((f) => f.name))), `Seahorse · eats tiny shrimp`, bar(meal, mealIn), food('mysis', 'its favourite'), 'Shares mealtime with the fish, so any food fills it too.'));
-    if (fish.length) { const fav = (k) => names(fish.filter((f) => favFoodOf(f) === k).map((f) => esc(f.name))); out.push(group(fishThumb(fish[0].species), fish.length === 1 ? esc(fish[0].name) : 'The fish', fish.length === 1 ? (SPECIES_DEF[fish[0].species]?.label ?? 'Fish') : esc(names(fish.map((f) => f.name))), bar(meal, horses.length ? '' : mealIn), ['flakes', 'pellets', 'treats'].map((k) => food(k, fav(k) ? `${fav(k)}` : '')).join(''), '♥ shows whose favourite it is. A favourite cheers them up.')); }
-    if (!out.length) out.push(`<p class="dim">${others.length ? `Only ${esc(others[0].ownerName ?? 'its caretaker')} can feed ${esc(others[0].name)}.` : 'Nothing to feed yet.'}</p>`);
-    else if (others.length) out.push(`<p class="fnote">${esc(others.map((o) => o.name).join(' and '))} ${others.length === 1 ? 'is' : 'are'} fed by ${esc(others[0].ownerName ?? 'its caretaker')}.</p>`);
-    return `<div class="drawer">${out.join('')}<p class="fhow">Choose a food, then tap the water to drop it.</p></div>`;
+    const M = feedModel(), cur = game.feedFood, sh = S().shells;
+    if (!M.groups.length) return `<div class="drawer"><p class="fnote">${M.others.length ? `Only ${esc(M.others[0].ownerName ?? 'its caretaker')} can feed ${esc(M.others[0].name)}.` : 'Nothing to feed yet.'}</p></div>`;
+    const chip = (g, k) => { const d = FOODS[k]; return d.price ? `<i class="cost">${d.price} 🐚</i>` : g.pays ? '<i class="earn">free +1 🐚</i>' : '<i>free</i>'; };
+    const food = (g, f) => { const d = FOODS[f.k], poor = sh < d.price; return `<button class="fd ${cur === f.k ? 'on' : ''}" data-feed="${f.k}"${g.id ? ` data-for="${esc(g.id)}"` : ''} ${poor ? 'disabled' : ''}><span>${ICON[f.k]}</span><b>${d.label}</b>${f.fav ? `<small>♥ ${f.fav}</small>` : ''}${poor ? '<small class="poor">not enough shells</small>' : chip(g, f.k)}</button>`; };
+    const out = M.groups.map((g) => `<section class="fg ${g.eat ? '' : 'isfull'}"><div class="fgh"><img alt="" src="${g.thumb}"><div><b>${g.title}</b><small>${g.sub}</small></div><em class="${g.cls}">${g.word}</em><div class="fh ${g.cls}" role="img" aria-label="${g.pct}% full"><i style="width:${Math.max(4, g.pct)}%"></i></div><span class="fpct">${g.pct}% full</span></div>
+      ${g.eat ? `<div class="fds">${g.foods.map((f) => food(g, f)).join('')}</div>` : `<p class="fwait">Full for now · can eat again ${soon(g.canIn)}</p>`}${g.eat && g.note ? `<p class="fnote">${g.note}</p>` : ''}${g.fed ? `<p class="fnote fby">${g.fed}</p>` : ''}</section>`);
+    if (M.others.length) out.push(`<p class="fnote">${esc(M.others.map((o) => o.name).join(' and '))} ${M.others.length === 1 ? 'is' : 'are'} fed by ${esc(M.others[0].ownerName ?? 'its caretaker')}.</p>`);
+    return `<div class="drawer">${out.join('')}${M.canEat.length ? `<p class="fhow">Pick a food, then tap the water. Each feed is up to 3 drops.${M.hungry.length ? ' A hungry animal fed for free earns 1 🐚.' : ''}</p>` : ''}</div>`;
   };
   const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.octo ? hasOcto(S()) : d.sea ? hasSeahorse(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   const views = {
-    care: () => `<h3>Care</h3>${(() => { const [txt, act] = careHead(); return act ? `<button class="carehead due" data-act="${act}">${txt}</button>` : `<p class="carehead">${txt}</p>`; })()}<div class="grid2 acts">${(() => { const k = careState(); return tile('🫙', 'Feed', 'feeddrawer', feedOpen ? 'choose below' : k.feed[0], k.feed[1]); })()}${feedOpen ? feedDrawer() : ''}${(() => { const k = careState(); return tile('🧽', 'Clean glass', 'clean', k.glass[0], k.glass[1]) + tile('💧', 'Change water', 'water', k.water[0], k.water[1]); })()}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
+    care: () => `<h3>Care</h3>${(() => { const [txt, act, extra] = careHead(); return act ? `<button class="carehead due" data-act="${act}" ${extra ?? ''}>${txt}</button>` : `<p class="carehead">${txt}</p>`; })()}<div class="grid2 acts">${(() => { const k = careState(); const M = feedModel(), next = M.groups.length ? Math.min(...M.groups.map((g) => g.canIn)) : 0; return tile('🫙', 'Feed', 'feeddrawer', !M.groups.length ? k.feed[0] : M.hungry.length === 1 ? `${M.hungry[0].who.charAt(0).toUpperCase() + M.hungry[0].who.slice(1)} ${/^the /.test(M.hungry[0].who) ? 'are' : 'is'} hungry` : M.hungry.length ? `${M.hungry.length} hungry · choose below` : M.canEat.length ? 'Can eat a little' : `All full · next meal ${soon(next)}`, M.hungry.length ? 'due' : 'later'); })()}${(feedOpen ?? feedModel().hungry.length > 0) ? feedDrawer() : ''}${(() => { const k = careState(); return tile('🧽', 'Clean glass', 'clean', k.glass[0], k.glass[1]) + tile('💧', 'Change water', 'water', k.water[0], k.water[1]); })()}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move it · Done' : 'Rearrange or sell decorations'}</button></div>`,
@@ -318,7 +328,7 @@ export function initUI({ game, social, cb }) {
       </div>
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
       ${game.shared ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
-      <p class="dim foot">OUR TANK · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 12 Oct (screen fit)</p></div>`,
+      <p class="dim foot">OUR TANK · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 12 Oct (feeding)</p></div>`,
   };
   function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; im.src = k === 'fish' ? fishThumb(id) : decorThumb(id); }, i * 16)); }
   function paint() {
@@ -331,8 +341,8 @@ export function initUI({ game, social, cb }) {
     const nf = sheet.querySelector('form.note'); if (nf) nf.onsubmit = (e) => { e.preventDefault(); const i = nf.querySelector('input'); if (i.value.trim()) { cb.note(i.value); i.value = ''; } };
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
     if (tab === 'notices') { readAt = Date.now(); try { localStorage.setItem(RK, String(readAt)); } catch { /* storage unavailable */ } bell(); sheet.querySelectorAll('[data-nt]').forEach((b) => (b.onclick = () => { const n = notices[+b.dataset.nt]; if (!n) return; sfx('tap'); if (n.gift) { open('tank'); cb.gift(); } else if (n.tab) open(n.tab); })); }
-    sheet.querySelectorAll('[data-feed]').forEach((b) => (b.onclick = () => { game.feedFood = b.dataset.feed; game.feedFor = b.dataset.for ?? null; feedOpen = false; sfx('tap'); open('tank'); cb.act('feed'); }));
-    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'feeddrawer') { feedOpen = !feedOpen; open('care', true); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
+    sheet.querySelectorAll('[data-feed]').forEach((b) => (b.onclick = () => { game.feedFood = b.dataset.feed; game.feedFor = b.dataset.for ?? null; feedOpen = null; sfx('tap'); open('tank'); cb.act('feed'); }));
+    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => { sfx('tap'); const a = b.dataset.act; if (a === 'feeddrawer') { feedOpen = !(feedOpen ?? feedModel().hungry.length > 0); open('care', true); return; } if (a === 'feednow') { game.feedFood = b.dataset.food; game.feedFor = b.dataset.for ?? null; feedOpen = null; open('tank'); cb.act('feed'); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     { const on = sheet.querySelector('.cats .cat.on'), row = on?.parentElement; if (on && row) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }      // keep the chosen shelf in view in the row
     sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async () => {
@@ -416,7 +426,7 @@ export function initUI({ game, social, cb }) {
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
-    if (t === 'tank') { sheet.classList.remove('on'); feedOpen = false; return; } if (t !== 'care') feedOpen = false;
+    if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;
     sheet.innerHTML = `<button class="x">×</button>` + views[t](); sheet.classList.add('on');
     sheet.querySelector('.x').onclick = () => open('tank'); sheet.querySelectorAll('[data-open]').forEach((b) => { b.onclick = () => open(b.dataset.open); });
     sheet.querySelectorAll('details.fold').forEach((d) => d.addEventListener('toggle', () => { d.open ? game.folds.add(d.dataset.fold) : game.folds.delete(d.dataset.fold); }));

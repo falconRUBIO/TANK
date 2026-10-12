@@ -776,7 +776,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
         ensureFish(f); t.lastFed = now; f.fedAt = now;
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
-        f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
+        f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
+         f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
         if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
         dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: `${name} fed ${f.name} a crab.` } });
         return ok({ applied: true, delta: pay, food, fish: f.id });
@@ -786,7 +787,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       const needed = t.hunger > 0.25, pay = needed && price === 0 ? 1 : 0;
-      t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
+      t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
       if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care');

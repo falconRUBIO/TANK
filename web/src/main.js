@@ -104,8 +104,11 @@ const FOOD_ICON = { flakes: '🫧', pellets: '🟤', treats: '🍤', mysis: '�
 // the food was chosen in the Care drawer; while feeding, a small strip at the top says what a tap does, and the tank below is left clear
 function renderFoodbar() {
   const bar = $('foodbar'), k = defaultFood();
-  bar.innerHTML = `<span>${FOOD_ICON[k] ?? '🫧'} Tap the water to drop ${esc(dropWord(k))}</span><button data-done class="done">Done</button>`;
+  const ks = foodsFor().map(([x]) => x), left = Math.max(0, 3 - feedDrops), many = ks.length > 1, d = FOODS[k];
+  // the food (tap it to change) and who it is for, then what to do and how many drops are left
+  bar.innerHTML = `<button class="fsw" data-swap ${many ? '' : 'disabled'}><span class="fi">${FOOD_ICON[k] ?? '🫧'}</span><span class="ft"><b>${esc(d.label)}${d.price ? ` · ${d.price} 🐚` : ''}${many ? ' <i>⌄</i>' : ''}</b><small>Tap the water · ${esc(dropWord(k).replace(/^.*? for /, 'for ').replace(/^(flakes|pellets|treats)$/, 'for the fish'))}</small></span></button><span class="fdots" aria-label="${left} drops left">${[0, 1, 2].map((i) => `<i class="${i < left ? 'on' : ''}"></i>`).join('')}</span><button data-done class="done">Done</button>`;
   bar.classList.add('on'); bar.querySelector('[data-done]').onclick = () => { sfx('tap'); endFeed(); };
+  bar.querySelector('[data-swap]').onclick = () => { if (!many) return; sfx('tap'); let i = ks.indexOf(k); for (let n = 0; n < ks.length; n++) { i = (i + 1) % ks.length; if ((game.state.shells ?? 0) >= FOODS[ks[i]].price) break; } game.feedFood = ks[i]; if (ks[i] === 'crab') game.feedFor = myOctos()[0]?.id ?? null; feedIdle = 0; renderFoodbar(); };
 }
 function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => f.species === 'octopus' && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
@@ -114,7 +117,7 @@ async function dropFood(x) {
   if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for a crab ${hrs((0.08 - octoHunger(oc)) / OHR / 3600)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) / HR / 3600)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
   if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
-  feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
+  feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed(); else renderFoodbar();
   const r = await game.dispatch({ t: 'feed', x, food, fish: oc?.id }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
 }
