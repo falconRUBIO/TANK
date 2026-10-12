@@ -9,6 +9,7 @@ import { Fish3D } from './fish3d.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
+import { personaOf } from '../profile.js';
 import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
@@ -61,13 +62,13 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
+        f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
+        f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
@@ -131,11 +132,41 @@ export class Fishes {
       const reg = (f.pos.x < -1.3 ? 0 : f.pos.x > 1.3 ? 2 : 1) * 2 + (f.pos.y > 7 ? 1 : 0); this.routine ||= this.loadRoutine(); const rr = ((this.routine[f.fid] ||= {})[phase] ||= {}); rr[reg] = (rr[reg] ?? 0) + dt; this.rdirty = true;
       if (!d.rchk || t - d.rchk > 20) { d.rchk = t; const seenIn = Object.values(this.routine[f.fid] ?? {}).filter((m) => Object.values(m).some((v) => v >= 40)); const hasTwo = [0, 1, 2, 3, 4, 5].some((r) => Object.values(this.routine[f.fid] ?? {}).filter((m) => (m[r] ?? 0) >= 40).length >= 2); if (hasTwo && seenIn.length && this.wants(f, 'routine')) this.said(f, 'routine'); }
     }
+    this.kindTick(dt, t, live);
     for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
       const a = live[i], b = live[j], k = a.fid < b.fid ? a.fid + b.fid : b.fid + a.fid; this.pt ||= {}; const close = a.pos.distanceTo(b.pos) < 1.7 && a.id !== 'neon' && !(a.species.school && a.id === b.id);
       this.pt[k] = close ? (this.pt[k] ?? 0) + dt : 0; if (this.pt[k] > 8 && (this.wants(a, 'together', b) || this.wants(b, 'together', a))) { this.said(a, 'together', { with: b.fid }); this.pt[k] = -20; }
     }
     if (this.rdirty && t - (this.rsave ?? 0) > 25) { this.rsave = t; this.rdirty = false; try { localStorage.setItem('ourtank.routine', JSON.stringify(this.routine)); } catch { /* storage unavailable */ } }
+  }
+  // what a seahorse or an octopus is seen doing, for its own journal, and a running tally of how each animal spends its time (sent by the lead phone every few minutes)
+  kindTick(dt, t, live) {
+    const lead = this.isLead ? this.isLead() : true, spots = this.spots?.() ?? [];
+    for (const f of live) {
+      const d = f.dw, sp = f.species.id, S = f.st;
+      if (sp === 'seahorse') {
+        const H = f.holdfast;
+        if (H?.on && H.held > 4 && this.wants(f, 'hitch')) this.said(f, 'hitch');
+        d.eyes = f.eyeL && f.eyeR && Math.abs(f.eyeL.x - f.eyeR.x) > 1 ? (d.eyes ?? 0) + dt : Math.max(0, (d.eyes ?? 0) - dt); if (d.eyes > 2.5 && this.wants(f, 'eyes')) this.said(f, 'eyes');
+        if ((f.snicks ?? 0) >= 2 && this.wants(f, 'snick')) this.said(f, 'snick');
+        if ((f.tintK ?? 0) > 0.15 && this.wants(f, 'blend')) this.said(f, 'blend');
+        if (f.favHold && (f.heldFor?.[f.favHold] ?? 0) > 120 && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });
+        const mate = live.find((o) => o !== f && o.species.id === 'seahorse' && o.pos.distanceTo(f.pos) < 1.5); d.dance = mate ? (d.dance ?? 0) + dt : 0; if (d.dance > 6 && this.wants(f, 'dance')) this.said(f, 'dance');
+      } else if (sp === 'octopus' && S) {
+        const k = { flat: 'camo', kelp: 'camo', lion: 'mimic', snake: 'mimic', jelly: 'mimic', bury: 'bury', squirt: 'squirt' }[S.s === f.act ? f.act : ''];
+        if (k && this.wants(f, k)) this.said(f, k);
+        if (S.mode === 'inspect' && S.s === 'work' && this.wants(f, 'grab')) this.said(f, 'grab');
+        if (f.den && (f.tuckK ?? 0) > 0.5 && this.wants(f, 'den')) this.said(f, 'den');
+        d.rear = levelAt(f.pos.x, f.pos.z) === 'rear' && f.pos.y < sandH(f.pos.x, f.pos.z) + 1.5 ? (d.rear ?? 0) + dt : 0; if (d.rear > 10 && this.wants(f, 'highbank')) this.said(f, 'highbank');
+      }
+      // the tally: distance, the part of the tank it was in, holdfasts and snaps, the places it went
+      const L = (d.log ||= { dist: 0, lv: {}, places: new Set(), holds: f.holdN ?? 0, snaps: f.snicks ?? 0 }); if (d.lp) L.dist += Math.min(1, f.pos.distanceTo(d.lp)); (d.lp ||= f.pos.clone()).copy(f.pos);
+      const lv = sp === 'octopus' ? levelAt(f.pos.x, f.pos.z) : f.pos.y > 8.5 ? 'top' : f.pos.y > 5 ? 'mid' : 'low'; L.lv[lv] = (L.lv[lv] ?? 0) + dt;
+      for (const q of spots) if (Math.hypot(f.pos.x - q.x, f.pos.z - q.z) < 1.2 && f.pos.y < (q.y ?? 0) + (q.h ?? 1) + 1) L.places.add(q.id);
+    }
+    if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
+    const logs = live.filter((f) => f.dw?.log).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps, fav: f.favHold ?? undefined }; f.dw.log = null; return e; });
+    if (logs.length) this.onLog(logs);
   }
   // ── moving things about: an octopus drags a rock or shell to where it wants it, or lifts a coconut shell and carries it off to live under ──
   haulTick(dt, t) {

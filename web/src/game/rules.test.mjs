@@ -112,7 +112,7 @@ ok('discoveries come from real behaviour: right trait, real decoration, once per
   assert.equal(ob({ key: 'bubbles', fish: 'a' }).applied, false, 'no bubbler, no bubble play'); assert.equal(ob({ key: 'glass', fish: 'b' }).applied, true); assert.equal(ob({ key: 'made-up', fish: 'a' }).applied, false);
   assert.equal(ob({ key: 'together', fish: 'a', with: 'b' }).applied, true); assert.equal(ob({ key: 'together', fish: 'a', with: 'a' }).applied, false, 'not with itself');
   assert.ok(t.fish[0].disc.hideaway && t.fish[0].disc['together:b'] && t.fish[1].disc.glass); const r = ob({ key: 'routine', fish: 'a' }); assert.ok(r.events.some((e) => /routine/.test(e.journal ?? '') && e.noticed));
-  assert.equal(Object.keys(R.DISCOVERIES).length, 15); assert.equal(ob({ key: 'food', fish: 'a' }).applied, false, 'a phone cannot report what only the server can see');
+  assert.equal(Object.values(R.DISCOVERIES).filter((d) => !d.kind).length, 15); assert.equal(ob({ key: 'food', fish: 'a' }).applied, false, 'a phone cannot report what only the server can see');
 });
 ok('one shared daily wish: feasible, replaced each day, paid once, never punishing', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: -D, stage: 'baby', traits: ['Calm'] })];
@@ -567,3 +567,13 @@ ok('an octopus remembers a friend and a rival for every phone, and its moments a
   const old = R.ensureFish({ id: 'l', name: 'Old', species: 'goldfish', seed: 1, born: 0, stage: 'adult', traits: [] }); delete old.paid; assert.equal(R.sellValue(old), Math.floor(R.SPECIES_DEF.goldfish.price / R.SPECIES_DEF.goldfish.count / 2), 'a fish from before prices were kept counts as bought');
 }
 console.log('Care rhythm and selling checks passed');
+ok('a profile: quiet species behaviours go in that animal\'s own journal only, a fish log is bounded and checked', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.fish = [R.ensureFish({ id: 's', name: 'Pip', species: 'seahorse', seed: 1, born: -864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'g', name: 'Bo', species: 'goldfish', seed: 2, born: -864e5, stage: 'adult', traits: ['Brave'] })];
+  t.decor = [{ id: 'd1', type: 'grass', x: 0, z: 1, ry: 0 }]; let k = 0; const ob = (a) => R.applyAction(t, { t: 'observe', ...a }, { now: 5e6 + ++k * 1000, name: 'Sam', uid: 'u' });
+  const r = ob({ key: 'hitch', fish: 's' }); assert.equal(r.applied, true); assert.ok(!r.events.some((e) => /tail/.test((e.journal ?? '') + (e.toast ?? ''))), 'no tank journal line, no toast');
+  assert.ok(t.fish[0].story.some((x) => /tail/.test(x.text)), 'in its own story'); assert.equal(ob({ key: 'hitch', fish: 'g' }).applied, false, 'a clownfish does not hitch its tail');
+  assert.equal(ob({ key: 'favhitch', fish: 's' }).applied, false, 'a favourite holdfast needs a real one'); assert.equal(ob({ key: 'favhitch', fish: 's', spot: 'd1' }).applied, true);
+  assert.deepEqual(R.behavioursFor(t.fish[0]).slice(0, 2), ['hitch', 'eyes']); assert.ok(R.seenBehaviour(t.fish[0], 'hitch') && !R.seenBehaviour(t.fish[0], 'dance'));
+  const L = R.applyAction(t, { t: 'fishLog', logs: [{ fish: 's', dist: 1e9, holds: 3, snaps: 'x', lv: { low: 50, nope: 9 }, places: ['d1', 'fake'], fav: 'd1' }, { fish: 'ghost', dist: 5 }] }, { now: 6e6, name: 'Sam', uid: 'u' });
+  assert.equal(L.applied, true); const g = t.fish[0].log; assert.equal(g.dist, 120); assert.equal(g.holds, 3); assert.equal(g.snaps, 0); assert.deepEqual(g.lv, { low: 50 }); assert.deepEqual(g.places, ['d1']); assert.equal(g.fav, 'd1');
+});

@@ -449,6 +449,25 @@
   #foodbar button.done{padding:7px 10px!important;font-size:12px!important}
   #settle,#settle.top{top:calc(env(safe-area-inset-top,0px) + 58px)!important;bottom:auto!important}
   #app:has(#foodbar.on) #toast{top:calc(env(safe-area-inset-top,0px) + 56px)!important}      /* while feeding, the strip has the top row and a message sits just under it */
+
+  /* the animal profile: a summary, four tabs, trait bars, favourites, familiarity and behaviours */
+  #card .psum{display:flex;gap:12px;align-items:center;margin:10px 0 12px;padding:12px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(95,224,240,.16),rgba(180,140,255,.14));border:1px solid rgba(255,255,255,.18)}
+  #card .psum em{font-style:normal;font-size:26px;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.14)}
+  #card .psum b{display:block;font:700 15.5px -apple-system,system-ui,sans-serif;color:#fff;margin-bottom:2px}#card .psum span{display:block;font-size:13px;line-height:1.4;color:#d6e6f6}
+  #card .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:3px;border-radius:999px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12);position:sticky;top:-18px;z-index:4;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #card .tb{all:unset;cursor:pointer;text-align:center;padding:8px 2px;border-radius:999px;font:600 12.5px -apple-system,system-ui,sans-serif;color:#c5d8ea}#card .tb.on{background:rgba(255,255,255,.2);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  #card .tpane{padding-top:4px}#card .sm{font-size:12.5px;margin:8px 2px}
+  #card .info{border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:2px 12px}
+  #card .ir{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13.5px}#card .ir:last-child{border-bottom:0}#card .ir span{color:#b7cde6}#card .ir b{font-weight:600;color:#fff;text-align:right}
+  #card .favs{display:grid;grid-template-columns:1fr 1fr;gap:8px}#card .fv{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14)}
+  #card .fv em{font-style:normal;font-size:18px;float:right}#card .fv small{display:block;font:600 10.5px -apple-system,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#b7cde6;margin-bottom:3px}#card .fv b{font:600 14px -apple-system,system-ui,sans-serif;color:#fff}#card .fv.unk b{color:#8fa8c2;font-weight:500;font-style:italic}
+  #card .fam2{padding:12px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}#card .fl{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}#card .fl b{color:#fff;font-size:14.5px}#card .fl small{color:#b7cde6;font-size:12px}
+  #card .famb{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}#card .famb i{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}#card .famb i.f{background:#7ee08a}#card .famb i.c b{display:block;height:100%;background:#7ee08a;border-radius:4px}
+  #card .bsum{padding:12px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}#card .bsum p{margin:0 0 8px;font-size:13.5px;color:#eaf4ff}#card .bsum .lnk{margin-top:8px;padding:0}
+  #card .tags{display:flex;flex-wrap:wrap;gap:6px}#card .bt{padding:5px 10px;border-radius:999px;font-size:12.5px;background:rgba(126,224,138,.18);border:1px solid rgba(126,224,138,.4);color:#e9ffe9}#card .bt.lock{background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);color:#8fa8c2;min-width:18px;text-align:center}
+  #card .tbars{display:grid;gap:12px;margin:8px 0 12px}#card .tr .tlab{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px}#card .tr .tlab span{color:#fff;font-weight:600}#card .tr .tlab b{font-weight:600}
+  #card .tr i{display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}#card .tr i b{display:block;height:100%;border-radius:4px}#card .tr small{display:block;margin-top:4px;font-size:12px;color:#b7cde6;line-height:1.35}
+  #card .lvbar{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px}#card .lvkey{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;color:#c5d8ea}#card .lvkey i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 </style></head><body><div id="app">
 <header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

@@ -261,6 +261,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           if (!lim.hit('a:' + ws.userId, cfg.actionsPer10s, 10e3)) return send(ws, { t: 'ack', idem: m.idem, ok: false, reason: 'RATE_LIMIT' });
           const { t: type, idem, ...rest } = m;
           if (type === 'observe' && !lim.hit('ob:' + ws.userId, 24, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
+          if (type === 'fishLog' && !lim.hit('fl:' + ws.userId, 3, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
           const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an });
           send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait });
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone

@@ -17,6 +17,7 @@ import { runOnboarding, Live, api, ensureRecoveryKey, newRecoveryKey, leaveTankN
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
+import { personaOf, summaryOf, familiarityOf, behaviourList, traitWords, TRAIT_BARS, SPECIES_INFO, FAMILIAR } from './profile.js';
 
 const { stage, canvas, IW, IH, camera, scene, composer, bokeh, grade, TOD, cur, env, lamp, halo, pool, qs, LITE } = stg;
 const $ = (id) => document.getElementById(id);
@@ -53,6 +54,7 @@ fishes.phase = () => { const h = new Date().getHours(); return h >= 5 && h < 11 
 // what the fish are really doing is reported to the game, a little at a time, and the game decides what counts
 let lastObs = 0, obsQueue = [];
 fishes.onObserve = (o) => { obsQueue.push(o); };
+fishes.onLog = (logs) => { if (window.__noLog) return; if (game.state) game.dispatch({ t: 'fishLog', logs }).catch(() => null); };
 setInterval(() => { if (!game.state || performance.now() - lastObs < 1500 || !obsQueue.length) return; lastObs = performance.now(); game.observe(obsQueue.shift()); if (obsQueue.length > 8) obsQueue.length = 8; }, 800);
 const rng = fishes.rng; fishes.defaultBubble = fishes.bubbleAt;
 
@@ -458,8 +460,8 @@ function socialLines(rec) {
   const so = socialOf(game.state, rec), rows = [...so.notes.map((x) => `<li class="bad">${esc(x)}</li>`), ...so.needs.map((x) => `<li>${esc(x)}</li>`), ...so.good.slice(0, 2).map((x) => `<li class="good">${esc(x.text)}</li>`)];
   return rows.length ? `<ul class="soc">${rows.join('')}</ul>` : '';
 }
-function storyBlock(rec) {
-  const st = (rec.story ?? []).slice(-6).reverse(); if (!st.length) return '';
+function storyBlock(rec, n = 6) {
+  const st = (rec.story ?? []).slice(-n).reverse(); if (!st.length) return '';
   const when = (ts) => { const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
   return `<ul class="story">${st.map((x) => `<li><i>${when(x.at)}</i>${esc(x.text)}</li>`).join('')}</ul>`;
 }
@@ -470,22 +472,48 @@ function showCard(f) {
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
   const fam = (rec.parents?.length || childrenOf(game.state, rec.id).length) ? '<button class="lnk fam" id="fam">Family</button>' : '';
   const strain = (() => { const so = socialOf(game.state, rec); return so.notes[0] ? `<p class="warnline soft">${esc(so.notes[0])}</p>` : ''; })(), warn0 = rec.ail >= AIL_WARN ? '<p class="warnline">Critical. Slow, and eating little. Needs food and clean water.</p>' : rec.ail >= AIL_TIRED ? '<p class="warnline">Sluggish and paler. Care would help.</p>' : '', warn = warn0 + strain;
-  game.folds ||= new Set(); const fid = 'fish:' + rec.id, more = `<details class="fold" data-fold="${fid}" ${game.folds.has(fid) ? 'open' : ''}><summary><span>${esc(f.name)}'s story</span></summary><div>${rec.species === 'octopus' ? '' : `<p class="why">${p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ')}</p>`}${socialLines(rec)}<dl>${rec.species === 'octopus' && game.shared && rec.owner && rec.owner !== game.you?.userId ? `<dt>Who feeds it</dt><dd>Only ${esc(rec.ownerName ?? 'its caretaker')}</dd>` : ''}${familyRows(rec)}${noticedRow(rec)}</dl>${storyBlock(rec) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}</div></details>`;
   const octo = rec.species === 'octopus', mind = octo ? octoMind(rec) : null, tile = (k, v, wide = false) => (v ? `<div class="ft ${wide ? 'w' : ''}"><small>${k}</small><b>${v}</b></div>` : '');
   const days = Math.max(1, Math.round((Date.now() - (rec.born ?? Date.now())) / 864e5)), denTxt = octo ? (f.den?.home ? (f.den.kind === 'pot' ? 'A clay pot' : 'A coconut shell') : f.den?.kind === 'rocks' ? 'A rock shelter it built' : f.den ? (DECOR_DEF[f.den.kind]?.label ?? 'A den') : 'Looking for one') : null;
   const owner = rec.ownerName || rec.owner ? (!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')) : null, close = bondLine(rec).replace(/^.*<dd>|<\/dd>$/g, '');
-  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button><button class="more" id="more">More info ›</button>
-    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · <b class="mood">${p.mood}</b></div>
-    <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div></div>
-    ${octo ? `<p class="mind"><b>${mind.label}</b> ${esc(octoLine(mind, f))}</p>` : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}</p>`}
-    ${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
+  // the profile: a header and a line about who it is, then four tabs
+  const P = personaOf(rec), sum = summaryOf({ ...rec, name: f.name }, P), fm = familiarityOf(rec), beh = behaviourList(rec), seen = beh.filter((x) => x.seen), info = SPECIES_INFO[rec.species] ?? {};
+  const stage = { baby: 'Baby', juvenile: 'Young', adult: 'Adult' }[stageOf(rec)] ?? '', sea = rec.species === 'seahorse', LOG = rec.log ?? {}, live = f.dw?.log;
+  const lv = { ...(LOG.lv ?? {}) }; for (const [k, v] of Object.entries(live?.lv ?? {})) lv[k] = (lv[k] ?? 0) + v;
+  const AREA = { front: 'The front sand', middle: 'The middle bank', rear: 'The high back bank', top: 'Near the surface', mid: 'Mid-water', low: 'Near the bottom' }, topArea = Object.entries(lv).sort((x, y) => y[1] - x[1])[0];
+  const decorName = (id) => { const d = id && game.state.decor.find((x) => x.id === id); return d ? DECOR_DEF[d.type]?.label ?? null : null; };
+  const palId = rec.pal ?? (octo ? rec.buddy ?? f.buddy : null), pal = palId ? (game.state.fish.find((x) => x.id === palId)?.name ?? fishes.byId.get(palId)?.name) : null;
+  const favs = [[octo ? '🦀' : '🍤', 'Food', p.food], sea ? ['🌿', 'Hitch', decorName(LOG.fav ?? f.favHold)] : octo ? ['🏠', 'Home', denTxt === 'Looking for one' ? null : denTxt] : ['📍', 'Spot', p.spot], ['🧭', 'Area', topArea && topArea[1] > 60 ? AREA[topArea[0]] : null], ['💞', 'Companion', pal ? esc(pal) : null]];
+  if (octo && f.favThing) favs.splice(2, 0, ['✨', 'Thing', f.favThing]);
+  const tab = (game.profTab ??= 'over'), T = (k, l) => `<button class="tb ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`, row = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : '');
+  const famBar = `<div class="famb">${FAMILIAR.map((_, i) => `<i class="${i < fm.i ? 'f' : i === fm.i ? 'c' : ''}">${i === fm.i ? `<b style="width:${Math.round(Math.max(0.12, fm.k) * 100)}%"></b>` : ''}</i>`).join('')}</div>`;
+  const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
+  const over = `${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
-    <h4>At a glance</h4><div class="facts">${tile('Age', `${p.age}${nx ? ` · grows up in ${nx.label}` : ''}`, true)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Favourite food', p.food)}${tile(octo ? 'Home' : 'Favourite spot', octo ? denTxt : p.spot)}${tile('Favourite thing', octo ? f.favThing : null)}${tile('Favourite trick', octo ? f.signatureText?.() : null)}${tile('Best friend', octo && (rec.buddy ?? f.buddy) ? esc(fishes.byId.get(rec.buddy ?? f.buddy)?.name ?? '') : null)}${tile('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${tile('Caretaker', owner)}${tile('Closest to', close)}</div>
+    <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
+    <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
+    <h4>Behaviours</h4><div class="bsum"><p>${seen.length} of ${beh.length} behaviours seen</p><div class="tags">${tags(seen.length ? seen.slice(0, 6) : beh.slice(0, 3))}</div><button class="lnk" data-tab="pers">See them all ›</button></div>
+    <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>
     ${comfortBlock(rec)}
-    ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
-    ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>${more}`;
-  card.querySelector('details.fold')?.addEventListener('toggle', (e) => { e.target.open ? game.folds.add(fid) : game.folds.delete(fid); });
+    ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
+  const pers = `<div class="tbars">${TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return `<div class="tr"><div class="tlab"><span>${b.label}</span><b style="color:${b.col}">${w}</b></div><i><b style="width:${Math.round(v * 100)}%;background:${b.col}"></b></i><small>${ex}</small></div>`; }).join('')}</div>
+    <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>
+    ${octo ? (octoLine(mind, f) !== mind.line ? `<p class="mind">${esc(octoLine(mind, f))}</p>` : '') : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}${p.traits.length ? ' ' + p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ') : ''}</p>`}
+    <h4>Behaviours · ${seen.length} of ${beh.length}</h4><div class="tags">${tags(beh)}</div><p class="dim sm">${seen.length < beh.length ? `Keep watching: ${esc(f.name)} will show you the rest in its own time.` : `You have seen everything ${esc(f.name)} does.`}</p>
+    ${socialLines(rec)}`;
+  const tankLen = (n) => (n < 1 ? 'Less than one tank length' : `${Math.round(n)} tank length${Math.round(n) === 1 ? '' : 's'}`), dist = (LOG.dist ?? 0) + (live?.dist ?? 0), lvTot = Object.values(lv).reduce((a, b) => a + b, 0);
+  const lvKeys = octo ? ['rear', 'middle', 'front'] : ['top', 'mid', 'low'], lvCol = { rear: '#c9a46a', middle: '#e3c58c', front: '#f1dcae', top: '#7fd3ff', mid: '#3f9fd8', low: '#2a6a9a' };
+  const kids = childrenOf(game.state, rec.id).length, places = new Set([...(LOG.places ?? []), ...(live?.places ?? [])]).size;
+  const stats = `<div class="facts">${tile('Age', p.age)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Travelled', tankLen(dist / 8))}${tile('Places visited', places ? String(places) : null)}${sea ? tile('Holdfasts gripped', String((LOG.holds ?? 0) + Math.max(0, (f.holdN ?? 0) - (live?.holds ?? f.holdN ?? 0)))) + tile('Plankton snapped', String((LOG.snaps ?? 0) + Math.max(0, (f.snicks ?? 0) - (live?.snaps ?? f.snicks ?? 0)))) : ''}${tile('Puzzle jars', rec.solved ? `${rec.solved}${rec.bestSecs ? ` · best ${rec.bestSecs}s` : ''}` : null)}${tile('Crabs caught', rec.crabs ? String(rec.crabs) : null)}${tile('Rearranged the tank', rec.moved ? `${rec.moved} time${rec.moved === 1 ? '' : 's'}` : null)}${tile('Tricks', rec.tricks?.length ? rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ') : null, true)}${tile('Youngsters', kids ? String(kids) : null)}</div>
+    ${lvTot > 60 ? `<h4>Where it spends its time</h4><div class="lvbar">${lvKeys.map((k) => `<b style="flex:${Math.max(0.001, lv[k] ?? 0)};background:${lvCol[k]}"></b>`).join('')}</div><div class="lvkey">${lvKeys.map((k) => `<span><i style="background:${lvCol[k]}"></i>${AREA[k]} ${Math.round(((lv[k] ?? 0) / lvTot) * 100)}%</span>`).join('')}</div>` : `<p class="dim sm">Where ${esc(f.name)} likes to spend its time will show here after a while.</p>`}
+    ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}`;
+  const jour = `${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
+  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button>
+    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b></div></div>
+    <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
+    <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
+    <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
+  card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
@@ -675,11 +703,11 @@ function watchTick(dt) {
 }
 document.addEventListener('visibilitychange', () => game.track(document.hidden ? 'hidden' : 'visible'));
 // ── one tank, several phones: a single phone (the director) decides where the fish go and when a memory passes; the others follow it ──
-const netFish = new Map(); let lastSnapSent = 0;
+const netFish = new Map(); let lastSnapSent = 0; window.__netFish = netFish;
 function isDirector() { return !game.shared || game.director === true; }
 const r2 = (v) => Math.round(v * 100) / 100;
 // what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, colour, chewing…)
-const OPOSE = ['restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK', 'flatK', 'lionK', 'snakeK', 'jellyK', 'kelpK', 'puffK', 'sink', 'mimicK', 'climbK', 'squintK', 'wideK', 'inhaleK'];
+const OPOSE = ['curlK', 'restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK', 'flatK', 'lionK', 'snakeK', 'jellyK', 'kelpK', 'puffK', 'sink', 'mimicK', 'climbK', 'squintK', 'wideK', 'inhaleK'];
 game.on('snap', (list, crabs, ts) => { const at = performance.now(); for (const f of list) { let e = netFish.get(f.i); if (!e) netFish.set(f.i, (e = {})); const gap = Number.isFinite(ts) && Number.isFinite(e.ts) && ts > e.ts ? (ts - e.ts) / 1000 : (at - (e.at ?? 0)) / 1000;      // timed by the lead phone's clock, so a late or bunched message does not fake a burst of speed
  if (gap > 0.04 && gap < 1) { if (Number.isFinite(e.ph) && Number.isFinite(f.ph) && f.ph >= e.ph) e.rate = (f.ph - e.ph) / gap; const v = (a, b2) => (Number.isFinite(a) && Number.isFinite(b2) ? (b2 - a) / gap : 0); e.vx = v(e.x, f.x); e.vy = v(e.y, f.y); e.vz = v(e.z, f.z); e.vh = Number.isFinite(e.h) ? Math.atan2(Math.sin(f.h - e.h), Math.cos(f.h - e.h)) / gap : 0; } else { e.vx = e.vy = e.vz = e.vh = 0; } Object.assign(e, f, { at, ts }); } if (Array.isArray(crabs) && !isDirector()) fishes.netCrabs(crabs); });
 game.on('role', (d) => { if (d) netFish.clear(); });

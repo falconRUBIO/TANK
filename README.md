@@ -124,3 +124,14 @@ The bottom of the tank is one continuous landscape of sand with three levels: a 
 - **Light.** The camera sits a little higher and looks down, so the tops of the banks catch the eye as well as their faces. The faces are a darker, browner sand with the layers it was laid down in, the hollow where a face meets the level below is in shade, and the lip of each ledge catches the light. Slow, broad sunbeams come down from the surface, and moving caustics are drawn on the sand itself, strongest on flat tops and faint on the faces.
 
 `node tools/terrain_check.mjs` sends an octopus from the front floor to the top of the back bank and back (it must go by the ramps and the terrace, never straight up a face), leaves three octopuses alone for twenty minutes of tank time and checks they use every level and that no fish or octopus ever goes into the sand, and places a decoration with a finger on each level and on a face.
+
+## Seahorses
+A seahorse spends most of its time holding on to a plant, coral or post with its tail, close to home: a holdfast nearby is far more likely than one across the tank, and the one it holds longest becomes its favourite. While anchored, each eye looks its own way; both lock forward just before it snaps up a speck of plankton with a flick of its head. It slowly takes on a little of its holdfast's colour, and lets go to drift slowly to another when food lands or after a while (a calmer seahorse holds on longer). In a shared tank only the lead phone decides where it holds on; the other phones follow. `node tools/seahorse_check.mjs OUTDIR` checks it.
+
+## Animal profiles
+Tap an animal and open its card: a title and a line about who it is, then four tabs.
+- **Overview**: how it is doing, its favourites (food, its holdfast or home, the part of the tank it spends most time in, its companion), how well the tank knows it (New Arrival → Settling In → Familiar → Comfortable → Well Established, from time in the tank, things seen and play), the behaviours seen so far, and the basics (species, scientific name, adult size, life stage, caretaker).
+- **Personality**: five bars (curiosity, sociability, boldness, activity, adaptability). They come from what already drives the animal: a fish's traits, an octopus's temperament, a little of its own seed. Then every behaviour it can show, with the ones not seen yet as "?".
+- **Stats**: how far it has gone, places visited, holdfasts and snaps for a seahorse, jars, crabs and rearranging for an octopus, and where it spends its time.
+- **Journal**: its own story.
+Seahorse and octopus behaviours (tail hitching, independent eyes, camouflage, impressions…) are quiet: a line in that animal's journal, no toast and no shells. The lead phone sends a small tally of where each animal went every three minutes (`fishLog`, bounded and rate limited). No new personal data. `node tools/profile_check.mjs OUTDIR` checks it.

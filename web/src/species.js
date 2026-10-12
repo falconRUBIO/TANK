@@ -558,21 +558,23 @@ const seahorse = {
     const path = []; for (let i = 0; i < P.length - 1; i++) for (let k = 0; k < 10; k++) { const t = k / 10; path.push([P[i][0] + (P[i + 1][0] - P[i][0]) * t, P[i][1] + (P[i + 1][1] - P[i][1]) * t, (i + t) / (P.length - 1)]); }
     path.push([...P[P.length - 1], 1]);
     const rad = prof([[0, 4.6], [0.08, 4.2], [0.16, 3.0], [0.3, 6.2], [0.45, 6.0], [0.6, 3.6], [0.8, 2.2], [1, 1.1]]);
-    const near = (x, y) => { let best = 1e9, bs = 0, bx = 0; for (const q of path) { const d = Math.hypot(x - q[0], y - q[1]); if (d < best) { best = d; bs = q[2]; bx = q[0]; } } return { d: best, s: bs, cx: bx }; };
+    const near = (x, y) => { let best = 1e9, bs = 0, bx = 0, bi = 0; for (let i = 0; i < path.length; i++) { const q = path[i], d = Math.hypot(x - q[0], y - q[1]); if (d < best) { best = d; bs = q[2]; bx = q[0]; bi = i; } } return { d: best, s: bs, cx: bx, i: bi }; };
+    // the tail is rigged: every voxel of it keeps its place relative to the nearest point of the centre line, and the line can uncurl to swim or coil tight round a stem
+    const TAIL0 = 0.55, tailOf = (i, x, y, v) => (path[i][2] >= TAIL0 ? { ...v, tag: 'tail', at: i, off: [x - path[i][0], y - path[i][1], 0] } : v);
     return {
-      bounds: { x: [-14, 24], y: [-26, 30], z: [-9, 9] }, center: [4, 2],
+      bounds: { x: [-14, 24], y: [-26, 30], z: [-9, 9] }, center: [4, 2], tail: { path, i0: path.findIndex((q) => q[2] >= TAIL0) },
       sample(x, y, z) {
-        const { d, s, cx } = near(x, y), r = rad(s), inBody = (d / r) ** 2 + (z / (r * 0.8)) ** 2 <= 1;
+        const { d, s, cx, i: pi } = near(x, y), r = rad(s), inBody = (d / r) ** 2 + (z / (r * 0.8)) ** 2 <= 1;
         // snout: a short tube pointing forward from the head
         if (!inBody && x > 8 && x < 18 && Math.hypot(y - (21 - (x - 8) * 0.1), z) <= 1.7 - (x - 8) * 0.04) return { c: x > 15 ? ridgeC : mix(bodyC, bellyC, 0.4) };
-        if (!inBody && z === 0 && s > 0.2 && s < 0.85 && x < cx && Math.floor((s * 36 + 0.3) % 2) === 0 && d < r + 1.4) return { c: ridgeC };        // a small spine on each ring along the back
+        if (!inBody && z === 0 && s > 0.2 && s < 0.85 && x < cx && Math.floor((s * 36 + 0.3) % 2) === 0 && d < r + 1.4) return tailOf(pi, x, y, { c: ridgeC });        // a small spine on each ring along the back
         // eye: a dark square with a glint on the outer shell of the head
-        if (inBody && s < 0.12 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 2 && Math.abs(y - 22) <= 2) { const ed = Math.max(Math.abs(x - 8), Math.abs(y - 22)); return ed === 2 ? { c: [255, 210, 90], em: 1 } : x === 7 && y === 23 ? { c: [255, 255, 255], em: 2 } : { c: [14, 12, 20], em: 1 }; }
+        if (inBody && s < 0.12 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 2 && Math.abs(y - 22) <= 2) { const ed = Math.max(Math.abs(x - 8), Math.abs(y - 22)); return ed === 2 ? { c: [255, 210, 90], em: 1 } : x === 7 && y === 23 ? { c: [255, 255, 255], em: 2, tag: 'glint' } : { c: [14, 12, 20], em: 1 }; }
         if (inBody) {
           let c = x > cx ? mix(bodyC, bellyC, 0.75) : bodyC; const ring = Math.floor((s * 36 + 0.3) % 2) === 0;
           if (s > 0.18 && ring) c = mix(c, ridgeC, 0.6); if (s < 0.1 && y > 24 && x < 6) c = ridgeC;                // ringed body, little crown
           if (fbm(x * 0.4 + seed, y * 0.4, z * 0.4) > 0.7) c = mix(c, [255, 248, 230], 0.55); else if (fbm(x * 0.9 + 3, y * 0.9, z * 0.9 + seed) > 0.74) c = mix(c, ridgeC, 0.5);      // pale freckles and dark specks
-          return { c, wave: s > 0.7 ? 0.25 : 0 };
+          return tailOf(pi, x, y, { c });
         }
         // dorsal fin: a thin fluttering plate behind the back
         if (z === 0 && s > 0.27 && s < 0.5 && x < cx - r + 1 && x > cx - r - 5 * Math.sin((Math.PI * (s - 0.27)) / 0.23)) return { c: mix([255, 244, 220], bodyC, 0.2), wave: 1.1 };
@@ -583,6 +585,18 @@ const seahorse = {
     };
   },
 };
+
+// The seahorse's tail for a given curl: -1 hangs almost straight (swimming), 0 is its resting hook, 1 coils tight round a stem.
+// Returns the centre line's points and angles (centred like the model), and how much each point has turned from the rest shape.
+export function seahorseTail(sp, curl, out) {
+  const T = sp.tail, P = T.path, n = P.length, c0 = sp.center ?? [0, 0];
+  if (!T.ang) { T.ang = new Float32Array(n); T.len = new Float32Array(n); for (let i = 1; i < n; i++) { T.ang[i] = Math.atan2(P[i][1] - P[i - 1][1], P[i][0] - P[i - 1][0]); T.len[i] = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); } T.ang[0] = T.ang[1]; }
+  const o = out ?? { x: new Float32Array(n), y: new Float32Array(n), d: new Float32Array(n) }, i0 = T.i0, a0 = T.ang[i0];
+  for (let i = 0; i <= i0; i++) { o.x[i] = P[i][0] - c0[0]; o.y[i] = P[i][1] - c0[1]; o.d[i] = 0; }
+  let prev = a0;
+  for (let i = i0 + 1; i < n; i++) { let da = T.ang[i] - a0; da = Math.atan2(Math.sin(da), Math.cos(da)); const a = a0 + da * (1 + curl * 0.9); o.d[i] = a - T.ang[i]; o.x[i] = o.x[i - 1] + Math.cos(a) * T.len[i]; o.y[i] = o.y[i - 1] + Math.sin(a) * T.len[i]; prev = a; }
+  return o;
+}
 
 // ───────────────────────── Octopus: round head forward, eight trailing arms ─────────────────────────
 // ── Octopus ──

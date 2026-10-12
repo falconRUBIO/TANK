@@ -184,11 +184,35 @@ export const DISCOVERIES = {
   bubbles: { label: 'Plays in the bubbles', traits: ['Playful'], needsBubbler: true, line: (f) => `${f.name} has found the bubbles and plays in them.` },
   food: { label: 'Loves its favourite food', serverOnly: true, line: (f, x) => `${f.name} loves ${x.food}.` },
   routine: { label: 'Has a daily routine', traits: null, line: (f) => `${f.name} has settled into a daily routine.` },
+  // what a seahorse and an octopus are seen to do. These are quiet: a line in that animal's own journal, nothing in the tank's, and no shells
+  hitch: { label: 'Tail hitching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} wrapped its tail round a stem and held on.` },
+  eyes: { label: 'Independent eyes', kind: 'seahorse', quiet: true, line: (f) => `${f.name} watched two things at once, one eye each way.` },
+  snick: { label: 'Snaps up plankton', kind: 'seahorse', quiet: true, line: (f) => `${f.name} snapped up a speck of plankton with a flick of its head.` },
+  blend: { label: 'Colour matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the colour of the plant it was holding.` },
+  favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favourite place to hold on.` },
+  dance: { label: 'Greeting dance', kind: 'seahorse', quiet: true, line: (f) => `${f.name} met another seahorse and they circled each other, glowing.` },
+  camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the colour and the texture of its skin to match what was behind it.` },
+  den: { label: 'Den dwelling', kind: 'octopus', quiet: true, line: (f) => `${f.name} tucked itself into its den.` },
+  grab: { label: 'Arm exploration', kind: 'octopus', quiet: true, line: (f) => `${f.name} wrapped its arms round something to feel it all over.` },
+  mimic: { label: 'Impressions', kind: 'octopus', quiet: true, line: (f) => `${f.name} pretended to be another animal.` },
+  bury: { label: 'Burying', kind: 'octopus', quiet: true, line: (f) => `${f.name} dug itself into the sand until only its eyes showed.` },
+  squirt: { label: 'Squirting water', kind: 'octopus', quiet: true, line: (f) => `${f.name} squirted a jet of water.` },
+  rearrange: { label: 'Rearranging', kind: 'octopus', quiet: true, line: (f) => `${f.name} moved something in the tank to suit itself.` },
+  puzzle: { label: 'Puzzle solving', kind: 'octopus', quiet: true, line: (f) => `${f.name} opened a puzzle jar.` },
+  highbank: { label: 'Climbing the high bank', kind: 'octopus', quiet: true, line: (f) => `${f.name} explored the high bank at the back of the tank.` },
 };
+// the behaviours each animal could show, in the order the profile lists them: its own species' first, then the ones its traits allow
+const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'food'] };
+export function behavioursFor(f) {
+  const own = BEHAVIOURS[f?.species]; if (own) return own;
+  const tr = f?.traits ?? []; return ['spot', 'friend', 'glass', 'surface', 'night_rest', 'hideaway', 'regular', 'object', 'together', 'bubbles', 'routine', 'food'].filter((k) => { const d = DISCOVERIES[k]; return !d.kind && (!d.traits || d.traits.some((x) => tr.includes(x))); });
+}
+export const seenBehaviour = (f, k) => !!(f?.disc?.[k] || (k === 'spot' && f?.found?.includes('spot')) || (k === 'friend' && f?.pal) || (k === 'puzzle' && (f?.solved ?? 0) > 0));
 export const FRIEND_REWARD = 3, AGE_REWARDS = [[14, 5], [30, 8]], FIRST_HATCH_REWARD = 5;
 function unlock(t, f, key, now, ev, x = {}) {
   const d = DISCOVERIES[key]; if (!d) return false; f.disc ||= {}; const k = d.pair ? `${key}:${x.otherId}` : key; if (f.disc[k] || (d.pair && f.disc[key + ':' + x.otherId])) return false;
   f.disc[k] = now; if (d.pair) { f.disc.together = f.disc.together ?? now; if (x.otherObj) { x.otherObj.disc ||= {}; x.otherObj.disc['together:' + f.id] ??= now; x.otherObj.disc.together ??= now; } } if (!d.line) return true;
+  if (d.quiet) { ev.push({ story: f.id, text: d.line(f, x) }); return true; }
   ev.push({ journal: d.line(f, x), noticed: f.id, toast: d.line(f, x) }); return true;
 }
 function discover(t, now, ev) {
@@ -318,7 +342,7 @@ export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?
 function puzzles(t, now, ev) {
   for (const f of t.fish) {
     const p = f.puzzle; if (!p || now < p.until) continue;
-    f.puzzle = null; f.solved = (f.solved ?? 0) + 1; f.bestSecs = Math.min(f.bestSecs ?? 1e9, p.secs); f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15);
+    f.puzzle = null; f.solved = (f.solved ?? 0) + 1; f.disc ||= {}; f.disc.puzzle ??= now; f.bestSecs = Math.min(f.bestSecs ?? 1e9, p.secs); f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15);
     if (p.by) { f.bond ||= {}; f.bond[p.by] = (f.bond[p.by] ?? 0) + 1; }
     const first = f.solved === 1; if (first) t.shells += PUZZLE_FIRST_REWARD;
     ev.push({ journal: first ? `${f.name} worked out the puzzle jar.` : f.solved === 4 ? `${f.name} opens the puzzle jar in ${p.secs} seconds now.` : `${f.name} opened the puzzle jar in ${p.secs} seconds.`, puzzle: f.id, ...(first ? { toast: `${f.name} worked out the jar! +${PUZZLE_FIRST_REWARD} shells`, milestone: f.id } : {}) });
@@ -712,6 +736,7 @@ const num = (v) => (Number.isFinite(+v) ? +v : NaN);
 const STORY_KEYS = ['grew', 'noticed', 'discovery', 'milestone', 'wishDone', 'puzzle', 'crab'];
 function recordStory(t, ev, now) {
   for (const e of ev) {
+    if (e.story && e.text) { const f = t.fish.find((x) => x.id === e.story); if (f) { f.story ||= []; if (!f.story.some((x) => x.text === e.text)) { f.story.push({ at: now, text: e.text }); if (f.story.length > 14) f.story.splice(1, f.story.length - 14); } } continue; }
     const ids = new Set(); for (const k of STORY_KEYS) if (typeof e[k] === 'string') ids.add(e[k]); for (const id of e.arrival ?? []) ids.add(id);
     for (const id of ids) { const f = t.fish.find((x) => x.id === id); if (!f) continue; const text = (e.arrival && e.arrival.includes(id) ? `Arrived in the tank` : e.journal) ?? null; if (!text) continue; f.story ||= []; if (f.story.some((x) => x.text === text)) continue; f.story.push({ at: now, text }); if (f.story.length > 14) f.story.splice(1, f.story.length - 14); }
   }
@@ -819,7 +844,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       if (f.movedAt != null && now - f.movedAt < MOVE_GAP) return ok({ applied: false });
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
       if (Math.hypot(x - it.x, z - it.z) > MOVE_MAX) return fail('OUT_OF_BOUNDS');
-      it.x = +x.toFixed(2); it.z = +z.toFixed(2); f.movedAt = now; f.moved = (f.moved ?? 0) + 1;
+      it.x = +x.toFixed(2); it.z = +z.toFixed(2); f.movedAt = now; f.moved = (f.moved ?? 0) + 1; f.disc ||= {}; f.disc.rearrange ??= now;
       const home = a.home === true && ['coconut', 'pot'].includes(it.type), own = f.home === it.id; if (home) f.home = it.id; if (home || own) it.ry = +Math.max(-1, Math.min(1, num(a.ry) || 0)).toFixed(2);      // its own shell it may also turn
       events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : own ? `${f.name} shoved its ${DECOR_DEF[it.type].label.toLowerCase()} about and turned it round.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
       return ok({ applied: true });
@@ -926,6 +951,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       events.push({ journal: `${name} brought in ${f.name}, their own octopus.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} brought in their octopus.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
     // an octopus nobody in the crew looks after (its caretaker is gone, or the server once lost the tank and gave them a new identity)
+    case 'fishLog': {                                              // the lead phone's tally of what its animals did lately: how far each went, where it spent its time, what it held on to
+      let did = false; const n = (v, max) => Math.max(0, Math.min(max, num(v) || 0));
+      for (const e of (Array.isArray(a.logs) ? a.logs : []).slice(0, 30)) {
+        const f = t.fish.find((x) => x.id === e?.fish && !x.dead); if (!f) continue; const L = (f.log ||= {}); did = true;
+        L.dist = +((L.dist ?? 0) + n(e.dist, 120)).toFixed(1); L.snaps = (L.snaps ?? 0) + Math.round(n(e.snaps, 60)); L.holds = (L.holds ?? 0) + Math.round(n(e.holds, 30));
+        L.lv ||= {}; for (const k of ['front', 'middle', 'rear', 'top', 'mid', 'low']) if (e.lv?.[k]) L.lv[k] = Math.round((L.lv[k] ?? 0) + n(e.lv[k], 400));
+        if (Array.isArray(e.places)) { L.places ||= []; for (const id of e.places.slice(0, 10)) if (typeof id === 'string' && t.decor.some((d) => d.id === id) && !L.places.includes(id)) L.places.push(id); L.places = L.places.slice(-40); }
+        if (typeof e.fav === 'string' && t.decor.some((d) => d.id === e.fav)) L.fav = e.fav;
+      }
+      return ok({ applied: did });
+    }
     case 'claimOcto': {                                            // a caretaker with no octopus of their own takes it on
       if (!members) return fail('FORBIDDEN'); const f = t.fish.find((x) => x.id === a.id); if (!f || !isSmart(f) || f.dead) return fail('NOT_FOUND');
       if (f.owner && members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');
@@ -968,7 +1004,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       const sights = { watch: ['watch'], inspect: ['greet'], together: ['together', ...(f && other && (f.pal === other.id || other.pal === f.id) ? ['friends'] : [])], visit: ['visit'], regular: ['visit', ...(f?.found?.includes('spot') && spotOk ? ['favourite'] : [])], object: ['visit', ...(f && (f.traits ?? []).includes('Curious') && spotOk ? ['investigate'] : [])], hideaway: ['visit'], bubbles: ['bubbles'] }[key] ?? [];
       for (const kind of sights) if (progress(t, kind, events, name, kind === 'greet' ? String(a.fish ?? '') : null)) did = true;
       const d = DISCOVERIES[key];
-      if (d && d.line && !d.serverOnly && f && !(f.stage === 'baby' && now - f.born < 3600e3)) {
+      if (d && d.line && !d.serverOnly && f && (!d.kind || d.kind === f.species) && !(f.stage === 'baby' && now - f.born < 3600e3)) {
         const tr = f.traits ?? [], decor = a.spot ? t.decor.find((x) => x.id === a.spot) : null, other = d.pair ? t.fish.find((x) => x.id === a.with && x.id !== f.id) : null;
         const okTrait = !d.traits || d.traits.some((x) => tr.includes(x)), okDecor = !d.needsDecor || decor, okPair = !d.pair || other, okBubble = !d.needsBubbler || t.decor.some((x) => x.type === 'bubbler');
         if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other })) did = true;

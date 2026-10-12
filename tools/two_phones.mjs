@@ -6,7 +6,7 @@ import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/two', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
-const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
+const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); if (process.env.NOLOG) await p.addInitScript(() => { window.__noLog = true; }); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const shot = (p, n) => p.screenshot({ path: `${out}/${n}.png` });
 const popups = (p) => p.evaluate(() => ['coach', 'toast', 'settle', 'reunion'].filter((id) => document.getElementById(id)?.classList.contains('on')));
 // the creator
@@ -45,24 +45,25 @@ ck('side by side, every octopus is in the same place on both phones', worst < 0.
 await A.evaluate(async () => { const g = window.__game; for (let i = 0; i < 4; i++) await g.dispatch({ t: 'dev', what: 'shells' }); g.state.level = Math.max(g.state.level, 3);
   for (const sp of ['neon', 'goldfish', 'blue', 'seahorse']) await g.dispatch({ t: 'buyFish', species: sp, name: '', seed: Math.floor(Math.random() * 9e4) }); await g.dispatch({ t: 'dev', what: 'rush' }); });
 await A.waitForTimeout(9000);
-const view = (p) => p.evaluate(() => { const L = window.__fishes.list; return { fish: Object.fromEntries(L.map((f) => [f.fid, { x: f.pos.x, y: f.pos.y, z: f.pos.z, h: f.heading, ph: f.phase % 2000, o: f.species.move === 'jet' ? [f.restK, f.crawlK, f.workK, f.tuckK ?? 0] : null }])), crabs: (window.__fishes.crabs ?? []).map((c) => [c.x, c.z]) }; });
+const view = (p) => p.evaluate(() => { const L = window.__fishes.list; return { fish: Object.fromEntries(L.map((f) => [f.fid, { x: f.pos.x, y: f.pos.y, z: f.pos.z, h: f.heading, sp: f.species.id ?? f.sp?.id, ph: f.phase % 2000, o: f.species.move === 'jet' ? [f.restK, f.crawlK, f.workK, f.tuckK ?? 0] : null }])), crabs: (window.__fishes.crabs ?? []).map((c) => [c.x, c.z]) }; });
 const cmp = async (label, rounds = 8) => {
-  let gap = 0, head = 0, beat = 0, pose = 0, n = 0; const gaps = [];
+  let gap = 0, head = 0, headId = "", beat = 0, pose = 0, n = 0; const gaps = [];
   for (let i = 0; i < rounds; i++) {
     await A.waitForTimeout(700); const [va, vb] = await Promise.all([view(A), view(B)]);
     for (const [id, a] of Object.entries(va.fish)) { const b2 = vb.fish[id]; if (!b2) continue; n++;
-      { const g = Math.hypot(a.x - b2.x, a.y - b2.y, a.z - b2.z); gaps.push(g); gap = Math.max(gap, g); } head = Math.max(head, Math.abs(Math.atan2(Math.sin(a.h - b2.h), Math.cos(a.h - b2.h))));
+      { const g = Math.hypot(a.x - b2.x, a.y - b2.y, a.z - b2.z); gaps.push(g); gap = Math.max(gap, g); } { const dh = Math.abs(Math.atan2(Math.sin(a.h - b2.h), Math.cos(a.h - b2.h))); if (dh > head) { head = dh; headId = id + (a.sp ? ":" + a.sp : ""); } }
       const dph = Math.abs(a.ph - b2.ph); beat = Math.max(beat, Math.min(dph, 2000 - dph)); if (a.o && b2.o) pose = Math.max(pose, ...a.o.map((v, j) => Math.abs(v - b2.o[j]))); }
   }
-  gaps.sort((x, y) => x - y); return { gap, p95: gaps[Math.floor(gaps.length * 0.95)] ?? 0, head, beat, pose, n };
+  gaps.sort((x, y) => x - y); return { gap, p95: gaps[Math.floor(gaps.length * 0.95)] ?? 0, head, headId, beat, pose, n };
 };
 if (process.env.DEBUG) { const fps = (p) => p.evaluate(() => new Promise((ok) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 1000) requestAnimationFrame(f); else ok(n); }; requestAnimationFrame(f); })); console.log('fps A', await fps(A), 'fps B', await fps(B)); }
 if (process.env.DEBUG) for (let i = 0; i < 6; i++) { await A.waitForTimeout(500); const [va, vb] = await Promise.all([view(A), view(B)]); console.log(Object.entries(va.fish).map(([id, a]) => vb.fish[id] ? `${id}:${Math.hypot(a.x - vb.fish[id].x, a.y - vb.fish[id].y).toFixed(2)}` : id + ':-').join(' ')); }
 const full = await cmp('full'); const fa2 = await fishOf(A), fb2 = await fishOf(B); if (process.env.DEBUG) { console.log(fa2, fb2, await A.evaluate(() => window.__game.director), await B.evaluate(() => window.__game.director)); const [va, vb] = await Promise.all([view(A), view(B)]); for (const [id, a] of Object.entries(va.fish)) console.log(id, a.x.toFixed(2), a.y.toFixed(2), vb.fish[id] ? vb.fish[id].x.toFixed(2) + ' ' + vb.fish[id].y.toFixed(2) : 'missing'); }
 ck('both phones have the same fish', JSON.stringify(fa2.map((x) => x.split(':').slice(0, 2).join(':'))) === JSON.stringify(fb2.map((x) => x.split(':').slice(0, 2).join(':'))) && fa2.length >= 6, fa2.length + ' fish');
+if (full.p95 >= 0.35) { const dbg = (p) => p.evaluate(() => ({ dir: window.__game.director, conn: window.__game.live?.connected, hidden: document.hidden, ages: [...(window.__netFish ?? new Map())].map(([k, e]) => k + ':' + Math.round(performance.now() - e.at)), n: window.__fishes.list.length })); console.log('  A', JSON.stringify(await dbg(A)), '\n  B', JSON.stringify(await dbg(B))); }
 ck('every fish is in the same place on both phones', full.p95 < 0.35 && full.gap < 0.9, `typical worst gap ${full.p95.toFixed(2)}, biggest ${full.gap.toFixed(2)} tank units (the tank is about 8 wide)`);
 { const dayA = await A.evaluate(() => [document.getElementById('day')?.textContent, window.__game.day]), dayB = await B.evaluate(() => [document.getElementById('day')?.textContent, window.__game.day]); ck('both phones show the same day, the one the server says', dayA[0] === dayB[0] && dayA[1] === dayB[1] && dayA[1] >= 1, JSON.stringify([dayA, dayB])); }
-ck('every fish faces the same way', full.head < 0.5, 'biggest turn difference ' + full.head.toFixed(2) + ' rad');
+ck('every fish faces the same way', full.head < 0.5, 'biggest turn difference ' + full.head.toFixed(2) + ' rad (' + full.headId + ')');
 ck('tails and arms move in step', full.beat < 1.2, 'biggest stroke difference ' + full.beat.toFixed(2));
 ck('each octopus holds the same pose on both phones', full.pose < 0.25, 'biggest pose difference ' + full.pose.toFixed(2));
 await shot(A, '5_full_A'); await shot(B, '5_full_B');
