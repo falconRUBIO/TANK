@@ -10,7 +10,8 @@
   :root{--bg:#0a1220;--panel:#0f1a2c;--line:#1d2c44;--ink:#dbe8f7;--dim:#7e93ad;--gold:#e6c36a}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#050a12;color:var(--ink);font:14px -apple-system,system-ui,"SF Pro Text",sans-serif;overflow:hidden}
-  #app{height:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);position:relative}
+  #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+/* pinned to the edges of the screen, not 100% of the page: on an iPhone home-screen app 100% stops short of the home-bar area and left a black strip at the bottom */
   header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;justify-content:space-between}
   h1{margin:0;font-size:15px;letter-spacing:.14em;font-weight:600}
   .pill{margin-top:6px;display:inline-flex;gap:6px;align-items:center;font:11px ui-monospace,Menlo,monospace;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:#0c1626}
