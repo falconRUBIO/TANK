@@ -6,6 +6,7 @@ const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k
 import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
+import { gripWork } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
@@ -53,6 +54,7 @@ export class Fishes {
   }
   // make the scene match the game's fish list
   sync(state, { arrivals = [] } = {}) {
+    this.recs = new Map(state.fish.map((d) => [d.id, d]));      // each animal's saved record, as the server has it (a seahorse reads its memory of holdfasts from it)
     this.moveOn = !state.flags?.noRearrange;
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
     { const sig = (state.decor?.length ?? 0) + ':' + state.fish.length + ':' + ((state.glass ?? 0) > 0.5 ? 1 : 0); if (sig !== this.sig) { if (this.sig != null) this.changedAt = performance.now(); this.sig = sig; } }
@@ -64,7 +66,7 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
@@ -152,14 +154,14 @@ export class Fishes {
         d.eyes = f.eyeL && f.eyeR && Math.abs(f.eyeL.x - f.eyeR.x) > 1 ? (d.eyes ?? 0) + dt : Math.max(0, (d.eyes ?? 0) - dt); if (d.eyes > 2.5 && this.wants(f, 'eyes')) this.said(f, 'eyes');
         if ((f.snicks ?? 0) >= 2 && this.wants(f, 'snick')) this.said(f, 'snick');
         if ((f.tintK ?? 0) > 0.15 && this.wants(f, 'blend')) this.said(f, 'blend');
-        if (f.favHold && (f.heldFor?.[f.favHold] ?? 0) > 120 && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });
-        const mate = live.find((o) => o !== f && o.species.id === 'seahorse' && o.pos.distanceTo(f.pos) < 1.5); d.dance = mate ? (d.dance ?? 0) + dt : 0; if (d.dance > 6 && this.wants(f, 'dance')) this.said(f, 'dance');
+        if (f.favHold && f.favourite?.(spots) === f.favHold && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });      // a favourite it has earned (held two minutes and gone back to)
+        if (f.greeted) { f.greeted = false; f.greets = (f.greets ?? 0) + 1; if (this.wants(f, 'dance')) this.said(f, 'dance'); }      // a real greeting (see Fish3D.hoverUpdate), not just two seahorses close together
         if (f.link?.on && f.link.o.link?.on) { d.tails = (d.tails ?? 0) + dt; if (d.tails > 5 && this.wants(f, 'tails')) this.said(f, 'tails'); }
         // two seahorses that have shared the tank a while now and then link tails: never on their first day, more often the longer they have been together
-        if (lead && !f.link && !f.seeking && !f.greet && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
-          if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 5) continue;
+        if (lead && !f.link && !f.seeking && !f.greet && !f.sleepy && !f.weak && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
+          if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.sleepy || o.weak || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 5) continue;
           const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, bond = Math.max(0, Math.min(1, (days - 1) / 4));
-          if (bond > 0 && Math.random() < dt * 0.012 * bond) { const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandUnder(m.x, m.z, 0.8) + 2.4, Math.min(8, (f.pos.y + o.pos.y) / 2));
+          if (bond > 0 && Math.random() < dt * 0.004 * bond * (0.4 + 0.6 * ((f.persona?.soc ?? 0.5) + (o.persona?.soc ?? 0.5)))) { /* sociable pairs link more often */ const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandUnder(m.x, m.z, 0.8) + 2.4, Math.min(8, (f.pos.y + o.pos.y) / 2));
             // open water: nothing in the way of the pair or of the tails curled under them
             const W = Fish3D.world, clear = () => ![0.3, 0, -0.5, -1, -1.4].some((dy) => [[0, 0], [0.4, 0], [-0.4, 0]].some(([dx, dz]) => W.at?.(m.x + dx, m.y + dy, m.z + dz) || W.soft?.at?.(m.x + dx, m.y + dy, m.z + dz)));
             for (let k = 0; k < 6 && !clear(); k++) m.y += 0.5;
@@ -174,12 +176,16 @@ export class Fishes {
         d.rear = levelAt(f.pos.x, f.pos.z) === 'rear' && f.pos.y < sandH(f.pos.x, f.pos.z) + 1.5 ? (d.rear ?? 0) + dt : 0; if (d.rear > 10 && this.wants(f, 'highbank')) this.said(f, 'highbank');
       }
       // the tally: distance, the part of the tank it was in, holdfasts and snaps, the places it went
-      const L = (d.log ||= { dist: 0, lv: {}, places: new Set(), holds: f.holdN ?? 0, snaps: f.snicks ?? 0 }); if (d.lp) L.dist += Math.min(1, f.pos.distanceTo(d.lp)); (d.lp ||= f.pos.clone()).copy(f.pos);
+      const L = (d.log ||= { dist: 0, lv: {}, places: new Set(), holds: f.holdN ?? 0, snaps: f.snicks ?? 0, meals: f.meals ?? 0, strikes: f.strikesN ?? 0, greets: f.greets ?? 0, links: f.linksN ?? 0, inspects: f.inspects ?? 0 }); if (d.lp) L.dist += Math.min(1, f.pos.distanceTo(d.lp)); (d.lp ||= f.pos.clone()).copy(f.pos);
       const lv = sp === 'octopus' ? levelAt(f.pos.x, f.pos.z) : f.pos.y > 8.5 ? 'top' : f.pos.y > 5 ? 'mid' : 'low'; L.lv[lv] = (L.lv[lv] ?? 0) + dt;
       for (const q of spots) if (Math.hypot(f.pos.x - q.x, f.pos.z - q.z) < 1.2 && f.pos.y < (q.y ?? 0) + (q.h ?? 1) + 1) L.places.add(q.id);
     }
     if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
-    const logs = live.filter((f) => f.dw?.log).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps, fav: f.favHold ?? undefined }; f.dw.log = null; return e; });
+    const logs = live.filter((f) => f.dw?.log).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
+      if (f.sk === 'seahorse') { Object.assign(e, { meals: (f.meals ?? 0) - L.meals, strikes: (f.strikesN ?? 0) - L.strikes, greets: (f.greets ?? 0) - L.greets, links: (f.linksN ?? 0) - L.links, inspects: (f.inspects ?? 0) - L.inspects });
+        const M = f.memDelta; if (M) { e.hitch = {}; for (const id of new Set([...Object.keys(M.secs), ...Object.keys(M.visits)])) e.hitch[id] = [Math.round(M.secs[id] ?? 0), M.visits[id] ?? 0, ...(M.pos[id] ?? [])]; f.memDelta = null; }      // what it has done on each holdfast since the last report, by the decoration's id
+        if (f.lastHitch) e.last = f.lastHitch; }
+      f.dw.log = null; return e; });
     if (logs.length) this.onLog(logs);
   }
   // every voxel of the decorations near a point, as world-space boxes [x, y, z, half size]: for fitting a seahorse's tail round a real stem
@@ -188,10 +194,16 @@ export class Fishes {
     for (const [id, it] of D.items) {
       const g = it.group; if (Math.hypot(g.position.x - cx, g.position.z - cz) > r + 1.5) continue;
       const key = id + ':' + g.position.x.toFixed(2) + ',' + g.position.z.toFixed(2) + ',' + g.rotation.y.toFixed(2); let vs = this.dvCache.get(key);
-      if (!vs) { vs = []; g.updateMatrixWorld(true); g.traverse((o) => { if (!o.isInstancedMesh) return; o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox, gs = (bb.max.x - bb.min.x) / 2; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, M); M.premultiply(o.matrixWorld); M.decompose(P, Q, S); vs.push([P.x, P.y, P.z, gs * Math.max(S.x, S.y, S.z)]); } }); this.dvCache.set(key, vs); if (this.dvCache.size > 64) this.dvCache.delete(this.dvCache.keys().next().value); }
+      if (!vs) { vs = []; g.updateMatrixWorld(true); g.traverse((o) => { if (!o.isInstancedMesh) return; o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox, gs = (bb.max.x - bb.min.x) / 2; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, M); M.premultiply(o.matrixWorld); M.decompose(P, Q, S); vs.push([P.x, P.y, P.z, gs * Math.max(S.x, S.y, S.z), id]); } }); this.dvCache.set(key, vs); if (this.dvCache.size > 64) this.dvCache.delete(this.dvCache.keys().next().value); }
       for (const v of vs) if (Math.hypot(v[0] - cx, v[2] - cz) < r) out.push(v);
     }
     return out;
+  }
+  // which decorations stand near a point and exactly where (id, position, turn): when this changes, grip points found there are out of date
+  decorSig(cx, cz, r) {
+    const D = this.decor; if (!D?.items) return ''; let s = '';
+    for (const [id, it] of D.items) { const g = it.group; if (Math.hypot(g.position.x - cx, g.position.z - cz) > r + 1.5) continue; s += id + ':' + g.position.x.toFixed(2) + ',' + g.position.z.toFixed(2) + ',' + g.rotation.y.toFixed(2) + (it.haul ? '~' : '') + ';'; }
+    return s;
   }
   // ── moving things about: an octopus drags a rock or shell to where it wants it, or lifts a coconut shell and carries it off to live under ──
   haulTick(dt, t) {
@@ -509,9 +521,14 @@ export class Fishes {
     for (const [id, jar] of [...this.jars]) if (!state.fish.some((d) => d.id === id) && jar.state === 'closed') { jar.state = 'open'; jar.t = 0; }
   }
   investigate(spot) {
-    for (const f of this.list) if (!f.dead && !f.visitor && f.species.move === 'hover' && !f.greet) {                    // a seahorse drifts over to look, then holds still beside it for a while
-      f.target.set(Math.max(-3.8, Math.min(3.8, spot.x + (this.rng() - 0.5) * 0.5)), 1.1 + (spot.h ?? 1) * (0.35 + this.rng() * 0.3), spot.z + 0.6); f.idle = 8 + this.rng() * 6; f.retarget = f.idle + 2; f.seeking = false; this.burst(new THREE.Vector3(spot.x, 1.5, spot.z + 0.4));
-    }
+    // a seahorse may notice it, after a moment of its own: the nearer and the more curious, the likelier. What it then does (let go and go to look,
+    // or just turn an eye to it) is its own choice (see Fish3D.seahorse). It looks at the thing at its real height, from the sand it stands on.
+    { let burst = false;
+      for (const f of this.list) if (!f.dead && !f.visitor && f.species.move === 'hover' && !f.greet) {
+        const cur = f.persona?.cur ?? 0.5, d = Math.hypot(f.pos.x - spot.x, f.pos.z - spot.z); if (this.rng() > 0.9 - d * 0.08 + (cur - 0.5) * 0.5) continue;
+        const y = Math.min(Fish3D.topY - 1, (spot.y ?? sandH(spot.x, spot.z)) + Math.min(1.6, Math.max(0.5, (spot.h ?? 1) * 0.6)));
+        f.noticeQ = { x: spot.x, y, z: spot.z, id: spot.id, at: (f.tt ?? 0) + 1.5 + this.rng() * 8 * (1.4 - cur) }; burst = true; }
+      if (burst) this.burst(new THREE.Vector3(spot.x, (spot.y ?? 0) + 0.8, spot.z + 0.4)); }
     for (const f of this.list) if (!f.dead && !f.visitor && f.species.move !== 'jet' && f.species.move !== 'hover' && !f.script?.length && (f.profile?.traits ?? []).includes('Curious') && this.rng() < 0.6) {
       const y = 1.5 + (spot.h ?? 1) * 0.45; f.script = [{ x: spot.x - 0.9, y, z: spot.z + 1.2, rt: 2.4 }, { x: spot.x + 0.9, y: y + 0.4, z: spot.z + 1.2, rt: 2.2 }, { x: spot.x, y: y + 0.2, z: spot.z + 1.5, rt: 1.6 }]; f.pick(this.rng);
     } for (const f of this.list) if (f.species.move === 'jet' && !f.dead && !f.jarAt) f.inspect = { x: spot.x, z: spot.z }; }       // the octopus goes to look at anything new; other curious fish are handled in wrapPick
@@ -534,14 +551,18 @@ export class Fishes {
   }
   // seahorses greet their partner: now and then (more in the morning) two of them meet at a plant, circle each other glowing, and part
   seahorseTick(dt, t) {
+    if (this.isLead && !this.isLead()) return;      // only the lead phone decides when two seahorses greet; the other phones are shown it in its snapshots
     this.shT = (this.shT ?? 30 + this.rng() * 40) - dt; if (this.shT > 0) return;
-    const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2) return;
+    const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && !f.link && !f.sleepy && !f.weak && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2 || this.night) return;
+    hs.sort((x, y) => (y.persona?.soc ?? 0.5) + this.rng() * 0.6 - ((x.persona?.soc ?? 0.5) + this.rng() * 0.6));      // the sociable ones start it
+    if (this.rng() > 0.35 + 0.65 * ((hs[0].persona?.soc ?? 0.5) + (hs[1].persona?.soc ?? 0.5)) / 2) return;      // two independent ones may let the chance go by
     const [a, b] = hs, spots = (this.spots?.() ?? []).filter((x) => DECOR_DEF[x.type]?.cat === 'PLANTS'), mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
     let sp = null, bd = 1e9; for (const x of spots) { const d = Math.hypot(x.x - mid.x, x.z - mid.z); if (d < bd) { bd = d; sp = x; } }
     const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = Math.max(sandUnder(cx, cz, 0.7) + 2.4, sp ? (sp.y ?? 0) + sp.h + 1.4 : Math.max(2.5, Math.min(8, mid.y)));      // above the plant, so their tails hang clear of it and of the sand
     a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
   }
   update(dt, t) {
+    gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < (k.life ?? 4)) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
@@ -562,17 +583,25 @@ export class Fishes {
     }
     if (this.loose?.length) { const now = performance.now(); this.loose = this.loose.filter((l) => { if (l.fade && l.until - now < 2000 && l.until > now) l.m.scale.setScalar(Math.max(0.01, (l.m.userData.s0 ??= l.m.scale.x) * (l.until - now) / 2000)); if (now < l.until) return true; this.scene.remove(l.m); return false; }); }
     if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6, f?.rs?.grab?.kind === 'jar' ? f.rs.grab.twist : null); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
-    for (const f of this.flakes) { f.age += dt; if (f.pos.y > sandH(f.pos.x, f.pos.z) + 0.2) {      // food settles on the sand wherever it lands, on any level
-      f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
-    this.flakes = this.flakes.filter((f) => !f.eaten && f.age < 30);
+    for (const f of this.flakes) {
+      if (f.sucked) { const s = f.sucked, m = s.dead ? null : s.snout(this.tmp2 ||= new THREE.Vector3()); f.suckT = (f.suckT ?? 0) + dt;      // struck: drawn into the snout in a blink, and only then eaten
+        if (!m) { f.sucked = null; continue; } f.pos.lerp(m, Math.min(1, dt * 28)); if (f.pos.distanceTo(m) < 0.05 || f.suckT > 0.14) { f.eaten = true; s.meals = (s.meals ?? 0) + 1; if (s.holdfast?.on) s.strikesN = (s.strikesN ?? 0) + 1; this.onEat?.(s); } continue; }
+      f.age += dt; if (f.pos.y > sandH(f.pos.x, f.pos.z) + 0.2) {      // food settles on the sand wherever it lands, on any level
+        if (f.kind === 'mysis') {      // tiny shrimp: they sink quickly to a depth of their own, down where the seahorses hold on, and swim about there in little darts before they settle
+          f.depth ??= sandH(f.pos.x, f.pos.z) + 1.6 + this.rng() * 3.2; const free = f.pos.y <= f.depth;
+          f.vx = Math.max(-0.2, Math.min(0.2, (f.vx ?? 0) + (this.rng() - 0.5) * dt * (free ? 1.2 : 0.4))); f.vz = Math.max(-0.14, Math.min(0.14, (f.vz ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.9 : 0.3)));
+          f.pos.x = Math.max(-3.8, Math.min(3.8, f.pos.x + f.vx * dt)); f.pos.z = Math.max(-0.5, Math.min(2.2, f.pos.z + f.vz * dt)); f.pos.y -= (free ? 0.05 + Math.sin(t * 3 + f.ph) * 0.12 : 0.9) * dt; }
+        else { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } } }
+    this.flakes = this.flakes.filter((f) => !f.eaten && (f.age < 30 || f.sucked));
     this.mesh.count = this.flakes.length;
     this.flakes.forEach((f, i) => { this.m.makeRotationY(f.ph + t * 0.4); this.m.setPosition(f.pos); this.mesh.setMatrixAt(i, this.m); this.mesh.setColorAt(i, f.c); });
     this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
     // every fish picks its own piece of food; claims spread them out
     const claims = new Map(), W = Fish3D.world, o = this.tmp;
-    for (const f of this.list) { if (f.flake && !f.flake.eaten && this.flakes.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
+    for (const f of this.list) { if (f.flake && !f.flake.eaten && !f.flake.sucked && this.flakes.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
     for (const f of this.list) {
       if (f.visitor || f.dead || f.species.move === 'jet') { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // an octopus does not eat flakes
+      if (f.sk === 'seahorse' && f.leadOf?.() !== false && !f.chase && (f.holdfast?.on || f.releaseT > 0)) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // holding on, a seahorse hunts from its stem (see Fish3D.seahorse)
       const tr = f.profile?.traits ?? [], shy = tr.includes('Shy'), greedy = tr.includes('Greedy'), curious = tr.includes('Curious');
       f.hold = (f.hold ?? 0) - dt; f.think = (f.think ?? 0) - dt;
       let fl = f.flake;
@@ -580,7 +609,9 @@ export class Fishes {
         f.think = 0.8 + this.rng() * 1.6;
         let best = null, bs = 1e9;
         for (const c of this.flakes) {
-          if (c.eaten || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
+          if (c.eaten || c.sucked || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
+          if (c.watchedBy && c.watchedBy !== f && c.watchedBy.prey === c && c.watchD < 1.2) continue;      // right in front of a seahorse that is watching it: fair's fair
+          if (c.kind === 'mysis' && f.sk !== 'seahorse' && c.age < 6) continue;      // the other fish are slow to notice the seahorses' shrimp, so it reaches them first
           if (W.push) { o.set(0, 0, 0); if (W.push(c.pos, 0.25, o)) continue; }
           const d = f.pos.distanceTo(c.pos); if (d > (c.kind === 'mysis' && f.sk === 'seahorse' ? 16 : 9)) continue;      // its own shrimp, a seahorse comes up for from anywhere
           const sc = d + ((claims.get(c) || 0) - (c === f.flake ? 1 : 0)) * (greedy ? 0.8 : 2.6) + this.rng() * 1.4 - (curious ? Math.max(0, 3 - c.age) * 0.6 : 0) - (c === f.flake ? 1 : 0);
@@ -594,9 +625,9 @@ export class Fishes {
         f.target.copy(fl.pos); f.retarget = 0.3;
         // bite test along the path the mouth travelled this frame (so a fast fish cannot swim through food), with depth counting half
         const m = f.mouth(), a = f.pm ?? m, ab = o.copy(m).sub(a), len2 = ab.lengthSq(), tt = len2 > 1e-6 ? Math.max(0, Math.min(1, (fl.pos.clone().sub(a).dot(ab)) / len2)) : 1;
-        const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = Math.max(0.45, f.radius * 0.5);
+        const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = f.sk === 'seahorse' ? 0.3 : Math.max(0.45, f.radius * 0.5);
         f.pm = m.clone(); f.nibble = Math.hypot(cx, cy, cz);
-        if (f.nibble < reach) { fl.eaten = true; f.flake = null; f.pm = null; f.gulp = 0.35; this.onEat?.(f); }
+        if (f.nibble < reach) { fl.eaten = true; f.flake = null; f.pm = null; f.gulp = 0.35; if (f.sk === 'seahorse') { f.meals = (f.meals ?? 0) + 1; f.strikeT = 0.16; f.strikeSeq = (f.strikeSeq ?? 0) + 1; } this.onEat?.(f); }
       } else f.pm = null;
     }
     for (const f of this.list) if (f.isShy && !f.dead && !(f.fleeT > 0) && !f.seeking) for (const o of this.list) {

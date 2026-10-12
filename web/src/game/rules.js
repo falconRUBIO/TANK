@@ -963,7 +963,18 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
         L.dist = +((L.dist ?? 0) + n(e.dist, 120)).toFixed(1); L.snaps = (L.snaps ?? 0) + Math.round(n(e.snaps, 60)); L.holds = (L.holds ?? 0) + Math.round(n(e.holds, 30));
         L.lv ||= {}; for (const k of ['front', 'middle', 'rear', 'top', 'mid', 'low']) if (e.lv?.[k]) L.lv[k] = Math.round((L.lv[k] ?? 0) + n(e.lv[k], 400));
         if (Array.isArray(e.places)) { L.places ||= []; for (const id of e.places.slice(0, 10)) if (typeof id === 'string' && t.decor.some((d) => d.id === id) && !L.places.includes(id)) L.places.push(id); L.places = L.places.slice(-40); }
-        if (typeof e.fav === 'string' && t.decor.some((d) => d.id === e.fav)) L.fav = e.fav;
+        // a seahorse's holdfasts, by the decoration's id (never by position, so a moved decoration is still the same place to it):
+        // seconds held, visits, and where it stood when last held. Ones no longer in the tank are forgotten, and only the 16 most used are kept.
+        const has = (id) => typeof id === 'string' && t.decor.some((d) => d.id === id);
+        if (e.hitch && typeof e.hitch === 'object') { L.hitch ||= {}; for (const [id, h] of Object.entries(e.hitch).slice(0, 12)) { if (!has(id) || !Array.isArray(h)) continue; const H = (L.hitch[id] ||= [0, 0, null, null]); H[0] = Math.round(H[0] + n(h[0], 200)); H[1] += Math.round(n(h[1], 6)); if (Number.isFinite(+h[2]) && Number.isFinite(+h[3])) { H[2] = +Math.max(-6, Math.min(6, +h[2])).toFixed(2); H[3] = +Math.max(-6, Math.min(6, +h[3])).toFixed(2); } } }
+        if (L.hitch) { for (const id of Object.keys(L.hitch)) if (!has(id)) delete L.hitch[id]; const ks = Object.keys(L.hitch).sort((a2, b2) => L.hitch[b2][0] - L.hitch[a2][0]); for (const id of ks.slice(16)) delete L.hitch[id]; }
+        if (has(e.last)) L.last = e.last;
+        // its favourite is earned on the server too: the holdfast it has held longest, once it has gone back to it and held it two minutes in all
+        if (L.hitch && Object.keys(L.hitch).length) { const [bid, b] = Object.entries(L.hitch).sort((x, y) => y[1][0] - x[1][0])[0]; if (b[0] >= 120 && b[1] >= 2) L.fav = bid; else if (!has(L.fav)) delete L.fav; }
+        else if (typeof e.fav === 'string' && has(e.fav)) L.fav = e.fav;      // (an older phone's report)
+        if (L.fav && !has(L.fav)) delete L.fav;
+        // what it has really done since tracking began: meals, strikes from its stem, greetings, tails held, new things looked at
+        for (const k of ['meals', 'strikes', 'greets', 'links', 'inspects']) if (e[k] != null) L[k] = (L[k] ?? 0) + Math.round(n(e[k], k === 'meals' ? 60 : 30));
       }
       return ok({ applied: did });
     }

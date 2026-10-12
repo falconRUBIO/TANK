@@ -509,7 +509,7 @@ function showCard(f) {
   const tankLen = (n) => (n < 1 ? 'Less than one tank length' : `${Math.round(n)} tank length${Math.round(n) === 1 ? '' : 's'}`), dist = (LOG.dist ?? 0) + (live?.dist ?? 0), lvTot = Object.values(lv).reduce((a, b) => a + b, 0);
   const lvKeys = octo ? ['rear', 'middle', 'front'] : ['top', 'mid', 'low'], lvCol = { rear: '#c9a46a', middle: '#e3c58c', front: '#f1dcae', top: '#7fd3ff', mid: '#3f9fd8', low: '#2a6a9a' };
   const kids = childrenOf(game.state, rec.id).length, places = new Set([...(LOG.places ?? []), ...(live?.places ?? [])]).size;
-  const stats = `<div class="facts">${tile('Age', p.age)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Travelled', tankLen(dist / 8))}${tile('Places visited', places ? String(places) : null)}${sea ? tile('Holdfasts gripped', String((LOG.holds ?? 0) + Math.max(0, (f.holdN ?? 0) - (live?.holds ?? f.holdN ?? 0)))) + tile('Plankton snapped', String((LOG.snaps ?? 0) + Math.max(0, (f.snicks ?? 0) - (live?.snaps ?? f.snicks ?? 0)))) : ''}${tile('Puzzle jars', rec.solved ? `${rec.solved}${rec.bestSecs ? ` · best ${rec.bestSecs}s` : ''}` : null)}${tile('Crabs caught', rec.crabs ? String(rec.crabs) : null)}${tile('Rearranged the tank', rec.moved ? `${rec.moved} time${rec.moved === 1 ? '' : 's'}` : null)}${tile('Tricks', rec.tricks?.length ? rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ') : null, true)}${tile('Youngsters', kids ? String(kids) : null)}</div>
+  const stats = `<div class="facts">${tile('Age', p.age)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Travelled', tankLen(dist / 8))}${tile('Places visited', places ? String(places) : null)}${sea ? tile('Holdfasts gripped', String((LOG.holds ?? 0) + Math.max(0, (f.holdN ?? 0) - (live?.holds ?? f.holdN ?? 0)))) + tile('Plankton snapped', String((LOG.snaps ?? 0) + Math.max(0, (f.snicks ?? 0) - (live?.snaps ?? f.snicks ?? 0)))) + seaStats(LOG, f, live) : ''}${tile('Puzzle jars', rec.solved ? `${rec.solved}${rec.bestSecs ? ` · best ${rec.bestSecs}s` : ''}` : null)}${tile('Crabs caught', rec.crabs ? String(rec.crabs) : null)}${tile('Rearranged the tank', rec.moved ? `${rec.moved} time${rec.moved === 1 ? '' : 's'}` : null)}${tile('Tricks', rec.tricks?.length ? rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ') : null, true)}${tile('Youngsters', kids ? String(kids) : null)}</div>
     ${lvTot > 60 ? `<h4>Where it spends its time</h4><div class="lvbar">${lvKeys.map((k) => `<b style="flex:${Math.max(0.001, lv[k] ?? 0)};background:${lvCol[k]}"></b>`).join('')}</div><div class="lvkey">${lvKeys.map((k) => `<span><i style="background:${lvCol[k]}"></i>${AREA[k]} ${Math.round(((lv[k] ?? 0) / lvTot) * 100)}%</span>`).join('')}</div>` : `<p class="dim sm">Where ${esc(f.name)} likes to spend its time will show here after a while.</p>`}
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}`;
   const jour = `${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
@@ -712,6 +712,27 @@ const netFish = new Map(); let lastSnapSent = 0; window.__netFish = netFish;
 function isDirector() { return !game.shared || game.director === true; }
 const r2 = (v) => Math.round(v * 100) / 100;
 // what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, colour, chewing…)
+// a seahorse in one short string for the other phones: its state, where each eye looks, its colour (how much, and of what), the greeting's glow,
+// a count of its strikes (so each phone plays each strike once), and the thickness and lean of what it holds (so its coil fits the same stem)
+// a seahorse's own counts on its card: what is saved plus what has happened since the last report; a count shows only once it has really happened
+function seaStats(LOG, f, live) {
+  const tile = (k, v) => (v ? `<div class="ft"><small>${k}</small><b>${v}</b></div>` : ''), cnt = (k, fk) => (LOG[k] ?? 0) + Math.max(0, (f[fk] ?? 0) - (live?.[k] ?? f[fk] ?? 0));
+  const H = LOG.hitch ?? {}, d = f.memDelta, secs = Object.values(H).reduce((a, h) => a + (h[0] ?? 0), 0) + Object.values(d?.secs ?? {}).reduce((a, v) => a + v, 0), fav = LOG.fav ?? f.favHold, fv = fav ? (H[fav]?.[1] ?? 0) + (d?.visits[fav] ?? 0) : 0, places = new Set([...Object.keys(H), ...Object.keys(d?.visits ?? {})]).size;
+  const hm = secs >= 3600 ? `${Math.floor(secs / 3600)}h ${Math.round((secs % 3600) / 60)}m` : secs >= 60 ? `${Math.round(secs / 60)} min` : '';
+  return tile('Meals eaten', cnt('meals', 'meals')) + tile('Strikes from its stem', cnt('strikes', 'strikesN')) + tile('Time holding on', hm) + tile('Holdfasts tried', places) + tile('Visits to its favourite', fv) + tile('Greetings', cnt('greets', 'greets')) + tile('Tails held', cnt('links', 'linksN')) + tile('New things inspected', cnt('inspects', 'inspects'));
+}
+const SEA_STATES = Fish3D.SEA_STATES, e5 = (v) => Math.max(0, Math.min(4, Math.round(((v ?? 0) + 1) * 2)));
+const seaPack = (f) => [Math.max(0, SEA_STATES.indexOf(f.hs ?? 'swimming')), '' + e5(f.eyeL?.x) + e5(f.eyeL?.y) + e5(f.eyeR?.x) + e5(f.eyeR?.y), r2(f.tintK ?? 0), f.tintCol ? ((f.tintCol[0] << 16) | (f.tintCol[1] << 8) | f.tintCol[2]).toString(16) : '', r2(f.glowK ?? 0), f.strikeSeq ?? 0, r2(f.gripStem ?? 0), r2(f.gripLean ?? 0)].join(',');
+function seaUnpack(f, str, k) {
+  const a = str.split(','), num = (i, lo, hi) => { const v = +a[i]; return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : null; };
+  f.hs = SEA_STATES[num(0, 0, SEA_STATES.length - 1) ?? 0];
+  const ev = a[1] ?? ''; if (/^[0-4]{4}$/.test(ev)) { const d = (i) => +ev[i] / 2 - 1; for (const [key, i] of [['eyeL', 0], ['eyeR', 2]]) { const e = (f[key] ||= { x: 0, y: 0, tx: 0, ty: 0, t: 0 }); e.x += (d(i) - e.x) * k; e.y += (d(i + 1) - e.y) * k; } }
+  if (/^[0-9a-f]{1,6}$/.test(a[3] ?? '')) { const c = parseInt(a[3], 16), col = [(c >> 16) & 255, (c >> 8) & 255, c & 255]; if (!f.tintCol || f.tintCol.some((v, i) => v !== col[i])) { f.tintCol = col; f.tintApplied = -1; } }
+  const tk = num(2, 0, 0.6); if (tk != null && Math.abs(tk - (f.tintK ?? 0)) > 0.02) f.setTint(tk);
+  const gk = num(4, 0, 1); if (gk != null) { f.glowK = gk; f.netGlowAt = performance.now(); }
+  const sq = num(5, 0, 1e9); if (sq != null) { if (f.netStrikeSeq != null && sq > f.netStrikeSeq) f.netStrikeT = 0.16; f.netStrikeSeq = sq; }
+  const st = num(6, 0, 8), le = num(7, 0, 1); if (st) f.gripStem = st; if (le) f.gripLean = le;
+}
 const OPOSE = ['curlK', 'restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK', 'flatK', 'lionK', 'snakeK', 'jellyK', 'kelpK', 'puffK', 'sink', 'mimicK', 'climbK', 'squintK', 'wideK', 'inhaleK'];
 game.on('snap', (list, crabs, ts) => { const at = performance.now(); for (const f of list) { let e = netFish.get(f.i); if (!e) netFish.set(f.i, (e = {})); const gap = Number.isFinite(ts) && Number.isFinite(e.ts) && ts > e.ts ? (ts - e.ts) / 1000 : (at - (e.at ?? 0)) / 1000;      // timed by the lead phone's clock, so a late or bunched message does not fake a burst of speed
  if (gap > 0.04 && gap < 1) { if (Number.isFinite(e.ph) && Number.isFinite(f.ph) && f.ph >= e.ph) e.rate = (f.ph - e.ph) / gap; const v = (a, b2) => (Number.isFinite(a) && Number.isFinite(b2) ? (b2 - a) / gap : 0); e.vx = v(e.x, f.x); e.vy = v(e.y, f.y); e.vz = v(e.z, f.z); e.vh = Number.isFinite(e.h) ? Math.atan2(Math.sin(f.h - e.h), Math.cos(f.h - e.h)) / gap : 0; } else { e.vx = e.vy = e.vz = e.vh = 0; } Object.assign(e, f, { at, ts }); } if (Array.isArray(crabs) && !isDirector()) fishes.netCrabs(crabs); });
@@ -723,7 +744,7 @@ game.on('fx', (m) => {
 function netSync(dt, now) {
   if (!game.shared || wc.active) return;
   if (isDirector()) {
-    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0), g: r2(f.gripK ?? 0) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() }); }
+    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0), g: r2(f.gripK ?? 0), sh: seaPack(f) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() }); }
     return;
   }
   const t = performance.now(), real = Math.min(1, Math.max(dt, (t - (netSync.last ?? t)) / 1000)), k = 1 - Math.exp(-real * 14); netSync.last = t;      // catch up by the time that really passed, even after a slow frame
@@ -736,7 +757,9 @@ function netSync(dt, now) {
     if (Number.isFinite(e.ph)) { const want = e.ph + (t - e.at) * 0.001 * (e.rate ?? 0), d = want - (f.phase % 2000); f.phase = Math.abs(d) > 3 ? want : f.phase + d * k; }      // the same stroke of the tail, the same step of the arms
     if (Array.isArray(e.o)) OPOSE.forEach((key, j) => { if (Number.isFinite(e.o[j]) && key in f) f[key] += (e.o[j] - f[key]) * k; });
     if (Number.isFinite(e.c) && f.sp?.tail) { f.curlK = (f.curlK ?? 0) + (e.c - (f.curlK ?? 0)) * k; if (Number.isFinite(e.g)) f.gripK = (f.gripK ?? 0) + (e.g - (f.gripK ?? 0)) * k; f.setPose(f.phase); }      // a seahorse's tail: curled round a stem or a partner's tail on every phone, not only the lead one
-    f.group.position.copy(f.pos); f.group.quaternion.setFromEuler(new THREE.Euler(f.roll, f.heading, f.pitch, 'YZX'));
+    if (typeof e.sh === 'string' && f.sp?.tail) seaUnpack(f, e.sh, k);
+    f.netStrikeT = Math.max(0, (f.netStrikeT ?? 0) - dt); const strike = f.netStrikeT > 0 ? 0.2 * Math.sin(Math.PI * (1 - f.netStrikeT / 0.16)) : 0;      // the strike, played here as on the lead phone
+    f.group.position.copy(f.pos); f.group.quaternion.setFromEuler(new THREE.Euler(f.roll, f.heading, f.pitch - strike, 'YZX'));
   }
 }
 
@@ -917,7 +940,7 @@ async function boot() {
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
-window.__fishes = fishes; window.__decor = decor;
+window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);

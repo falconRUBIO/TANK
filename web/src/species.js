@@ -645,17 +645,22 @@ const tailAngles = (curl) => { const K = curl < 0 ? 5.6 + curl * 4.4 : 5.6 + cur
 function tailPlanar(curl, px, py, pa) { const A = tailAngles(curl); let x = TAIL.base[0], y = TAIL.base[1]; for (let i = 0; i < TAIL.n; i++) { const a = A(i / (TAIL.n - 1)); if (i > 0) { x += Math.cos(a) * TAIL.ds; y += Math.sin(a) * TAIL.ds; } px[i] = x; py[i] = y; pa[i] = a; } }
 seahorse.tailRest = (() => { const n = TAIL.n, px = new Float32Array(n), py = new Float32Array(n), pa = new Float32Array(n); tailPlanar(0, px, py, pa); return { n, p: Array.from({ length: n }, (_, i) => [px[i], py[i]]), a: pa }; })();
 export const SEAHORSE_LEAN = TAIL.lean;
+// the tip of the snout (the mouth), in model voxels from the model's centre, and the way the snout points: where a seahorse sucks in its food
+export const SEAHORSE_SNOUT = { x: 13.5 + 19 * Math.cos(-0.38) - 6, y: 38.5 + 19 * Math.sin(-0.38) - 2, a: -0.38 };
 // how far from the stem the outside of the coil reaches (model voxels): leaves inside this are pressed aside while it holds on
 export const SEAHORSE_GRIP_R = TAIL.stem + 2 * tailR(TAIL.ig / (TAIL.n - 1)) + 0.35;
-export function seahorseTail(sp, curl, grip = 0, out) {
+// stem: how thick the thing it holds is (model voxels from the axis to the inside of the coil): a plant's stem, or a thicker branch or post, round which
+// the same tail makes fewer, wider turns. The default is a plant stem.
+export const SEAHORSE_STEM = TAIL.stem, SEAHORSE_STEM_MAX = 5.6;
+export function seahorseTail(sp, curl, grip = 0, out, stem = TAIL.stem, lean = TAIL.lean) {
   const n = TAIL.n, c0 = sp.center ?? [0, 0];
   const o = out ?? { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), T: new Float32Array(n * 3), N: new Float32Array(n * 3), B: new Float32Array(n * 3), px: new Float32Array(n), py: new Float32Array(n), pa: new Float32Array(n), ax: 0, ay: 0 };
   tailPlanar(Math.max(-1, Math.min(1, curl)), o.px, o.py, o.pa);
-  // holding on, it leans back (by TAIL.lean, applied to the whole body when it is placed) so its belly is clear of the stem; the coil is tilted the other way here so it is upright in the water
-  const g = Math.max(0, Math.min(1, grip)), ig = TAIL.ig, GB = 12, cl = Math.cos(TAIL.lean), sl = Math.sin(TAIL.lean), rot = (x, y) => [x * cl + y * sl, -x * sl + y * cl];
+  // holding on, it leans back (by `lean`, applied to the whole body when it is placed) so its belly and head are clear of what it holds; the coil is tilted the other way here so it is upright in the water
+  const g = Math.max(0, Math.min(1, grip)), ig = TAIL.ig, GB = 12, cl = Math.cos(lean), sl = Math.sin(lean), rot = (x, y) => [x * cl + y * sl, -x * sl + y * cl];
   // the coil tightens as the tail thins, so every turn lies against the stem; ph is how far round the stem each point of the tail has gone
   const hph = o.hph ??= new Float32Array(n), hr = o.hr ??= new Float32Array(n); let ph = Math.PI;
-  for (let i = 0; i < n; i++) { hr[i] = TAIL.stem + tailR(i / (n - 1)) + 0.35; if (i > ig) ph += TAIL.ds / hr[i]; hph[i] = ph; }
+  for (let i = 0; i < n; i++) { hr[i] = stem + tailR(i / (n - 1)) + 0.35; if (i > ig) ph += TAIL.ds / hr[i]; hph[i] = ph; }
   const O = [o.px[ig] - rot(-hr[ig], 0)[0], o.py[ig] - rot(-hr[ig], 0)[1]], mid = rot(0, -TAIL.pitch * (hph[n - 1] - Math.PI) * 0.5);
   o.ax = O[0] + mid[0] - c0[0]; o.ay = O[1] + mid[1] - c0[1];
   for (let i = 0; i < n; i++) {

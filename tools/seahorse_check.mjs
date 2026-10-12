@@ -25,12 +25,12 @@ const r = await p.evaluate(async () => {
     const e1 = hs[0].eyeL, e2 = hs[0].eyeR; if (e1 && e2) { n.eyesN++; if (Math.abs(e1.tx - e2.tx) + Math.abs(e1.ty - e2.ty) > 0) n.eyesApart++; }
     if (i % 2000 === 0) await new Promise((q) => setTimeout(q, 0)); }
   const avg = (a) => a.length ? a.reduce((s, c) => s + c, 0) / a.length : NaN;
-  return { held: n.held.map((x) => Math.round(100 * x / n.total)), swim: n.swim.map((x) => Math.round(100 * x / n.total)), snicks: hs.map((h) => h.snicks ?? 0), holds: n.holds.map((s) => [...s]), fav: hs.map((h) => h.favHold ?? null), same: n.same, eyesApart: Math.round(100 * n.eyesApart / Math.max(1, n.eyesN)), curlHeld: +avg(n.curlHeld).toFixed(2), curlSwim: +avg(n.curlSwim).toFixed(2), tint: +n.tint.toFixed(2), thoughts: [...n.thoughts], sunk: n.sunk };
+  return { held: n.held.map((x) => Math.round(100 * x / n.total)), swim: n.swim.map((x) => Math.round(100 * x / n.total)), snicks: hs.map((h) => h.snicks ?? 0), holds: n.holds.map((s) => [...s]), fav: hs.map((h) => h.favHold ?? null), favEarned: hs.map((h) => !h.favHold || (h.memOf(h.favHold).secs >= 120 && h.memOf(h.favHold).visits >= 2)), same: n.same, eyesApart: Math.round(100 * n.eyesApart / Math.max(1, n.eyesN)), curlHeld: +avg(n.curlHeld).toFixed(2), curlSwim: +avg(n.curlSwim).toFixed(2), tint: +n.tint.toFixed(2), thoughts: [...n.thoughts], sunk: n.sunk };
 });
 console.log('  four minutes:', JSON.stringify(r));
 ck('each seahorse spends most of its time anchored by its tail', r.held.every((x) => x >= 50), `${r.held}% of the time`);
 ck('they swim between holdfasts too, slowly', r.swim.every((x) => x > 0 && x < 40), `${r.swim}% of the time swimming`);
-ck('each uses more than one holdfast and has a favourite', r.holds.every((h) => h.length >= 2) && r.fav.every(Boolean), JSON.stringify({ holds: r.holds, fav: r.fav }));
+ck('each uses more than one holdfast, and a favourite is earned, never handed out (two visits, two minutes held)', r.holds.every((h) => h.length >= 2) && r.favEarned.every(Boolean), JSON.stringify({ holds: r.holds, fav: r.fav }));
 ck('two seahorses never hold on to the same stem at once', r.same === 0, `${r.same} frames`);
 ck('they snap up plankton every so often', r.snicks.every((x) => x >= 6), `${r.snicks} snaps`);
 ck('each eye looks its own way much of the time', r.eyesApart >= 40, `${r.eyesApart}% of the time the eyes look different ways`);
