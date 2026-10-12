@@ -1,8 +1,8 @@
 // The living roster: spawns a Fish3D for every fish in the game state, grows them, gives each its own
 // personality-driven wandering, and runs feeding (flakes sink, each fish picks its own piece).
-import { sandH, placeable, crossesFace, levelAt, slopeAt } from './terrain.js';
+import { sandH, placeable, crossesFace, levelAt, slopeAt, GLASS_Z } from './terrain.js';
 // where a crab comes down for an octopus: near x,z but on the same level of sand as the octopus, on flat sand, so the hunt never has to go round by a ramp
-const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k = 0; k < 24; k++) { const r = k * 0.12, a = k * 2.4, qx = Math.max(-3.6, Math.min(3.6, x + Math.cos(a) * r)), qz = Math.max(-3.3, Math.min(2.4, z + Math.sin(a) * r)); if (levelAt(qx, qz) === lv && slopeAt(qx, qz).s < 0.8) return [qx, qz]; } return [o.pos.x + 0.8, o.pos.z]; };
+const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k = 0; k < 24; k++) { const r = k * 0.12, a = k * 2.4, qx = Math.max(-3.6, Math.min(3.6, x + Math.cos(a) * r)), qz = Math.max(-3.3, Math.min(GLASS_Z - 0.8, z + Math.sin(a) * r)); if (levelAt(qx, qz) === lv && slopeAt(qx, qz).s < 0.8) return [qx, qz]; } return [o.pos.x + 0.8, o.pos.z]; };
 import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
@@ -210,7 +210,7 @@ export class Fishes {
     const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
     const mine = new Set(this.list.filter((o) => !o.dead).map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
     const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
-    const bad = (x, z, at = null) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9) || !placeable(x, z) || z < -3.3 || z > 2.3 || (at && crossesFace(at.x, at.z, x, z));      // a thing is shoved along the sand it sits on: never over the edge of a bank, never onto a face
+    const bad = (x, z, at = null) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9) || !placeable(x, z) || z < -3.3 || z > GLASS_Z - 0.9 || (at && crossesFace(at.x, at.z, x, z));      // a thing is shoved along the sand it sits on: never over the edge of a bank, never onto a face
     const home = !f.homeId && spots.filter((q) => (q.type === 'coconut' || q.type === 'pot') && !mine.has(q.id)).sort((a, b) => (a.type === 'coconut' ? 0 : 1) - (b.type === 'coconut' ? 0 : 1))[0];
     if (home && rnd() < 0.7) {                                                                                  // a coconut and nowhere to live: carry it to a quiet corner
       const at = dc.atOf(home.id), want = f.fav ? [f.fav.x, f.fav.z] : null;
@@ -222,14 +222,14 @@ export class Fishes {
     }
     if (f.homeId && rnd() < 0.6) {                                                                             // its own shell is light: now and then it shoves it along a little and turns it this way or that
       const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 10; i++) {
-        const sx = rnd() < 0.5 ? -1 : 1, x = Math.max(-3.4, Math.min(3.4, at.x + sx * (0.35 + rnd() * 0.55))), z = Math.max(-3.3, Math.min(2.1, at.z + (rnd() - 0.5) * 0.4)), ry = (rnd() - 0.5) * 1.3;      // mostly sideways, so it can stand on the far side and shove
+        const sx = rnd() < 0.5 ? -1 : 1, x = Math.max(-3.4, Math.min(3.4, at.x + sx * (0.35 + rnd() * 0.55))), z = Math.max(-3.3, Math.min(GLASS_Z - 1.0, at.z + (rnd() - 0.5) * 0.4)), ry = (rnd() - 0.5) * 1.3;      // mostly sideways, so it can stand on the far side and shove
         const L = Math.hypot(x - at.x, z - at.z) || 1, stand = 1.2 + 0.45 * (f.radius ?? 2), sxp = at.x - ((x - at.x) / L) * stand, szp = at.z - ((z - at.z) / L) * stand;
         if (L > 0.25 && Math.abs(sxp) < 3.7 && szp > -3.4 && szp < 2.5 && placeable(sxp, szp) && !crossesFace(at.x, at.z, sxp, szp) && !bad(x, z, at) && x > -3.7 && x < 3.7 && dc.roomFor(f.homeId, x, z, ry)) return { kind: 'turn', id: f.homeId, gx: x, gz: z, ry }; }
     }
     const movers = spots.filter((q) => ['rock', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
     if (!movers.length) return null;
     if (!f.homeId && f.den?.kind !== 'rocks' && movers.length >= 2 && M.tidy > 0.3) {                                                // no shell or pot to live in: it gathers rocks into a shelter at its favourite spot
-      const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(-3.2, Math.min(1.9, c.z));
+      const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(-3.2, Math.min(GLASS_Z - 1.0, c.z));
       const there = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) < 1.5), away = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) >= 1.5).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
       for (const m of away.slice(0, 3)) for (let i = 0; i < 10; i++) { const a = (there.length + i) * 2.1 + rnd() * 0.6; let x = cx + Math.cos(a) * 1.1, z = cz + Math.sin(a) * 0.75; const L = Math.hypot(x - m.x, z - m.z); if (L > MOVE_MAX) { x = m.x + ((x - m.x) / L) * (MOVE_MAX - 0.4); z = m.z + ((z - m.z) / L) * (MOVE_MAX - 0.4); }      // too far for one trip: bring it part of the way
         if (!bad(x, z, m) && Math.hypot(x - m.x, z - m.z) > 0.6 && free(m.id, x, z)) return { kind: 'build', id: m.id, gx: x, gz: z }; }
@@ -531,7 +531,7 @@ export class Fishes {
       const cg = sandH(c.x, c.z) + 0.13; if (c.y > cg + 0.01) { c.y = Math.max(cg, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
       R.down += dt; R.burst -= dt;
       if (hunter && !c.pinned && !(c.dazed > performance.now()) && R.burst <= -0.5 && R.dodges < 2 && R.down < 9) { const dx = c.x - hunter.pos.x, dz = c.z - hunter.pos.z, d = Math.hypot(dx, dz); if (d < 2.1) { const a = Math.atan2(dz, dx) + (this.rng() < 0.5 ? 1 : -1) * (0.6 + this.rng() * 0.6), sp = 1.5; R.vx = Math.cos(a) * sp; R.vz = Math.sin(a) * sp * 0.55; R.burst = 0.75; R.dodges++; R.face = a; } }
-      if (R.burst > 0 && !c.pinned) { c.x = Math.max(-3.6, Math.min(3.6, c.x + R.vx * dt)); c.z = Math.max(-3.4, Math.min(2.4, c.z + R.vz * dt)); c.y = sandH(c.x, c.z) + 0.13; }      // it scuttles over the sand, up and down with it
+      if (R.burst > 0 && !c.pinned) { c.x = Math.max(-3.6, Math.min(3.6, c.x + R.vx * dt)); c.z = Math.max(-3.4, Math.min(GLASS_Z - 0.6, c.z + R.vz * dt)); c.y = sandH(c.x, c.z) + 0.13; }      // it scuttles over the sand, up and down with it
       let ry = c.mesh.rotation.y, dr = R.face - ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y = ry + dr * Math.min(1, dt * 8);
       c.mesh.position.set(c.x + (c.pinned ? Math.sin(t * 30) * 0.03 : R.burst > 0 ? 0 : Math.sin(t * 4 + c.z) * 0.04), c.y, c.z);
     }

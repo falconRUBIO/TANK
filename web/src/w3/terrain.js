@@ -42,6 +42,8 @@ export function levelAt(x, z) { const h = sandH(x, z), hm = hMid(x); return h > 
 export function restY(x, z, r = 0.3) { let lo = sandH(x, z), sum = lo; for (const [a, b] of [[r, 0], [-r, 0], [0, r], [0, -r]]) { const h = sandH(x + a, z + b); lo = Math.min(lo, h); sum += h; } return lo * 0.65 + (sum / 5) * 0.35; }
 // the highest sand under something of radius r: what a body that wide has to stay above, so its edge does not sink into a slope or the face of a bank
 export function sandUnder(x, z, r) { let m = sandH(x, z); for (let k = 0; k < 8; k++) { const a = k * 0.785398; m = Math.max(m, sandH(x + Math.cos(a) * r, z + Math.sin(a) * r)); } return m; }
+// the front glass of the tank: the open floor runs right down to it, at the bottom of the screen
+export const GLASS_Z = 4.2;
 // too steep to stand a decoration on
 export const STEEP = 0.85;
 export const placeable = (x, z) => slopeAt(x, z).s <= STEEP && slopeAt(x, z, 0.3).s <= STEEP * 1.15;
@@ -56,7 +58,14 @@ const ORDER = { front: 0, middle: 1, rear: 2 };
 // the stops on the way from a to b, in order (empty when they are on the same level)
 export function routeBetween(ax, az, bx, bz) {
   const from = ORDER[levelAt(ax, az)], to = ORDER[levelAt(bx, bz)], out = [];
-  if (from === to) return out;
+  if (from === to) {
+    // the same level at both ends but a face in between: it is part-way along a ramp, so it follows that ramp to the end on its goal's level
+    if (!crossesFace(ax, az, bx, bz)) return out;
+    let best = null, bd = 1.3; for (const R of Object.values(RAMPS)) R.forEach((q, i) => { const d = Math.hypot(q.x - ax, q.z - az); if (d < bd) { bd = d; best = { R, i }; } });
+    if (!best) return out; const { R, i } = best, lb = levelAt(bx, bz);
+    const seq = levelAt(R[0].x, R[0].z) === lb ? R.slice(0, i + 1).reverse() : levelAt(R.at(-1).x, R.at(-1).z) === lb ? R.slice(i) : [];
+    return seq.map((q) => ({ ...q }));
+  }
   if (to > from) { if (from === 0) out.push(...RAMPS.low); if (to === 2) out.push(...RAMPS.up); }
   else { if (from === 2) out.push(...[...RAMPS.up].reverse()); if (to === 0) out.push(...[...RAMPS.low].reverse()); }
   return out.map((p) => ({ ...p }));
