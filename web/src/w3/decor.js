@@ -104,6 +104,7 @@ export class Solids {
   cells(v, px, py, pz, ry, fn) { const c = Math.cos(ry), s = Math.sin(ry); for (const q of v.m.values()) { const x = q.i * v.u, y = q.j * v.u, z = q.k * v.u; fn(px + x * c + z * s, py + y, pz - x * s + z * c); } }
   addVox(v, px, py, pz, ry = 0, d = 1) { this.cells(v, px, py, pz, ry, (x, y, z) => this.stamp(x, y, z, d)); }
   overlaps(v, px, py, pz, ry = 0) { let n = 0; this.cells(v, px, py, pz, ry, (x, y, z) => { const k = this.idx(Math.round(x / G), Math.round(y / G), Math.round(z / G)); if (k >= 0 && this.a[k]) n++; }); return n; }
+  at(x, y, z) { const k = this.idx(Math.round(x / G), Math.round(y / G), Math.round(z / G)); return k >= 0 && this.a[k] > 0; }
   // sum of unit-ish push vectors away from solid cells within r of p; returns the number of touching cells
   push(p, r, out) {
     const cx = Math.round(p.x / G), cy = Math.round(p.y / G), cz = Math.round(p.z / G), R = Math.ceil(r / G) + 1; let n = 0;

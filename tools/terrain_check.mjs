@@ -8,7 +8,7 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errors = []; let fails = 0;
 p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
-await p.goto('http://localhost:8123/?q=0&dev=1&tod=noon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.goto(`http://localhost:${process.env.PORT || 8123}/?q=0&dev=1&tod=noon`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 6; s.shells = 500; s.fish.length = 0; const born = Date.now() - 12 * 864e5;
   for (const [i, pal] of [[1, 0], [2, 3], [3, 5]]) s.fish.push({ id: 'o' + i, name: 'Ink' + i, species: 'octopus', seed: 5 + i * 3, pal, born, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', hunger: 0.1, movedAt: Date.now() });
@@ -18,11 +18,11 @@ await p.waitForTimeout(3000);
 // 1. up and down: one octopus, sent from the front floor to the top of the back bank, and back
 const trip = (from, to) => p.evaluate(async ({ from, to }) => {
   const T = await import('/src/w3/terrain.js'), F = window.__fishes, f = F.byId.get('o1'); F.list.filter((o) => o !== f && o.species.move === 'jet').forEach((o) => { o.pos.set(-4, T.sandH(-4, 2.4) + 0.55, 2.4); o.st = { s: 'rest', t: 999, n: 0, pulse: 0 }; });
-  f.pos.set(from[0], T.sandH(from[0], from[1]) + 0.55, from[1]); f.vel.set(0, 0, 0); f.inspect = null; f.task = null; f.hunt = null; f.den = null; f.failed = []; f.isNight = false; f.shy = false; f.noSwimTrips = true;
+  f.pos.set(from[0], T.sandH(from[0], from[1]) + 0.55, from[1]); f.vel.set(0, 0, 0); f.inspect = null; f.task = null; f.hunt = null; f.den = null; f.failed = []; f.isNight = false; f.shy = false; f.noSwimTrips = true; f.roamSpot = () => [to[0], to[1]];      // its own wish to wander goes the same way, so it cannot change the trip under test
   const S = (f.st = { s: 'crawl', t: 60, n: 0, pulse: 0, mode: 'greet' }); f.target.set(to[0], 0.55, to[1]);
   let maxFace = 0, ramp = 0, levels = [], t = 0, jets = 0;
   for (let i = 0; i < 20 * 120; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => { if (x === f || x.species.move !== 'jet') x.update(0.05, Math.random, F.list); }); t += 0.05;      // the fish swim on as usual; the other octopuses wait at the side
-    if (f.st.s === 'jet') jets++; if (f.st.s === 'crawl') maxFace = Math.max(maxFace, T.slopeAt(f.pos.x, f.pos.z).s);
+    if (f.st.s === 'jet') jets++; if (f.st.s === 'crawl') { const sl = T.slopeAt(f.pos.x, f.pos.z).s; if (sl > maxFace) { maxFace = sl; window.__faceAt = { t: +t.toFixed(1), pos: f.pos.toArray().map((v) => +v.toFixed(2)), vel: f.vel.toArray().map((v) => +v.toFixed(2)), route: (f.st.route ?? []).map((q) => [+q.x.toFixed(1), +q.z.toFixed(1)]), tgt: [+f.target.x.toFixed(1), +f.target.z.toFixed(1)], detour: !!f.st.detour, prog: f.st.prog ? 1 : 0, gait: f.gait?.name }; } }
     for (const r of Object.values(T.RAMPS)) for (const q of r) if (Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9) ramp++;
     const lv = T.levelAt(f.pos.x, f.pos.z); if (levels.at(-1) !== lv) levels.push(lv);
     if (f.st.s !== 'crawl' && f.st.s !== 'jet' && Math.hypot(f.pos.x - to[0], f.pos.z - to[1]) < 1.2) break;
@@ -32,6 +32,7 @@ const trip = (from, to) => p.evaluate(async ({ from, to }) => {
 }, { from, to });
 let r = await trip([-2, 2.3], [-2.5, -3.1]); console.log('  up:', JSON.stringify(r));
 ck('crawling from the front floor it reaches the top of the back bank', r.level === 'rear' && r.dist < 1.3, JSON.stringify(r.at));
+if (process.env.DEBUG) console.log('  face', JSON.stringify(await p.evaluate(() => window.__faceAt)));
 ck('it goes up by the ramps, through the terrace, not straight up a face', r.ramp > 0 && r.levels.join() === 'front,middle,rear' && r.maxFace < 1.3, `levels ${r.levels} · steepest under it ${r.maxFace}`);
 ck('it is standing on the sand up there, not floating or sunk', Math.abs(r.ground - 0.55) < 0.12, `${r.ground}`);
 await p.evaluate(() => { window.__tank.camera.updateMatrixWorld(); }); await p.screenshot({ path: `${out}/up_there.png` });

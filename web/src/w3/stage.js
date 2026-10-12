@@ -23,7 +23,7 @@ renderer.info.autoReset = false;      // count draw calls across every post-proc
 export const scene = new THREE.Scene();
 export const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
 export const CAM_Z = 33;                               // a little further back than it was, so a full tank does not feel crammed
-export const CAM_Y = 13, LOOK_Y = 4.2;                // up a little and looking down, so the tops of the sand banks catch the eye as well as their faces
+export const CAM_Y = 14, LOOK_Y = 5.6;                // up a little and looking down, so the tops of the sand banks catch the eye as well as their faces
 camera.position.set(0, CAM_Y, CAM_Z); camera.lookAt(0, LOOK_Y, 0);
 scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 

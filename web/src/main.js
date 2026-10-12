@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
-import { swayTime, fishBoost } from './w3/voxshade.js';
+import { swayTime, fishBoost, plantPush, PUSH_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
@@ -773,6 +773,9 @@ function frameBody(now) {
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
   bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
+  { const P = plantPush.value; let k = 0;      // the plants bend away from whoever is among them (not a seahorse holding on to one)
+    for (const pass of [0, 1]) for (const f of fishes.list) { if (k >= PUSH_N) break; if (f.dead || f.holdfast?.on || (pass === 0) !== (f.species.move === 'jet') || (pass === 1 && f.pos.y > 8)) continue; P[k++].set(f.pos.x, f.pos.y, f.pos.z, f.radius * (f.species.move === 'jet' ? 0.75 : 0.55) * (f.group.scale.x || 1)); }
+    for (; k < PUSH_N; k++) P[k].set(0, -99, 0, 0); }
   fishBoost.value.set(0.36, 0.3, 0.22).multiplyScalar(0.3 + 0.7 * Math.min(1, cur.sunI / 12));
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);

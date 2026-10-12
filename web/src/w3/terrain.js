@@ -40,6 +40,8 @@ export function slopeAt(x, z, e = 0.08) { const gx = (sandH(x + e, z) - sandH(x 
 export function levelAt(x, z) { const h = sandH(x, z), hm = hMid(x); return h > hm + 0.55 * (hRear(x) - hm) * Math.max(0.35, lRear(x)) && h > hm + 0.35 ? 'rear' : h > hm * 0.5 ? 'middle' : 'front'; }
 // where something of radius r rests: mostly on the lowest sand under it, so it beds in on a slope rather than floating off it
 export function restY(x, z, r = 0.3) { let lo = sandH(x, z), sum = lo; for (const [a, b] of [[r, 0], [-r, 0], [0, r], [0, -r]]) { const h = sandH(x + a, z + b); lo = Math.min(lo, h); sum += h; } return lo * 0.65 + (sum / 5) * 0.35; }
+// the highest sand under something of radius r: what a body that wide has to stay above, so its edge does not sink into a slope or the face of a bank
+export function sandUnder(x, z, r) { let m = sandH(x, z); for (let k = 0; k < 8; k++) { const a = k * 0.785398; m = Math.max(m, sandH(x + Math.cos(a) * r, z + Math.sin(a) * r)); } return m; }
 // too steep to stand a decoration on
 export const STEEP = 0.85;
 export const placeable = (x, z) => slopeAt(x, z).s <= STEEP && slopeAt(x, z, 0.3).s <= STEEP * 1.15;

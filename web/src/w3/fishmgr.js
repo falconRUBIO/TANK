@@ -13,8 +13,8 @@ import { personaOf } from '../profile.js';
 import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
-  goldfish: { x: [-3.4, 3.6], y: [4, 10.5], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [7.5, 12.5], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [5, 11], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [6.5, 12], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [7, 12.5], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 10.5], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.5] },
+  goldfish: { x: [-3.4, 3.6], y: [4, 11.6], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [9, 13.1], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
+  angelfish: { x: [-3.0, 3.6], y: [5.5, 12], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [8, 13], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9.8], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [8.5, 13], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 11], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
 };
 export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
