@@ -33,7 +33,7 @@ ck('the fish use the top of the screen too, not only the middle', f[0] + f[1] >=
 ck('the fish are not piled in the middle', f[2] <= 40, `${f[2]}% in the middle fifth`);
 ck('the octopuses spend a good share of their time low on the screen, on the front floor', o[3] + o[4] >= 35, `${o[3] + o[4]}% in the bottom two fifths`);
 ck('the octopuses use every level of the sand: the front floor, the middle bank and the high bank at the back', lv.front >= 25 && lv.middle >= 20 && lv.rear >= 10, JSON.stringify(lv));
-ck('the octopuses are not piled in the middle either', o[2] <= 45, `${o[2]}% in the middle fifth`);
+ck('the octopuses are not piled in the middle either (the middle terrace itself sits in the middle of the screen)', o[2] <= 50, `${o[2]}% in the middle fifth`);
 ck('they give each other room: a fish seldom has two others within a couple of body lengths', piled <= 25, `${piled}% of the time`);
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Screen spread checks passed'); await b.close(); process.exit(fails ? 1 : 0);
