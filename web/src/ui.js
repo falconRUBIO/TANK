@@ -134,9 +134,11 @@ export function initUI({ game, social, cb }) {
   };
   const slotsHtml = () => {
     const s = game.members; if (!s) return '';
+    // the people first, then one invite card for however many seats are free, not a row of identical ones
+    const free = [1, 2, 3, 4].filter((n) => !s.some((x) => x.slot === n)).length;
     return [1, 2, 3, 4].map((n) => { const m = s.find((x) => x.slot === n); return m
       ? `<div class="slot${m.id === game.you.userId ? ' me' : ''}"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '<button class="nudge" data-edit-me>Edit look</button>' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
-      : `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>Slot ${n}</small></div>`; }).join('');
+      : ''; }).join('') + (free ? `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>${free === 1 ? '1 seat free' : `${free} seats free`}</small></div>` : '');
   };
   // your look, edited from the Crew tab with the same editor as the first screen
   let draft = null;
@@ -255,12 +257,18 @@ export function initUI({ game, social, cb }) {
       const wish = WISHES[S().wishIdx];
       const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
       const THANKABLE = ['feed', 'glass', 'water', 'decor', 'fish', 'visitor', 'bottle', 'gift'];
-      const act = game.activity.slice().reverse().slice(0, 12).map((a) => { const can = a.userId && a.userId !== me && THANKABLE.includes(a.type) && Date.now() - a.ts < 24 * 3600e3 && !game.thanked?.has(a.id); return `<div class="act"><span>${esc(youify(a.text))}</span>${can ? `<button class="heart" data-thank="${a.id}" data-to="${a.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(a.ts)}</small>`}</div>`; }).join('') || '<p class="dim">Nothing yet.</p>';
-      const msgs = game.messages.slice(-20).map((m) => `<div class="msg ${m.userId === game.you.userId ? 'me' : ''}"><b>${esc(m.name)}</b> ${esc(m.text)}</div>`).join('');
+      // the crew feed: what everyone said and did, in one list, newest first, under Today / Yesterday / the day's name; a heart to thank a friend for something they did today
+      const ICON = { feed: '🍽️', glass: '🧽', water: '💧', decor: '🪴', fish: '🐟', visitor: '✨', bottle: '🍾', gift: '🎁', wish: '⭐', note: '📝', trim: '✂️', puzzle: '🧩' };
+      const dayName = (ts) => { const a = new Date(ts), b = new Date(), d = Math.round((new Date(b.toDateString()) - new Date(a.toDateString())) / 864e5); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : a.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); };
+      const items = [...game.activity.map((a) => ({ k: 'act', ...a })), ...game.messages.map((m) => ({ k: 'msg', ...m }))].filter((x) => Number.isFinite(x.ts)).sort((a, b) => b.ts - a.ts).slice(0, 40);
+      let lastDay = null; const feed = items.map((it) => { const day = dayName(it.ts), head = day !== lastDay ? `<div class="fday">${day}</div>` : ''; lastDay = day;
+        if (it.k === 'msg') { const mine = it.userId === me; return `${head}<div class="fmsg ${mine ? 'me' : ''}"><b>${mine ? 'You' : esc(it.name)}</b><p>${esc(it.text)}</p><small>${ago(it.ts)}</small></div>`; }
+        const can = it.userId && it.userId !== me && THANKABLE.includes(it.type) && Date.now() - it.ts < 24 * 3600e3 && !game.thanked?.has(it.id);
+        return `${head}<div class="fact"><span class="ic">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
       return `<h3>Friends</h3>${seg}<div class="slots">${slotsHtml()}</div>
-        <div class="code"><small>TANK CODE</small><b>${esc(game.code)}</b><div class="row"><button data-code="copy">Copy</button><button data-code="share">Invite friends</button><button data-code="regen" title="Invalidate the old code">New code</button></div></div>
-        ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}<h4>Recent activity</h4>${act}<h4>Messages</h4><div class="chat">${msgs || '<p class="dim">Say hello.</p>'}</div>
-        <form class="send"><input maxlength="140" placeholder="Send a message" autocomplete="off"><button>Send</button></form>`;
+        <h4>What's happening</h4><form class="send feedsend"><input maxlength="140" placeholder="Say something to the crew" autocomplete="off"><button>Send</button></form>
+        <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
+        ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}`;
     },
     settings: () => `<h3>Settings</h3><div class="set">
       <h4>Sound and look</h4><div class="group">
@@ -275,6 +283,9 @@ export function initUI({ game, social, cb }) {
       <h4>Your tank</h4><div class="group">
         ${game.state.fish.some((f) => f.species === 'octopus') ? `<label class="row2"><span>Octopus moves things</span><button class="tog ${game.state.flags?.noRearrange ? '' : 'on'}" id="rearr">${game.state.flags?.noRearrange ? 'Off' : 'On'}</button></label>` : ''}
         ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div>
+        <div class="row2"><span>Tank code</span><b class="tcode">${esc(game.code ?? '')}</b></div>
+        <label class="row2"><span>Invite friends</span><span><button class="tog" data-code="copy">Copy code</button> <button class="tog" data-code="share">Share</button></span></label>
+        <label class="row2"><span>Change the code<small>The old one stops working</small></span><button class="tog" data-code="regen">New code</button></label>
         <div class="row2"><span>Tank storage</span><b id="stor">checking…</b></div>
         <div class="row2"><span>Copy on this phone</span><b id="phc">…</b></div>
         <label class="row2"><span>Recovery key</span><button class="tog" id="rkey">Show</button></label>
