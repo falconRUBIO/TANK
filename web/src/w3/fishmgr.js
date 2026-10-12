@@ -12,8 +12,8 @@ import { mulberry32 } from '../color.js';
 import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
 const BANDS = {
-  goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [2.5, 9], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.5] },
+  goldfish: { x: [-3.4, 3.6], y: [4, 10.5], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [7.5, 12.5], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
+  angelfish: { x: [-3.0, 3.6], y: [5, 11], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [6.5, 12], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [7, 12.5], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 10.5], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.5] },
 };
 export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
@@ -65,7 +65,7 @@ export class Fishes {
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: 3 + (((d.seed * 13) % 100) / 100) * 8 }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
+        this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
         f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
@@ -295,7 +295,7 @@ export class Fishes {
     f.pick = (r) => {
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
       const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
-      f.idle = 0;
+      f.idle = 0; const high = (f.band?.y?.[0] ?? 3) >= 6.5, lowK = high ? 0.4 : 1;      // a surface swimmer is drawn down to the sand far less often
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
@@ -314,17 +314,17 @@ export class Fishes {
       if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
       if (this.night && !has('Playful')) {
         if (has('Shy')) return T(-3 + r() * 6, 4 + r() * 6, 0.8 + r() * 1.8, 4 + r() * 3);
-        if (r() < 0.5) f.idle = 4; return T(-3.4 + r() * 6.8, 0.9 + r() * 2.2, -1 + r() * 2.5, 7 + r() * 4);
+        if (r() < 0.5) f.idle = 4; return T(-3.4 + r() * 6.8, high ? 4 + r() * 3 : 0.9 + r() * 2.2, -1 + r() * 2.5, 7 + r() * 4);
       }
       if (mood === 'Hungry' && r() < 0.5 && f.id !== 'cory') return T(-2.5 + r() * 5, 9 + r() * 2.5, 0.8 + r() * 1.2, 4);
-      if (mood === 'Sleepy') return T(-3 + r() * 6, 1 + r() * 2.2, f.target.z, 8);
-      if (has('Shy') && r() < 0.75) {                                              // tucks in behind plants and decorations, or hugs the back wall
+      if (mood === 'Sleepy') return T(-3 + r() * 6, high ? 4 + r() * 2.5 : 1 + r() * 2.2, f.target.z, 8);
+      if (has('Shy') && r() < 0.75 * lowK) {                                              // tucks in behind plants and decorations, or hugs the back wall
         const s = spots.length ? spots[(r() * spots.length) | 0] : null;
         return s ? T(s.x + (r() - 0.5) * 0.8, 0.9 + r() * Math.max(0.6, s.h * 0.5), s.z - 0.9 - r() * 0.4, 6 + r() * 4) : T(-3.4 + r() * 7, 1 + r() * 2.5, -1.6 - r() * 1.2, 6 + r() * 4);
       }
       if (has('Brave') && r() < 0.6) return T(-2 + r() * 4, 3 + r() * 7, 2.2 + r() * 0.6, 3 + r() * 3);   // swims out front, close to the glass
       if (has('Curious') && r() < 0.65) {                                          // goes to inspect decorations and other fish
-        if (spots.length && r() < 0.7) { const s = spots[(r() * spots.length) | 0]; return T(s.x + (r() - 0.5) * 0.8, 1 + s.h * 0.55, s.z + 1.2, 3.5); }
+        if (spots.length && r() < 0.7 * lowK) { const s = spots[(r() * spots.length) | 0]; return T(s.x + (r() - 0.5) * 0.8, (s.y ?? 0) + 1 + s.h * 0.55, s.z + 1.2, 3.5); }
         const o = others[(r() * others.length) | 0]; if (o) return T(o.pos.x + (r() - 0.5) * 1.6, o.pos.y + (r() - 0.5), o.pos.z + 0.6, 3);
       }
       if (has('Social') && !school && r() < 0.7 && others.length) {                // sticks close to a buddy
@@ -332,9 +332,20 @@ export class Fishes {
         return T(o.pos.x - Math.cos(o.heading) * 1.6 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.2);
       }
       if (has('Playful')) { f.retarget = 1.4 + r() * 1.4; if (r() < 0.4) T(this.bubbleAt.x + (r() - 0.5) * 0.8, 2 + r() * 8, 0.2 + r(), 2 + r()); return; }
-      if (has('Lazy')) { f.target.y = 1 + r() * 2.5; f.retarget = 7 + r() * 5; if (r() < 0.4) f.idle = 3; return; }
+      if (has('Lazy')) { f.target.y = high ? f.band.y[0] + r() * 2 : 1 + r() * 2.5; f.retarget = 7 + r() * 5; if (r() < 0.4) f.idle = 3; return; }
       if (has('Greedy') && r() < 0.5) return T(-2.5 + r() * 5, 10.5 + r() * 3, 0.8 + r() * 1.6, 4);   // waits near the surface where food falls
       if (has('Calm')) f.retarget += 3;
+    };
+    // Room to swim: wherever it means to go, if two or more others are already there (or headed there) it picks a quieter place
+    // in its own layer of the water instead. A fish following a friend, schooling, doing a trick or going for food stays put.
+    const chosen = f.pick;
+    f.pick = (r) => {
+      chosen(r); if (window.__noRoom || f.script?.length || f.palId || school || f.profile?.mood === 'Hungry' || f.weak) return;
+      const crowd = (x, y, z) => this.list.reduce((n, o) => n + (o !== f && !o.dead && o.species.move !== 'jet' && (Math.hypot(o.pos.x - x, (o.pos.y - y) * 0.8, o.pos.z - z) < 1.5 || Math.hypot(o.target.x - x, (o.target.y - y) * 0.8, o.target.z - z) < 1.2) ? 1 : 0), 0);
+      const T0 = f.target; if (crowd(T0.x, T0.y, T0.z) < 2) return;
+      const b = f.band; let best = null, bn = 1e9;
+      for (let k = 0; k < 8; k++) { const x = b.x[0] + r() * (b.x[1] - b.x[0]), y = Math.max(b.y[0], Math.min(b.y[1], T0.y + (r() - 0.5) * 3)), z = b.z[0] + r() * (b.z[1] - b.z[0]), n = crowd(x, y, z) + Math.hypot(x - T0.x, y - T0.y) * 0.05; if (n < bn) { bn = n; best = [x, y, z]; } }
+      if (best) T0.set(best[0], Math.min(Fish3D.topY - 0.3, best[1]), best[2]);
     };
   }
   // Show a trick: a scripted route through or around a decoration, then back to normal wandering.
