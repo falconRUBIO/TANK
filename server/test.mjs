@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { start } from './server.mjs';
 import { ALPHABET, tickTank } from './logic.mjs';
-import { DECOR_DEF } from '../web/src/game/rules.js';
+import { DECOR_DEF, WATER_PAY, GLASS_PAY } from '../web/src/game/rules.js';
 
 let pass = 0; let L_tick = () => null;
 const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
@@ -156,8 +156,8 @@ await t('feeding a full tank is accepted but not rewarded', async () => {
 await t('water change and glass cleaning only pay when actually needed', async () => {
   wc.send(JSON.stringify({ t: 'water', idem: 'w0' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'w0')).applied, false);
   setW(tank.id, { water: 0.4, glass: 0.5, simTs: Date.now() });
-  wc.send(JSON.stringify({ t: 'water', idem: 'w1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'w1')).delta, 2);
-  wc.send(JSON.stringify({ t: 'glass', idem: 'g1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'g1')).delta, 1);
+  wc.send(JSON.stringify({ t: 'water', idem: 'w1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'w1')).delta, WATER_PAY);
+  wc.send(JSON.stringify({ t: 'glass', idem: 'g1' })); assert.equal((await waitFor(wc, (m) => m.t === 'ack' && m.idem === 'g1')).delta, GLASS_PAY);
 });
 await t('chat messages reach everyone and are stored', async () => {
   wb.send(JSON.stringify({ t: 'chat', text: 'hello <b>fish</b>' })); const m = await waitFor(wa, (x) => x.t === 'chat'); assert.equal(m.msg.name, 'Sam'); assert.ok(!m.msg.text.includes('<'));
@@ -474,7 +474,7 @@ await t('analytics: sessions and actions are recorded without personal data, pla
 await t('economy integrity: milestones and the daily wish pay once even when caretakers act at the same moment, and one wallet cannot be double-spent', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now(), wx = await open(x.token), wy = await open(y.token), wz = await open(z.token), w0 = getW(tk.id), tpl = w0.fish[0];
   const fish = ['m1', 'm2', 'm3'].map((id, i) => ({ ...tpl, id, name: id.toUpperCase(), species: 'goldfish', traits: ['Calm'], born: now - 14 * DAY - 60e3, stage: 'adult', ail: 0, health: 1, happy: 0.8, found: [], disc: {}, bond: {}, petAt: {} }));
-  setW(tk.id, { fish, decor: [], orders: [], eggs: [], floaters: [], shells: 50, simTs: now - 2000, hunger: 0.3, water: 0.9, glass: 0, createdAt: now - 40 * DAY, lastDeath: now, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15, flags: { ...w0.flags, tut: 5, msV: 1, pairs: {}, weeks: 5 }, daily: { day: Math.floor(now / DAY), kind: 'play', tier: 'normal', reward: 5, text: 'Play with a fish', need: 1, have: 0, ids: [], done: false } });
+  setW(tk.id, { fish, decor: [], orders: [], eggs: [], floaters: [], shells: 50, simTs: now - 2000, hunger: 0.3, water: 0.9, glass: 0, createdAt: now - 40 * DAY, lastDeath: now, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15, dayLog: { day: Math.floor(now / DAY), care: true, bond: true, paid: true }, flags: { ...w0.flags, tut: 5, msV: 1, pairs: {}, weeks: 5 }, daily: { day: Math.floor(now / DAY), kind: 'play', tier: 'normal', reward: 5, text: 'Play with a fish', need: 1, have: 0, ids: [], done: false } });
   const [r1, r2] = await Promise.all([ackOf(wx, { t: 'pet', id: 'm1', idem: 'ei-1' }), ackOf(wy, { t: 'pet', id: 'm2', idem: 'ei-2' })]); assert.ok(r1.ok && r2.ok);
   let w = getW(tk.id); assert.equal(w.daily.done, true, 'the shared wish is done'); assert.equal(w.shells, 50 + 15 + 5, 'three 14-day milestones (+5 each) and one wish (+5), each exactly once');
   assert.ok(w.fish.every((f) => f.found.includes('age14') && !f.found.includes('age30')), 'every fish records the milestone once');

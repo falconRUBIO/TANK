@@ -4,7 +4,7 @@
 import * as R from '../web/src/game/rules.js';
 const visits = +(process.argv[2] || 3), DAYS = +(process.argv[3] || 60), H = 3600e3, DAY = 864e5;
 const sim = (visitsPerDay) => {
-  const t = R.newWorld(0, 3); R.norm(t, 0); t.flags.tut = 5; t.fish.push(R.ensureFish({ id: 'oct', name: 'Ink', species: 'octopus', seed: 3, born: 0, stage: 'baby', traits: ['Curious'], owner: 'sim', ownerName: 'Sim' })); let now = 0; const log = { level: {}, species: {}, shellsEarned: 0, fish: {}, wishes: {} }; let lastLevel = 1, lastWish = 0;
+  const t = R.newWorld(0, 3); R.norm(t, 0); t.flags.tut = 5; t.fish.push(R.ensureFish({ id: 'oct', name: 'Ink', species: 'octopus', seed: 3, born: 0, stage: 'baby', traits: ['Curious'], owner: 'sim', ownerName: 'Sim' })); let now = 0; const log = { level: {}, species: {}, shellsEarned: 0, fish: {}, wishes: {}, chores: {}, chorePay: 0 }; let lastLevel = 1, lastWish = 0;
   const gaps = visitsPerDay === 1 ? [10] : visitsPerDay === 2 ? [8, 16] : visitsPerDay === 3 ? [8, 13, 20] : [8, 11, 14, 18, 21, 23];
   const want = () => [...Object.entries(R.SPECIES_DEF).map(([k, d]) => ({ kind: 'fish', k, ...d })), ...Object.entries(R.DECOR_DEF).map(([k, d]) => ({ kind: 'decor', k, ...d }))].filter((x) => x.level <= t.level).sort((a, b) => a.price - b.price);
   const bought = new Set();
@@ -13,7 +13,9 @@ const sim = (visitsPerDay) => {
     act({ t: 'tut', step: 5 });
     if (hr === gaps[0]) for (let c = 0; c < +(process.env.GIFT || 0); c++) R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now, name: 'Sim', uid: 'sim' + c });     // GIFT=n: n caretakers each collect the daily gift
     if (t.drift) act({ t: 'collect', id: t.drift.id });
-    if (t.hunger > 0.3) act({ t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > 0.3) act({ t: 'feed', food: 'crab', fish: 'oct' }); if (process.env.TREATS) act({ t: 'crab', id: 'oct' }); if (t.glass > 0.3) act({ t: 'glass' }); if (t.water < 0.7) act({ t: 'water' });
+    // the chores, done the moment the game says they are due; each one counted with what it paid
+    const chore = (k, a) => { const s0 = t.shells, r = act(a); if (r?.ok && r.applied !== false) { log.chores[k] = (log.chores[k] ?? 0) + 1; log.chorePay += Math.max(0, t.shells - s0); } };
+    if (R.needs(t).includes('feed') && t.hunger > 0.3) chore('fish meal', { t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > R.OCTO_DUE) chore('crab', { t: 'feed', food: 'crab', fish: 'oct' }); if (process.env.TREATS) act({ t: 'crab', id: 'oct' }); if (R.needs(t).includes('glass')) chore('glass', { t: 'glass' }); if (R.needs(t).includes('water')) chore('water', { t: 'water' });
     for (const f of t.fish.slice(0, 3)) act({ t: 'pet', id: f.id });
     // spend like a goal-driven player: new fish first (saving up for them), then new decorations, then more of what is already liked
     for (let guard = 0; guard < 8; guard++) {
@@ -33,6 +35,6 @@ const sim = (visitsPerDay) => {
     log.shellsEarned += Math.max(0, t.shells - before);
   }
   log.final = { level: t.level, fish: t.fish.length, orders: t.orders.length, decor: t.decor.length, shells: t.shells, seen: t.seen.fish.length + t.seen.decor.length, of: R.COLLECTION_SIZE(), score: R.scoreOf(t, now) };
-  log.perDay = +(log.shellsEarned / DAYS).toFixed(1); return log;
+  log.perDay = +(log.shellsEarned / DAYS).toFixed(1); for (const k in log.chores) log.chores[k] = +(log.chores[k] / DAYS).toFixed(2); log.chorePay = +(log.chorePay / DAYS).toFixed(1); return log;
 };
-for (const v of [1, 3, 6]) { if (process.argv[2] && +process.argv[2] !== v) continue; const l = sim(v); console.log(`\n${v} visit${v > 1 ? 's' : ''}/day over ${DAYS} days`); console.log(' shells/day (net of spending, incl. rewards):', l.perDay); console.log(' level reached on day:', JSON.stringify(l.level)); console.log(' species unlocked/bought on day:', JSON.stringify(l.species)); console.log(' wishes done on day:', JSON.stringify(l.wishes)); console.log(' end state:', JSON.stringify(l.final)); }
+for (const v of [1, 3, 6]) { if (process.argv[2] && +process.argv[2] !== v) continue; const l = sim(v); console.log(`\n${v} visit${v > 1 ? 's' : ''}/day over ${DAYS} days`); console.log(' shells/day (net of spending, incl. rewards):', l.perDay); console.log(' level reached on day:', JSON.stringify(l.level)); console.log(' species unlocked/bought on day:', JSON.stringify(l.species)); console.log(' wishes done on day:', JSON.stringify(l.wishes)); console.log(' chores per day:', JSON.stringify(l.chores), '· shells/day from chores:', l.chorePay); console.log(' end state:', JSON.stringify(l.final)); }

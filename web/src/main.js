@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -106,7 +106,7 @@ function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find(
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : null;
-  if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for a crab ${hrs((0.08 - octoHunger(oc)) * 8)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) * 5)}.`, 3600); endFeed(); return; }
+  if (food === 'crab' ? !oc || octoHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for a crab ${hrs((0.08 - octoHunger(oc)) / OHR / 3600)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) / HR / 3600)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
   if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
   feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed();
@@ -229,7 +229,7 @@ function brainBlock(rec) {
   const can = canPuzzle(rec), nx = nextStage(rec), mine = canFeedOcto(rec, game.you?.userId, game.shared), restJar = rec.puzzleAt != null && Date.now() - rec.puzzleAt < 3 * 3600e3, restCrab = rec.crabAt != null && Date.now() - rec.crabAt < 2 * 3600e3;
   const jar = rec.puzzle ? '<button class="act2" disabled>🧩 Working on a jar…</button>' : !can ? `<button class="act2" disabled>🧩 Puzzle jar<small>when grown up${nx ? ` · ${nx.label}` : ''}</small></button>` : restJar ? `<button class="act2" disabled>🧩 Puzzle jar<small>tired of puzzles · next in ${(() => { const m = Math.max(1, Math.ceil((3 * 3600e3 - (Date.now() - rec.puzzleAt)) / 60e3)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; })()}</small></button>` : `<button class="act2" id="puz">🧩 Puzzle jar<small>${PUZZLE_COST} 🐚</small></button>`;
   // its crab, straight from its card: the old crab treat is gone, a hungry octopus's crab is its treat
-  const h = octoHunger(rec), crab = !mine ? '' : h < 0.08 ? `<button class="act2" disabled>🦀 Crab<small>not hungry yet · ${(() => { const m = Math.max(1, Math.round((0.08 - h) * 8 * 60)); return m >= 60 ? `in about ${Math.round(m / 60)}h` : `in ${m} min`; })()}</small></button>` : `<button class="act2 ${h > 0.25 ? 'due' : ''}" id="crabt">🦀 Feed ${esc(rec.name)} a crab<small>${h > 0.25 ? 'hungry now' : 'peckish'} · free</small></button>`;
+  const h = octoHunger(rec), crab = !mine ? '' : h < 0.08 ? `<button class="act2" disabled>🦀 Crab<small>not hungry yet · ${(() => { const m = Math.max(1, Math.round((0.08 - h) / OHR / 60)); return m >= 60 ? `in about ${Math.round(m / 60)}h` : `in ${m} min`; })()}</small></button>` : `<button class="act2 ${h > OCTO_DUE ? 'due' : ''}" id="crabt">🦀 Feed ${esc(rec.name)} a crab<small>${h > OCTO_DUE ? 'hungry now' : 'peckish'} · free</small></button>`;
   return `<div class="acts2">${jar}${crab}</div>`;
 }
 async function trainFish(f, key, spot) {

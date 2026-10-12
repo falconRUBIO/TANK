@@ -6,7 +6,9 @@ import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
-import { hasOcto, hasFishOnly, canFeedOcto, octoHunger } from './game/rules.js';
+import { hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
+// how long until something is due, in plain words: "in about 5 hours", "tomorrow", "in about 2 days"
+const inTime = (ms) => { const h = ms / 3600e3; return h < 1 ? 'within the hour' : h < 20 ? `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}` : h < 36 ? 'in about a day' : `in about ${Math.round(h / 24)} days`; };
 
 export { drawAvatar } from './people.js';
 import { drawAvatar, soloLook } from './people.js';
@@ -65,8 +67,8 @@ export function initUI({ game, social, cb }) {
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
   // the one thing that matters most right now, in a sentence at the top of Care (tap it to do it); when all is done, what the octopus is up to
   const careHead = () => { const s = S(), me = game.you?.userId, mine = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), oc = mine[0];
-    if (oc && octoHunger(oc) > 0.25) return [`${esc(oc.name)} is hungry. Feed ${esc(oc.name)} a crab.`, 'feeddrawer'];
-    if (hasFishOnly(s) && s.hunger > 0.25) return ['The fish are hungry. Give them some flakes.', 'feeddrawer'];
+    if (oc && dueIn(s, 'crab', oc) <= 0) return [`${esc(oc.name)} is hungry. Feed ${esc(oc.name)} a crab.`, 'feeddrawer'];
+    if (hasFishOnly(s) && dueIn(s, 'meal') <= 0) return ['The fish are hungry. Give them some flakes.', 'feeddrawer'];
     if (s.water < 0.5) return ['The water is dirty. Change it.', 'water'];
     if (s.glass > 0.6) return ['There is algae on the glass. Give it a wipe.', 'clean'];
     if (s.water < 0.7) return ['The water is getting cloudy. A change would help.', 'water'];
@@ -75,12 +77,13 @@ export function initUI({ game, social, cb }) {
     return [`All looked after.${th ? ` ${esc(any.name)}: ${esc(th.charAt(0).toLowerCase() + th.slice(1))}` : ' Enjoy the tank.'}`, null]; };
   // each care tile says whether it is needed now, and if not, roughly when it will be, so nobody taps it for nothing
   const careState = () => { const s = S(), me = game.you?.userId, ocs = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), oc = ocs[0], fish = hasFishOnly(s);
-    const fNeed = (oc && octoHunger(oc) > 0.25) || (fish && s.hunger > 0.25), fH = Math.min(oc ? (0.25 - octoHunger(oc)) * 8 : 99, fish ? (0.25 - s.hunger) * 5 : 99);
+    // due times come from the rules, the same ones the meters and the reminders use
+    const ocDue = (f) => dueIn(s, 'crab', f) <= 0, fishDue = fish && dueIn(s, 'meal') <= 0, fNeed = ocs.some(ocDue) || fishDue, fH = Math.min(...ocs.map((f) => dueIn(s, 'crab', f) / 3600e3), fish ? dueIn(s, 'meal') / 3600e3 : 99, 99);
     // who is hungry, by name: your octopuses that are, and the fish if they are
-    const who = [...ocs.filter((f) => octoHunger(f) > 0.25).map((f) => esc(f.name)), ...(fish && s.hunger > 0.25 ? ['the fish'] : [])], list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who.at(-1) : who[0] ?? '';
+    const who = [...ocs.filter(ocDue).map((f) => esc(f.name)), ...(fishDue ? ['the fish'] : [])], list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who.at(-1) : who[0] ?? '';
     const verb = who.length === 1 && who[0] !== 'the fish' ? 'is' : 'are', hungryTxt = list ? `${list.charAt(0).toUpperCase() + list.slice(1)} ${verb} hungry · feed now` : 'Hungry · feed now';
-    if (!oc && !fish) return { feed: ['Nothing to feed yet', 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] };
-    return { feed: fNeed ? [hungryTxt, 'due'] : [`Full · hungry ${inH(Math.max(0, fH))}`, 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH((0.3 - s.glass) * 30)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH((s.water - 0.7) * 48)}`, 'later'] }; };
+    if (!oc && !fish) return { feed: ['Nothing to feed yet', 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH(dueIn(s, 'glass') / 3600e3)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH(dueIn(s, 'water') / 3600e3)}`, 'later'] };
+    return { feed: fNeed ? [hungryTxt, 'due'] : [`Full · hungry ${inH(Math.max(0, fH))}`, 'later'], glass: s.glass > 0.3 ? [`${s.glass > 0.6 ? 'Algae' : 'A little algae'} · wipe now`, 'due'] : [`Clear · wipe ${inH(dueIn(s, 'glass') / 3600e3)}`, 'later'], water: s.water < 0.7 ? [`${s.water < 0.5 ? 'Dirty' : 'Cloudy'} · change now`, 'due'] : [`Clean · change ${inH(dueIn(s, 'water') / 3600e3)}`, 'later'] }; };
 
   // ── header ──
   function updateHeader() {
@@ -125,10 +128,10 @@ export function initUI({ game, social, cb }) {
   const meters = () => {
     const s = S(), me = game.you?.userId, row = (icon, name, v, [word, lv], hint) => `<div class="meter ${lv}"><span class="mi">${icon}</span><div class="mb"><div class="mt"><b>${name}</b><em>${word}</em></div><i><b style="width:${Math.round(Math.max(0.02, Math.min(1, v)) * 100)}%"></b></i>${hint ? `<small>${hint}</small>` : ''}</div></div>`;
     const lvl = (v, a, b, words) => (v >= a ? [words[0], 'ok'] : v >= b ? [words[1], 'mid'] : [words[2], 'low']), rows = [];
-    for (const f of s.fish.filter((x) => x.species === 'octopus' && !x.dead)) { const v = 1 - octoHunger(f), mine = canFeedOcto(f, me, game.shared); rows.push(row('🐙', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (v < 0.6 ? 'Drop a crab from Feed' : 'Empties in about 8 hours. Only you feed it.') : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
-    if (hasFishOnly(s)) { const v = 1 - s.hunger; rows.push(row('🐟', 'The fish', v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), v < 0.6 ? 'Feed them flakes from Feed' : 'Get hungry in about 5 hours')); }
-    rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? 'Time for a water change' : 'Turns cloudy over a couple of days'));
-    rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? 'Give it a wipe' : 'Algae builds up over about a day'));
+    for (const f of s.fish.filter((x) => x.species === 'octopus' && !x.dead)) { const v = 1 - octoHunger(f), mine = canFeedOcto(f, me, game.shared); rows.push(row('🐙', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (dueIn(s, 'crab', f) <= 0 ? 'Drop a crab from Feed' : `Ready for a crab ${inTime(dueIn(s, 'crab', f))}. Only you feed it.`) : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
+    if (hasFishOnly(s)) { const v = 1 - s.hunger; rows.push(row('🐟', 'The fish', v, lvl(v, 0.7, 0.4, ['Full', 'Peckish', 'Hungry']), dueIn(s, 'meal') <= 0 ? 'Feed them flakes from Feed' : `Next meal ${inTime(dueIn(s, 'meal'))}`)); }
+    rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? `Time for a water change (+${WATER_PAY} shells)` : `Due for a change ${inTime(dueIn(s, 'water'))}`));
+    rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? `Give it a wipe (+${GLASS_PAY} shells)` : `Due for a wipe ${inTime(dueIn(s, 'glass'))}`));
     const n = s.fish.length + (s.orders ?? []).reduce((a, o) => a + (SPECIES_DEF[o.species]?.count ?? 1), 0), cap = capacity(s.level);
     return `<div class="meters">${rows.join('')}</div><p class="room">🐠 <b>${n} of ${cap}</b> places in the tank are taken${n < cap ? ` · room for ${cap - n} more` : ' · level up to make room'}</p>`;
   };
@@ -191,6 +194,15 @@ export function initUI({ game, social, cb }) {
   const ordersHtml = () => { const o = S().orders ?? [], e = S().eggs ?? []; return o.length || e.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>📦 ${esc(x.name || SPECIES_DEF[x.species].label)}</span><b>${eta(x.arrivesAt - game.now())}</b></div>`).join('')}${e.map((x) => `<div><span>🥚 Egg</span><b>${eta(x.hatchAt - game.now())}</b></div>`).join('')}</div>` : ''; };
   const dailyHtml = () => { const d = S().daily; if (!d) return ''; return `<div class="wish daily ${d.done ? 'done' : ''}"><small>TODAY'S REQUEST · OPTIONAL</small><span>${esc(d.text)}${d.need > 1 && !d.done ? ` (${d.have}/${d.need})` : ''}</span><b>${d.done ? 'Done' : `+${d.reward ?? DAILY_REWARD} 🐚`}</b></div>`; };
   const wishHtml = () => { const s = S(), w = WISHES[s.wishIdx]; return w ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(w.text)}</span><b>+${w.reward} 🐚</b></div>` : `<div class="wish"><small>THE TANK'S WISH</small><span>Every wish has come true.</span></div>`; };
+  // the fish living in the tank now, your own octopus first; tap one to sell it to a new home
+  const members = () => (game.shared ? game.members ?? [] : null);
+  const inTankHtml = () => {
+    const s = S(), me = game.you?.userId, fish = s.fish.filter((f) => !f.dead), rank = (f) => (f.species === 'octopus' ? 0 : 2) + (f.owner === me ? 0 : 1);
+    if (!fish.length) return '';
+    const row = (f) => { const d = SPECIES_DEF[f.species], mine = canSell(f, me, members()), who = f.owner && f.owner !== me && game.shared ? `${esc(f.ownerName ?? 'a friend')}'s` : f.owner === me && game.shared ? 'yours' : '';
+      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? 'Sell' : 'Theirs'}</em></button>`; };
+    return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
+  };
   const bookHtml = () => {
     const s = S(), cell = (kind, id, label) => { const got = s.seen[kind].includes(id); return `<div class="bk ${got ? '' : 'nope'}"><img alt="" data-thumb="${kind === 'fish' ? 'fish' : 'decor'}:${id}"><b>${got ? esc(label) : '???'}</b></div>`; };
     return `<div class="bkhead"><b>${s.seen.fish.length + s.seen.decor.length} / ${COLLECTION_SIZE()}</b><small>Every 5 finds earns 3 shells</small></div><h4>Fish</h4><div class="bkg">${Object.entries(SPECIES_DEF).map(([id, d]) => cell('fish', id, d.label)).join('')}</div><h4>Decorations</h4><div class="bkg">${Object.entries(DECOR_DEF).map(([id, d]) => cell('decor', id, d.label)).join('')}</div>`;
@@ -229,7 +241,7 @@ export function initUI({ game, social, cb }) {
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
       `;
   };
-  const EARN = [['Feed hungry fish', '+1 each'], ['Wipe the glass', '+1 (a pearl every 5th: +3)'], ['Change cloudy water', '+2'], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
+  const EARN = [['Feed hungry fish or a hungry octopus', '+1 each'], ['Wipe the glass, every few days', `+${GLASS_PAY} (a pearl every 5th: +${PEARL_PAY})`], ['Change cloudy water, every few days', `+${WATER_PAY}`], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favourite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
   let feedOpen = false;
   // what this caretaker can feed right now: a crab for their own octopus (the hungriest first), flakes and the rest for the fish
   const feedDrawer = () => {
@@ -250,7 +262,7 @@ export function initUI({ game, social, cb }) {
       const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection'], ['settings', 'Settings']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
       if (sub === 'settings') return views.settings().replace('<h3>Settings</h3>', '<h3>Settings</h3>' + seg);
       if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
-      if (sub === 'book') return `<h3>Collection</h3>${seg}${bookHtml()}`;
+      if (sub === 'book') return `<h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}`;
       if (sub === 'look') return lookHtml();
       if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot me"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
         <p class="dim">You are playing on your own. Open the game on the server to start a shared tank; three friends can then join with its six-character code.</p>`;
@@ -341,7 +353,15 @@ export function initUI({ game, social, cb }) {
       const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
       dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, ...(x.parents?.length ? [`Parents: ${x.parents.map((q) => q.name).join(' & ')}`] : []), ...(x.gen ? [`Generation ${x.gen}`] : []), x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
     }));
-    sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); }));
+    sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async () => {
+      const s = S(), f = s.fish.find((x) => x.id === b.dataset.sellfish); if (!f) return; sfx('tap'); const d = SPECIES_DEF[f.species], pay = sellValue(f), alive = s.fish.filter((x) => !x.dead).length;
+      if (!canSell(f, game.you?.userId, members())) { dialog({ title: f.name.toUpperCase(), text: `${d?.label ?? f.species} · looked after by ${f.ownerName ?? 'a friend'}.`, lines: [`Only ${f.ownerName ?? 'its caretaker'}, or the tank's first caretaker, can sell ${f.name}.`], ok: 'OK' }); return; }
+      if (alive <= 1) { dialog({ title: f.name.toUpperCase(), text: `${f.name} is the only fish in the tank, so it stays. Bring in another fish first.`, ok: 'OK' }); return; }
+      const yes = await dialog({ title: `SELL ${f.name.toUpperCase()}?`, text: `${f.name} the ${(d?.label ?? f.species).toLowerCase()} goes to a new home and leaves the tank for good.`, lines: [...(game.shared && f.owner && f.owner !== game.you?.userId && (game.members ?? []).some((m) => m.id === f.owner) ? [`${f.name} is ${f.ownerName ?? 'a friend'}'s. As the tank's first caretaker you can still sell it, for example if they have stopped playing.`] : []), pay ? `You get ${pay} shells, half of what ${f.name} cost.` : `${f.name} came free, so it fetches no shells.`], ok: pay ? `Sell for ${pay} 🐚` : 'Sell', cancel: 'Keep', danger: true });
+      if (!yes) return; const y = sheet.scrollTop, r = await game.dispatch({ t: 'sellFish', id: f.id });
+      if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : REASONS[r.reason] ?? 'Could not sell that.'); open('friends', true); sheet.scrollTop = y;
+    }));
+    sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
       const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It drops into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
