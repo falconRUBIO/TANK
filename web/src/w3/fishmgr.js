@@ -12,6 +12,8 @@ import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
 import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
 
+// the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
+const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [4, 11.6], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [9, 13.1], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
   angelfish: { x: [-3.0, 3.6], y: [5.5, 12], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [8, 13], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9.8], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [8.5, 13], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 11], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
@@ -66,7 +68,7 @@ export class Fishes {
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
+        f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
         f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);

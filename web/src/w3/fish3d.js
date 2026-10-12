@@ -984,6 +984,7 @@ export class Fish3D {
     { const T = this.target, gh = sandH(T.x, T.z); if (T.y < gh + Math.min(Math.max(T.y, 0.35), 1.0)) T.y = gh + Math.min(Math.max(T.y, 0.35), 1.0); }      // wherever it is heading, it is in the water above the sand there: over a bank a low swimmer swims as low above that sand as it would above the floor
     if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
+    if (this.openWater && !this.seeking && !this.weak && !this.script?.length) { const fl = Math.min(Fish3D.topY - 1, 6.3 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl; }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm))) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
