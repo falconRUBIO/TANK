@@ -638,7 +638,7 @@ export class Fish3D {
       if (q.id === this.novel) w *= 1 + 2 * cur;                                                // something new it has just been to look at
       pool.push([q, w, e]); tot += w;
     }
-    if (!roost && pool.filter(([q]) => q.id !== this.lastHold).length >= 2) { for (let i = pool.length - 1; i >= 0; i--) if (pool[i][0].id === this.lastHold) { tot -= pool[i][1]; pool.splice(i, 1); } }      // not straight back to where it just was, if there is a real choice
+    if (!roost && pool.filter(([q]) => q.id !== this.lastHold && (pool.length > 2 || Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 3.5)).length >= 1) { for (let i = pool.length - 1; i >= 0; i--) if (pool[i][0].id === this.lastHold) { tot -= pool[i][1]; pool.splice(i, 1); } }      // not straight back to where it just was, if there is a real choice (two others, or one within a short swim)
     if (!pool.length) return false;
     const fav = this.favourite(spots); let pick = fav && rng() < (roost ? 0.85 : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;
     if (!pick) { let r = rng() * tot; for (const x of pool) { r -= x[1]; if (r <= 0) { pick = x; break; } } pick ||= pool[0]; }
