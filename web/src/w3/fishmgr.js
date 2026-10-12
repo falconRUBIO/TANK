@@ -1,5 +1,8 @@
 // The living roster: spawns a Fish3D for every fish in the game state, grows them, gives each its own
 // personality-driven wandering, and runs feeding (flakes sink, each fish picks its own piece).
+import { sandH, placeable, crossesFace, levelAt, slopeAt } from './terrain.js';
+// where a crab comes down for an octopus: near x,z but on the same level of sand as the octopus, on flat sand, so the hunt never has to go round by a ramp
+const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k = 0; k < 24; k++) { const r = k * 0.12, a = k * 2.4, qx = Math.max(-3.6, Math.min(3.6, x + Math.cos(a) * r)), qz = Math.max(-3.3, Math.min(2.4, z + Math.sin(a) * r)); if (levelAt(qx, qz) === lv && slopeAt(qx, qz).s < 0.8) return [qx, qz]; } return [o.pos.x + 0.8, o.pos.z]; };
 import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
@@ -10,7 +13,7 @@ import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE
 
 const BANDS = {
   goldfish: { x: [-3.4, 3.6], y: [3, 10], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [3, 11], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [2.5, 9], z: [0.4, 1.8] }, octopus: { x: [-3.2, 3.4], y: [0.6, 6.5], z: [0.3, 1.7] },
+  angelfish: { x: [-3.0, 3.6], y: [3, 10], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [3, 10], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3, 9], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [2.5, 9], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.5] },
 };
 export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
@@ -152,7 +155,7 @@ export class Fishes {
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
   beginTask(f, pl) {
     const at = this.decor.atOf(pl.id), type = (this.spots?.() ?? []).find((q) => q.id === pl.id)?.type, r = this.decor.reach(type), off = pl.kind === 'turn' ? r + 0.45 * (f.radius ?? 2) + (f.cr ?? 0.6) : r + 0.55 * (f.radius ?? 2) + (f.cr ?? 0.6), hold = Math.max(0.5, r * 0.85), L = Math.hypot(pl.gx - at.x, pl.gz - at.z) || 1;      // for a shove it grips the rim up close
-    const ux = (pl.gx - at.x) / L, uz = (pl.gz - at.z) / L, inside = (x, z) => Math.abs(x) <= 3.7 && z >= 0.15 && z <= 2.7 && (!f.freeSpot || f.freeSpot(x, z));
+    const ux = (pl.gx - at.x) / L, uz = (pl.gz - at.z) / L, inside = (x, z) => Math.abs(x) <= 3.7 && z >= -3.4 && z <= 2.7 && slopeAt(x, z).s < 1.0 && !crossesFace(at.x, at.z, x, z) && (!f.freeSpot || f.freeSpot(x, z));      // on open sand, on the thing's own level, not on a face
     // where it stands to take hold: straight behind the thing, or failing that the nearest open spot round it; nowhere open, it leaves the job
     let ax = at.x - ux * off, az = at.z - uz * off, found = inside(ax, az);
     for (let k = 1; k <= 10 && !found; k++) for (const sgn of [1, -1]) { if (found) break; const a = Math.atan2(-uz, -ux) + sgn * k * 0.31, x = at.x + Math.cos(a) * off, z = at.z + Math.sin(a) * off; if (inside(x, z)) { ax = x; az = z; found = true; } }
@@ -176,36 +179,36 @@ export class Fishes {
     const dc = this.decor, spots = this.spots?.() ?? []; if (!dc || !spots.length) return null;
     const mine = new Set(this.list.filter((o) => !o.dead).map((o) => o.homeId).filter(Boolean)), rnd = () => this.rng();
     const free = (id, x, z) => x > -3.7 && x < 3.7 && z > -0.4 && z < 2.4 && dc.roomFor(id, x, z);
-    const bad = (x, z) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9);
+    const bad = (x, z, at = null) => (f.failed ?? []).some((q) => Math.hypot(q.x - x, q.z - z) < 0.9) || !placeable(x, z) || z < -3.3 || z > 2.3 || (at && crossesFace(at.x, at.z, x, z));      // a thing is shoved along the sand it sits on: never over the edge of a bank, never onto a face
     const home = !f.homeId && spots.filter((q) => (q.type === 'coconut' || q.type === 'pot') && !mine.has(q.id)).sort((a, b) => (a.type === 'coconut' ? 0 : 1) - (b.type === 'coconut' ? 0 : 1))[0];
     if (home && rnd() < 0.7) {                                                                                  // a coconut and nowhere to live: carry it to a quiet corner
       const at = dc.atOf(home.id), want = f.fav ? [f.fav.x, f.fav.z] : null;
-      for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = 0.2 + rnd() * 1.3; if (!bad(x, z) && Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
+      for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = want && i < 4 ? want[0] + (rnd() - 0.5) : sx * (2.4 + rnd() * 1.3), z = want && i < 4 ? want[1] + (rnd() - 0.5) : at.z + (rnd() - 0.5) * 2.6; if (!bad(x, z, at) && Math.hypot(x - at.x, z - at.z) <= MOVE_MAX - 0.3 && Math.hypot(x - at.x, z - at.z) > 0.8 && free(home.id, x, z)) return { kind: 'home', id: home.id, gx: x, gz: z }; }
       return null;
     }
     if (f.homeId && (relocate || (rnd() < 0.35 && Date.now() - (f.homeMovedAt ?? 0) > 25 * 60e3))) {              // now and then it picks its whole shell up and carries it somewhere else to live under
-      const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = i < 6 ? sx * (1.2 + rnd() * 2.3) : -3.3 + rnd() * 6.6, z = 0.2 + rnd() * 1.4, d = Math.hypot(x - at.x, z - at.z); if (d > 1.4 && d <= MOVE_MAX - 0.3 && !bad(x, z) && free(f.homeId, x, z)) return { kind: 'home', id: f.homeId, gx: x, gz: z }; }
+      const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 16; i++) { const sx = rnd() < 0.5 ? -1 : 1, x = i < 6 ? sx * (1.2 + rnd() * 2.3) : -3.3 + rnd() * 6.6, z = at.z + (rnd() - 0.5) * 2.8, d = Math.hypot(x - at.x, z - at.z); if (d > 1.4 && d <= MOVE_MAX - 0.3 && !bad(x, z, at) && free(f.homeId, x, z)) return { kind: 'home', id: f.homeId, gx: x, gz: z }; }
     }
     if (f.homeId && rnd() < 0.6) {                                                                             // its own shell is light: now and then it shoves it along a little and turns it this way or that
       const at = dc.atOf(f.homeId); if (at) for (let i = 0; i < 10; i++) {
-        const sx = rnd() < 0.5 ? -1 : 1, x = Math.max(-3.4, Math.min(3.4, at.x + sx * (0.35 + rnd() * 0.55))), z = Math.max(0.3, Math.min(2.1, at.z + (rnd() - 0.5) * 0.4)), ry = (rnd() - 0.5) * 1.3;      // mostly sideways, so it can stand on the far side and shove
+        const sx = rnd() < 0.5 ? -1 : 1, x = Math.max(-3.4, Math.min(3.4, at.x + sx * (0.35 + rnd() * 0.55))), z = Math.max(-3.3, Math.min(2.1, at.z + (rnd() - 0.5) * 0.4)), ry = (rnd() - 0.5) * 1.3;      // mostly sideways, so it can stand on the far side and shove
         const L = Math.hypot(x - at.x, z - at.z) || 1, stand = 1.2 + 0.45 * (f.radius ?? 2), sxp = at.x - ((x - at.x) / L) * stand, szp = at.z - ((z - at.z) / L) * stand;
-        if (L > 0.25 && Math.abs(sxp) < 3.7 && szp > 0.15 && szp < 2.5 && !bad(x, z) && x > -3.7 && x < 3.7 && dc.roomFor(f.homeId, x, z, ry)) return { kind: 'turn', id: f.homeId, gx: x, gz: z, ry }; }
+        if (L > 0.25 && Math.abs(sxp) < 3.7 && szp > -3.4 && szp < 2.5 && placeable(sxp, szp) && !crossesFace(at.x, at.z, sxp, szp) && !bad(x, z, at) && x > -3.7 && x < 3.7 && dc.roomFor(f.homeId, x, z, ry)) return { kind: 'turn', id: f.homeId, gx: x, gz: z, ry }; }
     }
     const movers = spots.filter((q) => ['rock', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
     if (!movers.length) return null;
     if (!f.homeId && f.den?.kind !== 'rocks' && movers.length >= 2 && M.tidy > 0.3) {                                                // no shell or pot to live in: it gathers rocks into a shelter at its favourite spot
-      const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(0.3, Math.min(1.9, c.z));
+      const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(-3.2, Math.min(1.9, c.z));
       const there = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) < 1.5), away = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) >= 1.5).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
       for (const m of away.slice(0, 3)) for (let i = 0; i < 10; i++) { const a = (there.length + i) * 2.1 + rnd() * 0.6; let x = cx + Math.cos(a) * 1.1, z = cz + Math.sin(a) * 0.75; const L = Math.hypot(x - m.x, z - m.z); if (L > MOVE_MAX) { x = m.x + ((x - m.x) / L) * (MOVE_MAX - 0.4); z = m.z + ((z - m.z) / L) * (MOVE_MAX - 0.4); }      // too far for one trip: bring it part of the way
-        if (!bad(x, z) && Math.hypot(x - m.x, z - m.z) > 0.6 && free(m.id, x, z)) return { kind: 'build', id: m.id, gx: x, gz: z }; }
+        if (!bad(x, z, m) && Math.hypot(x - m.x, z - m.z) > 0.6 && free(m.id, x, z)) return { kind: 'build', id: m.id, gx: x, gz: z }; }
     }
     const m = movers[(rnd() * movers.length) | 0], homeSpot = f.den;
     for (let i = 0; i < 12; i++) {
       let x, z;
       if (homeSpot && M.tidy > 0.45) { const sx = rnd() < 0.5 ? -1 : 1; x = homeSpot.x + sx * (0.85 + rnd() * 0.3); z = homeSpot.z - 0.1 + rnd() * 0.5; }                // a wall beside its den
       else { const a = rnd() * 6.28, r = 1 + rnd() * 1.4; x = m.x + Math.cos(a) * r; z = m.z + Math.sin(a) * r * 0.5; }                           // shoves it about to see what happens
-      if (!bad(x, z) && Math.hypot(x - m.x, z - m.z) > 0.6 && Math.hypot(x - m.x, z - m.z) <= MOVE_MAX && free(m.id, x, z)) return { kind: 'push', id: m.id, gx: x, gz: z };
+      if (!bad(x, z, m) && Math.hypot(x - m.x, z - m.z) > 0.6 && Math.hypot(x - m.x, z - m.z) <= MOVE_MAX && free(m.id, x, z)) return { kind: 'push', id: m.id, gx: x, gz: z };
     }
     return null;
   }
@@ -358,13 +361,13 @@ export class Fishes {
     else if (built) { const all = [built[0], ...built[1]], cx = all.reduce((a, q) => a + q.x, 0) / all.length, cz = all.reduce((a, q) => a + q.z, 0) / all.length; f.den = { x: cx, z: cz, id: built[0].id, home: false, kind: 'rocks', n: all.length }; }
     else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
     const key = f.den ? `${f.den.id}|${f.den.kind}|${f.hoard}|${d.crabs ?? 0}` : '';
-    if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
+    if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, sandH(f.den.x, f.den.z) + 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
     if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.onMoment = (kind, o) => { const k = kind + ':' + f.fid, now = performance.now(); if (now - ((this.momentAt ||= {})[k] ?? -1e9) < 3600e3) return; this.momentAt[k] = now; this.onMoment?.({ fish: f.fid, kind, other: o?.fid }); }; f.onThrow = (p, d, kind, at) => (kind === 'smack' ? this.burst(at) : kind === 'shell' ? this.toss(p, d) : kind === 'water' ? this.waterJet(p, d) : this.silt(p, d)); f.onSand = (p, k) => this.sand(p, k); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
   }
-  looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
+  looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, sandH(p.x + 0.45, p.z + 0.5) + 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it
   dropCrab(fid) {
-    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const n = (f.crabN = (f.crabN ?? 0) + 1), key = [...fid].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) % 9973 + n * 17, x = Math.max(-3.4, Math.min(3.4, f.pos.x + (spot(key) - 0.5) * 3)), z = 1.0 + spot(key + 0.5) * 1.2, m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
+    const f = this.byId.get(fid); if (!f || f.dead || f.species.move !== 'jet') return; const n = (f.crabN = (f.crabN ?? 0) + 1), key = [...fid].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) % 9973 + n * 17, [x, z] = crabSpot(f, Math.max(-3.4, Math.min(3.4, f.pos.x + (spot(key) - 0.5) * 3)), f.pos.z + (spot(key + 0.5) - 0.5) * 1.2), m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); f.hunt = hnt; this.burst(new THREE.Vector3(x, 14, z));
   }
   // a crab dropped in at feeding time: it sinks where you tapped, and the octopus that is free (or the hungriest) goes after it
@@ -372,7 +375,7 @@ export class Fishes {
     const os = this.list.filter((f) => f.species.move === 'jet' && !f.dead && !f.visitor); if (!os.length) return;
     const f = (fid && os.find((o) => o.fid === fid)) ?? os.find((o) => !o.hunt) ?? os[0]; let z = 1.0 + spot(x * 7.31) * 1.0;      // where it lands follows from where it was dropped, so every phone agrees
     for (const o of os) { const dx = x - o.pos.x, d = Math.hypot(dx, z - o.pos.z); if (d < 2.0) { const side = dx !== 0 ? Math.sign(dx) : (o.pos.x > 0 ? -1 : 1); x = o.pos.x + side * 2.0; if (Math.abs(x) > 3.6) x = o.pos.x - side * 2.0; } }      // it lands clear of any octopus (to one side), never through one
-    x = Math.max(-3.6, Math.min(3.6, x)); z = Math.max(0.3, Math.min(2.4, z));
+    x = Math.max(-3.6, Math.min(3.6, x)); [x, z] = crabSpot(f, x, f.pos.z + (z - 1.5));
     const m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, Fish3D.topY + 0.2, z); this.scene.add(m);
     const hnt = { x, z, mesh: m, y: Fish3D.topY + 0.2 }; (this.crabs ||= []).push(hnt); if (!f.hunt) f.hunt = hnt; else (f.hunts ||= []).push(hnt); this.burst(new THREE.Vector3(x, 14, z));
   }
@@ -403,7 +406,7 @@ export class Fishes {
   }
   puff(p, d) { const q = new THREE.Vector3(p.x - d.x * 0.6, p.y - d.y * 0.6 + 0.1, p.z - d.z * 0.6); for (let i = 0; i < 6 && this.bursts.length < 150; i++) this.bursts.push({ pos: q.clone().add(new THREE.Vector3((this.rng() - 0.5) * 0.5, (this.rng() - 0.5) * 0.4, (this.rng() - 0.5) * 0.5)), v: 0.5 + this.rng() * 0.9, age: 0, r: 0.04 + this.rng() * 0.05 }); }
   // a crab already on the sand (it climbed out of a jar), for the octopus to catch
-  crabOut(x, z) { const m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, 0.13, z); m.rotation.y = this.rng() * 6; this.scene.add(m); const hnt = { x, z, mesh: m, y: 0.13 }; (this.crabs ||= []).push(hnt); return hnt; }
+  crabOut(x, z) { const y = sandH(x, z) + 0.13, m = buildCrab(); m.scale.setScalar(CRAB); m.position.set(x, y, z); m.rotation.y = this.rng() * 6; this.scene.add(m); const hnt = { x, z, mesh: m, y }; (this.crabs ||= []).push(hnt); return hnt; }
   // several phones, one tank: the lead phone tells the others where its crabs are; they move theirs to match, add any they are missing and drop any extra
   crabSnap() { return (this.crabs ?? []).filter((c) => !c.held).slice(0, 8).map((c) => [r2(c.x), r2(c.y), r2(c.z), r2(c.mesh.rotation.y), c.pinned ? 1 : 0]); }
   netCrabs(list) {
@@ -429,7 +432,7 @@ export class Fishes {
     for (const d of state.fish) {
       const f = this.byId.get(d.id), jar = this.jars.get(d.id);
       if (d.puzzle) {
-        if (!jar) { const j = buildJar(); let h = 0; for (const ch of d.id) h = (h * 31 + ch.charCodeAt(0)) | 0; j.pos = { x: ((Math.abs(h) % 50) / 10) - 2.5, z: 1.3 + ((Math.abs(h) >> 6) % 8) / 10 }; j.root.position.set(j.pos.x, 0.12, j.pos.z); j.root.scale.setScalar(0.95); this.scene.add(j.root); this.onSprite?.(j.root); this.jars.set(d.id, j); this.burst(new THREE.Vector3(j.pos.x, 0.8, j.pos.z)); }
+        if (!jar) { const j = buildJar(); let h = 0; for (const ch of d.id) h = (h * 31 + ch.charCodeAt(0)) | 0; j.pos = { x: ((Math.abs(h) % 50) / 10) - 2.5, z: 1.3 + ((Math.abs(h) >> 6) % 8) / 10 }; j.root.position.set(j.pos.x, sandH(j.pos.x, j.pos.z) + 0.12, j.pos.z); j.root.scale.setScalar(0.95); this.scene.add(j.root); this.onSprite?.(j.root); this.jars.set(d.id, j); this.burst(new THREE.Vector3(j.pos.x, 0.8, j.pos.z)); }
         if (f) f.jarAt = this.jars.get(d.id).pos;
       } else {
         if (f) f.jarAt = null;
@@ -480,19 +483,20 @@ export class Fishes {
     // a crab on the sand is not easy prey: when the octopus closes in it scuttles off in a burst (away, and a little sideways), twice at most, then it tires and the octopus has it
     for (const c of this.crabs ?? []) {
       const R = (c.run ||= { dodges: 0, burst: 0, vx: 0, vz: 0, down: 0, face: this.rng() * 6.28 }), hunter = this.list.find((o) => o.hunt === c);
-      c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > 0.2 ? 0.6 : 0); if (c.held) continue;
+      c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > sandH(c.x, c.z) + 0.2 ? 0.6 : 0); if (c.held) continue;
       if (c.dazed > performance.now() && !c.pinned) { c.mesh.rotation.z = Math.sin(t * 7) * 0.1; c.mesh.rotation.y += dt * 0.6; } else if (!c.held && c.mesh.rotation.z && Math.abs(c.mesh.rotation.z) < 0.2) c.mesh.rotation.z *= 0.9;      // dazed in the ink: it reels on the spot
       if (c.net && performance.now() - c.net.at < 1200) { const k = Math.min(1, dt * 9), N = c.net; c.x += (N.x - c.x) * k; c.y += (N.y - c.y) * k; c.z += (N.z - c.z) * k; c.mesh.position.set(c.x, c.y, c.z); let dr = N.ry - c.mesh.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y += dr * k; continue; }
-      if (c.y > 0.13) { c.y = Math.max(0.13, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
+      const cg = sandH(c.x, c.z) + 0.13; if (c.y > cg + 0.01) { c.y = Math.max(cg, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
       R.down += dt; R.burst -= dt;
       if (hunter && !c.pinned && !(c.dazed > performance.now()) && R.burst <= -0.5 && R.dodges < 2 && R.down < 9) { const dx = c.x - hunter.pos.x, dz = c.z - hunter.pos.z, d = Math.hypot(dx, dz); if (d < 2.1) { const a = Math.atan2(dz, dx) + (this.rng() < 0.5 ? 1 : -1) * (0.6 + this.rng() * 0.6), sp = 1.5; R.vx = Math.cos(a) * sp; R.vz = Math.sin(a) * sp * 0.55; R.burst = 0.75; R.dodges++; R.face = a; } }
-      if (R.burst > 0 && !c.pinned) { c.x = Math.max(-3.6, Math.min(3.6, c.x + R.vx * dt)); c.z = Math.max(0.3, Math.min(2.4, c.z + R.vz * dt)); }
+      if (R.burst > 0 && !c.pinned) { c.x = Math.max(-3.6, Math.min(3.6, c.x + R.vx * dt)); c.z = Math.max(-3.4, Math.min(2.4, c.z + R.vz * dt)); c.y = sandH(c.x, c.z) + 0.13; }      // it scuttles over the sand, up and down with it
       let ry = c.mesh.rotation.y, dr = R.face - ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y = ry + dr * Math.min(1, dt * 8);
       c.mesh.position.set(c.x + (c.pinned ? Math.sin(t * 30) * 0.03 : R.burst > 0 ? 0 : Math.sin(t * 4 + c.z) * 0.04), c.y, c.z);
     }
     if (this.loose?.length) { const now = performance.now(); this.loose = this.loose.filter((l) => { if (l.fade && l.until - now < 2000 && l.until > now) l.m.scale.setScalar(Math.max(0.01, (l.m.userData.s0 ??= l.m.scale.x) * (l.until - now) / 2000)); if (now < l.until) return true; this.scene.remove(l.m); return false; }); }
     if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6, f?.rs?.grab?.kind === 'jar' ? f.rs.grab.twist : null); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
-    for (const f of this.flakes) { f.age += dt; if (f.pos.y > 0.2) { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
+    for (const f of this.flakes) { f.age += dt; if (f.pos.y > sandH(f.pos.x, f.pos.z) + 0.2) {      // food settles on the sand wherever it lands, on any level
+      f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } }
     this.flakes = this.flakes.filter((f) => !f.eaten && f.age < 30);
     this.mesh.count = this.flakes.length;
     this.flakes.forEach((f, i) => { this.m.makeRotationY(f.ph + t * 0.4); this.m.setPosition(f.pos); this.mesh.setMatrixAt(i, this.m); this.mesh.setColorAt(i, f.c); });

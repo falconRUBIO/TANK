@@ -42,7 +42,7 @@ ck('feeding a crab to an octopus that is not hungry says when it will be', /isn'
 await setup(0.95); await p.waitForTimeout(1500);
 const beg = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); f.profile = F.profileOf(window.__game.state.fish.find((x) => x.id === 'x1'), window.__game.state); f.begCool = 0; f.glassAt = null; f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; let got = null;
   for (let i = 0; i < 2400 && !got; i++) { if (f.st?.s === 'rest' && f.st.t > 0.5) f.st.t = 0; F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.glassAt && /Watching you for a crab/.test(f.actText ?? '')) got = { i, mood: f.profile.mood }; }
-  return got ?? { mood: f.profile?.mood }; });
+  return got ?? { mood: f.profile?.mood, s: f.st?.s, mode: f.st?.mode, hunt: !!f.hunt, crabs: (F.crabs ?? []).length, inspect: !!f.inspect, task: !!f.task, shy: f.shy, lead: f.lead, glass: f.glassAt, beg: f.begCool, at: [+f.pos.x.toFixed(1), +f.pos.y.toFixed(1), +f.pos.z.toFixed(1)] }; });
 ck('a hungry octopus comes to the glass and watches you for a crab', beg?.i != null, JSON.stringify(beg));
 // 5. the welcome back leads with the octopus's moments
 await setup(0.02);

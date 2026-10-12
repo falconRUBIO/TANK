@@ -1,6 +1,7 @@
 // Purchasable decorations. Every item is a small voxel model built with the same recipe as the fish
 // (chunky cubes, smooth normals, baked AO, warm shade). Builders return a group centred on its own origin
 // on the sand, plus the voxel lists that become solid collision for the fish.
+import { restY } from './terrain.js';
 import * as THREE from 'three';
 import { mulberry32, fbm, mix } from '../color.js';
 import { Vox, plantVox, topLit, hash, PU } from './decor.js';
@@ -206,10 +207,13 @@ const B = {
 // build one item: returns { group, parts, lamp }
 export function buildItem(type, seed = 1) {
   const group = new THREE.Group(), parts = B[type](group, seed);
-  return { group, parts, lamp: group.userData.lamp ?? null, type };
+  const box = new THREE.Box3().setFromObject(group), foot = Math.max(0.12, Math.min(0.6, Math.min(box.max.x - box.min.x, box.max.z - box.min.z) * 0.3)) || 0.3;      // how wide it stands on the sand
+  return { group, parts, lamp: group.userData.lamp ?? null, type, foot };
 }
-const world = (it, x, z, ry, p) => { const c = Math.cos(ry), s = Math.sin(ry); return [x + p.x * c + p.z * s, p.y, z - p.x * s + p.z * c, ry + p.ry]; };
+// where a decoration stands: on the sand at its spot, whichever level that is, bedded in a little on a slope rather than floating off it
+export const baseY = (it, x, z) => restY(x, z, it?.foot ?? 0.3);
+const world = (it, x, z, ry, p) => { const c = Math.cos(ry), s = Math.sin(ry); return [x + p.x * c + p.z * s, baseY(it, x, z) + p.y, z - p.x * s + p.z * c, ry + p.ry]; };
 export function stampItem(it, solids, x, z, ry, d = 1) { for (const p of it.parts) { const [wx, wy, wz, r] = world(it, x, z, ry, p); const grid = p.soft ? solids.soft : solids; if (grid) grid.addVox(p.v, wx, wy, wz, r, d); } }
 export function itemOverlaps(it, solids, x, z, ry) { let n = 0; for (const p of it.parts) { if (p.soft) continue; const [wx, wy, wz, r] = world(it, x, z, ry, p); n += solids.overlaps(p.v, wx, wy, wz, r); } return n; }
-export function placeGroup(it, x, z, ry) { it.group.position.set(x, 0, z); it.group.rotation.y = ry; }
+export function placeGroup(it, x, z, ry) { it.group.position.set(x, baseY(it, x, z), z); it.group.rotation.y = ry; }
 export function disposeItem(it) { it.group.traverse((o) => { if (o.isInstancedMesh) { o.geometry.dispose(); o.dispose?.(); } }); }

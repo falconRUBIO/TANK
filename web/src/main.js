@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
 import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
+import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
@@ -144,7 +145,7 @@ const ray = new THREE.Raycaster(), floor = new THREE.Plane(new THREE.Vector3(0, 
 // the top of the water that is really visible: below the header buttons and the phone's safe area. Fish never go above it, and food starts there.
 function fitTop() {
   const r = canvas.getBoundingClientRect(); if (!r.height) return; const sc = Math.max(r.width / IW, r.height / IH), dh = IH * sc, hb = document.querySelector('header')?.getBoundingClientRect().bottom ?? 60;
-  const c = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far); c.position.set(0, 4.6, stg.CAM_Z); c.lookAt(0, 5.3, 0); c.updateMatrixWorld(); c.updateProjectionMatrix();
+  const c = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far); c.position.set(0, stg.CAM_Y, stg.CAM_Z); c.lookAt(0, stg.LOOK_Y, 0); c.updateMatrixWorld(); c.updateProjectionMatrix();
   const v = (hb + 34 - r.top - (r.height - dh)) / dh, rr = new THREE.Raycaster(); rr.setFromCamera(new THREE.Vector2(0, -(v * 2 - 1)), c); const pl = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.6), out = new THREE.Vector3();
   if (rr.ray.intersectPlane(pl, out)) Fish3D.topY = Math.max(8, Math.min(14.5, out.y));
 }
@@ -166,6 +167,7 @@ function startPlace(type, id = null) {
   placebar.classList.add('on'); updatePlaceOk();
 }
 const updatePlaceOk = () => { const p = decor.preview; $('pok').disabled = !p?.valid; };
+window.__startPlace = startPlace;      // for the drills: start placing a decoration as the shop does
 function endPlace() { placing = null; placebar.classList.remove('on'); if (resumeRearrange) { resumeRearrange = false; setRearrange(true, true); } }
 $('prot').onclick = () => { decor.rotate(); updatePlaceOk(); sfx('tap'); };
 $('pcan').onclick = () => { sfx('tap'); if (placing) { decor.cancel(); endPlace(); } else if (rearrange) setRearrange(false); };
@@ -269,7 +271,7 @@ stg.hideForDepth.push(driftSp);
 let driftId = null;
 function syncDrift() {
   const g = game.state?.drift; if (!g) { driftSp.visible = false; driftGlow.visible = false; driftId = null; return; }
-  if (driftId !== g.id) { driftId = g.id; driftSp.material.map = driftTexture(g.kind); driftSp.material.needsUpdate = true; driftSp.position.set(g.x, 2.1, g.z); if (driftSp.userData.seen !== g.id) { driftSp.userData.seen = g.id; if (game.state.flags.tut >= 5) { sfx('arrive'); fishes.burst(driftSp.position); } } }
+  if (driftId !== g.id) { driftId = g.id; driftSp.material.map = driftTexture(g.kind); driftSp.material.needsUpdate = true; driftSp.position.set(g.x, sandH(g.x, g.z) + 2.1, g.z); driftSp.userData.y0 = driftSp.position.y; if (driftSp.userData.seen !== g.id) { driftSp.userData.seen = g.id; if (game.state.flags.tut >= 5) { sfx('arrive'); fishes.burst(driftSp.position); } } }
   driftSp.visible = true; driftGlow.visible = true;
 }
 function driftHit(ev) { const g = game.state?.drift; if (!g || !driftSp.visible) return false; const r = rayFrom(ev); return r.ray.distanceToPoint(driftSp.position) < 1.3; }
@@ -291,9 +293,9 @@ let bottleId = null; const eggSprites = new Map();
 function syncExtras() {
   const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
   if (!b) { bottleSp.visible = bottleGlow.visible = false; bottleId = null; }
-  else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id); bottleSp.position.set(-3 + (h % 60) / 10, 2.1, 0.8 + ((h >> 8) % 20) / 10); if (s.flags.tut >= 5) { sfx('arrive'); fishes.burst(bottleSp.position); } } bottleSp.visible = bottleGlow.visible = true; }
+  else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id); bottleSp.position.set(-3 + (h % 60) / 10, 0, 0.8 + ((h >> 8) % 20) / 10); bottleSp.position.y = sandH(bottleSp.position.x, bottleSp.position.z) + 2.1; bottleSp.userData.y0 = bottleSp.position.y; if (s.flags.tut >= 5) { sfx('arrive'); fishes.burst(bottleSp.position); } } bottleSp.visible = bottleGlow.visible = true; }
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
-  for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: eggTex, transparent: true, depthWrite: false })); const h = hashId(e.id); sp.scale.set(1, 1, 1); sp.position.set(-3 + (h % 60) / 10, 0.7, 0.1 + ((h >> 8) % 14) / 10); sp.renderOrder = 4; scene.add(sp); stg.hideForDepth.push(sp); eggSprites.set(e.id, sp); }
+  for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: eggTex, transparent: true, depthWrite: false })); const h = hashId(e.id); sp.scale.set(1, 1, 1); sp.position.set(-3 + (h % 60) / 10, 0, 1.7 + ((h >> 8) % 9) / 10); sp.position.y = sandH(sp.position.x, sp.position.z) + 0.7; sp.renderOrder = 4; scene.add(sp); stg.hideForDepth.push(sp); eggSprites.set(e.id, sp); }
   for (const [id, sp] of [...eggSprites]) if (!ids.has(id)) { scene.remove(sp); const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); eggSprites.delete(id); fishes.burst(sp.position); }
 }
 function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
@@ -376,7 +378,7 @@ async function takePhoto() {
 window.__postcard = postcardCaption;
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
-const card = $('card'), look = new THREE.Vector3(0, 5.3, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
+const card = $('card'), look = new THREE.Vector3(0, stg.LOOK_Y, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 function pickFish(ev) { const r = rayFrom(ev); let best = null, bd = 1e9; for (const f of fishes.list) { const h = r.ray.distanceToPoint(f.pos); if (h < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } } return best; }
 const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`;
 let lastCard = 0, lastInspect = null;
@@ -544,7 +546,8 @@ async function playedWith(f) {
 const octoPlayed = new WeakMap();
 function lureRelease() { for (const f of fishes.list) { octoPlayed.delete(f); const L = lureFx.get(f); if (L) L.played = false; if (L && L.s !== 'idle') { L.s = 'idle'; L.t = 0; L.cool = performance.now() + 1500; f.lureCalm = 0; f.retarget = 0.4 + Math.random(); } } }
 let dragging = false;
-function movePlace(ev) { if (rayFrom(ev).ray.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
+// the finger picks a spot on the sand itself, on whichever level it touches (front floor, terrace or the back bank)
+function movePlace(ev) { const r = rayFrom(ev).ray, h = raySand(r.origin, r.direction); if (h) { decor.move(h.x, h.z); updatePlaceOk(); } else if (r.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
 canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', (ev) => {
   dragging = false; const c = tapCand; tapCand = null;
@@ -715,6 +718,7 @@ function frame(now) {
 function frameBody(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
+  stg.beams.update(t); stg.env.setCaustic(stg.caustic.tex, t, (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5));      // light on the sand follows the sun
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
   stg.applyTod(dt);
   if (focus) {
@@ -723,7 +727,7 @@ function frameBody(now) {
     const d = Math.max(6, focus.radius * 8.6), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     camGoal.set(focus.pos.x + 0.3, focus.pos.y - shift + 0.12, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - shift, focus.pos.z);
   }
-  else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, 4.6 + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), stg.CAM_Z); lookGoal.set(0, 5.3, 0); }
+  else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, stg.CAM_Y + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), stg.CAM_Z); lookGoal.set(0, stg.LOOK_Y, 0); }
   const fd = focus ? camera.position.distanceTo(focus.pos) : stg.CAM_Z;
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
@@ -732,9 +736,9 @@ function frameBody(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
-  if (bottleSp.visible) { bottleSp.position.y = 2.1 + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
+  if (bottleSp.visible) { bottleSp.position.y = (bottleSp.userData.y0 ?? 2.1) + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
   for (const sp of eggSprites.values()) { const w = 1 + Math.sin(t * 3 + sp.position.x) * 0.05; sp.scale.set(w, w, 1); }
-  if (driftSp.visible) { driftSp.position.y = 2.1 + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
+  if (driftSp.visible) { driftSp.position.y = (driftSp.userData.y0 ?? 2.1) + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();

@@ -195,3 +195,35 @@ export class Rain {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 }
+
+// Broad, soft beams of sunlight coming down from the surface near the middle of the tank, widening as they fall and fading out
+// before the sand. Five or six of them, each its own slow sway and breath; the shape is built once, only two numbers move.
+export class Beams {
+  constructor(n = 6) {
+    this.group = new THREE.Group(); this.items = [];
+    this.mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+      uniforms: { uI: { value: 0.5 }, uCol: { value: new THREE.Color(1, 0.94, 0.75) } },
+      vertexShader: 'attribute float aK; varying vec2 vUv; varying float vK; void main(){ vUv = uv; vK = aK; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+      fragmentShader: `varying vec2 vUv; varying float vK; uniform float uI; uniform vec3 uCol;
+        void main(){
+          float across = smoothstep(0.0, 0.5, vUv.x) * smoothstep(1.0, 0.5, vUv.x);       // soft at both edges, brightest down the middle
+          float down = smoothstep(0.0, 0.08, vUv.y) * pow(vUv.y, 1.6);                     // strongest near the surface (uv.y = 1 at the top), gone well before the bottom
+          float a = across * down * uI * vK;
+          a = floor(a * 40.0 + 0.5) / 40.0;                                                 // a few gentle steps, in keeping with the pixel look
+          gl_FragColor = vec4(uCol * a, a);
+        }` });
+    const rnd = (i) => { const x = Math.sin(i * 127.1 + 3.7) * 43758.5453; return x - Math.floor(x); };
+    for (let i = 0; i < n; i++) {
+      const t = n > 1 ? i / (n - 1) : 0.5, x0 = -1.6 + t * 3.2 + (rnd(i) - 0.5) * 0.5, w0 = 1.1 + rnd(i + 9) * 1.1, z = -2.4 + rnd(i + 3) * 3.2;
+      const g = new THREE.BufferGeometry(), top = 14.2, bot = 1.2, spread = 1.4 + rnd(i + 5) * 1.0, lean = x0 * 0.9;      // each beam leans out a little from the middle, as light does through a surface overhead
+      const P = [x0 - w0 / 2, top, z, x0 + w0 / 2, top, z, x0 + lean - (w0 * (1 + spread)) / 2, bot, z, x0 + lean + (w0 * (1 + spread)) / 2, bot, z];
+      g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 0, 0, 1, 0], 2));
+      g.setAttribute('aK', new THREE.Float32BufferAttribute([1, 1, 1, 1], 1)); g.setIndex([0, 2, 1, 1, 2, 3]);
+      const m = new THREE.Mesh(g, this.mat); m.frustumCulled = false; m.renderOrder = 4; this.group.add(m);
+      this.items.push({ m, k: g.attributes.aK, ph: rnd(i + 7) * 6.28, sp: 0.05 + rnd(i + 11) * 0.06, base: 0.55 + rnd(i + 13) * 0.45 });
+    }
+  }
+  // t in seconds: each beam breathes and drifts very slowly
+  update(t) { for (const b of this.items) { const k = b.base * (0.65 + 0.35 * Math.sin(t * b.sp * 6.28 + b.ph)); b.k.array.fill(k); b.k.needsUpdate = true; b.m.position.x = Math.sin(t * b.sp + b.ph) * 0.25; } }
+}

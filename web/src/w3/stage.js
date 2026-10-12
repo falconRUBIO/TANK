@@ -9,7 +9,7 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { buildEnvironment } from './env.js';
 import { Fish3D } from './fish3d.js';
 import { lanternGlow } from './items.js';
-import { Shafts, waterSurface, Snow, Bubbles } from './fx.js';
+import { Shafts, Beams, waterSurface, Snow, Bubbles } from './fx.js';
 import { CausticMap } from './textures.js';
 
 export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0, settle: 0, settleK: 0 };
@@ -23,7 +23,8 @@ renderer.info.autoReset = false;      // count draw calls across every post-proc
 export const scene = new THREE.Scene();
 export const camera = new THREE.PerspectiveCamera(30, IW / IH, 0.5, 120);
 export const CAM_Z = 33;                               // a little further back than it was, so a full tank does not feel crammed
-camera.position.set(0, 4.6, CAM_Z); camera.lookAt(0, 5.3, 0);
+export const CAM_Y = 13, LOOK_Y = 4.2;                // up a little and looking down, so the tops of the sand banks catch the eye as well as their faces
+camera.position.set(0, CAM_Y, CAM_Z); camera.lookAt(0, LOOK_Y, 0);
 scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 
 // gradient water backdrop
@@ -53,6 +54,7 @@ const glowMat = () => new THREE.MeshBasicMaterial({ map: glowTex, transparent: t
 export const halo = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), glowMat()); halo.position.set(0, -20, 0); halo.renderOrder = 6; scene.add(halo);
 export const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), glowMat()); pool.rotation.x = -Math.PI / 2; pool.position.set(0, -20, 0); pool.renderOrder = 3; scene.add(pool);
 export const shafts = new Shafts(); shafts.rebuild();   // god-ray streaks removed from the scene (too much); class kept for later
+export const beams = new Beams(6); scene.add(beams.group);      // broad, slow sunbeams from the surface
 export const surf = waterSurface(); scene.add(surf.mesh);
 export const snow = new Snow(); scene.add(snow.pts); { const m = snow.pts.material; if (m) { if (m.size) m.size *= 0.7; if (m.opacity != null) m.opacity *= 0.75; } }      // marine snow: small and soft, never a sparkle
 export const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -0.8, 16); scene.add(bubbles.mesh, bubbles2.mesh);
@@ -63,7 +65,7 @@ composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
 // depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
 export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
-export const hideForDepth = [halo, pool, shafts.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
+export const hideForDepth = [halo, pool, shafts.group, beams.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
 const bokehRender = bokeh.render.bind(bokeh);
 bokeh.render = (...a) => { const was = hideForDepth.map((o) => o.visible); hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o, i) => (o.visible = was[i])); };   // put back what was visible, never force things on
 composer.addPass(bokeh);
@@ -107,8 +109,8 @@ composer.addPass(grade);
 
 // ── time of day ──
 export const TOD = {
-  morning:   { sunCol: 0xf2f0d0, sunI: 9.5, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.35, fog: 0x2288a8, fogNear: 28, fogFar: 66, bgTop: 0x5cd0e0, bgBot: 0x2a8cb0, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
-  afternoon: { sunCol: 0xffe8a4, sunI: 10, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.35, fog: 0x1f7ab8, fogNear: 28, fogFar: 66, bgTop: 0x4cc0f4, bgBot: 0x2078c4, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
+  morning:   { sunCol: 0xf2f0d0, sunI: 9.5, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.35, fog: 0x1e7896, fogNear: 28, fogFar: 66, bgTop: 0x62c8c8, bgBot: 0x116a88, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
+  afternoon: { sunCol: 0xffe8a4, sunI: 10, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.35, fog: 0x1a7398, fogNear: 28, fogFar: 66, bgTop: 0x5cc4cc, bgBot: 0x0e6284, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
   evening:   { sunCol: 0xff9a78, sunI: 11, sunPos: [11, 9, 10], hemiSky: 0xd0a0b0, hemiGnd: 0x58404a, hemiI: 1.0, ambI: 0.32, rimCol: 0xffa0a0, rimI: 0.45, fog: 0x7a5a9c, fogNear: 22, fogFar: 62, bgTop: 0xff9ec0, bgBot: 0x6a52b0, lampI: 50, shaft: 0.2, surf: 0.4, exposure: 1.04, bloom: 0.3, glow: 1.4, tint: 0xfff0f0, pool: 0.2, warm: 1.2 },
   night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.4, fog: 0x1a2868, fogNear: 18, fogFar: 54, bgTop: 0x4a5cc0, bgBot: 0x182060, lampI: 130, shaft: 0.16, surf: 0.15, exposure: 1.12, bloom: 0.39, glow: 3.0, tint: 0xeef2ff, pool: 0.15, warm: 0.2 },
 };
@@ -137,6 +139,7 @@ export function applyTod(dt) {
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
   rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
+  beams.mat.uniforms.uI.value = cur.shaft * 2.2; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
   stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK); bloom.strength = cur.bloom;
   grade.uniforms.uTint.value.copy(cur.tint);

@@ -8,14 +8,14 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-const DECOR = [{ id: 'c1', type: 'coconut', x: 2.4, z: 1.5, ry: 0 }, { id: 'r1', type: 'rock', x: -2.0, z: 0.9, ry: 0 }, { id: 'b1', type: 'boulder', x: -0.2, z: 0.7, ry: 0 }, { id: 'g1', type: 'grass', x: -3.4, z: 2.75, ry: 0 }, { id: 'f1', type: 'fern', x: 1.0, z: 2.3, ry: 0 }, { id: 's1', type: 'sword', x: -1.4, z: 2.4, ry: 0 }, { id: 'k1', type: 'kelp', x: -4.1, z: 2.6, ry: 0 }];
+const DECOR = [{ id: 'c1', type: 'coconut', x: 2.4, z: 1.5, ry: 0 }, { id: 'r1', type: 'rock', x: -2.0, z: 0.1, ry: 0 }, { id: 'b1', type: 'boulder', x: -0.2, z: -0.3, ry: 0 }, { id: 'g1', type: 'grass', x: -3.4, z: 2.75, ry: 0 }, { id: 'f1', type: 'fern', x: 1.0, z: 2.3, ry: 0 }, { id: 's1', type: 'sword', x: -1.4, z: 2.4, ry: 0 }, { id: 'k1', type: 'kelp', x: -4.1, z: 2.6, ry: 0 }];
 await p.evaluate((DECOR) => { const g = window.__game, s = g.state; s.flags.tut = 5; s.fish.length = 0; s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 12 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', home: 'c1', movedAt: 0 });
   s.decor.length = 0; s.decor.push(...DECOR); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, DECOR);
 await p.waitForTimeout(2500);
 // each trip: start somewhere, crawl to a goal that has something in the way
 const TRIPS = [
   { name: 'along the front, past the kelp and the grass', from: [-4.2, 1.6], to: [-2.2, 2.4] },
-  { name: 'past the rock and the boulder', from: [-4.2, 0.8], to: [0.0, 2.7] },
+  { name: 'along the terrace, past the rock and the boulder', from: [-4.0, 0.2], to: [2.1, -0.6] },
   { name: 'through the fern, round the front of the coconut', from: [0.0, 2.7], to: [4.0, 2.6] },
   { name: 'down the side of the coconut', from: [4.0, 2.6], to: [4.3, 0.3] },
   { name: 'along the back, where the coconut and the boulder block the way', from: [4.3, 0.3], to: [-3.6, 0.3] },

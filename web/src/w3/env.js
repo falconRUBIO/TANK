@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mulberry32, fbm, mix, hex } from '../color.js';
 import { stoneTex, woodTex, gravelTex, floorTex } from './textures.js';
 import { Solids } from './decor.js';
+import { sandH, slopeAt } from './terrain.js';
 
 import { swayTime } from './voxshade.js';
 export { swayTime };
@@ -182,23 +183,56 @@ export function buildEnvironment() {
     black:  { amp: 0.22, ripple: 0.09, rf: 3.4, n: 150, geo: 'ico', size: [0.06, 0.3], cols: [[30, 28, 38], [48, 46, 60], [22, 22, 30], [150, 156, 214]] },
     coral:  { amp: 0.28, ripple: 0, rf: 0, n: 320, geo: 'cone', size: [0.12, 0.3], cols: [[255, 150, 170], [255, 196, 170], [255, 232, 224], [232, 120, 150]] },
   };
-  const bottomH = (sp, x, z) => fbm(x * 0.35, z * 0.35, 8) * sp.amp + (sp.ripple ? Math.sin(x * sp.rf + fbm(x * 0.3, z * 0.5, 2) * 4 + z * 0.8) * sp.ripple : 0) + Math.max(0, (-z - 3) * 0.12) + Math.max(0, (Math.abs(x) - 6) * 0.1);
+  const bottomH = (sp, x, z) => fbm(x * 0.35, z * 0.35, 8) * sp.amp + (sp.ripple ? Math.sin(x * sp.rf + fbm(x * 0.3, z * 0.5, 2) * 4 + z * 0.8) * sp.ripple : 0) + Math.max(0, (Math.abs(x) - 6) * 0.1);
   const GEO = { ico: new THREE.IcosahedronGeometry(0.5, 0), sphere: new THREE.SphereGeometry(0.5, 8, 6), cone: new THREE.ConeGeometry(0.5, 1, 5) };
-  const bedGeo = new THREE.PlaneGeometry(30, 30, 64, 64); bedGeo.rotateX(-Math.PI / 2); bedGeo.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(bedGeo.attributes.position.count * 3), 3));
-  const fl = new THREE.Mesh(bedGeo, patch(new THREE.MeshStandardMaterial({ map: floorTex('sand'), vertexColors: true, roughness: 1 })));
-  fl.position.set(0, 0, 5); fl.receiveShadow = true; root.add(fl); floorMesh = fl;
+  // the bed: a grid that is fine over the tank, where the banks and terraces are, and coarse further out where only the far floor shows
+  const axis = (lo, hi, a, b, fine, coarse) => { const v = []; for (let x = lo; x < a; x += coarse) v.push(x); for (let x = a; x < b; x += fine) v.push(x); for (let x = b; x < hi; x += coarse) v.push(x); v.push(hi); return v; };
+  const XS = axis(-18, 18, -6.2, 6.2, 0.12, 1.0), ZS = axis(-22, 16, -4.6, 4.2, 0.12, 1.0), NXV = XS.length, NZV = ZS.length;
+  const bedGeo = new THREE.BufferGeometry(); { const pos = new Float32Array(NXV * NZV * 3), uv = new Float32Array(NXV * NZV * 2), idx = [];
+    for (let j = 0; j < NZV; j++) for (let i = 0; i < NXV; i++) { const k = j * NXV + i; pos[k * 3] = XS[i]; pos[k * 3 + 2] = ZS[j]; }
+    for (let j = 0; j < NZV - 1; j++) for (let i = 0; i < NXV - 1; i++) { const a = j * NXV + i, b = a + 1, c = a + NXV, d = c + 1; idx.push(a, c, b, b, c, d); }
+    bedGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); bedGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); bedGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(NXV * NZV * 3), 3)); bedGeo.setIndex(idx); }
+  const bedMat = patch(new THREE.MeshStandardMaterial({ map: floorTex('sand'), vertexColors: true, roughness: 1 })), cau = { uCau: { value: null }, uCauT: { value: 0 }, uCauI: { value: 0.6 } };
+  // sunlight through the moving surface, drawn on the sand: two layers of the caustic pattern drifting different ways, warm and pale,
+  // strongest on the flat tops of the banks and the open floor, faint down the faces
+  { const before = bedMat.onBeforeCompile; bedMat.onBeforeCompile = (sh) => { before(sh); Object.assign(sh.uniforms, cau);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCauW; varying float vCauUp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCauW = (modelMatrix * vec4(transformed, 1.0)).xyz; vCauUp = normalize(mat3(modelMatrix) * objectNormal).y;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uCau; uniform float uCauT, uCauI; varying vec3 vCauW; varying float vCauUp;')
+      .replace('#include <opaque_fragment>', `{ vec2 w = vCauW.xz;
+          float c1 = texture2D(uCau, w * 0.31 + vec2(uCauT * 0.011, uCauT * 0.005)).r, c2 = texture2D(uCau, w * 0.43 + vec2(-uCauT * 0.007, uCauT * 0.009) + 0.37).r;
+          float c = smoothstep(0.62, 0.95, c1) + smoothstep(0.66, 0.98, c2) * 0.5, flatK = smoothstep(0.5, 0.92, vCauUp), near = 1.0 - smoothstep(4.0, 9.0, length(w - vec2(0.0, 0.0)));
+          outgoingLight += vec3(1.0, 0.94, 0.75) * c * uCauI * (0.25 + 0.75 * flatK) * near; }
+        #include <opaque_fragment>`); }; bedMat.customProgramCacheKey = () => 'bed-caustics'; }
+  const fl = new THREE.Mesh(bedGeo, bedMat);
+  // the sun is in front: the banks' own shadows would fall behind them, out of sight, so the sand is left out of the shadow pass
+  fl.receiveShadow = true; fl.castShadow = false; root.add(fl); floorMesh = fl;
   const pebbles = new THREE.InstancedMesh(GEO.ico, patch(new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.9 })), 720);
   pebblesMesh = pebbles; pebbles.castShadow = pebbles.receiveShadow = true; pebbles.frustumCulled = false; root.add(pebbles);
+  // the bed's own copy of each floor texture, tiled mirror-wise: the pixel art is not drawn to tile, and a plain repeat left a seam down the middle of the tank
+  const bedTexes = {}, bedTex = (key) => bedTexes[key] ??= (() => { const t = floorTex(key).clone(); t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping; t.needsUpdate = true; return t; })();
   let bottomKey = null;
   const buildBottom = (key) => {
     const sp = BOTTOM[key] ?? BOTTOM.sand; if (bottomKey === key) return; bottomKey = key;
     const p = bedGeo.attributes.position, col = bedGeo.attributes.color;
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, bottomH(sp, x, z) - 0.1); const k = 0.8 + fbm(x * 1.2, z * 1.2, 3) * 0.4; col.setXYZ(i, k, k, k); }
-    p.needsUpdate = true; col.needsUpdate = true; bedGeo.computeVertexNormals(); floorMesh.material.map = floorTex(key); floorMesh.material.needsUpdate = true;
+    // the banks are the same under every style of bottom; the style adds its own small bumps on top, a little less on the raised sand
+    const uv = bedGeo.attributes.uv, SUN = [0.98, 0.9, 0.74], MID = [0.9, 0.82, 0.66], FACE = [0.42, 0.33, 0.24], SHADE = [0.6, 0.58, 0.55];      // golden tops, the open floor a shade below, faces a warm brown
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i), h = sandH(x, z), y = h + bottomH(sp, x, z) * (h > 0.3 ? 0.35 : 1) - 0.1; p.setY(i, y);
+      uv.setXY(i, (x + 15) / 30, (z - h * 0.95 + 10) / 30);                      // the texture runs on down a face instead of stretching
+      const sl = Math.abs(x) < 7 && Math.abs(z) < 5.5 ? slopeAt(x, z).s : 0, steep = Math.min(1, Math.max(0, (sl - 0.3) / 0.8));
+      // a hollow where a face meets the level below is in shade; the lip of a ledge catches the light
+      let ring = 0; if (h > 0.02 || sl > 0.05) { for (const [a, b] of [[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]]) ring += sandH(x + a, z + b); ring = ring / 4 - h; }
+      let ring2 = 0; if (h > 0.02 || sl > 0.05) { for (const [a, b] of [[0.18, 0], [-0.18, 0], [0, 0.18], [0, -0.18]]) ring2 += sandH(x + a, z + b); ring2 = ring2 / 4 - h; }
+      const hollow = Math.min(1, Math.max(0, ring * 2.2)), lip = Math.min(1, Math.max(0, -ring2 * 9)) * (1 - steep * 0.6);
+      const grain = 0.9 + fbm(x * 1.2, z * 1.2, 3) * 0.2, strata = steep > 0.05 ? 0.88 + 0.24 * fbm(x * 1.6, h * 7, z * 1.6) : 1;      // the faces show the layers the sand was laid down in
+      const top = h > 0.3 ? SUN : MID, c = [0, 1, 2].map((q) => (top[q] + (FACE[q] - top[q]) * steep) * (1 - 0.45 * hollow) + (SHADE[q] - 1) * 0.15 * hollow);
+      const k = grain * strata * (1 + 0.35 * lip); col.setXYZ(i, c[0] * k, c[1] * k, c[2] * k);
+    }
+    p.needsUpdate = true; col.needsUpdate = true; uv.needsUpdate = true; bedGeo.computeVertexNormals(); bedGeo.computeBoundingSphere(); floorMesh.material.map = bedTex(key); floorMesh.material.needsUpdate = true;
     const r = mulberry32(key.length * 13 + 5); pebbles.geometry = GEO[sp.geo]; pebbles.count = sp.n;
     for (let i = 0; i < sp.n; i++) {
       const x = (r() - 0.5) * 12, z = -4 + r() * 6.4, sc = sp.size[0] + r() * r() * (sp.size[1] - sp.size[0]), tall = sp.geo === 'cone' ? 2.4 + r() * 1.6 : 1;
-      m4.compose(v.set(x, 0.05 + bottomH(sp, x, z + 2.5) - 0.1 + sc * 0.2, z), q.setFromEuler(sp.geo === 'cone' ? e.set((r() - 0.5) * 0.5, r() * 6, (r() - 0.5) * 0.5) : e.set(r() * 3, r() * 3, r() * 3)), sp.geo === 'cone' ? s.set(sc, sc * tall, sc) : s.set(sc * 1.4, sc, sc * 1.2)); pebbles.setMatrixAt(i, m4);
+      m4.compose(v.set(x, 0.05 + sandH(x, z) + bottomH(sp, x, z) * (sandH(x, z) > 0.3 ? 0.35 : 1) - 0.1 + sc * 0.2 - (slopeAt(x, z).s > 0.9 ? sc * 0.5 : 0), z), q.setFromEuler(sp.geo === 'cone' ? e.set((r() - 0.5) * 0.5, r() * 6, (r() - 0.5) * 0.5) : e.set(r() * 3, r() * 3, r() * 3)), sp.geo === 'cone' ? s.set(sc, sc * tall, sc) : s.set(sc * 1.4, sc, sc * 1.2)); pebbles.setMatrixAt(i, m4);
       pebbles.setColorAt(i, C(...sp.cols[(r() * sp.cols.length) | 0]));
     }
     pebbles.instanceMatrix.needsUpdate = true; if (pebbles.instanceColor) pebbles.instanceColor.needsUpdate = true;
@@ -207,12 +241,12 @@ export function buildEnvironment() {
 
   // ── growth on the ruins, hazy kelp and dark framing blades (all other decoration lives in decor.js) ──
 
-  const backdrop = buildBackdrop(); root.add(backdrop);
+  const backdrop = buildBackdrop(); root.add(backdrop); backdrop.children.slice(0, 3).forEach((m) => (m.visible = false));      // the flat far dunes: from up here they read as stripes across the water, so the sand runs back into the haze instead
 
   const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0] };
-  const WATER = new THREE.Color(0x8fb4c8), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
+  const WATER = new THREE.Color(0x8fb4c8), DEEP = new THREE.Color(0x1d7894), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
   const paintBack = () => {
-    const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(WATER, 0.45 + i * 0.1).multiplyScalar(backLight); });
+    const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the colour of deep water, with only a hint of the chosen backdrop
     backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.62).lerp(WATER, i < 6 ? 0.18 : 0.42).multiplyScalar(backLight * (i < 6 ? 0.92 : 1)));
     backdrop.userData.rock.forEach((m) => m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9));
   };
@@ -222,5 +256,5 @@ export function buildEnvironment() {
   };
   const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };
   const SCALE = { sand: 0.9, pearl: 0.7, gravel: 0.5, black: 0.8, coral: 0.45 };
-  return { root, archX: 0, colliders: Object.assign(new Solids(), { soft: new Solids() }), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
+  return { root, setCaustic: (tex, t, k = 0.6) => { cau.uCau.value = tex; cau.uCauT.value = t; cau.uCauI.value = k; }, archX: 0, colliders: Object.assign(new Solids(), { soft: new Solids() }), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
 }

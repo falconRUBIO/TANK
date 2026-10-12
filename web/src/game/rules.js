@@ -53,7 +53,7 @@ export const DECOR_DEF = {
 };
 export const LEVEL_AT = [0, 14, 36, 66, 100, 140, 184, 220];                     // score needed for level 1..5
 export const MAX_DECOR = 60;
-export const BOUNDS = { x: [-4.4, 4.4], z: [-1.0, 3.3] };
+export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.3] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
 // The rhythm of looking after the tank (the water and glass come due a little before three full days, so someone who visits once a day at about the same time meets them on the third). Feeding is the everyday visit, about twice a day, because watching the fish rush for food
 // and the octopus hunt its crab is the fun part. The water and the glass are a bigger job every few days, and pay more for it.
