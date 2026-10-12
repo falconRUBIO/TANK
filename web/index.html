@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script>try{if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('pwa')}catch(e){}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script>try{if(navigator.standalone||matchMedia('(display-mode: standalone)').matches){var d=document.documentElement;d.classList.add('pwa');var fit=function(){var p=innerHeight>=innerWidth,h=Math.max(innerHeight,p?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width));d.style.setProperty('--fullH',h+'px')};fit();addEventListener('resize',fit);addEventListener('orientationchange',function(){setTimeout(fit,300)})}}catch(e){}</script>
 <title>Our Tank</title>
 <link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#0a1220"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Our Tank">
 <script>addEventListener('error',function(e){var t=document.getElementById('ltxt');if(t&&!window.__booted)t.textContent='Something went wrong loading the tank. Please reload.'});try{var c=document.createElement('canvas');if(!(c.getContext('webgl2')||c.getContext('webgl')))window.__noGL=1}catch(e){window.__noGL=1}</script>
@@ -10,8 +10,8 @@
   :root{--bg:#0a1220;--panel:#0f1a2c;--line:#1d2c44;--ink:#dbe8f7;--dim:#7e93ad;--gold:#e6c36a}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#050a12;color:var(--ink);font:14px -apple-system,system-ui,"SF Pro Text",sans-serif;overflow:hidden}
-  /* opened from the home screen: the whole screen, home-bar area included (iOS can report the page shorter than the screen), with sand behind it so no dark strip can show */
-  html.pwa,html.pwa body{background:#d8cc9c}html.pwa #app{bottom:auto;height:100vh;height:100lvh}
+  /* opened from the home screen: the whole screen, home-bar area included (iOS reports the page a status bar shorter than the screen, so the height is the screen's own), with sand behind it so no dark strip can show */
+  html.pwa,html.pwa body{background:#d8cc9c}html.pwa #app{bottom:auto;height:100vh;height:var(--fullH,100lvh)}
   #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
 /* pinned to the edges of the screen, not 100% of the page: on an iPhone home-screen app 100% stops short of the home-bar area and left a black strip at the bottom */
   header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;justify-content:space-between}
