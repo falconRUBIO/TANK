@@ -11,7 +11,7 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#050a12;color:var(--ink);font:14px -apple-system,system-ui,"SF Pro Text",sans-serif;overflow:hidden}
   /* opened from the home screen: the whole screen, home-bar area included (iOS reports the page a status bar shorter than the screen, so the height is the screen's own), with sand behind it so no dark strip can show */
-  html.pwa,html.pwa body{background:#d8cc9c}html.pwa #app{bottom:auto;height:100vh;height:var(--fullH,100lvh)}
+  html.pwa,html.pwa body{background:#d8cc9c;height:var(--fullH,100%)}html.pwa #app{bottom:auto;height:100vh;height:var(--fullH,100lvh)}
   #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;max-width:430px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
 /* pinned to the edges of the screen, not 100% of the page: on an iPhone home-screen app 100% stops short of the home-bar area and left a black strip at the bottom */
   header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;justify-content:space-between}
