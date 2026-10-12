@@ -550,51 +550,132 @@ const mandarin = reef({                         // a mandarin dragonet: long and
 
 // ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
 const seahorse = {
-  id: 'seahorse', label: 'Seahorse', move: 'hover', length: 54, vox: 0.044,
+  id: 'seahorse', label: 'Seahorse', move: 'hover', length: 77, vox: 0.031,
   make(seed = 1) {
-    const rng = mulberry32(seed * 5099 + 17), pals = [[[240, 140, 20], [255, 206, 120], [168, 70, 10]], [[220, 60, 60], [255, 170, 150], [140, 26, 40]], [[232, 186, 20], [255, 236, 140], [150, 110, 10]], [[140, 80, 200], [214, 180, 248], [80, 40, 140]]];
-    const [bodyC, bellyC, ridgeC] = pals[Math.floor(rng() * pals.length)];      // orange, red, yellow or violet: each with a paler belly and darker rings
-    const P = [[7, 21], [5, 15], [4, 8], [3, 1], [2, -6], [1, -12], [2, -17], [5, -19], [8, -17], [8, -13]];
-    const path = []; for (let i = 0; i < P.length - 1; i++) for (let k = 0; k < 10; k++) { const t = k / 10; path.push([P[i][0] + (P[i + 1][0] - P[i][0]) * t, P[i][1] + (P[i + 1][1] - P[i][1]) * t, (i + t) / (P.length - 1)]); }
-    path.push([...P[P.length - 1], 1]);
-    const rad = prof([[0, 4.6], [0.08, 4.2], [0.16, 3.0], [0.3, 6.2], [0.45, 6.0], [0.6, 3.6], [0.8, 2.2], [1, 1.1]]);
-    const near = (x, y) => { let best = 1e9, bs = 0, bx = 0, bi = 0; for (let i = 0; i < path.length; i++) { const q = path[i], d = Math.hypot(x - q[0], y - q[1]); if (d < best) { best = d; bs = q[2]; bx = q[0]; bi = i; } } return { d: best, s: bs, cx: bx, i: bi }; };
-    // the tail is rigged: every voxel of it keeps its place relative to the nearest point of the centre line, and the line can uncurl to swim or coil tight round a stem
-    const TAIL0 = 0.55, tailOf = (i, x, y, v) => (path[i][2] >= TAIL0 ? { ...v, tag: 'tail', at: i, off: [x - path[i][0], y - path[i][1], 0] } : v);
+    const rng = mulberry32(seed * 5099 + 17);
+    // colours after real seahorses: the golden lined seahorse, a red spiny one, orange, violet and a dark one; some grow fleshy filaments along the back and the crown
+    const PALS = [
+      { body: [214, 168, 82], belly: [240, 214, 150], ring: [196, 118, 44], dark: [120, 82, 40], spot: [255, 248, 228] },
+      { body: [178, 42, 46], belly: [214, 96, 90], ring: [120, 20, 34], dark: [80, 14, 24], spot: [255, 214, 210], spiny: true },
+      { body: [236, 140, 40], belly: [255, 204, 130], ring: [176, 80, 18], dark: [110, 50, 14], spot: [255, 240, 210] },
+      { body: [146, 96, 196], belly: [212, 180, 240], ring: [96, 52, 150], dark: [60, 30, 96], spot: [244, 230, 255] },
+      { body: [92, 76, 64], belly: [150, 128, 104], ring: [60, 48, 40], dark: [34, 26, 22], spot: [236, 220, 196], spiny: true },
+    ];
+    const pal = PALS[Math.floor(rng() * PALS.length)], spiny = pal.spiny || rng() < 0.2;
+    // the trunk's centre line, crown to the root of the tail, and how thick it is along it: a slim neck, a deep chest and a pot belly that bulges forward
+    const SP = [[6, 40], [4.5, 33], [3.2, 26], [3, 19], [3.6, 11], [4.2, 3], [4, -4], [3, -9]];
+    const spine = []; for (let i = 0; i < SP.length - 1; i++) for (let k = 0; k < 8; k++) { const t = k / 8; spine.push([SP[i][0] + (SP[i + 1][0] - SP[i][0]) * t, SP[i][1] + (SP[i + 1][1] - SP[i][1]) * t, (i + t) / (SP.length - 1)]); }
+    spine.push([...SP[SP.length - 1], 1]);
+    const rf = prof([[0, 3.6], [0.14, 3.3], [0.3, 5.2], [0.5, 7.6], [0.68, 7.2], [0.85, 4.8], [1, 3.4]]), rb = prof([[0, 4], [0.14, 3.7], [0.3, 5.6], [0.5, 6.4], [0.7, 5.6], [0.86, 4.2], [1, 3.4]]);      // how far the outline reaches in front (the pot belly) and behind (the curved back)
+    const near = (pts, x, y) => { let best = 1e9, bi = 0; for (let i = 0; i < pts.length; i++) { const d = (x - pts[i][0]) ** 2 + (y - pts[i][1]) ** 2; if (d < best) { best = d; bi = i; } } return bi; };
+    const tail = seahorse.tailRest;
+    const N = tail.n, TR = tailR;                          // the tail tapers from the trunk to a fine curled tip
+    const ringAt = (s) => { const f = (s * 11 + 0.3) % 1; return f < 0.16 ? 1 : f < 0.3 ? 0.4 : 0; };      // the bony plates: a raised rim at each ring
+    const speck = (x, y, z, c) => { const n1 = fbm(x * 0.55 + seed, y * 0.55, z * 0.55), n2 = fbm(x * 1.3 + 7, y * 1.3 + seed, z * 1.3); if (n1 > 0.78) return mix(c, pal.spot, 0.45); if (n2 > 0.8) return mix(c, pal.dark, 0.4); return c; };
+    const hash = (a, b, c) => { let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791) ^ (seed * 2654435761); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h >>> 0) % 1000) / 1000; };
+    // the trunk is drawn from its outline, the way a seahorse is drawn in profile: a curved back, an arched neck, a deep chest and a pot belly that bulges forward
+    const BACK = prof([[-9, 0.2], [-3, -2.6], [4, -4.6], [11, -5.2], [18, -4.4], [25, -2.6], [30, -0.6], [34, 1.4], [37, 3.2]]), FRONT = prof([[-9, 5.8], [-3, 9.2], [3, 11.6], [9, 12.2], [15, 10.6], [21, 8.4], [27, 7.2], [31, 7.6], [35, 9.2]]);
+    const trunk = (x, y, z) => {
+      const b = BACK(y), f = FRONT(y), c = (f + b) / 2, hw = (f - b) / 2, s = (37 - y) / 46, u = (x - c) / hw;
+      const ringPh = ((y + 30) / 2.7) % 1, rim = ringPh < 0.28 ? 1 : 0, bulge = rim ? 0.45 : 0;      // the bony plates: each ring's rim stands a little proud
+      const zw = hw * 0.74 * (u > 0 ? 1 - 0.3 * u : 1) + bulge, xin = Math.abs(u) <= 1 + bulge / hw;
+      const d = xin ? (z / (zw * Math.sqrt(Math.max(0, 1 - Math.min(1, u * u))) + 0.001)) ** 2 : 9;
+      return { s, u, c, hw, zw, rim, d, across: x - c, r: hw, rb: hw, rz: zw };
+    };
+    const tailHit = (x, y, z) => {
+      const i = near(tail.p, x, y), q = tail.p[i], u = i / (N - 1), r = TR(u), a = tail.a[i], nx = -Math.sin(a), ny = Math.cos(a);
+      const on = (x - q[0]) * nx + (y - q[1]) * ny, ot = (x - q[0]) * Math.cos(a) + (y - q[1]) * Math.sin(a);
+      const sq = Math.pow(Math.abs(on) / r, 3) + Math.pow(Math.abs(z) / (r * 0.95), 3);    // a square-sided tail, as a real seahorse's is
+      return { i, u, r, on, ot, sq };
+    };
+    const tailTag = (h, v) => ({ ...v, tag: 'tail', at: h.i, off: [h.ot, h.on, 0] });
     return {
-      bounds: { x: [-14, 24], y: [-26, 30], z: [-9, 9] }, center: [4, 2], tail: { path, i0: path.findIndex((q) => q[2] >= TAIL0) },
+      bounds: { x: [-20, 36], y: [-46, 51], z: [-11, 11] }, center: [6, 2], tail: { n: N },
       sample(x, y, z) {
-        const { d, s, cx, i: pi } = near(x, y), r = rad(s), inBody = (d / r) ** 2 + (z / (r * 0.8)) ** 2 <= 1;
-        // snout: a short tube pointing forward from the head
-        if (!inBody && x > 8 && x < 18 && Math.hypot(y - (21 - (x - 8) * 0.1), z) <= 1.7 - (x - 8) * 0.04) return { c: x > 15 ? ridgeC : mix(bodyC, bellyC, 0.4) };
-        if (!inBody && z === 0 && s > 0.2 && s < 0.85 && x < cx && Math.floor((s * 36 + 0.3) % 2) === 0 && d < r + 1.4) return tailOf(pi, x, y, { c: ridgeC });        // a small spine on each ring along the back
-        // eye: a dark square with a glint on the outer shell of the head
-        if (inBody && s < 0.12 && z !== 0 && (d / r) ** 2 + ((Math.abs(z) + 1) / (r * 0.8)) ** 2 > 1 && Math.abs(x - 8) <= 2 && Math.abs(y - 22) <= 2) { const ed = Math.max(Math.abs(x - 8), Math.abs(y - 22)); return ed === 2 ? { c: [255, 210, 90], em: 1 } : x === 7 && y === 23 ? { c: [255, 255, 255], em: 2, tag: 'glint' } : { c: [14, 12, 20], em: 1 }; }
-        if (inBody) {
-          let c = x > cx ? mix(bodyC, bellyC, 0.75) : bodyC; const ring = Math.floor((s * 36 + 0.3) % 2) === 0;
-          if (s > 0.18 && ring) c = mix(c, ridgeC, 0.6); if (s < 0.1 && y > 24 && x < 6) c = ridgeC;                // ringed body, little crown
-          if (fbm(x * 0.4 + seed, y * 0.4, z * 0.4) > 0.7) c = mix(c, [255, 248, 230], 0.55); else if (fbm(x * 0.9 + 3, y * 0.9, z * 0.9 + seed) > 0.74) c = mix(c, ridgeC, 0.5);      // pale freckles and dark specks
-          return tailOf(pi, x, y, { c });
+        // snout: a long tube from the face, pointing forward and a little down, flaring at the small mouth
+        { const ox = 13.5, oy = 38.5, ca = Math.cos(-0.38), sa = Math.sin(-0.38), u = (x - ox) * ca + (y - oy) * sa, v = -(x - ox) * sa + (y - oy) * ca;
+          if (u >= -1 && u <= 19) { const t = u / 19, rr = 2.1 - t * 0.7 + (t > 0.9 ? 0.7 : 0); if (Math.hypot(v, z * 1.1) <= rr) return { c: t > 0.93 ? pal.dark : speck(x, y, z, mix(pal.body, pal.belly, v < 0 ? 0.45 : 0.15)) }; } }
+        // the eye: a big turret on each side of the head, a gold ring round a dark pupil that swivels on its own
+        const ez = 3.4, ex = 11.5, ey = 41;
+        if (z !== 0) { const az = Math.abs(z), d = Math.hypot(x - ex, y - ey, (az - ez) * 1.2); if (d <= 3 && az >= ez - 1) {
+          if (az >= ez + 0.6) { const pd = Math.hypot(x - ex - 0.3, y - ey); if (pd < 1.1) return { c: [10, 10, 16], em: 1, tag: 'glint' }; if (pd < 2.2) return { c: (Math.round(Math.atan2(y - ey, x - ex) * 3) & 1) ? [230, 186, 70] : [196, 140, 44], em: 1, tag: 'glint' }; }
+          return { c: mix(pal.body, pal.ring, 0.3) }; } }
+        // the crown (coronet): a knobbly crest rising from the top of the head
+        if (y >= 43 && y <= 51 && x >= 2 && x <= 9 && Math.abs(z) <= 2.2 - (y - 43) * 0.25) { const k = x - 2, top = 43 + [4, 6, 5, 7, 6, 7, 5, 3][k]; if (y <= top && (y < top - 1 || k % 2 === 1 || y === top - 1)) return { c: y >= top - 1 ? pal.dark : mix(pal.body, pal.ring, 0.45) }; }
+        // the head: a deep, horse-like skull tilted toward the snout, with a cheek plate
+        { const hx = x - 9.5, hy = y - 40.5, c1 = Math.cos(-0.35), s1 = Math.sin(-0.35), u = hx * c1 + hy * s1, v = -hx * s1 + hy * c1, hd = (u / 6.2) ** 2 + (v / 5) ** 2 + (z / (3.9 - Math.max(0, v) * 0.15)) ** 2;
+          if (hd <= 1) { let c = speck(x, y, z, v < -1.5 ? mix(pal.body, pal.belly, 0.45) : pal.body); if (hd > 0.55 && Math.abs(Math.sin(u * 0.9 + v * 0.5)) < 0.18) c = mix(c, pal.spot, 0.45); if (Math.abs(u + 2.5) < 0.7 && hd > 0.5) c = mix(c, pal.ring, 0.5); return { c }; }
+          if (spiny && hd <= 1.6 && v > 2.5 && Math.abs(z) <= 0.8 && hash(Math.round(u), 3, 0) > 0.5) return { c: hash(x, y, 1) > 0.5 ? pal.spot : pal.ring }; }
+        // the trunk: ringed bony plates with a knob at each corner, a paler belly, freckles and specks
+        if (y > -12 && y < 38) {
+          const T = trunk(x, y, z);
+          if (T.d <= 1) {
+            let c = T.u > 0.15 ? mix(pal.body, pal.belly, Math.min(1, (T.u - 0.15) * 1.3)) : pal.body;
+            if (T.rim) c = mix(c, pal.ring, T.u > 0.4 ? 0.35 : 0.6); else if (((y + 30) / 2.7) % 1 > 0.85) c = mix(c, pal.dark, 0.25);      // a light rim and a shadowed seam on every ring
+            if (T.u > 0.5 && Math.abs(z) <= 0.6 && !T.rim) c = mix(c, pal.spot, 0.3);
+            return { c: speck(x, y, z, c) };
+          }
+          // the knobs: at the back ridge, the two sides and the keel of the belly, on each ring's rim
+          if (T.rim && T.d <= 1.7 && Math.abs(T.u) <= 1.15) { const back = T.u < -0.8 && Math.abs(z) <= 1.2, side = Math.abs(T.u) < 0.35 && Math.abs(Math.abs(z) - T.zw) <= 1.1, keel = T.u > 0.85 && Math.abs(z) <= 1; if (back || side || keel) return { c: mix(pal.ring, pal.dark, 0.3) }; }
+          // fleshy filaments (cirri) on a spiny seahorse's back
+          if (spiny && T.u < -1 && T.u > -1 - 3 / T.hw && Math.abs(z) <= 0.6 && T.rim && hash(Math.round(y), 1, 0) > 0.45) return { c: hash(x, y, z) > 0.5 ? pal.spot : pal.ring };
+          // the dorsal fin: a fan of fine rays on the back, low down the trunk; it ripples
+          if (Math.abs(z) <= 0.5 && y > -2 && y < 13 && T.u < -1) { const f = (y + 2) / 15, h = Math.sin(Math.PI * f) * 6; if ((-T.u - 1) * T.hw <= h) return { c: (x + y) % 2 ? mix(pal.belly, pal.body, 0.35) : mix(pal.belly, pal.ring, 0.45), wave: 1.1 }; }
+          // the pectoral fins: small rayed fans at the back of the head
+          if (Math.abs(Math.abs(z) - (T.zw + 0.6)) < 0.5 && y > 32 && y < 35 && T.u < -0.1 && T.u > -0.8) return { c: (y % 2) ? mix(pal.belly, pal.body, 0.3) : mix(pal.belly, pal.ring, 0.35), flap: 1.2 };
         }
-        // dorsal fin: a thin fluttering plate behind the back
-        if (z === 0 && s > 0.27 && s < 0.5 && x < cx - r + 1 && x > cx - r - 5 * Math.sin((Math.PI * (s - 0.27)) / 0.23)) return { c: mix([255, 244, 220], bodyC, 0.2), wave: 1.1 };
-        // tiny pectoral fin by the cheek
-        if (Math.abs(z) === 2 && s > 0.12 && s < 0.2 && x < cx && x > cx - 4 && d < r + 3) return { c: [255, 240, 214], flap: 1.5 };
+        // the tail: square plated, ringed with knobs at the corners, curling forward
+        if (y < 0) {
+          const h = tailHit(x, y, z);
+          if (h.i > 0 && h.sq <= 1 && Math.abs(h.ot) < 1.2) { let c = pal.body; const ring = ((h.i * 1.05) % 3.2) < 0.9; if (ring && h.sq > 0.4) c = mix(c, pal.ring, 0.55); if (h.on > h.r * 0.4) c = mix(c, pal.belly, 0.35); return tailTag(h, { c: speck(x, y, z, c) }); }
+          if (h.i > 0 && h.sq <= 1.9 && h.sq > 1 && Math.abs(h.ot) < 1 && ((h.i * 1.05) % 3.2) < 0.9 && Math.abs(Math.abs(h.on) - Math.abs(z)) < 1.2 && h.u < 0.85) return tailTag(h, { c: pal.ring });
+          if (spiny && h.i > 0 && h.on < -h.r && h.on > -h.r - 2.5 && Math.abs(z) <= 0.6 && Math.abs(h.ot) < 0.8 && h.u < 0.6 && hash(h.i, 2, 0) > 0.6) return tailTag(h, { c: pal.spot });
+        }
         return null;
       },
     };
   },
 };
-
-// The seahorse's tail for a given curl: -1 hangs almost straight (swimming), 0 is its resting hook, 1 coils tight round a stem.
-// Returns the centre line's points and angles (centred like the model), and how much each point has turned from the rest shape.
-export function seahorseTail(sp, curl, out) {
-  const T = sp.tail, P = T.path, n = P.length, c0 = sp.center ?? [0, 0];
-  if (!T.ang) { T.ang = new Float32Array(n); T.len = new Float32Array(n); for (let i = 1; i < n; i++) { T.ang[i] = Math.atan2(P[i][1] - P[i - 1][1], P[i][0] - P[i - 1][0]); T.len[i] = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); } T.ang[0] = T.ang[1]; }
-  const o = out ?? { x: new Float32Array(n), y: new Float32Array(n), d: new Float32Array(n) }, i0 = T.i0, a0 = T.ang[i0];
-  for (let i = 0; i <= i0; i++) { o.x[i] = P[i][0] - c0[0]; o.y[i] = P[i][1] - c0[1]; o.d[i] = 0; }
-  let prev = a0;
-  for (let i = i0 + 1; i < n; i++) { let da = T.ang[i] - a0; da = Math.atan2(Math.sin(da), Math.cos(da)); const a = a0 + da * (1 + curl * 0.9); o.d[i] = a - T.ang[i]; o.x[i] = o.x[i - 1] + Math.cos(a) * T.len[i]; o.y[i] = o.y[i - 1] + Math.sin(a) * T.len[i]; prev = a; }
+// The tail's rest centre line (in model coordinates) and its rig. curl: -1 hangs nearly straight (swimming), 0 is its resting curl, 1 a tight spiral.
+// grip: 0 the tail curls flat beside the body; 1 its end wraps in a helix round an upright stem in front of the belly (ax, ay is where that stem passes, in model coordinates minus centre).
+const TAIL = { n: 52, ds: 1.1, base: [3, -9], a0: -1.85, pitch: 0.85, ig: 14, lean: 0.34, stem: 2.1 };
+// the tail's thickness along its length (radius, in voxels), used to build it and to wrap it snugly: each coil sits its own thickness out from the stem
+const tailR = (u) => 3.1 - 2.1 * Math.pow(u, 0.85);
+const tailAngles = (curl) => { const K = curl < 0 ? 5.6 + curl * 4.4 : 5.6 + curl * 4.6; return (u) => TAIL.a0 + K * Math.pow(u, 2.2); };
+function tailPlanar(curl, px, py, pa) { const A = tailAngles(curl); let x = TAIL.base[0], y = TAIL.base[1]; for (let i = 0; i < TAIL.n; i++) { const a = A(i / (TAIL.n - 1)); if (i > 0) { x += Math.cos(a) * TAIL.ds; y += Math.sin(a) * TAIL.ds; } px[i] = x; py[i] = y; pa[i] = a; } }
+seahorse.tailRest = (() => { const n = TAIL.n, px = new Float32Array(n), py = new Float32Array(n), pa = new Float32Array(n); tailPlanar(0, px, py, pa); return { n, p: Array.from({ length: n }, (_, i) => [px[i], py[i]]), a: pa }; })();
+export const SEAHORSE_LEAN = TAIL.lean;
+// how far from the stem the outside of the coil reaches (model voxels): leaves inside this are pressed aside while it holds on
+export const SEAHORSE_GRIP_R = TAIL.stem + 2 * tailR(TAIL.ig / (TAIL.n - 1)) + 0.35;
+export function seahorseTail(sp, curl, grip = 0, out) {
+  const n = TAIL.n, c0 = sp.center ?? [0, 0];
+  const o = out ?? { x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), T: new Float32Array(n * 3), N: new Float32Array(n * 3), B: new Float32Array(n * 3), px: new Float32Array(n), py: new Float32Array(n), pa: new Float32Array(n), ax: 0, ay: 0 };
+  tailPlanar(Math.max(-1, Math.min(1, curl)), o.px, o.py, o.pa);
+  // holding on, it leans back (by TAIL.lean, applied to the whole body when it is placed) so its belly is clear of the stem; the coil is tilted the other way here so it is upright in the water
+  const g = Math.max(0, Math.min(1, grip)), ig = TAIL.ig, GB = 12, cl = Math.cos(TAIL.lean), sl = Math.sin(TAIL.lean), rot = (x, y) => [x * cl + y * sl, -x * sl + y * cl];
+  // the coil tightens as the tail thins, so every turn lies against the stem; ph is how far round the stem each point of the tail has gone
+  const hph = o.hph ??= new Float32Array(n), hr = o.hr ??= new Float32Array(n); let ph = Math.PI;
+  for (let i = 0; i < n; i++) { hr[i] = TAIL.stem + tailR(i / (n - 1)) + 0.35; if (i > ig) ph += TAIL.ds / hr[i]; hph[i] = ph; }
+  const O = [o.px[ig] - rot(-hr[ig], 0)[0], o.py[ig] - rot(-hr[ig], 0)[1]], mid = rot(0, -TAIL.pitch * (hph[n - 1] - Math.PI) * 0.5);
+  o.ax = O[0] + mid[0] - c0[0]; o.ay = O[1] + mid[1] - c0[1];
+  for (let i = 0; i < n; i++) {
+    let x = o.px[i], y = o.py[i], z = 0; const a = o.pa[i]; let Tx = Math.cos(a), Ty = Math.sin(a), Tz = 0, Nx = -Ty, Ny = Tx, Nz = 0;
+    if (g > 0 && i > ig - GB) {
+      // the end of the tail wraps round the stem: a helix about an upright axis, coils stacked down the stem so they never lie on each other;
+      // before the first coil it runs in straight along the helix's tangent, which keeps it outside the stem as it comes round from the body
+      const ph = hph[i], R = hr[Math.max(ig, i)], [rx, ry] = rot(R * Math.cos(ph), -TAIL.pitch * (ph - Math.PI));
+      let [hTx, hTy] = rot(-Math.sin(ph), -TAIL.pitch / R), hTz = Math.cos(ph); const hl = Math.hypot(hTx, hTy, hTz); hTx /= hl; hTy /= hl; hTz /= hl; const [rnx, rny] = rot(-Math.cos(ph), 0);      // N points in toward the stem, as it points in toward the middle of the flat curl, so the tail never flips over as it wraps
+      const back = Math.min(0, i - ig) * TAIL.ds, hx = O[0] + rx + hTx * back, hy = O[1] + ry + hTy * back, hz = R * Math.sin(ph) + hTz * back;
+      const w = g * Math.min(1, Math.max(0, (i - (ig - GB)) / (GB - 3))), e = w * w * (3 - 2 * w);
+      x += (hx - x) * e; y += (hy - y) * e; z += (hz - z) * e;
+      Tx += (hTx - Tx) * e; Ty += (hTy - Ty) * e; Tz += (hTz - Tz) * e; Nx += (rnx - Nx) * e; Ny += (rny - Ny) * e; Nz += (-Math.sin(ph) - Nz) * e;
+    }
+    let tl = Math.hypot(Tx, Ty, Tz) || 1; Tx /= tl; Ty /= tl; Tz /= tl;
+    // keep the frame square: N across the tail, B = T x N
+    const dn = Nx * Tx + Ny * Ty + Nz * Tz; Nx -= dn * Tx; Ny -= dn * Ty; Nz -= dn * Tz; const nl = Math.hypot(Nx, Ny, Nz) || 1; Nx /= nl; Ny /= nl; Nz /= nl;
+    const Bx = Ty * Nz - Tz * Ny, By = Tz * Nx - Tx * Nz, Bz = Tx * Ny - Ty * Nx;
+    o.x[i] = x - c0[0]; o.y[i] = y - c0[1]; o.z[i] = z; o.T[i * 3] = Tx; o.T[i * 3 + 1] = Ty; o.T[i * 3 + 2] = Tz; o.N[i * 3] = Nx; o.N[i * 3 + 1] = Ny; o.N[i * 3 + 2] = Nz; o.B[i * 3] = Bx; o.B[i * 3 + 1] = By; o.B[i * 3 + 2] = Bz;
+  }
   return o;
 }
 

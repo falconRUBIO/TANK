@@ -6,12 +6,15 @@ export const swayTime = { value: 0 };
 // animals near the plants (x, y, z, reach): leaves bend away from them, so an octopus crawling through sea grass or a fish nosing a fan parts the leaves instead of passing through them
 export const PUSH_N = 16;
 export const plantPush = { value: Array.from({ length: PUSH_N }, () => new THREE.Vector4(0, -99, 0, 0)) };
+// where seahorses are holding on (x, y, z of the grip, reach of the coils): that part of the plant is held still and the leaves are pressed out of the way of the tail
+export const HOLD_N = 4;
+export const plantHold = { value: Array.from({ length: HOLD_N }, () => new THREE.Vector4(0, -99, 0, 0)) };
 
 export function voxShading(mat, { sway = false, boost = 1 } = {}) {
   mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uBoost = fishBoost; sh.uniforms.uTime = swayTime; sh.uniforms.uBoostK = { value: boost }; if (sway) sh.uniforms.uPush = plantPush;
+    sh.uniforms.uBoost = fishBoost; sh.uniforms.uTime = swayTime; sh.uniforms.uBoostK = { value: boost }; if (sway) { sh.uniforms.uPush = plantPush; sh.uniforms.uHold = plantHold; }
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
-      attribute vec3 aN; ${sway ? `attribute vec2 aSw; uniform float uTime; uniform vec4 uPush[${PUSH_N}];` : ''}`)
+      attribute vec3 aN; ${sway ? `attribute vec2 aSw; uniform float uTime; uniform vec4 uPush[${PUSH_N}]; uniform vec4 uHold[${HOLD_N}];` : ''}`)
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
         if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
     if (sway) sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `
@@ -20,9 +23,14 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
         #ifdef USE_INSTANCING
           mv = instanceMatrix * mv; cv = instanceMatrix * cv;
         #endif
-        vec2 sway = vec2((sin(uTime * 1.1 + swp + swk * 2.0) * 0.16 + sin(uTime * 2.3 + swp * 2.0) * 0.03) * swk, cos(uTime * 0.9 + swp) * 0.07 * swk);
+        // a seahorse holding on keeps that part of the plant still
+        vec4 cw0 = modelMatrix * cv; float steady = 1.0;
+        vec2 press = vec2(0.0);
+        for (int i = 0; i < ${HOLD_N}; i++) { vec4 q = uHold[i]; if (q.w <= 0.0) continue; vec3 d = cw0.xyz - q.xyz; steady = min(steady, smoothstep(0.3, 0.9, length(d)));
+          float hd = length(d.xz); if (abs(d.y) < 0.22 && hd > 0.06 && hd < q.w) press += d.xz / hd * (q.w - hd); }      // a leaf in the way of the coils is pressed just clear of them; the stem itself stays
+        vec2 sway = vec2((sin(uTime * 1.1 + swp + swk * 2.0) * 0.16 + sin(uTime * 2.3 + swp * 2.0) * 0.03) * swk, cos(uTime * 0.9 + swp) * 0.07 * swk) * steady;
         mv.xz += sway; cv.xz += sway;
-        vec4 wp = modelMatrix * mv, cw = modelMatrix * cv; float bendK = smoothstep(0.0, 0.35, aSw.x);
+        vec4 wp = modelMatrix * mv, cw = modelMatrix * cv; wp.xz += press; cw.xz += press; float bendK = smoothstep(0.0, 0.35, aSw.x);
         // the push is worked out once for the whole voxel, from its centre, and the voxel moves as one: a leaf slides aside at its own size instead of stretching
         vec2 bend = vec2(0.0);
         for (int i = 0; i < ${PUSH_N}; i++) { vec4 q = uPush[i]; vec3 d = cw.xyz - q.xyz; float hd = length(d.xz); float rr = q.w * (1.0 - smoothstep(q.w * 0.8, q.w * 1.6, abs(d.y)));

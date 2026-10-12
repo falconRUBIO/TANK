@@ -1,6 +1,6 @@
 // The living roster: spawns a Fish3D for every fish in the game state, grows them, gives each its own
 // personality-driven wandering, and runs feeding (flakes sink, each fish picks its own piece).
-import { sandH, placeable, crossesFace, levelAt, slopeAt, GLASS_Z } from './terrain.js';
+import { sandH, sandUnder, placeable, crossesFace, levelAt, slopeAt, GLASS_Z } from './terrain.js';
 // where a crab comes down for an octopus: near x,z but on the same level of sand as the octopus, on flat sand, so the hunt never has to go round by a ramp
 const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k = 0; k < 24; k++) { const r = k * 0.12, a = k * 2.4, qx = Math.max(-3.6, Math.min(3.6, x + Math.cos(a) * r)), qz = Math.max(-3.3, Math.min(GLASS_Z - 0.8, z + Math.sin(a) * r)); if (levelAt(qx, qz) === lv && slopeAt(qx, qz).s < 0.8) return [qx, qz]; } return [o.pos.x + 0.8, o.pos.z]; };
 import * as THREE from 'three';
@@ -62,7 +62,7 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
@@ -157,7 +157,11 @@ export class Fishes {
         if (lead && !f.link && !f.seeking && !f.greet && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
           if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 5) continue;
           const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, bond = Math.max(0, Math.min(1, (days - 1) / 4));
-          if (bond > 0 && Math.random() < dt * 0.012 * bond) { const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandH(m.x, m.z) + 2, Math.min(8, (f.pos.y + o.pos.y) / 2)); f.linkWith(o, m, 25 + Math.random() * 25); }
+          if (bond > 0 && Math.random() < dt * 0.012 * bond) { const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandUnder(m.x, m.z, 0.8) + 2.4, Math.min(8, (f.pos.y + o.pos.y) / 2));
+            // open water: nothing in the way of the pair or of the tails curled under them
+            const W = Fish3D.world, clear = () => ![0.3, 0, -0.5, -1, -1.4].some((dy) => [[0, 0], [0.4, 0], [-0.4, 0]].some(([dx, dz]) => W.at?.(m.x + dx, m.y + dy, m.z + dz) || W.soft?.at?.(m.x + dx, m.y + dy, m.z + dz)));
+            for (let k = 0; k < 6 && !clear(); k++) m.y += 0.5;
+            if (clear()) f.linkWith(o, m, 25 + Math.random() * 25); }
           break;
         }
       } else if (sp === 'octopus' && S) {
@@ -175,6 +179,17 @@ export class Fishes {
     if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
     const logs = live.filter((f) => f.dw?.log).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps, fav: f.favHold ?? undefined }; f.dw.log = null; return e; });
     if (logs.length) this.onLog(logs);
+  }
+  // every voxel of the decorations near a point, as world-space boxes [x, y, z, half size]: for fitting a seahorse's tail round a real stem
+  decorVox(cx, cz, r) {
+    const D = this.decor; if (!D?.items) return []; const out = [], M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3(); this.dvCache ||= new Map();
+    for (const [id, it] of D.items) {
+      const g = it.group; if (Math.hypot(g.position.x - cx, g.position.z - cz) > r + 1.5) continue;
+      const key = id + ':' + g.position.x.toFixed(2) + ',' + g.position.z.toFixed(2) + ',' + g.rotation.y.toFixed(2); let vs = this.dvCache.get(key);
+      if (!vs) { vs = []; g.updateMatrixWorld(true); g.traverse((o) => { if (!o.isInstancedMesh) return; o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox, gs = (bb.max.x - bb.min.x) / 2; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, M); M.premultiply(o.matrixWorld); M.decompose(P, Q, S); vs.push([P.x, P.y, P.z, gs * Math.max(S.x, S.y, S.z)]); } }); this.dvCache.set(key, vs); if (this.dvCache.size > 64) this.dvCache.delete(this.dvCache.keys().next().value); }
+      for (const v of vs) if (Math.hypot(v[0] - cx, v[2] - cz) < r) out.push(v);
+    }
+    return out;
   }
   // ── moving things about: an octopus drags a rock or shell to where it wants it, or lifts a coconut shell and carries it off to live under ──
   haulTick(dt, t) {
@@ -521,7 +536,7 @@ export class Fishes {
     const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2) return;
     const [a, b] = hs, spots = (this.spots?.() ?? []).filter((x) => DECOR_DEF[x.type]?.cat === 'PLANTS'), mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
     let sp = null, bd = 1e9; for (const x of spots) { const d = Math.hypot(x.x - mid.x, x.z - mid.z); if (d < bd) { bd = d; sp = x; } }
-    const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = sp ? 1.6 + sp.h * 0.6 : Math.max(2.5, Math.min(8, mid.y));
+    const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = Math.max(sandUnder(cx, cz, 0.7) + 2.4, sp ? (sp.y ?? 0) + sp.h + 1.4 : Math.max(2.5, Math.min(8, mid.y)));      // above the plant, so their tails hang clear of it and of the sand
     a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
   }
   update(dt, t) {

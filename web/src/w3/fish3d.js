@@ -2,7 +2,9 @@
 // shadowed and animated (tail bend, fin flutter) in the scene, steered in 3D.
 import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
-import { seahorseTail } from '../species.js';
+import { seahorseTail, SEAHORSE_LEAN, SEAHORSE_GRIP_R } from '../species.js';
+const SWIVEL = 0.15;      // how far a seahorse turns either way on its stem as it watches (radians)
+const FACES = [0, Math.PI, 0.5, Math.PI - 0.5, -0.5, Math.PI + 0.5, 1, Math.PI - 1];      // the ways it may face on its stem, side-on to the glass first
 import { genesOf } from '../game/genes.js';
 import { patch } from './env.js';
 import { sandH, sandUnder, slopeAt, levelAt, routeBetween, crossesFace, GLASS_Z } from './terrain.js';
@@ -110,14 +112,15 @@ export class Fish3D {
   // the sand its body has to stay above: under an octopus, the highest sand across its mantle and head; under a fish, along its length from nose to tail
   sandBelow() {
     if (this.species.move === 'jet') return sandH(this.pos.x, this.pos.z);      // an octopus walks by the sand under its middle; its body is drawn lifted clear of a slope beside it (see liftSand)
-    const L = this.radius * 0.75, cp = Math.cos(this.pitch || 0), fx = Math.cos(this.heading) * L * cp, fz = -Math.sin(this.heading) * L * cp, fy = Math.sin(this.pitch || 0) * L, deep = Math.max(0, this.radius * 0.45 - 0.35) + (this.sp.tail ? this.radius * 0.5 : 0);      // a deep-bodied fish (and a seahorse's hanging tail) needs more room under it
+    const L = this.radius * 0.75, cp = Math.cos(this.pitch || 0), fx = Math.cos(this.heading) * L * cp, fz = -Math.sin(this.heading) * L * cp, fy = Math.sin(this.pitch || 0) * L, deep = Math.max(0, this.radius * 0.45 - 0.35) + (this.sp.tail ? (this.tailLow != null ? Math.max(0, -(this.holdfast ? Math.max(this.tailLow, this.tailLowHeld ?? -99) : this.tailLow) * this.scale - 0.3) : this.radius * 0.5) : 0);      // a seahorse's tail hangs below it; on its way to a stem it curls up ready to grip, so it can come down to where it will hold on      // a deep-bodied fish (and a seahorse's hanging tail) needs more room under it
     return deep + Math.max(sandUnder(this.pos.x, this.pos.z, this.radius * 0.28), sandH(this.pos.x + fx, this.pos.z + fz) - fy, sandH(this.pos.x - fx, this.pos.z - fz) + fy);
   }
   setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * (this.species.move === 'jet' ? 0.25 : 0.3)); this.setPose(this.phase, true); }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
     const b = this.sp.bend, s = this.scale, arr = this.mesh.instanceMatrix.array, jet = this.species.move === 'jet';
-    const list = all ? null : this.mobile, tailRig = this.sp.tail ? (this.tailRig = seahorseTail(this.sp, this.curlK ?? 0, this.tailRig)) : null;
+    const list = all ? null : this.mobile, tailRig = this.sp.tail ? (this.tailRig = seahorseTail(this.sp, this.curlK ?? 0, this.gripK ?? 0, this.tailRig)) : null;
+    if (tailRig) { const cp = Math.cos(this.pitch || 0), sp = Math.sin(this.pitch || 0); let lo = 0; for (let i = 0; i < tailRig.x.length; i += 3) lo = Math.min(lo, tailRig.x[i] * sp + tailRig.y[i] * cp); this.tailLow = lo - 2.6; }      // how far below its middle the tail reaches as it is posed now (model voxels), so the sand clamp keeps all of it out of the sand
     const n = all ? this.vox.length : list.length;
     // an octopus arm is posed once per station along its centre line, not once per voxel: a few thousand voxels share a few hundred stations
     let pc = null, pcs = null, stamp = 0, poseAt = null, layAt = null;
@@ -152,7 +155,7 @@ export class Fish3D {
       }
       if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
       if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
-      if (tailRig && v.tag === 'tail') { const ti = v.at, d = tailRig.d[ti], c = Math.cos(d), sn = Math.sin(d), ox = v.off[0], oy = v.off[1]; x = tailRig.x[ti] + ox * c - oy * sn; y = tailRig.y[ti] + ox * sn + oy * c; }      // the seahorse's tail, coiled or let out
+      if (tailRig && v.tag === 'tail') { const ti = v.at, k3 = ti * 3, T = tailRig.T, Nn = tailRig.N, B = tailRig.B, ot = v.off[0], on = v.off[1], oz = v.z; x = tailRig.x[ti] + ot * T[k3] + on * Nn[k3] + oz * B[k3]; y = tailRig.y[ti] + ot * T[k3 + 1] + on * Nn[k3 + 1] + oz * B[k3 + 1]; z = tailRig.z[ti] + ot * T[k3 + 2] + on * Nn[k3 + 2] + oz * B[k3 + 2]; }      // the seahorse's tail: each voxel keeps its place across the tail's own frame as the tail curls flat or wraps round a stem
       else if (tailRig && v.tag === 'glint') { const e = v.z > 0 ? this.eyeR : this.eyeL; if (e) { x += e.x; y += e.y; z += Math.sign(v.z) * 0.3; } }      // each eye looks its own way
       if (jet && v.pupil) { x += this.lookX; y += this.lookY; }
       if (jet && v.tag === 'eye') { const lid = Math.max(this.sleepK * 0.92, this.blinkK, (this.squintK ?? 0) * 0.55) - (this.wideK ?? 0) * 0.3; if (Math.abs(lid) > 0.02) y = this.eyeY + (y - this.eyeY) * (1 - 0.88 * lid); }
@@ -507,7 +510,8 @@ export class Fish3D {
     this.tt = (this.tt ?? 0) + dt; const t = this.tt; this.retarget -= dt; this.idle = (this.idle ?? 0) - dt;
     const G = this.greet;
     if (G) {                                                                         // the morning greeting: two partners meet at a plant and circle each other, glowing, then part
-      G.t -= dt; G.ang += dt * 0.85 * G.side; const wantX = G.cx + Math.cos(G.ang) * G.r, wantZ = G.cz + Math.sin(G.ang) * G.r * 0.7, wantY = G.y + Math.sin(t * 1.4 + G.side) * 0.12;
+      if (this.holdfast) this.letGo(); if (this.sp.tail) { this.curlK = (this.curlK ?? 0) + (0.5 - (this.curlK ?? 0)) * Math.min(1, dt * 1.5); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 3); }      // a seahorse lets go of its stem to dance, its tail loosening
+      G.t -= dt; G.ang += dt * 0.85 * G.side; const wantX = G.cx + Math.cos(G.ang) * G.r, wantZ = G.cz + Math.sin(G.ang) * G.r * 0.7, wantY = Math.max(G.y + Math.sin(t * 1.4 + G.side) * 0.12, 0.35 + this.sandBelow());
       this.pos.x += (wantX - this.pos.x) * Math.min(1, dt * 1.6); this.pos.y += (wantY - this.pos.y) * Math.min(1, dt * 1.6); this.pos.z += (wantZ - this.pos.z) * Math.min(1, dt * 1.6);
       let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.5); this.vel.multiplyScalar(Math.exp(-3 * dt));
       this.glowK += ((G.t > 1.2 ? 1 : 0) - this.glowK) * Math.min(1, dt * 1.2);
@@ -525,7 +529,11 @@ export class Fish3D {
     const sp = this.face(dt, 0.9);
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
     this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
-    if (this.sp.tail) { const going = this.vel.length() > 0.08; this.curlK += ((going ? -0.65 + 0.15 * Math.sin(t * 2.2) : 0.1) - this.curlK) * Math.min(1, dt * 1.5); this.pitch *= 0.6; }      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; the body stays upright
+    if (this.sp.tail) {
+      const going = this.vel.length() > 0.08, H = this.holdfast, near = H && !H.on ? Math.max(0, Math.min(1, (1.6 - this.pos.distanceTo(this.target)) / 1.1)) : 0;
+      if (this.tailHits()) this.tuckT = 1.5; this.tuckT = Math.max(0, (this.tuckT ?? 0) - dt);
+      const want = this.tuckT > 0 ? 1 : (going ? -0.65 + 0.15 * Math.sin(t * 2.2) : 0.1) * (1 - near) + near;      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; nearing its stem it curls ready to grip; about to brush a plant, a rock or the sand, it tucks up
+      this.curlK += (want - this.curlK) * Math.min(1, dt * (this.tuckT > 0 ? 4 : 1.5)); this.gripK = (this.gripK ?? 0) + (near * 0.6 - (this.gripK ?? 0)) * Math.min(1, dt * 3); this.pitch *= 0.6; }      // the body stays upright      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; the body stays upright
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
   }
@@ -533,6 +541,66 @@ export class Fish3D {
   // A seahorse is a poor swimmer and spends most of its time anchored by its curled tail to something upright (a 'holdfast'): seagrass,
   // a plant, coral, a post. From there it waits for food to drift past, each eye moving on its own, and snaps it up with a flick of the head.
   // It has a favourite holdfast and a small home range, and slowly takes on a little of its holdfast's colour.
+  // where on this thing to hold on: a real stem at a comfortable height, with open water round it for the coils of the tail, and room for the body leaning back from it.
+  // Each candidate is scored by how many solid or leafy cells the tail and body would touch; the cleanest wins, and a thing with no clean place is passed over.
+  holdSpot(q, rng) {
+    const vox = this.decorVox?.(q.x, q.z, 1.8) ?? [], sc = this.scale || 0.03, base = q.y ?? 0, h = Math.max(0.6, q.h ?? 1), plant = PLANTS.has(q.type);
+    if (!this.gripLocal) { const c = seahorseTail(this.sp, 1, 1); this.gripLocal = [c.ax, c.ay]; }
+    // the decorations' own voxels, filed by cell
+    // each voxel is filed under every cell its box (grown by half one of its own voxels) touches, so a point needs one look-up
+    const C = 0.1, key = (a, b, c) => ((a + 512) * 1024 + (b + 512)) * 1024 + (c + 512), H = new Map(), hv = sc * 0.45;
+    for (const v of vox) { const m = v[3] + hv; for (let a = Math.floor((v[0] - m) / C); a <= Math.floor((v[0] + m) / C); a++) for (let b = Math.floor((v[1] - m) / C); b <= Math.floor((v[1] + m) / C); b++) for (let c = Math.floor((v[2] - m) / C); c <= Math.floor((v[2] + m) / C); c++) { const k = key(a, b, c); (H.get(k) ?? H.set(k, []).get(k)).push(v); } }
+    // its own voxels as it would hold on: tail coiled round the stem, body leaning back
+    const L = SEAHORSE_LEAN;
+    if (this.heldPose?.sc !== sc) {      // worked out once for its size: every other voxel as it holds on, and the ways it leans
+      const keep = [this.curlK, this.gripK, this.pitch]; this.curlK = 1; this.gripK = 1; this.pitch = 0; this.setPose(0, true); const arr = this.mesh.instanceMatrix.array, raw = [], isTail = [];
+      for (let i = 0; i < this.mesh.count; i += 2) { const o = i * 16; raw.push(arr[o + 12], arr[o + 13], arr[o + 14]); isTail.push(this.vox[i]?.tag === 'tail'); }
+      this.tailLowHeld = this.tailLow; this.curlK = keep[0] ?? 0; this.gripK = keep[1] ?? 0; this.pitch = keep[2] ?? 0; this.setPose(this.phase ?? 0, true);
+      const tilt = (p) => { const c = Math.cos(p), s2 = Math.sin(p), o = new Float32Array(raw.length); for (let i = 0; i < raw.length; i += 3) { o[i] = raw[i] * c - raw[i + 1] * s2; o[i + 1] = raw[i] * s2 + raw[i + 1] * c; o[i + 2] = raw[i + 2]; } return o; };
+      const lean = tilt(L); this.heldPose = { sc, isTail, poses: [[0, L, lean], [SWIVEL, L, lean], [-SWIVEL, L, lean], [0, L - 0.1, tilt(L - 0.1)]] };      // as it holds on it turns a little either way on its stem and flicks its head forward to strike: every one of those must be clear too
+    }
+    const { isTail, poses } = this.heldPose;
+    const gl = this.gripLocal, gAt = (p) => [gl[0] * Math.cos(p) - gl[1] * Math.sin(p), gl[0] * Math.sin(p) + gl[1] * Math.cos(p)];
+    const Rout = SEAHORSE_GRIP_R * sc + 0.09; let lastTail = 0; const hits1 = (pts, px, py, pz, ch, sh, limit, ax, ay, az) => { let bad = 0, tb = 0;
+      for (let i = 0; i < pts.length && bad <= limit + 40; i += 3) { const lx = pts[i], ly = pts[i + 1], lz = pts[i + 2], wx = px + lx * ch + lz * sh, wy = py + ly, wz = pz - lx * sh + lz * ch;
+        if (wy < sandH(wx, wz) + 0.02) { bad++; continue; }
+        let hit = false; { const L2 = H.get(key(Math.floor(wx / C), Math.floor(wy / C), Math.floor(wz / C))); if (L2) for (const v of L2) { const m = v[3] + hv; if (plant && Math.abs(v[1] - ay) < 0.22) { const hd = Math.hypot(v[0] - ax, v[2] - az); if (hd > 0.06 && hd < Rout) continue; }      // pressed aside by the tail (see the plant shader)
+ if (Math.abs(v[0] - wx) < m && Math.abs(v[1] - wy) < m && Math.abs(v[2] - wz) < m) { hit = true; break; } } }
+        if (hit) { bad++; if (isTail[i / 3]) tb++; } }
+      lastTail = tb; return bad; };
+    // every pose it takes on the stem: the grip stays on the stem and the body turns or tilts about it
+    const hits = (sx, yy, sz, face, limit) => { let bad = 0, tb = 0; for (const [dh, p, pts] of poses) { const [gx, gy] = gAt(p), ch = Math.cos(face + dh), sh = Math.sin(face + dh);
+      bad += hits1(pts, sx - ch * gx * sc, yy - gy * sc, sz + sh * gx * sc, ch, sh, limit - bad, sx, yy, sz); tb += lastTail; if (bad > limit) break; } lastTail = tb; return bad; };
+    const stems = plant ? vox.filter((v) => Math.hypot(v[0] - q.x, v[2] - q.z) < 0.8 && v[1] > base + h * 0.28 && v[1] < base + h * 0.78) : [];
+    let best = null;
+    for (let k = 0; k < 28; k++) {
+      let sx, sz, yy;
+      if (plant) { if (!stems.length) return null; const v = stems[(rng() * stems.length) | 0]; sx = v[0]; sz = v[2]; yy = v[1]; }      // a stem or blade of the plant itself
+      else { const a = rng() * 6.283, r = (q.r ?? 0.5) + SEAHORSE_GRIP_R * sc; sx = q.x + Math.cos(a) * r; sz = q.z + Math.sin(a) * r; yy = base + h * (0.3 + rng() * 0.4); }      // something solid: at its edge
+      for (const face of FACES) {
+        const bad = hits(sx, yy, sz, face, best ? best.bad : 99);      // the stem passes through the open middle of its coils, so it is no clash
+        if (!best || bad < best.bad) best = { x: sx, y: yy, z: sz, face, bad, tail: lastTail };
+        if (best.bad === 0) break;
+      }
+      if (best?.bad === 0) break;
+    }
+    if (!best || best.bad > 1) return null;
+    return best;
+  }
+  // where the stem passes through its coiled tail, in the world, from how it is posed: the same on every phone, since the curl and grip are shared
+  gripPoint() {
+    if (!this.sp.tail || (this.gripK ?? 0) < 0.5 || this.dead) return null;
+    if (!this.gripLocal) { const c = seahorseTail(this.sp, 1, 1); this.gripLocal = [c.ax, c.ay]; }
+    const gl = this.gripLocal, cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), gx = gl[0] * cp - gl[1] * sp, gy = gl[0] * sp + gl[1] * cp, sc = this.scale;
+    return [this.pos.x + Math.cos(this.heading) * gx * sc, this.pos.y + gy * sc, this.pos.z - Math.sin(this.heading) * gx * sc];
+  }
+  // would its tail, as posed now, touch the sand or a decoration? A few points along it are checked in the world
+  tailHits() {
+    const R = this.tailRig, W = Fish3D.world; if (!R) return false; const sc = this.scale, cp = Math.cos(this.pitch || 0), sp = Math.sin(this.pitch || 0), ch = Math.cos(this.heading), sh = Math.sin(this.heading);
+    for (const i of [12, 20, 28, 36, 44, 51]) { const x = R.x[i], y = R.y[i], z = R.z[i], px = x * cp - y * sp, py = x * sp + y * cp, wx = this.pos.x + (px * ch + z * sh) * sc, wy = this.pos.y + py * sc, wz = this.pos.z + (-px * sh + z * ch) * sc;
+      if (wy < sandH(wx, wz) + 0.08 || W.at?.(wx, wy, wz) || W.soft?.at?.(wx, wy, wz)) return true; }
+    return false;
+  }
   pickHold(rng, spots) {
     const others = this.others ?? [], taken = new Set(others.filter((o) => o !== this && o.holdfast).map((o) => o.holdfast.id));
     const w = (q) => (PLANTS.has(q.type) ? 3 : HOLDFAST.has(q.type) ? 1.5 : q.type === 'rock' || q.type === 'boulder' ? 0.5 : 0) / (1 + 0.6 * Math.hypot(q.x - this.pos.x, q.z - this.pos.z) ** 1.5);      // a small home range: a holdfast close by is far more likely than one across the tank
@@ -540,8 +608,8 @@ export class Fish3D {
     let pool = spots.filter((q) => w(q) > 0 && !taken.has(q.id) && (q.id !== this.lastHold || spots.length < 3) && roomy(q)); if (!pool.length) return false;
     let q = this.favHold && rng() < 0.55 ? pool.find((x) => x.id === this.favHold) : null;
     if (!q) { let tot = pool.reduce((n, x) => n + w(x), 0), r = rng() * tot; for (const x of pool) { r -= w(x); if (r <= 0) { q = x; break; } } q ||= pool[0]; }
-    const base = q.y ?? 0, h = Math.max(0.6, q.h ?? 1), side = rng() < 0.5 ? -1 : 1;
-    this.holdfast = { id: q.id, type: q.type, x: q.x + side * 0.08, z: q.z + 0.2, y: Math.max(sandH(q.x, q.z) + 0.3 + this.radius * 0.45, base + Math.max(0.45, Math.min(h - 0.25, h * (0.22 + rng() * 0.4)))), hf: Math.min(1, 0.3 + rng() * 0.5), face: q.x > 0 ? Math.PI : 0, on: false, until: (25 + rng() * 45) * (1.35 - (this.persona?.act ?? 0.45) * 0.8), snick: 2 + rng() * 5, held: 0 };
+    const base = q.y ?? 0, h = Math.max(0.6, q.h ?? 1), spot = this.holdSpot(q, rng); if (!spot) { this.lastHold = q.id; return false; }
+    this.holdfast = { id: q.id, type: q.type, x: spot.x, z: spot.z, y: spot.y, hf: Math.min(1, Math.max(0.2, (spot.y - base) / h)), face: spot.face, lim: 20 + 7 * Math.hypot(spot.x - this.pos.x, spot.y - this.pos.y, spot.z - this.pos.z), on: false, until: (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8), snick: 2 + rng() * 5, held: 0 };
     this.idle = 0; this.retarget = 40; this.target.set(this.holdfast.x, this.holdfast.y, this.holdfast.z);
     this.thought = `Swimming slowly over to the ${(LABEL[q.type] ?? q.type)}.`; return true;
   }
@@ -556,26 +624,37 @@ export class Fish3D {
     if (H && (G || this.seeking)) { this.letGo(); return false; }                     // food in the water, or a friend come to dance: off it goes
     if (!H) { if (!this.seeking && !G && (this.tintK ?? 0) > 0.01) this.setTint(Math.max(0, this.tintK - dt * 0.02)); return false; }
     // where its tail grips: a point inside the coil, held at the stem, the stem swaying with the water as the plants do
-    if (!this.gripLocal) { const c = seahorseTail(this.sp, 1), n = c.x.length; this.gripLocal = [c.x[n - 5], c.y[n - 5]]; }
-    const sc = this.scale, hh = H.hf * H.hf, sw = swayTime.value, ax = H.x + (PLANTS.has(H.type) ? Math.sin(sw * 1.1 + H.y * 0.55 + H.x * 1.9) * 0.12 * hh : 0), az = H.z + (PLANTS.has(H.type) ? Math.cos(sw * 0.9 + H.y * 0.45 + H.z * 1.7) * 0.08 * hh : 0);
-    const ch = Math.cos(this.heading), sh = Math.sin(this.heading), wx = ax - ch * this.gripLocal[0] * sc, wy = H.y - this.gripLocal[1] * sc, wz = az + sh * this.gripLocal[0] * sc;
+    if (!this.gripLocal) { const c = seahorseTail(this.sp, 1, 1); this.gripLocal = [c.ax, c.ay]; }      // where the stem passes through the coils of its tail
+    const sc = this.scale, ax = H.x, az = H.z;      // the plant is held still where it grips (see the plant shader), so the grip does not move
+    const cp = Math.cos(this.pitch), spn = Math.sin(this.pitch), gx = this.gripLocal[0] * cp - this.gripLocal[1] * spn, gy = this.gripLocal[0] * spn + this.gripLocal[1] * cp;      // the grip point as the body is leaning now
+    const ch = Math.cos(this.heading), sh = Math.sin(this.heading), wx = ax - ch * gx * sc, wy = H.y - gy * sc, wz = az + sh * gx * sc;
     if (!H.on) {                                                                    // still on its way: slow and upright, turning side-on as it arrives
       this.target.set(wx, wy, wz); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
       if (d < 0.9) { let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 2); }
-      if (d < 0.6) { H.on = true; this.vel.set(0, 0, 0); this.holdN = (this.holdN ?? 0) + 1; }      // close enough to reach: it glides the last little way as its tail takes hold
-      else if ((H.trip = (H.trip ?? 0) + dt) > 25) { this.letGo(); }                 // could not get there: tries somewhere else
+      if (d < 0.6) H.settle = true;
+      if (H.settle) {                                                               // close enough to reach: it glides the last little way onto its spot, leans back and wraps its tail round the stem
+        const k = Math.min(1, dt * 4); this.pos.x += (wx - this.pos.x) * k; this.pos.y += (wy - this.pos.y) * k; this.pos.z += (wz - this.pos.z) * k; this.vel.set(0, 0, 0);
+        const g0 = this.gripK ?? 0; this.curlK += (1 - this.curlK) * Math.min(1, dt * 3); this.gripK = d < 0.2 ? Math.min(1, g0 + dt * 2.2) : g0;
+        let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 3); this.pitch += (SEAHORSE_LEAN * this.gripK - this.pitch) * Math.min(1, dt * 4);
+        if (this.gripK >= 1 && d < 0.03) { H.on = true; H.settle = false; this.holdN = (this.holdN ?? 0) + 1; }
+        this.phase += dt * 10; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
+        this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
+        if ((H.trip = (H.trip ?? 0) + dt) > (H.lim ?? 25) + 6) this.letGo();
+        return true;
+      }
+      if ((H.trip = (H.trip ?? 0) + dt) > (H.lim ?? 25)) { this.letGo(); }                 // could not get there (a seahorse is slow, so it allows for how far it had to go): tries somewhere else
       return false;
     }
     // anchored
     H.held += dt; H.until -= dt; this.heldFor = (this.heldFor ?? {}); this.heldFor[H.id] = (this.heldFor[H.id] ?? 0) + dt;
     if (!this.favHold || this.heldFor[H.id] > (this.heldFor[this.favHold] ?? 0)) this.favHold = H.id;      // the holdfast it spends most time on becomes its favourite
-    this.curlK += (1 - this.curlK) * Math.min(1, dt * 2.5);
+    this.curlK += (1 - this.curlK) * Math.min(1, dt * 2.5); this.gripK = (this.gripK ?? 0) + (1 - (this.gripK ?? 0)) * Math.min(1, dt * 2);      // the tail coils round the stem
     this.pos.x += (wx - this.pos.x) * Math.min(1, dt * 6); this.pos.y += (wy - this.pos.y) * Math.min(1, dt * 6); this.pos.z += (wz - this.pos.z) * Math.min(1, dt * 6); this.vel.set(0, 0, 0);
-    let dh = H.face + Math.sin(t * 0.35 + this.phase) * 0.25 - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 1.2);      // turns a little this way and that on its stem, watching
+    let dh = H.face + Math.sin(t * 0.35 + this.phase) * SWIVEL - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 1.2);      // turns a little this way and that on its stem, watching
     H.snick -= dt; if (H.snick < 0.7 && H.snick + dt >= 0.7) this.aimT = 0.7;
     if (H.snick <= 0) { H.snick = 4 + rng() * 10; this.snickT = 0.32; this.snicks = (this.snicks ?? 0) + 1; this.snickSaid = 3; this.onSnick?.(this); }
     this.snickT = Math.max(0, (this.snickT ?? 0) - dt); const flick = this.snickT > 0 ? Math.sin(Math.PI * (1 - this.snickT / 0.32)) : 0;
-    this.pitch += ((-0.32 * flick + Math.sin(t * 0.7 + this.phase) * 0.03) - this.pitch) * Math.min(1, dt * (flick ? 30 : 3)); this.roll += (Math.sin(t * 0.5) * 0.02 - this.roll) * Math.min(1, dt * 2);
+    this.pitch += ((SEAHORSE_LEAN * (this.gripK ?? 0) - 0.1 * flick + Math.sin(t * 0.7 + this.phase) * 0.02) - this.pitch) * Math.min(1, dt * (flick ? 30 : 3));      // leaning back from its stem, with a little flick of the head to strike this.roll += (Math.sin(t * 0.5) * 0.02 - this.roll) * Math.min(1, dt * 2);
     if (H.held > 6) { const col = PLANT_COLS[H.type]?.[1] ?? HOLD_COLS[H.type]; if (col) { this.tintCol = col; this.setTint(Math.min(0.3, (this.tintK ?? 0) + dt * 0.012)); } }      // slowly takes on a little of its holdfast's colour
     this.snickSaid = Math.max(0, (this.snickSaid ?? 0) - dt);
     this.thought = this.snickSaid > 0 ? 'Snapped up a speck of plankton.' : this.aimT > 0 ? 'Both eyes on something drifting past.' : H.held < 8 ? `Holding on to the ${(LABEL[H.type] ?? H.type)} with its tail.` : (this.tintK ?? 0) > 0.15 ? `Blending in with the ${(LABEL[H.type] ?? H.type)}.` : 'Watching the water, one eye each way.';
@@ -592,13 +671,13 @@ export class Fish3D {
     // side by side a body-width apart, facing each other, each leaning back a little so the curled tails swing in under them and twine together in the middle
     const t = this.tt, S = Math.max(0.3, this.radius * 0.62), face = L.side < 0 ? 0 : Math.PI;
     const mx = L.m.x + Math.sin(t * 0.2 + L.ph) * 0.25, my = L.m.y + Math.sin(t * 0.3 + L.ph) * 0.15, mz = L.m.z + Math.cos(t * 0.17 + L.ph) * 0.1;      // the pair drifts slowly together
-    const wx = mx + L.side * S / 2, wy = my + L.side * 0.05, wz = mz + L.side * 0.06, d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
+    const wx = mx + L.side * S / 2, wy = Math.max(my + L.side * 0.05, 0.35 + this.sandBelow()), wz = mz + L.side * 0.06, d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
     let dh = face + Math.sin(t * 0.35 + L.ph + L.side) * 0.1 - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
     if (!L.on) {                                                                     // on its way to the meeting point: slow and upright, turning to face its partner as it arrives
       this.target.set(wx, wy, wz); this.idle = 0; this.retarget = 40;
       _p2.set(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z).multiplyScalar(Math.min(0.55, d * 1.2) / (d || 1)); this.vel.lerp(_p2, Math.min(1, dt * 2)); this.pos.addScaledVector(this.vel, dt);
       if (d < 1.2) this.heading += dh * Math.min(1, dt * 2); else { let mh = Math.atan2(-this.vel.z, this.vel.x) - this.heading; mh = Math.atan2(Math.sin(mh), Math.cos(mh)); this.heading += mh * Math.min(1, dt * 1.5); }
-      this.curlK += (-0.4 - this.curlK) * Math.min(1, dt * 1.5); this.phase += dt * 12; this.pitch *= 0.9;
+      this.curlK += (-0.4 - this.curlK) * Math.min(1, dt * 1.5); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 3); this.phase += dt * 12; this.pitch *= 0.9;
       if (d < 0.2) { L.on = true; this.vel.set(0, 0, 0); }
       if ((L.trip = (L.trip ?? 0) + dt) > 30) { this.unlink(); return false; }      // could not get there: another time
       this.thought = `Swimming over to ${L.o.name ?? 'its partner'}.`;
@@ -606,7 +685,7 @@ export class Fish3D {
       this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
       return true;
     }
-    this.heading += dh * Math.min(1, dt * 1.2); this.curlK += (1 - this.curlK) * Math.min(1, dt * 2.5);
+    this.heading += dh * Math.min(1, dt * 1.2); this.curlK += (1 - this.curlK) * Math.min(1, dt * 2.5); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 3);
     this.pos.x += (wx - this.pos.x) * Math.min(1, dt * 4); this.pos.y += (wy - this.pos.y) * Math.min(1, dt * 4); this.pos.z += (wz - this.pos.z) * Math.min(1, dt * 4); this.vel.set(0, 0, 0);
     this.pitch += (0.32 + Math.sin(t * 0.6 + L.ph) * 0.05 - this.pitch) * Math.min(1, dt * 2); this.roll += (Math.sin(t * 0.5 + L.side) * 0.03 - this.roll) * Math.min(1, dt * 2);
     this.thought = `Holding tails with ${L.o.name ?? 'its partner'}.`; this.phase += dt * 8;

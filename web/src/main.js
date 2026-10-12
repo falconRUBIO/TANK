@@ -4,8 +4,9 @@ import { Game, REASONS } from './game/game.js';
 import { capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
-import { swayTime, fishBoost, plantPush, PUSH_N } from './w3/voxshade.js';
+import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
+import { SEAHORSE_GRIP_R } from './species.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
@@ -718,7 +719,7 @@ game.on('fx', (m) => {
 function netSync(dt, now) {
   if (!game.shared || wc.active) return;
   if (isDirector()) {
-    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() }); }
+    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0), g: r2(f.gripK ?? 0) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() }); }
     return;
   }
   const t = performance.now(), real = Math.min(1, Math.max(dt, (t - (netSync.last ?? t)) / 1000)), k = 1 - Math.exp(-real * 14); netSync.last = t;      // catch up by the time that really passed, even after a slow frame
@@ -730,7 +731,7 @@ function netSync(dt, now) {
     const dh = ((eh - f.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI; f.heading += dh * k; f.pitch += (e.p - f.pitch) * k; f.roll += (e.r - f.roll) * k;
     if (Number.isFinite(e.ph)) { const want = e.ph + (t - e.at) * 0.001 * (e.rate ?? 0), d = want - (f.phase % 2000); f.phase = Math.abs(d) > 3 ? want : f.phase + d * k; }      // the same stroke of the tail, the same step of the arms
     if (Array.isArray(e.o)) OPOSE.forEach((key, j) => { if (Number.isFinite(e.o[j]) && key in f) f[key] += (e.o[j] - f[key]) * k; });
-    if (Number.isFinite(e.c) && f.sp?.tail) { f.curlK = (f.curlK ?? 0) + (e.c - (f.curlK ?? 0)) * k; f.setPose(f.phase); }      // a seahorse's tail: curled round a stem or a partner's tail on every phone, not only the lead one
+    if (Number.isFinite(e.c) && f.sp?.tail) { f.curlK = (f.curlK ?? 0) + (e.c - (f.curlK ?? 0)) * k; if (Number.isFinite(e.g)) f.gripK = (f.gripK ?? 0) + (e.g - (f.gripK ?? 0)) * k; f.setPose(f.phase); }      // a seahorse's tail: curled round a stem or a partner's tail on every phone, not only the lead one
     f.group.position.copy(f.pos); f.group.quaternion.setFromEuler(new THREE.Euler(f.roll, f.heading, f.pitch, 'YZX'));
   }
 }
@@ -775,7 +776,8 @@ function frameBody(now) {
   bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
   bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
   { const P = plantPush.value; let k = 0;      // the plants bend away from whoever is among them (not a seahorse holding on to one)
-    for (const pass of [0, 1]) for (const f of fishes.list) { if (k >= PUSH_N) break; if (f.dead || f.holdfast?.on || (pass === 0) !== (f.species.move === 'jet') || (pass === 1 && f.pos.y > 8)) continue; P[k++].set(f.pos.x, f.pos.y, f.pos.z, f.radius * (f.species.move === 'jet' ? 0.75 : 0.55) * (f.group.scale.x || 1)); }
+    { const Q = plantHold.value; let j = 0; for (const f of fishes.list) { const G = j < HOLD_N ? f.gripPoint?.() : null; if (G) Q[j++].set(G[0], G[1], G[2], SEAHORSE_GRIP_R * f.scale + 0.09); } for (; j < HOLD_N; j++) Q[j].set(0, -99, 0, 0); }      // where a seahorse holds on, the plant is still and the leaves make room for its tail
+    for (const pass of [0, 1]) for (const f of fishes.list) { if (k >= PUSH_N) break; if (f.dead || (f.gripK ?? 0) >= 0.5 || (pass === 0) !== (f.species.move === 'jet') || (pass === 1 && f.pos.y > 8)) continue; P[k++].set(f.pos.x, f.pos.y, f.pos.z, f.radius * (f.species.move === 'jet' ? 0.75 : 0.55) * (f.group.scale.x || 1)); }
     for (; k < PUSH_N; k++) P[k].set(0, -99, 0, 0); }
   fishBoost.value.set(0.36, 0.3, 0.22).multiplyScalar(0.3 + 0.7 * Math.min(1, cur.sunI / 12));
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
