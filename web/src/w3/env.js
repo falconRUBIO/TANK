@@ -196,12 +196,12 @@ export function buildEnvironment() {
   // sunlight through the moving surface, drawn on the sand: two layers of the caustic pattern drifting different ways, warm and pale,
   // strongest on the flat tops of the banks and the open floor, faint down the faces
   { const before = bedMat.onBeforeCompile; bedMat.onBeforeCompile = (sh) => { before(sh); Object.assign(sh.uniforms, cau);
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCauW; varying float vCauUp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCauW = (modelMatrix * vec4(transformed, 1.0)).xyz; vCauUp = normalize(mat3(modelMatrix) * objectNormal).y;');
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCauW; varying float vCauUp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCauW = (modelMatrix * vec4(transformed, 1.0)).xyz; vec3 cn = mat3(modelMatrix) * objectNormal; vCauUp = cn.y / max(length(cn), 1e-4);');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uCau; uniform float uCauT, uCauI; varying vec3 vCauW; varying float vCauUp;')
       .replace('#include <opaque_fragment>', `{ vec2 w = vCauW.xz;
           float c1 = texture2D(uCau, w * 0.31 + vec2(uCauT * 0.011, uCauT * 0.005)).r, c2 = texture2D(uCau, w * 0.43 + vec2(-uCauT * 0.007, uCauT * 0.009) + 0.37).r;
           float c = smoothstep(0.62, 0.95, c1) + smoothstep(0.66, 0.98, c2) * 0.5, flatK = smoothstep(0.5, 0.92, vCauUp), near = 1.0 - smoothstep(4.0, 9.0, length(w - vec2(0.0, 0.0)));
-          outgoingLight += vec3(1.0, 0.94, 0.75) * c * uCauI * (0.25 + 0.75 * flatK) * near; }
+          float add = clamp(c * uCauI * (0.25 + 0.75 * flatK) * near, 0.0, 1.0); outgoingLight += vec3(1.0, 0.94, 0.75) * add; }
         #include <opaque_fragment>`); }; bedMat.customProgramCacheKey = () => 'bed-caustics'; }
   const fl = new THREE.Mesh(bedGeo, bedMat);
   // the sun is in front: the banks' own shadows would fall behind them, out of sight, so the sand is left out of the shadow pass

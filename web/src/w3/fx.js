@@ -208,8 +208,8 @@ export class Beams {
       fragmentShader: `varying vec2 vUv; varying float vK; uniform float uI; uniform vec3 uCol;
         void main(){
           float across = smoothstep(0.0, 0.5, vUv.x) * smoothstep(1.0, 0.5, vUv.x);       // soft at both edges, brightest down the middle
-          float down = smoothstep(0.0, 0.08, vUv.y) * pow(vUv.y, 1.6);                     // strongest near the surface (uv.y = 1 at the top), gone well before the bottom
-          float a = across * down * uI * vK;
+          float v = clamp(vUv.y, 0.0, 1.0), down = smoothstep(0.0, 0.08, v) * pow(max(v, 1e-4), 1.6);                     // strongest near the surface (uv.y = 1 at the top), gone well before the bottom
+          float a = clamp(across * down * uI * vK, 0.0, 1.0);
           a = floor(a * 40.0 + 0.5) / 40.0;                                                 // a few gentle steps, in keeping with the pixel look
           gl_FragColor = vec4(uCol * a, a);
         }` });

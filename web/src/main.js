@@ -711,14 +711,27 @@ let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = perform
 const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:60;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
 // One bad frame must never stop the game: the loop is always scheduled again, whatever happened inside it.
 let frameErrors = 0, simErrors = 0, simMs = 0;
+// If the finished picture comes out pure black for several checks in a row (it happened on an iPhone after the sand banks
+// arrived), the heavier effects are switched off one at a time until the tank shows again, and which one it was is reported.
+const SAFE = [['depth of field', () => { stg.bokeh.enabled = false; }], ['bloom', () => { stg.bloom.enabled = false; }], ['sunbeams and sand light', () => { stg.beams.group.visible = false; safeNoCaustic = true; }]];
+let blackRun = 0, blackAt = 0, safeStep = 0, safeNoCaustic = false; const px = new Uint8Array(4 * 6);
+function blackCheck(now) {
+  if (now - blackAt < 2000 || safeStep >= SAFE.length || document.hidden) return; blackAt = now;
+  try { const gl = stg.renderer.getContext(), W = gl.drawingBufferWidth, H = gl.drawingBufferHeight; let lit = 0;
+    for (let i = 0; i < 6; i++) { gl.readPixels(Math.round(W * (0.2 + 0.12 * i)), Math.round(H * (0.25 + 0.1 * i)), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px.subarray(i * 4, i * 4 + 4)); if (Math.max(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]) > 6) lit++; }
+    if (lit > 0) { blackRun = 0; return; }
+    if (++blackRun < 3) return; blackRun = 0; const [name, off] = SAFE[safeStep++]; off(); console.error(`frame error: the tank was drawing black, turned off the ${name}`); game.track(`safe_${name.split(' ')[0]}`);
+  } catch { /* reading pixels is only a check */ }
+}
+window.__blackCheck = () => ({ safeStep, blackRun });
 function frame(now) {
-  let later = false; try { later = frameBody(now); } catch (e) { if (frameErrors++ < 5) console.error('frame error', e); }
+  let later = false; try { later = frameBody(now); } catch (e) { if (frameErrors++ < 5) console.error('frame error', e); try { composer.render(); } catch { /* nothing more to try this frame */ } }      // a frame that went wrong part way still draws the tank, rather than leaving the screen black
   if (later) setTimeout(() => requestAnimationFrame(frame), 120); else requestAnimationFrame(frame);
 }
 function frameBody(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
-  stg.beams.update(t); stg.env.setCaustic(stg.caustic.tex, t, (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5));      // light on the sand follows the sun
+  stg.beams.update(t); stg.env.setCaustic(stg.caustic.tex, t, safeNoCaustic ? 0 : (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5));      // light on the sand follows the sun
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
   stg.applyTod(dt);
   if (focus) {
@@ -752,7 +765,7 @@ function frameBody(now) {
   if (LITE) { $('loading').classList.add('off'); return true; }
   { const air = wc.active && wc.level < 0.97; stg.bubbles.mesh.visible = stg.bubbles2.mesh.visible = !air; for (const b of decor.streams.values()) b.mesh.visible = !air; fishes.bm.visible = !air; }      // no bubbles rise through air: they stop while the water is out and start again when it is back
   if (wc.active) { try { wc.frame(dt * (window.__wcScale ?? 1)); } catch (e) { console.error('water change error', e); wc.finish(); } }
-  stg.renderer.info.reset(); composer.render();
+  stg.renderer.info.reset(); composer.render(); blackCheck(now);
   if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }
   return false;
 }

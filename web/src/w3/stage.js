@@ -63,12 +63,20 @@ export const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -
 export const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(IW, IH, { type: THREE.HalfFloatType, samples: 4 }));
 composer.setSize(IW, IH);
 composer.addPass(new RenderPass(scene, camera));
+// A safety net: a pixel that is not a number (some phone GPUs make one where a desktop makes zero) would be smeared over the whole
+// screen by the blur and the bloom, and the tank goes black. This pass turns any such pixel into plain black before that can happen.
+const scrub = () => new ShaderPass({ uniforms: { tDiffuse: { value: null } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){ vec4 c = texture2D(tDiffuse, vUv); bool bad = !(c.r == c.r) || !(c.g == c.g) || !(c.b == c.b) || !(c.a == c.a) || abs(c.r) > 6.0e4 || abs(c.g) > 6.0e4 || abs(c.b) > 6.0e4;
+      gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : clamp(c, vec4(0.0), vec4(64.0)); }` });
+composer.addPass(scrub());
 // depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
 export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
 export const hideForDepth = [halo, pool, shafts.group, beams.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
 const bokehRender = bokeh.render.bind(bokeh);
 bokeh.render = (...a) => { const was = hideForDepth.map((o) => o.visible); hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o, i) => (o.visible = was[i])); };   // put back what was visible, never force things on
-composer.addPass(bokeh);
+composer.addPass(bokeh); composer.addPass(scrub());
 export const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 export const grade = new ShaderPass({
