@@ -527,7 +527,7 @@ export class Fish3D {
     if (this.sp.tail) { if (!lead) { this.holdfast = null; } else if (this.seahorse(dt, rng)) return; }      // in a shared tank only the lead phone decides where a seahorse holds on; the others are shown it
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
-    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : 0.5) * (holding ? 0.06 : 1);
+    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 0.75 : 0.5) * (holding ? 0.06 : 1);      // (a seahorse on its way to a holdfast swims steadily, still slowly)
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
     this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.resolve(others);
@@ -643,9 +643,11 @@ export class Fish3D {
       pool.push([q, w, e]); tot += w;
     }
     if (!roost && pool.filter(([q]) => q.id !== this.lastHold && (pool.length > 2 || Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 4.2)).length >= 1) { for (let i = pool.length - 1; i >= 0; i--) if (pool[i][0].id === this.lastHold) { tot -= pool[i][1]; pool.splice(i, 1); } }      // not straight back to where it just was, if there is a real choice (two others, or one within a short swim)
+    { const dq = ([q]) => Math.hypot(q.x - this.pos.x, q.z - this.pos.z);      // a small home range: with somewhere near to go, nowhere far away
+      if (pool.some((x) => x[0].id !== this.lastHold && dq(x) < 3.2)) for (let i = pool.length - 1; i >= 0; i--) if (dq(pool[i]) > 4.5) { tot -= pool[i][1]; pool.splice(i, 1); } }
     if (!pool.length) return false;
     const fav = this.favourite(spots), fq = fav && spots.find((q) => q.id === fav), fd = fq ? Math.hypot(fq.x - this.pos.x, fq.z - this.pos.z) : 0;
-    let pick = fav && rng() < (roost ? (fd < 2.5 ? 0.85 : 0.35) : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;      // for the night, its favourite if it is not far; otherwise somewhere near it knows
+    let pick = fav && rng() < (roost ? (fd < 2.5 ? 0.85 : 0.35) : fd < 3.5 ? 0.2 + 0.4 * cautious : 0.05) ? pool.find(([q]) => q.id === fav) : null;      // for the night, its favourite if it is not far; otherwise somewhere near it knows
     if (!pick) { let r = rng() * tot; for (const x of pool) { r -= x[1]; if (r <= 0) { pick = x; break; } } pick ||= pool[0]; }
     const [q, , e] = pick, want = 0.25 + 0.6 * bold;      // a bold seahorse holds on higher up, a cautious one lower down
     const free = e.grips.filter((g) => !others.some((o) => o.holdfast && Math.hypot(o.holdfast.x - g.x, o.holdfast.z - g.z) < 0.6 && Math.abs(o.holdfast.y - g.y) < 0.9)); if (!free.length) return false;
@@ -723,7 +725,9 @@ export class Fish3D {
     if (food.length) {
       const m = this.snout(_snt), seen = (c) => !c.eaten && (!c.sucked || c.sucked === this);
       if (this.prey && (!seen(this.prey) || this.prey.pos.distanceTo(m) > SEA_WATCH * 1.2)) this.prey = null;
-      if (!this.prey) { let bd = SEA_WATCH; for (const c of food) if (seen(c)) { const d = c.pos.distanceTo(m); if (d < bd) { bd = d; this.prey = c; this.preyT = 0; } } }
+      { const cur = this.prey ? this.prey.pos.distanceTo(m) : SEA_WATCH; let bd = this.prey ? cur * 0.6 : SEA_WATCH, pick = null;      // the nearest piece in sight; it switches only to one clearly nearer than the one it is watching
+        for (const c of food) if (c !== this.prey && seen(c)) { const d = c.pos.distanceTo(m); if (d < bd) { bd = d; pick = c; } }
+        if (pick) { this.prey = pick; this.preyT = 0; } }
       if (this.prey) {
         this.preyT += dt; const p = this.prey.pos; this.prey.watchedBy = this; this.prey.watchD = p.distanceTo(m);      // other fish leave a shrimp right in front of a watching seahorse (see the scramble in fishmgr)
         let want = Math.atan2(-(p.z - this.pos.z), p.x - this.pos.x) - H.face; want = Math.atan2(Math.sin(want), Math.cos(want)); aimH = Math.max(-0.75, Math.min(0.75, want));      // it turns on its stem to follow it, within what the grip allows

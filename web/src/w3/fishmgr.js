@@ -6,7 +6,7 @@ const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k
 import * as THREE from 'three';
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
-import { gripWork } from './grips.js';
+import { gripWork, PLANTS } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
@@ -601,6 +601,7 @@ export class Fishes {
     }
     if (this.loose?.length) { const now = performance.now(); this.loose = this.loose.filter((l) => { if (l.fade && l.until - now < 2000 && l.until > now) l.m.scale.setScalar(Math.max(0.01, (l.m.userData.s0 ??= l.m.scale.x) * (l.until - now) / 2000)); if (now < l.until) return true; this.scene.remove(l.m); return false; }); }
     if (this.jars) for (const [id, jar] of [...this.jars]) { const f = this.byId.get(id); updateJar(jar, dt, t, !!f && f.workK > 0.6, f?.rs?.grab?.kind === 'jar' ? f.rs.grab.twist : null); if (jar.state === 'open' && jar.t > 3.2) { this.scene.remove(jar.root); this.onSpriteGone?.(jar.root); this.jars.delete(id); } }
+    if (this.flakes.length && ((this.psT = (this.psT ?? 0) - dt) <= 0)) { this.psT = 2; this.plantSpots = (this.spots?.() ?? []).filter((q) => PLANTS.has(q.type)); }      // where the cover is, looked up now and then
     for (const f of this.flakes) {
       if (f.sucked) { const s = f.sucked, m = s.dead ? null : s.snout(this.tmp2 ||= new THREE.Vector3()); f.suckT = (f.suckT ?? 0) + dt;      // struck: drawn into the snout in a blink, and only then eaten
         if (!m) { f.sucked = null; continue; } f.pos.lerp(m, Math.min(1, dt * 28)); if (f.pos.distanceTo(m) < 0.05 || f.suckT > 0.14) { f.eaten = true; s.meals = (s.meals ?? 0) + 1; if (s.holdfast?.on) s.strikesN = (s.strikesN ?? 0) + 1; this.onEat?.(s); } continue; }
@@ -609,9 +610,12 @@ export class Fishes {
         if (f.kind === 'mysis') {      // tiny shrimp: they sink quickly to a depth of their own, down where the seahorses hold on, and there they are carried along by the water, with little darts of their own, before they settle
           f.depth ??= sandH(f.pos.x, f.pos.z) + 1.6 + this.rng() * 3.2; const free = f.pos.y <= f.depth;
           f.vx = Math.max(-0.08, Math.min(0.08, (f.vx ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.6 : 0.2))); f.vz = Math.max(-0.06, Math.min(0.06, (f.vz ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.45 : 0.15)));
-          const nx = f.pos.x + (f.vx + cur.x) * dt, nz = f.pos.z + (f.vz + cur.z) * dt;
+          // like real mysids they keep near cover: a free one hangs about the nearest plant, in and out of its leaves at stem height, until the water carries it off to another
+          let cx = 0, cz = 0; if (free) { f.freeT = (f.freeT ?? 0) + dt; if (!f.cover || (f.coverT = (f.coverT ?? 0) - dt) <= 0) { f.coverT = 3 + this.rng() * 3; let bd = 2.6; f.cover = null; for (const q of (this.plantSpots ??= [])) { const d = Math.hypot(q.x - f.pos.x, q.z - f.pos.z); if (d < bd) { bd = d; f.cover = q; } } if (f.cover && !f.coverY) { f.coverY = true; f.depth = sandH(f.cover.x, f.cover.z) + 2.4 + this.rng() * 2.0; } }
+            const q = f.cover; if (q) { const a = t * (0.25 + (f.ph % 1) * 0.2) + f.ph, rr = 0.15 + (f.ph % 1) * 0.6, gx = q.x + Math.cos(a) * rr - f.pos.x, gz = q.z + Math.sin(a) * rr * 0.7 - f.pos.z, gl = Math.hypot(gx, gz) || 1, k = Math.min(0.09, gl * 0.12); cx = (gx / gl) * k; cz = (gz / gl) * k; } }
+          const nx = f.pos.x + (f.vx + cur.x + cx) * dt, nz = f.pos.z + (f.vz + cur.z + cz) * dt;
           if (nx < -3.8 || nx > 3.8) f.vx = -f.vx; if (nz < -0.5 || nz > 2.2) f.vz = -f.vz;      // at the glass or the back, it turns along it
-          f.pos.x = Math.max(-3.8, Math.min(3.8, nx)); f.pos.z = Math.max(-0.5, Math.min(2.2, nz)); f.pos.y -= (free ? 0.05 + Math.sin(t * 3 + f.ph) * 0.12 - cur.y : 0.9) * dt; }
+          f.pos.x = Math.max(-3.8, Math.min(3.8, nx)); f.pos.z = Math.max(-0.5, Math.min(2.2, nz)); f.pos.y += (free ? (f.depth - f.pos.y) * 0.25 + Math.sin(t * 3 + f.ph) * 0.12 + cur.y : -0.9) * dt; }      // free, it hovers about its depth with little bobs
         else { f.pos.y -= 0.42 * dt; f.pos.x += (Math.sin(t * 1.6 + f.ph) * 0.12 + cur.x * 0.6) * dt; f.pos.z = Math.max(-0.5, Math.min(2.4, f.pos.z + cur.z * 0.6 * dt)); } } }
     this.flakes = this.flakes.filter((f) => !f.eaten && (f.age < 30 || f.sucked));
     this.mesh.count = this.flakes.length;
@@ -632,7 +636,7 @@ export class Fishes {
         for (const c of this.flakes) {
           if (c.eaten || c.sucked || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
           if (c.watchedBy && c.watchedBy !== f && c.watchedBy.prey === c && c.watchD < 1.2) continue;      // right in front of a seahorse that is watching it: fair's fair
-          if (c.kind === 'mysis' && f.sk !== 'seahorse' && c.age < 6) continue;      // the other fish are slow to notice the seahorses' shrimp, so it reaches them first
+          if (c.kind === 'mysis' && f.sk !== 'seahorse' && (c.freeT ?? 0) < 8) continue;      // the other fish are slow to notice the seahorses' shrimp: once down among the plants it drifts there a while on the current, and only then do the others come for what is left
           if (W.push) { o.set(0, 0, 0); if (W.push(c.pos, 0.25, o)) continue; }
           const d = f.pos.distanceTo(c.pos); if (d > (c.kind === 'mysis' && f.sk === 'seahorse' ? 16 : 9)) continue;      // its own shrimp, a seahorse comes up for from anywhere
           const sc = d + ((claims.get(c) || 0) - (c === f.flake ? 1 : 0)) * (greedy ? 0.8 : 2.6) + this.rng() * 1.4 - (curious ? Math.max(0, 3 - c.age) * 0.6 : 0) - (c === f.flake ? 1 : 0);
