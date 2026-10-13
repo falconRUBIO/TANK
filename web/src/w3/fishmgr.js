@@ -362,9 +362,9 @@ export class Fishes {
   // fish that are going without care look pale and tired, and keep low
   sicken(f, d) {
     const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_TIRED ? 0.3 : 0, weak = ail >= AIL_WARN, tired = ail >= AIL_TIRED;
-    f.setPale(k); if (f.weak !== weak || f.tired !== tired) { f.weak = weak; f.tired = tired; f.tmul = this.mulFor(f); }
+    f.setPale(Math.max(k, 0.25 * (f.starve ?? 0))); if (f.weak !== weak || f.tired !== tired) { f.weak = weak; f.tired = tired; f.tmul = this.mulFor(f); }
   }
-  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1); }
+  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (1 - 0.45 * (f.starve ?? 0)); }
   // a rare visitor swims in from the side, glowing softly, until it is greeted or leaves
   addVisitor(v) {
     const sp = SPECIES[v.species], def = SPECIES_DEF[v.species]; if (!sp) return;
@@ -608,7 +608,9 @@ export class Fishes {
     const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, court }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, court }; this.burst(new THREE.Vector3(cx, y, cz));      // courting, they circle closer and longer
   }
   update(dt, t) {
-    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now); }      // a male's brood pouch, as full as his pregnancy says
+    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);
+      // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
+      for (const f of this.list) if (f.species?.move === 'jet' && f.rec && !f.dead && !f.visitor) { const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
