@@ -730,8 +730,12 @@ export class Fish3D {
         if (pick) { this.prey = pick; this.preyT = 0; } }
       if (this.prey) {
         this.preyT += dt; const p = this.prey.pos; this.prey.watchedBy = this; this.prey.watchD = p.distanceTo(m);      // other fish leave a shrimp right in front of a watching seahorse (see the scramble in fishmgr)
-        let want = Math.atan2(-(p.z - this.pos.z), p.x - this.pos.x) - H.face; want = Math.atan2(Math.sin(want), Math.cos(want)); aimH = Math.max(-0.75, Math.min(0.75, want));      // it turns on its stem to follow it, within what the grip allows
-        aimP = Math.max(-0.34, Math.min(0.28, (p.y - m.y) * (p.distanceTo(m) < 1 ? 1.3 : 0.9)));      // and tips its head up or down to it, more as it comes close
+        let want = Math.atan2(-(p.z - H.z), p.x - H.x) - H.face; want = Math.atan2(Math.sin(want), Math.cos(want)); aimH = Math.max(-0.75, Math.min(0.75, want));      // it turns on its stem to face it, within what the grip allows
+        // and pivots on its grip to bring its snout to it: held by the tail, its snout swings round the grip at a fixed distance, so the lean that
+        // points the snout at the shrimp is worked out from where the shrimp is, seen from the grip in the plane it faces (within how far it can lean)
+        { const gl = this.gripLocalFor(this.gripStem ?? SEAHORSE_STEM, this.gripLean ?? SEAHORSE_LEAN), va = SEAHORSE_SNOUT.x - gl[0], vb = SEAHORSE_SNOUT.y - gl[1];
+          const along = (p.x - H.x) * Math.cos(this.heading) - (p.z - H.z) * Math.sin(this.heading), up = p.y - H.y;
+          let pk = Math.atan2(up, along) - Math.atan2(vb, va); pk = Math.atan2(Math.sin(pk), Math.cos(pk)); aimP = Math.max(-0.38, Math.min(0.3, pk - (this.gripLean ?? SEAHORSE_LEAN))); }
         if (!this.strikeT && this.preyT > 0.25 && p.distanceTo(m) < SEA_REACH) {      // within reach of the snout: a very quick strike, sucking it in
           this.strikeT = SEA_STRIKE; this.foodWait = 0; this.strikeSeq = (this.strikeSeq ?? 0) + 1; this.prey.sucked = this; this.prey.suckT = 0; this.aimT = 0.2; this.thought = 'Struck! Sucked in a shrimp in a flash.'; this.snickSaid = 3; }
       }
