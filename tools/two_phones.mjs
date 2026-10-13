@@ -39,6 +39,7 @@ let worst = 0; for (let i = 0; i < 6; i++) {
   const pos = async (p) => p.evaluate(() => Object.fromEntries((window.__fishes?.list ?? []).map((f) => [f.fid, [f.pos.x, f.pos.y]])));
   const [pa, pb] = await Promise.all([pos(A), pos(B)]); for (const id of Object.keys(pa)) if (pb[id]) worst = Math.max(worst, Math.hypot(pa[id][0] - pb[id][0], pa[id][1] - pb[id][1]));
 }
+if (process.env.DEBUG) for (const [nm, p] of [['A', A], ['B', B]]) console.log('  side', nm, JSON.stringify(await p.evaluate(() => window.__fishes.list.map((f) => { const e = window.__netFish?.get(f.fid); return [f.fid, f.pos.x, f.pos.y, e ? [e.x, e.y, e.vx, e.vy, e.ts, Math.round(performance.now() - e.at), e.seen ? Math.round(performance.now() - e.seen) : null] : null]; }))));
 await shot(A, '4_side_A'); await shot(B, '4_side_B');
 ck('side by side, every octopus is in the same place on both phones', worst < 0.8, 'biggest gap ' + worst.toFixed(2) + ' tank units');
 // a full tank: a school, some reef fish and a seahorse join, then a crab treat drops in for an octopus
