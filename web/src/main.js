@@ -764,7 +764,10 @@ function netSync(dt, now) {
   if (isDirector()) { sendSnap(now); return; }
   const t = performance.now(), real = Math.min(1, Math.max(dt, (t - (netSync.last ?? t)) / 1000)), k = 1 - Math.exp(-real * 14); netSync.last = t;      // catch up by the time that really passed, even after a slow frame
   for (const f of fishes.list) {
-    const e = netFish.get(f.fid); if (!e || t - (e.seen ?? e.at) > 3000 || (play && play.fish === f)) continue;                       // no news from the director: this phone's own fish carry on
+    const e = netFish.get(f.fid); if (!e || (play && play.fish === f)) continue;
+    const quiet = t - (e.seen ?? e.at);      // how long since the lead phone was last heard from
+    if (quiet > 20000) continue;      // long silent (it left, or its phone is asleep): this phone's own animals carry on
+    if (quiet > 3000) { const kq = 1 - Math.exp(-real * 0.6); f.pos.x += (e.x - f.pos.x) * kq; f.pos.y += (e.y - f.pos.y) * kq; f.pos.z += (e.z - f.pos.z) * kq; f.group.position.copy(f.pos); continue; }      // a short silence (a busy or briefly hidden lead phone): each animal stays about where it was last seen, still moving in its own way, so it has not wandered off when the news comes back
     // the lead phone's news is a fraction of a second old by the time it arrives: carry each fish on along its course for that long, so both screens show it in the same place now
     const age = Math.min(0.35, (t - e.at) / 1000), ex = e.x + (e.vx ?? 0) * age, ey = e.y + (e.vy ?? 0) * age, ez = e.z + (e.vz ?? 0) * age, eh = e.h + (e.vh ?? 0) * age;
     { const far = Math.hypot(ex - f.pos.x, ey - f.pos.y, ez - f.pos.z) > 1.5, kk = far ? 1 - Math.exp(-real * 3) : k; f.pos.x += (ex - f.pos.x) * kk; f.pos.y += (ey - f.pos.y) * kk; f.pos.z += (ez - f.pos.z) * kk; }      // after a gap in the news, a fish that has drifted off glides back over a second or so, never jumps
