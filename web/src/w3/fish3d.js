@@ -199,8 +199,8 @@ export class Fish3D {
       if (v > 0.02) { const ax = this.pos.x + (this.vel.x / v) * 0.5, az = this.pos.z + (this.vel.z / v) * 0.5; if ([-0.4, 0, 0.35].some((k) => W.soft.at(ax, this.pos.y + R * k, az))) this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } }
     if (W.push && !this.homing) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
-      for (const off of jet ? [...offs, 'mantle'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
-        if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
+      for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
+        if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (off === 'snout') this.snout(_p1); else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
         const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.9, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
         if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
