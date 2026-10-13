@@ -7,7 +7,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 120000 }); await p.waitForTimeout(2000);
 const scen = async (name, decor) => {
-  const watch = (async () => { for (let i = 0; i < 600; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__snapHaul).catch(() => false)) { await p.screenshot({ path: `${OUT}/${name}_haul.png` }); await p.evaluate(() => { window.__snapHaul = false; }); return; } } })();
+  const watch = (async () => { try { for (let i = 0; i < 600; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => window.__snapHaul).catch(() => false)) { await p.screenshot({ path: `${OUT}/${name}_haul.png` }); await p.evaluate(() => { window.__snapHaul = false; }); return; } } } catch { /* the page closed: nothing more to watch */ } })();
   const out = await p.evaluate(async ({ decor }) => {
     const g = window.__game, F = window.__fishes, s = g.state; s.flags.tut = 5; s.level = 6; s.shells = 200; s.fish.length = 0; s.decor.length = 0; s.decor.push(...decor);
     s.fish.push({ id: 'o1', name: 'Inky', species: 'octopus', seed: 3, born: Date.now() - 9 * 864e5, stage: 'adult', traits: [], happy: 0.8, health: 1, appetite: 0, owner: null, bond: {} });
