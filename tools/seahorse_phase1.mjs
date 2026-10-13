@@ -24,10 +24,11 @@ const setup = (fish, decor, extra = {}) => p.evaluate(([fish, decor, extra]) => 
   for (const f of fish) s.fish.push({ born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, ...f }); for (const d of decor) s.decor.push({ ry: 0, ...d }); g.emit('state');
   document.querySelectorAll('#coach,#toast,#settle,#reunion,#modal').forEach((e) => (e.style.display = 'none')); }, [fish, decor, extra]).then(() => p.waitForTimeout(1500))
   .then(() => p.evaluate(() => { for (const f of window.__fishes.list) { f.noticeQ = null; f.exploreAt = null; } }));      // the tank as set up is not 'something new' to them
+let booted = false; const fresh = async () => { if (booted) await boot(); booted = true; };      // each section starts from a freshly loaded page
 await boot();
 
 if (run('grips')) {
-  console.log('grips');
+  console.log('grips'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }], []);
   const r = await p.evaluate(async () => {
     const G = await import('/src/w3/grips.js'), g = window.__game, s = g.state, out = {};
@@ -47,7 +48,7 @@ if (run('grips')) {
 }
 
 if (run('hitch')) {
-  console.log('hitch');
+  console.log('hitch'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }],
     [{ id: 'p1', type: 'grass', x: -2.4, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.6, z: 1.8 }, { id: 'p3', type: 'kelp', x: -0.9, z: 1.9 }, { id: 'p4', type: 'fern', x: 0.4, z: -0.2 }, { id: 'a1', type: 'anchor', x: -0.4, z: -1.2 }, { id: 'r1', type: 'brain', x: 0.8, z: 0.9 }, { id: 'r2', type: 'rock', x: 2.6, z: 0.2 }, { id: 'r3', type: 'boulder', x: -1.6, z: 0.4 }, { id: 'r4', type: 'pillar', x: 2.8, z: -1.2 }]);
   const r = await p.evaluate(async () => {
@@ -63,7 +64,7 @@ if (run('hitch')) {
 }
 
 if (run('memory')) {
-  console.log('memory');
+  console.log('memory'); await fresh();
   const decor = [{ id: 'p1', type: 'grass', x: -2.4, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.6, z: 1.8 }, { id: 'p3', type: 'kelp', x: -0.4, z: -0.4 }, { id: 'p4', type: 'fern', x: 2.4, z: -0.6 }];
   // a seahorse that has held the sword plant a lot, as the server remembers it; a newcomer with no history
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4, traits: ['Shy', 'Calm'], log: { hitch: { p2: [600, 6, 1.6, 1.8] }, fav: 'p2' } }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }], decor);
@@ -110,7 +111,7 @@ if (run('memory')) {
 }
 
 if (run('feeding')) {
-  console.log('feeding');
+  console.log('feeding'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4, traits: ['Calm'] }], [{ id: 'p1', type: 'grass', x: 0, z: 1.2 }], { hunger: 0.5 });
   const r = await p.evaluate(async () => {
     const F = window.__fishes, h = F.byId.get('h1'); let t = 0; while (!h.holdfast?.on && t < 120) { await window.__step(1); t++; }
@@ -146,7 +147,7 @@ if (run('feeding')) {
 }
 
 if (run('persona')) {
-  console.log('persona');
+  console.log('persona'); await fresh();
   const decor = [{ id: 'p1', type: 'grass', x: -2.6, z: 2.2 }, { id: 'p2', type: 'sword', x: -0.6, z: 2.3 }, { id: 'p3', type: 'kelp', x: 1.4, z: 2.0 }, { id: 'p4', type: 'fern', x: -1.8, z: -0.8 }, { id: 'p5', type: 'grass', x: 0.6, z: -1.2 }, { id: 'p6', type: 'anemone', x: 2.6, z: -0.4 }];
   const runOne = async (persona) => { await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }], decor);
     return p.evaluate(async (persona) => { const F = window.__fishes, h = F.byId.get('h1'); Object.defineProperty(h, 'persona', { get: () => persona, set: () => {}, configurable: true }); /* the regular sync would put back the one from its record */ let holds = 0, last = null, zs = 0, zn = 0, hfs = 0; const used = {};
@@ -164,7 +165,7 @@ if (run('persona')) {
 }
 
 if (run('night')) {
-  console.log('night');
+  console.log('night'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }, { id: 'h3', name: 'Moss', species: 'seahorse', seed: 23 }],
     [{ id: 'p1', type: 'grass', x: -2.4, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.6, z: 1.8 }, { id: 'p3', type: 'kelp', x: -0.4, z: -0.4 }, { id: 'p4', type: 'fern', x: 2.4, z: -0.6 }]);
   const r = await p.evaluate(async () => {
@@ -183,7 +184,7 @@ if (run('night')) {
 }
 
 if (run('social')) {
-  console.log('social');
+  console.log('social'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }], [{ id: 'p1', type: 'grass', x: -1.2, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.0, z: 1.8 }]);
   const r = await p.evaluate(async () => {
     const F = window.__fishes, hs = F.list.filter((f) => f.sp?.tail), seen = []; const oo = F.onObserve; F.onObserve = (o) => { seen.push(o.key); oo?.(o); };
@@ -202,7 +203,7 @@ if (run('social')) {
 }
 
 if (run('sync')) {
-  console.log('sync');
+  console.log('sync'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }], [{ id: 'p1', type: 'grass', x: 0, z: 1.2 }]);
   const r = await p.evaluate(async () => {
     const F = window.__fishes, [a, b] = F.list.filter((f) => f.sp?.tail), S = window.__sea; await window.__step(20);
@@ -216,7 +217,7 @@ if (run('sync')) {
 }
 
 if (run('perf')) {
-  console.log('perf');
+  console.log('perf'); await fresh();
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }, { id: 'h3', name: 'Moss', species: 'seahorse', seed: 23 }, { id: 'h4', name: 'Kelpie', species: 'seahorse', seed: 31 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }, { id: 'o1', name: 'Inky', species: 'octopus', seed: 5, owner: 'me' }],
     [{ id: 'p1', type: 'grass', x: -2.4, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.6, z: 1.8 }, { id: 'p3', type: 'kelp', x: -0.4, z: -0.4 }, { id: 'p4', type: 'fern', x: 2.4, z: -0.6 }, { id: 'a1', type: 'anchor', x: -1.4, z: -1.6 }, { id: 'b1', type: 'bridge', x: 1.0, z: -1.8 }, { id: 'r1', type: 'boulder', x: 0.4, z: 0.6 }, { id: 'c1', type: 'coconut', x: -2.8, z: -0.2 }]);
   const r = await p.evaluate(async () => {
