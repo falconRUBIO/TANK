@@ -851,7 +851,7 @@ export class Fish3D {
       else for (let k = 0; k < 6; k++) { this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); if (this.target.distanceTo(this.pos) > 3) break; }
       this.idle = 0.2 + rng() * 0.5; this.retarget = 4 + this.target.distanceTo(this.pos) / Math.max(0.1, this.speed * 0.5); return;      // (time enough to get there)
     }
-    if (this.sp.tail && !this.seeking && (role !== 'explore') && (role !== 'social' || rng() < 0.3) && this.pickHold(rng, spots, !!this.sleepy || role === 'plants')) return;
+    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy)) return;      // (a nursery baby never grips: it perches, below)
     // a nursery baby is still too small to coil its tail round a stem (grips.js finds none for it), so it perches: it settles close beside one
     // and stays there a while. The plant-lover goes back to its own plant, the others now and then to any
     this.perch = null;

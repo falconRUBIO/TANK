@@ -48,10 +48,7 @@ const fed = await p.evaluate(() => { const F = window.__fishes, kids = F.list.fi
   const drops = []; for (let i = 0; i < 6; i++) for (const k of kids) drops.push([i * 200, k.pos.x]); window.__sim(1400, 1 / 30, drops);
   return kids.map((k) => ({ role: k.role, meals: k.meals ?? 0 })); });
 ck('the tracked babies catch food themselves', fed.filter((k) => k.meals > 0).length >= 2, fed);
-const roles = await p.evaluate(() => { const F = window.__fishes, kids = F.list.filter((f) => f.nursery); for (const k of kids) k.bl = null; window.__sim(9000, 1 / 30);
-  return Object.fromEntries(kids.map((k) => [k.role, { dist: +k.bl.dist.toFixed(1), plant: +(k.bl.plant / k.bl.secs).toFixed(2), fam: +(k.bl.fam / k.bl.secs).toFixed(2) }])); });
-console.log('  roles', JSON.stringify(roles));
-ck('three different characters, from what they do: the explorer roams furthest, the plant-lover stays by the plants, the social one by its family', roles.explore.dist > roles.plants.dist && roles.explore.dist > roles.social.dist && roles.plants.plant > roles.explore.plant && roles.plants.plant > roles.social.plant && roles.social.fam > roles.explore.fam && roles.social.fam > roles.plants.fam, roles);
+// (the three characters are measured in tools/baby_personality.mjs)
 // the choice: when they are ready it comes up by itself, a baby is picked, confirmed, and kept
 await p.evaluate(() => { const s = window.__game.state; s.nursery.readyAt = Date.now() + 1500; window.__game.emit('state'); });
 for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/READY/.test(t)) break; if (t) await p.click('#modal.on #mok').catch(() => {}); }      // (a daily gift may be showing first)
