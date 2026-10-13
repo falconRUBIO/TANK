@@ -746,24 +746,28 @@ function seaUnpack(f, str, k) {
 }
 const OPOSE = ['curlK', 'restK', 'crawlK', 'workK', 'greetK', 'sq', 'glassNear', 'glideK', 'cruiseK', 'landK', 'dashK', 'tuckK', 'camoK', 'glowK', 'chewK', 'sleepK', 'blinkK', 'flatK', 'lionK', 'snakeK', 'jellyK', 'kelpK', 'puffK', 'sink', 'mimicK', 'climbK', 'squintK', 'wideK', 'inhaleK'];
 game.on('snap', (list, crabs, ts) => { const at = performance.now(); for (const f of list) { let e = netFish.get(f.i); if (!e) netFish.set(f.i, (e = {})); const gap = Number.isFinite(ts) && Number.isFinite(e.ts) && ts > e.ts ? (ts - e.ts) / 1000 : (at - (e.at ?? 0)) / 1000;      // timed by the lead phone's clock, so a late or bunched message does not fake a burst of speed
- if (gap > 0.04 && gap < 1) { if (Number.isFinite(e.ph) && Number.isFinite(f.ph) && f.ph >= e.ph) e.rate = (f.ph - e.ph) / gap; const v = (a, b2) => (Number.isFinite(a) && Number.isFinite(b2) ? (b2 - a) / gap : 0); e.vx = v(e.x, f.x); e.vy = v(e.y, f.y); e.vz = v(e.z, f.z); e.vh = Number.isFinite(e.h) ? Math.atan2(Math.sin(f.h - e.h), Math.cos(f.h - e.h)) / gap : 0; } else { e.vx = e.vy = e.vz = e.vh = 0; } Object.assign(e, f, { at, ts }); } if (Array.isArray(crabs) && !isDirector()) fishes.netCrabs(crabs); });
+ if (gap > 0.04 && gap < 2.5) { if (Number.isFinite(e.ph) && Number.isFinite(f.ph) && f.ph >= e.ph) e.rate = (f.ph - e.ph) / gap; const v = (a, b2) => (Number.isFinite(a) && Number.isFinite(b2) ? (b2 - a) / gap : 0); e.vx = v(e.x, f.x); e.vy = v(e.y, f.y); e.vz = v(e.z, f.z); e.vh = Number.isFinite(e.h) ? Math.atan2(Math.sin(f.h - e.h), Math.cos(f.h - e.h)) / gap : 0; } else { e.vx = e.vy = e.vz = e.vh = 0; } Object.assign(e, f, { at, ts }); } if (Array.isArray(crabs) && !isDirector()) fishes.netCrabs(crabs); });
 game.on('role', (d) => { if (d) netFish.clear(); });
 game.on('fx', (m) => {
   if (m.kind === 'water') { if (!wc.active && !REDUCED && !document.hidden) { setFocus(null); wc.start({ dirt0: 1, dispatch: () => true }); } }      // a friend is changing the water: watch it happen
   else if (m.kind === 'sight' && !isDirector()) sights.spawn(m.what, { dir: m.dir, y0: m.y0, z: m.z });
 });
+// The lead phone sends where every animal is, about seven times a second. It is sent on a steady timer as well as from the frame loop, so a lead
+// phone that is drawing slowly (busy, or an older phone) still keeps the others up to date, and their animals never wander off on their own.
+function sendSnap(now) {
+  if (!game.shared || wc.active || !isDirector() || now - lastSnapSent <= 130 || !game.live?.connected || document.hidden || !fishes.list.length) return;
+  lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0), g: r2(f.gripK ?? 0), sh: seaPack(f) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() });
+}
+setInterval(() => { try { sendSnap(performance.now()); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); } }, 140);
 function netSync(dt, now) {
   if (!game.shared || wc.active) return;
-  if (isDirector()) {
-    if (now - lastSnapSent > 130 && game.live?.connected && !document.hidden && fishes.list.length) { lastSnapSent = now; game.live.send({ t: 'snap', ts: Math.round(now) % 1e7, fish: fishes.list.map((f) => ({ i: f.fid, x: r2(f.pos.x), y: r2(f.pos.y), z: r2(f.pos.z), h: r2(f.heading), p: r2(f.pitch), r: r2(f.roll), ph: r2(f.phase % 2000), ...(f.sp?.tail ? { c: r2(f.curlK ?? 0), g: r2(f.gripK ?? 0), sh: seaPack(f) } : {}), ...(f.species.move === 'jet' ? { o: OPOSE.map((k) => r2(f[k] ?? 0)) } : {}) })), crabs: fishes.crabSnap() }); }
-    return;
-  }
+  if (isDirector()) { sendSnap(now); return; }
   const t = performance.now(), real = Math.min(1, Math.max(dt, (t - (netSync.last ?? t)) / 1000)), k = 1 - Math.exp(-real * 14); netSync.last = t;      // catch up by the time that really passed, even after a slow frame
   for (const f of fishes.list) {
     const e = netFish.get(f.fid); if (!e || t - e.at > 3000 || (play && play.fish === f)) continue;                       // no news from the director: this phone's own fish carry on
     // the lead phone's news is a fraction of a second old by the time it arrives: carry each fish on along its course for that long, so both screens show it in the same place now
     const age = Math.min(0.35, (t - e.at) / 1000), ex = e.x + (e.vx ?? 0) * age, ey = e.y + (e.vy ?? 0) * age, ez = e.z + (e.vz ?? 0) * age, eh = e.h + (e.vh ?? 0) * age;
-    if (Math.hypot(ex - f.pos.x, ey - f.pos.y, ez - f.pos.z) > 4) f.pos.set(ex, ey, ez); else { f.pos.x += (ex - f.pos.x) * k; f.pos.y += (ey - f.pos.y) * k; f.pos.z += (ez - f.pos.z) * k; }
+    { const far = Math.hypot(ex - f.pos.x, ey - f.pos.y, ez - f.pos.z) > 1.5, kk = far ? 1 - Math.exp(-real * 3) : k; f.pos.x += (ex - f.pos.x) * kk; f.pos.y += (ey - f.pos.y) * kk; f.pos.z += (ez - f.pos.z) * kk; }      // after a gap in the news, a fish that has drifted off glides back over a second or so, never jumps
     const dh = ((eh - f.heading + Math.PI * 3) % (Math.PI * 2)) - Math.PI; f.heading += dh * k; f.pitch += (e.p - f.pitch) * k; f.roll += (e.r - f.roll) * k;
     if (Number.isFinite(e.ph)) { const want = e.ph + (t - e.at) * 0.001 * (e.rate ?? 0), d = want - (f.phase % 2000); f.phase = Math.abs(d) > 3 ? want : f.phase + d * k; }      // the same stroke of the tail, the same step of the arms
     if (Array.isArray(e.o)) OPOSE.forEach((key, j) => { if (Number.isFinite(e.o[j]) && key in f) f[key] += (e.o[j] - f[key]) * k; });

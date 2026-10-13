@@ -76,5 +76,17 @@ let crabGap = 0, seen = 0; for (let i = 0; i < 8; i++) { await A.waitForTimeout(
 if (process.env.DEBUG) console.log('crabs', JSON.stringify((await view(A)).crabs), JSON.stringify((await view(B)).crabs)); await shot(A, '6_crab_A'); await shot(B, '6_crab_B');
 ck('a crab treat lands and runs in the same place on both phones', seen > 0 && crabGap < 0.5, `seen ${seen}, biggest gap ${crabGap.toFixed(2)}`);
 const hunt = await cmp('hunt', 6); ck('while the octopus hunts, both phones still agree', hunt.gap < 0.8 && hunt.pose < 0.3, `gap ${hunt.gap.toFixed(2)}, pose ${hunt.pose.toFixed(2)}`);
+// the lead phone's connection drops and comes back: the other phone takes over as lead, the first comes back as a follower, nothing jumps,
+// and both end up showing every animal in the same place again
+{ const dirOf = (p) => p.evaluate(() => window.__game.director === true), d0 = [await dirOf(A), await dirOf(B)];
+  const lead = d0[0] ? A : B, other = d0[0] ? B : A;
+  const jumps = [0, 0]; let prev = [null, null];
+  await lead.evaluate(() => window.__game.live.ws.close());
+  for (let i = 0; i < 40; i++) { await A.waitForTimeout(250); const vs = await Promise.all([view(A), view(B)]);
+    vs.forEach((v, k) => { if (prev[k]) for (const [id, f] of Object.entries(v.fish)) { const q = prev[k][id]; if (q) jumps[k] = Math.max(jumps[k], Math.hypot(f.x - q.x, f.y - q.y, f.z - q.z)); } prev[k] = v.fish; }); }
+  const d1 = [await dirOf(lead), await dirOf(other)], back = await lead.evaluate(() => window.__game.live.connected);
+  ck('when the lead phone drops out and comes back, the other phone leads and the first follows', back && !d1[0] && d1[1], JSON.stringify({ before: d0, after: { returned: d1[0], other: d1[1] }, back }));
+  ck('nothing jumps on either phone while the lead changes hands', Math.max(...jumps) < 1.2, `biggest step between quarter-second looks ${jumps.map((j) => j.toFixed(2)).join(' / ')} tank units`);
+  const after = await cmp('after handover', 6); ck('after the handover, every animal is in the same place on both phones', after.p95 < 0.35 && after.gap < 0.9, `typical worst gap ${after.p95.toFixed(2)}, biggest ${after.gap.toFixed(2)}`); }
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Two-phone checks passed'); await b.close(); process.exit(fails ? 1 : 0);
