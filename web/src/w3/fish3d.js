@@ -149,7 +149,7 @@ export class Fish3D {
     for (let j = 0; j < n; j++) {
       const i = all ? j : list[j], v = this.vox[i];
       let x = v.x, y = v.y, z = v.z, grow = 1;
-      if (v.tag === 'pouch') grow = (this.brood ?? 0) >= v.pk ? 1 : 0;      // a male's brood pouch, only as full as it is
+      if (v.tag === 'pouch') { grow = (this.brood ?? 0) >= v.pk ? 1 : 0; if (this.contractK) x -= 1.2 * this.contractK * v.pk; }      // a male's brood pouch, only as full as it is (squeezed as he gives birth)
       if (b) {
         const piv = b.pivot - this.cx;
         if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
@@ -530,6 +530,11 @@ export class Fish3D {
     } else if (!(this.netGlowAt > performance.now() - 2000)) this.glowK += (0 - this.glowK) * Math.min(1, dt * 1.2);      // (on another phone the glow comes from the lead phone)
     if (Math.abs(this.glowK - (this.glowApplied ?? 0)) > 0.03) { this.glowApplied = this.glowK; this.applyGlow(); }
     if (G) { this.pitch += (Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.phase += dt * 14; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); } return; }
+    if (this.sp.tail && this.birthT > 0) {      // giving birth: he lets go, straightens a little, and his pouch contracts in pulses as the babies come out of it
+      this.birthT -= dt; if (lead && this.holdfast) this.release(0.2); this.vel.multiplyScalar(Math.exp(-3 * dt)); this.pos.y += 0.04 * dt;
+      const c = this.birthT > 1.2 ? Math.max(0, Math.sin((7.5 - this.birthT) * 4.5)) : 0; this.contractK = c;
+      this.pitch += ((-0.06 + 0.14 * c) - this.pitch) * Math.min(1, dt * 6); this.curlK += (-0.2 - (this.curlK ?? 0)) * Math.min(1, dt * 2); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 4); this.phase += dt * 14;
+      this.place(dt); return; }
     if (this.sp.tail) { if (!lead) { this.holdfast = null; } else if (this.seahorse(dt, rng)) return; }      // in a shared tank only the lead phone decides where a seahorse holds on; the others are shown it
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;

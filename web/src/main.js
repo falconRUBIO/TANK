@@ -10,6 +10,7 @@ import { SEAHORSE_GRIP_R } from './species.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
+import { Nursery } from './w3/nursery.js';
 import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
@@ -473,6 +474,7 @@ function storyBlock(rec, n = 6) {
 }
 function showCard(f) {
   if (f.dead) return showDeadCard(f);
+  if (f.nursery) return openNursery();      // a baby still in the nursery: the nursery's own card
   if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
@@ -493,7 +495,13 @@ function showCard(f) {
   const tab = (game.profTab ??= 'over'), T = (k, l) => `<button class="tb ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`, row = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : '');
   const famBar = `<div class="famb">${FAMILIAR.map((_, i) => `<i class="${i < fm.i ? 'f' : i === fm.i ? 'c' : ''}">${i === fm.i ? `<b style="width:${Math.round(Math.max(0.12, fm.k) * 100)}%"></b>` : ''}</i>`).join('')}</div>`;
   const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
-  const over = `${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
+  const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
+    if (stageOf(rec) === 'adult') out.push(`${rec.sex === 'm' ? 'Male' : rec.sex === 'f' ? 'Female' : ''}${rec.mate && nm(rec.mate) ? ` · paired with ${esc(nm(rec.mate))}` : ''}`);
+    if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
+    else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
+    return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
+  const over = `${famLine}${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
@@ -637,9 +645,28 @@ function spotlightFish(id, ms = 3600, delay = 700) {
 // ── wiring the game to the scene and the interface ──
 const pendingArrivals = new Set();
 let lastLamp = null, seenDecor = null;
+// ── the nursery: the brood grows up in the tank; after five days any caretaker chooses the one that stays ──
+const nurseryFx = new Nursery(stg.scene); window.__nursery = nurseryFx;
+let readyShown = null;
+async function openNursery() {
+  const N = game.state?.nursery; if (!N || $('modal').classList.contains('on')) return;
+  const day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }), who = (c) => `${c.name} · ${c.sex === 'm' ? 'a little male' : 'a little female'} · ${(c.traits ?? []).join(', ').toLowerCase() || 'still finding its way'}`;
+  const parents = `Born ${day(N.born)} to ${N.pa?.name ?? 'their father'} and ${N.ma?.name ?? 'their mother'}.`;
+  if (game.now() < N.readyAt) { const d = Math.min(5, Math.floor((game.now() - N.born) / 864e5) + 1); return ui.dialog({ title: 'THE NURSERY', text: `${N.n} baby seahorses, day ${d} of 5. ${parents} Three of them you can already tell apart:`, lines: N.cands.map(who), ok: 'Lovely' }); }
+  const pick = await ui.choose({ title: "THEY'RE READY", text: `Your baby seahorses are ready to leave the nursery. Choose one to stay in your aquarium. ${parents}`, options: N.cands.map((c) => ({ label: who(c), value: c.id })), cancel: 'Not yet' });
+  if (!pick) return; const c = N.cands.find((x) => x.id === pick); if (!c) return;
+  const sure = await ui.dialog({ title: `KEEP ${c.name.toUpperCase()}?`, text: `${c.name} will stay in your aquarium for good. The other babies will swim off to new homes.`, ok: `Keep ${c.name}`, cancel: 'Go back' });
+  if (!sure) return openNursery();
+  const r = await game.dispatch({ t: 'keepBaby', nursery: N.id, baby: c.id });
+  if (!r.ok) { if (r.reason === 'TANK_FULL') ui.dialog({ title: 'NO ROOM YET', text: 'The tank is full. When there is room for one more, choose then: the babies will wait.', ok: 'OK' }); else if (r.reason === 'NOT_FOUND') ui.toast('Someone has already chosen a baby to keep.'); else fail(r); }
+}
+function nurseryCheck() {      // the moment they are ready, once a session: the choice comes up by itself
+  const N = game.state?.nursery; if (!N || game.now() < N.readyAt || readyShown === N.id || ui?.tab !== 'tank' || $('modal').classList.contains('on')) return;
+  readyShown = N.id; setTimeout(openNursery, 1500);
+}
 function syncWorld() {
   const s = game.state; if (!s) return;
-  fishes.me = game.you?.userId ?? 'me'; fishes.people = game.shared ? (game.online ?? []) : []; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear();
+  fishes.me = game.you?.userId ?? 'me'; fishes.people = game.shared ? (game.online ?? []) : []; fishes.sync(s, { arrivals: [...pendingArrivals] }); pendingArrivals.clear(); nurseryFx.set(s, fishes); nurseryCheck();
   decor.sync(s.decor, s);
   { const ids = new Set(s.decor.map((d) => d.id)); if (seenDecor) for (const d of s.decor) if (!seenDecor.has(d.id)) { const sp = decor.spots().find((x) => x.id === d.id); if (sp) fishes.investigate(sp); } seenDecor = ids; }       // an octopus goes to look at anything new
   const lp = decor.lamp(); lastLamp = lp; stage.lantern = lp ? 1 : 0;
@@ -665,7 +692,7 @@ function maybeGift() {
   if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) setTimeout(() => { if (!$('modal').classList.contains('on')) offerGift(); }, 1200);
   else giftOffered = Date.now();
 }
-let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
+let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((game.state?.nursery?.id ?? null) !== nurseryFx.id) syncWorld(); nurseryCheck();      /* a birth or a choice that came with time passing, not with an action */ if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
   moment({ at: new THREE.Vector3(0, 6, 1), haptics: 30 });
@@ -836,6 +863,7 @@ function frameBody(now) {
   const simT0 = performance.now();
   try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } }
+  try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
   simMs += (performance.now() - simT0 - simMs) * 0.05;
   stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);

@@ -11,7 +11,7 @@ import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
-import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, favFoodOf } from '../game/rules.js';
+import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
@@ -66,20 +66,24 @@ export class Fishes {
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
     { const sig = (state.decor?.length ?? 0) + ':' + state.fish.length + ':' + ((state.glass ?? 0) > 0.5 ? 1 : 0); if (sig !== this.sig) { if (this.sig != null) this.changedAt = performance.now(); this.sig = sig; } }
     const seen = new Set();
-    state.fish.forEach((d, idx) => {
-      seen.add(d.id); const k = STAGE_SCALE[stageOf(d)];
+    // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
+    // they grow through the five days, and the one that is kept carries on as the same seahorse
+    const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father })) : [];
+    [...state.fish, ...kids].forEach((d, idx) => {
+      seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)];
       let f = this.byId.get(d.id);
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.nursery = d.nursery ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
+        if (d.nursery) { const dad = this.byId.get(d.father); if (dad && Date.now() - (state.nursery?.born ?? 0) < 15 * 60e3) f.pos.set(dad.pos.x + (this.rng() - 0.5) * 0.6, dad.pos.y - 0.3, dad.pos.z + 0.3); }      // just born: out of his pouch
         f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
+        f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
@@ -110,6 +114,7 @@ export class Fishes {
   // Watching: what the fish are really doing, reported once and only when it matters. The server checks every report.
   // A phone only counts what it actually sees, and only while the game is open and visible.
   said(f, key, extra = {}, cool = 600) {
+    if (f.nursery) return;      // (a nursery baby has no record on the server yet)
     const k = f.fid + key + (extra.with ?? '') + (extra.spot ?? ''), now = performance.now() / 1000; this.cool ||= new Map();
     if (now - (this.cool.get(k) ?? -1e9) < cool) return; this.cool.set(k, now); this.onObserve?.({ key, fish: f.fid, ...extra });
   }
@@ -167,7 +172,7 @@ export class Fishes {
         // two seahorses that have shared the tank a while now and then link tails: never on their first day, more often the longer they have been together
         if (lead && !f.link && !f.seeking && !f.greet && !f.sleepy && !f.weak && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
           if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.sleepy || o.weak || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 5) continue;
-          const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, bond = Math.max(0, Math.min(1, (days - 1) / 4));
+          const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, mates = f.mateId === o.fid, bond = mates ? 3 : Math.max(0, Math.min(1, (days - 1) / 4));      // (a pair holds tails far more often)
           if (bond > 0 && Math.random() < dt * 0.004 * bond * (0.4 + 0.6 * ((f.persona?.soc ?? 0.5) + (o.persona?.soc ?? 0.5)))) { /* sociable pairs link more often */ const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandUnder(m.x, m.z, 0.8) + 2.4, Math.min(8, (f.pos.y + o.pos.y) / 2));
             // open water: nothing in the way of the pair or of the tails curled under them
             const W = Fish3D.world, clear = () => ![0.3, 0, -0.5, -1, -1.4].some((dy) => [[0, 0], [0.4, 0], [-0.4, 0]].some(([dx, dz]) => W.at?.(m.x + dx, m.y + dy, m.z + dz) || W.soft?.at?.(m.x + dx, m.y + dy, m.z + dz)));
@@ -188,7 +193,7 @@ export class Fishes {
       for (const q of spots) if (Math.hypot(f.pos.x - q.x, f.pos.z - q.z) < 1.2 && f.pos.y < (q.y ?? 0) + (q.h ?? 1) + 1) L.places.add(q.id);
     }
     if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
-    const logs = live.filter((f) => f.dw?.log).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
+    const logs = live.filter((f) => f.dw?.log && !f.nursery).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
       if (f.sk === 'seahorse') { Object.assign(e, { meals: (f.meals ?? 0) - L.meals, strikes: (f.strikesN ?? 0) - L.strikes, greets: (f.greets ?? 0) - L.greets, links: (f.linksN ?? 0) - L.links, inspects: (f.inspects ?? 0) - L.inspects });
         const M = f.memDelta; if (M) { e.hitch = {}; for (const id of new Set([...Object.keys(M.secs), ...Object.keys(M.visits)])) e.hitch[id] = [Math.round(M.secs[id] ?? 0), M.visits[id] ?? 0, ...(M.pos[id] ?? [])]; f.memDelta = null; }      // what it has done on each holdfast since the last report, by the decoration's id
         if (f.lastHitch) e.last = f.lastHitch; }
@@ -573,13 +578,17 @@ export class Fishes {
     this.shT = (this.shT ?? 30 + this.rng() * 40) - dt; if (this.shT > 0) return;
     const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && !f.link && !f.sleepy && !f.weak && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2 || this.night) return;
     hs.sort((x, y) => (y.persona?.soc ?? 0.5) + this.rng() * 0.6 - ((x.persona?.soc ?? 0.5) + this.rng() * 0.6));      // the sociable ones start it
-    if (this.rng() > 0.35 + 0.65 * ((hs[0].persona?.soc ?? 0.5) + (hs[1].persona?.soc ?? 0.5)) / 2) return;      // two independent ones may let the chance go by
+    const mated = hs.find((x) => x.mateId && hs.some((o) => o.fid === x.mateId)), court = mated && [mated, hs.find((o) => o.fid === mated.mateId)].some((x) => x.rec?.preg && Date.now() - x.rec.preg.start < 3 * 3600e3);
+    if (mated) { const o = hs.find((x) => x.fid === mated.mateId); hs.splice(hs.indexOf(mated), 1); hs.splice(hs.indexOf(o), 1); hs.unshift(mated, o); }      // a pair greets each other, every morning
+    else if (this.rng() > 0.35 + 0.65 * ((hs[0].persona?.soc ?? 0.5) + (hs[1].persona?.soc ?? 0.5)) / 2) return;      // two independent ones may let the chance go by
+    if (court) this.shT = 50 + this.rng() * 40;      // just courted: they dance again and again for a while
     const [a, b] = hs, spots = (this.spots?.() ?? []).filter((x) => DECOR_DEF[x.type]?.cat === 'PLANTS'), mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
     let sp = null, bd = 1e9; for (const x of spots) { const d = Math.hypot(x.x - mid.x, x.z - mid.z); if (d < bd) { bd = d; sp = x; } }
     const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = Math.max(sandUnder(cx, cz, 0.7) + 2.4, sp ? (sp.y ?? 0) + sp.h + 1.4 : Math.max(2.5, Math.min(8, mid.y)));      // above the plant, so their tails hang clear of it and of the sand
-    a.greet = { cx, cz, y, r: 0.42, ang: 0, side: 1, t: 11 }; b.greet = { cx, cz, y, r: 0.42, ang: Math.PI, side: 1, t: 11 }; this.burst(new THREE.Vector3(cx, y, cz));
+    const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, court }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, court }; this.burst(new THREE.Vector3(cx, y, cz));      // courting, they circle closer and longer
   }
   update(dt, t) {
+    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now); }      // a male's brood pouch, as full as his pregnancy says
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
