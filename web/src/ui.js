@@ -200,7 +200,7 @@ export function initUI({ game, social, cb }) {
     const s = S(), me = game.you?.userId, fish = s.fish.filter((f) => !f.dead), rank = (f) => (f.species === 'octopus' ? 0 : 2) + (f.owner === me ? 0 : 1);
     if (!fish.length) return '';
     const row = (f) => { const d = SPECIES_DEF[f.species], mine = canSell(f, me, members()), who = f.owner && f.owner !== me && game.shared ? `${esc(f.ownerName ?? 'a friend')}'s` : f.owner === me && game.shared ? 'yours' : '';
-      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? 'Sell' : 'Theirs'}</em></button>`; };
+      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
   const bookHtml = () => {
@@ -378,10 +378,11 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async () => {
       const s = S(), f = s.fish.find((x) => x.id === b.dataset.sellfish); if (!f) return; sfx('tap'); const d = SPECIES_DEF[f.species], pay = sellValue(f), alive = s.fish.filter((x) => !x.dead).length;
       if (!canSell(f, game.you?.userId, members())) { dialog({ title: f.name.toUpperCase(), text: `${d?.label ?? f.species} · looked after by ${f.ownerName ?? 'a friend'}.`, lines: [`Only ${f.ownerName ?? 'its caretaker'}, or the tank's first caretaker, can sell ${f.name}.`], ok: 'OK' }); return; }
+      if (f.preg) { dialog({ title: f.name.toUpperCase(), text: `${f.name} is expecting babies, so he stays until they are born.`, ok: 'OK' }); return; }
       if (alive <= 1) { dialog({ title: f.name.toUpperCase(), text: `${f.name} is the only fish in the tank, so it stays. Bring in another fish first.`, ok: 'OK' }); return; }
       const yes = await dialog({ title: `SELL ${f.name.toUpperCase()}?`, text: `${f.name} the ${(d?.label ?? f.species).toLowerCase()} goes to a new home and leaves the tank for good.`, lines: [...(game.shared && f.owner && f.owner !== game.you?.userId && (game.members ?? []).some((m) => m.id === f.owner) ? [`${f.name} is ${f.ownerName ?? 'a friend'}'s. As the tank's first caretaker you can still sell it, for example if they have stopped playing.`] : []), pay ? `You get ${pay} shells, half of what ${f.name} cost.` : `${f.name} came free, so it fetches no shells.`], ok: pay ? `Sell for ${pay} 🐚` : 'Sell', cancel: 'Keep', danger: true });
       if (!yes) return; const y = sheet.scrollTop, r = await game.dispatch({ t: 'sellFish', id: f.id });
-      if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : REASONS[r.reason] ?? 'Could not sell that.'); open('friends', true); sheet.scrollTop = y;
+      if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : r.reason === 'EXPECTING' ? 'He is expecting babies, so he stays.' : REASONS[r.reason] ?? 'Could not sell that.'); open('friends', true); sheet.scrollTop = y;
     }));
     sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));

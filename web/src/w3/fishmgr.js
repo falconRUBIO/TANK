@@ -11,7 +11,7 @@ import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
-import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf } from '../game/rules.js';
+import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
@@ -68,7 +68,7 @@ export class Fishes {
     const seen = new Set();
     // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
     // they grow through the five days, and the one that is kept carries on as the same seahorse
-    const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father })) : [];
+    const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father })) : [];
     [...state.fish, ...kids].forEach((d, idx) => {
       seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)];
       let f = this.byId.get(d.id);
@@ -76,14 +76,14 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.nursery = d.nursery ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.nursery = d.nursery ?? null; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
         if (d.nursery) { const dad = this.byId.get(d.father); if (dad && Date.now() - (state.nursery?.born ?? 0) < 15 * 60e3) f.pos.set(dad.pos.x + (this.rng() - 0.5) * 0.6, dad.pos.y - 0.3, dad.pos.z + 0.3); }      // just born: out of his pouch
         f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
+        f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; f.role = d.role ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
       }
     });
@@ -573,6 +573,19 @@ export class Fishes {
     }
   }
   // seahorses greet their partner: now and then (more in the morning) two of them meet at a plant, circle each other glowing, and part
+  // the three nursery babies are each their own little character, and it shows in where they go: one roams the whole tank, one keeps to
+  // the plants, one stays close to its father and the others (see Fish3D.pickHover). What each did is kept in f.bl, so a drill can measure it.
+  babyTick(dt) {
+    const kids = this.list.filter((f) => f.nursery && !f.dead); if (!kids.length) return;
+    const plants = this.plantSpots?.length ? this.plantSpots : (this.spots?.() ?? []).filter((q) => PLANTS.has(q.type));
+    for (const f of kids) {
+      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0 }), dad = this.byId.get(f.rec?.father), fam = [dad, ...kids.filter((k) => k !== f)].filter(Boolean);
+      L.secs += dt; if (f.lp) L.dist += f.lp.distanceTo(f.pos); (f.lp ||= new THREE.Vector3()).copy(f.pos);
+      if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9)) L.plant += dt;
+      if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt;
+      f.kin = () => fam;      // (who its family is, for where it swims: see Fish3D.pickHover)
+    }
+  }
   seahorseTick(dt, t) {
     if (this.isLead && !this.isLead()) return;      // only the lead phone decides when two seahorses greet; the other phones are shown it in its snapshots
     this.shT = (this.shT ?? 30 + this.rng() * 40) - dt; if (this.shT > 0) return;
@@ -590,7 +603,7 @@ export class Fishes {
   update(dt, t) {
     if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now); }      // a male's brood pouch, as full as his pregnancy says
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
-    this.socialTick(dt); this.seahorseTick(dt, t); this.octoAware(dt); this.haulTick(dt, t);
+    this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < (k.life ?? 4)) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     if (this.thrown?.length) this.thrown = this.thrown.filter((k) => { k.age += dt; k.vy -= 4.5 * dt; k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.position.z += k.vz * dt; k.m.rotation.x += 7 * dt; if (k.m.position.y <= 0.1 && k.age > 0.2) { this.scene.remove(k.m); this.looseShell({ x: Math.max(-4, Math.min(4, k.m.position.x)) - 0.45, z: Math.max(0.3, Math.min(2.6, k.m.position.z)) - 0.5 }); return false; } return true; });      // a flung shell flies, lands and lies there
@@ -644,6 +657,7 @@ export class Fishes {
         let best = null, bs = 1e9;
         for (const c of this.flakes) {
           if (c.eaten || c.sucked || (f.id === 'cory' && c.pos.y > 0.7) || (shy && c.age < 1.8)) continue;
+          if (f.nursery && (c.kind !== 'flakes' && c.kind !== 'mysis' || f.pos.distanceTo(c.pos) > 5)) continue;      // a baby goes only for the tiniest bits, and only near it
           if (c.watchedBy && c.watchedBy !== f && c.watchedBy.prey === c && c.watchD < 1.2) continue;      // right in front of a seahorse that is watching it: fair's fair
           if (c.kind === 'mysis' && f.sk !== 'seahorse' && (c.freeT ?? 0) < 8) continue;      // the other fish are slow to notice the seahorses' shrimp: once down among the plants it drifts there a while on the current, and only then do the others come for what is left
           if (W.push) { o.set(0, 0, 0); if (W.push(c.pos, 0.25, o)) continue; }
@@ -659,7 +673,7 @@ export class Fishes {
         f.target.copy(fl.pos); f.retarget = 0.3;
         // bite test along the path the mouth travelled this frame (so a fast fish cannot swim through food), with depth counting half
         const m = f.mouth(), a = f.pm ?? m, ab = o.copy(m).sub(a), len2 = ab.lengthSq(), tt = len2 > 1e-6 ? Math.max(0, Math.min(1, (fl.pos.clone().sub(a).dot(ab)) / len2)) : 1;
-        const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = f.sk === 'seahorse' ? 0.3 : Math.max(0.45, f.radius * 0.5);
+        const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = f.nursery ? 0.22 : f.sk === 'seahorse' ? 0.3 : Math.max(0.45, f.radius * 0.5);
         f.pm = m.clone(); f.nibble = Math.hypot(cx, cy, cz);
         if (f.nibble < reach) { fl.eaten = true; f.flake = null; f.pm = null; f.gulp = 0.35; if (f.sk === 'seahorse') { f.meals = (f.meals ?? 0) + 1; f.strikeT = 0.16; f.strikeSeq = (f.strikeSeq ?? 0) + 1; } this.onEat?.(f); }
       } else f.pm = null;

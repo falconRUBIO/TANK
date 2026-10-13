@@ -43,6 +43,15 @@ ck('he gives birth on his due time: the pregnancy ends, the nursery begins with 
 ck('this phone sees it happen: he lets go and the brood comes out of his pouch', (b1.birthT > 0 || b1.sawBirth) && !b1.held && b2.fry === b1.nursery.n - 3 && b2.out === b2.fry, { birthT: b1.birthT, saw: b1.sawBirth, held: b1.held, fry: b2.fry, out: b2.out });
 ck('the three tracked babies swim in the tank, tiny', b1.tracked.length === 3 && b1.tracked.every((k) => k < 0.4), b1.tracked);
 ck('the birth is written once, and never happens twice', b1.births === 1 && b2.births === 1 && b2.id === b1.nursery.id, { first: b1.births, later: b2.births });
+// the babies eat: food dropped near them, and the tracked ones catch the tiniest bits themselves (stepped quickly, without drawing)
+const fed = await p.evaluate(() => { const F = window.__fishes, kids = F.list.filter((f) => f.nursery); for (const k of kids) k.meals = 0;
+  const drops = []; for (let i = 0; i < 6; i++) for (const k of kids) drops.push([i * 200, k.pos.x]); window.__sim(1400, 1 / 30, drops);
+  return kids.map((k) => ({ role: k.role, meals: k.meals ?? 0 })); });
+ck('the tracked babies catch food themselves', fed.filter((k) => k.meals > 0).length >= 2, fed);
+const roles = await p.evaluate(() => { const F = window.__fishes, kids = F.list.filter((f) => f.nursery); for (const k of kids) k.bl = null; window.__sim(9000, 1 / 30);
+  return Object.fromEntries(kids.map((k) => [k.role, { dist: +k.bl.dist.toFixed(1), plant: +(k.bl.plant / k.bl.secs).toFixed(2), fam: +(k.bl.fam / k.bl.secs).toFixed(2) }])); });
+console.log('  roles', JSON.stringify(roles));
+ck('three different characters, from what they do: the explorer roams furthest, the plant-lover stays by the plants, the social one by its family', roles.explore.dist > roles.plants.dist && roles.explore.dist > roles.social.dist && roles.plants.plant > roles.explore.plant && roles.plants.plant > roles.social.plant && roles.social.fam > roles.explore.fam && roles.social.fam > roles.plants.fam, roles);
 // the choice: when they are ready it comes up by itself, a baby is picked, confirmed, and kept
 await p.evaluate(() => { const s = window.__game.state; s.nursery.readyAt = Date.now() + 1500; window.__game.emit('state'); });
 for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/READY/.test(t)) break; if (t) await p.click('#modal.on #mok').catch(() => {}); }      // (a daily gift may be showing first)
@@ -55,11 +64,18 @@ ck('choosing asks for a confirmation first', /KEEP/.test(conf.title ?? ''), conf
 const pick = await p.evaluate(() => window.__game.state.nursery?.cands[1]);
 await p.click('#mok'); await p.waitForTimeout(3000);
 const kept = await p.evaluate((id) => { const s = window.__game.state, f = s.fish.find((x) => x.id === id), F = window.__fishes; return { f: f && { name: f.name, bornHere: f.bornHere, birthDate: !!f.birthDate, parents: (f.parents ?? []).map((q) => q.name), stage: f.stage }, nursery: s.nursery, seahorses: s.fish.filter((x) => x.species === 'seahorse').length, onScreen: F.list.filter((x) => x.nursery).length, same: !!F.byId.get(id), fry: window.__nursery?.mesh?.count ?? -1 }; }, pick.id);
-ck('one baby is kept, with its own name, parents and birth date; the others leave', kept.f && kept.f.name === pick.name && kept.f.bornHere && kept.f.birthDate && kept.f.parents.join() === 'Sunny,Pearl' && kept.nursery === null && kept.seahorses === 3 && kept.onScreen === 0 && kept.same && kept.fry === 0, kept);
+const dep = await p.evaluate(() => { const N = window.__nursery, out = { departed: window.__departed ?? null, going: !!N.going, count: N.mesh.count, ys: [] }; let t = 0;
+  while (N.going && t < 10) { N.update(0.05, t, window.__game.state, window.__fishes); t += 0.05; if (Math.abs(t % 1) < 0.05) out.ys.push(+(N.fry.reduce((a, f) => a + f.pos.y, 0) / Math.max(1, N.fry.length)).toFixed(1)); }
+  out.secs = +t.toFixed(1); out.after = N.mesh.count; return out; });
+ck('the others gather, swim up together and fade into the water, briefly', dep.departed && dep.going && dep.count > 0 && dep.after === 0 && dep.secs < 6 && dep.ys.at(-1) > dep.ys[0], dep);
+ck('one baby is kept, with its own name, parents and birth date; the others leave', kept.f && kept.f.name === pick.name && kept.f.bornHere && kept.f.birthDate && kept.f.parents.join() === 'Sunny,Pearl' && kept.nursery === null && kept.seahorses === 3 && kept.onScreen === 0 && kept.same && dep.after === 0, kept);
 await p.evaluate((id) => { window.__game.profTab = 'over'; window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(id))); }, pick.id); await p.waitForTimeout(600);
 await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
 const prof = await p.evaluate(() => document.querySelector('#card .tpane')?.innerText ?? '');
 await p.screenshot({ path: `${OUT}/6_profile.png` });
 ck('its profile says it was born here, with its mother, father and birth date', /BORN IN YOUR AQUARIUM/.test(prof) && /Mother: Pearl/.test(prof) && /Father: Sunny/.test(prof) && /Birth date/.test(prof), prof.slice(0, 160).replace(/\s+/g, ' '));
+await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(3000);
+const again = await p.evaluate(() => ({ departed: window.__departed ?? null, going: !!window.__nursery?.going, kept: window.__game.state.fish.filter((f) => f.bornHere).length }));
+ck('after a reload it does not play again, and still one baby', !again.departed && !again.going && again.kept === 1, again);
 ck('no page errors', errors.length === 0, errors.slice(0, 5));
 console.log(fails ? `${fails} failed` : 'Seahorse family checks passed'); await b.close(); process.exit(fails ? 1 : 0);

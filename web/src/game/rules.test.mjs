@@ -536,6 +536,18 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     const n0 = t.fish.length, N = t.nursery, r = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[0].id }, { now: due + 6 * D });
     assert.equal(r.reason, 'TANK_FULL'); assert.equal(t.fish.length, n0); assert.ok(t.nursery, 'still waiting');
     t.fish.splice(t.fish.findIndex((f) => f.species === 'neon'), 1); assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[1].id }, { now: due + 7 * D }).ok, true); });
+  ok('family polish: an expecting father cannot be sold; the three babies are three different characters; feeding is remembered for the nursery; the choice records who swam off, once', () => {
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg);
+    const sh = t.shells, r = R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: m.preg.start + H }); assert.equal(r.reason, 'EXPECTING'); assert.ok(t.fish.some((f) => f.id === 'm')); assert.equal(t.shells, sh);
+    const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H); const N = t.nursery;
+    assert.deepEqual(N.cands.map((c) => c.role), ['explore', 'plants', 'social']); assert.deepEqual(N.cands.map((c) => c.traits[0]), ['Curious', 'Calm', 'Social']);
+    assert.equal(R.applyAction(t, { t: 'sellFish', id: N.cands[0].id }, { now: due + 2 * H }).reason, 'NOT_FOUND', 'a nursery baby is not in the shop list');
+    t.hunger = 0.5; t.shells = 50; R.applyAction(t, { t: 'feed', food: 'flakes' }, { now: due + 2 * H }); assert.equal(N.fed, 1);
+    live(t, due + 3 * H, due + 5 * D + H); assert.equal(R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: due + 5 * D + H }).ok, true, 'after the birth he can go to a new home again');
+    t.fish.push(R.ensureFish({ id: 'z', name: 'Z', species: 'neon', seed: 2, born: -20 * D, stage: 'adult', traits: [] }));
+    assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[2].id }, { now: due + 5 * D + 2 * H }).ok, true);
+    assert.deepEqual(t.lastDepart.left, [N.cands[0].id, N.cands[1].id]); assert.equal(t.lastDepart.kept, N.cands[2].id); assert.equal(t.lastDepart.nursery, N.id);
+    const back = JSON.parse(JSON.stringify(t)); R.norm(back, due + 6 * D); assert.equal(back.lastDepart.nursery, N.id); });
   ok('the pouch fills through the pregnancy and goes back down after the birth; seahorses no longer lay eggs; an old save without any of this still loads', () => {
     const p = { preg: { start: 0, due: 7 * D } }; assert.equal(R.broodOf(p, 0), 0); assert.ok(Math.abs(R.broodOf(p, 3.5 * D) - 0.5) < 1e-9); assert.equal(R.broodOf(p, 9 * D), 1);
     assert.ok(R.broodOf({ lastBirth: 0 }, 1 * D) > 0 && R.broodOf({ lastBirth: 0 }, 3 * D) === 0);

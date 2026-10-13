@@ -830,7 +830,12 @@ export class Fish3D {
   }
   pickHover(rng) {
     const spots = this.getSpots?.() ?? [], b = this.band;
-    if (this.sp.tail && !this.seeking && this.pickHold(rng, spots, !!this.sleepy)) return;
+    // a nursery baby shows its own character in where it goes next: the explorer seldom settles and heads off anywhere, the plant-lover
+    // goes back to a stem whenever it can, the social one swims over to its father or a brother or sister
+    const role = this.nursery ? this.role : null, kin = role === 'social' ? this.kin?.() : null;
+    if (kin?.length && rng() < 0.75) { const o = kin[(rng() * kin.length) | 0]; this.target.set(o.pos.x + (rng() - 0.5) * 0.7, o.pos.y + (rng() - 0.5) * 0.4, o.pos.z + (rng() - 0.5) * 0.4); this.idle = 1 + rng() * 2; this.retarget = 3 + rng() * 2; return; }
+    if (role === 'explore' && rng() < 0.8) { this.target.set(-4 + rng() * 8, b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 0.5 + rng(); this.retarget = 4 + rng() * 3; return; }
+    if (this.sp.tail && !this.seeking && (role !== 'explore') && this.pickHold(rng, spots, !!this.sleepy || role === 'plants')) return;
     // at the sand's own height under the thing it rests beside, not a fixed height above the floor
     if (spots.length && rng() < 0.6) { const s = spots[(rng() * spots.length) | 0], y = Math.max((s.y ?? 0) + 0.8, (s.y ?? 0) + s.h * (0.3 + rng() * 0.4) + 0.4); this.target.set(s.x + (rng() - 0.5) * 0.5, Math.min(Fish3D.topY - 1, y), s.z + 0.55); this.idle = 7 + rng() * 9; this.retarget = this.idle + 3; return; }   // hold on and rest
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 1.5 + rng() * 3; this.retarget = 4 + rng() * 4;

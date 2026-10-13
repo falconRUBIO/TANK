@@ -14,15 +14,15 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vect
 export class Nursery {
   constructor(scene) {
     this.scene = scene;
-    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), MAX * CELLS.length);
+    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), (MAX + 3) * CELLS.length);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.mesh.count = 0; this.mesh.frustumCulled = false; scene.add(this.mesh);
-    this.fry = []; this.id = null;
+    this.fry = []; this.id = null; this.track = new Map(); this.going = null;
   }
   played(id) { try { return localStorage.getItem('birth:' + id) === '1'; } catch { return false; } }
   markPlayed(id) { try { localStorage.setItem('birth:' + id, '1'); } catch { /* a private window: it may play again, which is harmless */ } }
   // the brood this tank has now (from the tank record), and whether this phone should see it being born
   set(state, fishes) {
-    const N = state?.nursery; if (!N) { if (this.fry.length) { this.fry = []; this.mesh.count = 0; } this.id = null; return; }
+    const N = state?.nursery; if (!N) { this.depart(state); if (this.fry.length && !this.going) { this.fry = []; this.mesh.count = 0; } this.id = null; return; }
     if (this.id === N.id) return; this.id = N.id;
     const n = Math.max(0, Math.min(MAX, (N.n ?? 12) - 3)), dad = fishes.byId.get(N.father), fresh = Date.now() - N.born < 10 * 60e3 && !this.played(N.id);
     let h = 0; for (const ch of N.id) h = (h * 31 + ch.charCodeAt(0)) | 0; const rnd = () => ((h = (h * 1103515245 + 12345) | 0) >>> 8) / 16777216;
@@ -36,8 +36,34 @@ export class Nursery {
     this.mesh.count = n * CELLS.length;
     let j = 0; for (const f of this.fry) for (const c of CELLS) this.mesh.setColorAt(j++, f.col[c[2]]); if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   }
+  // a baby has been chosen: the others gather, swim up together and fade into the water. Every phone that was watching the nursery sees it
+  // once (the choice is in the tank record with its time, so a phone that opens the game later, or reloads, does not see it again)
+  depart(state) {
+    const D = state?.lastDepart; if (!D || this.going || this.id !== D.nursery || Date.now() - D.at > 90e3 || this.played('left:' + D.nursery)) return;
+    this.markPlayed('left:' + D.nursery);
+    for (const id of D.left ?? []) { const k = this.track.get(id); if (k) this.fry.push({ pos: k.pos.clone(), vel: new THREE.Vector3(), head: k.head, ph: Math.random() * 6.28, out: true, big: k.size / CELL, col: k.col }); }
+    if (!this.fry.length) return;
+    const c = new THREE.Vector3(); for (const f of this.fry) c.add(f.pos); c.divideScalar(this.fry.length); c.y = Math.max(c.y, 3);
+    this.going = { t: 0, c }; if (typeof window !== 'undefined') window.__departed = D.nursery;
+    this.mesh.count = this.fry.length * CELLS.length; let j = 0; for (const f of this.fry) for (const q of CELLS) this.mesh.setColorAt(j++, f.col[q[2]]); if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+  goingUpdate(dt, t) {
+    const G = this.going; G.t += dt; let j = 0;
+    for (const f of this.fry) {      // about a second and a half to gather, then up and away, fading as they go
+      const goal = G.t < 1.5 ? _p.copy(G.c).add(_s.set(Math.sin(f.ph + t) * 0.4, Math.cos(f.ph * 2 + t) * 0.3, 0)) : _p.set(G.c.x + Math.sin(f.ph) * 0.6, 20, G.c.z);
+      const to = _p.sub(f.pos), d = to.length() || 1; to.multiplyScalar((G.t < 1.5 ? 0.9 : 1.3) * Math.min(1, d) / d);
+      f.vel.lerp(to, Math.min(1, dt * 2)); f.pos.addScaledVector(f.vel, dt); f.head += dt * 0.5;
+      const size = CELL * (f.big ?? 2.07) * Math.max(0, 1 - Math.max(0, G.t - 2) / 2.5);
+      _q.setFromAxisAngle(_up, f.head); _s.set(size, size, size);
+      for (const c of CELLS) { _p.set(c[0] * size, c[1] * size, 0).applyQuaternion(_q).add(f.pos); _m.compose(_p, _q, _s); this.mesh.setMatrixAt(j++, _m); }
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (G.t > 4.6) { this.going = null; this.fry = []; this.mesh.count = 0; }
+  }
   update(dt, t, state, fishes) {
+    if (this.going) return this.goingUpdate(dt, t);
     const N = state?.nursery; if (!N || !this.fry.length) return;
+    for (const f of fishes.list) if (f.nursery && !f.dead) this.track.set(f.fid, { pos: f.pos.clone(), head: f.heading ?? 0, size: CELL * (1 + 1.07 * Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born)))), col: f.nurseryCol ?? (this.fry[0]?.col) });
     const nk = Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), size = CELL * (1 + 1.07 * nk), dad = fishes.byId.get(N.father);
     const plants = (fishes.plantSpots?.length ? fishes.plantSpots : (fishes.spots?.() ?? []).filter((q) => ['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone'].includes(q.type)));
     const food = fishes.flakes ?? [];
