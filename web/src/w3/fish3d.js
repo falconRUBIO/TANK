@@ -191,12 +191,12 @@ export class Fish3D {
   resolve(others) {
     const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
     // a fish is solid down its length; an octopus only in its mantle and head (its arms wrap round things, they do not hold it off them), and one frame can only ever nudge it, never throw it
-    const jet = this.species.move === 'jet', sea = !!this.sp?.tail, offs = jet ? [-0.3, 0, 0.3] : sea ? [-0.85, -0.55, -0.25, 0.05, 0.35] : [-0.8, -0.4, 0, 0.4, 0.8]; if (jet) _p2.copy(this.pos);
-    // a seahorse is upright and slim: it is felt for from the tail trailing below it up to its head and snout. Swimming, it keeps off leaves too, but not on the last stretch
+    const jet = this.species.move === 'jet', sea = !!this.sp?.tail, offs = jet ? [-0.3, 0, 0.3] : sea ? [-0.55, -0.25, 0.05, 0.35] : [-0.8, -0.4, 0, 0.4, 0.8]; if (jet) _p2.copy(this.pos);
+    // a seahorse is upright and slim: it is felt for from its tail up to its head and snout. Swimming, it keeps off leaves too, but not on the last stretch
     // onto its own holdfast, nor while it holds on, greets or holds tails (its grip was found clear of every leaf already)
     const Hf = this.holdfast, seaSoft = sea && !this.link && !this.greet && !(Hf && (Hf.on || Hf.settle || this.pos.distanceTo(this.target) < 1.0));
     if (seaSoft && W.soft?.at) { const v = Math.hypot(this.vel.x, this.vel.z);      // leaves just ahead: it rises over them rather than pushing through
-      if (v > 0.02) { const ax = this.pos.x + (this.vel.x / v) * 0.5, az = this.pos.z + (this.vel.z / v) * 0.5; if ([-0.8, -0.4, 0, 0.35].some((k) => W.soft.at(ax, this.pos.y + R * k, az))) this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } }
+      if (v > 0.02) { const ax = this.pos.x + (this.vel.x / v) * 0.5, az = this.pos.z + (this.vel.z / v) * 0.5; if ([-0.4, 0, 0.35].some((k) => W.soft.at(ax, this.pos.y + R * k, az))) this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } }
     if (W.push && !this.homing) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
@@ -737,7 +737,11 @@ export class Fish3D {
         // points the snout at the shrimp is worked out from where the shrimp is, seen from the grip in the plane it faces (within how far it can lean)
         { const gl = this.gripLocalFor(this.gripStem ?? SEAHORSE_STEM, this.gripLean ?? SEAHORSE_LEAN), va = SEAHORSE_SNOUT.x - gl[0], vb = SEAHORSE_SNOUT.y - gl[1];
           const along = (p.x - H.x) * Math.cos(this.heading) - (p.z - H.z) * Math.sin(this.heading), up = p.y - H.y;
-          let pk = Math.atan2(up, along) - Math.atan2(vb, va); pk = Math.atan2(Math.sin(pk), Math.cos(pk)); aimP = Math.max(-0.38, Math.min(0.3, pk - (this.gripLean ?? SEAHORSE_LEAN))); }
+          let pk = Math.atan2(up, along) - Math.atan2(vb, va); pk = Math.atan2(Math.sin(pk), Math.cos(pk)); aimP = Math.max(-0.38, Math.min(0.3, pk - (this.gripLean ?? SEAHORSE_LEAN)));
+          // never into a leaf or a decoration: where its snout would be at that lean is checked, and it leans less if it would touch something
+          const Wd = Fish3D.world, sc = this.scale, ch = Math.cos(this.heading), shh = Math.sin(this.heading), L0 = this.gripLean ?? SEAHORSE_LEAN;
+          for (let k = 0; k < 3 && aimP; k++) { const pp = L0 + aimP, aa = (va * Math.cos(pp) - vb * Math.sin(pp)) * sc, bb = (va * Math.sin(pp) + vb * Math.cos(pp)) * sc, sx = H.x + ch * aa, sy = H.y + bb, sz = H.z - shh * aa;
+            if (!(Wd.at?.(sx, sy, sz) || Wd.soft?.at?.(sx, sy, sz))) break; aimP *= 0.5; } }
         if (!this.strikeT && this.preyT > 0.25 && p.distanceTo(m) < SEA_REACH) {      // within reach of the snout: a very quick strike, sucking it in
           this.strikeT = SEA_STRIKE; this.foodWait = 0; this.strikeSeq = (this.strikeSeq ?? 0) + 1; this.prey.sucked = this; this.prey.suckT = 0; this.aimT = 0.2; this.thought = 'Struck! Sucked in a shrimp in a flash.'; this.snickSaid = 3; }
       }
