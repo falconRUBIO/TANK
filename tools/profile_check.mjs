@@ -43,5 +43,17 @@ for (const [id, nm] of [['h1', 'seahorse'], ['o1', 'octopus'], ['g1', 'fish']]) 
   }
   await p.evaluate(() => window.__focus(-1)).catch(() => {}); await p.waitForTimeout(300);
 }
+// habits on the Personality tab: from a record with known counts, exactly those numbers; nothing for a fish with no history
+{ const hb = await p.evaluate(async () => { const g = window.__game, s = g.state, h = s.fish.find((x) => x.id === 'h1'), F = window.__fishes, f = F.byId.get('h1');
+    h.log = { ...(h.log ?? {}), hitch: { p1: [900, 35, -2.6, 2.3], p2: [200, 4, 1.2, 2.4] }, fav: 'p1', meals: 12, strikes: 8, greets: 3, links: 2, inspects: 4 };
+    for (const k of ['meals', 'strikesN', 'greets', 'linksN', 'inspects']) f[k] = 0; f.memDelta = null; f.dw && (f.dw.log = null);      // nothing new since the last report, so only the record counts
+    const g1 = s.fish.find((x) => x.id === 'g1'); if (g1) g1.log = {};
+    const read = async (id) => { g.profTab = 'pers'; window.__focus(F.list.indexOf(F.byId.get(id))); await new Promise((r) => setTimeout(r, 500)); document.getElementById('fishpill')?.click(); await new Promise((r) => setTimeout(r, 900));
+      document.querySelector('#card .tb[data-tab="pers"]')?.click(); await new Promise((r) => setTimeout(r, 600)); const L = [...document.querySelectorAll('#card .tpane ul.dyk li')].map((x) => x.innerText); window.__focus(-1); await new Promise((r) => setTimeout(r, 300)); return L; };
+    return { sea: await read('h1'), fish: await read('g1') }; });
+  console.log('  habits:', JSON.stringify(hb));
+  const t = hb.sea.join(' | ');
+  ck('habits: the seahorse\'s Personality tab says what its record says, with the real numbers', /same sea grass 34 times/i.test(t) && /4 so far/.test(t) && /8 of 12 meals/.test(t) && /3 times/.test(t), t);
+  ck('habits: nothing is said about a fish with no history', hb.fish.length === 0, hb.fish.join(' | ')); }
 ck('no page errors', !errors.length, errors.slice(0, 3).join(' | '));
 console.log(fails ? `${fails} failed` : 'Profile checks passed'); await b.close(); process.exit(fails ? 1 : 0);
