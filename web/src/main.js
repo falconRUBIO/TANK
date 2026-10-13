@@ -114,6 +114,14 @@ function renderFoodbar() {
   bar.querySelector('[data-swap]').onclick = () => { if (!many) return; sfx('tap'); let i = ks.indexOf(k); for (let n = 0; n < ks.length; n++) { i = (i + 1) % ks.length; if ((game.state.shells ?? 0) >= FOODS[ks[i]].price) break; } game.feedFood = ks[i]; if (ks[i] === 'crab') game.feedFor = myOctos()[0]?.id ?? null; if (ks[i] === 'mysis') game.feedFor = mySeas()[0]?.id ?? null; feedIdle = 0; renderFoodbar(); };
 }
 function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => (f.species === 'octopus' || f.species === 'seahorse') && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); }
+// chosen in the Care menu: the menu closes and the food goes straight in, above the animal it is for (or the fish), where you can see it;
+// the bar stays for a second or third drop if you want one
+function feedGo() {
+  startFeed(); if (!feedMode) return;
+  const f = game.feedFor && fishes.byId.get(game.feedFor), fish = fishes.list.filter((x) => !x.dead && !x.visitor && x.species?.move !== 'jet' && x.sk !== 'seahorse');
+  const x = f ? f.pos.x : fish.length ? fish.reduce((a, o) => a + o.pos.x, 0) / fish.length : 0;
+  dropFood(Math.max(-3.6, Math.min(3.6, x)));
+}
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : food === 'mysis' ? mySeas()[0] : null, own = food === 'crab' || food === 'mysis';
@@ -968,7 +976,7 @@ async function boot() {
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
-    act: (a) => ({ feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
+    act: (a) => ({ feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },

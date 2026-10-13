@@ -29,8 +29,8 @@ await p.evaluate(() => document.querySelector('#sheet .crow[data-act="feeddrawer
 ck('tapping the Feed row folds the food list away and back', closed && reopened, { closed, reopened });
 // the Feed button goes straight to feeding the hungriest (and does not also toggle the row)
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="feeddrawer"] .cbtn').click()); await p.waitForTimeout(500);
-const feeding = await p.evaluate(() => ({ sheet: document.getElementById('sheet').classList.contains('on'), bar: document.getElementById('foodbar')?.classList.contains('on'), food: window.__game.feedFood, text: document.getElementById('foodbar')?.textContent?.slice(0, 60) }));
-ck('the Feed button closes Care and starts feeding the hungriest animal with its food', !feeding.sheet && feeding.bar && feeding.food === 'crab', feeding);
+await p.waitForTimeout(1200); const feeding = await p.evaluate(() => ({ sheet: document.getElementById('sheet').classList.contains('on'), food: window.__game.feedFood, inky: +(window.__game.state.fish.find((f) => f.id === 'o1')?.hunger ?? 1).toFixed(2) }));
+ck('the Feed button closes Care and drops the crab straight in for the hungriest animal, no tap on the water needed', !feeding.sheet && feeding.food === 'crab' && feeding.inky < 0.5, feeding);
 await p.evaluate(() => document.querySelector('#foodbar [data-done]')?.click());
 // Wipe opens the glass cleaning; Change starts the water change
 await open(); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="clean"] .cbtn').click()); await p.waitForTimeout(600);
