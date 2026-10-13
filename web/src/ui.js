@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE, driftBlame, giftReady } from './game/rules.js';
+import { CRAB_PRICE, driftBlame, giftReady, sexOf } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -200,7 +200,7 @@ export function initUI({ game, social, cb }) {
     const s = S(), me = game.you?.userId, fish = s.fish.filter((f) => !f.dead), rank = (f) => (f.species === 'octopus' ? 0 : 2) + (f.owner === me ? 0 : 1);
     if (!fish.length) return '';
     const row = (f) => { const d = SPECIES_DEF[f.species], mine = canSell(f, me, members()), who = f.owner && f.owner !== me && game.shared ? `${esc(f.ownerName ?? 'a friend')}'s` : f.owner === me && game.shared ? 'yours' : '';
-      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
+      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)}${f.species === 'seahorse' ? (sexOf(f) === 'm' ? ' ♂ male' : ' ♀ female') : ''} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
   const bookHtml = () => {

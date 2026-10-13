@@ -549,6 +549,9 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[2].id }, { now: due + 5 * D + 2 * H }).ok, true);
     assert.deepEqual(t.lastDepart.left, [N.cands[0].id, N.cands[1].id]); assert.equal(t.lastDepart.kept, N.cands[2].id); assert.equal(t.lastDepart.nursery, N.id);
     const back = JSON.parse(JSON.stringify(t)); R.norm(back, due + 6 * D); assert.equal(back.lastDepart.nursery, N.id); });
+  ok('buying a seahorse: the caretaker chooses male or female, and it arrives so', () => {
+    for (const sex of ['m', 'f']) { const t = R.newWorld(0, 3, { empty: true }); t.level = 8; t.shells = 500; t.flags.tut = 5; const r = R.applyAction(t, { t: 'buyFish', species: 'seahorse', name: 'Sal', seed: 4, sex }, { now: 1000 }); assert.equal(r.ok, true, r.reason); R.advance(t, 1000 + 864e5); const f = t.fish.find((x) => x.species === 'seahorse'); assert.ok(f, 'arrived'); assert.equal(f.sex, sex); assert.equal(R.sexOf(f), sex); }
+    const t = R.newWorld(0, 3, { empty: true }); t.level = 8; t.shells = 500; t.flags.tut = 5; R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'G', seed: 4, sex: 'f' }, { now: 1000 }); R.advance(t, 1000 + 864e5); assert.equal(t.fish[0].sex, undefined, 'only seahorses'); });
   ok('the pouch fills through the pregnancy and goes back down after the birth; seahorses no longer lay eggs; an old save without any of this still loads', () => {
     const p = { preg: { start: 0, due: 7 * D } }; assert.equal(R.broodOf(p, 0), 0); assert.ok(Math.abs(R.broodOf(p, 3.5 * D) - 0.5) < 1e-9); assert.equal(R.broodOf(p, 9 * D), 1);
     assert.ok(R.broodOf({ lastBirth: 0 }, 1 * D) > 0 && R.broodOf({ lastBirth: 0 }, 3 * D) === 0);

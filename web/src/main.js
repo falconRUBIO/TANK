@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { babyRole, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { babyRole, sexOf, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -206,8 +206,13 @@ async function adopt(species) {
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
   { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'GOOD TO KNOW', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
+  let sex; if (species === 'seahorse') {      // a seahorse is a male or a female: the caretaker chooses (pairs are a male and a female; the male carries the young)
+    const hs = s.fish.filter((f) => f.species === 'seahorse' && !f.dead), m = hs.filter((f) => sexOf(f) === 'm').length, w = hs.length - m;
+    sex = await ui.choose({ title: 'MALE OR FEMALE?', text: `Seahorses pair as a male and a female, and the male carries the young.${hs.length ? ` In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}.` : ''}`, options: [{ label: '♂ Male', value: 'm' }, { label: '♀ Female', value: 'f' }], cancel: 'Not now' });
+    if (!sex) return;
+  }
   let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'WHO IS IT FOR?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
-  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to });
+  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(sex ? { sex } : {}) });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
 }
