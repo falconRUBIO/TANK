@@ -224,12 +224,13 @@ if (run('perf')) {
     const hs = F.list.filter((f) => f.sp?.tail); let worst = 0, sum = 0, n = 0;
     await window.__step(120, () => { const t0 = performance.now(); for (const h of hs) h.update(0.05, Math.random, F.list); const ms = performance.now() - t0; worst = Math.max(worst, ms); sum += ms; n++; });
     // a decoration moved: its grips are searched again, in the background
-    const g = window.__game; g.state.decor.find((d) => d.id === 'p1').x = -2.0; g.emit('state'); await new Promise((q) => setTimeout(q, 600)); const q0 = G.gripQueue(); await window.__step(10);
-    return { maxGripFrameMs: +G.gripStats.maxFrameMs.toFixed(2), gripWorkMs: +G.gripStats.workMs.toFixed(1), gripFrames: G.gripStats.frames, seahorseUpdateAvgMs: +(sum / n).toFixed(3), seahorseUpdateWorstMs: +worst.toFixed(2), queuedAfterMove: q0, queueAfter: G.gripQueue() };
+    const g = window.__game, before = G.gripsFor(window.__decor.spots().find((x) => x.id === 'p1'), hs[0]); g.state.decor.find((d) => d.id === 'p1').x = -2.0; g.emit('state'); await new Promise((q) => setTimeout(q, 600));
+    const moved = G.gripsFor(window.__decor.spots().find((x) => x.id === 'p1'), hs[0]), q0 = moved !== before ? 1 : 0; await window.__step(10); const movedReady = moved.status === 'ready' && moved.grips.length > 0;
+    return { maxGripFrameMs: +G.gripStats.maxFrameMs.toFixed(2), gripWorkMs: +G.gripStats.workMs.toFixed(1), gripFrames: G.gripStats.frames, seahorseUpdateAvgMs: +(sum / n).toFixed(3), seahorseUpdateWorstMs: +worst.toFixed(2), queuedAfterMove: q0, movedReady, queueAfter: G.gripQueue() };
   });
   console.log('    ', JSON.stringify(r));
   ck('20. the grip search stays inside its per-frame budget (no long frames from it)', r.maxGripFrameMs < 6, r);
-  ck('    moving a decoration queues a new search for it, which finishes in the background', r.queuedAfterMove >= 1 && r.queueAfter === 0, r);
+  ck('    moving a decoration queues a new search for it, which finishes in the background', r.queuedAfterMove >= 1 && r.movedReady && r.queueAfter === 0, r);
 }
 
 ck('no page errors', errors.length === 0, errors.slice(0, 5));
