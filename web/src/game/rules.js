@@ -69,7 +69,7 @@ export const HR = 0.3 / (CARE.meal * 3600), WR = 0.29 / (CARE.water * 3600), GR 
 export const OHR = OCTO_DUE / (CARE.crab * 3600);                                 // an octopus has its own hunger, and only its own caretaker can feed it (a crab)
 // how long until each part of the care is due, in milliseconds (0 when it is due now); a fish's own octopus hunger if one is given
 export const dueIn = (t, what, f = null) => {
-  const left = what === 'meal' ? (0.3 - t.hunger) / HR : what === 'crab' ? (OCTO_DUE - octoHunger(f)) / OHR : what === 'water' ? (t.water - 0.7) / (WR * (1 + 0.5 * Math.min(2, t.floaters?.length ?? 0))) : what === 'glass' ? (0.3 - t.glass) / GR : 0;
+  const left = what === 'meal' ? (0.3 - t.hunger) / HR : what === 'crab' || what === 'mysis' ? (OCTO_DUE - ownHunger(f)) / OHR : what === 'water' ? (t.water - 0.7) / (WR * (1 + 0.5 * Math.min(2, t.floaters?.length ?? 0))) : what === 'glass' ? (0.3 - t.glass) / GR : 0;
   return Number.isFinite(left) ? Math.max(0, Math.round(left * 1000)) : 0;
 };                                        // an octopus has its own hunger: it goes from fed to starving in about eight hours, and only its own caretaker can feed it (a crab)
 export const isOcto = (f) => f?.species === 'octopus';
@@ -81,8 +81,14 @@ export const founderOf = (members) => (members?.length ? members.reduce((a, m) =
 // who may sell a fish: its own caretaker, or anyone when it has none (or its caretaker has left the crew), and the tank's first caretaker
 // may sell any fish, so a tank is never stuck with the octopus of someone who quit; alone, you may sell any
 export const canSell = (f, uid, members = null) => !!f && !f.dead && (!members || !f.owner || f.owner === uid || !members.some((m) => m.id === f.owner) || founderOf(members) === uid);
-export const octoHunger = (f) => (isOcto(f) ? Math.max(0, Math.min(1, f.hunger ?? 0.3)) : 0);
-export const canFeedOcto = (f, uid, shared = true) => isOcto(f) && !f.dead && (!shared || !f.owner || f.owner === uid);
+// an octopus and a seahorse each have their own hunger, and only their own caretaker feeds them (an octopus a crab, a seahorse mysis shrimp);
+// one with no caretaker (or alone in a solo tank) anyone may feed. Every other fish eats from the tank's shared food.
+export const ownFood = (f) => (isOcto(f) ? 'crab' : f?.species === 'seahorse' ? 'mysis' : null);
+export const ownHungry = (f) => !!ownFood(f);
+export const ownHunger = (f) => (ownHungry(f) ? Math.max(0, Math.min(1, f.hunger ?? 0.3)) : 0);
+export const canFeedOwn = (f, uid, shared = true) => ownHungry(f) && !f.dead && (!shared || !f.owner || f.owner === uid);
+export const octoHunger = (f) => (isOcto(f) ? ownHunger(f) : 0);
+export const canFeedOcto = (f, uid, shared = true) => isOcto(f) && canFeedOwn(f, uid, shared);
 const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
@@ -122,7 +128,7 @@ export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].tra
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
 const APPETITE = { Greedy: 0.3, Playful: 0.1, Social: 0.05, Curious: 0.05, Lazy: -0.2, Calm: -0.1, Shy: -0.05, Brave: 0 };
 export const appetiteOf = (traits = [], seed = 0) => Math.max(-0.25, Math.min(0.35, (traits.reduce((a, x) => a + (APPETITE[x] ?? 0), 0)) + ((seed % 7) - 3) * 0.02));
-export function ensureFish(f) { if (isOcto(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
+export function ensureFish(f) { if (ownHungry(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
 const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).length;
 
 // ── reef themes ──
@@ -155,7 +161,7 @@ let clockHour = null;
 export function setClockHour(h) { clockHour = Number.isFinite(h) ? h : null; }   // a forced time of day (?tod=) makes moods follow the light, not the phone's clock
 export function needsOf(f, t, now = Date.now()) {
   ensureFish(f);
-  const fed = Math.max(0, Math.min(1, 1 - (isOcto(f) ? octoHunger(f) : t.hunger) * (1 + f.appetite))), h = clockHour ?? new Date(now).getHours() + new Date(now).getMinutes() / 60;
+  const fed = Math.max(0, Math.min(1, 1 - (ownHungry(f) ? ownHunger(f) : t.hunger) * (1 + f.appetite))), h = clockHour ?? new Date(now).getHours() + new Date(now).getMinutes() / 60;
   const energy = Math.max(0.1, Math.min(1, 0.55 + 0.4 * Math.sin(((h - 6) / 24) * Math.PI * 2) + ((f.traits ?? []).includes('Lazy') ? -0.15 : 0) + ((f.traits ?? []).includes('Playful') ? 0.1 : 0)));
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
@@ -241,11 +247,11 @@ function memorialOf(t, f, now) {
 }
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) {
   for (const f of [...t.fish]) {
-    ensureFish(f); const n = needsOf(f, t, now), octo = isOcto(f), fh0 = oh0?.get(f.id) ?? octoHunger(f);
+    ensureFish(f); const n = needsOf(f, t, now), octo = ownHungry(f), fh0 = oh0?.get(f.id) ?? ownHunger(f);      /* (octo: it has its own hunger, an octopus or a seahorse) */
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
     const steps = Math.max(1, Math.min(480, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
     for (let k = 0; k < steps; k++) {
-      const el = ((k + 0.5) / steps) * dt, hun = octo ? Math.min(octoHunger(f), fh0 + el * OHR) : Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = (fedK < 0.2 || hun >= 0.8) && at - (octo ? (f.fedAt ?? f.born) : (t.lastFed ?? -Infinity)) > FED_GRACE, bad = hungry || wat < 0.5;      // a fish of small appetite still goes hungry when nobody feeds it at all; an octopus is judged by its own last crab (or its arrival), never by the tank's flakes
+      const el = ((k + 0.5) / steps) * dt, hun = octo ? Math.min(ownHunger(f), fh0 + el * OHR) : Math.min(t.hunger, h0 + el * HR), wat = Math.max(t.water, w0 - el * WR * (1 + 0.5 * Math.min(2, t.floaters.length))), fedK = 1 - hun * (1 + f.appetite), at = now - (dt - el) * 1000, hungry = (fedK < 0.2 || hun >= 0.8) && at - (octo ? (f.fedAt ?? f.born) : (t.lastFed ?? -Infinity)) > FED_GRACE, bad = hungry || wat < 0.5;      // a fish of small appetite still goes hungry when nobody feeds it at all; an octopus is judged by its own last crab (or its arrival), never by the tank's flakes
       f.ail = Math.max(0, f.ail + (bad ? dt / steps : -(dt / steps) * 2)); if (bad && f.ail >= AIL_TIRED) f.born += stepMs;      // growth pauses once a fish is run down
     }
     const target = Math.min(1, 0.3 + 0.28 * t.water + 0.12 * (1 - t.glass) + 0.18 * n.fed + likes(f, t));
@@ -671,7 +677,7 @@ export const growthOf = (t, d, now) => (DECOR_DEF[d.type]?.cat === 'PLANTS' ? 1 
 // Optional, replaced (never carried over) the next day, never penalised, paid once to the shared wallet. Three tiers: easy 3, normal 5, special 8.
 // A wish is only chosen if the tank can do it right now, so a lone fish is never asked for a friendship and a spotless tank is never asked for care.
 const minorDecor = ['starfish', 'moss', 'shell'], seenDecor = (t) => t.decor.some((d) => !minorDecor.includes(d.type));
-export const needs = (t) => [(t.hunger > 0.3 || t.fish.some((f) => isOcto(f) && !f.dead && octoHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
+export const needs = (t) => [(t.hunger > 0.3 || t.fish.some((f) => ownHungry(f) && !f.dead && ownHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
 const withSpot = (t) => t.fish.some((f) => f.found?.includes('spot') && t.decor.some((d) => d.id === f.spotId));
 export const DAILY = {
   watch: { tier: 'easy', text: 'Watch your fish swim for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
@@ -799,7 +805,7 @@ function _advance(t, now = Date.now()) {
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
-    for (const f of t.fish) if (isOcto(f)) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
+    for (const f of t.fish) if (ownHungry(f)) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
@@ -876,16 +882,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     case 'feed': {
       const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
-      if (food === 'crab') {                                            // a crab for an octopus: each octopus has its own hunger, and only its own caretaker feeds it
-        const mine = t.fish.filter((f) => canFeedOcto(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => octoHunger(y) - octoHunger(x))[0];
-        if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
+      if (food === 'crab' || food === 'mysis') {                       // a crab for an octopus, mysis for a seahorse: each has its own hunger, and only its own caretaker feeds it
+        const kind = (x) => ownFood(x) === food, mine = t.fish.filter((f) => kind(f) && canFeedOwn(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && kind(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => ownHunger(y) - ownHunger(x))[0];
+        if (!f) return fail(t.fish.some((x) => kind(x) && !x.dead) ? 'NOT_YOURS' : 'NOT_FOUND'); if (!canFeedOwn(f, uid, !solo)) return fail('NOT_YOURS');
+        if (food === 'mysis' && t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // (the nursery babies eat the shrimp too)
         ensureFish(f); t.lastFed = now; f.fedAt = now;
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
-        if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
-        dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: `${name} fed ${f.name} a crab.` } });
+        if (needed) { careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
+        dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: food === 'crab' ? `${name} fed ${f.name} a crab.` : `${name} fed ${f.name} mysis shrimp.` } });
         return ok({ applied: true, delta: pay, food, fish: f.id });
       }
       if (t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // the babies eat with everyone else (no meter: just remembered for the nursery card)

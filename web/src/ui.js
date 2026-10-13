@@ -6,7 +6,7 @@ import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
-import { hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
+import { canFeedOwn, ownHunger, hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
 // how long until something is due, in plain words: "in about 5 hours", "tomorrow", "in about 2 days"
 const inTime = (ms) => { const h = ms / 3600e3; return h < 1 ? 'within the hour' : h < 20 ? `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}` : h < 36 ? 'in about a day' : `in about ${Math.round(h / 24)} days`; };
 
@@ -67,8 +67,8 @@ export function initUI({ game, social, cb }) {
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
   // the one thing that matters most right now, in a sentence at the top of Care (tap it to do it); when all is done, what the octopus is up to
   const careHead = () => { const s = S(), me = game.you?.userId, mine = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), oc = mine[0];
-    { const H = feedModel().hungry, g = H[0]; if (g) { const meal = H.filter((x) => x.kind !== 'octo').map((x) => x.who), who = g.kind === 'octo' ? g.who : names(meal), them = g.kind === 'octo' || (meal.length === 1 && !/^the /.test(meal[0])) ? (g.kind === 'octo' ? g.who : meal[0]) : 'them', k = quickFood(g);      // one tap: the right food, straight to the water
-      return [`${who.charAt(0).toUpperCase() + who.slice(1)} ${g.kind === 'octo' || (meal.length === 1 && !/^the /.test(meal[0])) ? 'is' : 'are'} hungry. <b>Feed ${them} ${k === 'crab' ? 'a crab' : FOODS[k].label.toLowerCase()} ›</b>`, 'feednow', `data-food="${k}"${g.id ? ` data-for="${esc(g.id)}"` : ''}`]; } }
+    { const H = feedModel().hungry, g = H[0]; if (g) { const meal = H.filter((x) => x.kind !== 'octo' && x.kind !== 'sea').map((x) => x.who), who = (g.kind === 'octo' || g.kind === 'sea') ? g.who : names(meal), them = (g.kind === 'octo' || g.kind === 'sea') || (meal.length === 1 && !/^the /.test(meal[0])) ? ((g.kind === 'octo' || g.kind === 'sea') ? g.who : meal[0]) : 'them', k = quickFood(g);      // one tap: the right food, straight to the water
+      return [`${who.charAt(0).toUpperCase() + who.slice(1)} ${(g.kind === 'octo' || g.kind === 'sea') || (meal.length === 1 && !/^the /.test(meal[0])) ? 'is' : 'are'} hungry. <b>Feed ${them} ${k === 'crab' ? 'a crab' : FOODS[k].label.toLowerCase()} ›</b>`, 'feednow', `data-food="${k}"${g.id ? ` data-for="${esc(g.id)}"` : ''}`]; } }
     if (s.water < 0.5) return ['The water is dirty. Change it.', 'water'];
     if (s.glass > 0.6) return ['There is algae on the glass. Give it a wipe.', 'clean'];
     if (s.water < 0.7) return ['The water is getting cloudy. A change would help.', 'water'];
@@ -129,6 +129,7 @@ export function initUI({ game, social, cb }) {
     const s = S(), me = game.you?.userId, row = (icon, name, v, [word, lv], hint) => `<div class="meter ${lv}"><span class="mi">${icon}</span><div class="mb"><div class="mt"><b>${name}</b><em>${word}</em></div><i><b style="width:${Math.round(Math.max(0.02, Math.min(1, v)) * 100)}%"></b></i>${hint ? `<small>${hint}</small>` : ''}</div></div>`;
     const lvl = (v, a, b, words) => (v >= a ? [words[0], 'ok'] : v >= b ? [words[1], 'mid'] : [words[2], 'low']), rows = [];
     for (const f of s.fish.filter((x) => x.species === 'octopus' && !x.dead)) { const v = 1 - octoHunger(f), mine = canFeedOcto(f, me, game.shared); rows.push(row('🐙', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (dueIn(s, 'crab', f) <= 0 ? 'Drop a crab from Feed' : `Ready for a crab ${inTime(dueIn(s, 'crab', f))}. Only you feed it.`) : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
+    for (const f of s.fish.filter((x) => x.species === 'seahorse' && !x.dead)) { const v = 1 - ownHunger(f), mine = canFeedOwn(f, me, game.shared); rows.push(row('🦐', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (dueIn(s, 'mysis', f) <= 0 ? 'Give it mysis shrimp from Feed' : `Ready for shrimp ${inTime(dueIn(s, 'mysis', f))}. Only you feed it.`) : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
     if (hasFishOnly(s)) { const v = 1 - s.hunger; rows.push(row('🐟', 'The fish', v, lvl(v, 0.7, 0.4, ['Full', 'Peckish', 'Hungry']), dueIn(s, 'meal') <= 0 ? 'Feed them flakes from Feed' : `Next meal ${inTime(dueIn(s, 'meal'))}`)); }
     rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? `Time for a water change (+${WATER_PAY} shells)` : `Due for a change ${inTime(dueIn(s, 'water'))}`));
     rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? `Give it a wipe (+${GLASS_PAY} shells)` : `Due for a wipe ${inTime(dueIn(s, 'glass'))}`));
@@ -256,14 +257,15 @@ export function initUI({ game, social, cb }) {
     const fedLine = (fb) => (game.shared && fb && Date.now() - fb.at < 12 * 3600e3 ? `${fb.uid === me ? 'You' : esc(fb.name ?? 'Someone')} fed them ${ago(fb.at)}` : '');
     for (const o of live.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)))
       groups.push({ id: o.id, kind: 'octo', thumb: fishThumb('octopus', o.pal ?? null), title: esc(o.name), who: esc(o.name), sub: 'Octopus · eats crabs', ...state(octoHunger(o), OCTO_DUE, OHR), foods: [{ k: 'crab', fav: '' }], note: 'The crab drops onto the sand for it to hunt.', fed: fedLine(o.fedBy) });
-    const horses = live.filter((f) => f.species === 'seahorse'), fish = live.filter((f) => f.species !== 'octopus' && f.species !== 'seahorse'), meal = state(s.hunger ?? 0, 0.3, HR), fed = fedLine(s.fedBy);
-    if (horses.length) groups.push({ id: null, kind: 'sea', thumb: fishThumb('seahorse'), title: esc(names(horses.map((f) => f.name))), who: horses.length === 1 ? esc(horses[0].name) : 'the seahorses', sub: 'Seahorse · eats tiny shrimp', ...meal, foods: [{ k: 'mysis', fav: 'its favourite' }], note: fish.length ? 'Eats at the same time as the fish, so any food fills it too.' : '', fed: fish.length ? '' : fed });
+    for (const h of live.filter((f) => f.species === 'seahorse' && canFeedOwn(f, me, game.shared)).sort((a, b) => ownHunger(b) - ownHunger(a)))      // each seahorse has its own hunger too, and its own caretaker
+      groups.push({ id: h.id, kind: 'sea', thumb: fishThumb('seahorse'), title: esc(h.name), who: esc(h.name), sub: 'Seahorse · eats tiny shrimp', ...state(ownHunger(h), OCTO_DUE, OHR), foods: [{ k: 'mysis', fav: 'its favourite' }], note: '', fed: fedLine(h.fedBy) });
+    const fish = live.filter((f) => f.species !== 'octopus' && f.species !== 'seahorse'), meal = state(s.hunger ?? 0, 0.3, HR), fed = fedLine(s.fedBy);
     if (fish.length) { const fav = (k) => names(fish.filter((f) => favFoodOf(f) === k).map((f) => esc(f.name))); groups.push({ id: null, kind: 'fish', thumb: fishThumb(fish[0].species), title: fish.length === 1 ? esc(fish[0].name) : 'The fish', who: fish.length === 1 ? esc(fish[0].name) : 'the fish', sub: fish.length === 1 ? (SPECIES_DEF[fish[0].species]?.label ?? 'Fish') : esc(names(fish.map((f) => f.name))), ...meal, foods: ['flakes', 'pellets', 'treats'].map((k) => ({ k, fav: fav(k) })), note: '', fed }); }
-    const others = live.filter((f) => f.species === 'octopus' && !canFeedOcto(f, me, game.shared));
+    const others = live.filter((f) => (f.species === 'octopus' || f.species === 'seahorse') && !canFeedOwn(f, me, game.shared));
     return { groups, others, hungry: groups.filter((g) => g.pays), canEat: groups.filter((g) => g.eat) };
   };
   // the one food to give straight from the headline: a crab for a hungry octopus, mysis if only seahorses are hungry, otherwise flakes
-  const quickFood = (g) => (g.kind === 'octo' ? 'crab' : g.kind === 'sea' && !feedModel().groups.some((x) => x.kind === 'fish') ? 'mysis' : 'flakes');
+  const quickFood = (g) => (g.kind === 'octo' ? 'crab' : g.kind === 'sea' ? 'mysis' : 'flakes');
   const feedDrawer = () => {
     const M = feedModel(), cur = game.feedFood, sh = S().shells;
     if (!M.groups.length) return `<div class="drawer"><p class="fnote">${M.others.length ? `Only ${esc(M.others[0].ownerName ?? 'its caretaker')} can feed ${esc(M.others[0].name)}.` : 'Nothing to feed yet.'}</p></div>`;
@@ -271,7 +273,7 @@ export function initUI({ game, social, cb }) {
     const food = (g, f) => { const d = FOODS[f.k], poor = sh < d.price; return `<button class="fd ${cur === f.k ? 'on' : ''}" data-feed="${f.k}"${g.id ? ` data-for="${esc(g.id)}"` : ''} ${poor ? 'disabled' : ''}><span>${ICON[f.k]}</span><b>${d.label}</b>${f.fav ? `<small>♥ ${f.fav}</small>` : ''}${poor ? '<small class="poor">not enough shells</small>' : chip(g, f.k)}</button>`; };
     const out = M.groups.map((g) => `<section class="fg ${g.eat ? '' : 'isfull'}"><div class="fgh"><img alt="" src="${g.thumb}"><div><b>${g.title}</b><small>${g.sub}</small></div><em class="${g.cls}">${g.word}</em><div class="fh ${g.cls}" role="img" aria-label="${g.pct}% full"><i style="width:${Math.max(4, g.pct)}%"></i></div><span class="fpct">${g.pct}% full</span></div>
       ${g.eat ? `<div class="fds">${g.foods.map((f) => food(g, f)).join('')}</div>` : `<p class="fwait">Full for now · can eat again ${soon(g.canIn)}</p>`}${g.eat && g.note ? `<p class="fnote">${g.note}</p>` : ''}${g.fed ? `<p class="fnote fby">${g.fed}</p>` : ''}</section>`);
-    if (M.others.length) out.push(`<p class="fnote">${esc(M.others.map((o) => o.name).join(' and '))} ${M.others.length === 1 ? 'is' : 'are'} fed by ${esc(M.others[0].ownerName ?? 'its caretaker')}.</p>`);
+    for (const [who, os] of Object.entries(M.others.reduce((g, o) => { (g[o.ownerName ?? 'their caretaker'] ||= []).push(o); return g; }, {}))) out.push(`<p class="fnote">${esc(os.map((o) => o.name).join(' and '))} ${os.length === 1 ? 'is' : 'are'} fed by ${esc(who)}.</p>`);
     return `<div class="drawer">${out.join('')}${M.canEat.length ? `<p class="fhow">Pick a food, then tap the water. Each feed is up to 3 drops.${M.hungry.length ? ' A hungry animal fed for free earns 1 🐚.' : ''}</p>` : ''}</div>`;
   };
   const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.octo ? hasOcto(S()) : d.sea ? hasSeahorse(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
