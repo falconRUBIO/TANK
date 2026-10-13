@@ -788,7 +788,7 @@ function frame(now) {
 function frameBody(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
-  stg.beams.update(t); stg.env.setCaustic(stg.caustic.tex, t, safeNoCaustic ? 0 : (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5));      // light on the sand follows the sun
+  const lit = rain.light(t); stg.beams.update(t, lit); stg.env.setCaustic(stg.caustic.tex, t, safeNoCaustic ? 0 : (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5) * lit);      // light on the sand follows the sun
   if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
   stg.applyTod(dt);
   if (focus) {

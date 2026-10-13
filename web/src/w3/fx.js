@@ -181,19 +181,12 @@ export class Sightings {
   }
 }
 
-// Rain on the surface: thin streaks fall from the top of the water and fade. Purely a mood; the curious fish rise to look.
+// Rain on the surface, seen from under the water: nothing falls into the tank. The drops break up the surface, so the light from above
+// dims and flickers. Purely a mood; the curious fish rise to look. `light(t)` is how much of the usual light comes through.
 export class Rain {
-  constructor(n = 70) {
-    this.n = n; this.on = false; this.level = 0;
-    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.022, 0.6, 0.022), new THREE.MeshBasicMaterial({ color: 0xd6ecff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }), n);
-    this.mesh.frustumCulled = false; this.mesh.visible = false; this.mesh.renderOrder = 7;
-    this.p = Array.from({ length: n }, () => ({ x: -5 + Math.random() * 10, y: 11 + Math.random() * 5, z: -2 + Math.random() * 5, v: 9 + Math.random() * 6 })); this.m = new THREE.Matrix4();
-  }
-  update(dt) {
-    this.level += ((this.on ? 1 : 0) - this.level) * Math.min(1, dt * 0.8); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return; this.mesh.material.opacity = 0.5 * this.level;
-    this.p.forEach((q, i) => { q.y -= q.v * dt; if (q.y < 9.2) { q.y = 15.8; q.x = -5 + Math.random() * 10; q.z = -2 + Math.random() * 5; } this.m.setPosition(q.x, q.y, q.z); this.mesh.setMatrixAt(i, this.m); });
-    this.mesh.instanceMatrix.needsUpdate = true;
-  }
+  constructor() { this.on = false; this.level = 0; this.mesh = new THREE.Group(); }
+  update(dt) { this.level += ((this.on ? 1 : 0) - this.level) * Math.min(1, dt * 0.8); }
+  light(t) { return 1 - this.level * (0.4 + 0.08 * Math.sin(t * 7.3) * Math.sin(t * 3.1 + 1.3)); }
 }
 
 // Broad, soft beams of sunlight coming down from the surface near the middle of the tank, widening as they fall and fading out
@@ -224,6 +217,6 @@ export class Beams {
       this.items.push({ m, k: g.attributes.aK, ph: rnd(i + 7) * 6.28, sp: 0.05 + rnd(i + 11) * 0.06, base: 0.55 + rnd(i + 13) * 0.45 });
     }
   }
-  // t in seconds: each beam breathes and drifts very slowly
-  update(t) { for (const b of this.items) { const k = b.base * (0.65 + 0.35 * Math.sin(t * b.sp * 6.28 + b.ph)); b.k.array.fill(k); b.k.needsUpdate = true; b.m.position.x = Math.sin(t * b.sp + b.ph) * 0.25; } }
+  // t in seconds: each beam breathes and drifts very slowly (dim: less light coming through the surface, as on a rainy day)
+  update(t, dim = 1) { for (const b of this.items) { const k = b.base * (0.65 + 0.35 * Math.sin(t * b.sp * 6.28 + b.ph)) * dim; b.k.array.fill(k); b.k.needsUpdate = true; b.m.position.x = Math.sin(t * b.sp + b.ph) * 0.25; } }
 }
