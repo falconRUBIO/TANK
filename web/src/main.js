@@ -11,6 +11,7 @@ import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
 import { skyOf } from './game/sky.js';
+import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { soloLook, saveSoloLook } from './people.js';
@@ -505,6 +506,7 @@ function showCard(f) {
     <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>
     ${octo ? (octoLine(mind, f) !== mind.line ? `<p class="mind">${esc(octoLine(mind, f))}</p>` : '') : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}${p.traits.length ? ' ' + p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ') : ''}</p>`}
     <h4>Behaviours · ${seen.length} of ${beh.length}</h4><div class="tags">${tags(beh)}</div><p class="dim sm">${seen.length < beh.length ? `Keep watching: ${esc(f.name)} will show you the rest in its own time.` : `You have seen everything ${esc(f.name)} does.`}</p>
+    ${(() => { const hb = habitLines({ name: f.name, species: rec.species, ...lifeTotals(LOG, f, live) }, decorName); return hb.length ? `<h4>Habits</h4><ul class="dyk">${hb.map((h) => `<li>${h.icon} ${esc(h.text)}</li>`).join('')}</ul>` : ''; })()}
     ${socialLines(rec)}`;
   const tankLen = (n) => (n < 1 ? 'Less than one tank length' : `${Math.round(n)} tank length${Math.round(n) === 1 ? '' : 's'}`), dist = (LOG.dist ?? 0) + (live?.dist ?? 0), lvTot = Object.values(lv).reduce((a, b) => a + b, 0);
   const lvKeys = octo ? ['rear', 'middle', 'front'] : ['top', 'mid', 'low'], lvCol = { rear: '#c9a46a', middle: '#e3c58c', front: '#f1dcae', top: '#7fd3ff', mid: '#3f9fd8', low: '#2a6a9a' };
@@ -715,11 +717,20 @@ const r2 = (v) => Math.round(v * 100) / 100;
 // a seahorse in one short string for the other phones: its state, where each eye looks, its colour (how much, and of what), the greeting's glow,
 // a count of its strikes (so each phone plays each strike once), and the thickness and lean of what it holds (so its coil fits the same stem)
 // a seahorse's own counts on its card: what is saved plus what has happened since the last report; a count shows only once it has really happened
+// what an animal has really done: what the server has from its log, plus what has happened here since the last report
+function lifeTotals(LOG, f, live) {
+  const cnt = (k, fk) => (LOG[k] ?? 0) + Math.max(0, (f?.[fk] ?? 0) - (live?.[k] ?? f?.[fk] ?? 0)), d = f?.memDelta, hitch = {};
+  for (const [id, h] of Object.entries(LOG.hitch ?? {})) hitch[id] = [h[0] ?? 0, h[1] ?? 0];
+  for (const [id, v] of Object.entries(d?.secs ?? {})) (hitch[id] ||= [0, 0])[0] += v;
+  for (const [id, v] of Object.entries(d?.visits ?? {})) (hitch[id] ||= [0, 0])[1] += v;
+  const lv = { ...(LOG.lv ?? {}) }; for (const [k, v] of Object.entries(live?.lv ?? {})) lv[k] = (lv[k] ?? 0) + v;
+  return { hitch, fav: LOG.fav ?? f?.favHold ?? null, meals: cnt('meals', 'meals'), strikes: cnt('strikes', 'strikesN'), greets: cnt('greets', 'greets'), links: cnt('links', 'linksN'), inspects: cnt('inspects', 'inspects'), places: new Set([...(LOG.places ?? []), ...(live?.places ?? [])]).size, lv };
+}
 function seaStats(LOG, f, live) {
-  const tile = (k, v) => (v ? `<div class="ft"><small>${k}</small><b>${v}</b></div>` : ''), cnt = (k, fk) => (LOG[k] ?? 0) + Math.max(0, (f[fk] ?? 0) - (live?.[k] ?? f[fk] ?? 0));
-  const H = LOG.hitch ?? {}, d = f.memDelta, secs = Object.values(H).reduce((a, h) => a + (h[0] ?? 0), 0) + Object.values(d?.secs ?? {}).reduce((a, v) => a + v, 0), fav = LOG.fav ?? f.favHold, fv = fav ? (H[fav]?.[1] ?? 0) + (d?.visits[fav] ?? 0) : 0, places = new Set([...Object.keys(H), ...Object.keys(d?.visits ?? {})]).size;
+  const tile = (k, v) => (v ? `<div class="ft"><small>${k}</small><b>${v}</b></div>` : ''), T = lifeTotals(LOG, f, live), H = T.hitch;
+  const secs = Object.values(H).reduce((a, h) => a + h[0], 0), fv = T.fav ? H[T.fav]?.[1] ?? 0 : 0, places = Object.keys(H).length;
   const hm = secs >= 3600 ? `${Math.floor(secs / 3600)}h ${Math.round((secs % 3600) / 60)}m` : secs >= 60 ? `${Math.round(secs / 60)} min` : '';
-  return tile('Meals eaten', cnt('meals', 'meals')) + tile('Strikes from its stem', cnt('strikes', 'strikesN')) + tile('Time holding on', hm) + tile('Holdfasts tried', places) + tile('Visits to its favourite', fv) + tile('Greetings', cnt('greets', 'greets')) + tile('Tails held', cnt('links', 'linksN')) + tile('New things inspected', cnt('inspects', 'inspects'));
+  return tile('Meals eaten', T.meals) + tile('Strikes from its stem', T.strikes) + tile('Time holding on', hm) + tile('Holdfasts tried', places) + tile('Visits to its favourite', fv) + tile('Greetings', T.greets) + tile('Tails held', T.links) + tile('New things inspected', T.inspects);
 }
 const SEA_STATES = Fish3D.SEA_STATES, e5 = (v) => Math.max(0, Math.min(4, Math.round(((v ?? 0) + 1) * 2)));
 const seaPack = (f) => [Math.max(0, SEA_STATES.indexOf(f.hs ?? 'swimming')), '' + e5(f.eyeL?.x) + e5(f.eyeL?.y) + e5(f.eyeR?.x) + e5(f.eyeR?.y), r2(f.tintK ?? 0), f.tintCol ? ((f.tintCol[0] << 16) | (f.tintCol[1] << 8) | f.tintCol[2]).toString(16) : '', r2(f.glowK ?? 0), f.strikeSeq ?? 0, r2(f.gripStem ?? 0), r2(f.gripLean ?? 0)].join(',');

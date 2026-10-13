@@ -2,22 +2,25 @@
 // the sand) is left alone for some minutes of tank time. Every second, each animal's voxels are checked in world space against the sand under them
 // and against every decoration's voxels. A voxel counts as clipping when it is more than half inside the sand or more than half inside a decoration's voxel.
 // Things an animal does on purpose are counted apart: an octopus buried in the sand, tucked under its own coconut shell, or wrapping its arms round something it holds.
-// Needs the solo game on 8123. node tools/clip_check.mjs [minutes]
+// Needs the solo game on 8123 (or PORT). node tools/clip_check.mjs [minutes]; SEA=1 a tank of seahorses; DENSE=1 with SEA, a densely planted tank of 18 decorations
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 const MIN = +(process.argv[2] || 5);
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errors = []; let fails = 0; p.on('pageerror', (e) => errors.push(e.message));
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
-await p.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.goto(`http://localhost:${process.env.PORT || 8123}/?q=0&dev=1&tod=afternoon`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);
-await p.evaluate((SEA) => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.fish.length = 0; const born = Date.now() - 12 * 864e5;
+await p.evaluate(([SEA, DENSE]) => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.fish.length = 0; const born = Date.now() - 12 * 864e5;
   for (const [i, pal] of [[1, 0], [2, 3], [3, 5]]) s.fish.push({ id: 'o' + i, name: 'Ink' + i, species: 'octopus', seed: 5 + i * 3, pal, born, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', hunger: 0.1, movedAt: Date.now() });
   ['goldfish', 'neon', 'blue', 'guppy', 'platy', 'danio', 'betta', 'cory', 'angelfish', 'seahorse'].forEach((sp, i) => s.fish.push({ id: 'g' + i, name: 'F' + i, species: sp, seed: 3 + i * 7, born, stage: 'adult', traits: [['Calm', 'Shy', 'Brave', 'Playful', 'Social', 'Lazy', 'Curious', 'Greedy'][i % 8]], happy: 0.8, health: 1 }));
   s.decor.length = 0; s.decor.push({ id: 'd1', type: 'coconut', x: 2.2, z: 2.3, ry: 0 }, { id: 'd2', type: 'grass', x: -3.0, z: 2.4, ry: 0 }, { id: 'd3', type: 'rock', x: 0.4, z: 2.0, ry: 0 }, { id: 'd4', type: 'fern', x: -2.4, z: -0.2, ry: 0 }, { id: 'd5', type: 'brain', x: 1.6, z: -0.4, ry: 0 },
     { id: 'd6', type: 'sword', x: -3.4, z: -3.2, ry: 0 }, { id: 'd7', type: 'pot', x: 2.6, z: -3.3, ry: 0 }, { id: 'd8', type: 'boulder', x: -0.6, z: -3.6, ry: 0 });
   if (SEA) { s.fish.length = 0; ['seahorse', 'seahorse', 'seahorse', 'seahorse'].forEach((sp, i) => s.fish.push({ id: 'h' + i, name: 'H' + i, species: sp, seed: 3 + i * 7, born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1 }));
     s.decor.length = 0; s.decor.push({ id: 'd1', type: 'grass', x: -2.8, z: 2.2, ry: 0 }, { id: 'd2', type: 'fern', x: -0.8, z: 2.4, ry: 0 }, { id: 'd3', type: 'sword', x: 1.4, z: 2.2, ry: 0 }, { id: 'd4', type: 'red', x: 3.0, z: 1.8, ry: 0 }, { id: 'd5', type: 'kelp', x: -2.0, z: -0.3, ry: 0 }, { id: 'd6', type: 'bamboo', x: 1.6, z: -0.5, ry: 0 }, { id: 'd7', type: 'anemone', x: -0.2, z: 0.2, ry: 0 }, { id: 'd8', type: 'pillar', x: 2.8, z: -0.2, ry: 0 }); }
-  g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, !!process.env.SEA);
+  if (DENSE) { s.decor.length = 0; [['grass', -3.2, 2.3], ['fern', -2.2, 2.0], ['sword', -1.2, 2.4], ['kelp', -0.3, 1.9], ['red', 0.7, 2.3], ['grass', 1.6, 2.0], ['anemone', 2.6, 2.3], ['bamboo', 3.3, 1.6],
+    ['kelp', -2.8, 0.6], ['sword', -1.6, 0.3], ['fern', -0.4, 0.5], ['grass', 0.8, 0.2], ['red', 2.0, 0.6], ['anchor', 2.9, -0.4], ['kelp', -2.2, -1.3], ['fern', 0.2, -1.2], ['bridge', 1.6, -1.6], ['rock', -0.9, -0.8]]
+    .forEach(([type, x, z], i) => s.decor.push({ id: 'n' + i, type, x, z, ry: (i * 0.7) % 3 })); }
+  g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, [!!process.env.SEA, !!process.env.DENSE]);
 await p.waitForTimeout(3000);
 const r = await p.evaluate(async (MIN) => {
   const T = await import('/src/w3/terrain.js'), F = window.__fishes, D = window.__decor, THREE = window.__tank.camera.constructor;

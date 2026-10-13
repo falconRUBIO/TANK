@@ -24,6 +24,13 @@ const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Laz
 const bubbleSpot = new THREE.Vector3(-3.6, 0, 0.5);
 
 // little speech-bubble icons drawn once per mood
+// The water is never quite still: a slow, gentle flow. It turns along the tank and back over a minute or so, a little differently at each depth and from front to back, and carries drifting food with it. It never steers food to anyone.
+export function current(x, y, z, t, out) {
+  out.x = 0.11 * Math.sin(0.05 * t + 0.5 * y + 0.4 * z) + 0.05 * Math.sin(0.12 * t + 1.1 * z + 0.35 * x + 1.7);
+  out.z = 0.04 * Math.sin(0.07 * t + 0.7 * x + 0.3 * y + 0.6);
+  out.y = 0.02 * Math.sin(0.09 * t + 0.8 * x + 2.1);
+  return out;
+}
 const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'] };
 const emoteTex = {};
 function emoteTexture(mood) {
@@ -598,11 +605,14 @@ export class Fishes {
       if (f.sucked) { const s = f.sucked, m = s.dead ? null : s.snout(this.tmp2 ||= new THREE.Vector3()); f.suckT = (f.suckT ?? 0) + dt;      // struck: drawn into the snout in a blink, and only then eaten
         if (!m) { f.sucked = null; continue; } f.pos.lerp(m, Math.min(1, dt * 28)); if (f.pos.distanceTo(m) < 0.05 || f.suckT > 0.14) { f.eaten = true; s.meals = (s.meals ?? 0) + 1; if (s.holdfast?.on) s.strikesN = (s.strikesN ?? 0) + 1; this.onEat?.(s); } continue; }
       f.age += dt; if (f.pos.y > sandH(f.pos.x, f.pos.z) + 0.2) {      // food settles on the sand wherever it lands, on any level
-        if (f.kind === 'mysis') {      // tiny shrimp: they sink quickly to a depth of their own, down where the seahorses hold on, and swim about there in little darts before they settle
+        const cur = current(f.pos.x, f.pos.y, f.pos.z, t, this.tmpC ||= new THREE.Vector3());
+        if (f.kind === 'mysis') {      // tiny shrimp: they sink quickly to a depth of their own, down where the seahorses hold on, and there they are carried along by the water, with little darts of their own, before they settle
           f.depth ??= sandH(f.pos.x, f.pos.z) + 1.6 + this.rng() * 3.2; const free = f.pos.y <= f.depth;
-          f.vx = Math.max(-0.2, Math.min(0.2, (f.vx ?? 0) + (this.rng() - 0.5) * dt * (free ? 1.2 : 0.4))); f.vz = Math.max(-0.14, Math.min(0.14, (f.vz ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.9 : 0.3)));
-          f.pos.x = Math.max(-3.8, Math.min(3.8, f.pos.x + f.vx * dt)); f.pos.z = Math.max(-0.5, Math.min(2.2, f.pos.z + f.vz * dt)); f.pos.y -= (free ? 0.05 + Math.sin(t * 3 + f.ph) * 0.12 : 0.9) * dt; }
-        else { f.pos.y -= 0.42 * dt; f.pos.x += Math.sin(t * 1.6 + f.ph) * 0.12 * dt; } } }
+          f.vx = Math.max(-0.08, Math.min(0.08, (f.vx ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.6 : 0.2))); f.vz = Math.max(-0.06, Math.min(0.06, (f.vz ?? 0) + (this.rng() - 0.5) * dt * (free ? 0.45 : 0.15)));
+          const nx = f.pos.x + (f.vx + cur.x) * dt, nz = f.pos.z + (f.vz + cur.z) * dt;
+          if (nx < -3.8 || nx > 3.8) f.vx = -f.vx; if (nz < -0.5 || nz > 2.2) f.vz = -f.vz;      // at the glass or the back, it turns along it
+          f.pos.x = Math.max(-3.8, Math.min(3.8, nx)); f.pos.z = Math.max(-0.5, Math.min(2.2, nz)); f.pos.y -= (free ? 0.05 + Math.sin(t * 3 + f.ph) * 0.12 - cur.y : 0.9) * dt; }
+        else { f.pos.y -= 0.42 * dt; f.pos.x += (Math.sin(t * 1.6 + f.ph) * 0.12 + cur.x * 0.6) * dt; f.pos.z = Math.max(-0.5, Math.min(2.4, f.pos.z + cur.z * 0.6 * dt)); } } }
     this.flakes = this.flakes.filter((f) => !f.eaten && (f.age < 30 || f.sucked));
     this.mesh.count = this.flakes.length;
     this.flakes.forEach((f, i) => { this.m.makeRotationY(f.ph + t * 0.4); this.m.setPosition(f.pos); this.mesh.setMatrixAt(i, this.m); this.mesh.setColorAt(i, f.c); });

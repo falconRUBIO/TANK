@@ -191,12 +191,15 @@ export class Fish3D {
   resolve(others) {
     const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
     // a fish is solid down its length; an octopus only in its mantle and head (its arms wrap round things, they do not hold it off them), and one frame can only ever nudge it, never throw it
-    const jet = this.species.move === 'jet', offs = jet ? [-0.3, 0, 0.3] : [-0.8, -0.4, 0, 0.4, 0.8]; if (jet) _p2.copy(this.pos);
+    const jet = this.species.move === 'jet', sea = !!this.sp?.tail, offs = jet ? [-0.3, 0, 0.3] : sea ? [-0.55, -0.25, 0.05, 0.35] : [-0.8, -0.4, 0, 0.4, 0.8]; if (jet) _p2.copy(this.pos);
+    // a seahorse is upright and slim: it is felt for from its tail up to its head. Swimming, it keeps off leaves too, but not on the last stretch
+    // onto its own holdfast, nor while it holds on, greets or holds tails (its grip was found clear of every leaf already)
+    const Hf = this.holdfast, seaSoft = sea && !this.link && !this.greet && !(Hf && (Hf.on || Hf.settle || this.pos.distanceTo(this.target) < 1.0));
     if (W.push && !this.homing) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
-        if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
-        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
+        if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
+        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.75, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
         if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
       if (!moved) break;
@@ -690,9 +693,12 @@ export class Fish3D {
     const gl = this.gripLocalFor(this.gripStem ?? SEAHORSE_STEM, this.gripLean ?? SEAHORSE_LEAN), sc = this.scale, cp = Math.cos(this.pitch), spn = Math.sin(this.pitch), gx = gl[0] * cp - gl[1] * spn, gy = gl[0] * spn + gl[1] * cp;      // the grip point as the body is leaning now
     const ch = Math.cos(this.heading), sh = Math.sin(this.heading), wx = H.x - ch * gx * sc, wy = H.y - gy * sc, wz = H.z + sh * gx * sc;
     if (!H.on) {                                                                    // still on its way: slow and upright, turning side-on as it arrives
-      this.target.set(wx, wy, wz); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
+      // it comes in from open water on the side its body will be, a little above, then glides in: not straight through the leaves
+      if (!H.via) { let ox = wx - H.x, oz = wz - H.z, ol = Math.hypot(ox, oz); if (ol < 0.05) { ox = Math.cos(H.face); oz = -Math.sin(H.face); ol = 1; } H.via = { x: wx + (ox / ol) * 0.8, y: wy + 0.3, z: Math.min(GLASS_Z - 0.4, wz + (oz / ol) * 0.8), done: Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z) < 1.0 }; }
+      if (!H.via.done && Math.hypot(H.via.x - this.pos.x, H.via.y - this.pos.y, H.via.z - this.pos.z) < 0.35) H.via.done = true;
+      if (H.via.done) this.target.set(wx, wy, wz); else this.target.set(H.via.x, H.via.y, H.via.z); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
       if (d < 0.9) { let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 2); }
-      if (d < 0.6) H.settle = true;
+      if (d < 0.6 && H.via.done) H.settle = true;
       if (H.settle) {                                                               // close enough to reach: it glides the last little way onto its spot, leans back and wraps its tail round the stem
         const k = Math.min(1, dt * 4); this.pos.x += (wx - this.pos.x) * k; this.pos.y += (wy - this.pos.y) * k; this.pos.z += (wz - this.pos.z) * k; this.vel.set(0, 0, 0);
         const g0 = this.gripK ?? 0; this.curlK += (1 - this.curlK) * Math.min(1, dt * 3); this.gripK = d < 0.2 ? Math.min(1, g0 + dt * 2.2) : g0;
@@ -720,13 +726,16 @@ export class Fish3D {
       if (!this.prey) { let bd = SEA_WATCH; for (const c of food) if (seen(c)) { const d = c.pos.distanceTo(m); if (d < bd) { bd = d; this.prey = c; this.preyT = 0; } } }
       if (this.prey) {
         this.preyT += dt; const p = this.prey.pos; this.prey.watchedBy = this; this.prey.watchD = p.distanceTo(m);      // other fish leave a shrimp right in front of a watching seahorse (see the scramble in fishmgr)
-        let want = Math.atan2(-(p.z - this.pos.z), p.x - this.pos.x) - H.face; want = Math.atan2(Math.sin(want), Math.cos(want)); aimH = Math.max(-0.6, Math.min(0.6, want));      // the head turns to follow it, within what the grip allows
-        aimP = Math.max(-0.28, Math.min(0.22, (p.y - m.y) * 0.9));
+        let want = Math.atan2(-(p.z - this.pos.z), p.x - this.pos.x) - H.face; want = Math.atan2(Math.sin(want), Math.cos(want)); aimH = Math.max(-0.75, Math.min(0.75, want));      // it turns on its stem to follow it, within what the grip allows
+        aimP = Math.max(-0.34, Math.min(0.28, (p.y - m.y) * (p.distanceTo(m) < 1 ? 1.3 : 0.9)));      // and tips its head up or down to it, more as it comes close
         if (!this.strikeT && this.preyT > 0.25 && p.distanceTo(m) < SEA_REACH) {      // within reach of the snout: a very quick strike, sucking it in
           this.strikeT = SEA_STRIKE; this.foodWait = 0; this.strikeSeq = (this.strikeSeq ?? 0) + 1; this.prey.sucked = this; this.prey.suckT = 0; this.aimT = 0.2; this.thought = 'Struck! Sucked in a shrimp in a flash.'; this.snickSaid = 3; }
       }
-      { this.foodWait = (this.foodWait ?? 0) + dt;      // food in the water and none within reach of its snout for a while: it may go after it
-        const urgent = this.tankHungry?.() ?? false, patience = this.weak ? Infinity : this.sleepy ? (urgent ? 25 : Infinity) : 5 + 12 * (1 - bold);      // a weak one stays put and only takes what comes by
+      { // food still falling, or drifting in the water near its own height, may yet come by on the current: while there is any, it keeps watching
+        // and its patience runs down only slowly. Food that has settled out of reach, or is far off, is what it may in the end let go and go after.
+        const sy = this.pos.y, promising = food.some((c) => !c.eaten && !c.sucked && Math.hypot(c.pos.x - this.pos.x, c.pos.z - this.pos.z) < 3.2 && c.pos.y > sy - 2.2 && (c.pos.y < sy + 2.6 || !c.depth || c.pos.y > c.depth));
+        this.foodWait = (this.foodWait ?? 0) + dt * (promising ? 0.2 : 1);
+        const urgent = this.tankHungry?.() ?? false, patience = this.weak ? Infinity : this.sleepy ? (urgent ? 25 : Infinity) : 6 + 14 * (1 - bold);      // a weak one stays put and only takes what comes by
         if (this.foodWait > patience && food.some((c) => !c.eaten && !c.sucked && c.pos.distanceTo(this.pos) < 7)) { this.chase = true; this.release(0.4); return true; }      // nothing comes near: it goes to find it
       }
     } else this.prey = null;

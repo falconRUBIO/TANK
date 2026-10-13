@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import * as S from './sky.js';
+import { habitLines } from './habits.js';
 const DAY = 864e5; let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ✓', name); };
 console.log('Rules');
 ok('fish get hungry at their own pace', () => { const t = R.newWorld(0); t.fish.push(R.ensureFish({ id: 'g', name: 'Greedy', species: 'goldfish', seed: 3, born: 0, stage: 'baby', traits: ['Greedy'] }), R.ensureFish({ id: 'l', name: 'Lazy', species: 'goldfish', seed: 3, born: 0, stage: 'baby', traits: ['Lazy'] })); t.hunger = 0.5;
@@ -483,6 +484,16 @@ ok('each fish keeps its own story, the memorial keeps it too, and the end of a d
   R.advance(t, 2 * D); assert.ok((t.fish[1].story ?? []).some((x) => /growing up|adult|grew/i.test(x.text)), JSON.stringify(t.fish[1].story));
   const m = R.nextUp(t, 2 * D); assert.match(m, /(\.|tomorrow)$/); const e = quiet(1); e.orders = [{ id: 'o1', species: 'cory', name: 'Gob', arrivesAt: 5 * 3600e3 }]; assert.match(R.nextUp(e, 0), /Gob arrives in about 5 hours/);
 });
+ok('habit lines come only from real counts: none for a newcomer, each number is what happened, a removed decoration is never named', () => { const L = (id) => ({ p1: 'Sea Grass', p2: 'Sword Plant' })[id] ?? null;
+  assert.deepEqual(habitLines({ name: 'New' }, L), [], 'nothing to say about an animal with no history');
+  assert.deepEqual(habitLines({ name: 'Pip', hitch: { p1: [100, 2] }, fav: 'p1', strikes: 2, inspects: 2, greets: 1 }, L), [], 'small counts say nothing yet');
+  const h = habitLines({ name: 'Pip', hitch: { p1: [900, 35], p2: [200, 4], gone: [5000, 50] }, fav: 'p1', meals: 12, strikes: 8, greets: 3, links: 2, inspects: 4 }, L), txt = h.map((x) => x.text).join(' | ');
+  assert.ok(txt.includes('gone back to the same sea grass 34 times'), txt); assert.ok(txt.includes('82%'), 'share of real holding time, without the removed decoration: ' + txt);
+  assert.ok(txt.includes('4 so far') && txt.includes('8 of 12 meals') && txt.includes('3 times') && txt.includes('twice'), txt); assert.ok(!/undefined|NaN/.test(txt));
+  const roam = habitLines({ name: 'Moss', hitch: { a: [200, 2], b: [180, 2], c: [170, 2], d: [160, 1], e: [150, 1] } }, (id) => 'Kelp ' + id).map((x) => x.k);
+  assert.ok(roam.includes('roams') && !roam.includes('familiar'), roam.join());
+  const fish = habitLines({ name: 'Nori', places: 6, lv: { top: 800, mid: 100 } }, L).map((x) => x.text).join(' | ');
+  assert.ok(fish.includes('near the surface') && fish.includes('6 different decorations'), 'the same rules serve a fish: ' + fish); });
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

@@ -3,7 +3,7 @@
 // Needs the dev server: PORT=8124 DB=/tmp/two.db DEV=1 node server/server.mjs ; OUT=dir node tools/two_phones.mjs
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
-const out = process.env.OUT || '/tmp/two', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
+const out = process.env.OUT || '/tmp/two', base = `http://localhost:${process.env.PORT || 8124}`; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); if (process.env.NOLOG) await p.addInitScript(() => { window.__noLog = true; }); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
