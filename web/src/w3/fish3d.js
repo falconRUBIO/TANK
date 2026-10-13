@@ -196,7 +196,10 @@ export class Fish3D {
     // onto its own holdfast, nor while it holds on, greets or holds tails (its grip was found clear of every leaf already)
     const Hf = this.holdfast, seaSoft = sea && !this.link && !this.greet && !(Hf && (Hf.on || Hf.settle || this.pos.distanceTo(this.target) < 1.0));
     if (seaSoft && W.soft?.at) { const v = Math.hypot(this.vel.x, this.vel.z);      // leaves just ahead: it rises over them rather than pushing through
-      if (v > 0.02) { const ax = this.pos.x + (this.vel.x / v) * 0.5, az = this.pos.z + (this.vel.z / v) * 0.5; if ([-0.4, 0, 0.35].some((k) => W.soft.at(ax, this.pos.y + R * k, az))) this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } }
+      if (v > 0.02) { const blocked = (ang) => { const c = Math.cos(ang), s2 = Math.sin(ang), dx = (this.vel.x * c - this.vel.z * s2) / v, dz = (this.vel.x * s2 + this.vel.z * c) / v; return [0.5, 0.9].some((d) => [-0.55, -0.2, 0.15, 0.4].some((k) => W.soft.at(this.pos.x + dx * d, this.pos.y + R * k, this.pos.z + dz * d) || W.at?.(this.pos.x + dx * d, this.pos.y + R * k, this.pos.z + dz * d))); };
+        if (blocked(0)) { const ang = [0.6, -0.6, 1.1, -1.1].find((a2) => !blocked(a2));      // a way round: the nearest clear heading either side, eased into
+          if (ang != null) { const k = Math.min(1, (this.rdt ?? 1 / 60) * 2.5) * ang, c = Math.cos(k), s2 = Math.sin(k), vx = this.vel.x * c - this.vel.z * s2; this.vel.z = this.vel.x * s2 + this.vel.z * c; this.vel.x = vx; }
+          else this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } } }      // no way round: over the top
     if (W.push && !this.homing) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
@@ -538,7 +541,7 @@ export class Fish3D {
     this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
     if (this.sp.tail) {
       const going = this.vel.length() > 0.08, H = this.holdfast, near = H && !H.on ? Math.max(0, Math.min(1, (1.6 - this.pos.distanceTo(this.target)) / 1.1)) : 0;
-      if (this.tailHits()) this.tuckT = 1.5; this.tuckT = Math.max(0, (this.tuckT ?? 0) - dt);
+      if (this.tailHits() || (going && this.tailHits(this.vel.x * 0.6, this.vel.y * 0.6, this.vel.z * 0.6))) this.tuckT = 1.5;      // it tucks its tail up before it would brush a leaf, not after this.tuckT = Math.max(0, (this.tuckT ?? 0) - dt);
       const want = this.tuckT > 0 ? 1 : (going ? -0.65 + 0.15 * Math.sin(t * 2.2) : 0.1) * (1 - near) + near;      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; nearing its stem it curls ready to grip; about to brush a plant, a rock or the sand, it tucks up
       this.curlK += (want - this.curlK) * Math.min(1, dt * (this.tuckT > 0 ? 4 : 1.5)); this.gripK = (this.gripK ?? 0) + (near * 0.6 - (this.gripK ?? 0)) * Math.min(1, dt * 3); this.pitch *= 0.6; }      // the body stays upright      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; the body stays upright
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
@@ -598,9 +601,9 @@ export class Fish3D {
     return out.set(this.pos.x + Math.cos(this.heading) * px * sc, this.pos.y + py * sc, this.pos.z - Math.sin(this.heading) * px * sc);
   }
   // would its tail, as posed now, touch the sand or a decoration? A few points along it are checked in the world
-  tailHits() {
+  tailHits(ox = 0, oy = 0, oz = 0) {      // (ox, oy, oz: where it will be shortly, to tuck its tail before it gets there)
     const R = this.tailRig, W = Fish3D.world; if (!R) return false; const sc = this.scale, cp = Math.cos(this.pitch || 0), sp = Math.sin(this.pitch || 0), ch = Math.cos(this.heading), sh = Math.sin(this.heading);
-    for (const i of [12, 20, 28, 36, 44, 51]) { const x = R.x[i], y = R.y[i], z = R.z[i], px = x * cp - y * sp, py = x * sp + y * cp, wx = this.pos.x + (px * ch + z * sh) * sc, wy = this.pos.y + py * sc, wz = this.pos.z + (-px * sh + z * ch) * sc;
+    for (const i of [12, 20, 28, 36, 44, 51]) { const x = R.x[i], y = R.y[i], z = R.z[i], px = x * cp - y * sp, py = x * sp + y * cp, wx = this.pos.x + ox + (px * ch + z * sh) * sc, wy = this.pos.y + oy + py * sc, wz = this.pos.z + oz + (-px * sh + z * ch) * sc;
       if (wy < sandH(wx, wz) + 0.08 || W.at?.(wx, wy, wz) || W.soft?.at?.(wx, wy, wz)) return true; }
     return false;
   }

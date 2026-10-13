@@ -52,11 +52,12 @@ const r = await p.evaluate(async (MIN) => {
         if (hit.size && nHit > 3) { const types = [...new Set(hit.values())].join('+'); add(tag(types)); if (!why) worst.push({ who: f.name, sp: f.species.id, what: types, tags: hitTags, at: [...hit.keys()].map((id) => { const g = D.items.get(id)?.group; return g ? [id, +g.position.x.toFixed(2), +g.position.y.toFixed(2), +g.position.z.toFixed(2), +g.rotation.x.toFixed(2), +g.rotation.z.toFixed(2)] : id; }), solid: [...hit.keys()].map((id) => { const g = D.items.get(id)?.group?.position; return g ? !!window.__tank.decor.solids?.at?.(g.x, g.y + 0.2, g.z) : null; }), depth: +hitD.toFixed(2), pos: f.pos.toArray().map((v) => +v.toFixed(2)), s: f.st?.s, mode: f.st?.mode, act: f.act, hold: f.holdfast ? f.holdfast.type + (f.holdfast.on ? ':on' : f.holdfast.settle ? ':settle' : ':going') + ':' + (f.holdfast.held ?? 0).toFixed(1) + ':g' + (f.gripK ?? 0).toFixed(2) + ':p' + (f.pitch ?? 0).toFixed(2) : undefined, link: f.link ? (f.link.on ? 'on' : 'going') : undefined }); }
       } }
     if (i % 400 === 0) await new Promise((q) => setTimeout(q, 0)); }
-  return { heldHits, heldSamples, sizes: [1, 3, 8, 20, 50, 1e9].map((m, j, A) => sizes.filter((v) => v <= m && v > (A[j - 1] ?? 0)).length), gridSeen, tally, samples, worst: worst.filter((w) => Object.values(w.tags ?? {}).reduce((a2, c) => a2 + c, 0) > 20 || (w.n ?? 0) > 20).slice(0, 30), nw: worst.length };
+  return { heldHits, heldSamples, sizes: [1, 3, 8, 20, 50, 1e9].map((m, j, A) => sizes.filter((v) => v <= m && v > (A[j - 1] ?? 0)).length), gridSeen, tally, samples, worst: worst.filter((w) => Object.values(w.tags ?? {}).reduce((a2, c) => a2 + c, 0) > 20 || (w.n ?? 0) > 20).slice(0, 30), nw: worst.length, leafOnly: worst.filter((w) => w.what !== 'sand' && w.what.split('+').every((x) => PLANTS.has(x))).length };
 }, MIN);
 console.log('  seahorses holding on:', r.heldSamples, 'samples,', r.heldHits, 'voxels inside a decoration');
 console.log('  decor hit sizes (1,2-3,4-8,9-20,21-50,>50 voxels)', JSON.stringify(r.sizes), '  grid sees hits', r.gridSeen, '  samples', r.samples, JSON.stringify(r.tally));
 for (const w of r.worst) console.log('   ', JSON.stringify(w));
+console.log(`  of those: ${r.leafOnly} only in plant leaves (flexible), ${r.nw - r.leafOnly} in sand or rigid decorations`);
 ck('nothing passes through the sand or a decoration unless it means to (a touch of 1-3 voxels is contact)', r.nw / r.samples < 0.02, `${r.nw} of ${r.samples} samples`);
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Clip checks passed'); await b.close(); process.exit(fails ? 1 : 0);

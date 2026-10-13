@@ -74,6 +74,8 @@ ck('tails and arms move in step', full.beat < 1.2, 'biggest stroke difference ' 
 ck('each octopus holds the same pose on both phones', full.pose < 0.25, 'biggest pose difference ' + full.pose.toFixed(2));
 await shot(A, '5_full_A'); await shot(B, '5_full_B');
 await A.evaluate(() => { const g = window.__game, me = g.you.userId, o = g.state.fish.find((f) => f.species === 'octopus' && f.owner === me); window.__fishes.dropCrabAt(0.4, o.id); });      // a crab only the lead phone knows about: the other phone must still show it
+const snapCount = (p) => p.evaluate(() => new Promise((ok) => { let n = 0, s = 0, fr = 0; const t0 = performance.now(); window.__game.on('snap', () => n++); const send = window.__game.live.send.bind(window.__game.live); window.__game.live.send = (m) => { if (m?.t === 'snap') s++; return send(m); }; const f = () => { fr++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); }; requestAnimationFrame(f); setTimeout(() => { window.__game.live.send = send; ok({ got: n, sent: s, frames: fr }); }, 3000); }));
+if (process.env.DEBUG) console.log('  crab phase snaps over 3 s', JSON.stringify(await Promise.all([snapCount(A), snapCount(B)])));
 await A.waitForTimeout(1200);
 let crabGap = 0, seen = 0; for (let i = 0; i < 8; i++) { await A.waitForTimeout(600); const [va, vb] = await Promise.all([view(A), view(B)]); if (va.crabs.length) seen++; for (const c of va.crabs) { const d = Math.min(...vb.crabs.map((q) => Math.hypot(c[0] - q[0], c[1] - q[1])), 99); crabGap = Math.max(crabGap, d); } }
 if (process.env.DEBUG) console.log('crabs', JSON.stringify((await view(A)).crabs), JSON.stringify((await view(B)).crabs)); await shot(A, '6_crab_A'); await shot(B, '6_crab_B');
