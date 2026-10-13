@@ -536,11 +536,18 @@ export class Fish3D {
       this.pitch += ((-0.06 + 0.14 * c) - this.pitch) * Math.min(1, dt * 6); this.curlK += (-0.2 - (this.curlK ?? 0)) * Math.min(1, dt * 2); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 4); this.phase += dt * 14;
       this.place(dt); return; }
     if (this.sp.tail) { if (!lead) { this.holdfast = null; } else if (this.seahorse(dt, rng)) return; }      // in a shared tank only the lead phone decides where a seahorse holds on; the others are shown it
+    if (this.follow && !this.seeking && !this.holdfast) {      // a social baby swimming alongside one of its family, a little to the side and behind
+      const o = this.follow; this.followT -= dt;
+      if (o.dead || this.followT <= 0) { this.follow = null; this.retarget = 0; }
+      else { const side = (this.fid ?? '').length & 1 ? 1 : -1, h = o.heading ?? 0; this.target.set(o.pos.x - Math.cos(h) * 0.35 + Math.sin(h) * 0.45 * side, o.pos.y + 0.15, o.pos.z + Math.sin(h) * 0.35 + Math.cos(h) * 0.45 * side); this.retarget = 1; this.idle = 0; }
+    }
+    if (this.perch && !this.perch.on && !this.seeking && this.pos.distanceTo(this.target) < 0.5) { this.perch.on = true; this.idle = this.perch.wait; this.retarget = this.perch.wait; }      // a baby arrived beside its stem: it stays
+    if (this.perch?.on && (this.seeking || this.idle <= 0)) this.perch = null;
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
-    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 0.75 : 0.5) * (holding ? 0.06 : 1);      // (a seahorse on its way to a holdfast swims steadily, still slowly)
+    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 0.75 : 0.5) * (holding ? 0.06 : 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1);      // (an exploring baby is a little brisker) (a seahorse on its way to a holdfast swims steadily, still slowly)
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
-    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
     const sp = this.face(dt, 0.9);
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
@@ -623,6 +630,7 @@ export class Fish3D {
   // its favourite is earned: the holdfast it has spent most time on, once it has gone back to it at least twice and held it two minutes in all.
   // A decoration that has gone is simply not among the choices any more, and a new favourite grows from where it holds on next.
   favourite(spots) {
+    if (this.role === 'plants' && this.homeId && spots.some((q) => q.id === this.homeId)) return this.homeId;      // the plant-lover's first stem is its place
     let best = null, bs = 0;
     for (const q of spots) { const m = this.memOf(q.id); if (m.secs >= 120 && m.visits >= 2 && m.secs > bs) { bs = m.secs; best = q.id; } }
     return best;
@@ -633,7 +641,7 @@ export class Fish3D {
     if (visit) { d.visits[H.id] = (d.visits[H.id] ?? 0) + 1; d.pos[H.id] = [+H.qx.toFixed(2), +H.qz.toFixed(2)]; this.lastHitch = H.id; }
   }
   // how long it stays on a holdfast: an active seahorse moves on sooner, a quiet one holds on far longer
-  holdLength(rng) { return (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8); }
+  holdLength(rng) { return (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
   // ── choosing a holdfast ── among the decorations with real grip points (found in the background, see grips.js), weighed by distance, by what it
   // knows and by its personality; then one of that decoration's grips, at the height its boldness likes and where no other seahorse is.
   pickHold(rng, spots, roost = false) {
@@ -716,7 +724,7 @@ export class Fish3D {
         const k = Math.min(1, dt * 4); this.pos.x += (wx - this.pos.x) * k; this.pos.y += (wy - this.pos.y) * k; this.pos.z += (wz - this.pos.z) * k; this.vel.set(0, 0, 0);
         const g0 = this.gripK ?? 0; this.curlK += (1 - this.curlK) * Math.min(1, dt * 3); this.gripK = d < 0.2 ? Math.min(1, g0 + dt * 2.2) : g0;
         let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 3); this.pitch += ((this.gripLean ?? SEAHORSE_LEAN) * this.gripK - this.pitch) * Math.min(1, dt * 4);
-        if (this.gripK >= 1 && d < 0.03) { H.on = true; H.settle = false; this.holdN = (this.holdN ?? 0) + 1; this.remember(H, 0, true); }
+        if (this.gripK >= 1 && d < 0.03) { H.on = true; H.settle = false; this.holdN = (this.holdN ?? 0) + 1; this.remember(H, 0, true); if (this.role === 'plants' && !this.homeId && PLANTS.has(H.type)) this.homeId = H.id; }
         this.phase += dt * 10; this.place(dt);
         if ((H.trip = (H.trip ?? 0) + dt) > (H.lim ?? 25) + 6) this.release(0.4);
         return true;
@@ -832,10 +840,26 @@ export class Fish3D {
     const spots = this.getSpots?.() ?? [], b = this.band;
     // a nursery baby shows its own character in where it goes next: the explorer seldom settles and heads off anywhere, the plant-lover
     // goes back to a stem whenever it can, the social one swims over to its father or a brother or sister
-    const role = this.nursery ? this.role : null, kin = role === 'social' ? this.kin?.() : null;
-    if (kin?.length && rng() < 0.75) { const o = kin[(rng() * kin.length) | 0]; this.target.set(o.pos.x + (rng() - 0.5) * 0.7, o.pos.y + (rng() - 0.5) * 0.4, o.pos.z + (rng() - 0.5) * 0.4); this.idle = 1 + rng() * 2; this.retarget = 3 + rng() * 2; return; }
-    if (role === 'explore' && rng() < 0.8) { this.target.set(-4 + rng() * 8, b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 0.5 + rng(); this.retarget = 4 + rng() * 3; return; }
-    if (this.sp.tail && !this.seeking && (role !== 'explore') && this.pickHold(rng, spots, !!this.sleepy || role === 'plants')) return;
+    const role = this.nursery ? this.role : null;
+    if (role === 'social') {      // goes over to its family, the ones swimming about first (not just whoever is resting on a stem), and swims alongside
+      const kin = (this.kin?.() ?? []).filter((o) => !o.dead), free = kin.filter((o) => !o.holdfast?.on && !o.perch?.on), calm = free.filter((o) => !(o.nursery && o.role === 'explore')), pick = calm.length && rng() < 0.6 ? calm : free.length ? free : kin;      /* its parents and the plant-lover more often than the explorer, which never stays */
+      if (pick.length && rng() < 0.85) { const o = pick.slice().sort((x, y) => y.vel.length() - x.vel.length())[rng() < 0.7 ? 0 : (rng() * pick.length) | 0];      /* mostly the one on the move */ this.follow = o; this.followT = 10 + rng() * 10; this.idle = 0; this.retarget = 1.5; return; }
+    }
+    if (role === 'explore' && rng() < 0.85) {      // somewhere new every time: half the time a decoration to look at, otherwise open water
+      const far = spots.filter((q) => Math.hypot(q.x - this.pos.x, q.z - this.pos.z) > 2.5 && q.id !== this.lastLook);
+      if (far.length && rng() < 0.7) { const q = far[(rng() * far.length) | 0]; this.lastLook = q.id; this.target.set(q.x + (rng() - 0.5) * 0.6, Math.min(Fish3D.topY - 1, (q.y ?? 0) + 0.6 + rng() * Math.max(0.4, (q.h ?? 1) * 0.6)), q.z + 0.5); }
+      else for (let k = 0; k < 6; k++) { this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); if (this.target.distanceTo(this.pos) > 3) break; }
+      this.idle = 0.2 + rng() * 0.5; this.retarget = 4 + this.target.distanceTo(this.pos) / Math.max(0.1, this.speed * 0.5); return;      // (time enough to get there)
+    }
+    if (this.sp.tail && !this.seeking && (role !== 'explore') && (role !== 'social' || rng() < 0.3) && this.pickHold(rng, spots, !!this.sleepy || role === 'plants')) return;
+    // a nursery baby is still too small to coil its tail round a stem (grips.js finds none for it), so it perches: it settles close beside one
+    // and stays there a while. The plant-lover goes back to its own plant, the others now and then to any
+    this.perch = null;
+    if (role && !this.seeking && (role === 'plants' || rng() < (role === 'explore' ? 0.1 : 0.25))) {
+      const plants = spots.filter((q) => PLANTS.has(q.type)), home = role === 'plants' && plants.find((q) => q.id === this.homeId);
+      const q = home && rng() < 0.8 ? home : plants[(rng() * plants.length) | 0];
+      if (q) { if (role === 'plants' && !this.homeId) this.homeId = q.id; this.target.set(q.x + (rng() - 0.5) * 0.3, (q.y ?? 0) + 0.5 + rng() * Math.max(0.3, (q.h ?? 1) * 0.5), q.z + 0.4); this.idle = 0; this.retarget = 25; this.perch = { id: q.id, on: false, wait: this.holdLength(rng) * (role === 'plants' ? 1 : 0.4) }; return; }
+    }
     // at the sand's own height under the thing it rests beside, not a fixed height above the floor
     if (spots.length && rng() < 0.6) { const s = spots[(rng() * spots.length) | 0], y = Math.max((s.y ?? 0) + 0.8, (s.y ?? 0) + s.h * (0.3 + rng() * 0.4) + 0.4); this.target.set(s.x + (rng() - 0.5) * 0.5, Math.min(Fish3D.topY - 1, y), s.z + 0.55); this.idle = 7 + rng() * 9; this.retarget = this.idle + 3; return; }   // hold on and rest
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 1.5 + rng() * 3; this.retarget = 4 + rng() * 4;

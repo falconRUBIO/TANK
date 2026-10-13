@@ -4,6 +4,7 @@ import { sandH, sandUnder, placeable, crossesFace, levelAt, slopeAt, GLASS_Z } f
 // where a crab comes down for an octopus: near x,z but on the same level of sand as the octopus, on flat sand, so the hunt never has to go round by a ramp
 const crabSpot = (o, x, z) => { const lv = levelAt(o.pos.x, o.pos.z); for (let k = 0; k < 24; k++) { const r = k * 0.12, a = k * 2.4, qx = Math.max(-3.6, Math.min(3.6, x + Math.cos(a) * r)), qz = Math.max(-3.3, Math.min(GLASS_Z - 0.8, z + Math.sin(a) * r)); if (levelAt(qx, qz) === lv && slopeAt(qx, qz).s < 0.8) return [qx, qz]; } return [o.pos.x + 0.8, o.pos.z]; };
 import * as THREE from 'three';
+const _tv = new THREE.Vector3();
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
 import { gripWork, PLANTS } from './grips.js';
@@ -68,7 +69,7 @@ export class Fishes {
     const seen = new Set();
     // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
     // they grow through the five days, and the one that is kept carries on as the same seahorse
-    const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father })) : [];
+    const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
     [...state.fish, ...kids].forEach((d, idx) => {
       seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)];
       let f = this.byId.get(d.id);
@@ -577,12 +578,18 @@ export class Fishes {
   // the plants, one stays close to its father and the others (see Fish3D.pickHover). What each did is kept in f.bl, so a drill can measure it.
   babyTick(dt) {
     const kids = this.list.filter((f) => f.nursery && !f.dead); if (!kids.length) return;
-    const plants = this.plantSpots?.length ? this.plantSpots : (this.spots?.() ?? []).filter((q) => PLANTS.has(q.type));
+    if ((this.bsT = (this.bsT ?? 0) - dt) <= 0) { this.bsT = 1; this.bsp = this.spots?.() ?? []; }      // (the decorations, looked up once a second)
+    const sp = this.bsp ?? [], plants = sp.filter((q) => PLANTS.has(q.type));
     for (const f of kids) {
-      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0 }), dad = this.byId.get(f.rec?.father), fam = [dad, ...kids.filter((k) => k !== f)].filter(Boolean);
+      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f)].filter(Boolean);
       L.secs += dt; if (f.lp) L.dist += f.lp.distanceTo(f.pos); (f.lp ||= new THREE.Vector3()).copy(f.pos);
       if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9)) L.plant += dt;
       if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt;
+      const v = f.vel.length(), dn = Math.min(...fam.map((o) => o.pos.distanceTo(f.pos)), 99);
+      if (v > 0.03 && !f.perch?.on && fam.some((o) => { const d = o.pos.distanceTo(f.pos); return o.vel.length() > 0.03 && !o.holdfast?.on && !o.perch?.on && d < 1.5 && f.vel.dot(_tv.copy(o.pos).sub(f.pos)) > 0.5 * v * d; })) L.swimWith += dt;      // swimming after or alongside one of them while it is on the move (heading its way, not just passing)
+      if (dn > 2) f.blFar = true; else if (dn < 0.8 && f.blFar) { f.blFar = false; L.meets = (L.meets ?? 0) + 1; }      // came over to one of its family from across the tank
+      const on = !!f.holdfast?.on || !!f.perch?.on; if (on) L.hitched += dt; if (on && !f.blOn) { L.holds++; if (f.homeId && (f.holdfast?.id ?? f.perch?.id) === f.homeId) L.home++; } f.blOn = on;
+      const near = (q, r) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < r, keep = f.blAt && sp.find((q) => q.id === f.blAt && near(q, 1.4)), at = keep ? f.blAt : sp.find((q) => near(q, 0.8))?.id ?? null; if (at) L.places.add(at); if (at && at !== f.blAt) L.looks = (L.looks ?? 0) + 1; f.blAt = at;      // each time it comes up to a decoration
       f.kin = () => fam;      // (who its family is, for where it swims: see Fish3D.pickHover)
     }
   }

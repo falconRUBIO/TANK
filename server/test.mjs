@@ -5,6 +5,7 @@ import { start } from './server.mjs';
 import { ALPHABET, tickTank } from './logic.mjs';
 import { DECOR_DEF, WATER_PAY, GLASS_PAY } from '../web/src/game/rules.js';
 
+const R_births = (id) => S.db.prepare('SELECT COUNT(*) AS n FROM journal WHERE tank_id=? AND text LIKE ?').get(id, '%gave birth%')?.n ?? 0;
 let pass = 0; let L_tick = () => null;
 const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(id).world);
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
@@ -656,6 +657,31 @@ await t('two phones in one tank agree on a director, who alone sends fish positi
   wx.send(JSON.stringify({ t: 'fx', kind: 'sight', what: 'whale', dir: -1, y0: 5, z: -8 })); const sg = await waitFor(wy, (m) => m.t === 'fx' && m.kind === 'sight'); assert.equal(sg.what, 'whale'); assert.equal(sg.dir, -1);
   wy.msgs.length = 0; wx.send(JSON.stringify({ t: 'vis', hidden: true })); await waitFor(wy, (m) => m.t === 'role' && m.director === true);
   wy.msgs.length = 0; wx.close(); await new Promise((r) => setTimeout(r, 150)); assert.equal(last(wy)?.director ?? true, true, 'and when the director leaves, the other takes over'); wy.close();
+});
+await t('seahorse family across phones: born with nobody connected, once; two phones choose at the same moment and only one baby stays; every phone, and one that was away, ends with the same tank; replays and reconnects add nothing', async () => {
+  const u = [await mkUser('F1'), await mkUser('F2'), await mkUser('F3')], tk = (await call('/api/tanks', { name: 'Family' }, u[0].token)).body; await call('/api/join', { code: tk.code }, u[1].token); await call('/api/join', { code: tk.code }, u[2].token);
+  const now = Date.now(), D = 864e5, sh = (id, name, sex, extra = {}) => ({ id, name, species: 'seahorse', seed: id.length * 7, born: now - 40 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, sex, mate: sex === 'm' ? 'sf' : 'sm', pairedAt: now - 20 * D, owner: null, ...extra });
+  setW(tk.id, { level: 8, shells: 100, hunger: 0, water: 1, glass: 0, simTs: now - 60e3, flags: { ...getW(tk.id).flags, tut: 5, firsts: Object.fromEntries(u.map((x) => [x.userId, true])) },
+    fish: [sh('sm', 'Sunny', 'm', { preg: { start: now - 7 * D, due: now - 30e3, mother: 'sf', ma: { id: 'sf', name: 'Pearl', seed: 14 }, seed: 99, n: 12 } }), sh('sf', 'Pearl', 'f')] });
+  tickTank(S.db, tk.id); tickTank(S.db, tk.id);      // nobody connected: the server's own tick brings the birth
+  let w = getW(tk.id); assert.ok(w.nursery, 'born while nobody was there'); assert.equal(w.fish.find((f) => f.id === 'sm').preg, null); const N = w.nursery;
+  assert.equal(R_births(tk.id), 1, 'the birth is written once');
+  const ph = await Promise.all(u.slice(0, 2).map(async (x) => { const ws = await open(x.token); ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'snapshot' || m.t === 'state') ws.tank = m.tank; }); await waitFor(ws, (m) => m.t === 'snapshot'); return ws; }));
+  const ask = (ws, m) => { ws.send(JSON.stringify(m)); return waitFor(ws, (x) => x.t === 'ack' && x.idem === m.idem, 4000); };
+  assert.equal((await ask(ph[0], { t: 'keepBaby', nursery: N.id, baby: N.cands[0].id, idem: 'kb0' })).reason, 'NOT_READY', 'not before the five days');
+  setW(tk.id, { nursery: { ...getW(tk.id).nursery, readyAt: Date.now() - 1000 } });
+  const [r1, r2] = await Promise.all([ask(ph[0], { t: 'keepBaby', nursery: N.id, baby: N.cands[0].id, idem: 'kb1' }), ask(ph[1], { t: 'keepBaby', nursery: N.id, baby: N.cands[1].id, idem: 'kb2' })]);
+  assert.equal([r1, r2].filter((r) => r.ok).length, 1, 'exactly one choice wins'); const won = r1.ok ? N.cands[0] : N.cands[1];
+  ph[0].send(JSON.stringify({ t: 'keepBaby', nursery: N.id, baby: N.cands[2].id, idem: 'kb1' })); ph[1].send(JSON.stringify({ t: 'keepBaby', nursery: N.id, baby: N.cands[2].id, idem: 'kb3' }));      // the same message again, and a late third choice
+  await new Promise((r) => setTimeout(r, 400)); w = getW(tk.id);
+  const born = w.fish.filter((f) => f.bornHere); assert.equal(born.length, 1, 'one baby'); assert.equal(born[0].id, won.id, 'the one chosen, with its own identity'); assert.equal(w.nursery, null);
+  assert.equal(w.lastDepart.kept, won.id); assert.deepEqual(w.lastDepart.left.sort(), N.cands.filter((c) => c.id !== won.id).map((c) => c.id).sort(), 'the other two leave, once');
+  for (const ws of ph) { assert.equal(ws.tank.nursery, null); assert.deepEqual(ws.tank.fish.map((f) => f.id).sort(), w.fish.map((f) => f.id).sort(), 'every phone has the same fish'); assert.deepEqual(ws.tank.lastDepart, w.lastDepart); }
+  const away = await open(u[2].token), snap = await waitFor(away, (m) => m.t === 'snapshot');      // the third phone was away the whole time
+  assert.deepEqual(snap.tank.fish.map((f) => f.id).sort(), w.fish.map((f) => f.id).sort()); assert.equal(snap.tank.nursery, null); assert.equal(snap.tank.lastDepart.nursery, N.id);
+  for (const ws of ph) ws.close(); await new Promise((r) => setTimeout(r, 50));
+  const back = await open(u[0].token), s2 = await waitFor(back, (m) => m.t === 'snapshot'); assert.equal(s2.tank.fish.filter((f) => f.bornHere).length, 1, 'a reconnect adds nothing'); tickTank(S.db, tk.id);
+  w = getW(tk.id); assert.equal(w.fish.filter((f) => f.bornHere).length, 1); assert.equal(w.fish.length, 3); assert.equal(R_births(tk.id), 1); back.close(); away.close();
 });
 wsA.close();
 wa.close(); await S.close();
