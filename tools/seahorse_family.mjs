@@ -12,7 +12,7 @@ const p = await (await b.newContext({ viewport: { width: 430, height: 932 }, dev
 p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /error/.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)); });
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const until = async (fn, secs = 90) => { for (let i = 0; i < secs * 2; i++) { const v = await p.evaluate(fn).catch(() => null); if (v) return v; await p.waitForTimeout(500); } return null; };      // (a machine without a graphics chip draws about one frame a second: wait for things rather than for a fixed time)
-const hide = () => p.evaluate(() => document.querySelectorAll('#coach,#toast,#settle,#reunion,#goal').forEach((e) => (e.style.display = 'none')));
+const hide = async () => { for (let i = 0; i < 4; i++) { const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (!t || /READY|KEEP/.test(t)) break; await p.click('#modal.on #mok').catch(() => {}); await p.waitForTimeout(400); } await p.evaluate(() => document.querySelectorAll('#coach,#toast,#settle,#reunion,#goal').forEach((e) => (e.style.display = 'none'))); };      // (a daily gift may show first)
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=noon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(1500);
 await p.evaluate(() => document.querySelector('#modal')?.classList.remove('on'));
@@ -26,17 +26,17 @@ await hide(); await until(() => window.__fishes.byId.get('h1')?.brood != null);
 // the pouch, half way and nearly full; none on the female
 const pouch = () => p.evaluate(() => { const F = window.__fishes, out = {}; for (const id of ['h1', 'h2']) { const f = F.byId.get(id); out[id] = { brood: +(f?.brood ?? 0).toFixed(2), shown: f ? f.vox.filter((v) => v.tag === 'pouch' && (f.brood ?? 0) >= v.pk).length : -1, all: f ? f.vox.filter((v) => v.tag === 'pouch').length : -1 }; } return out; });
 const half = await pouch();
-await p.evaluate(() => window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('h1')))); await p.waitForTimeout(1800); await p.screenshot({ path: `${OUT}/1_pouch_half.png` });
+await p.evaluate(() => window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('h1')))); await p.waitForTimeout(1800); await hide(); await p.screenshot({ path: `${OUT}/1_pouch_half.png` });
 await p.evaluate((D) => { const s = window.__game.state, m = s.fish.find((f) => f.id === 'h1'), now = Date.now(); m.preg.start = now - 6.8 * D; m.preg.due = now + 0.2 * D; window.__game.emit('state'); }, D); await until(() => (window.__fishes.byId.get('h1')?.brood ?? 0) > 0.9);
-const full = await pouch(); await p.screenshot({ path: `${OUT}/2_pouch_full.png` });
+const full = await pouch(); await hide(); await p.screenshot({ path: `${OUT}/2_pouch_full.png` });
 console.log('  pouch', JSON.stringify({ half, full }));
 ck('a pregnant male has a brood pouch, fuller as his pregnancy goes on', half.h1.shown > 0 && full.h1.shown > half.h1.shown && half.h1.brood > 0.4 && half.h1.brood < 0.6 && full.h1.brood > 0.9, { half: half.h1, full: full.h1 });
 ck('the female has none', half.h2.shown === 0 && full.h2.shown === 0, { half: half.h2, full: full.h2 });
 // the birth, on his due time, while this phone watches
 await p.evaluate(() => { const s = window.__game.state, m = s.fish.find((f) => f.id === 'h1'); m.preg.due = Date.now() + 2500; window.__game.emit('state'); });
-await until(() => window.__nursery?.id && (window.__nursery.fry.some((f) => f.out) || window.__fishes.byId.get('h1')?.birthT > 0)); await until(() => window.__nursery.fry.filter((f) => f.out).length >= 3, 60); await p.screenshot({ path: `${OUT}/3_birth.png` });
+await until(() => window.__nursery?.id && (window.__nursery.fry.some((f) => f.out) || window.__fishes.byId.get('h1')?.birthT > 0)); await until(() => window.__nursery.fry.filter((f) => f.out).length >= 3, 60); await hide(); await p.screenshot({ path: `${OUT}/3_birth.png` });
 const b1 = await p.evaluate(() => { const g = window.__game, s = g.state, F = window.__fishes, dad = F.byId.get('h1'); return { nursery: s.nursery && { id: s.nursery.id, n: s.nursery.n, cands: s.nursery.cands.length, ready: s.nursery.readyAt - s.nursery.born }, preg: s.fish.find((f) => f.id === 'h1').preg, births: g.journal.filter((j) => /gave birth/.test(j.text)).length, birthT: +(dad?.birthT ?? 0).toFixed(1), held: !!dad?.holdfast?.on, sawBirth: !!window.__sawBirth, tracked: F.list.filter((f) => f.nursery).map((f) => +(f.growth ?? 0).toFixed(2)) }; });
-await until(() => window.__nursery.fry.every((f) => f.out), 240); await p.evaluate(() => window.__focus(null)); await p.waitForTimeout(1500); await p.screenshot({ path: `${OUT}/4_nursery.png` });
+await until(() => window.__nursery.fry.every((f) => f.out), 240); await p.evaluate(() => window.__focus(null)); await p.waitForTimeout(1500); await hide(); await p.screenshot({ path: `${OUT}/4_nursery.png` });
 const b2 = await p.evaluate(() => { const g = window.__game, s = g.state; return { id: s.nursery?.id, births: g.journal.filter((j) => /gave birth/.test(j.text)).length, fry: window.__nursery?.fry?.length ?? -1, out: (window.__nursery?.fry ?? []).filter((f) => f.out).length }; });
 console.log('  birth', JSON.stringify({ b1, b2 }));
 ck('he gives birth on his due time: the pregnancy ends, the nursery begins with three tracked babies and the rest of the brood', b1.nursery && b1.nursery.cands === 3 && b1.preg == null && b1.nursery.n >= 10 && b1.nursery.n <= 15 && b1.nursery.ready === 5 * 864e5, b1);
