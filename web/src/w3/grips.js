@@ -61,7 +61,7 @@ function begin(e) {
   const q = e.q, sc = P.sc, vox = e.sh.decorVox?.(q.x, q.z, 1.8) ?? [];
   const own = vox.filter((v) => v[4] === q.id); if (!own.length) return false;
   const base = q.y, top = Math.max(...own.map((v) => v[1]));
-  e.ctx = { phase: 'file', i: 0, vox, own, H: new Map(), hv: sc * 0.45, sc, plant: PLANTS.has(q.type), q, base, ht: Math.max(0.3, top - base), cands: [], seen: new Set(), P, Rout: SEAHORSE_GRIP_R * sc + 0.09 };
+  e.ctx = { phase: 'file', i: 0, vox, own, H: new Map(), hv: sc * 0.45, sc, plant: PLANTS.has(q.type), rigid: q.type === 'bamboo', q, base, ht: Math.max(0.3, top - base), cands: [], seen: new Set(), P, Rout: SEAHORSE_GRIP_R * sc + 0.09 };
   return true;
 }
 // every voxel filed under each cell its box (grown by half one of the seahorse's voxels) touches, so a point needs one look-up
@@ -111,7 +111,7 @@ function clashes(ctx, P, sx, yy, sz, face, limit) {
       if (wy < sandH(wx, wz) + 0.02) { if (++bad > limit) return bad; continue; }
       const L = H.get(cellKey(Math.floor(wx / C), Math.floor(wy / C), Math.floor(wz / C))); if (!L) continue;
       for (const v of L) {
-        if (plant && Math.abs(v[1] - yy) < 0.22) { const hd = Math.hypot(v[0] - sx, v[2] - sz); if (hd > 0.06 && hd < Rout) continue; }      // a leaf pressed aside by the tail
+        if (plant && !ctx.rigid && Math.abs(v[1] - yy) < 0.22) { const hd = Math.hypot(v[0] - sx, v[2] - sz); if (hd > 0.06 && hd < Rout) continue; }      // a leaf pressed aside by the tail (bamboo's stalks are rigid: never pressed aside)
         const m = v[3] + hv; if (Math.abs(v[0] - wx) < m && Math.abs(v[1] - wy) < m && Math.abs(v[2] - wz) < m) { if (++bad > limit) return bad; break; }
       }
     }

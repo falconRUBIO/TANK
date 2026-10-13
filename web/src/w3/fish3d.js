@@ -195,11 +195,13 @@ export class Fish3D {
     // a seahorse is upright and slim: it is felt for from its tail up to its head. Swimming, it keeps off leaves too, but not on the last stretch
     // onto its own holdfast, nor while it holds on, greets or holds tails (its grip was found clear of every leaf already)
     const Hf = this.holdfast, seaSoft = sea && !this.link && !this.greet && !(Hf && (Hf.on || Hf.settle || this.pos.distanceTo(this.target) < 1.0));
+    if (seaSoft && W.soft?.at) { const v = Math.hypot(this.vel.x, this.vel.z);      // leaves just ahead: it rises over them rather than pushing through
+      if (v > 0.02) { const ax = this.pos.x + (this.vel.x / v) * 0.5, az = this.pos.z + (this.vel.z / v) * 0.5; if ([-0.4, 0, 0.35].some((k) => W.soft.at(ax, this.pos.y + R * k, az))) this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } }
     if (W.push && !this.homing) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
         if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
-        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.75, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
+        const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.9, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
         if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
       }
       if (!moved) break;
@@ -530,7 +532,7 @@ export class Fish3D {
     const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 0.75 : 0.5) * (holding ? 0.06 : 1);      // (a seahorse on its way to a holdfast swims steadily, still slowly)
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
     this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
-    this.pos.addScaledVector(this.vel, dt); this.resolve(others);
+    this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
     const sp = this.face(dt, 0.9);
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
     this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
@@ -586,7 +588,7 @@ export class Fish3D {
   holdSpot(q) { const e = gripsNow(q, this), g = e.grips[0]; return g ? { ...g, bad: 0 } : null; }
   // where the stem passes through its coiled tail, in the world, from how it is posed: the same on every phone, since the curl and grip are shared
   gripPoint() {
-    if (!this.sp.tail || (this.gripK ?? 0) < 0.5 || this.dead) return null;
+    if (!this.sp.tail || ((this.gripK ?? 0) < 0.5 && !this.holdfast?.settle) || this.dead) return null;      // (gliding the last little way onto its stem, the leaves part for it already)
     const gl = this.gripLocalFor(this.gripStem ?? SEAHORSE_STEM, this.gripLean ?? SEAHORSE_LEAN), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch), gx = gl[0] * cp - gl[1] * sp, gy = gl[0] * sp + gl[1] * cp, sc = this.scale;
     return [this.pos.x + Math.cos(this.heading) * gx * sc, this.pos.y + gy * sc, this.pos.z - Math.sin(this.heading) * gx * sc];
   }
