@@ -204,7 +204,7 @@ export class Fish3D {
     if (jet) { const L = this.pos.distanceTo(_p2); if (L > 0.08) this.pos.lerpVectors(_p2, this.pos, 0.08 / L); if (this.pos.z < OCT_BACK && this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3) this.pos.z = OCT_BACK; }      // and on the sand it is never pushed off the back of the bank
     for (const o of others) {                                               // fish are solid too
       if (o === this || (jet && o.species.move !== 'jet') || this.link?.o === o) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
-      const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.5, dd = Math.hypot(dx, dy, dz), min = Math.max(0.5, 0.42 * (this.radius + o.radius));
+      const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.5, dd = Math.hypot(dx, dy, dz), min = this.sp.tail && o.sp?.tail ? 0.9 * (this.cr + o.cr) : Math.max(0.5, 0.42 * (this.radius + o.radius));      // two seahorses are slim and may hold on side by side
       if (dd < min * 0.92 && dd > 1e-3) { const k = (min * 0.92 - dd) / dd * (!jet && o.species.move === 'jet' ? 1 : 0.5); this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k / 1.5; }
     }
     this.pos.x = Math.max(-4.7, Math.min(4.7, this.pos.x)); this.pos.y = Math.max(0.35 + this.sandBelow(), Math.min(Fish3D.topY - Math.min(0.9, this.radius * 0.35), this.pos.y)); this.pos.z = Math.max(-3.8, Math.min(GLASS_Z - 0.2, this.pos.z));
@@ -525,7 +525,7 @@ export class Fish3D {
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
     const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : 0.5) * (holding ? 0.06 : 1);
-    to.multiplyScalar((base / d) * Math.min(1, d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);
+    to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
     this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.resolve(others);
     const sp = this.face(dt, 0.9);
@@ -641,10 +641,11 @@ export class Fish3D {
     }
     if (!roost && pool.filter(([q]) => q.id !== this.lastHold && (pool.length > 2 || Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 4.2)).length >= 1) { for (let i = pool.length - 1; i >= 0; i--) if (pool[i][0].id === this.lastHold) { tot -= pool[i][1]; pool.splice(i, 1); } }      // not straight back to where it just was, if there is a real choice (two others, or one within a short swim)
     if (!pool.length) return false;
-    const fav = this.favourite(spots); let pick = fav && rng() < (roost ? 0.85 : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;
+    const fav = this.favourite(spots), fq = fav && spots.find((q) => q.id === fav), fd = fq ? Math.hypot(fq.x - this.pos.x, fq.z - this.pos.z) : 0;
+    let pick = fav && rng() < (roost ? (fd < 2.5 ? 0.85 : 0.35) : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;      // for the night, its favourite if it is not far; otherwise somewhere near it knows
     if (!pick) { let r = rng() * tot; for (const x of pool) { r -= x[1]; if (r <= 0) { pick = x; break; } } pick ||= pool[0]; }
     const [q, , e] = pick, want = 0.25 + 0.6 * bold;      // a bold seahorse holds on higher up, a cautious one lower down
-    const free = e.grips.filter((g) => !others.some((o) => o.holdfast && Math.hypot(o.holdfast.x - g.x, o.holdfast.z - g.z) < 0.3 && Math.abs(o.holdfast.y - g.y) < 0.6)); if (!free.length) return false;
+    const free = e.grips.filter((g) => !others.some((o) => o.holdfast && Math.hypot(o.holdfast.x - g.x, o.holdfast.z - g.z) < 0.6 && Math.abs(o.holdfast.y - g.y) < 0.9)); if (!free.length) return false;
     let g = free[0], gs = 9; for (const x of free) { const sc = Math.abs(x.hf - want) + rng() * 0.3; if (sc < gs) { gs = sc; g = x; } }
     this.gripStem = g.stem ?? SEAHORSE_STEM; this.gripLean = g.lean ?? SEAHORSE_LEAN; this.holdfast = { id: q.id, type: q.type, qx: q.x, qz: q.z, x: g.x, y: g.y, z: g.z, face: g.face, hf: g.hf, stem: this.gripStem, lim: 20 + 7 * Math.hypot(g.x - this.pos.x, g.y - this.pos.y, g.z - this.pos.z), on: false, until: this.holdLength(rng), snick: 2 + rng() * 5, held: 0, roost };
     this.idle = 0; this.retarget = 40; this.target.set(g.x, g.y, g.z); this.novel = q.id === this.novel ? null : this.novel;

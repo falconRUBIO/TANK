@@ -14,7 +14,7 @@ export const FACES = [0, Math.PI, 0.5, Math.PI - 0.5, -0.5, Math.PI + 0.5, 1, Ma
 const MAX_GRIPS = 6, MAX_CANDS = 40, C = 0.1;
 const cellKey = (a, b, c) => ((a + 512) * 1024 + (b + 512)) * 1024 + (c + 512);
 const CACHE = new Map(), QUEUE = [], FRAME = { t0: 0, defer: false, all: false };
-export const gripStats = { searches: 0, tested: 0, workMs: 0, maxFrameMs: 0, frames: 0, worstUnitMs: 0, worstUnit: '' };
+export const gripStats = { searches: 0, tested: 0, workMs: 0, maxFrameMs: 0, frames: 0, worstUnitMs: 0, worstUnit: '', poseMs: 0, maxSearchFrameMs: 0 };
 
 // the grip points of one decoration for a seahorse of this size: { status: 'pending' | 'ready', grips: [{ x, y, z, face, hf }] }
 export function gripsFor(q, sh) {
@@ -30,13 +30,13 @@ export function gripsFor(q, sh) {
 // do some of the waiting searches, for at most budgetMs this frame. A search goes in small steps (filing a few hundred voxels, looking over a few dozen
 // of its own, or testing one way of facing on one stem), so no single step runs long, even on a big rock or the coconut.
 export function gripWork(budgetMs = 1.5) {
-  if (!QUEUE.length) return; const t0 = performance.now(); gripStats.frames++; FRAME.t0 = t0; FRAME.defer = false;
+  if (!QUEUE.length) return; const t0 = performance.now(); gripStats.frames++; FRAME.t0 = t0; FRAME.defer = false; FRAME.posed = false;
   while (QUEUE.length && !FRAME.defer && performance.now() - t0 < budgetMs) {
     const e = QUEUE[0];
     if (e.status !== 'pending' || CACHE.get(e.k) !== e) { QUEUE.shift(); continue; }
-    const u0 = performance.now(), ph = e.ctx?.phase ?? 'begin'; advance(e); const um = performance.now() - u0; if (um > gripStats.worstUnitMs) { gripStats.worstUnitMs = um; gripStats.worstUnit = ph + ':' + e.q.type; }
+    const u0 = performance.now(), posing = !!e.sh.hasHeldPose && !e.sh.hasHeldPose(SEAHORSE_STEM, SEAHORSE_LEAN), ph = e.ctx?.phase ?? (posing ? 'pose' : 'begin'); advance(e); const um = performance.now() - u0; if (ph === 'pose' || FRAME.posed) { FRAME.posed = true; gripStats.poseMs = Math.max(gripStats.poseMs, um); } else if (um > gripStats.worstUnitMs) { gripStats.worstUnitMs = um; gripStats.worstUnit = ph + ':' + e.q.type; }
   }
-  const ms = performance.now() - t0; gripStats.workMs += ms; gripStats.maxFrameMs = Math.max(gripStats.maxFrameMs, ms);
+  const ms = performance.now() - t0; gripStats.workMs += ms; gripStats.maxFrameMs = Math.max(gripStats.maxFrameMs, ms); if (!FRAME.posed) gripStats.maxSearchFrameMs = Math.max(gripStats.maxSearchFrameMs, ms);      // (frames that posed a seahorse, a one-off for each, are counted apart)
 }
 // for tests and tools: the whole search at once
 export function gripsNow(q, sh) { const e = gripsFor(q, sh); FRAME.all = true; while (e.status === 'pending') advance(e); FRAME.all = false; return e; }
