@@ -345,6 +345,10 @@
   #sheet .set .foot{margin:20px 6px 4px;font-size:12px;line-height:1.5;text-align:center;color:#a9c0d6}
   #sheet .tog{padding:7px 14px;font-size:13px;min-height:34px}
   #sheet .grid2.acts{gap:var(--g2)}
+  /* Feed is a slim full-width bar above the food drawer: icon, label and state in one centred line */
+  #sheet .grid2.acts .tile[data-act="feeddrawer"]{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:center;min-height:0;padding:11px 14px;gap:8px}
+  #sheet .grid2.acts .tile[data-act="feeddrawer"] span{font-size:20px}#sheet .grid2.acts .tile[data-act="feeddrawer"] small::before{content:'· ';opacity:.6}
+  #sheet .carehead{text-align:center!important}
   #sheet .grid2.acts .tile{min-height:88px;gap:6px;padding:14px 8px;border-radius:var(--rad);font-size:14px;font-weight:600;justify-content:center}
   #sheet .grid2.acts .tile span{font-size:26px;line-height:1}#sheet .grid2.acts .tile small{font-size:12px;font-weight:400;color:#c5d8ea}
   #sheet .needs.wide{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;padding:2px 4px}
