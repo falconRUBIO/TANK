@@ -649,8 +649,8 @@ let lastLamp = null, seenDecor = null;
 const nurseryFx = new Nursery(stg.scene); window.__nursery = nurseryFx;
 let readyShown = null;
 const ROLE_LINE = { explore: 'roams all over the tank', plants: 'stays close to the plants', social: 'keeps near its family' };
-async function openNursery() {
-  const N = game.state?.nursery; if (!N || $('modal').classList.contains('on')) return;
+async function openNursery(auto = false) {
+  const N = game.state?.nursery; if (!N || $('modal').classList.contains('on')) { if (auto && N && readyShown === N.id) readyShown = null; return; }      // (something else was on screen: the choice comes up again on the next check)
   const day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }), who = (c) => `${c.name} · ${c.sex === 'm' ? 'a little male' : 'a little female'} · ${(c.traits ?? []).join(', ').toLowerCase() || 'still finding its way'}${ROLE_LINE[babyRole(N, c)] ? ' · ' + ROLE_LINE[babyRole(N, c)] : ''}`;
   const parents = `Born ${day(N.born)} to ${N.pa?.name ?? 'their father'} and ${N.ma?.name ?? 'their mother'}.`;
   if (game.now() < N.readyAt) { const d = Math.min(5, Math.floor((game.now() - N.born) / 864e5) + 1); return ui.dialog({ title: 'THE NURSERY', text: `${N.n} baby seahorses, day ${d} of 5. ${parents} ${N.fed ? `They have been fed ${N.fed === 1 ? 'once' : N.fed + ' times'} so far, and catch the tiniest bits themselves. ` : 'They catch the tiniest bits of food themselves. '}Three of them you can already tell apart:`, lines: N.cands.map(who), ok: 'Lovely' }); }
@@ -663,7 +663,7 @@ async function openNursery() {
 }
 function nurseryCheck() {      // the moment they are ready, once a session: the choice comes up by itself
   const N = game.state?.nursery; if (!N || game.now() < N.readyAt || readyShown === N.id || ui?.tab !== 'tank' || $('modal').classList.contains('on')) return;
-  readyShown = N.id; setTimeout(openNursery, 1500);
+  readyShown = N.id; setTimeout(() => openNursery(true), 1500);
 }
 function syncWorld() {
   const s = game.state; if (!s) return;

@@ -540,7 +540,8 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg);
     const sh = t.shells, r = R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: m.preg.start + H }); assert.equal(r.reason, 'EXPECTING'); assert.ok(t.fish.some((f) => f.id === 'm')); assert.equal(t.shells, sh);
     const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H); const N = t.nursery;
-    assert.deepEqual(N.cands.map((c) => c.role), ['explore', 'plants', 'social']); assert.deepEqual(N.cands.map((c) => c.traits[0]), ['Curious', 'Calm', 'Social']);
+    assert.deepEqual(N.cands.map((c) => c.role), ['explore', 'plants', 'social']);
+    for (let seed = 1; seed < 400; seed++) { const u = tank(); const m = u.fish[0]; m.preg = { start: 0, due: 7 * D, mother: 'w', seed: seed * 7919, n: 12 }; R.advance(u, 7 * D + 1); assert.equal(new Set(u.nursery.cands.map((c) => c.name)).size, 3, 'three different names, seed ' + seed); } assert.deepEqual(N.cands.map((c) => c.traits[0]), ['Curious', 'Calm', 'Social']);
     assert.equal(R.applyAction(t, { t: 'sellFish', id: N.cands[0].id }, { now: due + 2 * H }).reason, 'NOT_FOUND', 'a nursery baby is not in the shop list');
     t.hunger = 0.5; t.shells = 50; R.applyAction(t, { t: 'feed', food: 'flakes' }, { now: due + 2 * H }); assert.equal(N.fed, 1);
     live(t, due + 3 * H, due + 5 * D + H); assert.equal(R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: due + 5 * D + H }).ok, true, 'after the birth he can go to a new home again');

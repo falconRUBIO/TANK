@@ -331,7 +331,7 @@ export function initUI({ game, social, cb }) {
       </div>`}
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
       ${game.dev ? `<h4>Developer</h4><div class="group"><label class="row2"><span>Developer Tools</span><button class="tog" id="devtools">Open ›</button></label></div>` : ''}
-      ${game.shared && !game.test ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
+      ${game.shared && !game.test ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Player ID<small>${esc(game.you?.userId ?? '')}</small></span><button class="tog" id="myid">Copy</button></label><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
       <p class="dim foot">OUR TANK · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 13 Oct (seahorse families 2)</p></div>`,
   };
   // ── Developer Tools (only for the player ids the server lists; every step is checked again there) ──
@@ -354,7 +354,7 @@ export function initUI({ game, social, cb }) {
         ${stg === 'none' ? row('Create test pair', 'pair', true, 'Two adult seahorses, paired by the game') : ''}
         ${row('Start pregnancy', 'pregnant', stg === 'paired')}
         ${row('Advance to day 3', 'preg3', stg === 'pregnant' && days < 3)}
-        ${row('Advance to day 6', 'preg6', stg === 'pregnant' && days < 6 && (st.pregDays ?? 0) > 6)}
+        ${row('Advance to day 6', 'preg6', stg === 'pregnant' && days < 6 && (st.pregDays ?? 0) >= 6)}
         ${row('Trigger birth', 'birth', stg === 'pregnant')}
       </div>
       <h4>Nursery</h4><div class="group">
@@ -395,6 +395,7 @@ export function initUI({ game, social, cb }) {
     const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+    bind('myid', () => { navigator.clipboard?.writeText(game.you?.userId ?? '').then(() => toast('Player ID copied'), () => toast(game.you?.userId ?? '')); });
     bind('devtools', () => { sub = 'devtools'; devInfo = null; open('friends', true); devLoad(); }); bind('devback', () => { sub = 'settings'; open('friends', true); });
     bind('devfast', () => { const on = !devFast(); try { localStorage.setItem('ourtank.devfast', on ? '1' : '0'); } catch { /* ignore */ } if (!on && game.test) return cb.devLeave(); open('friends', true); if (on) devLoad(); });
     bind('deventer', () => cb.devEnter()); bind('devleave', () => cb.devLeave()); bind('devjoin', () => cb.devJoin().then(devLoad));

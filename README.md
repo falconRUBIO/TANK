@@ -168,9 +168,8 @@ Seahorses pair, court, and the male carries the young. All of it is kept in the 
 A hidden panel for going through a seahorse family in a few minutes instead of twelve days, on the game's real rules and real multiplayer.
 
 - **Who sees it:** only players whose player id is listed in the server's `DEV_USERS` environment variable (comma separated). The app holds
-  no secret; the server checks the id on every developer call and refuses everyone else (403). A player's id is shown under Settings >
-  Developer… only once they are listed, so to find yours the first time read `userId` from the browser's `ourtank.session` storage, or ask
-  the server operator to look it up in the `users` table.
+  no secret; the server checks the id on every developer call and refuses everyone else (403). Each player's id is under Settings >
+  Your data > Player ID (Copy). It is not a secret (the crew's phones see it); the sign-in token never leaves the phone.
 - **Where:** Settings > Developer > Developer Tools > Seahorse lifecycle test. Turn on *Fast lifecycle test* to show the controls.
 - **The test aquarium** is an ordinary tank marked `test`, with its own id, code, animals, journal and history. Its people are kept in
   `test_members`, so entering it never takes anyone out of their real tank, and it cannot be found or joined with the normal join. The

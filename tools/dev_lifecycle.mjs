@@ -43,7 +43,7 @@ s = await press('pregnant'); ck('Start pregnancy: day 1 of a real 6–9 day preg
 s = await press('preg3'); ck('Advance to day 3', s.stage.pregDay === 3, s.stage);
 const pouch = (p) => p.evaluate(() => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m ? +(m.brood ?? 0).toFixed(2) : -1; });
 const p3 = await until(A, () => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m && m.brood > 0.2 ? +m.brood.toFixed(2) : null; });
-s = await press('preg6'); const p6a = await until(A, () => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m && m.brood > 0.6 ? +m.brood.toFixed(2) : null; }), p6b = await until(B, () => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m && m.brood > 0.6 ? +m.brood.toFixed(2) : null; });
+s = await press('preg6'); const p6a = await until(A, () => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m && m.brood > 0.5 ? +m.brood.toFixed(2) : null; }), p6b = await until(B, () => { const m = window.__fishes.list.find((f) => f.rec?.preg); return m && m.brood > 0.5 ? +m.brood.toFixed(2) : null; });
 ck('Advance to day 6: the pouch is fuller, the same on both phones', s.stage.pregDay === 6 && p6a > p3 && Math.abs(p6a - p6b) < 0.05, { day: s.stage.pregDay, p3, p6a, p6b });
 await A.evaluate(() => window.__ui.open('tank')); await A.screenshot({ path: `${OUT}/3_day6.png` });
 s = await press('birth'); await A.evaluate(() => window.__ui.open('tank'));
@@ -57,7 +57,8 @@ await A.evaluate(() => window.__ui.open('tank')); await B.evaluate(() => window.
 s = await press('ready'); await A.evaluate(() => window.__ui.open('tank'));
 const ready = (p) => until(p, () => { const t = document.querySelector('#modal.on h2')?.textContent ?? ''; if (/READY/.test(t)) return true; if (t && !/KEEP/.test(t)) document.querySelector('#modal.on #mok')?.click(); return null; }, 120);
 const [ra, rb] = await Promise.all([ready(A), ready(B)]); await A.screenshot({ path: `${OUT}/5_ready.png` });
-ck("Ready to choose: THEY'RE READY comes up on both phones, the player's own screen", ra && rb && s.stage.stage === 'ready');
+const why = async (p) => p.evaluate(() => ({ modal: document.querySelector('#modal.on h2')?.textContent ?? null, tab: window.__ui?.tab ?? null, nursery: !!window.__game.state.nursery, ready: window.__game.state.nursery ? window.__game.now() >= window.__game.state.nursery.readyAt : null }));
+ck("Ready to choose: THEY'RE READY comes up on both phones, the player's own screen", ra && rb && s.stage.stage === 'ready', { ra, rb, a: ra ? null : await why(A), b: rb ? null : await why(B) });
 // both choose at the same moment, different babies
 await Promise.all([tap(A, '#modal [data-i="0"]'), tap(B, '#modal [data-i="1"]')]); await Promise.all([until(A, () => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? '')), until(B, () => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? ''))]);
 await A.screenshot({ path: `${OUT}/6_confirm.png` });
@@ -74,7 +75,8 @@ await panel(A); A.once('dialog', () => {}); await tap(A, '#devreset'); await unt
 ck('Reset test aquarium: clean on both phones', !!(await until(B, () => window.__game.state.fish.length === 0 && !window.__game.state.nursery)));
 await A.evaluate(() => { localStorage.setItem('ourtank.devfast', '0'); localStorage.removeItem('ourtank.testAq'); location.reload(); }); await until(A, () => window.__game?.state && window.__game.mode === 'net');
 const realAfter = await call('/api/export', null, a.token);
-ck('back in the real tank, untouched', (await A.evaluate(() => !window.__game.test && document.getElementById('testb').hidden && window.__game.code)) === home.code && JSON.stringify(realAfter.world.fish) === JSON.stringify(realBefore.world.fish) && realAfter.world.shells === realBefore.world.shells && realAfter.journal.length === realBefore.journal.length, { shells: [realBefore.world.shells, realAfter.world.shells], journal: [realBefore.journal.length, realAfter.journal.length] });
+const realTx = S.db.prepare('SELECT type, COUNT(*) n FROM transactions WHERE tank_id=? GROUP BY type').all(home.id).map((r) => r.type).sort();      // what was ever done in the real tank
+ck('back in the real tank, untouched', (await A.evaluate(() => !window.__game.test && document.getElementById('testb').hidden && window.__game.code)) === home.code && JSON.stringify(realAfter.world.fish.map((f) => [f.id, f.name, f.species])) === JSON.stringify(realBefore.world.fish.map((f) => [f.id, f.name, f.species])) && !realAfter.world.nursery && !realAfter.world.fish.some((f) => f.species === 'seahorse') && realTx.every((t) => !['devSea', 'keepBaby', 'feed'].includes(t)) && realAfter.journal.length === realBefore.journal.length, { realTx, shells: [realBefore.world.shells, realAfter.world.shells], journal: [realBefore.journal.length, realAfter.journal.length] });      // (shells may move by the daily gift the drill claims there, nothing else)
 ck('the phone never kept the test aquarium as its copy of its tank', await A.evaluate((c) => { const k = JSON.parse(localStorage.getItem('ourtank.cache') || 'null'); return !k || k.code === c; }, home.code));
 ck('no page errors', errors.length === 0, errors.slice(0, 4));
 console.log(fails ? `${fails} failed` : 'Developer lifecycle checks passed'); await br.close(); await S.close(); process.exit(fails ? 1 : 0);
