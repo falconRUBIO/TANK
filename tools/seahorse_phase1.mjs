@@ -13,9 +13,10 @@
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 const only = process.argv[2] ? new Set(process.argv[2].split(',')) : null, run = (k) => !only || only.has(k);
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
-const p = await ctx.newPage(); const errors = []; let fails = 0;
-p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /error/.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)); });
+const errors = []; let fails = 0, ctx, p;
+const open = async () => { await ctx?.close(); ctx = await b.newContext({ viewport: { width: 430, height: 932 } }); p = await ctx.newPage();      // a new browser profile: nothing kept from before
+  p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /error/.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)); }); };
+await open();
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const boot = async () => { await p.goto('http://localhost:8123/?q=0&dev=1&tod=noon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(1500);
   await p.evaluate(() => { window.__step = async (secs, each) => { const F = window.__fishes; for (let i = 0; i < secs * 20; i++) { window.__t = (window.__t ?? 0) + 0.05; F.update(0.05, window.__t); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); F.observe?.(0.05, window.__t); each?.(i); if (i % 400 === 0) await new Promise((q) => setTimeout(q, 0)); } }; }); };
@@ -24,7 +25,7 @@ const setup = (fish, decor, extra = {}) => p.evaluate(([fish, decor, extra]) => 
   for (const f of fish) s.fish.push({ born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, ...f }); for (const d of decor) s.decor.push({ ry: 0, ...d }); g.emit('state');
   document.querySelectorAll('#coach,#toast,#settle,#reunion,#modal').forEach((e) => (e.style.display = 'none')); }, [fish, decor, extra]).then(() => p.waitForTimeout(1500))
   .then(() => p.evaluate(() => { for (const f of window.__fishes.list) { f.noticeQ = null; f.exploreAt = null; } }));      // the tank as set up is not 'something new' to them
-let booted = false; const fresh = async () => { if (booted) await boot(); booted = true; };      // each section starts from a freshly loaded page
+let booted = false; const fresh = async () => { if (booted) { await open(); await boot(); } booted = true; };      // each section starts from a freshly loaded page
 await boot();
 
 if (run('grips')) {
