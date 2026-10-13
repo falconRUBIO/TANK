@@ -275,6 +275,8 @@ export function initUI({ game, social, cb }) {
     return `<div class="drawer">${out.join('')}${M.canEat.length ? `<p class="fhow">Pick a food, then tap the water. Each feed is up to 3 drops.${M.hungry.length ? ' A hungry animal fed for free earns 1 🐚.' : ''}</p>` : ''}</div>`;
   };
   const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.octo ? hasOcto(S()) : d.sea ? hasSeahorse(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
+  let devInfo = null; const devFast = () => { try { return localStorage.getItem('ourtank.devfast') === '1'; } catch { return false; } };
+  const devLoad = async () => { if (!game.dev) return; try { devInfo = await cb.devInfo(); } catch (e) { devInfo = { tank: null }; } if (tab === 'friends' && sub === 'devtools') { const y = sheet.scrollTop; open('friends', true); sheet.scrollTop = y; } };
   const views = {
     care: () => `<h3>Care</h3>${(() => { const [txt, act, extra] = careHead(); return act ? `<button class="carehead due" data-act="${act}" ${extra ?? ''}>${txt}</button>` : `<p class="carehead">${txt}</p>`; })()}<div class="grid2 acts">${(() => { const k = careState(); const M = feedModel(), next = M.groups.length ? Math.min(...M.groups.map((g) => g.canIn)) : 0; return tile('🫙', 'Feed', 'feeddrawer', !M.groups.length ? k.feed[0] : M.hungry.length === 1 ? `${M.hungry[0].who.charAt(0).toUpperCase() + M.hungry[0].who.slice(1)} ${/^the /.test(M.hungry[0].who) ? 'are' : 'is'} hungry` : M.hungry.length ? `${M.hungry.length} hungry · choose below` : M.canEat.length ? 'Can eat a little' : `All full · next meal ${soon(next)}`, M.hungry.length ? 'due' : 'later'); })()}${(feedOpen ?? feedModel().hungry.length > 0) ? feedDrawer() : ''}${(() => { const k = careState(); return tile('🧽', 'Clean glass', 'clean', k.glass[0], k.glass[1]) + tile('💧', 'Change water', 'water', k.water[0], k.water[1]); })()}${readyToTrim(S(), Date.now()).length ? tile('✂️', 'Trim plants', 'trim', `${readyToTrim(S(), Date.now()).length} ready`) : ''}${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo') : ''}</div><h4>Tank status</h4>${meters()}<h4>Today</h4>${todayHtml()}`,
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
@@ -286,6 +288,7 @@ export function initUI({ game, social, cb }) {
       if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
       if (sub === 'book') return `<h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}`;
       if (sub === 'look') return lookHtml();
+      if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot me"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
         <p class="dim">You are playing on your own. Open the game on the server to start a shared tank; three friends can then join with its six-character code.</p>`;
       const wish = WISHES[S().wishIdx];
@@ -314,7 +317,7 @@ export function initUI({ game, social, cb }) {
         <label class="row2"><span>Notifications</span><button class="tog" id="pushbtn">…</button></label>
         <label class="row2" id="pushtestrow" hidden><span>Check that they arrive</span><button class="tog" id="pushtest">Send a test</button></label>
       </div>` : `<h4>Help</h4><div class="group"><label class="row2"><span>Replay the tips</span><button class="tog" id="tutr">Replay</button></label></div>`}
-      <h4>Your tank</h4><div class="group">
+      ${game.test ? `<h4>Test aquarium</h4><div class="group"><div class="row2"><span>You are in</span><b>TEST AQUARIUM</b></div><label class="row2"><span>Back to your own tank</span><button class="tog" id="devleave">Leave test</button></label></div>` : `<h4>Your tank</h4><div class="group">
         ${game.state.fish.some((f) => f.species === 'octopus') ? `<label class="row2"><span>Octopus moves things</span><button class="tog ${game.state.flags?.noRearrange ? '' : 'on'}" id="rearr">${game.state.flags?.noRearrange ? 'Off' : 'On'}</button></label>` : ''}
         ${game.shared ? `<div class="row2"><span>Tank</span><b>${esc(game.tankName)}</b></div>
         <div class="row2"><span>Tank code</span><b class="tcode">${esc(game.code ?? '')}</b></div>
@@ -325,10 +328,45 @@ export function initUI({ game, social, cb }) {
         <label class="row2"><span>Recovery key</span><button class="tog" id="rkey">Show</button></label>
         <label class="row2"><span>Backup</span><span><button class="tog" id="bkup">Download</button> <button class="tog" id="bkcopy">Copy as text</button></span></label>
         <label class="row2"><span>Leave this tank</span><button class="tog warn" id="leave">Leave</button></label>` : `<label class="row2"><span>Start over</span><button class="tog warn" id="reset">Reset tank</button></label>`}
-      </div>
+      </div>`}
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
-      ${game.shared ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
+      ${game.dev ? `<h4>Developer</h4><div class="group"><label class="row2"><span>Developer Tools</span><button class="tog" id="devtools">Open ›</button></label></div>` : ''}
+      ${game.shared && !game.test ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
       <p class="dim foot">OUR TANK · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 13 Oct (seahorse families 2)</p></div>`,
+  };
+  // ── Developer Tools (only for the player ids the server lists; every step is checked again there) ──
+  views.devtools = () => {
+    const D = devInfo, on = devFast(), st = D?.stage ?? {}, stg = st.stage ?? 'none', can = (ok) => (D?.tank && ok ? '' : 'disabled');
+    const stageTxt = !D ? 'Loading…' : !D.tank ? 'No test aquarium yet' : ({ none: 'No seahorse pair yet', paired: `Paired: ${st.male} and ${st.female}`, pregnant: `Pregnancy · ${st.male} · day ${st.pregDay} of ${st.pregDays}`, nursery: `Nursery · day ${st.nurseryDay} of 5 · fed ${st.fed} time${st.fed === 1 ? '' : 's'}`, ready: `Nursery · ready to choose · fed ${st.fed} time${st.fed === 1 ? '' : 's'}` })[stg];
+    const row = (label, op, ok, note = '') => `<label class="row2"><span>${label}${note ? `<small>${note}</small>` : ''}</span><button class="tog" data-dev="${op}" ${can(ok)}>${op === 'pair' ? 'Create' : 'Go'}</button></label>`;
+    const days = st.pregDay ?? 0, nd = st.nurseryDay ?? 0;
+    return `<h3>Developer Tools</h3><div class="set">
+      <h4>Seahorse lifecycle test</h4><div class="group">
+        <label class="row2"><span>Fast lifecycle test<small>Manual steps on a separate test aquarium</small></span><button class="tog ${on ? 'on' : ''}" id="devfast">${on ? 'On' : 'Off'}</button></label>
+      </div>
+      ${on ? `<h4>Test aquarium</h4><div class="group">
+        <div class="row2"><span>Current stage</span><b>${esc(stageTxt)}</b></div>
+        ${D?.tank ? `<div class="row2"><span>Test code<small>${esc((D.people ?? []).join(', ') || 'Nobody yet')}</small></span><b class="tcode">${esc(D.tank.code)}</b></div>` : ''}
+        <label class="row2"><span>${game.test ? 'You are in the test aquarium' : 'Watch it happen'}</span><button class="tog" id="${game.test ? 'devleave' : 'deventer'}">${game.test ? 'Back to my tank' : 'Enter test aquarium'}</button></label>
+        <label class="row2"><span>Join another phone's test<small>Enter its test code</small></span><button class="tog" id="devjoin">Join</button></label>
+      </div>
+      <h4>Pregnancy</h4><div class="group">
+        ${stg === 'none' ? row('Create test pair', 'pair', true, 'Two adult seahorses, paired by the game') : ''}
+        ${row('Start pregnancy', 'pregnant', stg === 'paired')}
+        ${row('Advance to day 3', 'preg3', stg === 'pregnant' && days < 3)}
+        ${row('Advance to day 6', 'preg6', stg === 'pregnant' && days < 6 && (st.pregDays ?? 0) > 6)}
+        ${row('Trigger birth', 'birth', stg === 'pregnant')}
+      </div>
+      <h4>Nursery</h4><div class="group">
+        ${row('Advance to day 2', 'nurs2', stg === 'nursery' && nd < 2)}
+        ${row('Advance to day 4', 'nurs4', stg === 'nursery' && nd < 4)}
+        ${row('Ready to choose', 'ready', stg === 'nursery')}
+      </div>
+      <h4>Test management</h4><div class="group">
+        <label class="row2"><span>Run full demo<small>Steps through to THEY'RE READY, then stops for your choice</small></span><button class="tog" id="devdemo" ${can(stg !== 'ready')}>${cb.devDemoOn?.() ? 'Stop' : 'Run'}</button></label>
+        <label class="row2"><span>Reset test aquarium</span><button class="tog warn" id="devreset" ${can(true)}>Reset</button></label>
+      </div>` : ''}
+      <p class="dim foot"><button class="lnk" id="devback">‹ Settings</button></p></div>`;
   };
   function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; im.src = k === 'fish' ? fishThumb(id) : decorThumb(id); }, i * 16)); }
   function paint() {
@@ -357,6 +395,11 @@ export function initUI({ game, social, cb }) {
     const buy = $('buy'); if (buy) buy.onclick = async () => { const [kind, id] = selected.split(':'); if (kind === 'fish') cb.adopt(id); else if (kind === 'floor' || kind === 'backdrop') { sfx('tap'); const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; } else cb.startPlace(id); };
     const rr = $('rearr'); if (rr) rr.onclick = () => { rearrange = !rearrange; cb.rearrange(rearrange); if (rearrange) open('tank'); else open('decorate', true); };
     const bind = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+    bind('devtools', () => { sub = 'devtools'; devInfo = null; open('friends', true); devLoad(); }); bind('devback', () => { sub = 'settings'; open('friends', true); });
+    bind('devfast', () => { const on = !devFast(); try { localStorage.setItem('ourtank.devfast', on ? '1' : '0'); } catch { /* ignore */ } if (!on && game.test) return cb.devLeave(); open('friends', true); if (on) devLoad(); });
+    bind('deventer', () => cb.devEnter()); bind('devleave', () => cb.devLeave()); bind('devjoin', () => cb.devJoin().then(devLoad));
+    bind('devreset', () => cb.devReset().then(devLoad)); bind('devdemo', () => { cb.devDemo(devLoad); devLoad(); });
+    sheet.querySelectorAll('[data-dev]').forEach((b) => (b.onclick = async () => { b.disabled = true; await cb.devStep(b.dataset.dev); devLoad(); }));
     bind('rearr', async () => { await game.dispatch({ t: 'tankPref', rearrange: !!game.state.flags?.noRearrange }); open('friends', true); }); bind('snd', () => { setSound(!soundOn()); open('friends', true); }); bind('mus', () => { setMusic(!musicOn()); open('friends', true); }); bind('gfx', () => { cb.cycleQuality(); open('friends', true); });
     const phc = $('phc'); if (phc) phc.textContent = game.copyAt ? 'Saved ' + (Date.now() - game.copyAt < 120000 ? 'just now' : new Date(game.copyAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })) : 'Saving…';
     const stor = $('stor'); if (stor) cb.storage().then((r) => { stor.textContent = r.level === 'safe' ? 'Protected ✓' : r.level === 'waiting' ? 'Starting up…' : 'Not protected: it can vanish when the server restarts'; stor.style.color = r.level === 'risk' ? '#ff9a8a' : r.level === 'safe' ? '#8fe0a8' : ''; }).catch(() => { stor.textContent = 'Unknown'; });

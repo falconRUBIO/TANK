@@ -11,7 +11,8 @@ const getW = (id) => JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?
 const setW = (id, patch) => { const w = { ...getW(id), ...patch }; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), id); };
 const t = async (name, fn) => { try { await fn(); pass++; console.log('  ✓', name); } catch (e) { console.log('  ✗', name, '\n   ', e.message); process.exitCode = 1; } };
 const pushed = [];
-const S = await start({ port: 0, dbPath: ':memory:', limits: { joinPerMin: 400, userPerHour: 5000, tankPerHour: 5000, actionsPer10s: 500 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
+const DEVS = [];      // the developers' player ids, as the server's DEV_USERS would hold them
+const S = await start({ devUsers: DEVS, port: 0, dbPath: ':memory:', limits: { joinPerMin: 400, userPerHour: 5000, tankPerHour: 5000, actionsPer10s: 500 }, push: { publicKey: 'PUB', privateKey: 'PRIV', sender: async (sub, payload) => { pushed.push({ sub, payload: JSON.parse(payload) }); } } });
 const base = `http://localhost:${S.port}`;
 L_tick = () => tickTank(S.db, tank.id);
 const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
@@ -682,6 +683,54 @@ await t('seahorse family across phones: born with nobody connected, once; two ph
   for (const ws of ph) ws.close(); await new Promise((r) => setTimeout(r, 50));
   const back = await open(u[0].token), s2 = await waitFor(back, (m) => m.t === 'snapshot'); assert.equal(s2.tank.fish.filter((f) => f.bornHere).length, 1, 'a reconnect adds nothing'); tickTank(S.db, tk.id);
   w = getW(tk.id); assert.equal(w.fish.filter((f) => f.bornHere).length, 1); assert.equal(w.fish.length, 3); assert.equal(R_births(tk.id), 1); back.close(); away.close();
+});
+await t('developer test aquarium: only listed players; real tanks untouched; the whole seahorse lifecycle step by step on the real rules; two phones; reset', async () => {
+  const dev = await mkUser('Dev'), dev2 = await mkUser('Dev2'), plain = await mkUser('Plain'), mine = (await call('/api/tanks', { name: 'Home' }, dev.token)).body;
+  setW(mine.id, { shells: 77, level: 3, flags: { ...getW(mine.id).flags, tut: 5 }, fish: [{ id: 'hx', name: 'Homey', species: 'goldfish', seed: 2, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, owner: dev.userId }] });
+  const homeBefore = JSON.stringify({ ...getW(mine.id), simTs: 0 }), homeJournal = S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(mine.id).n;
+  // not a developer: no tools, every endpoint refused, and no way into a test aquarium
+  for (const [path, body] of [['/api/dev/test', null], ['/api/dev/test/open', {}], ['/api/dev/test/step', { op: 'pair' }], ['/api/dev/test/reset', {}], ['/api/dev/test/join', { code: 'AAAAAA' }]]) assert.equal((await call(path, body, plain.token)).status, 403, path);
+  assert.equal((await call('/api/me', null, plain.token)).body.dev, undefined);
+  DEVS.push(dev.userId, dev2.userId); assert.equal((await call('/api/me', null, dev.token)).body.dev, true);
+  const op = await call('/api/dev/test/open', {}, dev.token); assert.equal(op.status, 200); const code = op.body.tank.code;
+  assert.notEqual(op.body.tank.id, mine.id); assert.equal((await call('/api/me', null, dev.token)).body.tank.id, mine.id, 'still in their own tank');
+  assert.equal((await call('/api/join/preview', { code }, plain.token)).status, 404, 'a test aquarium cannot be found the normal way'); assert.equal((await call('/api/join', { code }, plain.token)).status, 404);
+  assert.equal((await call('/api/dev/test/open', {}, dev.token)).body.tank.id, op.body.tank.id, 'opening again finds the same one');
+  // two phones in it: the second developer joins with the code; a socket to the test aquarium needs both the role and the seat
+  assert.equal((await call('/api/dev/test/join', { code }, dev2.token)).status, 200);
+  const sock = (tok) => new Promise((ok, no) => { const ws = new WebSocket(`ws://localhost:${S.port}/ws?test=1`, ['ourtank.' + tok]); ws.msgs = []; ws.on('message', (d) => { const m = JSON.parse(d.toString()); ws.msgs.push(m); if (m.t === 'snapshot' || m.t === 'state') ws.tank = m.tank; }); ws.on('open', () => ok(ws)); ws.on('unexpected-response', (_, r) => no(new Error('HTTP ' + r.statusCode))); ws.on('error', no); });
+  await assert.rejects(sock(plain.token), /401/, 'not a developer: no test socket');
+  const A = await sock(dev.token), B = await sock(dev2.token); const sa = await waitFor(A, (m) => m.t === 'snapshot'); await waitFor(B, (m) => m.t === 'snapshot');
+  assert.equal(sa.tank.id, op.body.tank.id); assert.equal(sa.test, true); assert.equal(sa.tank.fish.length, 0);
+  const step = async (o, tok = dev.token) => (await call('/api/dev/test/step', { op: o, idem: o + Math.random() }, tok)).body, settle = () => new Promise((r) => setTimeout(r, 150));
+  { const x = await step('pregnant'); assert.equal(x.reason, 'NOT_NOW', JSON.stringify(x)); }
+  let r = await step('pair'); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(r.stage.stage, 'paired'); assert.ok(r.stage.male && r.stage.female);
+  r = await step('pregnant'); assert.equal(r.stage.stage, 'pregnant'); assert.equal(r.stage.pregDay, 1); assert.ok(r.stage.pregDays >= 6 && r.stage.pregDays <= 9, 'a real pregnancy length');
+  r = await step('preg3'); assert.equal(r.stage.pregDay, 3); r = await step('preg6'); assert.equal(r.stage.pregDay, 6);
+  assert.equal((await step('preg3')).reason, 'NOT_NOW', 'never backwards'); assert.equal((await step('nurs2')).reason, 'NOT_NOW', 'no nursery yet');
+  await settle(); const male = A.tank.fish.find((f) => f.preg); assert.ok(male && B.tank.fish.find((f) => f.preg)?.preg.start === male.preg.start, 'both phones: the same pregnancy, the same day');
+  r = await step('birth'); assert.equal(r.stage.stage, 'nursery'); assert.equal(r.stage.nurseryDay, 1); await settle();
+  const births = () => S.db.prepare("SELECT COUNT(*) n FROM journal WHERE tank_id=? AND text LIKE '%gave birth%'").get(op.body.tank.id).n; assert.equal(births(), 1);
+  assert.equal((await step('birth')).reason, 'NOT_NOW', 'no second birth'); assert.equal(births(), 1);
+  assert.ok(A.msgs.some((m) => m.t === 'event' && /gave birth/.test(m.journal?.text ?? '')) && B.msgs.some((m) => m.t === 'event' && /gave birth/.test(m.journal?.text ?? '')), 'both phones hear the birth');
+  A.send(JSON.stringify({ t: 'feed', food: 'flakes', idem: 'tf1' })); await waitFor(A, (m) => m.t === 'ack' && m.idem === 'tf1');      // feeding is the ordinary action
+  r = await step('nurs2'); assert.equal(r.stage.nurseryDay, 2); r = await step('nurs4'); assert.equal(r.stage.nurseryDay, 4);
+  r = await step('ready', dev2.token); assert.equal(r.stage.stage, 'ready', 'either developer may step it'); await settle();
+  const N = getW(op.body.tank.id).nursery; assert.ok(N.fed >= 0);
+  const ask = (ws, m) => { ws.send(JSON.stringify(m)); return waitFor(ws, (x) => x.t === 'ack' && x.idem === m.idem, 4000); };
+  const [k1, k2] = await Promise.all([ask(A, { t: 'keepBaby', nursery: N.id, baby: N.cands[0].id, idem: 'tk1' }), ask(B, { t: 'keepBaby', nursery: N.id, baby: N.cands[1].id, idem: 'tk2' })]);
+  assert.equal([k1, k2].filter((x) => x.ok).length, 1, 'one choice wins'); await settle();
+  let w = getW(op.body.tank.id); assert.equal(w.fish.filter((f) => f.bornHere).length, 1); assert.equal(w.lastDepart.left.length, 2); assert.deepEqual(A.tank.lastDepart, w.lastDepart); assert.deepEqual(B.tank.lastDepart, w.lastDepart);
+  // the real tank never moved
+  assert.equal(JSON.stringify({ ...getW(mine.id), simTs: 0 }), homeBefore, 'the real tank is untouched'); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(mine.id).n, homeJournal);
+  // reset: a clean test aquarium for both phones; a late choice from before cannot bring anything back
+  const old = N.id; r = (await call('/api/dev/test/reset', {}, dev.token)).body; assert.equal(r.stage.stage, 'none'); await settle();
+  w = getW(op.body.tank.id); assert.equal(w.fish.length, 0); assert.equal(w.nursery, null); assert.equal(births(), 0); assert.equal(A.tank.fish.length, 0); assert.equal(B.tank.fish.length, 0);
+  assert.equal((await ask(A, { t: 'keepBaby', nursery: old, baby: N.cands[2].id, idem: 'tk9' })).ok, false, 'a late message from before the reset does nothing'); assert.equal(getW(op.body.tank.id).fish.length, 0);
+  await step('pair'); await step('pregnant'); await step('birth'); assert.notEqual(getW(op.body.tank.id).nursery.id, old, 'a new family never reuses an old id');
+  // the plain player's own test endpoints stay shut even with a real tank, and a developer's normal socket still opens their own tank
+  const home = await open(dev.token), hs = await waitFor(home, (m) => m.t === 'snapshot'); assert.equal(hs.tank.id, mine.id); assert.equal(hs.test, undefined);
+  for (const x of [A, B, home]) x.close(); DEVS.length = 0;
 });
 wsA.close();
 wa.close(); await S.close();

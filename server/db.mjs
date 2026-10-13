@@ -56,6 +56,13 @@ export function openDb(path = 'ourtank.db') {
     ); INSERT INTO members_v4 SELECT tank_id, user_id, slot, joined_at, last_seen FROM members; DROP TABLE members; ALTER TABLE members_v4 RENAME TO members; COMMIT;`);
   try { db.exec('ALTER TABLE tanks ADD COLUMN world TEXT'); } catch { /* column already there */ }
   try { db.exec('ALTER TABLE users ADD COLUMN recovery_hash TEXT'); } catch { /* column already there */ }
+  // a developer's test aquarium: a tank marked test, whose people are kept apart from the real caretakers (test_members), so being in one
+  // never takes anyone out of their own tank, and no one can join a test tank the ordinary way
+  try { db.exec('ALTER TABLE tanks ADD COLUMN test INTEGER NOT NULL DEFAULT 0'); } catch { /* column already there */ }
+  db.exec(`CREATE TABLE IF NOT EXISTS test_members (
+    tank_id TEXT NOT NULL REFERENCES tanks(id), user_id TEXT NOT NULL REFERENCES users(id), joined_at INTEGER NOT NULL,
+    PRIMARY KEY (tank_id, user_id), UNIQUE (user_id)
+  )`);
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_recovery ON users(recovery_hash) WHERE recovery_hash IS NOT NULL');
   return db;
 }

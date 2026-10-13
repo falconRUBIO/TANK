@@ -26,6 +26,9 @@ export async function api(path, body, method = body ? 'POST' : 'GET') {
 }
 export async function serverAvailable() { try { await api('/api/me'); return true; } catch (e) { return !e.offline && !!e.status; } }
 
+// a developer's test aquarium (see server: test_members): this phone shows it instead of its own tank until it leaves it again
+export const inTest = () => { try { return localStorage.getItem('ourtank.testAq') === '1'; } catch { return false; } };
+export const setTest = (on) => { try { if (on) localStorage.setItem('ourtank.testAq', '1'); else localStorage.removeItem('ourtank.testAq'); } catch { /* ignore */ } };
 // ── realtime ──
 export class Live {
   constructor(onMsg, onStatus) {
@@ -35,12 +38,13 @@ export class Live {
   }
   open() {
     this.closed = false;
-    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws';
+    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws' + (inTest() ? '?test=1' : '');
     const ws = (this.ws = new WebSocket(url, ['ourtank.' + session.token]));
     ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
     ws.onmessage = (e) => { this.lastMsg = Date.now(); const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };
     ws.onclose = () => {
       this.onStatus(false);
+      if (!this.closed && inTest() && this.retry >= 3) { setTest(false); location.reload(); return; }      // the test aquarium is gone or no longer ours: back to our own tank
       if (!this.closed) { if (this.retry >= 2 && !this.checking) { this.checking = true; api('/api/me').then(() => { this.checking = false; }).catch((e) => { this.checking = false; if (e.status === 401) location.reload(); }); } setTimeout(() => this.open(), Math.min(8000, 800 * 2 ** this.retry++)); }       // signed out because the server lost its data: start over, which restores the tank
     };
     ws.onerror = () => ws.close();
@@ -69,7 +73,7 @@ export function runOnboarding() {
     try { const kept = await idbGet(WAS); if (Array.isArray(kept) && kept.length && !formerIds().length) localStorage.setItem(WAS, JSON.stringify(kept.slice(-8))); } catch { /* storage unavailable */ }      // the former ids too are kept in two places
     if (!session?.token) { const kept = await idbGet('ourtank.session'); if (kept?.token) { session = kept; store(session); } }
     if (session?.token) {
-      try { const me = await api('/api/me'); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank }); }
+      try { const me = await api('/api/me'); if (!me.dev) setTest(false); if (me.tank) return done({ mode: 'net', user: me.user, tank: me.tank, dev: !!me.dev }); }
       catch (e) {
         if (e.offline) return done({ mode: 'local' });
         if (e.status === 401) { const healed = await healTank().catch(() => null); if (healed) return done({ mode: 'net', user: healed.user, tank: healed.tank, healed: true }); }

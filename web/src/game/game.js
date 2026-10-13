@@ -60,7 +60,7 @@ export class Game {
   }
   // The phone keeps its own copy of the shared tank. If the server ever loses its data (a restart on a host with no permanent disk), the copy puts the tank back under the same code.
   keepCopy(force = false) {
-    if (this.mode !== 'net' || !this.state || !this.you) return;
+    if (this.mode !== 'net' || !this.state || !this.you || this.test) return;      // (a test aquarium is never kept as this phone's copy of its tank)
     if (!force && this._copyAt > Date.now() - 1500) { if (!this._copyT) this._copyT = setTimeout(() => { this._copyT = null; this.keepCopy(); }, 1700); return; }      // saved at most every few seconds, but the latest change is never skipped
     this._copyAt = Date.now();
     const me = (this.members ?? []).find((x) => x.id === this.you.userId);
@@ -71,7 +71,7 @@ export class Game {
   onNet(m) {
     if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
-      const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
+      this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ day: e.day, text: e.text, ts: e.ts, userId: e.userId })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }

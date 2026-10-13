@@ -65,7 +65,8 @@ class Limiter {
   sweep() { const now = Date.now(); for (const [k, a] of this.h) if (!a.length || now - a[a.length - 1] > 3600e3) this.h.delete(k); }
 }
 
-export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null } = {}) {
+export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null, devUsers = null } = {}) {
+  const isDev = (u) => L.isDev(u, devUsers ?? process.env.DEV_USERS);      // the developer's tools are for these player ids only (DEV_USERS in the server's environment)
   const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
   const push = makePush(db, pushOpts ?? vapidFor(db));
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
@@ -114,7 +115,27 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const level = o?.on && o.at && !o.err ? 'safe' : o?.on ? 'waiting' : disk ? 'safe' : 'risk';
         return json(res, 200, { level, offsite: !!o?.on, disk, lastCopy: o?.at || null, error: o?.err || null });
       }
-      if (req.method === 'GET' && p === '/api/me') { const t = L.tankOf(db, user.id); return json(res, 200, { user, tank: t ? { id: t.id, name: t.name, code: t.code, slot: t.slot } : null }); }
+      if (req.method === 'GET' && p === '/api/me') { const t = L.tankOf(db, user.id); return json(res, 200, { user, tank: t ? { id: t.id, name: t.name, code: t.code, slot: t.slot } : null, ...(isDev(user) ? { dev: true } : {}) }); }
+      // ── the developer's seahorse lifecycle test: every call checks the player id on the server, and only ever touches that player's test aquarium ──
+      if (p.startsWith('/api/dev/')) {
+        if (!isDev(user)) throw new L.GameError('FORBIDDEN', 'Not available.', 403);
+        const info = (t) => { if (!t) return { tank: null }; const { w } = L.loadWorld(db, t.id); return { tank: { id: t.id, code: t.code, name: t.name }, stage: R.seaStage(w), people: L.listMembers(db, t.id).map((m) => m.name) }; };
+        if (req.method === 'GET' && p === '/api/dev/test') return json(res, 200, info(L.testTankOf(db, user.id)));
+        if (req.method === 'POST' && p === '/api/dev/test/open') { L.openTestTank(db, user); return json(res, 200, info(L.testTankOf(db, user.id))); }
+        if (req.method === 'POST' && p === '/api/dev/test/join') { const b = await readBody(req); const t = L.joinTestTank(db, user, String(b.code ?? '')); for (const w of [...(rooms.get(t.id) ?? [])]) send(w, { t: 'presence', online: online(t.id) }); return json(res, 200, info(L.testTankOf(db, user.id))); }
+        if (req.method === 'POST' && p === '/api/dev/test/step') {
+          const b = await readBody(req), t = L.testTankOf(db, user.id); if (!t) throw new L.GameError('NO_TANK', 'Open the test aquarium first.', 404);
+          const r = L.act(db, user, { t: 'devSea', op: String(b.op ?? '') }, { idem: String(b.idem ?? '') || crypto.randomUUID(), tank: t });
+          if (r.ok && !r.dup) { broadcast(t.id, { t: 'state', tank: L.publicTank(r.world), by: user.id }); for (const e of r.events) broadcast(t.id, { t: 'event', ...e }); }
+          return json(res, 200, { ok: r.ok, reason: r.reason ?? null, ...info(t) });
+        }
+        if (req.method === 'POST' && p === '/api/dev/test/reset') {
+          const r = L.resetTestTank(db, user);
+          for (const w of [...(rooms.get(r.id) ?? [])]) send(w, { t: 'snapshot', ...L.snapshot(db, w.user, online(r.id), L.testTankOf(db, w.userId)) });      // every phone in it starts again from the clean tank
+          return json(res, 200, info(L.testTankOf(db, user.id)));
+        }
+        throw new L.GameError('NOT_FOUND', 'Not found.', 404);
+      }
       if (req.method === 'POST' && p === '/api/profile') {
         if (!lim.hit('p:' + user.id, 20, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
         const u = L.updateProfile(db, user, await readBody(req)); const t = L.tankOf(db, user.id);
@@ -188,15 +209,17 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     if (url.pathname !== '/ws') return socket.destroy();
     // the sign-in travels in the connection's protocol header, not in the address (addresses end up in logs); the address form still works for older phones
     const proto = String(req.headers['sec-websocket-protocol'] ?? '').split(',').map((x) => x.trim()).find((x) => x.startsWith('ourtank.')), user = L.authUser(db, proto ? proto.slice(8) : url.searchParams.get('token'));
-    if (!user || !L.tankOf(db, user.id)) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return socket.destroy(); }
-    wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; wss.emit('connection', ws, req); });
+    const test = url.searchParams.get('test') === '1';      // a developer's test aquarium instead of their own tank
+    if (!user || !(test ? isDev(user) && L.testTankOf(db, user.id) : L.tankOf(db, user.id))) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return socket.destroy(); }
+    wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; ws.test = test; wss.emit('connection', ws, req); });
   });
   wss.on('connection', (ws) => {
-    const tank = L.tankOf(db, ws.userId); ws.tankId = tank.id;
+    const tankNow = () => (ws.test ? (isDev(ws.user) ? L.testTankOf(db, ws.userId) : null) : null);      // (looked up again for every action: a reset or a move to another test aquarium never reaches the wrong one)
+    const tank = ws.test ? tankNow() : L.tankOf(db, ws.userId); if (!tank) return ws.close(); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
     ws.joinedAt = Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
-    send(ws, { t: 'snapshot', ...L.snapshot(db, ws.user, online(tank.id)) });
+    send(ws, { t: 'snapshot', ...L.snapshot(db, ws.user, online(tank.id), ws.test ? tank : null) });
     // catching the tank up for the newcomer can change it (growth, a reward): everyone already here must see the same tank
     { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
@@ -221,6 +244,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, out);
           return;
         }
+        if (ws.test && (m.t === 'nudge' || m.t === 'thank' || m.t === 'chat')) return;      // nothing from a test aquarium reaches anyone's real crew
         if (m.t === 'nudge') {
           const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
           if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
@@ -262,7 +286,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const { t: type, idem, ...rest } = m;
           if (type === 'observe' && !lim.hit('ob:' + ws.userId, 24, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
           if (type === 'fishLog' && !lim.hit('fl:' + ws.userId, 3, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
-          const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an });
+          const tk = ws.test ? tankNow() : null; if (ws.test && tk?.id !== ws.tankId) return send(ws, { t: 'ack', idem, ok: false, reason: 'NO_TANK' });
+          const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an, tank: tk });
           send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait });
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
           if (r.ok && !r.dup) {

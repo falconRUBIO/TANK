@@ -16,7 +16,7 @@ import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { soloLook, saveSoloLook } from './people.js';
-import { runOnboarding, Live, api, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
+import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
@@ -935,13 +935,29 @@ async function firstFishPrompt() {
     const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') { fail(r); firstAskAfter = performance.now() + 10 * 60e3; } else if (r.ok) sfx('arrive');      // something went wrong: not again for a good while
   } catch { firstAskAfter = performance.now() + 60e3; } finally { firstAsking = false; }
 }
+// ── Developer Tools: one lifecycle step on the server (it answers with the new stage; every phone in the test aquarium gets the change) ──
+const STEP_FAIL = { NOT_NOW: 'Not at this stage', TANK_FULL: 'The test aquarium is full', NO_TANK: 'Open the test aquarium first', FORBIDDEN: 'Not available' };
+async function devStep(op) { try { const r = await api('/api/dev/test/step', { op, idem: crypto.randomUUID().slice(0, 18) }); if (!r.ok) ui.toast(STEP_FAIL[r.reason] ?? 'That did not work'); return r; } catch (e) { ui.toast(e.message || 'That did not work'); return null; } }
+// the whole way to THEY'RE READY with a pause at each stage to watch it, then it stops: the choice is the person's own
+let demoRun = null;
+async function devDemo(after) {
+  if (demoRun) { demoRun = null; ui.toast('Demo stopped'); return; }
+  const run = (demoRun = {}), wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  for (const [op, ms] of [['pair', 4000], ['pregnant', 15000], ['preg3', 15000], ['preg6', 20000], ['birth', 30000], ['nurs2', 30000], ['nurs4', 30000], ['ready', 0]]) {
+    if (demoRun !== run) return; const st = (await api('/api/dev/test').catch(() => null))?.stage?.stage;
+    if (op === 'pair' && st !== 'none') continue; if (op === 'pregnant' && st !== 'paired') continue;
+    const r = await devStep(op); after?.(); if (!r?.ok && !['preg3', 'preg6'].includes(op)) { demoRun = null; return; } await wait(ms);
+  }
+  demoRun = null; after?.();
+}
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
   if (window.__noGL) { $('ltxt').textContent = 'This browser cannot draw the tank. Try Safari or Chrome on a recent phone.'; return new Promise(() => {}); }
   const r = await runOnboarding(); if (r.healed) setTimeout(() => ui?.toast('The server had been reset. Your tank is back, with the same code.', 5200), 3000);
   if (r.mode === 'net') {
-    const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); });
+    const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); game.dev = !!r.dev; });
+    game.on('state', () => { $('testb').hidden = !game.test; });      // a small, constant reminder that this is the test aquarium
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
@@ -951,6 +967,14 @@ async function boot() {
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
+    // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
+    devInfo: () => api('/api/dev/test'),
+    devEnter: async () => { try { await api('/api/dev/test/open', {}); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not open the test aquarium'); } },
+    devLeave: () => { setTest(false); location.reload(); },
+    devJoin: async () => { const code = await ui.dialog({ title: 'JOIN A TEST AQUARIUM', text: 'The test code shown in Developer Tools on the other phone.', input: { max: 6, placeholder: 'Test code' }, ok: 'Join', cancel: 'Cancel' }); if (!code) return;
+      try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
+    devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
+    devReset: async () => { const yes = await ui.dialog({ title: 'RESET TEST?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
     gift: () => offerGift(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {

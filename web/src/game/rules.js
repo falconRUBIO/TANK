@@ -395,6 +395,56 @@ export const broodOf = (f, now = Date.now()) => f?.preg ? Math.max(0, Math.min(1
 export const BABY_ROLES = ['explore', 'plants', 'social'], ROLE_TRAIT = { explore: 'Curious', plants: 'Calm', social: 'Social' };
 export const babyRole = (N, c) => c?.role ?? BABY_ROLES[Math.max(0, N?.cands?.indexOf(c) ?? 0) % 3];
 export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nursery.readyAt;
+// a courtship that takes: he carries their young for six to nine days (the length comes from h, a number of the moment)
+function conceive(m, w, now, h, ev) {
+  const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
+  m.preg = { start: now, due: Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
+  ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, toast: `${m.name} is expecting! The babies will come in about a week.`, court: m.id });
+}
+// where a tank's seahorse family is now, for the developer's lifecycle test panel (read only)
+export function seaStage(t, now = Date.now()) {
+  const hs = (t.fish ?? []).filter((f) => f.species === 'seahorse' && !f.dead), m = hs.find((f) => f.preg) ?? hs.find((f) => sexOf(f) === 'm' && f.mate && hs.some((x) => x.id === f.mate)), w = m && hs.find((x) => x.id === (m.preg?.mother ?? m.mate));
+  const N = t.nursery, out = { male: m?.name ?? null, female: w?.name ?? null, kept: t.lastDepart?.kept ? hs.find((f) => f.id === t.lastDepart.kept)?.name ?? null : null };
+  if (N) { const day = Math.min(SEA.NURSERY, Math.floor((now - N.born) / DAY) + 1); return { ...out, stage: now >= N.readyAt ? 'ready' : 'nursery', nurseryDay: day, fed: N.fed ?? 0, babies: N.cands.map((c) => c.name), father: N.pa?.name ?? null }; }
+  if (m?.preg) { const P = m.preg; return { ...out, stage: 'pregnant', pregDay: Math.floor((now - P.start) / DAY) + 1, pregDays: Math.round((P.due - P.start) / DAY) }; }
+  if (m) return { ...out, stage: 'paired' };
+  return { ...out, stage: 'none' };
+}
+// The developer's lifecycle test. It runs only on a test aquarium (the server allows it nowhere else) and never changes a duration or the
+// clock: it creates a pair, starts a pregnancy the way a courtship does, or moves this one family's own timestamps forward, and then the
+// game's rules (seaFamilies, through advance) do what they always do: the pairing, the birth, the nursery, the moment they are ready.
+const DEV_SEA = new Set(['pair', 'pregnant', 'preg3', 'preg6', 'birth', 'nurs2', 'nurs4', 'ready']);
+function devSea(t, op, now, ev) {
+  if (!DEV_SEA.has(op)) return 'BAD_STEP';
+  const hs = () => t.fish.filter((f) => f.species === 'seahorse' && !f.dead), st = seaStage(t, now), fam = () => { const m = hs().find((f) => f.preg) ?? hs().find((f) => sexOf(f) === 'm' && f.mate); return { m, w: m && hs().find((x) => x.id === (m.preg?.mother ?? m.mate)) }; };
+  const shift = (d, ...objs) => { for (const [o, ...ks] of objs) for (const k of ks) if (Number.isFinite(o?.[k])) o[k] += d; };
+  if (op === 'pair') {
+    if (st.stage !== 'none') return 'NOT_NOW';
+    const free = (sx) => hs().find((f) => sexOf(f) === sx && !f.mate && stageOf(f, now) === 'adult');
+    let m = free('m'), w = free('f');
+    if (w && m && relatedFish(m, w)) w = null;
+    if (t.fish.length + (m ? 0 : 1) + (w ? 0 : 1) > capacity(t.level)) return 'TANK_FULL';
+    const add = (sx, name, seed) => { const f = ensureFish({ id: nextId(t, 'f'), name, species: 'seahorse', seed, born: now - 40 * DAY, stage: 'adult', traits: traitsFor('seahorse', seed), sex: sx, happy: 0.85, paid: 0, owner: null }); t.fish.push(f); return f; };
+    m ||= add('m', NAMES.find((n) => n === 'Sunny' && !t.fish.some((f) => f.name === n)) ?? 'Coral', 104); w ||= add('f', NAMES.find((n) => n === 'Pearl' && !t.fish.some((f) => f.name === n)) ?? 'Shell', 211);
+    m.sex = 'm'; w.sex = 'f'; t.bonds ||= {}; t.bonds[m.id + '|' + w.id] = SEA.PAIR_DAYS * DAY; t.pairAt = 0; t.pairLast = now;      // they have shared the tank long enough: the pairing itself is the game's
+    ev.push(...advance(t, now)); return fam().m?.mate ? null : 'NOT_NOW';
+  }
+  const { m, w } = fam();
+  if (op === 'pregnant') {
+    if (st.stage !== 'paired' || !m || !w) return 'NOT_NOW';
+    m.breedAt = 0; m.pairedAt = Math.min(m.pairedAt ?? now, now - SEA.COURT_AFTER * DAY); conceive(m, w, now, hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)), ev); return null;
+  }
+  if (op === 'preg3' || op === 'preg6' || op === 'birth') {
+    if (st.stage !== 'pregnant') return 'NOT_NOW';
+    const P = m.preg, total = P.due - P.start, want = op === 'birth' ? total + 1000 : ((op === 'preg3' ? 3 : 6) - 1) * DAY + HOUR, have = now - P.start;      // how far into it he should be, and is
+    if (have >= want || (op !== 'birth' && want >= total)) return 'NOT_NOW';      // only forward, and a day never past the birth
+    shift(have - want, [P, 'start', 'due']); ev.push(...advance(t, now)); return null;
+  }
+  const N = t.nursery; if (!N || st.stage !== 'nursery') return 'NOT_NOW';
+  const want = op === 'ready' ? N.readyAt - N.born + 1000 : ((op === 'nurs2' ? 2 : 4) - 1) * DAY + HOUR, have = now - N.born;
+  if (have >= want) return 'NOT_NOW';
+  const dad = t.fish.find((f) => f.id === N.father); shift(have - want, [N, 'born', 'readyAt'], [dad, 'lastBirth', 'breedAt']); ev.push(...advance(t, now)); return null;
+}
 function seaFamilies(t, now, ev) {
   const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
   for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) { delete f.mate; delete f.pairedAt; } }      // a partner that has left
@@ -416,10 +466,7 @@ function seaFamilies(t, now, ev) {
     if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
       const w = byId.get(m.mate); if (m.sex !== 'm' || !w || !adult(m) || !adult(w) || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
       const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
-      const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
-      m.preg = { start: now, due: Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
-      ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, toast: `${m.name} is expecting! The babies will come in about a week.`, court: m.id });
-      break;
+      conceive(m, w, now, h, ev); break;
     }
   }
   // birth: on the day it is due, whether or not anyone is watching. The pregnancy ends here in the same change, so it happens once.
@@ -816,7 +863,7 @@ export function nextUp(t, now = Date.now()) {
 }
 export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.events) recordStory(t, r.events, o?.now ?? Date.now()); return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); return ev; }
-function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, solo = false, uid = 'me', members = null } = {}) {
+function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
@@ -1120,6 +1167,10 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
       events.push({ journal: `${name}: “${txt}”` }); return ok();
+    }
+    case 'devSea': {                                               // the developer's seahorse lifecycle test: only ever on a test aquarium (the server decides)
+      if (!test) return fail('FORBIDDEN');
+      const why = devSea(t, String(a.op ?? ''), now, events); return why ? fail(why) : ok({ stage: seaStage(t, now) });
     }
     case 'dev': {
       if (!dev) return fail('FORBIDDEN');

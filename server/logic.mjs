@@ -79,6 +79,57 @@ export function createTank(db, user, name, startWorld = null, wantCode = null) {
     throw new GameError('CODE_EXHAUSTED', 'Could not allocate a code.', 503);
   });
 }
+// ── the developer's test aquarium ──
+// Only people whose player id the server was given (DEV_USERS, a list kept in the server's environment, never in the app) can have one.
+// It is an ordinary tank marked test, so it runs on exactly the same rules, sync and storage as every other; its people are in test_members,
+// which leaves their real tank membership untouched, and no one can join it with the normal join (joinTank skips test tanks).
+export const isDev = (user, list = process.env.DEV_USERS) => !!user?.id && String(list ?? '').split(/[\s,]+/).filter(Boolean).includes(user.id);
+export function testTankOf(db, userId) {
+  return db.prepare('SELECT t.* FROM test_members m JOIN tanks t ON t.id=m.tank_id WHERE m.user_id=? AND t.test=1').get(userId) ?? null;
+}
+// a fresh test world: grown-up enough to hold a family, with plants to hold on to, and nothing that belongs to anyone's real tank
+export function testWorld(now = Date.now(), seq = 10) {
+  const w = R.newWorld(now, 7, { empty: true }); Object.assign(w, { level: 8, shells: 200, hunger: 0.2, water: 1, glass: 0, seq });
+  w.flags = { ...(w.flags ?? {}), tut: 5, firstFish: true };
+  w.decor = [['kelp', -2.4, 1.9], ['grass', -0.7, 2.1], ['sword', 1.2, 2.0], ['fern', 2.6, 1.7], ['red', 0.3, 0.4]].map(([type, x, z], i) => ({ id: 'td' + i, type, x, z, ry: 0 }));
+  return w;
+}
+export function openTestTank(db, user, now = Date.now()) {
+  const have = testTankOf(db, user.id); if (have) return { id: have.id, code: have.code, name: have.name };
+  const id = crypto.randomUUID();
+  return tx(db, () => {
+    for (let i = 0; i < 40; i++) {
+      const code = randomCode();
+      try { db.prepare('INSERT INTO tanks (id,name,code,created_at,sim_ts,world,test) VALUES (?,?,?,?,?,?,1)').run(id, 'TEST AQUARIUM', code, now, now, JSON.stringify(testWorld(now))); } catch (e) { if (/UNIQUE/.test(String(e.message))) continue; throw e; }
+      db.prepare('DELETE FROM test_members WHERE user_id=?').run(user.id);
+      db.prepare('INSERT INTO test_members (tank_id,user_id,joined_at) VALUES (?,?,?)').run(id, user.id, now);
+      addJournal(db, id, 'A test aquarium for trying things out. Nothing here touches a real tank.', user.id, now);
+      return { id, code, name: 'TEST AQUARIUM' };
+    }
+    throw new GameError('CODE_EXHAUSTED', 'Could not allocate a code.', 503);
+  });
+}
+export function joinTestTank(db, user, code, now = Date.now()) {
+  const t = db.prepare('SELECT id,code,name FROM tanks WHERE code=? AND test=1').get(normalizeCode(code));
+  if (!t) throw new GameError('NOT_FOUND', 'No test aquarium has that code.', 404);
+  return tx(db, () => {
+    if (db.prepare('SELECT COUNT(*) n FROM test_members WHERE tank_id=? AND user_id<>?').get(t.id, user.id).n >= MAX_MEMBERS) throw new GameError('TANK_FULL', 'That test aquarium is full.', 409);
+    db.prepare('DELETE FROM test_members WHERE user_id=?').run(user.id); db.prepare('INSERT INTO test_members (tank_id,user_id,joined_at) VALUES (?,?,?)').run(t.id, user.id, now);
+    return { id: t.id, code: t.code, name: t.name };
+  });
+}
+// back to a clean test aquarium: its animals, family, journal and history go; its id counter carries on, so nothing from before the reset
+// (a late choice, a birth this phone already watched) can ever match anything after it
+export function resetTestTank(db, user, now = Date.now()) {
+  const t = testTankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You have no test aquarium.', 404);
+  return tx(db, () => {
+    const { w } = loadWorld(db, t.id), fresh = testWorld(now, (w.seq ?? 10) + 1000);
+    for (const tb of ['journal', 'activity', 'messages', 'transactions']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id);
+    db.prepare('UPDATE tanks SET created_at=? WHERE id=?').run(now, t.id); saveWorld(db, t.id, fresh);
+    addJournal(db, t.id, 'The test aquarium was reset.', user.id, now);
+    return { id: t.id, world: fresh };
+  });
+}
 // ── backups and deleting your data ──
 // A backup is the tank's saved state as plain JSON: fish, decorations, shells and history. Nothing personal beyond the names the players chose.
 export function exportTank(db, user) {
@@ -130,15 +181,18 @@ export function deleteUser(db, user) {
     const t = tankOf(db, user.id); let tankGone = false;
     if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); orphanOctopuses(db, t.id, user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
     for (const tb of ['push_subs', 'push_log']) { try { db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); } catch { /* table shape differs */ } }
+    db.prepare('DELETE FROM test_members WHERE user_id=?').run(user.id);      // (a developer's seat in a test aquarium)
     try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
     db.prepare('DELETE FROM users WHERE id=?').run(user.id); return { ok: true, tankId: t?.id ?? null, tankGone };
   });
 }
-const members = (db, tankId) => db.prepare('SELECT u.id,u.name,u.avatar,m.slot,m.last_seen FROM members m JOIN users u ON u.id=m.user_id WHERE m.tank_id=? ORDER BY m.slot').all(tankId).map((r) => ({ id: r.id, name: r.name, avatar: JSON.parse(r.avatar), slot: r.slot, lastSeen: r.last_seen }));
+const realMembers = (db, tankId) => db.prepare('SELECT u.id,u.name,u.avatar,m.slot,m.last_seen FROM members m JOIN users u ON u.id=m.user_id WHERE m.tank_id=? ORDER BY m.slot').all(tankId).map((r) => ({ id: r.id, name: r.name, avatar: JSON.parse(r.avatar), slot: r.slot, lastSeen: r.last_seen }));
+const testMembers = (db, tankId) => db.prepare('SELECT u.id,u.name,u.avatar,m.joined_at FROM test_members m JOIN users u ON u.id=m.user_id WHERE m.tank_id=? ORDER BY m.joined_at').all(tankId).slice(0, MAX_MEMBERS).map((r, i) => ({ id: r.id, name: r.name, avatar: JSON.parse(r.avatar), slot: i + 1, lastSeen: r.joined_at }));
+const members = (db, tankId) => { const m = realMembers(db, tankId); return m.length ? m : testMembers(db, tankId); };
 export const listMembers = members;
 
 export function previewJoin(db, code) {
-  const t = db.prepare('SELECT id,name FROM tanks WHERE code=?').get(normalizeCode(code));
+  const t = db.prepare('SELECT id,name FROM tanks WHERE code=? AND test=0').get(normalizeCode(code));
   if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);
   const m = members(db, t.id);
   return { name: t.name, members: m.map(({ name, avatar, slot }) => ({ name, avatar, slot })), full: m.length >= MAX_MEMBERS };
@@ -186,7 +240,7 @@ function remapOne(w, was, now) {
   return n > 0;
 }
 export function joinTank(db, user, code, was = null) {
-  const t = db.prepare('SELECT id,name FROM tanks WHERE code=?').get(normalizeCode(code));
+  const t = db.prepare('SELECT id,name FROM tanks WHERE code=? AND test=0').get(normalizeCode(code));
   if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);
   return tx(db, () => {
     const mine = db.prepare('SELECT tank_id,slot FROM members WHERE user_id=?').get(user.id);
@@ -243,17 +297,17 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
+export const ACTIONS = new Set(['devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
-export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null } = {}) {
-  const t0 = tankOf(db, user.id); if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null, tank = null } = {}) {
+  const t0 = tank ?? tankOf(db, user.id), test = !!tank?.test;      // (tank: a developer's test aquarium, see testTankOf) if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
   if (!ACTIONS.has(action?.t)) throw new GameError('BAD_ACTION', 'Unknown action.');
   const key = clean(idem, 64); if (!key) throw new GameError('BAD_IDEM', 'Missing idempotency key.');
   return tx(db, () => {
     const { w } = loadWorld(db, t0.id), out = [];
     const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, action.t, now, key);
     if (ins.changes === 0) { const ev = R.advance(w, now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: [] }; }
-    const shellsBefore = w.shells, r = R.applyAction(w, action, { name: user.name, now, dev, uid: user.id, members: members(db, t0.id) });
+    const shellsBefore = w.shells, r = R.applyAction(w, action, { name: user.name, now, dev, test, uid: user.id, members: members(db, t0.id) });
     if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
     for (const e of r.events) {
       if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, user.id, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, noticed: e.noticed, found: e.found, arrival: e.arrival, wish: e.wish, died: e.died, warn: e.warn, milestone: e.milestone, puzzle: e.puzzle, crab: e.crab, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
@@ -262,7 +316,7 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false, ana
     }
     saveWorld(db, t0.id, w);
     db.prepare('UPDATE transactions SET amount=? WHERE tank_id=? AND user_id=? AND idem=?').run(r.delta ?? 0, t0.id, user.id, key);
-    analytics?.fromAction(user.id, t0.id, action, { ...r, events: r.events }, shellsBefore, w.shells, now);
+    if (!test) analytics?.fromAction(user.id, t0.id, action, { ...r, events: r.events }, shellsBefore, w.shells, now);
     return { ...r, world: w, events: out };
   });
 }
@@ -274,14 +328,14 @@ export function addMessage(db, user, text, now = Date.now()) {
 }
 export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members SET last_seen=? WHERE user_id=?').run(now, userId); }
 
-export function snapshot(db, user, online = []) {
-  const t0 = tankOf(db, user.id); if (!t0) return null;
+export function snapshot(db, user, online = [], tank = null) {
+  const t0 = tank ?? tankOf(db, user.id); if (!t0) return null;
   const { row, w } = loadWorld(db, t0.id);
   for (const e of R.advance(w)) { if (e.journal) addJournal(db, t0.id, e.journal, null); if (e.activity) addActivity(db, t0.id, null, e.activity.type, e.activity.text); }     // growth and discoveries that happened while nobody was looking
   saveWorld(db, t0.id, w);
   const names = Object.fromEntries(members(db, t0.id).map((m) => [m.id, m.name]));
   return {
-    you: { userId: user.id, slot: t0.slot },
+    you: { userId: user.id, slot: t0.slot ?? members(db, t0.id).find((m) => m.id === user.id)?.slot ?? 1 }, ...(t0.test ? { test: true } : {}),
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,
     journal: db.prepare('SELECT id,day,text,user_id AS userId,ts FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 60').all(t0.id).reverse(),

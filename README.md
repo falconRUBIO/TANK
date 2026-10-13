@@ -163,6 +163,26 @@ Seahorses pair, court, and the male carries the young. All of it is kept in the 
 
 `node web/src/game/rules.test.mjs` runs the whole lifecycle on simulated time (pairing, relatives, pregnancy length, a birth while every phone is closed, no second birth, the choice racing between two caretakers, a full tank). `OUT=dir node tools/seahorse_family.mjs` plays it in the game: the pouch, the birth, the nursery, the choice and the profile.
 
+## Developer Tools: the seahorse lifecycle test
+
+A hidden panel for going through a seahorse family in a few minutes instead of twelve days, on the game's real rules and real multiplayer.
+
+- **Who sees it:** only players whose player id is listed in the server's `DEV_USERS` environment variable (comma separated). The app holds
+  no secret; the server checks the id on every developer call and refuses everyone else (403). A player's id is shown under Settings >
+  Developer… only once they are listed, so to find yours the first time read `userId` from the browser's `ourtank.session` storage, or ask
+  the server operator to look it up in the `users` table.
+- **Where:** Settings > Developer > Developer Tools > Seahorse lifecycle test. Turn on *Fast lifecycle test* to show the controls.
+- **The test aquarium** is an ordinary tank marked `test`, with its own id, code, animals, journal and history. Its people are kept in
+  `test_members`, so entering it never takes anyone out of their real tank, and it cannot be found or joined with the normal join. The
+  phone shows a small TEST AQUARIUM badge, never keeps it as its local copy of a tank, and sends no chat, nudges or thanks from it.
+- **Steps** (each one only when it applies): create a test pair (the game pairs them), start a pregnancy (the same as a courtship),
+  advance to day 3 or day 6, trigger the birth, advance the nursery to day 2 or 4, ready to choose. A step moves only that family's own
+  timestamps; the rules then do the birth, the nursery and THEY'RE READY as always. No duration or clock changes.
+- **Second phone:** list its player id too, then on that phone Developer Tools > Join another phone's test, with the test code shown on
+  the first phone.
+- **Reset** clears the test aquarium's animals, family, journal and history (both phones see it at once). Ids carry on from before, so a
+  late message from before the reset can never match anything after it.
+
 ## Feeding
 Feeding is meant to need no explaining.
 - **One tap from Care.** When someone is hungry, the top of Care says so and is a button: "Inky is hungry. Feed Inky a crab ›" takes you straight to the tank with the right food (a crab for the octopus, mysis if only the seahorse is hungry, otherwise flakes). The food list below also opens by itself whenever someone is hungry. Tapping Feed opens or closes it by hand.
