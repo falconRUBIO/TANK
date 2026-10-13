@@ -13,8 +13,8 @@ export const PLANTS = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo'
 export const FACES = [0, Math.PI, 0.5, Math.PI - 0.5, -0.5, Math.PI + 0.5, 1, Math.PI - 1, -1, Math.PI + 1, 1.5, -1.5, 0.25, -0.25, Math.PI + 0.25, Math.PI - 0.25];      // the ways it may face on its stem, side-on to the glass first
 const MAX_GRIPS = 6, MAX_CANDS = 40, C = 0.1;
 const cellKey = (a, b, c) => ((a + 512) * 1024 + (b + 512)) * 1024 + (c + 512);
-const CACHE = new Map(), QUEUE = [];
-export const gripStats = { searches: 0, tested: 0, workMs: 0, maxFrameMs: 0, frames: 0 };
+const CACHE = new Map(), QUEUE = [], FRAME = { t0: 0, defer: false, all: false };
+export const gripStats = { searches: 0, tested: 0, workMs: 0, maxFrameMs: 0, frames: 0, worstUnitMs: 0, worstUnit: '' };
 
 // the grip points of one decoration for a seahorse of this size: { status: 'pending' | 'ready', grips: [{ x, y, z, face, hf }] }
 export function gripsFor(q, sh) {
@@ -30,30 +30,33 @@ export function gripsFor(q, sh) {
 // do some of the waiting searches, for at most budgetMs this frame. A search goes in small steps (filing a few hundred voxels, looking over a few dozen
 // of its own, or testing one way of facing on one stem), so no single step runs long, even on a big rock or the coconut.
 export function gripWork(budgetMs = 1.5) {
-  if (!QUEUE.length) return; const t0 = performance.now(); gripStats.frames++;
-  while (QUEUE.length && performance.now() - t0 < budgetMs) {
+  if (!QUEUE.length) return; const t0 = performance.now(); gripStats.frames++; FRAME.t0 = t0; FRAME.defer = false;
+  while (QUEUE.length && !FRAME.defer && performance.now() - t0 < budgetMs) {
     const e = QUEUE[0];
     if (e.status !== 'pending' || CACHE.get(e.k) !== e) { QUEUE.shift(); continue; }
-    advance(e);
+    const u0 = performance.now(), ph = e.ctx?.phase ?? 'begin'; advance(e); const um = performance.now() - u0; if (um > gripStats.worstUnitMs) { gripStats.worstUnitMs = um; gripStats.worstUnit = ph + ':' + e.q.type; }
   }
   const ms = performance.now() - t0; gripStats.workMs += ms; gripStats.maxFrameMs = Math.max(gripStats.maxFrameMs, ms);
 }
 // for tests and tools: the whole search at once
-export function gripsNow(q, sh) { const e = gripsFor(q, sh); while (e.status === 'pending') advance(e); return e; }
+export function gripsNow(q, sh) { const e = gripsFor(q, sh); FRAME.all = true; while (e.status === 'pending') advance(e); FRAME.all = false; return e; }
 export function clearGrips() { CACHE.clear(); QUEUE.length = 0; }
 export const gripQueue = () => QUEUE.length;
 
 function finish(e) { e.status = 'ready'; e.ctx = null; gripStats.searches++; }
 // one small step of a search
 function advance(e) {
-  if (!e.ctx) { if (!begin(e)) finish(e); return; }
+  if (!e.ctx) { const ok = begin(e); if (ok === false) finish(e); return; }
   const ctx = e.ctx;
   if (ctx.phase === 'file') { fileSome(ctx, 300); if (ctx.i >= ctx.vox.length) { ctx.phase = 'look'; ctx.i = 0; } return; }
   if (ctx.phase === 'look') { lookSome(ctx, 10); if (ctx.i >= ctx.own.length) { order(e); ctx.phase = 'test'; ctx.i = 0; ctx.li = 0; ctx.fi = 0; } return; }
   step(e); if (ctx.i >= ctx.cands.length || e.grips.length >= MAX_GRIPS) finish(e);
 }
 
+// getting ready, one costly thing per step: the seahorse posed as it holds on, then the voxels of each decoration near here (null: not ready yet)
 function begin(e) {
+  if (e.sh.hasHeldPose && !e.sh.hasHeldPose(SEAHORSE_STEM, SEAHORSE_LEAN)) { if (!FRAME.all && performance.now() - FRAME.t0 > 0.3) { FRAME.defer = true; return null; } e.sh.heldPoseData?.(); return null; }
+  if (e.sh.decorVoxWarm && !e.sh.decorVoxWarm(e.q.x, e.q.z, 1.8)) return null;
   const P = e.sh.heldPoseData?.(); if (!P) return false;
   const q = e.q, sc = P.sc, vox = e.sh.decorVox?.(q.x, q.z, 1.8) ?? [];
   const own = vox.filter((v) => v[4] === q.id); if (!own.length) return false;
@@ -122,7 +125,9 @@ function step(e) {
   const next = () => { ctx.i++; ctx.li = 0; ctx.fi = 0; };
   if (ctx.li === 0 && ctx.fi === 0 && e.grips.some((g) => Math.hypot(g.x - v[0], g.z - v[2]) < 0.1 && Math.abs(g.y - v[1]) < 0.25)) return next();      // keep the grips on one decoration apart
   const leans = ctx.plant ? PLANT_LEANS : POST_LEANS, lean = leans[ctx.li];
-  const P = v[4] === SEAHORSE_STEM && lean === SEAHORSE_LEAN ? ctx.P : e.sh.heldPoseData?.(v[4], lean); if (!P) return next();      // the seahorse as it would hold a stem this thick, leaning this far back
+  const fresh = !(v[4] === SEAHORSE_STEM && lean === SEAHORSE_LEAN) && !e.sh.hasHeldPose?.(v[4], lean);
+  if (fresh && !FRAME.all && performance.now() - FRAME.t0 > 0.3) { FRAME.defer = true; return; }      // posing it for a new stem takes a few ms: that waits for the start of a frame, on its own
+  const P = v[4] === SEAHORSE_STEM && lean === SEAHORSE_LEAN ? ctx.P : e.sh.heldPoseData?.(v[4], lean); if (!P) return next(); if (fresh) return;      // the seahorse as it would hold a stem this thick, leaning this far back
   const face = FACES[ctx.fi];
   if (clashes(ctx, P, v[0], v[1], v[2], face, 0) === 0) { e.grips.push({ x: v[0], y: v[1], z: v[2], face, stem: v[4], lean, hf: Math.min(1, Math.max(0, (v[1] - ctx.base) / ctx.ht)) }); return next(); }
   if (++ctx.fi >= FACES.length) { ctx.fi = 0; if (++ctx.li >= leans.length) next(); }

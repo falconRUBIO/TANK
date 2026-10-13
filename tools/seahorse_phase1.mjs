@@ -220,13 +220,13 @@ if (run('perf')) {
   await setup([{ id: 'h1', name: 'Pip', species: 'seahorse', seed: 4 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11 }, { id: 'h3', name: 'Moss', species: 'seahorse', seed: 23 }, { id: 'h4', name: 'Kelpie', species: 'seahorse', seed: 31 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }, { id: 'o1', name: 'Inky', species: 'octopus', seed: 5, owner: 'me' }],
     [{ id: 'p1', type: 'grass', x: -2.4, z: 1.6 }, { id: 'p2', type: 'sword', x: 1.6, z: 1.8 }, { id: 'p3', type: 'kelp', x: -0.4, z: -0.4 }, { id: 'p4', type: 'fern', x: 2.4, z: -0.6 }, { id: 'a1', type: 'anchor', x: -1.4, z: -1.6 }, { id: 'b1', type: 'bridge', x: 1.0, z: -1.8 }, { id: 'r1', type: 'boulder', x: 0.4, z: 0.6 }, { id: 'c1', type: 'coconut', x: -2.8, z: -0.2 }]);
   const r = await p.evaluate(async () => {
-    const G = await import('/src/w3/grips.js'), F = window.__fishes; G.clearGrips(); G.gripStats.maxFrameMs = 0; G.gripStats.workMs = 0; G.gripStats.frames = 0;
+    const G = await import('/src/w3/grips.js'), F = window.__fishes; G.clearGrips(); G.gripStats.maxFrameMs = 0; G.gripStats.worstUnitMs = 0; G.gripStats.workMs = 0; G.gripStats.frames = 0;
     const hs = F.list.filter((f) => f.sp?.tail); let worst = 0, sum = 0, n = 0;
     await window.__step(120, () => { const t0 = performance.now(); for (const h of hs) h.update(0.05, Math.random, F.list); const ms = performance.now() - t0; worst = Math.max(worst, ms); sum += ms; n++; });
     // a decoration moved: its grips are searched again, in the background
     const g = window.__game, before = G.gripsFor(window.__decor.spots().find((x) => x.id === 'p1'), hs[0]); g.state.decor.find((d) => d.id === 'p1').x = -2.0; g.emit('state'); await new Promise((q) => setTimeout(q, 600));
     const moved = G.gripsFor(window.__decor.spots().find((x) => x.id === 'p1'), hs[0]), q0 = moved !== before ? 1 : 0; await window.__step(10); const movedReady = moved.status === 'ready' && moved.grips.length > 0;
-    return { maxGripFrameMs: +G.gripStats.maxFrameMs.toFixed(2), gripWorkMs: +G.gripStats.workMs.toFixed(1), gripFrames: G.gripStats.frames, seahorseUpdateAvgMs: +(sum / n).toFixed(3), seahorseUpdateWorstMs: +worst.toFixed(2), queuedAfterMove: q0, movedReady, queueAfter: G.gripQueue() };
+    return { maxGripFrameMs: +G.gripStats.maxFrameMs.toFixed(2), worstUnit: G.gripStats.worstUnit + ' ' + G.gripStats.worstUnitMs.toFixed(1), gripWorkMs: +G.gripStats.workMs.toFixed(1), gripFrames: G.gripStats.frames, seahorseUpdateAvgMs: +(sum / n).toFixed(3), seahorseUpdateWorstMs: +worst.toFixed(2), queuedAfterMove: q0, movedReady, queueAfter: G.gripQueue() };
   });
   console.log('    ', JSON.stringify(r));
   ck('20. the grip search stays inside its per-frame budget (no long frames from it)', r.maxGripFrameMs < 6, r);

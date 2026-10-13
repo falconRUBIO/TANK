@@ -567,6 +567,7 @@ export class Fish3D {
   // the pose it holds on in (tail coiled, body leaning back), and the ways it turns and tilts on its stem: what the grip search tests against the decorations
   // where the stem passes through its coils (model voxels from its centre), for a stem of this thickness
   gripLocalFor(stem = SEAHORSE_STEM, lean = SEAHORSE_LEAN) { const k = stem.toFixed(2) + ':' + lean.toFixed(2), m = (this.gripLocals ||= new Map()); let g = m.get(k); if (!g) { const c = seahorseTail(this.sp, 1, 1, undefined, stem, lean); g = [c.ax, c.ay]; m.set(k, g); } return g; }
+  hasHeldPose(stem, lean) { return this.heldPoses?.get(stem.toFixed(2) + ':' + lean.toFixed(2))?.sc === (this.scale || 0.03); }
   heldPoseData(stem = SEAHORSE_STEM, lean = SEAHORSE_LEAN) {
     const sc = this.scale || 0.03, k = stem.toFixed(2) + ':' + lean.toFixed(2), cache = (this.heldPoses ||= new Map()); let hp = cache.get(k);
     if (hp?.sc !== sc) {      // worked out once for its size and the thickness of what it holds: every other voxel as it holds on, and the ways it leans
