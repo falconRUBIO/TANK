@@ -274,6 +274,7 @@ export function norm(t, now = Date.now()) {
   t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
   // Repair: whatever an older version or a damaged save left behind must not stop a tank from running (one broken fish once kept an order from ever arriving).
   if (!Array.isArray(t.fish)) t.fish = []; if (!Array.isArray(t.decor)) t.decor = [];
+  if (t.nursery && (typeof t.nursery !== 'object' || !Array.isArray(t.nursery.cands) || !Number.isFinite(t.nursery.readyAt))) t.nursery = null; t.nursery ??= null;
   t.fish = t.fish.filter((f) => f && typeof f === 'object' && SPECIES_DEF[f.species]);
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
@@ -374,12 +375,64 @@ function eggs(t, now, ev) {
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
-  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school), by = {};
+  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.length >= 2); if (!pairs.length) return;
   const g = pairs[hash32(now / 6e4) % pairs.length], [A, B] = [g[0], g[1]];
   t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), hatchAt: now + 4 * HOUR }); unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
   ev.push({ journal: `${A.name} and ${B.name} laid an egg.`, toast: 'An egg! It will hatch in a few hours.' });
+}
+// ── Seahorse families ── pairs form slowly between a male and a female that share the tank as adults (never parent and child, never brother
+// and sister); now and then a settled pair courts at dawn and the male carries their young in his brood pouch for six to nine days; he gives
+// birth (on the server's clock, whether or not anyone is watching) and the babies grow up in the tank for five days; then the caretakers
+// choose one to stay, and the others swim off to new homes. All of it lives in the tank record, so every phone shows the same.
+export const SEA = { PAIR_DAYS: 2, COURT_AFTER: 1, PREG_MIN: 6, PREG_MAX: 9, NURSERY: 5, COOLDOWN: 14 };
+export const sexOf = (f) => f?.sex ?? ((hash32((f?.seed ?? 0) * 31 + 7) & 1) ? 'm' : 'f');
+export const relatedFish = (a, b) => { const pa = (a.parents ?? []).map((p) => p.id), pb = (b.parents ?? []).map((p) => p.id); return pa.includes(b.id) || pb.includes(a.id) || pa.some((id) => pb.includes(id)); };
+// how full a male's brood pouch is now (0 to 1): it fills through his pregnancy, and after the birth goes back down over two days
+export const broodOf = (f, now = Date.now()) => f?.preg ? Math.max(0, Math.min(1, (now - f.preg.start) / Math.max(1, f.preg.due - f.preg.start))) : Number.isFinite(f?.lastBirth) ? Math.max(0, 0.7 * (1 - (now - f.lastBirth) / (2 * DAY))) : 0;
+export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nursery.readyAt;
+function seaFamilies(t, now, ev) {
+  const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
+  for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) { delete f.mate; delete f.pairedAt; } }      // a partner that has left
+  // pairing: the time each male and female have spent in the tank together as adults adds up; after a couple of days they pair
+  if (now >= (t.pairAt ?? 0)) {
+    const step = Math.max(0, Math.min(now - (t.pairLast ?? now), 2 * DAY)); t.pairLast = now; t.pairAt = now + 3 * HOUR; t.bonds ||= {};      // (a long absence counts for at most two days)
+    for (const k of Object.keys(t.bonds)) { const [a, b] = k.split('|'); if (!byId.has(a) || !byId.has(b) || byId.get(a).mate || byId.get(b).mate) delete t.bonds[k]; }
+    const males = hs.filter((f) => f.sex === 'm' && !f.mate && adult(f)), females = hs.filter((f) => f.sex === 'f' && !f.mate && adult(f));
+    for (const m of males) for (const w of females) { if (relatedFish(m, w)) continue; const k = m.id + '|' + w.id; t.bonds[k] = (t.bonds[k] ?? 0) + step; }
+    for (const [k, ms] of Object.entries(t.bonds).sort((x, y) => y[1] - x[1])) {
+      if (ms < SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), m = byId.get(a), w = byId.get(b); if (!m || !w || m.mate || w.mate) continue;
+      m.mate = w.id; w.mate = m.id; m.pairedAt = w.pairedAt = now; delete t.bonds[k]; unlock(t, m, 'pair', now, ev); unlock(t, w, 'pair', now, ev);
+      ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.` });
+    }
+  }
+  // courtship and pregnancy: a settled pair, now and then, when no other family is under way and his cooldown is over
+  if (now >= (t.courtAt ?? 0)) {
+    t.courtAt = now + 6 * HOUR;
+    if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
+      const w = byId.get(m.mate); if (m.sex !== 'm' || !w || !adult(m) || !adult(w) || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
+      const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
+      const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
+      m.preg = { start: now, due: Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
+      ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, toast: `${m.name} is expecting! The babies will come in about a week.`, court: m.id });
+      break;
+    }
+  }
+  // birth: on the day it is due, whether or not anyone is watching. The pregnancy ends here in the same change, so it happens once.
+  for (const m of hs) {
+    if (!m.preg || now < m.preg.due) continue;
+    const P = m.preg, born = P.due, w = byId.get(P.mother), ma = w ? snap(w) : P.ma, pa = snap(m), fam = nextId(t, 'n');
+    m.preg = null; m.lastBirth = born; m.breedAt = born + SEA.COOLDOWN * DAY; m.births = (m.births ?? 0) + 1; if (w) w.births = (w.births ?? 0) + 1;
+    const taken = new Set(t.fish.map((f) => f.name)), names = NAMES.filter((n) => !taken.has(n)), cands = [];
+    for (let i = 0; i < 3; i++) { const h = hash32(P.seed + i * 7919), pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null), traits = [...new Set([pick(ma, 1), pick(pa, 3)].filter(Boolean))];
+      cands.push({ id: nextId(t, 'f'), name: names[(h + i) % Math.max(1, names.length)] ?? NAMES[(h + i) % NAMES.length], seed: h % 90000, traits: traits.length ? traits : traitsFor('seahorse', h % 90000), genes: ma && pa ? blendGenes(ma.genes, pa.genes, seededRandom(h)) : genesOf(h % 90000), sex: i === 0 ? 'm' : i === 1 ? 'f' : (h & 1 ? 'm' : 'f') }); }
+    t.nursery = { id: fam, father: m.id, mother: P.mother, pa, ma, born, readyAt: born + SEA.NURSERY * DAY, n: P.n, gen: Math.max(pa.gen ?? 0, ma?.gen ?? 0) + 1, cands };
+    ev.push({ journal: `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n} tiny seahorses.`, birth: m.id });
+  }
+  // the babies are ready (said once); the choice itself is a caretaker's (keepBaby)
+  if (t.nursery && now >= t.nursery.readyAt && !t.nursery.said) { t.nursery.said = true; ev.push({ journal: 'The baby seahorses are ready to leave the nursery. One can stay in the tank.', toast: "They're ready! Choose one baby seahorse to stay." }); }
+  if (t.nursery && !byId.has(t.nursery.father) && !t.nursery.pa) t.nursery = null;      // (a damaged record)
 }
 const STORY = {
   Shy: (f, t) => (t.decor.length ? `${f.name} spent a while tucked in behind the plants.` : null),
@@ -690,6 +743,7 @@ guard.seen = new Set();
 export const timeStepErrors = () => [...guard.seen];      // shown on the developer page so a stuck tank is easy to spot
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
+  guard('seahorses', () => seaFamilies(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
@@ -984,6 +1038,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, s
       if (t.fish.some((x) => isSmart(x) && !x.dead && x.owner === uid) || t.orders.some((o) => o.species === 'octopus' && o.owner === uid)) return fail('ALREADY_HAVE');
       f.owner = uid; f.ownerName = name; (t.flags.firsts ||= {})[uid] = true; f.bond ||= {}; f.bond[uid] = Math.max(f.bond[uid] ?? 0, 1);
       events.push({ journal: `${name} took ${f.name} under their wing.`, toast: `${f.name} is yours now.`, activity: { type: 'fish', text: `${name} is now looking after ${f.name}.` } }); return ok({ id: f.id });
+    }
+    case 'keepBaby': {                                             // the caretakers choose the one baby seahorse that stays: it becomes a seahorse of the tank, the others swim off to new homes
+      const N = t.nursery; if (!N || N.id !== a.nursery) return fail('NOT_FOUND');      // (already chosen, perhaps by someone else a moment ago)
+      if (now < N.readyAt) return fail('NOT_READY');
+      const c = N.cands.find((x) => x.id === a.baby); if (!c) return fail('NOT_FOUND');
+      if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
+      if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
+      const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
+      t.fish.push(f); t.nursery = null; (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
+      if (!t.flags.firstHatch) t.flags.firstHatch = { at: now, fish: f.id, parents: [N.father, N.mother] };
+      events.push({ journal: `${f.name} is staying in the tank, a little seahorse born here to ${N.pa?.name ?? 'its father'} and ${N.ma?.name ?? 'its mother'}. The other babies have swum off to new homes.`, toast: `${f.name} is staying!`, kept: f.id }); return ok();
     }
     case 'sellFish': {                                             // a fish goes to a new home: it leaves the tank, and the shared wallet gets half of what it cost. Never the last fish
       const f = t.fish.find((x) => x.id === a.id); if (!f || f.dead) return fail('NOT_FOUND');

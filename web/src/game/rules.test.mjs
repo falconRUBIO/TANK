@@ -494,6 +494,54 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
   assert.ok(roam.includes('roams') && !roam.includes('familiar'), roam.join());
   const fish = habitLines({ name: 'Nori', places: 6, lv: { top: 800, mid: 100 } }, L).map((x) => x.text).join(' | ');
   assert.ok(fish.includes('near the surface') && fish.includes('6 different decorations'), 'the same rules serve a fish: ' + fish); });
+// ── seahorse families (simulated time: days pass in a few steps; the real lifecycle is unchanged) ──
+{ const H = 3600e3, D = 864e5;
+  const tank = (extra = []) => { const t = R.newWorld(0, 1, { empty: true }); t.level = 8; t.fish.length = 0;
+    t.fish.push(R.ensureFish({ id: 'm', name: 'Sunny', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: ['Calm'], sex: 'm' }), R.ensureFish({ id: 'w', name: 'Pearl', species: 'seahorse', seed: 11, born: -20 * D, stage: 'adult', traits: ['Shy'], sex: 'f' }), ...extra);
+    for (const k of ['pairAt', 'courtAt', 'eggAt']) t[k] = 0; return t; };
+  const live = (t, from, to, step = 3 * H) => { const ev = []; for (let now = from; now <= to; now += step) { t.hunger = 0; t.water = 1; t.glass = 0; for (const f of t.fish) { f.health = 1; f.happy = 0.9; } ev.push(...R.advance(t, now)); } return ev; };
+  ok('seahorses pair slowly: a male and a female sharing the tank as adults pair after a couple of days, and the pair is kept in the tank record', () => {
+    const t = tank(); live(t, 0, 1 * D); assert.ok(!t.fish[0].mate, 'not after one day'); live(t, 1 * D, 3 * D); assert.equal(t.fish[0].mate, 'w'); assert.equal(t.fish[1].mate, 'm');
+    const back = JSON.parse(JSON.stringify(t)); R.norm(back, 3 * D); assert.equal(back.fish.find((f) => f.id === 'm').mate, 'w', 'a reload keeps the pair'); });
+  ok('never a parent and its child, never brother and sister', () => {
+    const t = tank([R.ensureFish({ id: 'd', name: 'Dot', species: 'seahorse', seed: 5, born: -20 * D, stage: 'adult', traits: [], sex: 'f', parents: [{ id: 'm', name: 'Sunny' }] }), R.ensureFish({ id: 's', name: 'Fin', species: 'seahorse', seed: 6, born: -20 * D, stage: 'adult', traits: [], sex: 'm', parents: [{ id: 'm', name: 'Sunny' }] })]);
+    t.fish = t.fish.filter((f) => f.id !== 'w'); live(t, 0, 10 * D); assert.ok(!t.fish.some((f) => f.mate), JSON.stringify(t.fish.map((f) => [f.id, f.mate]))); });
+  ok('a settled pair courts now and then, and he carries the young for six to nine days', () => {
+    const t = tank(); const ev = live(t, 0, 20 * D); const m = t.fish[0], court = ev.filter((e) => e.court);
+    assert.equal(court.length >= 1, true, 'courtship happened'); assert.ok(m.preg || t.nursery, 'pregnant or already born');
+    for (let seed = 1; seed < 40; seed++) { const u = tank(); u.fish[0].seed = seed; live(u, 0, 30 * D, 6 * H); const N = u.nursery, p = u.fish[0];
+      if (N) { const start = N.born - (N.born - (p.lastBirth ?? N.born)); assert.ok(N.readyAt - N.born === 5 * D); } }
+    const u = tank(); live(u, 0, 4 * D); let m2 = u.fish[0]; for (let d = 4; d < 30 && !m2.preg; d++) live(u, d * D, (d + 1) * D);
+    if (m2.preg) { const days = (m2.preg.due - m2.preg.start) / D; assert.ok(days >= 6 && days <= 9, String(days)); } });
+  ok('birth happens on the server clock while nobody is there, once, and the nursery holds three babies with their own names, looks and parents', () => {
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg, 'pregnant');
+    const due = m.preg.due, ev = R.advance(t, due + 20 * D);      // weeks pass with every phone closed
+    assert.equal(ev.filter((e) => e.birth).length, 1); assert.ok(t.nursery); assert.equal(t.nursery.cands.length, 3); assert.equal(t.nursery.born, due, 'born on the day it was due, not when someone looked');
+    assert.equal(new Set(t.nursery.cands.map((c) => c.name)).size, 3); assert.ok(t.nursery.cands.every((c) => c.genes && c.traits.length)); assert.ok(t.nursery.n >= 10 && t.nursery.n <= 15);
+    assert.equal(m.preg, null); assert.equal(m.breedAt, due + 14 * D, 'a fortnight before he can carry again');
+    assert.equal(R.advance(t, due + 21 * D).filter((e) => e.birth).length, 0, 'never born twice'); });
+  ok('choosing the baby: not before five days, one choice wins even if two caretakers choose at once, it keeps its name and parents, the others leave', () => {
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const N = t.nursery, [c0, c1] = N.cands, now = due + 2 * H;
+    assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c0.id }, { now }).reason, 'NOT_READY');
+    const ready = due + 5 * D + H; live(t, due + 3 * H, ready);      // (the tank is looked after through the nursery days)
+    const r1 = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c0.id }, { now: ready }), r2 = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c1.id }, { now: ready });
+    assert.equal(r1.ok, true); assert.equal(r2.ok, false); assert.equal(t.nursery, null);
+    const f = t.fish.find((x) => x.id === c0.id); assert.ok(f, 'the same identity'); assert.equal(f.name, c0.name); assert.equal(f.birthDate, due); assert.equal(f.bornHere, true); assert.deepEqual(f.parents.map((p) => p.name), ['Sunny', 'Pearl']);
+    assert.equal(R.stageOf(f, ready), 'baby', 'it starts its own growing up'); assert.equal(t.fish.filter((x) => x.species === 'seahorse').length, 3, 'one baby, not three'); });
+  ok('a full tank: the nursery still happens, the choice waits, and nothing is removed to make room', () => {
+    const t = tank(); t.level = 8; while (t.fish.length < R.capacity(8)) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));
+    live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 40 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg); const due = m.preg.due; live(t, m.preg.start + H, due + 6 * D);
+    while (t.fish.length + R.pending(t) + t.eggs.length < R.capacity(t.level)) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));      // (the tank may have grown a level meanwhile: full again)
+    const n0 = t.fish.length, N = t.nursery, r = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[0].id }, { now: due + 6 * D });
+    assert.equal(r.reason, 'TANK_FULL'); assert.equal(t.fish.length, n0); assert.ok(t.nursery, 'still waiting');
+    t.fish.splice(t.fish.findIndex((f) => f.species === 'neon'), 1); assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: N.cands[1].id }, { now: due + 7 * D }).ok, true); });
+  ok('the pouch fills through the pregnancy and goes back down after the birth; seahorses no longer lay eggs; an old save without any of this still loads', () => {
+    const p = { preg: { start: 0, due: 7 * D } }; assert.equal(R.broodOf(p, 0), 0); assert.ok(Math.abs(R.broodOf(p, 3.5 * D) - 0.5) < 1e-9); assert.equal(R.broodOf(p, 9 * D), 1);
+    assert.ok(R.broodOf({ lastBirth: 0 }, 1 * D) > 0 && R.broodOf({ lastBirth: 0 }, 3 * D) === 0);
+    const t = tank(); t.eggAt = 0; live(t, 0, 5 * D); assert.equal(t.eggs.length, 0);
+    const old = JSON.parse(JSON.stringify(tank())); for (const f of old.fish) { delete f.sex; } delete old.nursery; R.norm(old, 0); R.advance(old, H); assert.ok(old.fish.every((f) => f.sex === 'm' || f.sex === 'f')); assert.equal(old.nursery, null); });
+}
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

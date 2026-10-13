@@ -62,7 +62,7 @@ export class Fish3D {
     this.species = species; this.id = species.id; this.seed = seed;
     const model = buildModel(species.make(seed, opts.look ?? null));
     const key = (x, y, z) => `${x},${y},${z}`;
-    const occ = new Set(model.list.map((v) => key(v.x, v.y, v.z)));
+    const occ = new Set(model.list.filter((v) => v.tag !== 'pouch').map((v) => key(v.x, v.y, v.z)));      // (a brood pouch is not there most of the time: it does not shade the belly)
     // drop voxels buried on all six sides – they can never be seen
     this.vox = model.list.filter((v) => !(occ.has(key(v.x + 1, v.y, v.z)) && occ.has(key(v.x - 1, v.y, v.z)) && occ.has(key(v.x, v.y + 1, v.z)) && occ.has(key(v.x, v.y - 1, v.z)) && occ.has(key(v.x, v.y, v.z + 1)) && occ.has(key(v.x, v.y, v.z - 1))));
     this.sp = model.sp; this.cx = model.sp.center?.[0] ?? 0;
@@ -94,7 +94,7 @@ export class Fish3D {
     this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
-    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.tag === 'tail' || v.tag === 'glint') this.mobile.push(i); });
+    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
     this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null;
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
@@ -149,6 +149,7 @@ export class Fish3D {
     for (let j = 0; j < n; j++) {
       const i = all ? j : list[j], v = this.vox[i];
       let x = v.x, y = v.y, z = v.z, grow = 1;
+      if (v.tag === 'pouch') grow = (this.brood ?? 0) >= v.pk ? 1 : 0;      // a male's brood pouch, only as full as it is
       if (b) {
         const piv = b.pivot - this.cx;
         if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
