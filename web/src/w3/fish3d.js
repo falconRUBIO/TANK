@@ -486,7 +486,7 @@ export class Fish3D {
       if (this.sleepK > 0.05) { const sk = this.sleepK, dr = 1 - 0.18 * sk + 0.22 * sk * Math.max(0, Math.sin(tnow * 1.1 + v.x * 0.35 + v.z * 0.3 + Math.sin(tnow * 0.4) * 2)); R *= dr; G *= dr * 0.97; B *= dr * 1.04; }                  // asleep: a little darker and paler, with slow ripples of colour like a dream
       if (mw.annoyed > 0.01) { const q = 1 - 0.45 * mw.annoyed; R = R * q + 0.05 * mw.annoyed; G *= q; B = B * q + 0.1 * mw.annoyed; }                  // annoyed: dark and purplish
       if (mw.hunting > 0.01) { const q = 1 + (0.62 + 0.38 * (0.5 + 0.5 * Math.sin(tnow * 3.4 + v.x * 0.3 - v.y * 0.12)) - 1) * mw.hunting; R *= q; G *= q; B *= q; }   // hunting: dark clouds ripple along the body
-      if (v.tag === 'mantle' || v.tag === 'head') { const sh = Math.max(0, Math.sin(v.x * 0.16 + v.y * 0.27 + v.nz * 1.4 + tnow * 0.55)) ** 6 * 0.11 * (1 - this.sleepK) * (1 - k) * (1 - cq); R += (0.78 - R) * sh; G += (0.96 - G) * sh; B += (1 - B) * sh; }       // a faint iridescent sheen drifting over the skin, gone when it is camouflaged
+      if (v.tag === 'mantle' || v.tag === 'head') { const sh = Math.max(0, Math.sin(v.x * 0.16 + v.y * 0.27 + v.nz * 1.4 + tnow * 0.55)) ** 6 * 0.11 * (1 - this.sleepK) * (1 - k) * (1 - cq) * (this.stillLie ? 0 : 1); R += (0.78 - R) * sh; G += (0.96 - G) * sh; B += (1 - B) * sh; }       // a faint iridescent sheen drifting over the skin, gone when it is camouflaged
       a[o] = Math.min(1, R); a[o + 1] = Math.min(1, G); a[o + 2] = Math.min(1, B);
     }
     this.mesh.instanceColor.needsUpdate = true;
@@ -925,7 +925,7 @@ export class Fish3D {
       S.gaitSet = false; this.glassCool = Math.max(0, (this.glassCool ?? 0) - dt); this.squirtCool = Math.max(0, (this.squirtCool ?? 0) - dt); this.begCool = Math.max(0, (this.begCool ?? 0) - dt); if (this.act === 'grab' && !this.inspect) this.act = null;
       if (S.t <= 0 && this.isNight && this.den && !S.mode && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) > 1.4 && rng() < 0.7) this.goDen(S, rng);     // it turns in at its den for the night
       else if (S.t <= 0 && !S.mode && !this.inspect && this.profile?.mood !== 'Hungry' && (levelAt(this.pos.x, this.pos.z) === 'rear' || ((S.stay = 0), false)) && (S.stay = (S.stay ?? 0) + 1) <= 5 && rng() < 0.7) { S.t = 6 + rng() * 8; this.lookX = (rng() - 0.5) * 1.6; }      // up on the high bank it likes to stay a while and look out over the tank
-      else if (S.t <= 0 && (this.starve ?? 0) > 0 && !S.mode && !this.glassAt && !this.task && rng() < 0.6 + 0.4 * this.starve) { S.s = 'rest'; S.t = 14 + 22 * this.starve; this.inspect = null; if (this.starve > 0.3) { this.actText = 'Listless with hunger. It needs a crab.'; this.actFlash = 6; } }      // long unfed: it lies on the sand, arms limp, and hardly stirs
+      else if (S.t <= 0 && (this.starve ?? 0) > 0 && !S.mode && !this.glassAt && !this.task && rng() < 0.6 + 0.4 * this.starve) { S.s = 'rest'; S.t = 40 + 40 * this.starve; this.inspect = null; if (this.starve > 0.3) { this.actText = 'Listless with hunger. It needs a crab.'; this.actFlash = 6; } }      // long unfed: it lies on the sand, arms limp, and hardly stirs
       else if (S.t <= 0 && this.profile?.mood === 'Hungry' && (this.begCool ?? 0) <= 0 && this.lead !== false && !this.shy && !this.glassAt && rng() < 0.6) { this.begCool = 90 + rng() * 60; this.glassAt = { x: (rng() - 0.5) * 3, y: 2.2 + rng() * 1.4, until: performance.now() + 6500 }; this.actText = 'Hungry. Watching you for a crab.'; this.actFlash = 9; }      // hungry, it comes to the front and watches you, hoping
       else if (S.t <= 0 && this.den?.home && !S.mode && !this.inspect && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) > 1.4 && rng() < 0.12 + 0.15 * (this.shy ? 1 : 0)) this.goDen(S, rng);
       else if (S.t <= 0 && !S.mode && !this.inspect && !this.glassAt && !this.homing && (this.tuckK ?? 0) < 0.1 && this.sleepK < 0.2 && this.lead !== false && this.pickAct(S, rng, others, M)) { /* an impression, a game or a look round: pickAct set it up */ }
@@ -1104,12 +1104,16 @@ export class Fish3D {
       this.lookGoal = tx == null ? [0, 0] : [Math.max(-1, Math.min(1, tx)) * 1.3, Math.max(-1, Math.min(1, tz)) * 0.6];
     }
     if (this.lookGoal) { this.lookX += (this.lookGoal[0] - this.lookX) * Math.min(1, dt * 5); this.lookY += (this.lookGoal[1] - this.lookY) * Math.min(1, dt * 5); }
+    // starving and lying down: he just lies there. No turning, no colour changes, no looking about, no arms reaching: only slow breathing
+    { const still = (this.starve ?? 0) > 0.4 && S.s === 'rest' && !S.mode && !this.hunt && !this.glassAt && !this.inspect;
+      if (still && !this.stillLie) { this.stillLie = { h: this.heading, camo: this.camoK, p: this.pos.clone() }; } else if (!still) this.stillLie = null;
+      if (this.stillLie) { this.lookGoal = [0, 0]; this.gazeT = 0; this.flush = 0; this.act = null; this.costumeK = (this.costumeK ?? 0) * Math.exp(-dt * 2); } }
     // sleep: at night, after resting a while, he closes his eyes to slits, goes slow and pale, and his skin flickers with dreams; any fright or poke wakes him
     this.wakeT = Math.max(0, this.wakeT - dt); const sleeping = this.isNight && S.s === 'rest' && this.restFor > 20 && this.wakeT <= 0 && !this.pale;
     this.sleepK += ((sleeping ? 1 : 0) - this.sleepK) * Math.min(1, dt * (sleeping ? 0.5 : 2.5)); if (sleeping && S.t <= 0.5) S.t = 6;
     this.blinkNext -= dt; if (this.blinkNext <= 0 && S.s !== 'jet') { this.blinkK = 1; this.blinkNext = 4 + rng() * 7; } this.blinkK = Math.max(0, this.blinkK - dt * 5);
     // each arm has a mind of its own: now and then one probes the floor beside it, or reaches out toward a fish swimming past, while the rest of him sits still
-    { const calm = (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect')) && this.restK > 0.5 && !this.pale, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading);
+    { const calm = (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect')) && this.restK > 0.5 && !this.pale && !this.stillLie, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading);
       this.minds.forEach((m, i) => {
         m.next -= dt; if (m.until > 0 && (calm || m.fast)) { m.until -= dt; m.k += (1 - m.k) * Math.min(1, dt * (m.fast ? 14 : 3)); } else { m.until = 0; m.fast = false; m.k += (0 - m.k) * Math.min(1, dt * 2.2); } if (!calm || m.until > 0 || m.next > 0) return;
         const a = this.rig.arms[i], r = rng(); let tgt = null;
@@ -1130,13 +1134,14 @@ export class Fish3D {
     this.ctxT = (this.ctxT ?? 0) + dt;
     const hiding = S.s === 'work' && S.mode === 'inspect' && this.inspectBlend && gnd?.kind === 'decor';             // sometimes it settles beside the new thing and takes on its look
     const camoT = ((S.s === 'rest' || S.s === 'flat' || S.s === 'bury') && !this.flush && this.camoWill && this.ctxT > this.camoDelay && gnd) || hiding ? 0.94 : 0;
-    this.camoK += Math.max(-dt * 0.7, Math.min(dt * 0.4, camoT - this.camoK)); this.camoT0 += dt;
+    if (this.stillLie) this.camoK = this.stillLie.camo; else this.camoK += Math.max(-dt * 0.7, Math.min(dt * 0.4, camoT - this.camoK)); this.camoT0 += dt;      // (lying still: its colour holds)
     { const ck = this.costumeK ?? 0, bt = (this.camoK / 0.94) * (gnd?.kind === 'decor' ? 1 : 0.6) * (1 - ck) + (this.costumeBump ?? 0) * ck; this.bump += (bt - this.bump) * Math.min(1, dt * 2); }       // the skin roughens as it blends in      // a slow, steady fade: about 2.3 seconds in, 1.4 out, eased when drawn
     if (this.camoT0 > 0.05 && this.camoK > 0.03) { const g = this.ground; if (g && g.key !== this.camoKey) { this.camoKey = g.key; this.camoSpec = g; this.camoPrev = this.camoK > 0.1 ? this.camoTex : null; this.camoMix = this.camoPrev ? 0 : 1; this.camoMixT = performance.now(); this.camoTex = null; this.camoApplied = -1; } }
     const moodMoved = ['scared', 'annoyed', 'hunting', 'fond'].some((k) => Math.abs(this.mw[k] - this.mwA[k]) > 0.02 || (k === 'hunting' && this.mw.hunting > 0.03));
     if (this.camoT0 > (this.sleepK > 0.05 ? 0.3 : 0.05) && !this.pale && (this.sleepK > 0.02 || this.sleepWas || Math.abs((this.costumeK ?? 0) - (this.costumeApplied ?? 0)) > 0.01 || Math.abs(this.camoK - this.camoApplied) > 0.012 || this.flush > 0 || this.flushApplied || this.camoMix < 1 || moodMoved || (this.camoT0 > 0.25 && this.camoK < 0.3))) { this.camoT0 = 0; this.sleepWas = this.sleepK > 0.02; this.applyCamo(); }
     { const tw = this.tuckWant ?? 0; this.tuckWant = 0; this.tuckK = (this.tuckK ?? 0) + (tw - (this.tuckK ?? 0)) * Math.min(1, dt * (tw ? 0.8 : 2.5)); const k = 1 - this.tuckK; this.group.scale.setScalar(k); this.lift -= 0.6 * (1 - k); }
     { const ls = Math.max(0, sandUnder(this.pos.x, this.pos.z, Math.min(0.45, this.radius * 0.25)) - sandH(this.pos.x, this.pos.z)); this.liftSand = (this.liftSand ?? 0) + (ls - (this.liftSand ?? 0)) * Math.min(1, dt * 6); }      // drawn lifted clear of the sand beside it, so its head and mantle never sink into a slope or the face of a bank
+    if (this.stillLie) { this.heading = this.stillLie.h; this.vel.set(0, 0, 0); this.pos.copy(this.stillLie.p); }      // (and does not turn)
     this.group.position.copy(this.pos); this.group.position.y += this.lift + this.liftSand; this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
     this.accum += dt; if (this.accum > (1 / 20) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.35 : 1)) { this.accum = 0; this.setPose(this.phase); }
   }
