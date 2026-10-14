@@ -46,7 +46,7 @@ export function initUI({ game, social, cb }) {
   // one line of news is kept once. A countdown ("arrives in 47 min", "wipe in about 9h") is the same notice ticking, so it is updated in place, quietly, rather than added again every minute
   const noticeKey = (text) => (/\b\d+\s*(min|h|hours?|minutes?|days?)\b/.test(text) ? text.replace(/\d+/g, '#') : text);      // only a countdown ticks; 'level 3' and 'level 4' are two different moments
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
-    if (!text) return; const now = Date.now(), key = noticeKey(text);
+    if (!text || /already collected|isn't hungry yet|is full for now|not yet|Not at this stage/i.test(text)) return; const now = Date.now(), key = noticeKey(text);      // (a reply to a tap is not news)
     const same = notices.slice(0, 40).find((n) => n.text === text && now - n.ts < 3 * 864e5); if (same) return;
     const ticking = notices.slice(0, 40).find((n) => (n.key ?? noticeKey(n.text)) === key && key !== text && now - n.ts < 3 * 864e5);
     if (ticking) { ticking.text = text; ticking.tab = tab; ticking.gift = gift; ticking.kind = kind; noticeSave(); refreshNotices(); return; }
@@ -59,8 +59,9 @@ export function initUI({ game, social, cb }) {
     if (!notices.length) return '<p class="dim">Nothing yet. Hints, messages and moments in the tank will be kept here.</p>';
     const day = (ts) => { const d = Math.floor(ts / 864e5), t = Math.floor(Date.now() / 864e5); return d === t ? 'Today' : d === t - 1 ? 'Yesterday' : new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
     let last = '', out = '';
-    for (const n of notices) { const d = day(n.ts); if (d !== last) { last = d; out += `<h4>${d}</h4>`; } out += `<button class="je nt ${n.ts > readAt ? 'new' : ''} ${n.tab || n.gift ? 'go' : ''}" data-nt="${notices.indexOf(n)}"><small>${new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</small><span>${esc(n.text)}</span></button>`; }
-    return out;
+    const pic = (t) => /hatch|egg/i.test(t) ? 'hatched' : /passed away|rest/i.test(t) ? 'trust' : /grew|grown|adult|elder/i.test(t) ? 'grown' : /friend/i.test(t) ? 'friend' : /visit/i.test(t) ? 'visitor' : /trick|puzzle|jar/i.test(t) ? 'trick' : /crab/i.test(t) ? 'crab' : /hungry|fed|feed/i.test(t) ? 'feed' : /water/i.test(t) ? 'water' : /glass/i.test(t) ? 'glass' : /note/i.test(t) ? 'note' : /gift|shell|bottle/i.test(t) ? 'gift' : /plant|shop|decor/i.test(t) ? 'spot' : /chapter|wish|level/i.test(t) ? 'wish' : 'wish';
+    for (const n of notices) { const d = day(n.ts); if (d !== last) { out += `${last ? '</div>' : ''}<h4>${d}</h4><div class="ntcard">`; last = d; } out += `<button class="nt2 ${n.ts > readAt ? 'new' : ''} ${n.tab || n.gift ? 'go' : ''}" data-nt="${notices.indexOf(n)}"><span class="jic">${msIcon(pic(n.text), true, 22)}</span><span class="ntx">${esc(n.text)}</span><small>${new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</small></button>`; }
+    return out + (last ? '</div>' : '');      // each day one grouped card: a picture, the news, the time
   };
   // the game opens up gradually: a new tank shows only feeding, fish and a few decorations; food choices, themes, comfort, the daily checklist, floors and postcards appear once the tank has grown a little
   const adv = () => { const s = S(); return !!s && (s.level >= 2 || s.fish.length >= 2); };
@@ -378,9 +379,9 @@ export function initUI({ game, social, cb }) {
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
       const seg = `<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection'], ['settings', 'Settings']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
-      if (sub === 'settings') return views.settings().replace('<h3>Settings</h3>', '<h3>Settings</h3>' + seg);
-      if (sub === 'journal') return `<h3>Journal</h3>${seg}${journalHtml()}`;
-      if (sub === 'book') return `<h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}`;
+      if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<h3>Settings</h3>' + seg)}</div>`;
+      if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}${journalHtml()}</div>`;
+      if (sub === 'book') return `<div class="crew"><h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}</div>`;
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>

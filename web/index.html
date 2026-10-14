@@ -650,6 +650,14 @@
 #sheet .jday h5{margin:16px 4px 6px;font:600 11.5px -apple-system,system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:rgba(235,242,250,.55)}#sheet .jcard{border-radius:16px;background:rgba(255,255,255,.06);padding:2px 12px}
 #sheet .je2{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:.5px solid rgba(255,255,255,.08);font-size:14px;line-height:1.35;color:#e6eef6}#sheet .je2:last-child{border-bottom:0}#sheet .jic{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:rgba(10,24,40,.4)}#sheet .jic svg{image-rendering:pixelated}
 #sheet .bk small{display:block;margin-top:2px;font-size:10px;line-height:1.25;color:rgba(235,242,250,.5);text-align:center}
+
+/* notices: one grouped card a day */
+#sheet .ntcard{border-radius:16px;background:rgba(255,255,255,.06);padding:2px 12px;margin-bottom:6px}#sheet .nt2{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;width:100%;padding:10px 0;border-bottom:.5px solid rgba(255,255,255,.08)}#sheet .nt2:last-child{border-bottom:0}
+#sheet .nt2 .ntx{flex:1;font-size:14px;line-height:1.35;color:#e6eef6}#sheet .nt2 small{flex:none;font-size:11.5px;color:rgba(235,242,250,.45)}#sheet .nt2.new .ntx{color:#fff;font-weight:600}#sheet .nt2.new small{color:#ffb36b}#sheet .nt2.go small::after{content:" ›"}
+/* iOS-style switches */
+#sheet .set :is(#snd,#mus){all:unset;cursor:pointer;position:relative;width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.36);font-size:0;transition:background .25s}#sheet .set :is(#snd,#mus)::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.04);transition:transform .25s cubic-bezier(.3,1.3,.5,1)}
+#sheet .set :is(#snd,#mus).on{background:#34c759}#sheet .set :is(#snd,#mus).on::after{transform:translateX(20px)}
+#sheet .card b{white-space:normal!important;overflow:visible!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;text-align:center}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
