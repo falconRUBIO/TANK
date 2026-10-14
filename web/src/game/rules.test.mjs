@@ -45,11 +45,21 @@ ok('a rare visitor drops by, saying hello pays and adds it to the book, and it l
   assert.equal(R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 2000 }).applied, false);
   const t2 = R.newWorld(now - 864e5); R.norm(t2, now); t2.flags.tut = 5; t2.visitAt = now - 1; R.advance(t2, now); assert.ok(t2.visitor); R.advance(t2, now + 3 * 3600e3 + 1000); assert.equal(t2.visitor, null);
 });
+ok('eggs: one at a time; food and clean water on two days hatch it strong; a rare neglected egg can be found by the octopus, a cared-for one never', () => {
+  const mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.flags.tut = 5; t.fish = ['a', 'b', 'c', 'd'].map((id, i) => R.ensureFish({ id, name: id.toUpperCase(), species: 'goldfish', seed: 10 + i, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] })); return t; };
+  let t = mk(); const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1); t.eggAt = 0; R.advance(t, now + 3600e3); assert.equal(t.eggs.length, 1, 'never two eggs at once');
+  t.water = 0.5; R.applyAction(t, { t: 'water' }, { now: now + 2 * 3600e3 }); t.water = 0.5; R.applyAction(t, { t: 'water' }, { now: now + 864e5 + 3600e3 }); assert.equal(R.eggCare(t.eggs[0]), 2);
+  R.advance(t, now + 3 * 864e5 + 1000); const baby = t.fish.find((f) => f.stage === 'baby'); assert.ok(baby?.loved && baby.happy === 1, 'cared-for egg hatches strong');
+  t = mk(); t.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' })); t.eggAt = 0; R.advance(t, now); t.eggs[0].risk = true;
+  const u = structuredClone(t); R.advance(t, now + 2.1 * 864e5); assert.equal(t.eggs.length, 0, 'the neglected flagged egg is eaten'); assert.ok(t.fish.length === 5);
+  u.water = 0.5; R.applyAction(u, { t: 'water' }, { now: now + 3600e3 }); R.advance(u, now + 2.1 * 864e5); assert.equal(u.eggs.length, 1, 'a looked-after egg is safe');
+  let flagged = 0; for (let i = 0; i < 400; i++) { const w = mk(); w.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' })); w.eggAt = 0; R.advance(w, now + i * 6e4); flagged += w.eggs[0]?.risk ? 1 : 0; } assert.ok(flagged > 0 && flagged < 25, 'rare: ' + flagged + '/400');
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
   const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1, 'egg laid');
-  R.advance(t, now + 5 * 3600e3); assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2];
+  R.advance(t, now + 2.9 * 864e5); assert.equal(t.eggs.length, 1, 'still an egg after almost three days'); R.advance(t, now + 3 * 864e5 + 1000); assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2]; assert.ok(!c.loved, 'an egg nobody looked after hatches plain');
   assert.equal(c.species, 'goldfish'); assert.equal(c.stage, 'baby'); assert.ok(c.seed === 10 || c.seed === 20, 'pattern from one parent ' + c.seed); assert.ok(c.genes && c.gen === 1 && c.parents.length === 2); assert.ok(c.traits.every((x) => ['Shy', 'Brave'].includes(x)));
 });
 ok('the journal no longer invents stories on a timer, and routine care goes to the activity list', () => {
@@ -129,11 +139,11 @@ ok('one shared daily wish: feasible, replaced each day, paid once, never punishi
 ok('family trees: hatchlings keep their parents, grandparents, generation and blended colours; the record outlives the fish', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.createdAt = -50 * D; t.visitAt = t.storyAt = 1e15; const mk = (id, name, seed, extra = {}) => R.ensureFish({ id, name, species: 'goldfish', seed, born: -9 * D, stage: 'adult', traits: ['Calm'], owner: 'u1', ownerName: 'Alex', ...extra });
   t.fish = [mk('a', 'Ada', 4), mk('b', 'Bix', 9)]; t.eggAt = 0; let now = 20 * 3600e3; R.advance(t, now); assert.equal(t.eggs.length, 1); assert.equal(t.eggs[0].pa.name, 'Ada'); assert.ok(t.eggs[0].pa.genes && t.eggs[0].pb.genes);
-  now += 5 * 3600e3; const ev = R.advance(t, now); const kid = t.fish.find((f) => f.parents); assert.ok(kid && kid.gen === 1 && kid.parents.length === 2 && kid.parents.map((p) => p.name).sort().join() === 'Ada,Bix'); assert.ok(kid.genes && kid.ownerName === 'Alex');
+  now += 3 * D + 1000; const ev = R.advance(t, now); const kid = t.fish.find((f) => f.parents); assert.ok(kid && kid.gen === 1 && kid.parents.length === 2 && kid.parents.map((p) => p.name).sort().join() === 'Ada,Bix'); assert.ok(kid.genes && kid.ownerName === 'Alex');
   assert.ok(ev.some((e) => /child of/.test(e.journal ?? ''))); assert.ok(ev.some((e) => /first generation/.test(e.journal ?? '')));
   const ga = R.genesOf(4), gb = R.genesOf(9); assert.ok(Math.abs(kid.genes.dh - (ga.dh + gb.dh) / 2) <= 0.016 && kid.genes.size >= 0.9 && kid.genes.size <= 1.1, 'colours blend the parents');
   // a second generation: grandparents are remembered by name even after the grandparents are gone
-  kid.born = now - 9 * D; kid.stage = 'adult'; const kid2 = mk('k2', 'Kit', 5, { parents: [{ id: 'x', name: 'Zed', parents: [] }], gen: 1, genes: R.genesOf(5) }); t.fish = [kid, kid2]; t.eggAt = 0; t.eggs = []; now += 30 * 3600e3; R.advance(t, now); now += 5 * 3600e3; R.advance(t, now);
+  kid.born = now - 9 * D; kid.stage = 'adult'; const kid2 = mk('k2', 'Kit', 5, { parents: [{ id: 'x', name: 'Zed', parents: [] }], gen: 1, genes: R.genesOf(5) }); t.fish = [kid, kid2]; t.eggAt = 0; t.eggs = []; now += 30 * 3600e3; R.advance(t, now); now += 3 * D + 1000; R.advance(t, now);
   const grand = t.fish.find((f) => f.gen === 2); assert.ok(grand, 'a second generation'); const names = grand.parents.map((p) => p.name); assert.ok(names.includes(kid.name) && names.includes('Kit'));
   assert.ok(grand.parents.find((p) => p.name === kid.name).parents.map((q) => q.name).sort().join() === 'Ada,Bix', 'grandparents survive in the record');
   assert.ok(R.childrenOf(t, kid.id).some((c) => c.id === grand.id)); const rt = JSON.parse(JSON.stringify(t)); assert.deepEqual(rt.fish.find((f) => f.gen === 2).parents, grand.parents);
@@ -179,7 +189,7 @@ ok('first friendship: +3 once per pair, remembered by stable ids, never repeated
 ok('first successful breeding: +5 once per tank, on the hatch and not the egg, parents and child recorded', () => {
   const D = 864e5, t = quiet(2); t.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; f.seed = 3; }); t.simTs = 0; t.eggAt = 1 * D; t.createdAt = -9 * D; const s0 = t.shells;
   R.advance(t, 1.01 * D); assert.equal(t.eggs.length, 1, 'an egg was laid'); assert.ok(!t.flags.firstHatch, 'laying an egg pays nothing'); const s1 = t.shells;
-  R.advance(t, 1.01 * D + 5 * 3600e3); assert.equal(t.eggs.length, 0); const hatched = t.fish.find((f) => f.parents?.length === 2); assert.ok(hatched, 'hatchling keeps its parents'); assert.equal(t.flags.firstHatch.fish, hatched.id); assert.deepEqual(t.flags.firstHatch.parents.sort(), ['f0', 'f1']);
+  R.advance(t, 4.02 * D); assert.equal(t.eggs.length, 0); const hatched = t.fish.find((f) => f.parents?.length === 2); assert.ok(hatched, 'hatchling keeps its parents'); assert.equal(t.flags.firstHatch.fish, hatched.id); assert.deepEqual(t.flags.firstHatch.parents.sort(), ['f0', 'f1']);
   assert.ok(t.shells - s1 >= R.FIRST_HATCH_REWARD); const s2 = t.shells; t.eggAt = 0; t.eggs.push({ id: 'e9', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 2 * D }); R.advance(t, 3 * D); assert.ok(t.shells - s2 < R.FIRST_HATCH_REWARD + 50, 'a second hatch does not pay it again');
   const second = t.shells; const w = quiet(2); w.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; }); w.flags.firstHatch = { at: 1 }; w.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 1 }); const wev = R.advance(w, 2); assert.ok(!wev.some((e) => /first baby/.test(e.toast ?? '')) && w.flags.firstHatch.at === 1, 'already recorded: no pay'); assert.ok(second > 0);
 });
