@@ -201,18 +201,21 @@ export function initUI({ game, social, cb }) {
     el.querySelector('.heart')?.addEventListener('click', async (e) => { e.target.textContent = '♥ Loved'; e.target.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); setTimeout(close, 700); });
     el.querySelector('.reply')?.addEventListener('click', () => { close(); setTimeout(() => writeNote(n.name), 300); });
   }
-  // the notes board: everything on the glass now, and the last few that came down, each with a heart and a way to write back
-  function noteBoard(focusId = null) {
-    const me = game.you?.userId, now = (S().notes ?? []).slice().sort((a, b) => b.at - a.at), old = (S().noteLog ?? []).filter((n) => !now.some((x) => x.id === n.id)), el = document.createElement('div'); el.className = 'notecomp board';
-    el.innerHTML = `<div class="nbw"><header><h3>Notes on the glass</h3><button class="x" aria-label="Close">×</button></header><div class="nbs">
-      ${now.length ? `<div class="gnotes">${now.map((n) => noteCard(n)).join('')}</div>` : '<p class="dim">No notes on the glass right now.</p>'}
-      ${old.length ? `<h4>Earlier</h4><div class="gnotes old">${old.map((n) => noteCard(n)).join('')}</div>` : ''}</div>
-      <div class="ncbtn"><button class="stick">✏️ Write a note</button></div></div>`;
+  // a note's own card, like a fish has: the note big, a heart, write back, take it down; and the earlier notes underneath
+  function noteBoard(id) {
+    const me = game.you?.userId, all = [...(S().notes ?? []), ...(S().noteLog ?? [])], n = all.find((x) => x.id === id); if (!n) return; const mine = n.by === me, loved = (n.hearts ?? []).length > 0;
+    const old = (S().noteLog ?? []).filter((x) => x.id !== id).slice(0, 8), el = document.createElement('div'); el.className = 'notesheet';
+    el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="nsn">${noteCard(n, true)}</div>
+      <div class="nsact">${mine ? '' : `<button class="heart"><i>♡</i><span>Love it</span></button><button class="reply"><i>✎</i><span>Write back</span></button>`}<button class="down"><i>✕</i><span>${mine ? 'Peel it off' : 'Take it down'}</span></button>${mine ? '<button class="reply new"><i>✎</i><span>New note</span></button>' : ''}</div>
+      <p class="nsmeta">${mine ? (loved ? `♥ ${n.hearts.join(' and ')} loved it` : (n.read ?? []).length ? 'Read by the crew' : 'Not read yet') : `From ${esc(n.name)} · ${ago(n.at)}`}</p>
+      ${old.length ? `<h4>Earlier notes</h4><div class="nsold">${old.map((o) => `<div class="nso" style="--nb:${NOTE_BG[o.color] ?? NOTE_BG.butter}"><em>${o.doodle}</em><span>${esc(o.text)}</span><small>${o.by === me ? 'you' : esc(o.name)} · ${ago(o.at)}</small></div>`).join('')}</div>` : ''}</div>`;
     document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
-    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); };
-    el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.x').onclick = close; el.querySelector('.stick').onclick = () => { close(); setTimeout(() => writeNote(), 280); };
-    el.querySelectorAll('[data-act="noteopen"]').forEach((b) => (b.onclick = () => { close(); setTimeout(() => readNote(b.dataset.id), 280); }));
-    if (focusId) el.querySelector(`[data-id="${focusId}"]`)?.classList.add('lit');
+    if (!mine && !(n.read ?? []).includes(me)) game.dispatch({ t: 'readNote', id });
+    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
+    el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close;
+    el.querySelector('.heart')?.addEventListener('click', async (e) => { const b = e.currentTarget; b.classList.add('on'); b.querySelector('i').textContent = '♥'; b.querySelector('span').textContent = 'Loved'; b.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); });
+    el.querySelectorAll('.reply').forEach((b) => b.addEventListener('click', () => { close(); setTimeout(() => writeNote(b.classList.contains('new') ? null : n.name), 320); }));
+    el.querySelector('.down').addEventListener('click', async () => { close(); sfx('tap'); await game.dispatch(mine ? { t: 'peelNote', id } : { t: 'readNote', id, dismiss: true }); });
   }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
@@ -380,7 +383,7 @@ export function initUI({ game, social, cb }) {
         return `${head}<div class="fact"><span class="ic t-${it.type}">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
       const on = (game.online ?? []).length, all = (game.members ?? []).length;
       return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="slots">${slotsHtml()}</div>
-        ${game.shared ? notesHtml() : ''}
+        ${game.shared ? `<div class="crow notesrow" role="button" tabindex="0" data-act="notenew"><span class="ci">✏️</span><span class="ct"><b>Leave a note on the glass</b><small>A post-it your crew sees on their tank</small></span><i class="chev">›</i></div>` : ''}
         <h4>Activity</h4><form class="send feedsend"><input maxlength="140" placeholder="Message the crew" autocomplete="off"><button aria-label="Send">↑</button></form>
         <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
         ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}</div>`;

@@ -1026,8 +1026,8 @@ const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now()
 const glassNotes = document.createElement('div'); glassNotes.id = 'glassnotes'; glassNotes.hidden = true; document.body.appendChild(glassNotes);
 const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set(), noteHearts = new Map(); let notesBooted = false;
 function syncGlassNote() {
-  const me = game.you?.userId, ns = game.shared ? (game.state?.notes ?? []).slice().sort((a, b) => b.at - a.at).slice(0, 2) : [];
-  const sheetUp = document.getElementById('sheet')?.classList.contains('on'), show = ns.length > 0 && ui?.tab === 'tank' && !focus && !play && !sheetUp && !document.querySelector('.notecomp');
+  const me = game.you?.userId, ns = game.shared ? (game.state?.notes ?? []).filter((n) => !(n.gone ?? []).includes(me)).sort((a, b) => b.at - a.at).slice(0, 2) : [];      // (a note you took down is gone from your glass only)
+  const sheetUp = document.getElementById('sheet')?.classList.contains('on'), show = ns.length > 0 && ui?.tab === 'tank' && !focus && !play && !sheetUp && !document.querySelector('.notecomp,.notesheet');
   glassNotes.hidden = !show; if (!show) return;
   const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length).join(); if (glassNotes.dataset.k === key) return;
   const gone = [...glassNotes.querySelectorAll('.postit')].filter((el) => !ns.some((n) => n.id === el.dataset.id));      // a note that came down peels off the glass and drifts away

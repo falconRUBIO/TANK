@@ -1270,7 +1270,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       for (const o of (t.notes ?? []).filter((n) => n.by === uid)) logNote(t, o); t.notes = (t.notes ?? []).filter((n) => n.by !== uid); const n = { id: nextId(t, 'n'), by: uid, name, text: txt, color, doodle, at: now, read: [] }; t.notes.push(n);
       events.push({ activity: { type: 'note', text: `${name} left a note on the glass.` }, glassNote: n.id }); return ok({ id: n.id });
     }
-    case 'readNote': { const n = [...(t.notes ?? []), ...(t.noteLog ?? [])].find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid && !n.read.includes(uid)) { n.read.push(uid); if (a.heart) { n.hearts = [...(n.hearts ?? []), name]; events.push({ activity: { type: 'note', text: `${name} loved ${n.name}'s note.` } }); } } return ok(); }
+    case 'readNote': { const n = [...(t.notes ?? []), ...(t.noteLog ?? [])].find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (a.dismiss && n.by !== uid) { n.gone = [...new Set([...(n.gone ?? []), uid])]; } if (n.by !== uid && !n.read.includes(uid)) { n.read.push(uid); if (a.heart) { n.hearts = [...(n.hearts ?? []), name]; events.push({ activity: { type: 'note', text: `${name} loved ${n.name}'s note.` } }); } } return ok(); }
     case 'peelNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid) return fail('NOT_YOURS'); logNote(t, n); t.notes = t.notes.filter((x) => x !== n); return ok(); }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
