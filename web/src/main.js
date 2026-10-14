@@ -340,7 +340,7 @@ function syncExtras() {
     const h = hashId(e.id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at)), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a);
     egg.at = at; egg.e = e; egg.group.position.set(at.x, eggY(at.x, at.z), at.z); egg.group.rotation.y = (h % 628) / 100; scene.add(egg.group); eggSprites.set(e.id, egg);
   }
-  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
+  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
 }
 function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
 async function openBottle() {
@@ -507,7 +507,24 @@ function storyBlock(rec, n = 6) {
   const when = (ts) => { const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
   return `<ul class="story">${st.map((x) => `<li><i>${when(x.at)}</i>${esc(x.text)}</li>`).join('')}</ul>`;
 }
+// an egg: tap it and the camera comes close like it does for a fish; the pill opens a small card with when it hatches and how it is doing
+function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + egg.e.id, pos: egg.group.position, radius: 0.55, mul: 1, species: { id: 'egg' }, name: 'Egg' }); }
+function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
+function showEggCard(fx) {
+  const e = fx.egg.e, s = game.state, nm = (id, snap) => s.fish.find((x) => x.id === id)?.name ?? snap?.name ?? 'a fish', A = nm(e.a, e.pa), B = nm(e.b, e.pb), now = Date.now();
+  const left = Math.max(0, e.hatchAt - now), hrs = Math.round(left / 36e5), when = left < 36e5 ? 'Any minute now' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `In about ${Math.round(hrs / 24 * 2) / 2} days`;
+  const cared = e.cared?.length ?? 0, p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5, stage = p > 0.85 ? 'Wobbling: nearly ready' : p > 0.55 ? 'Eyes have appeared' : p > 0.22 ? 'A little one is forming' : 'Just laid';
+  const pill = $('fishpill'); fx.name = `${A} & ${B}'s egg`;
+  if (cardOpen !== fx.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = 'Egg'; pill.hidden = false; pill.onclick = () => { cardOpen = fx.fid; sfx('tap'); showEggCard(fx); }; return; }
+  pill.hidden = true;
+  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
+    <div class="chd"><h2>${esc(fx.name)}</h2><div class="sp">${SPECIES_DEF[e.species]?.label ?? e.species} egg · <b class="mood">${stage}</b></div></div>
+    <dl><dt>Hatches</dt><dd>${when}</dd><dt>Parents</dt><dd>${esc(A)} and ${esc(B)}</dd>${e.laid ? `<dt>Laid</dt><dd>${new Date(e.laid).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</dd>` : ''}<dt>Looked after</dt><dd>${cared >= 2 ? `${cared} days ✓ It will hatch strong` : `${cared} of 2 days`}</dd></dl>
+    <p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy and a day ahead in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, and a day ahead in growing.'}</p>`;
+  card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
+}
 function showCard(f) {
+  if (f.isEgg) return showEggCard(f);
   if (f.dead) return showDeadCard(f);
   if (f.nursery) return openNursery();      // a baby still in the nursery: the nursery's own card
   if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
@@ -574,6 +591,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
+  if (!placing && !rearrange && !feedMode && !cleanMode && !pickFish(ev)) { const egg = eggHit(ev); if (egg) { const fx = eggFocusOf(egg); if (focus === fx) { cardOpen = fx.fid; showEggCard(fx); } else setFocus(fx); return; } }
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
   if (feedMode) { if (rayFrom(ev).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.8), hit)) dropFood(Math.max(-4, Math.min(4, hit.x))); return; }
@@ -1098,6 +1116,7 @@ window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
+window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
 window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };
