@@ -141,8 +141,8 @@ export function initUI({ game, social, cb }) {
     // the people first, then one invite card for however many seats are free, not a row of identical ones
     const free = [1, 2, 3, 4].filter((n) => !s.some((x) => x.slot === n)).length;
     return [1, 2, 3, 4].map((n) => { const m = s.find((x) => x.slot === n); return m
-      ? `<div class="slot${m.id === game.you.userId ? ' me' : ''}"><canvas class="av big" data-slot="${n}"></canvas><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? '● Online' : '○ Away'}</small>${m.id === game.you.userId ? '<button class="nudge" data-edit-me>Edit look</button>' : `<button class="nudge" data-nudge="${m.id}">Nudge</button><button class="nudge" data-bottle="${m.id}">Bottle</button>`}</div>`
-      : ''; }).join('') + (free ? `<div class="slot empty" data-invite><span>+</span><b>Invite</b><small>${free === 1 ? '1 seat free' : `${free} seats free`}</small></div>` : '');
+      ? `<div class="slot${m.id === game.you.userId ? ' me' : ''}"><span class="avw ${game.online.includes(m.id) ? 'live' : ''}"><canvas class="av big" data-slot="${n}"></canvas></span><b>${esc(m.name)}${m.id === game.you.userId ? ' (you)' : ''}</b><small>${game.online.includes(m.id) ? 'Here now' : 'Away'}</small>${m.id === game.you.userId ? '<button class="nudge" data-edit-me>Edit look</button>' : `<span class="sbtns"><button class="nudge" data-nudge="${m.id}" aria-label="Nudge">👋</button><button class="nudge" data-bottle="${m.id}" aria-label="Send a bottle">🍾</button></span>`}</div>`
+      : ''; }).join('') + (free ? `<div class="slot empty" data-invite><span class="avw add">+</span><b>Invite</b><small>${free === 1 ? '1 seat free' : `${free} seats free`}</small></div>` : '');
   };
   // your look, edited from the Crew tab with the same editor as the first screen
   let draft = null;
@@ -365,8 +365,8 @@ export function initUI({ game, social, cb }) {
       if (sub === 'book') return `<h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}`;
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
-      if (!game.shared) return `<h3>Friends</h3>${seg}<div class="slots"><div class="slot me"><canvas class="av big" data-slot="me"></canvas><b>You</b><small>● Online</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 2</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 3</small></div><div class="slot empty"><span>+</span><b>Invite</b><small>Slot 4</small></div></div>
-        <p class="dim">You are playing on your own. Open the game on the server to start a shared tank; three friends can then join with its six-character code.</p>`;
+      if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>
+        <p class="dim crewsolo">Share your tank and up to three friends can look after it with you: notes on the glass, caring together, gifts and bottles.</p></div>`;
       const wish = WISHES[S().wishIdx];
       const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
       const THANKABLE = ['feed', 'glass', 'water', 'decor', 'fish', 'visitor', 'bottle', 'gift'];
@@ -377,12 +377,13 @@ export function initUI({ game, social, cb }) {
       let lastDay = null; const feed = items.map((it) => { const day = dayName(it.ts), head = day !== lastDay ? `<div class="fday">${day}</div>` : ''; lastDay = day;
         if (it.k === 'msg') { const mine = it.userId === me; return `${head}<div class="fmsg ${mine ? 'me' : ''}"><b>${mine ? 'You' : esc(it.name)}</b><p>${esc(it.text)}</p><small>${ago(it.ts)}</small></div>`; }
         const can = it.userId && it.userId !== me && THANKABLE.includes(it.type) && Date.now() - it.ts < 24 * 3600e3 && !game.thanked?.has(it.id);
-        return `${head}<div class="fact"><span class="ic">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
-      return `<h3>Friends</h3>${seg}<div class="slots">${slotsHtml()}</div>
+        return `${head}<div class="fact"><span class="ic t-${it.type}">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
+      const on = (game.online ?? []).length, all = (game.members ?? []).length;
+      return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="slots">${slotsHtml()}</div>
         ${game.shared ? notesHtml() : ''}
-        <h4>What's happening</h4><form class="send feedsend"><input maxlength="140" placeholder="Say something to the crew" autocomplete="off"><button>Send</button></form>
+        <h4>Activity</h4><form class="send feedsend"><input maxlength="140" placeholder="Message the crew" autocomplete="off"><button aria-label="Send">↑</button></form>
         <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
-        ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}`;
+        ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}</div>`;
     },
     settings: () => `<h3>Settings</h3><div class="set">
       <h4>Sound and look</h4><div class="group">
