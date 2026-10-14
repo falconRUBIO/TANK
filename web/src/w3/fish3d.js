@@ -545,9 +545,9 @@ export class Fish3D {
     if (this.perch?.on && (this.seeking || this.idle <= 0)) this.perch = null;
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
-    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 0.75 : 0.5) * (holding ? 0.06 : 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1);      // (an exploring baby is a little brisker) (a seahorse on its way to a holdfast swims steadily, still slowly)
+    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 1.35 : 0.5) * (holding ? 0.06 : 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1);      // (an exploring baby is a little brisker) (a seahorse on its way to a holdfast swims steadily, still slowly)
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
-    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1) * (this.holdfast && !this.holdfast.on ? 1.6 : 1);      /* (on its way to a stem it goes there, it does not dawdle in the open) */ if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
     const sp = this.face(dt, 0.9);
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
@@ -641,7 +641,7 @@ export class Fish3D {
     if (visit) { d.visits[H.id] = (d.visits[H.id] ?? 0) + 1; d.pos[H.id] = [+H.qx.toFixed(2), +H.qz.toFixed(2)]; this.lastHitch = H.id; }
   }
   // how long it stays on a holdfast: an active seahorse moves on sooner, a quiet one holds on far longer
-  holdLength(rng) { return (this.nursery ? 1 : 1.3) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
+  holdLength(rng) { return (this.nursery ? 1 : 1.7) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
   // ── choosing a holdfast ── among the decorations with real grip points (found in the background, see grips.js), weighed by distance, by what it
   // knows and by its personality; then one of that decoration's grips, at the height its boldness likes and where no other seahorse is.
   pickHold(rng, spots, roost = false) {
