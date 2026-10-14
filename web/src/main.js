@@ -578,7 +578,7 @@ function showCard(f) {
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
-  const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}"><i>${m.icon}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
+  const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${m.icon}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
   const over = `${path}${famLine}${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
@@ -606,6 +606,7 @@ function showCard(f) {
     <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
+  card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
@@ -841,7 +842,8 @@ game.on('members', () => {                                                    //
   } seenOnline = now;
 });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, haptics: 25 }); spotlightFish(id, 3200, 500); } });
-game.on('surprise', (x) => { if (x?.fish) spotlightFish(x.fish, 4200, 1200); });      // the day's surprise: a close look at whoever it happened to
+game.on('surprise', (x) => { if (!x?.fish) return; setTimeout(() => ui?.surprise(x.text), 300); spotlightFish(x.fish, 4200, 1200); sfx('arrive'); });
+game.on('teamGlow', (text) => { setTimeout(() => ui?.together(String(text ?? 'You both looked after the tank today.').replace(/ It glows tonight\.$/, ' The tank glows tonight.')), 400); glowT = 0; });      // the day's surprise: a close look at whoever it happened to
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, shells: 2 }); spotlightFish(id, 3000, 600); } });
 game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dropCrabAt(x, fish); ui?.toast(`${nameOf(by)} fed ${game.state.fish.find((f) => f.id === fish)?.name ?? 'their octopus'} a crab`); } else { fishes.drop(x, 7, food); ui?.toast(food === 'mysis' ? `${nameOf(by)} fed ${dropWord('mysis').replace('mysis shrimp for ', '')} mysis shrimp` : `${nameOf(by)} fed the fish`); } sfx('splash'); });
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });

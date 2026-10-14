@@ -38,7 +38,7 @@ export class Game {
       if (e.toast) this.emit('toast', e.toast);
       if (e.noticed) this.emit('noticed', e.noticed);
       if (e.levelUp) this.emit('levelup', e.levelUp);
-      if (e.puzzle) this.emit('puzzle', e.puzzle); if (e.crab) this.emit('crab', e.crab); if (e.together) this.emit('together'); if (e.theme) this.emit('theme', e.theme); if (e.grew) this.emit('grew', e.grew); if (e.discovery) this.emit('discovery', e.discovery); if (e.surprise) this.emit('surprise', e.surprise);
+      if (e.puzzle) this.emit('puzzle', e.puzzle); if (e.crab) this.emit('crab', e.crab); if (e.together) this.emit('together'); if (e.theme) this.emit('theme', e.theme); if (e.grew) this.emit('grew', e.grew); if (e.discovery) this.emit('discovery', e.discovery); if (e.surprise) this.emit('surprise', e.surprise); if (e.teamGlow) this.emit('teamGlow', e.toast);
       if (e.arrival) this.emit('arrival', e.arrival); if (e.chapter) this.emit('chapter', e.chapter); if (e.died) this.emit('died', e.died);
       if (e.placed) this.emit('placed', e.placed);
     }
@@ -80,7 +80,7 @@ export class Game {
       if (m.journal) { this.journal.push({ day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal'); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
-      if (m.toast && (mine || m.grew || m.discovery || m.surprise || m.teamGlow)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery); if (m.surprise) this.emit('surprise', m.surprise);
+      if (m.toast && (mine || m.grew || m.discovery || m.surprise || m.teamGlow)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery); if (m.surprise) this.emit('surprise', m.surprise); if (m.teamGlow) this.emit('teamGlow', m.toast);
       if (m.arrival) this.emit('arrival', m.arrival); if (m.placed) this.emit('placed', m.placed);
     } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
     else if (m.t === 'snap') this.emit('snap', m.fish, m.crabs, m.ts);
