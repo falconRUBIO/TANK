@@ -48,7 +48,7 @@ function applySky(phaseName) {
   stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0; glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain' && !REDUCED; fishes.rain = ev === 'rain';
 }
 const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
-fishes.onGoodbye = () => { const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
+fishes.onGoodbye = () => { if (REDUCED) return; const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
 { const SURF = { ROCKS: { cols: [[96, 104, 74], [66, 78, 52], [122, 124, 106], [82, 90, 64]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
@@ -516,12 +516,19 @@ function eggGone(egg, s) {
   if (!baby) { fishes.burst(at); return; }
   eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
-  for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
+  if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
   fishes.burst(at); sfx('arrive'); haptic(12);
-  if (f3 && !document.hidden && !play) spotlightFish(baby.id, 6000, 900);      // you saw it hatch: a close look at the new baby
+  for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
+  if (f3 && !document.hidden && !play) { spotlightFish(baby.id, 6000, 900); setTimeout(() => nameBaby(baby.id), 7400); }      // you saw it hatch: a close look at the new baby
 }
 function shardTick(dt) { for (let i = shards.length - 1; i >= 0; i--) { const k = shards[i]; k.age += dt; k.vy -= 3.2 * dt; k.m.position.x += k.vx * dt; k.m.position.y = Math.max(sandH(k.m.position.x, k.m.position.z) + 0.03, k.m.position.y + k.vy * dt); k.m.position.z += k.vz * dt; if (k.m.position.y <= sandH(k.m.position.x, k.m.position.z) + 0.04) { k.vx *= 0.8; k.vz *= 0.8; k.vy = 0; } else { k.m.rotation.x += k.rx * dt; k.m.rotation.z += k.rx * 0.7 * dt; } if (k.age > 4) { k.m.material.opacity = Math.max(0, 1 - (k.age - 4) / 2); } if (k.age > 6) { scene.remove(k.m); k.m.geometry.dispose(); k.m.material.dispose(); shards.splice(i, 1); } } }
 const eggBabies = new Set();
+// you were there when it hatched: name the baby (a name is already chosen; keep it or type another)
+async function nameBaby(id) {
+  const f = game.state.fish.find((x) => x.id === id); if (!f || f.named || play || placing || document.hidden) return;
+  const nm = await ui.dialog({ title: 'NAME YOUR BABY', text: `The new little one is called ${f.name} for now. Keep it, or give it a name of your own.`, input: { value: f.name }, ok: 'Name it', cancel: `Keep ${f.name}` });
+  if (!nm || nm === f.name || game.state.fish.find((x) => x.id === id)?.named) return; const r = await game.dispatch({ t: 'nameFish', id, name: nm }); if (!r.ok) fail(r); else ui.toast(`Welcome, ${nm}!`, 2600);
+}
 // a neglected egg the octopus has its eye on: the day before, it comes to sniff at it now and then (look after the tank and it loses interest)
 function eggSniff(egg) {
   const e = egg.e, now = Date.now(); if (!e.risk || (e.cared?.length ?? 0) || !e.laid || now < e.laid + 864e5 || now > e.laid + 2 * 864e5) return false;
@@ -969,7 +976,7 @@ function frameBody(now) {
   if (feedMode && (feedIdle += dt) > 12) endFeed();
   if (bottleSp.visible) { bottleSp.position.y = (bottleSp.userData.y0 ?? 2.1) + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
   shardTick(Math.min(0.05, dt));
-  for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); egg.tick(t);
+  for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     if ((egg.guardT = (egg.guardT ?? 0) - 1 / 60) <= 0) { egg.guardT = 9 + Math.random() * 8; const par = fishes.byId.get(Math.random() < 0.5 ? e.a : e.b); if (par && !par.dead && par.species.move !== 'jet' && !par.holdfast) { par.target.set(egg.at.x + (Math.random() - 0.5) * 1.2, egg.group.position.y + 0.6 + Math.random() * 0.6, egg.at.z + 0.4 + Math.random() * 0.5); par.retarget = 4; } } }      // now and then a parent swims over to keep an eye on it
   if (driftSp.visible) { driftSp.position.y = (driftSp.userData.y0 ?? 2.1) + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
@@ -1020,6 +1027,7 @@ async function welcomeBack() {
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
   ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
   sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto);
+  { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
 }
 
 // one gentle, opt-in nudge a day, only for something that really happened (never "come back!")

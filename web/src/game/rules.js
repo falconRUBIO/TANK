@@ -382,6 +382,7 @@ function eggs(t, now, ev) {
     const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
     const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     ev.push({ journal: A && B ? `An egg hatched: meet ${f.name}, child of ${A.name} and ${B.name}.` : `An egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+    if (A && B && [e.a, e.b].every((id) => t.fish.some((x) => x.id === id && !x.dead))) ev.push({ journal: `${A.name} and ${B.name} came over to meet ${f.name}.` });
     if (!t.flags.firstHatch) { t.flags.firstHatch = { at: now, fish: f.id, parents: [A?.id ?? null, B?.id ?? null] }; t.shells += FIRST_HATCH_REWARD; ev.push({ toast: `Your first baby fish hatched. +${FIRST_HATCH_REWARD} shells`, milestone: f.id }); }
     if (gen > (t.flags.topGen ?? 0)) { t.flags.topGen = gen; ev.push({ journal: gen === 1 ? 'The first generation hatched in this tank.' : `A ${['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'][gen] ?? gen + 'th'} generation has hatched in this tank.` }); }
   }
@@ -946,7 +947,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'nameFish': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND');
       const nm = cleanName(a.name); if (!nm) return fail('BAD_NAME');
-      const old = f.name; f.name = nm; events.push({ activity: { type: 'fish', text: `${name} renamed ${old} to ${nm}.` } }); return ok();
+      const old = f.name; f.name = nm; f.named = true; events.push({ activity: { type: 'fish', text: `${name} renamed ${old} to ${nm}.` } }); return ok();
     }
     case 'buyDecor': {
       const d = DECOR_DEF[a.type]; if (!d) return fail('UNKNOWN_ITEM');

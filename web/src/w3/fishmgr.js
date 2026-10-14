@@ -576,6 +576,17 @@ export class Fishes {
   // seahorses greet their partner: now and then (more in the morning) two of them meet at a plant, circle each other glowing, and part
   // the three nursery babies are each their own little character, and it shows in where they go: one roams the whole tank, one keeps to
   // the plants, one stays close to its father and the others (see Fish3D.pickHover). What each did is kept in f.bl, so a drill can measure it.
+  // a young fish (out of the egg, not in the nursery) swims like a baby: little quick darts, a bob as it goes, and it keeps close to a parent
+  hatchTick(dt) {
+    for (const f of this.list) {
+      if (f.dead || f.nursery || f.visitor || (f.cute ?? 0) < 0.4 || f.species?.move === 'jet' || f.holdfast || f.perch?.on) continue;
+      f.target.y += Math.sin((f.tt ?? performance.now() / 1e3) * 5 + (f.phase ?? 0)) * 0.012 * f.cute;      // the bob
+      if ((f.kidT = (f.kidT ?? Math.random() * 2) - dt) > 0) continue; f.kidT = (f.sleepy ? 6 : 1.6) + Math.random() * 2.2;
+      const par = (f.rec?.parents ?? []).map((p) => this.byId.get(p.id)).filter((o) => o && !o.dead), near = par.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0];
+      if (near && Math.random() < 0.6 * f.cute) { f.target.set(near.pos.x - Math.cos(near.heading ?? 0) * 0.6 + (Math.random() - 0.5) * 0.5, near.pos.y + (Math.random() - 0.4) * 0.5, near.pos.z + (Math.random() - 0.5) * 0.5); f.retarget = 2.5; }      // tagging along just behind mum or dad
+      else if (!f.sleepy) { f.target.set(f.pos.x + (Math.random() - 0.5) * 1.8, f.pos.y + (Math.random() - 0.5) * 0.8, f.pos.z + (Math.random() - 0.5) * 1.2); f.retarget = 1.4; }      // a quick little dart
+    }
+  }
   babyTick(dt) {
     const kids = this.list.filter((f) => f.nursery && !f.dead); if (!kids.length) return;
     if ((this.bsT = (this.bsT ?? 0) - dt) <= 0) { this.bsT = 1; this.bsp = this.spots?.() ?? []; }      // (the decorations, looked up once a second)
@@ -614,7 +625,7 @@ export class Fishes {
     // laid to rest: the body sinks slowly and fades away, rather than vanishing
     if (this.leaving?.length) this.leaving = this.leaving.filter((L) => { L.age += dt; const q = Math.min(1, L.age / 2.6), e = q * q * (3 - 2 * q); L.f.group.position.y = L.y - e * 2.2; L.f.group.scale.setScalar(L.s * (1 - 0.85 * e)); L.f.group.rotation.z += dt * 0.25; if (q < 1) return true; this.scene.remove(L.f.group); return false; });
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
-    this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.octoAware(dt); this.haulTick(dt, t);
+    this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < (k.life ?? 4)) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     if (this.thrown?.length) this.thrown = this.thrown.filter((k) => { k.age += dt; k.vy -= 4.5 * dt; k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.position.z += k.vz * dt; k.m.rotation.x += 7 * dt; if (k.m.position.y <= 0.1 && k.age > 0.2) { this.scene.remove(k.m); this.looseShell({ x: Math.max(-4, Math.min(4, k.m.position.x)) - 0.45, z: Math.max(0.3, Math.min(2.6, k.m.position.z)) - 0.5 }); return false; } return true; });      // a flung shell flies, lands and lies there
