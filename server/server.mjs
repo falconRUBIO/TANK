@@ -249,7 +249,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
           if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
           if (!lim.hit(`n:${ws.userId}:${to}`, 1, 2 * 3600e3)) return send(ws, { t: 'nudged', ok: false, reason: 'TOO_SOON' });
-          const { w } = L.loadWorld(db, mine.id); const theirOcto = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === to && (f.hunger ?? 0) > 0.5); const why = theirOcto ? 'octo' : (w.hunger > 0.5 && w.fish.some((f) => f.species !== 'octopus')) ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null; const octoName = theirOcto?.name;
+          const { w } = L.loadWorld(db, mine.id); const theirOcto = w.fish.find((f) => (f.species === 'octopus' || f.species === 'seahorse') && !f.dead && f.owner === to && (f.hunger ?? 0) > 0.5); const why = theirOcto ? 'octo' : (w.hunger > 0.5 && w.fish.some((f) => f.species !== 'octopus')) ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null; const octoName = theirOcto?.name;
           if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
           const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
           for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why, name: octoName });
@@ -326,7 +326,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
         for (const m of away) {
           const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
-          if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
+          if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }
+          const sh = w.fish.find((f) => f.species === 'seahorse' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);      // a seahorse has its own hunger too, and its own caretaker
+          if (sh) { const k = `push:sea:${id}:${sh.id}`; if (!recent(k) && await push.notify(m.id, `${sh.name} is hungry. Give it some mysis shrimp.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
           const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45, k = `push:care:${id}:${m.id}`;
           if ((fishHungry || foul) && !recent(k) && await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now })) mark(k);
         }

@@ -641,7 +641,7 @@ export class Fish3D {
     if (visit) { d.visits[H.id] = (d.visits[H.id] ?? 0) + 1; d.pos[H.id] = [+H.qx.toFixed(2), +H.qz.toFixed(2)]; this.lastHitch = H.id; }
   }
   // how long it stays on a holdfast: an active seahorse moves on sooner, a quiet one holds on far longer
-  holdLength(rng) { return (this.nursery ? 1 : 1.3) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
+  holdLength(rng) { return (this.nursery ? 1 : 1.3) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
   // ── choosing a holdfast ── among the decorations with real grip points (found in the background, see grips.js), weighed by distance, by what it
   // knows and by its personality; then one of that decoration's grips, at the height its boldness likes and where no other seahorse is.
   pickHold(rng, spots, roost = false) {
@@ -851,7 +851,7 @@ export class Fish3D {
       else for (let k = 0; k < 6; k++) { this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); if (this.target.distanceTo(this.pos) > 3) break; }
       this.idle = 0.2 + rng() * 0.5; this.retarget = 4 + this.target.distanceTo(this.pos) / Math.max(0.1, this.speed * 0.5); return;      // (time enough to get there)
     }
-    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy)) return;      // (a nursery baby never grips: it perches, below)
+    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy || (this.starve ?? 0) > 0.4)) return;      // (a hungry one, long unfed, goes back to a stem and clings there)      // (a nursery baby never grips: it perches, below)
     // a nursery baby is still too small to coil its tail round a stem (grips.js finds none for it), so it perches: it settles close beside one
     // and stays there a while. The plant-lover goes back to its own plant, the others now and then to any
     this.perch = null;

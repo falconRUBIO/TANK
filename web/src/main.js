@@ -236,7 +236,8 @@ async function trimPlants() {
 function snipFx(ids) {
   const rc = canvas.getBoundingClientRect();
   ids.forEach((id, n) => setTimeout(() => {
-    const q = (decor.spots?.() ?? []).find((x) => x.id === id); if (!q) return; const k = decor.items?.get(id)?.group.scale.x ?? 1, top = new THREE.Vector3(q.x, sandH(q.x, q.z) + (q.h ?? 1) * k * 0.92, q.z).project(camera);      // the top of the plant as it is now (it is shrinking back)
+    const q = (decor.spots?.() ?? []).find((x) => x.id === id); if (!q) return; const it = decor.items?.get(id), bb = new THREE.Box3(); it?.group.updateMatrixWorld(true); it?.group.traverse((o) => { if (o.isMesh && o.visible && o.geometry) { if (o.isInstancedMesh) { o.computeBoundingBox(); bb.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } else { o.geometry.boundingBox || o.geometry.computeBoundingBox(); bb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } } });      // the plant as it is drawn (solid parts only)
+    const tipY = bb.isEmpty() ? sandH(q.x, q.z) + (q.h ?? 1) : bb.max.y - 0.15, top = new THREE.Vector3(q.x, tipY, q.z).project(camera);      // the top of the plant as it is now (it is shrinking back)
     if (top.z > 1) return; const x = rc.left + (top.x + 1) / 2 * rc.width, y = rc.top + (1 - top.y) / 2 * rc.height, host = document.getElementById('app') ?? document.body;
     const fx = document.createElement('div'); fx.className = 'snipfx'; fx.style.left = x + 'px'; fx.style.top = y + 'px'; fx.innerHTML = '<b>✂️</b>' + Array.from({ length: 9 }, (_, i) => `<i style="--dx:${Math.round((Math.random() - 0.5) * 90)}px;--dy:${Math.round(40 + Math.random() * 80)}px;--r:${Math.round((Math.random() - 0.5) * 540)}deg;--d:${(0.05 * i).toFixed(2)}s"></i>`).join('');
     host.appendChild(fx); setTimeout(() => fx.remove(), 2600);

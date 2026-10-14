@@ -519,7 +519,9 @@ export function initUI({ game, social, cb }) {
   const modal = $('modal');
   // a reward worth a moment: a card in the middle of the screen that says what it is and why, with a burst of shells, and one button to claim it
   // one pop-up at a time: a new one waits until the one on screen is closed, so nothing is ever replaced half-way
-  const modalFree = () => new Promise((res) => { const w = () => (modal.classList.contains('on') ? setTimeout(w, 300) : res()); w(); });
+  let modalShut = 0; new MutationObserver(() => { if (!modal.classList.contains('on')) modalShut = performance.now(); }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+  // ... and a breath between two in a row, so the second is seen as a new thing rather than the first changing under your finger
+  const modalFree = () => new Promise((res) => { const w = () => (modal.classList.contains('on') ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : res()); w(); });
   function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
     return modalFree().then(() => new Promise((res) => {
       const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${(i / 18) * 360}deg;--d:${70 + (i % 3) * 26}px;--t:${0.9 + (i % 4) * 0.12}s">${i % 3 ? '✦' : '🐚'}</i>`).join('');
@@ -541,11 +543,11 @@ export function initUI({ game, social, cb }) {
   }
   // a small chooser: one tap on one of a few options (or Not now)
   function choose({ title, text = '', options, cancel = 'Not now' }) {
-    return new Promise((res) => {
+    return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}<div class="chooser">${options.map((o, i) => `<button class="big ${i ? 'alt' : ''}" data-i="${i}">${esc(o.label)}</button>`).join('')}</div>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
       modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); res(v); };
       modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => done(options[+b.dataset.i].value); }); const no = $('mno'); if (no) no.onclick = () => done(undefined);
-    });
+    }));
   }
   // The opening of a tank: choose the free first fish, then name it, all in one card. The first one is preselected so it can be accepted straight away.
   function pickFish({ title, text, species, name }) {
