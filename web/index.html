@@ -566,13 +566,14 @@
 .ncrow .dz{all:unset;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:19px;cursor:pointer;background:rgba(255,255,255,.08)}.ncrow .dz.on{background:rgba(255,255,255,.28);transform:scale(1.1)}
 .ncbtn{display:flex;gap:10px;margin-top:18px}.ncbtn button{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;font-weight:600;font-size:15px;cursor:pointer;background:rgba(255,255,255,.12);color:#eaf3fb}
 .ncbtn .stick,.ncbtn .heart,.ncbtn .reply:last-child{background:linear-gradient(#ffe08a,#f2b84b);color:#3a2808}.ncbtn button:disabled{opacity:.45}
-#glassnotes{position:fixed;z-index:7;left:14px;top:calc(env(safe-area-inset-top,0px) + 70px);display:flex;gap:0;pointer-events:none}
+#glassnotes{position:fixed;z-index:7;inset:0;pointer-events:none}
 #glassnotes[hidden]{display:none}
-.postit{all:unset;pointer-events:auto;position:relative;box-sizing:border-box;width:124px;min-height:118px;padding:20px 11px 9px;margin-right:6px;display:flex;flex-direction:column;cursor:pointer;color:#3a3024;
+.postit{all:unset;pointer-events:auto;position:absolute;touch-action:none;box-sizing:border-box;width:124px;min-height:118px;padding:20px 11px 9px;display:flex;flex-direction:column;cursor:pointer;color:#3a3024;
   background:linear-gradient(176deg,rgba(255,255,255,.35),rgba(255,255,255,0) 22%),linear-gradient(var(--pc),color-mix(in srgb,var(--pc) 88%,#c9a94a));
   transform:rotate(var(--r)) translateY(calc(var(--i,0) * 6px));transform-origin:50% 6px;border-radius:2px 2px 3px 2px;
   box-shadow:0 1px 1px rgba(0,0,0,.12),0 14px 16px -12px rgba(0,0,0,.55),6px 18px 22px -16px rgba(0,30,50,.5);animation:pgentle 6s ease-in-out var(--d) infinite}
-.postit:nth-child(2){margin-top:14px}
+.postit.drag{z-index:2;animation:none!important;transform:rotate(calc(var(--r) * .4)) scale(1.08);box-shadow:0 1px 1px rgba(0,0,0,.1),0 30px 30px -14px rgba(0,0,0,.5);transition:transform .15s,box-shadow .15s}
+#toast,#settle,#reunion{z-index:9!important}
 .postit .band{position:absolute;inset:0 0 auto 0;height:15px;background:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,0));border-bottom:1px solid rgba(0,0,0,.035)}
 .postit .pt{flex:1;font:500 13.5px/1.28 "Chalkboard SE","Marker Felt","Comic Neue","Segoe Print","Comic Sans MS",cursive;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .postit .pf{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font:11.5px "Chalkboard SE","Marker Felt","Comic Sans MS",cursive;color:#6b5a42}.postit .pd{font-size:15px}
@@ -630,7 +631,7 @@
 .notesheet .nsn{padding:6px 18px 4px}.notesheet .gnote.big{min-height:190px}
 .notesheet .nsact{display:flex;gap:8px;margin:18px 0 8px}.notesheet .nsact button{all:unset;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 9px;border-radius:16px;background:rgba(255,255,255,.08);cursor:pointer;font:600 12px -apple-system,system-ui,sans-serif;color:#e8f1fa}
 .notesheet .nsact i{font-style:normal;font-size:19px;line-height:1}.notesheet .nsact .heart i{color:#ff6b8a}.notesheet .nsact .heart.on{background:rgba(255,55,95,.18)}.notesheet .nsact .down i{color:#9fb3c6}.notesheet .nsact button:active{background:rgba(255,255,255,.16)}
-.notesheet .nsmeta{margin:4px 0 0;text-align:center;font-size:12.5px;color:rgba(235,242,250,.5)}
+.notesheet .nshint{margin:2px 0 0;text-align:center;font-size:12px;color:rgba(255,226,160,.75)}.notesheet .nsmeta{margin:4px 0 0;text-align:center;font-size:12.5px;color:rgba(235,242,250,.5)}
 .notesheet h4{margin:20px 4px 8px;font:600 12px -apple-system,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(235,242,250,.5)}
 .notesheet .nsold{border-radius:16px;background:rgba(255,255,255,.06);padding:2px 12px}.notesheet .nso{display:grid;grid-template-columns:26px 1fr;column-gap:10px;padding:10px 0;border-bottom:.5px solid rgba(255,255,255,.1)}.notesheet .nso:last-child{border-bottom:0}
 .notesheet .nso em{grid-row:span 2;display:grid;place-items:center;width:26px;height:26px;border-radius:7px;font-style:normal;font-size:14px;background:var(--nb)}.notesheet .nso span{font-size:14px;color:#e8f1fa;line-height:1.3}.notesheet .nso small{font-size:11.5px;color:rgba(235,242,250,.45)}

@@ -106,6 +106,12 @@ ok('old age: an elder at three quarters of its lifespan, then a peaceful death s
   assert.ok(elderSaid && elderDay >= Math.floor(L * R.ELDER_AT) && elderDay <= Math.ceil(L * R.ELDER_AT) + 1, 'became an elder on day ' + elderDay);
   assert.ok(gone && gone >= L && gone < L * 1.6, 'died of old age on day ' + gone); assert.ok(t.memorial.at(-1).oldAge);
 });
+ok('a note: its writer drags it to a new spot on the glass; a friend can peel it off and keep it', () => {
+  const t = R.newWorld(0); R.norm(t, 0); R.applyAction(t, { t: 'glassNote', text: 'hello', color: 'mint', doodle: '🐙' }, { now: 1e9, uid: 'u1', name: 'Alex' }); const id = t.notes[0].id;
+  assert.ok(R.applyAction(t, { t: 'moveNote', id, x: 0.7, y: 2 }, { now: 1e9, uid: 'u1', name: 'Alex' }).ok); assert.deepEqual(t.notes[0].pos, { x: 0.7, y: 1 });
+  assert.equal(R.applyAction(t, { t: 'moveNote', id, x: 0, y: 0 }, { now: 1e9, uid: 'u2', name: 'Sam' }).reason, 'NOT_YOURS');
+  assert.ok(R.applyAction(t, { t: 'keepNote', id }, { now: 1e9, uid: 'u2', name: 'Sam' }).ok); assert.equal(t.kept.u2[0].text, 'hello'); assert.ok(t.notes[0].gone.includes('u2'));
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];

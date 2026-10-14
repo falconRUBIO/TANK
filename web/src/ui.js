@@ -208,8 +208,10 @@ export function initUI({ game, social, cb }) {
     const me = game.you?.userId, all = [...(S().notes ?? []), ...(S().noteLog ?? [])], n = all.find((x) => x.id === id); if (!n) return; const mine = n.by === me, loved = (n.hearts ?? []).length > 0;
     const old = (S().noteLog ?? []).filter((x) => x.id !== id).slice(0, 8), el = document.createElement('div'); el.className = 'notesheet';
     el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="nsn">${noteCard(n, true)}</div>
-      <div class="nsact">${mine ? '' : `<button class="heart"><i>♡</i><span>Love it</span></button><button class="reply"><i>✎</i><span>Write back</span></button>`}<button class="down"><i>✕</i><span>${mine ? 'Peel it off' : 'Take it down'}</span></button>${mine ? '<button class="edit"><i>✎</i><span>Edit</span></button>' : ''}</div>
+      <div class="nsact">${mine ? '<button class="edit"><i>✎</i><span>Edit</span></button><button class="down"><i>✕</i><span>Peel it off</span></button>' : `<button class="heart ${loved && (n.hearts ?? []).includes(game.members?.find((x) => x.id === me)?.name) ? 'on' : ''}"><i>♡</i><span>Love it</span></button><button class="reply"><i>✎</i><span>Write back</span></button><button class="keep"><i>📌</i><span>Peel &amp; keep</span></button>`}</div>
+      ${mine ? '<p class="nshint">Press and drag it on the glass to move it</p>' : ''}
       <p class="nsmeta">${mine ? (loved ? `♥ ${n.hearts.join(' and ')} loved it` : (n.read ?? []).length ? 'Read by the crew' : 'Not read yet') : `From ${esc(n.name)} · ${ago(n.at)}`}</p>
+      ${(() => { const k = (S().kept?.[me] ?? []).filter((x) => x.id !== id); return k.length ? `<h4>Notes you kept</h4><div class="nsold">${k.slice(0, 8).map((o) => `<div class="nso" style="--nb:${NOTE_BG[o.color] ?? NOTE_BG.butter}"><em>${o.doodle}</em><span>${esc(o.text)}</span><small>${esc(o.name)} · ${ago(o.at)}</small></div>`).join('')}</div>` : ''; })()}
       ${old.length ? `<h4>Earlier notes</h4><div class="nsold">${old.map((o) => `<div class="nso" style="--nb:${NOTE_BG[o.color] ?? NOTE_BG.butter}"><em>${o.doodle}</em><span>${esc(o.text)}</span><small>${o.by === me ? 'you' : esc(o.name)} · ${ago(o.at)}</small></div>`).join('')}</div>` : ''}</div>`;
     document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
     if (!mine && !(n.read ?? []).includes(me)) game.dispatch({ t: 'readNote', id });
@@ -218,7 +220,8 @@ export function initUI({ game, social, cb }) {
     el.querySelector('.heart')?.addEventListener('click', async (e) => { const b = e.currentTarget; b.classList.add('on'); b.querySelector('i').textContent = '♥'; b.querySelector('span').textContent = 'Loved'; b.disabled = true; sfx('love'); await game.dispatch({ t: 'readNote', id, heart: true }); });
     el.querySelectorAll('.reply').forEach((b) => b.addEventListener('click', () => { close(); setTimeout(() => writeNote(b.classList.contains('new') ? null : n.name), 320); }));
     el.querySelector('.edit')?.addEventListener('click', () => { close(); setTimeout(() => editNote(n), 320); });
-    el.querySelector('.down').addEventListener('click', async () => { close(); sfx('peel'); await game.dispatch(mine ? { t: 'peelNote', id } : { t: 'readNote', id, dismiss: true }); });
+    el.querySelector('.down')?.addEventListener('click', async () => { close(); sfx('peel'); await game.dispatch({ t: 'peelNote', id }); });
+    el.querySelector('.keep')?.addEventListener('click', async () => { close(); sfx('peel'); const r = await game.dispatch({ t: 'keepNote', id }); if (r.ok) toast(`Kept ${n.name}'s note. Tap any note to see the ones you kept.`, 2600); });
   }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
