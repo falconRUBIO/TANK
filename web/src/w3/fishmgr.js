@@ -236,17 +236,20 @@ export class Fishes {
       const T = f.task;
       if (T?.stage === 'haul') { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null, dt);
         const it = this.decor.items.get(T.id); if (it && T.kind === 'turn') { T.ht = (T.ht ?? 0) + dt; it.group.rotation.z += (0.42 * Math.sin(Math.min(1, T.ht / 5) * Math.PI) - it.group.rotation.z) * Math.min(1, dt * 3); } }      // tipped over on its side while it is shoved, then set back down
+      if (f.species.id === 'octopus') f.shellK = 0;
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
       // the shell is lifted and tipped up at the front as the octopus goes in under it, then held just off the sand over itself, rocking a little as it breathes
       const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.2)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
-      // like a real coconut octopus, it does not sit in the open hollow: once it has settled it turns the half shell over, dome up, and hides under it
-      // with only its eyes and the tips of its arms showing at the gap; when it comes out it sets the shell back down on its side
-      const wantY = entering ? 0.2 : 0, wantTilt = entering ? -0.4 : 0, k = Math.min(1, dt * 2.5);
-      g.y += ((it.restY ??= g.y) + wantY - g.y) * k; it.group.rotation.x += (wantTilt - it.group.rotation.x) * k;
+      // like a real coconut octopus: its half shell lies dome up on the sand like a little hut. Coming home it lifts the near edge like a lid, crawls in
+      // underneath and lets the shell down over itself, leaving a crack at the front to peek out of; leaving, it lifts the edge again and slips out
       const m = it.group.children.find((c) => c.isMesh); if (!m) continue; m.userData.y0 ??= m.position.y;
-      it.flipK = (it.flipK ?? 0) + ((under ? 1 : 0) - (it.flipK ?? 0)) * Math.min(1, dt * (under ? 1.1 : 1.8)); const q = it.flipK, e = q * q * (3 - 2 * q), lift = Math.sin(q * Math.PI) * 0.35;      // it is lifted as it turns, then lowered over the octopus
-      m.rotation.x = e * Math.PI / 2 + (under && q > 0.97 ? Math.sin(t * 1.3) * 0.02 * (1 - (f.sleepK ?? 0)) : 0); m.position.y = m.userData.y0 + (0.17 - m.userData.y0) * e + lift;      // (resting on the rim, a hand's breadth of gap at the sand, rising a touch as it breathes)
+      const near = !f.dead && dist < 1.5 && !under, open = near ? 1 : under ? (f.sleepK ?? 0) > 0.5 ? 0.02 : 0.1 + Math.sin(t * 0.7) * 0.03 : 0;      // (asleep, it pulls the shell right down)
+      it.flipK = (it.flipK ?? 0) + (1 - (it.flipK ?? 0)) * Math.min(1, dt * 0.9); it.lidK = (it.lidK ?? 0) + (open - (it.lidK ?? 0)) * Math.min(1, dt * (open > (it.lidK ?? 0) ? 2.2 : 1.3));
+      const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
+      const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand
+      m.rotation.x = th; m.position.y = m.userData.y0 * (1 - e) + hy * e; m.position.z = hz * e;
+      f.shellK = under ? e * (1 - L) : entering ? e * 0.4 : 0;
     }
   }
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
