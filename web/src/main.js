@@ -13,6 +13,7 @@ import { Glow, Sightings, Rain } from './w3/fx.js';
 import { Nursery } from './w3/nursery.js';
 import { makeEgg, eggSpot, eggY } from './w3/egg.js';
 import { msIcon } from './msicons.js';
+import { factOfDay, TRAIT_FACTS } from './facts.js';
 import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
@@ -621,7 +622,10 @@ function showCard(f) {
     ${comfortBlock(rec)}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
-  const pers = `<div class="tbars">${TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return `<div class="tr"><div class="tlab"><span>${b.label}</span><b style="color:${b.col}">${w}</b></div><i><b style="width:${Math.round(v * 100)}%;background:${b.col}"></b></i><small>${ex}</small></div>`; }).join('')}</div>
+  // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
+  const pers = `<div class="tgrid">${TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v), dots = Math.max(1, Math.round(v * 5)); return `<button class="tg" data-tip="${esc(`${b.label}: ${w}. ${ex}`)}"><span>${b.label}</span><b style="color:${b.col}">${w}</b><i>${[1, 2, 3, 4, 5].map((k) => `<em style="${k <= dots ? `background:${b.col}` : ''}"></em>`).join('')}</i></button>`; }).join('')}</div>
+    ${(() => { const tf = (TRAIT_FACTS[rec.species] ?? {}), t = (octo ? octoChips(mind) : p.traits).map((x) => tf[x]).find(Boolean); return t ? `<p class="tfact">${msIcon("trick", true, 14)} ${esc(t)}</p>` : ''; })()}
+    ${(() => { const F = factOfDay(rec.species, game.factPeek ?? 0); return F ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${F.n} of ${F.of}</small><p>${esc(F.text)}</p><span>Tap for another</span></div>` : ''; })()}
     <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>
     ${octo ? (octoLine(mind, f) !== mind.line ? `<p class="mind">${esc(octoLine(mind, f))}</p>` : '') : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}${p.traits.length ? ' ' + p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ') : ''}</p>`}
     <h4>Behaviours · ${seen.length} of ${beh.length}</h4><div class="tags">${tags(beh)}</div><p class="dim sm">${seen.length < beh.length ? `Keep watching: ${esc(f.name)} will show you the rest in its own time.` : `You have seen everything ${esc(f.name)} does.`}</p>
@@ -639,6 +643,7 @@ function showCard(f) {
     <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
+  card.querySelectorAll('[data-tip]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.tip, 3200); }; }); if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
