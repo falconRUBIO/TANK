@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { LIFESPAN, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -231,7 +231,8 @@ function setRearrange(on, silent = false) {
 // ── adopting fish ──
 async function adopt(species) {
   const d = SPECIES_DEF[species], s = game.state;
-  const about = `${d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}`;
+  const life = LIFESPAN[species], lifeTxt = life ? ` Lives about ${life >= 365 ? `${Math.round(life / 30.4)} months` : `${Math.round(life / 30.4)} months`} in the tank.` : '', fod = factOfDay(species);
+  const about = `${d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}${lifeTxt}${fod ? ` Did you know? ${fod.text}` : ''}`;      // what it is like, how long it lives, and one real fact
   const names = d.count === 1 ? await ui.dialog({ title: `NAME YOUR ${d.label.toUpperCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
@@ -613,7 +614,8 @@ function showCard(f) {
   const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${msIcon(m.key === 'home' && (rec.parents ?? []).length ? 'hatched' : m.key, m.done)}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
   const tr = rec.species === 'octopus' ? octoTrust(rec, game.you?.userId ?? 'me') : null, trustRow = tr ? `<div class="trust"><span>🐙 Trust</span><b>${tr.label}</b><small>${tr.next ? `${tr.next.need} more crab${tr.next.need === 1 ? '' : 's'} or visits to: ${tr.next.label.toLowerCase()}` : 'It trusts you completely.'}</small></div>` : '';      // how far this octopus has come to trust you
   const misses = rec.missing && Date.now() - rec.missing.at < 864e5 ? `Misses the ${rec.missing.what}. Looking for somewhere new.` : null, thought = misses ?? f.thought;      // for a day after something it loved is taken out
-  const over = `${path}${trustRow}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}
+  const fod = factOfDay(rec.species), factLine = fod ? `<div class="dyk mini" role="button" tabindex="0" data-tab="pers"><small>DID YOU KNOW?</small><p>${esc(fod.text)}</p></div>` : '';      // the day's fact, also on the first tab
+  const over = `${path}${trustRow}${factLine}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
@@ -623,7 +625,9 @@ function showCard(f) {
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
   // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
-  const pers = `<div class="tgrid">${TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v), dots = Math.max(1, Math.round(v * 5)); return `<button class="tg" data-tip="${esc(`${b.label}: ${w}. ${ex}`)}"><span>${b.label}</span><b style="color:${b.col}">${w}</b><i>${[1, 2, 3, 4, 5].map((k) => `<em style="${k <= dots ? `background:${b.col}` : ''}"></em>`).join('')}</i></button>`; }).join('')}</div>
+  const bondV = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15), bondW = bondV >= 0.9 ? 'Best friends' : bondV >= 0.5 ? 'Close' : bondV >= 0.2 ? 'Warming up' : 'Just met';
+  const tiles = [...TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return { label: b.label, col: b.col, w, v, tip: `${b.label}: ${w}. ${ex}` }; }), { label: 'Bond with you', col: '#ff8fb1', w: bondW, v: bondV, tip: `Bond with you: ${bondW}. It grows each time you feed or play with ${rec.name}.` }];      // six tiles, three even rows of two
+  const pers = `<div class="tgrid">${tiles.map((x) => { const dots = Math.max(1, Math.round(x.v * 5)); return `<button class="tg" data-tip="${esc(x.tip)}"><span>${x.label}</span><b style="color:${x.col}">${x.w}</b><i>${[1, 2, 3, 4, 5].map((k) => `<em style="${k <= dots ? `background:${x.col}` : ''}"></em>`).join('')}</i></button>`; }).join('')}</div>
     ${(() => { const tf = (TRAIT_FACTS[rec.species] ?? {}), t = (octo ? octoChips(mind) : p.traits).map((x) => tf[x]).find(Boolean); return t ? `<p class="tfact">${msIcon("trick", true, 14)} ${esc(t)}</p>` : ''; })()}
     ${(() => { const F = factOfDay(rec.species, game.factPeek ?? 0); return F ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${F.n} of ${F.of}</small><p>${esc(F.text)}</p><span>Tap for another</span></div>` : ''; })()}
     <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>
