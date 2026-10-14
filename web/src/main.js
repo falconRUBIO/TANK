@@ -508,7 +508,7 @@ function storyBlock(rec, n = 6) {
   return `<ul class="story">${st.map((x) => `<li><i>${when(x.at)}</i>${esc(x.text)}</li>`).join('')}</ul>`;
 }
 // an egg: tap it and the camera comes close like it does for a fish; the pill opens a small card with when it hatches and how it is doing
-function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + egg.e.id, pos: egg.group.position, radius: 0.55, mul: 1, species: { id: 'egg' }, name: 'Egg' }); }
+function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + egg.e.id, pos: egg.group.position, radius: 0.95, mul: 1, species: { id: "egg" }, name: 'Egg' }); }
 // the egg is gone: either it hatched (the shell cracks open, the baby swims out of it and, if you are watching, the camera follows it a moment) or the octopus found it
 const shards = [];
 function eggGone(egg, s) {

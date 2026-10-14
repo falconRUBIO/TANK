@@ -284,7 +284,7 @@ export function norm(t, now = Date.now()) {
   t.fish = t.fish.filter((f) => f && typeof f === 'object' && SPECIES_DEF[f.species]);
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
-  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt));
+  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus');      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
@@ -388,7 +388,7 @@ function eggs(t, now, ev) {
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.eggs.length) return;      // one egg at a time, so each one is an event
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
-  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
+  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.length >= 2); if (!pairs.length) return;
   const g = pairs[hash32(now / 6e4) % pairs.length], [A, B] = [g[0], g[1]];

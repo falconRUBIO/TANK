@@ -55,6 +55,10 @@ ok('eggs: one at a time; food and clean water on two days hatch it strong; a rar
   u.water = 0.5; R.applyAction(u, { t: 'water' }, { now: now + 3600e3 }); R.advance(u, now + 2.1 * 864e5); assert.equal(u.eggs.length, 1, 'a looked-after egg is safe');
   let flagged = 0; for (let i = 0; i < 400; i++) { const w = mk(); w.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' })); w.eggAt = 0; R.advance(w, now + i * 6e4); flagged += w.eggs[0]?.risk ? 1 : 0; } assert.ok(flagged > 0 && flagged < 25, 'rare: ' + flagged + '/400');
 });
+ok('octopuses never lay eggs, and an old octopus egg is cleared', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.flags.tut = 5; t.fish = ['a', 'b'].map((id) => R.ensureFish({ id, name: id, species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' }));
+  t.eggAt = 0; R.advance(t, 20 * 3600e3); assert.equal(t.eggs.length, 0); t.eggs.push({ id: 'e1', species: 'octopus', a: 'a', b: 'b', hatchAt: 1e15 }); R.norm(t, 1); assert.equal(t.eggs.length, 0);
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
