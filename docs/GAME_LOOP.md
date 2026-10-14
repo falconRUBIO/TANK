@@ -140,6 +140,28 @@ Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `S
 ## The daily gift
 Every caretaker can collect a small gift once a day: +2 shells into the shared wallet (`DAILY_GIFT`). It appears as the hint pill ("A small gift is waiting for you. Tap to collect."). There is no streak and nothing to catch up on: missing days costs nothing and gifts do not pile up. It needs a new local day and at least 20 hours since the last one, so changing the phone's clock or time zone cannot claim twice. Simulated effect (`GIFT=n node tools/econ.mjs 3 60`, n caretakers collecting): with all three collecting, a 3-visits-a-day tank earns about 32% more shells per day and reaches the top level around day 29 instead of day 35; a once-a-day player with three collectors reaches it around day 35 instead of day 48.
 
+## 8. The loop, rounded out (this round)
+
+- **The day's surprise.** The first feeding of each day sets off one small real moment (a baby's big meal, two fish becoming friends,
+  the octopus snatching the food, a fish at the glass). Its own card, a close look at that fish, a line in that fish's story.
+- **Coming up.** Care shows the next two things to look forward to, with when (an egg, a birth, a fish growing up, the next puzzle).
+- **Evening recap.** Once a day after six, a quiet card with up to three things that happened today and what is next.
+- **Milestones.** Every fish has the same seven-step path on its card: came home or hatched, a friend, a favourite spot, trusts you,
+  a trick, grown up, a parent. Built from what the game already records.
+- **Raised, not just grown.** A young fish fed on four different days grows up Calm; one played with five times grows up Brave.
+- **Eggs.** One at a time, three days to hatch, food and clean water on two days hatch it strong. A rare neglected egg can be lost
+  to the octopus (it sniffs round it the day before, and the egg card warns). Hatching cracks the shell, the parents come to meet the
+  baby, and whoever is watching names it. Octopuses never lay eggs.
+- **Babies look and act like babies.** Big eyes, a big head on a round little body; they dart, bob and keep close to a parent.
+- **Octopus trust.** Hides from you, then watches you, then comes to the glass when you look in, then takes a crab from your fingers.
+  Per person, from crabs and play.
+- **The coconut hut.** The coconut octopus keeps its half shell dome up, lifts the near edge to crawl under, and peeks out of the crack.
+- **Wishes.** The animals ask for what they need (somewhere to hide, a stem, a shell, bubbles, plants). Care lists them, the shop
+  marks what would help, and the animal notices when it arrives. Prices are unchanged.
+- **Together.** Two people caring for the tank on the same day make it glow that evening. Notes on the glass: post-its the crew
+  leave each other, read where they stick, with a board of the last two weeks.
+- **Gentler endings.** A warning card before an animal could die, and a short goodbye when it is laid to rest.
+
 ## Ideas kept for later
 
 - **Fish grow old (undecided).** After a few weeks a fish slowly ages: paler colours, slower swimming, longer rests. In the end a gentle farewell card,
