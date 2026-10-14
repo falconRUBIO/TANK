@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE, driftBlame, giftReady, sexOf, forecast } from './game/rules.js';
+import { CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -161,6 +161,46 @@ export function initUI({ game, social, cb }) {
   // what counts as new: unlocked by the tank's latest level-up (never at level 1, where everything is new) and not yet in the tank
   const isNew = (s, c) => (c.kind === 'fish' || c.kind === 'decor') && s.level > 1 && c.level === s.level && !(c.kind === 'fish' ? s.fish.some((f) => f.species === c.id) || (s.orders ?? []).some((o) => o.species === c.id) : s.decor.some((d) => d.type === c.id));
   const newCount = () => { const s = S(); if (!s || s.level < 2) return 0; return Object.entries(SPECIES_DEF).filter(([id, d]) => !d.visitor && isNew(s, { kind: 'fish', id, level: d.level })).length + Object.entries(DECOR_DEF).filter(([id, d]) => isNew(s, { kind: 'decor', id, level: d.level })).length; };
+  // ── notes on the glass ── little sticky notes the crew leave each other; one each, gone after three days
+  const NOTE_BG = { butter: '#ffeaa6', blush: '#ffd3de', mint: '#cff3dc', sky: '#d3e7ff', lilac: '#e6d9ff' };
+  function noteCard(n, big = false) {
+    const me = game.you?.userId, mine = n.by === me, unread = !mine && !(n.read ?? []).includes(me), tilt = ((n.id.charCodeAt(n.id.length - 1) % 5) - 2) * 1.4;
+    return `<div class="gnote ${big ? 'big' : ''} ${unread ? 'unread' : ''}" style="--nb:${NOTE_BG[n.color] ?? NOTE_BG.butter};--tilt:${tilt}deg" ${big ? '' : `role="button" tabindex="0" data-act="noteopen" data-id="${n.id}"`}>
+      <i class="tape"></i><em class="dd">${n.doodle}</em><p>${esc(n.text)}</p><footer><span>— ${mine ? 'you' : esc(n.name)}</span><small>${ago(n.at)}${(n.hearts ?? []).length ? ` · ♥ ${n.hearts.length}` : ''}</small></footer>${unread && !big ? '<b class="dot"></b>' : ''}</div>`;
+  }
+  function notesHtml() {
+    const ns = (S().notes ?? []).slice().sort((a, b) => b.at - a.at), mineHas = ns.some((n) => n.by === game.you?.userId);
+    return `<h4>Notes on the glass</h4><div class="gnotes">${ns.map((n) => noteCard(n)).join('')}<button class="gnote add" data-act="notenew"><em class="dd">✏️</em><p>${mineHas ? 'Write a new note' : 'Leave a note'}</p><footer><span>for the crew</span></footer></button></div>`;
+  }
+  // write a note: a sticky you type on, a colour and a little doodle, then stick it on the glass
+  function noteComposer(reply = null) {
+    return new Promise((done) => {
+      let color = 'butter', doodle = '🐙'; const el = document.createElement('div'); el.className = 'notecomp';
+      const paint = () => { el.querySelector('.gnote').style.setProperty('--nb', NOTE_BG[color]); el.querySelector('.dd').textContent = doodle; el.querySelectorAll('[data-c]').forEach((b) => b.classList.toggle('on', b.dataset.c === color)); el.querySelectorAll('[data-d]').forEach((b) => b.classList.toggle('on', b.dataset.d === doodle)); };
+      el.innerHTML = `<div class="ncw"><div class="gnote big edit" style="--tilt:-1.5deg"><i class="tape"></i><em class="dd"></em><textarea maxlength="120" placeholder="${reply ? `Write back to ${esc(reply)}…` : 'Write something sweet…'}"></textarea><footer><span>— you</span><small class="left">120</small></footer></div>
+        <div class="ncrow">${Object.keys(NOTE_BG).map((c) => `<button class="sw" data-c="${c}" style="background:${NOTE_BG[c]}" aria-label="${c}"></button>`).join('')}</div>
+        <div class="ncrow">${['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'].map((d) => `<button class="dz" data-d="${d}">${d}</button>`).join('')}</div>
+        <div class="ncbtn"><button class="cancel">Not now</button><button class="stick">Stick it on the glass</button></div></div>`;
+      document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); paint();
+      const ta = el.querySelector('textarea'), left = el.querySelector('.left'), stick = el.querySelector('.stick'); ta.oninput = () => { left.textContent = 120 - ta.value.length; stick.disabled = !ta.value.trim(); }; ta.oninput(); setTimeout(() => ta.focus(), 250);
+      el.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => { color = b.dataset.c; sfx('tap'); paint(); })); el.querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { doodle = b.dataset.d; sfx('tap'); paint(); }));
+      const close = (v) => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); done(v); };
+      el.querySelector('.cancel').onclick = () => close(null); stick.onclick = () => close({ text: ta.value.trim(), color, doodle }); el.onclick = (e) => { if (e.target === el) close(null); };
+    });
+  }
+  async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('place'); toast('Your note is on the glass.'); refresh(); }
+  // read a note: it comes off the glass big, with a heart and a way to write back
+  function readNote(id) {
+    const n = (S().notes ?? []).find((x) => x.id === id); if (!n) return; const mine = n.by === game.you?.userId, el = document.createElement('div'); el.className = 'notecomp read';
+    el.innerHTML = `<div class="ncw">${noteCard(n, true)}<div class="ncbtn">${mine ? '<button class="peel">Peel it off</button><button class="cancel">Close</button>' : `<button class="heart">♡ Love it</button><button class="reply">Write back</button>`}</div></div>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); sfx('tap');
+    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); refresh(); cb.notesChanged?.(); };
+    if (!mine && !(n.read ?? []).includes(game.you?.userId)) game.dispatch({ t: 'readNote', id }).then(() => cb.notesChanged?.());
+    el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.cancel')?.addEventListener('click', close);
+    el.querySelector('.peel')?.addEventListener('click', async () => { await game.dispatch({ t: 'peelNote', id }); close(); });
+    el.querySelector('.heart')?.addEventListener('click', async (e) => { e.target.textContent = '♥ Loved'; e.target.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); setTimeout(close, 700); });
+    el.querySelector('.reply')?.addEventListener('click', () => { close(); setTimeout(() => writeNote(n.name), 300); });
+  }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id), deal: id === dailyFish(), level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
@@ -170,7 +210,7 @@ export function initUI({ game, social, cb }) {
     return out.map((c) => {
       if (c.kind === 'floor' || c.kind === 'backdrop') { const key = c.kind + ':' + c.id; return `<button class="card ${selected === key ? 'sel' : ''}" data-k="${key}"><div class="sw" style="background:${SWATCH[c.kind][c.id]}"></div><b>${esc(c.label)}</b><span class="pr">${c.cur ? 'IN USE' : c.own || !c.price ? 'OWNED' : '🐚 ' + c.price}</span></button>`; }
       const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
-      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}<b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
+      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}${(() => { const n = c.kind === 'decor' && tankNeeds(S()).find((x) => x.types.includes(c.id)); return n ? `<em class="wanttag">♥ ${esc(n.key === 'plants' ? 'Fish' : n.name)}</em>` : ''; })()}<b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ' <em>−25%</em>' : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
@@ -299,7 +339,7 @@ export function initUI({ game, social, cb }) {
         : `<div class="chero"><b>All looked after</b><small>${head[0].replace(/^All looked after\.\s*/, '') || 'Enjoy the tank.'}</small></div>`;
       const extras = `${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo', 'a picture of the tank') : ''}`;
       const ahead = forecast(s, Date.now(), 2), coming = ahead.length ? `<div class="soon">${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.icon}</i><span>${esc(x.text)}</span><b>${x.when}</b></div>`).join('')}</div>` : '';      // what to look forward to: the next two things, soonest first
-      return `<h3>Care</h3>${hero}${coming}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
+      return `<h3>Care</h3>${hero}${coming}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}${(() => { const ns = tankNeeds(s); return ns.length ? `<h4>Wishes</h4><div class="cgroup wishes">${ns.map((n) => `<div class="crow" role="button" tabindex="0" data-act="needshop" data-cat="${DECOR_DEF[n.types[0]]?.cat ?? 'PLANTS'}"><span class="ci">${{ hide: '🪨', stem: '🌿', shell: '🥥', bubbles: '🫧', plants: '🌱' }[n.key] ?? '🪴'}</span><span class="ct"><b>${esc(n.text)}</b><small>Try ${n.types.slice(0, 2).map((x) => `a ${esc(DECOR_DEF[x].label.toLowerCase())}`).join(' or ')} from the shop</small></span><i class="chev">›</i></div>`).join('')}</div>` : ''; })()}
         ${extras.replace('PUZZLE', '').trim() ? `<h4>Extras</h4><div class="grid2 acts mini">${extras}</div>` : ''}<h4>Today</h4>${todayHtml(due.length > 0)}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;
     },
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
@@ -326,6 +366,7 @@ export function initUI({ game, social, cb }) {
         const can = it.userId && it.userId !== me && THANKABLE.includes(it.type) && Date.now() - it.ts < 24 * 3600e3 && !game.thanked?.has(it.id);
         return `${head}<div class="fact"><span class="ic">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
       return `<h3>Friends</h3>${seg}<div class="slots">${slotsHtml()}</div>
+        ${game.shared ? notesHtml() : ''}
         <h4>What's happening</h4><form class="send feedsend"><input maxlength="140" placeholder="Say something to the crew" autocomplete="off"><button>Send</button></form>
         <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
         ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}`;
@@ -403,7 +444,7 @@ export function initUI({ game, social, cb }) {
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
     if (tab === 'notices') { readAt = Date.now(); try { localStorage.setItem(RK, String(readAt)); } catch { /* storage unavailable */ } bell(); sheet.querySelectorAll('[data-nt]').forEach((b) => (b.onclick = () => { const n = notices[+b.dataset.nt]; if (!n) return; sfx('tap'); if (n.gift) { open('tank'); cb.gift(); } else if (n.tab) open(n.tab); })); }
     sheet.querySelectorAll('[data-feed]').forEach((b) => (b.onclick = () => { game.feedFood = b.dataset.feed; game.feedFor = b.dataset.for ?? null; feedOpen = null; sfx('tap'); open('tank'); cb.act('feedgo'); }));
-    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = (e) => { e?.stopPropagation?.(); sfx('tap'); const a = b.dataset.act; if (a === 'notyet') { toast(b.dataset.say.replace(/^\w/, (x) => x.toUpperCase())); return; } if (a === 'feeddrawer') { feedOpen = !(feedOpen ?? feedModel().hungry.length > 0); open('care', true); return; } if (a === 'feednow') { game.feedFood = b.dataset.food; game.feedFor = b.dataset.for ?? null; feedOpen = null; open('tank'); cb.act('feedgo'); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
+    sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = (e) => { e?.stopPropagation?.(); sfx('tap'); const a = b.dataset.act; if (a === 'notenew') { writeNote(); return; } if (a === 'noteopen') { readNote(b.dataset.id); return; } if (a === 'needshop') { cat = b.dataset.cat || 'PLANTS'; open('decorate'); return; } if (a === 'notyet') { toast(b.dataset.say.replace(/^\w/, (x) => x.toUpperCase())); return; } if (a === 'feeddrawer') { feedOpen = !(feedOpen ?? feedModel().hungry.length > 0); open('care', true); return; } if (a === 'feednow') { game.feedFood = b.dataset.food; game.feedFor = b.dataset.for ?? null; feedOpen = null; open('tank'); cb.act('feedgo'); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     { const on = sheet.querySelector('.cats .cat.on'), row = on?.parentElement; if (on && row) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }      // keep the chosen shelf in view in the row
     sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async () => {
@@ -610,5 +651,5 @@ export function initUI({ game, social, cb }) {
   const together = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>💛 TOGETHER</b><p>${esc(text)}</p>`, 8000); };
   const recap = (lines, next) => { place(); shelf('settle', `<b>🌙 TODAY IN THE TANK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}${next ? `<p class="nx">Next: ${esc(next)}</p>` : ''}`, 12000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

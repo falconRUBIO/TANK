@@ -78,6 +78,20 @@ ok('an octopus learns to trust you step by step, from crabs and play, and says s
   for (let i = 0; i < 16; i++) { o.hunger = 0.9; const r = R.applyAction(t, { t: 'feed', food: 'crab', fish: 'o' }, { now: 1e6 + i * 864e5, uid: 'u1', name: 'Alex' }); lines.push(...r.events.filter((e) => e.trust).map((e) => e.trust.lvl)); }
   assert.deepEqual(lines, [1, 2, 3]); assert.equal(R.octoTrust(o, 'u1').label, 'Takes a crab from your hand'); assert.equal(R.octoTrust(o, 'u2').lvl, 0, 'trust is per person');
 });
+ok('notes on the glass: one each, read and loved by others, peeled only by their writer, gone after three days', () => {
+  const t = R.newWorld(0); R.norm(t, 0); const now = 1e9;
+  let r = R.applyAction(t, { t: 'glassNote', text: 'fed Inky <3', color: 'mint', doodle: '🐙' }, { now, uid: 'u1', name: 'Alex' }); assert.ok(r.ok); assert.equal(t.notes[0].text, 'fed Inky 3');
+  R.applyAction(t, { t: 'glassNote', text: 'second', color: 'nope', doodle: 'x' }, { now: now + 1, uid: 'u1', name: 'Alex' }); assert.equal(t.notes.length, 1, 'a new note replaces your last'); assert.equal(t.notes[0].color, 'butter');
+  R.applyAction(t, { t: 'readNote', id: t.notes[0].id, heart: true }, { now: now + 2, uid: 'u2', name: 'Sam' }); assert.deepEqual(t.notes[0].read, ['u2']); assert.deepEqual(t.notes[0].hearts, ['Sam']);
+  assert.equal(R.applyAction(t, { t: 'peelNote', id: t.notes[0].id }, { now: now + 3, uid: 'u2', name: 'Sam' }).reason, 'NOT_YOURS');
+  R.norm(t, now + 4 * 864e5); assert.equal(t.notes.length, 0, 'gone after three days');
+});
+ok('the animals ask for what they need, and a decoration that answers it is noticed', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 9; t.shells = 999; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' }), R.ensureFish({ id: 'g', name: 'Pip', species: 'goldfish', seed: 3, born: -9 * 864e5, stage: 'adult', traits: ['Shy'] })];
+  const ns = R.tankNeeds(t, 1e6); assert.ok(ns.some((n) => n.key === 'hide' && n.name === 'Pip') && ns.some((n) => n.key === 'shell' && n.name === 'Inky'), JSON.stringify(ns));
+  const r = R.applyAction(t, { t: 'buyDecor', type: 'coconut', x: 0, z: 0 }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r.events.some((e) => /Inky has its eye on the new coconut/.test(e.journal ?? '')), JSON.stringify(r.events.map((e) => e.journal)));
+  assert.ok(!R.tankNeeds(t, 1e6).some((n) => n.key === 'shell'));
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];

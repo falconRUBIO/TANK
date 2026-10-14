@@ -139,3 +139,8 @@ Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `S
 
 ## The daily gift
 Every caretaker can collect a small gift once a day: +2 shells into the shared wallet (`DAILY_GIFT`). It appears as the hint pill ("A small gift is waiting for you. Tap to collect."). There is no streak and nothing to catch up on: missing days costs nothing and gifts do not pile up. It needs a new local day and at least 20 hours since the last one, so changing the phone's clock or time zone cannot claim twice. Simulated effect (`GIFT=n node tools/econ.mjs 3 60`, n caretakers collecting): with all three collecting, a 3-visits-a-day tank earns about 32% more shells per day and reaches the top level around day 29 instead of day 35; a once-a-day player with three collectors reaches it around day 35 instead of day 48.
+
+## Ideas kept for later
+
+- **Fish grow old (undecided).** After a few weeks a fish slowly ages: paler colours, slower swimming, longer rests. In the end a gentle farewell card,
+  and its life story goes into the memorial. Its children carry on, so the generations matter. Not built: the owner wants to think about it first.

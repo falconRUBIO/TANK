@@ -284,7 +284,7 @@ export function norm(t, now = Date.now()) {
   t.fish = t.fish.filter((f) => f && typeof f === 'object' && SPECIES_DEF[f.species]);
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
-  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus');      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
+  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.notes = (t.notes ?? []).filter((n) => n && typeof n.text === 'string' && now - n.at < NOTE_LIFE);      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
@@ -368,6 +368,7 @@ function visitors(t, now, ev) {
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
+export const NOTE_COLORS = ['butter', 'blush', 'mint', 'sky', 'lilac'], NOTE_DOODLES = ['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'], NOTE_LIFE = 3 * DAY;
 const careEgg = (t, now) => { const d = Math.floor(now / DAY); for (const e of t.eggs ?? []) { e.cared ||= []; if (!e.cared.includes(d) && now < e.hatchAt) e.cared.push(d); } };      // food or clean water on a day counts as looking after the egg that day
 export const eggCare = (e) => (e?.cared ?? []).length;
 function eggs(t, now, ev) {
@@ -903,6 +904,21 @@ export const OCTO_TRUST = [
 ];
 export function octoTrust(f, uid) { const b = f?.bond?.[uid] ?? 0, i = OCTO_TRUST.reduce((k, x, j) => (b >= x.at ? j : k), 0), nx = OCTO_TRUST[i + 1]; return { lvl: i, label: OCTO_TRUST[i].label, bond: b, next: nx ? { label: nx.label, need: nx.at - b } : null }; }
 function trustStep(f, uid, was, ev) { if (f.species !== 'octopus') return; const now = octoTrust(f, uid).lvl; if (now > was && OCTO_TRUST[now].line) { const t = OCTO_TRUST[now].line(f.name); ev.push({ journal: t, toast: t, trust: { fish: f.id, lvl: now } }); } }
+// ── What the animals would like in the tank ── a shy fish wants somewhere to hide, a seahorse a stem to hold, the octopus a shell to live under,
+// a playful fish bubbles, a crowd of fish some plants. Each names who wants it and which decorations would do; it goes away once the tank has one.
+const NEEDS = [
+  { key: 'hide', has: ['rock', 'boulder', 'arch', 'pot', 'chest', 'wood', 'skull', 'coconut', 'brain'], types: ['rock', 'boulder', 'arch', 'pot'], who: (fs) => fs.find((f) => (f.traits ?? []).includes('Shy') && f.species !== 'octopus'), text: (n) => `${n} would like somewhere to hide.`, done: (n, d) => `${n} found a hiding place by the new ${d}.` },
+  { key: 'stem', has: ['grass', 'kelp', 'sword', 'fern', 'bamboo', 'red'], types: ['kelp', 'grass', 'sword'], who: (fs) => fs.find((f) => f.species === 'seahorse'), text: (n) => `${n} needs a stem to wrap its tail round.`, done: (n, d) => `${n} wrapped its tail round the new ${d} straight away.` },
+  { key: 'shell', has: ['coconut', 'pot'], types: ['coconut', 'pot'], who: (fs) => fs.find((f) => f.species === 'octopus'), text: (n) => `${n} would love a shell to hide under.`, done: (n, d) => `${n} has its eye on the new ${d}. A home at last.` },
+  { key: 'bubbles', has: ['bubbler'], types: ['bubbler'], who: (fs) => fs.find((f) => (f.traits ?? []).includes('Playful')), text: (n) => `${n} would love some bubbles to play in.`, done: (n) => `${n} raced straight into the bubbles.` },
+  { key: 'plants', has: null, types: ['grass', 'fern', 'kelp'], who: (fs) => (fs.filter((f) => f.species !== 'octopus').length >= 3 ? fs.find((f) => f.species !== 'octopus') : null), text: () => 'The fish would like some plants to swim through.', done: () => 'The fish are weaving through the new plants.' },
+];
+export function tankNeeds(t, now = Date.now()) {
+  const fs = t.fish.filter((f) => !f.dead && !f.nursery && stageOf(f, now) !== 'baby'), types = new Set(t.decor.map((d) => d.type)), out = [];
+  for (const N of NEEDS) { const have = N.has ? N.has.some((x) => types.has(x)) : t.decor.some((d) => DECOR_DEF[d.type]?.cat === 'PLANTS'); if (have) continue; const f = N.who(fs); if (!f) continue; out.push({ key: N.key, fish: f.id, name: f.name, text: N.text(f.name), types: N.types }); }
+  return out.slice(0, 2);
+}
+function needsMet(t, before, type, now, ev) { const after = new Set(tankNeeds(t, now).map((n) => n.key)); for (const n of before) { if (after.has(n.key)) continue; const N = NEEDS.find((x) => x.key === n.key), f = t.fish.find((x) => x.id === n.fish); if (f) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); const line = N.done(n.name, (DECOR_DEF[type]?.label ?? type).toLowerCase()); ev.push({ journal: line, toast: line }); } }
 export function milestonesOf(f) {
   const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, grown = stageOf(f) === 'adult';
   return [
@@ -1020,11 +1036,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.decor.length >= MAX_DECOR) return fail('TANK_CROWDED');
       const gift = a.free && (t.flags.starter?.[a.type] ?? 0) > 0, free = gift || (a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS');   // the starter pack, or the tutorial's free plant
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
-      if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
+      const needs0 = tankNeeds(t, now); if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
       const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
-      themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
+      needsMet(t, needs0, a.type, now, events); themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
       return ok({ id: item.id });
     }
     case 'octoMove': {                                              // an octopus shifts a small decoration (the phone that is watching reports it)
@@ -1243,6 +1259,14 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += BOTTLE_PAY;
       events.push({ activity: { type: 'bottle', text: `${name} opened a bottle from ${b.fromName}.` }, toast: `${b.fromName}: “${b.note}” +${BOTTLE_PAY} shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: BOTTLE_PAY, from: b.fromName, note: b.note });
     }
+    case 'glassNote': {                                             // a note left on the glass for the others: one per person (a new one replaces your last), gone after three days
+      const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120); if (!txt) return fail('BAD_NAME');
+      const color = NOTE_COLORS.includes(a.color) ? a.color : NOTE_COLORS[0], doodle = NOTE_DOODLES.includes(a.doodle) ? a.doodle : NOTE_DOODLES[0];
+      t.notes = (t.notes ?? []).filter((n) => n.by !== uid); const n = { id: nextId(t, 'n'), by: uid, name, text: txt, color, doodle, at: now, read: [] }; t.notes.push(n);
+      events.push({ activity: { type: 'note', text: `${name} left a note on the glass.` }, glassNote: n.id }); return ok({ id: n.id });
+    }
+    case 'readNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid && !n.read.includes(uid)) { n.read.push(uid); if (a.heart) { n.hearts = [...(n.hearts ?? []), name]; events.push({ activity: { type: 'note', text: `${name} loved ${n.name}'s note.` } }); } } return ok(); }
+    case 'peelNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid) return fail('NOT_YOURS'); t.notes = t.notes.filter((x) => x !== n); return ok(); }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
       events.push({ journal: `${name}: “${txt}”` }); return ok();

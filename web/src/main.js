@@ -1012,6 +1012,15 @@ function frameBody(now) {
 // ── coming back: show up to three things that really happened while you were away ──
 const seenKey = () => 'ourtank.seen.' + (game.shared ? game.you.userId : 'solo');
 const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now())); } catch { /* ignore */ } };
+// ── a note someone left on the glass for you: a little sticky in the corner of the tank until you read it ──
+const glassNote = document.createElement('button'); glassNote.id = 'glassnote'; glassNote.hidden = true; document.body.appendChild(glassNote);
+function syncGlassNote() {
+  const me = game.you?.userId, n = game.shared ? (game.state?.notes ?? []).filter((x) => x.by !== me && !(x.read ?? []).includes(me)).sort((a, b) => b.at - a.at)[0] : null;
+  const show = !!n && ui?.tab === 'tank' && !focus && !play; glassNote.hidden = !show; if (!show) return;
+  if (glassNote.dataset.id !== n.id) { glassNote.dataset.id = n.id; glassNote.className = 'c-' + n.color; glassNote.innerHTML = `<em>${n.doodle}</em><span>A note from<br><b>${String(n.name).replace(/[<>&]/g, '')}</b></span>`; glassNote.classList.add('pop'); sfx('arrive'); }
+  glassNote.onclick = () => { sfx('tap'); ui.readNote(n.id); };
+}
+game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1500);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
 let wbShown = false;
 function eveningRecap() {
