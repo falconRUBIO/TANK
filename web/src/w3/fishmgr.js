@@ -12,7 +12,7 @@ import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
-import { SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
+import { octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
@@ -244,7 +244,7 @@ export class Fishes {
       // like a real coconut octopus: its half shell lies dome up on the sand like a little hut. Coming home it lifts the near edge like a lid, crawls in
       // underneath and lets the shell down over itself, leaving a crack at the front to peek out of; leaving, it lifts the edge again and slips out
       const m = it.group.children.find((c) => c.isMesh); if (!m) continue; m.userData.y0 ??= m.position.y;
-      const near = !f.dead && dist < 1.5 && !under, open = near ? 1 : under ? (f.sleepK ?? 0) > 0.5 ? 0.02 : 0.24 + Math.sin(t * 0.7) * 0.04 : 0;      // (asleep, it pulls the shell right down)
+      const near = !f.dead && dist < 1.5 && !under, open = near ? 1 : under ? (f.sleepK ?? 0) > 0.5 ? 0.02 : (f.trust ?? 0) >= 1 ? 0.24 + Math.sin(t * 0.7) * 0.04 : 0.07 : 0;      /* (an octopus that does not know you yet keeps the shell nearly shut; one that does watches you through the crack) */      // (asleep, it pulls the shell right down)
       it.flipK = (it.flipK ?? 0) + (1 - (it.flipK ?? 0)) * Math.min(1, dt * 0.9); it.lidK = (it.lidK ?? 0) + (open - (it.lidK ?? 0)) * Math.min(1, dt * (open > (it.lidK ?? 0) ? 2.2 : 1.3));
       const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
       const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand
@@ -359,7 +359,7 @@ export class Fishes {
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
   // who a fish belongs to and who it likes: its original caretaker, or whoever has bonded with it most
   relate(f, d) {
-    if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; }       // it knows who has looked after it, and keeps to itself around someone it has never met
+    if (d.species === 'octopus') { f.bondMe = (d.bond?.[this.me] ?? 0) + (d.owner === this.me ? 1 : 0); f.shy = f.bondMe === 0 && stageOf(d) !== 'baby'; f.trust = octoTrust(d, this.me).lvl; }       // it knows who has looked after it, and keeps to itself around someone it has never met
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
     if (d.species === 'octopus') { f.movedAt = d.movedAt ?? 0; f.homeId = d.home ?? null; f.adultish = stageOf(d) !== 'baby'; f.onTask = (fish, ev) => this.taskEvent(fish, ev); }
     if (d.species === 'octopus') { f.sharedBuddy = d.buddy ?? null; f.sharedRival = d.rival ?? null; f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; if (sv.fish) { f.fishMemo = sv.fish; f.buddy = sv.buddy ?? null; f.rival = sv.rival ?? null; } } } }

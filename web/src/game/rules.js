@@ -893,6 +893,16 @@ function raised(t, f, now, ev) {
 }
 function raiseNote(t, now, kind, f = null) { const d = Math.floor(now / DAY); for (const x of f ? [f] : t.fish) { if (x.dead || stageOf(x, now) === 'adult') continue; const R = (x.raise ||= {}); if (kind === 'fed') { R.days ||= []; if (!R.days.includes(d)) R.days.push(d); } else R.pets = (R.pets ?? 0) + 1; } }
 // ── Each fish's milestones ── one path for every fish, from the day it came home to raising young of its own
+// ── An octopus learns to trust you ── slowly, from crabs and from time spent with it (each crab or play counts once): first it hides from you,
+// then it watches you from its shell, then it comes to the glass when you look in, and at last it takes a crab from your fingers
+export const OCTO_TRUST = [
+  { at: 0, label: 'Hides from you', line: null },
+  { at: 3, label: 'Watches you', line: (n) => `${n} has started watching you from its shell.` },
+  { at: 8, label: 'Comes to the glass', line: (n) => `${n} comes to the glass when you look in now.` },
+  { at: 15, label: 'Takes a crab from your hand', line: (n) => `${n} trusts you enough to take a crab from your fingers.` },
+];
+export function octoTrust(f, uid) { const b = f?.bond?.[uid] ?? 0, i = OCTO_TRUST.reduce((k, x, j) => (b >= x.at ? j : k), 0), nx = OCTO_TRUST[i + 1]; return { lvl: i, label: OCTO_TRUST[i].label, bond: b, next: nx ? { label: nx.label, need: nx.at - b } : null }; }
+function trustStep(f, uid, was, ev) { if (f.species !== 'octopus') return; const now = octoTrust(f, uid).lvl; if (now > was && OCTO_TRUST[now].line) { const t = OCTO_TRUST[now].line(f.name); ev.push({ journal: t, toast: t, trust: { fish: f.id, lvl: now } }); } }
 export function milestonesOf(f) {
   const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, grown = stageOf(f) === 'adult';
   return [
@@ -951,7 +961,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
-         f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1; unlock(t, f, 'food', now, events, { food });
+         f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
         dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: food === 'crab' ? `${name} fed ${f.name} a crab.` : `${name} fed ${f.name} mysis shrimp.` } });
         return ok({ applied: true, delta: pay, food, fish: f.id });
@@ -1077,7 +1087,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
       if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
-      f.petAt[u] = now; raiseNote(t, now, 'pet', f); f.bond[u] = (f.bond[u] ?? 0) + 1; f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id }); dayCheck(t, now, events, 'bond');
+      f.petAt[u] = now; raiseNote(t, now, 'pet', f); const tw = octoTrust(f, u).lvl; f.bond[u] = (f.bond[u] ?? 0) + 1; trustStep(f, u, tw, events); f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id }); dayCheck(t, now, events, 'bond');
       f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: `${f.name} knows you now! +2 shells`, discovery: f.id }); return ok({ applied: true, delta: 2, bond: f.bond[u] }); }
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
     }
@@ -1112,7 +1122,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = (a.id ? os.find((x) => x.id === a.id) : os.filter((x) => canFeedOcto(x, uid, !solo)).sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
       if (f.crabAt != null && now - f.crabAt < CRAB_GAP) return ok({ applied: false, delta: 0, wait: CRAB_GAP - (now - f.crabAt), id: f.id });
       if (t.shells < CRAB_PRICE) return fail('NOT_ENOUGH_SHELLS');
-      t.shells -= CRAB_PRICE; f.crabAt = now; checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + 1;
+      t.shells -= CRAB_PRICE; f.crabAt = now; checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events);
       dayCheck(t, now, events, 'bond'); events.push({ journal: f.crabs === 1 ? `${f.name} caught its first crab.` : null, activity: { type: 'fish', text: `${name} gave ${f.name} a crab.` }, crab: f.id }); if (!events.at(-1).journal) delete events.at(-1).journal;
       return ok({ applied: true, delta: -CRAB_PRICE, id: f.id });
     }

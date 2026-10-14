@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -253,7 +253,11 @@ async function feedCrabTo(id) {
   const x = Math.max(-3.5, Math.min(3.5, (f?.pos.x ?? 0) + 0.5)); fishes.dropCrabAt(x, id); sfx('splash'); haptic(8);
   const r = await game.dispatch({ t: 'feed', x, food: 'crab', fish: id }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed(); ui.refresh();
+  if (r.applied && f && !f.dead && octoTrust(rec, game.you?.userId ?? 'me').lvl >= 3) { f.glassAt = { x, y: 3.6, until: performance.now() + 5000 }; setTimeout(() => ui.toast(`${rec.name} reaches up and takes it from your fingers.`, 2600), 900); }      // it trusts you completely: it comes up to take the crab from you
 }
+// an octopus that has come to trust you comes over to the glass when you look in
+function octoHello() { for (const f of fishes.list) if (f.species?.id === 'octopus' && !f.dead && (f.trust ?? 0) >= 2 && (f.shellK ?? 0) < 0.3 && !f.task && Math.random() < 0.8) f.glassAt = { x: (Math.random() - 0.5) * 2.4, y: 2.6 + Math.random(), until: performance.now() + 6000 }; }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(octoHello, 1200); });
 async function giveCrab() {
   const me = game.you?.userId, mine = game.state.fish.filter((f) => f.species === 'octopus' && !f.dead && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
   const r = await game.dispatch({ t: 'crab', id: o.id }); if (!r.ok) return fail(r);
@@ -579,7 +583,8 @@ function showCard(f) {
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${m.icon}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
-  const over = `${path}${famLine}${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
+  const tr = rec.species === 'octopus' ? octoTrust(rec, game.you?.userId ?? 'me') : null, trustRow = tr ? `<div class="trust"><span>🐙 Trust</span><b>${tr.label}</b><small>${tr.next ? `${tr.next.need} more crab${tr.next.need === 1 ? '' : 's'} or visits to: ${tr.next.label.toLowerCase()}` : 'It trusts you completely.'}</small></div>` : '';      // how far this octopus has come to trust you
+  const over = `${path}${trustRow}${famLine}${f.thought ? `<div class="now">💭 <span>${esc(f.thought)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
@@ -1007,6 +1012,18 @@ function frameBody(now) {
 // ── coming back: show up to three things that really happened while you were away ──
 const seenKey = () => 'ourtank.seen.' + (game.shared ? game.you.userId : 'solo');
 const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now())); } catch { /* ignore */ } };
+// ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
+let wbShown = false;
+function eveningRecap() {
+  const s = game.state, d = new Date(); if (!s || (s.flags.tut ?? 0) < 5 || d.getHours() < 18 || wbShown || document.hidden) return;
+  const key = 'ourtank.recap', day = d.toDateString(); try { if (localStorage.getItem(key) === day) return; } catch { /* ignore */ }
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), lines = [];
+  for (const e of game.journal) if (e.ts >= start && !/began|wish came true|Today's/.test(e.text) && !lines.includes(e.text)) lines.push(e.text);
+  for (const f of s.fish) for (const x of f.story ?? []) { const t = x.text?.includes(f.name) ? x.text : `${f.name}: ${String(x.text ?? '').replace(/^\w/, (c) => c.toLowerCase())}`; if ((x.at ?? x.ts ?? 0) >= start && x.text && !/^Arrived in the tank/.test(x.text) && !lines.includes(t)) lines.push(t); }
+  if (lines.length < 2) return; try { localStorage.setItem(key, day); } catch { /* ignore */ }
+  const next = forecast(s, Date.now(), 1)[0]; ui.recap(lines.slice(-3), next ? (next.when === 'now' ? next.text : `${next.text}, ${next.when}`) : null);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(eveningRecap, 4000); });
 async function welcomeBack() {
   let seen = 0; try { seen = +localStorage.getItem(seenKey()) || 0; } catch { /* ignore */ }
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
@@ -1031,7 +1048,7 @@ async function welcomeBack() {
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
   ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
-  sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto);
+  sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto); wbShown = true;
   { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
 }
 
@@ -1139,7 +1156,7 @@ async function boot() {
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
-  welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);
+  welcomeBack().then((shown) => { if (!shown) setTimeout(eveningRecap, 6000); }); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);
   // nudges: the subscription this phone holds is told to the server on every open (it may have been renewed, or the tank put back under new accounts) and whenever the browser renews it
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }

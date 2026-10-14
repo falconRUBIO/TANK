@@ -72,6 +72,12 @@ ok('the loop: one surprise with the first feeding of the day, a glow when two pe
   const ms = R.milestonesOf(k); assert.ok(ms[0].label === 'Hatched' && ms.find((m) => m.key === 'grown').done);
   const f = R.forecast(t, now + 3.2 * D, 3); assert.ok(f.length >= 1 && f.every((x) => x.text && x.when));
 });
+ok('an octopus learns to trust you step by step, from crabs and play, and says so once at each step', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.shells = 500; t.visitAt = t.storyAt = 1e15; const o = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult', owner: 'u1', hunger: 0.9 }); t.fish = [o];
+  assert.equal(R.octoTrust(o, 'u1').lvl, 0); const lines = [];
+  for (let i = 0; i < 16; i++) { o.hunger = 0.9; const r = R.applyAction(t, { t: 'feed', food: 'crab', fish: 'o' }, { now: 1e6 + i * 864e5, uid: 'u1', name: 'Alex' }); lines.push(...r.events.filter((e) => e.trust).map((e) => e.trust.lvl)); }
+  assert.deepEqual(lines, [1, 2, 3]); assert.equal(R.octoTrust(o, 'u1').label, 'Takes a crab from your hand'); assert.equal(R.octoTrust(o, 'u2').lvl, 0, 'trust is per person');
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
