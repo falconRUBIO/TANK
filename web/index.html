@@ -72,6 +72,9 @@
   .snipfx i{position:absolute;left:-3px;top:-6px;width:7px;height:7px;background:#4fbf5a;box-shadow:inset -2px -2px 0 #2f8a3a;animation:clip 1.9s ease-in var(--d) both;opacity:1}
   @keyframes snip{0%{transform:scale(.6) rotate(-30deg);opacity:1}18%{transform:scale(1.15) rotate(10deg);opacity:1}32%{transform:scale(1) rotate(-14deg)}46%{transform:scale(1) rotate(10deg)}60%{transform:scale(1) rotate(-6deg);opacity:1}100%{transform:translateY(-26px) scale(.9);opacity:0}}
   @keyframes clip{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
+  #modal .box.mourn{background:linear-gradient(#2c3a52,#1c2638)}#modal .box.mourn h2{color:#e9eef7;letter-spacing:.08em}#modal .box.mourn .amt{color:#e9eef7}
+  #modal .box.mourn .mpic{position:relative;width:96px;height:96px;margin:0 auto 6px}#modal .box.mourn .mpic img{width:96px;height:96px;image-rendering:pixelated;filter:grayscale(.75) brightness(.9);opacity:.9}
+  #modal .box.mourn .mpic span{position:absolute;right:-6px;top:-6px;font-size:30px}
   #sheet h4{margin:14px 0 6px;font:11px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
   .act{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #15243a}.act small{color:var(--dim)}
   .chat{max-height:110px;overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:12.5px}.msg b{color:#8ec3ff}.msg.me b{color:var(--gold)}

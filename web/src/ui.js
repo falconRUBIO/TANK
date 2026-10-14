@@ -530,6 +530,19 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); };
     }));
   }
+  // a death, said plainly in the middle of the screen: who it was, how long it lived here, why, and the one thing to do now
+  function mourn({ name, species, pal = null, days, who = null, canRest = false }) {
+    return modalFree().then(() => new Promise((res) => {
+      const label = (SPECIES_DEF[species]?.label ?? species).toLowerCase();
+      modal.innerHTML = `<div class="box party mourn"><div class="mpic"><img alt="" src="${fishThumb(species, pal)}"><span>🕊️</span></div><h2>${esc(name.toUpperCase())} HAS PASSED AWAY</h2>
+        <div class="amt">${days} <small>day${days === 1 ? '' : 's'} in your tank</small></div>
+        <p>Your ${esc(label)} went too long without food and clean water.${who ? ` ${esc(who)} looked after it.` : ''} The others are staying close.</p>
+        ${canRest ? '<button class="big gold" id="mok">Lay to rest</button><button class="lnk" id="mno">Later</button>' : '<button class="big gold" id="mok">Remember them</button>'}</div>`;
+      modal.classList.add('on', 'party'); sfx('tap');
+      const done = (v) => { modal.classList.remove('on', 'party'); res(v); };
+      $('mok').onclick = () => done(canRest ? 'rest' : true); const no = $('mno'); if (no) no.onclick = () => done(null);
+    }));
+  }
   function dialog({ title, text = '', lines = null, input = null, ok = 'OK', cancel = null, danger = false }) {
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${lines ? `<ul class="away">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}${input ? `<input id="mi" maxlength="${input.max ?? 14}" value="${esc(input.value ?? '')}" placeholder="${esc(input.placeholder ?? '')}" autocomplete="off">` : ''}<div class="err" id="me"></div>
@@ -581,5 +594,5 @@ export function initUI({ game, social, cb }) {
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

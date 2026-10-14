@@ -740,6 +740,26 @@ game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+// A death is never missed: every one in the tank's memorial that this phone has not shown yet (here, on another phone, or while nobody was
+// looking) gets the card in the middle of the screen, once. Deaths from before this phone ever checked are not brought up again.
+let mourning = false;
+async function mournCheck() {
+  const s = game.state; if (!s || mourning || !ui) return; const key = 'ourtank.mourned', now = game.now();
+  let seen; try { seen = JSON.parse(localStorage.getItem(key) ?? 'null'); } catch { seen = null; }
+  const tag = (x) => `${x.id}:${x.died}`, all = s.memorial ?? [];
+  if (!Array.isArray(seen)) { seen = all.filter((x) => now - x.died > 2 * 864e5).map(tag); try { localStorage.setItem(key, JSON.stringify(seen)); } catch { /* ignore */ } }
+  const fresh = all.filter((x) => !seen.includes(tag(x)) && now - x.died < 14 * 864e5); if (!fresh.length) return;
+  mourning = true;
+  try {
+    for (const x of fresh) {
+      seen.push(tag(x)); try { localStorage.setItem(key, JSON.stringify(seen.slice(-60))); } catch { /* ignore */ }
+      const fl = (game.state.floaters ?? []).find((z) => z.id === x.id), who = x.ownerName ?? game.members?.find((m) => m.id === x.owner)?.name ?? null;
+      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl });
+      if (r === 'rest' && (game.state.floaters ?? []).some((z) => z.id === x.id)) { const d = await game.dispatch({ t: 'scoop', id: x.id }); if (d.ok && d.applied) { sfx('tap'); haptic(10); } }
+    }
+  } finally { mourning = false; }
+}
+game.on('state', () => setTimeout(mournCheck, 600));
 game.on('died', (id) => {                         // a quiet beat, not an alarm: the light dims, the others slow down and stay near
   const f = fishes.byId.get(id), name = f?.name ?? 'A fish'; ui?.farewell(name); stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 9000);
   for (const o of fishes.list) if (o !== f && !o.dead) { o.mul = 0.6; setTimeout(() => { if (o.mul === 0.6) o.mul = 1; }, 9000); }
