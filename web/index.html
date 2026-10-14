@@ -67,6 +67,11 @@
   .code button,.send button{all:unset;cursor:pointer;font-size:12px;padding:6px 10px;border-radius:8px;background:#17304f;color:#a9c8ee;border:1px solid #244368}
   #testb{position:absolute;top:calc(env(safe-area-inset-top,0px) + 4px);left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--gold);border:1px solid rgba(230,195,106,.45);border-radius:999px;padding:2px 9px;background:rgba(10,18,32,.82)}
   .tog[disabled]{opacity:.35;pointer-events:none}
+  .snipfx{position:fixed;z-index:70;pointer-events:none;width:0;height:0}
+  .snipfx b{position:absolute;left:-16px;top:-46px;font-size:30px;animation:snip 2s ease-out forwards}
+  .snipfx i{position:absolute;left:-3px;top:-6px;width:7px;height:7px;background:#4fbf5a;box-shadow:inset -2px -2px 0 #2f8a3a;animation:clip 1.9s ease-in var(--d) both;opacity:1}
+  @keyframes snip{0%{transform:scale(.6) rotate(-30deg);opacity:1}18%{transform:scale(1.15) rotate(10deg);opacity:1}32%{transform:scale(1) rotate(-14deg)}46%{transform:scale(1) rotate(10deg)}60%{transform:scale(1) rotate(-6deg);opacity:1}100%{transform:translateY(-26px) scale(.9);opacity:0}}
+  @keyframes clip{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
   #sheet h4{margin:14px 0 6px;font:11px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
   .act{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #15243a}.act small{color:var(--dim)}
   .chat{max-height:110px;overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:12.5px}.msg b{color:#8ec3ff}.msg.me b{color:var(--gold)}

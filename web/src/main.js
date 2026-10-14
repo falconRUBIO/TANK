@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { babyRole, sexOf, canFeedOwn, ownHunger, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -226,7 +226,23 @@ async function adopt(species) {
   ui.open('tank'); sfx('buy'); ui.refresh();
 }
 const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-async function trimPlants() { const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (r.applied) { sfx('splash'); shellToast(r); } else ui.toast('Nothing needs trimming yet'); }
+// trimming: every grown plant visibly shrinks back, a pair of scissors snips above each one and a few green clippings fall away from it
+async function trimPlants() {
+  const ids = readyToTrim(game.state, game.now()).map((d) => d.id); if (!ids.length) { ui.toast('Nothing needs trimming yet'); return; }
+  const r = await game.dispatch({ t: 'trim' }); if (!r.ok) return fail(r); if (!r.applied) { ui.toast('Nothing needs trimming yet'); return; }
+  decor.grow(game.state); snipFx(ids); sfx('tap'); haptic(10); setTimeout(() => sfx('tap'), 180);
+  ui.toast(`Trimmed ${ids.length} plant${ids.length > 1 ? 's' : ''} ✂️ +${r.delta} 🐚`, 3200); flyShells(r.delta);
+}
+function snipFx(ids) {
+  const rc = canvas.getBoundingClientRect();
+  ids.forEach((id, n) => setTimeout(() => {
+    const q = (decor.spots?.() ?? []).find((x) => x.id === id); if (!q) return; const k = decor.items?.get(id)?.group.scale.x ?? 1, top = new THREE.Vector3(q.x, sandH(q.x, q.z) + (q.h ?? 1) * k * 0.92, q.z).project(camera);      // the top of the plant as it is now (it is shrinking back)
+    if (top.z > 1) return; const x = rc.left + (top.x + 1) / 2 * rc.width, y = rc.top + (1 - top.y) / 2 * rc.height, host = document.getElementById('app') ?? document.body;
+    const fx = document.createElement('div'); fx.className = 'snipfx'; fx.style.left = x + 'px'; fx.style.top = y + 'px'; fx.innerHTML = '<b>✂️</b>' + Array.from({ length: 9 }, (_, i) => `<i style="--dx:${Math.round((Math.random() - 0.5) * 90)}px;--dy:${Math.round(40 + Math.random() * 80)}px;--r:${Math.round((Math.random() - 0.5) * 540)}deg;--d:${(0.05 * i).toFixed(2)}s"></i>`).join('');
+    host.appendChild(fx); setTimeout(() => fx.remove(), 2600);
+  }, n * 260));
+}
+
 // a crab dropped just in front of the octopus, from its card: the same meal as from Feed, without hunting for the water
 async function feedCrabTo(id) {
   const rec = game.state.fish.find((x) => x.id === id), f = fishes.byId.get(id); if (!rec || rec.dead) return;
@@ -971,7 +987,7 @@ async function boot() {
   const r = await runOnboarding(); if (r.healed) setTimeout(() => ui?.toast('The server had been reset. Your tank is back, with the same code.', 5200), 3000);
   if (r.mode === 'net') {
     const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); game.dev = !!r.dev; });
-    game.on('state', () => { $('testb').hidden = !game.test; });      // a small, constant reminder that this is the test aquarium
+    game.on('state', () => { $('testb').hidden = !game.test; if (game.state) decor.grow(game.state); });      // (a plant trimmed on another phone shrinks here too)      // a small, constant reminder that this is the test aquarium
     await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
   } else game.startLocal();
   ui = initUI({ game, social, cb: {

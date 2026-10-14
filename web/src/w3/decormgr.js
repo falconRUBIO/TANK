@@ -29,7 +29,14 @@ export class DecorMgr {
     for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
   }
   // plants slowly grow between trims
-  grow(state, now = Date.now()) { for (const d of state.decor) { const it = this.items.get(d.id); if (!it || this.preview?.id === d.id) continue; const k = growthOf(state, d, now); if (Math.abs((it.grown ?? 1) - k) > 0.005) { it.grown = k; it.group.scale.setScalar(k); } } }
+  // a plant's size from how long since it was trimmed; a big change (a trim, here or on another phone) is eased over about a second, so you see it happen
+  grow(state, now = Date.now()) {
+    for (const d of state.decor) { const it = this.items.get(d.id); if (!it || this.preview?.id === d.id) continue; const k = growthOf(state, d, now), was = it.grown ?? 1;
+      if (Math.abs(was - k) <= 0.005) continue; it.grown = k;
+      if (Math.abs(was - k) < 0.05) { it.group.scale.setScalar(k); continue; }
+      const t0 = performance.now(), from = it.group.scale.x, step = () => { const u = Math.min(1, (performance.now() - t0) / 1100), e = 1 - (1 - u) ** 3; it.group.scale.setScalar(from + (k - from) * e + Math.sin(u * Math.PI) * 0.04 * (from > k ? -1 : 1)); if (u < 1 && it.grown === k) requestAnimationFrame(step); };
+      requestAnimationFrame(step); }
+  }
   // where decorations stand, for fish that like to hide behind or inspect them
   spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, type: it.type, x: it.at.x, z: it.at.z, h: PICK[it.type]?.[1] ?? 1, y: baseY(it, it.at.x, it.at.z) }); return o; }
   // world position of the first lantern, for the lamp light
