@@ -240,8 +240,13 @@ export class Fishes {
       const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
       // the shell is lifted and tipped up at the front as the octopus goes in under it, then held just off the sand over itself, rocking a little as it breathes
       const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.2)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
-      const wantY = entering ? 0.2 : under ? 0.06 + Math.sin(t * 1.3) * 0.012 * (1 - (f.sleepK ?? 0)) : 0, wantTilt = entering ? -0.4 : under ? -0.13 + Math.sin(t * 1.3) * 0.015 : 0, k = Math.min(1, dt * 2.5);
-      g.y += (wantY - g.y) * k; it.group.rotation.x += (wantTilt - it.group.rotation.x) * k;
+      // like a real coconut octopus, it does not sit in the open hollow: once it has settled it turns the half shell over, dome up, and hides under it
+      // with only its eyes and the tips of its arms showing at the gap; when it comes out it sets the shell back down on its side
+      const wantY = entering ? 0.2 : 0, wantTilt = entering ? -0.4 : 0, k = Math.min(1, dt * 2.5);
+      g.y += ((it.restY ??= g.y) + wantY - g.y) * k; it.group.rotation.x += (wantTilt - it.group.rotation.x) * k;
+      const m = it.group.children.find((c) => c.isMesh); if (!m) continue; m.userData.y0 ??= m.position.y;
+      it.flipK = (it.flipK ?? 0) + ((under ? 1 : 0) - (it.flipK ?? 0)) * Math.min(1, dt * (under ? 1.1 : 1.8)); const q = it.flipK, e = q * q * (3 - 2 * q), lift = Math.sin(q * Math.PI) * 0.35;      // it is lifted as it turns, then lowered over the octopus
+      m.rotation.x = e * Math.PI / 2 + (under && q > 0.97 ? Math.sin(t * 1.3) * 0.02 * (1 - (f.sleepK ?? 0)) : 0); m.position.y = m.userData.y0 + (0.17 - m.userData.y0) * e + lift;      // (resting on the rim, a hand's breadth of gap at the sand, rising a touch as it breathes)
     }
   }
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
