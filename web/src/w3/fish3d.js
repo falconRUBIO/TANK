@@ -99,7 +99,8 @@ export class Fish3D {
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
     this.stride = 0.85 + (((seed | 0) % 7) / 7) * 0.4; this.rs.stride = this.stride; this.gr = null; this.bold = (((seed | 0) * 37) % 100) / 100; this.glideK = 0; this.cruiseK = 0; this.landK = 0; this.dashK = 0; this.lookX = 0; this.lookY = 0; this.lookT = 0; this.lift = 0; this.sleepK = 0; this.blinkK = 0; this.blinkNext = 3 + Math.random() * 5; this.wakeT = 0; this.isNight = false; this.mw = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.mwA = { scared: 0, annoyed: 0, hunting: 0, fond: 0 }; this.scareT = 0; this.annoyT = 0; this.pokes = 0; this.pokeT = 0; this.bump = 0; this.fondFocus = false; this.carryMesh = null;
-    { let sy = 0, n = 0; for (const v of this.vox) { if (v.tag === 'eye') { sy += v.y; n++; } v.pap = species.move === 'jet' && h3(v.x * 3, v.y * 5 + 1, v.z * 7) > 0.7; } this.eyeY = n ? sy / n : 0; } this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; this.flatK = 0; this.lionK = 0; this.snakeK = 0; this.jellyK = 0; this.kelpK = 0; this.puffK = 0; this.sink = 0; this.gait = null; this.act = null; this.actText = null; this.follow = null; this.startleCool = 0; this.throwCool = 0; this.nearFor = 0; }
+    { let sy = 0, n = 0; for (const v of this.vox) { if (v.tag === 'eye') { sy += v.y; n++; } v.pap = species.move === 'jet' && h3(v.x * 3, v.y * 5 + 1, v.z * 7) > 0.7; } this.eyeY = n ? sy / n : 0; }
+    { let ex = 0, ey = 0, n = 0, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; for (const v of this.vox) { if (v.em) { ex += v.x; ey += v.y; n++; } x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); } this.cuteEye = n ? { x: ex / n, y: ey / n } : null; this.cuteMid = (y0 + y1) / 2; this.cuteSpan = x1 - x0; this.cute = 0; }      /* (for the baby look, see setPose) */ this.camoK = 0; this.camoApplied = 0; this.camoMix = 1; this.flush = 0; this.restFor = 0; this.camoT0 = 0; this.rp = [0, 0, 0]; this.flatK = 0; this.lionK = 0; this.snakeK = 0; this.jellyK = 0; this.kelpK = 0; this.puffK = 0; this.sink = 0; this.gait = null; this.act = null; this.actText = null; this.follow = null; this.startleCool = 0; this.throwCool = 0; this.nearFor = 0; }
     this.setPose(0, true);
     this.group = new THREE.Group(); this.group.add(this.mesh);
     // state
@@ -182,6 +183,11 @@ export class Fish3D {
            if (v.tag === 'web' || v.tag === 'beak') { const j = 1 - this.restK - 0.6 * this.crawlK; if (j > 0) { x -= 1.4 * j; y += 1.6 * j; z *= 1 - 0.12 * j; } if (this.chewK > 0.01) { const ch = this.chewK * Math.sin(this.tt * 16); if (v.tag === 'beak') { y += ch * 0.8; z += Math.sign(v.z || 1) * ch * 0.7; } else if (!v.web && v.y < -5) y += ch * 0.4; } }      // chewing: the beak works and the lips move with it      // jetting, the mouth and the web draw up into the head behind the streaming arms
            y += this.bob ?? 0; }
       }
+      // a baby is drawn as a baby: big shining eyes, a big head on a short, round little body (eased out as it grows up)
+      if (this.cute > 0.01 && !jet && this.cuteEye) { const c = this.cute, E = this.cuteEye;
+        if (v.em) { x = E.x + (x - E.x) * (1 + 0.85 * c); y = E.y + 0.5 * c + (y - E.y) * (1 + 0.85 * c); z += Math.sign(z || 1) * 0.5 * c; grow *= 1 + 0.75 * c; }
+        else if (!tailRig) { const back = E.x - x; if (back > 0) x = E.x - back * (1 - 0.38 * c * Math.min(1, back / (this.cuteSpan * 0.2))); y = this.cuteMid + (y - this.cuteMid) * (1 + 0.2 * c); if (back < this.cuteSpan * 0.3) grow *= 1 + 0.1 * c; }
+        else if (v.tag !== 'tail' && y > E.y - 3) grow *= 1 + 0.1 * c; }
       const o = i * 16, sg = s * grow;
       arr[o] = sg; arr[o + 5] = sg; arr[o + 10] = sg; arr[o + 15] = 1;
       arr[o + 12] = x * s; arr[o + 13] = y * s; arr[o + 14] = z * s;

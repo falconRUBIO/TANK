@@ -71,13 +71,13 @@ export class Fishes {
     // they grow through the five days, and the one that is kept carries on as the same seahorse
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
     [...state.fish, ...kids].forEach((d, idx) => {
-      seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)];
+      seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)]; const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
       let f = this.byId.get(d.id);
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.pal != null ? { pal: d.pal } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.nursery = d.nursery ?? null; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.nursery = d.nursery ?? null; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.cute = cute; f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
@@ -85,7 +85,7 @@ export class Fishes {
         f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
         f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; f.role = d.role ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
-        if (Math.abs((f.growth ?? 1) - k) > 1e-3) f.setGrowth(k);
+        if (Math.abs((f.growth ?? 1) - k) > 1e-3 || f.cute !== cute) { f.cute = cute; f.setGrowth(k); }
       }
     });
     this.syncJars(state);
