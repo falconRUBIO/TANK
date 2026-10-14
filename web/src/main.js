@@ -338,9 +338,9 @@ function syncExtras() {
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const h = hashId(e.id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at)), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a);
-    egg.at = at; egg.e = e; egg.group.position.set(at.x, eggY(at.x, at.z), at.z); egg.group.rotation.y = (h % 628) / 100; scene.add(egg.group); eggSprites.set(e.id, egg);
+    egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, eggY(at.x, at.z), at.z); egg.group.rotation.y = (h % 628) / 100; scene.add(egg.group); eggSprites.set(e.id, egg);
   }
-  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
+  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
 }
 function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
 async function openBottle() {
@@ -509,6 +509,24 @@ function storyBlock(rec, n = 6) {
 }
 // an egg: tap it and the camera comes close like it does for a fish; the pill opens a small card with when it hatches and how it is doing
 function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + egg.e.id, pos: egg.group.position, radius: 0.55, mul: 1, species: { id: 'egg' }, name: 'Egg' }); }
+// the egg is gone: either it hatched (the shell cracks open, the baby swims out of it and, if you are watching, the camera follows it a moment) or the octopus found it
+const shards = [];
+function eggGone(egg, s) {
+  const at = egg.group.position.clone(), e = egg.e, baby = s.fish.filter((f) => f.stage === 'baby' && (f.parents ?? []).some((p) => p.id === e.a || p.id === e.b) && !eggBabies.has(f.id)).sort((a, b) => b.born - a.born)[0];      /* (the newest child of these parents) */
+  if (!baby) { fishes.burst(at); return; }
+  eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
+  const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
+  for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
+  fishes.burst(at); sfx('arrive'); haptic(12);
+  if (f3 && !document.hidden && !play) spotlightFish(baby.id, 6000, 900);      // you saw it hatch: a close look at the new baby
+}
+function shardTick(dt) { for (let i = shards.length - 1; i >= 0; i--) { const k = shards[i]; k.age += dt; k.vy -= 3.2 * dt; k.m.position.x += k.vx * dt; k.m.position.y = Math.max(sandH(k.m.position.x, k.m.position.z) + 0.03, k.m.position.y + k.vy * dt); k.m.position.z += k.vz * dt; if (k.m.position.y <= sandH(k.m.position.x, k.m.position.z) + 0.04) { k.vx *= 0.8; k.vz *= 0.8; k.vy = 0; } else { k.m.rotation.x += k.rx * dt; k.m.rotation.z += k.rx * 0.7 * dt; } if (k.age > 4) { k.m.material.opacity = Math.max(0, 1 - (k.age - 4) / 2); } if (k.age > 6) { scene.remove(k.m); k.m.geometry.dispose(); k.m.material.dispose(); shards.splice(i, 1); } } }
+const eggBabies = new Set();
+// a neglected egg the octopus has its eye on: the day before, it comes to sniff at it now and then (look after the tank and it loses interest)
+function eggSniff(egg) {
+  const e = egg.e, now = Date.now(); if (!e.risk || (e.cared?.length ?? 0) || !e.laid || now < e.laid + 864e5 || now > e.laid + 2 * 864e5) return false;
+  const o = fishes.list.find((f) => f.species?.id === 'octopus' && !f.dead && !f.task && !f.hunt && !f.inspect && !f.holdfast); if (o) o.inspect = { x: egg.at.x + 0.7, z: egg.at.z + 0.2 }; return true;
+}
 function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
 function showEggCard(fx) {
   const e = fx.egg.e, s = game.state, nm = (id, snap) => s.fish.find((x) => x.id === id)?.name ?? snap?.name ?? 'a fish', A = nm(e.a, e.pa), B = nm(e.b, e.pb), now = Date.now();
@@ -520,7 +538,7 @@ function showEggCard(fx) {
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
     <div class="chd"><h2>${esc(fx.name)}</h2><div class="sp">${SPECIES_DEF[e.species]?.label ?? e.species} egg · <b class="mood">${stage}</b></div></div>
     <dl><dt>Hatches</dt><dd>${when}</dd><dt>Parents</dt><dd>${esc(A)} and ${esc(B)}</dd>${e.laid ? `<dt>Laid</dt><dd>${new Date(e.laid).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</dd>` : ''}<dt>Looked after</dt><dd>${cared >= 2 ? `${cared} days ✓ It will hatch strong` : `${cared} of 2 days`}</dd></dl>
-    <p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy and a day ahead in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, and a day ahead in growing.'}</p>`;
+    ${e.risk && !cared && e.laid && now > e.laid + 864e5 ? `<p class="warn">${esc(s.fish.find((x) => x.species === 'octopus' && !x.dead)?.name ?? 'The octopus')} has been sniffing around it. Feed the fish or change the water today to keep it safe.</p>` : ''}<p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy, with a head start in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, with a head start in growing.'}</p>`;
   card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
 }
 function showCard(f) {
@@ -950,7 +968,9 @@ function frameBody(now) {
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
   if (bottleSp.visible) { bottleSp.position.y = (bottleSp.userData.y0 ?? 2.1) + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
+  shardTick(Math.min(0.05, dt));
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); egg.tick(t);
+    if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     if ((egg.guardT = (egg.guardT ?? 0) - 1 / 60) <= 0) { egg.guardT = 9 + Math.random() * 8; const par = fishes.byId.get(Math.random() < 0.5 ? e.a : e.b); if (par && !par.dead && par.species.move !== 'jet' && !par.holdfast) { par.target.set(egg.at.x + (Math.random() - 0.5) * 1.2, egg.group.position.y + 0.6 + Math.random() * 0.6, egg.at.z + 0.4 + Math.random() * 0.5); par.retarget = 4; } } }      // now and then a parent swims over to keep an eye on it
   if (driftSp.visible) { driftSp.position.y = (driftSp.userData.y0 ?? 2.1) + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
