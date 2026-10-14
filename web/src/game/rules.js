@@ -949,15 +949,15 @@ export function milestonesOf(f) {
 export function forecast(t, now = Date.now(), n = 3) {
   const c = [], nm = (id, sn) => t.fish.find((f) => f.id === id)?.name ?? sn?.name;
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s egg` : 'The egg'} hatches`, '🥚']);
-  for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, `${f.name}'s babies are born`, '🌿']);
+  for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, `${f.name}'s babies are born`, '🌿', f]);
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, '📦']);
-  for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, `${f.name} grows up`, '🌱']); }
-  for (const f of t.fish) if (f.species === 'octopus' && !f.dead && f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) c.push([PUZZLE_GAP - (now - f.puzzleAt), `${f.name} is ready for a new puzzle`, '🧩']);
+  for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, `${f.name} grows up`, '🌱', f]); }
+  for (const f of t.fish) if (f.species === 'octopus' && !f.dead && f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) c.push([PUZZLE_GAP - (now - f.puzzleAt), `${f.name} is ready for a new puzzle`, '🧩', f]);
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
-  return c.filter((x) => x[0] > 0).slice(0, n).map(([ms, text, icon]) => ({ ms, text, icon, when: when(ms) }));
+  return c.filter((x) => x[0] > 0).slice(0, n).map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];

@@ -19,6 +19,15 @@ const ART = {
   visitor: ['.....y......', '....yYy.....', '.yyyYwYyyy..', '..yYwwwYy...', '...yYwYy....', '..yYy.yYy...', '..yy...yy...', '............', '...g..g.....', '..gGggGg....', '...gggg.....', '............'],
   bottle: ['.....SS.....', '.....bb.....', '....bwbb....', '...bwwbbb...', '...bwwbbb...', '...bwsssb...', '...bwsSsb...', '...bwsssb...', '...bwbbbb...', '...bbbbbb...', '....BBBB....', '............'],
   wish: ['.....y......', '.....y......', '....yYy.....', 'yyyyYwYyyyy.', '.yyYwwwYyy..', '..yYwwwYy...', '..yYYwYYy...', '.yYy...yYy..', '.yy.....yy..', '............', '............', '............'],
+  rock: ['............', '............', '............', '....kkkk....', '...kSSSSk...', '..kSssSSSk..', '.kSsssgSSSk.', '.kSssgggSSk.', 'kSSsssSSSSSk', 'kSSSSSSSSSSk', '.kkkkkkkkkk.', '............'],
+  coconut: ['............', '............', '....oooo....', '..ooSSSSoo..', '.oSSsSSsSSo.', '.oSSSSSSSSo.', 'oSSkSSSkSSSo', 'oSSSSSSSSSSo', 'owwwwwwwwwwo', 'wwccccccccww', '............', '............'],
+  bubbles: ['.......bb...', '......bwbb..', '......bbbb..', '.......bb...', '..bb........', '.bwbb...b...', '.bbbb..bwb..', '..bb....b...', '.....bb.....', '....bwbb....', '....bbbb....', '.....bb.....'],
+  camera: ['............', '............', '...kkk......', '.kkkkkkkkkk.', '.kSSSkkSSSk.', '.kSSkbbkSSk.', '.kSkbwbbkSk.', '.kSkbbbbkSk.', '.kSSkbbkSSk.', '.kSSSkkSSSk.', '.kkkkkkkkkk.', '............'],
+  hand: ['............', '...c.c.c....', '..cc.c.c.c..', '..cc.c.c.c..', '..cc.c.c.c..', '..ccccccccc.', 'cccccccccc..', '.cccccccccc.', '..ccccccccc.', '...cccccccc.', '....cccccc..', '............'],
+  crab: ['............', 'r.r......r.r', 'rrr......rrr', '.r..rrrr..r.', '..rrrrrrrr..', '.rrkrrrrkrr.', 'rrrrrrrrrrrr', '.rrrrrrrrrr.', '..r.r..r.r..', '.r..r..r..r.', '............', '............'],
+  shrimp: ['............', '....rr......', '...rwrr.....', '..rrrrrr....', '..r..rrrr...', '.......rrr..', '........rr..', '.......rrr..', '.....rrrr...', '...rrrr.....', '..rr.r......', '............'],
+  pellets: ['............', '............', '..SS....S...', '.SSSS..SSS..', '..SS....S...', '.....SS.....', '....SSSS.SS.', '.....SS.SSSS', '..S......SS.', '.SSS..SS....', '..S..SSSS...', '......SS....'],
+  cake: ['............', '.....y......', '.....p......', '.....w......', '..wwwwwwww..', '..pPpPpPpP..', '..wwwwwwww..', '..cccccccc..', '..ccrcccrc..', '..cccccccc..', '.SSSSSSSSSS.', '............'],
 };
 const cache = new Map();
 export const iconKeys = () => Object.keys(ART);

@@ -404,14 +404,23 @@ async function finishPlay() {
 }
 // postcard: the clean tank frame with a one-line caption about something that really happened, ready to send to a friend
 const HIGHLIGHT = /hatch|grew|grow|adult|learned|puzzle|jar|worked out|perfect|level|friends|first|visiting|birthday|days old|week/i;
+// the postcard's line is about what is in the picture: the animal you are looking at (or the one in the middle of the frame), by name, and what it is doing
+function postcardSubject() {
+  if (focus && !focus.isEgg && !focus.dead) return focus;
+  let best = null, bd = 1e9; for (const f of fishes.list) { if (f.dead || f.visitor || f.nursery) continue; const p = f.pos.clone().project(camera); if (Math.abs(p.x) > 1 || Math.abs(p.y) > 1 || p.z > 1) continue; const d = Math.hypot(p.x, p.y * 0.8) - (f.radius ?? 1) * 0.15; if (d < bd) { bd = d; best = f; } }
+  return best;
+}
 function postcardCaption() {
-  const s = game.state, recent = (game.journal ?? []).slice().reverse().find((e) => Date.now() - e.ts < 3 * 864e5 && HIGHLIGHT.test(e.text) && !/began/.test(e.text));
-  if (recent) return recent.text;
-  const f = s.fish.slice().sort((a, b) => (b.wishes ?? 0) + (b.solved ?? 0) - ((a.wishes ?? 0) + (a.solved ?? 0)))[0];
-  return f ? `${f.name} the ${SPECIES_DEF[f.species]?.label ?? 'fish'}, ${s.fish.length} friend${s.fish.length === 1 ? '' : 's'} in the tank.` : 'A quiet day in the tank.';
+  const s = game.state, f = postcardCaption.subject ?? postcardSubject(), rec = f && s.fish.find((x) => x.id === f.fid);
+  if (!rec) return s.visitor ? `A rare visitor dropped by the tank today.` : 'A quiet day in the tank.';
+  const kind = (SPECIES_DEF[rec.species]?.label ?? 'fish').toLowerCase(), lc = (t) => String(t).replace(/^\w/, (c) => c.toLowerCase()).replace(/\.$/, '');
+  const recent = (rec.story ?? []).slice().reverse().find((x) => Date.now() - (x.at ?? 0) < 2 * 864e5 && x.text && !/^Arrived in the tank|^Became an elder|days old|reached .* days/i.test(x.text));
+  const now = f.thought && !/^Knows you are here/.test(f.thought) ? lc(f.thought) : null, age = rec.elder ? 'an old friend' : stageOf(rec) === 'baby' ? 'the newest in the tank' : null;
+  return `${rec.name}, our ${kind}${age ? `, ${age}` : ''}${now ? `: ${now}.` : recent ? `. ${recent.text.includes(rec.name) ? recent.text : lc(recent.text) + '.'}` : '.'}`;
 }
 function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
 async function takePhoto() {
+  postcardCaption.subject = postcardSubject(); setTimeout(() => { postcardCaption.subject = null; }, 15000);
   const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #fishpill, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
   // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
