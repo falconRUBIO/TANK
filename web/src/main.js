@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -47,6 +47,7 @@ function applySky(phaseName) {
   stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0; glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain' && !REDUCED; fishes.rain = ev === 'rain';
 }
 const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
+fishes.onGoodbye = () => { const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots();
 { const SURF = { ROCKS: { cols: [[96, 104, 74], [66, 78, 52], [122, 124, 106], [82, 90, 64]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
@@ -760,6 +761,26 @@ async function mournCheck() {
   } finally { mourning = false; }
 }
 game.on('state', () => setTimeout(mournCheck, 600));
+// Before it comes to that: an animal in a critical state gets a card too, once per spell of illness on this phone, with the care that saves it
+let warning = false;
+async function sickCheck() {
+  const s = game.state; if (!s || warning || mourning || !ui) return; const key = 'ourtank.sickSeen', me = game.you?.userId;
+  let seen; try { seen = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { seen = []; }
+  const ill = s.fish.filter((f) => !f.dead && (f.ail ?? 0) >= AIL_WARN), keep = seen.filter((id) => ill.some((f) => f.id === id));      // (one that got better can warn again next time)
+  const f = ill.find((x) => !keep.includes(x.id)); if (keep.length !== seen.length) try { localStorage.setItem(key, JSON.stringify(keep)); } catch { /* ignore */ }
+  if (!f) return; keep.push(f.id); try { localStorage.setItem(key, JSON.stringify(keep)); } catch { /* ignore */ }
+  const own = ownFood(f), hungry = own ? ownHunger(f) > 0.25 : s.hunger > 0.25, dirty = s.water < 0.7, mine = !own || canFeedOwn(f, me, game.shared);
+  const acts = [...(hungry && mine ? [{ label: own === 'crab' ? `Give ${f.name} a crab` : own === 'mysis' ? `Give ${f.name} shrimp` : 'Feed the fish', value: 'feed' }] : []), ...(dirty ? [{ label: 'Change the water', value: 'water' }] : [])];
+  const why = hungry && dirty ? `${f.name} has gone too long without food and clean water.` : hungry ? `${f.name} has gone too long without food.` : dirty ? `The water is too dirty for ${f.name}.` : `${f.name} has been neglected for days.`;
+  const who = hungry && !mine ? ` Only ${f.ownerName ?? 'its caretaker'} can feed it: give them a nudge.` : '';
+  warning = true;
+  try {
+    const r = await ui.sick({ name: f.name, species: f.species, pal: f.pal ?? null, why: why + who, acts: acts.length ? acts : [{ label: 'Look after the tank', value: 'care' }] });
+    if (r === 'feed') { game.feedFood = own ?? 'flakes'; game.feedFor = own ? f.id : null; ui.open('tank'); feedGo(); }
+    else if (r === 'water') { ui.open('tank'); changeWater(); } else if (r === 'care') ui.open('care');
+  } finally { warning = false; }
+}
+game.on('state', () => setTimeout(sickCheck, 900));
 game.on('died', (id) => {                         // a quiet beat, not an alarm: the light dims, the others slow down and stay near
   const f = fishes.byId.get(id), name = f?.name ?? 'A fish'; ui?.farewell(name); stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 9000);
   for (const o of fishes.list) if (o !== f && !o.dead) { o.mul = 0.6; setTimeout(() => { if (o.mul === 0.6) o.mul = 1; }, 9000); }
@@ -941,6 +962,13 @@ async function welcomeBack() {
   const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
   const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
+  if (game.shared) {      // who looked after the tank while you were away, one line each: "Alex fed Inky a crab and changed the water."
+    const care = /^(.+?) (fed .+|changed the water|cleaned .+|trimmed .+)\.$/, by = new Map();
+    for (const e of game.journal) { if (e.ts <= seen || e.userId === mine) continue; const m = care.exec(e.text); if (!m) continue; const a = by.get(m[1]) ?? []; if (!a.includes(m[2])) a.push(m[2]); by.set(m[1], a); }
+    const said = [...by].slice(0, 2).map(([who, a]) => `${who} ${a.length > 2 ? a.slice(0, 2).join(', ') + ' and more' : a.join(' and ')}.`);
+    for (let i = lines.length - 1; i >= 0; i--) if (care.test(lines[i])) lines.splice(i, 1);
+    lines.unshift(...said);
+  }
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);

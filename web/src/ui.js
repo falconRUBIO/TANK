@@ -530,6 +530,16 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); };
     }));
   }
+  // an animal close to dying: said plainly, with the things that will save it as buttons
+  function sick({ name, species, pal = null, why, acts }) {
+    return modalFree().then(() => new Promise((res) => {
+      modal.innerHTML = `<div class="box party mourn sick"><div class="mpic"><img alt="" src="${fishThumb(species, pal)}"><span>⚠️</span></div><h2>${esc(name.toUpperCase())} IS VERY SICK</h2>
+        <p>${esc(why)} Without help it could die within a day or two.</p>${acts.map((x, i) => `<button class="big ${i ? 'alt' : 'gold'}" data-i="${i}">${esc(x.label)}</button>`).join('')}<button class="lnk" id="mno">Later</button></div>`;
+      modal.classList.add('on', 'party'); sfx('tap');
+      const done = (v) => { modal.classList.remove('on', 'party'); res(v); };
+      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => done(acts[+b.dataset.i].value); }); $('mno').onclick = () => done(null);
+    }));
+  }
   // a death, said plainly in the middle of the screen: who it was, how long it lived here, why, and the one thing to do now
   function mourn({ name, species, pal = null, days, who = null, canRest = false }) {
     return modalFree().then(() => new Promise((res) => {
@@ -594,5 +604,5 @@ export function initUI({ game, social, cb }) {
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<b>CHAPTER</b><p><strong>${esc(c.title)}</strong></p><p>${esc(c.text)}</p>`, 9000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

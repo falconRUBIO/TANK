@@ -95,7 +95,7 @@ export class Fishes {
       if (!f.dead) { f.dead = true; f.floater = true; f.setPale(0.6); f.profile = { traits: [], mood: 'Passed away', needs: [0, 0, 0, 0] }; if (f.emote) { f.emote.visible = false; } this.burst(f.pos); }
     }
     if (state.visitor) { seen.add(state.visitor.id); if (!this.byId.has(state.visitor.id)) this.addVisitor(state.visitor); }
-    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+    for (const f of [...this.list]) if (!seen.has(f.fid)) { if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
   }
   makeEmote(f) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, fog: false, opacity: 0 })); sp.scale.setScalar(0.8); sp.renderOrder = 9; sp.visible = false;
@@ -611,6 +611,8 @@ export class Fishes {
     if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
       for (const f of this.list) if ((f.species?.move === 'jet' || (f.sk === 'seahorse' && !f.nursery)) && f.rec && !f.dead && !f.visitor) {      /* (a seahorse has its own hunger too) */ const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
+    // laid to rest: the body sinks slowly and fades away, rather than vanishing
+    if (this.leaving?.length) this.leaving = this.leaving.filter((L) => { L.age += dt; const q = Math.min(1, L.age / 2.6), e = q * q * (3 - 2 * q); L.f.group.position.y = L.y - e * 2.2; L.f.group.scale.setScalar(L.s * (1 - 0.85 * e)); L.f.group.rotation.z += dt * 0.25; if (q < 1) return true; this.scene.remove(L.f.group); return false; });
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }

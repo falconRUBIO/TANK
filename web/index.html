@@ -74,6 +74,7 @@
   @keyframes clip{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
   #modal .box.mourn{background:linear-gradient(#2c3a52,#1c2638)}#modal .box.mourn h2{color:#e9eef7;letter-spacing:.08em}#modal .box.mourn .amt{color:#e9eef7}
   #modal .box.mourn .mpic{position:relative;width:96px;height:96px;margin:0 auto 6px}#modal .box.mourn .mpic img{width:96px;height:96px;image-rendering:pixelated;filter:grayscale(.75) brightness(.9);opacity:.9}
+  #modal .box.sick{background:linear-gradient(#3a2c22,#24201c)}#modal .box.sick .big{margin-top:8px}
   #modal .box.mourn .mpic span{position:absolute;right:-6px;top:-6px;font-size:30px}
   #sheet h4{margin:14px 0 6px;font:11px ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
   .act{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #15243a}.act small{color:var(--dim)}
@@ -535,6 +536,7 @@
   .orders small,.wish small,.sty small,.themes small,#sheet .je small,#sheet button.nt small,#reunion b,#settle b{font:600 12px -apple-system,system-ui,"SF Pro Text",sans-serif!important;letter-spacing:.02em!important;text-transform:none}
   .fold summary,.cat,.lv b,.lvrow b,.orders b,.wish b,.drawer .fd i,#foodbar button small,.foodrow small,.foodrow button,.card .pr{font-family:-apple-system,system-ui,"SF Pro Text",sans-serif!important;letter-spacing:.01em!important}
   .fold summary{font-size:14px!important;font-weight:600!important}
+.restdim{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at 50% 60%,rgba(0,8,20,.15),rgba(0,8,20,.55));animation:restdim 3.4s ease-in-out forwards}@keyframes restdim{0%{opacity:0}35%{opacity:1}100%{opacity:0}}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
