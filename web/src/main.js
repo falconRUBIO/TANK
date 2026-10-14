@@ -528,7 +528,7 @@ function showCard(f) {
   const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
   const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
-    if (stageOf(rec) === 'adult') out.push(`${rec.sex === 'm' ? 'Male' : rec.sex === 'f' ? 'Female' : ''}${rec.mate && nm(rec.mate) ? ` · paired with ${esc(nm(rec.mate))}` : ''}`);
+    if (stageOf(rec) === 'adult' && rec.mate && nm(rec.mate)) out.push(`💞 Paired with ${esc(nm(rec.mate))}`);      /* (male or female is in the line under the name) */
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
@@ -555,7 +555,7 @@ function showCard(f) {
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}`;
   const jour = `${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button>
-    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b></div></div>
+    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}${rec.species === 'seahorse' ? (sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female') : ''} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b></div></div>
     <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
