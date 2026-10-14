@@ -476,12 +476,14 @@ function devSea(t, op, now, ev) {
 }
 function seaFamilies(t, now, ev) {
   const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
-  for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) { delete f.mate; delete f.pairedAt; } }      // a partner that has left
+  for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) {      // a partner that has left: seahorses pair for life, so the one left behind grieves a while before it could pair again
+    const gone = (t.memorial ?? []).find((m) => m.id === f.mate)?.name ?? t.lastDepart?.name ?? 'its partner'; delete f.mate; delete f.pairedAt; f.widowAt = now; f.happy = Math.max(0.3, (f.happy ?? 0.7) - 0.2);
+    const line = `${f.name} misses ${gone}. They were a pair.`; ev.push({ journal: line, toast: line, story: f.id, text: line }); } }
   // pairing: the time each male and female have spent in the tank together as adults adds up; after a couple of days they pair
   if (now >= (t.pairAt ?? 0)) {
     const step = Math.max(0, Math.min(now - (t.pairLast ?? now), 2 * DAY)); t.pairLast = now; t.pairAt = now + 3 * HOUR; t.bonds ||= {};      // (a long absence counts for at most two days)
     for (const k of Object.keys(t.bonds)) { const [a, b] = k.split('|'); if (!byId.has(a) || !byId.has(b) || byId.get(a).mate || byId.get(b).mate) delete t.bonds[k]; }
-    const males = hs.filter((f) => f.sex === 'm' && !f.mate && adult(f)), females = hs.filter((f) => f.sex === 'f' && !f.mate && adult(f));
+    const ready = (f) => !f.mate && adult(f) && !f.elder && (f.widowAt == null || now - f.widowAt > 7 * DAY), males = hs.filter((f) => f.sex === 'm' && ready(f)), females = hs.filter((f) => f.sex === 'f' && ready(f));      // (not while grieving, and elders do not start again)
     for (const m of males) for (const w of females) { if (relatedFish(m, w)) continue; const k = m.id + '|' + w.id; t.bonds[k] = (t.bonds[k] ?? 0) + step; }
     for (const [k, ms] of Object.entries(t.bonds).sort((x, y) => y[1] - x[1])) {
       if (ms < SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), m = byId.get(a), w = byId.get(b); if (!m || !w || m.mate || w.mate) continue;
@@ -493,7 +495,7 @@ function seaFamilies(t, now, ev) {
   if (now >= (t.courtAt ?? 0)) {
     t.courtAt = now + 6 * HOUR;
     if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
-      const w = byId.get(m.mate); if (m.sex !== 'm' || !w || !adult(m) || !adult(w) || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
+      const w = byId.get(m.mate); if (m.sex !== 'm' || !w || !adult(m) || !adult(w) || m.elder || w.elder || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
       const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
       conceive(m, w, now, h, ev); break;
     }
