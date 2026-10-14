@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE, driftBlame, giftReady, sexOf } from './game/rules.js';
+import { CRAB_PRICE, driftBlame, giftReady, sexOf, forecast } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -298,7 +298,8 @@ export function initUI({ game, social, cb }) {
       const hero = due.length ? `<div class="chero due"><b>${due.length === 1 ? '1 thing needs you' : `${due.length} things need you`}</b><small>Each one earns shells.</small></div>`
         : `<div class="chero"><b>All looked after</b><small>${head[0].replace(/^All looked after\.\s*/, '') || 'Enjoy the tank.'}</small></div>`;
       const extras = `${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo', 'a picture of the tank') : ''}`;
-      return `<h3>Care</h3>${hero}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
+      const ahead = forecast(s, Date.now(), 2), coming = ahead.length ? `<div class="soon">${ahead.map((x) => `<div><i>${x.icon}</i><span>${esc(x.text)}</span><b>${x.when}</b></div>`).join('')}</div>` : '';      // what to look forward to: the next two things, soonest first
+      return `<h3>Care</h3>${hero}${coming}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
         ${extras.replace('PUZZLE', '').trim() ? `<h4>Extras</h4><div class="grid2 acts mini">${extras}</div>` : ''}<h4>Today</h4>${todayHtml(due.length > 0)}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;
     },
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,

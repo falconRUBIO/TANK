@@ -59,6 +59,19 @@ ok('octopuses never lay eggs, and an old octopus egg is cleared', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.flags.tut = 5; t.fish = ['a', 'b'].map((id) => R.ensureFish({ id, name: id, species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' }));
   t.eggAt = 0; R.advance(t, 20 * 3600e3); assert.equal(t.eggs.length, 0); t.eggs.push({ id: 'e1', species: 'octopus', a: 'a', b: 'b', hatchAt: 1e15 }); R.norm(t, 1); assert.equal(t.eggs.length, 0);
 });
+ok('the loop: one surprise with the first feeding of the day, a glow when two people care the same day, raising shapes a baby, milestones and what is coming up', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.visitAt = t.storyAt = 1e15;
+  t.fish = ['a', 'b', 'c'].map((id, i) => R.ensureFish({ id, name: id.toUpperCase(), species: 'goldfish', seed: 3 + i, born: -9 * D, stage: 'adult', traits: ['Shy'] }));
+  let now = 10 * D + 3600e3; t.hunger = 0.8; let r = R.applyAction(t, { t: 'feed' }, { now, uid: 'u1', name: 'Alex' }); assert.equal(r.events.filter((e) => e.surprise).length, 1, 'a surprise');
+  t.hunger = 0.8; r = R.applyAction(t, { t: 'feed' }, { now: now + 4 * 3600e3, uid: 'u1', name: 'Alex' }); assert.equal(r.events.filter((e) => e.surprise).length, 0, 'only one a day');
+  assert.ok(!r.events.some((e) => e.teamGlow)); t.water = 0.5; r = R.applyAction(t, { t: 'water' }, { now: now + 5 * 3600e3, uid: 'u2', name: 'Sam' }); assert.ok(r.events.some((e) => e.teamGlow) && t.glowUntil > now, 'two people, one day: the tank glows');
+  t.hunger = 0.8; r = R.applyAction(t, { t: 'feed' }, { now: now + D, uid: 'u1', name: 'Alex' }); assert.equal(r.events.filter((e) => e.surprise).length, 1, 'a new day, a new surprise');
+  const k = R.ensureFish({ id: 'k', name: 'Kit', species: 'goldfish', seed: 9, born: now, stage: 'baby', traits: ['Shy'], parents: [{ id: 'a', name: 'A' }] }); t.fish.push(k);
+  for (const d of [0.1, 1.05, 2, 2.98]) { t.hunger = 0.8; R.applyAction(t, { t: 'feed' }, { now: now + d * D, uid: 'u1', name: 'Alex' }); }      // four different days while it grows
+  R.advance(t, now + 3.2 * D); assert.ok(k.traits.includes('Calm') && k.raisedAs === 'Calm' && !k.raise, 'fed often while growing: grows up Calm ' + k.traits);
+  const ms = R.milestonesOf(k); assert.ok(ms[0].label === 'Hatched' && ms.find((m) => m.key === 'grown').done);
+  const f = R.forecast(t, now + 3.2 * D, 3); assert.ok(f.length >= 1 && f.every((x) => x.text && x.when));
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
