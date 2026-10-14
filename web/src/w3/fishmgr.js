@@ -370,9 +370,9 @@ export class Fishes {
   // fish that are going without care look pale and tired, and keep low
   sicken(f, d) {
     const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_TIRED ? 0.3 : 0, weak = ail >= AIL_WARN, tired = ail >= AIL_TIRED;
-    f.setPale(Math.max(k, 0.5 * (f.starve ?? 0))); if (f.weak !== weak || f.tired !== tired) { f.weak = weak; f.tired = tired; f.tmul = this.mulFor(f); }
+    const old = !!d.elder; f.setPale(Math.max(k, 0.5 * (f.starve ?? 0), old ? 0.22 : 0)); if (f.weak !== weak || f.tired !== tired || f.old !== old) { f.weak = weak; f.tired = tired; f.old = old; f.tmul = this.mulFor(f); }      // (an elder's colours have softened)
   }
-  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (1 - 0.65 * (f.starve ?? 0)); }
+  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (f.old ? 0.72 : 1) * (1 - 0.65 * (f.starve ?? 0)); }      // (and an elder takes life slowly)
   // a rare visitor swims in from the side, glowing softly, until it is greeted or leaves
   addVisitor(v) {
     const sp = SPECIES[v.species], def = SPECIES_DEF[v.species]; if (!sp) return;

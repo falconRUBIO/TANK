@@ -97,6 +97,15 @@ ok('taking out something an animal loved: it misses it, loses a little happiness
   const r = R.applyAction(t, { t: 'sellDecor', id: 'd1' }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r.events.some((e) => /Pip misses the reef rock/i.test(e.journal ?? '')), JSON.stringify(r.events)); assert.ok(t.fish[0].happy < 0.8 && !t.fish[0].spotId && t.fish[0].missing);
   const r2 = R.applyAction(t, { t: 'sellDecor', id: 'd2' }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r2.events.some((e) => /starfish go back to the sea/.test(e.activity?.text ?? '')));
 });
+ok('old age: an elder at three quarters of its lifespan, then a peaceful death some days past its full span; never the last animal', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -900 * D; t.visitAt = t.storyAt = t.eggAt = 1e15; const L = R.LIFESPAN.seahorse;
+  const mk = (id, sp, born) => R.ensureFish({ id, name: id, species: sp, seed: 3, born, stage: 'adult', happy: 0.8, health: 1 });
+  t.fish = [mk('s', 'seahorse', 0), mk('g', 'goldfish', 0)]; let gone = null, elderSaid = false, elderDay = null;
+  for (let d = 1; d < L * 3 && !gone; d++) { t.hunger = 0; t.water = 1; t.glass = 1; for (const f of t.fish) { f.fedAt = d * D; f.hunger = 0; f.ail = 0; } const ev = R.advance(t, d * D + 3600e3);
+    if (ev.some((e) => /getting old/.test(e.journal ?? '') && /^s /.test(e.journal))) { elderSaid = true; elderDay = d; } if (ev.some((e) => e.died === 's')) gone = d; }
+  assert.ok(elderSaid && elderDay >= Math.floor(L * R.ELDER_AT) && elderDay <= Math.ceil(L * R.ELDER_AT) + 1, 'became an elder on day ' + elderDay);
+  assert.ok(gone && gone >= L && gone < L * 1.6, 'died of old age on day ' + gone); assert.ok(t.memorial.at(-1).oldAge);
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];

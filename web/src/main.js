@@ -584,7 +584,7 @@ function showCard(f) {
   const owner = rec.ownerName || rec.owner ? (!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')) : null, close = bondLine(rec).replace(/^.*<dd>|<\/dd>$/g, '');
   // the profile: a header and a line about who it is, then four tabs
   const P = personaOf(rec), sum = summaryOf({ ...rec, name: f.name }, P), fm = familiarityOf(rec), beh = behaviourList(rec), seen = beh.filter((x) => x.seen), info = SPECIES_INFO[rec.species] ?? {};
-  const stage = { baby: 'Baby', juvenile: 'Young', adult: 'Adult' }[stageOf(rec)] ?? '', sea = rec.species === 'seahorse', LOG = rec.log ?? {}, live = f.dw?.log;
+  const stage = rec.elder ? 'Elder' : { baby: 'Baby', juvenile: 'Young', adult: 'Adult' }[stageOf(rec)] ?? '', sea = rec.species === 'seahorse', LOG = rec.log ?? {}, live = f.dw?.log;
   const lv = { ...(LOG.lv ?? {}) }; for (const [k, v] of Object.entries(live?.lv ?? {})) lv[k] = (lv[k] ?? 0) + v;
   const AREA = { front: 'The front sand', middle: 'The middle bank', rear: 'The high back bank', top: 'Near the surface', mid: 'Mid-water', low: 'Near the bottom' }, topArea = Object.entries(lv).sort((x, y) => y[1] - x[1])[0];
   const decorName = (id) => { const d = id && game.state.decor.find((x) => x.id === id); return d ? DECOR_DEF[d.type]?.label ?? null : null; };
@@ -827,7 +827,7 @@ async function mournCheck() {
     for (const x of fresh) {
       seen.push(tag(x)); try { localStorage.setItem(key, JSON.stringify(seen.slice(-60))); } catch { /* ignore */ }
       const fl = (game.state.floaters ?? []).find((z) => z.id === x.id), who = x.ownerName ?? game.members?.find((m) => m.id === x.owner)?.name ?? null;
-      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl });
+      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl, oldAge: !!(x.oldAge || fl?.oldAge) });
       if (r === 'rest' && (game.state.floaters ?? []).some((z) => z.id === x.id)) { const d = await game.dispatch({ t: 'scoop', id: x.id }); if (d.ok && d.applied) { sfx('tap'); haptic(10); } }
     }
   } finally { mourning = false; }

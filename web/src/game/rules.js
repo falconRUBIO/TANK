@@ -92,6 +92,9 @@ export const canFeedOcto = (f, uid, shared = true) => isOcto(f) && canFeedOwn(f,
 const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
+// lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
+export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120 }, ELDER_AT = 0.75;
+export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < 1 ? 'baby' : d < 3 ? 'juvenile' : 'adult'; }
 export function nextStage(fish, now = Date.now()) {
   const age = now - fish.born, s = stageOf(fish, now);
@@ -262,6 +265,16 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
     if (f.ail < AIL_TIRED) { f.warned = false; f.tiredSaid = false; }
     else if (!f.tiredSaid) { f.tiredSaid = true; ev.push({ journal: `${f.name} looks tired. It needs food and clean water.`, toast: `${f.name} looks tired. A little care would help.`, tired: f.id }); }
     else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is in a critical state. It needs food and clean water.`, toast: `${f.name} is in a critical state. The tank needs care.`, warn: f.id }); }
+    // old age: real lifespans, compressed about tenfold. From three quarters of its span an animal is an elder; past its full span, each day there is a
+    // small and slowly rising chance it slips away peacefully (worked out from the day, so every phone agrees). Well looked-after ones live a little longer.
+    { const L = lifeOf(f), age = (now - f.born) / DAY;
+      if (age >= L * ELDER_AT && !f.elder && !f.dead) { f.elder = now; ev.push({ journal: `${f.name} is getting old. Its colours have softened and it takes life slowly now.`, toast: `${f.name} is an elder now.`, story: f.id, text: 'Became an elder.' }); }
+      const over = age - L * (1 + 0.1 * Math.max(0, (f.happy ?? 0.7) - 0.6) / 0.4), d = Math.floor(now / DAY);
+      if (over > 0 && f.oldDay !== d && t.flags.mortality !== false) { f.oldDay = d; const p = Math.min(0.5, 0.03 + 0.02 * over / 7);
+        if (hash32(d * 7919 + [...String(f.id)].reduce((a, c) => a * 31 + c.charCodeAt(0), 3)) % 10000 < p * 10000 && now - (t.lastDeath ?? 0) > DAY && t.fish.length > 1) {
+          t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; const m = memorialOf(t, f, now); m.oldAge = true; (t.memorial ||= []).push(m);
+          (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], oldAge: true });
+          const yrs = Math.round(age); ev.push({ journal: `${f.name} passed away peacefully of old age, after ${yrs} days in the tank. A long, full life.`, toast: `${f.name} passed away peacefully of old age.`, died: f.id }); continue; } } }
     // death follows the fish's real condition: five days of neglect AND health that has stayed critically low, then the guard rails
     if (f.ail >= AIL_DIE && f.health <= 0.4 && t.flags.mortality !== false) {
       const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
