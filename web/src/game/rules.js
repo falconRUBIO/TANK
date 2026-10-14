@@ -284,7 +284,7 @@ export function norm(t, now = Date.now()) {
   t.fish = t.fish.filter((f) => f && typeof f === 'object' && SPECIES_DEF[f.species]);
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
-  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.notes = (t.notes ?? []).filter((n) => n && typeof n.text === 'string' && now - n.at < NOTE_LIFE);      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
+  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
@@ -368,7 +368,8 @@ function visitors(t, now, ev) {
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
-export const NOTE_COLORS = ['butter', 'blush', 'mint', 'sky', 'lilac'], NOTE_DOODLES = ['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'], NOTE_LIFE = 3 * DAY;
+const logNote = (t, n) => { t.noteLog = [n, ...(t.noteLog ?? []).filter((x) => x.id !== n.id)].slice(0, 12); };      // the board keeps the last twelve notes for two weeks
+export const NOTE_KEEP = 14 * 864e5, NOTE_COLORS = ['butter', 'blush', 'mint', 'sky', 'lilac'], NOTE_DOODLES = ['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'], NOTE_LIFE = 3 * DAY;
 const careEgg = (t, now) => { const d = Math.floor(now / DAY); for (const e of t.eggs ?? []) { e.cared ||= []; if (!e.cared.includes(d) && now < e.hatchAt) e.cared.push(d); } };      // food or clean water on a day counts as looking after the egg that day
 export const eggCare = (e) => (e?.cared ?? []).length;
 function eggs(t, now, ev) {
@@ -1262,11 +1263,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'glassNote': {                                             // a note left on the glass for the others: one per person (a new one replaces your last), gone after three days
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120); if (!txt) return fail('BAD_NAME');
       const color = NOTE_COLORS.includes(a.color) ? a.color : NOTE_COLORS[0], doodle = NOTE_DOODLES.includes(a.doodle) ? a.doodle : NOTE_DOODLES[0];
-      t.notes = (t.notes ?? []).filter((n) => n.by !== uid); const n = { id: nextId(t, 'n'), by: uid, name, text: txt, color, doodle, at: now, read: [] }; t.notes.push(n);
+      for (const o of (t.notes ?? []).filter((n) => n.by === uid)) logNote(t, o); t.notes = (t.notes ?? []).filter((n) => n.by !== uid); const n = { id: nextId(t, 'n'), by: uid, name, text: txt, color, doodle, at: now, read: [] }; t.notes.push(n);
       events.push({ activity: { type: 'note', text: `${name} left a note on the glass.` }, glassNote: n.id }); return ok({ id: n.id });
     }
-    case 'readNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid && !n.read.includes(uid)) { n.read.push(uid); if (a.heart) { n.hearts = [...(n.hearts ?? []), name]; events.push({ activity: { type: 'note', text: `${name} loved ${n.name}'s note.` } }); } } return ok(); }
-    case 'peelNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid) return fail('NOT_YOURS'); t.notes = t.notes.filter((x) => x !== n); return ok(); }
+    case 'readNote': { const n = [...(t.notes ?? []), ...(t.noteLog ?? [])].find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid && !n.read.includes(uid)) { n.read.push(uid); if (a.heart) { n.hearts = [...(n.hearts ?? []), name]; events.push({ activity: { type: 'note', text: `${name} loved ${n.name}'s note.` } }); } } return ok(); }
+    case 'peelNote': { const n = (t.notes ?? []).find((x) => x.id === a.id); if (!n) return fail('NOT_FOUND'); if (n.by !== uid) return fail('NOT_YOURS'); logNote(t, n); t.notes = t.notes.filter((x) => x !== n); return ok(); }
     case 'note': {
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 90); if (!txt) return fail('BAD_NAME');
       events.push({ journal: `${name}: “${txt}”` }); return ok();

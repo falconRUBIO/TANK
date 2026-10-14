@@ -566,13 +566,28 @@
 .ncrow .dz{all:unset;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:19px;cursor:pointer;background:rgba(255,255,255,.08)}.ncrow .dz.on{background:rgba(255,255,255,.28);transform:scale(1.1)}
 .ncbtn{display:flex;gap:10px;margin-top:18px}.ncbtn button{all:unset;flex:1;text-align:center;padding:13px 0;border-radius:14px;font-weight:600;font-size:15px;cursor:pointer;background:rgba(255,255,255,.12);color:#eaf3fb}
 .ncbtn .stick,.ncbtn .heart,.ncbtn .reply:last-child{background:linear-gradient(#ffe08a,#f2b84b);color:#3a2808}.ncbtn button:disabled{opacity:.45}
-#glassnote{all:unset;position:fixed;z-index:7;left:16px;top:calc(env(safe-area-inset-top,0px) + 66px);width:86px;padding:14px 8px 9px;border-radius:3px 3px 12px 3px;background:#ffeaa6;color:#3b3226;transform:rotate(-5deg);box-shadow:0 10px 18px -8px rgba(0,0,0,.5);text-align:center;cursor:pointer;font:12px/1.2 "Chalkboard SE","Marker Felt",cursive}
-#glassnote[hidden]{display:none}#glassnote em{display:block;font-style:normal;font-size:20px;margin-bottom:2px}#glassnote b{font-size:13px}
-#glassnote::before{content:"";position:absolute;top:-7px;left:50%;width:34px;height:13px;margin-left:-17px;background:rgba(255,255,255,.6);transform:rotate(4deg)}
-#glassnote.pop{animation:gpop .5s cubic-bezier(.2,1.6,.4,1),nwig2 4s ease-in-out 1s infinite}
-@keyframes gpop{from{transform:rotate(-5deg) scale(.3);opacity:0}to{transform:rotate(-5deg) scale(1);opacity:1}}@keyframes nwig2{0%,85%,100%{transform:rotate(-5deg)}90%{transform:rotate(-1deg)}95%{transform:rotate(-8deg)}}
-#glassnote.c-blush{background:#ffd3de}#glassnote.c-mint{background:#cff3dc}#glassnote.c-sky{background:#d3e7ff}#glassnote.c-lilac{background:#e6d9ff}
-@media (prefers-reduced-motion: reduce){.gnote.unread,#glassnote.pop{animation:none}}
+#glassnotes{position:fixed;z-index:7;left:14px;top:calc(env(safe-area-inset-top,0px) + 70px);display:flex;gap:0;pointer-events:none}
+#glassnotes[hidden]{display:none}
+.postit{all:unset;pointer-events:auto;position:relative;box-sizing:border-box;width:124px;min-height:118px;padding:20px 11px 9px;margin-right:6px;display:flex;flex-direction:column;cursor:pointer;color:#3a3024;
+  background:linear-gradient(176deg,rgba(255,255,255,.35),rgba(255,255,255,0) 22%),linear-gradient(var(--pc),color-mix(in srgb,var(--pc) 88%,#c9a94a));
+  transform:rotate(var(--r)) translateY(calc(var(--i,0) * 6px));transform-origin:50% 6px;border-radius:2px 2px 3px 2px;
+  box-shadow:0 1px 1px rgba(0,0,0,.12),0 14px 16px -12px rgba(0,0,0,.55),6px 18px 22px -16px rgba(0,30,50,.5);animation:pgentle 6s ease-in-out var(--d) infinite}
+.postit:nth-child(2){margin-top:14px}
+.postit .band{position:absolute;inset:0 0 auto 0;height:15px;background:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,0));border-bottom:1px solid rgba(0,0,0,.035)}
+.postit .pt{flex:1;font:500 13.5px/1.28 "Chalkboard SE","Marker Felt","Comic Neue","Segoe Print","Comic Sans MS",cursive;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.postit .pf{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font:11.5px "Chalkboard SE","Marker Felt","Comic Sans MS",cursive;color:#6b5a42}.postit .pd{font-size:15px}
+.postit .ph{position:absolute;top:3px;right:6px;font-size:11px;color:#e0476b}
+.postit .curl{position:absolute;right:0;bottom:0;width:22px;height:22px;background:linear-gradient(135deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.08) 51%,rgba(255,255,255,.55) 70%,color-mix(in srgb,var(--pc) 80%,#fff));border-radius:0 0 3px 0;box-shadow:-2px -2px 4px rgba(0,0,0,.06)}
+.postit::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,rgba(255,255,255,0) 40%,rgba(255,255,255,.22) 48%,rgba(255,255,255,0) 58%);pointer-events:none}
+.postit.fresh{animation:pstick .6s cubic-bezier(.2,1.5,.4,1) var(--d) backwards,pgentle 6s ease-in-out 1s infinite}
+.postit:active{filter:brightness(.97)}
+@keyframes pstick{0%{transform:rotate(calc(var(--r) - 14deg)) translate(-30px,-40px) scale(1.25);opacity:0;box-shadow:0 40px 40px -20px rgba(0,0,0,.4)}70%{opacity:1}100%{transform:rotate(var(--r))}}
+@keyframes pgentle{0%,100%{transform:rotate(var(--r))}50%{transform:rotate(calc(var(--r) + .6deg)) translateY(.5px)}}
+.notecomp.board .nbw{width:100%;max-width:400px;max-height:82vh;display:flex;flex-direction:column;padding:16px;border-radius:26px;background:var(--lg-bg,#1d2b3c);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-rim),var(--lg-drop);transform:translateY(20px);transition:transform .3s cubic-bezier(.2,1.3,.4,1)}
+.notecomp.board.on .nbw{transform:none}.notecomp.board header{display:flex;align-items:center;justify-content:space-between;margin:0 2px 4px}.notecomp.board h3{margin:0;font-size:17px;color:#f2f8fe}.notecomp.board h4{margin:16px 2px 8px;font-size:12px;color:#9fb3c6;text-transform:uppercase;letter-spacing:.08em}
+.notecomp.board .x{all:unset;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);color:#fff;font-size:18px;cursor:pointer}
+.notecomp.board .nbs{overflow:auto;padding:18px 6px 6px;margin:0 -6px}.notecomp.board .gnotes.old .gnote{opacity:.62;filter:saturate(.7)}.notecomp.board .gnote.lit{outline:3px solid rgba(255,255,255,.7);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){.gnote.unread,.postit,.postit.fresh{animation:none}}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

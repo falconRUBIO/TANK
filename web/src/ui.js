@@ -191,7 +191,7 @@ export function initUI({ game, social, cb }) {
   async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('place'); toast('Your note is on the glass.'); refresh(); }
   // read a note: it comes off the glass big, with a heart and a way to write back
   function readNote(id) {
-    const n = (S().notes ?? []).find((x) => x.id === id); if (!n) return; const mine = n.by === game.you?.userId, el = document.createElement('div'); el.className = 'notecomp read';
+    const n = [...(S().notes ?? []), ...(S().noteLog ?? [])].find((x) => x.id === id); if (!n) return; const mine = n.by === game.you?.userId, el = document.createElement('div'); el.className = 'notecomp read';
     el.innerHTML = `<div class="ncw">${noteCard(n, true)}<div class="ncbtn">${mine ? '<button class="peel">Peel it off</button><button class="cancel">Close</button>' : `<button class="heart">♡ Love it</button><button class="reply">Write back</button>`}</div></div>`;
     document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); sfx('tap');
     const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); refresh(); cb.notesChanged?.(); };
@@ -200,6 +200,19 @@ export function initUI({ game, social, cb }) {
     el.querySelector('.peel')?.addEventListener('click', async () => { await game.dispatch({ t: 'peelNote', id }); close(); });
     el.querySelector('.heart')?.addEventListener('click', async (e) => { e.target.textContent = '♥ Loved'; e.target.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); setTimeout(close, 700); });
     el.querySelector('.reply')?.addEventListener('click', () => { close(); setTimeout(() => writeNote(n.name), 300); });
+  }
+  // the notes board: everything on the glass now, and the last few that came down, each with a heart and a way to write back
+  function noteBoard(focusId = null) {
+    const me = game.you?.userId, now = (S().notes ?? []).slice().sort((a, b) => b.at - a.at), old = (S().noteLog ?? []).filter((n) => !now.some((x) => x.id === n.id)), el = document.createElement('div'); el.className = 'notecomp board';
+    el.innerHTML = `<div class="nbw"><header><h3>Notes on the glass</h3><button class="x" aria-label="Close">×</button></header><div class="nbs">
+      ${now.length ? `<div class="gnotes">${now.map((n) => noteCard(n)).join('')}</div>` : '<p class="dim">No notes on the glass right now.</p>'}
+      ${old.length ? `<h4>Earlier</h4><div class="gnotes old">${old.map((n) => noteCard(n)).join('')}</div>` : ''}</div>
+      <div class="ncbtn"><button class="stick">✏️ Write a note</button></div></div>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
+    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); };
+    el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.x').onclick = close; el.querySelector('.stick').onclick = () => { close(); setTimeout(() => writeNote(), 280); };
+    el.querySelectorAll('[data-act="noteopen"]').forEach((b) => (b.onclick = () => { close(); setTimeout(() => readNote(b.dataset.id), 280); }));
+    if (focusId) el.querySelector(`[data-id="${focusId}"]`)?.classList.add('lit');
   }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
@@ -651,5 +664,5 @@ export function initUI({ game, social, cb }) {
   const together = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>💛 TOGETHER</b><p>${esc(text)}</p>`, 8000); };
   const recap = (lines, next) => { place(); shelf('settle', `<b>🌙 TODAY IN THE TANK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}${next ? `<p class="nx">Next: ${esc(next)}</p>` : ''}`, 12000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }
