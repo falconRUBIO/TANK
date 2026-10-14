@@ -1014,16 +1014,20 @@ const seenKey = () => 'ourtank.seen.' + (game.shared ? game.you.userId : 'solo')
 const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now())); } catch { /* ignore */ } };
 // ── notes on the glass: real post-its stuck to the front of the tank, readable where they are; a tap opens the notes board ──
 const glassNotes = document.createElement('div'); glassNotes.id = 'glassnotes'; glassNotes.hidden = true; document.body.appendChild(glassNotes);
-const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set();
+const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set(), noteHearts = new Map(); let notesBooted = false;
 function syncGlassNote() {
   const me = game.you?.userId, ns = game.shared ? (game.state?.notes ?? []).slice().sort((a, b) => b.at - a.at).slice(0, 2) : [];
   const sheetUp = document.getElementById('sheet')?.classList.contains('on'), show = ns.length > 0 && ui?.tab === 'tank' && !focus && !play && !sheetUp && !document.querySelector('.notecomp');
   glassNotes.hidden = !show; if (!show) return;
-  const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length).join(); if (glassNotes.dataset.k === key) return; glassNotes.dataset.k = key;
+  const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length).join(); if (glassNotes.dataset.k === key) return;
+  const gone = [...glassNotes.querySelectorAll('.postit')].filter((el) => !ns.some((n) => n.id === el.dataset.id));      // a note that came down peels off the glass and drifts away
+  for (const el of gone) { const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.classList.add('peeled'); Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', margin: 0 }); document.body.appendChild(c); setTimeout(() => c.remove(), 1200); }
+  glassNotes.dataset.k = key;
   const esc2 = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  glassNotes.innerHTML = ns.map((n, i) => { const fresh = !seenNotes.has(n.id) && n.by !== me && !(n.read ?? []).includes(me), tilt = i ? 3.5 : -3; return `<button class="postit ${fresh ? 'fresh' : ''}" style="--pc:${NOTE_INK[n.color] ?? NOTE_INK.butter};--r:${tilt}deg;--d:${i * 0.12}s" data-id="${n.id}"><span class="band"></span><span class="pt">${esc2(n.text)}</span><span class="pf"><span>— ${n.by === me ? 'you' : esc2(n.name)}</span><span class="pd">${n.doodle}</span></span>${(n.hearts ?? []).length ? `<span class="ph">♥${n.hearts.length > 1 ? n.hearts.length : ''}</span>` : ''}<span class="curl"></span></button>`; }).join('');
-  for (const n of ns) if (n.by !== me && !(n.read ?? []).includes(me) && !seenNotes.has(n.id)) { seenNotes.add(n.id); sfx('arrive'); setTimeout(() => { if (!glassNotes.hidden) game.dispatch({ t: 'readNote', id: n.id }); }, 3500); }      // read where it is: it counts as read once it has been on screen a moment
-  glassNotes.querySelectorAll('.postit').forEach((b) => (b.onclick = () => { sfx('tap'); ui.noteBoard(b.dataset.id); }));
+  glassNotes.innerHTML = ns.map((n, i) => { const fresh = notesBooted && !seenNotes.has(n.id), loved = (noteHearts.get(n.id) ?? (n.hearts ?? []).length) < (n.hearts ?? []).length, tilt = i ? 3.5 : -3; noteHearts.set(n.id, (n.hearts ?? []).length); return `<button class="postit ${fresh ? 'fresh' : ''}" style="--pc:${NOTE_INK[n.color] ?? NOTE_INK.butter};--r:${tilt}deg;--d:${i * 0.12}s" data-id="${n.id}"><span class="band"></span><span class="pt">${esc2(n.text)}</span><span class="pf"><span>— ${n.by === me ? 'you' : esc2(n.name)}</span><span class="pd">${n.doodle}</span></span>${(n.hearts ?? []).length ? `<span class="ph ${loved ? 'pop' : ''}">♥${n.hearts.length > 1 ? n.hearts.length : ''}</span>` : ''}<span class="curl"></span></button>`; }).join('');
+  for (const n of ns) if (!seenNotes.has(n.id)) { seenNotes.add(n.id); if (n.by === me || (n.read ?? []).includes(me)) continue; sfx('arrive'); setTimeout(() => { if (!glassNotes.hidden) game.dispatch({ t: 'readNote', id: n.id }); }, 3500); }      // read where it is: it counts as read once it has been on screen a moment
+  glassNotes.querySelectorAll('.postit').forEach((b) => (b.onclick = () => { sfx('tap'); haptic(6); b.classList.add('lift'); setTimeout(() => ui.noteBoard(b.dataset.id), 160); }));
+  notesBooted = true;
 }
 game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
