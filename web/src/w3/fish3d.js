@@ -535,7 +535,7 @@ export class Fish3D {
       if (G.t <= 0) { this.greet = null; this.idle = 4 + rng() * 4; this.retarget = 6; this.pickHover(rng); }
     } else if (!(this.netGlowAt > performance.now() - 2000)) this.glowK += (0 - this.glowK) * Math.min(1, dt * 1.2);      // (on another phone the glow comes from the lead phone)
     if (Math.abs(this.glowK - (this.glowApplied ?? 0)) > 0.03) { this.glowApplied = this.glowK; this.applyGlow(); }
-    if (G) { this.pitch += (Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.phase += dt * 14; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); } return; }
+    if (G) { this.pitch += (Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.phase += dt * 14; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / (this.poseHz ?? 30)) { this.accum = 0; this.setPose(this.phase); } return; }
     if (this.sp.tail && this.birthT > 0) {      // giving birth: he lets go, straightens a little, and his pouch contracts in pulses as the babies come out of it
       this.birthT -= dt; if (lead && this.holdfast) this.release(0.2); this.vel.multiplyScalar(Math.exp(-3 * dt)); this.pos.y += 0.04 * dt;
       const c = this.birthT > 1.2 ? Math.max(0, Math.sin((7.5 - this.birthT) * 4.5)) : 0; this.contractK = c;
@@ -564,7 +564,7 @@ export class Fish3D {
       const want = this.tuckT > 0 ? 1 : (going ? -0.65 + 0.15 * Math.sin(t * 2.2) : 0.1) * (1 - near) + near;      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; nearing its stem it curls ready to grip; about to brush a plant, a rock or the sand, it tucks up
       this.curlK += (want - this.curlK) * Math.min(1, dt * (this.tuckT > 0 ? 4 : 1.5)); this.gripK = (this.gripK ?? 0) + (near * 0.6 - (this.gripK ?? 0)) * Math.min(1, dt * 3); this.pitch *= 0.6; }      // the body stays upright      // swimming, the tail lets out and trails; drifting, it hangs in its loose hook; the body stays upright
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
-    this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); }
+    this.accum += dt; if (this.accum > 1 / (this.poseHz ?? 30)) { this.accum = 0; this.setPose(this.phase); }
   }
   // ── The seahorse ──
   // A seahorse is a poor swimmer and spends most of its time anchored by its curled tail to something upright (a 'holdfast'): seagrass,
@@ -809,7 +809,7 @@ export class Fish3D {
     return false;
   }
   // the group follows its position and pose, and the rig is posed at 24 Hz
-  place(dt) { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(_eu.set(this.roll, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / 24) { this.accum = 0; this.setPose(this.phase); } }
+  place(dt) { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(_eu.set(this.roll, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / (this.poseHz ?? 30)) { this.accum = 0; this.setPose(this.phase); } }
   // two seahorses that have shared the tank a while sometimes link tails: they swim to a meeting point, face each other, curl their tails round each other's and drift together
   linkWith(o, m, secs) { this.letGo(); o.letGo?.(); this.link = { o, m, t: secs, side: -1, on: false, ph: Math.random() * 6 }; o.link = { o: this, m, t: secs, side: 1, on: false, ph: this.link.ph }; }
   unlink() { const o = this.link?.o; this.link = null; this.idle = 0; this.retarget = 0; this.thought = null; this.linkCool = 150; if (o?.link?.o === this) { o.link = null; o.idle = 0; o.retarget = 0; o.thought = null; o.linkCool = 150; } }
