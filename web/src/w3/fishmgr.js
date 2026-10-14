@@ -587,7 +587,7 @@ export class Fishes {
   // a young fish (out of the egg, not in the nursery) swims like a baby: little quick darts, a bob as it goes, and it keeps close to a parent
   hatchTick(dt) {
     for (const f of this.list) {
-      if (f.dead || f.nursery || f.visitor || (f.cute ?? 0) < 0.4 || f.species?.move === 'jet' || f.holdfast || f.perch?.on) continue;
+      if (f.dead || f.nursery || f.visitor || f.sk === 'seahorse' || f.species?.tail || (f.cute ?? 0) < 0.4 || f.species?.move === 'jet' || f.holdfast || f.perch?.on) continue;      // (seahorses keep their own ways: they hunt for stems to hold)
       f.target.y += Math.sin((f.tt ?? performance.now() / 1e3) * 5 + (f.phase ?? 0)) * 0.012 * f.cute;      // the bob
       if ((f.kidT = (f.kidT ?? Math.random() * 2) - dt) > 0) continue; f.kidT = (f.sleepy ? 6 : 1.6) + Math.random() * 2.2;
       const par = (f.rec?.parents ?? []).map((p) => this.byId.get(p.id)).filter((o) => o && !o.dead), near = par.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0];
