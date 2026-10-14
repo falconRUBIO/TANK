@@ -66,8 +66,10 @@ const PLANTS = ['grass', 'fern', 'sword', 'red', 'kelp', 'anemone', 'bamboo'];
 export function eggSpot(spots, reach, hash, taken = []) {
   const clear = (x, z) => Math.abs(x) < 6.2 && z > -1.8 && z < 1.1 && spots.every((s) => Math.hypot(s.x - x, s.z - z) >= reach(s.type) * 0.5 + RX) && taken.every((p) => Math.hypot(p.x - x, p.z - z) > 0.9);
   const homes = [...spots.filter((s) => PLANTS.includes(s.type)), ...spots.filter((s) => ['rock', 'boulder', 'shell', 'moss'].includes(s.type))];
-  for (let k = 0; k < homes.length; k++) { const s = homes[(hash + k) % homes.length], r = reach(s.type) * 0.55 + RX;
-    for (let j = 0; j < 9; j++) { const a = (hash & 1 ? 0.35 : Math.PI - 0.35) + ((j % 2 ? 1 : -1) * Math.ceil(j / 2) * Math.PI) / 7, x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r; if (clear(x, z)) return { x, z, by: s.type }; } }
+  for (let k = 0; k < homes.length; k++) { const s = homes[(hash + k) % homes.length], r = reach(s.type) * 0.75 + RX;
+    // only beside it, never behind: a little toward you at most, so the leaves never hide it (sin > 0 is toward the camera)
+    const R = [0.12, 0.35, -0.05], sides = hash & 1 ? [R, R.map((a) => Math.PI - a)] : [R.map((a) => Math.PI - a), R];
+    for (const a of sides.flat()) { const x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r; if (clear(x, z)) return { x, z, by: s.type }; } }
   for (let j = 0; j < 40; j++) { const x = -3 + (((hash >> (j % 16)) + j * 37) % 60) / 10, z = -0.8 + (((hash >> 3) + j * 53) % 18) / 10; if (clear(x, z)) return { x, z, by: null }; }
   return { x: -2 + (hash % 40) / 10, z: 0.6, by: null };
 }
