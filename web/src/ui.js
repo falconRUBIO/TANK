@@ -1,6 +1,7 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds } from './game/rules.js';
+import { msIcon } from './msicons.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -173,21 +174,22 @@ export function initUI({ game, social, cb }) {
     return `<h4>Notes on the glass</h4><div class="gnotes">${ns.map((n) => noteCard(n)).join('')}<button class="gnote add" data-act="notenew"><em class="dd">✏️</em><p>${mineHas ? 'Write a new note' : 'Leave a note'}</p><footer><span>for the crew</span></footer></button></div>`;
   }
   // write a note: a sticky you type on, a colour and a little doodle, then stick it on the glass
-  function noteComposer(reply = null) {
+  function noteComposer(reply = null, edit = null) {
     return new Promise((done) => {
-      let color = 'butter', doodle = '🐙'; const el = document.createElement('div'); el.className = 'notecomp';
+      let color = edit?.color ?? 'butter', doodle = edit?.doodle ?? '🐙'; const el = document.createElement('div'); el.className = 'notecomp';
       const paint = () => { el.querySelector('.gnote').style.setProperty('--nb', NOTE_BG[color]); el.querySelector('.dd').textContent = doodle; el.querySelectorAll('[data-c]').forEach((b) => b.classList.toggle('on', b.dataset.c === color)); el.querySelectorAll('[data-d]').forEach((b) => b.classList.toggle('on', b.dataset.d === doodle)); };
       el.innerHTML = `<div class="ncw"><div class="gnote big edit" style="--tilt:-1.5deg"><i class="tape"></i><em class="dd"></em><textarea maxlength="120" placeholder="${reply ? `Write back to ${esc(reply)}…` : 'Write something sweet…'}"></textarea><footer><span>— you</span><small class="left">120</small></footer></div>
         <div class="ncrow">${Object.keys(NOTE_BG).map((c) => `<button class="sw" data-c="${c}" style="background:${NOTE_BG[c]}" aria-label="${c}"></button>`).join('')}</div>
         <div class="ncrow">${['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'].map((d) => `<button class="dz" data-d="${d}">${d}</button>`).join('')}</div>
-        <div class="ncbtn"><button class="cancel">Not now</button><button class="stick">Stick it on the glass</button></div></div>`;
+        <div class="ncbtn"><button class="cancel">Not now</button><button class="stick">${edit ? 'Save the note' : 'Stick it on the glass'}</button></div></div>`;
       document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); paint();
-      const ta = el.querySelector('textarea'), left = el.querySelector('.left'), stick = el.querySelector('.stick'); ta.oninput = () => { left.textContent = 120 - ta.value.length; stick.disabled = !ta.value.trim(); }; ta.oninput(); setTimeout(() => ta.focus(), 250);
+      const ta = el.querySelector('textarea'), left = el.querySelector('.left'), stick = el.querySelector('.stick'); if (edit) ta.value = edit.text; ta.oninput = () => { left.textContent = 120 - ta.value.length; stick.disabled = !ta.value.trim(); }; ta.oninput(); setTimeout(() => ta.focus(), 250);
       el.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => { color = b.dataset.c; sfx('tap'); paint(); })); el.querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { doodle = b.dataset.d; sfx('tap'); paint(); }));
       const close = (v) => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); done(v); };
       el.querySelector('.cancel').onclick = () => close(null); stick.onclick = () => close({ text: ta.value.trim(), color, doodle }); el.onclick = (e) => { if (e.target === el) close(null); };
     });
   }
+  async function editNote(n) { const v = await noteComposer(null, n); if (!v) return; const r = await game.dispatch({ t: 'editNote', id: n.id, ...v }); if (r.ok) { sfx('place'); toast('Note updated.'); } }
   async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('place'); toast('Your note is on the glass.'); refresh(); }
   // read a note: it comes off the glass big, with a heart and a way to write back
   function readNote(id) {
@@ -206,7 +208,7 @@ export function initUI({ game, social, cb }) {
     const me = game.you?.userId, all = [...(S().notes ?? []), ...(S().noteLog ?? [])], n = all.find((x) => x.id === id); if (!n) return; const mine = n.by === me, loved = (n.hearts ?? []).length > 0;
     const old = (S().noteLog ?? []).filter((x) => x.id !== id).slice(0, 8), el = document.createElement('div'); el.className = 'notesheet';
     el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="nsn">${noteCard(n, true)}</div>
-      <div class="nsact">${mine ? '' : `<button class="heart"><i>♡</i><span>Love it</span></button><button class="reply"><i>✎</i><span>Write back</span></button>`}<button class="down"><i>✕</i><span>${mine ? 'Peel it off' : 'Take it down'}</span></button>${mine ? '<button class="reply new"><i>✎</i><span>New note</span></button>' : ''}</div>
+      <div class="nsact">${mine ? '' : `<button class="heart"><i>♡</i><span>Love it</span></button><button class="reply"><i>✎</i><span>Write back</span></button>`}<button class="down"><i>✕</i><span>${mine ? 'Peel it off' : 'Take it down'}</span></button>${mine ? '<button class="edit"><i>✎</i><span>Edit</span></button>' : ''}</div>
       <p class="nsmeta">${mine ? (loved ? `♥ ${n.hearts.join(' and ')} loved it` : (n.read ?? []).length ? 'Read by the crew' : 'Not read yet') : `From ${esc(n.name)} · ${ago(n.at)}`}</p>
       ${old.length ? `<h4>Earlier notes</h4><div class="nsold">${old.map((o) => `<div class="nso" style="--nb:${NOTE_BG[o.color] ?? NOTE_BG.butter}"><em>${o.doodle}</em><span>${esc(o.text)}</span><small>${o.by === me ? 'you' : esc(o.name)} · ${ago(o.at)}</small></div>`).join('')}</div>` : ''}</div>`;
     document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
@@ -215,6 +217,7 @@ export function initUI({ game, social, cb }) {
     el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close;
     el.querySelector('.heart')?.addEventListener('click', async (e) => { const b = e.currentTarget; b.classList.add('on'); b.querySelector('i').textContent = '♥'; b.querySelector('span').textContent = 'Loved'; b.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); });
     el.querySelectorAll('.reply').forEach((b) => b.addEventListener('click', () => { close(); setTimeout(() => writeNote(b.classList.contains('new') ? null : n.name), 320); }));
+    el.querySelector('.edit')?.addEventListener('click', () => { close(); setTimeout(() => editNote(n), 320); });
     el.querySelector('.down').addEventListener('click', async () => { close(); sfx('tap'); await game.dispatch(mine ? { t: 'peelNote', id } : { t: 'readNote', id, dismiss: true }); });
   }
   function shopCards() {
@@ -380,7 +383,11 @@ export function initUI({ game, social, cb }) {
       let lastDay = null; const feed = items.map((it) => { const day = dayName(it.ts), head = day !== lastDay ? `<div class="fday">${day}</div>` : ''; lastDay = day;
         if (it.k === 'msg') { const mine = it.userId === me; return `${head}<div class="fmsg ${mine ? 'me' : ''}"><b>${mine ? 'You' : esc(it.name)}</b><p>${esc(it.text)}</p><small>${ago(it.ts)}</small></div>`; }
         const can = it.userId && it.userId !== me && THANKABLE.includes(it.type) && Date.now() - it.ts < 24 * 3600e3 && !game.thanked?.has(it.id);
-        return `${head}<div class="fact"><span class="ic t-${it.type}">${ICON[it.type] ?? '•'}</span><span class="tx">${esc(youify(it.text))}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : `<small>${ago(it.ts)}</small>`}</div>`; }).join('');
+        // a notification row: who (their avatar), what they did, when, and a little picture of it
+        const mine = it.userId === me, who = mine ? 'You' : game.members?.find((x) => x.id === it.userId)?.name ?? '', raw = String(it.text ?? ''), body = who && raw.startsWith(who) ? raw.slice(who.length).trim() : mine && myName && raw.startsWith(myName) ? raw.slice(myName.length).trim() : raw;
+        const hue = [...String(it.userId ?? 'tank')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7), ini = (mine ? myName || 'You' : who) ? (mine ? myName || 'You' : who)[0].toUpperCase() : '';
+        const pic = { feed: 'feed', water: 'water', glass: 'glass', decor: 'spot', trim: 'trim', fish: 'grown', note: 'note', gift: 'gift', visitor: 'visitor', bottle: 'bottle', wish: 'wish', puzzle: 'puzzle', grow: 'grown' }[it.type] ?? 'wish';
+        return `${head}<div class="fact ${mine ? 'mine' : ''}">${who ? `<span class="fav" style="--h:${hue}">${ini}</span>` : '<span class="fav tank">🐠</span>'}<span class="tx">${who ? `<b>${esc(who)}</b> ` : ''}${esc(who ? body.replace(/^\w/, (c) => c.toLowerCase()) : youify(raw))} <small>${ago(it.ts)}</small></span><span class="fic">${msIcon(pic, true, 30)}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : ''}</div>`; }).join('');
       const on = (game.online ?? []).length, all = (game.members ?? []).length;
       return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="slots">${slotsHtml()}</div>
         ${game.shared ? `<div class="crow notesrow" role="button" tabindex="0" data-act="notenew"><span class="ci">✏️</span><span class="ct"><b>Leave a note on the glass</b><small>A post-it your crew sees on their tank</small></span><i class="chev">›</i></div>` : ''}

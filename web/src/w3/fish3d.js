@@ -212,7 +212,7 @@ export class Fish3D {
       for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
         if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (off === 'snout') this.snout(_p1); else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
         const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.9, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
-        if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); moved = true; }
+        if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.25, 0.04 * n + 0.04); this.pos.addScaledVector(_o, step / m); const into = -(this.vel.x * _o.x + this.vel.y * _o.y + this.vel.z * _o.z) / m; if (into > 0) this.vel.addScaledVector(_o, into / m); moved = true; }      // pushed out of something, it also stops heading into it: it slides along instead of bouncing in and out every frame (which looked like shivering on the spot)
       }
       if (!moved) break;
     }
@@ -220,7 +220,7 @@ export class Fish3D {
     for (const o of others) {                                               // fish are solid too
       if (o === this || (jet && o.species.move !== 'jet') || this.link?.o === o) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
       const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.5, dd = Math.hypot(dx, dy, dz), min = this.sp.tail && o.sp?.tail ? 0.9 * (this.cr + o.cr) : Math.max(0.5, 0.42 * (this.radius + o.radius));      // two seahorses are slim and may hold on side by side
-      if (dd < min * 0.92 && dd > 1e-3) { const k = (min * 0.92 - dd) / dd * (!jet && o.species.move === 'jet' ? 1 : 0.5); this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k / 1.5; }
+      if (dd < min * 0.92 && dd > 1e-3) { const k = (min * 0.92 - dd) / dd * (!jet && o.species.move === 'jet' ? 1 : 0.5); this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k / 1.5; const into = -(this.vel.x * dx + this.vel.y * dy + this.vel.z * dz / 1.5) / dd; if (into > 0) { this.vel.x += dx / dd * into; this.vel.y += dy / dd * into; this.vel.z += dz / dd * into / 1.5; } }      // (and stops pressing into the other one)
     }
     this.pos.x = Math.max(-4.7, Math.min(4.7, this.pos.x)); this.pos.y = Math.max(0.35 + this.sandBelow(), Math.min(Fish3D.topY - Math.min(0.9, this.radius * 0.35), this.pos.y)); this.pos.z = Math.max(-3.8, Math.min(GLASS_Z - 0.2, this.pos.z));
   }

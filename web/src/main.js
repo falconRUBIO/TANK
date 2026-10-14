@@ -12,6 +12,7 @@ import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
 import { Nursery } from './w3/nursery.js';
 import { makeEgg, eggSpot, eggY } from './w3/egg.js';
+import { msIcon } from './msicons.js';
 import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
@@ -591,7 +592,7 @@ function showCard(f) {
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
-  const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${m.icon}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
+  const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${msIcon(m.key === 'home' && (rec.parents ?? []).length ? 'hatched' : m.key, m.done)}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
   const tr = rec.species === 'octopus' ? octoTrust(rec, game.you?.userId ?? 'me') : null, trustRow = tr ? `<div class="trust"><span>🐙 Trust</span><b>${tr.label}</b><small>${tr.next ? `${tr.next.need} more crab${tr.next.need === 1 ? '' : 's'} or visits to: ${tr.next.label.toLowerCase()}` : 'It trusts you completely.'}</small></div>` : '';      // how far this octopus has come to trust you
   const misses = rec.missing && Date.now() - rec.missing.at < 864e5 ? `Misses the ${rec.missing.what}. Looking for somewhere new.` : null, thought = misses ?? f.thought;      // for a day after something it loved is taken out
   const over = `${path}${trustRow}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}
@@ -1027,9 +1028,9 @@ const glassNotes = document.createElement('div'); glassNotes.id = 'glassnotes'; 
 const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set(), noteHearts = new Map(); let notesBooted = false;
 function syncGlassNote() {
   const me = game.you?.userId, ns = game.shared ? (game.state?.notes ?? []).filter((n) => !(n.gone ?? []).includes(me)).sort((a, b) => b.at - a.at).slice(0, 2) : [];      // (a note you took down is gone from your glass only)
-  const sheetUp = document.getElementById('sheet')?.classList.contains('on'), show = ns.length > 0 && ui?.tab === 'tank' && !focus && !play && !sheetUp && !document.querySelector('.notecomp,.notesheet');
+  const show = ns.length > 0 && !play;      // a post-it stays stuck to the glass whatever slides up over the tank
   glassNotes.hidden = !show; if (!show) return;
-  const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length).join(); if (glassNotes.dataset.k === key) return;
+  const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length + ':' + (n.edited ?? 0)).join(); if (glassNotes.dataset.k === key) return;
   const gone = [...glassNotes.querySelectorAll('.postit')].filter((el) => !ns.some((n) => n.id === el.dataset.id));      // a note that came down peels off the glass and drifts away
   for (const el of gone) { const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.classList.add('peeled'); Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', margin: 0 }); document.body.appendChild(c); setTimeout(() => c.remove(), 1200); }
   glassNotes.dataset.k = key;
