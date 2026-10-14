@@ -188,7 +188,7 @@ function startPlace(type, id = null) {
   placebar.classList.add('on'); updatePlaceOk();
 }
 const updatePlaceOk = () => { const p = decor.preview; $('pok').disabled = !p?.valid; };
-window.__startPlace = startPlace;      // for the drills: start placing a decoration as the shop does
+window.__startPlace = startPlace; window.__decorMenu = (id) => decorMenu(id);      // for the drills: start placing a decoration as the shop does
 function endPlace() { placing = null; placebar.classList.remove('on'); if (resumeRearrange) { resumeRearrange = false; setRearrange(true, true); } }
 $('prot').onclick = () => { decor.rotate(); updatePlaceOk(); sfx('tap'); };
 $('pcan').onclick = () => { sfx('tap'); if (placing) { decor.cancel(); endPlace(); } else if (rearrange) setRearrange(false); };
@@ -203,14 +203,22 @@ $('psell').onclick = async () => {
   const pl = placing; if (!pl?.id) return; decor.cancel(); endPlace();
   const r = await game.dispatch({ t: 'sellDecor', id: pl.id }); if (r.ok) { sfx('coin'); ui.toast(`Sold for ${r.delta} shell${r.delta === 1 ? '' : 's'}`); } else fail(r);
 };
-// tap a decoration you placed: move it, or take it out (half its price back)
+// tap a decoration you placed: its own little card (what it is, who loves it), with Move and Take it out
 async function decorMenu(id) {
-  const d = game.state.decor.find((x) => x.id === id), D = d && DECOR_DEF[d.type]; if (!D || placing || feedMode || cleanMode) return; sfx('tap'); haptic(6);
+  const d = game.state.decor.find((x) => x.id === id), D = d && DECOR_DEF[d.type]; if (!D || placing || feedMode || cleanMode || document.querySelector('.notesheet')) return; sfx('tap'); haptic(6);
   const half = Math.floor(D.price / 2), star = d.type === 'starfish', lovers = game.state.fish.filter((f) => !f.dead && (f.home === id || f.spotId === id)), who = lovers.map((f) => f.name).join(' and ');
-  const about = lovers.length ? (lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} here.` : `${who}'s favourite spot.`) : D.blurb ?? '';
-  const v = await ui.choose({ title: D.label.toUpperCase(), text: about, options: [{ label: star ? '✥ Carry it somewhere else' : '✥ Move it', value: 'move' }, { label: star ? `Let it go back to the sea${half ? ` · +${half} 🐚` : ''}` : `Take it out${half ? ` · +${half} 🐚` : ''}`, value: 'sell' }], cancel: 'Leave it' });
-  if (v === 'move') startPlace(d.type, id);
-  else if (v === 'sell') { if (lovers.length && !(await ui.dialog({ title: star ? 'LET IT GO?' : 'TAKE IT OUT?', text: lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} in it and will have to find a new home. ${lovers.length > 1 ? 'They' : 'It'} will miss it for a while.` : `It is ${who}'s favourite spot. ${lovers.length > 1 ? 'They' : 'It'} will miss it, and go looking for a new one.`, ok: star ? 'Let it go' : 'Take it out', cancel: 'Keep it', danger: true }))) return; const r = await game.dispatch({ t: 'sellDecor', id }); if (r.ok) { sfx('coin'); if (!lovers.length) ui.toast(star ? `The starfish slipped away to the sea${half ? ` · +${r.delta} 🐚` : ''}` : half ? `${D.label} taken out · +${r.delta} 🐚` : `${D.label} taken out`); decor.sync(game.state.decor, game.state); } else fail(r); }
+  if (star) { const it = decor.items.get(id); if (it) it.curlT = performance.now(); sfx('curl'); }      // touched, a starfish curls its arms up for a moment
+  const about = lovers.length ? (lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} here.` : `${who}'s favourite spot.`) : '', days = Math.max(0, Math.floor((Date.now() - (d.at ?? Date.now())) / 864e5));
+  const el = document.createElement('div'); el.className = 'notesheet deco';
+  el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="dch"><h3>${esc(D.label)}</h3><p>${esc(D.blurb ?? '')}</p>${about ? `<p class="dlove">♥ ${esc(about)}</p>` : ''}<small>${days ? `In the tank for ${days} day${days === 1 ? '' : 's'}` : 'New in the tank'}</small></div>
+    <div class="nsact"><button class="mv"><i>✥</i><span>${star ? 'Carry it' : 'Move it'}</span></button><button class="down"><i>${star ? '🌊' : '✕'}</i><span>${star ? 'Let it go' : 'Take it out'}${half ? ` · +${half} 🐚` : ''}</span></button></div></div>`;
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
+  const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
+  el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close;
+  el.querySelector('.mv').onclick = () => { close(); startPlace(d.type, id); };
+  el.querySelector('.down').onclick = async () => { close();
+    if (lovers.length && !(await ui.dialog({ title: star ? 'LET IT GO?' : 'TAKE IT OUT?', text: lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} in it and will have to find a new home. ${lovers.length > 1 ? 'They' : 'It'} will miss it for a while.` : `It is ${who}'s favourite spot. ${lovers.length > 1 ? 'They' : 'It'} will miss it, and go looking for a new one.`, ok: star ? 'Let it go' : 'Take it out', cancel: 'Keep it', danger: true }))) return;
+    const r = await game.dispatch({ t: 'sellDecor', id }); if (r.ok) { sfx('coin'); if (!lovers.length) ui.toast(star ? `The starfish slipped away to the sea${half ? ` · +${r.delta} 🐚` : ''}` : half ? `${D.label} taken out · +${r.delta} 🐚` : `${D.label} taken out`); decor.sync(game.state.decor, game.state); } else fail(r); };
 }
 function cancelModes() { endFeed(); if (cleanMode) { cleanMode = false; gcv.style.pointerEvents = 'none'; } if (placing) { decor.cancel(); endPlace(); } setRearrange(false, true); }
 function setRearrange(on, silent = false) {
@@ -531,7 +539,7 @@ function eggGone(egg, s) {
   eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
   if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
-  fishes.burst(at); sfx('arrive'); haptic(12);
+  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('arrive'), 400); haptic(12);
   for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
   if (f3 && !document.hidden && !play) { spotlightFish(baby.id, 6000, 900); setTimeout(() => nameBaby(baby.id), 7400); }      // you saw it hatch: a close look at the new baby
 }
@@ -618,7 +626,7 @@ function showCard(f) {
     ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}`;
   const jour = `${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button>
-    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}${rec.species === 'seahorse' ? (sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female') : ''} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b></div></div>
+    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}${rec.species === 'seahorse' ? (sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female') : ''} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b>${(rec.parents ?? []).length && Date.now() - rec.born < 864e5 ? ' <em class="newb">New</em>' : ''}</div></div>
     <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;

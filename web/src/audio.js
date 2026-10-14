@@ -69,6 +69,11 @@ const SFX = {
   arrive: () => { noise(0, 0.5, 1200, 0.16); [392, 523, 659].forEach((f, i) => tone(f, 0.1 + i * 0.1, 0.3, { vol: 0.1 })); },
   error: () => tone(200, 0, 0.16, { vol: 0.1, type: 'square', to: 150 }),
   wipe: () => noise(0, 0.12, 2600, 0.05),
+  stick: () => { noise(0, 0.05, 3200, 0.06); tone(520, 0.01, 0.06, { vol: 0.05, type: 'triangle', to: 380 }); },      // a post-it pressed onto the glass
+  peel: () => { noise(0, 0.22, 4200, 0.05); tone(700, 0.02, 0.18, { vol: 0.03, to: 1100 }); },      // and peeled off
+  love: () => { tone(988, 0, 0.1, { vol: 0.07, type: 'sine' }); tone(1319, 0.08, 0.22, { vol: 0.07, type: 'sine' }); },
+  crack: () => { [0, 0.07, 0.15].forEach((d) => noise(d, 0.04, 2400, 0.12)); tone(1200, 0.2, 0.25, { vol: 0.05, type: 'sine', to: 1800 }); },      // an egg cracking open
+  curl: () => tone(340, 0, 0.25, { vol: 0.05, type: 'sine', to: 220 }),      // a starfish curling up
 };
 export const sfx = (name) => { if (!on) return; if (!ensure()) return; if (ctx.state === 'suspended') ctx.resume(); try { SFX[name]?.(); } catch { /* audio is optional */ } };
 export const soundOn = () => on;

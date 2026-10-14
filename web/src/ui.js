@@ -190,7 +190,7 @@ export function initUI({ game, social, cb }) {
     });
   }
   async function editNote(n) { const v = await noteComposer(null, n); if (!v) return; const r = await game.dispatch({ t: 'editNote', id: n.id, ...v }); if (r.ok) { sfx('place'); toast('Note updated.'); } }
-  async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('place'); toast('Your note is on the glass.'); refresh(); }
+  async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('stick'); toast('Your note is on the glass.'); refresh(); }
   // read a note: it comes off the glass big, with a heart and a way to write back
   function readNote(id) {
     const n = [...(S().notes ?? []), ...(S().noteLog ?? [])].find((x) => x.id === id); if (!n) return; const mine = n.by === game.you?.userId, el = document.createElement('div'); el.className = 'notecomp read';
@@ -215,10 +215,10 @@ export function initUI({ game, social, cb }) {
     if (!mine && !(n.read ?? []).includes(me)) game.dispatch({ t: 'readNote', id });
     const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
     el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close;
-    el.querySelector('.heart')?.addEventListener('click', async (e) => { const b = e.currentTarget; b.classList.add('on'); b.querySelector('i').textContent = '♥'; b.querySelector('span').textContent = 'Loved'; b.disabled = true; sfx('coin'); await game.dispatch({ t: 'readNote', id, heart: true }); });
+    el.querySelector('.heart')?.addEventListener('click', async (e) => { const b = e.currentTarget; b.classList.add('on'); b.querySelector('i').textContent = '♥'; b.querySelector('span').textContent = 'Loved'; b.disabled = true; sfx('love'); await game.dispatch({ t: 'readNote', id, heart: true }); });
     el.querySelectorAll('.reply').forEach((b) => b.addEventListener('click', () => { close(); setTimeout(() => writeNote(b.classList.contains('new') ? null : n.name), 320); }));
     el.querySelector('.edit')?.addEventListener('click', () => { close(); setTimeout(() => editNote(n), 320); });
-    el.querySelector('.down').addEventListener('click', async () => { close(); sfx('tap'); await game.dispatch(mine ? { t: 'peelNote', id } : { t: 'readNote', id, dismiss: true }); });
+    el.querySelector('.down').addEventListener('click', async () => { close(); sfx('peel'); await game.dispatch(mine ? { t: 'peelNote', id } : { t: 'readNote', id, dismiss: true }); });
   }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
