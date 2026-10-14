@@ -8,7 +8,7 @@ import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
-import { canFeedOwn, ownHunger, hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
+import { ownFood, canFeedOwn, ownHunger, hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
 // how long until something is due, in plain words: "in about 5 hours", "tomorrow", "in about 2 days"
 const inTime = (ms) => { const h = ms / 3600e3; return h < 1 ? 'within the hour' : h < 20 ? `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}` : h < 36 ? 'in about a day' : `in about ${Math.round(h / 24)} days`; };
 
@@ -98,6 +98,7 @@ export function initUI({ game, social, cb }) {
     $('lvl').textContent = 'LV ' + lv; $('lvbar').style.width = Math.max(4, Math.min(100, pct)) + '%'; $('lvbar').parentElement.title = b ? `${score}/${b} to level ${lv + 1}` : 'Max level';
     const g = goalText(); if ($('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
+    { const me = game.you?.userId, due = s.hunger > 0.55 || s.water < 0.5 || s.glass < 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }      // a dot on Care when something needs you
   }
   function goalText() {
     const s = S(); if (!s) return { text: '' };
@@ -226,6 +227,20 @@ export function initUI({ game, social, cb }) {
     el.querySelector('.edit')?.addEventListener('click', () => { close(); setTimeout(() => editNote(n), 320); });
     el.querySelector('.down')?.addEventListener('click', async () => { close(); sfx('peel'); await game.dispatch({ t: 'peelNote', id }); });
     el.querySelector('.keep')?.addEventListener('click', async () => { close(); sfx('peel'); const r = await game.dispatch({ t: 'keepNote', id }); if (r.ok) toast(`Kept ${n.name}'s note. Tap any note to see the ones you kept.`, 2600); });
+  }
+  let heldAt = 0;      // when a shop card was last held for a preview (the shop redraws, so this lives here rather than on the card)
+  function shopPreview(key) {
+    const [kind, id] = key.split(':'); if (kind !== 'fish' && kind !== 'decor') return; const d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return; sfx('tap');
+    const L = kind === 'fish' ? LIFESPAN[id] : null, facts = kind === 'fish' ? FACTS[id] ?? [] : [], fact = facts.length ? facts[Math.floor(Date.now() / 864e5) % facts.length] : null, lovers = kind === 'decor' ? tankNeeds(S()).filter((n) => n.types.includes(id)) : [];
+    const lock = S().level < d.level, price = kind === 'fish' ? fishPrice(id) : d.price, el = document.createElement('div'); el.className = 'notesheet deco';
+    el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="dch"><img class="pvimg" alt="" data-thumb="${key}"><h3>${esc(d.label)}</h3><p>${esc(d.blurb ?? '')}${kind === 'fish' && d.count > 1 ? ` Comes as a school of ${d.count}.` : ''}</p>
+      ${L ? `<p class="pvl">Lives about ${Math.round(L / 30.4)} months in the tank</p>` : ''}${lovers.length ? `<p class="dlove">♥ ${esc(lovers.map((n) => n.name).join(' and '))} would love this</p>` : ''}${fact ? `<div class="pvf"><small>DID YOU KNOW?</small><p>${esc(fact)}</p></div>` : ''}</div>
+      <div class="nsact"><button class="close"><span>Close</span></button><button class="buy" ${lock ? 'disabled' : ''}><span>${lock ? `Unlocks at level ${d.level}` : kind === 'decor' && isFree(S(), id) ? 'Place it · Free' : `${kind === 'fish' ? 'Adopt' : 'Buy'} · 🐚 ${price}`}</span></button></div></div>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); { const im = el.querySelector('.pvimg'); im.src = kind === 'fish' ? fishThumb(id) : decorThumb(id); }
+    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
+    el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close; el.querySelector('.close').onclick = close;
+    const t0 = Date.now(); el.addEventListener('click', (e) => { if (Date.now() - t0 < 500) { e.stopPropagation(); e.preventDefault(); } }, true);      // (the finger lifting from the hold is not a tap on what just opened under it)
+    el.querySelector('.buy').onclick = () => { close(); heldAt = 0; const c = sheet.querySelector(`.card[data-k="${key}"]`); if (c) c.click(); };
   }
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
@@ -486,8 +501,9 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-act]').forEach((b) => (b.onclick = (e) => { e?.stopPropagation?.(); sfx('tap'); const a = b.dataset.act; if (a === 'notenew') { writeNote(); return; } if (a === 'noteopen') { readNote(b.dataset.id); return; } if (a === 'needshop') { cat = b.dataset.cat || 'PLANTS'; open('decorate'); return; } if (a === 'notyet') { toast(b.dataset.say.replace(/^\w/, (x) => x.toUpperCase())); return; } if (a === 'feeddrawer') { feedOpen = !(feedOpen ?? feedModel().hungry.length > 0); open('care', true); return; } if (a === 'feednow') { game.feedFood = b.dataset.food; game.feedFor = b.dataset.for ?? null; feedOpen = null; open('tank'); cb.act('feedgo'); return; } if (a === 'fish') { open('tank'); cb.meetFish(); } else if (a === 'book') { game.track('book_opened'); open('journal'); } else if (a === 'photo') { open('tank'); cb.photo(); } else { open('tank'); cb.act(a); } }));
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     { const on = sheet.querySelector('.cats .cat.on'), row = on?.parentElement; if (on && row) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }      // keep the chosen shelf in view in the row
+    sheet.querySelectorAll('.card').forEach((b) => { let ht = null; b.onpointerdown = () => { ht = setTimeout(() => { ht = 'held'; heldAt = Date.now(); shopPreview(b.dataset.k); }, 450); }; b.onpointerup = b.onpointerleave = b.onpointercancel = () => { if (ht && ht !== 'held') clearTimeout(ht); setTimeout(() => (ht = null), 60); }; b.oncontextmenu = (e) => e.preventDefault(); b.__held = () => ht === 'held'; });      // press and hold: a closer look first
     sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async () => {
-      const [kind, id] = b.dataset.k.split(':'), s = S(); sfx('tap');
+      if (Date.now() - heldAt < 900) return; const [kind, id] = b.dataset.k.split(':'), s = S(); sfx('tap');
       if (kind === 'floor' || kind === 'backdrop') { const own = styleOwned(s, kind, id), price = STYLE_PRICE[kind][id]; if ((s.style ?? {})[kind] === id) { toast('Already in use'); return; } if (!own && price && s.shells < price) { toast(`${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; } const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; return; }
       const d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return; const price = kind === 'fish' ? fishPrice(id) : d.price, free = kind === 'decor' && isFree(s, id);
       if (s.level < d.level) { toast(`${d.label} unlocks at tank level ${d.level}`); return; }
@@ -573,7 +589,9 @@ export function initUI({ game, social, cb }) {
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
-    cb.onTab(t); if (t === 'friends') flag('friends', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
+    { const FIRST = { care: 'Everything that needs you, and what is coming. Each job earns shells.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Everything that has happened in the tank, newest first.' }, k = 'ourtank.first.' + t;
+      let seen = true; try { seen = !!localStorage.getItem(k); } catch { /* ignore */ } if (!seen && FIRST[t] && !quiet) { try { localStorage.setItem(k, '1'); } catch { /* ignore */ } setTimeout(() => toast(FIRST[t], 4200), 450); } }      // the first time you open a tab, one line about what it is for
+    cb.onTab(t); if (t === 'friends') flag('friends', false); if (t === 'care') flag('care', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;
     sheet.innerHTML = `<button class="x">×</button>` + views[t](); sheet.classList.add('on');
     sheet.querySelector('.x').onclick = () => open('tank'); sheet.querySelectorAll('[data-open]').forEach((b) => { b.onclick = () => open(b.dataset.open); });
