@@ -92,6 +92,11 @@ ok('the animals ask for what they need, and a decoration that answers it is noti
   const r = R.applyAction(t, { t: 'buyDecor', type: 'coconut', x: 0, z: 0 }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r.events.some((e) => /Inky has its eye on the new coconut/.test(e.journal ?? '')), JSON.stringify(r.events.map((e) => e.journal)));
   assert.ok(!R.tankNeeds(t, 1e6).some((n) => n.key === 'shell'));
 });
+ok('taking out something an animal loved: it misses it, loses a little happiness, and looks for somewhere new', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.decor = [{ id: 'd1', type: 'rock', x: 0, z: 0, ry: 0 }, { id: 'd2', type: 'starfish', x: 1, z: 0, ry: 0 }]; t.fish = [R.ensureFish({ id: 'g', name: 'Pip', species: 'goldfish', seed: 3, born: -9 * 864e5, stage: 'adult', happy: 0.8, spotId: 'd1' })];
+  const r = R.applyAction(t, { t: 'sellDecor', id: 'd1' }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r.events.some((e) => /Pip misses the reef rock/i.test(e.journal ?? '')), JSON.stringify(r.events)); assert.ok(t.fish[0].happy < 0.8 && !t.fish[0].spotId && t.fish[0].missing);
+  const r2 = R.applyAction(t, { t: 'sellDecor', id: 'd2' }, { now: 1e6, uid: 'u1', name: 'Alex' }); assert.ok(r2.events.some((e) => /starfish go back to the sea/.test(e.activity?.text ?? '')));
+});
 ok('two adults of one species lay an egg that hatches into a blend of both', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];

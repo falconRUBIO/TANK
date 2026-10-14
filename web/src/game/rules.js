@@ -1080,7 +1080,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     case 'sellDecor': {
       const i = t.decor.findIndex((x) => x.id === a.id); if (i < 0) return fail('NOT_FOUND');
-      const d = DECOR_DEF[t.decor[i].type]; for (const f of t.fish) if (f.home === t.decor[i].id) delete f.home; t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
+      const it = t.decor[i], d = DECOR_DEF[it.type], lbl = d.label.toLowerCase();
+      for (const f of t.fish) { if (f.dead || (f.home !== it.id && f.spotId !== it.id)) continue; const wasHome = f.home === it.id; delete f.home; if (f.spotId === it.id) delete f.spotId; f.happy = Math.max(0.2, (f.happy ?? 0.7) - 0.15); f.missing = { what: lbl, at: now };      // an animal that loved it misses it, and goes looking for somewhere new
+        const line = wasHome ? `${f.name} lost its home when the ${lbl} was taken out. It is looking for a new one.` : `${f.name} misses the ${lbl}. It is looking for a new favourite spot.`; events.push({ journal: line, toast: line, story: f.id, text: line }); }
+      if (it.type === 'starfish') events.push({ activity: { type: 'decor', text: `${name} let the starfish go back to the sea.` } });
+      t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
       if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
