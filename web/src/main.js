@@ -202,6 +202,13 @@ $('psell').onclick = async () => {
   const pl = placing; if (!pl?.id) return; decor.cancel(); endPlace();
   const r = await game.dispatch({ t: 'sellDecor', id: pl.id }); if (r.ok) { sfx('coin'); ui.toast(`Sold for ${r.delta} shell${r.delta === 1 ? '' : 's'}`); } else fail(r);
 };
+// tap a decoration you placed: move it, or take it out (half its price back)
+async function decorMenu(id) {
+  const d = game.state.decor.find((x) => x.id === id), D = d && DECOR_DEF[d.type]; if (!D || placing || feedMode || cleanMode) return; sfx('tap'); haptic(6);
+  const half = Math.floor(D.price / 2), home = game.state.fish.find((f) => f.home === id && !f.dead), v = await ui.choose({ title: D.label.toUpperCase(), text: home ? `${home.name} lives here.` : D.blurb ?? '', options: [{ label: '✥ Move it', value: 'move' }, { label: `Take it out${half ? ` · +${half} 🐚` : ''}`, value: 'sell' }], cancel: 'Leave it' });
+  if (v === 'move') startPlace(d.type, id);
+  else if (v === 'sell') { if (home && !(await ui.dialog({ title: 'TAKE IT OUT?', text: `${home.name} lives in it. It will have to find a new home.`, ok: 'Take it out', cancel: 'Keep it', danger: true }))) return; const r = await game.dispatch({ t: 'sellDecor', id }); if (r.ok) { sfx('coin'); ui.toast(half ? `${D.label} taken out · +${r.delta} 🐚` : `${D.label} taken out`); decor.sync(game.state.decor, game.state); } else fail(r); }
+}
 function cancelModes() { endFeed(); if (cleanMode) { cleanMode = false; gcv.style.pointerEvents = 'none'; } if (placing) { decor.cancel(); endPlace(); } setRearrange(false, true); }
 function setRearrange(on, silent = false) {
   rearrange = on; if (ui) ui.rearrange = on;
@@ -631,7 +638,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   const f = pickFish(ev); if (f?.visitor) { greetVisitor(f); return; }
   const now = performance.now(), fresh = { t0: now, x: ev.clientX, y: ev.clientY, on: false };
   if (f) { if (now - lureEnd > 1500) tapCand = { f, x: ev.clientX, y: ev.clientY, t: now }; lure = fresh; return; }
-  if (focus) setFocus(null); else lure = fresh;
+  if (focus) setFocus(null); else { lure = fresh; const did = decor.pick(rayFrom(ev).ray); if (did && now - lureEnd > 1500) tapCand = { decor: did, x: ev.clientX, y: ev.clientY, t: now }; }      /* (a quick tap on a decoration: its little menu) */
 });
 let tapCand = null, lureEnd = 0;
 // hold a finger in the water: the bold and the curious come to see it. Nothing is earned; the fish simply like you.
@@ -679,7 +686,7 @@ function movePlace(ev) { const r = rayFrom(ev).ray, h = raySand(r.origin, r.dire
 canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', (ev) => {
   dragging = false; const c = tapCand; tapCand = null;
-  if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) setFocus(c.f === focus ? null : c.f);
+  if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) { if (c.decor) decorMenu(c.decor); else setFocus(c.f === focus ? null : c.f); }
   if (lure?.on) { lureEnd = performance.now(); lureRelease(); } lure = null;
 }); addEventListener('pointercancel', () => { if (lure?.on) lureRelease(); lure = null; tapCand = null; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });

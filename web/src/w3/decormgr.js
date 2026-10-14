@@ -78,6 +78,10 @@ export class DecorMgr {
   }
   bubbleSpot() { for (const [id] of this.streams) { const it = this.items.get(id); if (it) return new THREE.Vector3(it.at.x, baseY(it, it.at.x, it.at.z), it.at.z); } return null; }
   tick(t, dt = 0.016) { for (const b of this.streams.values()) b.update(dt, t);
+    // a starfish is alive: it creeps very slowly about the sand round where you put it, turning as it goes, its arms rippling a little
+    { const T = Date.now() / 1000; for (const it of this.items.values()) { if (it.type !== 'starfish' || it.haul || it.slide || this.preview?.id === it.id) continue; const h = ((it.seedK ??= [...String(it.id)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 1000) / 1000) * 6.28;
+      const x = it.at.x + 0.45 * Math.sin(T * 0.004 + h) + 0.15 * Math.sin(T * 0.011 + h * 2), z = it.at.z + 0.3 * Math.sin(T * 0.0031 + h * 1.7), g = it.group;
+      g.position.set(x, baseY(it, x, z), z); g.rotation.y = (it.at.ry ?? 0) + 0.6 * Math.sin(T * 0.0023 + h); const r = 1 + 0.035 * Math.sin(t * 0.9 + h); g.scale.set(r, 1, 2 - r); } }
     for (const it of this.items.values()) if (it.slide) { const sl = it.slide; sl.t += dt / 2.2; const k = Math.min(1, sl.t), e = k * k * (3 - 2 * k), g = it.group.position; if (k >= 1) { it.slide = null; continue; } g.x = sl.from.x + (it.at.x - sl.from.x) * e; g.z = sl.from.z + (it.at.z - sl.from.z) * e; g.y = baseY(it, g.x, g.z) + Math.sin(k * Math.PI) * 0.12; } const p = this.preview; if (p) { p.item.group.position.y = baseY(p.item, p.x, p.z) + 0.12 + Math.sin(t * 4) * 0.05; } }
   // ── carried by an octopus: lifted out of the collision grid, moved each frame, then set down (or put back if it is interrupted) ──
   haulBegin(id) { const it = this.items.get(id); if (!it || it.haul || this.preview?.id === id) return false; stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); it.haul = { x: it.at.x, z: it.at.z }; it.slide = null; return true; }
