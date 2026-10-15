@@ -177,3 +177,107 @@ An explorer in the same 7 minutes went to *other* untouched things instead of ba
 - Replace the weighted dice roll for idle choices with drives: curiosity (novelty from these memories), comfort, hunger, social, display.
 - These memories are the inputs: unfamiliar things feed curiosity, favorites feed comfort and routine, and the fish memories feed social.
 - Consider letting familiarity shape routes, such as patrolling between favorites, and which things it carries to its den (that's Phase C).
+
+---
+
+# Phase A, part 2: making the intelligence visible
+
+**Status: partly done.** Below, each point is split into four parts:
+- **logic:** what the code does;
+- **automated:** what a test checks;
+- **observed:** what a headless simulation showed;
+- **device:** what still needs a real iPhone.
+
+A state variable changing is not counted as success.
+
+## Bugs fixed first
+
+| Bug | Cause | Fix | Verified |
+|---|---|---|---|
+| Seahorses listed but not in the tank (H74JQH) | The seahorse tail curl started undefined; the hover update turned the height into NaN, so they were drawn nowhere | Initialize the curl and self-heal any non-finite position | Your tank's saved world in a two-phone test: both seahorses had height `null` on both phones before the fix, and normal heights after |
+| Coconut rotating on app open | The den shell's turn-over animation restarted from zero on every load | A home it already had starts turned over; shells rebuilt later keep their side | Code path; **device: watch an app open** |
+| Sleepy (Zz) octopus moving a lot | A sickness flag called `tired` (yes/no) overwrote the octopus's 0–1 fatigue every update, so tiredness never built up. Sleepy also only halved its speed | Fatigue renamed to `fatigue`. Sleepy holds fatigue at 0.9 → home and stay. The Zz shows only once it has settled | Simulation over 90 s while Sleepy: **100% resting, 0.4–0.9 total movement** (before: 10.3, dashing and jetting) |
+
+Side effect of the rename: fatigue now really works, and its old rate wore an octopus out in about a minute of crawling. The rate is now 0.004/s while active, about 3 minutes to "worn out".
+
+## The 12 points
+
+1. **Attention before action** (notice → orient → maybe watch → decide → approach → maybe stop partway → examine with arms → leave or return)
+   - **Logic:** all stages exist in `aware()`.
+     - A cautious first approach (a watcher or homebody, or a shy one, a new thing, more than 2.5 away) stops partway (`pause`) and looks before going on.
+     - Familiar things (k ≥ 0.35) skip watching and are approached sooner.
+   - **Observed:**
+     - explorer: noticed → crept over → handled, at 19 s;
+     - watcher: watched first, handled at 44 s;
+     - collector: hesitated, then handled at 76 s;
+     - homebody: watched from its den and kept its distance.
+   - **Not yet observed:** a halfway pause. The test pot sits 1.2 from the octopus, under the 2.5 threshold.
+   - **Device:** place a pot across the tank from a watcher.
+2. **Selective curiosity**
+   - **Logic:** willingness goes up for:
+     - small things it can handle;
+     - places to hide (for a homebody);
+     - the same kind as a favorite.
+
+     It goes down with exposure (seconds spent watching or putting it off, up to −0.3). Revisits favor favorites or untouched things, set by nature.
+   - **Automated:** none specific yet.
+   - **Device:** needed.
+3. **Changing its mind**
+   - **Logic:**
+     - hunger, a fright, tiredness, sleep, a crab or a jar pause the errand, and it resumes later;
+     - a fish passing within 1.4 can distract it once per errand (trickster 35%, watcher 25%, explorer 15%, homebody 5%);
+     - retries are capped at 3, and an errand lapses after 6 minutes.
+   - **Observed:** declines and retries in the logs.
+   - **Not yet observed:** a distraction. The test tank has no fish.
+4. **Visible familiarity**
+   - **Logic:** caution goes down as familiarity grows, and it returns to favorites on its own.
+   - **Observed (part 1):** a collector went back to the pot 3 times on its own (n = 4).
+   - **Not yet measured:** first-time vs later approach speed, side by side.
+5. **A style for each type:** no new work this round. The existing signature tricks and the awareness table differ (character test).
+6. **Quiet moments:** nothing added runs more often. Sleepy and tired octopuses now actually rest more (above).
+7. **No cheating:**
+   - It only reacts to changes it could perceive: awake, not tucked in, within about 6.5 m.
+   - It only learns by touching.
+   - Search is bounded.
+   - **Limit:** "seeing" is distance plus awake, not true line of sight.
+8. **Caretaker recognition:** uses the existing trust and bond (glass greetings, through the crack of its shell). Nothing new this round. Not positive every time: a sulk or hunger overrides it.
+9. **Shareable moments:** the journal lines from part 1. No new ones added.
+10. **iPhone test plan:** below.
+11. **Two octopuses, different habits:**
+    - **Logic:** a per-animal affinity seed and per-nature tables.
+    - **Not yet measured:** two in one tank side by side.
+12. **Tests:** see "Results" below.
+
+## Results (this round)
+
+| Check | Result |
+|---|---|
+| Rule tests | Passed |
+| Server tests | 83 passed |
+| Awareness, personality (1 run each) | Passed |
+| Rest | Passed: tired 58%, frightened 69% under its shell |
+| Den | Passed |
+| Character | Passed (re-run on the final code) |
+| Seahorse | Passed |
+| Profile, bonds, toys | Passed |
+| Two-phone seahorse load (your tank) | Fixed |
+
+**Not run this round:** the full 2-runs-per-nature awareness test and the memory sequence. The headless browser page crashed or ran more than 90 minutes. It's a known problem with repeated setups in one page, and the test needs a fresh page per run.
+
+## Manual iPhone test plan (no new dev controls)
+
+Use the normal app. The only hidden setting used is **Skip a day** (Settings → Developer, visible with `?dev=1`).
+
+1. **Seahorses:** open the app on both phones. Both seahorses should be visible within 5 s. Force-close and reopen twice.
+2. **Coconut:** with the octopus living in the coconut, close and reopen the app. The shell should already be dome-up and **not** turn over.
+3. **Sleepy:** when the card says Sleepy, watch for 2 minutes. It should go home (or stay put without a home), with the Zz above it once it's settled and no dashing.
+4. **New thing:** buy a pot and place it across the tank (far from the octopus). Watch for 3 minutes and write down:
+   - does it look at it first;
+   - does a watcher or homebody stop partway;
+   - how long until its arms are on it.
+5. **Second time:** next day, move the same pot while it watches. It should go over sooner, without watching first.
+6. **Moved while it wasn't looking:** move the pot while it's tucked in its shell. Within a few minutes it should go to the old spot, feel around, then find it.
+7. **Distraction:** with fish swimming, place something new near the fish's path. Sometimes (not always) it breaks off with "Distracted by…" and comes back.
+8. **Two octopuses:** over a few days, note which things each one returns to. They should differ.
+
+Please report what you saw against each step. Steps 4, 7 and 8 are the ones that still need a real device to count as done.
