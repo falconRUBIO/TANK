@@ -70,7 +70,7 @@ ok('the loop: one surprise with the first feeding of the day, a glow when two pe
   for (const d of [0.1, 1.05, 2, 2.98]) { t.hunger = 0.8; R.applyAction(t, { t: 'feed' }, { now: now + d * D, uid: 'u1', name: 'Alex' }); }      // four different days while it grows
   R.advance(t, now + 3.2 * D); assert.ok(k.traits.includes('Calm') && k.raisedAs === 'Calm' && !k.raise, 'fed often while growing: grows up Calm ' + k.traits);
   const ms = R.milestonesOf(k); assert.ok(ms[0].label === 'Hatched' && ms.find((m) => m.key === 'grown').done);
-  const f = R.forecast(t, now + 3.2 * D, 3); assert.ok(f.length >= 1 && f.every((x) => x.text && x.when));
+  const f = R.forecast(t, now + 3.2 * D, 3); assert.ok(f.every((x) => x.text && x.when && x.ms <= 24 * 3600e3) && f.filter((x) => !/hatches|born/.test(x.text)).every((x) => x.ms <= 8 * 3600e3), 'only what is coming soon');
 });
 ok('an octopus learns to trust you step by step, from crabs and play, and says so once at each step', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.shells = 500; t.visitAt = t.storyAt = 1e15; const o = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult', owner: 'u1', hunger: 0.9 }); t.fish = [o];

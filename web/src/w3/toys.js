@@ -18,9 +18,16 @@ function ballMesh() {      // a faceted beach ball: six colored panels round it,
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
   return new THREE.Mesh(g, new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, transparent: true, shininess: 70, specular: 0x666666, emissive: 0x121212 }));      // glossy vinyl: a bright highlight rolls round it as it turns
 }
-const bubbleTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), f = g.createRadialGradient(24, 22, 3, 32, 32, 30);
-  f.addColorStop(0, 'rgba(255,255,255,.35)'); f.addColorStop(0.75, 'rgba(210,240,255,.08)'); f.addColorStop(1, 'rgba(220,245,255,.45)'); g.fillStyle = f; g.beginPath(); g.arc(32, 32, 29, 0, 6.3); g.fill();
-  g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.stroke(); g.lineWidth = 3.5; g.lineCap = 'round'; g.beginPath(); g.arc(32, 32, 21, 3.6, 4.5); g.stroke();
+const bubbleTex = (() => { const N = 128, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), m = N / 2, R = N / 2 - 3;      // a real bubble: almost clear in the middle, a thin bright rim with a little rainbow in it, a window of light top-left and a small glint bottom-right
+  const body = g.createRadialGradient(m, m, R * 0.55, m, m, R); body.addColorStop(0, 'rgba(255,255,255,0.02)'); body.addColorStop(0.8, 'rgba(200,240,255,0.10)'); body.addColorStop(0.93, 'rgba(235,250,255,0.55)'); body.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = body; g.beginPath(); g.arc(m, m, R, 0, 6.3); g.fill();
+  const iri = g.createLinearGradient(0, 0, N, N); for (const [k, col] of [[0, 'rgba(255,170,220,.55)'], [0.35, 'rgba(160,230,255,.45)'], [0.65, 'rgba(190,255,200,.45)'], [1, 'rgba(255,220,150,.55)']]) iri.addColorStop(k, col);
+  g.strokeStyle = iri; g.lineWidth = 3; g.beginPath(); g.arc(m, m, R - 2.5, 0, 6.3); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.ellipse(m - R * 0.38, m - R * 0.42, R * 0.2, R * 0.11, -0.7, 0, 6.3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(m + R * 0.42, m + R * 0.45, R * 0.07, 0, 6.3); g.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const ringTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.strokeStyle = 'rgba(235,250,255,.9)'; g.lineWidth = 3; g.beginPath(); g.arc(32, 32, 26, 0, 6.3); g.stroke();
+  for (let k = 0; k < 6; k++) { const a = k * 1.05; g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(32 + Math.cos(a) * 30, 32 + Math.sin(a) * 30, 2.2, 0, 6.3); g.fill(); }      // a pop: a ring and a few droplets flung out
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const beamTex = (() => { const c = document.createElement('canvas'); c.width = 32; c.height = 128; const g = c.getContext('2d'), v = g.createLinearGradient(0, 0, 0, 128); v.addColorStop(0, 'rgba(200,250,255,0)'); v.addColorStop(1, 'rgba(200,250,255,.55)');
   g.fillStyle = v; g.fillRect(0, 0, 32, 128); const h = g.createLinearGradient(0, 0, 32, 0); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(0.5, 'rgba(0,0,0,0)'); h.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = h; g.fillRect(0, 0, 32, 128);
@@ -71,15 +78,20 @@ export class Toys {
   }
 
   // ── bubbles: a stream rises from the sand where you tapped, for a while ──
-  blow(at) { this.fount = { at: at.clone(), t: 9, acc: 0, who: new Set() }; this.onSound?.('bubble'); }
-  stepBubbles(dt) {
+  blow(at) {
+    if (this.fount?.stone) { this.scene.remove(this.fount.stone); this.fount.stone.geometry.dispose(); }
+    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16, 0), new THREE.MeshLambertMaterial({ color: 0x9aa7b0, flatShading: true, emissive: 0x101418 })); stone.scale.set(1.3, 0.7, 1.1); stone.position.set(at.x, at.y + 0.08, at.z); this.scene.add(stone);      // a little air stone where you tapped
+    this.fount = { at: at.clone(), t: 10, acc: 0, who: new Set(), stone, puff: 0 }; this.onSound?.('bubble'); }
+  stepBubbles(dt, t = 0) {
     const F = this.fount;
-    if (F) { F.t -= dt; F.acc += dt; while (F.t > 0 && F.acc > 0.13 && this.bubbles.length < 70) { F.acc -= 0.13; const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTex, transparent: true, depthWrite: false })); const r = 0.07 + Math.random() * 0.1;
-        s.position.set(F.at.x + (Math.random() - 0.5) * 0.25, F.at.y + 0.1, F.at.z + (Math.random() - 0.5) * 0.25); s.scale.setScalar(r * 2); this.scene.add(s); this.bubbles.push({ s, r, vy: 0.7 + Math.random() * 0.5, ph: Math.random() * 6 }); }
-      if (F.t <= 0 && !this.bubbles.length) { this.done('bubbles', F.who); this.fount = null; } }
-    const pop = (b, i) => { this.scene.remove(b.s); b.s.material.dispose(); this.bubbles.splice(i, 1); };
-    for (let i = this.bubbles.length - 1; i >= 0; i--) { const b = this.bubbles[i], p = b.s.position; b.ph += dt * 6; b.vy = Math.min(1.8, b.vy + dt * 0.4); p.y += b.vy * dt; p.x += Math.sin(b.ph) * 0.25 * dt; b.r *= 1 + dt * 0.05; b.s.scale.setScalar(b.r * 2);      // they wobble as they rise, and grow a little nearer the top
-      if (p.y > Fish3D.topY + 0.4) { pop(b, i); continue; }
+    if (F) { F.t -= dt; F.acc += dt; F.puff -= dt; const gap = F.puff > 0 ? 0.05 : 0.16; if (F.puff < -0.9 - Math.random()) F.puff = 0.35 + Math.random() * 0.3;      // the stone puffs: little bursts, then a trickle
+      while (F.t > 0 && F.acc > gap && this.bubbles.length < 80) { F.acc -= gap; const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTex, transparent: true, depthWrite: false, fog: false })); const r = 0.05 + Math.pow(Math.random(), 2) * 0.16;
+        s.position.set(F.at.x + (Math.random() - 0.5) * 0.25, F.at.y + 0.1, F.at.z + (Math.random() - 0.5) * 0.25); s.scale.setScalar(r * 2); this.scene.add(s); this.bubbles.push({ s, r, vy: 0.5 + r * 4 + Math.random() * 0.3, ph: Math.random() * 6, wob: 4 + Math.random() * 4 }); }      // (big ones rise faster, as real bubbles do)
+      if (F.t <= 0 && !this.bubbles.length) { this.done('bubbles', F.who); this.scene.remove(F.stone); F.stone.geometry.dispose(); this.fount = null; } }
+    const pop = (b, i, burst = true) => { this.scene.remove(b.s); b.s.material.dispose(); this.bubbles.splice(i, 1); if (burst) { const r = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, transparent: true, depthWrite: false, fog: false })); r.position.copy(b.s.position); r.scale.setScalar(b.r * 2); this.scene.add(r); (this.rings ||= []).push({ r, t: 0, s0: b.r * 2 }); } };
+    for (let i = (this.rings ?? []).length - 1; i >= 0; i--) { const q = this.rings[i]; q.t += dt; const k = q.t / 0.28; q.r.scale.setScalar(q.s0 * (1 + k * 1.6)); q.r.material.opacity = 1 - k; if (k >= 1) { this.scene.remove(q.r); q.r.material.dispose(); this.rings.splice(i, 1); } }      // (pops: a quick ring that flicks out and is gone)
+    for (let i = this.bubbles.length - 1; i >= 0; i--) { const b = this.bubbles[i], p = b.s.position; b.ph += dt * 6; b.vy = Math.min(1.8, b.vy + dt * 0.4); p.y += b.vy * dt; p.x += Math.sin(b.ph * 0.6) * 0.3 * dt; p.z += Math.cos(b.ph * 0.45) * 0.12 * dt; b.r *= 1 + dt * 0.04; const w = Math.sin(t * b.wob + b.ph) * 0.09; b.s.scale.set(b.r * 2 * (1 + w), b.r * 2 * (1 - w), 1);      // they wobble and squash as they rise, and grow a little nearer the top      // they wobble as they rise, and grow a little nearer the top
+      if (p.y > Fish3D.topY + 0.4) { pop(b, i, false); continue; }
       for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p);
         if (k === 'fish' && d < 3 && Math.random() < dt * 2) { f.target.copy(p).y += 0.4; f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish dart after them
         if (k === 'seahorse' && d < 1.8) { f.glance = p.clone(); f.glanceT = 0.8; }
@@ -107,5 +119,5 @@ export class Toys {
       } }
   }
 
-  update(dt, t) { if (this.ball) this.stepBall(dt); if (this.fount || this.bubbles.length) this.stepBubbles(dt); if (this.light) this.stepLight(dt, t); }
+  update(dt, t) { if (this.ball) this.stepBall(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
 }
