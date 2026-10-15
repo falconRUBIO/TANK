@@ -61,7 +61,7 @@ export class Fishes {
     return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: f.found?.includes('spot') ? (DECOR_DEF[st.decor?.find((d) => d.id === f.spotId)?.type]?.label ?? SPOTS[tr[0]] ?? 'Found one') : 'Still looking', food: f.species === 'octopus' ? 'Crabs' : FOODS[favFoodOf(f)].label, needs: [n.fed, n.happy, n.energy, n.health], mood: n.mood, vigor: n.vigor };
   }
   // make the scene match the game's fish list
-  sync(state, { arrivals = [] } = {}) {
+  sync(state, { arrivals = [] } = {}) { this.state = state;
     this.recs = new Map(state.fish.map((d) => [d.id, d]));      // each animal's saved record, as the server has it (a seahorse reads its memory of holdfasts from it)
     this.moveOn = !state.flags?.noRearrange;
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
@@ -341,8 +341,14 @@ export class Fishes {
       f.thought = th;
       { const lk = f.likes && Object.entries(f.likes).sort((a, b) => b[1] - a[1])[0]; const sp = lk && lk[1] >= 3 ? (f.getSpots?.() ?? []).find((x) => x.id === lk[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
       if (M.type === 'showoff' && f.audience >= 1 && f.bondMe >= 1 && S?.s === 'rest' && !S.mode && !f.shy && (f.glassCool ?? 0) <= 0 && this.rng() < 0.1) { f.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.5 + this.rng() * 3, until: performance.now() + 5000 }; f.glassCool = 90 + this.rng() * 90; }       // an audience it knows: it goes and shows off at the glass
+      // its partner (see rules: octoPartners): it goes to find it now and then, and close by they touch arms, tasting each other with their suckers
+      { const pt = f.rec?.partner && this.list.find((o) => o.fid === f.rec.partner && !o.dead && o.mind);
+        if (pt && S?.s === 'rest' && !S.mode && !f.inspect && Math.hypot(pt.pos.x - f.pos.x, pt.pos.z - f.pos.z) >= 2.4 && this.rng() < 0.05) { S.s = 'crawl'; S.t = 6; const sd = f.pos.x >= pt.pos.x ? 1.3 : -1.3; f.target.set(Math.max(-3.5, Math.min(3.5, pt.pos.x + sd)), 0.55, pt.pos.z); th = `Going to find ${pt.name}.`; } }
       for (const o of this.list) if (o !== f && o.species.id === 'octopus' && !o.dead && o.mind && Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 2.4) {
-        if (M.soc < 0.4 && S?.s !== 'jet') { f.annoyT = Math.max(f.annoyT, 3); f.fearNear = false; if (S?.s === 'rest' && !S.mode) { S.s = 'crawl'; S.t = 6; f.target.set(Math.max(-3.5, Math.min(3.5, f.pos.x + (f.pos.x >= o.pos.x ? 2.6 : -2.6))), 0.55, f.pos.z); } th = `Keeping its distance from ${o.name}.`; }
+        const mine = f.rec?.partner === o.fid, B = this.state?.octoBonds, k = [f.fid, o.fid].sort().join('|'), warming = (B?.[k] ?? 0) > 1.5 * 864e5;      // partners, or half way there: no more keeping away
+        if (mine) { if (S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.3) { f.inspect = { x: o.pos.x, z: o.pos.z, r: 0.7 }; this.burst?.(o.pos.clone().add(f.pos).multiplyScalar(0.5)); } th = this.rng() < 0.5 ? `Touching arms with ${o.name}.` : `Resting close to ${o.name}.`; }
+        else if (warming && M.soc < 0.4) { if (S?.s === "rest" && !S.mode && !f.inspect && this.rng() < 0.1) f.inspect = { x: o.pos.x, z: o.pos.z, r: 0.7 }; th = `Tasting ${o.name} with one careful arm.`; }
+        else if (M.soc < 0.4 && S?.s !== 'jet') { f.annoyT = Math.max(f.annoyT, 3); f.fearNear = false; if (S?.s === 'rest' && !S.mode) { S.s = 'crawl'; S.t = 6; f.target.set(Math.max(-3.5, Math.min(3.5, f.pos.x + (f.pos.x >= o.pos.x ? 2.6 : -2.6))), 0.55, f.pos.z); } th = `Keeping its distance from ${o.name}.`; }
         else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
         break;
       }

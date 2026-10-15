@@ -724,6 +724,13 @@ ok('an octopus remembers a friend and a rival for every phone, and its moments a
   const old = R.ensureFish({ id: 'l', name: 'Old', species: 'goldfish', seed: 1, born: 0, stage: 'adult', traits: [] }); delete old.paid; assert.equal(R.sellValue(old), Math.floor(R.SPECIES_DEF.goldfish.price / R.SPECIES_DEF.goldfish.count / 2), 'a fish from before prices were kept counts as bought');
 }
 console.log('Care rhythm and selling checks passed');
+ok('two males bond as companions and never conceive; two octopuses become partners, whatever their sex', () => {
+  let now = 50 * DAY; const t = R.newWorld(now); t.fish = []; const mk = (id, sp, sex, seed) => R.ensureFish({ id, name: id, species: sp, seed, born: 0, stage: 'adult', traits: [], happy: 0.9, sex });
+  t.fish.push(mk('a', 'seahorse', 'm', 1), mk('b', 'seahorse', 'm', 2), mk('o', 'octopus', 'm', 3), mk('p', 'octopus', 'm', 4));
+  for (let i = 0; i < 160; i++) { now += 3 * 3600e3; t.hunger = 0; t.water = 1; for (const f of t.fish) { f.fedAt = now; f.hunger = 0; f.ail = 0; } R.advance(t, now); }
+  const F = (id) => t.fish.find((f) => f.id === id); assert.equal(F('a').mate, 'b'); assert.ok(!F('a').preg && !F('b').preg, 'companions never get pregnant'); assert.equal(F('o').partner, 'p'); assert.equal(F('p').partner, 'o');
+  assert.equal(R.bondKey({ id: 'z', sex: 'f' }, { id: 'y', sex: 'm' }), 'y|z');
+});
 ok('a profile: quiet species behaviours go in that animal\'s own journal only, a fish log is bounded and checked', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.fish = [R.ensureFish({ id: 's', name: 'Pip', species: 'seahorse', seed: 1, born: -864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'g', name: 'Bo', species: 'goldfish', seed: 2, born: -864e5, stage: 'adult', traits: ['Brave'] })];
   t.decor = [{ id: 'd1', type: 'grass', x: 0, z: 1, ry: 0 }]; let k = 0; const ob = (a) => R.applyAction(t, { t: 'observe', ...a }, { now: 5e6 + ++k * 1000, name: 'Sam', uid: 'u' });
