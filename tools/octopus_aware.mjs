@@ -22,7 +22,7 @@ const sim = (secs, watchId) => p.evaluate(async ([secs, watchId]) => { const F =
     if (i % 10 === 0) { const ts = i / 10, I = f.inv; if (I?.id === watchId) { out.notice ??= ts; out.phases.add(I.phase); if (I.phase === 'watch') out.watch = true; } if (f.thought) out.thoughts.add(f.thought);
       const d = g.state.decor.find((x) => x.id === watchId); if (d) out.minD = Math.min(out.minD, Math.hypot(f.pos.x - d.x, f.pos.z - d.z)); if (window.__oldSpot) out.oldMin = Math.min(out.oldMin, Math.hypot(f.pos.x - window.__oldSpot.x, f.pos.z - window.__oldSpot.z));
       const e = g.state.fish.find((x) => x.id === f.fid)?.mem?.fam?.[watchId]; if (e?.n && out.touch == null) out.touch = ts; await new Promise((q) => setTimeout(q, 0)); } }
-  F.aware = aw; return { ...out, phases: [...out.phases], thoughts: [...out.thoughts].filter((x) => /new|pot|shell|moved|spot|gone|look/i.test(x)).slice(0, 8), awareMs: +(out.awareMs / Math.max(1, out.awareN)).toFixed(3) }; }, [secs, watchId]);
+  F.aware = aw; return { ...out, phases: [...out.phases], thoughts: [...out.thoughts].filter((x) => /new|pot|shell|moved|spot|gone|look|Distracted|Stopped/i.test(x)).slice(0, 8), awareMs: +(out.awareMs / Math.max(1, out.awareN)).toFixed(3) }; }, [secs, watchId]);
 const place = (type, x, z) => p.evaluate(async ([type, x, z]) => { const r = await window.__game.dispatch({ t: 'buyDecor', type, x, z, ry: 0 }); return r.ok ? window.__game.state.decor.at(-1).id : 'fail:' + r.reason; }, [type, x, z]);
 const mem = () => p.evaluate(() => window.__game.state.fish[0].mem ?? null);
 // 1. three natures meet the same new pot, several five-minute visits each
@@ -30,10 +30,10 @@ if (process.env.ONLY !== 'mem') {
 console.log('Personality: the same new pot, five-minute visits');
 const table = {};
 for (const [type, seed] of [['explorer', 1], ['watcher', 4], ['homebody', 6], ['collector', 3]]) {
-  const rows = []; for (let k = 0; k < RUNS; k++) { await setup(seed); await p.waitForTimeout(600); await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(1.5, 0.6, 1.2); f.tired = 0; f.scared = 0; });
+  const rows = []; for (let k = 0; k < RUNS; k++) { await setup(seed); await p.waitForTimeout(600); await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(1.5, 0.6, 1.2); f.fatigue = 0; f.scared = 0; });
     const id = await place('pot', 0.6, 0.4); const r = await sim(240, id); rows.push(r); }
   const went = rows.filter((r) => r.touch != null), avg = (a) => (a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : null);
-  table[type] = { noticed: rows.filter((r) => r.notice != null).length, watchedFirst: rows.filter((r) => r.watch).length, investigated: went.length, secsToTouch: avg(went.map((r) => r.touch)), awareMs: avg(rows.map((r) => r.awareMs)) };
+  table[type] = { noticed: rows.filter((r) => r.notice != null).length, watchedFirst: rows.filter((r) => r.watch).length, investigated: went.length, secsToTouch: avg(went.map((r) => r.touch)), awareMs: avg(rows.map((r) => r.awareMs)), pausedHalfway: rows.filter((r) => r.phases.includes('pause')).length, distracted: rows.filter((r) => r.thoughts.some((t) => /^Distracted/.test(t))).length };
   console.log(`  ${type.padEnd(9)} ${JSON.stringify(table[type])}`, rows[0].thoughts.slice(0, 3).join(' / '));
 }
 ck('every nature notices the new pot', Object.values(table).every((t) => t.noticed === RUNS), JSON.stringify(table));
@@ -53,7 +53,7 @@ await sim(420, pot); m = await mem(); ck('it goes back to it again and again: fa
 await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(-4.2, f.pos.y, -1.5); f.vel.set(0, 0, 0); f.inspect = null; f.inv = null; f.st.s = 'rest'; f.st.mode = null; f.st.t = 3; });
 const tucked = await p.evaluate(() => { const f = window.__fishes.list[0]; return Math.hypot(f.pos.x - 2.4, f.pos.z - 1.2); });
 await p.evaluate((pot) => { const d = window.__game.state.decor.find((x) => x.id === pot); window.__oldSpot = { x: d.x, z: d.z }; return window.__game.dispatch({ t: 'moveDecor', id: pot, x: d.x + 1.6, z: d.z - 0.6, ry: 0 }); }, pot);
-await p.evaluate(() => { const f = window.__fishes.list[0]; f.tired = 0; });
+await p.evaluate(() => { const f = window.__fishes.list[0]; f.fatigue = 0; });
 const mv = await sim(300, pot); m = await mem();
 ck('moved out of its sight, it first goes to where the pot used to be', mv.oldMin < 1.6 && mv.phases.some((x) => /old/i.test(x)), `it was ${tucked.toFixed(2)} away, came within ${mv.oldMin.toFixed(2)} of the old spot; phases ${mv.phases}`);
 ck('then finds it in its new spot and knows it is the same one', !m.fam[pot].mv && Math.abs(m.fam[pot].x - (await p.evaluate(() => window.__oldSpot.x)) - 1.6) < 0.05, JSON.stringify(m.fam[pot]));

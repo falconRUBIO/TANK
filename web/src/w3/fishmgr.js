@@ -49,8 +49,9 @@ function emoteTexture(mood) {
 }
 const r2 = (v) => Math.round(v * 100) / 100;
 // how each nature meets something new: how soon it goes (s), how willing it is, how long it watches first, whether it watches from its den, how often it goes back to a favorite and how drawn it is to things it has never touched
-const AWARE = { explorer: { d: [1, 3], p: 0.95, watch: null, rev: 0.3, nov: 0.6 }, trickster: { d: [2, 4], p: 0.85, watch: null, rev: 0.4, nov: 0.45 }, showoff: { d: [3, 6], p: 0.75, watch: null, rev: 0.45, nov: 0.3 },
-  collector: { d: [2, 5], p: 0.75, watch: null, rev: 0.65, nov: 0.35 }, watcher: { d: [3, 5], p: 0.7, watch: [8, 14], rev: 0.55, nov: 0.2 }, homebody: { d: [6, 12], p: 0.5, watch: [25, 45], den: true, rev: 0.75, nov: 0.1 } };
+const AWARE = { explorer: { distract: 0.15, d: [1, 3], p: 0.95, watch: null, rev: 0.3, nov: 0.6 }, trickster: { distract: 0.35, d: [2, 4], p: 0.85, watch: null, rev: 0.4, nov: 0.45 }, showoff: { distract: 0.12, d: [3, 6], p: 0.75, watch: null, rev: 0.45, nov: 0.3 },
+  collector: { distract: 0.08, d: [2, 5], p: 0.75, watch: null, rev: 0.65, nov: 0.35 }, watcher: { distract: 0.25, d: [3, 5], p: 0.7, watch: [8, 14], rev: 0.55, nov: 0.2 }, homebody: { distract: 0.05, d: [6, 12], p: 0.5, watch: [25, 45], den: true, rev: 0.75, nov: 0.1 } };
+const HIDEY = new Set(['coconut', 'pot', 'rock', 'cave', 'castle', 'skull', 'chest']);      // somewhere to tuck into: a homebody takes an interest
 const COLLECTIBLE = new Set(['shell', 'pot', 'coconut', 'chest', 'crystal', 'starfish', 'anchor', 'skull', 'lantern']);
 const GRIP_R = { grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 0.8, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5 };
 const CRAB = 1.15;                // a crab is a meal-sized thing next to an octopus, not as big as its head
@@ -117,7 +118,7 @@ export class Fishes {
   updateEmotes(t) {
     for (const f of this.list) {
       const sp = f.emote, pt = f.rec?.partner && this.list.find((o) => o.fid === f.rec.partner && !o.dead), mood = pt && pt.pos.distanceTo(f.pos) < 2.4 ? 'Together' : f.profile?.mood;      /* two octopus partners close together: a heart now and then */ if (!sp) continue; if (f.dead) { sp.visible = false; continue; }
-      const phase = (t + f.emoteSeed) % 14, show = EMOTE[mood] && (phase < 3.4 || (mood === 'Hungry' && phase < 7)) && !f.group.parent?.userData?.hide;
+      const phase = (t + f.emoteSeed) % 14, show = EMOTE[mood] && (phase < 3.4 || (mood === 'Hungry' && phase < 7)) && !f.group.parent?.userData?.hide && !(mood === 'Sleepy' && f.species.move === 'jet' && (f.restK ?? 0) < 0.5 && (f.sleepK ?? 0) < 0.3);      // a sleepy octopus shows its Zz once it has settled, not while it is still on its way home
       const want = show ? Math.min(1, Math.min(phase, 3.4 - phase + 0.4) * 2.5) : 0;
       sp.material.opacity += (want - sp.material.opacity) * 0.2; sp.visible = sp.material.opacity > 0.03;
       if (sp.visible) { if (sp.userData.mood !== mood && EMOTE[mood]) { sp.material.map = emoteTexture(mood); sp.material.needsUpdate = true; sp.userData.mood = mood; } sp.position.set(f.pos.x, f.pos.y + f.radius * 0.8 + 0.5 + Math.sin(t * 2 + f.emoteSeed) * 0.05, f.pos.z + 0.4); }
@@ -256,7 +257,9 @@ export class Fishes {
       // underneath and lets the shell down over itself, leaving a crack at the front to peek out of; leaving, it lifts the edge again and slips out
       const m = it.group.children.find((c) => c.isMesh); if (!m) continue; m.userData.y0 ??= m.position.y;
       const near = !f.dead && dist < 1.5 && !under, open = near ? 1 : under ? (f.sleepK ?? 0) > 0.5 ? 0.02 : (f.trust ?? 0) >= 1 ? 0.24 + Math.sin(t * 0.7) * 0.04 : 0.07 : 0;      /* (an octopus that does not know you yet keeps the shell nearly shut; one that does watches you through the crack) */      // (asleep, it pulls the shell right down)
+      if (it.flipK == null && ((this.flipped ||= new Set()).has(it.id ?? f.den.id) || performance.now() - (this.openedAt ??= performance.now()) < 15000)) { it.flipK = 1; it.lidK = open; }      // opening the app, a home it already had is shown as it was, not turned over again before your eyes
       it.flipK = (it.flipK ?? 0) + (1 - (it.flipK ?? 0)) * Math.min(1, dt * 0.9); it.lidK = (it.lidK ?? 0) + (open - (it.lidK ?? 0)) * Math.min(1, dt * (open > (it.lidK ?? 0) ? 2.2 : 1.3));
+      if (it.flipK > 0.99) (this.flipped ||= new Set()).add(it.id ?? f.den.id);      // (and a shell rebuilt later keeps its side)
       const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
       const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand
       m.rotation.x = th; m.position.y = m.userData.y0 * (1 - e) + hy * e; m.position.z = hz * e; m.scale.setScalar(1 + 0.12 * e);      /* (turned over, it is a roomier hut) */
@@ -362,17 +365,21 @@ export class Fishes {
     }
     const d = find(I.id), L = lbl(I.type); if (!d) { this.endInv(f); return; }
     if (now - I.born > 6 * 60e3) { this.endInv(f); return; }
-    const busy = f.dead || f.hunt || f.jarAt || f.task || f.glassAt || f.profile?.mood === 'Hungry' || (f.scared ?? 0) > 0 || (f.tired ?? 0) > 0.8 || !awake;
+    const busy = f.dead || f.hunt || f.jarAt || f.task || f.glassAt || f.profile?.mood === 'Hungry' || (f.scared ?? 0) > 0 || (f.fatigue ?? 0) > 0.8 || !awake;
     if (busy) { if (f.inspect?.inv || f.inspect?.oldspot) f.inspect = null; if (I.phase === 'go' || I.phase === 'goOld') { I.phase = I.phase === 'go' ? 'later' : 'oldspot'; I.t = 30; } f.watchPt = null; return; }      // first things first; it comes back to it
-    I.t -= 1; const tgt = { x: I.x ?? d.x, y: 0.7, z: I.z ?? d.z };
-    const goTo = () => { I.phase = 'go'; I.t = 45; f.inspect = { x: tgt.x, z: tgt.z, id: I.id, type: I.type, r: GRIP_R[I.type] ?? 0.5, inv: true }; if (!/^Recognized|^There it is/.test(I.text ?? '')) I.text = I.kind === 'moved' ? `Going over to the ${L} in its new spot.` : `Creeping over to the new ${L}.`; f.watchPt = null; };
+    I.t -= 1; if (I.phase === 'notice' || I.phase === 'watch' || I.phase === 'later') (f.expo ||= {})[I.id] = (f.expo[I.id] ?? 0) + 1; const tgt = { x: I.x ?? d.x, y: 0.7, z: I.z ?? d.z };
+    const goTo = () => { const k0 = fam[I.id]?.k ?? 0, d0 = Math.hypot(f.pos.x - tgt.x, f.pos.z - tgt.z); if (!I.paused && I.kind === 'new' && k0 < 0.2 && d0 > 2.5 && r() < (P.watch ? 0.8 : 0.25) + 0.4 * (0.5 - bold)) I.pauseD = d0 * (0.4 + 0.2 * r()); I.phase = 'go'; I.t = 45; f.inspect = { x: tgt.x, z: tgt.z, id: I.id, type: I.type, r: GRIP_R[I.type] ?? 0.5, inv: true }; if (!/^Recognized|^There it is/.test(I.text ?? '')) I.text = I.kind === 'moved' ? `Going over to the ${L} in its new spot.` : `Creeping over to the new ${L}.`; f.watchPt = null; };
     const decide = () => { let p = P.p * (0.7 + 0.6 * bold); if (f.mind?.type === 'showoff' && (f.audience ?? 0) > 0.3) p += 0.15; if (f.mind?.type === 'collector' && COLLECTIBLE.has(I.type)) p += 0.15; if (f.shy && I.kind === 'new') p -= 0.1;
+      if (COLLECTIBLE.has(I.type)) p += 0.08; if (P.den && HIDEY.has(I.type)) p += 0.15; if ((f.likeIds ?? []).some((id) => find(id)?.type === I.type)) p += 0.12; p -= Math.min(0.3, (f.expo?.[I.id] ?? 0) / 400);      // small enough to handle, somewhere to hide, like a thing it already loves: more interesting; a thing it has stared at for ages without going is less so
       if (r() < Math.max(0.05, Math.min(0.98, p))) goTo();
       else { I.tries++; if (I.tries >= 3) { this.memSay(f, `Has decided to leave the ${L} alone for now.`); this.endInv(f); } else { I.phase = 'later'; I.t = 40 + r() * 50; I.text = `Keeping its distance from the ${L} for now.`; } } };
     if (I.phase === 'goNow') goTo();
-    else if (I.phase === 'notice') { f.watchPt = tgt; if (!I.delaySet) { I.delaySet = true; I.t = this.delay(f, P, I); } if (I.t <= 0) { if (P.watch && !I.watched) { I.watched = true; I.phase = 'watch'; I.t = P.watch[0] + r() * (P.watch[1] - P.watch[0]); I.text = P.den && f.den ? `Watching the ${L} from its den.` : `Watching the ${L} from a distance.`; if (P.den && f.den && S?.s === 'rest' && !S.mode && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) > 1.4) f.goDen?.(S, () => this.rng()); } else decide(); } }
+    else if (I.phase === 'notice') { f.watchPt = tgt; if (!I.delaySet) { I.delaySet = true; I.t = this.delay(f, P, I) * (1 - 0.6 * Math.min(1, fam[I.id]?.k ?? 0)); } if (I.t <= 0) { if (P.watch && !I.watched && (fam[I.id]?.k ?? 0) < 0.35) { I.watched = true; I.phase = 'watch'; I.t = P.watch[0] + r() * (P.watch[1] - P.watch[0]); I.text = P.den && f.den ? `Watching the ${L} from its den.` : `Watching the ${L} from a distance.`; if (P.den && f.den && S?.s === 'rest' && !S.mode && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) > 1.4) f.goDen?.(S, () => this.rng()); } else decide(); } }
     else if (I.phase === 'watch') { f.watchPt = tgt; if (I.t <= 0) decide(); }
+    else if (I.phase === 'pause') { f.watchPt = tgt; if (I.t <= 0) goTo(); }      // stopped short, looking: then on it goes
     else if (I.phase === 'later') { f.watchPt = null; if (I.t <= 0) { I.phase = 'notice'; I.delaySet = true; I.t = 1; } }
+    else if (I.phase === 'go' && I.pauseD && !I.paused && f.inspect?.id === I.id && Math.hypot(f.pos.x - tgt.x, f.pos.z - tgt.z) < I.pauseD) { I.paused = true; I.pauseD = 0; f.inspect = null; I.phase = 'pause'; I.t = 2 + r() * 4 * (1.3 - bold); I.text = `Stopped short of the ${L} to have a good look.`; }      // a cautious first approach: halfway there it stops and looks before going on
+    else if (I.phase === 'go' && !I.distracted && f.inspect?.id === I.id && (() => { const o = this.list.find((o) => o !== f && !o.dead && o.species.move !== 'jet' && o.pos.distanceTo(f.pos) < 1.4); if (!o || r() > (P.distract ?? 0.1)) return false; I.distracted = true; f.inspect = null; I.phase = 'later'; I.t = 8 + r() * 12; I.text = `Distracted by ${o.name}. It will get back to the ${L}.`; f.watchPt = { x: o.pos.x, y: o.pos.y, z: o.pos.z }; return true; })()) { /* once per errand at most: no endless retries */ }
     else if (I.phase === 'go') { if (!(f.inspect && f.inspect.id === I.id) || I.t <= 0) { if (f.inspect?.id === I.id) f.inspect = null; I.tries++; if (I.tries >= 3) this.endInv(f); else { I.phase = 'later'; I.t = 20 + r() * 30; } } }      // it could not get there: later, a few times at most
     else if (I.phase === 'feel') { if (I.t <= 0) this.endInv(f); }
     else if (I.phase === 'oldspot') { if (I.t <= 0 && S?.s === 'rest' && !S.mode && !f.inspect) { I.phase = 'goOld'; I.t = 40; f.inspect = { x: I.ox, z: I.oz, oldspot: true }; I.text = `Going to where the ${L} used to be.`; } }
