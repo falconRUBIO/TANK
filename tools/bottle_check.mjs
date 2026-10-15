@@ -1,4 +1,4 @@
-// A message in a bottle, end to end on two phones: written in the Crew box, tossed in, washed up in the other tank (sinks, rests on the sand), opened as a letter, floated away; the sender hears it was found.
+// A message in a bottle, end to end on two phones: written in the Crew box, tossed in, dropped into the other tank (floats at the surface), opened as a letter, sinks away; the sender hears it was found.
 // Needs the dev server on 8124 (PORT=8124 DB=/tmp/x.db DEV=1 node server/server.mjs). OUT=dir node tools/bottle_check.mjs
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
@@ -26,11 +26,11 @@ ck('the bottle letter opens with the words on it', (await A.inputValue('#bt')) =
 await B.evaluate(() => { window.__ys = []; setInterval(() => { const q = window.__bottleSeen(); if (q.v) window.__ys.push(q.y); }, 150); }); await B.evaluate(() => { window.__ys = []; setInterval(() => { const q = window.__bottleSeen(); if (q.v) window.__ys.push(q.y); }, 150); }); await A.click('#modal.on #mok'); await A.waitForTimeout(700); await A.screenshot({ path: `${out}/toss.png` });
 await clear(B); await B.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click());
 await B.waitForTimeout(6000); const ys = await B.evaluate(() => window.__ys), y0 = Math.max(...ys), y1 = ys.at(-1);
-await B.screenshot({ path: `${out}/arrived.png` }); ck('it washes up in their tank and sinks to the sand', y1 < y0 - 0.5, `${y0} → ${y1}`);
+await B.screenshot({ path: `${out}/arrived.png` }); ck('it drops into their tank and floats at the surface', y1 > 9.5 && y1 < 12 && Math.min(...ys) < y1, `top ${y0}, dipped to ${Math.min(...ys)}, floating at ${y1}`);
 ck('the sender sees no bottle in their own tank', !(await A.evaluate(() => window.__bottleSeen().v)));
 await B.waitForTimeout(3000); B.evaluate(() => window.__openBottle()); await B.waitForSelector('#modal.on .bletter', { timeout: 30000 }); await B.waitForTimeout(900); await B.screenshot({ path: `${out}/letter.png` });
 ck('it opens as a letter from them', /You are the best tank buddy/.test(await B.textContent('#modal .bletter')) && /Ana/.test(await B.textContent('#modal .bletter')));
-await B.evaluate(() => { window.__ys = []; }); await B.click('#modal.on #mno'); await B.waitForTimeout(800); { const ys = await B.evaluate(() => window.__ys); ck('then it floats up and away', ys.at(-1) > Math.min(...ys) + 3, `rose to ${ys.at(-1)}`); } await B.waitForTimeout(3200); ck('and is gone', !(await B.evaluate(() => window.__bottleSeen().v)));
+await B.evaluate(() => { window.__ys = []; }); await B.click('#modal.on #mno'); await B.waitForTimeout(4800); { const ys = await B.evaluate(() => window.__ys); ck('then it fills with water and sinks away', Math.min(...ys) < ys[0] - 3, `sank from ${ys[0]} to ${Math.min(...ys)}`); } await B.waitForTimeout(1500); ck('and is gone', !(await B.evaluate(() => window.__bottleSeen().v)));
 await A.waitForFunction(() => window.__toasts.some((t) => /found your bottle/.test(t)), null, { timeout: 10000 }).catch(() => null); ck('the sender hears it was found', await A.evaluate(() => window.__toasts.some((t) => /found your bottle/.test(t))), JSON.stringify(await A.evaluate(() => window.__toasts)));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Bottle checks passed'); process.exit(fails ? 1 : 0);

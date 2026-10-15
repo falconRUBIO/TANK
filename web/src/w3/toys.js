@@ -16,7 +16,7 @@ function ballMesh() {      // a faceted beach ball: six colored panels round it,
   for (let i = 0; i < pos.count; i += 3) { let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { x += pos.getX(i + k); y += pos.getY(i + k); z += pos.getZ(i + k); }
     const c = Math.abs(y / 3) > 0.24 ? cap : C[Math.floor(((Math.atan2(z, x) + Math.PI) / (2 * Math.PI)) * 6) % 6]; for (let k = 0; k < 3; k++) col.push(c.r, c.g, c.b); }
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
-  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, transparent: true, emissive: 0x161616 }));
+  return new THREE.Mesh(g, new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, transparent: true, shininess: 70, specular: 0x666666, emissive: 0x121212 }));      // glossy vinyl: a bright highlight rolls round it as it turns
 }
 const bubbleTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), f = g.createRadialGradient(24, 22, 3, 32, 32, 30);
   f.addColorStop(0, 'rgba(255,255,255,.35)'); f.addColorStop(0.75, 'rgba(210,240,255,.08)'); f.addColorStop(1, 'rgba(220,245,255,.45)'); g.fillStyle = f; g.beginPath(); g.arc(32, 32, 29, 0, 6.3); g.fill();
@@ -40,10 +40,11 @@ export class Toys {
   toss(x, z = 0.6) {
     if (this.ball) this.ballEnd(true);
     const m = ballMesh(); m.position.set(Math.max(-X, Math.min(X, x)), Fish3D.topY + 0.6, z); this.scene.add(m);
-    this.ball = { m, v: new THREE.Vector3((Math.random() - 0.5) * 0.4, -2.2, 0), life: 45, who: new Set(), cool: new Map(), splashed: false };
+    const sh = new THREE.Mesh(new THREE.CircleGeometry(0.42, 20), new THREE.MeshBasicMaterial({ color: 0x0a1a20, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 })); sh.rotation.x = -Math.PI / 2; this.scene.add(sh);      // its soft shadow on the sand
+    this.ball = { m, sh, v: new THREE.Vector3((Math.random() - 0.5) * 0.4, -2.2, 0), life: 45, who: new Set(), cool: new Map(), splashed: false };
     this.onSound?.('splash');
   }
-  ballEnd(now = false) { const B = this.ball; if (!B) return; if (now) { this.scene.remove(B.m); B.m.geometry.dispose(); this.done('ball', B.who); this.ball = null; } else B.leaving = B.leaving ?? 0; }
+  ballEnd(now = false) { const B = this.ball; if (!B) return; if (now) { this.scene.remove(B.m); B.m.geometry.dispose(); this.scene.remove(B.sh); B.sh.geometry.dispose(); this.done('ball', B.who); this.ball = null; } else B.leaving = B.leaving ?? 0; }
   stepBall(dt) {
     const B = this.ball, p = B.m.position, v = B.v, r = 0.38; B.life -= dt;
     if (B.life <= 0 && B.leaving == null) B.leaving = 0;
@@ -55,6 +56,7 @@ export class Toys {
       const dx = sandH(p.x + 0.2, p.z) - sandH(p.x - 0.2, p.z), dz = sandH(p.x, p.z + 0.2) - sandH(p.x, p.z - 0.2); v.x -= dx * 3 * dt; v.z -= dz * 3 * dt; }      // and rolls down a slope
     if (Math.abs(p.x) > X) { p.x = Math.sign(p.x) * X; v.x = -v.x * 0.5; } if (p.z < ZB || p.z > ZF) { p.z = Math.max(ZB, Math.min(ZF, p.z)); v.z = -v.z * 0.5; } if (p.y > Fish3D.topY + 0.8 && B.leaving == null) { p.y = Fish3D.topY + 0.8; v.y = Math.min(0, v.y); }
     B.m.rotation.z -= v.x * dt / r; B.m.rotation.x += v.z * dt / r;      // it rolls the way it moves
+    { const gy = sandH(p.x, p.z), hgt = p.y - r - gy, k = Math.max(0, 1 - hgt / 4); B.sh.position.set(p.x, gy + 0.05, p.z); B.sh.scale.setScalar(0.6 + 0.5 * k); B.sh.material.opacity = 0.32 * k * k * (B.m.material.opacity ?? 1); }      // closer to the sand, the shadow sharpens and darkens
     if (B.leaving != null) return;
     const now = performance.now();
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p), cd = (B.cool.get(f) ?? 0) > now;
