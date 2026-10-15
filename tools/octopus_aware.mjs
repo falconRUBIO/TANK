@@ -2,12 +2,13 @@
 // from its den, perhaps not at all), handles it and learns it; keeps going back to it; finds it again when it is moved out of its sight (old spot first,
 // then a short search) and recognizes it; lets it go when it is taken out; and remembers all this across a reload. Measures what it really does.
 // Needs the solo game on 8123. node tools/octopus_aware.mjs [runs]
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const RUNS = +(process.argv[2] || 3), base = 'http://localhost:8123';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 let ctx = await b.newContext({ viewport: { width: 390, height: 760 } }), p = await ctx.newPage(); const errors = []; let fails = 0;
 p.on('pageerror', (e) => errors.push(e.message));
 const boot = async () => { await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000); };
+const fresh = async () => { await ctx.close(); ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); await boot(); };      // a fresh page for each run: one page set up over and over runs out of memory and crashes
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);
@@ -30,7 +31,7 @@ if (process.env.ONLY !== 'mem') {
 console.log('Personality: the same new pot, five-minute visits');
 const table = {};
 for (const [type, seed] of [['explorer', 1], ['watcher', 4], ['homebody', 6], ['collector', 3]]) {
-  const rows = []; for (let k = 0; k < RUNS; k++) { await setup(seed); await p.waitForTimeout(600); await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(1.5, 0.6, 1.2); f.fatigue = 0; f.scared = 0; });
+  const rows = []; for (let k = 0; k < RUNS; k++) { await fresh(); await setup(seed); await p.waitForTimeout(600); await p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(1.5, 0.6, 1.2); f.fatigue = 0; f.scared = 0; });
     const id = await place('pot', 0.6, 0.4); const r = await sim(240, id); rows.push(r); }
   const went = rows.filter((r) => r.touch != null), avg = (a) => (a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : null);
   table[type] = { noticed: rows.filter((r) => r.notice != null).length, watchedFirst: rows.filter((r) => r.watch).length, investigated: went.length, secsToTouch: avg(went.map((r) => r.touch)), awareMs: avg(rows.map((r) => r.awareMs)), pausedHalfway: rows.filter((r) => r.phases.includes('pause')).length, distracted: rows.filter((r) => r.thoughts.some((t) => /^Distracted/.test(t))).length };

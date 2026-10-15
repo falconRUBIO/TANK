@@ -3,9 +3,9 @@
 // Every meal a seahorse eats is counted as taken from its stem (still holding on) or after letting go to chase. Food is never steered
 // towards a seahorse by the drill; the food moves only as it does in the game.
 // Needs the solo game on 8123.  node tools/seahorse_feeding.mjs [feeds=14] [seed=1]
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const FEEDS = +(process.argv[2] || 14), SEED = +(process.argv[3] || 1);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 430, height: 932 } })).newPage(); const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 await p.goto(`http://localhost:${process.env.PORT || 8123}/?q=0&dev=1&tod=noon`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');

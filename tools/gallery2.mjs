@@ -1,7 +1,7 @@
 // Big look at every species at side and three-quarter view. OUT=file node tools/gallery2.mjs [ids...]
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/gallery2.png', only = process.argv.slice(2);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 1000, height: 800 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 await p.goto(base + '/?q=1&dev=1'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 });
 const imgs = await p.evaluate(async (only) => { const v = await import('/src/voxel.js'), sp = await import('/src/species.js'); const o = []; for (const k of Object.keys(sp.SPECIES)) { if (only.length && !only.includes(k)) continue; const f = new v.Fish(sp.SPECIES[k], 3); const make = (yaw) => { const c = f.frame({ yaw }); const d = document.createElement('canvas'); d.width = d.height = 300; const g = d.getContext('2d'); g.imageSmoothingEnabled = false; const k2 = Math.max(1, Math.floor(290 / Math.max(c.width, c.height))); g.drawImage(c, (300 - c.width * k2) / 2, (300 - c.height * k2) / 2, c.width * k2, c.height * k2); return d.toDataURL(); }; o.push([k, sp.SPECIES[k].label, make(0), make(0.7)]); } return o; }, only);

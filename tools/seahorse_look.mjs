@@ -1,9 +1,9 @@
 // The seahorse, close up for art review: four of them side by side with different colours, each frozen in a tail pose
 // (swimming, resting curl, tight spiral, wrapped round a stem). OUT=dir node tools/seahorse_look.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const OUT = process.env.OUT || '/tmp/seahorse_look'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
 await p.goto('http://localhost:8123/?q=2&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(1500);

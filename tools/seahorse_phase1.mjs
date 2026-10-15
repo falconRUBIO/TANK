@@ -10,9 +10,9 @@
 //   sync      a seahorse's compact state carries its state, eyes, colour, glow and strikes, and each strike plays once on another phone
 //   perf      the background grip search stays inside its time budget each frame
 // Needs the solo game on 8123.  node tools/seahorse_phase1.mjs [section,section...]
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const only = process.argv[2] ? new Set(process.argv[2].split(',')) : null, run = (k) => !only || only.has(k);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = []; let fails = 0, ctx, p;
 const open = async () => { await ctx?.close(); ctx = await b.newContext({ viewport: { width: 430, height: 932 } }); p = await ctx.newPage();      // a new browser profile: nothing kept from before
   p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /error/.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)); }); };

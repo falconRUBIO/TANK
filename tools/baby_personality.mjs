@@ -2,8 +2,8 @@
 // three different broods): the explorer travels furthest, looks at the most decorations and never holds on for long; the plant-lover holds
 // on to plants most and keeps going back to its own stem; the social one swims along with its family, and not just because the father rests
 // on a plant. Needs the solo game on 8123.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 430, height: 932 } })).newPage(); const errors = []; let fails = 0;
 p.on('pageerror', (e) => errors.push(e.message));
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };

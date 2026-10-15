@@ -1,0 +1,39 @@
+# Every night: the full set of drills (an hour or two), and a look at last night's backup in the private backup repository.
+# The backup check needs a repository secret BACKUP_READ_TOKEN: a fine-grained GitHub token with read-only Contents access to falconRUBIO/ourtank-data
+# and nothing else. Without it, that job says so and is skipped. (Scheduled runs only happen from the repository's default branch.)
+name: Nightly
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: bash tools/check_all.sh
+        env:
+          FULL: '1'
+          PW_MODULE: ${{ github.workspace }}/node_modules/playwright/index.mjs
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HAS_TOKEN: ${{ secrets.BACKUP_READ_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: env.HAS_TOKEN != 'true'
+        run: echo "::warning::No BACKUP_READ_TOKEN secret, so last night's backup was not checked."
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/checkout@v4
+        with: { repository: falconRUBIO/ourtank-data, token: '${{ secrets.BACKUP_READ_TOKEN }}', path: ourtank-data }
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - if: env.HAS_TOKEN == 'true'
+        run: node --disable-warning=ExperimentalWarning tools/backup_check.mjs ourtank-data

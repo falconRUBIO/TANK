@@ -1,10 +1,10 @@
 // The server forgets everything while two phones share a tank, and both phones open the app again. They must land back in ONE tank with the old code,
 // each with their own octopus, nobody offered another one, and both in each other's crew. Needs the dev server: PORT=8124 DB=/tmp/x.db DEV=1 node server/server.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/forget', base = 'http://localhost:8124', DB = process.env.DB || '/tmp/audit.db'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const modalTitle = (p) => p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? '');

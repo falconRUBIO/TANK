@@ -1,9 +1,9 @@
 // Pictures of the sand banks: the empty tank (no decorations, three octopuses), and the same tank decorated on all three levels.
 // Needs the solo game on 8123. node tools/shots_terrain.mjs OUTDIR [tod]
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const out = process.argv[2] || '/tmp/terrain_shots', tod = process.argv[3] || 'afternoon'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
 await p.goto(`http://localhost:8123/?q=1&dev=1&tod=${tod}`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);

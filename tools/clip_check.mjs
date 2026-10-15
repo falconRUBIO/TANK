@@ -3,9 +3,9 @@
 // and against every decoration's voxels. A voxel counts as clipping when it is more than half inside the sand or more than half inside a decoration's voxel.
 // Things an animal does on purpose are counted apart: an octopus buried in the sand, tucked under its own coconut shell, or wrapping its arms round something it holds.
 // Needs the solo game on 8123 (or PORT). node tools/clip_check.mjs [minutes]; SEA=1 a tank of seahorses; DENSE=1 with SEA, a densely planted tank of 18 decorations
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const MIN = +(process.argv[2] || 5);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errors = []; let fails = 0; p.on('pageerror', (e) => errors.push(e.message));
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto(`http://localhost:${process.env.PORT || 8123}/?q=0&dev=1&tod=afternoon`); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');

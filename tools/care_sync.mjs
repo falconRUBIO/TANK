@@ -1,5 +1,5 @@
 // The Care menu across phones: each phone lists the animals it feeds and says who feeds the rest; one caretaker's feeding, wiping or water change updates another's open Care by itself. Starts its own server. node tools/care_sync.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import { start } from '../server/server.mjs';
 const S = await start({ port: 0, dbPath: ':memory:', limits: { userPerHour: 500, tankPerHour: 500, joinPerMin: 500, actionsPer10s: 500 } }), base = `http://localhost:${S.port}`;
 const call = async (p, body, tok) => (await fetch(base + p, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: body ? JSON.stringify(body) : undefined })).json();
@@ -10,7 +10,7 @@ const a = await mk('Alex'), b = await mk('Blair'), home = await call('/api/tanks
     { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, hunger: 0.6, sex: 'm', owner: a.userId, ownerName: 'Alex' },
     { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born: now - 9 * D, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: a.userId }];
   S.db.prepare('UPDATE tanks SET world=?, sim_ts=? WHERE id=?').run(JSON.stringify(w), now, home.id); }
-const br = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] }); const errs = []; let fails = 0;
+const br = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] }); const errs = []; let fails = 0;
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const phone = async (u) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 } }); await ctx.addInitScript((s) => { localStorage.setItem('ourtank.session', JSON.stringify(s)); }, { token: u.token, userId: u.userId, named: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(e.message)); await p.goto(base + '/?tod=noon'); await p.waitForFunction(() => window.__game?.state && window.__game.mode === 'net', null, { timeout: 120000 }); await p.waitForTimeout(1500); return p; };
 const A = await phone(a), B = await phone(b);

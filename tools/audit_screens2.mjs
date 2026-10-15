@@ -1,8 +1,8 @@
 // A second walk through screens the first one skips. OUT=dir node tools/audit_screens2.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const W = +(process.env.W || 390), H = +(process.env.H || 760), out = process.env.OUT || '/tmp/audit2'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: W, height: H } })).newPage(); const errors = [];
 p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const shot = async (n, ms = 1200) => { await p.waitForTimeout(ms); await p.screenshot({ path: `${out}/${n}.png` }); };

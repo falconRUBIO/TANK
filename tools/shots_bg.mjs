@@ -1,6 +1,6 @@
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const out = process.env.OUT || '.';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 for (const tod of ['afternoon']) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 1 }); const p = await ctx.newPage();
   p.on('pageerror', (e) => console.log('pageerror:', e.message));

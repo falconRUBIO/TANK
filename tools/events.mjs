@@ -1,6 +1,6 @@
 // Checks the pop-ups and small features that the main playthrough does not reach: level-up reveal, welcome back, photo.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', (e) => errs.push(e.message));
 let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };

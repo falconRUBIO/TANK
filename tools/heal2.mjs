@@ -2,7 +2,7 @@
 //  1. a phone whose ordinary storage was wiped but whose second store survived
 //  2. a phone that lost its sign-in but still has the tank copy, using its recovery key
 //  3. a friend's brand-new phone with nothing, joining with the tank code
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import * as R from '../web/src/game/rules.js';
@@ -18,7 +18,7 @@ const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags
 ['goldfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: null })));
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token);
 const tank = await api('/api/import', { app: 'our-tank', tank: { name: 'Hard' }, world }, A.token); await api('/api/join', { code: tank.code }, B.token);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const phone = async (u, extra = []) => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('pageerror', e.message)); await p.goto(base + '/?q=1&dev=1'); if (u) { await p.evaluate((s) => { localStorage.setItem('ourtank.session', JSON.stringify(s)); }, { token: u.token, userId: u.userId, recoveryKey: u.recoveryKey }); await p.reload(); await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 180000 }); } return p; };
 const pa = await phone(A), pb = await phone(B);
 await new Promise((r) => setTimeout(r, 7000));                      // let both phones save their copies

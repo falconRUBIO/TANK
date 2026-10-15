@@ -1,9 +1,9 @@
 // The people screens: making your person, the tank code and recovery key, the octopus pick, the Crew tab with two caretakers, and editing your look.
 // Needs the dev server: PORT=8124 DB=/tmp/people.db DEV=1 node server/server.mjs ; then OUT=dir node tools/shots_people.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/people', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = [];
 const mk = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2 }); await ctx.addInitScript(() => { setInterval(() => { const t = document.querySelector('#modal.on h2, #modal.on .title')?.textContent ?? ''; if (/GIFT|LEVEL/.test(t)) document.querySelector('#modal.on #mok')?.click(); }, 300); }); const p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const shot = async (pg, n, ms = 800) => { await pg.waitForTimeout(ms); await pg.screenshot({ path: `${out}/${n}.png` }); };

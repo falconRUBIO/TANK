@@ -1,5 +1,5 @@
 // A friend's first minute: opens the invite link on a phone, joins, and ends up in the tank. Screenshots at each step. Needs a server on :8124 (DEV=1).
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 import * as R from '../web/src/game/rules.js';
 const base = 'http://localhost:8124', out = process.env.OUT || '/tmp/friend'; fs.mkdirSync(out, { recursive: true });
@@ -8,7 +8,7 @@ const av = { skin: '#e8b890', hair: '#5a3ad0', hat: null };
 const A = await api('/api/users', { name: 'Ana', avatar: av }); const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags.tut = 5; world.level = 3; world.shells = 40;
 ['goldfish', 'neon'].forEach((sp, i) => world.fish.push(R.ensureFish({ id: 'f' + (i + 1), name: ['Coral', 'Spark'][i], species: sp, seed: 3 + i, born: now - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: A.userId })));
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token); const tank = await api('/api/import', { app: 'our-tank', tank: { name: 'The Reef' }, world }, A.token);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const t0 = Date.now(), errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const shot = async (n, ms = 700) => { await p.waitForTimeout(ms); await p.screenshot({ path: `${out}/${n}.png` }); console.log(String(Math.round((Date.now() - t0) / 1000)).padStart(3) + 's', n); };
 await p.goto(base + '/join/' + tank.code + '?q=1'); await p.waitForSelector('#welcome.on', { timeout: 60000 }); await shot('1_join_link', 1500);

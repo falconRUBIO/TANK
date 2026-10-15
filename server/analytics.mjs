@@ -5,7 +5,7 @@ export const CARE = new Set(['fish_fed', 'glass_cleaned', 'water_changed']);
 export const FISH = new Set(['fish_played_with', 'fish_inspected']);
 export const DECOR = new Set(['decoration_placed']);
 export const SOCIAL = new Set(['nudge_sent', 'bottle_sent', 'bottle_opened', 'friend_thanked', 'friend_invited', 'friend_joined']);
-export const CLIENT_EVENTS = new Set(['fish_inspected', 'journal_opened', 'friend_invited', 'book_opened', 'hidden', 'visible']);
+export const CLIENT_EVENTS = new Set(['fish_inspected', 'journal_opened', 'friend_invited', 'book_opened', 'hidden', 'visible', 'animal_lost']);
 export const ALL_EVENTS = ['session_started', 'session_ended', 'fish_fed', 'glass_cleaned', 'water_changed', 'fish_inspected', 'fish_played_with', 'decoration_placed', 'shells_earned', 'shells_spent', 'gift_collected', 'visitor_greeted', 'fish_arrived', 'egg_hatched', 'journal_opened', 'book_opened', 'daily_wish_completed', 'discovery_unlocked', 'friend_invited', 'friend_joined', 'nudge_sent', 'bottle_sent', 'bottle_opened', 'friend_thanked', 'fish_died', 'fish_laid_to_rest', 'level_up', 'fish_milestone', 'fish_wish_granted', 'plants_trimmed', 'perfect_day', 'fish_tired'];
 
 export function makeAnalytics(db) {

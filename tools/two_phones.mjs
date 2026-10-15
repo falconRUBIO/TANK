@@ -1,10 +1,10 @@
 // Two phones side by side: the creator makes a tank and picks an octopus, a friend joins and must be offered an octopus of their own,
 // both phones must then show the same octopuses in the same places, and nothing pops up while a new octopus drops in.
 // Needs the dev server: PORT=8124 DB=/tmp/two.db DEV=1 node server/server.mjs ; OUT=dir node tools/two_phones.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/two', base = `http://localhost:${process.env.PORT || 8124}`; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });      // two phones, both in the foreground
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'] });      // two phones, both in the foreground
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 }, ...(process.env.SMALL ? { deviceScaleFactor: 0.5 } : {}) })).newPage(); /* SMALL=1: draw at half resolution, so a machine drawing without a graphics chip keeps up a usable frame rate */ if (process.env.NOLOG) await p.addInitScript(() => { window.__noLog = true; }); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const shot = (p, n) => p.screenshot({ path: `${out}/${n}.png` });

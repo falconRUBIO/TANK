@@ -1,8 +1,8 @@
 // Onboarding and recovery screens against the dev server. PORT=8124 DB=/tmp/audit.db DEV=1 node server/server.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const out = process.env.OUT || '/tmp/audit_onb', base = 'http://localhost:8124'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const mk = async () => (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage();
 const p = await mk(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 const shot = async (pg, n) => { await pg.waitForTimeout(700); await pg.screenshot({ path: `${out}/${n}.png` }); };

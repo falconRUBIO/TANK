@@ -275,6 +275,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (m.t === 'track') {
           if (!CLIENT_EVENTS.has(m.e) || !lim.hit('tr:' + ws.userId, 60, 60e3)) return;
           const now = Date.now(); if (m.e === 'hidden') { if (ws.visSince) { ws.visMs = (ws.visMs ?? 0) + now - ws.visSince; ws.visSince = null; } return; } if (m.e === 'visible') { ws.visSince ??= now; return; }
+          if (m.e === 'animal_lost') console.warn('client: an animal had a broken position and was put back', ws.tankId);
           return an.record(ws.userId, ws.tankId, m.e);
         }
         if (m.t === 'chat') {

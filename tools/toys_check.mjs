@@ -1,10 +1,10 @@
 // The Toy box: a ball, bubbles and the light spot in a tank with fish, an octopus and a seahorse. The ball sinks, bounces and gets nosed and
 // batted; bubbles rise and get popped and snapped at; the light is followed and pounced on; plays are counted and animals learn. Needs the solo game on 8123.
 // node tools/toys_check.mjs OUTDIR
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const out = process.argv[2] || '/tmp/toys'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage(); const errors = []; let fails = 0;
 p.on('pageerror', (e) => errors.push(e.message));
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };

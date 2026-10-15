@@ -1,8 +1,8 @@
 // Makes the home-screen icons from the game's own octopus sprite: a coral octopus over lit water and sand.
 // Needs the server on 8124. MODE=try OUT=file shows angle choices; without MODE it writes web/icon-512.png, web/icon-192.png and web/apple-touch-icon.png.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 1100, height: 600 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
 await p.goto('http://localhost:8124/privacy.html');
 const yaw = +(process.env.YAW ?? -0.785), pitch = +(process.env.PITCH ?? 0);

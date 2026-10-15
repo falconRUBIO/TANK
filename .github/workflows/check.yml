@@ -1,0 +1,19 @@
+# Quick check on every push and pull request: the rule and server tests, real saved tanks on two phones, the octopus den and rest, the seahorses.
+# A red check here means: do not deploy. (With Render's Auto-Deploy set to "After CI checks pass", a red check holds the deploy back.)
+name: Quick check
+on:
+  push:
+  pull_request:
+jobs:
+  quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: bash tools/check_all.sh
+        env:
+          PW_MODULE: ${{ github.workspace }}/node_modules/playwright/index.mjs

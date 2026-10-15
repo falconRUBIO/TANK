@@ -1,8 +1,8 @@
 // The sky events: full moon, new moon, spawning night, rain. OUT=dir node tools/shots_sky.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/sky'; fs.mkdirSync(out, { recursive: true });
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const errors = [];
 for (const [name, tod, sky] of [['fullmoon', 'night', 'fullmoon'], ['darkmoon', 'night', 'darkmoon'], ['spawn', 'night', 'spawn'], ['rain', 'afternoon', 'rain']]) {
   const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });

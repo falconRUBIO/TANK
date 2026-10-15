@@ -1038,6 +1038,7 @@ function netSync(dt, now) {
   const t = performance.now(), real = Math.min(1, Math.max(dt, (t - (netSync.last ?? t)) / 1000)), k = 1 - Math.exp(-real * 14); netSync.last = t;      // catch up by the time that really passed, even after a slow frame
   for (const f of fishes.list) {
     const e = netFish.get(f.fid); if (!e || (play && play.fish === f)) continue;
+    if (!Number.isFinite(e.x + e.y + e.z)) continue;      // a broken position from the lead phone is never copied: this phone's own animal carries on
     const quiet = t - (e.seen ?? e.at);      // how long since the lead phone was last heard from
     if (quiet > 20000) continue;      // long silent (it left, or its phone is asleep): this phone's own animals carry on
     if (quiet > 3000) { const kq = 1 - Math.exp(-real * 0.6); f.pos.x += (e.x - f.pos.x) * kq; f.pos.y += (e.y - f.pos.y) * kq; f.pos.z += (e.z - f.pos.z) * kq; f.group.position.copy(f.pos); continue; }      // a short silence (a busy or briefly hidden lead phone): each animal stays about where it was last seen, still moving in its own way, so it has not wandered off when the news comes back
@@ -1324,6 +1325,7 @@ async function boot() {
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
+Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      // what an octopus learns, kept with the tank fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);

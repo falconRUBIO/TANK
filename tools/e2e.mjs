@@ -1,7 +1,7 @@
 // End-to-end: real browser sessions create/join one tank over the live server.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const base = process.env.BASE || 'http://localhost:8124', out = process.env.OUT || '.';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const mk = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('pageerror:', e.message)); return p; };
 const step = (m) => console.log('•', m);
 const A = await mk(), B = await mk(), C = await mk(), D = await mk();

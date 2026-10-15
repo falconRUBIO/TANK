@@ -1,5 +1,5 @@
 // The server loses all its data while two phones are playing: do both phones get the same tank back? (starts its own server on 8124)
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 const base = 'http://localhost:8124'; let srv;
@@ -10,7 +10,7 @@ await start('/tmp/heal1.db');
 const av = { skin: '#e8b890', hair: '#5a3ad0', hat: null };
 const A = await api('/api/users', { name: 'Ana', avatar: av }), B = await api('/api/users', { name: 'Ben', avatar: av });
 const tank = await api('/api/tanks', { name: 'Heal' }, A.token); await api('/api/join', { code: tank.code }, B.token);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const open = async (u) => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); await ctx.addInitScript(([s, first]) => { if (first) localStorage.setItem('ourtank.session', JSON.stringify(s)); }, [{ token: u.token, userId: u.userId }, true]); const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('pageerror', e.message)); await p.goto(base + '/?q=1&dev=1'); await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 180000 }); return p; };
 const pa = await open(A); const pb = await open(B);
 await pa.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'tut', step: 5 }); await g.dispatch({ t: 'firstFish', species: 'goldfish', name: 'Coral', seed: 4 }); });

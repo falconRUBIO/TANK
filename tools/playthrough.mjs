@@ -1,7 +1,7 @@
 // Plays the whole solo game through the real interface: tutorial, feeding, shopping, placing, adopting, levelling.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '.';
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage();
 const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/404|Failed to load/.test(m.text())) errors.push(m.text().slice(0, 200)); });
 let fails = 0; const ck = (name, ok, extra = '') => { console.log(ok ? '  ✓' : '  ✗', name, extra); if (!ok) fails++; };

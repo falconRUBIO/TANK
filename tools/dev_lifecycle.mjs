@@ -2,7 +2,7 @@
 // aquarium; the panel's buttons take a seahorse pair from pairing to THEY'RE READY on the game's own rules; both phones choose at once and
 // exactly one baby stays; the others leave on each phone once, not again after a reload; leaving the test puts the phone back in its own,
 // untouched tank. Starts its own server (temporary database). node tools/dev_lifecycle.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import { start } from '../server/server.mjs';
 import fs from 'node:fs';
 const OUT = process.env.OUT || '/tmp/devlife'; fs.mkdirSync(OUT, { recursive: true });
@@ -13,7 +13,7 @@ const a = await mk('Alex'), b = await mk('Blair'), plain = await mk('Pat'); cons
 { const row = S.db.prepare('SELECT world FROM tanks WHERE id=?').get(home.id), w = JSON.parse(row.world); w.flags = { ...w.flags, tut: 5, firsts: { [a.userId]: true, [b.userId]: true, [plain.userId]: true } }; w.fish = [{ id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: a.userId }]; w.shells = 42; S.db.prepare('UPDATE tanks SET world=? WHERE id=?').run(JSON.stringify(w), home.id); }      // a lived-in real tank
 DEVS.push(a.userId, b.userId);
 const realBefore = await call('/api/export', null, a.token);
-const br = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] }); let fails = 0; const errors = [];
+const br = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] }); let fails = 0; const errors = [];
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const phone = async (u) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 } }); await ctx.addInitScript((s) => { try { if (!localStorage.getItem('ourtank.session')) localStorage.setItem('ourtank.session', JSON.stringify(s)); localStorage.setItem('ourtank.tut', '9'); } catch {} }, { token: u.token, userId: u.userId, named: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); return p; };
 const until = async (p, fn, secs = 120, arg) => { for (let i = 0; i < secs * 2; i++) { const v = await p.evaluate(fn, arg).catch(() => null); if (v) return v; await p.waitForTimeout(500); } return null; };

@@ -1,5 +1,5 @@
 // Two phones in one tank: do they see the same fish? PORT=8124 DB=/tmp/sync.db DEV=1 node server/server.mjs
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import * as R from '../web/src/game/rules.js';
 const base = 'http://localhost:8124';
 const api = async (path, body, token) => (await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) })).json();
@@ -11,7 +11,7 @@ const now = Date.now(), world = R.newWorld(now, 3, { empty: true }); world.flags
 const bk = { app: 'our-tank', tank: { name: 'Sync' }, world };
 await api('/api/profile', { name: 'Ana', avatar: av }, A.token);
 const tank = await api('/api/import', bk, A.token); await api('/api/join', { code: tank.code }, B.token);
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const open = async (u) => { const ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); await ctx.addInitScript((s) => localStorage.setItem('ourtank.session', JSON.stringify(s)), { token: u.token, userId: u.userId }); const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('pageerror', e.message)); await p.goto(base + '/?q=1&dev=1'); await p.waitForFunction(() => window.__game?.state && window.__fishes, null, { timeout: 180000 }); return p; };
 const pa = await open(A); await new Promise((r) => setTimeout(r, 1500)); const pb = await open(B);
 await new Promise((r) => setTimeout(r, 8000));
