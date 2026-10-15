@@ -36,10 +36,14 @@ const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Gloomy
 const emoteTex = {};
 function emoteTexture(mood) {
   if (emoteTex[mood]) return emoteTex[mood];
-  const [glyph, bg] = EMOTE[mood], c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d');
-  g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.arc(24, 21, 19, 0, 6.3); g.fill(); g.fillRect(14, 34, 8, 8); g.fillStyle = bg; g.globalAlpha = 0.1; g.fillRect(0, 0, 48, 48); g.globalAlpha = 1;
-  g.font = '24px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, 24, 22);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return (emoteTex[mood] = t);
+  // a Liquid Glass bubble: clear, faintly frosted, a bright rim and a soft highlight, so the mood reads without a white blob over the tank
+  const [glyph] = EMOTE[mood], c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d'), bub = (x, y, r) => {
+    const f = g.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r); f.addColorStop(0, 'rgba(255,255,255,.30)'); f.addColorStop(0.7, 'rgba(220,240,255,.12)'); f.addColorStop(1, 'rgba(200,230,255,.22)');
+    g.fillStyle = f; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill(); g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.55)'; g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = Math.max(1.5, r * 0.09); g.lineCap = 'round'; g.beginPath(); g.arc(x, y, r * 0.78, 3.6, 4.5); g.stroke(); };
+  bub(48, 42, 34); bub(26, 82, 6); bub(16, 92, 3.5);      // the bubble, and two little ones trailing down to the animal
+  g.font = '40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.globalAlpha = 0.88; g.fillText(glyph, 48, 44); g.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (emoteTex[mood] = t);
 }
 const r2 = (v) => Math.round(v * 100) / 100;
 const CRAB = 1.15;                // a crab is a meal-sized thing next to an octopus, not as big as its head
