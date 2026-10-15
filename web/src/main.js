@@ -940,7 +940,7 @@ game.on('surprise', (x) => { if (!x?.fish) return; setTimeout(() => ui?.surprise
 game.on('teamGlow', (text) => { setTimeout(() => ui?.together(String(text ?? 'You both looked after the tank today.').replace(/ It glows tonight\.$/, ' The tank glows tonight.')), 400); glowT = 0; });      // the day's surprise: a close look at whoever it happened to
 game.on('discovery', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, shells: 2 }); spotlightFish(id, 3000, 600); } });
 game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dropCrabAt(x, fish); ui?.toast(`${nameOf(by)} fed ${game.state.fish.find((f) => f.id === fish)?.name ?? 'their octopus'} a crab`); } else { fishes.drop(x, 7, food); ui?.toast(food === 'mysis' ? `${nameOf(by)} fed ${dropWord('mysis').replace('mysis shrimp for ', '')} mysis shrimp` : `${nameOf(by)} fed the fish`); } sfx('splash'); });
-game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
+game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (a.type === 'visitor' || (a.type === 'bottle' && !/found a bottle/.test(a.text ?? ''))) ui?.toast(a.text); }      /* (the sender hears from their own phone that it was found) */ ui?.refresh(); });
 game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
 fishes.onEat = () => { sfx('eat'); }; fishes.onDance = () => { if (!document.hidden) sfx('click'); };
