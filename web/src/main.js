@@ -1,11 +1,12 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
+import { Toys } from './w3/toys.js';
 import { SEAHORSE_GRIP_R } from './species.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
 import { DecorMgr } from './w3/decormgr.js';
@@ -359,7 +360,11 @@ const bottleSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bottleTex, tra
 const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xa8f0ff })); bottleGlow.renderOrder = 5; bottleGlow.visible = false; scene.add(bottleGlow);
 stg.hideForDepth.push(bottleSp, bottleGlow);
 const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
-let bottleId = null; const sentBottles = new Map(); const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf08a3a, clown: 0xf0703a, blue: 0x8a6cf0, platy: 0xf0a040 };
+let bottleId = null; const sentBottles = new Map();
+const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys;
+toys.onSound = (k) => sfx({ splash: 'bubble', bubble: 'bubble', bonk: 'tap', pop: 'click', pounce: 'tap' }[k] ?? 'tap');
+toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fish: ids }).catch(() => null); };      // who joined in learns the toy a little more
+function armToy(k) { const T = TOYS[k]; if (!T) return; ui.open('tank'); toys.armed = k; ui.toast(T.how, 3200); } const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf08a3a, clown: 0xf0703a, blue: 0x8a6cf0, platy: 0xf0a040 };
 function syncExtras() {
   const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
   // a bottle from a friend: it drops in at the surface with a splash, sinks slowly, and comes to rest tipped over on the sand, glinting now and then
@@ -625,6 +630,8 @@ function showCard(f) {
   const tab = (game.profTab ??= 'over'), T = (k, l) => `<button class="tb ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`, row = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : '');
   const famBar = `<div class="famb">${FAMILIAR.map((_, i) => `<i class="${i < fm.i ? 'f' : i === fm.i ? 'c' : ''}">${i === fm.i ? `<b style="width:${Math.round(Math.max(0.12, fm.k) * 100)}%"></b>` : ''}</i>`).join('')}</div>`;
   const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
+  const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
+    return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
   const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
@@ -647,7 +654,7 @@ function showCard(f) {
     if (par.length) out.push(`Parents: ${par.join(' & ')}`); if (rec.mate && nm(rec.mate)) out.push(`Partner: ${nm(rec.mate)}`); if (sib.length) out.push(`Siblings: ${sib.slice(0, 4).join(', ')}${sib.length > 4 ? ` +${sib.length - 4}` : ''}`); if (kidsL.length) out.push(`Young: ${kidsL.length}${kidsL.some((k) => !k.alive) ? ` (${kidsL.filter((k) => k.alive).length} still here)` : ''}`);
     return out.length ? esc(out.join(' · ')) : null; })();
   const fod = factOfDay(rec.species), factLine = fod ? `<div class="dyk mini" role="button" tabindex="0" data-tab="pers"><small>DID YOU KNOW?</small><p>${esc(fod.text)}</p></div>` : '';      // the day's fact, also on the first tab
-  const over = `${path}${trustRow}${bondTile}${famLine}${factLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
+  const over = `${path}${trustRow}${bondTile}${toysTile}${famLine}${factLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
@@ -690,6 +697,9 @@ function showCard(f) {
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) f.poseHz = 60;      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
+  if (toys.armed && !placing && !feedMode && !cleanMode) { const k = toys.armed, ray = rayFrom(ev).ray;      // a toy from the Toy box: the ball is tossed in, bubbles rise from the sand, the light is held and dragged
+    if (k === 'ball') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { toys.toss(hit.x, 0.3 + Math.random() * 0.8); toys.armed = null; } return; }
+    const at = toys.sandHit(ray); if (!at) return; if (k === 'bubbles') { toys.blow(at); toys.armed = null; } else if (k === 'light') { toys.lightOn(at); lightHeld = true; canvas.setPointerCapture?.(ev.pointerId); } return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && !pickFish(ev)) { const egg = eggHit(ev); if (egg) { const fx = eggFocusOf(egg); if (focus === fx) { cardOpen = fx.fid; showEggCard(fx); } else setFocus(fx); return; } }
@@ -745,8 +755,9 @@ function lureRelease() { for (const f of fishes.list) { octoPlayed.delete(f); co
 let dragging = false;
 // the finger picks a spot on the sand itself, on whichever level it touches (front floor, terrace or the back bank)
 function movePlace(ev) { const r = rayFrom(ev).ray, h = raySand(r.origin, r.direction); if (h) { decor.move(h.x, h.z); updatePlaceOk(); } else if (r.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
-canvas.addEventListener('pointermove', (ev) => { if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
+canvas.addEventListener('pointermove', (ev) => { if (lightHeld) { const at = toys.sandHit(rayFrom(ev).ray); if (at) toys.moveLight(at); return; } if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', (ev) => {
+  if (lightHeld) { lightHeld = false; toys.lightOff(); toys.armed = null; }
   dragging = false; const c = tapCand; tapCand = null;
   if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) { if (c.decor) decorMenu(c.decor); else setFocus(c.f === focus ? null : c.f); }
   if (lure?.on) { lureEnd = performance.now(); lureRelease(); } lure = null;
@@ -1085,7 +1096,7 @@ function frameBody(now) {
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();
-  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
+  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); toys.update(dt, t); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
@@ -1236,7 +1247,7 @@ async function boot() {
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
-    act: (a) => ({ feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
+    act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },

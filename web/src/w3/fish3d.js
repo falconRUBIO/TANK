@@ -46,7 +46,7 @@ import { fishBoost, voxShading, swayTime } from './voxshade.js';
 export { fishBoost };
 voxShading(mat);
 const dummy = new THREE.Matrix4();
-const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3(), _o = new THREE.Vector3();
+const _p1 = new THREE.Vector3(), _p2 = new THREE.Vector3(), _o = new THREE.Vector3(), _tw = new THREE.Vector3();
 const col = new THREE.Color();
 const h3 = (x, y, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 1274126177); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 const vnoise = (x, y, z) => { const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), fx = x - xi, fy = y - yi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz), L = (a, b, t) => a + (b - a) * t;
@@ -309,11 +309,14 @@ export class Fish3D {
   updateHold(dt, S, kind) {
     const sc = this.scale || 0.06, rig = this.rig; if (!rig) return;
     let G = this.rs.grab; if (!G || G.kind !== kind) {
-      const ang = kind === 'jar' ? Math.atan2(this.rs.jz ?? 0, (this.rs.jx ?? 14) - 3) : 0; let best = 0, bd = 9; rig.arms.forEach((a, i) => { const d = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (d < bd) { bd = d; best = i; } });
+      const ang = kind === 'jar' ? Math.atan2(this.rs.jz ?? 0, (this.rs.jx ?? 14) - 3) : kind === 'twine' ? (() => { const v = _tw.copy(this.twineWith.pos); this.group.worldToLocal(v); return Math.atan2(v.z, v.x); })() : 0;      let best = 0, bd = 9; rig.arms.forEach((a, i) => { const d = Math.abs(Math.atan2(Math.sin(a.th - ang), Math.cos(a.th - ang))); if (d < bd) { bd = d; best = i; } });      // (for twining, the arm on the side facing its partner)
       const p0 = rig.pose(rig.arms[best], 1, { rest: 1, crawl: 0, sq: 0, ph: 0 }, [0, 0, 0]); G = this.rs.grab = { kind, arm: best, n1: (best + 1) % 8, n2: (best + 7) % 8, p: [...p0], p0: [...p0], w: 0, t: 0, a0: ang };
     }
     G.t += dt; G.w = Math.min(1, G.t / 0.5); let T;
     if (kind === 'carry') T = [9, -7.3, 0.4 + Math.sin(G.t * 2) * 0.3];
+    else if (kind === 'twine') {      // its partner close by: one arm reaches out to meet one of theirs, the tip curling slowly round and round where they touch
+      const o = this.twineWith, v = _tw.copy(o.pos).add(this.pos).multiplyScalar(0.5); this.group.worldToLocal(v); v.multiplyScalar(1 / sc); const L = v.length(), m = Math.min(1, 15 / Math.max(1, L)); v.multiplyScalar(m);
+      const c = G.t * 1.6 + (this.fid < o.fid ? 0 : Math.PI); T = [v.x + Math.cos(c) * 1.6, Math.max(-7.5, v.y) + Math.sin(c * 0.7) * 1.2, v.z + Math.sin(c) * 1.6]; G.w = Math.min(1, G.t / 0.9); }
     else { const R = (this.rs.jr ?? 12) * 0.92, a = Math.PI + G.a0 + Math.sin(G.t * 1.7) * 0.8; G.twist = Math.sin(G.t * 1.7) * 0.8; T = [(this.rs.jx ?? 14) + Math.cos(a) * R * 0.8, (1.25 - this.pos.y) / sc, (this.rs.jz ?? 0) + Math.sin(a) * R * 0.8]; G.w = Math.min(1, G.t / 0.8); }
     const tip = rig.pose(rig.arms[G.arm], 1, this.rs, this.rp), k = Math.min(1, dt * 6); for (let i = 0; i < 3; i++) G.p[i] += (T[i] - tip[i]) * k;
     if (kind === 'carry' && this.carryMesh) { this.carryMesh.visible = true; this.carryMesh.position.set(tip[0] * sc, tip[1] * sc, tip[2] * sc); }       // the shell sits in the arm
@@ -899,7 +902,7 @@ export class Fish3D {
       to.multiplyScalar(Math.min(2.4, 0.5 + d * 0.9) / d); this.vel.lerp(to, Math.min(1, dt * 2.2)); this.restK += (1 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 3);
       this.glassNear += ((1 - Math.max(0, Math.min(1, (d - 0.15) / 2.2))) - this.glassNear) * Math.min(1, dt * 3); if (d < 0.35) this.vel.multiplyScalar(Math.exp(-6 * dt));
     } else this.glassNear *= Math.exp(-dt * 2.5);
-    if (S.s === 'work' && S.mode === 'hunt' && this.hunt) this.updateGrab(dt, S); else if (S.mode === 'carry2' || (S.s === 'work' && S.mode === 'jar' && this.jarAt)) this.updateHold(dt, S, S.mode === 'jar' ? 'jar' : 'carry'); else if (this.rs.grab) { this.rs.grab = null; this.gr = null; }
+    if (S.s === 'work' && S.mode === 'hunt' && this.hunt) this.updateGrab(dt, S); else if (S.mode === 'carry2' || (S.s === 'work' && S.mode === 'jar' && this.jarAt)) this.updateHold(dt, S, S.mode === 'jar' ? 'jar' : 'carry'); else if (this.twineWith && !this.twineWith.dead && (this.twineT = Math.max(0, (this.twineT ?? 0) - dt)) > 0 && Math.hypot(this.twineWith.pos.x - this.pos.x, this.twineWith.pos.z - this.pos.z) < 2.6 && Math.abs(this.twineWith.pos.y - this.pos.y) < 3 && (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect'))) this.updateHold(dt, S, 'twine'); else if (this.rs.grab) { this.rs.grab = null; this.gr = null; }
     if (S.s === 'work') {
       const jar = S.mode === 'jar' ? this.jarAt : S.mode === 'hunt' ? this.hunt : S.mode === 'inspect' ? this.inspect : null;
       this.vel.multiplyScalar(Math.exp(-4 * dt)); this.restK += (0.7 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);

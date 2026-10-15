@@ -635,6 +635,18 @@ export function octoMind(f) {
   return { type: T.id, label: T.label, line: T.line, cur: j(T.cur, 2), bold: j(T.bold, 3), soc: j(T.soc, 4), tidy: j(T.tidy, 5) };
 }
 export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
+// ── Toys ── free, in the Toy box: the ball is there from the start; bubbles and the light spot open up as the tank plays. Each animal learns a toy
+// by playing with it (five goes and it knows it, and has a favourite). Who likes what follows the real animals: fish chase and nose things,
+// an octopus bats and grabs, a seahorse snaps at small drifting things and watches the rest with its eyes.
+export const TOYS = {
+  ball: { label: 'Ball', unlock: 0, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
+  bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them.', fits: ['fish', 'seahorse', 'octopus'] },
+  light: { label: 'Light spot', unlock: 8, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it.', fits: ['fish', 'octopus', 'seahorse'] },
+};
+export const TOY_LEARN = 5;
+export const toyKind = (f) => (f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : 'fish');
+export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.toyPlays ?? 0) >= TOYS[k].unlock);
+export const favToy = (f) => { const e = Object.entries(f?.toys ?? {}).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 ? e[0] : null; };
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
 export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
 export const canPuzzle = (f, now = Date.now()) => isSmart(f) && stageOf(f, now) !== 'baby';
@@ -1142,6 +1154,15 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.shells += g.amount; if (g.kind === 'pearl') events.push({ journal: `${name} found a pearl. ${driftBlame(g)}`, toast: `A pearl! +${g.amount} shells` });
       else events.push({ toast: `${driftBlame(g)} +${g.amount} shells` });
       levelCheck(t, now, events); return ok({ applied: true, delta: g.amount, kind: g.kind });
+    }
+    case 'play': {                                                  // a toy played with: who joined in learns it a little more; the tank's plays open the next toy
+      const toy = TOYS[a.toy] ? a.toy : null; if (!toy || !toysOpen(t).includes(toy)) return fail('NOT_FOUND');
+      const at = (t.flags.toyAt ||= {}), k = uid + ':' + toy; if (now - (at[k] ?? 0) < 45e3) return ok({ applied: false });      // (a play is one go with a toy, not every bounce)
+      at[k] = now; const before = toysOpen(t); t.toyPlays = (t.toyPlays ?? 0) + 1;
+      const ids = [...new Set((Array.isArray(a.fish) ? a.fish : []).map(String))].slice(0, 10), who = ids.map((id) => t.fish.find((f) => f.id === id && !f.dead)).filter((f) => f && TOYS[toy].fits.includes(toyKind(f)));
+      for (const f of who) { f.toys ||= {}; f.toys[toy] = (f.toys[toy] ?? 0) + 1; if (f.toys[toy] === TOY_LEARN) { const line = `${f.name} has learned to play with the ${TOYS[toy].label.toLowerCase()}.`; events.push({ journal: line, story: f.id, text: line, toast: line }); } }
+      for (const n of toysOpen(t).filter((x) => !before.includes(x))) events.push({ journal: `A new toy in the Toy box: ${TOYS[n].label.toLowerCase()}.`, toast: `New toy: ${TOYS[n].label}` });
+      return ok({ n: who.length });
     }
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;

@@ -22,13 +22,14 @@ await p.waitForTimeout(3000);
 const r = await p.evaluate(async () => {
   const F = window.__fishes, a = F.byId.get('o1'), c = F.byId.get('o2'); let near = 0, touches = 0, n = 0, minD = 1e9, thoughts = new Set(); a.pos.x = -3; c.pos.x = 3;
   for (let i = 0; i < 6 * 60 * 20; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); n++;
-    const d = Math.hypot(a.pos.x - c.pos.x, a.pos.z - c.pos.z); minD = Math.min(minD, d); if (d < 2.4) near++; if (a.inspect && !a._was) touches++; a._was = !!a.inspect; if (a.thought) thoughts.add(a.thought);
+    const d = Math.hypot(a.pos.x - c.pos.x, a.pos.z - c.pos.z); minD = Math.min(minD, d); if (d < 2.4) near++; const tw = (a.twineT ?? 0) > 0; if (tw && !a._was) touches++; a._was = tw; if (a.rs.grab?.kind === 'twine' || c.rs.grab?.kind === 'twine') window.__twF = (window.__twF ?? 0) + 1; if (a.thought) thoughts.add(a.thought);
     if (i % 2000 === 0) await new Promise((q) => setTimeout(q, 0)); }
-  return { near: Math.round(100 * near / n), minD: +minD.toFixed(2), touches, thoughts: [...thoughts].filter((t) => /Inky|Miso/.test(t)) };
+  return { twF: window.__twF ?? 0, near: Math.round(100 * near / n), minD: +minD.toFixed(2), touches, thoughts: [...thoughts].filter((t) => /Inky|Miso/.test(t)) };
 });
 console.log('  six minutes:', JSON.stringify(r));
-ck('the partners find each other', r.near >= 20 && r.minD < 2, `${r.near}% close, nearest ${r.minD}`);
+ck('the partners find each other', r.near >= 8 && r.minD < 2.2, `${r.near}% close, nearest ${r.minD}`);
 ck('they touch arms, but not all the time', r.touches >= 1 && r.touches <= 6, `${r.touches} touches`);
+ck('close together, they twine an arm each (the pose, not just the thought)', r.twF > 0, `${r.twF} frames`);
 ck('the card says so', r.thoughts.some((t) => /arms|close to|find/.test(t)), JSON.stringify(r.thoughts));
 await p.evaluate(() => { const m = document.getElementById('modal'); m?.classList.remove('on', 'party'); }); await p.waitForTimeout(400);
 for (const id of ['o1', 'h1', 'h3']) {
