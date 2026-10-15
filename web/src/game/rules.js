@@ -868,6 +868,8 @@ function deliver(t, now, ev) {
     if (o.arrivesAt > now) continue;
     t.orders.splice(t.orders.indexOf(o), 1); const d = SPECIES_DEF[o.species], made = [];
     for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i));
+    if (o.giftFrom) for (const f of made) f.gift = { id: o.id, from: o.giftFrom, fromId: o.giftFromId ?? null, note: o.giftNote ?? null, at: now, ...(o.surprise ? { wrapped: true } : {}) };
+    if (o.giftFrom && o.surprise) { ev.push({ journal: `A gift from ${o.giftFrom} arrived for ${o.ownerName}. It is still wrapped.`, toast: `A gift from ${o.giftFrom} has arrived for ${o.ownerName}!`, giftArrived: { for: o.owner } }); continue; }      // wrapped: nothing says what is inside
     ev.push({ journal: o.giftFrom ? `${made[0].name} the ${d.label.toLowerCase()} has arrived, a gift from ${o.giftFrom} to ${o.ownerName}.` : d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
   }
 }
@@ -1045,7 +1047,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s egg` : 'The egg'} hatches`, '🥚']);
   for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, `${f.name}'s babies are born`, '🌿', f]);
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
-  for (const o of t.orders ?? []) c.push([o.arrivesAt - now, `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, '📦']);
+  for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? `A gift for ${o.ownerName ?? 'a friend'} arrives` : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, o.surprise ? '🎁' : '📦']);
   for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, s.to === 'adult' ? `${f.name} turns 3 days old and becomes an adult` : `${f.name} turns 1 day old and becomes a youngster`, '🌱', f]); }      // (what really happens, not just "grows up")
   for (const f of t.fish) if (f.species === 'octopus' && !f.dead && f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) c.push([PUZZLE_GAP - (now - f.puzzleAt), `${f.name} is ready for a new puzzle`, '🧩', f]);
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
@@ -1055,7 +1057,7 @@ export function forecast(t, now = Date.now(), n = 3) {
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];
-  for (const o of t.orders ?? []) c.push([o.arrivesAt - now, `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`]);
+  for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? 'A gift arrives' : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`]);
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, 'An egg hatches']);
   for (const f of t.fish) { const n = nextStage(f, now); if (n) c.push([n.ms, `${f.name} grows up`]); }
   if (t.drift == null && t.driftAt > now) c.push([t.driftAt - now, 'Something turns up in the tank']);
@@ -1126,8 +1128,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker
-      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(a.species === 'seahorse' && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}), name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
-      events.push({ activity: { type: 'fish', text: to ? `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.` : `${name} ordered a new fish.` }, toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(a.species === 'seahorse' && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}), name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      events.push({ activity: { type: 'fish', text: to ? (a.surprise !== false ? `${name} sent ${to.name} a surprise gift.` : `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.`) : `${name} ordered a new fish.` },      /* (a surprise says nothing of what it is, anywhere, until it is opened) */ toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
     }
@@ -1389,6 +1391,21 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
       t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; t.shells += 4;
       events.push({ activity: { type: 'visitor', text: `${name} greeted a rare visitor.` }, journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
+    }
+    case 'openGift': {                                              // the one it is for unwraps it: everything inside comes out at once (a school, too)
+      const f = t.fish.find((x) => x.id === a.id && x.gift?.wrapped); if (!f) return fail('NOT_FOUND'); if (f.owner !== uid) return fail('NOT_YOURS');
+      const all = t.fish.filter((x) => x.gift?.id === f.gift.id && x.gift.wrapped), d = SPECIES_DEF[f.species];
+      for (const x of all) { delete x.gift.wrapped; x.gift.opened = now; }
+      const what = all.length > 1 ? `${all.length} ${d.label.toLowerCase()}s` : `${f.name} the ${d.label.toLowerCase()}`;
+      events.push({ journal: `${name} opened ${f.gift.from}'s gift: ${what}!`, giftOpened: { to: f.gift.fromId, text: `${name} opened your gift and met ${all.length > 1 ? `the ${d.label.toLowerCase()}s` : f.name}.` } });
+      return ok({ ids: all.map((x) => x.id) });
+    }
+    case 'thankGift': {
+      const f = t.fish.find((x) => x.id === a.id && x.gift && !x.gift.wrapped); if (!f) return fail('NOT_FOUND'); if (f.owner !== uid) return fail('NOT_YOURS');
+      if (f.gift.thanked) return ok({ applied: false });
+      for (const x of t.fish) if (x.gift?.id === f.gift.id) x.gift.thanked = now;
+      events.push({ journal: `${name} thanked ${f.gift.from} for ${f.name}.`, giftOpened: { to: f.gift.fromId, text: `${name} says thank you for ${f.name}!` } });
+      return ok();
     }
     case 'bottle': {
       const to = members?.find((m) => m.id === a.to); if (!to || to.id === uid) return fail('NOT_A_FRIEND');

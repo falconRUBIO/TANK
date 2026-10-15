@@ -297,6 +297,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0, food: r.food ?? 'flakes', fish: r.fish ?? null });
             broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
+            for (const e of r.events) if (e.giftOpened?.to && !online(ws.tankId).includes(e.giftOpened.to)) push.notify(String(e.giftOpened.to), e.giftOpened.text, { cap: 2 }).catch(() => {});      // the one who gave it hears it was opened, and thanked
             if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`, { cap: 2 }).catch(() => {});
           } else if (!r.ok) send(ws, { t: 'state', tank: L.publicTank(r.world) });
         }
@@ -310,8 +311,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
   // tanks nobody has open still move on: tell the people who opted in when something worth seeing happens (visitor, arrival, hatch)
   // what in a tick is worth telling someone who is not looking: a death first, then a fish in trouble, a visitor, a solved jar, an arrival, a milestone, a discovery
-  const hitOf = (events, major = false) => events.find((e) => e.died) ?? events.find((e) => e.warn) ?? events.find((e) => e.visitor) ?? events.find((e) => e.puzzle) ?? events.find((e) => e.arrival) ?? (major ? null : events.find((e) => e.milestone || e.grew) ?? events.find((e) => e.found || e.discovery) ?? null);
-  const tellAway = async (tankId, hit, now = Date.now()) => { if (!hit || !push.enabled) return; const here = online(tankId); for (const m of L.listMembers(db, tankId)) if (!here.includes(m.id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : (hit.toast ?? 'Something is waiting in your tank'), { now, cap: 2 }).catch(() => {}); };
+  const hitOf = (events, major = false) => events.find((e) => e.died) ?? events.find((e) => e.warn) ?? events.find((e) => e.visitor) ?? events.find((e) => e.puzzle) ?? events.find((e) => e.giftArrived) ?? events.find((e) => e.arrival) ?? (major ? null : events.find((e) => e.milestone || e.grew) ?? events.find((e) => e.found || e.discovery) ?? null);
+  const tellAway = async (tankId, hit, now = Date.now()) => { if (!hit || !push.enabled) return; const here = online(tankId); for (const m of L.listMembers(db, tankId)) if (!here.includes(m.id)) await push.notify(m.id, hit.visitor ? 'A rare visitor is in your tank' : hit.giftArrived?.for === m.id ? 'A gift is waiting for you in the tank. Come and unwrap it!' : (hit.toast ?? 'Something is waiting in your tank'), { now, cap: 2 }).catch(() => {}); };
   let sweeping = false;
   const pushSweep = async (now = Date.now()) => {
     if (!push.enabled || sweeping) return; sweeping = true; try { await sweepOnce(now); } finally { sweeping = false; }
@@ -329,6 +330,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         // an egg that hatches within six hours: everyone away hears it once, so they can be there for it
         const egg = (w.eggs ?? []).find((e) => e.laid && e.hatchAt > now && e.hatchAt - now < 6 * 3600e3);
         if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} have turned silvery and are trembling. They hatch in a few hours.`, { now })) mark(k); } }
+        // a gift left wrapped for a day: the one it is for hears once more that it is waiting, and the one who sent it that it has not been opened yet
+        for (const f of (w.fish ?? []).filter((x) => x.gift?.wrapped && now - (x.gift.at ?? now) > 24 * 3600e3)) {
+          const k1 = `push:giftwait:${id}:${f.gift.id}`, k2 = `push:giftsender:${id}:${f.gift.id}`;
+          if (f.owner && !online(id).includes(f.owner) && !db.prepare('SELECT v FROM kv WHERE k=?').get(k1) && await push.notify(f.owner, `${f.gift.from}'s gift is still waiting for you, wrapped, in the tank.`, { now })) mark(k1);
+          if (f.gift.fromId && !online(id).includes(f.gift.fromId) && !db.prepare('SELECT v FROM kv WHERE k=?').get(k2) && await push.notify(f.gift.fromId, `${f.ownerName ?? 'Your friend'} hasn't opened your gift yet.`, { now })) mark(k2);
+        }
         // eggs just laid: everyone away hears who laid them and who is looking after them, once
         const fresh = (w.eggs ?? []).find((e) => e.laid && now - e.laid < 3 * 3600e3);
         if (fresh) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name, G = w.fish.find((f) => f.id === fresh.guard && !f.dead), md = R.eggCareOf(fresh).mode;

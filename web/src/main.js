@@ -14,6 +14,7 @@ import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
 import { Nursery } from './w3/nursery.js';
 import { makeEgg, eggSpot, eggY } from './w3/egg.js';
+import { makeGiftBag, ribbonOf } from './w3/giftbag.js';
 import { msIcon } from './msicons.js';
 import { factOfDay, TRAIT_FACTS, FACTS } from './facts.js';
 import { skyOf } from './game/sky.js';
@@ -246,7 +247,10 @@ async function adopt(species) {
     if (!sex) return;
   }
   let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'WHO IS IT FOR?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
-  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(sex ? { sex } : {}) });
+  let note, surprise; if (to) { const who = game.members?.find((m) => m.id === to)?.name ?? 'them';
+    surprise = await ui.choose({ title: 'KEEP IT A SURPRISE?', text: `Wrapped, ${who} only finds out what it is when they open it in the tank.`, options: [{ label: '🎁 Keep it a surprise', value: true }, { label: `Tell ${who} what it is`, value: false }], cancel: 'Not now' }); if (surprise === undefined) return;
+    note = await ui.dialog({ title: 'ADD A NOTE', text: `A few words to go with it, for ${who} to read when it arrives. You can leave it blank.`, input: { value: '', placeholder: 'Thought you would love this one!' }, ok: 'Send the gift', cancel: 'Skip the note' }); }
+  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}) });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
 }
@@ -380,6 +384,7 @@ function syncExtras() {
       U.t0 = Date.now() - (b.at ?? 0) < 6 * 3600e3 && !U.seen?.has(b.id) ? performance.now() : -1e9; (U.seen ||= new Set()).add(b.id); if (U.t0 > 0) { if (s.flags.tut >= 5) sfx('splash'); } }
     bottleSp.visible = bottleGlow.visible = true; }
   { const mine = new Set((s.bottles ?? []).filter((x) => x.from === me).map((x) => x.id)); for (const [id, to] of sentBottles) if (!mine.has(id)) { sentBottles.delete(id); if (to) ui.toast(`${to} found your bottle.`, 3200); } for (const x of s.bottles ?? []) if (x.from === me && !sentBottles.has(x.id)) sentBottles.set(x.id, game.members?.find((m) => m.id === x.to)?.name ?? null); }      // the one who sent it hears when it is found
+  giftSync(s);
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const C = eggCareOf(e), mode = C.mode === 'mouth' && !e.guard ? 'guard' : C.mode;      // (a cardinalfish father gone: the eggs he dropped lie on the sand)
@@ -656,6 +661,33 @@ function eggSniff(egg) {
   const e = egg.e, now = Date.now(); if (!e.risk || (e.cared?.length ?? 0) || !e.laid || now < e.laid + 864e5 || now > e.laid + 2 * 864e5) return false;
   const o = fishes.list.find((f) => f.species?.id === 'octopus' && !f.dead && !f.task && !f.hunt && !f.inspect && !f.holdfast); if (o) o.inspect = { x: egg.at.x + 0.7, z: egg.at.z + 0.2 }; return true;
 }
+// ── gifts: a fish given as a surprise waits wrapped in a gift bag on the sand until its friend opens it ──
+const giftBags = new Map(); let giftToldAt = 0;
+function giftSync(s) {
+  const want = new Map(); for (const f of s.fish ?? []) if (f.gift?.wrapped) { const g = want.get(f.gift.id) ?? { gift: f.gift, owner: f.owner, ownerName: f.ownerName, ids: [] }; g.ids.push(f.id); want.set(f.gift.id, g); }
+  for (const [id, g] of want) { let b = giftBags.get(id);
+    if (!b) { const h = hashId(id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h + 3, [...eggSprites.values(), ...giftBags.values()].map((x) => x.at)); b = { ...g, at, bag: makeGiftBag(ribbonOf(g.gift.fromId ?? g.gift.from)) }; b.bag.group.position.set(at.x, sandH(at.x, at.z), at.z); b.bag.group.rotation.y = ((h % 60) - 30) / 100; scene.add(b.bag.group); giftBags.set(id, b); }
+    else Object.assign(b, g); }
+  for (const [id, b] of [...giftBags]) if (!want.has(id) && !b.bag.opening) { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }      // opened on another phone, or gone
+  const mine = [...giftBags.values()].find((b) => b.owner === game.you?.userId && !b.bag.opening);
+  if (mine && Date.now() - giftToldAt > 10 * 60e3 && s.flags?.tut >= 5) { giftToldAt = Date.now(); setTimeout(() => ui?.toast(`A gift from ${mine.gift.from} is waiting for you. Tap the gift bag to open it.`, 4200), 1800); }
+}
+function giftTick(t, dt) { for (const [id, b] of [...giftBags]) if (b.bag.tick(t, dt) && !b.done) { b.done = true; setTimeout(() => { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }, 1500); } }
+function giftHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const b of giftBags.values()) { if (b.bag.opening) continue; const p = b.bag.group.position.clone(); p.y += 0.4; const d = ray.distanceToPoint(p); if (d < bd) { bd = d; best = b; } } return best; }
+async function openGiftBag(b) {
+  if (b.owner !== game.you?.userId) { ui.toast(`A gift from ${b.gift.from} for ${b.ownerName ?? 'a friend'}. Only they can open it.`, 3000); return; }
+  b.bag.open(); sfx('tap'); haptic(10);
+  const r = await game.dispatch({ t: 'openGift', id: b.ids[0] }); if (!r.ok) { b.bag.opening = null; return fail(r); }
+  const at = b.bag.group.position.clone(); setTimeout(() => { sfx('pop'); haptic(16); for (let i = 0; i < 4; i++) setTimeout(() => fishes.burst(at.clone().add(new THREE.Vector3(0, 0.4 + i * 0.15, 0))), i * 120); }, 900);
+  const ids = r.ids ?? b.ids; let n = 0; const out = () => { const fs = ids.map((id) => fishes.byId.get(id)).filter(Boolean); if (!fs.length && ++n < 40) return setTimeout(out, 100);      // the fish swim up out of the open bag
+    fs.forEach((f, i) => { f.pos.set(at.x + (i - (fs.length - 1) / 2) * 0.3, at.y + 0.4, at.z); f.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 2.4, at.z + 0.6); f.retarget = 4; });
+    if (fs[0] && !document.hidden) spotlightFish(fs[0].fid, 5500, 300); };
+  setTimeout(out, 1100);
+  const rec = () => game.state.fish.find((x) => x.id === ids[0]), d = SPECIES_DEF[rec()?.species] ?? { label: 'fish' };
+  setTimeout(async () => { const f = rec(); if (!f) return; const many = ids.length > 1;
+    const ok = await ui.dialog({ title: `A GIFT FROM ${String(b.gift.from).toUpperCase()}`, text: `${b.gift.note ? `“${b.gift.note}”\n\n` : ''}${many ? `${ids.length} ${d.label.toLowerCase()}s, for you to look after.` : `Meet ${f.name}, a ${d.label.toLowerCase()}, for you to look after.`}`, ok: 'Say thanks', cancel: 'Later' });
+    if (ok) { const t = await game.dispatch({ t: 'thankGift', id: ids[0] }); if (t.ok) ui.toast(`${b.gift.from} will know you loved it.`, 2600); } }, 6800);
+}
 function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
 function showEggCard(fx) {
   const e = fx.egg.e, s = game.state, nm = (id, snap) => s.fish.find((x) => x.id === id)?.name ?? snap?.name ?? 'a fish', A = nm(e.a, e.pa), B = nm(e.b, e.pb), now = Date.now();
@@ -767,6 +799,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     const at = toys.sandHit(ray); if (!at) return; if (k === 'bubbles') { toys.blow(at); toys.armed = null; } else if (k === 'light') { toys.lightOn(at); lightHeld = true; canvas.setPointerCapture?.(ev.pointerId); } return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
+  if (!placing && !rearrange && !feedMode && !cleanMode) { const gb = giftHit(ev); if (gb) { openGiftBag(gb); return; } }
   if (!placing && !rearrange && !feedMode && !cleanMode && !pickFish(ev)) { const egg = eggHit(ev); if (egg) { const fx = eggFocusOf(egg); if (focus === fx) { cardOpen = fx.fid; showEggCard(fx); } else setFocus(fx); return; } }
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
   if (rearrange) { const id = decor.pick(rayFrom(ev).ray); if (id) { const t = game.state.decor.find((d) => d.id === id).type; startPlace(t, id); } return; }
@@ -1172,6 +1205,7 @@ function frameBody(now) {
   else bottleM.group.visible = false;
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
+  giftTick(t, Math.min(0.05, dt));
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     eggCare(egg, Math.min(0.05, dt), t); }
@@ -1384,7 +1418,7 @@ Fish3D.onLost = (f) => { console.error('animal had a broken position and was put
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      // what an octopus learns, kept with the tank fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
-window.__eggs = eggSprites; window.__eggCare = eggCare; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
+window.__eggs = eggSprites; window.__eggCare = eggCare; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
 window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };

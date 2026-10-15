@@ -82,7 +82,7 @@ export class Fishes {
     // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
     // they grow through the five days, and the one that is kept carries on as the same seahorse
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
-    [...state.fish, ...kids].forEach((d, idx) => {
+    [...state.fish.filter((d) => !d.gift?.wrapped), ...kids].forEach((d, idx) => {      // (a gift still wrapped is not in the water yet: it is in its bag)
       seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)]; const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
       let f = this.byId.get(d.id);
       if (!f) {

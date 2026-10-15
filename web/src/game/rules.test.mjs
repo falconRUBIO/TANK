@@ -530,7 +530,7 @@ ok('reef themes: pieces that belong together lift the fish, pay once, and draw t
 });
 ok('gifts and togetherness: a fish can be bought for a friend, and two caretakers feeding within a minute delight the fish', () => {
   const t = quiet(1); t.level = 8; t.shells = 200; const members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }];
-  const r = R.applyAction(t, { t: 'buyFish', species: 'cory', name: 'Gob', seed: 4, to: 'u2' }, { now: 5000, name: 'Alex', uid: 'u1', members }); assert.ok(r.ok); assert.equal(t.orders.at(-1).owner, 'u2'); assert.equal(t.orders.at(-1).ownerName, 'Sam'); assert.equal(t.orders.at(-1).giftFrom, 'Alex');
+  const r = R.applyAction(t, { t: 'buyFish', species: 'cory', name: 'Gob', seed: 4, to: 'u2', surprise: false }, { now: 5000, name: 'Alex', uid: 'u1', members }); assert.ok(r.ok); assert.equal(t.orders.at(-1).owner, 'u2'); assert.equal(t.orders.at(-1).ownerName, 'Sam'); assert.equal(t.orders.at(-1).giftFrom, 'Alex');
   const ev = R.advance(t, 5000 + 24 * 3600e3); const arrived = ev.find((e) => e.arrival); assert.match(arrived.journal, /gift from Alex to Sam/); const gob = t.fish.find((f) => f.name === 'Gob'); assert.equal(gob.owner, 'u2');
   const bad = R.applyAction(t, { t: 'buyFish', species: 'cory', name: 'Nope', seed: 4, to: 'u9' }, { now: 6000 + 24 * 3600e3, name: 'Alex', uid: 'u1', members }); assert.equal(t.orders.at(-1).owner, 'u1', 'a stranger cannot be given a fish');
   const g = quiet(2); g.hunger = 0.8; g.simTs = 0; const happy0 = g.fish[0].happy; const f1 = R.applyAction(g, { t: 'feed', x: 0 }, { now: 1000, name: 'Alex', uid: 'u1' }); assert.ok(!f1.events.some((e) => e.together), 'one person alone is not together');
@@ -773,4 +773,16 @@ ok('parents look after their eggs as their kind do: a father guards, a cardinalf
   const m = mk('platy'), evm = R.advance(m, 20 * 3600e3); assert.equal(m.eggs[0].guard, 'p1'); assert.ok(evm.some((e) => /in his mouth/.test(e.toast ?? '')), 'a cardinalfish father carries them');
   const d = mk('betta'), evd = R.advance(d, 20 * 3600e3); assert.equal(d.eggs[0].guard, null, 'mandarins leave them to drift'); assert.ok(evd.some((e) => /drift/.test(e.toast ?? '')));
   const s = mk('goldfish'); s.fish[1].sex = 'f'; R.advance(s, 20 * 3600e3); assert.equal(s.eggs.length, 0, 'two females lay no eggs');
+});
+ok('a surprise gift arrives wrapped and says nothing of what it is; only its friend opens it; thanks reach the giver', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.shells = 500; t.visitAt = t.storyAt = t.eggAt = 1e15;
+  const mem = [{ id: 'ua', name: 'Ana' }, { id: 'ub', name: 'Ben' }];
+  const r = R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'Bubbles', seed: 4, to: 'ub', note: 'For you!' }, { now: 1000, uid: 'ua', name: 'Ana', members: mem });
+  assert.ok(r.ok); assert.ok(!r.events.some((e) => /clownfish/i.test(JSON.stringify(e))), 'ordering says nothing of the species');
+  const ev = R.advance(t, 1000 + D); const f = t.fish.find((x) => x.name === 'Bubbles'); assert.ok(f.gift?.wrapped); assert.equal(f.gift.note, 'For you!');
+  assert.ok(!ev.some((e) => /clownfish|Bubbles/i.test((e.journal ?? '') + (e.toast ?? ''))), 'the arrival says nothing of what it is');
+  assert.equal(R.applyAction(t, { t: 'openGift', id: f.id }, { now: 2 * D, uid: 'ua', name: 'Ana', members: mem }).ok, false, 'only its friend opens it');
+  const o = R.applyAction(t, { t: 'openGift', id: f.id }, { now: 2 * D, uid: 'ub', name: 'Ben', members: mem }); assert.ok(o.ok && !f.gift.wrapped); assert.equal(o.events[0].giftOpened.to, 'ua');
+  const th = R.applyAction(t, { t: 'thankGift', id: f.id }, { now: 2 * D, uid: 'ub', name: 'Ben', members: mem }); assert.ok(th.ok && f.gift.thanked); assert.ok(/thank you/.test(th.events[0].giftOpened.text));
+  const plain = R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'Open', seed: 5, to: 'ub', surprise: false }, { now: 3 * D, uid: 'ua', name: 'Ana', members: mem }); assert.ok(plain.events.some((e) => /clownfish/.test(e.activity?.text ?? '')), 'not a surprise: it may say');
 });

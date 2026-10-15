@@ -219,7 +219,7 @@ function keepOrders(list, world, heal, uid, now, was = []) {
     const d = R.SPECIES_DEF[o?.species]; if (!d || d.count > room) continue; room -= d.count;
     const at = Number.isFinite(+o.arrivesAt) ? +o.arrivesAt : now;
     out.push({ id: typeof o.id === 'string' ? o.id.slice(0, 24) : 'o' + now + out.length, species: o.species, name: clean(o.name, 14) || null, seed: Math.abs(Math.floor(+o.seed || now)) % 100000,
-      by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && !formerIds(was).includes(o.owner) ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null,
+      by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && !formerIds(was).includes(o.owner) ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null, ...(o.giftFrom ? { giftFromId: typeof o.giftFromId === 'string' ? o.giftFromId.slice(0, 64) : null, giftNote: o.giftNote ? clean(o.giftNote, 80) : null, surprise: !!o.surprise } : {}),
       at: Number.isFinite(+o.at) ? +o.at : now, arrivesAt: Math.max(now, Math.min(at, now + d.wait * 60e3)) });
   }
   return out;
@@ -308,7 +308,7 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
+export const ACTIONS = new Set(['openGift', 'thankGift', 'octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null, tank = null } = {}) {
   const t0 = tank ?? tankOf(db, user.id), test = !!tank?.test;      // (tank: a developer's test aquarium, see testTankOf) if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
