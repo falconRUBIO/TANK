@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -563,11 +563,20 @@ function bondLine(rec) {
   const who = top === you || !game.shared ? 'You' : game.members?.find((m) => m.id === top)?.name ?? 'You';
   return `<dt>Closest to</dt><dd>${mine >= 10 && top === you ? 'You' : who}${b[top] >= 10 ? ' ♥' : ''}</dd>`;
 }
+// an animal whose caretaker has not been in for two weeks (or has left the tank): anyone else can take it on, so it is never forgotten
+function awayBanner(rec) {
+  const aw = game.shared ? awayOwner(rec, game.members) : null; card.querySelector('.awayb')?.remove(); if (!aw || rec.owner === game.you?.userId) return;
+  const el = document.createElement('div'); el.className = 'awayb'; el.innerHTML = `<p>${esc(aw.left ? `${aw.name} has left the tank.` : `${aw.name} has not been in for ${aw.days} days.`)} ${esc(rec.name)} could use someone.</p><button class="act2">Look after ${esc(rec.name)}</button>`;
+  el.querySelector('button').onclick = async () => { const r = await game.dispatch({ t: 'lookAfter', id: rec.id }); if (r.ok) { sfx('arrive'); ui.toast(`You are looking after ${rec.name} now.`, 2800); el.remove(); } else fail(r); };
+  card.querySelector('h2')?.parentElement?.after(el) ?? card.prepend(el);
+}
 function showDeadCard(f) {
   lastCard = Date.now(); const x = game.state.floaters?.find((z) => z.id === f.fid); if (!x) { card.classList.remove('on'); return; }
   const days = Math.max(1, Math.round((x.died - x.born) / 864e5)), who = x.ownerName ?? game.members?.find((mm) => mm.id === x.owner)?.name ?? 'Unknown';
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${x.name}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
     <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${who}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
+    ${(() => { const lines = game.journal.filter((e) => e.text.includes(x.name) && !/passed away|died|lay|rest/i.test(e.text)).map((e) => e.text); const pick = [...new Set([lines[0], ...lines.filter((t) => /favou?rite|friends|loves|learned|hatched|guard|keeps going back|first/i.test(t)).slice(-3)].filter(Boolean))].slice(0, 4);
+      return pick.length ? `<h4>Remembered for</h4><ul class="remember">${pick.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''; })()}
     <button class="pet rest" id="rest">LAY TO REST</button>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null);
   $('rest').onclick = async () => { $('rest').disabled = true; const r = await game.dispatch({ t: 'scoop', id: f.fid }); setFocus(null); if (!r.ok) return fail(r); if (r.applied) { sfx('tap'); haptic(10); } };
@@ -672,8 +681,44 @@ function giftSync(s) {
   const mine = [...giftBags.values()].find((b) => b.owner === game.you?.userId && !b.bag.opening);
   if (mine && Date.now() - giftToldAt > 10 * 60e3 && s.flags?.tut >= 5) { giftToldAt = Date.now(); setTimeout(() => ui?.toast(`A gift from ${mine.gift.from} is waiting for you. Tap the gift bag to open it.`, 4200), 1800); }
 }
+// ── things worth knowing, each said once, the first time it matters ──
+const TIPS = [
+  ['eggs', (s) => (s.eggs ?? []).length, 'EGGS IN THE TANK', 'Tap the eggs to see who is guarding them. Feeding the fish or changing the water on two days helps them hatch strong.'],
+  ['away', (s) => game.shared && s.fish.some((f) => awayOwner(f, game.members) && f.owner !== game.you?.userId), 'A FRIEND IS AWAY', 'One of the animals has not had its caretaker in for a while. Tap it to look after it until they are back.'],
+  ['octo', (s) => s.fish.some((f) => f.species === 'octopus' && !f.dead && f.owner === game.you?.userId) && (s.flags?.tut ?? 0) >= 5, 'GETTING TO KNOW IT', 'Tap your octopus: its card says what it is thinking and how much it trusts you. Trust grows each time you feed it and come to visit.'],
+  ['toys', (s) => (s.toyPlays ?? 0) === 0 && Date.now() - (s.createdAt ?? Date.now()) > 864e5, 'PLAYTIME', 'Open Care, then Play: toss in a ball, start some bubbles, or shine a light spot. They learn which toys they like.'],
+  ['crew', () => game.shared && (game.members?.length ?? 0) > 1, 'YOUR CREW', 'In Crew you can message your friends, stick a note on the glass, or send a message in a bottle.'],
+  ['journal', () => (game.journal?.length ?? 0) > 25, 'THE JOURNAL', 'Everything that happens is kept in Crew, Journal, with photos of the moments you were there to see.'],
+];
+let tipT = 0;
+function tipsTick(dt) {
+  if ((tipT -= dt) > 0) return; tipT = 4; const s = game.state;
+  if (!s || (s.flags?.tut ?? 0) < 5 || ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || document.hidden || ['modal', 'reunion', 'coach', 'settle'].some((id) => $(id)?.classList.contains('on'))) return;
+  let seen; try { seen = JSON.parse(localStorage.getItem('ourtank.tips') || '{}'); } catch { return; }
+  if (Date.now() - (seen._last ?? 0) < 5 * 60e3) return;      // one tip at a time, a few minutes apart
+  const tip = TIPS.find(([k, when]) => !seen[k] && when(s)); if (!tip) return;
+  seen[tip[0]] = Date.now(); seen._last = Date.now(); try { localStorage.setItem('ourtank.tips', JSON.stringify(seen)); } catch { return; }
+  ui.showCoach({ title: tip[2], text: tip[3], button: 'Got it', onButton: () => $('coach').classList.remove('on') });
+}
+// ── a photo of a moment you were there for, kept with its journal line on this phone ──
+const MOMENT = /drove it away|lionfish|jellyfish|sea snake|squirted|hatched|laid|eggs|holding tails|held tails|smacked|friends now|opened .* gift|first crab|worked out|met /i;
+game.on('journal', (e) => {
+  if (!e?.text || !MOMENT.test(e.text) || document.hidden || ui?.tab !== 'tank' || placing) return;
+  setTimeout(() => { try { composer.render(); const w = 320, h = Math.round(w * canvas.height / canvas.width), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(canvas, 0, 0, w, h);
+    const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img: c.toDataURL('image/jpeg', 0.6) }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 12))); } catch { /* storage full or private mode: no photo, nothing lost */ } }, 300);
+});
+// ── a phone too slow to keep the animals smooth hands them to another (it says so to the server, which picks who runs them) ──
+const perf = { t: 0, n: 0, bad: 0, good: 0, slow: false, at: 0 };
+function perfTick(dt) {
+  perf.t += dt; perf.n++; if (perf.t < 5) return; const fps = perf.n / perf.t; perf.t = 0; perf.n = 0;
+  if (!game.shared || !game.live?.connected || document.hidden) return;
+  const others = (game.online ?? []).length > 1;
+  if (!perf.slow && isDirector() && others) { perf.bad = fps < 18 ? perf.bad + 1 : 0; if (perf.bad >= 3) { perf.slow = true; perf.at = Date.now(); game.live.send({ t: 'perf', slow: true }); } }
+  else if (perf.slow) { perf.good = fps > 35 ? perf.good + 1 : 0; if (perf.good >= 6 && Date.now() - perf.at > 10 * 60e3) { perf.slow = false; game.live.send({ t: 'perf', slow: false }); } }      // (sticky for ten minutes, so the job does not bounce back and forth)
+}
+game.on('role', () => { try { const p = JSON.parse(localStorage.getItem('ourtank.pushprefs') || '{}'); if (Object.keys(p).length) game.live?.send({ t: 'pushPrefs', prefs: p }); } catch { /* none */ } if (perf.slow) game.live?.send({ t: 'perf', slow: true }); });
 function giftTick(t, dt) { for (const [id, b] of [...giftBags]) if (b.bag.tick(t, dt) && !b.done) { b.done = true; setTimeout(() => { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }, 1500); } }
-function giftHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const b of giftBags.values()) { if (b.bag.opening) continue; const p = b.bag.group.position.clone(); p.y += 0.4; const d = ray.distanceToPoint(p); if (d < bd) { bd = d; best = b; } } return best; }
+function giftHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const b of giftBags.values()) { if (b.bag.opening) continue; const p = b.bag.group.position.clone(); p.y += 0.4; const d = ray.distanceToPoint(p); if (d < bd) { bd = d; best = b; } } return best; }
 async function openGiftBag(b) {
   if (b.owner !== game.you?.userId) { ui.toast(`A gift from ${b.gift.from} for ${b.ownerName ?? 'a friend'}. Only they can open it.`, 3000); return; }
   b.bag.open(); sfx('tap'); haptic(10);
@@ -688,7 +733,7 @@ async function openGiftBag(b) {
     const ok = await ui.dialog({ title: `A GIFT FROM ${String(b.gift.from).toUpperCase()}`, text: `${b.gift.note ? `“${b.gift.note}”\n\n` : ''}${many ? `${ids.length} ${d.label.toLowerCase()}s, for you to look after.` : `Meet ${f.name}, a ${d.label.toLowerCase()}, for you to look after.`}`, ok: 'Say thanks', cancel: 'Later' });
     if (ok) { const t = await game.dispatch({ t: 'thankGift', id: ids[0] }); if (t.ok) ui.toast(`${b.gift.from} will know you loved it.`, 2600); } }, 6800);
 }
-function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 0.9; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
+function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
 function showEggCard(fx) {
   const e = fx.egg.e, s = game.state, nm = (id, snap) => s.fish.find((x) => x.id === id)?.name ?? snap?.name ?? 'a fish', A = nm(e.a, e.pa), B = nm(e.b, e.pb), now = Date.now();
   const left = Math.max(0, e.hatchAt - now), hrs = Math.round(left / 36e5), when = left < 36e5 ? 'Any minute now' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `In about ${Math.round(hrs / 24 * 2) / 2} days`;
@@ -754,7 +799,7 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${path}${trustRow}${bondTile}${toysTile}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${path}${trustRow}${bondTile}${toysTile}${famLine}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
@@ -787,7 +832,7 @@ function showCard(f) {
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'LET IT GO?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
@@ -1205,7 +1250,7 @@ function frameBody(now) {
   else bottleM.group.visible = false;
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
-  giftTick(t, Math.min(0.05, dt));
+  giftTick(t, Math.min(0.05, dt)); tipsTick(dt); perfTick(dt);
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     eggCare(egg, Math.min(0.05, dt), t); }
@@ -1280,8 +1325,8 @@ async function welcomeBack() {
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
-  const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colors|smacked|squirted|friends now|has it in for|first crab/.test(t);
-  const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
+  const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colors|smacked|squirted|friends now|has it in for|first crab|drove it away/.test(t);
+  const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|eggs|guarding|drove it away|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday|looking after/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
   const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
   if (game.shared) {      // who looked after the tank while you were away, one line each: "Alex fed Inky a crab and changed the water."
@@ -1291,6 +1336,7 @@ async function welcomeBack() {
     for (let i = lines.length - 1; i >= 0; i--) if (care.test(lines[i])) lines.splice(i, 1);
     lines.unshift(...said);
   }
+  { const g = s.fish.find((f) => f.gift?.wrapped && f.owner === mine); if (g) lines.unshift(`A gift from ${g.gift.from} is waiting for you on the sand.`); }
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);
@@ -1418,7 +1464,7 @@ Fish3D.onLost = (f) => { console.error('animal had a broken position and was put
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      // what an octopus learns, kept with the tank fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
-window.__eggs = eggSprites; window.__eggCare = eggCare; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
+window.__eggs = eggSprites; window.__eggCare = eggCare; window.__showCard = (f) => { cardOpen = f.fid; showCard(f); }; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
 window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };

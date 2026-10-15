@@ -10,7 +10,7 @@ run() { local name="$1"; shift; echo "── $name"; local out; out="$("$@" 2>&1
 run "rule and server tests" npm test --silent
 for t in real_tank gift_check octopus_den octopus_rest seahorse_check; do run "$t" timeout 900 node --disable-warning=ExperimentalWarning "tools/$t.mjs"; done
 if [ -n "$FULL" ]; then
-  for t in care_check care_sync seahorse_family baby_personality playthrough sell_check octopus_acts octopus_character profile_check bonds_check toys_check octopus_aware; do run "$t" timeout 7000 node --disable-warning=ExperimentalWarning "tools/$t.mjs"; done
+  for t in care_check care_sync seahorse_family baby_personality playthrough sell_check octopus_acts octopus_character profile_check bonds_check toys_check egg_check away_check seahorse_family octopus_aware; do run "$t" timeout 7000 node --disable-warning=ExperimentalWarning "tools/$t.mjs"; done
   run dev_lifecycle timeout 5000 node --disable-warning=ExperimentalWarning tools/dev_lifecycle.mjs
 fi
 echo; echo "passed: ${#pass[@]}  ·  failed: ${#fail[@]} ${fail[*]}"

@@ -382,6 +382,8 @@ function visitors(t, now, ev) {
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
+export const AWAY_DAYS = 14;      // a caretaker not seen for this long: a friend may take on their animals
+export const awayOwner = (f, members, now = Date.now()) => { if (!f?.owner || f.dead) return null; const m = (members ?? []).find((x) => x.id === f.owner); return !m ? { name: f.ownerName ?? 'its caretaker', left: true } : now - (m.lastSeen ?? m.last_seen ?? now) >= AWAY_DAYS * DAY ? { name: m.name, days: Math.floor((now - (m.lastSeen ?? m.last_seen)) / DAY) } : null; };
 // How each kind really looks after its eggs. guard: a patch of eggs stuck down by a rock, the father on guard (fanning them, picking out bad ones,
 // chasing others off), the mother never far; mouth: the father carries them in his mouth and eats nothing until they hatch; drift: the pair rise
 // together at dusk and let the eggs go to drift, as they do in the sea, so the care is all yours.
@@ -1391,6 +1393,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
       t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; t.shells += 4;
       events.push({ activity: { type: 'visitor', text: `${name} greeted a rare visitor.` }, journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
+    }
+    case 'lookAfter': {                                              // a friend has not been in for two weeks (or has left): someone else takes their animal on, so it is never left to fend for itself
+      const f = t.fish.find((x) => x.id === a.id && !x.dead); if (!f) return fail('NOT_FOUND'); if (!f.owner || f.owner === uid) return fail('ALREADY_HAVE');
+      const ow = (members ?? []).find((m) => m.id === f.owner); if (ow && now - (ow.lastSeen ?? ow.last_seen ?? now) < AWAY_DAYS * DAY) return fail('STILL_HERE');
+      const was = f.ownerName ?? 'its caretaker'; f.ownerWas = { id: f.owner, name: was, at: now }; f.owner = uid; f.ownerName = name;
+      events.push({ journal: ow ? `${name} is looking after ${f.name} while ${was} is away.` : `${name} is looking after ${f.name} now.` }); return ok();
     }
     case 'openGift': {                                              // the one it is for unwraps it: everything inside comes out at once (a school, too)
       const f = t.fish.find((x) => x.id === a.id && x.gift?.wrapped); if (!f) return fail('NOT_FOUND'); if (f.owner !== uid) return fail('NOT_YOURS');

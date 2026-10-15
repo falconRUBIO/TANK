@@ -13,6 +13,8 @@ export function vapidFor(db, env = process.env) {
 }
 // Phones only ever hand out an address at their own platform's push service. Anything else would make the server send requests wherever a stranger points it.
 const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)(:443)?\//;
+// what a notification is about, for the per-kind switches in Settings
+export const kindOf = (body) => { const b = String(body); return /\begg|hatch|spawn/i.test(b) ? 'eggs' : /gift|bottle|thank/i.test(b) ? 'gifts' : /hungry|water|shrimp|crab/i.test(b) ? 'hungry' : /joined|says/i.test(b) ? 'friends' : 'visitors'; };
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
   const enabled = !!(sender || (publicKey && privateKey));
   if (!sender && enabled) webpush.setVapidDetails(subject || 'mailto:admin@example.com', publicKey, privateKey);
@@ -29,8 +31,9 @@ export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
     unsubscribe(userId, endpoint) { db.prepare('DELETE FROM push_subs WHERE user_id=? AND endpoint=?').run(userId, String(endpoint ?? '')); },
     hasSubs(userId) { return !!db.prepare('SELECT 1 FROM push_subs WHERE user_id=?').get(userId); },
     // returns true when something was actually sent
-    async notify(userId, body, { now = Date.now(), url = '/', cap = 1, force = false } = {}) {
+    async notify(userId, body, { now = Date.now(), url = '/', cap = 1, force = false, kind = kindOf(body) } = {}) {
       if (!enabled) return false;
+      if (!force) { let off = {}; try { off = JSON.parse(db.prepare('SELECT v FROM kv WHERE k=?').get('pushpref:' + userId)?.v ?? '{}'); } catch { /* none */ } if (off[kind] === false) return false; }      // a kind they switched off
       const subs = db.prepare('SELECT * FROM push_subs WHERE user_id=?').all(userId); if (!subs.length) return false;
       if (!force) { const h = localHour(now, subs[0].offset_min); if (h < 8 || h >= 22) return false;
         if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= cap) return false; }

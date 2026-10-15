@@ -16,6 +16,7 @@ if (files.length) {
   let now = null; try { now = open(last); } catch (e) { ck('it opens', false, e.message); }
   if (now) {
     ck('it opens and holds tanks', now.tanks.size > 0, `${now.tanks.size} tanks, ${now.users} players`);
+    { const sizes = [...now.tanks].map(([c, w]) => [c, JSON.stringify(w ?? {}).length]).sort((a, b) => b[1] - a[1]); ck('no tank\'s save is getting too big (under 1.5 MB)', !sizes.length || sizes[0][1] < 1.5e6, sizes.slice(0, 3).map(([c, n]) => `${c} ${(n / 1024).toFixed(0)} KB`).join(', ')); }      // memories, journals and logs are each capped; this watches the whole
     ck('every tank\'s world reads', [...now.tanks.values()].every(Boolean), [...now.tanks].filter(([, w]) => !w).map(([c]) => c).join(', '));
     if (files.length > 1) {
       const prev = open(files.at(-2)), gone = [...prev.tanks.keys()].filter((c) => !now.tanks.has(c)), lost = [];

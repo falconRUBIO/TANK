@@ -786,3 +786,10 @@ ok('a surprise gift arrives wrapped and says nothing of what it is; only its fri
   const th = R.applyAction(t, { t: 'thankGift', id: f.id }, { now: 2 * D, uid: 'ub', name: 'Ben', members: mem }); assert.ok(th.ok && f.gift.thanked); assert.ok(/thank you/.test(th.events[0].giftOpened.text));
   const plain = R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'Open', seed: 5, to: 'ub', surprise: false }, { now: 3 * D, uid: 'ua', name: 'Ana', members: mem }); assert.ok(plain.events.some((e) => /clownfish/.test(e.activity?.text ?? '')), 'not a surprise: it may say');
 });
+ok('an animal whose caretaker has been away two weeks (or left) can be taken on by a friend; not before', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: 0, stage: 'adult', owner: 'ua', ownerName: 'Ana' })];
+  const now = 40 * D, near = [{ id: 'ua', name: 'Ana', lastSeen: now - 3 * D }, { id: 'ub', name: 'Ben', last_seen: now }];
+  assert.equal(R.applyAction(t, { t: 'lookAfter', id: 'o' }, { now, uid: 'ub', name: 'Ben', members: near }).ok, false, 'Ana was here three days ago');
+  const away = [{ id: 'ua', name: 'Ana', lastSeen: now - 15 * D }, { id: 'ub', name: 'Ben', last_seen: now }]; assert.equal(R.awayOwner(t.fish[0], away, now).name, 'Ana');
+  const r = R.applyAction(t, { t: 'lookAfter', id: 'o' }, { now, uid: 'ub', name: 'Ben', members: away }); assert.ok(r.ok); assert.equal(t.fish[0].owner, 'ub'); assert.equal(t.fish[0].ownerWas.name, 'Ana'); assert.ok(/while Ana is away/.test(r.events[0].journal));
+});
