@@ -639,6 +639,7 @@ export const MOVE_GAP = 4 * 60e3, MOVE_MAX = 4.5;
 export const OCTO_MOMENTS = {
   squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
   arms: { gap: DAY, other: true, text: (n, o) => `${n} and ${o} sat side by side and touched arms for a while.` },
+  chased: { gap: 12 * 3600e3, other: true, text: (n, o) => `${o} charged at ${n} and drove it away from the eggs.` },
   smack: { gap: 12 * 3600e3, other: true, text: (n, o) => `${n} smacked ${o} with an arm for coming too close.` },
   lion: { gap: 3 * DAY, text: (n) => `${n} put its arms out stiff and passed for a lionfish.` },
   jelly: { gap: 3 * DAY, text: (n) => `${n} puffed up and drifted about like a jellyfish.` },

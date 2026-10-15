@@ -610,7 +610,8 @@ function eggCare(egg, dt, t) {
   if (egg.mode === 'mouth') { const m = G.mouth(); P.set(m.x, m.y - G.radius * 0.1, m.z); G.brood = true; G.lureCalm = 1; G.thought = 'Carrying the eggs in his mouth. He will not eat until they hatch.'; return; }
   if (!isDirector()) { if (G.pos.distanceTo(P) < 1.6) G.thought = 'Guarding the eggs.'; return; }
   const C = (egg.care ||= { s: 'watch', t: 0, cool: 0, mumT: 12 }), d = G.pos.distanceTo(P);
-  G.guarding = true; if (G.seeking || G.holdfast) { G.fanK = 0; G.lureCalm = 0; return; }      // a quick bite first, then straight back
+  G.guarding = true; if (C.s !== 'chase') octoNest(egg, G, P, C, t);      // (even while he is off for a bite: that is when an octopus tries its luck)
+  if (G.seeking || G.holdfast) { G.fanK = 0; G.lureCalm = 0; return; }      // a quick bite first, then straight back
   C.t += dt; C.cool -= dt;
   if (C.cool <= 0 && C.s !== 'chase') { const o = fishes.list.find((x) => x !== G && !x.dead && !x.visitor && x.fid !== e.a && x.fid !== e.b && x.species.move !== 'jet' && x.pos.distanceTo(P) < 1.5);
     if (o) { C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.dartT = 0.9; G.fanK = 0; G.lureCalm = 0; o.fleeT = 1.8; const ax = o.pos.x - P.x, az = o.pos.z - P.z, L = Math.hypot(ax, az) || 1; o.target.set(Math.max(-4.5, Math.min(4.5, o.pos.x + ax / L * 3)), o.pos.y + 0.6, Math.max(-3, Math.min(2.5, o.pos.z + az / L * 2))); o.retarget = 3; G.thought = `Chasing ${o.name} away from the eggs.`; } }
@@ -620,6 +621,36 @@ function eggCare(egg, dt, t) {
   G.target.set(P.x + (egg.side ??= hashId(e.id) & 1 ? 1 : -1) * (0.75 + Math.sin(a) * 0.15), P.y + 0.5 + Math.sin(t * 0.8) * 0.08, P.z + 0.3 + Math.cos(a) * 0.12);      // beside the clutch, nose to it, so you see both G.retarget = 1; G.lureCalm = d < 1.7 ? 1 : 0; G.fanK = d < 1.4 ? 1 : 0;
   if (d < 1.4 && C.t > 7 && Math.random() < dt * 0.25) { C.s = 'pick'; C.t = 0; G.thought = 'Picking a bad egg out of the clutch.'; } else if (d < 1.4 && C.s === "watch") G.thought = 'Fanning fresh water over the eggs.';
   if ((C.mumT -= dt) <= 0) { C.mumT = 22 + Math.random() * 20; const M = fishes.byId.get(e.guard === e.a ? e.b : e.a); if (M && !M.dead && !M.seeking && M.species.move !== 'jet') { M.target.set(P.x + 0.8, P.y + 0.9, P.z + 0.5); M.retarget = 5; M.thought = `Checking on the eggs with ${G.name}.`; } }
+}
+// An octopus and a guarded clutch, as on a reef: the father charges anything that comes for his eggs, however big, and the octopus backs off
+// (sometimes in a puff of ink) and remembers: it keeps clear of that spot, longer each time it is driven off. Now and then it comes back to look
+// from a safe distance; it only pushes in when the father has gone off (to eat) or if it is a bold one, and then he rushes back. A guarded
+// clutch is never taken (only an unguarded one can be, see the rules).
+function octoNest(egg, G, P, C, t) {
+  const now = performance.now(), O = (C.octo ||= {});
+  for (const o of fishes.list) {
+    if (o.species.move !== 'jet' || o.dead || !o.mind) continue;
+    const m = (O[o.fid] ||= { strikes: 0, probeAt: now + (60 + Math.random() * 120) * 1e3, keepAt: 0, push: false }), d = Math.hypot(o.pos.x - P.x, o.pos.z - P.z), gd = G.pos.distanceTo(P);
+    const away = () => { const sx = o.pos.x >= P.x ? 1 : -1; return { x: Math.max(-3.6, Math.min(3.6, P.x + sx * 4.2)), z: Math.max(-1.5, Math.min(2.2, o.pos.z)) }; };
+    if (now < (m.fleeing ?? 0)) { if (d < 2.0 && C.s !== 'chase' && gd < 3.5) { C.s = 'chase'; C.t = 0; C.o = o; C.cool = 2; G.dartT = 0.9; } continue; }      // already on its way off: he sees it out, one fight, not several
+    if (now < m.probeAt && d < 3.0 && now > (m.steerAt ?? 0)) { m.steerAt = now + 6e3; const q = o.inspect; if (!q || Math.hypot(q.x - P.x, q.z - P.z) < 2.8) { o.inspect = away(); if (o.st?.s === 'bury' || o.st?.s === 'rest') o.st.t = 0; } }      // it remembers: nothing near the eggs is worth it now, and it moves off on its own
+    if (d < 2.0 && C.s !== 'chase' && gd < 3.5) {      // too close: he goes for it
+      C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.seeking = false; G.dartT = 1.1; G.fanK = 0; G.lureCalm = 0; G.thought = `Charging at ${o.name} to drive it off the eggs.`;
+      o.startle?.(G.pos, G); m.strikes++; m.push = false; m.keepAt = 0; m.fleeing = now + 15e3; o.inspect = null;
+      if (o.den && o.st && Math.sign(o.den.x - P.x) === Math.sign(o.pos.x - P.x)) o.goDen?.(o.st, Math.random); else o.inspect = away();      // it retreats properly: home if that is not past the eggs, else well away on its own side
+      m.probeAt = now + Math.min(15 * 60, 90 + 75 * m.strikes + Math.random() * 90) * 1e3;      // the more often it is driven off, the longer it stays away
+      fishes.memSay?.(o, `${G.name} drove it off the eggs. Keeping well clear now.`);
+      if (isDirector()) game.dispatch({ t: 'octoMoment', fish: o.fid, kind: 'chased', other: G.fid }).catch?.(() => {});
+      continue;
+    }
+    if (now < m.probeAt) { if (m.strikes && now > m.keepAt) { m.keepAt = now + 60e3; (o.fears ||= []).push({ x: P.x, z: P.z, t: now, r: 2.8 }); if (o.fears.length > 4) o.fears.shift(); } continue; }      // keeping away: the spot stays one it avoids
+    // time to have another look: from the edge, watching; it slips in only if he has left them, or if it is bold enough to try its luck
+    if (o.st?.s !== 'rest' || o.st.mode || o.inspect || o.task || o.hunt || o.jarAt || (o.sleepK ?? 0) > 0.3) continue;
+    const left = gd > 2.5, bold = (o.mind.bold ?? 0.5) > 0.7 && Math.random() < 0.3; m.push = left || bold;
+    if (m.push) { o.fears = (o.fears ?? []).filter((q) => Math.hypot(q.x - P.x, q.z - P.z) > 0.5); o.inspect = { x: P.x, z: P.z }; fishes.memSay?.(o, left ? `${G.name} has left the eggs. Creeping in.` : 'Trying its luck with the eggs.'); }
+    else { const sd = o.pos.x < P.x ? -1 : 1; o.inspect = { x: Math.max(-3.6, Math.min(3.6, P.x + sd * 3.0)), z: P.z + 0.2 }; o.watchPt = { x: P.x, y: P.y, z: P.z }; fishes.memSay?.(o, `Eyeing the eggs from a safe distance. ${G.name} is watching it.`); }
+    m.probeAt = now + (120 + Math.random() * 180) * 1e3 + m.strikes * 30e3;
+  }
 }
 function eggSniff(egg) {
   const e = egg.e, now = Date.now(); if (!e.risk || (e.cared?.length ?? 0) || !e.laid || now < e.laid + 864e5 || now > e.laid + 2 * 864e5) return false;
