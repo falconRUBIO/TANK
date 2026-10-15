@@ -60,6 +60,8 @@ const SFX = {
   reward: () => { [659, 880, 1175].forEach((f, i) => { tone(f, i * 0.09, 0.9, { vol: 0.07, type: 'sine' }); tone(f * 2, i * 0.09 + 0.02, 0.6, { vol: 0.025, type: 'sine' }); }); noise(0, 0.5, 5200, 0.015); },
   tap: () => tone(620, 0, 0.07, { vol: 0.08, to: 880 }),
   click: () => { tone(2400, 0, 0.025, { vol: 0.05, to: 1800 }); tone(2600, 0.09, 0.025, { vol: 0.04, to: 1900 }); },      // two soft seahorse clicks
+  pop: () => { tone(1100, 0, 0.05, { vol: 0.1, to: 320 }); noise(0, 0.07, 2600, 0.035); },      // a cork coming out
+  bubble: () => { [0, 0.11, 0.2, 0.33].forEach((d, i) => tone(420 + i * 130, d, 0.06, { vol: 0.045, to: 760 + i * 160, type: 'sine' })); },
   open: () => tone(440, 0, 0.1, { vol: 0.07, to: 660 }),
   splash: () => { noise(0, 0.35, 1800, 0.18); tone(300, 0, 0.18, { vol: 0.07, to: 120 }); },
   eat: () => tone(900 + Math.random() * 300, 0, 0.05, { vol: 0.06, to: 500 }),

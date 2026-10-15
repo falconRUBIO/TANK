@@ -6,7 +6,7 @@ import { FACTS } from './facts.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
-import { sfx, setSound, soundOn, setMusic, musicOn } from './audio.js';
+import { sfx, haptic, setSound, soundOn, setMusic, musicOn } from './audio.js';
 import { OCTO_COLORS } from './species.js';
 import { ownFood, canFeedOwn, ownHunger, hasOcto, hasFishOnly, canFeedOcto, octoHunger, dueIn, favFoodOf, hasSeahorse, OCTO_DUE, OHR, HR, WATER_PAY, GLASS_PAY, PEARL_PAY, sellValue, canSell } from './game/rules.js';
 // how long until something is due, in plain words: "in about 5 hours", "tomorrow", "in about 2 days"
@@ -22,7 +22,7 @@ const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'line
 
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
-  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '';
+  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '', bottleTo = null;
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
   const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
@@ -420,9 +420,10 @@ export function initUI({ game, social, cb }) {
         return `${head}<div class="fact ${mine ? 'mine' : ''}">${who ? `<span class="fav" style="--h:${hue}">${ini}</span>` : '<span class="fav tank">🐠</span>'}<span class="tx">${who ? `<b>${esc(who)}</b> ` : ''}${esc(who ? body.replace(/^\w/, (c) => c.toLowerCase()) : youify(raw))} <small>${ago(it.ts)}</small></span><span class="fic">${msIcon(pic, true, 30)}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : ''}</div>`; }).join('');
       const on = (game.online ?? []).length, all = (game.members ?? []).length;
       return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="crewbox"><div class="slots">${slotsHtml()}</div><button class="pcmini" data-act="photo"><span>${msIcon('postcard', true, 26)}</span><b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
-        <h4>Activity</h4><div class="compose ${composeMode}"><div class="cmode" role="tablist"><button type="button" data-mode="msg" class="${composeMode === 'msg' ? 'on' : ''}">Message</button><button type="button" data-mode="note" class="${composeMode === 'note' ? 'on' : ''}">${msIcon('note', true, 16)} Note on the glass</button></div>
-        <form class="send feedsend"><input maxlength="${composeMode === 'note' ? 120 : 140}" placeholder="${composeMode === 'note' ? 'A post-it for their glass…' : 'Message the crew'}" autocomplete="off" value="${esc(crewDraft)}"><button aria-label="Send">${composeMode === 'note' ? msIcon('note', true, 18) : '↑'}</button></form>
-        <small class="chint">${composeMode === 'note' ? 'Sticks on everyone’s glass. You will see when they have read it.' : 'Shows here, in the crew’s activity.'}</small></div>
+        <h4>Activity</h4><div class="compose ${composeMode}"><div class="cmode" role="tablist"><button type="button" data-mode="msg" class="${composeMode === 'msg' ? 'on' : ''}">Message</button><button type="button" data-mode="note" class="${composeMode === 'note' ? 'on' : ''}">${msIcon('note', true, 16)} Note</button><button type="button" data-mode="bottle" class="${composeMode === 'bottle' ? 'on' : ''}">${msIcon('bottle', true, 16)} Bottle</button></div>
+        ${composeMode === 'bottle' ? (() => { const others = (game.members ?? []).filter((x) => x.id !== me); if (!others.some((x) => x.id === bottleTo)) bottleTo = others[0]?.id ?? null; return others.length > 1 ? `<div class="bto">${others.map((x) => `<button type="button" data-bto="${x.id}" class="${x.id === bottleTo ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>` : ''; })() : ''}
+        <form class="send feedsend"><input maxlength="${composeMode === 'note' ? 120 : composeMode === 'bottle' ? 80 : 140}" placeholder="${composeMode === 'note' ? 'A post-it for their glass…' : composeMode === 'bottle' ? `A secret for ${esc(game.members?.find((x) => x.id === bottleTo)?.name ?? 'a friend')}…` : 'Message the crew'}" autocomplete="off" value="${esc(crewDraft)}"><button aria-label="Send">${composeMode === 'note' ? msIcon('note', true, 18) : composeMode === 'bottle' ? msIcon('bottle', true, 18) : '↑'}</button></form>
+        <small class="chint">${composeMode === 'note' ? 'Sticks on everyone’s glass. You will see when they have read it.' : composeMode === 'bottle' ? 'Only they can read it. It washes up in their tank · 2 🐚' : 'Shows here, in the crew’s activity.'}</small></div>
         <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
         ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}</div>`;
     },
@@ -494,7 +495,8 @@ export function initUI({ game, social, cb }) {
     if (sub === 'look' && tab === 'friends' && sheet.querySelector('.ap') && !sheet.querySelector('.ap.pe')) bindLook();
     sheet.querySelectorAll('[data-invite]').forEach((e) => (e.onclick = () => social.invite()));
     sheet.querySelectorAll('[data-code]').forEach((b) => (b.onclick = () => ({ copy: () => social.copy(), share: () => social.share(), regen: () => social.regen() }[b.dataset.code]())));
-    const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'), v = i.value.trim(); crewDraft = ''; if (composeMode === 'note') { i.value = ''; writeNote(null, v); return; } if (v) { social.chat(v); i.value = ''; } }; { const i = f?.querySelector('input'); if (i) i.oninput = () => { crewDraft = i.value; }; }      // (what you are typing survives the list updating under it)      // a note opens the post-it (colour and doodle) with the words already on it
+    const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'), v = i.value.trim(); crewDraft = ''; if (composeMode === 'note') { i.value = ''; writeNote(null, v); return; } if (composeMode === 'bottle') { if (bottleTo) { i.value = ''; sendBottle(bottleTo, v); } return; } if (v) { social.chat(v); i.value = ''; } }; { const i = f?.querySelector('input'); if (i) i.oninput = () => { crewDraft = i.value; }; }      // (what you are typing survives the list updating under it)      // a note opens the post-it (colour and doodle) with the words already on it
+    sheet.querySelectorAll('[data-bto]').forEach((b) => (b.onclick = () => { bottleTo = b.dataset.bto; sfx('tap'); refresh(); }));
     sheet.querySelectorAll('.cmode [data-mode]').forEach((b) => (b.onclick = () => { if (composeMode === b.dataset.mode) return; composeMode = b.dataset.mode; sfx('tap'); refresh(); sheet.querySelector('form.send input')?.focus(); }));
     const nf = sheet.querySelector('form.note'); if (nf) nf.onsubmit = (e) => { e.preventDefault(); const i = nf.querySelector('input'); if (i.value.trim()) { cb.note(i.value); i.value = ''; } };
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
@@ -552,8 +554,7 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
-      const note = await dialog({ title: 'MESSAGE IN A BOTTLE', text: 'It drops into the tank for them to find. Costs 2 shells.', input: { max: 40, placeholder: 'Write something kind' }, ok: 'Send', cancel: 'Cancel' }); if (!note) return;
-      const r = await game.dispatch({ t: 'bottle', to: b.dataset.bottle, note }); if (r.ok) { sfx('tap'); toast('Bottle sent'); } else toast(REASONS[r.reason] ?? 'Could not send that.');
+      await sendBottle(b.dataset.bottle);
     }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     if (tab === 'decorate' || (tab === 'friends' && sub === 'book')) thumbs();
@@ -710,5 +711,26 @@ export function initUI({ game, social, cb }) {
   const together = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>💛 TOGETHER</b><p>${esc(text)}</p>`, 8000); };
   const recap = (lines, next) => { place(); shelf('settle', `<b>🌙 TODAY IN THE TANK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}${next ? `<p class="nx">Next: ${esc(next)}</p>` : ''}`, 12000); };
   const farewell = (name) => { place(); notice(`${name} has passed away.`, { kind: 'card' }); shelf('settle', `<b>REST WELL</b><p>${esc(name)} has passed away.</p><p>The others stay close.</p>`, 9000); };
-  return { noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  // ── message in a bottle ── the letter, unrolled on parchment; and writing one, with the bottle tossed in at the end
+  function bottleLetter({ from, note, at, pay }) {
+    return modalFree().then(() => new Promise((res) => {
+      modal.innerHTML = `<div class="box bletter"><div class="bpic">${msIcon('bottle', true, 54)}</div><div class="scroll"><small>A message in a bottle</small><p class="hand">${esc(note)}</p><footer>— ${esc(from)}${at ? ` · sent ${ago(at)}` : ''}</footer></div>
+        ${pay ? `<p class="bpay">+${pay} 🐚 for finding it</p>` : ''}<button class="big gold" id="mok">Write back</button><button class="lnk" id="mno">Let it float away</button></div>`;
+      modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); modalShut = performance.now(); res(v); };
+      $('mok').onclick = () => { sfx('tap'); done(true); }; $('mno').onclick = () => done(false);
+    }));
+  }
+  async function sendBottle(to, start = '') {
+    const m = game.members?.find((x) => x.id === to); if (!m) return false;
+    const v = await new Promise((res) => modalFree().then(() => {
+      modal.innerHTML = `<div class="box bletter write"><div class="bpic">${msIcon('bottle', true, 54)}</div><div class="scroll"><small>To ${esc(m.name)}</small><textarea id="bt" class="hand" maxlength="80" placeholder="Write something kind…">${esc(start)}</textarea><footer><span id="bl">80</span> left</footer></div>
+        <p class="bpay">It washes up in ${esc(m.name)}’s tank · 2 🐚</p><button class="big gold" id="mok">Toss it in</button><button class="lnk" id="mno">Not now</button></div>`;
+      modal.classList.add('on'); const ta = $('bt'), ok = $('mok'), upd = () => { $('bl').textContent = 80 - ta.value.length; ok.disabled = !ta.value.trim(); }; ta.oninput = upd; upd(); setTimeout(() => ta.focus(), 200);
+      const done = (x) => { modal.classList.remove('on'); modalShut = performance.now(); res(x); }; ok.onclick = () => done(ta.value.trim()); $('mno').onclick = () => done(null);
+    }));
+    if (!v) return false; const r = await game.dispatch({ t: 'bottle', to, note: v }); if (!r.ok) { toast(REASONS[r.reason] ?? 'Could not send that.'); return false; }
+    sfx('bubble'); haptic(12); const fly = document.createElement('div'); fly.className = 'btoss'; fly.innerHTML = msIcon('bottle', true, 44); document.body.appendChild(fly); setTimeout(() => fly.remove(), 2400);      // tossed in: it plops into the water and bobs off
+    toast(`Your bottle is drifting to ${m.name}.`, 2800); refresh(); return true;
+  }
+  return { bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

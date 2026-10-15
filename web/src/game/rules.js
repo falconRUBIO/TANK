@@ -1291,7 +1291,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     case 'bottle': {
       const to = members?.find((m) => m.id === a.to); if (!to || to.id === uid) return fail('NOT_A_FRIEND');
-      const note = String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40); if (!note) return fail('BAD_NAME');
+      const note = String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80); if (!note) return fail('BAD_NAME');
       if (now - ((t.flags.bottleAt ||= {})[uid] ?? -Infinity) < 6 * HOUR || t.bottles.some((b) => b.from === uid && now - b.at < 6 * HOUR)) return fail('TOO_SOON');   // remembered after the bottle is opened, so opening it cannot reset the wait
       if (t.shells < 2) return fail('NOT_ENOUGH_SHELLS'); if (t.bottles.length >= 12) return fail('TANK_CROWDED');
       t.shells -= 2; t.flags.bottleAt[uid] = now; t.bottles.push({ id: nextId(t, 'b'), from: uid, fromName: name, to: to.id, note, at: now });
@@ -1300,7 +1300,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'openBottle': {
       const b = t.bottles.find((x) => x.id === a.id && x.to === uid); if (!b) return ok({ applied: false, delta: 0 });
       t.bottles.splice(t.bottles.indexOf(b), 1); t.shells += BOTTLE_PAY;
-      events.push({ activity: { type: 'bottle', text: `${name} opened a bottle from ${b.fromName}.` }, toast: `${b.fromName}: “${b.note}” +${BOTTLE_PAY} shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: BOTTLE_PAY, from: b.fromName, note: b.note });
+      events.push({ activity: { type: 'bottle', text: `${name} found a bottle from ${b.fromName}.` } }); levelCheck(t, now, events); return ok({ applied: true, delta: BOTTLE_PAY, from: b.fromName, fromId: b.from, note: b.note, at: b.at });      // (the words are for the one who found it: no toast for everyone)
     }
     case 'glassNote': {                                             // a note left on the glass for the others: one per person (a new one replaces your last), gone after three days
       const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120); if (!txt) return fail('BAD_NAME');

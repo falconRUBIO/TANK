@@ -349,16 +349,25 @@ async function pickDrift() {
 }
 // message in a bottle: only its addressee sees it; tap to open
 const px16 = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 16; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t; };
-const bottleTex = px16((g) => { const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); }; r(6, 1, 4, 2, '#b98a52'); r(7, 3, 2, 2, '#bfe8ee'); r(4, 5, 8, 9, '#a9dde6'); r(3, 7, 10, 5, '#a9dde6'); r(5, 7, 5, 5, '#fff6dc'); r(6, 8, 3, 1, '#c9a96a'); r(6, 10, 3, 1, '#c9a96a'); r(11, 6, 1, 6, '#e8fbff'); });
+const bottleTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 24; const g = c.getContext('2d'), r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };      // a corked glass bottle with a rolled letter inside, drawn upright (it is tipped over on the sand by turning the sprite)
+  r(9, 0, 6, 4, '#1f4f5c'); r(9, 3, 6, 6, '#1f4f5c'); r(6, 7, 12, 3, '#1f4f5c'); r(5, 9, 14, 15, '#1f4f5c');      // outline
+  r(10, 1, 4, 3, '#b98a52'); r(10, 3, 4, 1, '#8a6034'); r(10, 4, 4, 4, '#a9e2ea'); r(7, 8, 10, 2, '#a9e2ea'); r(6, 10, 12, 13, '#9fdce6'); r(6, 21, 12, 2, '#6cc3d1');      // cork, neck, body
+  r(9, 11, 6, 9, '#fff3d0'); r(9, 11, 6, 1, '#e8d6a8'); r(10, 13, 4, 1, '#c9a96a'); r(10, 15, 3, 1, '#c9a96a'); r(10, 17, 4, 1, '#c9a96a'); r(9, 14, 6, 1, '#e0476b');      // the letter, tied with a ribbon
+  r(7, 11, 1, 9, '#eafcff'); r(11, 5, 1, 2, '#eafcff'); r(16, 12, 1, 6, '#c8f1f6');      // glints
+  const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const bottleSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bottleTex, transparent: true, depthWrite: false })); bottleSp.scale.set(1.4, 1.4, 1); bottleSp.visible = false; bottleSp.renderOrder = 6; scene.add(bottleSp);
 const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xa8f0ff })); bottleGlow.renderOrder = 5; bottleGlow.visible = false; scene.add(bottleGlow);
 stg.hideForDepth.push(bottleSp, bottleGlow);
 const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
-let bottleId = null; const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf08a3a, clown: 0xf0703a, blue: 0x8a6cf0, platy: 0xf0a040 };
+let bottleId = null; const sentBottles = new Map(); const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf08a3a, clown: 0xf0703a, blue: 0x8a6cf0, platy: 0xf0a040 };
 function syncExtras() {
   const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
-  if (!b) { bottleSp.visible = bottleGlow.visible = false; bottleId = null; }
-  else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id); bottleSp.position.set(-3 + (h % 60) / 10, 0, 0.8 + ((h >> 8) % 20) / 10); bottleSp.position.y = sandH(bottleSp.position.x, bottleSp.position.z) + 2.1; bottleSp.userData.y0 = bottleSp.position.y; if (s.flags.tut >= 5) { sfx('arrive'); fishes.burst(bottleSp.position); } } bottleSp.visible = bottleGlow.visible = true; }
+  // a bottle from a friend: it drops in at the surface with a splash, sinks slowly, and comes to rest tipped over on the sand, glinting now and then
+  if (!b) { if (!bottleSp.userData.leave) { bottleSp.visible = bottleGlow.visible = false; } bottleId = null; }
+  else { if (bottleId !== b.id) { bottleId = b.id; const h = hashId(b.id), U = bottleSp.userData; bottleSp.position.set(-2.6 + (h % 52) / 10, 0, 0.6 + ((h >> 8) % 16) / 10); U.rest = sandH(bottleSp.position.x, bottleSp.position.z) + 0.42; U.top = Fish3D.topY - 0.4; U.leave = null;
+      U.t0 = Date.now() - (b.at ?? 0) < 6 * 3600e3 && !U.seen?.has(b.id) ? performance.now() : -1e9; (U.seen ||= new Set()).add(b.id); if (U.t0 > 0) { if (s.flags.tut >= 5) sfx('arrive'); fishes.burst(new THREE.Vector3(bottleSp.position.x, U.top, bottleSp.position.z)); } }
+    bottleSp.visible = bottleGlow.visible = true; }
+  { const mine = new Set((s.bottles ?? []).filter((x) => x.from === me).map((x) => x.id)); for (const [id, to] of sentBottles) if (!mine.has(id)) { sentBottles.delete(id); if (to) ui.toast(`${to} found your bottle.`, 3200); } for (const x of s.bottles ?? []) if (x.from === me && !sentBottles.has(x.id)) sentBottles.set(x.id, game.members?.find((m) => m.id === x.to)?.name ?? null); }      // the one who sent it hears when it is found
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const h = hashId(e.id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at)), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a);
@@ -366,10 +375,15 @@ function syncExtras() {
   }
   for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
 }
-function bottleHit(ev) { return bottleSp.visible && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.3; }
+function bottleHit(ev) { return bottleSp.visible && !bottleSp.userData.leave && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.4; }
+// tap it: the cork pops, the letter unrolls, and once it is read the empty bottle floats up and away
 async function openBottle() {
-  const id = bottleId; if (!id) return; const r = await game.dispatch({ t: 'openBottle', id }); if (!r.ok) return fail(r); if (!r.applied) return;
-  sfx('coin'); fishes.burst(bottleSp.position.clone()); await ui.dialog({ title: `FROM ${String(r.from ?? 'a friend').toUpperCase()}`, text: `“${r.note}”`, ok: 'Thank you' }); flyShells(4);
+  const id = bottleId; if (!id) return; const U0 = bottleSp.userData; U0.leave = { t0: performance.now() + 1e9, y: bottleSp.position.y };      // (held where it is while the state catches up)
+  const r = await game.dispatch({ t: 'openBottle', id }); if (!r.ok || !r.applied) { U0.leave = null; return r.ok ? null : fail(r); }
+  sfx('pop'); haptic(14); fishes.burst(bottleSp.position.clone()); const U = bottleSp.userData; U.leave = { t0: performance.now() + 1e9, y: bottleSp.position.y }; bottleSp.visible = bottleGlow.visible = true;      // (stays put, uncorked, while the letter is open)
+  const back = await ui.bottleLetter({ from: r.from ?? 'a friend', note: r.note ?? '', at: r.at, pay: r.delta ?? 0 }); flyShells(r.delta ?? 2);
+  U.leave = { t0: performance.now(), y: bottleSp.position.y }; sfx('bubble');
+  if (back && r.fromId) ui.sendBottle(r.fromId);
 }
 async function greetVisitor(f) {
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
@@ -458,7 +472,7 @@ async function takePhoto() {
   try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] });      /* the picture alone: with text alongside, some apps send only the words */ return; } } catch (e) { if (e?.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ui.toast('Postcard saved');
 }
-window.__postcard = postcardCaption; window.__photo = takePhoto;
+window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBottle = () => openBottle(); window.__bottleSeen = () => ({ id: bottleId, v: bottleSp.visible, y: +bottleSp.position.y.toFixed(2), leave: !!bottleSp.userData.leave });
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
 const card = $('card'), look = new THREE.Vector3(0, stg.LOOK_Y, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
@@ -1058,7 +1072,10 @@ function frameBody(now) {
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
   if (feedMode && (feedIdle += dt) > 12) endFeed();
-  if (bottleSp.visible) { bottleSp.position.y = (bottleSp.userData.y0 ?? 2.1) + Math.sin(t * 1.5 + 1) * 0.12; bottleGlow.position.copy(bottleSp.position); const bs = 2.8 + Math.sin(t * 2.4) * 0.4; bottleGlow.scale.set(bs, bs, 1); }
+  if (bottleSp.visible) { const U = bottleSp.userData, M = bottleSp.material, now = performance.now(), k = Math.min(1, (now - (U.t0 ?? -1e9)) / 4200), e = 1 - Math.pow(1 - k, 3);      // sinking: from the surface down to the sand, rocking as it goes, then resting tipped over
+    if (U.leave && now >= U.leave.t0) { const q = Math.min(1, (now - U.leave.t0) / 2600); bottleSp.position.y = U.leave.y + (Fish3D.topY + 1 - U.leave.y) * q * q; M.rotation = -0.2 + Math.sin(t * 3) * 0.15; M.opacity = 1 - Math.max(0, q - 0.7) / 0.3; if (q >= 1) { U.leave = null; M.opacity = 1; bottleSp.visible = bottleGlow.visible = false; } }
+    else { bottleSp.position.y = (U.top ?? 8) + ((U.rest ?? 0.5) - (U.top ?? 8)) * e + (k >= 1 ? Math.sin(t * 1.2) * 0.03 : 0); M.rotation = k >= 1 ? -1.25 + Math.sin(t * 0.9) * 0.04 : Math.sin(t * 2.2) * 0.35 * (1 - k) - 1.25 * e; }
+    bottleGlow.position.copy(bottleSp.position); const gl = U.leave ? 0 : (Math.sin(t * 0.8) > 0.85 ? 1 : 0.35); const bs = (2.2 + gl * 1.2) * (bottleGlow.scale.x ? 1 : 1); bottleGlow.scale.set(bs, bs, 1); bottleGlow.material.opacity = U.leave ? 0 : 0.35 + gl * 0.5; }
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);

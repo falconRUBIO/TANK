@@ -289,7 +289,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           if (type === 'fishLog' && !lim.hit('fl:' + ws.userId, 3, 60e3)) return send(ws, { t: 'ack', idem, ok: false, reason: 'RATE_LIMIT' });
           const tk = ws.test ? tankNow() : null; if (ws.test && tk?.id !== ws.tankId) return send(ws, { t: 'ack', idem, ok: false, reason: 'NO_TANK' });
           const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an, tank: tk });
-          send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait });
+          send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait, ...(type === 'openBottle' && r.applied !== false ? { from: r.from, fromId: r.fromId, note: r.note, at: r.at } : {}) });      // (the letter, for the one who opened it only)
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
           if (r.ok && !r.dup) {
             if (BIG.has(type)) offsiteSoon();
