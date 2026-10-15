@@ -22,7 +22,7 @@ const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'line
 
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
-  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false;
+  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '';
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
   const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
@@ -179,7 +179,7 @@ export function initUI({ game, social, cb }) {
     return `<h4>Notes on the glass</h4><div class="gnotes">${ns.map((n) => noteCard(n)).join('')}<button class="gnote add" data-act="notenew"><em class="dd">✏️</em><p>${mineHas ? 'Write a new note' : 'Leave a note'}</p><footer><span>for the crew</span></footer></button></div>`;
   }
   // write a note: a sticky you type on, a colour and a little doodle, then stick it on the glass
-  function noteComposer(reply = null, edit = null) {
+  function noteComposer(reply = null, edit = null, start = '') {
     return new Promise((done) => {
       let color = edit?.color ?? 'butter', doodle = edit?.doodle ?? '🐙'; const el = document.createElement('div'); el.className = 'notecomp';
       const paint = () => { el.querySelector('.gnote').style.setProperty('--nb', NOTE_BG[color]); el.querySelector('.dd').textContent = doodle; el.querySelectorAll('[data-c]').forEach((b) => b.classList.toggle('on', b.dataset.c === color)); el.querySelectorAll('[data-d]').forEach((b) => b.classList.toggle('on', b.dataset.d === doodle)); };
@@ -188,14 +188,14 @@ export function initUI({ game, social, cb }) {
         <div class="ncrow">${['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'].map((d) => `<button class="dz" data-d="${d}">${d}</button>`).join('')}</div>
         <div class="ncbtn"><button class="cancel">Not now</button><button class="stick">${edit ? 'Save the note' : 'Stick it on the glass'}</button></div></div>`;
       document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); paint();
-      const ta = el.querySelector('textarea'), left = el.querySelector('.left'), stick = el.querySelector('.stick'); if (edit) ta.value = edit.text; ta.oninput = () => { left.textContent = 120 - ta.value.length; stick.disabled = !ta.value.trim(); }; ta.oninput(); setTimeout(() => ta.focus(), 250);
+      const ta = el.querySelector('textarea'), left = el.querySelector('.left'), stick = el.querySelector('.stick'); if (edit) ta.value = edit.text; else if (start) ta.value = start; ta.oninput = () => { left.textContent = 120 - ta.value.length; stick.disabled = !ta.value.trim(); }; ta.oninput(); setTimeout(() => ta.focus(), 250);
       el.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => { color = b.dataset.c; sfx('tap'); paint(); })); el.querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { doodle = b.dataset.d; sfx('tap'); paint(); }));
       const close = (v) => { el.classList.remove('on'); setTimeout(() => el.remove(), 260); done(v); };
       el.querySelector('.cancel').onclick = () => close(null); stick.onclick = () => close({ text: ta.value.trim(), color, doodle }); el.onclick = (e) => { if (e.target === el) close(null); };
     });
   }
   async function editNote(n) { const v = await noteComposer(null, n); if (!v) return; const r = await game.dispatch({ t: 'editNote', id: n.id, ...v }); if (r.ok) { sfx('place'); toast('Note updated.'); } }
-  async function writeNote(reply = null) { const v = await noteComposer(reply); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('stick'); toast('Your note is on the glass.'); refresh(); }
+  async function writeNote(reply = null, start = '') { const v = await noteComposer(reply, null, start); if (!v) return; const r = await game.dispatch({ t: 'glassNote', ...v }); if (!r.ok) return; sfx('stick'); toast('Your note is on the glass.'); refresh(); }
   // read a note: it comes off the glass big, with a heart and a way to write back
   function readNote(id) {
     const n = [...(S().notes ?? []), ...(S().noteLog ?? [])].find((x) => x.id === id); if (!n) return; const mine = n.by === game.you?.userId, el = document.createElement('div'); el.className = 'notecomp read';
@@ -420,8 +420,9 @@ export function initUI({ game, social, cb }) {
         return `${head}<div class="fact ${mine ? 'mine' : ''}">${who ? `<span class="fav" style="--h:${hue}">${ini}</span>` : '<span class="fav tank">🐠</span>'}<span class="tx">${who ? `<b>${esc(who)}</b> ` : ''}${esc(who ? body.replace(/^\w/, (c) => c.toLowerCase()) : youify(raw))} <small>${ago(it.ts)}</small></span><span class="fic">${msIcon(pic, true, 30)}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : ''}</div>`; }).join('');
       const on = (game.online ?? []).length, all = (game.members ?? []).length;
       return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="crewbox"><div class="slots">${slotsHtml()}</div><button class="pcmini" data-act="photo"><span>${msIcon('postcard', true, 26)}</span><b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
-        ${game.shared ? `<div class="crow notesrow" role="button" tabindex="0" data-act="notenew"><span class="ci">${msIcon('note', true, 24)}</span><span class="ct"><b>Leave a note on the glass</b><small>A post-it your crew sees on their tank</small></span><i class="chev">›</i></div>` : ''}
-        <h4>Activity</h4><form class="send feedsend"><input maxlength="140" placeholder="Message the crew" autocomplete="off"><button aria-label="Send">↑</button></form>
+        <h4>Activity</h4><div class="compose ${composeMode}"><div class="cmode" role="tablist"><button type="button" data-mode="msg" class="${composeMode === 'msg' ? 'on' : ''}">Message</button><button type="button" data-mode="note" class="${composeMode === 'note' ? 'on' : ''}">${msIcon('note', true, 16)} Note on the glass</button></div>
+        <form class="send feedsend"><input maxlength="${composeMode === 'note' ? 120 : 140}" placeholder="${composeMode === 'note' ? 'A post-it for their glass…' : 'Message the crew'}" autocomplete="off" value="${esc(crewDraft)}"><button aria-label="Send">${composeMode === 'note' ? msIcon('note', true, 18) : '↑'}</button></form>
+        <small class="chint">${composeMode === 'note' ? 'Sticks on everyone’s glass. You will see when they have read it.' : 'Shows here, in the crew’s activity.'}</small></div>
         <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
         ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}</div>`;
     },
@@ -493,7 +494,8 @@ export function initUI({ game, social, cb }) {
     if (sub === 'look' && tab === 'friends' && sheet.querySelector('.ap') && !sheet.querySelector('.ap.pe')) bindLook();
     sheet.querySelectorAll('[data-invite]').forEach((e) => (e.onclick = () => social.invite()));
     sheet.querySelectorAll('[data-code]').forEach((b) => (b.onclick = () => ({ copy: () => social.copy(), share: () => social.share(), regen: () => social.regen() }[b.dataset.code]())));
-    const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'); if (i.value.trim()) { social.chat(i.value); i.value = ''; } };
+    const f = sheet.querySelector('form.send'); if (f) f.onsubmit = (e) => { e.preventDefault(); const i = f.querySelector('input'), v = i.value.trim(); crewDraft = ''; if (composeMode === 'note') { i.value = ''; writeNote(null, v); return; } if (v) { social.chat(v); i.value = ''; } }; { const i = f?.querySelector('input'); if (i) i.oninput = () => { crewDraft = i.value; }; }      // (what you are typing survives the list updating under it)      // a note opens the post-it (colour and doodle) with the words already on it
+    sheet.querySelectorAll('.cmode [data-mode]').forEach((b) => (b.onclick = () => { if (composeMode === b.dataset.mode) return; composeMode = b.dataset.mode; sfx('tap'); refresh(); sheet.querySelector('form.send input')?.focus(); }));
     const nf = sheet.querySelector('form.note'); if (nf) nf.onsubmit = (e) => { e.preventDefault(); const i = nf.querySelector('input'); if (i.value.trim()) { cb.note(i.value); i.value = ''; } };
     const ch = sheet.querySelector('.chat'); if (ch) ch.scrollTop = ch.scrollHeight;
     if (tab === 'notices') { readAt = Date.now(); try { localStorage.setItem(RK, String(readAt)); } catch { /* storage unavailable */ } bell(); sheet.querySelectorAll('[data-nt]').forEach((b) => (b.onclick = () => { const n = notices[+b.dataset.nt]; if (!n) return; sfx('tap'); if (n.gift) { open('tank'); cb.gift(); } else if (n.tab) open(n.tab); })); }

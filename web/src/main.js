@@ -1089,14 +1089,16 @@ const seenKey = () => 'ourtank.seen.' + (game.shared ? game.you.userId : 'solo')
 const markSeen = () => { try { localStorage.setItem(seenKey(), String(Date.now())); } catch { /* ignore */ } };
 // ── notes on the glass: real post-its stuck to the front of the tank, readable where they are; a tap opens the notes board ──
 const glassNotes = document.createElement('div'); glassNotes.id = 'glassnotes'; glassNotes.hidden = true; document.body.appendChild(glassNotes);
-const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set(), noteHearts = new Map(); let notesBooted = false;
+const NOTE_INK = { butter: '#fff1a8', blush: '#ffd6e0', mint: '#d2f5dd', sky: '#d6e9ff', lilac: '#e9dcff' }, seenNotes = new Set(), stamped = new Set(), noteHearts = new Map(); let notesBooted = false;
 function syncGlassNote() {
   const me = game.you?.userId, ns = game.shared ? (game.state?.notes ?? []).filter((n) => !(n.gone ?? []).includes(me)).sort((a, b) => b.at - a.at).slice(0, 2) : [];      // (a note you took down is gone from your glass only)
   const show = ns.length > 0 && !play;      // a post-it stays stuck to the glass whatever slides up over the tank
-  glassNotes.hidden = !show; if (!show) return;
-  const key = ns.map((n) => n.id + ':' + (n.hearts ?? []).length + ':' + (n.edited ?? 0) + ':' + (n.pos ? n.pos.x + ',' + n.pos.y : '')).join(); if (glassNotes.querySelector('.drag')) return; if (glassNotes.dataset.k === key) return;
+  if (!show) { for (const el of glassNotes.querySelectorAll('.postit')) { if (play) break; const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.classList.add(el.classList.contains('seen') ? 'fallen' : 'peeled'); Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', margin: 0 }); document.body.appendChild(c); setTimeout(() => c.remove(), 1800); }      /* the last note comes down the same way */
+    glassNotes.innerHTML = ''; glassNotes.dataset.k = ''; glassNotes.hidden = true; return; }
+  glassNotes.hidden = false;
+  const key = ns.map((n) => n.id + ':' + (n.read ?? []).length + ':' + (n.hearts ?? []).length + ':' + (n.edited ?? 0) + ':' + (n.pos ? n.pos.x + ',' + n.pos.y : '')).join(); if (glassNotes.querySelector('.drag')) return; if (glassNotes.dataset.k === key) return;
   const gone = [...glassNotes.querySelectorAll('.postit')].filter((el) => !ns.some((n) => n.id === el.dataset.id));      // a note that came down peels off the glass and drifts away
-  for (const el of gone) { const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.classList.add('peeled'); Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', margin: 0 }); document.body.appendChild(c); setTimeout(() => c.remove(), 1200); }
+  for (const el of gone) { const r = el.getBoundingClientRect(), c = el.cloneNode(true); c.classList.add(el.classList.contains('seen') ? 'fallen' : 'peeled'); Object.assign(c.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', margin: 0 }); document.body.appendChild(c); setTimeout(() => c.remove(), 1800); }
   glassNotes.dataset.k = key;
   const esc2 = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   glassNotes.innerHTML = ns.map((n, i) => { const fresh = notesBooted && !seenNotes.has(n.id), loved = (noteHearts.get(n.id) ?? (n.hearts ?? []).length) < (n.hearts ?? []).length, tilt = i ? 3.5 : -3; noteHearts.set(n.id, (n.hearts ?? []).length); const P = n.pos ?? (i ? { x: 0.36, y: 0.11 } : { x: 0.02, y: 0.085 }); return `<button class="postit ${fresh ? 'fresh' : ''} ${n.by === me ? 'mine' : ''}" style="--pc:${NOTE_INK[n.color] ?? NOTE_INK.butter};--r:${tilt}deg;--d:${i * 0.12}s;left:calc((100vw - 128px) * ${P.x});top:calc((100vh - 130px) * ${P.y})" data-id="${n.id}" data-mine="${n.by === me ? 1 : ''}"><span class="band"></span><span class="pt">${esc2(n.text)}</span><span class="pf"><span>— ${n.by === me ? 'you' : esc2(n.name)}</span><span class="pd">${n.doodle}</span></span>${(n.hearts ?? []).length ? `<span class="ph ${loved ? 'pop' : ''}">♥${n.hearts.length > 1 ? n.hearts.length : ''}</span>` : ''}<span class="curl"></span></button>`; }).join('');
@@ -1108,6 +1110,11 @@ function syncGlassNote() {
       b.style.left = Math.max(0, Math.min(innerWidth - b.offsetWidth, st.l + dx)) + 'px'; b.style.top = Math.max(0, Math.min(innerHeight - b.offsetHeight, st.t + dy)) + 'px'; };
     b.onpointerup = () => { if (!st) return; st = null; if (!dragged) return; b.classList.remove('drag'); sfx('stick'); const x = b.offsetLeft / Math.max(1, innerWidth - 128), y = b.offsetTop / Math.max(1, innerHeight - 130); game.dispatch({ t: 'moveNote', id: b.dataset.id, x, y }); setTimeout(() => (dragged = false), 50); };
     b.onclick = () => { if (dragged) return; sfx('tap'); haptic(6); b.classList.add('lift'); setTimeout(() => ui.noteBoard(b.dataset.id), 160); }; });
+  // your own note, once the crew has read it: a SEEN stamp across it, then it peels off your glass by itself (theirs stays until they tap it)
+  for (const n of ns) { if (n.by !== me || stamped.has(n.id)) continue; const who = (n.read ?? []).filter((u) => u !== me).map((u) => game.members?.find((m) => m.id === u)?.name).filter(Boolean); if (!who.length) continue;
+    const el = glassNotes.querySelector(`.postit[data-id="${n.id}"]`); if (!el || document.hidden) continue; stamped.add(n.id);
+    setTimeout(() => { el.insertAdjacentHTML('beforeend', `<i class="seenst">SEEN<small>by ${who.slice(0, 2).map((x) => x.replace(/[&<>"]/g, '')).join(' & ')}</small></i>`); el.classList.add('seen'); sfx('stick'); haptic(10); }, 900);
+    setTimeout(() => game.dispatch({ t: 'readNote', id: n.id, dismiss: true }), 3900); }      /* SEEN for three seconds, then it drops to the bottom of the glass */
   notesBooted = true;
 }
 game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
