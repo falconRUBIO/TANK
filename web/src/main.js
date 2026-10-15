@@ -614,13 +614,24 @@ function showCard(f) {
   const ms = milestonesOf(rec), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${msIcon(m.key === 'home' && (rec.parents ?? []).length ? 'hatched' : m.key, m.done)}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there
   const tr = rec.species === 'octopus' ? octoTrust(rec, game.you?.userId ?? 'me') : null, trustRow = tr ? `<div class="trust"><span>🐙 Trust</span><b>${tr.label}</b><small>${tr.next ? `${tr.next.need} more crab${tr.next.need === 1 ? '' : 's'} or visits to: ${tr.next.label.toLowerCase()}` : 'It trusts you completely.'}</small></div>` : '';      // how far this octopus has come to trust you
   const misses = rec.missing && Date.now() - rec.missing.at < 864e5 ? `Misses the ${rec.missing.what}. Looking for somewhere new.` : null, thought = misses ?? f.thought;      // for a day after something it loved is taken out
+  const whyLine = (() => { const now = game.now(), nm = (id) => game.state.fish.find((x) => x.id === id)?.name ?? (game.state.memorial ?? []).find((x) => x.id === id)?.name, L = LIFESPAN[rec.species], age = (now - rec.born) / 864e5;      // why it is the way it is today, in one line
+    if (rec.widowAt && now - rec.widowAt < 7 * 864e5) return `Grieving its partner. It needs about ${Math.max(1, Math.ceil(7 - (now - rec.widowAt) / 864e5))} more day${Math.ceil(7 - (now - rec.widowAt) / 864e5) === 1 ? '' : 's'} before it feels like itself.`;
+    if (p.needs[3] < 0.5) return 'Unwell: it needs food and clean water to get its strength back.';
+    if (p.needs[0] < 0.35) return 'Hungry. It has been a while since a good meal.';
+    if (rec.elder) return 'An elder now: slower, softer colours, and still enjoying every day.';
+    if (L && age >= L * 0.75 - 7) return 'Getting older: within a week or so it will be an elder.';
+    if (p.needs[1] < 0.4) return 'A bit low. A clean tank and some play would cheer it up.';
+    return null; })();
+  const famNames = (() => { const out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, par = (rec.parents ?? []).map((x) => x?.name).filter(Boolean), kidsL = childrenOf(game.state, rec.id), sib = game.state.fish.filter((x) => x.id !== rec.id && (x.parents ?? []).length && (x.parents ?? []).some((q) => (rec.parents ?? []).some((r) => r?.id && r.id === q?.id))).map((x) => x.name);
+    if (par.length) out.push(`Parents: ${par.join(' & ')}`); if (rec.mate && nm(rec.mate)) out.push(`Partner: ${nm(rec.mate)}`); if (sib.length) out.push(`Siblings: ${sib.slice(0, 4).join(', ')}${sib.length > 4 ? ` +${sib.length - 4}` : ''}`); if (kidsL.length) out.push(`Young: ${kidsL.length}${kidsL.some((k) => !k.alive) ? ` (${kidsL.filter((k) => k.alive).length} still here)` : ''}`);
+    return out.length ? esc(out.join(' · ')) : null; })();
   const fod = factOfDay(rec.species), factLine = fod ? `<div class="dyk mini" role="button" tabindex="0" data-tab="pers"><small>DID YOU KNOW?</small><p>${esc(fod.text)}</p></div>` : '';      // the day's fact, also on the first tab
-  const over = `${path}${trustRow}${factLine}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}
+  const over = `${path}${trustRow}${factLine}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
     <h4>Behaviours</h4><div class="bsum"><p>${seen.length} of ${beh.length} behaviours seen</p><div class="tags">${tags(seen.length ? seen.slice(0, 6) : beh.slice(0, 3))}</div><button class="lnk" data-tab="pers">See them all ›</button></div>
-    <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>
+    <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>
     ${comfortBlock(rec)}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
@@ -831,6 +842,10 @@ game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+// a few words on the life it had, for the goodbye
+function lifeSummary(x) { const out = [], kids = childrenOf(game.state, x.id).length, pal = x.friend;
+  if (x.traits?.length) out.push(`${x.traits.slice(0, 2).join(' and ')} by nature`); if (pal) out.push(`best friends with ${pal}`); if (kids) out.push(`raised ${kids} young`); if (x.elder) out.push('lived to be an elder');
+  return out.length ? out.join(', ').replace(/^./, (c) => c.toUpperCase()) + '.' : null; }
 // A death is never missed: every one in the tank's memorial that this phone has not shown yet (here, on another phone, or while nobody was
 // looking) gets the card in the middle of the screen, once. Deaths from before this phone ever checked are not brought up again.
 let mourning = false;
@@ -845,7 +860,7 @@ async function mournCheck() {
     for (const x of fresh) {
       seen.push(tag(x)); try { localStorage.setItem(key, JSON.stringify(seen.slice(-60))); } catch { /* ignore */ }
       const fl = (game.state.floaters ?? []).find((z) => z.id === x.id), who = x.ownerName ?? game.members?.find((m) => m.id === x.owner)?.name ?? null;
-      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl, oldAge: !!(x.oldAge || fl?.oldAge) });
+      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl, oldAge: !!(x.oldAge || fl?.oldAge), life: lifeSummary(x) });
       if (r === 'rest' && (game.state.floaters ?? []).some((z) => z.id === x.id)) { const d = await game.dispatch({ t: 'scoop', id: x.id }); if (d.ok && d.applied) { sfx('tap'); haptic(10); } }
     }
   } finally { mourning = false; }

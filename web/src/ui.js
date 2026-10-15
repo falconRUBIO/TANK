@@ -642,12 +642,12 @@ export function initUI({ game, social, cb }) {
     }));
   }
   // a death, said plainly in the middle of the screen: who it was, how long it lived here, why, and the one thing to do now
-  function mourn({ name, species, pal = null, days, who = null, canRest = false, oldAge = false }) {
+  function mourn({ name, species, pal = null, days, who = null, canRest = false, oldAge = false, life = null }) {
     return modalFree().then(() => new Promise((res) => {
       const label = (SPECIES_DEF[species]?.label ?? species).toLowerCase();
       modal.innerHTML = `<div class="box party mourn"><div class="mpic"><img alt="" src="${fishThumb(species, pal)}"><span>🕊️</span></div><h2>${esc(name.toUpperCase())} HAS PASSED AWAY</h2>
         <div class="amt">${days} <small>day${days === 1 ? '' : 's'} in your tank</small></div>
-        <p>${oldAge ? `Your ${esc(label)} passed away peacefully of old age. A long, full life${who ? `, looked after by ${esc(who)}` : ''}.` : `Your ${esc(label)} went too long without food and clean water.${who ? ` ${esc(who)} looked after it.` : ''}`} The others are staying close.</p>
+        <p>${oldAge ? `Your ${esc(label)} passed away peacefully of old age. A long, full life${who ? `, looked after by ${esc(who)}` : ''}.` : `Your ${esc(label)} went too long without food and clean water.${who ? ` ${esc(who)} looked after it.` : ''}`} The others are staying close.</p>${life ? `<p class="life">${esc(life)}</p>` : ''}
         ${canRest ? '<button class="big gold" id="mok">Lay to rest</button><button class="lnk" id="mno">Later</button>' : '<button class="big gold" id="mok">Remember them</button>'}</div>`;
       modal.classList.add('on', 'party'); sfx('tap');
       const done = (v) => { modal.classList.remove('on', 'party'); res(v); };
