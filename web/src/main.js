@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { LIFESPAN, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -605,9 +605,9 @@ function showCard(f) {
   const tab = (game.profTab ??= 'over'), T = (k, l) => `<button class="tb ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`, row = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : '');
   const famBar = `<div class="famb">${FAMILIAR.map((_, i) => `<i class="${i < fm.i ? 'f' : i === fm.i ? 'c' : ''}">${i === fm.i ? `<b style="width:${Math.round(Math.max(0.12, fm.k) * 100)}%"></b>` : ''}</i>`).join('')}</div>`;
   const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
-  const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const famLine = (() => { if (octo) { const L = bondLines(rec, game.now(), LOG); return L.length ? `<p class="mind fam">${L.join('<br>')}</p>` : ''; } if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
-    if (stageOf(rec) === 'adult' && rec.mate && nm(rec.mate)) out.push(`💞 Paired with ${esc(nm(rec.mate))}`);      /* (male or female is in the line under the name) */
+    out.push(...bondLines(rec, now, LOG));
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
@@ -842,6 +842,23 @@ game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+// who it is close to, with the numbers behind it: a partner (and since when, and how often they greet), or how far along two are in getting to know each other
+function bondLines(rec, now, LOG = {}) {
+  const S = game.state, nm = (id) => S.fish.find((x) => x.id === id)?.name, out = [], d = (ms) => Math.max(1, Math.floor(ms / 864e5)), octoF = rec.species === 'octopus';
+  const mateId = octoF ? rec.partner : rec.mate, since = octoF ? rec.partneredAt : rec.pairedAt;
+  if (mateId && nm(mateId)) {
+    const o = S.fish.find((x) => x.id === mateId), same = !octoF && sexOf(o) === sexOf(rec);
+    const kind = octoF ? 'Partner' : same ? 'Companion' : 'Partner', note = octoF ? 'They touch arms and share a den. Octopuses rarely let anyone this close.' : same ? `Two ${sexOf(rec) === 'm' ? 'males' : 'females'}: they dance and hold tails every morning, but will not have babies.` : 'They greet each other every morning. Seahorses pair for life.';
+    out.push(`💞 <b>${kind}:</b> ${esc(nm(mateId))} · together ${d(now - (since ?? now))} day${d(now - (since ?? now)) === 1 ? '' : 's'}${!octoF && LOG.greets ? ` · ${LOG.greets} morning dance${LOG.greets === 1 ? '' : 's'}` : ''}`, `<small>${note}</small>`);
+    return out;
+  }
+  const B = octoF ? S.octoBonds : S.bonds, need = (octoF ? OCTO_PAIR_DAYS : SEA.PAIR_DAYS) * 864e5;
+  const best = Object.entries(B ?? {}).filter(([k]) => k.split('|').includes(rec.id)).sort((x, y) => y[1] - x[1])[0];
+  if (best && best[1] > 0) { const other = best[0].split('|').find((x) => x !== rec.id), o = S.fish.find((x) => x.id === other); if (o) { const pc = Math.min(99, Math.round(best[1] / need * 100)), same = !octoF && sexOf(o) === sexOf(rec);
+    out.push(`🫧 <b>Getting to know ${esc(o.name)}:</b> ${pc}%`, `<small>${octoF ? 'Tasting each other with their suckers, still a little wary.' : same ? 'Both ' + (sexOf(rec) === 'm' ? 'male' : 'female') + ': if they bond, they will be companions, not parents.' : 'A male and a female: if they bond, they could raise a family.'}</small>`); } }
+  if (!octoF && rec.widowAt && now - rec.widowAt < 7 * 864e5) out.push('<small>Still grieving: not ready to bond again yet.</small>');
+  return out;
+}
 // a few words on the life it had, for the goodbye
 function lifeSummary(x) { const out = [], kids = childrenOf(game.state, x.id).length, pal = x.friend;
   if (x.traits?.length) out.push(`${x.traits.slice(0, 2).join(' and ')} by nature`); if (pal) out.push(`best friends with ${pal}`); if (kids) out.push(`raised ${kids} young`); if (x.elder) out.push('lived to be an elder');

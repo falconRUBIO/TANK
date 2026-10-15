@@ -32,7 +32,7 @@ export function current(x, y, z, t, out) {
   out.y = 0.02 * Math.sin(0.09 * t + 0.8 * x + 2.1);
   return out;
 }
-const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'] };
+const EMOTE = { Hungry: ['🍤', '#2a1a1a'], Sleepy: ['💤', '#17203a'], Gloomy: ['☁️', '#1e2430'], 'Under the weather': ['🩹', '#2a1a22'], Together: ['💞', '#2a1a2a'] };
 const emoteTex = {};
 function emoteTexture(mood) {
   if (emoteTex[mood]) return emoteTex[mood];
@@ -105,7 +105,7 @@ export class Fishes {
   // (a bubble still fading out when the mood changes to one with no bubble keeps the old picture until it is gone)
   updateEmotes(t) {
     for (const f of this.list) {
-      const sp = f.emote, mood = f.profile?.mood; if (!sp) continue; if (f.dead) { sp.visible = false; continue; }
+      const sp = f.emote, pt = f.rec?.partner && this.list.find((o) => o.fid === f.rec.partner && !o.dead), mood = pt && pt.pos.distanceTo(f.pos) < 2.4 ? 'Together' : f.profile?.mood;      /* two octopus partners close together: a heart now and then */ if (!sp) continue; if (f.dead) { sp.visible = false; continue; }
       const phase = (t + f.emoteSeed) % 14, show = EMOTE[mood] && (phase < 3.4 || (mood === 'Hungry' && phase < 7)) && !f.group.parent?.userData?.hide;
       const want = show ? Math.min(1, Math.min(phase, 3.4 - phase + 0.4) * 2.5) : 0;
       sp.material.opacity += (want - sp.material.opacity) * 0.2; sp.visible = sp.material.opacity > 0.03;
@@ -627,7 +627,7 @@ export class Fishes {
     const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, court }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, court }; this.burst(new THREE.Vector3(cx, y, cz));      // courting, they circle closer and longer
   }
   update(dt, t) {
-    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);
+    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = Math.max(broodOf(f.rec, now), f.greet && f.rec.sex === 'm' ? 0.3 : 0);      /* a male puffs his pouch a little as he greets */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
       for (const f of this.list) if ((f.species?.move === 'jet' || (f.sk === 'seahorse' && !f.nursery)) && f.rec && !f.dead && !f.visitor) {      /* (a seahorse has its own hunger too) */ const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
     // laid to rest: the body sinks slowly and fades away, rather than vanishing

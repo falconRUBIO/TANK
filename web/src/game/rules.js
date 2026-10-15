@@ -474,6 +474,23 @@ function devSea(t, op, now, ev) {
   if (have >= want) return 'NOT_NOW';
   const dad = t.fish.find((f) => f.id === N.father); shift(have - want, [N, 'born', 'readyAt'], [dad, 'lastBirth', 'breedAt']); ev.push(...advance(t, now)); return null;
 }
+// one key per two seahorses getting to know each other: male first for a male and a female (as before), else in id order
+export const bondKey = (x, y) => (x.sex !== y.sex ? (x.sex === 'm' ? [x, y] : [y, x]) : [x, y].sort((a, b) => (a.id < b.id ? -1 : 1))).map((f) => f.id).join('|');
+// ── Two octopuses ── solitary by nature, but two that share a tank long enough, and are never fed short, stop sizing each other up: they touch arms
+// (octopuses taste with their suckers, so this is how they get to know one another), take turns resting in each other's den, and become partners.
+// Any two, whatever their sex: no mating, no eggs, just company. A hungry one stays wary, so a neglected pair takes longer.
+export const OCTO_PAIR_DAYS = 3;
+function octoPartners(t, now, ev) {
+  const os = t.fish.filter((f) => f.species === 'octopus' && !f.dead), byId = new Map(os.map((f) => [f.id, f]));
+  for (const f of os) if (f.partner && !byId.has(f.partner)) { const gone = (t.memorial ?? []).find((m) => m.id === f.partner)?.name ?? 'its partner'; delete f.partner; delete f.partneredAt; const line = `${f.name} keeps checking the den where ${gone} used to rest.`; ev.push({ journal: line, story: f.id, text: line }); }
+  if (now < (t.octoBondAt ?? 0)) return; const step = Math.max(0, Math.min(now - (t.octoBondLast ?? now), 2 * DAY)); t.octoBondLast = now; t.octoBondAt = now + 3 * HOUR; t.octoBonds ||= {};
+  const free = os.filter((f) => !f.partner && stageOf(f, now) === 'adult');
+  for (const k of Object.keys(t.octoBonds)) { const [a, b] = k.split('|'); if (!free.some((f) => f.id === a) || !free.some((f) => f.id === b)) delete t.octoBonds[k]; }
+  for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j], k = [x.id, y.id].sort().join('|'), calm = Math.min(x.happy ?? 0.7, y.happy ?? 0.7) > 0.45 ? 1 : 0.4; t.octoBonds[k] = (t.octoBonds[k] ?? 0) + step * calm; }
+  for (const [k, ms] of Object.entries(t.octoBonds).sort((p, q) => q[1] - p[1])) { if (ms < OCTO_PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), x = byId.get(a), y = byId.get(b); if (!x || !y || x.partner || y.partner) continue;
+    x.partner = y.id; y.partner = x.id; x.partneredAt = y.partneredAt = now; delete t.octoBonds[k];
+    const line = `${x.name} and ${y.name} have stopped sizing each other up. They touch arms now, and take turns resting in each other's den.`; ev.push({ journal: line, toast: `${x.name} and ${y.name} are partners now.` }, { story: x.id, text: `Became partners with ${y.name}.` }, { story: y.id, text: `Became partners with ${x.name}.` }); }
+}
 function seaFamilies(t, now, ev) {
   const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
   for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) {      // a partner that has left: seahorses pair for life, so the one left behind grieves a while before it could pair again
@@ -483,19 +500,21 @@ function seaFamilies(t, now, ev) {
   if (now >= (t.pairAt ?? 0)) {
     const step = Math.max(0, Math.min(now - (t.pairLast ?? now), 2 * DAY)); t.pairLast = now; t.pairAt = now + 3 * HOUR; t.bonds ||= {};      // (a long absence counts for at most two days)
     for (const k of Object.keys(t.bonds)) { const [a, b] = k.split('|'); if (!byId.has(a) || !byId.has(b) || byId.get(a).mate || byId.get(b).mate) delete t.bonds[k]; }
-    const ready = (f) => !f.mate && adult(f) && !f.elder && (f.widowAt == null || now - f.widowAt > 7 * DAY), males = hs.filter((f) => f.sex === 'm' && ready(f)), females = hs.filter((f) => f.sex === 'f' && ready(f));      // (not while grieving, and elders do not start again)
-    for (const m of males) for (const w of females) { if (relatedFish(m, w)) continue; const k = m.id + '|' + w.id; t.bonds[k] = (t.bonds[k] ?? 0) + step; }
+    const ready = (f) => !f.mate && adult(f) && !f.elder && (f.widowAt == null || now - f.widowAt > 7 * DAY), free = hs.filter(ready);      // (not while grieving, and elders do not start again)
+    // any two unrelated adults get to know each other: a male and a female become a pair; two males or two females, short of a partner, can bond as companions (as kept seahorses really do)
+    for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j]; if (relatedFish(x, y)) continue; const k = bondKey(x, y); t.bonds[k] = (t.bonds[k] ?? 0) + step; }
     for (const [k, ms] of Object.entries(t.bonds).sort((x, y) => y[1] - x[1])) {
       if (ms < SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), m = byId.get(a), w = byId.get(b); if (!m || !w || m.mate || w.mate) continue;
       m.mate = w.id; w.mate = m.id; m.pairedAt = w.pairedAt = now; delete t.bonds[k]; unlock(t, m, 'pair', now, ev); unlock(t, w, 'pair', now, ev);
-      ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.` });
+      if (m.sex === w.sex) ev.push({ journal: `${m.name} and ${w.name} have bonded as companions. They greet each other every morning, though they will not have babies.`, toast: `${m.name} and ${w.name} are companions now.` });
+      else ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.` });
     }
   }
   // courtship and pregnancy: a settled pair, now and then, when no other family is under way and his cooldown is over
   if (now >= (t.courtAt ?? 0)) {
     t.courtAt = now + 6 * HOUR;
     if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
-      const w = byId.get(m.mate); if (m.sex !== 'm' || !w || !adult(m) || !adult(w) || m.elder || w.elder || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
+      const w = byId.get(m.mate); if (m.sex !== 'm' || !w || w.sex !== 'f' || !adult(m) || !adult(w) || m.elder || w.elder || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
       const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
       conceive(m, w, now, h, ev); break;
     }
@@ -826,7 +845,7 @@ guard.seen = new Set();
 export const timeStepErrors = () => [...guard.seen];      // shown on the developer page so a stuck tank is easy to spot
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
-  guard('seahorses', () => seaFamilies(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
+  guard('seahorses', () => seaFamilies(t, now, ev)); guard('octopals', () => octoPartners(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
