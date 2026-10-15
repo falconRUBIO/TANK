@@ -1,6 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
-import { CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN } from './game/rules.js';
+import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
@@ -116,7 +116,7 @@ export function initUI({ game, social, cb }) {
     if (s.want) return { text: s.want.text, tab: '' };
     const o = (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)[0];
     if (o) return { text: `${o.name || SPECIES_DEF[o.species].label} arrives in ${eta(o.arrivesAt - game.now())}`, tab: '' };
-    const eg = (s.eggs ?? [])[0]; if (eg) return { text: `An egg is about to hatch in ${eta(eg.hatchAt - game.now())}`, tab: '' };
+    const eg = (s.eggs ?? [])[0]; if (eg) return { text: `Eggs hatch in ${eta(eg.hatchAt - game.now())}`, tab: '' };
     const cheapest = Math.min(...Object.values(DECOR_DEF).filter((d) => d.level <= s.level).map((d) => d.price));
     const owned = new Set([...s.fish.map((f) => f.species), ...(s.orders ?? []).map((o) => o.species)]), room = s.fish.length + (s.orders ?? []).length;
     const fish = Object.entries(SPECIES_DEF).filter(([k, d]) => !d.visitor && !owned.has(k) && d.level <= s.level && room + d.count <= capacity(s.level)).sort((x, y) => x[1].price - y[1].price)[0];
@@ -314,7 +314,7 @@ export function initUI({ game, social, cb }) {
   const todayHtml = (busy = false) => {
     const s = S(), now = game.now(), g = goalText(), up = [];
     for (const o of (s.orders ?? []).slice().sort((x, y) => x.arrivesAt - y.arrivesAt)) up.push([`📦 ${esc(o.name || SPECIES_DEF[o.species].label)} arrives`, eta(o.arrivesAt - now)]);
-    for (const e of (s.eggs ?? [])) up.push(['🥚 An egg hatches', eta(e.hatchAt - now)]);
+    for (const e of (s.eggs ?? [])) up.push(['🥚 The eggs hatch', eta(e.hatchAt - now)]);
     const grow = s.fish.map((f) => ({ f, n: nextStage(f, now) })).filter((x) => x.n).sort((a, b) => a.n.ms - b.n.ms)[0]; if (grow) up.push([`🌱 ${esc(grow.f.name)} grows up`, eta(grow.n.ms)]);
     const age = s.fish.map((f) => ({ f, d: (now - f.born) / 864e5 })).filter((x) => x.d < 30).map((x) => ({ ...x, to: x.d < 14 ? 14 : 30 })).sort((a, b) => (a.to - a.d) - (b.to - b.d))[0]; if (age) up.push([`🎂 ${esc(age.f.name)} turns ${age.to} days`, eta((age.to - age.d) * 864e5)]);
     const ready = readyToTrim(s, now).length; if (ready) up.push([`🌿 ${ready} plant${ready > 1 ? 's' : ''} ready to trim`, `+${ready}`]);
@@ -376,7 +376,7 @@ export function initUI({ game, social, cb }) {
         { act: 'clean', icon: '🧽', title: 'Clean the glass', sub: k.glass[0].replace(/ · wipe now$/, ''), due: k.glass[1] === 'due', btn: 'Wipe' },
         { act: 'water', icon: '💧', title: 'Change the water', sub: k.water[0].replace(/ · change now$/, ''), due: k.water[1] === 'due', btn: 'Change' }];
       for (const e of s.eggs ?? []) { const left = Math.max(0, e.hatchAt - Date.now()), h = Math.round(left / 36e5), c = e.cared?.length ?? 0, nm = (id, sn) => s.fish.find((f) => f.id === id)?.name ?? sn?.name;      // an egg waiting to hatch: how long, and how it is being looked after
-        chores.push({ act: 'egg', icon: '🥚', title: `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${esc(nm(e.a, e.pa))} & ${esc(nm(e.b, e.pb))}'s egg` : 'An egg'}`, sub: `hatches ${left < 36e5 ? 'any minute' : h < 24 ? `in ${h} h` : (() => { const d = Math.round(h / 12) / 2; return `in ${d} day${d === 1 ? '' : 's'}`; })()} · ${c >= 2 ? 'will hatch strong ✓' : `looked after ${c} of 2 days`}`, due: false }); }
+        chores.push({ act: 'egg', icon: '🥚', title: `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${esc(nm(e.a, e.pa))} & ${esc(nm(e.b, e.pb))}'s eggs` : 'Eggs'}`, sub: `${(() => { const G = s.fish.find((f) => f.id === e.guard && !f.dead); return G ? `${esc(G.name)} ${eggCareOf(e).mode === 'mouth' ? 'carries them' : 'guards them'} · ` : ''; })()}hatches ${left < 36e5 ? 'any minute' : h < 24 ? `in ${h} h` : (() => { const d = Math.round(h / 12) / 2; return `in ${d} day${d === 1 ? '' : 's'}`; })()} · ${c >= 2 ? 'will hatch strong ✓' : `looked after ${c} of 2 days`}`, due: false }); }
       const trim = readyToTrim(s, Date.now()).length; if (trim) chores.push({ act: 'trim', icon: '✂️', title: 'Trim the plants', sub: `${trim} ready · +${trim} 🐚`, due: true, btn: 'Trim' });
       const row = (c) => `<div class="crow ${c.due ? 'due' : ''}" role="button" tabindex="0" data-act="${c.due || c.feed ? c.act : 'notyet'}" data-say="${esc(c.sub)}"><span class="ci">${pix(c.icon)}</span><span class="ct"><b>${c.title}</b><small>${c.sub}</small></span>${c.due ? `<button class="cbtn" data-act="${c.quick ? 'feednow' : c.act}"${c.quick ? quick : ''}>${c.btn}</button>` : `<i class="chev">${c.feed ? (feedOn ? '⌃' : '⌄') : '›'}</i>`}</div>${c.feed && feedOn ? feedDrawer() : ''}`;
       if (!s.fish.some((f) => !f.dead)) chores.shift();      // (nothing to feed: no Feed row)

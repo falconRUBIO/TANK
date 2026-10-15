@@ -328,7 +328,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
         // an egg that hatches within six hours: everyone away hears it once, so they can be there for it
         const egg = (w.eggs ?? []).find((e) => e.laid && e.hatchAt > now && e.hatchAt - now < 6 * 3600e3);
-        if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s egg` : 'The egg'} is wobbling. It hatches in a few hours.`, { now })) mark(k); } }
+        if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} have turned silvery and are trembling. They hatch in a few hours.`, { now })) mark(k); } }
+        // eggs just laid: everyone away hears who laid them and who is looking after them, once
+        const fresh = (w.eggs ?? []).find((e) => e.laid && now - e.laid < 3 * 3600e3);
+        if (fresh) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name, G = w.fish.find((f) => f.id === fresh.guard && !f.dead), md = R.eggCareOf(fresh).mode;
+          const text = md === 'mouth' && G ? `${G.name} is carrying eggs in his mouth! They hatch in ${R.EGG_DAYS} days.` : md === 'drift' ? `${nm(fresh.a, fresh.pa)} and ${nm(fresh.b, fresh.pb)} spawned. Their eggs are drifting in the tank, and they need you.` : `New eggs! ${G ? `${G.name} is guarding them.` : 'Come and see.'} They hatch in ${R.EGG_DAYS} days.`;
+          for (const m of away) { const k = `push:laid:${id}:${fresh.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, text, { now })) mark(k); } }
         for (const m of away) {
           const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
           if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }

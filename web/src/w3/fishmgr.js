@@ -782,6 +782,7 @@ export class Fishes {
     for (const f of this.list) { if (f.flake && !f.flake.eaten && !f.flake.sucked && this.flakes.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
     for (const f of this.list) {
       if (f.visitor || f.dead || f.species.move === 'jet') { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // an octopus does not eat flakes
+      if (f.brood) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // a cardinalfish father with eggs in his mouth eats nothing until they hatch
       if (f.sk === 'seahorse' && f.leadOf?.() !== false && !f.chase && (f.holdfast?.on || f.releaseT > 0)) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // holding on, a seahorse hunts from its stem (see Fish3D.seahorse)
       const tr = f.profile?.traits ?? [], shy = tr.includes('Shy'), greedy = tr.includes('Greedy'), curious = tr.includes('Curious');
       f.hold = (f.hold ?? 0) - dt; f.think = (f.think ?? 0) - dt;

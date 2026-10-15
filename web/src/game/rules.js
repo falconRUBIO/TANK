@@ -382,6 +382,29 @@ function visitors(t, now, ev) {
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
+// How each kind really looks after its eggs. guard: a patch of eggs stuck down by a rock, the father on guard (fanning them, picking out bad ones,
+// chasing others off), the mother never far; mouth: the father carries them in his mouth and eats nothing until they hatch; drift: the pair rise
+// together at dusk and let the eggs go to drift, as they do in the sea, so the care is all yours.
+export const EGG_CARE = {
+  goldfish: { mode: 'guard', on: 'rock', fact: 'Clownfish fathers guard their eggs, fanning water over them and picking out any that go bad.' },
+  guppy: { mode: 'guard', on: 'rock', fact: 'A damselfish father guards his eggs fiercely, chasing off fish far bigger than he is.' },
+  cory: { mode: 'guard', on: 'rock', fact: 'Goby fathers guard their eggs in a hollow under a rock, fanning them clean.' },
+  blue: { mode: 'guard', on: 'plant', fact: 'A royal gramma father lines a nest with bits of seaweed and guards the eggs in it.' },
+  platy: { mode: 'mouth', fact: 'Cardinalfish fathers carry the eggs in their mouths, and eat nothing until they hatch.' },
+  angelfish: { mode: 'drift', fact: 'Angelfish pairs rise together at dusk and let their eggs drift away on the current.' },
+  betta: { mode: 'drift', fact: 'Mandarin pairs rise together at dusk and release their eggs to drift.' },
+};
+export const eggCareOf = (e) => EGG_CARE[e?.species] ?? EGG_CARE.goldfish;
+// who is looking after an egg now: its guardian if still here, else the other parent, else nobody (the caretaker)
+function eggGuard(t, e, ev) {
+  if (eggCareOf(e).mode === 'drift') return;
+  const live = (id) => t.fish.find((f) => f.id === id && !f.dead);
+  if (e.guard === undefined) e.guard = [e.b, e.a].map(live).find((f) => f && sexOf(f) === 'm')?.id ?? [e.a, e.b].find(live) ?? null;      // (an egg from before parents looked after them: its father takes it on)
+  if (e.guard && live(e.guard)) return;
+  const was = e.guard, other = [e.a, e.b].find((id) => id !== was && live(id));
+  if (other && eggCareOf(e).mode === 'guard') { e.guard = other; if (was) ev.push({ journal: `${live(other).name} has taken over guarding the eggs.` }); return; }
+  if (e.guard !== null) { e.guard = null; if (was) ev.push({ journal: 'The eggs have no parent watching them now. It is up to you to keep the water clean and the tank fed.' }); }
+}
 const logNote = (t, n) => { t.noteLog = [n, ...(t.noteLog ?? []).filter((x) => x.id !== n.id)].slice(0, 12); };      // the board keeps the last twelve notes for two weeks
 export const NOTE_KEEP = 14 * 864e5, NOTE_COLORS = ['butter', 'blush', 'mint', 'sky', 'lilac'], NOTE_DOODLES = ['🐙', '🐠', '🐟', '🌿', '💛', '⭐', '🫧', '🦀'], NOTE_LIFE = 3 * DAY;
 const careEgg = (t, now) => { const d = Math.floor(now / DAY); for (const e of t.eggs ?? []) { e.cared ||= []; if (!e.cared.includes(d) && now < e.hatchAt) e.cared.push(d); } };      // food or clean water on a day counts as looking after the egg that day
@@ -389,7 +412,8 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 function eggs(t, now, ev) {
   for (const e of [...t.eggs]) {
     // very rarely, an egg nobody has looked after at all is found by the octopus (only when it was flagged at laying, see below)
-    if (e.risk && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
+    if (e.risk && !e.guard && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
+    eggGuard(t, e, ev);
     if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
     const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
     const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
@@ -397,7 +421,9 @@ function eggs(t, now, ev) {
     const genes = A && B ? blendGenes(A.genes, B.genes, seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
     const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
     const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
-    ev.push({ journal: A && B ? `An egg hatched: meet ${f.name}, child of ${A.name} and ${B.name}.` : `An egg hatched: meet ${f.name}.`, toast: `The egg hatched! Meet ${f.name}.`, arrival: [f.id] });
+    const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
+    const how = md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most were swept off as tiny larvae; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched in the night. Most of the tiny larvae drifted off; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. One little one made it: meet ${f.name}`;
+    ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id] });
     if (A && B && [e.a, e.b].every((id) => t.fish.some((x) => x.id === id && !x.dead))) ev.push({ journal: `${A.name} and ${B.name} came over to meet ${f.name}.` });
     if (!t.flags.firstHatch) { t.flags.firstHatch = { at: now, fish: f.id, parents: [A?.id ?? null, B?.id ?? null] }; t.shells += FIRST_HATCH_REWARD; ev.push({ toast: `Your first baby fish hatched. +${FIRST_HATCH_REWARD} shells`, milestone: f.id }); }
     if (gen > (t.flags.topGen ?? 0)) { t.flags.topGen = gen; ev.push({ journal: gen === 1 ? 'The first generation hatched in this tank.' : `A ${['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'][gen] ?? gen + 'th'} generation has hatched in this tank.` }); }
@@ -405,12 +431,15 @@ function eggs(t, now, ev) {
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.eggs.length) return;      // one egg at a time, so each one is an event
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
-  const adults = t.fish.filter((f) => stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
+  const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
-  const pairs = Object.values(by).filter((g) => g.length >= 2); if (!pairs.length) return;
-  const g = pairs[hash32(now / 6e4) % pairs.length], [A, B] = [g[0], g[1]];
-  t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), laid: now, hatchAt: now + EGG_DAYS * DAY, cared: [], risk: t.fish.some((f) => f.species === 'octopus' && !f.dead) && hash32(now / 6e4 + 7) % 40 === 0 }); t.eggAt = now + (EGG_DAYS + 2 + (hash32(now / 6e4 + 3) % 3)) * DAY; unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
-  ev.push({ journal: `${A.name} and ${B.name} laid an egg.`, toast: `An egg! It hatches in ${EGG_DAYS} days. Food and clean water help it hatch strong.` });
+  const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
+  const g = pairs[hash32(now / 6e4) % pairs.length], A = g[0], B = g.find((f) => sexOf(f) !== sexOf(A)), [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
+  t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), laid: now, hatchAt: now + EGG_DAYS * DAY, cared: [], guard: C.mode === 'drift' ? null : Fa.id, risk: C.mode !== 'mouth' && t.fish.some((f) => f.species === 'octopus' && !f.dead) && hash32(now / 6e4 + 7) % 40 === 0 });      /* (and only while no parent is guarding it, see eggs()) */ t.eggAt = now + (EGG_DAYS + 2 + (hash32(now / 6e4 + 3) % 3)) * DAY; unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
+  const say = C.mode === 'mouth' ? { journal: `${Mo.name} laid eggs and ${Fa.name} took them into his mouth. He will carry them, eating nothing, until they hatch.`, toast: `${Fa.name} is carrying eggs in his mouth! They hatch in ${EGG_DAYS} days.` }
+    : C.mode === 'drift' ? { journal: `${A.name} and ${B.name} rose together and let their eggs go, as their kind do. The eggs drift by the plants now.`, toast: `${A.name} and ${B.name} spawned! Their eggs drift free. Food and clean water help them hatch strong.` }
+    : { journal: `${Mo.name} laid a patch of eggs by the ${C.on === 'plant' ? 'seaweed' : 'rocks'}, and ${Fa.name} is guarding them.`, toast: `Eggs! ${Fa.name} is guarding them. They hatch in ${EGG_DAYS} days.` };
+  ev.push({ ...say, egg: true });
 }
 // ── Seahorse families ── pairs form slowly between a male and a female that share the tank as adults (never parent and child, never brother
 // and sister); now and then a settled pair courts at dawn and the male carries their young in his brood pouch for six to nine days; he gives

@@ -1174,7 +1174,7 @@ export class Fish3D {
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading
     if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
-    if (this.openWater && !this.seeking && !this.weak && !this.script?.length) { const fl = Math.min(Fish3D.topY - 1, 6.3 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl; }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
+    if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding) { const fl = Math.min(Fish3D.topY - 1, 6.3 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl; }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm))) this.pick(rng);
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
@@ -1224,7 +1224,7 @@ export class Fish3D {
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }
     if (this.invert || Math.abs(this.roll) > 1.2) this.roll += ((this.invert ? Math.PI : 0) - this.roll) * Math.min(1, dt * 2.5);
-    this.phase += dt * (3.0 + sp * 5.5);
+    this.phase += dt * (3.0 + sp * 5.5 + 9 * (this.fanK ?? 0));      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
     this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));

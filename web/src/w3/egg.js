@@ -1,71 +1,54 @@
-// A fish egg in the tank: a small voxel egg with a clear, jelly-like shell and a little one growing inside it over three days.
-// It is tucked in at the foot of a plant (or a rock) where nothing overlaps it, rests on the sand, and wobbles when it is nearly ready.
+// Fish eggs in the tank, laid the way each kind really lays them (see makeEgg), resting where nothing overlaps them.
 import * as THREE from 'three';
 import { sandH } from './terrain.js';
 
-const V = 0.08;                                   // one voxel
-const RX = 0.4, RY = 0.5;                         // the egg's half width and half height
+const RX = 0.4, RY = 0.5;                         // the room a clutch takes: half its width, and the height its middle sits above the sand
 
-// one mesh from a set of voxels, only the faces that show
-function voxMesh(cells, mat) {
-  const key = (x, y, z) => x + ',' + y + ',' + z, has = new Set(cells.map((c) => key(c.x, c.y, c.z)));
-  const pos = [], nor = [], col = [], F = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
-  for (const c of cells) for (const [nx, ny, nz] of F) {
-    if (has.has(key(c.x + nx, c.y + ny, c.z + nz))) continue;
-    // four corners of the face, wound so the face points outward
-    const cx = (c.x + nx / 2) * V, cy = (c.y + ny / 2) * V, cz = (c.z + nz / 2) * V, A = nx ? [0, 0, 1] : [1, 0, 0], B = nz ? [0, 1, 0] : ny ? [0, 0, 1] : [0, 1, 0];
-    const p = (i, j) => [cx + (A[0] * i + B[0] * j) * V / 2, cy + (A[1] * i + B[1] * j) * V / 2, cz + (A[2] * i + B[2] * j) * V / 2], flip = (nx + ny) > 0 || nz < 0;      // (A × B points along -x, -y or +z)
-    const q = !flip ? [p(-1, -1), p(1, -1), p(1, 1), p(-1, -1), p(1, 1), p(-1, 1)] : [p(-1, -1), p(1, 1), p(1, -1), p(-1, -1), p(-1, 1), p(1, 1)];
-    for (const v of q) { pos.push(...v); nor.push(nx, ny, nz); col.push(c.c.r, c.c.g, c.c.b); }
-  }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return new THREE.Mesh(g, mat);
-}
-
-const inEgg = (x, y, z, sx = 1) => { const px = (x * V) / (RX * sx), pz = (z * V) / (RX * sx), py = (y * V) / RY; const k = py > 0 ? 1 - py * 0.12 : 1; return px * px + pz * pz < k * k * (1 - py * py); };     // a real egg: a little narrower at the top
-
-export function makeEgg(seed = 1, tint = 0xf06a9a) {
-  const group = new THREE.Group(), base = new THREE.Color(tint), shell = [], R = Math.ceil(RY / V) + 1;
+// A clutch, as real reef fish lay them: not one big egg but a patch of dozens of tiny ones, stuck down side by side on a rock or at the foot of
+// a plant. Day by day they change as they would: bright and see-through, then a dark speck in each (the eyes), and at the end silvery, the
+// little eyes plain to see, the whole patch trembling. mode 'drift': a loose cloud of clear eggs floating in the water instead (the kinds
+// that spawn in open water); mode 'mouth': a few eggs showing at a father's lips (the cardinalfish carry theirs).
+const EGG = 0.105, EYE = 0.04;
+export function makeEgg(seed = 1, tint = 0xf06a9a, mode = 'guard') {
   let h = seed >>> 0; const rnd = () => ((h = (h * 1664525 + 1013904223) >>> 0) / 4294967296);
-  for (let x = -R; x <= R; x++) for (let y = -R; y <= R; y++) for (let z = -R; z <= R; z++) {
-    if (!inEgg(x, y, z) || inEgg(x, y, z, 0.78)) continue;                 // a shell a voxel or two thick
-    const c = base.clone().offsetHSL((rnd() - 0.5) * 0.02, 0, (rnd() - 0.5) * 0.06 + (y > 2 ? 0.08 : 0) + (x < -1 && y > 0 ? 0.06 : 0));
-    if (rnd() < 0.08) c.offsetHSL(0, 0.1, -0.18);                        // a few soft speckles
-    shell.push({ x, y, z, c });
+  const group = new THREE.Group(), drift = mode === 'drift', mouth = mode === 'mouth', N = mouth ? 7 : drift ? 34 : 52, cells = [];
+  for (let i = 0; i < N && cells.length < N; i++) {
+    let x, y, z;
+    if (mouth) { x = (rnd() - 0.5) * 0.14; y = (rnd() - 0.5) * 0.1; z = (rnd() - 0.5) * 0.12; }
+    else if (drift) { const a = rnd() * Math.PI * 2, b = Math.acos(2 * rnd() - 1), r = 0.75 * Math.cbrt(rnd()); x = r * Math.sin(b) * Math.cos(a); y = r * Math.cos(b) * 0.8; z = r * Math.sin(b) * Math.sin(a); }
+    else { const a = (i * 2.399963) % (Math.PI * 2), r = Math.sqrt(i / N) * 0.5; x = Math.cos(a) * r * 1.25; z = Math.sin(a) * r * 0.8; y = -RY + EGG * 0.5 + (r < 0.2 ? EGG * 0.75 : 0) + rnd() * 0.012; }      // packed side by side in a low oval mound
+    cells.push({ x, y, z, s: (drift ? 0.55 : 0.8) + rnd() * (drift ? 0.2 : 0.35), ph: rnd() * 6.28 });      // (open-water eggs are tiny, and spread out)
   }
-  const shellMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.86, depthWrite: false, emissive: new THREE.Color(tint).multiplyScalar(0.12) });
-  const shellMesh = voxMesh(shell, shellMat); shellMesh.renderOrder = 5;
-  // inside: a yolk that gets used up, and the little one curled round it (a body, then eyes)
-  const yolkCells = [], kidCells = [], eyeCells = [], Y = new THREE.Color(0xffa83a), K = new THREE.Color(tint).offsetHSL(0, 0.25, -0.3), E = new THREE.Color(0x1a1420);
-  for (let x = -4; x <= 4; x++) for (let y = -4; y <= 4; y++) for (let z = -4; z <= 4; z++) if (x * x + y * y + z * z <= 12) yolkCells.push({ x, y: y - 1, z, c: Y.clone().offsetHSL(0, 0, (rnd() - 0.5) * 0.05) });
-  for (let i = 0; i < 14; i++) { const a = -0.6 + i * 0.32, r = 4; kidCells.push({ x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) - 1, z: 2, c: K }, { x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) - 1, z: 1, c: K }); }
-  eyeCells.push({ x: 3, y: 2, z: 3, c: E }, { x: 2, y: 3, z: 3, c: E });
-  const opaque = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x3a2010 });
-  const yolk = voxMesh(yolkCells, opaque), kid = voxMesh(kidCells.filter((c, i, a) => a.findIndex((d) => d.x === c.x && d.y === c.y && d.z === c.z) === i), opaque), eyes = voxMesh(eyeCells, opaque);
-  group.add(yolk, kid, eyes, shellMesh);
-  // a soft glow under an egg that is being looked after
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 20), new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: 0, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = -RY + 0.01; group.add(glow);
-  const egg = { group, shell: shellMesh, yolk, kid, eyes, glow, t0: rnd() * 6,
-    // p: how far along it is (0 just laid, 1 hatching); cared: days looked after
+  const box = new THREE.BoxGeometry(EGG, EGG, EGG), tiny = new THREE.BoxGeometry(EYE, EYE, EYE);
+  const base = new THREE.Color(tint), silver = new THREE.Color(0xdfe9f2);
+  const shellMat = new THREE.MeshLambertMaterial({ color: base.clone(), transparent: true, opacity: drift ? 0.5 : 0.92, depthWrite: false, emissive: base.clone().multiplyScalar(0.22) });
+  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x15121c, emissive: 0x050408 });
+  const shell = new THREE.InstancedMesh(box, shellMat, cells.length), eyes = new THREE.InstancedMesh(tiny, eyeMat, cells.length); shell.renderOrder = 5;
+  group.add(eyes, shell);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 20), new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: 0, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = -RY + 0.01; glow.visible = !drift && !mouth; group.add(glow);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3();
+  const pose = (t, shake) => { for (let i = 0; i < cells.length; i++) { const c = cells[i], w = shake * Math.sin(t * 17 + c.ph * 3) * 0.012, bob = drift ? Math.sin(t * 0.9 + c.ph) * 0.02 : 0;
+      v.set(c.x + w, c.y + bob, c.z); sc.setScalar(c.s); m.compose(v, q, sc); shell.setMatrixAt(i, m);
+      v.y += EGG * 0.12 * c.s; v.z += EGG * 0.18 * c.s; sc.setScalar(c.s * Math.min(1, egg.eyeK ?? 0)); m.compose(v, q, sc); eyes.setMatrixAt(i, m); }
+    shell.instanceMatrix.needsUpdate = eyes.instanceMatrix.needsUpdate = true; };
+  const egg = { group, shell, eyes, glow, mode, t0: rnd() * 6, eyeK: 0,
+    // p: how far along (0 just laid, 1 hatching); cared: days looked after
     set(p, cared) {
-      yolk.scale.setScalar(Math.max(0.35, 1 - p * 0.65)); kid.visible = p > 0.22; kid.scale.setScalar(0.5 + Math.min(1, p) * 0.6); eyes.visible = p > 0.55; eyes.scale.copy(kid.scale);
-      glow.material.opacity = cared >= 2 ? 0.28 : cared === 1 ? 0.14 : 0; egg.p = p;
+      egg.p = p; egg.eyeK = Math.max(0, Math.min(1, (p - 0.35) / 0.25));                         // eyes show from about the second day
+      shellMat.color.copy(base).lerp(silver, Math.max(0, (p - 0.6) / 0.4) * 0.4); shellMat.emissive.copy(shellMat.color).multiplyScalar(0.18 + (cared >= 2 ? 0.08 : 0));      // turning silvery near the end
+      glow.material.opacity = cared >= 2 ? 0.26 : cared === 1 ? 0.13 : 0;
     },
-    tick(t) {
-      const p = egg.p ?? 0, near = Math.max(0, (p - 0.85) / 0.15), w = near * (Math.sin(t * 9 + egg.t0) > 0.6 ? 1 : 0.25);      // nearly ready: little wobbles, now and then a real shake
-      group.rotation.z = Math.sin(t * 13 + egg.t0) * 0.12 * w + Math.sin(t * 0.8 + egg.t0) * 0.02; group.rotation.x = Math.cos(t * 11 + egg.t0) * 0.06 * w;
-      kid.rotation.y = Math.sin(t * 0.7 + egg.t0) * 0.25 * Math.min(1, p * 2);       // the little one stirs
-    },
+    tick(t) { const p = egg.p ?? 0, near = Math.max(0, (p - 0.85) / 0.15); pose(t, near * (Math.sin(t * 2.3 + egg.t0) > 0.3 ? 1 : 0.3)); if (drift) { group.rotation.y = t * 0.08 + egg.t0; } },
     dispose() { group.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); },
   };
-  egg.set(0, 0); return egg;
+  egg.set(0, 0); pose(0, 0); return egg;
 }
 
 const PLANTS = ['grass', 'fern', 'sword', 'red', 'kelp', 'anemone', 'bamboo'];
 // where to put it: at the foot of a plant (rocks next), beside it, at a depth the camera keeps sharp, clear of every other thing; else a clear patch of sand
-export function eggSpot(spots, reach, hash, taken = []) {
+export function eggSpot(spots, reach, hash, taken = [], on = 'plant') {
   const clear = (x, z) => Math.abs(x) < 6.2 && z > -1.8 && z < 1.1 && spots.every((s) => Math.hypot(s.x - x, s.z - z) >= reach(s.type) * 0.5 + RX) && taken.every((p) => Math.hypot(p.x - x, p.z - z) > 0.9);
-  const homes = [...spots.filter((s) => PLANTS.includes(s.type)), ...spots.filter((s) => ['rock', 'boulder', 'shell', 'moss'].includes(s.type))];
+  const plants = spots.filter((s) => PLANTS.includes(s.type)), rocks = spots.filter((s) => ['rock', 'boulder', 'shell', 'moss', 'wood', 'pillar'].includes(s.type)), homes = on === 'rock' ? [...rocks, ...plants] : [...plants, ...rocks];      // most lay on a rock face; a royal gramma by the weed
   for (let k = 0; k < homes.length; k++) { const s = homes[(hash + k) % homes.length], r = reach(s.type) * 0.75 + RX;
     // only beside it, never behind: a little toward you at most, so the leaves never hide it (sin > 0 is toward the camera)
     const R = [0.12, 0.35, -0.05], sides = hash & 1 ? [R, R.map((a) => Math.PI - a)] : [R.map((a) => Math.PI - a), R];
