@@ -59,6 +59,7 @@ function noise(t0, dur, freq, vol) {
 const SFX = {
   reward: () => { [659, 880, 1175].forEach((f, i) => { tone(f, i * 0.09, 0.9, { vol: 0.07, type: 'sine' }); tone(f * 2, i * 0.09 + 0.02, 0.6, { vol: 0.025, type: 'sine' }); }); noise(0, 0.5, 5200, 0.015); },
   tap: () => tone(620, 0, 0.07, { vol: 0.08, to: 880 }),
+  click: () => { tone(2400, 0, 0.025, { vol: 0.05, to: 1800 }); tone(2600, 0.09, 0.025, { vol: 0.04, to: 1900 }); },      // two soft seahorse clicks
   open: () => tone(440, 0, 0.1, { vol: 0.07, to: 660 }),
   splash: () => { noise(0, 0.35, 1800, 0.18); tone(300, 0, 0.18, { vol: 0.07, to: 120 }); },
   eat: () => tone(900 + Math.random() * 300, 0, 0.05, { vol: 0.06, to: 500 }),

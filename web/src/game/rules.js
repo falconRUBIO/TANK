@@ -510,6 +510,9 @@ function seaFamilies(t, now, ev) {
       else ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.` });
     }
   }
+  // the morning dance: once a day, in the journal and in both their stories (a pair, or two companions)
+  { const d = Math.floor(now / DAY); if (t.dawnDay !== d && new Date(now).getHours() >= 6) { t.dawnDay = d; const seen = new Set();
+    for (const f of hs) { const o = byId.get(f.mate); if (!o || seen.has(f.id) || f.dead || o.dead) continue; seen.add(o.id); const line = `${f.name} and ${o.name} danced at sunrise, tails linked.`; ev.push({ journal: line, story: f.id, text: line }, { story: o.id, text: line }); } } }
   // courtship and pregnancy: a settled pair, now and then, when no other family is under way and his cooldown is over
   if (now >= (t.courtAt ?? 0)) {
     t.courtAt = now + 6 * HOUR;
@@ -605,6 +608,7 @@ export const MOVE_GAP = 4 * 60e3, MOVE_MAX = 4.5;
 // the moments an octopus's journal remembers, and how often each kind may be written in
 export const OCTO_MOMENTS = {
   squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
+  arms: { gap: DAY, other: true, text: (n, o) => `${n} and ${o} sat side by side and touched arms for a while.` },
   smack: { gap: 12 * 3600e3, other: true, text: (n, o) => `${n} smacked ${o} with an arm for coming too close.` },
   lion: { gap: 3 * DAY, text: (n) => `${n} put its arms out stiff and passed for a lionfish.` },
   jelly: { gap: 3 * DAY, text: (n) => `${n} puffed up and drifted about like a jellyfish.` },
@@ -958,7 +962,7 @@ export function milestonesOf(f) {
   const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, grown = stageOf(f) === 'adult';
   return [
     { key: 'home', icon: hatched ? '🥚' : '🏠', label: hatched ? 'Hatched' : 'Came home', done: true },
-    { key: 'friend', icon: '💞', label: 'Made a friend', done: !!(f.pal || D.friend || D.together || Object.keys(D).some((k) => k.startsWith('together'))) },
+    { key: 'friend', icon: '💞', label: 'Made a friend', done: !!(f.pal || f.mate || f.partner || D.friend || D.together || Object.keys(D).some((k) => k.startsWith('together'))) },
     { key: 'spot', icon: '📍', label: 'Found a favourite spot', done: !!(D.spot || D.regular || D.hideaway || D.favhitch || D.den || (f.found ?? []).includes('spot')) },
     { key: 'trust', icon: '🤝', label: 'Trusts you', done: !!(D.bond || D.trust) },
     { key: 'trick', icon: '✨', label: 'Learned a trick', done: (f.tricks ?? []).length > 0 || !!(f.solved) },

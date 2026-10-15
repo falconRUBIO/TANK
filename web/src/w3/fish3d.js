@@ -528,7 +528,7 @@ export class Fish3D {
     if (G) {                                                                         // the morning greeting: two partners meet at a plant and circle each other, glowing, then part
       if (this.holdfast) this.letGo(); if (G.t < 6 && G.t + dt >= 6) this.greeted = true;      // half way through, glowing: a real greeting, for its journal and its log
       if (this.sp.tail) { this.curlK = (this.curlK ?? 0) + (0.5 - (this.curlK ?? 0)) * Math.min(1, dt * 1.5); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 3); }      // a seahorse lets go of its stem to dance, its tail loosening
-      G.t -= dt; G.ang += dt * 0.85 * G.side; const wantX = G.cx + Math.cos(G.ang) * G.r, wantZ = G.cz + Math.sin(G.ang) * G.r * 0.7, wantY = Math.max(G.y + Math.sin(t * 1.4 + G.side) * 0.12, 0.35 + this.sandBelow());
+      G.t -= dt; G.ang += dt * 0.85 * G.side; const rr = G.r * (G.T0 ? Math.min(1, 0.3 + 0.7 * Math.max(0, (G.T0 - G.t - 1.2) / 1.2)) : 1), wantX = G.cx + Math.cos(G.ang) * rr, wantZ = G.cz + Math.sin(G.ang) * rr * 0.7,      /* (they start nose to nose, then open out into the circle) */ wantY = Math.max(G.y + Math.sin(t * 1.4 + G.side) * 0.12, 0.35 + this.sandBelow());
       this.pos.x += (wantX - this.pos.x) * Math.min(1, dt * 1.6); this.pos.y += (wantY - this.pos.y) * Math.min(1, dt * 1.6); this.pos.z += (wantZ - this.pos.z) * Math.min(1, dt * 1.6);
       let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.5); this.vel.multiplyScalar(Math.exp(-3 * dt));
       this.glowK += ((G.t > 1.2 ? 1 : 0) - this.glowK) * Math.min(1, dt * 1.2);

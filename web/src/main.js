@@ -605,9 +605,10 @@ function showCard(f) {
   const tab = (game.profTab ??= 'over'), T = (k, l) => `<button class="tb ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`, row = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : '');
   const famBar = `<div class="famb">${FAMILIAR.map((_, i) => `<i class="${i < fm.i ? 'f' : i === fm.i ? 'c' : ''}">${i === fm.i ? `<b style="width:${Math.round(Math.max(0.12, fm.k) * 100)}%"></b>` : ''}</i>`).join('')}</div>`;
   const tags = (list) => list.map((x) => `<span class="bt ${x.seen ? '' : 'lock'}">${x.seen ? esc(x.label) : '?'}</span>`).join('');
-  const famLine = (() => { if (octo) { const L = bondLines(rec, game.now(), LOG); return L.length ? `<p class="mind fam">${L.join('<br>')}</p>` : ''; } if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
+  const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
-    out.push(...bondLines(rec, now, LOG));
+    if (rec.widowAt && now - rec.widowAt < 7 * 864e5 && !rec.mate) out.push('Still grieving: not ready to bond again yet.');
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
@@ -626,7 +627,7 @@ function showCard(f) {
     if (par.length) out.push(`Parents: ${par.join(' & ')}`); if (rec.mate && nm(rec.mate)) out.push(`Partner: ${nm(rec.mate)}`); if (sib.length) out.push(`Siblings: ${sib.slice(0, 4).join(', ')}${sib.length > 4 ? ` +${sib.length - 4}` : ''}`); if (kidsL.length) out.push(`Young: ${kidsL.length}${kidsL.some((k) => !k.alive) ? ` (${kidsL.filter((k) => k.alive).length} still here)` : ''}`);
     return out.length ? esc(out.join(' · ')) : null; })();
   const fod = factOfDay(rec.species), factLine = fod ? `<div class="dyk mini" role="button" tabindex="0" data-tab="pers"><small>DID YOU KNOW?</small><p>${esc(fod.text)}</p></div>` : '';      // the day's fact, also on the first tab
-  const over = `${path}${trustRow}${factLine}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
+  const over = `${path}${trustRow}${bondTile}${famLine}${factLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
@@ -844,20 +845,19 @@ game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) 
 game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
 // who it is close to, with the numbers behind it: a partner (and since when, and how often they greet), or how far along two are in getting to know each other
 function bondLines(rec, now, LOG = {}) {
-  const S = game.state, nm = (id) => S.fish.find((x) => x.id === id)?.name, out = [], d = (ms) => Math.max(1, Math.floor(ms / 864e5)), octoF = rec.species === 'octopus';
+  const S = game.state, nm = (id) => S.fish.find((x) => x.id === id)?.name, d = (ms) => Math.max(1, Math.floor(ms / 864e5)), octoF = rec.species === 'octopus';
   const mateId = octoF ? rec.partner : rec.mate, since = octoF ? rec.partneredAt : rec.pairedAt;
   if (mateId && nm(mateId)) {
     const o = S.fish.find((x) => x.id === mateId), same = !octoF && sexOf(o) === sexOf(rec);
     const kind = octoF ? 'Partner' : same ? 'Companion' : 'Partner', note = octoF ? 'They touch arms and share a den. Octopuses rarely let anyone this close.' : same ? `Two ${sexOf(rec) === 'm' ? 'males' : 'females'}: they dance and hold tails every morning, but will not have babies.` : 'They greet each other every morning. Seahorses pair for life.';
-    out.push(`💞 <b>${kind}:</b> ${esc(nm(mateId))} · together ${d(now - (since ?? now))} day${d(now - (since ?? now)) === 1 ? '' : 's'}${!octoF && LOG.greets ? ` · ${LOG.greets} morning dance${LOG.greets === 1 ? '' : 's'}` : ''}`, `<small>${note}</small>`);
-    return out;
+    const days = d(now - (since ?? now));
+    return `<div class="trust bond"><span>${msIcon('friend', true, 14)} ${kind}</span><b>${esc(nm(mateId))}</b><small>Together ${days} day${days === 1 ? '' : 's'}${!octoF && LOG.greets ? ` · ${LOG.greets} morning dance${LOG.greets === 1 ? '' : 's'}` : ''}. ${note}</small></div>`;
   }
   const B = octoF ? S.octoBonds : S.bonds, need = (octoF ? OCTO_PAIR_DAYS : SEA.PAIR_DAYS) * 864e5;
   const best = Object.entries(B ?? {}).filter(([k]) => k.split('|').includes(rec.id)).sort((x, y) => y[1] - x[1])[0];
   if (best && best[1] > 0) { const other = best[0].split('|').find((x) => x !== rec.id), o = S.fish.find((x) => x.id === other); if (o) { const pc = Math.min(99, Math.round(best[1] / need * 100)), same = !octoF && sexOf(o) === sexOf(rec);
-    out.push(`🫧 <b>Getting to know ${esc(o.name)}:</b> ${pc}%`, `<small>${octoF ? 'Tasting each other with their suckers, still a little wary.' : same ? 'Both ' + (sexOf(rec) === 'm' ? 'male' : 'female') + ': if they bond, they will be companions, not parents.' : 'A male and a female: if they bond, they could raise a family.'}</small>`); } }
-  if (!octoF && rec.widowAt && now - rec.widowAt < 7 * 864e5) out.push('<small>Still grieving: not ready to bond again yet.</small>');
-  return out;
+    return `<div class="trust bond"><span>${msIcon('friend', false, 14)} Getting to know</span><b>${esc(o.name)} · ${pc}%</b><i class="bbar"><em style="width:${pc}%"></em></i><small>${octoF ? 'Tasting each other with their suckers, still a little wary.' : same ? 'Both ' + (sexOf(rec) === 'm' ? 'male' : 'female') + ': if they bond, they will be companions, not parents.' : 'A male and a female: if they bond, they could raise a family.'}</small></div>`; } }
+  return '';
 }
 // a few words on the life it had, for the goodbye
 function lifeSummary(x) { const out = [], kids = childrenOf(game.state, x.id).length, pal = x.friend;
@@ -923,7 +923,7 @@ game.on('remoteFeed', (x, by, food, fish) => { if (food === 'crab') { fishes.dro
 game.on('remoteActivity', (a) => { if (a.userId !== game.you?.userId) { ui?.flag('friends', true); if (['visitor', 'bottle'].includes(a.type)) ui?.toast(a.text); } ui?.refresh(); });
 game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
-fishes.onEat = () => { sfx('eat'); };
+fishes.onEat = () => { sfx('eat'); }; fishes.onDance = () => { if (!document.hidden) sfx('click'); };
 
 // a quiet counter for 'watch your fish swim for 15 seconds': the tank is on screen, nothing is being done to it, and it is visible
 let watchT = 0; const dayKey = () => Math.floor(Date.now() / 864e5);
