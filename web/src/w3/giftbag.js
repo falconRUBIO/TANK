@@ -19,8 +19,13 @@ function vox(cells, mat) {
 export const RIBBONS = [0xe0476b, 0x3f8cff, 0x2fbf71, 0xf2a93b, 0x9b59f0, 0x18b5b5];
 export const ribbonOf = (id = '') => RIBBONS[[...String(id)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % RIBBONS.length];
 
-export function makeGiftBag(ribbon = 0xe0476b) {
-  const group = new THREE.Group(), body = [], band = [], bow = [], P = new THREE.Color(0xfff6ea), Pd = new THREE.Color(0xeadfce), R = new THREE.Color(ribbon), Rd = R.clone().offsetHSL(0, 0, -0.12);
+// the paper picked to stand out from the floor it sits on: dark paper on light floors, light paper on the black sand
+export const PAPER = { sand: 0x1f5f8b, pearl: 0x2b3a7a, gravel: 0x6a3fb0, black: 0xfff3e2, coral: 0x157a6e };
+const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+export function makeGiftBag(ribbon = 0xe0476b, floor = 'sand') {
+  const P = new THREE.Color(PAPER[floor] ?? PAPER.sand), dark = lum(P) < 0.4, Pd = P.clone().offsetHSL(0, 0, dark ? 0.06 : -0.08);
+  let R = new THREE.Color(ribbon); if (Math.abs(lum(R) - lum(P)) < 0.22 || Math.abs(R.getHSL({}).h - P.getHSL({}).h) < 0.12) R = new THREE.Color(dark ? 0xfff6ea : 0x2a2438);      // the giver's ribbon, unless it would vanish on the paper
+  const group = new THREE.Group(), body = [], band = [], bow = [], Rd = R.clone().offsetHSL(0, 0, -0.12);
   for (let x = -4; x <= 4; x++) for (let y = 0; y < 8; y++) for (let z = -3; z <= 3; z++) {
     if (Math.abs(x) < 4 && Math.abs(z) < 3 && y > 0) continue;                       // a bag: walls and a floor, open at the top
     const rib = x === 0 || z === 0; (rib ? band : body).push({ x, y, z, c: rib ? (y % 2 ? R : Rd) : (y > 5 ? Pd : P).clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.03) });
@@ -31,10 +36,10 @@ export function makeGiftBag(ribbon = 0xe0476b) {
   const mat = () => new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x1a1410 });
   const bodyM = vox(body, mat()), bandM = vox(band, mat()), bowM = vox(bow, mat());
   const inner = new THREE.Group(); inner.add(bodyM, bandM, bowM); group.add(inner); group.scale.setScalar(1.35);      // (big enough to spot and tap)
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0.25, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = 0.02; group.add(glow);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: floor === 'black' ? 0xfff0c0 : 0x1a1030, transparent: true, opacity: 0.25, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = 0.02; group.add(glow);
   const bag = { group, inner, glow, opening: null, t0: Math.random() * 6,
     tick(t, dt) {
-      if (!bag.opening) { inner.rotation.z = Math.sin(t * 1.3 + bag.t0) * 0.04; inner.position.y = Math.max(0, Math.sin(t * 2 + bag.t0)) * 0.03; glow.material.opacity = 0.18 + 0.12 * (0.5 + 0.5 * Math.sin(t * 2.4 + bag.t0)); return; }      // waiting: a little sway and a soft glow
+      if (!bag.opening) { inner.rotation.z = Math.sin(t * 1.3 + bag.t0) * 0.04; inner.position.y = Math.max(0, Math.sin(t * 2 + bag.t0)) * 0.03; glow.material.opacity = floor === 'black' ? 0.18 + 0.12 * (0.5 + 0.5 * Math.sin(t * 2.4 + bag.t0)) : 0.32; return; }      // a soft glow on dark sand, a crisp shadow under it on light floors      // waiting: a little sway and a soft glow
       const k = (bag.opening.t += dt);
       if (k < 0.7) { inner.rotation.z = Math.sin(k * 40) * 0.12; }                                                     // it shakes
       else { const u = Math.min(1, (k - 0.7) / 0.6); bowM.position.y = u * 0.6; bowM.material.transparent = true; bowM.material.opacity = 1 - u; inner.rotation.z = 0;      // the bow lets go and floats up
