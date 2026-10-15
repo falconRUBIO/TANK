@@ -414,11 +414,17 @@ function postcardSubject() {
 }
 function postcardCaption() {
   const s = game.state, f = postcardCaption.subject ?? postcardSubject(), rec = f && s.fish.find((x) => x.id === f.fid);
-  if (!rec) return s.visitor ? `A rare visitor dropped by the tank today.` : 'A quiet day in the tank.';
-  const kind = (SPECIES_DEF[rec.species]?.label ?? 'fish').toLowerCase(), lc = (t) => String(t).replace(/^\w/, (c) => c.toLowerCase()).replace(/\.$/, '');
+  const [a, b] = postcardText(); return `${a}. ${b}`;
+}
+// the postcard in two parts: who it is ("Zeus the seahorse") and one line about them, never saying the name twice
+function postcardText() {
+  const s = game.state, f = postcardCaption.subject ?? postcardSubject(), rec = f && s.fish.find((x) => x.id === f.fid);
+  if (!rec) return s.visitor ? ['A rare visitor', 'dropped by the tank today.'] : ['A quiet day', 'in the tank.'];
+  const kind = (SPECIES_DEF[rec.species]?.label ?? 'fish').toLowerCase(), he = rec.species === 'seahorse' ? (sexOf(rec) === 'm' ? 'He' : 'She') : 'It';
   const recent = (rec.story ?? []).slice().reverse().find((x) => Date.now() - (x.at ?? 0) < 2 * 864e5 && x.text && !/^Arrived in the tank|^Became an elder|days old|reached .* days/i.test(x.text));
-  const now = f.thought && !/^Knows you are here/.test(f.thought) ? lc(f.thought) : null, age = rec.elder ? 'an old friend' : stageOf(rec) === 'baby' ? 'the newest in the tank' : null;
-  return `${rec.name}, our ${kind}${age ? `, ${age}` : ''}${now ? `: ${now}.` : recent ? `. ${recent.text.includes(rec.name) ? recent.text : lc(recent.text) + '.'}` : '.'}`;
+  const now = f.thought && !/^Knows you are here|^Off to see/.test(f.thought) ? f.thought : null, age = rec.elder ? 'An old friend, still going strong.' : stageOf(rec) === 'baby' ? 'The newest in the tank.' : null;
+  const esc2 = rec.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), clean = (t) => { let x = String(t).trim(); x = x.replace(new RegExp('^' + esc2 + '(?=\\b)'), he).replace(new RegExp('\\b' + esc2 + '\\b', 'g'), he === 'It' ? 'it' : he === 'He' ? 'him' : 'her'); x = x.replace(/^\w/, (c) => c.toUpperCase()); return /[.!?]$/.test(x) ? x : x + '.'; };
+  return [`${rec.name} the ${kind}`, now ? clean(now) : recent ? clean(recent.text) : age ?? 'Having a lovely day in the tank.'];
 }
 function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
 async function takePhoto() {
@@ -426,7 +432,7 @@ async function takePhoto() {
   const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #fishpill, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
   await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
   // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
-  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 290, PH = M + IH2 + FOOT;
+  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 340, PH = M + IH2 + FOOT;
   const shot = document.createElement('canvas'); shot.width = SW; shot.height = SH; shot.getContext('2d').drawImage(canvas, 0, 0, SW, SH);
   hidden.forEach((e, i) => (e.style.visibility = prev[i]));
   const out = document.createElement('canvas'); out.width = PW; out.height = PH; const g = out.getContext('2d'); g.textBaseline = 'alphabetic';
@@ -438,8 +444,8 @@ async function takePhoto() {
   const sheen = g.createLinearGradient(0, M, 0, M + IH2 * 0.25); sheen.addColorStop(0, 'rgba(255,255,255,.12)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = sheen; g.fillRect(M, M, IW2, IH2 * 0.25); g.restore();
   g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 2; g.beginPath(); g.roundRect(M, M, IW2, IH2, 26); g.stroke();
   // the caption in a soft serif, wrapped
-  const fy = M + IH2 + 70; g.fillStyle = '#3b2f1a'; g.font = 'italic 600 46px ui-serif, "New York", Georgia, serif';
-  const lines = wrapText(g, postcardCaption(), IW2 - 20).slice(0, 3); lines.forEach((l, i) => g.fillText(l, M + 10, fy + i * 58));
+  const [title, line] = postcardText(), fy = M + IH2 + 74; g.fillStyle = '#3b2f1a'; g.font = '700 50px ui-serif, "New York", Georgia, serif'; g.fillText(title, M + 10, fy);
+  g.fillStyle = '#5a4a2c'; g.font = 'italic 500 40px ui-serif, "New York", Georgia, serif'; wrapText(g, line, IW2 - 20).slice(0, 2).forEach((l, i) => g.fillText(l, M + 10, fy + 58 + i * 50));
   // a little rule, then the tank's name and the day, the people in it, and the mark
   const ry = PH - 96; g.strokeStyle = 'rgba(120,96,50,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + 10, ry - 34); g.lineTo(PW - M - 10, ry - 34); g.stroke();
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
@@ -449,10 +455,10 @@ async function takePhoto() {
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
-  try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'OUR TANK', text: postcardCaption() }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+  try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] });      /* the picture alone: with text alongside, some apps send only the words */ return; } } catch (e) { if (e?.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ui.toast('Postcard saved');
 }
-window.__postcard = postcardCaption;
+window.__postcard = postcardCaption; window.__photo = takePhoto;
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
 const card = $('card'), look = new THREE.Vector3(0, stg.LOOK_Y, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();

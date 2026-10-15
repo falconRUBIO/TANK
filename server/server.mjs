@@ -68,6 +68,7 @@ class Limiter {
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null, devUsers = null } = {}) {
   const isDev = (u) => L.isDev(u, devUsers ?? process.env.DEV_USERS);      // the developer's tools are for these player ids only (DEV_USERS in the server's environment)
   const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
+  try { const rf = new URL('./returns.json', import.meta.url); if (fs.existsSync(rf)) L.applyReturns(db, JSON.parse(fs.readFileSync(rf, 'utf8'))); } catch (e) { console.error('returns:', e.message); }      // animals put back from a backup, once
   const push = makePush(db, pushOpts ?? vapidFor(db));
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>

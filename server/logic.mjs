@@ -271,6 +271,17 @@ export function loadWorld(db, tankId) {
   if (!w) { w = R.newWorld(row.created_at); Object.assign(w, { shells: row.shells, hunger: row.hunger, water: row.water, glass: row.glass, level: row.level, simTs: row.sim_ts }); }
   return { row, w };
 }
+// animals brought back from a backup, once each (server/returns.json): any that are not in the tank go back in, fed and well, and leave the memorial
+export function applyReturns(db, list, now = Date.now()) {
+  for (const r of list ?? []) {
+    const t = db.prepare('SELECT id FROM tanks WHERE code=?').get(String(r.code ?? '')); if (!t) continue;
+    const { w } = loadWorld(db, t.id); w.flags ||= {}; w.flags.returned ||= {}; if (w.flags.returned[r.key]) continue;
+    const back = []; for (const f of r.fish ?? []) { if (w.fish.some((g) => g.id === f.id)) continue; w.fish.push({ ...f, fedAt: now, ail: 0, health: 1, happy: Math.max(0.75, f.happy ?? 0.75), dead: undefined }); back.push(f); }
+    const ids = new Set(back.map((f) => f.id)); w.memorial = (w.memorial ?? []).filter((m) => !ids.has(m.id)); w.floaters = (w.floaters ?? []).filter((m) => !ids.has(m.id));
+    w.flags.returned[r.key] = now; R.norm(w, now); saveWorld(db, t.id, w);
+    if (back.length) addJournal(db, t.id, `${back.map((f) => f.name).join(' and ')} ${back.length === 1 ? 'is' : 'are'} back in the tank.`, null, now);
+  }
+}
 export function saveWorld(db, tankId, w) {
   db.prepare('UPDATE tanks SET world=?, shells=?, hunger=?, water=?, glass=?, level=?, sim_ts=? WHERE id=?').run(JSON.stringify(w), w.shells, w.hunger, w.water, w.glass, w.level, w.simTs, tankId);
 }
