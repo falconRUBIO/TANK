@@ -8,7 +8,7 @@ export const TOP_STYLES = [['tee', 'Tee'], ['stripes', 'Sailor'], ['hoodie', 'Ho
 export const EXTRAS = [['none', 'None'], ['glasses', 'Glasses'], ['shades', 'Shades'], ['freckles', 'Freckles'], ['blush', 'Blush']];
 const HEX = /^#[0-9a-fA-F]{6}$/, ids = (l) => l.map(([k]) => k);
 const pick = (v, list, d) => (list.includes(v) ? v : d);
-// Every look, old or new, comes out complete. Older looks only had skin, hair and a hat colour (drawn as a beanie).
+// Every look, old or new, comes out complete. Older looks only had skin, hair and a hat color (drawn as a beanie).
 export function normAvatar(a) {
   const o = a && typeof a === 'object' ? a : {};
   const hat = HEX.test(o.hat) ? o.hat.toLowerCase() : null;

@@ -52,7 +52,7 @@ export class DecorMgr {
     if (!id) { const spot = this.autoSpot(); x = spot.x; z = spot.z; }
     this.move(x, z); this.marker.visible = true; return this.preview;
   }
-  // the first free place, trying the middle row, then front, then back, spreading outward from the centre
+  // the first free place, trying the middle row, then front, then back, spreading outward from the center
   autoSpot() {
     const p = this.preview; let best = { x: 0, z: LANES[2] };
     for (const z of [LANES[2], LANES[1], LANES[0]]) for (let k = 0; k < 24; k++) {
@@ -90,7 +90,7 @@ export class DecorMgr {
   haulCancel(id) { const it = this.items.get(id); if (!it?.haul) return; const o = it.haul; it.haul = null; it.group.rotation.z = 0; placeGroup(it, o.x, o.z, it.at.ry); stampItem(it, this.solids, o.x, o.z, it.at.ry, 1); }
   // is there room for this item at x,z (ignoring itself)?
   roomFor(id, x, z, ry = null) { const it = this.items.get(id); if (!it) return false; const hauled = !!it.haul; if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); const n = itemOverlaps(it, this.solids, x, z, ry ?? it.at.ry); if (!hauled) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, 1); return n === 0; }
-  reach(type) { return PICK[type]?.[0] ?? 0.7; }          // how far a thing of this type spreads from its centre
+  reach(type) { return PICK[type]?.[0] ?? 0.7; }          // how far a thing of this type spreads from its center
   atOf(id) { const it = this.items.get(id); return it ? { x: it.at.x, z: it.at.z } : null; }
   // returns the final placement, leaving the item to be created/updated by sync() when the game state changes
   commit() {

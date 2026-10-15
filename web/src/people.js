@@ -9,7 +9,7 @@ const dark = (c, k) => mix(c, [20, 18, 34], k), light = (c, k) => mix(c, [255, 2
 const se = (x, y, z, rx, ry, rz, p) => Math.abs(x / rx) ** p + Math.abs(y / ry) ** p + Math.abs(z / rz) ** p;
 const hsh = (x, y, z) => { let h = (x * 374761393 + y * 668265263 + z * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
-const HY = 9, RX = 10, RY = 10.5, RZ = 9.5;                   // head centre and size, in voxels
+const HY = 9, RX = 10, RY = 10.5, RZ = 9.5;                   // head center and size, in voxels
 function inHeadAt(x, y, z, g = 0) { const dy = y - HY, t = Math.max(0, -dy / RY), j = 1 - 0.17 * t * t; return se(x / j, dy, z + 0.5, RX + g, RY + g, RZ + g, 2.5) <= 1; }
 const inEar = (x, y, z) => ((Math.abs(x) - RX + 0.2) / 1.5) ** 2 + ((y - (HY - 1)) / 2.5) ** 2 + ((z + 0.5) / 1.7) ** 2 <= 1;
 const inNeck = (x, y, z) => y <= HY - RY + 3 && y >= -7 && Math.hypot(x, z + 0.5) <= 3.6;
@@ -166,7 +166,7 @@ export function personSprite(av, yaw = -Math.PI / 8) {
   if (!m) { m = new Fish(species, 1, A); models.set(key, m); if (models.size > 40) models.delete(models.keys().next().value); }
   return tight(m.frame({ yaw }));
 }
-// the sprite canvas is square around the model's centre; cut it down to the pixels actually drawn
+// the sprite canvas is square around the model's center; cut it down to the pixels actually drawn
 const tights = new WeakMap();
 function tight(f) {
   let t = tights.get(f); if (t) return t;

@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { sandH } from './terrain.js';
 
-// a baby seahorse in profile, one voxel thick: [x forward, y up, colour] (0 body, 1 belly, 2 eye)
+// a baby seahorse in profile, one voxel thick: [x forward, y up, color] (0 body, 1 belly, 2 eye)
 const CELLS = [[1, 8, 0], [1, 7, 0], [2, 7, 2], [2, 6, 0], [3, 6, 0], [4, 6, 0], [1, 6, 0], [0, 5, 0], [1, 5, 1], [0, 4, 0], [1, 4, 1], [0, 3, 0], [1, 3, 1], [0, 2, 0], [0, 1, 0], [-1, 0, 0], [-1, -1, 0], [0, -2, 0], [1, -1, 0]];
 const MAX = 12, CELL = 0.085;      // voxel size at birth (the tracked babies start at about the same height)
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _c = new THREE.Color();

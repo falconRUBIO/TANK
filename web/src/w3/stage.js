@@ -12,7 +12,7 @@ import { lanternGlow } from './items.js';
 import { Shafts, Beams, waterSurface, Snow, Bubbles } from './fx.js';
 import { CausticMap } from './textures.js';
 
-export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0, settle: 0, settleK: 0 };
+export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0, settle: 0, settleK: 0, dim: 0, dimK: 0 };      // dim: the tank's lights turned down (while the light spot toy is on)
 export const IW = 405, IH = 720;                 // internal resolution (nearest-upscaled by CSS)
 export const canvas = document.getElementById('tank');
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -93,7 +93,7 @@ export const grade = new ShaderPass({
       // depth: bright, clearer water near the surface fading to deep, cool darkness below
       float dep = smoothstep(.0, 1., vUv.y);
       c *= mix(vec3(.74,.86,1.0), vec3(1.05,1.04,1.0), dep);
-      // warm foreground / cool distance: the colour of the pixels carries the light, like the reference
+      // warm foreground / cool distance: the color of the pixels carries the light, like the reference
       float cool = smoothstep(.3, .95, vUv.y*.75 + vUv.x*.35);
       c *= mix(mix(vec3(1.0), vec3(1.06,1.02,.9), uWarm), vec3(.92,1.0,1.1), cool);
       // sparkling, blocky surface light along the top edge
@@ -106,7 +106,7 @@ export const grade = new ShaderPass({
       float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
       c *= mix(1. - uPool*.5, 1.03, pool);
       c *= mix(.78, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
-      // PS1-style 15-bit colour with ordered dither
+      // PS1-style 15-bit color with ordered dither
       float levels = 31.;
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
       c = floor(q+.5)/levels;
@@ -149,7 +149,8 @@ export function applyTod(dt) {
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
   beams.mat.uniforms.uI.value = cur.shaft * 2.2; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
-  stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK); bloom.strength = cur.bloom;
+  stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); stage.dimK += (stage.dim - stage.dimK) * Math.min(1, dt * 1.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK) * (1 - 0.3 * stage.dimK); bloom.strength = cur.bloom;
+  if (stage.dimK > 0.001) { shafts.mat.uniforms.uI.value *= 1 - stage.dimK; beams.mat.uniforms.uI.value *= 1 - stage.dimK; surf.mat.uniforms.uI.value *= 1 - 0.7 * stage.dimK; }      // lights down: the sun's shafts fade, the spot stays bright
   grade.uniforms.uTint.value.copy(cur.tint);
 
 }

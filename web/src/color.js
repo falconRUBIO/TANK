@@ -1,4 +1,4 @@
-// Small colour + noise helpers shared by the sprite builder.
+// Small color + noise helpers shared by the sprite builder.
 export const hex = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
 export const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 export const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));

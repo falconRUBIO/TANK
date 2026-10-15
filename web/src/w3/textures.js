@@ -83,7 +83,7 @@ export class CausticMap {
   }
 }
 
-// One floor texture per bottom style, so they differ in pattern as well as colour (64px pixel-art like the rest).
+// One floor texture per bottom style, so they differ in pattern as well as color (64px pixel-art like the rest).
 const floorCache = {};
 export function floorTex(style) {
   if (floorCache[style]) return floorCache[style];

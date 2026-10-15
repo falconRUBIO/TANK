@@ -1,11 +1,11 @@
-// An animal's profile: the five personality bars, a title and a line about it, how well the tank knows it, its favourites and what it has been seen doing.
+// An animal's profile: the five personality bars, a title and a line about it, how well the tank knows it, its favorites and what it has been seen doing.
 // Everything here is read from things the game already keeps (traits, an octopus's temperament, its seed, its journal), so the card says what the animal really does.
 import { octoMind, behavioursFor, seenBehaviour, DISCOVERIES } from './game/rules.js';
 
 const hash = (seed, n) => { let x = ((seed | 0) + 1) * 2654435761 + n * 40503; x ^= x >>> 15; x = Math.imul(x, 2246822519); x ^= x >>> 13; return ((x >>> 0) % 1000) / 1000; };
 const clamp = (v) => Math.max(0.06, Math.min(0.96, v));
 
-// the five bars, each with its own colour, as in the profile drawings
+// the five bars, each with its own color, as in the profile drawings
 export const TRAIT_BARS = [
   { k: 'cur', label: 'Curiosity', col: '#5fe0f0' },
   { k: 'soc', label: 'Sociability', col: '#b48cff' },

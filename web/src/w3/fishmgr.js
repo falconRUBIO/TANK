@@ -42,7 +42,9 @@ function emoteTexture(mood) {
     g.fillStyle = f; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill(); g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,.55)'; g.stroke();
     g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = Math.max(1.5, r * 0.09); g.lineCap = 'round'; g.beginPath(); g.arc(x, y, r * 0.78, 3.6, 4.5); g.stroke(); };
   bub(48, 42, 34); bub(26, 82, 6); bub(16, 92, 3.5);      // the bubble, and two little ones trailing down to the animal
-  g.font = '40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.globalAlpha = 0.88; g.fillText(glyph, 48, 44); g.globalAlpha = 1;
+  g.fillStyle = 'rgba(8,30,52,.42)'; g.beginPath(); g.arc(48, 42, 25, 0, 6.3); g.fill();      // a soft dark core behind the picture, so it reads against bright water and sand
+  g.font = '40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; if (mood === 'Sleepy') { g.fillStyle = '#ffffff'; g.font = '800 30px ui-rounded, -apple-system, system-ui, sans-serif'; g.fillText('Z', 40, 48); g.font = '800 21px ui-rounded, -apple-system, system-ui, sans-serif'; g.fillText('z', 58, 34); }      // crisp white Zz: the emoji's blue was lost in the glass
+  else { g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = 6; g.fillText(glyph, 48, 44); g.shadowBlur = 0; }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (emoteTex[mood] = t);
 }
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -171,7 +173,7 @@ export class Fishes {
         d.eyes = f.eyeL && f.eyeR && Math.abs(f.eyeL.x - f.eyeR.x) > 1 ? (d.eyes ?? 0) + dt : Math.max(0, (d.eyes ?? 0) - dt); if (d.eyes > 2.5 && this.wants(f, 'eyes')) this.said(f, 'eyes');
         if ((f.snicks ?? 0) >= 2 && this.wants(f, 'snick')) this.said(f, 'snick');
         if ((f.tintK ?? 0) > 0.15 && this.wants(f, 'blend')) this.said(f, 'blend');
-        if (f.favHold && f.favourite?.(spots) === f.favHold && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });      // a favourite it has earned (held two minutes and gone back to)
+        if (f.favHold && f.favourite?.(spots) === f.favHold && this.wants(f, 'favhitch')) this.said(f, 'favhitch', { spot: f.favHold });      // a favorite it has earned (held two minutes and gone back to)
         if (f.greeted) { f.greeted = false; f.greets = (f.greets ?? 0) + 1; if (this.wants(f, 'dance')) this.said(f, 'dance'); }      // a real greeting (see Fish3D.hoverUpdate), not just two seahorses close together
         if (f.link?.on && f.link.o.link?.on) { d.tails = (d.tails ?? 0) + dt; if (d.tails > 5 && this.wants(f, 'tails')) this.said(f, 'tails'); }
         // two seahorses that have shared the tank a while now and then link tails: never on their first day, more often the longer they have been together
@@ -301,7 +303,7 @@ export class Fishes {
     }
     const movers = spots.filter((q) => ['rock', 'skull'].includes(q.type) && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 5);
     if (!movers.length) return null;
-    if (!f.homeId && f.den?.kind !== 'rocks' && movers.length >= 2 && M.tidy > 0.3) {                                                // no shell or pot to live in: it gathers rocks into a shelter at its favourite spot
+    if (!f.homeId && f.den?.kind !== 'rocks' && movers.length >= 2 && M.tidy > 0.3) {                                                // no shell or pot to live in: it gathers rocks into a shelter at its favorite spot
       const c = f.fav ?? { x: f.pos.x, z: f.pos.z }, cx = Math.max(-3.2, Math.min(3.2, c.x)), cz = Math.max(-3.2, Math.min(GLASS_Z - 1.0, c.z));
       const there = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) < 1.5), away = movers.filter((q) => Math.hypot(q.x - cx, q.z - cz) >= 1.5).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
       for (const m of away.slice(0, 3)) for (let i = 0; i < 10; i++) { const a = (there.length + i) * 2.1 + rnd() * 0.6; let x = cx + Math.cos(a) * 1.1, z = cz + Math.sin(a) * 0.75; const L = Math.hypot(x - m.x, z - m.z); if (L > MOVE_MAX) { x = m.x + ((x - m.x) / L) * (MOVE_MAX - 0.4); z = m.z + ((z - m.z) / L) * (MOVE_MAX - 0.4); }      // too far for one trip: bring it part of the way
@@ -380,7 +382,7 @@ export class Fishes {
   // fish that are going without care look pale and tired, and keep low
   sicken(f, d) {
     const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_TIRED ? 0.3 : 0, weak = ail >= AIL_WARN, tired = ail >= AIL_TIRED;
-    const old = !!d.elder; f.setPale(Math.max(k, 0.5 * (f.starve ?? 0), old ? 0.22 : 0)); if (f.weak !== weak || f.tired !== tired || f.old !== old) { f.weak = weak; f.tired = tired; f.old = old; f.tmul = this.mulFor(f); }      // (an elder's colours have softened)
+    const old = !!d.elder; f.setPale(Math.max(k, 0.5 * (f.starve ?? 0), old ? 0.22 : 0)); if (f.weak !== weak || f.tired !== tired || f.old !== old) { f.weak = weak; f.tired = tired; f.old = old; f.tmul = this.mulFor(f); }      // (an elder's colors have softened)
   }
   mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (f.old ? 0.72 : 1) * (1 - 0.65 * (f.starve ?? 0)); }      // (and an elder takes life slowly)
   // a rare visitor swims in from the side, glowing softly, until it is greeted or leaves
@@ -417,7 +419,7 @@ export class Fishes {
       if (sk === 'platy' && !this.night) { const c = spot(['STRUCTURES', 'ROCKS']); if (c && r() < 0.6) return T(c.x + (r() - 0.5) * 0.9, 1.0 + c.h * 0.45, c.z + 0.5, 6 + r() * 5); }
       if (sk === 'cory') { const c = spot(['ROCKS']); if (r() < 0.6) { f.idle = 2 + r() * 3; return T(c ? c.x + (r() - 0.5) * 1.4 : -3 + r() * 6, 0.9 + r() * 0.5, c ? c.z + 0.7 : 0.8 + r(), 5 + r() * 4); } }
       if (sk === 'betta') { const c = spot(['ROCKS']); if (c && r() < 0.65) { f.idle = 3 + r() * 3; return T(c.x + (r() - 0.5) * 1.2, 1.0 + c.h * 0.35 + r() * 0.5, c.z + 0.6, 6 + r() * 4); } }
-      // identity: a fish swims out to the glass for its own caretaker, goes back to its favourite spot, stays near its best friend, and has a corner of the tank it prefers
+      // identity: a fish swims out to the glass for its own caretaker, goes back to its favorite spot, stays near its best friend, and has a corner of the tank it prefers
       if (f.mine && r() < (has('Shy') ? 0.1 : 0.25)) return T(-1.5 + r() * 3, 4 + r() * 6, 2.5 + r() * 0.4, 4);
       if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
       if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
@@ -711,7 +713,7 @@ export class Fishes {
       f.flake = fl; f.seeking = !!fl; f.foodMul = fl ? (greedy ? 2.0 : 1.5) : 1;
       if (fl) {
         f.target.copy(fl.pos); f.retarget = 0.3;
-        // bite test along the path the mouth travelled this frame (so a fast fish cannot swim through food), with depth counting half
+        // bite test along the path the mouth traveled this frame (so a fast fish cannot swim through food), with depth counting half
         const m = f.mouth(), a = f.pm ?? m, ab = o.copy(m).sub(a), len2 = ab.lengthSq(), tt = len2 > 1e-6 ? Math.max(0, Math.min(1, (fl.pos.clone().sub(a).dot(ab)) / len2)) : 1;
         const cx = a.x + ab.x * tt - fl.pos.x, cy = a.y + ab.y * tt - fl.pos.y, cz = (a.z + ab.z * tt - fl.pos.z) * 0.5, reach = f.nursery ? 0.22 : f.sk === 'seahorse' ? 0.3 : Math.max(0.45, f.radius * 0.5);
         f.pm = m.clone(); f.nibble = Math.hypot(cx, cy, cz);

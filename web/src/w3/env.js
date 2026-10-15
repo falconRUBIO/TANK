@@ -53,7 +53,7 @@ class Blades {
   mesh(material) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
-    // vertex colours are authored in sRGB; convert once so lighting stays linear
+    // vertex colors are authored in sRGB; convert once so lighting stays linear
     const lin = this.col.map((v) => Math.pow(Math.min(1, Math.max(0, v)), 2.2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(lin, 3));
     g.setAttribute('aSway', new THREE.Float32BufferAttribute(this.sway, 1));
@@ -85,7 +85,7 @@ function lowPolyTube(points, radiusFn, radial, uvScale = 1) {
   g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 
-// A calm backdrop: a few soft, low dunes in muted colours that fade with the time of day. No shapes on top, nothing busy.
+// A calm backdrop: a few soft, low dunes in muted colors that fade with the time of day. No shapes on top, nothing busy.
 function buildBackdrop() {
   const g = new THREE.Group(); g.userData.mats = [];
   const layers = [[-9, 0xf6b8c8, 1.5, 0.2], [-16, 0xc9b6f0, 2.2, 1.2], [-24, 0x9fd0f2, 3.0, 2.2]];
@@ -175,7 +175,7 @@ export function buildEnvironment() {
   far.count = fc; far.frustumCulled = false; root.add(far);
 
   let floorMesh = null, pebblesMesh = null;
-  // ── the bottom: each style has its own shape, texture and scatter, not just a colour ──
+  // ── the bottom: each style has its own shape, texture and scatter, not just a color ──
   const BOTTOM = {
     sand:   { amp: 0.16, ripple: 0.085, rf: 2.6, n: 90, geo: 'ico', size: [0.03, 0.08], cols: [[236, 220, 176], [214, 190, 140], [248, 238, 210]] },
     pearl:  { amp: 0.05, ripple: 0, rf: 0, n: 720, geo: 'sphere', size: [0.09, 0.2], cols: [[255, 252, 250], [255, 214, 230], [214, 208, 255], [236, 244, 255]] },
@@ -246,7 +246,7 @@ export function buildEnvironment() {
   const BACK = { candy: [0xf6b8c8, 0xc9b6f0, 0x9fd0f2], lagoon: [0x7fd8d0, 0x5fb8d8, 0x6a9ae0], sunset: [0xffc79a, 0xff9eb4, 0xc08ae0], mint: [0xb8f0c8, 0x8adcc8, 0x9ac8f0] };
   const WATER = new THREE.Color(0x8fb4c8), DEEP = new THREE.Color(0x1d7894), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
   const paintBack = () => {
-    const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the colour of deep water, with only a hint of the chosen backdrop
+    const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the color of deep water, with only a hint of the chosen backdrop
     backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.62).lerp(WATER, i < 6 ? 0.18 : 0.42).multiplyScalar(backLight * (i < 6 ? 0.92 : 1)));
     backdrop.userData.rock.forEach((m) => m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9));
   };

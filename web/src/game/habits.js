@@ -10,7 +10,7 @@ const times = (n) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
 
 export function habitLines(facts, label = () => null) {
   const F = facts ?? {}, name = F.name || 'It', out = [], H = F.hitch ?? {};
-  // where it holds on: its favourite, and whether it keeps to places it knows or likes to try new ones
+  // where it holds on: its favorite, and whether it keeps to places it knows or likes to try new ones
   const held = Object.entries(H).map(([id, h]) => ({ id, secs: +h?.[0] || 0, visits: +h?.[1] || 0, name: label(id) })).filter((h) => h.name);
   const total = held.reduce((a, h) => a + h.secs, 0), top = held.slice().sort((a, b) => b.secs - a.secs)[0];
   const fav = F.fav && held.find((h) => h.id === F.fav);

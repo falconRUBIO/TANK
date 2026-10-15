@@ -22,7 +22,7 @@ export class Vox {
       if (d <= 1 + (fbm(i * 0.35 + seed, j * 0.35, k * 0.35) - 0.5) * rough * 2) this.set(i, j, k, fn(i, j, k));
     }
   }
-  // Same recipe as the fish: smooth normals from a 5x5x5 neighbourhood, baked AO, tiny per-cube colour jitter
+  // Same recipe as the fish: smooth normals from a 5x5x5 neighbourhood, baked AO, tiny per-cube color jitter
   mesh(sway = null) {
     const g = (i, j, k) => (this.m.has(i + ',' + j + ',' + k) ? 1 : 0);
     const cells = [...this.m.values()].filter((c) => !(g(c.i + 1, c.j, c.k) && g(c.i - 1, c.j, c.k) && g(c.i, c.j + 1, c.k) && g(c.i, c.j - 1, c.k) && g(c.i, c.j, c.k + 1) && g(c.i, c.j, c.k - 1)));

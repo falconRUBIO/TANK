@@ -4,7 +4,7 @@ import { hex, mix, clamp, prof, mulberry32, fbm } from './color.js';
 
 const sgn = (v) => (v < 0 ? -1 : 1);
 
-// Shared eye painter: returns a colour if (x,y,z) is on the surface layer inside the eye.
+// Shared eye painter: returns a color if (x,y,z) is on the surface layer inside the eye.
 function eyePainter(body, ex, ey, r, iris, pupil = 0.95) {
   return (x, y, z) => {
     if (z === 0) return null;
@@ -423,7 +423,7 @@ const betta = {
 
 // ───────────────────────── Saltwater roster ─────────────────────────
 // Internal ids (goldfish, neon, cory …) are what saves and orders store, so they stay; what the player sees is the saltwater fish below.
-// `skin` re-paints an existing body with a colour rule that also knows where the voxel is (x along the body, y up).
+// `skin` re-paints an existing body with a color rule that also knows where the voxel is (x along the body, y up).
 const lum = (c) => (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11) / 255;
 const skin = (base, id, label, fn, extra = {}) => ({ ...base, ...extra, id, label, make(seed = 1) { const m = base.make.call(base, seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? (r.em && r.em > 0 && r.em < 3 && lum(r.c) < 0.12 || r.em > 1 ? r : { ...r, c: fn(r.c, x, y, z, seed, r) }) : r; } }; } });
 const ramp3 = (c, lo, hi) => mix(lo, hi, clamp(lum(c) * 1.25));
@@ -553,7 +553,7 @@ const seahorse = {
   id: 'seahorse', label: 'Seahorse', move: 'hover', length: 77, vox: 0.031,
   make(seed = 1) {
     const rng = mulberry32(seed * 5099 + 17);
-    // colours after real seahorses: the golden lined seahorse, a red spiny one, orange, violet and a dark one; some grow fleshy filaments along the back and the crown
+    // colors after real seahorses: the golden lined seahorse, a red spiny one, orange, violet and a dark one; some grow fleshy filaments along the back and the crown
     const PALS = [
       { body: [214, 168, 82], belly: [240, 214, 150], ring: [196, 118, 44], dark: [120, 82, 40], spot: [255, 248, 228] },
       { body: [178, 42, 46], belly: [214, 96, 90], ring: [120, 20, 34], dark: [80, 14, 24], spot: [255, 214, 210], spiny: true },
@@ -562,7 +562,7 @@ const seahorse = {
       { body: [92, 76, 64], belly: [150, 128, 104], ring: [60, 48, 40], dark: [34, 26, 22], spot: [236, 220, 196], spiny: true },
     ];
     const pal = PALS[Math.floor(rng() * PALS.length)], spiny = pal.spiny || rng() < 0.2;
-    // the trunk's centre line, crown to the root of the tail, and how thick it is along it: a slim neck, a deep chest and a pot belly that bulges forward
+    // the trunk's center line, crown to the root of the tail, and how thick it is along it: a slim neck, a deep chest and a pot belly that bulges forward
     const SP = [[6, 40], [4.5, 33], [3.2, 26], [3, 19], [3.6, 11], [4.2, 3], [4, -4], [3, -9]];
     const spine = []; for (let i = 0; i < SP.length - 1; i++) for (let k = 0; k < 8; k++) { const t = k / 8; spine.push([SP[i][0] + (SP[i + 1][0] - SP[i][0]) * t, SP[i][1] + (SP[i + 1][1] - SP[i][1]) * t, (i + t) / (SP.length - 1)]); }
     spine.push([...SP[SP.length - 1], 1]);
@@ -640,8 +640,8 @@ const seahorse = {
     };
   },
 };
-// The tail's rest centre line (in model coordinates) and its rig. curl: -1 hangs nearly straight (swimming), 0 is its resting curl, 1 a tight spiral.
-// grip: 0 the tail curls flat beside the body; 1 its end wraps in a helix round an upright stem in front of the belly (ax, ay is where that stem passes, in model coordinates minus centre).
+// The tail's rest center line (in model coordinates) and its rig. curl: -1 hangs nearly straight (swimming), 0 is its resting curl, 1 a tight spiral.
+// grip: 0 the tail curls flat beside the body; 1 its end wraps in a helix round an upright stem in front of the belly (ax, ay is where that stem passes, in model coordinates minus center).
 const TAIL = { n: 52, ds: 1.1, base: [3, -9], a0: -1.85, pitch: 0.85, ig: 14, lean: 0.34, stem: 2.1 };
 // the tail's thickness along its length (radius, in voxels), used to build it and to wrap it snugly: each coil sits its own thickness out from the stem
 const tailR = (u) => 3.1 - 2.1 * Math.pow(u, 0.85);
@@ -649,7 +649,7 @@ const tailAngles = (curl) => { const K = curl < 0 ? 5.6 + curl * 4.4 : 5.6 + cur
 function tailPlanar(curl, px, py, pa) { const A = tailAngles(curl); let x = TAIL.base[0], y = TAIL.base[1]; for (let i = 0; i < TAIL.n; i++) { const a = A(i / (TAIL.n - 1)); if (i > 0) { x += Math.cos(a) * TAIL.ds; y += Math.sin(a) * TAIL.ds; } px[i] = x; py[i] = y; pa[i] = a; } }
 seahorse.tailRest = (() => { const n = TAIL.n, px = new Float32Array(n), py = new Float32Array(n), pa = new Float32Array(n); tailPlanar(0, px, py, pa); return { n, p: Array.from({ length: n }, (_, i) => [px[i], py[i]]), a: pa }; })();
 export const SEAHORSE_LEAN = TAIL.lean;
-// the tip of the snout (the mouth), in model voxels from the model's centre, and the way the snout points: where a seahorse sucks in its food
+// the tip of the snout (the mouth), in model voxels from the model's center, and the way the snout points: where a seahorse sucks in its food
 export const SEAHORSE_SNOUT = { x: 13.5 + 19 * Math.cos(-0.38) - 6, y: 38.5 + 19 * Math.sin(-0.38) - 2, a: -0.38 };
 // how far from the stem the outside of the coil reaches (model voxels): leaves inside this are pressed aside while it holds on
 export const SEAHORSE_GRIP_R = TAIL.stem + 2 * tailR(TAIL.ig / (TAIL.n - 1)) + 0.35;
@@ -691,7 +691,7 @@ export function seahorseTail(sp, curl, grip = 0, out, stem = TAIL.stem, lean = T
 // ───────────────────────── Octopus: round head forward, eight trailing arms ─────────────────────────
 // ── Octopus ──
 // A rounded mantle leaning back over a head with two big side eyes, and eight tapering arms that radiate from under the head.
-// Each arm is a rigged tube: a centre line pose(arm, t, state) plus every voxel's offset from it, so the arms can fan out and curl at rest,
+// Each arm is a rigged tube: a center line pose(arm, t, state) plus every voxel's offset from it, so the arms can fan out and curl at rest,
 // walk along the floor, and stream back together in a jet, each with its own phase. The same pose() builds the rest model and moves it.
 const OCT = { ax: 3, ay: -3, floor: -9.5, rad0: 3.4, rad1: 0.9 };
 const octoArms = (seed) => { const r = mulberry32(seed * 31 + 9); return Array.from({ length: 8 }, (_, i) => ({ i, th: i * Math.PI / 4 + 0.22 + (r() - 0.5) * 0.25, L: 21 + r() * 7, ph: r() * 6.28, curl: 0.6 + r() * 0.8 })); };
@@ -756,7 +756,7 @@ const octoPose = (a, t, S, o = [0, 0, 0]) => {
   }
   return o;
 };
-// the colours an octopus can be: the first four were always there (older octopuses were dealt one by their seed), and a new caretaker picks one for theirs
+// the colors an octopus can be: the first four were always there (older octopuses were dealt one by their seed), and a new caretaker picks one for theirs
 export const OCTO_COLORS = [
   { id: 'coral', label: 'Coral', skin: [226, 92, 78], pale: [255, 190, 170] }, { id: 'violet', label: 'Violet', skin: [170, 90, 200], pale: [236, 190, 255] },
   { id: 'ocean', label: 'Ocean', skin: [60, 150, 200], pale: [180, 236, 255] }, { id: 'amber', label: 'Amber', skin: [230, 140, 60], pale: [255, 220, 170] },
@@ -767,7 +767,7 @@ const octopus = {
   make(seed = 1, look = null) {
     const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
     const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);
-    // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its centre line (so it can be re-posed)
+    // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its center line (so it can be re-posed)
     const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
     arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
       const t = k / 90, rad = OCT.rad0 + (OCT.rad1 - OCT.rad0) * t, R = Math.ceil(rad); octoPose(a, t, REST, P);
@@ -808,7 +808,7 @@ const octopus = {
           c = mix(c, [c[0] * 0.66, c[1] * 0.6, c[2] * 0.62], clamp((y - 1) / 13) * 0.6);   // a darker back, so it stands out against pale sand
           return { c, tag: part };
         }
-        // the underside of the head: a solid funnel of web that runs from the head down to the mouth (so nothing hollow shows between the arms), a ring of lips, and a small tan beak at the centre
+        // the underside of the head: a solid funnel of web that runs from the head down to the mouth (so nothing hollow shows between the arms), a ring of lips, and a small tan beak at the center
         const kArm = armV.get(x + ',' + y + ',' + z);
         { const dx = x - 3, rr = Math.hypot(dx, z), ang = Math.atan2(z, dx);
           if (y <= -6 && y >= -8 && rr <= 3.0 - (y === -8 ? 1.0 : 0)) {                                                 // the mouth: lips around a small beak
@@ -834,7 +834,7 @@ const octopus = {
   },
 };
 
-// rare visitors: recoloured cousins of the shop fish
+// rare visitors: recolored cousins of the shop fish
 const recolor = (base, id, label, fn) => ({ ...base, id, label, make(seed = 1) { const m = base.make(seed), inner = m.sample; return { ...m, sample: (x, y, z) => { const r = inner(x, y, z); return r ? { ...r, c: fn(r.c), em: r.em } : r; } }; } });
 const moonbetta = recolor(mandarin, 'moonbetta', 'Ghost Dragonet', (c) => mix(c, [214, 228, 255], 0.62));
 const sunangel = recolor(emperor, 'sunangel', 'Golden Angelfish', (c) => [Math.min(255, c[0] * 0.5 + 150), Math.min(255, c[1] * 0.6 + 100), Math.max(0, c[2] * 0.25)]);

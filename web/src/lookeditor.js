@@ -1,4 +1,4 @@
-// The look editor: a turning portrait in a glass porthole, a row of tabs (Skin, Hair, Hat, Top, Extra), style tiles drawn from the real model, and colour swatches.
+// The look editor: a turning portrait in a glass porthole, a row of tabs (Skin, Hair, Hat, Top, Extra), style tiles drawn from the real model, and color swatches.
 // Used when you first make your person and again from the Crew tab. Edits `look` in place and calls onChange after each change.
 import { personSprite, drawAvatar } from './people.js';
 import { SKINS, HAIR_COLORS, PALETTE, HAIR_STYLES, HAT_STYLES, TOP_STYLES, EXTRAS, normAvatar, randomAvatar } from './game/avatar.js';
@@ -48,7 +48,7 @@ export function lookEditor(host, look, onChange = () => {}) {
       }
     }
   }
-  // after a colour change the tiles are redrawn in the new colour
+  // after a color change the tiles are redrawn in the new color
   function refreshTiles() { const my = ++job, [key, list] = tab.styles; styles.querySelectorAll('.pe-tile canvas').forEach((c, i) => setTimeout(() => { if (my === job) tileArt(c, { ...look, [key]: list[i][0] }, tab.crop); }, 20 + i * 24)); }
   host.querySelectorAll('.pe-tabs button').forEach((b) => (b.onclick = () => { tab = TABS.find((t) => t.k === b.dataset.t); host.querySelectorAll('.pe-tabs button').forEach((x) => x.classList.toggle('on', x === b)); panel(); }));
   host.querySelector('.pe-dice').onclick = () => { Object.assign(look, randomAvatar()); turn = 15; changed(); panel(); host.querySelector('.pe-stage').animate?.([{ transform: 'scale(.94)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(.3,1.6,.5,1)' }); };

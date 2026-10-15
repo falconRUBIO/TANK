@@ -13,17 +13,17 @@ export const FACTS = {
     'Coconut octopuses hunt shrimp, crabs and clams on sandy seabeds in the tropical Pacific and Indian Oceans.',
     'An octopus has three hearts and blue blood.',
     'Most of an octopus\'s neurons are in its arms: each arm can taste and feel what it touches on its own.',
-    'An octopus changes colour and texture in a fraction of a second, using thousands of tiny colour cells in its skin.',
+    'An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin.',
   ],
   seahorse: [
     'A seahorse\'s eyes move on their own: it can watch something in front and something behind at the same time.',
     'In seahorses the male gets pregnant: the female puts her eggs in his pouch and he carries them until they hatch.',
     'A male seahorse can give birth to anything from five to over a thousand tiny babies at once.',
-    'A seahorse pair greets each other each morning with a little dance, circling and changing colour together.',
+    'A seahorse pair greets each other each morning with a little dance, circling and changing color together.',
     'Seahorses court by swimming side by side with their tails linked, turning brighter as they go.',
     'Seahorses are poor swimmers. They spend most of the day holding on to seagrass with their curled tails.',
     'A seahorse has no teeth and no stomach. It snaps up tiny shrimp with a flick of its snout, so it eats almost all day.',
-    'Seahorses can change colour to match the plants they cling to.',
+    'Seahorses can change color to match the plants they cling to.',
     'Seahorses swim upright, pushed along by a little fin on their back that beats up to 50 times a second.',
   ],
   goldfish: ['Every clownfish is born male. The biggest in a group can become female.', 'Clownfish live among anemone tentacles, protected by a slimy coat that stops the stings.', 'Clownfish make little popping and clicking sounds to talk to each other.'],
@@ -34,7 +34,7 @@ export const FACTS = {
   angelfish: ['A young emperor angelfish has blue and white rings; it changes completely into stripes as it grows up.', 'Angelfish can make a loud knocking sound to warn others off.'],
   platy: ['In cardinalfish the dad keeps the eggs safe in his mouth until they hatch, and does not eat until they do.', 'Cardinalfish rest in quiet groups by day and hunt at night.'],
   danio: ['Anthias live in groups of many females and one male. If he goes, a female can turn into the new male.', 'Anthias hover above the reef, picking plankton out of the current.'],
-  betta: ['Mandarin dragonets are among the few animals that make true blue colour in their skin.', 'A mandarin dragonet picks tiny copepods off the rocks all day long, one by one.', 'Mandarins have no scales: a slimy coat protects them instead.'],
+  betta: ['Mandarin dragonets are among the few animals that make true blue color in their skin.', 'A mandarin dragonet picks tiny copepods off the rocks all day long, one by one.', 'Mandarins have no scales: a slimy coat protects them instead.'],
 };
 const dayN = () => Math.floor(Date.now() / 864e5);
 export function factOfDay(species, extra = 0) { const L = FACTS[species] ?? []; if (!L.length) return null; return { text: L[(dayN() + extra) % L.length], n: ((dayN() + extra) % L.length) + 1, of: L.length }; }

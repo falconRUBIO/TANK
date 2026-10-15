@@ -82,7 +82,7 @@ export function renderSprite(model, { yaw = 0, pitch = 0, phase = 0, scale = 1 }
     const col = ramp(v.c)[lvl];
     buf[p * 4] = col[0]; buf[p * 4 + 1] = col[1]; buf[p * 4 + 2] = col[2]; buf[p * 4 + 3] = 255;
   }
-  // hole fill: transparent pixel with >=3 opaque 4-neighbours takes a neighbour's colour
+  // hole fill: transparent pixel with >=3 opaque 4-neighbours takes a neighbour's color
   const copy = buf.slice();
   const op = (i) => copy[i * 4 + 3] === 255;
   for (let y = 1; y < S - 1; y++) for (let x = 1; x < S - 1; x++) {

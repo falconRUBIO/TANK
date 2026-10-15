@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -14,7 +14,7 @@ import { Glow, Sightings, Rain } from './w3/fx.js';
 import { Nursery } from './w3/nursery.js';
 import { makeEgg, eggSpot, eggY } from './w3/egg.js';
 import { msIcon } from './msicons.js';
-import { factOfDay, TRAIT_FACTS } from './facts.js';
+import { factOfDay, TRAIT_FACTS, FACTS } from './facts.js';
 import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
@@ -129,7 +129,8 @@ function feedGo() {
 }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
-  const food = defaultFood(), oc = food === 'crab' ? myOctos()[0] : food === 'mysis' ? mySeas()[0] : null, own = food === 'crab' || food === 'mysis';
+  const food = defaultFood(), own = food === 'crab' || food === 'mysis', mine = food === 'crab' ? myOctos() : food === 'mysis' ? mySeas() : [];
+  const oc = own ? (mine.find((o) => o.id === game.feedFor) ?? [...mine].sort((a, b) => ownHunger(b) - ownHunger(a))[0] ?? null) : null;      // the one you chose in Care, else your hungriest (not just the first one you have)
   if (own ? !oc || ownHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for ${food === 'crab' ? 'a crab' : 'shrimp'} ${hrs((0.08 - ownHunger(oc)) / OHR / 3600)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) / HR / 3600)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
   if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
@@ -210,7 +211,7 @@ async function decorMenu(id) {
   const d = game.state.decor.find((x) => x.id === id), D = d && DECOR_DEF[d.type]; if (!D || placing || feedMode || cleanMode || document.querySelector('.notesheet')) return; sfx('tap'); haptic(6);
   const half = Math.floor(D.price / 2), star = d.type === 'starfish', lovers = game.state.fish.filter((f) => !f.dead && (f.home === id || f.spotId === id)), who = lovers.map((f) => f.name).join(' and ');
   if (star) { const it = decor.items.get(id); if (it) it.curlT = performance.now(); sfx('curl'); }      // touched, a starfish curls its arms up for a moment
-  const about = lovers.length ? (lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} here.` : `${who}'s favourite spot.`) : '', days = Math.max(0, Math.floor((Date.now() - (d.at ?? Date.now())) / 864e5));
+  const about = lovers.length ? (lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} here.` : `${who}'s favorite spot.`) : '', days = Math.max(0, Math.floor((Date.now() - (d.at ?? Date.now())) / 864e5));
   const el = document.createElement('div'); el.className = 'notesheet deco';
   el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="dch"><h3>${esc(D.label)}</h3><p>${esc(D.blurb ?? '')}</p>${about ? `<p class="dlove">♥ ${esc(about)}</p>` : ''}<small>${days ? `In the tank for ${days} day${days === 1 ? '' : 's'}` : 'New in the tank'}</small></div>
     <div class="nsact"><button class="mv"><i>✥</i><span>${star ? 'Carry it' : 'Move it'}</span></button><button class="down"><i>${star ? '🌊' : '✕'}</i><span>${star ? 'Let it go' : 'Take it out'}${half ? ` · +${half} 🐚` : ''}</span></button></div></div>`;
@@ -219,7 +220,7 @@ async function decorMenu(id) {
   el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close;
   el.querySelector('.mv').onclick = () => { close(); startPlace(d.type, id); };
   el.querySelector('.down').onclick = async () => { close();
-    if (lovers.length && !(await ui.dialog({ title: star ? 'LET IT GO?' : 'TAKE IT OUT?', text: lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} in it and will have to find a new home. ${lovers.length > 1 ? 'They' : 'It'} will miss it for a while.` : `It is ${who}'s favourite spot. ${lovers.length > 1 ? 'They' : 'It'} will miss it, and go looking for a new one.`, ok: star ? 'Let it go' : 'Take it out', cancel: 'Keep it', danger: true }))) return;
+    if (lovers.length && !(await ui.dialog({ title: star ? 'LET IT GO?' : 'TAKE IT OUT?', text: lovers.some((f) => f.home === id) ? `${who} ${lovers.length > 1 ? 'live' : 'lives'} in it and will have to find a new home. ${lovers.length > 1 ? 'They' : 'It'} will miss it for a while.` : `It is ${who}'s favorite spot. ${lovers.length > 1 ? 'They' : 'It'} will miss it, and go looking for a new one.`, ok: star ? 'Let it go' : 'Take it out', cancel: 'Keep it', danger: true }))) return;
     const r = await game.dispatch({ t: 'sellDecor', id }); if (r.ok) { sfx('coin'); if (!lovers.length) ui.toast(star ? `The starfish slipped away to the sea${half ? ` · +${r.delta} 🐚` : ''}` : half ? `${D.label} taken out · +${r.delta} 🐚` : `${D.label} taken out`); decor.sync(game.state.decor, game.state); } else fail(r); };
 }
 function cancelModes() { endFeed(); if (cleanMode) { cleanMode = false; gcv.style.pointerEvents = 'none'; } if (placing) { decor.cancel(); endPlace(); } setRearrange(false, true); }
@@ -361,9 +362,13 @@ const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, tra
 stg.hideForDepth.push(bottleSp, bottleGlow);
 const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
 let bottleId = null; const sentBottles = new Map();
-const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys;
+const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
 toys.onSound = (k) => sfx({ splash: 'bubble', bubble: 'bubble', bonk: 'tap', pop: 'click', pounce: 'tap' }[k] ?? 'tap');
 toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fish: ids }).catch(() => null); };      // who joined in learns the toy a little more
+// while the light spot is on, the tank goes dark around it: a dark veil over the tank with a soft hole where the light falls, following your finger
+const dimmer = document.createElement('div'); dimmer.id = 'dimmer'; canvas.after(dimmer);      // (right over the tank, under the header, the menus and the bar)
+function toScreen(p) { const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc, q = p.clone().project(camera); return [r.left + (r.width - dw) * 0.5 + (q.x + 1) / 2 * dw, r.top + (r.height - dh) + (1 - q.y) / 2 * dh]; }
+function spotDim() { const L = toys.light, on = !!(L && L.on); dimmer.classList.toggle('on', on); if (!L) return; const [x, y] = toScreen(L.m.position); dimmer.style.setProperty('--x', x + 'px'); dimmer.style.setProperty('--y', y + 'px'); }
 function armToy(k) { const T = TOYS[k]; if (!T) return; ui.open('tank'); toys.armed = k; ui.toast(T.how, 3200); } const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf08a3a, clown: 0xf0703a, blue: 0x8a6cf0, platy: 0xf0a040 };
 function syncExtras() {
   const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
@@ -474,8 +479,11 @@ async function takePhoto() {
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
-  try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] });      /* the picture alone: with text alongside, some apps send only the words */ return; } } catch (e) { if (e?.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ui.toast('Postcard saved');
+  // shown first, with its own Share button: iPhones only open the share sheet straight from a tap, and building the picture takes a moment after yours
+  const url = URL.createObjectURL(blob); await ui.postcardPreview(url, async () => {
+    try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] }); return true; } } catch (e) { if (e?.name === 'AbortError') return false; }
+    const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove(); ui.toast('Postcard saved'); return true; });
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBottle = () => openBottle(); window.__bottleSeen = () => ({ id: bottleId, v: bottleSp.visible, y: +bottleSp.position.y.toFixed(2), leave: !!bottleSp.userData.leave });
 
@@ -646,32 +654,33 @@ function showCard(f) {
     if (rec.widowAt && now - rec.widowAt < 7 * 864e5) return `Grieving its partner. It needs about ${Math.max(1, Math.ceil(7 - (now - rec.widowAt) / 864e5))} more day${Math.ceil(7 - (now - rec.widowAt) / 864e5) === 1 ? '' : 's'} before it feels like itself.`;
     if (p.needs[3] < 0.5) return 'Unwell: it needs food and clean water to get its strength back.';
     if (p.needs[0] < 0.35) return 'Hungry. It has been a while since a good meal.';
-    if (rec.elder) return 'An elder now: slower, softer colours, and still enjoying every day.';
+    if (rec.elder) return 'An elder now: slower, softer colors, and still enjoying every day.';
     if (L && age >= L * 0.75 - 7) return 'Getting older: within a week or so it will be an elder.';
     if (p.needs[1] < 0.4) return 'A bit low. A clean tank and some play would cheer it up.';
     return null; })();
   const famNames = (() => { const out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, par = (rec.parents ?? []).map((x) => x?.name).filter(Boolean), kidsL = childrenOf(game.state, rec.id), sib = game.state.fish.filter((x) => x.id !== rec.id && (x.parents ?? []).length && (x.parents ?? []).some((q) => (rec.parents ?? []).some((r) => r?.id && r.id === q?.id))).map((x) => x.name);
     if (par.length) out.push(`Parents: ${par.join(' & ')}`); if (rec.mate && nm(rec.mate)) out.push(`Partner: ${nm(rec.mate)}`); if (sib.length) out.push(`Siblings: ${sib.slice(0, 4).join(', ')}${sib.length > 4 ? ` +${sib.length - 4}` : ''}`); if (kidsL.length) out.push(`Young: ${kidsL.length}${kidsL.some((k) => !k.alive) ? ` (${kidsL.filter((k) => k.alive).length} still here)` : ''}`);
     return out.length ? esc(out.join(' · ')) : null; })();
-  const fod = factOfDay(rec.species), factLine = fod ? `<div class="dyk mini" role="button" tabindex="0" data-tab="pers"><small>DID YOU KNOW?</small><p>${esc(fod.text)}</p></div>` : '';      // the day's fact, also on the first tab
-  const over = `${path}${trustRow}${bondTile}${toysTile}${famLine}${factLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
+  // Did you know: the day's fact (tap for another); every one you have read is kept, so the card builds into a little field guide of the species
+  const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
+  if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
+  const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
+  const over = `${path}${trustRow}${bondTile}${toysTile}${famLine}${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
-    <h4>Favourites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
-    <h4>Familiarity</h4><div class="fam2"><div class="fl"><b>${fm.label}</b>${fm.next ? `<small>next: ${fm.next}</small>` : '<small>knows this tank inside out</small>'}</div>${famBar}</div>
-    <h4>Behaviours</h4><div class="bsum"><p>${seen.length} of ${beh.length} behaviours seen</p><div class="tags">${tags(seen.length ? seen.slice(0, 6) : beh.slice(0, 3))}</div><button class="lnk" data-tab="pers">See them all ›</button></div>
+    <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
+    <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
     <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>
-    ${comfortBlock(rec)}
+    ${factLine}${comfortBlock(rec)}
     <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
   // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
   const bondV = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15), bondW = bondV >= 0.9 ? 'Best friends' : bondV >= 0.5 ? 'Close' : bondV >= 0.2 ? 'Warming up' : 'Just met';
   const tiles = [...TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return { label: b.label, col: b.col, w, v, tip: `${b.label}: ${w}. ${ex}` }; }), { label: 'Bond with you', col: '#ff8fb1', w: bondW, v: bondV, tip: `Bond with you: ${bondW}. It grows each time you feed or play with ${rec.name}.` }];      // six tiles, three even rows of two
-  const pers = `<div class="tgrid">${tiles.map((x) => { const dots = Math.max(1, Math.round(x.v * 5)); return `<button class="tg" data-tip="${esc(x.tip)}"><span>${x.label}</span><b style="color:${x.col}">${x.w}</b><i>${[1, 2, 3, 4, 5].map((k) => `<em style="${k <= dots ? `background:${x.col}` : ''}"></em>`).join('')}</i></button>`; }).join('')}</div>
+  const pers = `<div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div><div class="tgrid">${tiles.map((x) => { const dots = Math.max(1, Math.round(x.v * 5)); return `<button class="tg" data-tip="${esc(x.tip)}"><span>${x.label}</span><b style="color:${x.col}">${x.w}</b><i>${[1, 2, 3, 4, 5].map((k) => `<em style="${k <= dots ? `background:${x.col}` : ''}"></em>`).join('')}</i></button>`; }).join('')}</div>
     ${(() => { const tf = (TRAIT_FACTS[rec.species] ?? {}), t = (octo ? octoChips(mind) : p.traits).map((x) => tf[x]).find(Boolean); return t ? `<p class="tfact">${msIcon("trick", true, 14)} ${esc(t)}</p>` : ''; })()}
-    ${(() => { const F = factOfDay(rec.species, game.factPeek ?? 0); return F ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${F.n} of ${F.of}</small><p>${esc(F.text)}</p><span>Tap for another</span></div>` : ''; })()}
     <div class="chips">${(octo ? octoChips(mind) : p.traits).map((t) => `<span>${t}</span>`).join('')}</div>
     ${octo ? (octoLine(mind, f) !== mind.line ? `<p class="mind">${esc(octoLine(mind, f))}</p>` : '') : `<p class="mind">${esc(SOCIAL[rec.species]?.nature ?? '')}${p.traits.length ? ' ' + p.traits.map((t) => TRAIT_TXT[t]).filter(Boolean).join(' ') : ''}</p>`}
-    <h4>Behaviours · ${seen.length} of ${beh.length}</h4><div class="tags">${tags(beh)}</div><p class="dim sm">${seen.length < beh.length ? `Keep watching: ${esc(f.name)} will show you the rest in its own time.` : `You have seen everything ${esc(f.name)} does.`}</p>
+    <h4>Behaviors · ${seen.length} of ${beh.length}</h4><div class="tags">${tags(beh)}</div><p class="dim sm">${seen.length < beh.length ? `Keep watching: ${esc(f.name)} will show you the rest in its own time.` : `You have seen everything ${esc(f.name)} does.`}</p>
     ${(() => { const hb = habitLines({ name: f.name, species: rec.species, ...lifeTotals(LOG, f, live) }, decorName); return hb.length ? `<h4>Habits</h4><ul class="dyk">${hb.map((h) => `<li>${h.icon} ${esc(h.text)}</li>`).join('')}</ul>` : ''; })()}
     ${socialLines(rec)}`;
   const tankLen = (n) => (n < 1 ? 'Less than one tank length' : `${Math.round(n)} tank length${Math.round(n) === 1 ? '' : 's'}`), dist = (LOG.dist ?? 0) + (live?.dist ?? 0), lvTot = Object.values(lv).reduce((a, b) => a + b, 0);
@@ -679,11 +688,10 @@ function showCard(f) {
   const kids = childrenOf(game.state, rec.id).length, places = new Set([...(LOG.places ?? []), ...(live?.places ?? [])]).size;
   const stats = `<div class="facts">${tile('Age', p.age)}${tile('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${tile('Travelled', tankLen(dist / 8))}${tile('Places visited', places ? String(places) : null)}${sea ? tile('Holdfasts gripped', String((LOG.holds ?? 0) + Math.max(0, (f.holdN ?? 0) - (live?.holds ?? f.holdN ?? 0)))) + tile('Plankton snapped', String((LOG.snaps ?? 0) + Math.max(0, (f.snicks ?? 0) - (live?.snaps ?? f.snicks ?? 0)))) + seaStats(LOG, f, live) : ''}${tile('Puzzle jars', rec.solved ? `${rec.solved}${rec.bestSecs ? ` · best ${rec.bestSecs}s` : ''}` : null)}${tile('Crabs caught', rec.crabs ? String(rec.crabs) : null)}${tile('Rearranged the tank', rec.moved ? `${rec.moved} time${rec.moved === 1 ? '' : 's'}` : null)}${tile('Tricks', rec.tricks?.length ? rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ') : null, true)}${tile('Youngsters', kids ? String(kids) : null)}</div>
     ${lvTot > 60 ? `<h4>Where it spends its time</h4><div class="lvbar">${lvKeys.map((k) => `<b style="flex:${Math.max(0.001, lv[k] ?? 0)};background:${lvCol[k]}"></b>`).join('')}</div><div class="lvkey">${lvKeys.map((k) => `<span><i style="background:${lvCol[k]}"></i>${AREA[k]} ${Math.round(((lv[k] ?? 0) / lvTot) * 100)}%</span>`).join('')}</div>` : `<p class="dim sm">Where ${esc(f.name)} likes to spend its time will show here after a while.</p>`}
-    ${(() => { const dy = didYouKnow(rec, f); return dy.length ? `<h4>Did you know</h4><ul class="dyk">${dy.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''; })()}`;
+`;
   const jour = `${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button>
-    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}${rec.species === 'seahorse' ? (sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female') : ''} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b>${(rec.parents ?? []).length && Date.now() - rec.born < 864e5 ? ' <em class="newb">New</em>' : ''}</div></div>
-    <div class="psum"><em>${sea ? '🌿' : octo ? '🐙' : '🐟'}</em><div><b>${esc(sum.title)}</b><span>${esc(sum.line)}</span></div></div>
+    <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${f.species.label}${sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female'} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${p.mood}</b>${(rec.parents ?? []).length && Date.now() - rec.born < 864e5 ? ' <em class="newb">New</em>' : ''}</div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
   card.querySelectorAll('[data-tip]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.tip, 3200); }; }); if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
@@ -774,7 +782,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Every tank starts with an octopus. Choose the colour of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Every tank starts with an octopus. Choose the color of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
@@ -874,6 +882,14 @@ game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+// the practical side of its card: when it last ate, when it will be hungry again, how it is doing, and who looks after it
+function careRows(rec) {
+  const s = game.state, own = rec.species === 'octopus' || rec.species === 'seahorse', food = rec.species === 'octopus' ? 'crab' : rec.species === 'seahorse' ? 'mysis' : 'meal', last = own ? rec.fedAt : s.lastFed, next = dueIn(s, food, rec);
+  const r = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : ''), when = (ms) => (ms < 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.round(ms / 60e3)} min` : `in about ${Math.round(ms / 3600e3)} h`);
+  const ago2 = (ts) => { const m = (Date.now() - ts) / 60e3; return m < 1 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+  const bond = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15);
+  return r('Last fed', Number.isFinite(last) ? ago2(last) : 'Not yet') + r('Hungry again', next > 0 ? when(next) : 'Now: it would love a meal') + r('Eats', { crab: 'Crabs, from its own caretaker', mysis: 'Mysis shrimp, from its own caretaker', meal: 'Flakes and treats from anyone' }[food]) + r('Bond with you', bond >= 0.9 ? 'Best friends' : bond >= 0.5 ? 'Close' : bond >= 0.2 ? 'Warming up' : 'Just met');
+}
 // who it is close to, with the numbers behind it: a partner (and since when, and how often they greet), or how far along two are in getting to know each other
 function bondLines(rec, now, LOG = {}) {
   const S = game.state, nm = (id) => S.fish.find((x) => x.id === id)?.name, d = (ms) => Math.max(1, Math.floor(ms / 864e5)), octoF = rec.species === 'octopus';
@@ -940,7 +956,7 @@ game.on('died', (id) => {                         // a quiet beat, not an alarm:
 });
 game.on('theme', () => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); });
 let seenOnline = null;
-game.on('members', () => {                                                    // a friend arrives: a greeting, and their favourite fish swims over to the glass
+game.on('members', () => {                                                    // a friend arrives: a greeting, and their favorite fish swims over to the glass
   if (!game.shared) return; const now = new Set(game.online ?? []); if (seenOnline) for (const id of now) if (!seenOnline.has(id) && id !== game.you?.userId) {
     const m = game.members?.find((x) => x.id === id); if (!m) continue; ui?.toast(`${m.name} is in the tank`, 3200); sfx('arrive');
     const fav = game.state?.fish.map((f) => ({ f, b: f.bond?.[id] ?? 0 })).sort((a, b) => b.b - a.b)[0]; const fish = fav && fav.b > 0 ? fishes.byId.get(fav.f.id) : null; if (fish) { fish.target.set((Math.random() - 0.5) * 2.5, Math.max(1, Math.min(9, fish.pos.y)), 2.5); fish.retarget = 5; fishes.burst(fish.pos); }
@@ -968,8 +984,8 @@ document.addEventListener('visibilitychange', () => game.track(document.hidden ?
 const netFish = new Map(); let lastSnapSent = 0, simAt = 0;      // simAt: when the animals were last moved here (a snapshot is stamped with it, not with when it is sent) window.__netFish = netFish;
 function isDirector() { return !game.shared || game.director === true; }
 const r2 = (v) => Math.round(v * 100) / 100;
-// what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, colour, chewing…)
-// a seahorse in one short string for the other phones: its state, where each eye looks, its colour (how much, and of what), the greeting's glow,
+// what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, color, chewing…)
+// a seahorse in one short string for the other phones: its state, where each eye looks, its color (how much, and of what), the greeting's glow,
 // a count of its strikes (so each phone plays each strike once), and the thickness and lean of what it holds (so its coil fits the same stem)
 // a seahorse's own counts on its card: what is saved plus what has happened since the last report; a count shows only once it has really happened
 // what an animal has really done: what the server has from its log, plus what has happened here since the last report
@@ -1096,7 +1112,7 @@ function frameBody(now) {
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();
-  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); toys.update(dt, t); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
+  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
@@ -1163,7 +1179,7 @@ async function welcomeBack() {
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
-  const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colours|smacked|squirted|friends now|has it in for|first crab/.test(t);
+  const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colors|smacked|squirted|friends now|has it in for|first crab/.test(t);
   const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
   const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
   const s = game.state, lines = [...news];
@@ -1216,7 +1232,7 @@ async function firstFishPrompt() {
   if ($('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('settle')?.classList.contains('on') || focus || play || placing || (ui?.tab && ui.tab !== 'tank')) return;
   firstAsking = true;
   try {
-    const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its colour, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+    const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its color, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
     const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') { fail(r); firstAskAfter = performance.now() + 10 * 60e3; } else if (r.ok) sfx('arrive');      // something went wrong: not again for a good while
   } catch { firstAskAfter = performance.now() + 60e3; } finally { firstAsking = false; }
 }

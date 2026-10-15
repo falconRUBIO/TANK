@@ -8,7 +8,7 @@ export const SPECIES_DEF = {
   neon:      { label: 'Blue Chromis', price: 20, level: 1, wait: 20, count: 4, blurb: 'A shimmering school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
   cory:      { label: 'Yellow Goby', price: 18, level: 2, wait: 60, count: 1, blurb: 'A tidy little reef sitter.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
   blue:      { label: 'Royal Gramma', price: 28, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the reef.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
-  guppy:     { label: 'Damselfish', price: 18, level: 2, wait: 25, count: 2, blurb: 'A feisty, colourful pair.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
+  guppy:     { label: 'Damselfish', price: 18, level: 2, wait: 25, count: 2, blurb: 'A feisty, colorful pair.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
   angelfish: { label: 'Emperor Angelfish', price: 40, level: 3, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
   platy:     { label: 'Cardinalfish', price: 24, level: 3, wait: 40, count: 2, blurb: 'A gentle, glowing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
   danio:     { label: 'Pink Anthias', price: 32, level: 4, wait: 60, count: 4, blurb: 'A pink school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
@@ -24,7 +24,7 @@ export const DECOR_DEF = {
   grass:    { label: 'Sea Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
   fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
   sword:    { label: 'Broadleaf Seaweed',   cat: 'PLANTS',     price: 7,  level: 1, blurb: 'Broad green leaves.' },
-  red:      { label: 'Red Gorgonian',     cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A bright pop of colour.' },
+  red:      { label: 'Red Gorgonian',     cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A bright pop of color.' },
   rock:     { label: 'Reef Rock',   cat: 'ROCKS',      price: 6,  level: 1, blurb: 'Small and mossy.' },
   boulder:  { label: 'Reef Boulder',       cat: 'ROCKS',      price: 12,  level: 1, blurb: 'A big rock to hide behind.' },
   starfish: { label: 'Starfish',      cat: 'SPECIAL',    price: 4,  level: 1, blurb: 'A real little sea star. It creeps slowly about the sand.' },
@@ -44,7 +44,7 @@ export const DECOR_DEF = {
   crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 56, level: 7, blurb: 'A cluster that glows blue in the dark.' },
   lighthouse: { label: 'Little Lighthouse', cat: 'STRUCTURES', price: 150, level: 7, blurb: 'A landmark the whole tank saves for. Its lamp glows at night.' },
   spire:    { label: 'Coral Spire',   cat: 'SPECIAL',    price: 250, level: 8, blurb: 'The biggest piece in the tank. A towering reef of pink coral.' },
-  anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 16, level: 2, blurb: 'Soft tentacles that sway. A clownfish favourite.' },
+  anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 16, level: 2, blurb: 'Soft tentacles that sway. A clownfish favorite.' },
   brain:    { label: 'Brain Coral',   cat: 'ROCKS',      price: 14, level: 2, blurb: 'A ridged dome of coral.' },
   table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 20, level: 3, blurb: 'A wide shelf to hover under.' },
   coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A big hollow half-shell. An octopus may carry it off and move in.' },
@@ -114,7 +114,7 @@ export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= nee
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
 // The first fish is free and chosen: one of these, named by the player who brings it in.
-export const FIRST_FISH = ['octopus'];                       // everyone starts with an octopus of their own, in a colour they choose; fish come from the shop
+export const FIRST_FISH = ['octopus'];                       // everyone starts with an octopus of their own, in a color they choose; fish come from the shop
 export const OCTO_PALS = 6;
 const palOf = (a, seed) => (Number.isInteger(a.pal) && a.pal >= 0 && a.pal < OCTO_PALS ? a.pal : seed % OCTO_PALS);
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
@@ -169,14 +169,14 @@ export function needsOf(f, t, now = Date.now()) {
   const mood = fed < 0.25 ? 'Hungry' : f.health < 0.5 ? 'Under the weather' : energy < 0.3 ? 'Sleepy' : f.happy > 0.75 ? 'Happy' : f.happy < 0.4 ? 'Gloomy' : 'Content';
   return { fed, happy: f.happy, energy, health: f.health, mood, vigor: 0.65 + 0.35 * Math.min(f.health, 0.4 + fed * 0.6) };
 }
-// Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favourite.
+// Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favorite.
 // an octopus eats crabs, not flakes. A seahorse eats tiny shrimp: mysis is what seahorses are fed, so it is on the menu whenever there is one.
 // It feeds the same shared meal as flakes and costs the same (nothing), so it changes nothing in the economy; only a seahorse is cheered by it.
 export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, mysis: { label: 'Mysis shrimp', price: 0, sea: true }, crab: { label: 'Crab', price: 0, octo: true } };
 export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.dead), hasFishOnly = (t) => t.fish.some((f) => f.species !== 'octopus' && !f.dead);
 export const hasSeahorse = (t) => t.fish.some((f) => f.species === 'seahorse' && !f.dead);
 export const favFoodOf = (f) => (f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
-// Favourite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
+// Favorite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
 export function favouriteOf(f, t) {
   for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && count(t, sp[0]) >= sp[1]) { const hit = t.decor.find((d) => DECOR_DEF[d.type]?.cat === sp[0]); return { label: hit ? DECOR_DEF[hit.type].label.toLowerCase() : sp[2], key: tr }; } }
@@ -185,7 +185,7 @@ export function favouriteOf(f, t) {
 // What fish are noticed doing. Each is recorded once per fish (`f.disc[key]`), permanently, and written to the journal.
 // Some are noticed by the server from state; the rest are reported by a watching phone (`observe`) and checked here.
 export const DISCOVERIES = {
-  friend: { label: 'Found a best friend' }, spot: { label: 'Found a favourite spot' }, bond: { label: 'Trusts a caretaker' }, trust: { label: 'Follows a fingertip' }, parent: { label: 'Became a parent' },
+  friend: { label: 'Found a best friend' }, spot: { label: 'Found a favorite spot' }, bond: { label: 'Trusts a caretaker' }, trust: { label: 'Follows a fingertip' }, parent: { label: 'Became a parent' },
   glass: { label: 'Comfortable at the glass', traits: ['Brave', 'Social'], line: (f) => `${f.name} has become comfortable near the glass.` },
   surface: { label: 'Waits at the surface', traits: ['Greedy'], line: (f) => `${f.name} has started waiting near the surface at feeding time.` },
   night_rest: { label: 'Rests at night', traits: null, line: (f) => `${f.name} settles low in the tank to rest at night.` },
@@ -194,17 +194,17 @@ export const DISCOVERIES = {
   object: { label: 'Investigates objects', traits: ['Curious'], needsDecor: true, line: (f, x) => `${f.name} has started investigating the ${x.decor}.` },
   together: { label: 'Swims with a friend', traits: null, pair: true, line: (f, x) => `${f.name} and ${x.other} have begun swimming together.` },
   bubbles: { label: 'Plays in the bubbles', traits: ['Playful'], needsBubbler: true, line: (f) => `${f.name} has found the bubbles and plays in them.` },
-  food: { label: 'Loves its favourite food', serverOnly: true, line: (f, x) => `${f.name} loves ${x.food}.` },
+  food: { label: 'Loves its favorite food', serverOnly: true, line: (f, x) => `${f.name} loves ${x.food}.` },
   routine: { label: 'Has a daily routine', traits: null, line: (f) => `${f.name} has settled into a daily routine.` },
   // what a seahorse and an octopus are seen to do. These are quiet: a line in that animal's own journal, nothing in the tank's, and no shells
   hitch: { label: 'Tail hitching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} wrapped its tail round a stem and held on.` },
   eyes: { label: 'Independent eyes', kind: 'seahorse', quiet: true, line: (f) => `${f.name} watched two things at once, one eye each way.` },
   snick: { label: 'Snaps up plankton', kind: 'seahorse', quiet: true, line: (f) => `${f.name} snapped up a speck of plankton with a flick of its head.` },
-  blend: { label: 'Colour matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the colour of the plant it was holding.` },
-  favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favourite place to hold on.` },
+  blend: { label: 'Colour matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the color of the plant it was holding.` },
+  favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favorite place to hold on.` },
   dance: { label: 'Greeting dance', kind: 'seahorse', quiet: true, line: (f) => `${f.name} met another seahorse and they circled each other, glowing.` },
   tails: { label: 'Holding tails', kind: 'seahorse', quiet: true, line: (f) => `${f.name} curled its tail round another seahorse's and they drifted along together.` },
-  camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the colour and the texture of its skin to match what was behind it.` },
+  camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the color and the texture of its skin to match what was behind it.` },
   den: { label: 'Den dwelling', kind: 'octopus', quiet: true, line: (f) => `${f.name} tucked itself into its den.` },
   grab: { label: 'Arm exploration', kind: 'octopus', quiet: true, line: (f) => `${f.name} wrapped its arms round something to feel it all over.` },
   mimic: { label: 'Impressions', kind: 'octopus', quiet: true, line: (f) => `${f.name} pretended to be another animal.` },
@@ -214,7 +214,7 @@ export const DISCOVERIES = {
   puzzle: { label: 'Puzzle solving', kind: 'octopus', quiet: true, line: (f) => `${f.name} opened a puzzle jar.` },
   highbank: { label: 'Climbing the high bank', kind: 'octopus', quiet: true, line: (f) => `${f.name} explored the high bank at the back of the tank.` },
 };
-// the behaviours each animal could show, in the order the profile lists them: its own species' first, then the ones its traits allow
+// the behaviors each animal could show, in the order the profile lists them: its own species' first, then the ones its traits allow
 const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'tails', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'food'] };
 export function behavioursFor(f) {
   const own = BEHAVIOURS[f?.species]; if (own) return own;
@@ -233,7 +233,7 @@ function discover(t, now, ev) {
   for (const f of t.fish) {
     ensureFish(f); f.found ||= []; if (now - f.born < 2 * 3600e3 || f.happy < 0.7) continue;
     const fav = favouriteOf(f, t);
-    if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favourite spot near the ${fav.label}.`, toast: `${f.name} found a favourite spot! +2 shells`, discovery: f.id }); }
+    if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favorite spot near the ${fav.label}.`, toast: `${f.name} found a favorite spot! +2 shells`, discovery: f.id }); }
     else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f && !(o.found ?? []).includes('friend')) ?? social.find((o) => o !== f), key = [f.id, pal.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = pal.id; pal.pal ??= f.id; (f.disc ||= {}).friend ??= now; (pal.disc ||= {}).friend ??= now; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); if (first) t.shells += FRIEND_REWARD; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: first ? `${f.name} made a friend. +${FRIEND_REWARD} shells` : `${f.name} and ${pal.name} are friends now!`, discovery: f.id }); }
   }
 }
@@ -244,7 +244,7 @@ function discover(t, now, ev) {
 export const FED_GRACE = 30 * 3600e3;
 export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
 function memorialOf(t, f, now) {
-  const ms = [...(f.story ?? []).slice(0, 8).map((x) => x.text), `Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favourite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favourite spot');
+  const ms = [...(f.story ?? []).slice(0, 8).map((x) => x.text), `Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favorite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favorite spot');
   const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); for (const k of f.tricks ?? []) ms.push(`Learned to ${TRICKS[k]?.label ?? k}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
   return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, friend: pal?.name ?? null, elder: !!f.elder, disc: Object.keys(f.disc ?? {}), rested: null };
 }
@@ -268,7 +268,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
     // old age: real lifespans, compressed about tenfold. From three quarters of its span an animal is an elder; past its full span, each day there is a
     // small and slowly rising chance it slips away peacefully (worked out from the day, so every phone agrees). Well looked-after ones live a little longer.
     { const L = lifeOf(f), age = (now - f.born) / DAY;
-      if (age >= L * ELDER_AT && !f.elder && !f.dead) { f.elder = now; ev.push({ journal: `${f.name} is getting old. Its colours have softened and it takes life slowly now.`, toast: `${f.name} is an elder now.`, story: f.id, text: 'Became an elder.' }); }
+      if (age >= L * ELDER_AT && !f.elder && !f.dead) { f.elder = now; ev.push({ journal: `${f.name} is getting old. Its colors have softened and it takes life slowly now.`, toast: `${f.name} is an elder now.`, story: f.id, text: 'Became an elder.' }); }
       const over = age - L * (1 + 0.1 * Math.max(0, (f.happy ?? 0.7) - 0.6) / 0.4), d = Math.floor(now / DAY);
       if (over > 0 && f.oldDay !== d && t.flags.mortality !== false) { f.oldDay = d; const p = Math.min(0.5, 0.03 + 0.02 * over / 7);
         if (hash32(d * 7919 + [...String(f.id)].reduce((a, c) => a * 31 + c.charCodeAt(0), 3)) % 10000 < p * 10000 && now - (t.lastDeath ?? 0) > DAY && t.fish.length > 1) {
@@ -616,7 +616,7 @@ export const OCTO_MOMENTS = {
   flat: { gap: 3 * DAY, text: (n) => `${n} lay flat as a sole and slid across the sand.` },
   kelp: { gap: 3 * DAY, text: (n) => `${n} stood among the plants with its arms up, pretending to be one.` },
   bury: { gap: 3 * DAY, text: (n) => `${n} dug itself into the sand until only its eyes showed.` },
-  fish: { gap: 3 * DAY, other: true, text: (n, o) => `${n} took on ${o}'s colours and followed it about.` },
+  fish: { gap: 3 * DAY, other: true, text: (n, o) => `${n} took on ${o}'s colors and followed it about.` },
 };
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
@@ -636,7 +636,7 @@ export function octoMind(f) {
 }
 export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 // ── Toys ── free, in the Toy box: the ball is there from the start; bubbles and the light spot open up as the tank plays. Each animal learns a toy
-// by playing with it (five goes and it knows it, and has a favourite). Who likes what follows the real animals: fish chase and nose things,
+// by playing with it (five goes and it knows it, and has a favorite). Who likes what follows the real animals: fish chase and nose things,
 // an octopus bats and grabs, a seahorse snaps at small drifting things and watches the rest with its eyes.
 export const TOYS = {
   ball: { label: 'Ball', unlock: 0, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
@@ -751,7 +751,7 @@ export const DAILY = {
   care2: { tier: 'normal', text: 'Give two kinds of care the tank needs', need: 2, ok: (t) => needs(t).length >= 2 },
   friends: { tier: 'special', text: 'Watch two friends swim together', need: 1, ok: (t) => t.fish.some((f) => f.pal && t.fish.some((o) => o.id === f.pal)) },
   investigate: { tier: 'special', text: 'Watch a curious fish investigate a decoration', need: 1, ok: (t) => seenDecor(t) && t.fish.some((f) => (f.traits ?? []).includes('Curious')) },
-  favourite: { tier: 'special', text: 'Watch a fish at its favourite spot', need: 1, ok: withSpot },
+  favourite: { tier: 'special', text: 'Watch a fish at its favorite spot', need: 1, ok: withSpot },
   bubbles: { tier: 'special', text: 'Watch a playful fish by the bubbles', need: 1, ok: (t) => t.decor.some((d) => d.type === 'bubbler') && t.fish.some((f) => (f.traits ?? []).includes('Playful')) },
 };
 export const DAILY_TIER = { easy: 3, normal: 5, special: 8 };
@@ -975,7 +975,7 @@ export function milestonesOf(f) {
   return [
     { key: 'home', icon: hatched ? '🥚' : '🏠', label: hatched ? 'Hatched' : 'Came home', done: true },
     { key: 'friend', icon: '💞', label: 'Made a friend', done: !!(f.pal || f.mate || f.partner || D.friend || D.together || Object.keys(D).some((k) => k.startsWith('together'))) },
-    { key: 'spot', icon: '📍', label: 'Found a favourite spot', done: !!(D.spot || D.regular || D.hideaway || D.favhitch || D.den || (f.found ?? []).includes('spot')) },
+    { key: 'spot', icon: '📍', label: 'Found a favorite spot', done: !!(D.spot || D.regular || D.hideaway || D.favhitch || D.den || (f.found ?? []).includes('spot')) },
     { key: 'trust', icon: '🤝', label: 'Trusts you', done: !!(D.bond || D.trust) },
     { key: 'trick', icon: '✨', label: 'Learned a trick', done: (f.tricks ?? []).length > 0 || !!(f.solved) },
     { key: 'grown', icon: '🌟', label: 'All grown up', done: grown },
@@ -989,7 +989,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, `${f.name}'s babies are born`, '🌿', f]);
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, '📦']);
-  for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, `${f.name} grows up`, '🌱', f]); }
+  for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, s.to === 'adult' ? `${f.name} turns 3 days old and becomes an adult` : `${f.name} turns 1 day old and becomes a youngster`, '🌱', f]); }      // (what really happens, not just "grows up")
   for (const f of t.fish) if (f.species === 'octopus' && !f.dead && f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) c.push([PUZZLE_GAP - (now - f.puzzleAt), `${f.name} is ready for a new puzzle`, '🧩', f]);
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
   c.sort((a, b) => a[0] - b[0]);
@@ -1132,7 +1132,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const i = t.decor.findIndex((x) => x.id === a.id); if (i < 0) return fail('NOT_FOUND');
       const it = t.decor[i], d = DECOR_DEF[it.type], lbl = d.label.toLowerCase();
       for (const f of t.fish) { if (f.dead || (f.home !== it.id && f.spotId !== it.id)) continue; const wasHome = f.home === it.id; delete f.home; if (f.spotId === it.id) delete f.spotId; f.happy = Math.max(0.2, (f.happy ?? 0.7) - 0.15); f.missing = { what: lbl, at: now };      // an animal that loved it misses it, and goes looking for somewhere new
-        const line = wasHome ? `${f.name} lost its home when the ${lbl} was taken out. It is looking for a new one.` : `${f.name} misses the ${lbl}. It is looking for a new favourite spot.`; events.push({ journal: line, toast: line, story: f.id, text: line }); }
+        const line = wasHome ? `${f.name} lost its home when the ${lbl} was taken out. It is looking for a new one.` : `${f.name} misses the ${lbl}. It is looking for a new favorite spot.`; events.push({ journal: line, toast: line, story: f.id, text: line }); }
       if (it.type === 'starfish') events.push({ activity: { type: 'decor', text: `${name} let the starfish go back to the sea.` } });
       t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }
@@ -1234,7 +1234,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         if (e.hitch && typeof e.hitch === 'object') { L.hitch ||= {}; for (const [id, h] of Object.entries(e.hitch).slice(0, 12)) { if (!has(id) || !Array.isArray(h)) continue; const H = (L.hitch[id] ||= [0, 0, null, null]); H[0] = Math.round(H[0] + n(h[0], 200)); H[1] += Math.round(n(h[1], 6)); if (Number.isFinite(+h[2]) && Number.isFinite(+h[3])) { H[2] = +Math.max(-6, Math.min(6, +h[2])).toFixed(2); H[3] = +Math.max(-6, Math.min(6, +h[3])).toFixed(2); } } }
         if (L.hitch) { for (const id of Object.keys(L.hitch)) if (!has(id)) delete L.hitch[id]; const ks = Object.keys(L.hitch).sort((a2, b2) => L.hitch[b2][0] - L.hitch[a2][0]); for (const id of ks.slice(16)) delete L.hitch[id]; }
         if (has(e.last)) L.last = e.last;
-        // its favourite is earned on the server too: the holdfast it has held longest, once it has gone back to it and held it two minutes in all
+        // its favorite is earned on the server too: the holdfast it has held longest, once it has gone back to it and held it two minutes in all
         if (L.hitch && Object.keys(L.hitch).length) { const [bid, b] = Object.entries(L.hitch).sort((x, y) => y[1][0] - x[1][0])[0]; if (b[0] >= 120 && b[1] >= 2) L.fav = bid; else if (!has(L.fav)) delete L.fav; }
         else if (typeof e.fav === 'string' && has(e.fav)) L.fav = e.fav;      // (an older phone's report)
         if (L.fav && !has(L.fav)) delete L.fav;

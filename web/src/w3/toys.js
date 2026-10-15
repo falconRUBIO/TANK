@@ -11,7 +11,7 @@ const kindOf = (f) => (f.sk === 'octopus' ? 'octopus' : f.sk === 'seahorse' ? 's
 const free = (f) => !f.dead && !f.visitor && !f.nursery && !f.sleepy && !f.weak;
 const X = 4.4, ZB = -1.8, ZF = 2.5;
 
-function ballMesh() {      // a faceted beach ball: six coloured panels round it, white caps
+function ballMesh() {      // a faceted beach ball: six colored panels round it, white caps
   const g = new THREE.IcosahedronGeometry(0.38, 2).toNonIndexed(), pos = g.attributes.position, col = [], C = [0xff5a5a, 0xffd23f, 0x3fb6ff, 0xffffff, 0x5fd38a, 0xff8fd0].map((c) => new THREE.Color(c)), cap = new THREE.Color(0xfff8ea);
   for (let i = 0; i < pos.count; i += 3) { let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { x += pos.getX(i + k); y += pos.getY(i + k); z += pos.getZ(i + k); }
     const c = Math.abs(y / 3) > 0.24 ? cap : C[Math.floor(((Math.atan2(z, x) + Math.PI) / (2 * Math.PI)) * 6) % 6]; for (let k = 0; k < 3; k++) col.push(c.r, c.g, c.b); }
@@ -88,9 +88,9 @@ export class Toys {
   }
 
   // ── the light spot: a soft glow on the sand that follows your finger (a warm glow drawn over the sand, not added to it: bright sand would swallow it) ──
-  lightOn(at) { const m = new THREE.Mesh(new THREE.CircleGeometry(1.15, 36), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, fog: false, toneMapped: false, color: 0xffffff, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4 })); m.rotation.x = -Math.PI / 2; m.renderOrder = 4; this.scene.add(m); const beam = new THREE.Sprite(new THREE.SpriteMaterial({ map: beamTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, opacity: 0 })); beam.scale.set(1.6, 10, 1); this.scene.add(beam); this.light = { m, beam, at: at.clone(), want: at.clone(), on: true, who: new Set(), pounce: new Map() }; this.moveLight(at); }
+  lightOn(at) { const m = new THREE.Mesh(new THREE.CircleGeometry(1.15, 36), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, fog: false, toneMapped: false, color: 0xffffff, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4 })); m.rotation.x = -Math.PI / 2; m.renderOrder = 4; this.scene.add(m); const beam = new THREE.Sprite(new THREE.SpriteMaterial({ map: beamTex, transparent: true, depthWrite: false, fog: false, toneMapped: false, blending: THREE.AdditiveBlending, opacity: 0 })); beam.scale.set(1.6, 10, 1); this.scene.add(beam); this.onDim?.(1); this.light = { m, beam, at: at.clone(), want: at.clone(), on: true, who: new Set(), pounce: new Map() }; this.moveLight(at); }
   moveLight(at) { if (this.light && at) this.light.want.copy(at); }
-  lightOff() { if (this.light) this.light.on = false; }
+  lightOff() { if (this.light) this.light.on = false; this.onDim?.(0); }
   stepLight(dt, t) {
     const L = this.light, m = L.m, now = performance.now(); L.at.lerp(L.want, Math.min(1, dt * 10)); m.position.set(L.at.x, Math.max(sandH(L.at.x, L.at.z), sandH(L.at.x + 0.5, L.at.z), sandH(L.at.x - 0.5, L.at.z), sandH(L.at.x, L.at.z + 0.5), sandH(L.at.x, L.at.z - 0.5)) + 0.12, L.at.z);
     m.material.opacity += ((L.on ? 0.95 + Math.sin(t * 7) * 0.05 : 0) - m.material.opacity) * Math.min(1, dt * 6); L.beam.position.set(p0x(L), m.position.y + 4.5, L.at.z); L.beam.material.opacity = m.material.opacity * 0.7; m.scale.setScalar(1 + Math.sin(t * 3.1) * 0.06);      // it shimmers a little, like light through water
