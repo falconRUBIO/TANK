@@ -690,9 +690,9 @@ const TIPS = [
   ['crew', () => game.shared && (game.members?.length ?? 0) > 1, 'YOUR CREW', 'In Crew you can message your friends, stick a note on the glass, or send a message in a bottle.'],
   ['journal', () => (game.journal?.length ?? 0) > 25, 'THE JOURNAL', 'Everything that happens is kept in Crew, Journal, with photos of the moments you were there to see.'],
 ];
-let tipT = 0;
-function tipsTick(dt) {
-  if ((tipT -= dt) > 0) return; tipT = 4; const s = game.state;
+let tipAt = 0;
+function tipsTick() {
+  if (window.__noTips || performance.now() < tipAt) return; tipAt = performance.now() + 4000; const s = game.state; if (performance.now() < (window.__tipsSoon ? 0 : 60e3)) return;      // never in the first minute: arriving, joining and the welcome come first      // (by the clock, not by frames: a slow phone draws few)
   if (!s || (s.flags?.tut ?? 0) < 5 || ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || document.hidden || ['modal', 'reunion', 'coach', 'settle'].some((id) => $(id)?.classList.contains('on'))) return;
   let seen; try { seen = JSON.parse(localStorage.getItem('ourtank.tips') || '{}'); } catch { return; }
   if (Date.now() - (seen._last ?? 0) < 5 * 60e3) return;      // one tip at a time, a few minutes apart
@@ -707,16 +707,13 @@ game.on('journal', (e) => {
   setTimeout(() => { try { composer.render(); const w = 320, h = Math.round(w * canvas.height / canvas.width), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(canvas, 0, 0, w, h);
     const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img: c.toDataURL('image/jpeg', 0.6) }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 12))); } catch { /* storage full or private mode: no photo, nothing lost */ } }, 300);
 });
-// ── a phone too slow to keep the animals smooth hands them to another (it says so to the server, which picks who runs them) ──
-const perf = { t: 0, n: 0, bad: 0, good: 0, slow: false, at: 0 };
-function perfTick(dt) {
-  perf.t += dt; perf.n++; if (perf.t < 5) return; const fps = perf.n / perf.t; perf.t = 0; perf.n = 0;
-  if (!game.shared || !game.live?.connected || document.hidden) return;
-  const others = (game.online ?? []).length > 1;
-  if (!perf.slow && isDirector() && others) { perf.bad = fps < 18 ? perf.bad + 1 : 0; if (perf.bad >= 3) { perf.slow = true; perf.at = Date.now(); game.live.send({ t: 'perf', slow: true }); } }
-  else if (perf.slow) { perf.good = fps > 35 ? perf.good + 1 : 0; if (perf.good >= 6 && Date.now() - perf.at > 10 * 60e3) { perf.slow = false; game.live.send({ t: 'perf', slow: false }); } }      // (sticky for ten minutes, so the job does not bounce back and forth)
+// ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
+const perf = { t0: performance.now(), n: 0 };
+function perfTick() {
+  if (window.__perfOff) return; perf.n++; const el = (performance.now() - perf.t0) / 1000; if (el < 5) return; const fps = perf.n / el; perf.t0 = performance.now(); perf.n = 0;      // frames really drawn per real second
+  if (game.shared && game.live?.connected && !document.hidden) game.live.send({ t: 'perf', fps: Math.round(fps) });
 }
-game.on('role', () => { try { const p = JSON.parse(localStorage.getItem('ourtank.pushprefs') || '{}'); if (Object.keys(p).length) game.live?.send({ t: 'pushPrefs', prefs: p }); } catch { /* none */ } if (perf.slow) game.live?.send({ t: 'perf', slow: true }); });
+game.on('role', () => { try { const p = JSON.parse(localStorage.getItem('ourtank.pushprefs') || '{}'); if (Object.keys(p).length) game.live?.send({ t: 'pushPrefs', prefs: p }); } catch { /* none */ } });
 function giftTick(t, dt) { for (const [id, b] of [...giftBags]) if (b.bag.tick(t, dt) && !b.done) { b.done = true; setTimeout(() => { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }, 1500); } }
 function giftHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const b of giftBags.values()) { if (b.bag.opening) continue; const p = b.bag.group.position.clone(); p.y += 0.4; const d = ray.distanceToPoint(p); if (d < bd) { bd = d; best = b; } } return best; }
 async function openGiftBag(b) {
@@ -1250,7 +1247,7 @@ function frameBody(now) {
   else bottleM.group.visible = false;
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
-  giftTick(t, Math.min(0.05, dt)); tipsTick(dt); perfTick(dt);
+  giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick();
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     eggCare(egg, Math.min(0.05, dt), t); }

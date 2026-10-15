@@ -77,7 +77,15 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   // the parts of a tank that people notice change; a tank whose key changed between checks is sent to everyone again
   const stateKeys = new Map();
   const stateKey = (w) => [w.shells, w.level, (w.fish ?? []).map((f) => f.id + f.stage).join(), (w.decor ?? []).length, w.drift?.id, (w.bottles ?? []).length, (w.orders ?? []).length, (w.eggs ?? []).length, w.visitor?.species, JSON.stringify(w.flags ?? {}), w.wishIdx, (w.floaters ?? []).length, JSON.stringify(w.style ?? {})].join('|');
-  const directorOf = (tankId) => [...(rooms.get(tankId) ?? [])].sort((a, b) => (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || (a.slow ? 1 : 0) - (b.slow ? 1 : 0) || a.joinedAt - b.joinedAt)[0];      // a phone in the background, or one too slow to keep the animals smooth, hands them to another
+  // who runs the animals: a phone in view, the one that has had them so far; it hands them over only when it is clearly struggling
+  // (under 18 frames a second) and another phone is clearly fine (over 30), so they never go to a phone just as slow
+  const dirs = new Map();
+  const directorOf = (tankId) => {
+    const all = [...(rooms.get(tankId) ?? [])].sort((a, b) => a.joinedAt - b.joinedAt), vis = all.filter((w) => !w.hidden), pool = vis.length ? vis : all; if (!pool.length) { dirs.delete(tankId); return undefined; }
+    let cur = dirs.get(tankId); if (!cur || !pool.includes(cur)) cur = pool[0];
+    const best = pool.reduce((a, w) => ((w.fps ?? 60) > (a.fps ?? 60) ? w : a), cur); if ((cur.fps ?? 60) < 18 && (best.fps ?? 60) > 30) cur = best;
+    dirs.set(tankId, cur); return cur;
+  };
   const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o.t === 'snapshot' || o.t === 'state' ? { ...o, now: Date.now() } : o)); };        // the server's clock rides along so every phone counts down by the same time
   const broadcast = (tankId, o) => { for (const w of rooms.get(tankId) ?? []) send(w, o); };
@@ -228,7 +236,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
-        if (m.t === 'perf') { const v = !!m.slow; if (ws.slow !== v) { ws.slow = v; roles(ws.tankId); } return; }
+        if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants
         if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); } return; }
         if (m.t === 'snap') {
