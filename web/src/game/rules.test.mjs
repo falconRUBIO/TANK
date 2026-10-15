@@ -731,6 +731,29 @@ ok('two males bond as companions and never conceive; two octopuses become partne
   const F = (id) => t.fish.find((f) => f.id === id); assert.equal(F('a').mate, 'b'); assert.ok(!F('a').preg && !F('b').preg, 'companions never get pregnant'); assert.equal(F('o').partner, 'p'); assert.equal(F('p').partner, 'o');
   assert.equal(R.bondKey({ id: 'z', sex: 'f' }, { id: 'y', sex: 'm' }), 'y|z');
 });
+ok('octopus memory: familiarity grows only by handling, one go counts once, moves and removals are remembered, it is bounded, and an old phone never overwrites the tank', () => {
+  let now = 50 * DAY; const t = R.newWorld(now); t.fish = []; t.decor = []; const ctx = () => ({ now, uid: 'u1', name: 'Alex' });
+  t.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: now - 20 * DAY, stage: 'adult', traits: [] }), R.ensureFish({ id: 'g', name: 'Goldie', species: 'goldfish', seed: 4, born: now - 20 * DAY, stage: 'adult', traits: [] }));
+  t.decor.push({ id: 'd1', type: 'pot', x: 1, z: 1, at: now - 60e3 }, { id: 'd2', type: 'rock', x: -2, z: 0.5, at: now - 9 * DAY });
+  const touch = (decor, kind = 'revisit') => R.applyAction(t, { t: 'octoTouch', fish: 'o', decor, kind }, ctx()), o = () => t.fish[0];
+  assert.equal(o().mem, undefined, 'nothing known just for being in the tank');
+  let r = touch('d1', 'new'); assert.equal(r.ok, true); assert.ok(r.events.some((e) => /investigated the new ceramic pot|investigated the new .*pot/.test(e.journal ?? '')), JSON.stringify(r.events));
+  const k1 = o().mem.fam.d1.k; assert.ok(k1 > 0.1 && k1 < 0.5 && o().mem.fam.d1.n === 1);
+  r = touch('d1', 'new'); assert.equal(r.applied, false, 'a second report of the same go (another phone, a handoff) is not counted');
+  for (let i = 0; i < 5; i++) { now += 60e3; r = touch('d1'); } assert.ok(o().mem.fam.d1.k > k1 && o().mem.fam.d1.n === 6); assert.equal(R.famStage(o().mem.fam.d1), 'loved');
+  assert.deepEqual(o().mem.likes, ['d1'], 'its favorite is what it keeps going back to'); assert.equal(r.events.filter((e) => /investigated/.test(e.journal ?? '')).length, 0, 'the investigation is written once');
+  now += 60e3; R.applyAction(t, { t: 'moveDecor', id: 'd1', x: 3, z: 0, ry: 0 }, ctx()); const e = o().mem.fam.d1; assert.ok(e.mv && e.x === 1 && e.z === 1, 'moved while it was not looking: it still thinks the pot is where it was');
+  now += 60e3; r = touch('d1', 'moved'); assert.ok(r.events.some((x) => /found the .* in its new spot/.test(x.journal ?? '')) && !o().mem.fam.d1.mv && o().mem.fam.d1.x === 3, 'found again: the new place is learned');
+  now += 60e3; R.applyAction(t, { t: 'sellDecor', id: 'd1' }, ctx()); assert.ok(o().mem.fam.d1.gone && !o().mem.likes.includes('d1'), 'taken out: no longer a favorite');
+  R.norm(t, now + 4 * DAY); assert.equal(o().mem.fam.d1, undefined, 'and forgotten a few days later');
+  for (let i = 0; i < 30; i++) { t.decor.push({ id: 'x' + i, type: 'shell', x: 0, z: 0, at: now }); now += 60e3; touch('x' + i); } assert.ok(Object.keys(o().mem.fam).length <= R.OCTO_MEM.FAM && o().mem.likes.length <= R.OCTO_MEM.LIKES, 'bounded');
+  r = R.applyAction(t, { t: 'octoMem', fish: 'o', migrate: true, fav: { x: 0, z: 0 }, likes: { d2: 9 } }, ctx()); assert.equal(r.applied, false, 'an old phone does not overwrite what the tank already knows');
+  R.applyAction(t, { t: 'octoMem', fish: 'o', fav: { x: 1.5, z: 2 }, fishMemo: { g: { f: 3, a: 0 }, nope: { f: 9, a: 9 } } }, ctx()); assert.deepEqual(o().mem.fav, { x: 1.5, z: 2 }); assert.deepEqual(Object.keys(o().mem.fish), ['g']);
+  assert.equal(R.applyAction(t, { t: 'octoMem', fish: 'o', fav: { x: 99, z: 0 } }, ctx()).ok, true); assert.deepEqual(o().mem.fav, { x: 1.5, z: 2 }, 'a place outside the tank is ignored');
+  const t2 = R.newWorld(now); t2.fish = [R.ensureFish({ id: 'p', name: 'Pip', species: 'octopus', seed: 6, born: 0, stage: 'adult', traits: [] })]; t2.decor = [{ id: 'd2', type: 'rock', x: 0, z: 0, at: 0 }];
+  R.applyAction(t2, { t: 'octoMem', fish: 'p', migrate: true, likes: { d2: 4, ghost: 3 } }, ctx()); assert.ok(t2.fish[0].mem.fam.d2.n === 4 && !t2.fish[0].mem.fam.ghost, 'a first phone\'s old likes are kept, once, for things that exist');
+  const a = R.octoAffinity({ seed: 3 }, { id: 'q', type: 'shell', z: 0 }), b = R.octoAffinity({ seed: 6 }, { id: 'q', type: 'shell', z: 0 }); assert.ok(a > b, 'a collector cares more for a shell than a homebody does');
+});
 ok('a profile: quiet species behaviours go in that animal\'s own journal only, a fish log is bounded and checked', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.fish = [R.ensureFish({ id: 's', name: 'Pip', species: 'seahorse', seed: 1, born: -864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'g', name: 'Bo', species: 'goldfish', seed: 2, born: -864e5, stage: 'adult', traits: ['Brave'] })];
   t.decor = [{ id: 'd1', type: 'grass', x: 0, z: 1, ry: 0 }]; let k = 0; const ob = (a) => R.applyAction(t, { t: 'observe', ...a }, { now: 5e6 + ++k * 1000, name: 'Sam', uid: 'u' });

@@ -297,7 +297,8 @@ export function norm(t, now = Date.now()) {
   t.fish = t.fish.filter((f) => f && typeof f === 'object' && SPECIES_DEF[f.species]);
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
-  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
+  t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); (t.fish ?? []).forEach((f) => { if (f?.mem && typeof f.mem === 'object') memCap(t, f, now); else if (f) delete f.mem; });      // (an octopus's memories, kept bounded)
+  t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
@@ -634,6 +635,32 @@ export function octoMind(f) {
   const T = OCTO_TYPES[Math.floor(h(1) * OCTO_TYPES.length)], j = (v, n) => Math.max(0.05, Math.min(1, v + (h(n) - 0.5) * 0.3));
   return { type: T.id, label: T.label, line: T.line, cur: j(T.cur, 2), bold: j(T.bold, 3), soc: j(T.soc, 4), tidy: j(T.tidy, 5) };
 }
+// ── What an octopus remembers (kept with the tank, so every phone and every caretaker sees the same animal) ──
+// mem = { fav: {x,z} | null, fam: { [decorId]: { k, n, x, z, at, mv?, gone? } }, likes: [decorId ×3], fish: { [fishId]: { f, a } } }
+// k: how familiar a decoration is (0–1, grows only when it actually handles it); n: times it has; x,z: where it last knew it to be (a decoration
+// moved while it was not looking keeps the old place here until the octopus finds it again); mv: moved since; gone: taken out (forgotten after 3 days).
+export const OCTO_MEM = { FAM: 12, LIKES: 3, FISH: 6, GONE_DAYS: 3 };
+const COLLECT = new Set(['shell', 'pot', 'coconut', 'chest', 'crystal', 'starfish', 'anchor', 'skull', 'lantern']), DENNY = new Set(['rock', 'boulder', 'pot', 'coconut', 'arch', 'brain', 'moss']), PLANTY = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone']);
+export const memOf = (f) => (f.mem ||= { fav: null, fam: {}, likes: [], fish: {} });
+// how much this octopus cares for a kind of thing: its nature, and a little of its own (so two collectors still end up with different favorites)
+export function octoAffinity(f, d) {
+  const M = octoMind(f), type = d?.type ?? '', h = ((hash32(((f.seed | 0) * 131) ^ String(d?.id ?? '').split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7)) >>> 0) % 1000) / 1000;
+  let a = 0.6 + 0.4 * h;
+  if (M.type === 'collector' && COLLECT.has(type)) a += 0.6; if (M.type === 'homebody' && DENNY.has(type)) a += 0.5; if (M.type === 'watcher' && PLANTY.has(type)) a += 0.4;
+  if (M.type === 'showoff' && (d?.z ?? 0) > 1) a += 0.4; if (M.type === 'explorer' && (d?.z ?? 0) < 0) a += 0.3; if (M.type === 'trickster' && COLLECT.has(type)) a += 0.25;
+  return a;
+}
+function memLikes(t, f) {      // its three favorite decorations: the ones it knows best and cares most for
+  const m = memOf(f), score = (id) => { const e = m.fam[id], d = t.decor.find((x) => x.id === id); return e && d && !e.gone && e.n >= 2 ? e.k * octoAffinity(f, d) : 0; };
+  m.likes = Object.keys(m.fam).filter((id) => score(id) > 0.25).sort((a, b) => score(b) - score(a)).slice(0, OCTO_MEM.LIKES);
+}
+function memCap(t, f, now) {      // bounded: forgotten things fall away first, then the least familiar
+  const m = memOf(f); m.fam ||= {}; m.likes ||= []; m.fish ||= {}; for (const [id, e] of Object.entries(m.fam)) if (!e || typeof e !== 'object' || (e.gone && now - e.gone > OCTO_MEM.GONE_DAYS * DAY)) delete m.fam[id];
+  const ids = Object.keys(m.fam); if (ids.length > OCTO_MEM.FAM) for (const id of ids.sort((a, b) => (m.likes.includes(a) - m.likes.includes(b)) || ((m.fam[a].gone ? -1 : 0) - (m.fam[b].gone ? -1 : 0)) || (m.fam[a].k - m.fam[b].k)).slice(0, ids.length - OCTO_MEM.FAM)) delete m.fam[id];
+  const fk = Object.keys(m.fish); if (fk.length > OCTO_MEM.FISH) { for (const id of fk.sort((a, b) => (m.fish[a].f + m.fish[a].a) - (m.fish[b].f + m.fish[b].a)).slice(0, fk.length - OCTO_MEM.FISH)) delete m.fish[id]; }
+  memLikes(t, f);
+}
+export const famStage = (e) => (!e || !e.n ? 'new' : e.k >= 0.6 ? 'loved' : e.k >= 0.35 ? 'familiar' : 'investigated');
 export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 // ── Toys ── free, in the Toy box: the ball is there from the start; bubbles and the light spot open up as the tank plays. Each animal learns a toy
 // by playing with it (five goes and it knows it, and has a favorite). Who likes what follows the real animals: fish chase and nose things,
@@ -1106,6 +1133,26 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       events.push({ journal: home ? `${f.name} carried the ${DECOR_DEF[it.type].label.toLowerCase()} to a quiet corner and moved in.` : own ? `${f.name} shoved its ${DECOR_DEF[it.type].label.toLowerCase()} about and turned it round.` : `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.`, activity: { type: 'decor', text: `${f.name} moved the ${DECOR_DEF[it.type].label.toLowerCase()}.` } });
       return ok({ applied: true });
     }
+    case 'octoTouch': {                                             // an octopus really reached a decoration and handled it (the phone running the animals reports it): it knows it a little better
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor); if (!f || !d) return fail('NOT_FOUND');
+      const m = memOf(f), e = (m.fam[d.id] ||= { k: 0, n: 0, x: d.x, z: d.z, at: 0 }); if (now - (e.at ?? 0) < 45e3) return ok({ applied: false });      // one go is one go: a second phone, or a handoff, cannot count it twice
+      const M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
+      e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
+      const recent = now - (d.movedAt ?? d.at ?? 0) < 6 * 3600e3;
+      if (first && recent && a.kind === 'new') { const line = `${f.name} investigated the new ${label}.`; events.push({ journal: line, story: f.id, text: line }); }      // only after it really went over and felt it, and once
+      else if (wasMoved && a.kind === 'moved') { const line = `${f.name} found the ${label} in its new spot.`; const mo = (f.moments ||= {}); if (now - (mo.found ?? 0) > 6 * 3600e3) { mo.found = now; events.push({ journal: line, story: f.id, text: line }); } }
+      const was = m.likes.includes(d.id); memCap(t, f, now); if (!was && m.likes[0] === d.id && e.n >= 3) { const line = `${f.name} keeps going back to the ${label}. It is a favorite now.`; const mo = (f.moments ||= {}); if (now - (mo.fav ?? 0) > DAY) { mo.fav = now; events.push({ journal: line, story: f.id, text: line }); } }
+      return ok({ k: e.k, n: e.n, stage: famStage(e) });
+    }
+    case 'octoMem': {                                               // the rest of what it remembers: its favorite spot, how it feels about the fish (and, once, what an older phone had kept)
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead); if (!f) return fail('NOT_FOUND');
+      if (a.migrate && f.mem) return ok({ applied: false });      // never over newer memories kept here
+      const m = memOf(f), inB = (q) => q && Number.isFinite(+q.x) && Number.isFinite(+q.z) && Math.abs(+q.x) <= 5 && +q.z >= -4 && +q.z <= 4.6;
+      if (inB(a.fav)) m.fav = { x: +(+a.fav.x).toFixed(2), z: +(+a.fav.z).toFixed(2) };
+      if (a.fishMemo && typeof a.fishMemo === 'object') for (const [id, v] of Object.entries(a.fishMemo).slice(0, 20)) if (t.fish.some((x) => x.id === id && x.id !== f.id) && v && typeof v === 'object') m.fish[id] = { f: Math.max(0, Math.min(99, +(+v.f || 0).toFixed(1))), a: Math.max(0, Math.min(99, +(+v.a || 0).toFixed(1))) };
+      if (a.migrate && a.likes && typeof a.likes === 'object') for (const [id, n] of Object.entries(a.likes).slice(0, 20)) { const d = t.decor.find((x) => x.id === id); const c = Math.max(0, Math.min(20, n | 0)); if (d && c) m.fam[id] = { k: +Math.min(0.6, 0.12 * c).toFixed(3), n: c, x: d.x, z: d.z, at: 0 }; }      // its old likes, counted on one phone, kept as familiarity
+      memCap(t, f, now); return ok();
+    }
     case 'octoMemo': {                                              // who an octopus gets on with and who it has it in for, kept with the tank so every phone shows the same
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead); if (!f) return fail('NOT_FOUND');
       const fishOk = (id) => id == null || t.fish.some((x) => x.id === id && !x.dead && x.id !== f.id); if (!fishOk(a.buddy) || !fishOk(a.rival) || (a.buddy && a.buddy === a.rival)) return fail('NOT_FOUND');
@@ -1126,13 +1173,16 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'moveDecor': {
       const it = t.decor.find((x) => x.id === a.id); if (!it) return fail('NOT_FOUND');
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
-      it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.ry = +(num(a.ry) || 0).toFixed(2); return ok();
+      const moved = Math.hypot(it.x - x, it.z - z) > 0.3; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.ry = +(num(a.ry) || 0).toFixed(2);
+      if (moved) { it.movedAt = now; for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e && !e.gone) e.mv = now; } }      // an octopus that knew it there still thinks it is there, until it finds it again
+      return ok();
     }
     case 'sellDecor': {
       const i = t.decor.findIndex((x) => x.id === a.id); if (i < 0) return fail('NOT_FOUND');
       const it = t.decor[i], d = DECOR_DEF[it.type], lbl = d.label.toLowerCase();
       for (const f of t.fish) { if (f.dead || (f.home !== it.id && f.spotId !== it.id)) continue; const wasHome = f.home === it.id; delete f.home; if (f.spotId === it.id) delete f.spotId; f.happy = Math.max(0.2, (f.happy ?? 0.7) - 0.15); f.missing = { what: lbl, at: now };      // an animal that loved it misses it, and goes looking for somewhere new
         const line = wasHome ? `${f.name} lost its home when the ${lbl} was taken out. It is looking for a new one.` : `${f.name} misses the ${lbl}. It is looking for a new favorite spot.`; events.push({ journal: line, toast: line, story: f.id, text: line }); }
+      for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e) { e.gone = now; delete e.mv; memLikes({ ...t, decor: t.decor.filter((x) => x.id !== it.id) }, f); } }      // gone: it stops seeking it, and forgets it in a few days
       if (it.type === 'starfish') events.push({ activity: { type: 'decor', text: `${name} let the starfish go back to the sea.` } });
       t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
     }

@@ -48,6 +48,11 @@ function emoteTexture(mood) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (emoteTex[mood] = t);
 }
 const r2 = (v) => Math.round(v * 100) / 100;
+// how each nature meets something new: how soon it goes (s), how willing it is, how long it watches first, whether it watches from its den, how often it goes back to a favorite and how drawn it is to things it has never touched
+const AWARE = { explorer: { d: [1, 3], p: 0.95, watch: null, rev: 0.3, nov: 0.6 }, trickster: { d: [2, 4], p: 0.85, watch: null, rev: 0.4, nov: 0.45 }, showoff: { d: [3, 6], p: 0.75, watch: null, rev: 0.45, nov: 0.3 },
+  collector: { d: [2, 5], p: 0.75, watch: null, rev: 0.65, nov: 0.35 }, watcher: { d: [3, 5], p: 0.7, watch: [8, 14], rev: 0.55, nov: 0.2 }, homebody: { d: [6, 12], p: 0.5, watch: [25, 45], den: true, rev: 0.75, nov: 0.1 } };
+const COLLECTIBLE = new Set(['shell', 'pot', 'coconut', 'chest', 'crystal', 'starfish', 'anchor', 'skull', 'lantern']);
+const GRIP_R = { grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 0.8, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5 };
 const CRAB = 1.15;                // a crab is a meal-sized thing next to an octopus, not as big as its head
 const spot = (v) => { const q = Math.sin(v * 127.1 + 311.7) * 43758.5453; return q - Math.floor(q); };          // a repeatable 0..1 from a number
 export class Fishes {
@@ -67,7 +72,7 @@ export class Fishes {
     return { traits: tr, age: stageOf(f).replace(/^./, (c) => c.toUpperCase()), spot: f.found?.includes('spot') ? (DECOR_DEF[st.decor?.find((d) => d.id === f.spotId)?.type]?.label ?? SPOTS[tr[0]] ?? 'Found one') : 'Still looking', food: f.species === 'octopus' ? 'Crabs' : FOODS[favFoodOf(f)].label, needs: [n.fed, n.happy, n.energy, n.health], mood: n.mood, vigor: n.vigor };
   }
   // make the scene match the game's fish list
-  sync(state, { arrivals = [] } = {}) { this.state = state;
+  sync(state, { arrivals = [] } = {}) { this.state = state; this.decorDiff(state);
     this.recs = new Map(state.fish.map((d) => [d.id, d]));      // each animal's saved record, as the server has it (a seahorse reads its memory of holdfasts from it)
     this.moveOn = !state.flags?.noRearrange;
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
@@ -273,7 +278,7 @@ export class Fishes {
     if (ev === 'grab') { const at = dc.atOf(T.id); if (!at || Math.hypot(at.x - f.pos.x, at.z - f.pos.z) > T.off + 1.0 || !dc.haulBegin(T.id)) { f.task = null; return false; } T.stage = 'haul'; return true; }
     if (ev === 'drop') {
       const good = Math.hypot(T.gx - (f.pos.x + T.ux * T.hold), T.gz - (f.pos.z + T.uz * T.hold)) < 1.0;
-      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null); T.stage = 'placed'; f.movedAt = Date.now(); if (T.kind === 'home') f.homeMovedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', turn: T.kind === 'turn', ry: T.kind === 'turn' ? +T.ry.toFixed(2) : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); (f.failed ||= []).push({ x: T.gx, z: T.gz }); if (f.failed.length > 6) f.failed.shift(); f.task = null; }
+      if (good) { dc.haulEnd(T.id, T.gx, T.gz, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null); T.stage = 'placed'; f.movedAt = Date.now(); this.selfMoved = { id: T.id, at: performance.now() }; if (T.kind === 'home') f.homeMovedAt = Date.now(); this.onMove?.({ fish: f.fid, id: T.id, x: T.gx, z: T.gz, home: T.kind === 'home', turn: T.kind === 'turn', ry: T.kind === 'turn' ? +T.ry.toFixed(2) : 0 }); if (T.kind !== 'home') f.task = null; } else { dc.haulCancel(T.id); (f.failed ||= []).push({ x: T.gx, z: T.gz }); if (f.failed.length > 6) f.failed.shift(); f.task = null; }
       return good;
     }
     if (ev === 'abort') { if (T.stage === 'haul') dc.haulCancel(T.id); f.task = null; return false; }
@@ -318,6 +323,77 @@ export class Fishes {
     }
     return null;
   }
+  // what changed among the decorations since last time (from the game's own state, never by looking at every one every frame): put in, moved, taken out
+  decorDiff(state) {
+    const cur = new Map((state.decor ?? []).map((d) => [d.id, d])), ev = (this.decorEv ||= []), add = (e) => { e.n = this.evN = (this.evN ?? 0) + 1; ev.push(e); if (ev.length > 12) ev.shift(); };
+    if (this.decorWas) {
+      const fresh = (d) => Date.now() - (d.at ?? 0) < 20 * 60e3;      // (only something really put in lately is new: a tank swapped in whole, or a restored one, is not)
+      for (const [id, d] of cur) { const o = this.decorWas.get(id); if (!o) { if (fresh(d)) add({ kind: 'new', id, type: d.type, x: d.x, z: d.z }); } else if (Math.hypot(o.x - d.x, o.z - d.z) > 0.3) add({ kind: 'moved', id, type: d.type, x: d.x, z: d.z, ox: o.x, oz: o.z }); }
+      for (const [id, o] of this.decorWas) if (!cur.has(id)) add({ kind: 'removed', id, type: o.type, x: o.x, z: o.z });
+    } else { const now = Date.now(); for (const d of cur.values()) if (now - (d.movedAt ?? d.at ?? 0) < 20 * 60e3) add({ kind: 'recent', id: d.id, type: d.type, x: d.x, z: d.z }); }      // a phone that has just opened (or taken over): something put in or moved lately still counts
+    this.decorWas = new Map([...cur].map(([id, d]) => [id, { x: d.x, z: d.z, type: d.type }]));
+  }
+  // ── An octopus notices what changes in its tank, and goes to see for itself ──
+  // Once a second, on the phone running the animals. Its nature sets how soon it goes, whether it watches first (from its den, for a homebody),
+  // and how willing it is; hunger, a fright, sleep or a job of its own come first, and an errand that fails is tried again later, a few times at most.
+  // It only learns about a thing once it has reached it and handled it (onTouchDecor); a thing moved while it was not looking is looked for where
+  // it used to be, then a little way round, and recognized when found.
+  aware(f, S) {
+    const now = performance.now(), sp = f.getSpots?.() ?? [], find = (id) => sp.find((x) => x.id === id), lbl = (type) => (DECOR_DEF[type]?.label ?? 'thing').toLowerCase(), r = () => this.rng(), fam = f.fam ?? {};
+    const P = AWARE[f.mind?.type] ?? AWARE.explorer, bold = f.mind?.bold ?? 0.5, awake = (f.sleepK ?? 0) < 0.4 && !(f.isNight && (f.tuckK ?? 0) > 0.5), near = (x, z) => Math.hypot(f.pos.x - x, f.pos.z - z) < 6.5;
+    const start = (o) => { if (f.inv) { (f.invQ ||= []).push(o); if (f.invQ.length > 2) f.invQ.shift(); return; } f.inv = { tries: 0, born: now, ...o }; };
+    for (const ev of this.decorEv ?? []) { if (ev.n <= (f.evDone ?? 0)) continue; f.evDone = ev.n;
+      if (ev.kind === 'moved' && this.selfMoved?.id === ev.id && now - this.selfMoved.at < 120e3) continue;      // it moved that itself: nothing to wonder about
+      const known = fam[ev.id]?.n > 0, L = lbl(ev.type);
+      if (ev.kind === 'new' || ev.kind === 'recent') { if (!known && !fam[ev.id]?.gone && f.inv?.id !== ev.id) start({ kind: 'new', id: ev.id, type: ev.type, x: ev.x, z: ev.z, phase: 'notice', t: 0, text: `Noticed the new ${L}.` }); continue; }
+      if (ev.kind === 'moved') { const seen = awake && (f.tuckK ?? 0) < 0.3 && (near(ev.x, ev.z) || near(ev.ox, ev.oz));      /* (tucked under its shell, it does not see things moved) */
+        if (f.inv?.id === ev.id) { if (seen) { f.inv.x = ev.x; f.inv.z = ev.z; if (f.inspect?.inv) { f.inspect.x = ev.x; f.inspect.z = ev.z; } } continue; }
+        if (!known) { if (seen) start({ kind: 'new', id: ev.id, type: ev.type, x: ev.x, z: ev.z, phase: 'notice', t: 0, text: `Noticed the ${L}.` }); continue; }
+        const o = fam[ev.id]; start(seen ? { kind: 'moved', id: ev.id, type: ev.type, x: ev.x, z: ev.z, phase: 'notice', t: 0, text: `Watched the ${L} being moved.` } : { kind: 'moved', id: ev.id, type: ev.type, ox: o.x ?? ev.ox, oz: o.z ?? ev.oz, phase: 'oldspot', t: 20 + r() * 50 }); continue; }
+      if (ev.kind === 'removed') { if (f.inv?.id === ev.id) { if (f.inspect?.inv || f.inspect?.oldspot) f.inspect = null; this.endInv(f); } f.invQ = (f.invQ ?? []).filter((q) => q.id !== ev.id);
+        if ((fam[ev.id]?.k ?? 0) >= 0.35) { if (awake && near(ev.x, ev.z)) this.memSay(f, `Watched the ${lbl(ev.type)} go.`); else f.missingCheck = { x: ev.x, z: ev.z, label: lbl(ev.type), at: now + (30 + r() * 60) * 1e3 }; } }
+    }
+    const I = f.inv;
+    if (!I) {
+      if (f.missingCheck && now > f.missingCheck.at && S?.s === 'rest' && !S.mode && !f.inspect) { const m = f.missingCheck; if (!m.went) { m.went = true; f.inspect = { x: m.x, z: m.z, oldspot: true }; m.at = now + 25e3; } else { this.memSay(f, `Went to where the ${m.label} was. It is gone.`); f.missingCheck = null; } }      // one look where a thing it knew used to be; no endless searching
+      if ((this.recogAt = (this.recogAt ?? 0) - 1) <= 0) { this.recogAt = 4; for (const [id, e] of Object.entries(fam)) { if (!e.mv || e.gone) continue; const d = find(id); if (d && Math.hypot(d.x - f.pos.x, d.z - f.pos.z) < 2.8 && S?.s === 'rest' && !S.mode && !f.inspect && awake) { start({ kind: 'moved', id, type: d.type, x: d.x, z: d.z, phase: 'goNow', t: 0, text: `Recognized the ${lbl(d.type)}: it has been moved.` }); break; } } }      // it comes across a thing it knew, somewhere new
+      if (!f.inv && f.invQ?.length) f.inv = { tries: 0, born: now, ...f.invQ.shift() };
+      return;
+    }
+    const d = find(I.id), L = lbl(I.type); if (!d) { this.endInv(f); return; }
+    if (now - I.born > 6 * 60e3) { this.endInv(f); return; }
+    const busy = f.dead || f.hunt || f.jarAt || f.task || f.glassAt || f.profile?.mood === 'Hungry' || (f.scared ?? 0) > 0 || (f.tired ?? 0) > 0.8 || !awake;
+    if (busy) { if (f.inspect?.inv || f.inspect?.oldspot) f.inspect = null; if (I.phase === 'go' || I.phase === 'goOld') { I.phase = I.phase === 'go' ? 'later' : 'oldspot'; I.t = 30; } f.watchPt = null; return; }      // first things first; it comes back to it
+    I.t -= 1; const tgt = { x: I.x ?? d.x, y: 0.7, z: I.z ?? d.z };
+    const goTo = () => { I.phase = 'go'; I.t = 45; f.inspect = { x: tgt.x, z: tgt.z, id: I.id, type: I.type, r: GRIP_R[I.type] ?? 0.5, inv: true }; if (!/^Recognized|^There it is/.test(I.text ?? '')) I.text = I.kind === 'moved' ? `Going over to the ${L} in its new spot.` : `Creeping over to the new ${L}.`; f.watchPt = null; };
+    const decide = () => { let p = P.p * (0.7 + 0.6 * bold); if (f.mind?.type === 'showoff' && (f.audience ?? 0) > 0.3) p += 0.15; if (f.mind?.type === 'collector' && COLLECTIBLE.has(I.type)) p += 0.15; if (f.shy && I.kind === 'new') p -= 0.1;
+      if (r() < Math.max(0.05, Math.min(0.98, p))) goTo();
+      else { I.tries++; if (I.tries >= 3) { this.memSay(f, `Has decided to leave the ${L} alone for now.`); this.endInv(f); } else { I.phase = 'later'; I.t = 40 + r() * 50; I.text = `Keeping its distance from the ${L} for now.`; } } };
+    if (I.phase === 'goNow') goTo();
+    else if (I.phase === 'notice') { f.watchPt = tgt; if (!I.delaySet) { I.delaySet = true; I.t = this.delay(f, P, I); } if (I.t <= 0) { if (P.watch && !I.watched) { I.watched = true; I.phase = 'watch'; I.t = P.watch[0] + r() * (P.watch[1] - P.watch[0]); I.text = P.den && f.den ? `Watching the ${L} from its den.` : `Watching the ${L} from a distance.`; if (P.den && f.den && S?.s === 'rest' && !S.mode && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) > 1.4) f.goDen?.(S, () => this.rng()); } else decide(); } }
+    else if (I.phase === 'watch') { f.watchPt = tgt; if (I.t <= 0) decide(); }
+    else if (I.phase === 'later') { f.watchPt = null; if (I.t <= 0) { I.phase = 'notice'; I.delaySet = true; I.t = 1; } }
+    else if (I.phase === 'go') { if (!(f.inspect && f.inspect.id === I.id) || I.t <= 0) { if (f.inspect?.id === I.id) f.inspect = null; I.tries++; if (I.tries >= 3) this.endInv(f); else { I.phase = 'later'; I.t = 20 + r() * 30; } } }      // it could not get there: later, a few times at most
+    else if (I.phase === 'feel') { if (I.t <= 0) this.endInv(f); }
+    else if (I.phase === 'oldspot') { if (I.t <= 0 && S?.s === 'rest' && !S.mode && !f.inspect) { I.phase = 'goOld'; I.t = 40; f.inspect = { x: I.ox, z: I.oz, oldspot: true }; I.text = `Going to where the ${L} used to be.`; } }
+    else if (I.phase === 'goOld') {
+      if (S?.s === 'work' && S.mode === 'inspect' && f.inspect?.oldspot) { I.phase = 'feelOld'; I.t = 4; I.text = `Feeling around where the ${L} used to be.`; }
+      else if (!f.inspect?.oldspot || I.t <= 0) { if (f.inspect?.oldspot) f.inspect = null; I.tries++; if (I.tries >= 3) this.endInv(f); else { I.phase = 'oldspot'; I.t = 20 + r() * 20; } } }
+    else if (I.phase === 'feelOld' && I.t <= 0) {
+      if (f.inspect?.oldspot) f.inspect = null;
+      if (Math.hypot(d.x - f.pos.x, d.z - f.pos.z) < 3.4) { I.x = d.x; I.z = d.z; I.phase = 'go'; I.t = 45; f.inspect = { x: d.x, z: d.z, id: I.id, type: I.type, r: GRIP_R[I.type] ?? 0.5, inv: true }; I.text = `There it is: the ${L}, in a new spot.`; }      // it can see it from here
+      else if ((I.search = (I.search ?? 0) + 1) > 2) { this.memSay(f, `Gave up looking for the ${L}.`); this.endInv(f); }      // (it will know it again when it comes across it)
+      else { const a = r() * 6.28, rr = 1.5 + r() * 1.5, sx = Math.max(-4, Math.min(4, I.ox + Math.cos(a) * rr)), sz = Math.max(-1.8, Math.min(3.4, I.oz + Math.sin(a) * rr)); I.ox = sx; I.oz = sz; I.phase = 'goOld'; I.t = 35; f.inspect = { x: sx, z: sz, oldspot: true }; I.text = `Searching for the ${L}.`; } }
+  }
+  delay(f, P, I) { let k = P.d[0] + this.rng() * (P.d[1] - P.d[0]); k *= 1.3 - 0.6 * (f.mind?.bold ?? 0.5); if (f.mind?.type === 'showoff' && (f.audience ?? 0) > 0.3) k *= 0.4; if (f.mind?.type === 'collector' && COLLECTIBLE.has(I.type)) k *= 0.5; return Math.max(0.5, k); }
+  endInv(f) { f.inv = null; f.watchPt = null; if (f.inspect?.inv || f.inspect?.oldspot) f.inspect = null; }
+  memSay(f, text) { f.memText = text; f.memTextUntil = performance.now() + 9000; }
+  // it reached a decoration and is handling it: report it (the game decides what that teaches it)
+  touched(f, id) {
+    const I = f.inv, kind = I?.id === id ? I.kind : f.fam?.[id]?.mv ? 'moved' : 'revisit';
+    if (I?.id === id) { I.phase = 'feel'; I.t = 4; const L = (DECOR_DEF[I.type]?.label ?? 'thing').toLowerCase(); I.text = I.kind === 'moved' ? `Feeling the ${L} all over: yes, it is the same one.` : `Feeling the new ${L} all over with its arms.`; }
+    if (f.lead !== false) this.onTouchDecor?.({ fish: f.fid, decor: id, kind });
+  }
   loadOcto() { try { return JSON.parse(localStorage.getItem('ourtank.octo') || '{}'); } catch { return {}; } }
   // What each octopus makes of the world around it, thought over once a second: sulks in dirty water, notices who is watching, gets restless when nothing changes,
   // and (the tricksters) goes to see what a nearby fish will do when startled. The fish act on these in jetUpdate.
@@ -329,6 +405,7 @@ export class Fishes {
       if (f.species.id !== 'octopus' || f.dead || !f.mind) continue;
       const M = f.mind;
       f.lead = this.isLead ? this.isLead() : true;      // only the lead phone decides what it does next; the others are shown it
+      if (f.lead) this.aware(f, f.st);
       if (f.lead && (f.buddy ?? null) + '|' + (f.rival ?? null) !== (f.sharedBuddy ?? null) + '|' + (f.sharedRival ?? null) && performance.now() - (f.memoSent ?? -1e9) > 20000) { f.memoSent = performance.now(); this.onMemo?.({ fish: f.fid, buddy: f.buddy ?? null, rival: f.rival ?? null }); }
       f.sulk = Math.max(0, Math.min(1, Math.max((0.62 - W.water) / 0.3, (W.glass - 0.6) / 0.3, (W.hunger - 0.7) / 0.3)));
       const bonded = (f.bondIds ?? []).some((i) => people.has(i)); f.audience = bonded ? 1 : people.size > 0 ? 0.35 : 0;
@@ -344,8 +421,9 @@ export class Fishes {
       else if (f.actText) th = f.actText;
       else if (f.fearNear) th = 'Avoiding a spot that scared it.';
       else if (S?.s === 'rest' && f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.2) th = f.den.home ? (f.den.kind === 'pot' ? 'Curled up in its pot.' : 'Tucked into its coconut shell.') : f.den.kind === 'rocks' ? 'Home in the rock shelter it built.' : 'Home in its den.';
+      if (f.inv?.text && !f.hunt && !f.glassAt) th = f.inv.text; else if (f.memText && now < (f.memTextUntil ?? 0)) th = f.memText;
       f.thought = th;
-      { const lk = f.likes && Object.entries(f.likes).sort((a, b) => b[1] - a[1])[0]; const sp = lk && lk[1] >= 3 ? (f.getSpots?.() ?? []).find((x) => x.id === lk[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
+      { const sp = f.likeIds?.length ? (f.getSpots?.() ?? []).find((x) => x.id === f.likeIds[0]) : null; f.favThing = sp ? (DECOR_DEF[sp.type]?.label ?? null) : null; }
       if (M.type === 'showoff' && f.audience >= 1 && f.bondMe >= 1 && S?.s === 'rest' && !S.mode && !f.shy && (f.glassCool ?? 0) <= 0 && this.rng() < 0.03) { f.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.5 + this.rng() * 3, until: performance.now() + 8000, close: true }; f.glassCool = 300 + this.rng() * 300; }       // an audience it knows: it goes and shows off at the glass
       // its partner (see rules: octoPartners): it goes to find it now and then, and close by they touch arms, tasting each other with their suckers
       { const pt = f.rec?.partner && this.list.find((o) => o.fid === f.rec.partner && !o.dead && o.mind);
@@ -365,7 +443,9 @@ export class Fishes {
       }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
       if (f.prank) { const o = f.prank; if (o.dead || Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z) < 1.7) { if (!o.dead) { o.fleeT = 1.2; o.target.set(Math.max(-4, Math.min(4, o.pos.x + (o.pos.x > f.pos.x ? 2.5 : -2.5))), Math.min(12, o.pos.y + 1), o.pos.z); o.retarget = 2; } f.prank = null; } else if (S?.s === 'rest' && S.t <= 0) f.prank = null; }
-      if ((f.fav || f.likes || f.fishMemo) && f.favDirty) { f.favDirty = false; const all = this.loadOcto(); all[f.fid] = { x: f.fav ? +f.fav.x.toFixed(2) : undefined, z: f.fav ? +f.fav.z.toFixed(2) : undefined, likes: f.likes, fish: f.fishMemo, buddy: f.buddy, rival: f.rival }; try { localStorage.setItem('ourtank.octo', JSON.stringify(all)); } catch { /* storage unavailable */ } }
+      if (f.lead && f.favDirty && now - (f.memSentAt ?? -1e9) > 120e3) { f.favDirty = false; f.memSentAt = now; const sv = f.memSrv?.fav, fv = f.fav && f.fav.n > 12 && (!sv || Math.hypot(sv.x - f.fav.x, sv.z - f.fav.z) > 0.4) ? { x: +f.fav.x.toFixed(2), z: +f.fav.z.toFixed(2) } : null;      // its favorite spot and how it feels about the fish, kept with the tank now and then
+        const fm = f.fishMemo ? Object.fromEntries(Object.entries(f.fishMemo).sort((a, b) => (b[1].f + b[1].a) - (a[1].f + a[1].a)).slice(0, 6).map(([k, v]) => [k, { f: +(+v.f).toFixed(1), a: +(+v.a).toFixed(1) }])) : null;
+        if (fv || fm) this.onMem?.({ fish: f.fid, ...(fv ? { fav: fv } : {}), ...(fm ? { fishMemo: fm } : {}) }); }
     }
   }
   loadRoutine() { try { return JSON.parse(localStorage.getItem('ourtank.routine') || '{}'); } catch { return {}; } }
@@ -375,6 +455,11 @@ export class Fishes {
     if (d.species === 'octopus') { f.mind = octoMind(d); f.bold = f.mind.bold; }
     if (d.species === 'octopus') { f.movedAt = d.movedAt ?? 0; f.homeId = d.home ?? null; f.adultish = stageOf(d) !== 'baby'; f.onTask = (fish, ev) => this.taskEvent(fish, ev); }
     if (d.species === 'octopus') { f.sharedBuddy = d.buddy ?? null; f.sharedRival = d.rival ?? null; f.bondIds = Object.entries(d.bond ?? {}).filter(([, v]) => v >= 1).map(([i]) => i).concat(d.owner ? [d.owner] : []); if (!f.fav && !f.likes) { const sv = this.loadOcto()[d.id]; if (sv) { if (sv.x != null) f.fav = { x: sv.x, z: sv.z, n: 8 }; if (sv.likes) f.likes = sv.likes; if (sv.fish) { f.fishMemo = sv.fish; f.buddy = sv.buddy ?? null; f.rival = sv.rival ?? null; } } } }
+    if (d.species === 'octopus') {      // what it remembers comes from the tank (the same on every phone); an older phone's own memories are offered once, and only if the tank has none
+      const m = d.mem ?? null; f.memSrv = m; f.likeIds = m?.likes ?? []; f.fam = m?.fam ?? {}; const T = AWARE[f.mind?.type] ?? AWARE.explorer; f.revisitP = T.rev; f.noveltyP = T.nov;
+      if (m?.fav && !(f.fav?.n > 12)) f.fav = { x: m.fav.x, z: m.fav.z, n: 20 }; if (m?.fish && !f.memLoaded) { f.fishMemo = JSON.parse(JSON.stringify(m.fish)); f.memLoaded = true; }
+      if (!m && !(this.migrated ||= new Set()).has(d.id)) { const sv = this.loadOcto()[d.id]; if (sv && (sv.x != null || sv.likes || sv.fish)) { this.migrated.add(d.id); this.onMem?.({ fish: d.id, migrate: true, ...(sv.x != null ? { fav: { x: sv.x, z: sv.z } } : {}), ...(sv.likes ? { likes: sv.likes } : {}), ...(sv.fish ? { fishMemo: sv.fish } : {}) }); } }
+    }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
@@ -485,7 +570,7 @@ export class Fishes {
     else f.den = den ? { x: den.x, z: den.z, id: den.id, home: false, kind: den.type } : null;
     const key = f.den ? `${f.den.id}|${f.den.kind}|${f.hoard}|${d.crabs ?? 0}` : '';
     if (f.hoardKey !== key) { f.hoardKey = key; if (f.hoardGroup) this.scene.remove(f.hoardGroup); f.hoardGroup = null; if (f.den && f.hoard > 0) { f.hoardGroup = buildHoard(f.hoard, d.crabs ?? 0, d.seed ?? 1); f.hoardGroup.position.set(f.den.x, sandH(f.den.x, f.den.z) + 0.04, f.den.z); this.scene.add(f.hoardGroup); } }
-    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.onMoment = (kind, o) => { const k = kind + ':' + f.fid, now = performance.now(); if (now - ((this.momentAt ||= {})[k] ?? -1e9) < 3600e3) return; this.momentAt[k] = now; this.onMoment?.({ fish: f.fid, kind, other: o?.fid }); }; f.onThrow = (p, d, kind, at) => (kind === 'smack' ? this.burst(at) : kind === 'shell' ? this.toss(p, d) : kind === 'water' ? this.waterJet(p, d) : this.silt(p, d)); f.onSand = (p, k) => this.sand(p, k); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); }
+    if (!f.carryMesh) { f.carryMesh = shellMesh('shell'); f.carryMesh.scale.setScalar(1.7); f.carryMesh.visible = false; f.carryMesh.position.set(11 * f.scale, -7 * f.scale, 6 * f.scale); f.group.add(f.carryMesh); f.onDrop = (p) => this.looseShell(p); f.onInk = (p) => this.ink(p); f.onInkAt = (a, b) => this.inkJet(a, b); f.onPush = (p, d) => this.puff(p, d); f.onMoment = (kind, o) => { const k = kind + ':' + f.fid, now = performance.now(); if (now - ((this.momentAt ||= {})[k] ?? -1e9) < 3600e3) return; this.momentAt[k] = now; this.onMoment?.({ fish: f.fid, kind, other: o?.fid }); }; f.onThrow = (p, d, kind, at) => (kind === 'smack' ? this.burst(at) : kind === 'shell' ? this.toss(p, d) : kind === 'water' ? this.waterJet(p, d) : this.silt(p, d)); f.onSand = (p, k) => this.sand(p, k); f.isNight = !!this.night; f.onEat = (h) => this.eatCrab(h); f.onTouch = (id) => this.touched(f, id); }
   }
   looseShell(p) { const m = shellMesh(this.rng() < 0.5 ? 'shell' : 'clam'); m.position.set(p.x + 0.45, sandH(p.x + 0.45, p.z + 0.5) + 0.1, p.z + 0.5); m.rotation.y = this.rng() * 6; this.scene.add(m); (this.loose ||= []).push({ m, until: performance.now() + 150e3 }); }
   // a crab treat: it sinks to the floor and the octopus goes after it

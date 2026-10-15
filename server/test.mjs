@@ -732,6 +732,21 @@ await t('developer test aquarium: only listed players; real tanks untouched; the
   const home = await open(dev.token), hs = await waitFor(home, (m) => m.t === 'snapshot'); assert.equal(hs.tank.id, mine.id); assert.equal(hs.test, undefined);
   for (const x of [A, B, home]) x.close(); DEVS.length = 0;
 });
+await t('an octopus\'s memories: three caretakers, a handoff and duplicate reports agree on one memory and one journal line, and it is kept in the saved tank', async () => {
+  const u = [await mkUser('Ann'), await mkUser('Bo'), await mkUser('Cy')], tk = (await call('/api/tanks', { name: 'Mem' }, u[0].token)).body; for (const x of u.slice(1)) await call('/api/join', { code: tk.code }, x.token);
+  const now = Date.now(), W = getW(tk.id); W.fish = [...(W.fish ?? []), { id: 'om', name: 'Mo', species: 'octopus', seed: 3, born: now - 20 * 864e5, stage: 'adult', traits: [], happy: 0.8, health: 1 }]; W.decor = [...(W.decor ?? []), { id: 'dm', type: 'pot', x: 1, z: 1, ry: 0, at: now - 30e3 }]; setW(tk.id, { fish: W.fish, decor: W.decor });
+  const ws = await Promise.all(u.map((x) => open(x.token))); await new Promise((r) => setTimeout(r, 150));
+  const acks = await Promise.all(ws.map((w, i) => ackOf(w, { t: 'octoTouch', fish: 'om', decor: 'dm', kind: 'new', idem: 'touch' + i })));      // all three phones report the same go (a handoff, a reconnect)
+  assert.equal(acks.filter((x) => x.ok && x.applied !== false).length, 1, JSON.stringify(acks));
+  const lines = S.db.prepare('SELECT COUNT(*) AS n FROM journal WHERE tank_id=? AND text LIKE ?').get(tk.id, '%investigated the new%').n; assert.equal(lines, 1, 'one journal line');
+  const mem = getW(tk.id).fish.find((f) => f.id === 'om').mem; assert.ok(mem.fam.dm.n === 1 && mem.fam.dm.k > 0, JSON.stringify(mem));      // kept in the saved tank: a restart or a reload reads it back
+  const last = (w) => [...w.msgs].reverse().find((m) => m.t === 'state' && m.tank?.fish?.some((f) => f.id === 'om' && f.mem));
+  await new Promise((r) => setTimeout(r, 200)); const seen = ws.map((w) => JSON.stringify(last(w)?.tank.fish.find((f) => f.id === 'om').mem.fam.dm)); assert.ok(seen.every((x) => x && x === seen[0]), 'all three phones see the same memory: ' + seen.join(' | '));
+  const W2 = getW(tk.id); W2.fish.find((f) => f.id === 'om').mem.fam.dm.at = now - 120e3; setW(tk.id, { fish: W2.fish });      // later, the next director reports another visit
+  const r2 = await ackOf(ws[1], { t: 'octoTouch', fish: 'om', decor: 'dm', kind: 'revisit', idem: 'touch-later' }); assert.ok(r2.ok && r2.applied !== false); assert.equal(getW(tk.id).fish.find((f) => f.id === 'om').mem.fam.dm.n, 2);
+  const mig = await ackOf(ws[2], { t: 'octoMem', fish: 'om', migrate: true, likes: { dm: 9 }, idem: 'mig' }); assert.equal(mig.applied, false, 'a phone with stale local memories cannot overwrite the tank');
+  for (const w of ws) w.close();
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);
