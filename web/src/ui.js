@@ -22,7 +22,7 @@ const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'line
 
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
-  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '', bottleTo = null;
+  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '', bottleTo = null, careSub = 'care';
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
   const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
@@ -387,8 +387,12 @@ export function initUI({ game, social, cb }) {
       const extras = `${(() => { const o = S().fish.find((f) => canPuzzle(f) && canFeedOcto(f, game.you?.userId, game.shared)) ?? S().fish.find((f) => canPuzzle(f)); if (!o) { const b = S().fish.find((f) => f.species === 'octopus' && !f.dead); return b ? tile('🧩', 'Puzzle jar', 'puzzle', `when ${esc(b.name)} grows up`) : ''; } const busy = !!o.puzzle, rest = o.puzzleAt != null && Date.now() - o.puzzleAt < 3 * 3600e3; return tile('🧩', 'Puzzle jar', 'puzzle', busy ? `${esc(o.name)} is working` : rest ? `${esc(o.name)} is tired of puzzles · next one in ${eta(3 * 3600e3 - (Date.now() - o.puzzleAt))}` : `for ${esc(o.name)} · ${PUZZLE_COST} 🐚`); })()}${adv() ? tile('📷', 'Postcard', 'photo', 'a picture of the tank') : ''}`;
       const wishes = tankNeeds(s).map((n) => `<div class="tap wishrow" role="button" data-act="needshop" data-cat="${DECOR_DEF[n.types[0]]?.cat ?? 'PLANTS'}"><i>${msIcon({ hide: 'rock', stem: 'spot', shell: 'coconut', bubbles: 'bubbles', plants: 'spot' }[n.key] ?? 'spot', true, 22)}</i><span>${esc(n.text)}</span><b>Shop ›</b></div>`).join('');      // what the animals would like, in the same short list as what is coming
       const ahead = forecast(s, Date.now(), 2), coming = ahead.length || wishes ? `<div class="soon"><h5>Today</h5>${wishes}${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.fish ? `<img alt="" class="fthumb" src="${fishThumb(x.species, x.pal ?? null)}">` : pix(x.icon, 22)}</i><span>${esc(x.text)}</span><b>${x.when}</b></div>`).join('')}</div>` : '';      // what to look forward to: the next two things, soonest first
-      return `<h3>Care</h3>${hero}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${coming}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
-        ${extras.replace('PUZZLE', '').trim() ? `<h4>Extras</h4><div class="grid2 acts mini">${extras}</div>` : ''}<h4>Daily checklist</h4>${todayHtml(due.length > 0)}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;
+      // two tabs: Care (what the animals need: the jobs, what is coming, the checklist) and Play (the fun things: puzzles, postcards, what they would love to have)
+      const seg = `<div class="seg two">${[['care', 'Care'], ['play', 'Play']].map(([k, l]) => `<button class="${careSub === k ? 'on' : ''}" data-csub="${k}">${l}${k === 'care' && due.length ? ` <i class="nc">${due.length}</i>` : ''}</button>`).join('')}</div>`;
+      if (careSub === 'play') return `<h3>Play</h3>${seg}${wishes ? `<h4>They would love</h4><div class="soon">${wishes}</div>` : ''}${extras.replace('PUZZLE', '').trim() ? `<h4>Things to do together</h4><div class="grid2 acts mini">${extras}</div>` : ''}<p class="dim sm playsoon">More toys are on the way: balls to toss in, bubbles to blow.</p>`;
+      const comingCare = ahead.length ? `<div class="soon"><h5>Coming up</h5>${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.fish ? `<img alt="" class="fthumb" src="${fishThumb(x.species, x.pal ?? null)}">` : pix(x.icon, 22)}</i><span>${esc(x.text)}</span><b>${x.when}</b></div>`).join('')}</div>` : '';
+      return `<h3>Care</h3>${seg}${hero}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${comingCare}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
+        <h4>Daily checklist</h4>${todayHtml(due.length > 0)}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;
     },
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
@@ -551,6 +555,7 @@ export function initUI({ game, social, cb }) {
       if (!yes) return; const y = sheet.scrollTop, r = await game.dispatch({ t: 'sellFish', id: f.id });
       if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : r.reason === 'EXPECTING' ? 'He is expecting babies, so he stays.' : REASONS[r.reason] ?? 'Could not sell that.'); open('friends', true); sheet.scrollTop = y;
     }));
+    sheet.querySelectorAll('[data-csub]').forEach((b) => (b.onclick = () => { careSub = b.dataset.csub; sfx('tap'); open('care', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
