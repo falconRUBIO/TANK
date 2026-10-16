@@ -747,6 +747,16 @@ await t('an octopus\'s memories: three caretakers, a handoff and duplicate repor
   const mig = await ackOf(ws[2], { t: 'octoMem', fish: 'om', migrate: true, likes: { dm: 9 }, idem: 'mig' }); assert.equal(mig.applied, false, 'a phone with stale local memories cannot overwrite the tank');
   for (const w of ws) w.close();
 });
+await t('an oversized message drops only that connection, never the server; a journal photo is kept and shared', async () => {
+  const w1 = await open(a.token), w2 = await open(a.token); await waitFor(w1, (m) => m.t === 'snapshot'); await waitFor(w2, (m) => m.t === 'snapshot');
+  const closed = new Promise((r) => w1.on('close', r)); w1.send('x'.repeat(200 * 1024)); await closed;
+  assert.equal((await fetch(`http://localhost:${S.port}/healthz`)).status, 200, 'the server is still up');
+  const jid = Number(S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tank.id, 1, 'Inky swam right up to the glass and looked in at you.', null, Date.now()).lastInsertRowid);
+  w2.send(JSON.stringify({ t: 'photo', jid, img: 'data:image/jpeg;base64,' + 'A'.repeat(30000) })); await waitFor(w2, (m) => m.t === 'photo' && m.jid === jid);
+  w2.send(JSON.stringify({ t: 'photoGet', ids: [jid] })); const d = await waitFor(w2, (m) => m.t === 'photoData' && m.jid === jid); assert.ok(d.img.length > 30000);
+  w2.send(JSON.stringify({ t: 'photo', jid: jid + 999, img: 'data:image/jpeg;base64,AAAA' })); w2.send(JSON.stringify({ t: 'note', text: 'y'.repeat(9000) })); await new Promise((r) => setTimeout(r, 200));
+  assert.ok(!S.db.prepare('SELECT 1 FROM photos WHERE journal_id=?').get(jid + 999), 'a photo for a line in no tank of yours is refused'); w2.close();
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

@@ -417,6 +417,7 @@ function eggs(t, now, ev) {
     // very rarely, an egg nobody has looked after at all is found by the octopus (only when it was flagged at laying, see below)
     if (e.risk && !e.guard && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
     eggGuard(t, e, ev, now);
+    if (!e.eyes && e.laid && now - e.laid > 1.05 * DAY && now < e.hatchAt) { e.eyes = true; const M = t.fish.find((x) => x.id === e.a) ?? e.pa; ev.push({ journal: `Tiny eyes have appeared in ${M?.name ? `${M.name}'s` : 'the'} eggs.` }); }      // a little look at the eggs on their second day
     if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
     const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
     const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
@@ -639,6 +640,14 @@ export const isSmart = (f) => f?.species === 'octopus';
 export const MOVABLE = ['rock', 'coconut', 'pot', 'skull'];
 export const MOVE_GAP = 4 * 60e3, MOVE_MAX = 4.5;
 // the moments an octopus's journal remembers, and how often each kind may be written in
+// moments any animal can have, reported by the phone running the animals; each kind at most so often for each animal, so the journal stays special
+export const MOMENTS = {
+  ink: { gap: 8 * 3600e3, text: (n) => `${n} burst away in a cloud of ink!` },
+  camo: { gap: 12 * 3600e3, text: (n) => `${n} matched the ground so well it seemed to vanish.` },
+  glass: { gap: 12 * 3600e3, text: (n) => `${n} swam right up to the glass and looked in at you.` },
+  eggchase: { gap: 4 * 3600e3, other: true, text: (n, o) => `${n} chased ${o} away from the eggs.` },
+  ball: { gap: 12 * 3600e3, text: (n) => `${n} sent the ball spinning across the tank!` },
+};
 export const OCTO_MOMENTS = {
   squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
   arms: { gap: DAY, other: true, text: (n, o) => `${n} and ${o} sat side by side and touched arms for a while.` },
@@ -1198,6 +1207,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (buddy && buddy !== f.buddy) say('friend', `${f.name} and ${nameOf(buddy)} are friends now. It follows ${nameOf(buddy)} about.`);
       if (rival && rival !== f.rival) say('rival', `${f.name} has it in for ${nameOf(rival)}.`);
       if (buddy) f.buddy = buddy; else delete f.buddy; if (rival) f.rival = rival; else delete f.rival; return ok();
+    }
+    case 'moment': {
+      const f = t.fish.find((x) => x.id === a.fish && !x.dead), m = MOMENTS[a.kind]; if (!f || !m) return fail('NOT_FOUND');
+      const o = a.other ? t.fish.find((x) => x.id === a.other && !x.dead && x.id !== f.id) : null; if (m.other && !o) return fail('NOT_FOUND');
+      const at = (f.moments ||= {}); if (now - (at[a.kind] ?? 0) < m.gap) return ok({ applied: false });
+      at[a.kind] = now; events.push({ journal: m.text(f.name, o?.name) }); return ok();
     }
     case 'octoMoment': {                                            // something worth remembering an octopus did, written in the journal now and then (each kind of moment at most so often)
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), m = OCTO_MOMENTS[a.kind]; if (!f || !m) return fail('NOT_FOUND');

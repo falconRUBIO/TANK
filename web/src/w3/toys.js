@@ -69,7 +69,7 @@ export class Toys {
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p), cd = (B.cool.get(f) ?? 0) > now;
       if (k === 'fish' && d < 5) {      // fish come over and nose it along
         f.target.set(p.x - Math.sign(v.x || 1) * 0.3, Math.max(p.y, sandH(p.x, p.z) + 0.5), p.z); f.retarget = Math.max(f.retarget ?? 0, 0.7);
-        if (d < r + (f.radius ?? 0.5) * 0.45 && !cd) { const push = p.clone().sub(f.pos).setY(0.15).normalize(); v.addScaledVector(push, 1.4 + f.vel.length() * 0.6); v.y += 0.6; B.cool.set(f, now + 600); B.who.add(f.fid); this.onSound?.('bonk'); }
+        if (d < r + (f.radius ?? 0.5) * 0.45 && !cd) { const push = p.clone().sub(f.pos).setY(0.15).normalize(); v.addScaledVector(push, 1.4 + f.vel.length() * 0.6); v.y += 0.6; this.onBall?.(f); B.cool.set(f, now + 600); B.who.add(f.fid); this.onSound?.('bonk'); }
       } else if (k === 'octopus' && d < 6) {      // an octopus goes over and bats it with an arm
         if ((!f.inspect || f.inspect.toy) && !cd && d > 1.0) f.inspect = { x: p.x, z: p.z, toy: true };      // (it keeps after the ball as it rolls)
         if (d < 1.5 && !cd && p.y < sandH(p.x, p.z) + 1.3) { const away = p.clone().sub(f.pos).setY(0).normalize(); v.addScaledVector(away, 1.8); v.y += 2.6 + Math.random(); B.cool.set(f, now + 2600); B.who.add(f.fid); if (f.inspect?.toy) f.inspect = null; f.flush = Math.max(f.flush ?? 0, 0.4); this.fishes.burst?.(p.clone()); this.onSound?.('bonk'); }

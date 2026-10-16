@@ -635,7 +635,7 @@ function eggCare(egg, dt, t) {
   if (G.seeking || G.holdfast) { G.fanK = 0; G.lureCalm = 0; return; }      // a quick bite first, then straight back
   C.t += dt; C.cool -= dt;
   if (C.cool <= 0 && C.s !== 'chase') { const o = fishes.list.find((x) => x !== G && !x.dead && !x.visitor && x.fid !== e.a && x.fid !== e.b && x.species.move !== 'jet' && x.pos.distanceTo(P) < 1.5);
-    if (o) { C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.dartT = 0.9; G.fanK = 0; G.lureCalm = 0; o.fleeT = 1.8; const ax = o.pos.x - P.x, az = o.pos.z - P.z, L = Math.hypot(ax, az) || 1; o.target.set(Math.max(-4.5, Math.min(4.5, o.pos.x + ax / L * 3)), o.pos.y + 0.6, Math.max(-3, Math.min(2.5, o.pos.z + az / L * 2))); o.retarget = 3; G.thought = `Chasing ${o.name} away from the eggs.`; } }
+    if (o) { C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.dartT = 0.9; G.fanK = 0; G.lureCalm = 0; o.fleeT = 1.8; const ax = o.pos.x - P.x, az = o.pos.z - P.z, L = Math.hypot(ax, az) || 1; o.target.set(Math.max(-4.5, Math.min(4.5, o.pos.x + ax / L * 3)), o.pos.y + 0.6, Math.max(-3, Math.min(2.5, o.pos.z + az / L * 2))); o.retarget = 3; G.thought = `Chasing ${o.name} away from the eggs.`; momentOf('eggchase', G, o); } }
   if (C.s === 'chase') { if (C.t > 1.3 || C.o.dead) { C.s = 'watch'; C.t = 0; } else { G.target.copy(C.o.pos); G.retarget = 1; } return; }
   if (C.s === 'pick') { G.target.set(P.x, P.y + 0.18, P.z + 0.22); G.retarget = 1; G.lureCalm = 1; G.fanK = 0; if (C.t > 1.8) { C.s = 'watch'; C.t = 0; } return; }
   const a = t * 0.35 + egg.t0;
@@ -707,13 +707,30 @@ function tipsTick() {
   seen[tip[0]] = Date.now(); seen._last = Date.now(); try { localStorage.setItem('ourtank.tips', JSON.stringify(seen)); } catch { return; }
   ui.showCoach({ title: tip[2], text: tip[3], button: 'Got it', onButton: () => $('coach').classList.remove('on') });
 }
-// ── a photo of a moment you were there for, kept with its journal line on this phone ──
-const MOMENT = /drove it away|lionfish|jellyfish|sea snake|squirted|hatched|laid|eggs|holding tails|held tails|smacked|friends now|opened .* gift|first crab|worked out|met /i;
+// ── a photo for each real moment: a little camera of its own is pointed at whoever it is about (or the eggs) and takes the picture, wherever
+// the screen happens to be looking. The phone running the animals sends it to the tank, so everyone's journal has it; alone, it is kept here ──
+const SHOT_SKIP = /settled into a daily routine|have begun swimming together|comfortable near the glass|keeps coming back to|took on the colou?r|^.{1,40} fed |changed the water|cleaned the glass|trimmed|restyled|ordered |^Chapter:|began\.?$|wish came true|request|looked after|left the tank|joined|passed away|still wrapped/i;
+function actorOf(text) {
+  const names = fishes.list.filter((f) => !f.dead && f.name).sort((a, b) => b.name.length - a.name.length), hit = names.map((f) => ({ f, i: text.indexOf(f.name) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i);
+  if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos }; }
+  if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos };      // two animals in it: frame both
+}
+function shootAt(A) {
+  const r = stg.renderer, W = 480, H = 360, rt = (shootAt.rt ||= new THREE.WebGLRenderTarget(W, H, { colorSpace: THREE.SRGBColorSpace })), cam = (shootAt.cam ||= new THREE.PerspectiveCamera(38, W / H, 0.1, 200));
+  const c = A.with ? A.at.clone().lerp(A.with, 0.5) : A.at.clone(), span = A.with ? Math.max(1.5, A.at.distanceTo(A.with)) : 1.5;
+  cam.position.set(c.x + 0.6, c.y + 0.7 + span * 0.15, Math.min(c.z + 3.2 + span * 1.2, 16)); cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld();
+  const prev = r.getRenderTarget(); r.setRenderTarget(rt); r.render(scene, cam); const px = new Uint8Array(W * H * 4); r.readRenderTargetPixels(rt, 0, 0, W, H, px); r.setRenderTarget(prev);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H); for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);      // (the picture comes out upside down)
+  g.putImageData(im, 0, 0); return cv.toDataURL('image/jpeg', 0.72);
+}
 game.on('journal', (e) => {
-  if (!e?.text || !MOMENT.test(e.text) || document.hidden || ui?.tab !== 'tank' || placing) return;
-  setTimeout(() => { try { composer.render(); const w = 320, h = Math.round(w * canvas.height / canvas.width), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(canvas, 0, 0, w, h);
-    const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img: c.toDataURL('image/jpeg', 0.6) }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 12))); } catch { /* storage full or private mode: no photo, nothing lost */ } }, 300);
+  if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
+  if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
+  setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A);
+    if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
+    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, 450);      // a moment later, while it is still happening
 });
+window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone() }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
 const perf = { t0: performance.now(), n: 0 };
 function perfTick() {
@@ -1481,6 +1498,8 @@ window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
 window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
+const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || (game.state?.flags?.tut ?? 0) < 5) return; const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)
+fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      // what an octopus learns, kept with the tank fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);

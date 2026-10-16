@@ -32,6 +32,7 @@ export function openDb(path = 'ourtank.db') {
       id INTEGER PRIMARY KEY AUTOINCREMENT, tank_id TEXT NOT NULL, user_id TEXT NOT NULL, text TEXT NOT NULL, ts INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS kv ( k TEXT PRIMARY KEY, v TEXT NOT NULL );
+    CREATE TABLE IF NOT EXISTS photos ( journal_id INTEGER PRIMARY KEY, tank_id TEXT NOT NULL, ts INTEGER NOT NULL, img TEXT NOT NULL );
     CREATE TABLE IF NOT EXISTS push_subs (
       endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, offset_min INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL
     );

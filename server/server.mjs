@@ -212,7 +212,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     return sendStatic(req, res, file);
   });
 
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, handleProtocols: (protocols) => [...protocols].find((x) => x.startsWith('ourtank.')) ?? false });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 96 * 1024,      // (a journal photo is the biggest message: about 25 KB)
+    handleProtocols: (protocols) => [...protocols].find((x) => x.startsWith('ourtank.')) ?? false });
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname !== '/ws') return socket.destroy();
@@ -223,6 +224,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; ws.test = test; wss.emit('connection', ws, req); });
   });
   wss.on('connection', (ws) => {
+    ws.on('error', () => { try { ws.terminate(); } catch { /* gone */ } });      // a bad message (too big, malformed) drops that one connection; it must never take the server down
+    ws.bigN = 0;
     const tankNow = () => (ws.test ? (isDev(ws.user) ? L.testTankOf(db, ws.userId) : null) : null);      // (looked up again for every action: a reset or a move to another test aquarium never reaches the wrong one)
     const tank = ws.test ? tankNow() : L.tankOf(db, ws.userId); if (!tank) return ws.close(); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
@@ -233,9 +236,18 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
     ws.on('message', (raw) => {
+      if (raw.length > 4096 && !raw.subarray(0, 16).toString().startsWith('{"t":"photo"')) return;      // only a photo may be big; anything else that size is dropped, as before
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
+        if (m.t === 'photo') {      // a picture of a moment, taken by the phone running the animals, for everyone's journal
+          const jid = Math.floor(+m.jid), img = String(m.img ?? ''); if (!jid || !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 90000 || !lim.hit('ph:' + ws.userId, 20, 600e3)) return;
+          const j = db.prepare('SELECT id FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId); if (!j || db.prepare('SELECT 1 FROM photos WHERE journal_id=?').get(jid)) return;
+          db.prepare('INSERT INTO photos (journal_id,tank_id,ts,img) VALUES (?,?,?,?)').run(jid, ws.tankId, Date.now(), img);
+          db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60)').run(ws.tankId, ws.tankId);      // the newest sixty are kept
+          broadcast(ws.tankId, { t: 'photo', jid }); return;
+        }
+        if (m.t === 'photoGet') { const ids = (Array.isArray(m.ids) ? m.ids : []).slice(0, 12).map((x) => Math.floor(+x)).filter(Boolean); for (const id of ids) { const r = db.prepare('SELECT img FROM photos WHERE journal_id=? AND tank_id=?').get(id, ws.tankId); if (r) send(ws, { t: 'photoData', jid: id, img: r.img }); } return; }
         if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants
         if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); } return; }

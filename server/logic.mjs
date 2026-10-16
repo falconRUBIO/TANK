@@ -308,7 +308,7 @@ export function tickTank(db, tankId, now = Date.now()) {
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['lookAfter', 'openGift', 'thankGift', 'octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
+export const ACTIONS = new Set(['moment', 'lookAfter', 'openGift', 'thankGift', 'octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null, tank = null } = {}) {
   const t0 = tank ?? tankOf(db, user.id), test = !!tank?.test;      // (tank: a developer's test aquarium, see testTankOf) if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
@@ -349,7 +349,7 @@ export function snapshot(db, user, online = [], tank = null) {
     you: { userId: user.id, slot: t0.slot ?? members(db, t0.id).find((m) => m.id === user.id)?.slot ?? 1 }, ...(t0.test ? { test: true } : {}),
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,
-    journal: db.prepare('SELECT id,day,text,user_id AS userId,ts FROM journal WHERE tank_id=? ORDER BY id DESC LIMIT 60').all(t0.id).reverse(),
+    journal: db.prepare('SELECT j.id,j.day,j.text,j.user_id AS userId,j.ts,(p.journal_id IS NOT NULL) AS photo FROM journal j LEFT JOIN photos p ON p.journal_id=j.id WHERE j.tank_id=? ORDER BY j.id DESC LIMIT 120').all(t0.id).reverse(),
     activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 30').all(t0.id).reverse(),
     thanked: db.prepare('SELECT activity_id AS id FROM thanks WHERE from_user=?').all(user.id).map((r) => r.id),
     messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t0.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),

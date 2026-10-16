@@ -19,7 +19,7 @@ await clear(); await p.evaluate(() => window.__game.addJournal('Marlin charged a
 const shot = await p.evaluate(() => { try { return (JSON.parse(localStorage.getItem('ourtank.moments') || '[]')[0] ?? {}); } catch { return {}; } });
 ck('the moment you saw is kept with a photo', /^data:image\/jpeg/.test(shot.img ?? '') && /drove it away/.test(shot.text ?? ''), `${Math.round((shot.img?.length ?? 0) / 1024)} KB`);
 await p.evaluate(() => window.__ui.open('friends')); await p.waitForTimeout(600); await p.click('[data-sub="journal"]').catch(() => {}); await p.waitForTimeout(800);
-ck('the journal shows that photo with its line', await p.evaluate(() => !!document.querySelector('#sheet img.jshot')));
+ck('the journal shows that photo with its line', await p.evaluate(() => !!document.querySelector('#sheet .jpost .jimg img')));
 await p.evaluate(() => { document.querySelector('nav [data-tab="tank"]')?.click(); }); await clear();
 await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(); (s.floaters ||= []).push({ id: 'fz', name: 'Nemo', species: 'goldfish', seed: 2, stage: 'adult', born: now - 30 * 864e5, died: now, owner: null, ownerName: 'You' });
   g.addJournal('Nemo keeps going back to the sea grass. It seems to be its favorite place.'); g.addJournal('Nemo and Dory are friends now.'); window.__showCard({ fid: 'fz', dead: true }); });
