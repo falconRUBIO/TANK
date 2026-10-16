@@ -413,6 +413,21 @@ ok('looks are bought once with shells and then kept; free ones stay free; a tank
   const old = R.newWorld(0); old.style = { floor: 'black', backdrop: 'lagoon' }; delete old.flags.styles; R.norm(old, 0); assert.ok(R.styleOwned(old, 'floor', 'black') && R.styleOwned(old, 'backdrop', 'lagoon'), 'an old tank keeps its look');
   assert.equal(R.PERFECT_DAY_REWARD, 3);
 });
+ok('hide a treat: it costs shells, the octopus searches spot by spot, learns each caretaker\'s favorite places, and can be fooled by a new one', () => {
+  const D = 864e5, t = quiet(2); t.level = 8; t.shells = 200; const oc = t.fish[0]; oc.species = 'octopus'; oc.born = -5 * D; oc.stage = 'adult';
+  t.decor.length = 0; for (const [id, type] of [['a', 'coconut'], ['b', 'rock'], ['c', 'fern'], ['d', 'grass'], ['e', 'chest'], ['g', 'wood']]) t.decor.push({ id, type, x: 0, z: 0, ry: 0 });
+  let now = 1000; const go = (spot, who = 'u1', name = 'Alex') => { const r = R.applyAction(t, { t: 'hide', id: oc.id, spot }, { now, name, uid: who }); return r; };
+  const hunt = (spot, who, name) => { const r = go(spot, who, name); assert.ok(r.ok && r.applied, JSON.stringify(r)); now = r.until + 1; const ev = R.advance(t, now); now += R.HIDE_GAP + 1; return { tries: r.tries, ev }; };
+  assert.equal(R.applyAction(t, { t: 'hide', id: t.fish[1].id, spot: 'a' }, { now, uid: 'u1' }).ok, false, 'only an octopus hunts');
+  const s0 = t.shells, r0 = go('a'); assert.equal(t.shells, s0 - R.HIDE_COST, 'it costs shells'); assert.equal(go('b').busy, true, 'one hunt at a time');
+  now = r0.until + 1; R.advance(t, now); assert.ok(go('b').wait > 0, 'and a rest between hunts'); now += R.HIDE_GAP + 1;
+  const tries = []; for (let i = 0; i < 6; i++) tries.push(hunt('a', 'u1', 'Alex').tries);
+  assert.equal(tries.at(-1), 1, 'hide in the same place again and again and it goes straight there: ' + tries); assert.equal(tries.at(-2), 1);
+  const fooled = hunt('e', 'u1', 'Alex'); assert.ok(fooled.tries >= 3, 'a new place fools it: ' + fooled.tries); assert.ok(fooled.ev.some((e) => /Alex fooled/.test(e.journal ?? '')));
+  assert.ok(Object.keys(oc.disc ?? {}).some((k) => k === 'reader:u1'), 'after three straight finds it has learned Alex\'s hiding places');
+  for (let i = 0; i < 3; i++) hunt('c', 'u2', 'Sam'); const other = R.hideOrder(t, oc, 'u2'), mine = R.hideOrder(t, oc, 'u1'); assert.deepEqual(mine.slice(0, 2), ['a', 'e'], 'for Alex it looks first in the favorite, then the last place Alex used: ' + mine); assert.equal(other[0], 'c', 'Sam has habits of their own, and it knows them: ' + other); assert.notEqual(mine[0], 'c', 'which are not Alex\'s');
+  t.shells = 2; assert.equal(go('a').reason, 'NOT_ENOUGH_SHELLS');
+});
 ok('the octopus is clever: tricks in two lessons, a puzzle jar it solves faster every time, and it remembers who helped', () => {
   const D = 864e5, t = quiet(2); t.level = 8; t.shells = 50; const oc = t.fish[0]; oc.species = 'octopus'; oc.born = -5 * D; oc.stage = 'adult'; t.fish[1].born = -5 * D; t.fish[1].stage = 'adult';
   assert.equal(R.trainNeed(oc), 2); assert.equal(R.trainNeed(t.fish[1]), R.TRAIN_NEED);
@@ -589,6 +604,13 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     assert.equal(new Set(t.nursery.cands.map((c) => c.name)).size, 3); assert.ok(t.nursery.cands.every((c) => c.genes && c.traits.length)); assert.ok(t.nursery.n >= 10 && t.nursery.n <= 15);
     assert.equal(m.preg, null); assert.equal(m.breedAt, due + 14 * D, 'a fortnight before he can carry again');
     assert.equal(R.advance(t, due + 21 * D).filter((e) => e.birth).length, 0, 'never born twice'); });
+  ok('each nursery day one baby gets its own line in the journal, in turn, about the tank it lives in; never twice for a day', () => {
+    const t = tank(); t.decor.push({ id: 'dp', type: 'fern', x: 1, z: 1, ry: 0 }); live(t, 0, 4 * D); const m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const N = t.nursery, said = [];
+    for (let k = 1; k <= 5; k++) { const ev = R.advance(t, due + k * D + H); said.push(...ev.filter((e) => e.nurseryDay).map((e) => e.journal)); live(t, due + k * D + 2 * H, due + k * D + 3 * H); }
+    assert.equal(said.length, 4, 'days one to four, one line each: ' + JSON.stringify(said)); assert.ok(said.every((x, i) => x.startsWith(`Nursery, day ${i + 1}: `)));
+    assert.deepEqual(said.slice(0, 3).map((x) => N.cands.find((c) => x.includes(c.name))?.id), N.cands.map((c) => c.id), 'each of the three babies in turn');
+    assert.equal(R.advance(t, due + 4 * D + 5 * H).filter((e) => e.nurseryDay).length, 0, 'a day is told once'); });
   ok('choosing the baby: not before five days, one choice wins even if two caretakers choose at once, it keeps its name and parents, the others leave', () => {
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H);
     const N = t.nursery, [c0, c1] = N.cands, now = due + 2 * H;

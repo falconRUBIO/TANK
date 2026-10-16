@@ -364,6 +364,30 @@ const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.
 const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
 export const parentsOf = (f) => f.parents ?? [];
 export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }
+// ── Hide a treat ── a caretaker hides a treat in one of the decorations and the octopus searches for it, spot by spot. Where it looks first
+// is what it has learnt about that caretaker: the spots they have used, and the last one, count for more with every hunt; with no history it
+// is mostly a guess. So it soon goes straight to a favorite hiding place, and the only way to fool it is to keep changing. Shells in, no shells out.
+export const HIDE_COST = 5, HIDE_GAP = 20 * 60e3, HIDE_STEP = 9;
+export const hideLabel = (t, id) => (DECOR_DEF[t.decor.find((d) => d.id === id)?.type]?.label ?? 'thing').toLowerCase();
+export function hideOrder(t, f, uid) {
+  const mine = f.hides?.[uid] ?? {}, all = f.hidesAll ?? {}, last = f.lastHide?.[uid], w = Math.min(1, (f.seekN ?? 0) / 4), u = hash32(String(uid ?? '')) ;
+  return t.decor.map((d) => { const noise = (hash32((f.seekN ?? 0) * 97 + u + hash32(d.id)) % 1000) / 500;      // 0..2: its own guess, different each hunt
+    return [d.id, w * (3 * (mine[d.id] ?? 0) + (all[d.id] ?? 0) + (d.id === last ? 1.5 : 0)) + (2 - 1.5 * w) * noise]; }).sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+}
+function hunts(t, now, ev) {
+  for (const f of t.fish) {
+    const H = f.seek; if (!H || now < H.until) continue;
+    f.seek = null; const by = H.by ?? 'solo', tries = H.path.length, L = hideLabel(t, H.spot);
+    ((f.hides ||= {})[by] ||= {})[H.spot] = (f.hides[by][H.spot] ?? 0) + 1; (f.hidesAll ||= {})[H.spot] = (f.hidesAll[H.spot] ?? 0) + 1; (f.lastHide ||= {})[by] = H.spot;
+    f.seekN = (f.seekN ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.bond ||= {}; f.bond[by] = (f.bond[by] ?? 0) + 1; f.seekRun ||= {}; f.seekRun[by] = tries === 1 ? (f.seekRun[by] ?? 0) + 1 : 0;
+    const who = H.name ?? 'You', before = H.path.slice(0, -1).slice(-2).map((id) => 'the ' + hideLabel(t, id));
+    const you = who === 'You', whose = you ? 'your' : who + "'s", hides = you ? 'you hide' : who + ' hides';
+    const line = tries === 1 ? (f.seekN > 2 ? `${f.name} went straight to the ${L}: it knows where ${hides} things.` : `${f.name} found ${whose} treat in the ${L} on the first try. A lucky guess?`)
+      : tries === 2 ? `${f.name} found ${whose} treat in the ${L} on its second try.` : `${who} fooled ${f.name}: it searched ${before.join(' and ')} before finding the treat in the ${L}.`;
+    ev.push({ journal: line, story: f.id, text: line, toast: tries === 1 ? `${f.name} found it straight away!` : tries >= 3 ? `You fooled ${f.name}! Found on try ${tries}.` : `${f.name} found it on try ${tries}.`, hunt: f.id });
+    if (f.seekRun[by] >= 3 && !(f.disc ||= {})['reader:' + by]) { f.disc['reader:' + by] = now; const l2 = `${f.name} has learned ${who === 'You' ? 'your' : who + "'s"} hiding places.`; ev.push({ journal: l2, story: f.id, text: l2, discovery: true }); }
+  }
+}
 function puzzles(t, now, ev) {
   for (const f of t.fish) {
     const p = f.puzzle; if (!p || now < p.until) continue;
@@ -569,6 +593,16 @@ function seaFamilies(t, now, ev) {
     t.nursery = { id: fam, father: m.id, mother: P.mother, pa, ma, born, readyAt: born + SEA.NURSERY * DAY, n: P.n, gen: Math.max(pa.gen ?? 0, ma?.gen ?? 0) + 1, cands };
     ev.push({ journal: `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n} tiny seahorses.`, birth: m.id });
   }
+  // each nursery day, one baby's line in the journal, in turn: what its own way of living (roaming, the plants, staying near family) had it
+  // do in this tank, with the tank's real plants and parents, so the choice at the end is between three babies the caretakers have come to know
+  if (t.nursery && now < t.nursery.readyAt) { const N = t.nursery, day = Math.floor((now - N.born) / DAY);
+    if (day >= 1 && day > (N.told ?? 0) && N.cands?.length) { N.told = day; const c = N.cands[(day - 1) % N.cands.length], role = babyRole(N, c), h = hash32((N.born % 1e9) + day * 131 + c.seed),
+        plants = t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS').map((d) => (DECOR_DEF[d.type]?.label ?? 'plant').toLowerCase()), plant = plants.length ? plants[h % plants.length] : 'sea grass',
+        dad = N.pa?.name ?? 'its father', mom = N.ma?.name, other = t.fish.find((f) => !f.dead && !f.nursery && f.id !== N.father && f.id !== N.mother && f.species !== 'seahorse')?.name;
+      const lines = { explore: [`Nursery, day ${day}: ${c.name} swam the whole length of the tank today, all on its own.`, `Nursery, day ${day}: ${c.name} came right up to the glass to look out at you.`, other ? `Nursery, day ${day}: ${c.name} followed ${other} halfway across the tank before turning back.` : `Nursery, day ${day}: ${c.name} found the far corner of the tank and liked it there.`],
+        plants: [`Nursery, day ${day}: ${c.name} has found the ${plant} and holds on to it with its tiny tail for hours.`, `Nursery, day ${day}: ${c.name} spent the day tucked in the ${plant}, snapping up whatever drifted past.`, `Nursery, day ${day}: ${c.name} tried a new stem today, then went back to the ${plant}.`],
+        social: [`Nursery, day ${day}: ${c.name} never strayed far from ${dad} today.`, mom ? `Nursery, day ${day}: ${c.name} kept close to ${mom}, copying the way she sways.` : `Nursery, day ${day}: ${c.name} stayed with its brothers and sisters all day.`, `Nursery, day ${day}: ${c.name} swims to ${dad} whenever something new happens in the tank.`] }[role] ?? [];
+      if (lines.length) ev.push({ journal: lines[h % lines.length], nurseryDay: day }); } }
   // the babies are ready (said once); the choice itself is a caretaker's (keepBaby)
   if (t.nursery && now >= t.nursery.readyAt && !t.nursery.said) { t.nursery.said = true; ev.push({ journal: 'The baby seahorses are ready to leave the nursery. One can stay in the tank.', toast: "They're ready! Choose one baby seahorse to stay.", ready: true }); }
   if (t.nursery && !byId.has(t.nursery.father) && !t.nursery.pa) t.nursery = null;      // (a damaged record)
@@ -955,7 +989,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1297,6 +1331,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.shells -= PUZZLE_COST; f.puzzleAt = now; const secs = puzzleSecs(f); f.puzzle = { at: now, until: now + secs * 1000, secs, by: uid ?? null };
       dayCheck(t, now, events, 'bond'); events.push({ activity: { type: 'fish', text: `${name} gave ${f.name} a puzzle jar.` } });
       return ok({ applied: true, delta: -PUZZLE_COST, secs, until: f.puzzle.until });
+    }
+    case 'hide': {                                                  // a treat hidden in a decoration: the octopus hunts for it (see hunts)
+      const f = t.fish.find((x) => x.id === a.id && isSmart(x) && !x.dead); if (!f) return fail('NOT_FOUND');
+      if (f.seek) return ok({ applied: false, delta: 0, busy: true, until: f.seek.until });
+      if (f.seekAt != null && now - f.seekAt < HIDE_GAP) return ok({ applied: false, delta: 0, wait: HIDE_GAP - (now - f.seekAt) });
+      if (t.decor.length < 2 || !t.decor.some((d) => d.id === a.spot)) return fail('NOT_FOUND');
+      if (t.shells < HIDE_COST) return fail('NOT_ENOUGH_SHELLS');
+      t.shells -= HIDE_COST; f.seekAt = now; const order = hideOrder(t, f, uid ?? 'solo'), path = order.slice(0, order.indexOf(a.spot) + 1);
+      f.seek = { spot: a.spot, path, by: uid ?? 'solo', name: solo ? 'You' : name, at: now, until: now + (path.length * HIDE_STEP + 3) * 1000 };
+      events.push({ activity: { type: 'fish', text: `${name} hid a treat for ${f.name}.` } });
+      return ok({ applied: true, delta: -HIDE_COST, tries: path.length, until: f.seek.until });
     }
     case 'crab': {                                                  // a crab for the octopus (shells go in, a happy octopus and a bigger hoard come out)
       const os = t.fish.filter((f) => isSmart(f) && !f.dead); if (!os.length) return fail('CANT_TRAIN');      // any octopus, baby or grown, can have a crab treat

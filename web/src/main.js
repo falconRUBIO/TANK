@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -291,6 +291,25 @@ async function giveCrab() {
   if (!r.applied) { const m = Math.max(1, Math.ceil((r.wait ?? 0) / 60e3)); ui.toast(`${o.name} is full. Try again in about ${m >= 90 ? Math.round(m / 60) + ' hours' : m + ' minutes'}.`); return; }
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 5200, 1500);
 }
+// Hide a treat: choose where, and the octopus hunts for it, spot by spot, in the order it has learnt (the order comes from the rules, the same on every phone)
+async function hideTreat() {
+  const s = game.state, o = s.fish.find((f) => f.species === 'octopus' && !f.dead && !f.seek) ?? s.fish.find((f) => f.species === 'octopus' && !f.dead);
+  if (!o) { ui.toast('An octopus loves this game. Get one first.'); return; }
+  if (s.decor.length < 2) { ui.toast('Put at least two decorations in the tank to hide things in.'); return; }
+  if (o.seek) { ui.toast(`${o.name} is still searching`); return; }
+  const where = await ui.choose({ title: 'HIDE A TREAT', text: `Pick a place. ${o.name} remembers where you hide things, so a new place fools it. ${HIDE_COST} 🐚`, options: s.decor.map((d) => ({ label: hideLabel(s, d.id).replace(/^\w/, (c) => c.toUpperCase()), value: d.id })) });
+  if (!where) return;
+  const r = await game.dispatch({ t: 'hide', id: o.id, spot: where }); if (!r.ok) return fail(r);
+  if (r.busy) { ui.toast(`${o.name} is still searching`); return; }
+  if (!r.applied) { const m = Math.max(1, Math.ceil((r.wait ?? 0) / 60e3)); ui.toast(`${o.name} needs a break. Try again in about ${m} minute${m > 1 ? 's' : ''}.`); return; }
+  sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 4200, 1600); ui.toast(`Hidden in the ${hideLabel(s, where)}. Watch ${o.name} look for it.`, 3500);
+}
+// the hunt on screen: the octopus goes to each place in turn and has a good look; when it is found, bubbles at the treat
+setInterval(() => { const s = game.state; if (!s) return;
+  for (const d of s.fish) { const f = fishes.byId.get(d.id); if (!f) continue;
+    if (d.seek) { const k = Math.min(d.seek.path.length - 1, Math.floor((game.now() - d.seek.at) / (HIDE_STEP * 1000))), sp = decor.spots().find((q) => q.id === d.seek.path[k]);
+      if (sp && f.seekStep !== d.seek.at + ':' + k) { f.seekStep = d.seek.at + ':' + k; f.seekSpot = sp; f.inspect = { x: sp.x, z: sp.z }; } }
+    else if (f.seekStep) { const sp = f.seekSpot; f.seekStep = null; f.seekSpot = null; if (sp) fishes.burst?.(new THREE.Vector3(sp.x, (sp.y ?? 0) + 0.9, sp.z + 0.3)); } } }, 1000);
 async function givePuzzle(id) {
   const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
   const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
@@ -1383,12 +1402,27 @@ function syncGlassNote() {
 game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
 let wbShown = false;
+// once a week, in the evening: the week in a few plain lines, from the journal (no scores, nothing to keep up)
+window.__weekly = () => weeklyRecap();
+function weeklyRecap() {
+  const s = game.state, now = Date.now(), K = 'ourtank.weekly'; let last = 0; try { last = +localStorage.getItem(K) || 0; } catch { /* ignore */ }
+  if (!last) { try { localStorage.setItem(K, String(now)); } catch { /* ignore */ } return false; }      // (the first week starts counting now)
+  if (now - last < 7 * 864e5 || now - (s.createdAt ?? now) < 7 * 864e5) return false;
+  const wk = game.journal.filter((e) => e.ts >= now - 7 * 864e5), loved = wk.filter((e) => (e.hearts ?? []).length), names = (re) => [...new Set(wk.map((e) => e.text.match(re)?.[1]).filter(Boolean))];
+  const grew = names(/^(\w+) (?:reached adulthood|is an adult|grew up|is all grown up)/), came = names(/^(\w+)(?: the [\w ]+)? has arrived/), born = names(/^(\w+) gave birth/), list = (a) => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a.at(-1) : a[0];
+  const lines = [`${wk.length} moment${wk.length === 1 ? '' : 's'} in the journal${loved.length ? `, ${loved.length} of them loved` : ''}.`];
+  const best = [...loved].sort((a, b) => (b.hearts?.length ?? 0) - (a.hearts?.length ?? 0))[0]; if (best) lines.push(`Most loved: “${best.text.length > 70 ? best.text.slice(0, 67).trimEnd() + '…' : best.text}”`);
+  if (grew.length) lines.push(`${list(grew)} grew up.`); if (came.length) lines.push(`New in the tank: ${list(came)}.`); if (born.length) lines.push(`${list(born)} became a father.`);
+  if (wk.length < 3) return false; try { localStorage.setItem(K, String(now)); } catch { /* ignore */ }
+  ui.recap(lines.slice(0, 4), null, '🗓 THIS WEEK IN THE TANK'); return true;
+}
 function eveningRecap() {
   const s = game.state, d = new Date(); if (!s || (s.flags.tut ?? 0) < 5 || d.getHours() < 18 || wbShown || document.hidden) return;
   const key = 'ourtank.recap', day = d.toDateString(); try { if (localStorage.getItem(key) === day) return; } catch { /* ignore */ }
   const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), lines = [];
   for (const e of game.journal) if (e.ts >= start && !/began|wish came true|Today's/.test(e.text) && !lines.includes(e.text)) lines.push(e.text);
   for (const f of s.fish) for (const x of f.story ?? []) { const t = x.text?.includes(f.name) ? x.text : `${f.name}: ${String(x.text ?? '').replace(/^\w/, (c) => c.toLowerCase())}`; if ((x.at ?? x.ts ?? 0) >= start && x.text && !/^Arrived in the tank/.test(x.text) && !lines.includes(t)) lines.push(t); }
+  if (weeklyRecap()) { try { localStorage.setItem(key, day); } catch { /* ignore */ } return; }      // (once a week the evening card looks back on the whole week)
   if (lines.length < 2) return; try { localStorage.setItem(key, day); } catch { /* ignore */ }
   const next = forecast(s, Date.now(), 1)[0]; ui.recap(lines.slice(-3), next ? (next.when === 'now' ? next.text : `${next.text}, ${next.when}`) : null);
 }
@@ -1483,7 +1517,7 @@ async function boot() {
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
-    act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), crab: () => giveCrab() }[a]?.()),
+    act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), hide: () => hideTreat(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
