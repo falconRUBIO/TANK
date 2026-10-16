@@ -37,6 +37,7 @@ await O.evaluate(() => document.querySelector('#sheet .jpost .jheart').click());
 const meO = await O.evaluate(() => window.__game.you.userId);
 const seen = await D.waitForFunction(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 15000 }).then(() => true, () => false);
 ck('a heart is saved and the other phone sees whose it is', seen);
+ck('the other phone gets one line in the Bell: who loved which moment', await D.waitForFunction(() => /loved a moment: “/.test(localStorage.getItem('ourtank.notices') || ''), null, { timeout: 10000 }).then(() => true, () => false));
 ck('the heart shows filled, with who loved it', await O.evaluate(() => { const b = document.querySelector('#sheet .jpost .jheart'); return b.classList.contains('on') && /you/.test(b.textContent); }));
 await O.reload(); await O.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 });
 ck('it is still there after a reload (kept by the server)', await O.evaluate(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO]));
@@ -50,5 +51,13 @@ await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.e
 const pc = await O.waitForSelector('#modal.on .pcprev img', { timeout: 30000 }).then(() => true, () => false);
 ck('"Send as a postcard" makes a postcard of that moment, ready to share', pc && await O.evaluate(() => !!document.querySelector('#modal.on #mok')));
 if (process.env.OUT && pc) { const src = await O.evaluate(() => document.querySelector('#modal.on .pcprev img').src); const b64 = await O.evaluate(async (u) => { const r = await fetch(u); const bl = await r.blob(); return await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }); }, src); fs.writeFileSync(process.env.OUT + '/moment_postcard.png', Buffer.from(b64.split(',')[1], 'base64')); }
+{ await O.evaluate(() => { document.querySelector('.lightbox')?.remove(); }); await O.waitForTimeout(400);
+  const pj = await O.evaluate(() => +document.querySelector('#sheet .jpost .jimg img')?.closest('.jimg')?.dataset.jid || 0);
+  await O.evaluate(() => document.querySelector('#sheet .jpost .jimg img').closest('.jimg').click()); await O.waitForSelector('.lightbox.on .lbdel', { timeout: 10000 }).catch(() => {});
+  await O.click('.lightbox.on .lbdel'); const asks = await O.evaluate(() => /Tap again/.test(document.querySelector('.lightbox.on .lbdel')?.textContent ?? '')); await O.click('.lightbox.on .lbdel');
+  const gone = await D.waitForFunction((j) => !window.__game.photos?.has(j) && window.__game.journal.find((e) => e.id === j)?.photo === false, pj, { timeout: 10000 }).then(() => true, () => false);
+  await D.reload(); await D.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 });
+  const stays = await D.evaluate((j) => !window.__game.journal.find((e) => e.id === j)?.photo, pj);
+  ck('a bad photo can be removed: it asks once more, then it is gone from every phone, for good', !!pj && asks && gone && stays, JSON.stringify({ pj, asks, gone, stays })); }
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); fs.rmSync(tmp, { recursive: true, force: true }); console.log(fails ? `${fails} failed` : 'Journal checks passed'); process.exit(fails ? 1 : 0);

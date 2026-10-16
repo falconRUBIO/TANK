@@ -24,5 +24,5 @@ await step('reunion', async () => { await p.evaluate(() => window.__ui.reunion([
 await step('settle', async () => { await p.evaluate(() => window.__ui.settle(['Everyone is fed, the water is clean and today\'s request is done.', 'Tomorrow the tank has a new request for you.'])); await shot('10_settle', 1500); });
 await step('levelup', async () => { await p.evaluate(() => window.__game.emit('levelup', 5)); await shot('11_levelup', 1500); });
 await step('dead', async () => { await p.evaluate(() => { const g = window.__game; g.state.floaters = [{ id: 'z1', name: 'Dot', species: 'goldfish', seed: 1, stage: 'adult', born: Date.now() - 5 * 864e5, died: Date.now(), traits: [] }]; g.emit('state'); }); await p.waitForTimeout(3000); await shot('12_floater', 500); });
-await step('postcard', async () => { await p.evaluate(() => window.__ui.open('care')); await p.waitForTimeout(500); await p.click('[data-act=photo]'); await shot('13_postcard', 3500); });
+await step('postcard', async () => { await p.evaluate(() => window.__ui.open('friends')); await p.waitForTimeout(500); await p.click('[data-act=photo]'); await shot('13_postcard', 3500); });
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

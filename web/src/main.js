@@ -759,6 +759,7 @@ game.on('journal', (e) => {
     if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
     else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, 450);      // a moment later, while it is still happening
 });
+window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
 window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
 const perf = { t0: performance.now(), n: 0 };
@@ -1061,8 +1062,9 @@ async function offerGift() {
     ui?.updateHeader();
   } finally { giftBusy = false; }
 }
+let heldChapters = [], tipsDoneAt = 0, sawTips = false;
 function maybeGift() {
-  const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
+  const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || heldChapters.length || (tipsDoneAt && Date.now() - tipsDoneAt < 45e3) || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
   if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
   if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) setTimeout(() => { if (!$('modal').classList.contains('on')) offerGift(); }, 1200);
   else giftOffered = Date.now();
@@ -1082,7 +1084,10 @@ game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says 
 game.on('crab', (id) => { fishes.dropCrab(id); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
-game.on('chapter', (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); });
+// a chapter reached during the first tips waits until they are done, then shows on its own: one thing at a time on a new player's screen
+const showChapter = (c) => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); ui?.chapter(c); };
+game.on('chapter', (c) => { if ((game.state?.flags.tut ?? 5) < 5) heldChapters.push(c); else showChapter(c); });
+setInterval(() => { const t = game.state?.flags.tut ?? 0; if (t < 5) { sawTips = true; return; } if (sawTips && !tipsDoneAt) tipsDoneAt = Date.now();      /* (only a player who just went through the tips gets the quiet minute) */ if (heldChapters.length && Date.now() - tipsDoneAt > 4000 && !$('modal').classList.contains('on') && !$('coach').classList.contains('on')) showChapter(heldChapters.shift()); }, 1000);
 // the practical side of its card: when it last ate, when it will be hungry again, how it is doing, and who looks after it
 function careRows(rec) {
   const s = game.state, own = rec.species === 'octopus' || rec.species === 'seahorse', food = rec.species === 'octopus' ? 'crab' : rec.species === 'seahorse' ? 'mysis' : 'meal', last = own ? rec.fedAt : s.lastFed, next = dueIn(s, food, rec);

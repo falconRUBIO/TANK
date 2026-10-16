@@ -85,7 +85,8 @@ export class Game {
     } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
     else if (m.t === 'snap') this.emit('snap', m.fish, m.crabs, m.ts);
     else if (m.t === 'photo') { const e = this.journal.find((x) => x.id === m.jid); if (e) e.photo = true; this.emit('photo', m.jid); }      // a picture of a moment was taken for the journal
-    else if (m.t === 'hearts') { const e = this.journal.find((x) => x.id === m.jid); if (e) e.hearts = m.by ?? []; this.emit('hearts', m.jid); }      // who has hearted a moment
+    else if (m.t === 'hearts') { const e = this.journal.find((x) => x.id === m.jid); const was = e?.hearts ?? []; if (e) e.hearts = m.by ?? []; this.emit('hearts', m.jid, was); }      // who has hearted a moment
+    else if (m.t === 'photoGone') { const e = this.journal.find((x) => x.id === m.jid); if (e) e.photo = false; this.photos?.delete(m.jid); this.emit('photoGone', m.jid); }      // a photo taken out of the journal
     else if (m.t === 'photoData') { (this.photos ||= new Map()).set(m.jid, m.img); this.emit('photoData', m.jid); }
     else if (m.t === 'fx') this.emit('fx', m);
     else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }

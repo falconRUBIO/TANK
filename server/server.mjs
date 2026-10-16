@@ -247,6 +247,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60)').run(ws.tankId, ws.tankId);      // the newest sixty are kept
           broadcast(ws.tankId, { t: 'photo', jid }); return;
         }
+        if (m.t === 'photoDel') {      // a photo that came out badly: anyone in the tank can take it out of the journal (the moment's line stays)
+          const jid = Math.floor(+m.jid); if (!jid || !lim.hit('pd:' + ws.userId, 20, 600e3)) return;
+          if (db.prepare('DELETE FROM photos WHERE journal_id=? AND tank_id=?').run(jid, ws.tankId).changes) broadcast(ws.tankId, { t: 'photoGone', jid }); return;
+        }
         if (m.t === 'heart') {      // a heart on a journal moment, one per person, saved; tapping again takes it back
           const jid = Math.floor(+m.jid); if (!jid || !lim.hit('hr:' + ws.userId, 60, 60e3)) return;
           if (!db.prepare('SELECT 1 FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId)) return;
@@ -358,6 +362,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         // an egg that hatches within six hours: everyone away hears it once, so they can be there for it
         const egg = (w.eggs ?? []).find((e) => e.laid && e.hatchAt > now && e.hatchAt - now < 6 * 3600e3);
         if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} have turned silvery and are trembling. They hatch in a few hours.`, { now })) mark(k); } }
+        // an animal that grew up in the last few hours while a friend had the tank open: everyone away hears it once (a small reason to come and see), the one who looks after it first
+        if (here.length) for (const f of w.fish ?? []) { if (f.dead || f.nursery || !f.born) continue; const at = f.born + 3 * 864e5;      /* (with nobody in the tank, the day's own news already says it) */ if (now < at || now - at > 6 * 3600e3) continue;
+          for (const m of away) { const k = `push:grown:${id}:${f.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${f.name} is all grown up. Come and see.`, { now, kind: 'visitors' })) mark(k); } }
         // a gift left wrapped for a day: the one it is for hears once more that it is waiting, and the one who sent it that it has not been opened yet
         for (const f of (w.fish ?? []).filter((x) => x.gift?.wrapped && now - (x.gift.at ?? now) > 24 * 3600e3)) {
           const k1 = `push:giftwait:${id}:${f.gift.id}`, k2 = `push:giftsender:${id}:${f.gift.id}`;
