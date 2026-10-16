@@ -1324,8 +1324,9 @@ function frameBody(now) {
   if (play) { if (performance.now() > play.until || !fishes.byId.has(play.fish.fid)) { if (fishes.byId.has(play.fish.fid)) finishPlay(); else play = null; } else play.fish.retarget = 1; }
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();
+  if (!window.__simHold) {      /* (a check that runs the tank's clock itself holds this one, so a slow machine cannot move the animals in between) */
   try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
-  for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } }
+  for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
   simMs += (performance.now() - simT0 - simMs) * 0.05;
@@ -1535,6 +1536,10 @@ window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__eggs = eggSprites; window.__eggCare = eggCare; window.__showCard = (f) => { cardOpen = f.fid; showCard(f); }; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
 window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
+// for checks that run the tank's clock themselves: the page's clock follows that simulated time while they do, so timers measured in real
+// milliseconds (a visit to the glass, a fright) last as long in the run as in play, however slow the machine running it
+window.__simClock = (on) => { const P = performance; if (on && !P.__real) { const real = P.now.bind(P), t0 = real(), s0 = window.__t ?? 0; P.__real = real; P.now = () => t0 + ((window.__t ?? 0) - s0) * 1000; window.__simHold = true; }
+  else if (!on && P.__real) { P.now = P.__real; delete P.__real; window.__simHold = false; } };
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   window.__eaten = 0; const oe = fishes.onEat; fishes.onEat = (f) => { window.__eaten++; oe?.(f); };
