@@ -717,12 +717,12 @@ const SHOT_SKIP = /settled into a daily routine|have begun swimming together|com
 function actorOf(text) {
   const names = fishes.list.filter((f) => !f.dead && f.name).sort((a, b) => b.name.length - a.name.length), hit = names.map((f) => ({ f, i: text.indexOf(f.name) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i);
   if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos }; }
-  if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos };      // two animals in it: frame both
+  if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos, r: Math.max(a.radius ?? 1, b?.radius ?? 0) };      // two animals in it: frame both
 }
 function shootAt(A) {
   const r = stg.renderer, W = 480, H = 360, rt = (shootAt.rt ||= new THREE.WebGLRenderTarget(W, H, { colorSpace: THREE.SRGBColorSpace })), cam = (shootAt.cam ||= new THREE.PerspectiveCamera(38, W / H, 0.1, 200));
-  const c = A.with ? A.at.clone().lerp(A.with, 0.5) : A.at.clone(), span = A.with ? Math.max(1.5, A.at.distanceTo(A.with)) : 1.5;
-  cam.position.set(c.x + 0.6, c.y + 0.7 + span * 0.15, Math.min(c.z + 3.2 + span * 1.2, 16)); cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld();
+  const c = A.with ? A.at.clone().lerp(A.with, 0.5) : A.at.clone();
+  const s = Math.max(A.with ? A.at.distanceTo(A.with) : 0, (A.r ?? 1) * 1.6, 0.8); cam.fov = 30; cam.updateProjectionMatrix(); cam.position.set(c.x + 0.25 * s, c.y + 0.3 * s, Math.min(c.z + 0.9 + s * 1.1, 16));      /* close in on the moment itself: the animal (or the two) fill the picture */ cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld();
   const prev = r.getRenderTarget(); r.setRenderTarget(rt); r.render(scene, cam); const px = new Uint8Array(W * H * 4); r.readRenderTargetPixels(rt, 0, 0, W, H, px); r.setRenderTarget(prev);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H); for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);      // (the picture comes out upside down)
   g.putImageData(im, 0, 0); return cv.toDataURL('image/jpeg', 0.72);
@@ -734,7 +734,7 @@ game.on('journal', (e) => {
     if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
     else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, 450);      // a moment later, while it is still happening
 });
-window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone() }) : null; };
+window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
 const perf = { t0: performance.now(), n: 0 };
 function perfTick() {
