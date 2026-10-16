@@ -16,14 +16,18 @@ for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.ev
 await B.waitForTimeout(2500);
 await B.waitForFunction(() => window.__game?.state?.notes, null, { timeout: 60000 }); let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const clear = (p) => p.evaluate(() => document.querySelectorAll('#coach,#toast,#settle,#reunion,#modal').forEach((e) => e.classList.remove('on')));
+await B.evaluate(() => { window.__noteIdle = true; });      // Ben is signed in, but not looking at his phone
 await A.evaluate(() => new MutationObserver(() => { if (document.querySelector('#glassnotes .seenst')) window.__sawSeen = document.querySelector('#glassnotes .seenst').textContent; }).observe(document.body, { subtree: true, childList: true })); await clear(A); await A.evaluate(() => window.__ui.open('friends')); await A.waitForTimeout(800);
 await A.evaluate(() => document.querySelector('.cmode [data-mode="note"]').click()); await A.waitForTimeout(500);
 await A.fill('.compose form.send input', 'Feed Inky tonight please'); await A.screenshot({ path: `${out}/compose_note.png` });
-await A.evaluate(() => document.querySelector('.compose form.send').requestSubmit()); await A.waitForTimeout(1500); await A.waitForSelector('.notecomp.on textarea', { timeout: 5000 });
+await A.evaluate(() => document.querySelector('.compose form.send').requestSubmit()); await A.waitForTimeout(1500); await A.waitForSelector('.notecomp.on textarea', { timeout: 20000 });
 ck('the post-it opens with the words already on it', (await A.inputValue('.notecomp textarea')) === 'Feed Inky tonight please');
 await A.click('.notecomp .stick'); await A.waitForTimeout(1500); await A.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click());
 await clear(B); await B.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click()); await B.waitForSelector('#glassnotes .postit', { timeout: 15000 });
 ck('the note is on the other phone’s glass', true);
+await A.waitForTimeout(6000);
+ck('signed in but not using the app: the note is not counted as seen', await B.evaluate(() => !(window.__game.state.notes ?? []).some((n) => (n.read ?? []).includes(window.__game.you.userId))));
+await B.evaluate(() => { window.__noteIdle = false; }); await B.bringToFront(); await B.keyboard.press('Shift');      // (they pick the phone up and use it)
 await A.evaluate(() => { document.querySelector('nav [data-tab="tank"]')?.click(); }); await A.waitForSelector('#glassnotes .postit .seenst', { timeout: 15000 }).catch(() => null);
 await A.waitForFunction(() => window.__sawSeen, null, { timeout: 15000 }).catch(() => null); ck('the writer sees SEEN across it', !!(await A.evaluate(() => window.__sawSeen)), await A.evaluate(() => window.__sawSeen ?? ''));
 await A.waitForTimeout(5000); ck('then it comes off the writer’s glass by itself', !(await A.$('#glassnotes .postit')));

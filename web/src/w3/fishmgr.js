@@ -262,7 +262,7 @@ export class Fishes {
       if (it.flipK > 0.99) (this.flipped ||= new Set()).add(it.id ?? f.den.id);      // (and a shell rebuilt later keeps its side)
       const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
       const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand
-      m.rotation.x = th; m.position.y = m.userData.y0 * (1 - e) + hy * e; m.position.z = hz * e; m.scale.setScalar(1 + 0.12 * e);      /* (turned over, it is a roomier hut) */
+      m.rotation.x = th; m.position.y = m.userData.y0 * (1 - e) + hy * e; m.position.z = hz * e; m.scale.setScalar(1 + 0.18 * e);      /* (turned over, it is a roomier hut) */
       f.shellK = under ? e * (1 - 0.6 * L) : entering ? e * 0.4 : 0;
     }
   }

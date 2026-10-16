@@ -564,6 +564,13 @@ function bondLine(rec) {
   return `<dt>Closest to</dt><dd>${mine >= 10 && top === you ? 'You' : who}${b[top] >= 10 ? ' ♥' : ''}</dd>`;
 }
 // an animal whose caretaker has not been in for two weeks (or has left the tank): anyone else can take it on, so it is never forgotten
+// a parent looking after eggs: its card says so, and a tap goes to the eggs
+function eggLink(rec) {
+  card.querySelector('.eggl')?.remove(); const egg = [...eggSprites.values()].find((x) => x.e.guard === rec.id || ((x.e.a === rec.id || x.e.b === rec.id) && x.mode !== 'drift')); if (!egg) return;
+  const el = document.createElement('div'); el.className = 'awayb eggl'; el.innerHTML = `<p>${egg.e.guard === rec.id ? (egg.mode === 'mouth' ? `${esc(rec.name)} is carrying eggs in his mouth.` : `${esc(rec.name)} is guarding eggs.`) : `${esc(rec.name)} laid eggs; ${esc(game.state.fish.find((f) => f.id === egg.e.guard)?.name ?? 'the father')} is looking after them.`}</p><button class="act2">See the eggs</button>`;
+  el.querySelector('button').onclick = () => { const fx = eggFocusOf(egg); setFocus(fx); cardOpen = fx.fid; showEggCard(fx); };
+  card.querySelector('h2')?.parentElement?.after(el) ?? card.prepend(el);
+}
 function awayBanner(rec) {
   const aw = game.shared ? awayOwner(rec, game.members) : null; card.querySelector('.awayb')?.remove(); if (!aw || rec.owner === game.you?.userId) return;
   const el = document.createElement('div'); el.className = 'awayb'; el.innerHTML = `<p>${esc(aw.left ? `${aw.name} has left the tank.` : `${aw.name} has not been in for ${aw.days} days.`)} ${esc(rec.name)} could use someone.</p><button class="act2">Look after ${esc(rec.name)}</button>`;
@@ -714,6 +721,22 @@ function perfTick() {
   if (game.shared && game.live?.connected && !document.hidden) game.live.send({ t: 'perf', fps: Math.round(fps) });
 }
 game.on('role', () => { try { const p = JSON.parse(localStorage.getItem('ourtank.pushprefs') || '{}'); if (Object.keys(p).length) game.live?.send({ t: 'pushPrefs', prefs: p }); } catch { /* none */ } });
+// a note on the glass counts as seen only after three seconds that someone is really looking: the app in front and in use (touched, or
+// brought up, within the last minute), on the tank with nothing over it, and the note itself on screen. Being signed in is not seeing it.
+const noteWatch = new Map(); let lastActive = performance.now(), noteAt = 0;
+for (const ev of ['pointerdown', 'touchstart', 'keydown', 'wheel']) addEventListener(ev, () => { lastActive = performance.now(); }, { passive: true, capture: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) lastActive = performance.now(); });
+function noteSeenTick() {
+  const now = performance.now(), dt = Math.min(1, (now - (noteAt || now)) / 1000); noteAt = now; if (!noteWatch.size) return;
+  const looking = !window.__noteIdle && !document.hidden && document.hasFocus?.() !== false && now - lastActive < 60e3 && ui?.tab === 'tank' && !glassNotes.hidden && !['modal', 'sheet', 'reunion'].some((id) => $(id)?.classList.contains('on'));
+  for (const [id, ms] of noteWatch) {
+    const el = glassNotes.querySelector(`.postit[data-id="${id}"]`); if (!el) { noteWatch.delete(id); continue; }
+    const r = el.getBoundingClientRect(), onScreen = r.width > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    if (!looking || !onScreen) continue;
+    const t = ms + dt; if (t < 3) { noteWatch.set(id, t); continue; }
+    noteWatch.delete(id); game.dispatch({ t: 'readNote', id });
+  }
+}
 function giftTick(t, dt) { for (const [id, b] of [...giftBags]) if (b.bag.tick(t, dt) && !b.done) { b.done = true; setTimeout(() => { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }, 1500); } }
 function giftHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const b of giftBags.values()) { if (b.bag.opening) continue; const p = b.bag.group.position.clone(); p.y += 0.4; const d = ray.distanceToPoint(p); if (d < bd) { bd = d; best = b; } } return best; }
 async function openGiftBag(b) {
@@ -829,7 +852,7 @@ function showCard(f) {
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'LET IT GO?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
@@ -1247,7 +1270,7 @@ function frameBody(now) {
   else bottleM.group.visible = false;
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
-  giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick();
+  giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick(); noteSeenTick();
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     eggCare(egg, Math.min(0.05, dt), t); }
@@ -1289,7 +1312,7 @@ function syncGlassNote() {
   glassNotes.dataset.k = key;
   const esc2 = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   glassNotes.innerHTML = ns.map((n, i) => { const fresh = notesBooted && !seenNotes.has(n.id), loved = (noteHearts.get(n.id) ?? (n.hearts ?? []).length) < (n.hearts ?? []).length, hn = hashId(n.id), tilt = [-3, 3.5, -1.5][hn % 3];      /* each note keeps its own spot and tilt, whatever else is on the glass (by index, a note coming down made the other slide into its place, as if it changed color) */ noteHearts.set(n.id, (n.hearts ?? []).length); const P = n.pos ?? [{ x: 0.02, y: 0.085 }, { x: 0.36, y: 0.11 }, { x: 0.66, y: 0.095 }][hn % 3]; return `<button class="postit ${fresh ? 'fresh' : ''} ${n.by === me ? 'mine' : ''}" style="--pc:${NOTE_INK[n.color] ?? NOTE_INK.butter};--r:${tilt}deg;--d:${i * 0.12}s;left:calc((100vw - 128px) * ${P.x});top:calc((100vh - 130px) * ${P.y})" data-id="${n.id}" data-mine="${n.by === me ? 1 : ''}"><span class="band"></span><span class="pt">${esc2(n.text)}</span><span class="pf"><span>— ${n.by === me ? 'you' : esc2(n.name)}</span><span class="pd">${n.doodle}</span></span>${(n.hearts ?? []).length ? `<span class="ph ${loved ? 'pop' : ''}">♥${n.hearts.length > 1 ? n.hearts.length : ''}</span>` : ''}<span class="curl"></span></button>`; }).join('');
-  for (const n of ns) if (!seenNotes.has(n.id)) { seenNotes.add(n.id); if (n.by === me || (n.read ?? []).includes(me)) continue; sfx('arrive'); setTimeout(() => { if (!glassNotes.hidden) game.dispatch({ t: 'readNote', id: n.id }); }, 3500); }      // read where it is: it counts as read once it has been on screen a moment
+  for (const n of ns) if (!seenNotes.has(n.id)) { seenNotes.add(n.id); if (n.by === me || (n.read ?? []).includes(me)) continue; sfx('arrive'); noteWatch.set(n.id, 0); }      // read where it is, but only once someone has really had it in front of them (see noteSeenTick)
   glassNotes.querySelectorAll('.postit').forEach((b) => {
     let st = null, dragged = false;
     b.onpointerdown = (e) => { if (!b.dataset.mine) return; st = { x: e.clientX, y: e.clientY, l: b.offsetLeft, t: b.offsetTop }; dragged = false; b.setPointerCapture?.(e.pointerId); };

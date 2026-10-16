@@ -382,6 +382,7 @@ function visitors(t, now, ev) {
   ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
+export const POT_SKILL = 0.35;      // how well an octopus must know a clay pot before it squeezes all the way inside (until then it sits in the mouth)
 export const AWAY_DAYS = 14;      // a caretaker not seen for this long: a friend may take on their animals
 export const awayOwner = (f, members, now = Date.now()) => { if (!f?.owner || f.dead) return null; const m = (members ?? []).find((x) => x.id === f.owner); return !m ? { name: f.ownerName ?? 'its caretaker', left: true } : now - (m.lastSeen ?? m.last_seen ?? now) >= AWAY_DAYS * DAY ? { name: m.name, days: Math.floor((now - (m.lastSeen ?? m.last_seen)) / DAY) } : null; };
 // How each kind really looks after its eggs. guard: a patch of eggs stuck down by a rock, the father on guard (fanning them, picking out bad ones,
@@ -398,11 +399,11 @@ export const EGG_CARE = {
 };
 export const eggCareOf = (e) => EGG_CARE[e?.species] ?? EGG_CARE.goldfish;
 // who is looking after an egg now: its guardian if still here, else the other parent, else nobody (the caretaker)
-function eggGuard(t, e, ev) {
+function eggGuard(t, e, ev, now = Date.now()) {
   if (eggCareOf(e).mode === 'drift') return;
   const live = (id) => t.fish.find((f) => f.id === id && !f.dead);
   if (e.guard === undefined) e.guard = [e.b, e.a].map(live).find((f) => f && sexOf(f) === 'm')?.id ?? [e.a, e.b].find(live) ?? null;      // (an egg from before parents looked after them: its father takes it on)
-  if (e.guard && live(e.guard)) return;
+  if (e.guard && live(e.guard)) { const day = Math.floor(now / DAY); if (eggCareOf(e).mode !== 'drift' && e.said !== day && e.laid && now - e.laid > 20 * 3600e3) { e.said = day; ev.push({ journal: eggCareOf(e).mode === 'mouth' ? `${live(e.guard).name} is still carrying the eggs, and has not eaten.` : `${live(e.guard).name} has not left the eggs all day.` }); } return; }      // a line a day about the father's watch
   const was = e.guard, other = [e.a, e.b].find((id) => id !== was && live(id));
   if (other && eggCareOf(e).mode === 'guard') { e.guard = other; if (was) ev.push({ journal: `${live(other).name} has taken over guarding the eggs.` }); return; }
   if (e.guard !== null) { e.guard = null; if (was) ev.push({ journal: 'The eggs have no parent watching them now. It is up to you to keep the water clean and the tank fed.' }); }
@@ -415,7 +416,7 @@ function eggs(t, now, ev) {
   for (const e of [...t.eggs]) {
     // very rarely, an egg nobody has looked after at all is found by the octopus (only when it was flagged at laying, see below)
     if (e.risk && !e.guard && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
-    eggGuard(t, e, ev);
+    eggGuard(t, e, ev, now);
     if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
     const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
     const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
@@ -1170,9 +1171,10 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'octoTouch': {                                             // an octopus really reached a decoration and handled it (the phone running the animals reports it): it knows it a little better
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor); if (!f || !d) return fail('NOT_FOUND');
       const m = memOf(f), e = (m.fam[d.id] ||= { k: 0, n: 0, x: d.x, z: d.z, at: 0 }); if (now - (e.at ?? 0) < 45e3) return ok({ applied: false });      // one go is one go: a second phone, or a handoff, cannot count it twice
-      const M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
+      const k0 = e.k, M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
       e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
       const recent = now - (d.movedAt ?? d.at ?? 0) < 6 * 3600e3;
+      if (d.type === 'pot' && k0 < POT_SKILL && e.k >= POT_SKILL) { const line = `${f.name} has worked out how to squeeze inside the clay pot.`; events.push({ journal: line, story: f.id, text: line }); }      // from the mouth to all the way in, learned one night at a time
       if (first && recent && a.kind === 'new') { const line = `${f.name} investigated the new ${label}.`; events.push({ journal: line, story: f.id, text: line }); }      // only after it really went over and felt it, and once
       else if (wasMoved && a.kind === 'moved') { const line = `${f.name} found the ${label} in its new spot.`; const mo = (f.moments ||= {}); if (now - (mo.found ?? 0) > 6 * 3600e3) { mo.found = now; events.push({ journal: line, story: f.id, text: line }); } }
       const was = m.likes.includes(d.id); memCap(t, f, now); if (!was && m.likes[0] === d.id && e.n >= 3) { const line = `${f.name} keeps going back to the ${label}. It is a favorite now.`; const mo = (f.moments ||= {}); if (now - (mo.fav ?? 0) > DAY) { mo.fav = now; events.push({ journal: line, story: f.id, text: line }); } }

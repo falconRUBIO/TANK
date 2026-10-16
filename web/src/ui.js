@@ -53,7 +53,9 @@ export function initUI({ game, social, cb }) {
     notices.unshift({ ts: now, text, tab, gift, kind, key }); notices = notices.slice(0, 80); noticeSave(); bell();
   };
   let refreshNotices = () => {};
-  const unread = () => notices.filter((n) => n.ts > readAt).length;
+  // the bell counts only what is waiting on you (a gift, a bottle, a note, an animal needing you, a friend asking); the rest is the story, in the journal
+  const forYou = (n) => /gift|bottle|note|for you|waiting|is hungry|needs|says|nudge|wrote|could use someone|look after/i.test(n.text) && !/^Chapter:/.test(n.text);
+  const unread = () => notices.filter((n) => n.ts > readAt && forYou(n)).length;
   const bell = () => { const b = $('bell'); if (!b) return; const n = unread(); b.classList.toggle('new', n > 0); b.querySelector('i').textContent = n > 9 ? '9+' : n ? String(n) : ''; };
   const noticesHtml = () => {
     if (!notices.length) return '<p class="dim">Nothing yet. Hints, messages and moments in the tank will be kept here.</p>';
