@@ -31,7 +31,19 @@ ck('the journal shows it as a post with the photo', img);
 const tag = await O.evaluate(() => document.querySelector('#sheet .jpost .jtag')?.textContent ?? '');
 ck('the post says what kind of moment it is', /Hello/.test(tag), tag);
 ck('the bell\'s notices are not mixed into the journal', await O.evaluate(() => !document.querySelector('#sheet .crew .nts')));
-await O.evaluate(() => document.querySelector('#sheet .jpost .jimg').click()); await O.waitForTimeout(500);
+const jid = await O.evaluate(() => +document.querySelector('#sheet .jpost .jheart')?.dataset.jid || 0);
+ck('each moment has a heart button', jid > 0);
+await O.evaluate(() => document.querySelector('#sheet .jpost .jheart').click());
+const meO = await O.evaluate(() => window.__game.you.userId);
+const seen = await D.waitForFunction(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 15000 }).then(() => true, () => false);
+ck('a heart is saved and the other phone sees whose it is', seen);
+ck('the heart shows filled, with who loved it', await O.evaluate(() => { const b = document.querySelector('#sheet .jpost .jheart'); return b.classList.contains('on') && /you/.test(b.textContent); }));
+await O.reload(); await O.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 });
+ck('it is still there after a reload (kept by the server)', await O.evaluate(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO]));
+await O.evaluate(() => document.querySelectorAll('#modal,#coach,#reunion,#toast').forEach((e) => e.classList.remove('on'))); await O.evaluate(() => window.__ui.open('friends')); await O.waitForTimeout(600); await O.evaluate(() => document.querySelector('[data-sub="journal"]')?.click()); await O.waitForSelector('#sheet .jpost .jimg img', { timeout: 30000 }).catch(() => {});
+await O.evaluate(() => document.querySelector('#sheet .jpost .jheart').click());
+ck('tapping again takes it back', await D.waitForFunction(([jid, me]) => !(window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 20000 }).then(() => true, () => false));
+await O.evaluate(() => document.querySelector('#sheet .jpost .jimg').click()); await O.waitForSelector('.lightbox.on', { timeout: 10000 }).catch(() => {});      // (a single tap opens it a moment later: it could have been the first of a double tap)
 ck('tapping the photo opens it full screen with its line', await O.evaluate(() => /looked in at you/.test(document.querySelector('.lightbox.on p')?.textContent ?? '')));
 if (process.env.OUT) { await O.screenshot({ path: process.env.OUT + '/lightbox.png' }); await O.evaluate(() => document.querySelector('.lightbox')?.click()); await O.waitForTimeout(500); await O.screenshot({ path: process.env.OUT + '/journal.png' }); }
 await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.evaluate(() => document.querySelector('#sheet .jpost .jpc').click());

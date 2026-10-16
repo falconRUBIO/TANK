@@ -72,7 +72,7 @@ export class Game {
     if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
       this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
-      this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo })); this.emit('state'); this.emit('members'); this.keepCopy();
+      this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo, hearts: e.hearts ?? [] })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food, m.fish); }
@@ -85,6 +85,7 @@ export class Game {
     } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
     else if (m.t === 'snap') this.emit('snap', m.fish, m.crabs, m.ts);
     else if (m.t === 'photo') { const e = this.journal.find((x) => x.id === m.jid); if (e) e.photo = true; this.emit('photo', m.jid); }      // a picture of a moment was taken for the journal
+    else if (m.t === 'hearts') { const e = this.journal.find((x) => x.id === m.jid); if (e) e.hearts = m.by ?? []; this.emit('hearts', m.jid); }      // who has hearted a moment
     else if (m.t === 'photoData') { (this.photos ||= new Map()).set(m.jid, m.img); this.emit('photoData', m.jid); }
     else if (m.t === 'fx') this.emit('fx', m);
     else if (m.t === 'presence') { this.online = m.online; this.emit('members'); }

@@ -247,6 +247,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60)').run(ws.tankId, ws.tankId);      // the newest sixty are kept
           broadcast(ws.tankId, { t: 'photo', jid }); return;
         }
+        if (m.t === 'heart') {      // a heart on a journal moment, one per person, saved; tapping again takes it back
+          const jid = Math.floor(+m.jid); if (!jid || !lim.hit('hr:' + ws.userId, 60, 60e3)) return;
+          if (!db.prepare('SELECT 1 FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId)) return;
+          if (m.on === false) db.prepare('DELETE FROM hearts WHERE journal_id=? AND user_id=?').run(jid, ws.userId); else db.prepare('INSERT OR IGNORE INTO hearts (journal_id,user_id,ts) VALUES (?,?,?)').run(jid, ws.userId, Date.now());
+          broadcast(ws.tankId, { t: 'hearts', jid, by: db.prepare('SELECT user_id FROM hearts WHERE journal_id=? ORDER BY ts').all(jid).map((r) => r.user_id) }); return;
+        }
         if (m.t === 'photoGet') { const ids = (Array.isArray(m.ids) ? m.ids : []).slice(0, 12).map((x) => Math.floor(+x)).filter(Boolean); for (const id of ids) { const r = db.prepare('SELECT img FROM photos WHERE journal_id=? AND tank_id=?').get(id, ws.tankId); if (r) send(ws, { t: 'photoData', jid: id, img: r.img }); } return; }
         if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants

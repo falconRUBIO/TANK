@@ -349,7 +349,7 @@ export function snapshot(db, user, online = [], tank = null) {
     you: { userId: user.id, slot: t0.slot ?? members(db, t0.id).find((m) => m.id === user.id)?.slot ?? 1 }, ...(t0.test ? { test: true } : {}),
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,
-    journal: db.prepare('SELECT j.id,j.day,j.text,j.user_id AS userId,j.ts,(p.journal_id IS NOT NULL) AS photo FROM journal j LEFT JOIN photos p ON p.journal_id=j.id WHERE j.tank_id=? ORDER BY j.id DESC LIMIT 120').all(t0.id).reverse(),
+    journal: db.prepare('SELECT j.id,j.day,j.text,j.user_id AS userId,j.ts,(p.journal_id IS NOT NULL) AS photo,(SELECT group_concat(h.user_id) FROM hearts h WHERE h.journal_id=j.id) AS hearts FROM journal j LEFT JOIN photos p ON p.journal_id=j.id WHERE j.tank_id=? ORDER BY j.id DESC LIMIT 120').all(t0.id).reverse().map((e) => ({ ...e, hearts: e.hearts ? String(e.hearts).split(',') : [] })),
     activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 30').all(t0.id).reverse(),
     thanked: db.prepare('SELECT activity_id AS id FROM thanks WHERE from_user=?').all(user.id).map((r) => r.id),
     messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t0.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),
