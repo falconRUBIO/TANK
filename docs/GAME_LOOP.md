@@ -1,168 +1,201 @@
-# OUR TANK: the game loop as built
+# Our Tank: the full game loop (for review)
 
-Four friends share one aquarium on a phone. Calm, no ads, no purchases, no streaks. All numbers below come from the code; the pacing numbers are from a bot simulation, not from real players yet.
+A calm, shared aquarium for phones. One tank, up to four caretakers (friends or family). The animals live on a real clock: they get hungry, grow up, make friends, lay eggs, have babies and die of old age whether or not anyone has the app open. No ads, no streaks, one soft currency (shells).
 
-## 1. One visit (1 to 3 minutes)
-1. Open the tank. A small hint pill names the single most useful thing: feed, wipe the glass, change the water, collect a gift, greet a visitor, open a bottle, or "an egg is about to hatch".
-2. Do the care.
-   - Feed: tap the water to drop food. +1 shell, only if the fish are actually hungry.
-   - Wipe the glass: swipe it clean. +1 shell; every fifth wipe finds a pearl for +3.
-   - Change the water: one tap. +2 shells, only when the water is cloudy.
-3. Collect what is waiting: a gift left in the tank, a friend's bottle, a rare visitor.
-4. Spend shells (fish, decorations), arrange the tank, or just watch. Tap a fish to see its card and play with it by dragging a finger along the glass (the fish follows it; five seconds builds a bond).
+All numbers below come from the game rules (`web/src/game/rules.js`), which run on both the phone (solo tank) and the server (shared tank). When the two disagree, the server wins.
 
-## 2. Time passes while you are away (hours)
-| Thing | Pace |
+---
+
+## 1. First minutes
+
+1. **Welcome:** every tank starts with an octopus. The player picks one of six colors (Coral, Violet, Ocean, Amber, Kelp, Ink) and a name, then taps "Bring it home".
+2. **Tips:** four short cards on the first visit:
+   - *Time for a snack*: open Care, tap Feed.
+   - *Better together*: invite friends from the Crew tab.
+   - *A gift for the tank*: a free starter plant in the Shop.
+   - *You are all set*: "Show me what is coming" or "Done".
+3. A chapter banner reached during the tips (e.g. "Eight Arms Aboard") waits until they are done. The daily gift waits a further 45 seconds after that, so a new player sees one thing at a time.
+
+## 2. The daily loop
+
+| Step | What the player does | What they get |
+|---|---|---|
+| Open the app | Sees the tank; the Bell shows what happened while away | A welcome-back card ("Pip grew up", "Mimi dragged it out of its den") |
+| Daily gift | One tap on a card | +2 shells (once a day per caretaker) |
+| Care | Feed; wipe the glass and change the water when due; trim plants | Shells for each job (see section 4) |
+| Daily checklist | Small things to watch or do (watch a fish for 15 seconds, say hello to three fish, see two friends swim together...) | 3, 5 or 8 shells per item depending on tier; +3 for a perfect day |
+| Today's request | One shared wish a day for the whole tank (e.g. "a plant for Pip") | +4 shells, the animal's happiness |
+| Play | Toys, Hide a treat, Puzzle jar | Bond, journal moments, discoveries |
+| Shop | Spend shells on fish, decorations, floors, backdrops | Tank level, new animals, themes |
+| Journal (Crew tab) | Read and heart the day's moments, each with a photo | Postcards to send; a weekly recap |
+| Evening | A small recap card: today in the tank, and what is next | Once a week it becomes "This week in the tank" |
+
+Nothing is lost by skipping a day. The animals get hungrier and the water cloudier, but there are no streaks to break.
+
+## 3. The animals
+
+### Fish (bought in the Shop)
+
+| Species | Shop name | Price | From level | Comes as | Lifespan |
+|---|---|---|---|---|---|
+| goldfish | Clownfish | 10 | 1 | 1 | 420 days |
+| neon | Blue Chromis | 20 | 1 | school of 4 | 240 days |
+| cory | Yellow Goby | 18 | 2 | 1 | 300 days |
+| blue | Royal Gramma | 28 | 2 | 1 | 300 days |
+| guppy | Damselfish | 18 | 2 | pair | 300 days |
+| angelfish | Emperor Angelfish | 40 | 3 | 1 | 420 days |
+| platy | Cardinalfish | 24 | 3 | pair | 240 days |
+| danio | Pink Anthias | 32 | 4 | school of 4 | 240 days |
+| betta | Mandarin Dragonet | 52 | 4 | 1 | 300 days |
+| (special) | Ghost Dragonet, Golden Angelfish, Rose Goby | not sold | | | rare: hatched or gifted only |
+
+- **Arrival:** a bought fish is ordered and arrives later, from 10 minutes up to a few hours for rarer kinds.
+- **Life stages:** baby, then youngster at 1 day, adult at 3 days, then elder in the last quarter of its life. "All grown up" comes after 7 days in the tank.
+- **Character:** each fish has 1–2 traits (Calm, Shy, Brave, Social, Greedy, Curious...) and a favorite food. Over time it makes a best friend (or a rival), finds a favorite spot, learns two tricks with a caretaker (swim through a gate, ride the bubbles), and learns toys.
+- **Feeding:** the fish share one hunger. They are due about every 12 hours, and a meal can be given from 8% hunger.
+- **Eggs:** adult pairs of the same kind lay eggs, which hatch in 3 days. Many species really care for their eggs, and the game shows it: a clownfish or damselfish father guards and fans them, and some species carry them in their mouths. A father keeps the octopus away from his eggs. Caretakers can "look after" the eggs on two days for a strong hatch. The first hatch pays +5 shells.
+
+### Octopus (every tank starts with one; more can be bought at level 4 for 52 shells)
+
+- **Lifespan:** 120 days, as real octopuses are short-lived.
+- **Personality:** one of six types, which steers what it chooses to do: Explorer, Homebody, Show-off, Watcher, Collector, Trickster.
+- **Own caretaker:** each octopus belongs to one caretaker, and only they can feed it. A friend can take it on if its caretaker has been away for 14 days.
+- **Feeding:** a crab (4 shells, at most one every 2 hours). It hunts the crab on the sand and eats it leg by leg. Hunger comes back about every 12 hours.
+- **Home and rest:** it lives under a coconut shell (and can learn to use a clay pot). When tired or frightened it goes home and rests under the shell.
+  - Worn out, it stays home most of the next few minutes.
+  - Frightened, it stays hidden instead of coming out to greet anyone.
+- **What it does:** inspects anything new, moves rocks and its own shell, builds a shelter, and carries things.
+  - It camouflages to the ground.
+  - It does impressions: lionfish, sea snake, jellyfish, flatfish, kelp. A frightened mimic octopus prefers the sea snake, as real ones do.
+  - It inks, bats the ball, comes to the glass to greet people it knows, follows a fingertip on the glass, and smacks an annoying fish.
+- **Memory:**
+  - It remembers each decoration: how familiar it is, how often it has visited, and where it was moved from.
+  - It remembers each caretaker: trust, and who helped.
+  - It remembers each fish: buddies and rivals.
+- **Puzzle jar** (3 shells, once every 3 hours, adults): a crab in a jar. The first solve takes 150 seconds, then 75, 35 and 15 as it gets better. +3 shells the first time.
+- **Hide a treat** (5 shells, once every 20 minutes): the caretaker hides a treat in a decoration and the octopus searches spot by spot.
+  - The order it searches in is what it has learned about *that caretaker*: the places they have used, and the last one, count more with every hunt.
+  - Hide in the same place and it soon goes straight there. A new place fools it.
+  - Journal lines, bond, and a discovery after three straight finds ("Ink has learned your hiding places").
+
+### Seahorse (from level 3, 36 shells)
+
+- **Lifespan:** 180 days.
+- **Holdfasts:**
+  - It spends most of its time anchored by its tail to plants, its holdfasts. It swims slowly between them and earns a favorite after two visits and two minutes held.
+  - Two seahorses never hold the same stem at once.
+  - A calm one may stay on one stem for minutes.
+- **Eating and looks:** it snaps up drifting plankton, each eye looks its own way, it takes on a little of its holdfast's color, and it rests at night.
+- **Feeding:** tiny mysis shrimp (free). Each seahorse has its own hunger and its own caretaker, like the octopus.
+- **Family life:**
+  1. **Pairing:** a male and a female that share the tank as adults for 2 days pair up for life. They are never parent and child, or brother and sister.
+  2. **Courtship:** at dawn, a settled pair dances, circling with tails linked.
+  3. **Pregnancy:** the male carries the young in his brood pouch for 6–9 days. The pouch visibly fills.
+  4. **Birth:** on the server's clock, whether or not anyone is watching. 10–15 babies; three are tracked with their own names, looks and roles (one roams, one keeps to the plants, one stays near family).
+  5. **Nursery:** 5 days. The babies catch food themselves. Each day one baby gets a journal line about what it did in this tank.
+  6. **Choosing:** "They're ready!" The caretakers choose one baby to stay, with a confirmation. The others swim off to new homes, together. The kept baby's profile shows its mother, father and birth date.
+  7. **Rest:** the father rests for 14 days before he can carry again.
+- **Notifications:** the new pair, the courtship, the birth and "They're ready" reach caretakers who are away.
+
+### Visitors and finds
+
+- A rare visitor now and then (say hello: +4 shells).
+- Finds in the tank: a pearl drifting down or a lost item (+1 to +4).
+- A message in a bottle between friends.
+- Wrapped gift bags: a fish bought for a friend waits wrapped on the sand until they open it.
+
+## 4. Shells (the only currency)
+
+| Earn | Shells |
 |---|---|
-| Hunger rises to its cap | about 6 hours |
-| Algae on the glass | about 30 hours |
-| Cloudy water | about 48 hours |
-| Gift in the tank (1 to 3 shells, a 4-shell pearl, or fish treats; waits forever) | every 6 hours |
-| Ordered fish arrives | 10 min to 4 hours, by species |
-| Rare visitor (Moon Betta, Sun Angelfish, Rose Corydoras; greet for +4 and a book entry) | every 9 to 15 hours, stays 3 hours |
-| Egg (two adults of one species; hatches in 4 hours into a blend of both) | every 16 to 28 hours |
-| Tank birthday | +8 shells each week of the tank's age |
+| Daily gift | +2 |
+| Feed a properly hungry animal with free food | +1 |
+| Wipe the glass (every few days) | +4 (a pearl every 5th: +6) |
+| Change cloudy water (every few days) | +6 |
+| Trim grown plants | +1 each |
+| Daily checklist item | +3 / +5 / +8 |
+| Perfect day | +3 |
+| Today's request | +4 |
+| Rare visitor | +4 |
+| A fish grows up / turns 14 or 30 days | +1–2 / +5 / +8 |
+| Tricks, themes, a friend joins | +3 each |
+| Tank wishes (long goals) | +4 to +25 |
 
-Light follows the phone's clock (morning, afternoon, evening, night). At night most fish drift low and slow.
+**Spending:**
+- **Fish:** 10–52 shells.
+- **Decorations:** 29 kinds in Plants, Rocks, Wood, Structures and Special, up to 60 in a tank.
+- **Floors** (20–40) and **backdrops** (25).
+- **Foods:** pellets 2, treats 4, crab 4.
+- **Games:** puzzle jar 3, hide a treat 5.
 
-## 3. Stakes: neglect and death
-A fish accumulates neglect time when the tank has gone 30 hours without any feeding, or when the water is foul. A caretaker who feeds once a day never builds any. Care wins it back twice as fast.
-- Days 1 to 2: normal, needs decline gradually.
-- Day 3: sluggish and paler; growth pauses.
-- Day 4: critical: slow, little appetite, a warning goes out.
-- Day 5: death becomes possible, and only if that fish's own health is still critically low.
-- When a fish dies it stops swimming and floats slowly to the surface, belly-up. It stays until any caretaker taps it and chooses LAY TO REST (card shows name, species, age, original caretaker, date of death). While it floats the water fouls faster.
-- A memorial record is created at death (identity, arrival date, death date, original caretaker, personality, milestones) and is kept in the Journal under Remembered after the fish is laid to rest.
-- Safeguards: no deaths in a tank's first 3 days; at most one death per rolling 24 hours; the last fish never dies; the server decides, so two phones cannot produce two deaths; any one caretaker keeping up care keeps everyone's fish healthy.
+Toys are free: the ball from the start, bubbles after 3 plays, the light spot after 8.
 
-## 4. Growth and progression (days to weeks)
-- Fish: baby, juvenile (1 day, +1 shell), adult (3 days, +2 shells).
-- Tank level comes from a score (fish, adults, decorations, collection entries, shared wishes). Thresholds: 14, 36, 66, 100, 140, 184, 226 for levels 2 to 8. Capacity is 4 + 3 per level (7 at level 1, 28 at level 8). Each level-up pays 3 + level shells and unlocks content. Bot simulation at three short visits a day: level 2 around day 2, level 5 around day 12, level 7 around day 44.
-- Shop: 9 fish species (goldfish 10, neon school of 4 at 20, corydoras 18, guppy pair 18, blue ram 28, platy pair 24, angelfish 40, danio school of 4 at 32, betta 52) and 22 decorations (4 to 56 shells). Each fish has a wait before it arrives. One fish a day is 25% off.
-- Collection book: 34 entries (fish, decorations, rare visitors); +3 shells for every 5 found.
-- Tank wishes (shared goals, in order): 12 of them, from "three fish swimming together" (+4) to "find everything in the book" (+25).
-- The tank starts empty except for the caretaker's own octopus (colour chosen in the opening) and a free starter pack of five decorations. Floor (5 choices) and backdrop (4 choices) are picked in the Decorate tab.
-- Nothing beyond level 8 exists yet (see `docs/PROGRESSION_9_12.md`).
+> Known issue: shells pile up in older tanks (one test tank had 406). Hide a treat was added as a steady use for them. More could be needed.
 
-## 5. Fish as individuals
-- Each fish has one or two traits (Shy, Brave, Curious, Social, Playful, Lazy, Calm, Greedy) that drive real movement: shy fish hide behind plants and bolt when others come close; brave fish swim to the glass; curious fish inspect decorations and other fish; social fish keep a buddy; playful fish chase bubbles; lazy fish rest low; greedy fish wait near the surface.
-- Every fish also gets a small colour and size variation from its seed, a home corner of the tank, a favourite decoration it returns to (found after living here a while), a best friend it stays near, and a caretaker.
-- A fish swims out to the glass more often for its own caretaker (the person who brought it in, or who has bonded with it most). Each caretaker gets one octopus of their own, in a colour they pick (the creator's is the starter goldfish).
-- The fish card shows traits, age, time to next growth stage, favourite spot, original caretaker and who it is closest to.
+## 5. Progress
 
-## 6. Three players
-- Up to four caretakers share everything: fish, decorations, shells, journal, chat. Join by a 6-character code or link; a fifth person sees "This tank is full".
-- Nudge a friend when the tank needs something. Send a message in a bottle (40 characters, 2 shells to send, +2 shells for whoever opens it; one per 6 hours). Chat. Activity list.
-- Opt-in push notifications: a death, a critical-state warning, a rare visitor, a solved jar, an arrival or hatch, a growth milestone, a discovery; when nothing happened but care is overdue, your own octopus being hungry (to you alone), hungry fish or foul water (to everyone), each at most once in 12 hours; a friend joining, a nudge, a bottle. Maximum two a day per person, never 22:00 to 08:00 local time, never while the game is open.
+- **Tank level 1–8:** from a score of animals, adults, decorations and discoveries. The thresholds are 14, 36, 66, 100, 140, 184 and 220. Levels open new species and decorations, and the tank gets bigger.
+- **Chapters**, each said once: Day One, A Small Crew, A Week Together, Eight Arms Aboard, A Little Reef, All Grown Up, A Busy Tank, A Month of Water.
+- **Discoveries** per animal (the collection book): best friend, favorite spot, trusts a caretaker, follows a fingertip, became a parent, comfortable at the glass, waits at the surface, rests at night, a hiding place, investigates objects...
+- **Milestones** per animal: hatched, made a friend, found a favorite spot, trusts you, learned a trick, all grown up, became a parent.
+- **Reef themes** (kelp, coral, ruins, lanterns): pieces that belong together lift the fish, pay once, and draw their own visitor.
 
-## 7. Added since the first version of this document
-- **Behaviour discoveries (14).** Noticed once per fish, from real behaviour, saved permanently, written to the journal, shared by everyone, and shown only as a small toast. Found a best friend, a favourite spot, trusts a caretaker, follows a fingertip, became a parent (all decided by the server), and comfortable at the glass, waits at the surface, rests at night, has a hiding place, returns to one decoration, investigates objects, swims with a friend, plays in the bubbles, has a daily routine (all seen by a watching phone and checked by the server: right personality, a real decoration, a real partner, a real bubbler).
-- **One shared daily wish.** Watch fish swim for 15 seconds, say hello to three fish, see two fish swim together, watch a fish visit a decoration, watch a playful fish by the bubbles, give the tank some needed care, or place a plant. Only wishes that can be done right now are chosen; it is replaced each day; +3 shells once; nothing happens if it is missed. It shows quietly in the hint pill and in the Care sheet.
-- **Thank-yous.** A heart beside a friend's recent contribution (24 hours). Free, once per contribution, limited to one per friend per ten minutes, no counts or rankings anywhere. They get a small toast: "Sam appreciated you feeding the fish."
-- **Journal versus activity.** The Journal holds meaningful history (arrivals, births, growth, deaths and memorials, friendships, discoveries, tank milestones, unusual events, your own notes). Feeding, cleaning, purchases, decorating, renamed fish and opened bottles go to the Activity list in the Friends tab, which names who did what ("You fed the fish", "Alex and Sam helped Pip grow up"). The invented stories every few hours are gone; old journal rows are kept.
-- **Family trees.** Eggs record both parents. A hatchling keeps its parents, a snapshot of its grandparents, its generation number and blended colour genes (pattern from one parent, tint and size from both, with a little mutation). The Family button on a fish card lists generation, parents, grandparents and children, including ones that have died. Memorial records carry the same lineage. The journal marks the first hatch of each generation.
-- **Usage tracking and a private dashboard** (see README).
+## 6. Upkeep and consequences
 
-## 7a. More to do in a visit
-- **Fish wishes.** One fish at a time quietly wants something that fits its personality: more plants to hide among (Shy), something to explore (Curious), driftwood (Lazy), a bubbler or other fun thing (Playful), rocks to perch on (Brave), company (Social), a game, a clear view, fresher water or a proper meal. Only offered when it can be granted now. Granting it pays +2 shells, cheers the fish and is journalled. A wish fades after a day without penalty, and the next waits six hours. It shows in the hint pill, the Today tab and the fish card.
-- **Comfort.** Each fish card says Cosy, Comfortable or Could be better, with the one or two most useful changes. The Today tab shows the tank average.
-- **Plants grow.** Plants grow over a week. After three days they can be trimmed from the Care tab for +1 shell each, and then start again.
-- **Notes.** Retired from the fish card: the journal note and the chat already cover it, and fewer chores keep the tank calm. Old notes are kept.
-- **Landmarks and a shared project.** Little Lighthouse (150 shells, level 7) and Coral Spire (250, level 8). The Today tab shows how much of the next one the tank has saved.
-- **Today tab.** The one thing worth doing now, the fish wish, comfort, the shared project, today's wish, what is coming up and how shells are earned.
+- **Hunger:** fish are due about every 12 hours; each octopus and seahorse has its own hunger on the same rhythm.
+- **Water** gets cloudy and **glass** gets algae over about 66 hours. Each is a chore with a reward.
+- **Neglect:** a hungry, unwell animal first shows it (tired, then a warning) and can eventually die. There is a long grace period: 30 hours after its last meal before it suffers.
+- **Death:** a farewell card ("Rest well. The others stay close."). Animals also die of old age at the end of their lifespan. A memorial keeps them.
 
-## 7c. Saltwater, daily care and looks
-- **Saltwater only.** The first animal is always an octopus, in one of six colours (a new tank starts empty and you choose in the opening). An octopus eats crabs (free, from Feed), never flakes. Shop: Damselfish, Yellow Goby, Royal Gramma, Cardinalfish, Emperor Angelfish, Pink Anthias, Mandarin Dragonet, plus Seahorse and Octopus. Rare visitors: Ghost Dragonet, Golden Angelfish, Rose Goby. Decorations are reef themed (sea fan, gorgonian, sea whip, anemone, brain and table coral).
-- **Own gaits.** Seahorses hover upright and hold on to plants; octopuses rest with arms flat, crawl, and jet in pulses.
-- **Daily care.** Today shows three ticks (tank looked after, today's wish, a fish got attention). All three pays +3 once per UTC day. No streaks.
-- **Tank mood** (Thriving, Doing well, Needs care, Neglected) and a "looks tired" notice two days before a fish is critical.
-- **Looks are bought.** Floors 20 to 40 shells and backdrops 25 shells, once; sand and Candy are free.
+## 7. Social (shared tanks)
 
-## 7b. Not built yet
-- Progression beyond level 8 (a proposal is in `docs/PROGRESSION_9_12.md`).
-- A first-generation family tree picture beyond the text dialog.
-- Real-device testing: frame rate, touch feel, whether the timings feel right, and whether people actually notice the discoveries.
+- **Joining:** up to 4 caretakers join with a six-character code. Each gets one free first fish of their own.
+- **Caring:** anyone can feed the fish, wipe and change the water. Octopuses and seahorses have one caretaker each.
+- **Notes on the glass:** sticky notes, with colors and doodles, that others read. A note is only marked "seen" when someone really looks at it.
+- **Gifts:** buy a fish for a friend; it arrives wrapped in a bag in the giver's ribbon color.
+- **Bottles and nudges:** "Ana says Inky is hungry", for example.
+- **Journal:**
+  - an Instagram-like feed of the day's moments, each with an automatic close-up photo;
+  - a heart per person, saved on the server;
+  - postcards of a moment or of the tank;
+  - a photo can be removed by anyone.
+- **One phone runs the animals** (the smoothest one), and the others mirror it, so everyone sees the same thing.
 
-## 8. Questions for the reviewer
-1. Is five days of neglect before death possible the right weight for a casual shared game, or too harsh for friends who stop opening it?
-2. After the first few days, the daily wish and discoveries give a visit a small goal beyond care. Is that enough, given levels are slow (about 12 days to level 5)?
-3. Is the shared shell wallet right for four players, or should contributions be visible?
-4. Do the discoveries, daily wish and family trees make players care about individual fish, or do they read as extra chores?
+## 8. Notifications (opt-in, per kind, quiet hours 22:00–08:00)
 
-## 7d. The octopus is the clever one
-Based on what is known about real octopuses (individual recognition of people, prey puzzles such as screw-top jars, curiosity about new objects, camouflage and colour change, a tendency to squirt water at things and people they dislike). In the game:
-- **Puzzle jar** (Care tile or the fish card, 3 shells, one per octopus every 3 hours): a jar with a crab appears on the sand and the octopus goes to work on it. The first jar takes 150 seconds; then 75, 35, and 15 from the fourth on, because it remembers how. The first solve pays 3 shells; every solve makes it happier and raises its bond with whoever gave the jar. The game finishes the jar on its own, so closing the app costs nothing.
-- **Quick learner:** tricks take 2 lessons instead of 5.
-- **Knows people:** an octopus that has bonded with you swims to the glass and waves; one you have never looked after keeps to the rocks and hides.
-- **Curious:** it goes to inspect any new decoration.
-- **Colour:** camouflage has a reason. When it settles against an object (a rock, plant, pillar, or hiding in one) or onto the sand, it decides whether to blend in (about 80% on an object, 50% on open sand, over 90% when shy), waits a moment, then fades into that surface's colour and pattern. It never does it while moving or working, it decides again each time it settles somewhere new, and it flushes bright after something exciting.
-- **Cheeky:** tapping it sometimes earns a squirt of bubbles.
+- **Kinds:** Eggs and babies, Gifts and bottles, Hungry animals, Friends, Visitors and news.
+- **Daily limit:**
+  - Light news (a new pair, growing up) only goes out on a quiet day.
+  - What matters (a hungry animal, a birth, a gift for you) still gets through, up to three a day.
 
-## 7e. Every fish has a nature, and the tank notices
-Researched from reef-keeping guides, Project Seahorse and aquarium notes (see `SOCIAL` in `web/src/game/rules.js`):
-- **Clownfish** friendly, nestle in an anemone. **Royal gramma** territorial about its cave and only one per tank; rests upside down under ledges. **Emperor angelfish** bossy, can bully small fish. **Blue chromis** and **pink anthias** shoal and want three or more. **Yellow goby** keeps watch low on the sand, one per tank. **Damselfish** aggressive and territorial. **Cardinalfish** calm, hides in shade by day. **Mandarin dragonet** slow and gentle, picks over the rocks, one per tank. **Seahorse** pairs for life, holds on to plants, easily crowded out. **Octopus** clever; small fish stay wary.
-- `socialOf` gives a fish its strain (bullies, rivals, a predator, eased by hiding places), what it needs (a shoal, a partner, a home) and its friendships. It feeds the comfort tips, a small happiness effect (at most -0.12 or +0.05) and the card. `harmonyOf` gives the whole tank a chip on the Care tab. `adoptAdvice` warns, softly, before adopting a clashing fish.
-- In the tank: bullies chase the timid, small fish keep clear of a moving octopus, rivals turn away from each other, the clownfish lives by its anemone, the gramma claims a cave and often rests upside down, the cardinalfish hides in shade by day, the goby and dragonet stay low by the rocks. Curious fish go to look at anything new you place.
-- Nothing here can hurt a fish by itself: mortality is still only about neglect.
+## 9. Menus
 
-## 7f. One request a day, a way back, and a way to share
-- **One request a day.** Each tank-day has a single request: a fish's own wish (when one can be granted, about 45% of days) or the tank's daily wish. Never both. A fish's wish pays 4 shells and counts toward the perfect day; it fades at the end of the day with no penalty. `requestKind` in `web/src/game/rules.js`.
-- **While you were away** shows up to three things that really happened (hatches, growth, solved jars and the like first), what is waiting (a bottle, a gift, a delivery) and today's request, with a button to send a postcard.
-- **Postcards** (Care > Postcard): the clean tank with a caption about something that happened in the last three days (or the tank's best-loved fish), the tank name and day. Shared through the phone's share sheet, or saved.
-- **Animals:** seahorse pairs greet each other at a plant now and then (more in the morning), circling and glowing; the octopus's arms close around the jar and climb it; the cardinalfish is a silver, black-barred Banggai-style fish and the mandarin dragonet is long and low with a big sail and blue, teal and orange swirls.
+- **Tank:** the aquarium itself. Tap an animal for its card: profile, personality, stats and journal.
+- **Care:**
+  - **Needs you:** what is due now, each with one gold button (Wipe, Change). Feed appears here when an animal is hungry.
+  - **Later:** what is not due yet, with no button and when it will be due.
+  - **Coming up:** births, hatches, arrivals and growing up.
+  - The daily checklist and level bar.
+- **Feed** (opened from Care):
+  - One card per animal, with a dot-and-word status (Full / Peckish / Hungry).
+  - An animal that wants to eat has an obvious gold Feed button; a full one has none, and its card opens to say when it can eat next.
+  - The fish share one card with Flakes (free), Pellets (2) and Treats (4), shown only when they can eat.
+  - Choosing a food closes the menu and the meal drops in by itself, right by the animals. There is never a need to tap the water.
+- **Play:**
+  - "With *octopus name*": Hide a treat, Puzzle jar.
+  - Toy box: only the toys that are open, plus one line for the next.
+  - Share: postcard.
+- **Shop:** New, Plants, Rocks, Wood, Structures, Special, Fish, Floor, Backdrop, Themes. Press and hold an item for a closer look.
+- **Crew:** Friends, Journal, Collection, Settings (behind the gear icon).
+- **Bell:** everything that happened, newest first.
 
-## 7g. The loop, finished
-- **A promise at the end of the first session.** Finishing the tutorial now ends with a "Coming up" card (the first fish's growth time, a gift turning up in the tank within hours, a rare visitor tomorrow, tomorrow's request), and really schedules the gift and visitor (`firstPromises`, the `tut` action). Shared tanks are then offered one gentle nudge a day.
-- **A sky above the tank** (`web/src/game/sky.js`), from the real date: the moon in its true phase glimmers at the top of the water; a full moon lights the night silver and brings pearls in the tank; a new moon makes the plankton blaze; the night after the post-full-moon week is coral spawning (pink plankton); one day in eight it rains and the curious fish drift up. Nothing is required and nothing is a streak. `?sky=fullmoon|darkmoon|spawn|rain` forces one for testing.
-- **Reef themes** (`THEMES`): Kelp Forest, Coral Garden, Sunken Ruins, Lantern Cove. Enough matching pieces lift every fish a little, draw that theme's own rare visitor, and pay 3 shells the first time.
-- **Social:** a fish can be bought as a gift for a friend (they become its first caretaker); two caretakers feeding within a minute of each other cheer the fish (once every three hours); when a friend arrives you get a hello and their favourite fish swims to the glass.
-- **Sound:** soft generative music (a slow pentatonic scale that changes with the time of day, with an echo and far-off bubbles), switchable in Settings.
-- **Nudges:** at most one a day (two if a friend writes to you), 08:00 to 22:00 only, and only for something that happened: a rare visitor, a hatch or arrival, a solved jar, a milestone, a fish in trouble.
-- **Look:** the bottom bar, the top buttons, toasts, coach cards, the menu sheet, the fish card and every popup share one Liquid Glass style; the time-of-day switcher is gone (the light follows the phone's clock).
+## 10. Open questions for review
 
-## 7h. The octopus feels real
-- **Arms with minds:** while he rests, one arm at a time probes the floor beside him or reaches toward a fish swimming past (`minds` in `fish3d.js`, applied in the arm rig in `species.js`).
-- **Presses on the glass:** hold a finger on the water and the octopus comes to the glass and spreads his arms flat against it where you are touching.
-- **Moods in his skin:** startled (a fast fish too close, or a sudden poke) he goes pale and jets away; poked four times in a row he turns dark and squirts; hunting, dark clouds ripple down his body; with someone he knows a dark bar crosses his eye. Camouflage also roughens the skin (bumps).
-- **A den and a collection:** he adopts a rock or structure as a den, goes home to it, and fetches shells for a growing collection at its entrance (it grows with his age, solved jars and crabs eaten; crab shells show red).
-- **Crab treats** (Care tile, 4 shells, one every two hours per octopus): a crab sinks to the floor, he hunts it, and he is very happy.
-- **Later additions:** ink clouds when he is startled, sleep at night (eyes narrow to slits, slow breathing, dreamlike colour ripples), blinking and a breathing mantle; coconut shells and clay pots to decorate (he prefers them as a den); a seahorse (and an octopus) goes to look at anything newly placed; fish stay below the status bar and safe area (`Fish3D.topY`, measured from the header); the shell guide opens from the shell counter instead of the Care tab; the "empty tank" prompt is gone.
-- **Walking and grabbing:** he walks with a real gait (each arm plants its tip, peels up, curls and swings forward, out of step with the others; the front arms reach and pull, the rear ones drag; each octopus has its own stride). He catches a crab by reaching the nearest arm out, closing on it with the neighbouring arms cupping in, carrying it under his head to the beak and eating it (`updateGrab` in `fish3d.js`, `S.grab` in the arm rig). `tools/shots_gait.mjs` steps the simulation by hand and captures both.
-- **Swimming and body:** he turns to face where he is going and pushes along that heading (steering), stretches into a glide between pushes, ripples gently when cruising, and spreads his arms when landing; a bold octopus swims and dashes more. Now and then he dashes across the floor rising on his two back arms while the others stream behind. His arms never pass through his body, his pupils slide toward what he is looking at (crab, jar, your finger, a nearby fish), suckers show in rows under the arms, he carries a shell in an arm, and one arm grips the jar's lid while the others steady it.
-- **Crab:** a proper voxel crab (domed shell with spots, two claws that snap, eight legs, eyes on stalks) that scuttles and struggles when held. **Mouth:** a solid funnel of web with lips and a tan beak, so nothing hollow shows underneath.
-- **Simple and clean:** the first session is now choose, feed, then "coming up" (the free plant and the friends code wait in the goal line and the coming-up card). Food choices, reef themes, comfort, the daily checklist, floors, backdrops and postcards appear only once the tank has reached level 2 or has two fish. Every good thing that happens (growth, a find, a solved jar, a theme, feeding together, a level) now shares one soft chime and a gold glimmer on its message. On slower phones the rigs are posed less often (`Fish3D.poseScale`), and the system's reduced-motion setting turns off the passing memories, rain and camera sway. `tools/perf_octo.mjs` measures the rig: about 0.7 to 0.85 ms per octopus pose and about 2 ms per frame for a tank of nine fish on a desktop CPU.
-- **How a visit starts and ends:** coming back no longer opens a popup. A quiet glass card ("Welcome back") fades in over the tank with up to four things that happened, your most-loved fish swims to the glass to say hello, and a link sends a postcard. When the tank is looked after and today's request is done, the light softens a little and one line says what comes next (`nextUp`), once a day. Each fish keeps its own story (arrival, growing up, tricks, wishes, finds, solved jars), shown as a timeline in "More about" and copied into its memorial (`recordStory` in `rules.js`).
-
-## Chapters and farewells
-- **Chapters** (`CHAPTERS` in `rules.js`): Day One, A Small Crew, A Week Together, Eight Arms Aboard, A Little Reef, All Grown Up, A Busy Tank, A Month of Water. Each appears once per tank as a quiet card and a journal line. They pay no shells, so they cannot be farmed. A tank saved before chapters existed records what is already true and says nothing.
-- **A fish passing away** is a quiet beat: the light dims for a few seconds, the other fish slow down and stay near, and a short "rest well" card appears. No alarm, no penalty beyond what already exists.
-
-## The daily gift
-Every caretaker can collect a small gift once a day: +2 shells into the shared wallet (`DAILY_GIFT`). It appears as the hint pill ("A small gift is waiting for you. Tap to collect."). There is no streak and nothing to catch up on: missing days costs nothing and gifts do not pile up. It needs a new local day and at least 20 hours since the last one, so changing the phone's clock or time zone cannot claim twice. Simulated effect (`GIFT=n node tools/econ.mjs 3 60`, n caretakers collecting): with all three collecting, a 3-visits-a-day tank earns about 32% more shells per day and reaches the top level around day 29 instead of day 35; a once-a-day player with three collectors reaches it around day 35 instead of day 48.
-
-## 8. The loop, rounded out (this round)
-
-- **The day's surprise.** The first feeding of each day sets off one small real moment (a baby's big meal, two fish becoming friends,
-  the octopus snatching the food, a fish at the glass). Its own card, a close look at that fish, a line in that fish's story.
-- **Coming up.** Care shows the next two things to look forward to, with when (an egg, a birth, a fish growing up, the next puzzle).
-- **Evening recap.** Once a day after six, a quiet card with up to three things that happened today and what is next.
-- **Milestones.** Every fish has the same seven-step path on its card: came home or hatched, a friend, a favourite spot, trusts you,
-  a trick, grown up, a parent. Built from what the game already records.
-- **Raised, not just grown.** A young fish fed on four different days grows up Calm; one played with five times grows up Brave.
-- **Eggs.** One at a time, three days to hatch, food and clean water on two days hatch it strong. A rare neglected egg can be lost
-  to the octopus (it sniffs round it the day before, and the egg card warns). Hatching cracks the shell, the parents come to meet the
-  baby, and whoever is watching names it. Octopuses never lay eggs.
-- **Babies look and act like babies.** Big eyes, a big head on a round little body; they dart, bob and keep close to a parent.
-- **Octopus trust.** Hides from you, then watches you, then comes to the glass when you look in, then takes a crab from your fingers.
-  Per person, from crabs and play.
-- **The coconut hut.** The coconut octopus keeps its half shell dome up, lifts the near edge to crawl under, and peeks out of the crack.
-- **Wishes.** The animals ask for what they need (somewhere to hide, a stem, a shell, bubbles, plants). Care lists them, the shop
-  marks what would help, and the animal notices when it arrives. Prices are unchanged.
-- **Together.** Two people caring for the tank on the same day make it glow that evening. Notes on the glass: post-its the crew
-  leave each other, read where they stick, with a board of the last two weeks.
-- **Gentler endings.** A warning card before an animal could die, and a short goodbye when it is laid to rest.
-
-## Ideas kept for later
-
-- **Fish grow old (undecided).** After a few weeks a fish slowly ages: paler colours, slower swimming, longer rests. In the end a gentle farewell card,
-  and its life story goes into the memorial. Its children carry on, so the generations matter. Not built: the owner wants to think about it first.
+1. **Shells:** do they still pile up late in the game? What else is worth spending on, without a second currency or pay-to-win?
+2. **Late game:** after a month, what keeps a caretaker coming back besides upkeep (seahorse families, rare hatches, themes)?
+3. **Neglect:** is a 30-hour grace period too forgiving, or too harsh, for a casual game? Should death from neglect exist at all?
+4. **Octopus ownership:** is "only its caretaker can feed it" right for a shared tank, or does it frustrate friends?
+5. **Daily checklist and request:** do they feel like chores? Too many small rewards at once?
+6. **Hide a treat:** is 5 shells and a 20-minute rest the right pace?
+7. **Fish naming:** the internal species ids (goldfish, neon, betta...) differ from the shop names (Clownfish, Blue Chromis, Mandarin Dragonet...). Players only see the shop names; is the mapping sensible?
+8. **Notifications:** is three a day the right ceiling?
