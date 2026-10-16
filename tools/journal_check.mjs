@@ -26,34 +26,36 @@ const again = await D.evaluate((id) => window.__game.dispatch({ t: 'moment', kin
 const got = await O.waitForFunction(() => window.__game.journal.some((e) => /looked in at you/.test(e.text) && e.photo), null, { timeout: 30000 }).then(() => true, () => false);
 ck('the phone running the animals took its photo, and the other phone hears of it', got);
 await O.evaluate(() => window.__ui.open('friends')); await O.waitForTimeout(600); await O.evaluate(() => document.querySelector('[data-sub="journal"]')?.click());
-const img = await O.waitForSelector('#sheet .jpost .jimg img', { timeout: 30000 }).then(() => true, () => false);
+const mine = () => O.evaluate(() => { window.__mp = () => [...document.querySelectorAll('#sheet .jpost')].find((q) => /looked in at you/.test(q.textContent)); });      // (the post of this check's own moment: the animals may add moments of their own meanwhile)
+await mine();
+const img = await O.waitForFunction(() => !!window.__mp()?.querySelector('.jimg img'), null, { timeout: 30000 }).then(() => true, () => false);
 ck('the journal shows it as a post with the photo', img);
-const tag = await O.evaluate(() => document.querySelector('#sheet .jpost .jtag')?.textContent ?? '');
+const tag = await O.evaluate(() => window.__mp()?.querySelector('.jtag')?.textContent ?? '');
 ck('the post says what kind of moment it is', /Hello/.test(tag), tag);
 ck('the bell\'s notices are not mixed into the journal', await O.evaluate(() => !document.querySelector('#sheet .crew .nts')));
-const jid = await O.evaluate(() => +document.querySelector('#sheet .jpost .jheart')?.dataset.jid || 0);
+const jid = await O.evaluate(() => +window.__mp()?.querySelector('.jheart')?.dataset.jid || 0);
 ck('each moment has a heart button', jid > 0);
-await O.evaluate(() => document.querySelector('#sheet .jpost .jheart').click());
+await O.evaluate(() => window.__mp()?.querySelector('.jheart').click());
 const meO = await O.evaluate(() => window.__game.you.userId);
 const seen = await D.waitForFunction(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 15000 }).then(() => true, () => false);
 ck('a heart is saved and the other phone sees whose it is', seen);
 ck('the other phone gets one line in the Bell: who loved which moment', await D.waitForFunction(() => /loved a moment: “/.test(localStorage.getItem('ourtank.notices') || ''), null, { timeout: 10000 }).then(() => true, () => false));
-ck('the heart shows filled, with who loved it', await O.evaluate(() => { const b = document.querySelector('#sheet .jpost .jheart'); return b.classList.contains('on') && /you/.test(b.textContent); }));
-await O.reload(); await O.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 });
+ck('the heart shows filled, with who loved it', await O.evaluate(() => { const b = window.__mp()?.querySelector('.jheart'); return b.classList.contains('on') && /you/.test(b.textContent); }));
+await O.reload(); await O.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 }); await mine();
 ck('it is still there after a reload (kept by the server)', await O.evaluate(([jid, me]) => (window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO]));
 await O.evaluate(() => document.querySelectorAll('#modal,#coach,#reunion,#toast').forEach((e) => e.classList.remove('on'))); await O.evaluate(() => window.__ui.open('friends')); await O.waitForTimeout(600); await O.evaluate(() => document.querySelector('[data-sub="journal"]')?.click()); await O.waitForSelector('#sheet .jpost .jimg img', { timeout: 30000 }).catch(() => {});
-await O.evaluate(() => document.querySelector('#sheet .jpost .jheart').click());
+await O.evaluate(() => window.__mp()?.querySelector('.jheart').click());
 ck('tapping again takes it back', await D.waitForFunction(([jid, me]) => !(window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 20000 }).then(() => true, () => false));
-await O.evaluate(() => document.querySelector('#sheet .jpost .jimg').click()); await O.waitForSelector('.lightbox.on', { timeout: 10000 }).catch(() => {});      // (a single tap opens it a moment later: it could have been the first of a double tap)
+await O.evaluate(() => window.__mp()?.querySelector('.jimg').click()); await O.waitForSelector('.lightbox.on', { timeout: 10000 }).catch(() => {});      // (a single tap opens it a moment later: it could have been the first of a double tap)
 ck('tapping the photo opens it full screen with its line', await O.evaluate(() => /looked in at you/.test(document.querySelector('.lightbox.on p')?.textContent ?? '')));
 if (process.env.OUT) { await O.screenshot({ path: process.env.OUT + '/lightbox.png' }); await O.evaluate(() => document.querySelector('.lightbox')?.click()); await O.waitForTimeout(500); await O.screenshot({ path: process.env.OUT + '/journal.png' }); }
-await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.evaluate(() => document.querySelector('#sheet .jpost .jpc').click());
+await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.evaluate(() => window.__mp()?.querySelector('.jpc').click());
 const pc = await O.waitForSelector('#modal.on .pcprev img', { timeout: 30000 }).then(() => true, () => false);
 ck('"Send as a postcard" makes a postcard of that moment, ready to share', pc && await O.evaluate(() => !!document.querySelector('#modal.on #mok')));
 if (process.env.OUT && pc) { const src = await O.evaluate(() => document.querySelector('#modal.on .pcprev img').src); const b64 = await O.evaluate(async (u) => { const r = await fetch(u); const bl = await r.blob(); return await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }); }, src); fs.writeFileSync(process.env.OUT + '/moment_postcard.png', Buffer.from(b64.split(',')[1], 'base64')); }
 { await O.evaluate(() => { document.querySelector('.lightbox')?.remove(); }); await O.waitForTimeout(400);
-  const pj = await O.evaluate(() => +document.querySelector('#sheet .jpost .jimg img')?.closest('.jimg')?.dataset.jid || 0);
-  await O.evaluate(() => document.querySelector('#sheet .jpost .jimg img').closest('.jimg').click()); await O.waitForSelector('.lightbox.on .lbdel', { timeout: 10000 }).catch(() => {});
+  const pj = await O.evaluate(() => +window.__mp()?.querySelector('.jimg img')?.closest('.jimg')?.dataset.jid || 0);
+  await O.evaluate(() => window.__mp()?.querySelector('.jimg img').closest('.jimg').click()); await O.waitForSelector('.lightbox.on .lbdel', { timeout: 10000 }).catch(() => {});
   await O.click('.lightbox.on .lbdel'); const asks = await O.evaluate(() => /Tap again/.test(document.querySelector('.lightbox.on .lbdel')?.textContent ?? '')); await O.click('.lightbox.on .lbdel');
   const gone = await D.waitForFunction((j) => !window.__game.photos?.has(j) && window.__game.journal.find((e) => e.id === j)?.photo === false, pj, { timeout: 10000 }).then(() => true, () => false);
   await D.reload(); await D.waitForFunction(() => window.__game?.journal?.length, null, { timeout: 120000 });
