@@ -716,6 +716,12 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .fnext{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:space-between;width:calc(100% - 88px);margin:4px 0 0 88px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.06);font-size:14px;color:rgba(230,240,250,.78)}
 #sheet .fnext i{font-style:normal;font-size:18px;color:rgba(235,242,250,.6)}
 @media (max-width:379px){#sheet .fnext{width:100%;margin-left:0}}
+/* Feed: the status is a label, not a button (a coloured dot and word); the Feed button is the only button */
+#sheet .fpill{background:none!important;box-shadow:none!important;padding:0!important;font-size:13px!important;font-weight:600;letter-spacing:.01em;display:flex;align-items:center;gap:6px;top:16px!important;right:16px!important}
+#sheet .fpill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+#sheet .fpill.full{color:#6fd99a!important}#sheet .fpill.ok{color:#f0c35a!important}#sheet .fpill.hungry{color:#ff9a6b!important}
+#sheet .fgo{bottom:auto!important;top:50%;transform:translateY(-10%)}
+#sheet .fnext{background:none!important;padding:6px 2px!important;font-size:13.5px!important}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
