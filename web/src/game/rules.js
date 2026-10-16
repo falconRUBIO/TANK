@@ -1099,7 +1099,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
-  return c.filter((x) => x[0] > 0 && x[0] <= ((x[2] === '🥚' || x[2] === '🌿') && /hatches|born/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      // (what is coming soon: the next eight hours, or a day ahead for an egg or a birth).map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
+  return c.filter((x) => x[0] > 0 && x[0] <= ((x[2] === '🥚' || x[2] === '🌿') && /hatches|born/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours, or a day ahead for an egg or a birth) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];

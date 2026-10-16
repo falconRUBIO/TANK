@@ -677,6 +677,26 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 /* small phones (iPhone SE and the like): a card never runs off the screen, it scrolls; a hint sits under the top bar, wide, instead of squeezed beside it */
 #modal .box{max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
 @media (max-width:379px){#toast{top:calc(env(safe-area-inset-top,0px) + 58px)!important;max-width:calc(100% - 32px)!important}#modal .box{padding:16px;gap:10px}}
+/* Feed: its own screen, a card per animal (Design 2) */
+#sheet .fhead{position:relative;text-align:center;padding:2px 44px 6px}#sheet .fhead h3{margin:0;font-size:22px;font-weight:600;letter-spacing:0;text-transform:none;color:#f2f7fb}#sheet .fhead p{margin:4px 0 0;font-size:14px;color:rgba(230,240,250,.7)}
+#sheet .fhead .fx{all:unset;cursor:pointer;position:absolute;right:4px;top:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(240,246,252,.85);border-radius:50%}
+#sheet .fcards{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+#sheet .fcard{all:unset;box-sizing:border-box;position:relative;display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;width:100%;padding:14px 14px 14px 12px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);cursor:pointer}
+#sheet button.fcard:active{transform:scale(.985)}#sheet .fcard.isfull{opacity:.82}
+#sheet .fthumb{width:64px;height:64px;object-fit:contain;image-rendering:pixelated;transform:scale(1.55);transform-origin:center}      
+#sheet .fmid{display:flex;flex-direction:column;gap:2px;min-width:0}#sheet .fmid b{font-size:17px;color:#f2f7fb}#sheet .fmid small{font-size:13px;color:rgba(225,235,245,.66)}
+#sheet .ffood{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:rgba(235,242,250,.9)}#sheet .ffood img,#sheet .ffood svg{width:22px;height:22px}
+#sheet .fpill{position:absolute;top:12px;right:12px;font-style:normal;font-size:13px;font-weight:600;padding:4px 12px;border-radius:999px}
+#sheet .fpill.full{background:rgba(52,140,80,.75);color:#e3ffea}#sheet .fpill.ok{background:rgba(160,120,30,.75);color:#fff1c4}#sheet .fpill.hungry{background:rgba(190,80,40,.8);color:#ffe6da}
+#sheet .fcard .chev{position:absolute;right:16px;top:58%;font-style:normal;font-size:22px;color:rgba(235,242,250,.6)}
+#sheet .fcard .fby{grid-column:1/-1;font-size:12px;color:rgba(225,235,245,.55)}
+#sheet .fcard.fish{display:block;cursor:default}#sheet .fcard .ftop{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:12px}
+#sheet .ftiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+#sheet .ftile{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 4px 10px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);cursor:pointer;text-align:center}
+#sheet .ftile:active{transform:scale(.97)}#sheet .ftile[disabled]{opacity:.45;cursor:default}#sheet .ftile b{font-size:14px;color:#f2f7fb}#sheet .ftile small{font-size:12px;color:rgba(225,235,245,.7)}#sheet .ftile .ffav{position:absolute;top:6px;right:8px;font-style:normal;font-size:11px;color:#ff9fb0}
+#sheet .finfo{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+#sheet .finfo i{flex:none;width:24px;height:24px;border-radius:50%;background:rgba(235,242,250,.85);color:#1b2a3a;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif}#sheet .finfo p{margin:0;font-size:14px;color:rgba(235,242,250,.85)}
+#sheet .crow.hot{border:1px solid rgba(240,200,90,.75);background:linear-gradient(90deg,rgba(240,200,90,.16),rgba(240,200,90,.05))}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
