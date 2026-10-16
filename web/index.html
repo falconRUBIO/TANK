@@ -722,6 +722,11 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .fpill.full{color:#6fd99a!important}#sheet .fpill.ok{color:#f0c35a!important}#sheet .fpill.hungry{color:#ff9a6b!important}
 #sheet .fgo{bottom:auto!important;top:50%;transform:translateY(-10%)}
 #sheet .fnext{background:none!important;padding:6px 2px!important;font-size:13.5px!important}
+/* Care: a chore that is due looks like Feed (gold row, one gold button); one that is not has no button */
+#sheet .crow.due{border:1px solid rgba(240,200,90,.75)!important;background:linear-gradient(90deg,rgba(240,200,90,.16),rgba(240,200,90,.05))!important;border-radius:16px}
+#sheet .crow .cbtn{all:unset;cursor:pointer;flex:none;padding:8px 18px;border-radius:999px;font-weight:700;font-size:14px;color:#2a1c00;background:linear-gradient(180deg,#ffd76a,#f0b43a);box-shadow:0 4px 12px -4px rgba(240,180,58,.7),inset 0 1px 0 rgba(255,255,255,.6)}
+#sheet .playsoon2{margin:8px 4px 0;font-size:13px;color:rgba(230,240,250,.6)}
+#sheet .ftile small{white-space:nowrap;font-size:11.5px}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

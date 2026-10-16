@@ -101,7 +101,7 @@ function flyShells(n, from = [window.innerWidth / 2, window.innerHeight * 0.55])
 const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.delta > 1 ? 's' : ''}`); flyShells(r.delta); } };
 
 // feeding
-// The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and only the tank is left: tap the water.
+// The food is chosen inside the Care menu (game.feedFood). Once you tap Feed the menu closes and the meal drops in by itself.
 // Feeding: tapping Feed shows what can be fed just above the bar, then a tap on the water drops it.
 // which foods make sense: crabs for an octopus, flakes and the rest for fish. A tank with only octopuses is offered crabs alone.
 // the octopuses this caretaker may feed: their own (in a shared tank), or any in a solo tank; the hungriest first
@@ -113,6 +113,7 @@ const dropWord = (k) => { if (k === 'crab') return `a crab for ${myOctos()[0]?.n
 const FOOD_ICON = { flakes: '🫧', pellets: '🟤', treats: '🍤', mysis: '🦐', crab: '🦀' };
 // the food was chosen in the Care drawer; while feeding, a small strip at the top says what a tap does, and the tank below is left clear
 function renderFoodbar() {
+  if (autoFeed) return;
   const bar = $('foodbar'), k = defaultFood();
   const ks = foodsFor().map(([x]) => x), left = Math.max(0, 3 - feedDrops), many = ks.length > 1, d = FOODS[k];
   // the food (tap it to change) and who it is for, then what to do and how many drops are left
@@ -123,11 +124,16 @@ function renderFoodbar() {
 function startFeed() { if (!foodsFor().length) { const o = game.state.fish.find((f) => (f.species === 'octopus' || f.species === 'seahorse') && !f.dead); ui.toast(o ? `Only ${o.ownerName ?? 'its caretaker'} can feed ${o.name}.` : 'Nothing to feed yet.', 3000); return; } cancelModes(); feedMode = true; feedDrops = 0; feedIdle = 0; renderFoodbar(); }
 // chosen in the Care menu: the menu closes and the food goes straight in, above the animal it is for (or the fish), where you can see it;
 // the bar stays for a second or third drop if you want one
+// (no tapping the water: the whole meal goes in by itself, a crab beside the octopus, or up to three pinches spread over the fish or the seahorse,
+// stopping as soon as they have had enough; no food bar)
+let autoFeed = false;
 function feedGo() {
-  startFeed(); if (!feedMode) return;
-  const f = game.feedFor && fishes.byId.get(game.feedFor), fish = fishes.list.filter((x) => !x.dead && !x.visitor && x.species?.move !== 'jet' && x.sk !== 'seahorse');
-  const x = f ? f.pos.x : fish.length ? fish.reduce((a, o) => a + o.pos.x, 0) / fish.length : 0;
-  dropFood(Math.max(-3.6, Math.min(3.6, x)));
+  autoFeed = true; startFeed(); if (!feedMode) { autoFeed = false; return; } $('foodbar')?.classList.remove('on');
+  const food = defaultFood(), f = game.feedFor && fishes.byId.get(game.feedFor), fish = fishes.list.filter((x) => !x.dead && !x.visitor && x.species?.move !== 'jet' && x.sk !== 'seahorse');
+  const x0 = f ? f.pos.x : fish.length ? fish.reduce((a, o) => a + o.pos.x, 0) / fish.length : 0, at = (dx) => Math.max(-3.6, Math.min(3.6, x0 + dx));
+  const still = () => { const oc = game.feedFor && game.state.fish.find((q) => q.id === game.feedFor); return food === 'crab' || food === 'mysis' ? !!oc && ownHunger(oc) >= 0.08 : (game.state.hunger ?? 0) >= 0.08; };
+  const n = food === 'crab' ? 1 : 3, spread = [0, -0.9, 0.9];
+  (async () => { for (let i = 0; i < n; i++) { if (i && (!still() || !feedMode)) break; await dropFood(at(spread[i])); if (i < n - 1) await new Promise((r) => setTimeout(r, 650)); } autoFeed = false; endFeed(); })();
 }
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
@@ -136,7 +142,7 @@ async function dropFood(x) {
   if (own ? !oc || ownHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for ${food === 'crab' ? 'a crab' : 'shrimp'} ${hrs((0.08 - ownHunger(oc)) / OHR / 3600)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) / HR / 3600)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
   if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
-  feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed(); else renderFoodbar();
+  feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed(); else if (!autoFeed) renderFoodbar();
   const r = await game.dispatch({ t: 'feed', x, food, fish: oc?.id }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
 }
@@ -1007,7 +1013,7 @@ const tut = (() => {
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
-        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then tap the water to drop ${s.fish[0]?.species === 'octopus' ? 'a crab' : 'food'}.`, skip: skip }); ui.pulse('care');
+        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then Feed on ${s.fish[0]?.species === 'octopus' ? 'its card: a crab drops in for it' : 'their card: the food drops in'}.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Crew tab so three friends can join.` : 'Up to four friends can care for one tank. Tap Invite in the Crew tab and they join with a six-character code.';
@@ -1517,7 +1523,7 @@ async function boot() {
   } else game.startLocal();
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
-    act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: startFeed, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), hide: () => hideTreat(), crab: () => giveCrab() }[a]?.()),
+    act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: feedGo, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), hide: () => hideTreat(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
