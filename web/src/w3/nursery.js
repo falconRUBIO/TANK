@@ -8,7 +8,7 @@ import { sandH } from './terrain.js';
 
 // a baby seahorse in profile, one voxel thick: [x forward, y up, color] (0 body, 1 belly, 2 eye)
 const CELLS = [[1, 8, 0], [1, 7, 0], [2, 7, 2], [2, 6, 0], [3, 6, 0], [4, 6, 0], [1, 6, 0], [0, 5, 0], [1, 5, 1], [0, 4, 0], [1, 4, 1], [0, 3, 0], [1, 3, 1], [0, 2, 0], [0, 1, 0], [-1, 0, 0], [-1, -1, 0], [0, -2, 0], [1, -1, 0]];
-const MAX = 12, CELL = 0.085;      // voxel size at birth (the tracked babies start at about the same height)
+const MAX = 12, CELL = 0.085, SWARM = 0.6;      /* (the rest of the brood are specks beside the three tracked babies: a flat little shape reads as a speck, not a cutout) */      // voxel size at birth (the tracked babies start at about the same height)
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _c = new THREE.Color();
 
 export class Nursery {
@@ -53,7 +53,7 @@ export class Nursery {
       const goal = G.t < 1.5 ? _p.copy(G.c).add(_s.set(Math.sin(f.ph + t) * 0.4, Math.cos(f.ph * 2 + t) * 0.3, 0)) : _p.set(G.c.x + Math.sin(f.ph) * 0.6, 20, G.c.z);
       const to = _p.sub(f.pos), d = to.length() || 1; to.multiplyScalar((G.t < 1.5 ? 0.9 : 1.3) * Math.min(1, d) / d);
       f.vel.lerp(to, Math.min(1, dt * 2)); f.pos.addScaledVector(f.vel, dt); f.head += dt * 0.5;
-      const size = CELL * (f.big ?? 2.07) * Math.max(0, 1 - Math.max(0, G.t - 2) / 2.5);
+      const size = CELL * (f.big ?? 2.07 * SWARM) * Math.max(0, 1 - Math.max(0, G.t - 2) / 2.5);
       _q.setFromAxisAngle(_up, f.head); _s.set(size, size, size);
       for (const c of CELLS) { _p.set(c[0] * size, c[1] * size, 0).applyQuaternion(_q).add(f.pos); _m.compose(_p, _q, _s); this.mesh.setMatrixAt(j++, _m); }
     }
@@ -64,7 +64,7 @@ export class Nursery {
     if (this.going) return this.goingUpdate(dt, t);
     const N = state?.nursery; if (!N || !this.fry.length) return;
     for (const f of fishes.list) if (f.nursery && !f.dead) this.track.set(f.fid, { pos: f.pos.clone(), head: f.heading ?? 0, size: CELL * (1 + 1.07 * Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born)))), col: f.nurseryCol ?? (this.fry[0]?.col) });
-    const nk = Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), size = CELL * (1 + 1.07 * nk), dad = fishes.byId.get(N.father);
+    const nk = Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), size = CELL * SWARM * (1 + 1.07 * nk), dad = fishes.byId.get(N.father);
     const plants = (fishes.plantSpots?.length ? fishes.plantSpots : (fishes.spots?.() ?? []).filter((q) => ['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone'].includes(q.type)));
     const food = fishes.flakes ?? [];
     let j = 0;
