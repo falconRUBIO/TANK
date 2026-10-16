@@ -34,5 +34,9 @@ ck('the bell\'s notices are not mixed into the journal', await O.evaluate(() => 
 await O.evaluate(() => document.querySelector('#sheet .jpost .jimg').click()); await O.waitForTimeout(500);
 ck('tapping the photo opens it full screen with its line', await O.evaluate(() => /looked in at you/.test(document.querySelector('.lightbox.on p')?.textContent ?? '')));
 if (process.env.OUT) { await O.screenshot({ path: process.env.OUT + '/lightbox.png' }); await O.evaluate(() => document.querySelector('.lightbox')?.click()); await O.waitForTimeout(500); await O.screenshot({ path: process.env.OUT + '/journal.png' }); }
+await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.evaluate(() => document.querySelector('#sheet .jpost .jpc').click());
+const pc = await O.waitForSelector('#modal.on .pcprev img', { timeout: 30000 }).then(() => true, () => false);
+ck('"Send as a postcard" makes a postcard of that moment, ready to share', pc && await O.evaluate(() => !!document.querySelector('#modal.on #mok')));
+if (process.env.OUT && pc) { const src = await O.evaluate(() => document.querySelector('#modal.on .pcprev img').src); const b64 = await O.evaluate(async (u) => { const r = await fetch(u); const bl = await r.blob(); return await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }); }, src); fs.writeFileSync(process.env.OUT + '/moment_postcard.png', Buffer.from(b64.split(',')[1], 'base64')); }
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); fs.rmSync(tmp, { recursive: true, force: true }); console.log(fails ? `${fails} failed` : 'Journal checks passed'); process.exit(fails ? 1 : 0);

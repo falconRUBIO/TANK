@@ -459,13 +459,17 @@ function postcardText() {
   return [`${rec.name} the ${kind}`, now ? clean(now) : recent ? clean(recent.text) : age ?? 'Having a lovely day in the tank.'];
 }
 function wrapText(g, text, maxW) { const words = String(text).split(' '), lines = []; let line = ''; for (const w of words) { const t2 = line ? line + ' ' + w : w; if (g.measureText(t2).width > maxW && line) { lines.push(line); line = w; } else line = t2; } if (line) lines.push(line); return lines.slice(0, 3); }
-async function takePhoto() {
-  postcardCaption.subject = postcardSubject(); setTimeout(() => { postcardCaption.subject = null; }, 15000);
-  const hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #fishpill, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; const prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
-  await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
+async function takePhoto(opts = {}) {      // opts.img: a moment's photo from the journal instead of the tank as it is now (opts.title, opts.line its words)
+  let src = canvas, hidden = [], prev = [];
+  if (opts.img) { src = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = opts.img; }); }
+  else {
+    postcardCaption.subject = postcardSubject(); setTimeout(() => { postcardCaption.subject = null; }, 15000);
+    hidden = [...document.querySelectorAll('header, nav, #sheet, #goal, #card, #fishpill, #coach, #foodbar, #placebar, #toast, #glass, #reunion, #settle, #sub')]; prev = hidden.map((e) => e.style.visibility); hidden.forEach((e) => (e.style.visibility = 'hidden'));
+    await new Promise((r) => setTimeout(r, 80)); stg.renderer.info.reset(); composer.render();
+  }
   // a framed postcard: the tank as a photo on cream paper, a line about something that really happened, and who is in the tank
-  const SW = canvas.width, SH = canvas.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = Math.round(SW * 1.18), cy = (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 340, PH = M + IH2 + FOOT;
-  const shot = document.createElement('canvas'); shot.width = SW; shot.height = SH; shot.getContext('2d').drawImage(canvas, 0, 0, SW, SH);
+  const SW = src.width, SH = src.height, PW = 1080, M = 40, IW2 = PW - M * 2, crop = opts.img ? SH : Math.round(SW * 1.18), cy = opts.img ? 0 : (() => { const ys = fishes.list.filter((f) => !f.dead).map((f) => (1 - (f.pos.clone().project(camera).y * 0.5 + 0.5)) * SH); const mid = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : SH * 0.5; return Math.round(Math.max(0, Math.min(SH - crop, mid - crop * 0.42))); })(), IH2 = Math.round(IW2 * crop / SW), FOOT = 340, PH = M + IH2 + FOOT;
+  const shot = document.createElement('canvas'); shot.width = SW; shot.height = SH; shot.getContext('2d').drawImage(src, 0, 0, SW, SH);
   hidden.forEach((e, i) => (e.style.visibility = prev[i]));
   const out = document.createElement('canvas'); out.width = PW; out.height = PH; const g = out.getContext('2d'); g.textBaseline = 'alphabetic';
   const paper = g.createLinearGradient(0, 0, 0, PH); paper.addColorStop(0, '#f8f1de'); paper.addColorStop(1, '#efe5cb'); g.fillStyle = paper; g.fillRect(0, 0, PW, PH);
@@ -476,13 +480,13 @@ async function takePhoto() {
   const sheen = g.createLinearGradient(0, M, 0, M + IH2 * 0.25); sheen.addColorStop(0, 'rgba(255,255,255,.12)'); sheen.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = sheen; g.fillRect(M, M, IW2, IH2 * 0.25); g.restore();
   g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 2; g.beginPath(); g.roundRect(M, M, IW2, IH2, 26); g.stroke();
   // the caption in a soft serif, wrapped
-  const [title, line] = postcardText(), fy = M + IH2 + 74; g.fillStyle = '#3b2f1a'; g.font = '700 50px ui-serif, "New York", Georgia, serif'; g.fillText(title, M + 10, fy);
+  const [title, line] = opts.img ? [opts.title ?? 'A moment in the tank', opts.line ?? ''] : postcardText(), fy = M + IH2 + 74; g.fillStyle = '#3b2f1a'; g.font = '700 50px ui-serif, "New York", Georgia, serif'; g.fillText(title, M + 10, fy);
   g.fillStyle = '#5a4a2c'; g.font = 'italic 500 40px ui-serif, "New York", Georgia, serif'; wrapText(g, line, IW2 - 20).slice(0, 2).forEach((l, i) => g.fillText(l, M + 10, fy + 58 + i * 50));
   // a little rule, then the tank's name and the day, the people in it, and the mark
   const ry = PH - 96; g.strokeStyle = 'rgba(120,96,50,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + 10, ry - 34); g.lineTo(PW - M - 10, ry - 34); g.stroke();
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
-  const dateStr = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }); g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
+  const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      // (a moment's postcard carries the day it happened) g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
   g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 OUR TANK', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
@@ -1461,7 +1465,7 @@ async function boot() {
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
     devReset: async () => { const yes = await ui.dialog({ title: 'RESET TEST?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
     gift: () => offerGift(), closeCard: () => { sfx('tap'); setFocus(null); },
-    photo: takePhoto, pushState, pushToggle, pushTest, recoveryKey: async () => {
+    photo: takePhoto, momentPostcard: (img, text, tag, ts) => { const who = fishes.list.filter((f) => f.name && text.includes(f.name)).sort((a, b) => text.indexOf(a.name) - text.indexOf(b.name))[0]; return takePhoto({ img, title: who ? `${who.name}${tag ? ' · ' + tag.replace(/^\S+\s/, '') : ''}` : (tag.replace(/^\S+\s/, '') || 'A moment in the tank'), line: text, ts }); }, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {
         const k = await ensureRecoveryKey(), old = /^[A-Z0-9]{4}-[A-Z0-9]{4}/i.test(k) && !/^[a-z]+-[a-z]+-[a-z]+-[a-z]+$/.test(k);
         if (!old) { await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Four words that sign you back in to your tank on a new phone. Write them down somewhere safe.', lines: [k], ok: 'Done' }); return; }
