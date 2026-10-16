@@ -674,6 +674,9 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .set :is(#snd,#mus){all:unset;cursor:pointer;position:relative;width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.36);font-size:0;transition:background .25s}#sheet .set :is(#snd,#mus)::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.04);transition:transform .25s cubic-bezier(.3,1.3,.5,1)}
 #sheet .set :is(#snd,#mus).on{background:#34c759}#sheet .set :is(#snd,#mus).on::after{transform:translateX(20px)}
 #sheet .card b{white-space:normal!important;overflow:visible!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;text-align:center}
+/* small phones (iPhone SE and the like): a card never runs off the screen, it scrolls; a hint sits under the top bar, wide, instead of squeezed beside it */
+#modal .box{max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
+@media (max-width:379px){#toast{top:calc(env(safe-area-inset-top,0px) + 58px)!important;max-width:calc(100% - 32px)!important}#modal .box{padding:16px;gap:10px}}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

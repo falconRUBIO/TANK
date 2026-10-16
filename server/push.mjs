@@ -14,6 +14,9 @@ export function vapidFor(db, env = process.env) {
 // Phones only ever hand out an address at their own platform's push service. Anything else would make the server send requests wherever a stranger points it.
 const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)(:443)?\//;
 // what a notification is about, for the per-kind switches in Settings
+// how much a message matters when the day's limit is near: what needs a caretaker or happens once (hungry, a birth, a gift for you) still gets
+// through after something lighter went out; the lighter news (a new pair, growing up) never takes the day's only place from it
+export const prioOf = (body) => { const b = String(body); return /hungry|gave birth|ready! Choose|about to hatch|passed away|gift is waiting|sent you a bottle/i.test(b) ? 'high' : /are a pair now|is expecting|all grown up|is an adult/i.test(b) ? 'low' : 'normal'; };
 export const kindOf = (body) => { const b = String(body); return /\begg|hatch|spawn|gave birth|expecting|baby|babies|are a pair now/i.test(b) ? 'eggs' : /gift|bottle|thank/i.test(b) ? 'gifts' : /hungry|water|shrimp|crab/i.test(b) ? 'hungry' : /joined|says/i.test(b) ? 'friends' : 'visitors'; };
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
   const enabled = !!(sender || (publicKey && privateKey));
@@ -36,7 +39,7 @@ export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
       if (!force) { let off = {}; try { off = JSON.parse(db.prepare('SELECT v FROM kv WHERE k=?').get('pushpref:' + userId)?.v ?? '{}'); } catch { /* none */ } if (off[kind] === false) return false; }      // a kind they switched off
       const subs = db.prepare('SELECT * FROM push_subs WHERE user_id=?').all(userId); if (!subs.length) return false;
       if (!force) { const h = localHour(now, subs[0].offset_min); if (h < 8 || h >= 22) return false;
-        if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= cap) return false; }
+        const pr = prioOf(body), lim = pr === 'high' ? Math.max(cap, 3) : pr === 'low' ? 1 : cap; if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= lim) return false; }
       let sent = false;
       for (const s of subs) {
         try { await deliver({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify({ title: 'OUR TANK', body: String(body).slice(0, 120), url })); sent = true; }
