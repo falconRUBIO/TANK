@@ -697,6 +697,18 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .finfo{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 #sheet .finfo i{flex:none;width:24px;height:24px;border-radius:50%;background:rgba(235,242,250,.85);color:#1b2a3a;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif}#sheet .finfo p{margin:0;font-size:14px;color:rgba(235,242,250,.85)}
 #sheet .crow.hot{border:1px solid rgba(240,200,90,.75);background:linear-gradient(90deg,rgba(240,200,90,.16),rgba(240,200,90,.05))}
+#sheet .fcard.hungry{border-color:rgba(240,150,90,.6);box-shadow:0 0 0 1px rgba(240,150,90,.25) inset}
+#sheet .fcard .chev{top:62px!important}#sheet .ftiles.rest .ftile{opacity:.5}#sheet .ftile.poor{opacity:.45}
+#sheet .finfo2{grid-column:1/-1;margin-top:6px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:6px;text-align:left}
+#sheet .finfo2 p{margin:0;font-size:13px;color:rgba(230,240,250,.8)}#sheet .finfo2 b{color:#f2f7fb}#sheet .finfo2 .fwhy{color:rgba(230,240,250,.58);font-size:12px}
+#sheet .finfo2 .fh{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#sheet .finfo2 .fh i{display:block;height:100%;border-radius:3px;background:#56c98a}#sheet .finfo2 .fh.ok i{background:#e7b84a}#sheet .finfo2 .fh.hungry i{background:#f08a5a}
+/* Feed screen, closer to Design 2: taller sheet, bigger pictures, names and pills, the fish tiles beside the picture */
+#sheet.feedv{height:min(78vh,calc(100vh - var(--top) - var(--bar) - 30px))!important}
+#sheet .fcard{grid-template-columns:76px 1fr auto;padding:14px 16px 14px 12px}#sheet .fthumb{width:76px;height:76px;transform:scale(1.6)}
+#sheet .fmid b{font-size:19px;font-weight:600}#sheet .fmid small{font-size:14px}#sheet .ffood{font-size:15px}
+#sheet .fpill{font-size:14px;padding:5px 14px;top:14px;right:14px}#sheet .fpill.full{background:#2f8a4e;color:#fff}#sheet .fpill.ok{background:#a37c22;color:#fff}#sheet .fpill.hungry{background:#c4552c;color:#fff}
+#sheet .fcard .ftop{grid-template-columns:76px 1fr}#sheet .fcard.fish .ftiles{margin:6px 0 0 88px}#sheet .ftile{padding:10px 4px 8px}
+@media (max-width:379px){#sheet .fcard.fish .ftiles{margin-left:0}}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Notices"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
