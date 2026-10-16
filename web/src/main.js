@@ -716,13 +716,38 @@ function tipsTick() {
 const SHOT_SKIP = /settled into a daily routine|have begun swimming together|comfortable near the glass|keeps coming back to|took on the colou?r|^.{1,40} fed |changed the water|cleaned the glass|trimmed|restyled|ordered |^Chapter:|began\.?$|wish came true|request|looked after|left the tank|joined|passed away|still wrapped/i;
 function actorOf(text) {
   const names = fishes.list.filter((f) => !f.dead && f.name).sort((a, b) => b.name.length - a.name.length), hit = names.map((f) => ({ f, i: text.indexOf(f.name) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i);
-  if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos }; }
-  if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos, r: Math.max(a.radius ?? 1, b?.radius ?? 0) };      // two animals in it: frame both
+  if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos, who: [eg.group, hit[0]?.f.group].filter(Boolean) }; }
+  if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos, r: Math.max(a.radius ?? 1, b?.radius ?? 0), who: [a.group, b?.group].filter(Boolean) };      // two animals in it: frame both
+}
+// where the camera can really see the moment: from the front first, then from the sides and above. A plant or rock in the way moves the camera; an animal
+// tucked away out of sight (in its den, behind the coconut) is not photographed at all, rather than a close-up of the thing hiding it.
+// how much of the animal really shows from a spot: a tiny render of it alone (its whole outline), then the tank with and without it; its pixels that change are the ones you see
+const PW = 64, PH = 48, prt = new THREE.WebGLRenderTarget(PW, PH), pbuf = [0, 1, 2].map(() => new Uint8Array(PW * PH * 4));
+function shownFrac(cam, who) {
+  const r = stg.renderer, prev = r.getRenderTarget(), bg = scene.background, fog = scene.fog, cc = r.getClearColor(new THREE.Color()), ca = r.getClearAlpha(), grab = (k) => { r.setRenderTarget(prt); r.clear(); r.render(scene, cam); r.readRenderTargetPixels(prt, 0, 0, PW, PH, pbuf[k]); };
+  grab(0); who.forEach((g) => (g.visible = false)); grab(1); who.forEach((g) => (g.visible = true));
+  const hid = []; scene.children.forEach((o) => { if (o.visible && !who.includes(o)) { o.visible = false; hid.push(o); } }); scene.background = null; scene.fog = null; r.setClearColor(0, 0); grab(2);
+  hid.forEach((o) => (o.visible = true)); scene.background = bg; scene.fog = fog; r.setClearColor(cc, ca); r.setRenderTarget(prev);
+  let all = 0, seen = 0; const [A, B, C] = pbuf; for (let i = 0; i < PW * PH * 4; i += 4) if (C[i + 3] > 0) { all++; if (Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]) > 18) seen++; }
+  return all ? seen / all : 0;
+}
+// where the camera can really see the moment: from the front first, then from the sides and above. A plant or rock in the way moves the camera; an animal
+// tucked away out of sight (in its den, under the coconut) is not photographed at all, rather than a close-up of the thing hiding it.
+function clearView(cam, c, d, who) {
+  const tries = [[0.25, 0.3], [-0.6, 0.3], [0.8, 0.25], [0, 0.9], [-0.9, 0.6], [0.9, 0.7]]; let best = null;
+  for (const [ax, ay] of tries) {
+    const v = new THREE.Vector3(c.x + ax * d, c.y + ay * d * 0.6, c.z + d * Math.cos(ax * 0.9)); v.z = Math.min(v.z, 16); v.y = Math.max(v.y, 0.4);
+    if (!who.length) return v; cam.position.copy(v); cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld(); const f = shownFrac(cam, who);
+    if (f > 0.85) return v; if (!best || f > best[1]) best = [v, f];
+  }
+  return best[1] > 0.75 ? best[0] : null;      // only partly hidden from every side: the clearest view, if most of it shows
 }
 function shootAt(A) {
   const r = stg.renderer, W = 480, H = 360, rt = (shootAt.rt ||= new THREE.WebGLRenderTarget(W, H, { colorSpace: THREE.SRGBColorSpace })), cam = (shootAt.cam ||= new THREE.PerspectiveCamera(38, W / H, 0.1, 200));
-  const c = A.with ? A.at.clone().lerp(A.with, 0.5) : A.at.clone();
-  const s = Math.max(A.with ? A.at.distanceTo(A.with) : 0, (A.r ?? 1) * 1.6, 0.8); cam.fov = 30; cam.updateProjectionMatrix(); cam.position.set(c.x + 0.25 * s, c.y + 0.3 * s, Math.min(c.z + 0.9 + s * 1.1, 16));      /* close in on the moment itself: the animal (or the two) fill the picture */ cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld();
+  const box = new THREE.Box3(); (A.who ?? []).forEach((g) => box.expandByObject(g)); if (A.with && !A.who?.[1]) box.expandByPoint(A.with);      // framed to how the animals really look: a tall seahorse, a long fish
+  const c = box.isEmpty() ? (A.with ? A.at.clone().lerp(A.with, 0.5) : A.at.clone()) : box.getCenter(new THREE.Vector3()), z = box.isEmpty() ? null : box.getSize(new THREE.Vector3());
+  const s = z ? Math.max(z.y * 1.25, Math.hypot(z.x, z.z) * 0.95, 0.6) : Math.max(A.with ? A.at.distanceTo(A.with) : 0, (A.r ?? 1) * 1.6, 0.8), d = 0.9 + s * 1.1; cam.fov = 30; cam.updateProjectionMatrix();
+  const view = clearView(cam, c, d, A.who ?? []); if (!view) return null; cam.position.copy(view);      /* close in on the moment itself: the animal (or the two) fill the picture */ cam.lookAt(c.x, c.y, c.z); cam.updateMatrixWorld();
   const prev = r.getRenderTarget(); r.setRenderTarget(rt); r.render(scene, cam); const px = new Uint8Array(W * H * 4); r.readRenderTargetPixels(rt, 0, 0, W, H, px); r.setRenderTarget(prev);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H); for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);      // (the picture comes out upside down)
   g.putImageData(im, 0, 0); return cv.toDataURL('image/jpeg', 0.72);
@@ -730,11 +755,11 @@ function shootAt(A) {
 game.on('journal', (e) => {
   if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
-  setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A);
+  setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
     if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
     else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, 450);      // a moment later, while it is still happening
 });
-window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius }) : null; };
+window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
 const perf = { t0: performance.now(), n: 0 };
 function perfTick() {
