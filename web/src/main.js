@@ -1065,6 +1065,7 @@ async function offerGift() {
 let heldChapters = [], tipsDoneAt = 0, sawTips = false;
 function maybeGift() {
   const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || heldChapters.length || (tipsDoneAt && Date.now() - tipsDoneAt < 45e3) || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
+  if (nurseryFx.going || fishes.list.some((f) => f.birthT > 0)) return;      // (a birth or the babies' send-off on screen: the gift waits)
   if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
   if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) setTimeout(() => { if (!$('modal').classList.contains('on')) offerGift(); }, 1200);
   else giftOffered = Date.now();

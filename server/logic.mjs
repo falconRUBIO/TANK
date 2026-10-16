@@ -301,7 +301,7 @@ export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
     for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died, milestone: e.milestone, puzzle: e.puzzle, crab: e.crab, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
+      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, now), birth: e.birth, ready: e.ready, court: e.court, pair: e.pair, toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died, milestone: e.milestone, puzzle: e.puzzle, crab: e.crab, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
       else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival, want: e.want });
       if (e.activity) out.push({ activity: addActivity(db, tankId, null, e.activity.type, e.activity.text, now) });
     }

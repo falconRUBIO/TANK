@@ -378,6 +378,17 @@ await t('push: a caretaker hears that their own octopus is hungry (once in 12 ho
     const wo = await open(y.token); await new Promise((r) => setTimeout(r, 100)); const w3 = getW(tk.id); w3.fish[0].born = Date.now() - 3 * 864e5 - 1800e3; w3.fish[0].id += 'b'; setW(tk.id, { fish: w3.fish });
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(pushed.some((q) => /all grown up/.test(q.payload.body)), 'a friend has the tank open: the one away still hears it: ' + JSON.stringify(pushed.map((q) => q.payload.body))); wo.close(); }
 });
+await t('push: a seahorse birth in a closed tank reaches the caretakers who are away, as eggs and babies news', async () => {
+  const x = await mkUser('SeaDad'), tk = (await call('/api/tanks', { name: 'Brood' }, x.token)).body;
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/sea1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
+  const now = Date.now(), born = now - 20 * 864e5, sea = (id, name, sex, extra = {}) => ({ id, name, species: 'seahorse', seed: id.length * 7, born, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, hunger: 0, owner: x.id, ...extra });
+  setW(tk.id, { fish: [sea('sm', 'Sunny', 'm', { preg: { start: now - 7 * 864e5, due: now - 1000, mother: 'sf', ma: { id: 'sf', name: 'Pearl' }, seed: 12345, n: 11 } }), sea('sf', 'Pearl', 'f')], simTs: now - 2000, flags: { tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
+  const b = pushed.find((q) => /gave birth/.test(q.payload.body)); assert.ok(b, 'told: ' + JSON.stringify(pushed.map((q) => q.payload.body)));
+  const { kindOf } = await import('./push.mjs'); assert.equal(kindOf(b.payload.body), 'eggs'); assert.equal(kindOf("They're ready! Choose one baby seahorse to stay."), 'eggs'); assert.equal(kindOf('Sunny is expecting! The babies will come in about a week.'), 'eggs');
+  assert.ok(getW(tk.id).nursery, 'and the nursery began');
+});
 await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the one-a-day cap are respected', async () => {
   const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
   const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;

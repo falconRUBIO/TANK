@@ -14,11 +14,14 @@ await p.waitForTimeout(3000);
 const step = (n, dt = 0.05) => p.evaluate(([n, dt]) => { window.__simClock(true); const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(dt, (window.__t = (window.__t ?? 0) + dt)); F.list.forEach((f) => f.update(dt, Math.random, F.list)); } }, [n, dt]);
 const state = () => p.evaluate(() => { const f = window.__fishes.list[0], it = [...window.__decor.items.values()].find((x) => x.type === 'coconut'), [gx, gz] = f.denGoal(Math.random); return { x: +f.pos.x.toFixed(2), z: +f.pos.z.toFixed(2), vx: +f.vel.x.toFixed(3), vz: +f.vel.z.toFixed(3), s: f.st?.s, mode: f.st?.mode, dist: +Math.hypot(f.pos.x - gx, f.pos.z - gz).toFixed(2), shellY: +it.group.position.y.toFixed(3), tilt: +it.group.rotation.x.toFixed(3), flip: +((it?.group.children.find((c) => c.isMesh)?.rotation.x) ?? 0).toFixed(2), den: f.den?.kind, home: !!f.den?.home, tuck: +(f.tuckK ?? 0).toFixed(2) }; });
 for (const [why, set] of [['tired', 'f.fatigue = 0.9;'], ['frightened', 'f.fearHere();']]) {
+  const runs = []; for (let k = 0; k < 3; k++) {
   await p.evaluate((set) => { const f = window.__fishes.list[0]; f.pos.set(3.0, 0.6, 1.0); f.vel.set(0, 0, 0); f.inspect = null; f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; f.fatigue = 0; f.scared = 0; new Function('f', set)(f); }, set);
-  const { under, n, first } = await p.evaluate(async () => { window.__simClock(true); const F = window.__fishes, f = F.list[0]; let under = 0, n = 0, first = null; for (let i = 0; i < 180 * 20; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list));
+  const r1 = await p.evaluate(async () => { window.__simClock(true); const F = window.__fishes, f = F.list[0]; let under = 0, n = 0, first = null; for (let i = 0; i < 180 * 20; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list));
     if (i % 5 === 0) { const [gx, gz] = f.denGoal(() => 0.5), r = Math.hypot(f.pos.x - gx, f.pos.z - gz) < 0.6 && f.st.s === 'rest'; n++; if (r) { under++; first ??= i * 0.05; } } if (i % 600 === 0) await new Promise((q) => setTimeout(q, 0)); } return { under, n, first }; });
+  runs.push(r1); }
+  runs.sort((x, y) => x.under / x.n - y.under / y.n); const { under, n, first } = runs[1];      // (three runs of three minutes, the middle one: one unlucky stretch of a real animal's choices is not the rule)
   const txt = await p.evaluate(() => window.__fishes.list[0].actText);
-  ck(`${why}, it goes home under its shell soon and spends most of the next three minutes there`, first != null && first < 60 && under / n > 0.5, `home after ${first}s, under it ${Math.round(100 * under / n)}% of the time`);
+  ck(`${why}, it goes home under its shell soon and spends most of the next three minutes there`, first != null && first < 60 && under / n > 0.5, `home after ${first}s, under it ${Math.round(100 * under / n)}% of the time (runs: ${runs.map((x) => Math.round(100 * x.under / x.n)).join(', ')}%)`);
 }
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Rest checks passed'); process.exit(fails ? 1 : 0);

@@ -14,7 +14,7 @@ export function vapidFor(db, env = process.env) {
 // Phones only ever hand out an address at their own platform's push service. Anything else would make the server send requests wherever a stranger points it.
 const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)(:443)?\//;
 // what a notification is about, for the per-kind switches in Settings
-export const kindOf = (body) => { const b = String(body); return /\begg|hatch|spawn/i.test(b) ? 'eggs' : /gift|bottle|thank/i.test(b) ? 'gifts' : /hungry|water|shrimp|crab/i.test(b) ? 'hungry' : /joined|says/i.test(b) ? 'friends' : 'visitors'; };
+export const kindOf = (body) => { const b = String(body); return /\begg|hatch|spawn|gave birth|expecting|baby|babies|are a pair now/i.test(b) ? 'eggs' : /gift|bottle|thank/i.test(b) ? 'gifts' : /hungry|water|shrimp|crab/i.test(b) ? 'hungry' : /joined|says/i.test(b) ? 'friends' : 'visitors'; };
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
   const enabled = !!(sender || (publicKey && privateKey));
   if (!sender && enabled) webpush.setVapidDetails(subject || 'mailto:admin@example.com', publicKey, privateKey);
