@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const W = +(process.env.W || 390), H = +(process.env.H || 760), out = process.env.OUT || '/tmp/audit'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); });
-const shot = async (n) => { await p.waitForTimeout(900); await p.screenshot({ path: `${out}/${n}.png` }); };
+const shot = async (n) => { await p.waitForTimeout(900); if (!/levelup|chapter/.test(n)) { const g = await p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && /A GIFT FOR YOU/.test(m.textContent)) { m.querySelector('#mok')?.click(); return true; } return false; }); if (g) await p.waitForTimeout(900); }      /* (the daily gift waits to be claimed: claimed, so the screen underneath shows) */ await p.screenshot({ path: `${out}/${n}.png` }); };
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForTimeout(3000); await shot('01_open');
 const modal = await p.$('#modal.on #mok'); if (modal) { await shot('02_modal'); await modal.click(); }
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500); await shot('03_after_open');

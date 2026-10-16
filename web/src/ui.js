@@ -46,7 +46,7 @@ export function initUI({ game, social, cb }) {
   // one line of news is kept once. A countdown ("arrives in 47 min", "wipe in about 9h") is the same notice ticking, so it is updated in place, quietly, rather than added again every minute
   const noticeKey = (text) => (/\b\d+\s*(min|h|hours?|minutes?|days?)\b/.test(text) ? text.replace(/\d+/g, '#') : text);      // only a countdown ticks; 'level 3' and 'level 4' are two different moments
   const notice = (text, { tab = '', gift = false, kind = 'note' } = {}) => {
-    if (!text || /already collected|isn't hungry yet|is full for now|not yet|Not at this stage/i.test(text)) return; const now = Date.now(), key = noticeKey(text);      // (a reply to a tap is not news)
+    if (!text || /already collected|isn't hungry yet|is full for now|not yet|Not at this stage/i.test(text) || /^[+−-]\d+ (shells?|🐚)\.?$/i.test(text.trim()) || /^(Everything that needs you|Fish and decorations\. Press|Your crew: postcards|Everything that has happened)/.test(text)) return;      /* (nor is a bare shell count, or a hint about a tab: the Bell keeps what happened) */ const now = Date.now(), key = noticeKey(text);      // (a reply to a tap is not news)
     const same = notices.slice(0, 40).find((n) => n.text === text && now - n.ts < 3 * 864e5); if (same) return;
     const ticking = notices.slice(0, 40).find((n) => (n.key ?? noticeKey(n.text)) === key && key !== text && now - n.ts < 3 * 864e5);
     if (ticking) { ticking.text = text; ticking.tab = tab; ticking.gift = gift; ticking.kind = kind; noticeSave(); refreshNotices(); return; }
@@ -738,8 +738,9 @@ export function initUI({ game, social, cb }) {
   // coach card for the tutorial
   const coach = $('coach');
   function showCoach(args) {
-    const { title, text, button = null, onButton = null, skip = null } = args; coach._args = args; if (hushed()) { coachLater = args; coach.classList.remove('on'); return; }
-    coach.innerHTML = `<b>${esc(title)}</b><p>${esc(text)}</p><div class="crow">${button ? `<button class="big sm" id="cbtn">${esc(button)}</button>` : ''}${skip ? `<button class="lnk" id="cskip">Skip tips</button>` : ''}</div>`;
+    const { title, text, button = null, onButton = null, skip = null, skipLabel = 'Skip tips' } = args; coach._args = args; if (hushed()) { coachLater = args; coach.classList.remove('on'); return; }
+    coach.innerHTML = `<b>${esc(title)}</b><p>${esc(text)}</p><div class="crow">${button ? `<button class="big sm" id="cbtn">${esc(button)}</button>` : ''}${skip ? `<button class="lnk" id="cskip">${esc(skipLabel)}</button>` : ''}</div>`;
+    for (const o of ['settle', 'reunion']) if ($(o).classList.contains('top') || o === 'reunion') $(o).classList.remove('on');      /* (a tip takes the top of the screen: a line already there steps aside, it is kept in the Bell) */
     coach.classList.add('on'); if (button) $('cbtn').onclick = () => onButton?.(); if (skip) $('cskip').onclick = skip;
   }
   const hideCoach = () => { coachLater = null; coach.classList.remove('on'); };
