@@ -156,7 +156,7 @@ export function importTank(db, user, data) {
   if (healCode) {
     // the code is already in use: a friend's phone put this tank back first. This phone must join that one, never start a second copy of the same tank
     const have = db.prepare('SELECT id FROM tanks WHERE code=?').get(healCode);
-    if (have) { const e = new GameError('CODE_TAKEN', 'This tank is already back. Join it with the same code.', 409); if (mergeCopy(db, have.id, world, copyTs, user, now)) e.merged = have.id; throw e; }
+    if (have) { const e = new GameError('CODE_TAKEN', 'This tank is already back. Join it with the same code.', 409); const ids = new Set([user.id, ...(was ?? [])]), sw = loadWorld(db, have.id).w, sameTank = sw.createdAt === w.createdAt && (sw.fish ?? []).some((f) => (w.fish ?? []).some((g) => g?.id === f.id && g?.born === f.born)); if ((members(db, have.id).some((m) => ids.has(m.id)) || sameTank) && mergeCopy(db, have.id, world, copyTs, user, now)) e.merged = have.id; throw e; }      // only a real copy of that very tank is folded in (the same birth time and the same animals, which nobody can guess from the code), or one from a member; anyone else with the code just joins
     world.flags.healed = now; world.flags.healedFrom = copyTs;
   }
   const made = createTank(db, user, data.tank?.name, world, healCode); return { ...made, fish: world.fish.length };
@@ -347,10 +347,10 @@ export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members
 export function snapshot(db, user, online = [], tank = null) {
   const t0 = tank ?? tankOf(db, user.id); if (!t0) return null;
   const { row, w } = loadWorld(db, t0.id);
-  for (const e of R.advance(w)) { if (e.journal) addJournal(db, t0.id, e.journal, null, Math.min(Date.now(), e.jat ?? Date.now())); if (e.activity) addActivity(db, t0.id, null, e.activity.type, e.activity.text); }     // growth and discoveries that happened while nobody was looking
+  const news = writeEvents(db, t0.id, R.advance(w), Date.now());      // (the same journal writer as every other path; the news goes to the phones too, see server.mjs)     // growth and discoveries that happened while nobody was looking
   saveWorld(db, t0.id, w);
   const names = Object.fromEntries(members(db, t0.id).map((m) => [m.id, m.name]));
-  return {
+  return { news,
     you: { userId: user.id, slot: t0.slot ?? members(db, t0.id).find((m) => m.id === user.id)?.slot ?? 1 }, ...(t0.test ? { test: true } : {}),
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,

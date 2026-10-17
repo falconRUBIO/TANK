@@ -41,7 +41,7 @@ export function initUI({ game, social, cb }) {
   const S = () => { const s = game.state; if (!s?.fish?.some((f) => f.gift?.wrapped)) return s; return { ...s, fish: s.fish.filter((f) => !f.gift?.wrapped) }; };      // a wrapped gift is shown nowhere until it is opened
   // ── notices: every hint, message and card is kept on this phone, newest first, with a bell that counts the new ones ──
   const NK = 'ourtank.notices', RK = 'ourtank.noticesRead';
-  let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = +(localStorage.getItem(RK) || 0);
+  let notices = (() => { try { return JSON.parse(localStorage.getItem(NK) || '[]').filter((n) => !n.gift && !/small gift is waiting/.test(n.text)); } catch { return []; } })(), readAt = (() => { try { return +(localStorage.getItem(RK) || 0); } catch { return 0; } })();      /* (storage blocked, as in a private window: the app still starts) */
   const noticeSave = () => { try { localStorage.setItem(NK, JSON.stringify(notices.slice(0, 80))); } catch { /* storage unavailable */ } };
   // one line of news is kept once. A countdown ("arrives in 47 min", "wipe in about 9h") is the same notice ticking, so it is updated in place, quietly, rather than added again every minute
   const noticeKey = (text) => (/\b\d+\s*(min|h|hours?|minutes?|days?)\b/.test(text) ? text.replace(/\d+/g, '#') : text);      // only a countdown ticks; 'level 3' and 'level 4' are two different moments
@@ -721,7 +721,9 @@ export function initUI({ game, social, cb }) {
   // one pop-up at a time: a new one waits until the one on screen is closed, so nothing is ever replaced half-way
   let modalShut = 0; new MutationObserver(() => { if (!modal.classList.contains('on')) modalShut = performance.now(); }).observe(modal, { attributes: true, attributeFilter: ['class'] });
   // ... and a breath between two in a row, so the second is seen as a new thing rather than the first changing under your finger
-  const modalFree = () => new Promise((res) => { const w = () => (modal.classList.contains('on') ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : res()); w(); });
+  // the screen is free: the first waiter takes it at once (a short claim, until it has put its card up), so two waiting at the same moment never both open
+  let modalClaim = 0;
+  const modalFree = () => new Promise((res) => { const w = () => (modal.classList.contains('on') || performance.now() < modalClaim ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : (modalClaim = performance.now() + 250, res())); w(); });
   function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
     return modalFree().then(() => new Promise((res) => {
       const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${(i / 18) * 360}deg;--d:${70 + (i % 3) * 26}px;--t:${0.9 + (i % 4) * 0.12}s">${i % 3 ? '✦' : '🐚'}</i>`).join('');

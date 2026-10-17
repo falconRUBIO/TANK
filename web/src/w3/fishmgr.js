@@ -112,7 +112,7 @@ export class Fishes {
     for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); }      // gone for good while it was away (sold, moved on)
     this.ready = true;
     if (state.visitor) { seen.add(state.visitor.id); if (!this.byId.has(state.visitor.id)) this.addVisitor(state.visitor); }
-    for (const f of [...this.list]) if (!seen.has(f.fid)) { if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+    for (const f of [...this.list]) if (!seen.has(f.fid)) { if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.hoardGroup) { this.scene.remove(f.hoardGroup); f.hoardGroup = null; } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
   }
   // Little Adventures: an octopus that has gone climbs out over the back rim if anyone is watching (otherwise it is simply not there), and
   // climbs back in the same way when it comes home. While it is away it is out of the list, so nothing in the tank looks for it.

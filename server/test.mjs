@@ -779,6 +779,11 @@ await t('an octopus adventure resolves on the server with no phone open: one ret
   const rows = S.db.prepare('SELECT text, ts FROM journal WHERE tank_id=? AND text LIKE ?').all(tk.id, '%Ziggy came back%'); assert.equal(rows.length, 1, JSON.stringify(rows)); assert.equal(rows[0].ts, now - 3600e3, 'kept at the time it came home');
   const w = getW(tk.id); assert.ok(!w.fish[0].away && w.fish[0].advMem.n === 1);
 });
+await t('(audit) a malformed address does not bring the server down; a stranger with a tank code cannot write into it through import', async () => {
+  const r = await fetch(`http://localhost:${S.port}/%E0%A4%A`); assert.equal(r.status, 400); assert.equal((await fetch(`http://localhost:${S.port}/healthz`)).status, 200);
+  const o = await mkUser('Own'), tk = (await call('/api/tanks', { name: 'Mine' }, o.token)).body, before = getW(tk.id).shells, x = await mkUser('Evil');
+  const r2 = await call('/api/import', { app: 'our-tank', heal: true, code: tk.code, world: { fish: [], shells: 999999, level: 8 } }, x.token); assert.equal(r2.status, 409); assert.equal(getW(tk.id).shells, before, 'nothing was merged in'); assert.ok(getW(tk.id).level < 8);
+});
 await t('an oversized message drops only that connection, never the server; a journal photo is kept and shared; hearts are one per person', async () => {
   const w1 = await open(a.token), w2 = await open(a.token); await waitFor(w1, (m) => m.t === 'snapshot'); await waitFor(w2, (m) => m.t === 'snapshot');
   const closed = new Promise((r) => w1.on('close', r)); w1.send('x'.repeat(200 * 1024)); await closed;

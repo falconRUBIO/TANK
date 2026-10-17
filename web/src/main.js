@@ -614,8 +614,8 @@ function awayBanner(rec) {
 function showDeadCard(f) {
   lastCard = Date.now(); const x = game.state.floaters?.find((z) => z.id === f.fid); if (!x) { card.classList.remove('on'); return; }
   const days = Math.max(1, Math.round((x.died - x.born) / 864e5)), who = x.ownerName ?? game.members?.find((mm) => mm.id === x.owner)?.name ?? 'Unknown';
-  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${x.name}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
-    <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${who}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
+  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${esc(x.name)}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
+    <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${esc(who)}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
     ${(() => { const lines = game.journal.filter((e) => e.text.includes(x.name) && !/passed away|died|lay|rest/i.test(e.text)).map((e) => e.text); const pick = [...new Set([lines[0], ...lines.filter((t) => /favou?rite|friends|loves|learned|hatched|guard|keeps going back|first/i.test(t)).slice(-3)].filter(Boolean))].slice(0, 4);
       return pick.length ? `<h4>Remembered for</h4><ul class="remember">${pick.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''; })()}
     <button class="pet rest" id="rest">LAY TO REST</button>`;
@@ -1250,7 +1250,7 @@ function watchTick(dt) {
 }
 document.addEventListener('visibilitychange', () => game.track(document.hidden ? 'hidden' : 'visible'));
 // ── one tank, several phones: a single phone (the director) decides where the fish go and when a memory passes; the others follow it ──
-const netFish = new Map(); let lastSnapSent = 0, simAt = 0;      // simAt: when the animals were last moved here (a snapshot is stamped with it, not with when it is sent) window.__netFish = netFish;
+const netFish = new Map(); let lastSnapSent = 0, simAt = 0;      /* simAt: when the animals were last moved here (a snapshot is stamped with it, not with when it is sent) */ window.__netFish = netFish;
 function isDirector() { return !game.shared || game.director === true; }
 const r2 = (v) => Math.round(v * 100) / 100;
 // what the lead phone shares besides where each fish is: its swim rhythm, and for an octopus the whole pose (resting, crawling, working a jar, greeting, tucked in, color, chewing…)

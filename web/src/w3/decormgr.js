@@ -26,7 +26,7 @@ export class DecorMgr {
     }
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
     if (state) { this.grow(state); this.syncKeeps(state.keeps ?? []); }
-    for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
+    for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { if (!it.haul) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1);      /* (one being carried is already out of the solids) */ this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
   }
   // keepsakes from the octopus's adventures: tiny things on the sand, not solid, never picked up by a player
   syncKeeps(list) {

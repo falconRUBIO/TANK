@@ -313,7 +313,8 @@ export function norm(t, now = Date.now()) {
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
-  t.seen ||= { fish: [...new Set(t.fish.map((f) => f.species))], decor: [...new Set(t.decor.map((d) => d.type))] };
+  t.seen ||= {}; if (!Array.isArray(t.seen.fish)) t.seen.fish = [...new Set((t.fish ?? []).map((f) => f?.species).filter(Boolean))]; if (!Array.isArray(t.seen.decor)) t.seen.decor = [...new Set((t.decor ?? []).map((d) => d?.type).filter(Boolean))];      // (repairs a half-written one too)
+  if (!Number.isFinite(t.simTs)) t.simTs = now; if (!Number.isFinite(t.createdAt)) t.createdAt = now;      // a save without a clock never moved on (and its weekly birthday was NaN)
   t.lastFed ??= t.simTs ?? now;
   { const ow = (t.flags.styles ||= { floor: {}, backdrop: {} }); ow.floor ||= {}; ow.backdrop ||= {}; ow.floor[t.style?.floor ?? 'sand'] = true; ow.backdrop[t.style?.backdrop ?? 'candy'] = true; }      // a look a tank already uses stays its own
   if (!t.flags.msV) {                                   // a tank saved before fish milestones existed: record what its fish already reached, pay nothing retroactively
@@ -1148,7 +1149,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
-  if (AWAY_BLOCK.has(a.t) && t.fish.find((x) => x.id === (a.fish ?? a.id))?.away) return fail('AWAY');      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
+  if (AWAY_BLOCK.has(a.t) && [a.id, a.fish].flat().filter((x) => typeof x === 'string').some((id) => t.fish.find((x) => x.id === id)?.away)) return fail('AWAY');      // (every animal the action names: one listed under another field once slipped through)      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
   switch (a.t) {
     case 'visitorStay': { const r = decideStay(t, a, now, uid, name, ADVR); if (!r.ok) return fail(r.reason); events.push(...(r.events ?? [])); return ok({ applied: r.applied, keep: r.keep, fish: r.fish }); }      // a visitor that keeps coming back: let it stay, or let it wander (the first answer decides)
     case 'keepMove': { const k = (t.keeps ?? []).find((q) => q.id === a.id); if (!k) return fail('NOT_FOUND'); if (a.idk && k.h?.last === a.idk) return ok({ applied: false });      // the octopus carried or dropped a keepsake (the phone running the animals reports it, once per move)
@@ -1164,8 +1165,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         const kind = (x) => ownFood(x) === food && !x.away, mine = t.fish.filter((f) => kind(f) && canFeedOwn(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && kind(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => ownHunger(y) - ownHunger(x))[0];
         if (!f) return fail(t.fish.some((x) => kind(x) && !x.dead) ? 'NOT_YOURS' : 'NOT_FOUND'); if (!canFeedOwn(f, uid, !solo)) return fail('NOT_YOURS');
         if (food === 'mysis' && t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // (the nursery babies eat the shrimp too)
-        ensureFish(f); t.lastFed = now; f.fedAt = now;
+        ensureFish(f);
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
+        f.fedAt = now;      /* (its own meal: it does not count as feeding the fish, and a full one is not fed at all) */
         const needed = f.hunger > 0.25, pay = needed && feedPayOnce(t, now) ? 1 : 0;
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
@@ -1228,7 +1230,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const gift = a.free && (t.flags.starter?.[a.type] ?? 0) > 0, free = gift || (a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS');   // the starter pack, or the tutorial's free plant
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       const needs0 = tankNeeds(t, now); if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
-      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now }; t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
+      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now, paid: free ? 0 : d.price };      /* (what it cost: a free one sells for nothing) */ t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
       needsMet(t, needs0, a.type, now, events); themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
@@ -1307,7 +1309,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         const line = wasHome ? `${f.name} lost its home when the ${lbl} was taken out. It is looking for a new one.` : `${f.name} misses the ${lbl}. It is looking for a new favorite spot.`; events.push({ journal: line, toast: line, story: f.id, text: line }); }
       for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e) { e.gone = now; delete e.mv; memLikes({ ...t, decor: t.decor.filter((x) => x.id !== it.id) }, f); } }      // gone: it stops seeking it, and forgets it in a few days
       if (it.type === 'starfish') events.push({ activity: { type: 'decor', text: `${name} let the starfish go back to the sea.` } });
-      t.decor.splice(i, 1); t.shells += Math.floor(d.price / 2); return ok({ delta: Math.floor(d.price / 2) });
+      const back = Math.floor((Number.isFinite(it.paid) ? it.paid : d.price) / 2); t.decor.splice(i, 1); t.shells += back; return ok({ delta: back });      // half of what was really paid (a starter gift once sold for shells, again and again in a solo tank)
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
       if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
