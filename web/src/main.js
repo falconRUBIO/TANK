@@ -1129,7 +1129,7 @@ function maybeGift() {
   const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || heldChapters.length || (tipsDoneAt && Date.now() - tipsDoneAt < 45e3) || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
   if (nurseryFx.going || fishes.list.some((f) => f.birthT > 0)) return;      // (a birth or the babies' send-off on screen: the gift waits)
   if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
-  if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) { const tryGift = () => { if ($('reunion').classList.contains('on')) return setTimeout(tryGift, 1500); if (!$('modal').classList.contains('on')) offerGift(); }; setTimeout(tryGift, 1200); }      /* (after the welcome-back note has been read, never on top of it) */
+  if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) { const tryGift = () => { if (wbPending || $('reunion').classList.contains('on')) return setTimeout(tryGift, 1500); if (!$('modal').classList.contains('on')) offerGift(); }; setTimeout(tryGift, 1200); }      /* (after the welcome-back note has been read, never on top of it) */
   else giftOffered = Date.now();
 }
 let lastLive = 0, advSig = null; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((game.state?.nursery?.id ?? null) !== nurseryFx.id) syncWorld(); nurseryCheck();      /* a birth or a choice that came with time passing, not with an action */ if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); { const st = game.state, sig = st ? (st.keeps ?? []).map((k) => `${k.id}:${k.x}:${k.z}`).join() + '|' + st.decor.map((d) => `${d.x}:${d.z}`).join() : ''; if (sig !== advSig) { advSig = sig; if (st) decor.sync(st.decor, st); } }      /* (a keepsake brought home, or something an adventure moved, while time passed) */ }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
@@ -1444,7 +1444,7 @@ function syncGlassNote() {
 }
 game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
-let wbShown = false;
+let wbShown = false, wbPending = false;      // (pending: the welcome-back note is about to show, so nothing else pops up first)
 // once a week, in the evening: the week in a few plain lines, from the journal (no scores, nothing to keep up)
 window.__weekly = () => weeklyRecap();
 function weeklyRecap() {
@@ -1491,11 +1491,11 @@ async function welcomeBack() {
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);
   if (!lines.length) return;
-  await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
+  wbPending = true; await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
   ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
-  sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto); wbShown = true;
+  sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto); wbShown = true; wbPending = false;
   { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
 }
 
