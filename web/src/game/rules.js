@@ -3,6 +3,8 @@
 import { skyOf } from './sky.js';
 import { genesOf, blendGenes, seededRandom } from './genes.js';
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
+import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE } from './life.js';
+export { keepStory, todOf, TOD, LIFE };
 export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
 export { genesOf };
 export const SPECIES_DEF = {
@@ -252,10 +254,12 @@ function discover(t, now, ev) {
 // A fish counts as going hungry only once it has gone this long without any feeding. Hunger itself rises to its cap within hours, so judging by the hunger bar alone would call a once-a-day caretaker neglectful.
 export const FED_GRACE = 30 * 3600e3;
 export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
+// the place it was most attached to, by decoration id: its holdfast, its favourite spot, the thing it loved most (kept with its memorial, so family can be compared with it)
+const memPlace = (t, f) => { const id = f.log?.fav ?? f.spotId ?? f.mem?.likes?.[0] ?? null; return id && t.decor.some((d) => d.id === id) ? { id } : null; };
 function memorialOf(t, f, now) {
   const ms = [...(f.story ?? []).slice(0, 8).map((x) => x.text), `Reached the ${stageOf(f, now)} stage`]; if (f.found?.includes('spot')) ms.push(f.spotId ? `Found a favorite spot by the ${DECOR_DEF[t.decor.find((d) => d.id === f.spotId)?.type]?.label?.toLowerCase() ?? 'decorations'}` : 'Found a favorite spot');
   const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); for (const k of f.tricks ?? []) ms.push(`Learned to ${TRICKS[k]?.label ?? k}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
-  return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, friend: pal?.name ?? null, elder: !!f.elder, disc: Object.keys(f.disc ?? {}), rested: null };
+  return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, friend: pal?.name ?? null, elder: !!f.elder, disc: Object.keys(f.disc ?? {}), rested: null, place: memPlace(t, f), keeps: (t.keeps ?? []).filter((k) => k.by === f.id).map((k) => k.id) };
 }
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) {
   for (const f of [...t.fish]) {
@@ -407,8 +411,9 @@ function visitors(t, now, ev) {
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
   const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
-  t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR };
-  ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
+  t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR }; const vm = visitorArrives(t, t.visitor, now, ADVR);      // (a visitor that has been before goes back to its old place, and stays longer)
+  if ([2, 5, 10].includes(vm.n)) ev.push({ journal: `The ${d.label} is back. It has visited ${vm.n === 2 ? 'twice' : `${vm.n} times`} now, and went straight to its old spot.`, toast: `The ${d.label} is back! Tap it to say hello.`, visitor: true, adventure: { phase: 'small', kind: 'visitor' } });
+  else ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
 export const POT_SKILL = 0.35;      // how well an octopus must know a clay pot before it squeezes all the way inside (until then it sits in the mouth)
@@ -996,7 +1001,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('life', () => lifeDay(t, now, ev, ADVR)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1124,17 +1129,18 @@ export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.e
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); return ev; }
 const AWAY_BLOCK = new Set(['feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
 // what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
-const ADVR = { get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), get AIL_TIRED() { return AIL_TIRED; } };
+const ADVR = { get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
 function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   if (AWAY_BLOCK.has(a.t) && t.fish.find((x) => x.id === (a.fish ?? a.id))?.away) return fail('AWAY');      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
   switch (a.t) {
-    case 'keepMove': return moveKeep(t, a.id, num(a.x), num(a.z), now) ? ok() : fail('NOT_FOUND');      // the octopus carried a keepsake (the phone running the animals reports it)
+    case 'keepMove': { const k = (t.keeps ?? []).find((q) => q.id === a.id); if (!k) return fail('NOT_FOUND'); if (a.idk && k.h?.last === a.idk) return ok({ applied: false });      // the octopus carried or dropped a keepsake (the phone running the animals reports it, once per move)
+      if (!moveKeep(t, a.id, num(a.x), num(a.z), now)) return fail('NOT_FOUND'); const f = t.fish.find((x) => x.id === a.fish && !x.dead && !x.away) ?? null; carried(t, k, f, a.how === 'drop' ? 'drop' : a.how === 'carry' ? 'carry' : 'move', now, events, ADVR); if (a.idk) k.h.last = String(a.idk).slice(0, 40); return ok(); }      // the octopus carried a keepsake (the phone running the animals reports it)
     case 'dailyGift': {
       if (!giftReady(t, uid, now, a.tz)) return ok({ applied: false, delta: 0 });
-      (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += DAILY_GIFT;      // one gift a day for the tank, for whoever opens it first
+      (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; if (Number.isFinite(+a.tz)) t.tzMin = Math.max(-840, Math.min(840, Math.round(+a.tz))); t.shells += DAILY_GIFT;      // one gift a day for the tank, for whoever opens it first
       events.push({ toast: `A little gift for you: +${DAILY_GIFT} shells`, gift: true }); levelCheck(t, now, events); return ok({ applied: true, delta: DAILY_GIFT });
     }
     case 'feed': {
@@ -1229,7 +1235,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor); if (!f || !d) return fail('NOT_FOUND');
       const m = memOf(f), e = (m.fam[d.id] ||= { k: 0, n: 0, x: d.x, z: d.z, at: 0 }); if (now - (e.at ?? 0) < 45e3) return ok({ applied: false });      // one go is one go: a second phone, or a handoff, cannot count it twice
       const k0 = e.k, M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
-      e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
+      e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; noteVisit(t, f, e, now); e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
       const recent = now - (d.movedAt ?? d.at ?? 0) < 6 * 3600e3;
       if (d.type === 'pot' && k0 < POT_SKILL && e.k >= POT_SKILL) { const line = `${f.name} has worked out how to squeeze inside the clay pot.`; events.push({ journal: line, story: f.id, text: line }); }      // from the mouth to all the way in, learned one night at a time
       if (first && recent && a.kind === 'new') { const line = `${f.name} investigated the new ${label}.`; events.push({ journal: line, story: f.id, text: line }); }      // only after it really went over and felt it, and once

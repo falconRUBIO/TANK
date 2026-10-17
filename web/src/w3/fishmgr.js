@@ -10,6 +10,7 @@ import { Fish3D } from './fish3d.js';
 import { gripWork, PLANTS } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
+const HEAVY = new Set(['boulder', 'pillar', 'torii', 'wood', 'chest', 'arch', 'brain']);      // too big for an octopus to shift (it may try)
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
 import { octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
@@ -140,6 +141,39 @@ export class Fishes {
       if (q >= 1) { f.puppet = null; f.group.rotation.x = 0; f.group.scale.setScalar(s0); if (dir < 0) this.scene.remove(f.group); else { f.target.copy(f.pos); this.drips(path[1]); } }
     };
     if (dir < 0) this.drips(path[2]);
+  }
+  denOf(f) { const sp = (this.spots?.() ?? []).find((x) => x.id === f.homeId); return sp ? { x: sp.x, z: sp.z } : f.fav ? { x: f.fav.x, z: f.fav.z } : null; }
+  // an octopus taking a keepsake home: it goes to it, picks it up (the little thing rides under its arms), carries it to its den and leaves it
+  // there. Now and then it drops it on the way (and may fetch it another time). Only the phone running the animals reports where it ended up.
+  carryTick(dt) {
+    const ks = this.keepSpots?.() ?? [], lead = this.isLead ? this.isLead() : true;
+    for (const f of this.list) { const C = f.keepCarry; if (!C) continue; C.t += dt;
+      const k = ks.find((x) => x.id === C.id) ?? (C.it ? { it: C.it } : null), den = this.denOf(f), put = (how) => { const it = C.it; if (it) { const x = Math.max(-4.2, Math.min(4.2, f.pos.x)), z = Math.max(-3.4, Math.min(3.7, f.pos.z)); it.carried = false; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.group.position.set(it.x, sandH(it.x, it.z) + 0.03, it.z); if (lead) this.onKeep?.({ id: C.id, x: it.x, z: it.z, how, fish: f.fid, idk: `${f.fid}:${C.id}:${Math.round(C.t0 ?? 0)}` }); } f.keepCarry = null; };
+      if (!k || f.dead || f.puppet || !den) { if (C.it) put('drop'); else f.keepCarry = null; continue; }
+      if (C.phase === 'go') {
+        if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
+        if (C.t > 45) { f.keepCarry = null; continue; }
+        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: den.x, z: den.z + 0.55, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' };
+        continue;
+      }
+      const it = C.it; it.group.position.set(f.pos.x + Math.sin(f.heading ?? 0) * 0.15, Math.max(sandH(f.pos.x, f.pos.z) + 0.05, f.pos.y - 0.32), f.pos.z + 0.18);      // held low under its arms
+      if (!f.inspect) f.inspect = { x: den.x, z: den.z + 0.55, id: 'den', type: 'keep' };
+      const dd = Math.hypot(f.pos.x - den.x, f.pos.z - den.z);
+      if (dd < 1.0 || (f.st?.s === 'work' && dd < 2.0)) { put('carry');      /* at its den (or as close as it gets: it stops an arm's length from where it was going) */ f.thought = 'Left its keepsake by its den'; }
+      else if (C.t > 40) put('drop');
+      else if (C.slip != null && C.t > C.slip) { put('drop'); f.inspect = null; f.thought = 'Dropped it'; }      // butterfingers: it lands on the sand where it slipped
+    }
+  }
+  // too heavy: a bold octopus wraps its arms round something far too big to shift, leans back to pull, twice, then gives up and goes
+  tugTick(dt) {
+    for (const f of this.list) {
+      if (f.species?.move !== 'jet' || f.dead || f.puppet) continue; const S = f.st, I = f.inspect;
+      if (!f.tug && S?.s === 'work' && S.mode === 'inspect' && I && HEAVY.has(I.type) && f.tugFor !== I.id) { f.tugFor = I.id; if (this.rng() < 0.3 * (f.bold ?? 0.5) * 2) { f.tug = { t: 0, x: I.x, z: I.z }; f.tugs = (f.tugs ?? 0) + 1; } }
+      if (!f.tug) continue; const T = f.tug; T.t += dt; const dx = f.pos.x - T.x, dz = f.pos.z - T.z, d = Math.hypot(dx, dz) || 1, pull = Math.max(0, Math.sin(T.t * Math.PI / 1.1)) * (T.t < 4.4 ? 1 : 0);
+      f.pos.x += (dx / d) * pull * 0.5 * dt; f.pos.z += (dz / d) * pull * 0.5 * dt;      // leaning back, letting go, leaning back again
+      if (T.t > 4.6) { f.tug = null; f.inspect = null; f.gaveUp = (f.gaveUp ?? 0) + 1; if (S) { S.mode = null; S.s = 'rest'; S.t = 2.5; } f.thought = 'That one is too heavy'; }
+    }
   }
   drips(at) { for (let i = 0; i < 3; i++) this.burst(new THREE.Vector3(at.x + (i - 1) * 0.3, at.y - i * 0.4, at.z + 0.2)); }      // a few drops where it went over the rim (the wet trail)
   makeEmote(f) {
@@ -503,6 +537,8 @@ export class Fishes {
     }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
+    f.rivalId = d.rival ?? null; f.lossPlace = d.loss && Date.now() < d.loss.until ? d.loss.place : null; f.habits = d.habits ?? null;      // Emergent Life (life.js): a missed companion's place for a few days; its habits by time of day
+    if (d.species === 'seahorse' && stageOf(d) !== 'adult') { const par = (d.parents ?? []).map((p) => this.recs?.get(p.id) ?? (this.state?.memorial ?? []).find((m) => m.id === p.id)).find((p) => p?.log?.fav ?? p?.place?.id); f.familyPlant = par ? (par.log?.fav ?? par.place?.id) : null; } else f.familyPlant = null;      // a young seahorse knows the plant its family used (it may or may not take to it)
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
   }
   // fish that are going without care look pale and tired, and keep low
@@ -515,7 +551,7 @@ export class Fishes {
   addVisitor(v) {
     const sp = SPECIES[v.species], def = SPECIES_DEF[v.species]; if (!sp) return;
     const f = new Fish3D(sp, v.seed, { name: def.label, speed: def.speed, scale: 1, band: BANDS.goldfish });
-    f.fid = v.id; f.visitor = true; f.vigor = 1; f.profile = { traits: def.traits, mood: 'Visiting', needs: [1, 1, 1, 1] }; f.setGrowth(1);
+    f.fid = v.id; f.visitor = true; f.vigor = 1; f.spotId = v.spot ?? null;      /* the place it goes to: the same one each visit (life.js visitorArrives) */ f.profile = { traits: def.traits, mood: 'Visiting', needs: [1, 1, 1, 1] }; f.setGrowth(1);
     f.pos.set(this.rng() < 0.5 ? -4.6 : 4.6, 6 + this.rng() * 3, 1.2); this.wrapPick(f, { traits: def.traits }); f.pick(this.rng);
     if (!Fishes.glowMat) { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,248,214,.8)'); gr.addColorStop(0.45, 'rgba(255,236,170,.25)'); gr.addColorStop(1, 'rgba(255,236,170,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; Fishes.glowMat = new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending }); }
     f.glow = new THREE.Sprite(Fishes.glowMat); f.glow.renderOrder = 5; this.scene.add(f.glow); this.onSprite?.(f.glow);
@@ -532,7 +568,8 @@ export class Fishes {
     f.isShy = has('Shy');
     f.pick = (r) => {
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
-      const T = (x, y, z, rt) => { f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
+      const T = (x, y, z, rt) => { const rv = f.rivalId && this.byId.get(f.rivalId); if (rv && !rv.dead && Math.hypot(rv.pos.x - x, rv.pos.y - y) < 1.6) x += (x >= rv.pos.x ? 1 : -1) * 1.8;      /* a rival: it picks somewhere else rather than swim into it */
+        f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
       f.idle = 0; const high = (f.band?.y?.[0] ?? 3) >= 6.5, lowK = high ? 0.4 : 1;      // a surface swimmer is drawn down to the sand far less often
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
@@ -547,6 +584,8 @@ export class Fishes {
       if (sk === 'betta') { const c = spot(['ROCKS']); if (c && r() < 0.65) { f.idle = 3 + r() * 3; return T(c.x + (r() - 0.5) * 1.2, 1.0 + c.h * 0.35 + r() * 0.5, c.z + 0.6, 6 + r() * 4); } }
       // identity: a fish swims out to the glass for its own caretaker, goes back to its favorite spot, stays near its best friend, and has a corner of the tank it prefers
       if (f.mine && r() < (has('Shy') ? 0.1 : 0.25)) return T(-1.5 + r() * 3, 4 + r() * 6, 2.5 + r() * 0.4, 4);
+      if (f.lossPlace && r() < 0.35) { const sp = spots.find((x) => x.id === f.lossPlace); if (sp) return T(sp.x + (r() - 0.5) * 0.6, 0.9 + sp.h * 0.4, sp.z + 0.8, 7); }      // keeps going back to where it used to be with a companion that has died (a few days)
+      if (this.night && f.palId && r() < 0.6) { const o = this.byId.get(f.palId); if (o && !o.dead) { f.idle = 3; return T(o.pos.x + (r() - 0.5) * 0.7, o.pos.y + (r() - 0.5) * 0.4, o.pos.z + (r() - 0.5) * 0.4, 8); } }      // best friends settle down near each other for the night
       if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
       if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
       if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
@@ -774,7 +813,12 @@ export class Fishes {
     if ((this.keepT = (this.keepT ?? 30) - dt) <= 0) { this.keepT = 70 + this.rng() * 90;      // now and then an octopus goes and looks over a keepsake it brought home (its favorite most often)
       const ks = this.keepSpots?.() ?? []; for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.inspect || f.task || f.hunt || f.jarAt || !ks.length) continue;
         const mine = ks.filter((k) => k.by === f.fid), fav = mine.find((k) => k.id === f.rec?.advMem?.fav), pool = mine.length ? mine : ks; if (this.rng() > (mine.length ? 0.5 : 0.15)) continue;
-        const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0]; f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; f.thought = 'Checking on its keepsake'; } }
+        const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0], den = this.denOf(f);
+        // one it is attached to, lying away from its den: it may pick it up and take it home, more readily when nobody has been tapping or looking for a while
+        const quiet = Date.now() - (this.attnAt ?? 0) > 90e3, attach = q.by === f.fid ? 1 : 0.3, coll = f.mind?.type === 'collector' || f.mind?.type === 'trickster' ? 1.4 : f.mind?.type === 'homebody' ? 1.1 : 0.8;
+        if (den && Math.hypot(q.x - den.x, q.z - den.z) > 1.3 && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll) { f.keepCarry = { id: q.id, phase: 'go', t: 0 }; f.thought = 'Going to fetch its keepsake'; }
+        f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = 'Checking on its keepsake'; } }
+    this.carryTick(dt); this.tugTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }

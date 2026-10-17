@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { KEEPSAKES, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { KEEPSAKES, keepStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -56,6 +56,7 @@ const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
 fishes.onGoodbye = () => { if (REDUCED) return; const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots(); fishes.keepSpots = () => decor.keepSpots();
+fishes.onKeep = (m) => { if (game.state) game.dispatch({ t: 'keepMove', ...m }).catch(() => null); };      // an octopus carried or dropped a keepsake (Emergent Life)
 { const SURF = { ROCKS: { cols: [[96, 104, 74], [66, 78, 52], [122, 124, 106], [82, 90, 64]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
   Fish3D.groundAt = (x, z) => { let best = null, bd = 1.15; for (const sp of decor.spots()) { const d = Math.hypot(sp.x - x, sp.z - z); if (d < bd && SURF[DECOR_DEF[sp.type]?.cat]) { bd = d; best = sp; } } if (best) { const c = DECOR_DEF[best.type].cat; return { key: 'd:' + c, ctx: 'd:' + best.id, kind: 'decor', ...SURF[c] }; } const f = stg.env.floorSpec(); return { key: 'f:' + f.key, ctx: 'floor', kind: 'floor', cols: f.cols, scale: f.scale }; }; }
 fishes.hasBubbler = () => !!decor.bubbleSpot();
@@ -867,11 +868,16 @@ function showCard(f) {
   const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
+  const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
+    for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}`);
+    if (rec.loss && Date.now() < rec.loss.until) out.push(`Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
+    return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
       if (rec.away) out.push(`<b>${rec.away.inTank ? 'HIDING SOMEWHERE' : 'OUT EXPLORING'}</b>`);
       if (m?.n) out.push(`Adventures: ${m.n}${m.pref === 'long' ? ' · likes a long one' : m.pref === 'short' ? ' · likes to stay close' : ''}`);
       if (items.length) out.push(`Keepsakes: ${esc(items.join(', '))}`); if (fav) out.push(`Favorite: the ${esc(KEEPSAKES[fav.k].label.toLowerCase())}`);
+      for (const k of (game.state.keeps ?? []).filter((q) => q.by === rec.id && q.h?.carries).slice(0, 2)) out.push(esc(keepStory(game.state, k, { KEEPSAKES })));      // only from its record
       return `<p class="mind fam">${out.join('<br>')}</p>`; }
     if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
@@ -897,7 +903,7 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${path}${trustRow}${bondTile}${toysTile}${famLine}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
@@ -936,6 +942,7 @@ function showCard(f) {
 }
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) f.poseHz = 60;      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
+  fishes.attnAt = Date.now();      // someone is looking and touching: an octopus about to fetch a keepsake leaves it for later (Emergent Life)
   if (play) { playPoint(ev); return; }
   if (toys.armed && !placing && !feedMode && !cleanMode) { const k = toys.armed, ray = rayFrom(ev).ray;      // a toy from the Toy box: the ball is tossed in, bubbles rise from the sand, the light is held and dragged
     if (k === 'ball') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { toys.toss(hit.x, 0.3 + Math.random() * 0.8); toys.armed = null; } return; }

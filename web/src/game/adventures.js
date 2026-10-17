@@ -154,7 +154,6 @@ export function adventures(t, now, ev, R) {
     if (weekCount(t, at) >= ADV.WEEK_BUDGET || weekCount(t, at, true) >= ADV.SMALL_WEEK || (t.flags?.tut ?? 0) < 5 || t.fish.some((f) => f.away)) continue;
     small(t, at, ev, R);
   }
-  visitorMemory(t, now, ev, R);
 }
 
 function restless(t, f, at, ev, R) {
@@ -261,12 +260,6 @@ function small(t, at, ev, R) {
   const res = p.run(); remember(t, { id: 's' + ((t.adv.seq = (t.adv.seq ?? 0) + 1)), kind: p.kind, at, end: at });
   ev.push({ journal: res.line, jat: at, adventure: { phase: 'small', kind: p.kind } });
   for (const f of res.who) ev.push({ story: f.id, text: res.line, jat: at });
-}
-// a visitor that has been before is remembered
-function visitorMemory(t, now, ev, R) {
-  const v = t.visitor; if (!v || t.adv.vseen === v.id) return; t.adv.vseen = v.id;
-  const n = ((t.adv.visits ||= {})[v.species] = (t.adv.visits[v.species] ?? 0) + 1), d = R.SPECIES_DEF[v.species];
-  if ([2, 5, 10].includes(n) && d) ev.push({ journal: `The ${d.label} is back. It has visited ${n === 2 ? 'twice' : `${n} times`} now, and swam straight to its old spot.`, adventure: { phase: 'small', kind: 'visitor' } });
 }
 
 // for Coming up: an octopus that is away, without a time (nobody should be waiting on a timer)
