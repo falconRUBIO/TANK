@@ -84,6 +84,7 @@ export class Fishes {
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
     [...state.fish.filter((d) => !d.gift?.wrapped), ...kids].forEach((d, idx) => {      // (a gift still wrapped is not in the water yet: it is in its bag)
       seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : STAGE_SCALE[stageOf(d)]; const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
+      if (this.adventure(d)) return;      // out on an adventure (or hiding where nobody can see): not in the water until it is back
       let f = this.byId.get(d.id);
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
@@ -106,9 +107,41 @@ export class Fishes {
       if (!f) { f = new Fish3D(SPECIES[x.species], x.seed, { look: x.pal != null ? { pal: x.pal } : null, name: x.name, speed: 0.5, scale: 1, band: BANDS.goldfish }); f.fid = x.id; f.setGrowth(STAGE_SCALE[x.stage] ?? 1); f.pos.set((this.rng() - 0.5) * 6, 12.7, 1.2); this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }
       if (!f.dead) { f.dead = true; f.floater = true; f.setPale(0.6); f.profile = { traits: [], mood: 'Passed away', needs: [0, 0, 0, 0] }; if (f.emote) { f.emote.visible = false; } this.burst(f.pos); }
     }
+    for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); }      // gone for good while it was away (sold, moved on)
+    this.ready = true;
     if (state.visitor) { seen.add(state.visitor.id); if (!this.byId.has(state.visitor.id)) this.addVisitor(state.visitor); }
     for (const f of [...this.list]) if (!seen.has(f.fid)) { if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
   }
+  // Little Adventures: an octopus that has gone climbs out over the back rim if anyone is watching (otherwise it is simply not there), and
+  // climbs back in the same way when it comes home. While it is away it is out of the list, so nothing in the tank looks for it.
+  adventure(d) {
+    this.out ||= new Map(); const f = this.byId.get(d.id) ?? this.out.get(d.id), watching = typeof document === 'undefined' || document.visibilityState === 'visible';
+    if (d.away) {
+      if (!f || this.out.has(d.id)) return true;
+      this.list.splice(this.list.indexOf(f), 1); this.out.set(d.id, f); if (f.emote) f.emote.visible = false;
+      if (watching && !d.away.inTank && this.ready) this.climb(f, -1); else this.scene.remove(f.group);
+      return true;
+    }
+    if (f && this.out.has(d.id)) {
+      this.out.delete(d.id); this.list.push(f); this.byId.set(d.id, f); if (!f.group.parent) this.scene.add(f.group);
+      const den = (this.state?.decor ?? []).find((x) => x.id === d.home); if (d.away === undefined && watching && this.ready && !(d.advMem?.last?.out === 'hiding')) this.climb(f, 1, den); else if (den) { f.pos.set(den.x, sandH(den.x, den.z) + 0.6, den.z + 0.5); }
+    }
+    return false;
+  }
+  climb(f, dir, den = null) {
+    const x = Math.max(-3.8, Math.min(3.8, f.pos.x)), top = Fish3D.topY + 0.4, back = -3.4, path = dir < 0
+      ? [f.pos.clone(), new THREE.Vector3(x, Math.max(f.pos.y, 2), back), new THREE.Vector3(x, top, back), new THREE.Vector3(x, top + 1.6, back - 1.2)]
+      : [new THREE.Vector3(x, top + 1.6, back - 1.2), new THREE.Vector3(x, top, back), new THREE.Vector3(x, 2.2, back), den ? new THREE.Vector3(den.x, sandH(den.x, den.z) + 0.6, den.z + 0.5) : new THREE.Vector3(x, 1.2, 0.5)];
+    const T = 7, s0 = f.group.scale.x; let age = 0;
+    f.puppet = (dt) => {
+      age += dt; const q = Math.min(1, age / T), seg = Math.min(path.length - 2, Math.floor(q * (path.length - 1))), u = q * (path.length - 1) - seg, e = u * u * (3 - 2 * u);
+      f.pos.lerpVectors(path[seg], path[seg + 1], e); f.group.position.copy(f.pos); f.group.rotation.x = seg === 1 ? -0.9 * Math.sin(e * Math.PI) : 0;      // flat against the back glass on the way up
+      f.group.scale.setScalar(s0 * (dir < 0 ? (seg === path.length - 2 ? 1 - 0.6 * e : 1) : seg === 0 ? 0.4 + 0.6 * e : 1));
+      if (q >= 1) { f.puppet = null; f.group.rotation.x = 0; f.group.scale.setScalar(s0); if (dir < 0) this.scene.remove(f.group); else { f.target.copy(f.pos); this.drips(path[1]); } }
+    };
+    if (dir < 0) this.drips(path[2]);
+  }
+  drips(at) { for (let i = 0; i < 3; i++) this.burst(new THREE.Vector3(at.x + (i - 1) * 0.3, at.y - i * 0.4, at.z + 0.2)); }      // a few drops where it went over the rim (the wet trail)
   makeEmote(f) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, fog: false, opacity: 0 })); sp.scale.setScalar(0.8); sp.renderOrder = 9; sp.visible = false;
     f.emote = sp; f.emoteSeed = Math.random() * 20; this.scene.add(sp); this.onSprite?.(sp);
@@ -737,6 +770,11 @@ export class Fishes {
       for (const f of this.list) if ((f.species?.move === 'jet' || (f.sk === 'seahorse' && !f.nursery)) && f.rec && !f.dead && !f.visitor) {      /* (a seahorse has its own hunger too) */ const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
     // laid to rest: the body sinks slowly and fades away, rather than vanishing
     if (this.leaving?.length) this.leaving = this.leaving.filter((L) => { L.age += dt; const q = Math.min(1, L.age / 2.6), e = q * q * (3 - 2 * q); L.f.group.position.y = L.y - e * 2.2; L.f.group.scale.setScalar(L.s * (1 - 0.85 * e)); L.f.group.rotation.z += dt * 0.25; if (q < 1) return true; this.scene.remove(L.f.group); return false; });
+    if (this.out) for (const f of this.out.values()) if (f.puppet) f.puppet(dt);      // an octopus on its way out over the rim
+    if ((this.keepT = (this.keepT ?? 30) - dt) <= 0) { this.keepT = 70 + this.rng() * 90;      // now and then an octopus goes and looks over a keepsake it brought home (its favorite most often)
+      const ks = this.keepSpots?.() ?? []; for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.inspect || f.task || f.hunt || f.jarAt || !ks.length) continue;
+        const mine = ks.filter((k) => k.by === f.fid), fav = mine.find((k) => k.id === f.rec?.advMem?.fav), pool = mine.length ? mine : ks; if (this.rng() > (mine.length ? 0.5 : 0.15)) continue;
+        const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0]; f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; f.thought = 'Checking on its keepsake'; } }
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }

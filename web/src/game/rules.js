@@ -2,6 +2,8 @@
 // runs on the server (authoritative, shared tank) and in the browser (solo tank).
 import { skyOf } from './sky.js';
 import { genesOf, blendGenes, seededRandom } from './genes.js';
+import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
+export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
 export { genesOf };
 export const SPECIES_DEF = {
   goldfish:  { label: 'Clownfish',  price: 10,  level: 1, wait: 10, count: 1, blurb: 'Bold and curious. Loves a hiding place.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
@@ -213,12 +215,16 @@ export const DISCOVERIES = {
   mimic: { label: 'Impressions', kind: 'octopus', quiet: true, line: (f) => `${f.name} pretended to be another animal.` },
   bury: { label: 'Burying', kind: 'octopus', quiet: true, line: (f) => `${f.name} dug itself into the sand until only its eyes showed.` },
   squirt: { label: 'Squirting water', kind: 'octopus', quiet: true, line: (f) => `${f.name} squirted a jet of water.` },
+  escape1: { label: 'First Escape', kind: 'octopus', quiet: true, line: (f) => `${f.name} went out over the top of the tank for the first time, and came home.` },
+  collector: { label: 'The Collector', kind: 'octopus', quiet: true, line: (f) => `${f.name} has brought home three keepsakes now. It is building a collection.` },
+  homeagain: { label: 'Home Again', kind: 'octopus', quiet: true, line: (f) => `${f.name} was gone all night and still found its way home.` },
+  favfind: { label: 'A Familiar Find', kind: 'octopus', quiet: true, line: (f) => `${f.name} found something just like a keepsake it already has.` },
   rearrange: { label: 'Rearranging', kind: 'octopus', quiet: true, line: (f) => `${f.name} moved something in the tank to suit itself.` },
   puzzle: { label: 'Puzzle solving', kind: 'octopus', quiet: true, line: (f) => `${f.name} opened a puzzle jar.` },
   highbank: { label: 'Climbing the high bank', kind: 'octopus', quiet: true, line: (f) => `${f.name} explored the high bank at the back of the tank.` },
 };
 // the behaviors each animal could show, in the order the profile lists them: its own species' first, then the ones its traits allow
-const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'tails', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'food'] };
+const BEHAVIOURS = { seahorse: ['hitch', 'eyes', 'snick', 'blend', 'favhitch', 'dance', 'tails', 'night_rest', 'food'], octopus: ['camo', 'den', 'grab', 'mimic', 'bury', 'squirt', 'rearrange', 'puzzle', 'highbank', 'escape1', 'homeagain', 'collector', 'favfind', 'food'] };
 export function behavioursFor(f) {
   const own = BEHAVIOURS[f?.species]; if (own) return own;
   const tr = f?.traits ?? []; return ['spot', 'friend', 'glass', 'surface', 'night_rest', 'hideaway', 'regular', 'object', 'together', 'bubbles', 'routine', 'food'].filter((k) => { const d = DISCOVERIES[k]; return !d.kind && (!d.traits || d.traits.some((x) => tr.includes(x))); });
@@ -253,6 +259,7 @@ function memorialOf(t, f, now) {
 }
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) {
   for (const f of [...t.fish]) {
+    if (f.away) continue;      /* out on an adventure: nothing about it changes until it is back (see adventures.js) */
     ensureFish(f); const n = needsOf(f, t, now), octo = ownHungry(f), fh0 = oh0?.get(f.id) ?? ownHunger(f);      /* (octo: it has its own hunger, an octopus or a seahorse) */
     // walk through the interval in half-hour steps so a feeding in the middle of it counts
     const steps = Math.max(1, Math.min(480, Math.ceil(dt / 1800))); f.ail = f.ail ?? 0; const stepMs = (dt / steps) * 1000;
@@ -540,7 +547,7 @@ function octoPartners(t, now, ev) {
   const os = t.fish.filter((f) => f.species === 'octopus' && !f.dead), byId = new Map(os.map((f) => [f.id, f]));
   for (const f of os) if (f.partner && !byId.has(f.partner)) { const gone = (t.memorial ?? []).find((m) => m.id === f.partner)?.name ?? 'its partner'; delete f.partner; delete f.partneredAt; const line = `${f.name} keeps checking the den where ${gone} used to rest.`; ev.push({ journal: line, story: f.id, text: line }); }
   if (now < (t.octoBondAt ?? 0)) return; const step = Math.max(0, Math.min(now - (t.octoBondLast ?? now), 2 * DAY)); t.octoBondLast = now; t.octoBondAt = now + 3 * HOUR; t.octoBonds ||= {};
-  const free = os.filter((f) => !f.partner && stageOf(f, now) === 'adult');
+  const free = os.filter((f) => !f.partner && !f.away && stageOf(f, now) === 'adult');
   for (const k of Object.keys(t.octoBonds)) { const [a, b] = k.split('|'); if (!free.some((f) => f.id === a) || !free.some((f) => f.id === b)) delete t.octoBonds[k]; }
   for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j], k = [x.id, y.id].sort().join('|'), calm = Math.min(x.happy ?? 0.7, y.happy ?? 0.7) > 0.45 ? 1 : 0.4; t.octoBonds[k] = (t.octoBonds[k] ?? 0) + step * calm; }
   for (const [k, ms] of Object.entries(t.octoBonds).sort((p, q) => q[1] - p[1])) { if (ms < OCTO_PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), x = byId.get(a), y = byId.get(b); if (!x || !y || x.partner || y.partner) continue;
@@ -970,7 +977,7 @@ function _advance(t, now = Date.now()) {
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
-    for (const f of t.fish) if (ownHungry(f)) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
+    for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
@@ -989,7 +996,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1100,7 +1107,8 @@ export function forecast(t, now = Date.now(), n = 3) {
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
-  return c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🥚' && /hatches/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
+  const away = advForecast(t).map((x) => ({ ms: 0, text: x.text, icon: x.icon, when: '' }));      /* (an octopus out exploring: no time, nobody should be waiting on a clock) */
+  return [...away, ...c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🥚' && /hatches/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }))].slice(0, n);      // (about an animal: the card shows that animal itself)
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];
@@ -1114,11 +1122,16 @@ export function nextUp(t, now = Date.now()) {
 }
 export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.events) recordStory(t, r.events, o?.now ?? Date.now()); return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); return ev; }
+const AWAY_BLOCK = new Set(['feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
+// what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
+const ADVR = { get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), get AIL_TIRED() { return AIL_TIRED; } };
 function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
+  if (AWAY_BLOCK.has(a.t) && t.fish.find((x) => x.id === (a.fish ?? a.id))?.away) return fail('AWAY');      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
   switch (a.t) {
+    case 'keepMove': return moveKeep(t, a.id, num(a.x), num(a.z), now) ? ok() : fail('NOT_FOUND');      // the octopus carried a keepsake (the phone running the animals reports it)
     case 'dailyGift': {
       if (!giftReady(t, uid, now, a.tz)) return ok({ applied: false, delta: 0 });
       (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += DAILY_GIFT;      // one gift a day for the tank, for whoever opens it first
@@ -1127,7 +1140,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'feed': {
       const food = FOODS[a.food] ? a.food : 'flakes', price = FOODS[food].price;
       if (food === 'crab' || food === 'mysis') {                       // a crab for an octopus, mysis for a seahorse: each has its own hunger, and only its own caretaker feeds it
-        const kind = (x) => ownFood(x) === food, mine = t.fish.filter((f) => kind(f) && canFeedOwn(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && kind(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => ownHunger(y) - ownHunger(x))[0];
+        const kind = (x) => ownFood(x) === food && !x.away, mine = t.fish.filter((f) => kind(f) && canFeedOwn(f, uid, !solo)), f = (a.fish ? t.fish.find((x) => x.id === a.fish && kind(x) && !x.dead) : null) ?? mine.slice().sort((x, y) => ownHunger(y) - ownHunger(x))[0];
         if (!f) return fail(t.fish.some((x) => kind(x) && !x.dead) ? 'NOT_YOURS' : 'NOT_FOUND'); if (!canFeedOwn(f, uid, !solo)) return fail('NOT_YOURS');
         if (food === 'mysis' && t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // (the nursery babies eat the shrimp too)
         ensureFish(f); t.lastFed = now; f.fedAt = now;
@@ -1345,7 +1358,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       return ok({ applied: true, delta: -HIDE_COST, tries: path.length, until: f.seek.until });
     }
     case 'crab': {                                                  // a crab for the octopus (shells go in, a happy octopus and a bigger hoard come out)
-      const os = t.fish.filter((f) => isSmart(f) && !f.dead); if (!os.length) return fail('CANT_TRAIN');      // any octopus, baby or grown, can have a crab treat
+      const os = t.fish.filter((f) => isSmart(f) && !f.dead && !f.away); if (!os.length) return fail(t.fish.some((f) => f.away) ? 'AWAY' : 'CANT_TRAIN');      // any octopus, baby or grown, can have a crab treat
       const f = (a.id ? os.find((x) => x.id === a.id) : os.filter((x) => canFeedOcto(x, uid, !solo)).sort((x, y) => (x.crabAt ?? 0) - (y.crabAt ?? 0))[0]); if (!f) return fail('NOT_FOUND'); if (!canFeedOcto(f, uid, !solo)) return fail('NOT_YOURS');
       if (f.crabAt != null && now - f.crabAt < CRAB_GAP) return ok({ applied: false, delta: 0, wait: CRAB_GAP - (now - f.crabAt), id: f.id });
       if (t.shells < CRAB_PRICE) return fail('NOT_ENOUGH_SHELLS');
@@ -1523,6 +1536,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (a.what === 'egg') { t.eggAt = now; for (const f of t.fish) f.born -= 4 * DAY; events.push(...advance(t, now)); }
       if (a.what === 'hatch') { for (const e of t.eggs) e.hatchAt = now; events.push(...advance(t, now)); }
       if (a.what === 'drift') { t.driftAt = now; events.push(...advance(t, now)); }
+      if (a.what === 'adventure') { (t.adv ||= {}).octoAt = now; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); t.createdAt = Math.min(t.createdAt, now - 4 * DAY); events.push(...advance(t, now)); }      // Little Adventures: a chance for the octopus to go now (a homebody may still stay in)
+      if (a.what === 'moment') { (t.adv ||= {}).smallAt = now; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }
+      if (a.what === 'advRate') t.flags.advRate = Math.max(0.1, Math.min(100, Number(a.rate) || 1));      // testing: adventures this many times as often
       if (a.what === 'day') { for (const f of t.fish) f.born -= DAY; t.hunger = Math.min(0.85, t.hunger + 0.3); t.water = Math.max(0.45, t.water - 0.2); t.glass = Math.min(0.8, t.glass + 0.3); events.push(...advance(t, now)); }
       return ok();
     }

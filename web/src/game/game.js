@@ -30,10 +30,11 @@ export class Game {
   }
   save() { if (this.mode !== 'local') return; try { localStorage.setItem(KEY, JSON.stringify({ state: this.state, journal: this.journal.slice(-80), activity: this.activity.slice(-20) })); } catch { /* storage unavailable */ } }
   reset() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } location.reload(); }
-  addJournal(text) { const e = { day: this.day, text, ts: Date.now() }; this.journal.push(e); this.emit('journal', e); return e; }
+  addJournal(text, ts = Date.now()) { const e = { day: this.day, text, ts }; this.journal.push(e); this.emit('journal', e); return e; }
   consume(events, name) {
     for (const e of events) {
-      if (e.journal) this.addJournal(e.journal);
+      if (e.journal) this.addJournal(e.journal, Math.min(Date.now(), e.jat ?? Date.now()));      // (an adventure that ended while the app was closed keeps the time it really happened)
+      if (e.adventure) this.emit('adventure', e.adventure);
       if (e.activity) { this.activity.push({ ...e.activity, text: e.activity.text, ts: Date.now(), userId: 'me' }); }
       if (e.toast) this.emit('toast', e.toast);
       if (e.noticed) this.emit('noticed', e.noticed);
@@ -80,7 +81,7 @@ export class Game {
       if (m.journal) { this.journal.push({ id: m.journal.id, day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal', this.journal.at(-1)); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
-      if (m.toast && (mine || m.grew || m.discovery || m.surprise || m.teamGlow)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery); if (m.surprise) this.emit('surprise', m.surprise); if (m.teamGlow) this.emit('teamGlow', m.toast);
+      if (m.toast && (mine || m.grew || m.discovery || m.surprise || m.teamGlow || m.major)) this.emit('toast', m.toast); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery); if (m.surprise) this.emit('surprise', m.surprise); if (m.teamGlow) this.emit('teamGlow', m.toast);
       if (m.arrival) this.emit('arrival', m.arrival); if (m.placed) this.emit('placed', m.placed);
     } else if (m.t === 'role') { this.director = !!m.director; this.emit('role', this.director); }
     else if (m.t === 'snap') this.emit('snap', m.fish, m.crabs, m.ts);

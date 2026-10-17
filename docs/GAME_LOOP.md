@@ -187,6 +187,23 @@ Toys are free: the ball from the start, bubbles after 3 plays, the light spot af
 - **Crew:** Friends, Journal, Collection, Settings (behind the gear icon).
 - **Bell:** everything that happened, newest first.
 
+## 9b. Little Adventures (rare events)
+
+The full detail is in `docs/LITTLE_ADVENTURES.md`.
+
+- **The octopus goes exploring:**
+  - Every 4–8 days it has a chance to go (an explorer often goes, a homebody rarely).
+  - It paces the glass, then climbs out over the back rim.
+  - It is away for one of four lengths: a 5–20 minute hide, a short trip of 30 minutes to 3 hours, a night of 6–12 hours, or, exceptionally, 24–48 hours.
+  - It comes home with one of 16 outcomes chosen by its nature, sometimes carrying a keepsake that it then keeps by its den.
+- **While it is away it is completely safe:**
+  - no hunger and no illness;
+  - it cannot be fed, sold or played with;
+  - its trust and its owner are unchanged.
+- **Where it shows:** the Feed card says "Out exploring", Coming up mentions it with no time, and a major trip writes one journal line and sends one push when it leaves and one when it returns.
+- **Small moments:** every 3–6 days, a fish, seahorse or tank moment drawn only from what the tank really has, at most 2 a week.
+- **No rewards:** no shells and no new currency.
+
 ## 10. Open questions for review
 
 1. **Shells:** do they still pile up late in the game? What else is worth spending on, without a second currency or pay-to-win?

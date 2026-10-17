@@ -771,6 +771,14 @@ await t('an octopus\'s memories: three caretakers, a handoff and duplicate repor
   const mig = await ackOf(ws[2], { t: 'octoMem', fish: 'om', migrate: true, likes: { dm: 9 }, idem: 'mig' }); assert.equal(mig.applied, false, 'a phone with stale local memories cannot overwrite the tank');
   for (const w of ws) w.close();
 });
+await t('an octopus adventure resolves on the server with no phone open: one return line, at the time it came home', async () => {
+  const o = await mkUser('Adv'), tk = (await call('/api/tanks', { name: 'Adv' }, o.token)).body, now = Date.now(), W = getW(tk.id);
+  W.flags.tut = 5; W.createdAt = now - 20 * 864e5; W.fish = [{ id: 'oa', name: 'Ziggy', species: 'octopus', seed: 3, born: now - 20 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, hunger: 0.1, ownerName: 'Adv' }];
+  W.fish[0].away = { id: 'aS', kind: 'short', at: now - 2 * 3600e3, until: now - 3600e3, out: 'quiet', inTank: false, hunger: 0.1, fedAt: null }; W.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [{ id: 'aS', kind: 'short', fish: 'oa', at: now - 2 * 3600e3, out: 'quiet' }] }; setW(tk.id, W);
+  tickTank(S.db, tk.id, now); tickTank(S.db, tk.id, now + 60e3);
+  const rows = S.db.prepare('SELECT text, ts FROM journal WHERE tank_id=? AND text LIKE ?').all(tk.id, '%Ziggy came back%'); assert.equal(rows.length, 1, JSON.stringify(rows)); assert.equal(rows[0].ts, now - 3600e3, 'kept at the time it came home');
+  const w = getW(tk.id); assert.ok(!w.fish[0].away && w.fish[0].advMem.n === 1);
+});
 await t('an oversized message drops only that connection, never the server; a journal photo is kept and shared; hearts are one per person', async () => {
   const w1 = await open(a.token), w2 = await open(a.token); await waitFor(w1, (m) => m.t === 'snapshot'); await waitFor(w2, (m) => m.t === 'snapshot');
   const closed = new Promise((r) => w1.on('close', r)); w1.send('x'.repeat(200 * 1024)); await closed;

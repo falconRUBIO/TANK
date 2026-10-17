@@ -1170,6 +1170,7 @@ export class Fish3D {
     this.accum += dt; if (this.accum > (1 / 20) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.35 : 1)) { this.accum = 0; this.setPose(this.phase); }
   }
   update(dt, rng, others) {
+    if (this.puppet) return this.puppet(dt);      // climbing out of the tank or back in (see FishManager.climb)
     if (this.dead) return this.deadUpdate(dt);
     { const T = this.target, gh = sandH(T.x, T.z); if (T.y < gh + Math.min(Math.max(T.y, 0.35), 1.0)) T.y = gh + Math.min(Math.max(T.y, 0.35), 1.0); }      // wherever it is heading, it is in the water above the sand there: over a bank a low swimmer swims as low above that sand as it would above the floor
     if (this.sp.tail) { if (!Number.isFinite(this.curlK)) this.curlK = 0; if (!Number.isFinite(this.gripK)) this.gripK = 0; }      // a seahorse's tail starts loose: an unset curl once turned its height into NaN and hid it

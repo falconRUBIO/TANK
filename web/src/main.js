@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { KEEPSAKES, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -55,7 +55,7 @@ function applySky(phaseName) {
 const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
 fishes.onGoodbye = () => { if (REDUCED) return; const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
-fishes.spots = () => decor.spots();
+fishes.spots = () => decor.spots(); fishes.keepSpots = () => decor.keepSpots();
 { const SURF = { ROCKS: { cols: [[96, 104, 74], [66, 78, 52], [122, 124, 106], [82, 90, 64]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
   Fish3D.groundAt = (x, z) => { let best = null, bd = 1.15; for (const sp of decor.spots()) { const d = Math.hypot(sp.x - x, sp.z - z); if (d < bd && SURF[DECOR_DEF[sp.type]?.cat]) { bd = d; best = sp; } } if (best) { const c = DECOR_DEF[best.type].cat; return { key: 'd:' + c, ctx: 'd:' + best.id, kind: 'decor', ...SURF[c] }; } const f = stg.env.floorSpec(); return { key: 'f:' + f.key, ctx: 'floor', kind: 'floor', cols: f.cols, scale: f.scale }; }; }
 fishes.hasBubbler = () => !!decor.bubbleSpot();
@@ -867,7 +867,13 @@ function showCard(f) {
   const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
-  const famLine = (() => { if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
+      const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
+      if (rec.away) out.push(`<b>${rec.away.inTank ? 'HIDING SOMEWHERE' : 'OUT EXPLORING'}</b>`);
+      if (m?.n) out.push(`Adventures: ${m.n}${m.pref === 'long' ? ' · likes a long one' : m.pref === 'short' ? ' · likes to stay close' : ''}`);
+      if (items.length) out.push(`Keepsakes: ${esc(items.join(', '))}`); if (fav) out.push(`Favorite: the ${esc(KEEPSAKES[fav.k].label.toLowerCase())}`);
+      return `<p class="mind fam">${out.join('<br>')}</p>`; }
+    if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
     if (rec.widowAt && now - rec.widowAt < 7 * 864e5 && !rec.mate) out.push('Still grieving: not ready to bond again yet.');
     if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
@@ -1105,7 +1111,7 @@ function maybeGift() {
   if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) setTimeout(() => { if (!$('modal').classList.contains('on')) offerGift(); }, 1200);
   else giftOffered = Date.now();
 }
-let lastLive = 0; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((game.state?.nursery?.id ?? null) !== nurseryFx.id) syncWorld(); nurseryCheck();      /* a birth or a choice that came with time passing, not with an action */ if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
+let lastLive = 0, advSig = null; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((game.state?.nursery?.id ?? null) !== nurseryFx.id) syncWorld(); nurseryCheck();      /* a birth or a choice that came with time passing, not with an action */ if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); { const st = game.state, sig = st ? (st.keeps ?? []).map((k) => `${k.id}:${k.x}:${k.z}`).join() + '|' + st.decor.map((d) => `${d.x}:${d.z}`).join() : ''; if (sig !== advSig) { advSig = sig; if (st) decor.sync(st.decor, st); } }      /* (a keepsake brought home, or something an adventure moved, while time passed) */ }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
   moment({ at: new THREE.Vector3(0, 6, 1), haptics: 30 });

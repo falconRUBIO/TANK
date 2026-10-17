@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server/server.mjs",
-    "test": "node web/src/game/rules.test.mjs && node --disable-warning=ExperimentalWarning server/test.mjs"
+    "test": "node web/src/game/rules.test.mjs && node web/src/game/adventures.test.mjs && node --disable-warning=ExperimentalWarning server/test.mjs"
   },
   "dependencies": {
     "web-push": "^3.6.7",

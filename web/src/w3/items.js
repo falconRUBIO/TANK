@@ -204,6 +204,18 @@ const B = {
   },
 };
 
+// Keepsakes an octopus brings back from an adventure (Little Adventures): tiny, lying on the sand by its den. Not for sale and not solid.
+const tiny = (g, v, y = 0.03) => { topLit(v); const m = v.mesh(); m.position.y = y; g.add(m); return []; };
+export const KEEP_B = {
+  cap: (g) => { const v = new Vox(0.04); for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const r2 = i * i + k * k; if (r2 > 17) continue; const rim = r2 > 11; v.set(i, 0, k, rim && (Math.atan2(k, i) * 6 | 0) % 2 ? [150, 30, 30] : [200, 48, 44]); if (rim) v.set(i, 1, k, [176, 40, 38]); } v.set(0, 1, 0, [240, 220, 200], 1.2); return tiny(g, v); },
+  key: (g) => { const v = new Vox(0.035), c = [212, 168, 70], d = [170, 128, 50]; for (let i = -6; i <= 3; i++) v.set(i, 0, 0, c); for (let a = 0; a < 12; a++) { const x = 6 + Math.round(Math.cos(a / 12 * Math.PI * 2) * 2.4), z = Math.round(Math.sin(a / 12 * Math.PI * 2) * 2.4); v.set(x, 0, z, c, 1.1); } v.set(-6, 0, 1, d); v.set(-6, 0, 2, d); v.set(-4, 0, 1, d); return tiny(g, v); },
+  pebble: (g) => { const v = new Vox(0.04); v.ellipsoid(0, 0, 0, 4.2, 2, 3.2, (i, j, k) => mix([150, 152, 156], [205, 206, 210], fbm(i * 0.4, j * 0.4, k * 0.4)), 3, 0.12); return tiny(g, v, 0.05); },
+  glass: (g) => { const v = new Vox(0.04); for (const [i, k] of [[0, 0], [1, 0], [2, 0], [-1, 0], [0, 1], [1, 1], [-1, 1], [0, -1], [1, -1], [2, 1], [0, 2], [-2, 0]]) v.set(i, 0, k, [120, 206, 180], 1.35); v.set(0, 1, 0, [170, 236, 210], 1.4); return tiny(g, v); },
+  shard: (g) => { const v = new Vox(0.04); for (let i = -3; i <= 3; i++) for (let k = -2; k <= 2; k++) if (i + k < 3 && i - k > -4) v.set(i, 0, k, (i + 3) % 3 === 0 ? [60, 96, 190] : [236, 230, 214]); return tiny(g, v); },
+  shell: (g) => { const v = new Vox(0.03); for (let a = 0; a < 26; a++) { const r = 0.6 + a * 0.16, th = a * 0.55; v.set(Math.round(Math.cos(th) * r), Math.round(a / 9), Math.round(Math.sin(th) * r), a % 3 ? [236, 206, 170] : [196, 140, 104]); } return tiny(g, v); },
+};
+export function buildKeep(kind) { const group = new THREE.Group(); (KEEP_B[kind] ?? KEEP_B.pebble)(group); group.scale.setScalar(1.6); return { group, parts: [], lamp: null, type: kind, foot: 0.12 }; }
+
 // build one item: returns { group, parts, lamp }
 export function buildItem(type, seed = 1) {
   const group = new THREE.Group(), parts = B[type](group, seed);

@@ -1,7 +1,7 @@
 // Placed decorations: keeps the scene in step with the game's decor list, runs placement previews,
 // and feeds the fish collision grid.
 import * as THREE from 'three';
-import { buildItem, stampItem, itemOverlaps, placeGroup, disposeItem, baseY } from './items.js';
+import { buildItem, buildKeep, stampItem, itemOverlaps, placeGroup, disposeItem, baseY } from './items.js';
 import { placeable, levelAt } from './terrain.js';
 import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
@@ -25,9 +25,18 @@ export class DecorMgr {
       else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); const from = have.group.position.clone(); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); if (Math.hypot(from.x - d.x, from.z - d.z) > 0.15) have.slide = { from, t: 0 }; }
     }
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
-    if (state) this.grow(state);
+    if (state) { this.grow(state); this.syncKeeps(state.keeps ?? []); }
     for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
   }
+  // keepsakes from the octopus's adventures: tiny things on the sand, not solid, never picked up by a player
+  syncKeeps(list) {
+    this.keeps ||= new Map(); const seen = new Set();
+    for (const k of list) { seen.add(k.id); let it = this.keeps.get(k.id); if (it?.carried) continue;
+      if (!it) { it = buildKeep(k.k); it.id = k.id; it.kind = k.k; it.by = k.by; it.group.rotation.y = (seedOf(k.id) % 628) / 100; this.scene.add(it.group); this.keeps.set(k.id, it); }
+      if (it.x !== k.x || it.z !== k.z) { it.x = k.x; it.z = k.z; it.group.position.set(k.x, baseY(it, k.x, k.z), k.z); } }
+    for (const [id, it] of [...this.keeps]) if (!seen.has(id)) { this.scene.remove(it.group); disposeItem(it); this.keeps.delete(id); }
+  }
+  keepSpots() { return [...(this.keeps?.values() ?? [])].filter((it) => !it.carried).map((it) => ({ id: it.id, kind: it.kind, by: it.by, x: it.x, z: it.z, y: baseY(it, it.x, it.z), it })); }
   // plants slowly grow between trims
   // a plant's size from how long since it was trimmed; a big change (a trim, here or on another phone) is eased over about a second, so you see it happen
   grow(state, now = Date.now()) {
