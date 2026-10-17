@@ -106,7 +106,7 @@ export function canAdventure(t, f, now, R, cur) {
 // an extended one: a settled adult in its prime that has come home safely from several shorter ones
 export function eligibleLong(t, f, now, R) {
   const m = advMemOf(f), age = (now - f.born) / DAY;
-  return !f.elder && age >= 10 && age < R.lifeOf(f) * 0.7 && (m.kinds.short ?? 0) + (m.kinds.night ?? 0) >= 3 && (f.happy ?? 0) >= 0.65 && now - (t.createdAt ?? now) >= 21 * DAY && !octoHist(t).some((h) => h.kind === 'long' && now - h.at < 30 * DAY);
+  return !f.elder && age >= 10 && age < R.lifeOf(f) * 0.7 && (m.kinds.short ?? 0) + (m.kinds.night ?? 0) + (m.kinds.hide ?? 0) / 2 >= 2 && (f.happy ?? 0) >= 0.65 && now - (t.createdAt ?? now) >= 21 * DAY && !octoHist(t).some((h) => h.kind === 'long' && now - h.at < 30 * DAY);
 }
 const weekCount = (t, now, small = false) => (t.adv.hist ?? []).filter((h) => now - h.at < 7 * DAY && (!small || !h.fish)).length;
 const octoHist = (t) => (t.adv.hist ?? []).filter((h) => h.fish && ADV_KINDS[h.kind]);
@@ -137,7 +137,7 @@ export function adventures(t, now, ev, R) {
   t.keeps = t.keeps.filter((k) => k && KEEPSAKES[k.k] && Number.isFinite(k.x) && Number.isFinite(k.z));
   for (const f of t.fish) {
     if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R, now);
-    if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R);
+    if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R, now);
     if (f.away && !R.isOcto(f)) delete f.away;
   }
   for (let i = 0; i < 6 && now >= t.adv.octoAt; i++) {       // catch up on missed chances (a long time closed), a few at most
@@ -148,7 +148,7 @@ export function adventures(t, now, ev, R) {
     if (H(sid(f.id), at / MIN | 0, 5) > Math.min(0.95, 0.55 * nat.go)) continue;      // a homebody often stays in
     restless(t, f, at, ev, R);
     if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R, now);
-    if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R);
+    if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R, now);
   }
   for (let i = 0; i < 4 && now >= t.adv.smallAt; i++) {
     const at = t.adv.smallAt; t.adv.smallAt = at + span(ADV.SMALL_GAP, H(sid(t.id), at / MIN | 0, 6)) / rate(t);
@@ -172,12 +172,12 @@ function leave(t, f, at, ev, R, cur) {
   remember(t, { id, kind, fish: f.id, at, out: o.id });
   const major = kind !== 'hide';
   if (o.inTank || kind === 'hide') ev.push({ story: f.id, text: 'Disappeared from its den for a while.', jat: at, adventure: { phase: 'go', id, fish: f.id, kind } });
-  else ev.push({ journal: `${f.name} climbed out over the top of the tank and slipped away.`, jat: at, story: f.id, text: 'Went out exploring.', adventure: { phase: 'go', id, fish: f.id, kind }, major, toast: major ? `${f.name} has gone out exploring.` : undefined });
+  else ev.push({ journal: [`${f.name} climbed out over the top of the tank and slipped away.`, `${f.name} squeezed through the gap by the lid and was gone.`, `${f.name} slid up the glass, over the rim, and out of sight.`, `${f.name} went over the top of the tank, quiet as anything.`][Math.floor(H(sid(f.id), at / MIN | 0, 11) * 4)], jat: at, story: f.id, text: 'Went out exploring.', adventure: { phase: 'go', id, fish: f.id, kind }, major, toast: major && kind !== 'short' ? `${f.name} has gone out exploring.` : undefined });
 }
-function back(t, f, at, ev, R) {
-  const a = f.away; delete f.away;
+function back(t, f, at, ev, R, cur) {
+  const a = f.away; delete f.away; const since = Math.max(0, (cur ?? at) - at) / 1000 * (R.OHR ?? 0);      // (home partway through a long catch-up: the time since it came back counts as usual)
   // the time away does not count: hunger is where it was, and the next meal is as far off as it was when it left
-  if (R.ownHungry(f)) { f.hunger = Math.min(f.hunger ?? a.hunger, a.hunger ?? 0.3); if (a.fedAt != null) f.fedAt = a.fedAt + (at - a.at); }
+  if (R.ownHungry(f)) { f.hunger = Math.min(1, Math.min(f.hunger ?? a.hunger, a.hunger ?? 0.3) + since); if (a.fedAt != null) f.fedAt = a.fedAt + (at - a.at); }
   const m = advMemOf(f), c = context(t, f, at, R), o = OUTCOMES.find((x) => x.id === a.out) ?? OUTCOMES.find((x) => x.id === 'quiet');
   const okNow = !o.ok || o.ok(c), use = okNow ? o : OUTCOMES.find((x) => x.id === 'quiet');      // the thing it would have moved was taken away meanwhile
   m.n++; m.kinds[a.kind] = (m.kinds[a.kind] ?? 0) + 1; m.last = { id: a.id, kind: a.kind, at: a.at, end: at, out: use.id };
@@ -225,7 +225,7 @@ function small(t, at, ev, R) {
   const r = (n) => H(sid(t.id), at / MIN | 0, n), pick = (a, n) => a[Math.floor(r(n) * a.length)];
   const label = (d) => R.DECOR_DEF[d?.type]?.label ?? 'decoration', byId = (id) => t.fish.find((f) => f.id === id);
   const fish = t.fish.filter((f) => fishy(f, R) && R.stageOf(f, at) !== 'baby'), horses = t.fish.filter((f) => sea(f) && !f.dead), octos = t.fish.filter((f) => R.isOcto(f) && !f.dead && !f.away);
-  const plants = t.decor.filter((d) => R.DECOR_DEF[d.type]?.cat === 'PLANTS'), done = new Set((t.adv.hist ?? []).filter((h) => at - h.at < 21 * DAY).map((h) => h.kind));
+  const plants = t.decor.filter((d) => R.DECOR_DEF[d.type]?.cat === 'PLANTS'), done = new Set((t.adv.hist ?? []).filter((h) => at - h.at < 45 * DAY).map((h) => h.kind));
   const pool = [];
   const add = (kind, w, run) => { if (!done.has(kind)) pool.push({ kind, w, run }); };
   // fish
@@ -261,7 +261,7 @@ function small(t, at, ev, R) {
   if (t.fish.length && !(t.adv.hist ?? []).some((h) => at - h.at < 3 * DAY)) add('quietnight', 0.5, () => ({ line: 'A quiet night. Everyone slept, and the water was still.', who: [] }));
   const p = pickW(pool, r(50)); if (!p) return;
   const res = p.run(); remember(t, { id: 's' + ((t.adv.seq = (t.adv.seq ?? 0) + 1)), kind: p.kind, at, end: at });
-  ev.push({ journal: res.line, jat: at, adventure: { phase: 'small', kind: p.kind } });
+  ev.push({ ...(p.kind === 'quietnight' ? { story: 'tank', text: res.line } : { journal: res.line }), jat: at, adventure: { phase: 'small', kind: p.kind } });      // (a quiet night is not news)
   for (const f of res.who) ev.push({ story: f.id, text: res.line, jat: at });
 }
 

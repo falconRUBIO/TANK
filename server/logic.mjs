@@ -179,7 +179,7 @@ function mergeCopy(db, tankId, copy, copyTs, user, now) {
 export function deleteUser(db, user) {
   return tx(db, () => {
     const t = tankOf(db, user.id); let tankGone = false;
-    if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); orphanOctopuses(db, t.id, user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
+    if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); orphanOctopuses(db, t.id, user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); for (const q of ['DELETE FROM hearts WHERE journal_id NOT IN (SELECT id FROM journal)', 'DELETE FROM photos WHERE tank_id=?']) db.prepare(q).run(...(q.includes('?') ? [t.id] : [])); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
     for (const tb of ['push_subs', 'push_log']) { try { db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); } catch { /* table shape differs */ } }
     db.prepare('DELETE FROM test_members WHERE user_id=?').run(user.id);      // (a developer's seat in a test aquarium)
     try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
@@ -198,12 +198,15 @@ export function previewJoin(db, code) {
   return { name: t.name, members: m.map(({ name, avatar, slot }) => ({ name, avatar, slot })), full: m.length >= MAX_MEMBERS };
 }
 // A phone that lost its saved sign-in (crash, reinstall, cleared site data) can take its seat back with the tank code alone.
-// Whoever holds the code could already ask for an empty seat, so this adds no new trust; the old token is retired.
-export function claimSeat(db, code, slot, isOnline = () => false) {
+// It needs the account's recovery key too (unless the seat has gone unused for a month); the old token is retired.
+export const CLAIM_IDLE = 30 * 864e5;
+export function claimSeat(db, code, slot, isOnline = () => false, key = null, now = Date.now()) {
   const t = db.prepare('SELECT id FROM tanks WHERE code=?').get(normalizeCode(code));
   if (!t) throw new GameError('NOT_FOUND', 'Check the code and try again.', 404);
-  const m = db.prepare('SELECT user_id FROM members WHERE tank_id=? AND slot=?').get(t.id, Number(slot));
+  const m = db.prepare('SELECT user_id, last_seen FROM members WHERE tank_id=? AND slot=?').get(t.id, Number(slot));
   if (!m) throw new GameError('NO_SEAT', 'That seat is empty.', 404);
+  const rh = db.prepare('SELECT recovery_hash FROM users WHERE id=?').get(m.user_id)?.recovery_hash;      // the tank code is shared with friends, so it alone cannot take over an account that has a recovery key:
+  if (rh && (!key || keyHash(String(key)) !== rh) && now - (m.last_seen ?? now) < CLAIM_IDLE) throw new GameError(key ? 'BAD_KEY' : 'NEED_KEY', key ? 'That recovery key was not recognised.' : 'Enter your recovery key to take this seat back.', 403);      // (a seat nobody has used for a month can still be taken back with the code, so a lost key is not the end)
   if (isOnline(t.id, m.user_id)) throw new GameError('SEAT_ACTIVE', 'That caretaker is in the tank right now. Ask them, or use a recovery key.', 409);
   const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), m.user_id);
   const u = db.prepare('SELECT name FROM users WHERE id=?').get(m.user_id); addJournal(db, t.id, `${u.name} signed back in.`, m.user_id);
@@ -361,3 +364,14 @@ export function snapshot(db, user, online = [], tank = null) {
   };
 }
 export const publicTank = (w) => ({ ...w, day: dayOf(w) });
+
+// Old rows the game no longer reads, once a day: idempotency keys after two months, the activity feed after six, the newest 300 messages and
+// 3000 journal lines of each tank (every time capsule's line is kept), and hearts, thanks and photos whose line or entry is gone.
+export function pruneOld(db, now = Date.now()) {
+  const D = 864e5, run = (q, ...a) => { try { return db.prepare(q).run(...a).changes; } catch { return 0; } };
+  return tx(db, () => run('DELETE FROM transactions WHERE ts<?', now - 60 * D) + run('DELETE FROM activity WHERE ts<?', now - 180 * D)
+    + run('DELETE FROM messages WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY tank_id ORDER BY id DESC) r FROM messages) WHERE r>300)')
+    + run("DELETE FROM journal WHERE text NOT LIKE 'Time capsule:%' AND id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY tank_id ORDER BY id DESC) r FROM journal) WHERE r>3000)")
+    + run('DELETE FROM photos WHERE journal_id NOT IN (SELECT id FROM journal)') + run('DELETE FROM hearts WHERE journal_id NOT IN (SELECT id FROM journal)')
+    + run('DELETE FROM thanks WHERE activity_id NOT IN (SELECT id FROM activity)'));
+}

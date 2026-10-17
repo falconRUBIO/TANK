@@ -112,7 +112,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!lim.hit('c:' + ip(req), cfg.recoverPerHour, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many attempts. Try again later.', 429);
         const b = await readBody(req);
         const tk = db.prepare('SELECT id FROM tanks WHERE code=?').get(L.normalizeCode(b.code)); if (tk && !lim.hit('ct:' + tk.id, 4, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many seat claims for this tank. Try again later.', 429);      // however many places they come from, a tank's seats can only be taken a few times an hour
-        const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid)); offsiteSoon();
+        const r = L.claimSeat(db, b.code, b.slot, (tid, uid) => online(tid).includes(uid), b.key); offsiteSoon();
         const t = L.tankOf(db, r.userId); if (t) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) });
         return json(res, 200, r);
       }
@@ -342,7 +342,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     });
     ws.on('close', () => { const nowT = Date.now(); if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
   });
-  const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref();
+  const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref(); L.pruneOld(db); const pruner = setInterval(() => L.pruneOld(db), 24 * 3600e3); pruner.unref();      // (old rows the game no longer reads)
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
   const backup = () => { if (dbPath === ':memory:') return; const tmp = dbPath + '.backup.tmp'; try { fs.rmSync(tmp, { force: true }); db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); fs.renameSync(tmp, dbPath + '.backup'); } catch (e) { console.error('backup failed', e.message); } };
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
@@ -409,7 +409,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
     port: server.address().port, db, backup, push, pushSweep,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pruner); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
   })));
 }
 

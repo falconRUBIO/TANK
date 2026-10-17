@@ -889,7 +889,7 @@ function showCard(f) {
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
       if (rec.away) out.push(`<b>${rec.away.inTank ? 'HIDING SOMEWHERE' : 'OUT EXPLORING'}</b>`);
-      if (m?.n) out.push(`Adventures: ${m.n}${m.pref === 'long' ? ' · likes a long one' : m.pref === 'short' ? ' · likes to stay close' : ''}`);
+      if (m?.n) out.push(`Adventures: ${m.n - (m.kinds?.hide ?? 0)}${(m.kinds?.hide ?? 0) ? ` · hid ${m.kinds.hide} time${m.kinds.hide > 1 ? 's' : ''}` : ''}${m.pref === 'long' ? ' · likes a long one' : m.pref === 'short' ? ' · likes to stay close' : ''}`);
       if (items.length) out.push(`Keepsakes: ${esc(items.join(', '))}`); if (fav) out.push(`Favorite: the ${esc(KEEPSAKES[fav.k].label.toLowerCase())}`);
       for (const k of (game.state.keeps ?? []).filter((q) => q.by === rec.id && q.h?.carries).slice(0, 2)) out.push(esc(keepStory(game.state, k, { KEEPSAKES })));      // only from its record
       return `<p class="mind fam">${out.join('<br>')}</p>`; }

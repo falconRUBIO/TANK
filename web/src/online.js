@@ -146,10 +146,10 @@ export function runOnboarding() {
     };
     // Lost the saved sign-in (crash, reinstall)? Pick which caretaker you are and take the seat back with the tank code.
     const claimScreen = (code, members, err = '') => {
-      const s = screen(`<h2>WHO ARE YOU?</h2><p>Pick yourself to get back into the tank.</p><div class="claim"></div><div class="err" id="er">${err}</div><button class="lnk" id="rk">Use a recovery key instead</button><button class="lnk" id="bk">Back</button>`);
+      const s = screen(`<h2>WHO ARE YOU?</h2><p>Type your recovery key, then pick yourself.</p><div class="claim"></div><input id="ck" class="codein" autocomplete="off" spellcheck="false" placeholder="Your recovery key"><div class="err" id="er">${err}</div><button class="lnk" id="rk">Use a recovery key instead</button><button class="lnk" id="bk">Back</button>`);
       const host = s.querySelector('.claim');
       members.forEach((m) => { const b = document.createElement('button'); b.className = 'big alt'; const c = document.createElement('canvas'); drawAvatar(c, m.avatar); b.append(c, Object.assign(document.createElement('span'), { textContent: ' ' + m.name }));
-        b.onclick = async () => { try { const r = await api('/api/claim', { code, slot: m.slot }); session = { token: r.token, userId: r.userId }; store(session); const me = await api('/api/me'); try { session.recoveryKey = (await api('/api/recovery', {})).key; store(session); } catch { /* optional */ } done({ mode: 'net', user: me.user, tank: me.tank }); } catch (e) { claimScreen(code, members, e.message); } };
+        b.onclick = async () => { const key = s.querySelector('#ck').value.trim(); try { const r = await api('/api/claim', { code, slot: m.slot, key: key || undefined }); session = { token: r.token, userId: r.userId }; store(session); const me = await api('/api/me'); try { session.recoveryKey = (await api('/api/recovery', {})).key; store(session); } catch { /* optional */ } done({ mode: 'net', user: me.user, tank: me.tank }); } catch (e) { claimScreen(code, members, e.message); } };
         host.append(b); });
       s.querySelector('#rk').onclick = () => recoverScreen(); s.querySelector('#bk').onclick = welcome;
     };

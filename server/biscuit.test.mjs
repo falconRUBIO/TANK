@@ -32,7 +32,7 @@ const feed = (t) => act({ t: 'feed', food: 'crab', fish: 'o1' }, t, 'feed' + t);
 // 1. the escape: Biscuit grows restless and goes (this is the step the scheduler takes; the outcome is a bottle cap)
 { const w = getW(); w.fish[0].restless = { id: 'aB', at: now, until: now + 20 * MIN, kind: 'short', out: 'cap' }; setW(w); }
 tick(now + 21 * MIN); let w = getW();
-ok('Biscuit climbs out and is away: not in the water, cannot be fed', () => { assert.ok(w.fish[0].away && !w.fish[0].away.inTank); assert.equal(feed(now + 25 * MIN).ok, false); assert.ok(journal().some((j) => /Biscuit climbed out over the top of the tank/.test(j.text))); });
+ok('Biscuit climbs out and is away: not in the water, cannot be fed', () => { assert.ok(w.fish[0].away && !w.fish[0].away.inTank); assert.equal(feed(now + 25 * MIN).ok, false); assert.ok(journal().some((j) => /Biscuit (climbed out over the top|squeezed through the gap|slid up the glass|went over the top)/.test(j.text))); });
 const back = w.fish[0].away.until; tick(back + MIN); w = getW(); const cap = w.keeps.find((k) => k.by === 'o1');
 ok('it comes home with a bottle cap, kept on the sand by its den, from that very adventure', () => { assert.ok(!w.fish[0].away); assert.ok(cap && cap.k === 'cap' && cap.adv === 'aB'); assert.ok(Math.hypot(cap.x - 1.2, cap.z - 0.6) < 1.2); assert.ok(journal().some((j) => /came back holding a bottle cap/.test(j.text) && j.ts === back)); assert.equal(w.fish[0].advMem.items[0].id, cap.id); });
 // 2. Emergent Life: over the next days it wanders off with it and brings it back, handles it (the phone reports each real touch)
