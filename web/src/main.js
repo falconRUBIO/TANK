@@ -433,7 +433,7 @@ window.__greetV = (f) => greetVisitor(f);
 async function greetVisitor(f) {
   { const v = game.state.visitor; if (v?.id === f.fid && v.stay && !v.decided) { const label = SPECIES_DEF[v.species]?.label ?? 'visitor', n = game.state.visitMem?.[v.species]?.n ?? 3;      // a visitor that keeps coming back: an optional choice, no hurry, the first answer decides
     const keep = await ui.choose({ title: 'IT WANTS TO STAY', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, options: [{ label: 'Let it stay', value: 'stay' }, { label: 'Let it wander', value: 'wander' }], cancel: 'Not now' }); if (!keep) return;      /* (closing it decides nothing) */ const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: keep === 'stay' });
-    if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); ui.toast(`The ${label} lives here now.`); } return; } }
+    if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); const nm = await ui.dialog({ title: 'NAME IT', text: `The ${label} lives here now. What will you call it?`, input: { value: label.split(' ').pop(), max: 14 }, ok: 'Name it', cancel: 'Later' }); if (nm && r2.fish) await game.dispatch({ t: 'nameFish', id: r2.fish, name: nm }); } return; } }      /* (it came as a guest: whoever let it stay names it) */
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }

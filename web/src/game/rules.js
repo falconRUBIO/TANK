@@ -992,6 +992,7 @@ guard.seen = new Set();
 export const timeStepErrors = () => [...guard.seen];      // shown on the developer page so a stuck tank is easy to spot
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
+  const t0 = t.simTs, pre = new Map(t.fish.filter((f) => isOcto(f) && !f.away).map((f) => [f.id, [f.ail ?? 0, f.health ?? 1]]));      // (an octopus that leaves partway through: only its time in the tank counts against it)
   guard('seahorses', () => seaFamilies(t, now, ev)); guard('octopals', () => octoPartners(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
@@ -1015,7 +1016,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1459,6 +1460,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const pay = sellValue(f); t.fish.splice(t.fish.indexOf(f), 1); t.shells += pay; if (t.want?.fish === f.id) t.want = null;
       for (const o of t.fish) { const close = o.pal === f.id || o.buddy === f.id || o.mate === f.id || o.partner === f.id; unlink(o, f.id); if (close) o.loss = { id: f.id, name: f.name, at: now, until: now + 2 * DAY, place: o.spotId ?? null, rehomed: true }; }      // a friend that has gone to a new home is missed for a little while (not mourned: it is alive, elsewhere)
       const forOther = f.owner && f.owner !== uid && members?.some((m) => m.id === f.owner);      // the first caretaker selling someone else's fish says so
+      if (f.resident) { const M = t.visitMem?.[f.species]; if (M) { delete M.kept; M.stay = { no: now }; } events.push({ journal: `${name} let ${f.name} go back to the open water. It knows the way, and may visit again.`, toast: `${f.name} swam back out to the open water.` }); return ok({ id: f.id, delta: 0 }); }      // a visitor that stayed is not sold: it goes back where it came from, and may come visiting again
       events.push({ journal: forOther ? `${name} found ${f.name} a new home, for ${f.ownerName ?? 'its caretaker'}.` : `${name} found ${f.name} a new home.`, toast: pay ? `${f.name} went to a new home. +${pay} shells` : `${f.name} went to a new home.`, activity: { type: 'fish', text: `${name} sold ${f.name} to a new home.` }, released: f.id });
       return ok({ id: f.id, delta: pay });
     }
