@@ -3,8 +3,8 @@
 import { skyOf } from './sky.js';
 import { genesOf, blendGenes, seededRandom } from './genes.js';
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
-import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE } from './life.js';
-export { keepStory, todOf, TOD, LIFE };
+import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
+export { keepStory, todOf, TOD, LIFE, decorStory };
 export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
 export { genesOf };
 export const SPECIES_DEF = {
@@ -409,6 +409,8 @@ function puzzles(t, now, ev) {
 function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
+  if (todOf(t, now) < 2 && hash32(Math.floor(t.visitAt / 6e4)) % 10 < 4 && !t.visitWait) { t.visitWait = true; const h = new Date(now + (Number(t.tzMin) || 0) * 60e3).getUTCHours(); t.visitAt = now + ((22 - h + 24) % 24 || 24) * HOUR; return; }      // some visitors only come at night: this one waits for the evening (life.js)
+  t.visitWait = false;
   const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
   t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR }; const vm = visitorArrives(t, t.visitor, now, ADVR);      // (a visitor that has been before goes back to its old place, and stays longer)
@@ -1235,7 +1237,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor); if (!f || !d) return fail('NOT_FOUND');
       const m = memOf(f), e = (m.fam[d.id] ||= { k: 0, n: 0, x: d.x, z: d.z, at: 0 }); if (now - (e.at ?? 0) < 45e3) return ok({ applied: false });      // one go is one go: a second phone, or a handoff, cannot count it twice
       const k0 = e.k, M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
-      e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; noteVisit(t, f, e, now); e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
+      e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; noteVisit(t, f, e, now); decorVisit(t, d, f, now, events, ADVR); e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
       const recent = now - (d.movedAt ?? d.at ?? 0) < 6 * 3600e3;
       if (d.type === 'pot' && k0 < POT_SKILL && e.k >= POT_SKILL) { const line = `${f.name} has worked out how to squeeze inside the clay pot.`; events.push({ journal: line, story: f.id, text: line }); }      // from the mouth to all the way in, learned one night at a time
       if (first && recent && a.kind === 'new') { const line = `${f.name} investigated the new ${label}.`; events.push({ journal: line, story: f.id, text: line }); }      // only after it really went over and felt it, and once
@@ -1279,7 +1281,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const it = t.decor.find((x) => x.id === a.id); if (!it) return fail('NOT_FOUND');
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
       const moved = Math.hypot(it.x - x, it.z - z) > 0.3; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.ry = +(num(a.ry) || 0).toFixed(2);
-      if (moved) { it.movedAt = now; for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e && !e.gone) e.mv = now; } }      // an octopus that knew it there still thinks it is there, until it finds it again
+      if (moved) { decorMoved(it, now); it.movedAt = now; for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e && !e.gone) e.mv = now; } }      // an octopus that knew it there still thinks it is there, until it finds it again
       return ok();
     }
     case 'sellDecor': {
@@ -1393,6 +1395,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         const f = t.fish.find((x) => x.id === e?.fish && !x.dead); if (!f) continue; const L = (f.log ||= {}); did = true;
         L.dist = +((L.dist ?? 0) + n(e.dist, 120)).toFixed(1); L.snaps = (L.snaps ?? 0) + Math.round(n(e.snaps, 60)); L.holds = (L.holds ?? 0) + Math.round(n(e.holds, 30));
         L.lv ||= {}; for (const k of ['front', 'middle', 'rear', 'top', 'mid', 'low']) if (e.lv?.[k]) L.lv[k] = Math.round((L.lv[k] ?? 0) + n(e.lv[k], 400));
+        { const seen = new Set([...(Array.isArray(e.places) ? e.places : []), ...(e.hitch && typeof e.hitch === 'object' ? Object.keys(e.hitch) : [])].slice(0, 12)); for (const id of seen) decorVisit(t, t.decor.find((x) => x.id === id), f, now, events, ADVR); }      // the decoration remembers who comes (one count a day each)
         if (Array.isArray(e.places)) { L.places ||= []; for (const id of e.places.slice(0, 10)) if (typeof id === 'string' && t.decor.some((d) => d.id === id) && !L.places.includes(id)) L.places.push(id); L.places = L.places.slice(-40); }
         // a seahorse's holdfasts, by the decoration's id (never by position, so a moved decoration is still the same place to it):
         // seconds held, visits, and where it stood when last held. Ones no longer in the tank are forgotten, and only the 16 most used are kept.

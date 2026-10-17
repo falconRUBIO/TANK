@@ -43,9 +43,10 @@ export function lifeDay(t, now, ev, R) {
     const L = f.log; if (L?.hitch) for (const h of Object.values(L.hitch)) h[0] = Math.round(h[0] * LIFE.HOLD_FADE);
     if (L?.lv) for (const k of Object.keys(L.lv)) L.lv[k] = Math.round(L.lv[k] * LIFE.AREA_FADE);
     // a young one that has, on its own, come to love the plant its parent loved
-    if (L?.fav && !(f.moments?.famPlace) && (f.parents ?? []).length) {
-      const par = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id) ?? (t.memorial ?? []).find((m) => m.id === p.id)).find((p) => p && (p.log?.fav ?? p.place?.id) === L.fav);
-      if (par && label(L.fav)) { (f.moments ||= {}).famPlace = now; const kin = f.species === 'seahorse' ? (f.sex === 'm' ? 'son' : 'daughter') : 'young one', line = `${par.name}'s ${kin} ${f.name} has taken a liking to the same ${label(L.fav).toLowerCase()}.`; ev.push({ journal: line, story: f.id, text: line, life: 'family' }); }
+    const own = L?.fav ?? (!R.isOcto(f) && f.species !== 'seahorse' ? f.spotId : null);      // a seahorse's holdfast; a fish's favourite spot
+    if (own && !(f.moments?.famPlace) && (f.parents ?? []).length) {
+      const par = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id) ?? (t.memorial ?? []).find((m) => m.id === p.id)).find((p) => p && (p.log?.fav ?? p.spotId ?? p.place?.id) === own);
+      if (par && label(own)) { (f.moments ||= {}).famPlace = now; const kin = f.species === 'seahorse' ? (f.sex === 'm' ? 'son' : 'daughter') : 'young one', line = `${par.name}'s ${kin} ${f.name} has taken a liking to the same ${label(own).toLowerCase()}.`; ev.push({ journal: line, story: f.id, text: line, life: 'family' }); }
     }
   }
   // someone it knew is gone (old age): for a few days a companion keeps going back to where they used to be together. No meter, no penalty.
@@ -61,11 +62,30 @@ export function lifeDay(t, now, ev, R) {
 
 // A keepsake carried or dropped (the phone running the animals reports it; one report per move, checked here). A thing carried on several
 // different days and finally left by its den is a small milestone, said once.
+// ── Decorations keep a small history of their own: who first came to it, who keeps coming (by days, not touches), where it has stood,
+// and whether two generations of one family have both made it theirs. d.h = { first, by: { [id]: [days, lastDay, name] } ≤6, moves ≤3, gen } ──
+export function decorVisit(t, d, f, now, ev, R) {
+  if (!d || !f) return; const h = (d.h ||= { by: {}, moves: [] }), day = Math.floor(now / DAY); h.first ||= { id: f.id, name: f.name, at: now };
+  const e = (h.by[f.id] ||= [0, -1, f.name]); if (e[1] === day) return; e[1] = day; e[0] = Math.min(999, e[0] + 1); e[2] = f.name;
+  const ids = Object.keys(h.by); if (ids.length > 6) delete h.by[ids.sort((a, b) => h.by[a][0] - h.by[b][0])[0]];
+  // a young one now comes here on its own, on several days, where its parent also came on several days: two generations
+  if (h.gen || e[0] < 3) return; const par = (f.parents ?? []).find((p) => (h.by[p.id]?.[0] ?? 0) >= 3 || (t.memorial ?? []).find((m) => m.id === p.id)?.place?.id === d.id);
+  if (!par) return; h.gen = { a: par.id, an: par.name, b: f.id, bn: f.name, at: now }; const lbl = (R.DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
+  const line = `The ${lbl} has seen two generations now: first ${par.name}, and now ${f.name}.`; ev.push({ journal: line, story: f.id, text: line, life: 'generations' });
+}
+export function decorMoved(d, now) { const h = (d.h ||= { by: {}, moves: [] }); h.moves.push({ x: d.x, z: d.z, at: now }); if (h.moves.length > 3) h.moves.shift(); }
+export function decorStory(t, d, R, day0 = t.createdAt ?? 0) {
+  const h = d?.h; if (!h?.first) return null; const day = (ms) => Math.floor((ms - day0) / DAY) + 1, top = Object.entries(h.by).sort((a, b) => b[1][0] - a[1][0])[0];
+  const out = [`${h.first.name} found it first, on day ${day(h.first.at)}`]; if (top && top[1][0] >= 3) out.push(`${top[1][2]} has come back on ${top[1][0]} days`); if (h.gen) out.push(`two generations: ${h.gen.an}, then ${h.gen.bn}`); if (h.moves?.length) out.push(`moved ${h.moves.length === 3 ? '3 or more' : h.moves.length} time${h.moves.length === 1 ? '' : 's'}`);
+  return `${R.DECOR_DEF[d.type]?.label ?? 'Decoration'}: ${out.join('; ')}.`;
+}
+
 export function carried(t, k, f, how, now, ev, R) {
   const h = (k.h ||= { carries: 0, days: [], places: [] }), d = Math.floor(now / DAY);
   h.places.push({ x: k.x, z: k.z, at: now }); if (h.places.length > 4) h.places.shift();
   if (!f) return; h.by ||= {}; h.by[f.id] = Math.min(999, (h.by[f.id] ?? 0) + 1); const ids = Object.keys(h.by); if (ids.length > 4) delete h.by[ids.sort((a, b) => h.by[a] - h.by[b])[0]];
   if (how === 'carry' || how === 'drop') { h.carries++; if (!h.days.includes(d)) { h.days.push(d); if (h.days.length > 7) h.days.shift(); } }
+  if (k.by && f.id !== k.by) { h.movedBy = { id: f.id, name: f.name, at: now }; const o = t.fish.find((x) => x.id === k.by && !x.dead); if (o) ev.push({ story: o.id, text: `${f.name} moved its ${(R.KEEPSAKES[k.k]?.label ?? 'keepsake').toLowerCase()}. It went straight over to check.` }); return; }      // someone else's: the owner notices (the phone sends it over to look)
   if (how === 'drop' || !R.isOcto(f)) return;
   const den = t.decor.find((x) => x.id === f.home), atDen = den && Math.hypot(den.x - k.x, den.z - k.z) < 2.0, name = R.KEEPSAKES[k.k]?.label.toLowerCase() ?? 'keepsake';
   if (atDen && !h.denAt) h.denAt = now;

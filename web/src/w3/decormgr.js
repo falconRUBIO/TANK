@@ -33,10 +33,11 @@ export class DecorMgr {
     this.keeps ||= new Map(); const seen = new Set();
     for (const k of list) { seen.add(k.id); let it = this.keeps.get(k.id); if (it?.carried) continue;
       if (!it) { it = buildKeep(k.k); it.id = k.id; it.kind = k.k; it.by = k.by; it.group.rotation.y = (seedOf(k.id) % 628) / 100; this.scene.add(it.group); this.keeps.set(k.id, it); }
+      it.rec = k;
       if (it.x !== k.x || it.z !== k.z) { it.x = k.x; it.z = k.z; it.group.position.set(k.x, baseY(it, k.x, k.z), k.z); } }
     for (const [id, it] of [...this.keeps]) if (!seen.has(id)) { this.scene.remove(it.group); disposeItem(it); this.keeps.delete(id); }
   }
-  keepSpots() { return [...(this.keeps?.values() ?? [])].filter((it) => !it.carried).map((it) => ({ id: it.id, kind: it.kind, by: it.by, x: it.x, z: it.z, y: baseY(it, it.x, it.z), it })); }
+  keepSpots() { return [...(this.keeps?.values() ?? [])].filter((it) => !it.carried).map((it) => ({ id: it.id, kind: it.kind, by: it.by, x: it.x, z: it.z, y: baseY(it, it.x, it.z), it, rec: it.rec })); }
   // plants slowly grow between trims
   // a plant's size from how long since it was trimmed; a big change (a trim, here or on another phone) is eased over about a second, so you see it happen
   grow(state, now = Date.now()) {

@@ -52,6 +52,7 @@ export function run(kind, act, days, seed) {
   const os = t.fish.filter((f) => R.isOcto(f)), habits = os.flatMap((f) => (f.habits ?? []).map((q) => `${t.decor.find((x) => x.id === q.id)?.type}@${R.TOD[q.tod]}`));
   st.habits = habits.length; st.distinct = new Set(habits).size; st.octos = os.length; st.sameRoutine = os.length > 1 && os.every((f) => JSON.stringify((f.habits ?? []).map((q) => [q.id, q.tod])) === JSON.stringify((os[0].habits ?? []).map((q) => [q.id, q.tod]))) && habits.length > 0;
   st.likesSpread = Math.max(0, ...os.map((f) => Object.values(f.mem?.fam ?? {}).filter((e) => e.n > 0).length)); st.keeps = (t.keeps ?? []).length; st.keepHist = (t.keeps ?? []).filter((k) => k.h?.carries).length;
+  st.decorHist = t.decor.filter((d) => d.h?.first).length; st.decorBytes = JSON.stringify(t.decor.map((d) => d.h ?? null)).length;
   st.visitMem = Object.values(t.visitMem ?? {}).reduce((a, m) => a + m.n, 0); st.bytes = JSON.stringify(t).length; st.perDayMs = +(st.ms / days).toFixed(2);
   return st;
 }
@@ -62,7 +63,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const days of [7, 30, 60, 120]) {
     const R0 = rows.filter((x) => x.days === days), avg = (k) => +(R0.reduce((a, x) => a + (x[k] ?? 0), 0) / R0.length).toFixed(1), sum = (k) => R0.reduce((a, x) => a + (x[k] ?? 0), 0);
     const life = {}; for (const x of R0) for (const [k, v] of Object.entries(x.life)) life[k] = (life[k] ?? 0) + v;
-    console.log(`${String(days).padStart(3)} days, ${R0.length} tanks: habits ${avg('habits')} (distinct ${avg('distinct')}), same routine in a two-octopus tank ${R0.filter((x) => x.sameRoutine).length}, things known ${avg('likesSpread')}, keepsakes with a history ${avg('keepHist')}, journal ${avg('journal')} lines (${(avg('journal') / days).toFixed(2)}/day), life lines ${JSON.stringify(life)}, visitor returns told ${sum('visitsBack')}, duplicates ${sum('dups')}, saved size ${Math.round(avg('bytes') / 1024)} KB, ${avg('perDayMs')} ms/day`);
+    console.log(`${String(days).padStart(3)} days, ${R0.length} tanks: habits ${avg('habits')} (distinct ${avg('distinct')}), same routine in a two-octopus tank ${R0.filter((x) => x.sameRoutine).length}, things known ${avg('likesSpread')}, keepsakes with a history ${avg('keepHist')}, decorations with a history ${avg('decorHist')} (${Math.round(avg('decorBytes'))} B), journal ${avg('journal')} lines (${(avg('journal') / days).toFixed(2)}/day), life lines ${JSON.stringify(life)}, visitor returns told ${sum('visitsBack')}, duplicates ${sum('dups')}, saved size ${Math.round(avg('bytes') / 1024)} KB, ${avg('perDayMs')} ms/day`);
   }
   console.log('\nby caretaker activity (120 days):'); for (const act of Object.keys(ACTIVITY)) { const R0 = rows.filter((x) => x.days === 120 && x.act === act); console.log(`  ${act.padEnd(6)} habits ${(R0.reduce((a, x) => a + x.habits, 0) / R0.length).toFixed(1)}, journal ${(R0.reduce((a, x) => a + x.journal, 0) / R0.length / 120).toFixed(2)}/day`); }
 }

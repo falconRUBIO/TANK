@@ -1,5 +1,45 @@
 # Emergent Life: implementation report
 
+## Update: the second pass
+
+All seven items left open in the first pass are now built. Each one changes what the animal actually does, and the browser drill `tools/life_check2.mjs` checks each one in the running game.
+
+| Item | What it does, and where |
+|---|---|
+| **Decorations keep a history** | `d.h` holds: who found it first; who keeps coming back, counted by days, at most 6 animals; its last 3 places; and whether two generations of one family have both used it. Fed by real handling (`octoTouch`) and by the director phone's reports of places and holdfasts (`fishLog`). An animal's profile shows its favorite place's history. "The giant clam has seen two generations now: first Pip, and now Nemo." is written once per decoration, only when the parent visited on at least 3 days and the young one came back on its own on at least 3 days. Code: `life.js` `decorVisit`, `decorMoved`, `decorStory`. |
+| **Wrong entrance** | Coming home, the octopus sometimes (20% of approaches) tries the den from the wrong side, backs out and goes round. Code: `fishmgr.js` `quirkTick` and `wrongStep`. |
+| **Stubborn object** | A decoration being hauled sometimes (20%) catches. The octopus stops pulling, backs off and carries on, and the decoration does not move in the meantime. Code: `fishmgr.js` `snag`. |
+| **Fish accidents** | A bubble from the bubbler startles a passing fish (playful fish like bubbles, so they are exempt). A curious fish goes up to something, then turns back. A schooling fish falls behind, then hurries to catch up. A shy fish turns away from an octopus or an angelfish. Code: `quirkTick`. |
+| **Seahorse accidents** | Its tail sometimes slips off on the first grip (12%), and it swings down and curls round again. Now and then it lets go and drifts before finding another stem. Paired seahorses don't do this. Two seahorses still never share a stem. Code: `fish3d.js` holdfast and `quirkTick`. |
+| **Learning from others** | A shy fish sometimes follows a bold fish (its best friend, or a Brave fish nearby) to where it is going. An octopus that watches another handle something goes to look at it itself a few seconds later. That visit builds its own familiarity through the normal `octoTouch` report, so no memory is copied. A young fish is drawn to its family's favorite spot until it has a spot of its own. If it independently makes that spot its own, the family line is written once. The behaviors stay within each kind of animal. |
+| **Noticing attention** | Opening another animal's card can bring an octopus that knows you well (trust level 2 or more, and sociable) to the glass. This happens at most once every 5 minutes. There is no meter, and nothing is lost. Code: `fishmgr.js` `attention`. |
+| **Night** | Explorers, tricksters and collectors stay out at night and roam 1.6 times as often. Homebodies, watchers and show-offs go home. About 40% of visitors that would arrive by day wait for the tank's evening (22:00 local) instead. Code: `rules.js` `visitors`. |
+| **A keepsake moved by another octopus** | Recorded as `h.movedBy`. The owner's story gets the line "Sly moved its bottle cap. It went straight over to check." (story only, no journal line). Within 15 minutes the owner goes to it on the phone. Another octopus may also go and look at a keepsake that has just been moved. |
+| **Profile check** | The drill now opens the real profile card. It checks that "Every afternoon: the reef boulder" and "Reef Boulder: Sly found it first, on day 22; Sly has come back on 5 days." appear. |
+
+**Bug fixed along the way:** an octopus heading home, eating or on a job could be pulled away by checking a keepsake or copying another octopus. It now does those only when it is free.
+
+**Tests:**
+- **Rule tests:** 22 Emergent Life tests, up from 17. The 5 new ones cover decoration history, two generations at one decoration, the family spot for a young fish, a keepsake moved by another octopus, and night visitors.
+- **`tools/life_check2.mjs`:** all 15 checks pass, and passed twice in a row. Some steps put an animal in the real trigger condition and run one frame of the game code, so the drill doesn't wait on chance. Each check still counts what the animal then does.
+- **Drill tanks:** the seahorse checks run in a tank with plants only. Next to octopuses the seahorse keeps clear of the stems.
+- **Graphics quality:** the drill runs at quality level 1. At level 0, these drill plants gave the seahorse no grip points. That comes from the existing grip system and was not changed here.
+
+**Performance:**
+- In headless desktop Chromium with 7 animals, the animal simulation went from 1.26 to 1.55 ms per frame with the new ticks, against a 16.7 ms frame budget.
+- One accidents pass, which runs twice a second, costs about 0.005 ms.
+- **Not measured on a real iPhone.**
+- **Saved size:** decoration histories add about 1 KB per tank (simulation average). The whole tank was 15 KB after 120 days.
+
+**Still not built:**
+- "Annoying fish" memory for the octopus beyond the existing per-fish memory.
+- A fish noticing that a friend is absent (as opposed to dead).
+- A family personality tendency beyond the existing genes.
+- A per-object history of animals visiting the keepsakes.
+
+*The sections below are the first-pass report. Where it lists something as "not built", the table above takes precedence.*
+
+
 **What it does:** habits that grow out of what the animals really do and fade when they stop, keepsakes that build up a history, small accidents, companions who notice who is missing, young animals that take to their family's places, and visitors that remember the tank.
 
 **Where it lives:**

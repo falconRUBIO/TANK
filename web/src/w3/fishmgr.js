@@ -165,6 +165,51 @@ export class Fishes {
       else if (C.slip != null && C.t > C.slip) { put('drop'); f.inspect = null; f.thought = 'Dropped it'; }      // butterfingers: it lands on the sand where it slipped
     }
   }
+  // Little accidents and quiet habits, a few times a second (Emergent Life). All harmless, all shown by movement.
+  quirkTick(dt) {
+    if ((this.qT = (this.qT ?? 0) - dt) > 0) { for (const f of this.list) this.wrongStep(f, dt); return; } this.qT = 0.5; const r = this.rng, now = Date.now(), ks = this.keepSpots?.() ?? [];
+    for (const f of this.list) {
+      if (f.dead || f.puppet || f.visitor) continue; this.wrongStep(f, 0.5);
+      if (f.species?.move === 'jet') {
+        f.nightOwl = ['explorer', 'trickster', 'collector'].includes(f.mind?.type);      // about more at night (fish3d), the others go home
+        const S = f.st, den = f.den;
+        // wrong entrance: coming home, it tries the den from an awkward side, backs out and goes round
+        if (den && S?.s === 'crawl' && S.mode === 'den') { const d = Math.hypot(f.pos.x - den.x, f.pos.z - den.z); if (d > 2.2) f.denTry = false; else if (d < 1.6 && !f.denTry && !f.wrong) { f.denTry = true; if (r() < 0.2) { const side = f.pos.x < den.x ? -1 : 1; f.wrong = { t: 0, den, side, keep: f.target.clone() }; f.wrongs = (f.wrongs ?? 0) + 1; } } }
+        // another octopus is handling something: a watching one may go and look at it after
+        if (S?.s === 'work' && S.mode === 'inspect' && f.inspect?.id && f.inspect.type !== 'keep') for (const o of this.list) if (o !== f && o.species?.move === 'jet' && !o.dead && !o.inspect && !o.task && o.pos.distanceTo(f.pos) < 4 && (o.sawAt ?? 0) < now - 60e3 && r() < 0.25 * (o.mind?.cur ?? 0.5)) { o.sawAt = now; o.copyLook = { ...f.inspect, after: now + 8000 }; }
+        if (f.copyLook && now > f.copyLook.after && !f.inspect && !f.task && !f.keepCarry && !S?.mode) { f.inspect = { x: f.copyLook.x, z: f.copyLook.z, id: f.copyLook.id, type: f.copyLook.type, r: f.copyLook.r }; f.copyLook = null; f.copied = (f.copied ?? 0) + 1; f.thought = 'Curious about what the other one was doing'; }
+        // a keepsake moved by someone else: its owner goes to check on it; another octopus may go and look at a freshly moved one
+        if (!f.inspect && !f.task && !f.keepCarry && !S?.mode) { const q = ks.find((k) => k.rec?.h?.movedBy && now - k.rec.h.movedBy.at < 15 * 60e3 && (k.by === f.fid ? k.rec.h.movedBy.id !== f.fid && (f.checked ?? '') !== k.id + k.rec.h.movedBy.at : k.rec.h.movedBy.id !== f.fid && (f.checked ?? '') !== k.id + k.rec.h.movedBy.at && r() < 0.15));
+          if (q) { f.checked = q.id + q.rec.h.movedBy.at; f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; f.thought = q.by === f.fid ? 'Checking where its keepsake went' : 'Looking at the keepsake that moved'; } }
+        continue;
+      }
+      if (f.sk === 'seahorse') { if (f.holdfast?.on && !f.mate && r() < 0.5 * 0.0015 * (1 + (f.persona?.cur ?? 0.5))) { f.release(2.4); f.vel.set((r() - 0.5) * 0.25, 0.05, (r() - 0.5) * 0.15); f.drifts = (f.drifts ?? 0) + 1; } continue; }      // lets go and drifts a moment before finding another stem
+      // fish: a sudden bubble, a curious approach that turns back, a schooling fish falling behind, a shy one turning from a bigger animal
+      const tr = f.profile?.traits ?? [];
+      if (this.hasBubbler?.() && Math.hypot(f.pos.x - this.bubbleAt.x, f.pos.z - this.bubbleAt.z) < 0.9 && f.pos.y < 9 && !tr.includes('Playful') && r() < 0.15) { const dx = f.pos.x - this.bubbleAt.x || 0.1; f.vel.x += Math.sign(dx) * 2.2; f.target.set(f.pos.x + Math.sign(dx) * 2, f.pos.y + 0.5, f.pos.z); f.retarget = 2; f.startles = (f.startles ?? 0) + 1; }
+      if (tr.includes('Curious') && !f.seeking && (f.backAt ?? 0) < now - 30e3) { const sp = (this.spots?.() ?? []).find((q) => Math.hypot(q.x - f.target.x, q.z + 0.6 - f.target.z) < 1.2 && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 1.6); if (sp && r() < 0.12) { f.backAt = now; f.target.set(f.pos.x + (f.pos.x - sp.x) * 1.2, f.pos.y + 0.3, f.pos.z + 0.8); f.retarget = 2.5; f.retreats = (f.retreats ?? 0) + 1; } }
+      if (f.species?.school && !f.lagT && r() < 0.004) { f.lagT = 4; f.lags = (f.lags ?? 0) + 1; }
+      if (f.lagT) { f.lagT = Math.max(0, f.lagT - 0.5); f.mul = f.lagT > 2 ? 0.5 : f.lagT > 0 ? 1.5 : 1; if (!f.lagT) f.mul = 1; }      // drops back, then hurries to catch up
+      if (tr.includes('Shy')) { const big = this.list.find((o) => o !== f && !o.dead && (o.species?.move === 'jet' || o.sk === 'angelfish') && o.pos.distanceTo(f.pos) < 1.4); if (big && (f.shyAt ?? 0) < now - 8000) { f.shyAt = now; f.target.set(f.pos.x + (f.pos.x - big.pos.x) * 2, f.pos.y, f.pos.z + (f.pos.z - big.pos.z)); f.retarget = 2; f.turns = (f.turns ?? 0) + 1; } }
+    }
+  }
+  wrongStep(f, dt) {
+    const W = f.wrong; if (!W) return; W.t += dt; const dx = f.pos.x - W.den.x, dz = f.pos.z - W.den.z, d = Math.hypot(dx, dz) || 1;
+    if (W.t < 1.4) { f.pos.x += (dx / d) * 0.55 * dt; f.pos.z += (dz / d) * 0.55 * dt; }      // backs out
+    else if (W.t < 3.2) f.target.set(W.den.x + W.side * 1.1, f.target.y, W.den.z + 0.4);      // goes round to the other side
+    else { f.wrong = null; f.target.copy(W.keep); }
+  }
+  // the octopus that knows a caretaker well notices them looking after someone else, and comes to the glass (no meter, nothing lost)
+  attention(fid) {
+    for (const o of this.list) if (o.species?.move === 'jet' && o.fid !== fid && !o.dead && !o.puppet && !o.task && !o.keepCarry && (o.trust ?? 0) >= 2 && (o.mind?.soc ?? 0.5) > 0.55 && (o.lookCool ?? 0) < Date.now() && this.rng() < 0.5) {
+      o.lookCool = Date.now() + 5 * 60e3; o.glassAt = { x: (this.rng() - 0.5) * 3, y: 2.6 + this.rng() * 2, until: performance.now() + 9000, close: false }; o.noticed = (o.noticed ?? 0) + 1; }
+  }
+  // stubborn: a decoration being hauled catches on something; the octopus stops, backs off a little and tries again
+  snag(f, T, dt) {
+    if (T.snag === undefined) T.snag = this.rng() < 0.2 ? 1 + this.rng() * 2.5 : null; T.ht2 = (T.ht2 ?? 0) + dt;
+    if (T.snag != null && T.ht2 > T.snag && T.ht2 < T.snag + 1.6) { f.pos.x -= T.ux * 0.35 * dt; f.pos.z -= T.uz * 0.35 * dt; if (!T.snagged) { T.snagged = true; f.snags = (f.snags ?? 0) + 1; } return true; }
+    return false;
+  }
   // too heavy: a bold octopus wraps its arms round something far too big to shift, leans back to pull, twice, then gives up and goes
   tugTick(dt) {
     for (const f of this.list) {
@@ -313,7 +358,7 @@ export class Fishes {
     if (!this.decor) return;
     for (const f of this.list) {
       const T = f.task;
-      if (T?.stage === 'haul') { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null, dt);
+      if (T?.stage === 'haul' && !this.snag(f, T, dt)) { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null, dt);
         const it = this.decor.items.get(T.id); if (it && T.kind === 'turn') { T.ht = (T.ht ?? 0) + dt; it.group.rotation.z += (0.42 * Math.sin(Math.min(1, T.ht / 5) * Math.PI) - it.group.rotation.z) * Math.min(1, dt * 3); } }      // tipped over on its side while it is shoved, then set back down
       if (f.species.id === 'octopus') f.shellK = 0;
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
@@ -537,6 +582,7 @@ export class Fishes {
     }
     if (d.species === 'octopus') this.syncDen(f, d);
     f.disc = d.disc ?? {}; f.palId = d.pal ?? null; f.spotId = d.spotId ?? null; f.ownerId = d.owner ?? null;
+    if (d.species !== 'octopus' && d.species !== 'seahorse' && stageOf(d) !== 'adult') { const par = (d.parents ?? []).map((p) => this.recs?.get(p.id) ?? (this.state?.memorial ?? []).find((m) => m.id === p.id)).find((p) => p?.spotId ?? p?.place?.id); f.familySpot = par ? (par.spotId ?? par.place?.id) : null; } else if (d.species !== 'seahorse') f.familySpot = null;
     f.rivalId = d.rival ?? null; f.lossPlace = d.loss && Date.now() < d.loss.until ? d.loss.place : null; f.habits = d.habits ?? null;      // Emergent Life (life.js): a missed companion's place for a few days; its habits by time of day
     if (d.species === 'seahorse' && stageOf(d) !== 'adult') { const par = (d.parents ?? []).map((p) => this.recs?.get(p.id) ?? (this.state?.memorial ?? []).find((m) => m.id === p.id)).find((p) => p?.log?.fav ?? p?.place?.id); f.familyPlant = par ? (par.log?.fav ?? par.place?.id) : null; } else f.familyPlant = null;      // a young seahorse knows the plant its family used (it may or may not take to it)
     const top = Object.entries(d.bond ?? {}).sort((a, b) => b[1] - a[1])[0]; f.mine = !!this.me && (d.owner === this.me || (top && top[1] >= 3 && top[0] === this.me));
@@ -584,6 +630,8 @@ export class Fishes {
       if (sk === 'betta') { const c = spot(['ROCKS']); if (c && r() < 0.65) { f.idle = 3 + r() * 3; return T(c.x + (r() - 0.5) * 1.2, 1.0 + c.h * 0.35 + r() * 0.5, c.z + 0.6, 6 + r() * 4); } }
       // identity: a fish swims out to the glass for its own caretaker, goes back to its favorite spot, stays near its best friend, and has a corner of the tank it prefers
       if (f.mine && r() < (has('Shy') ? 0.1 : 0.25)) return T(-1.5 + r() * 3, 4 + r() * 6, 2.5 + r() * 0.4, 4);
+      if (f.familySpot && !f.spotId && r() < 0.15) { const sp = spots.find((x) => x.id === f.familySpot); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }      // young: drawn to where its family liked to be (its own spot, once it has one, wins)
+      if (has('Shy') && r() < 0.2) { const lead = this.list.find((o) => o !== f && !o.dead && !o.visitor && o.species?.move !== 'jet' && o.sk !== 'seahorse' && (o.profile?.traits ?? []).includes('Brave') && (o.fid === f.palId || o.pos.distanceTo(f.pos) < 3)); if (lead) { f.followed = (f.followed ?? 0) + 1; return T(lead.target.x - 0.8, lead.target.y, lead.target.z, 4); } }      // a shy one goes where a bold one goes
       if (f.lossPlace && r() < 0.35) { const sp = spots.find((x) => x.id === f.lossPlace); if (sp) return T(sp.x + (r() - 0.5) * 0.6, 0.9 + sp.h * 0.4, sp.z + 0.8, 7); }      // keeps going back to where it used to be with a companion that has died (a few days)
       if (this.night && f.palId && r() < 0.6) { const o = this.byId.get(f.palId); if (o && !o.dead) { f.idle = 3; return T(o.pos.x + (r() - 0.5) * 0.7, o.pos.y + (r() - 0.5) * 0.4, o.pos.z + (r() - 0.5) * 0.4, 8); } }      // best friends settle down near each other for the night
       if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
@@ -818,7 +866,7 @@ export class Fishes {
         const quiet = Date.now() - (this.attnAt ?? 0) > 90e3, attach = q.by === f.fid ? 1 : 0.3, coll = f.mind?.type === 'collector' || f.mind?.type === 'trickster' ? 1.4 : f.mind?.type === 'homebody' ? 1.1 : 0.8;
         if (den && Math.hypot(q.x - den.x, q.z - den.z) > 1.3 && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll) { f.keepCarry = { id: q.id, phase: 'go', t: 0 }; f.thought = 'Going to fetch its keepsake'; }
         f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = 'Checking on its keepsake'; } }
-    this.carryTick(dt); this.tugTick(dt);
+    this.carryTick(dt); this.tugTick(dt); this.quirkTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }

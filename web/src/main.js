@@ -1,7 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
-import { KEEPSAKES, keepStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -841,7 +841,9 @@ function showEggCard(fx) {
     ${e.risk && !cared && e.laid && now > e.laid + 864e5 ? `<p class="warn">${esc(s.fish.find((x) => x.species === 'octopus' && !x.dead)?.name ?? 'The octopus')} has been sniffing around it. Feed the fish or change the water today to keep it safe.</p>` : ''}<p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy, with a head start in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, with a head start in growing.'}</p><p class="dim">${esc(C.fact)}</p>`;
   card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
 }
+window.__showCard = (f) => showCard(f);
 function showCard(f) {
+  if (f && f.species?.move !== 'jet' && !f.dead) fishes.attention?.(f.fid);      // someone is looking at another animal: an octopus that knows them well may come to the glass
   if (f.isEgg) return showEggCard(f);
   if (f.dead) return showDeadCard(f);
   if (f.nursery) return openNursery();      // a baby still in the nursery: the nursery's own card
@@ -870,6 +872,7 @@ function showCard(f) {
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
   const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
     for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}`);
+    { const pid = rec.log?.fav ?? rec.spotId ?? rec.mem?.likes?.[0] ?? rec.habits?.[0]?.id, d = pid && game.state.decor.find((x) => x.id === pid), st = d && decorStory(game.state, d, { DECOR_DEF }); if (st) out.push(esc(st)); }      // its favourite place's own history
     if (rec.loss && Date.now() < rec.loss.until) out.push(`Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
