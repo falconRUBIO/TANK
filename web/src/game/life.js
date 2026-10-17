@@ -35,7 +35,7 @@ export function lifeDay(t, now, ev, R) {
       R.memCap(t, f, now);
       const H = Object.entries(f.mem.fam).filter(([id, e]) => e && !e.gone && label(id) && (e.days ?? 0) >= LIFE.HABIT_DAYS && now - (e.at ?? 0) < 4 * DAY && e.tod).map(([id, e]) => { const tot = e.tod.reduce((a, b) => a + b, 0), i = e.tod.indexOf(Math.max(...e.tod)); return { id, tod: i, share: tot ? e.tod[i] / tot : 0, days: e.days }; }).filter((h) => h.share >= 0.5).sort((a, b) => b.days - a.days).slice(0, 3);
       const was = new Set((f.habits ?? []).map((h) => h.id + ':' + h.tod)); f.habits = H.map((h) => ({ id: h.id, tod: h.tod, days: h.days }));
-      const mo = (f.moments ||= {}), told = (mo.habits ||= []), fresh = H.find((h) => !was.has(h.id + ':' + h.tod) && !told.includes(h.id + ':' + h.tod));      // each habit is told once in its life, however often it fades and comes back
+      const mo = (f.moments ||= {}), told = (mo.habits ||= []), fresh = H.find((h) => !told.includes(h.id + ':' + h.tod)); void was;      /* (one that formed during the quiet gap is told later, not lost) */      // each habit is told once in its life, however often it fades and comes back
       if (fresh && now - (mo.habit ?? 0) > LIFE.HABIT_GAP) { mo.habit = now; told.push(fresh.id + ':' + fresh.tod); if (told.length > 8) told.shift(); const line = `${f.name} has taken to visiting the ${label(fresh.id).toLowerCase()} every ${TOD[fresh.tod]}.`; ev.push({ journal: line, story: f.id, text: line, life: 'habit' }); }
       if (!f.habits.length) delete f.habits;
     }
@@ -45,14 +45,15 @@ export function lifeDay(t, now, ev, R) {
     // a young one that has, on its own, come to love the plant its parent loved
     const own = L?.fav ?? (!R.isOcto(f) && f.species !== 'seahorse' ? f.spotId : null);      // a seahorse's holdfast; a fish's favourite spot
     if (own && !(f.moments?.famPlace) && (f.parents ?? []).length) {
-      const par = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id) ?? (t.memorial ?? []).find((m) => m.id === p.id)).find((p) => p && (p.log?.fav ?? p.spotId ?? p.place?.id) === own);
+      const dh = t.decor.find((x) => x.id === own)?.h, used = (p) => p && ((p.log?.fav ?? p.spotId ?? p.place?.id) === own || (p.log?.hitch?.[own]?.[1] ?? 0) >= 2 || (dh?.by?.[p.id]?.[0] ?? 0) >= 3);      // the parent really used it: its favourite, or its holdfast record, or the decoration's own record of it
+      const par = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id) ?? (t.memorial ?? []).find((m) => m.id === p.id)).find(used);
       if (par && label(own)) { (f.moments ||= {}).famPlace = now; const kin = f.species === 'seahorse' ? (f.sex === 'm' ? 'son' : 'daughter') : 'young one', line = `${par.name}'s ${kin} ${f.name} has taken a liking to the same ${label(own).toLowerCase()}.`; ev.push({ journal: line, story: f.id, text: line, life: 'family' }); }
     }
   }
   // someone it knew is gone (old age): for a few days a companion keeps going back to where they used to be together. No meter, no penalty.
   const known = new Set(t.life.dead ?? []);
   for (const m of (t.memorial ?? []).filter((x) => !known.has(x.id))) {
-    known.add(m.id); const close = t.fish.filter((f) => !f.dead && (f.pal === m.id || f.mate === m.id || f.partner === m.id || f.buddy === m.id));
+    known.add(m.id); const close = t.fish.filter((f) => !f.dead && !f.away && (f.pal === m.id || f.mate === m.id || f.partner === m.id || f.buddy === m.id));
     for (const f of close) { const place = (m.place?.id && label(m.place.id)) ? m.place.id : f.spotId && label(f.spotId) ? f.spotId : null; f.loss = { id: m.id, name: m.name, at: now, until: now + LIFE.LOSS_DAYS * DAY, place };
       if (place) ev.push({ story: f.id, text: `Keeps going back to the ${label(place).toLowerCase()}, where it used to be with ${m.name}.` }); }
   }
@@ -67,7 +68,7 @@ export function lifeDay(t, now, ev, R) {
 export function decorVisit(t, d, f, now, ev, R) {
   if (!d || !f) return; const h = (d.h ||= { by: {}, moves: [] }), day = Math.floor(now / DAY); h.first ||= { id: f.id, name: f.name, at: now };
   const e = (h.by[f.id] ||= [0, -1, f.name]); if (e[1] === day) return; e[1] = day; e[0] = Math.min(999, e[0] + 1); e[2] = f.name;
-  const ids = Object.keys(h.by); if (ids.length > 6) delete h.by[ids.sort((a, b) => h.by[a][0] - h.by[b][0])[0]];
+  const ids = Object.keys(h.by).filter((i) => i !== f.id && !(f.parents ?? []).some((p) => p.id === i)); if (Object.keys(h.by).length > 6 && ids.length) delete h.by[ids.sort((a, b) => h.by[a][1] - h.by[b][1])[0]];      /* (the one not seen for longest goes; never the newcomer, never its parent) */
   // a young one now comes here on its own, on several days, where its parent also came on several days: two generations
   if (h.gen || e[0] < 3) return; const par = (f.parents ?? []).find((p) => (h.by[p.id]?.[0] ?? 0) >= 3 || (t.memorial ?? []).find((m) => m.id === p.id)?.place?.id === d.id);
   if (!par) return; h.gen = { a: par.id, an: par.name, b: f.id, bn: f.name, at: now }; const lbl = (R.DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
@@ -83,7 +84,7 @@ export function decorStory(t, d, R, day0 = t.createdAt ?? 0) {
 export function carried(t, k, f, how, now, ev, R) {
   const h = (k.h ||= { carries: 0, days: [], places: [] }), d = Math.floor(now / DAY);
   h.places.push({ x: k.x, z: k.z, at: now }); if (h.places.length > 4) h.places.shift();
-  if (!f) return; h.by ||= {}; h.by[f.id] = Math.min(999, (h.by[f.id] ?? 0) + 1); const ids = Object.keys(h.by); if (ids.length > 4) delete h.by[ids.sort((a, b) => h.by[a] - h.by[b])[0]];
+  if (!f) return; delete h.by;      /* (who comes to it is kept in h.visits, history.js) */
   if (how === 'carry' || how === 'drop') { h.carries++; if (!h.days.includes(d)) { h.days.push(d); if (h.days.length > 7) h.days.shift(); } }
   if (k.by && f.id !== k.by) { h.movedBy = { id: f.id, name: f.name, at: now }; const o = t.fish.find((x) => x.id === k.by && !x.dead); if (o) ev.push({ story: o.id, text: `${f.name} moved its ${(R.KEEPSAKES[k.k]?.label ?? 'keepsake').toLowerCase()}. It went straight over to check.` }); return; }      // someone else's: the owner notices (the phone sends it over to look)
   if (how === 'drop' || !R.isOcto(f)) return;
@@ -92,12 +93,12 @@ export function carried(t, k, f, how, now, ev, R) {
   if (atDen && h.days.length >= LIFE.CARRY_DAYS && !h.said) { h.said = now; const line = `${f.name} has been carrying the ${name.replace(/^piece of /, '')} around for ${h.days.length} days. It finally left it beside the ${(R.DECOR_DEF[den.type]?.label ?? 'den').toLowerCase()}.`; ev.push({ journal: line, story: f.id, text: line, life: 'keepsake' }); }
 }
 // a keepsake's story, from its record only (shown on the profile of the animal that found it, and in its memorial)
-export function keepStory(t, k, R, day0 = t.createdAt ?? 0) {
+export function keepStory(t, k, R, day0 = t.createdAt ?? 0, now = Date.now()) {
   const day = (ms) => Math.floor((ms - day0) / DAY) + 1, out = [], name = R.KEEPSAKES[k.k]?.label ?? 'Keepsake';
   out.push(k.byName ? `${k.byName} found it on day ${day(k.at)}` : `It turned up on day ${day(k.at)}`);
   if (k.h?.carries) out.push(`carried ${k.h.carries} time${k.h.carries === 1 ? '' : 's'}`);
   { const o = Object.entries(k.h?.visits ?? {}).filter(([id, v]) => id !== k.by && v[0] >= 2).sort((a, b) => b[1][0] - a[1][0])[0]; if (o) out.push(`${o[1][2]} has come to look at it on ${o[1][0]} days`); }      // someone else's interest in it, from the record
-  if (k.h?.denAt) { const end = (t.memorial ?? []).find((m) => m.id === k.by)?.died ?? Date.now(); const n = Math.max(1, Math.round((end - k.h.denAt) / DAY)); out.push(`kept beside its den for ${n} day${n === 1 ? '' : 's'}`); }
+  if (k.h?.denAt) { const end = (t.memorial ?? []).find((m) => m.id === k.by)?.died ?? now; const n = Math.max(1, Math.round((end - k.h.denAt) / DAY)); out.push(`kept beside its den for ${n} day${n === 1 ? '' : 's'}`); }
   return `${name}: ${out.join(', ')}.`;
 }
 

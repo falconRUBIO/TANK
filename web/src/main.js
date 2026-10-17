@@ -882,7 +882,7 @@ function showCard(f) {
     if (rec.grudge) out.push(`Has it in for ${esc(rec.grudge.name)}${rec.grudge.why === 'den' ? ', who keeps poking round its den' : ''}.`);
     if (rec.lean?.from?.length) { const L = rec.lean, dim = [['cur', 'curious'], ['soc', 'sociable'], ['bold', 'bold'], ['act', 'lively'], ['adapt', 'easy-going']].filter(([k]) => Number.isFinite(L[k]) && L[k] !== 0).map(([k, w]) => (L[k] > 0 ? `a little more ${w}` : `a little less ${w}`)); if (dim.length) out.push(`Takes after ${esc(L.from.join(' and '))}: ${dim.slice(0, 2).join(', ')}.`); }
     { const away = game.state.fish.find((o) => o.away && !o.away.inTank && (o.buddy === rec.id || o.id === rec.pal)); if (away) out.push(`Waiting for ${esc(away.name)} to come back.`); }
-    for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}`);
+    for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}.`);
     { const pid = rec.log?.fav ?? rec.spotId ?? rec.mem?.likes?.[0] ?? rec.habits?.[0]?.id, d = pid && game.state.decor.find((x) => x.id === pid), st = d && decorStory(game.state, d, { DECOR_DEF }); if (st) out.push(esc(st)); }      // its favourite place's own history
     if (rec.loss && Date.now() < rec.loss.until) out.push(rec.loss.rehomed ? `Misses ${esc(rec.loss.name)}, who went to a new home.` : `Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
