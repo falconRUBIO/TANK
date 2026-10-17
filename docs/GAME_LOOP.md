@@ -144,7 +144,7 @@ Toys are free: the ball from the start, bubbles after 3 plays, the light spot af
 
 - **Hunger:** fish are due about every 12 hours; each octopus and seahorse has its own hunger on the same rhythm.
 - **Water** gets cloudy and **glass** gets algae over about 66 hours. Each is a chore with a reward.
-- **Neglect:** a hungry, unwell animal first shows it (tired, then a warning) and can eventually die. There is a long grace period: 30 hours after its last meal before it suffers.
+- **Neglect:** it starts building up about 30 hours after an animal's last meal, or while the water is bad. After 2 days it looks tired; after 3 it is critical; after 5 days of neglect, with low health, it can die. Safeguards: at most one death a day, none in a tank's first 3 days, never the last animal. The simulated result: 3 days away is harmless, 7 days loses about one animal, 14 days all but the last. Care brings the others back to full health within two days. See docs/LOOP_AUDIT.md.
 - **Death:** a farewell card ("Rest well. The others stay close."). Animals also die of old age at the end of their lifespan. A memorial keeps them.
 
 ## 7. Social (shared tanks)
