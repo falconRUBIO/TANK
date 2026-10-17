@@ -22,5 +22,7 @@ for (let run = 0; run < 3; run++) {
 console.log(JSON.stringify(res));
 ck('it comes right up to the glass to greet you', res.some((r) => r.greeted === 'glass' && r.maxZ > 8));
 ck('and swims away again with no jump (never more than a swim stroke in one frame)', res.every((r) => r.maxJ < 0.6), JSON.stringify(res.map((r) => r.at)));
+const other = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('o1'); const seen = []; for (const v of [0.5, 0.8, 0.95]) { F.rng = () => v; f.greeted = null; f.glassAt = null; f.task = null; F.greet(); seen.push(f.greeted); } return seen; });
+ck('only some times: on other days it stays where it is, or watches from its den', !other.includes('glass'), JSON.stringify(other));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Glass checks passed'); process.exit(fails ? 1 : 0);

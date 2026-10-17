@@ -154,12 +154,12 @@ export class Fishes {
     if (ty === 'trickster') { const a = r() * 6.28; return { x: den.x + Math.cos(a) * 1.0, z: den.z + 0.4 + Math.sin(a) * 0.7 }; }
     return { x: den.x + (r() - 0.5) * 0.9, z: den.z + 0.55 };
   }
-  // an octopus seeing a caretaker open the tank: it depends on who. One it trusts comes to the glass; one it knows a little gets watched from the
+  // an octopus seeing a caretaker open the tank: it depends on who. One it trusts comes to the glass now and then; one it knows a little gets watched from the
   // den; a stranger it mostly ignores (the trust is per caretaker, earned by that person's own care, kept on the server). Nothing is lost by anyone.
   greet() {
     for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.task || f.keepCarry) continue; const lvl = f.trust ?? 0, ty = f.mind?.type, r = this.rng();
-      if (lvl >= 3 || (lvl >= 2 && (ty === 'showoff' || ty === 'watcher') && r < 0.7)) { f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close: lvl >= 3 }; f.inspect = null; f.greeted = 'glass'; f.thought = 'It knows you'; }
-      else if (lvl >= 1 && f.den && f.st) { f.inspect = null; f.goDen?.(f.st, Math.random); f.greeted = 'den'; f.thought = 'Watching you from its den'; }
+      if ((lvl >= 3 && r < 0.35) || (lvl >= 2 && (ty === 'showoff' || ty === 'watcher') && r < 0.25)) {      /* (only some times: an old friend does not need to say hello at every visit) */ f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close: lvl >= 3 }; f.inspect = null; f.greeted = 'glass'; f.thought = 'It knows you'; }
+      else if (lvl >= 1 && f.den && f.st && (lvl < 3 || r < 0.7)) { f.inspect = null; f.goDen?.(f.st, Math.random); f.greeted = 'den'; f.thought = 'Watching you from its den'; }
       else f.greeted = 'busy'; }      // carries on with what it was doing
   }
   denOf(f) { const sp = (this.spots?.() ?? []).find((x) => x.id === f.homeId); return sp ? { x: sp.x, z: sp.z } : f.fav ? { x: f.fav.x, z: f.fav.z } : null; }
