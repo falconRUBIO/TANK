@@ -86,7 +86,7 @@ await p.click('nav [data-tab=care]', { force: true }); await p.evaluate(() => { 
 await p.evaluate(() => { window.__game.save(); }); await p.addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3))); await p.reload(); await p.waitForSelector('#tank'); await p.waitForTimeout(1500);
 const s6 = await S(); ck('progress survives a reload', s6.fish.length === nFish && s6.decor.length >= 10 && s6.flags.tut === 5, `${s6.fish.length} fish, ${s6.decor.length} decor`);
 await p.waitForSelector('#reunion.on', { timeout: 20000 });
-ck('coming back shows what happened while away, inside the tank', /WELCOME BACK/.test(await p.textContent('#reunion')) && !(await p.evaluate(() => document.getElementById('modal').classList.contains('on'))) && (await p.$$eval('#reunion p', (n) => n.length)) <= 4, (await p.$$eval('#reunion p', (n) => n.map((x) => x.textContent))).join(' | '));
+ck('coming back shows what happened while away, inside the tank', /WELCOME BACK/.test(await p.textContent('#reunion')) && !(await p.evaluate(() => document.getElementById('modal').classList.contains('on'))) && (await p.$$eval('#reunion p', (n) => n.length)) <= 4, (await p.$$eval('#reunion p', (n) => n.map((x) => x.textContent))).join(' | ') + ' || modal: ' + (await p.evaluate(() => document.querySelector('#modal.on')?.innerText.slice(0, 160) ?? '')));
 console.log(errors.length ? 'Errors: ' + errors.slice(0, 5).join(' | ') : 'No page errors');
 if (errors.length) fails++;
 await b.close(); console.log(fails ? `\n${fails} FAILED` : '\nPlaythrough passed'); process.exit(fails ? 1 : 0);
