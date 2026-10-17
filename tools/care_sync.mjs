@@ -16,12 +16,16 @@ const phone = async (u) => { const ctx = await br.newContext({ viewport: { width
 const A = await phone(a), B = await phone(b);
 const clear = (p) => p.evaluate(() => { for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); });
 const care = async (p) => { await clear(p); await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(400); };
-const read = (p) => p.evaluate(() => ({ open: document.getElementById('sheet').classList.contains('on') && !!document.querySelector('#sheet .chero'), hero: document.querySelector('#sheet .chero b')?.textContent, due: [...document.querySelectorAll('#sheet .crow.due b')].map((x) => x.textContent), later: [...document.querySelectorAll('#sheet .cgroup.quiet .crow b')].map((x) => x.textContent), groups: [...document.querySelectorAll('#sheet .drawer .fg .fgh b')].map((x) => x.textContent), notes: [...document.querySelectorAll('#sheet .drawer .fnote')].map((x) => x.textContent).join(' | ') }));
+const read = (p) => p.evaluate(() => { const rows = (re) => { const h = [...document.querySelectorAll('#sheet h4')].find((x) => re.test(x.textContent)); return h?.nextElementSibling ? [...h.nextElementSibling.querySelectorAll('.crow b')].map((x) => x.textContent) : []; };
+  return { open: document.getElementById('sheet').classList.contains('on'), hero: document.querySelector('#sheet [data-csub="care"] .nc')?.textContent ?? '', due: rows(/Needs you/), later: rows(/Later/), groups: [...document.querySelectorAll('#sheet .fcards .fcard b')].map((x) => x.textContent), notes: [...document.querySelectorAll('#sheet .fcards .fnote, #sheet .fnote')].map((x) => x.textContent).join(' | ') }; });
+const feedScreen = async (p) => { await p.evaluate(() => document.querySelector('#sheet .crow[data-act="feeddrawer"]')?.click()); await p.waitForTimeout(500); };      // (Feed opens its own screen, a card per animal)
+const back = async (p) => { await p.evaluate(() => document.querySelector('#sheet [data-act="feedclose"]')?.click()); await p.waitForTimeout(400); };
 const until = async (p, fn, secs = 20) => { for (let i = 0; i < secs * 4; i++) { const v = await read(p); if (fn(v)) return v; await p.waitForTimeout(250); } return read(p); };
-await care(A); await care(B);
+await care(A); await care(B); await feedScreen(A); await feedScreen(B);
 let ra = await read(A), rb = await read(B); console.log('A', JSON.stringify(ra)); console.log('B', JSON.stringify(rb));
 ck('each phone shows only the animals that phone feeds (Alex: Pip and the fish; Blair: Inky and the fish)', ra.groups.includes('Pip') && !ra.groups.includes('Inky') && rb.groups.includes('Inky') && !rb.groups.includes('Pip'), { a: ra.groups, b: rb.groups });
 ck('and says who feeds the others', /Inky is fed by Blair/.test(ra.notes) && /Pip is fed by Alex/.test(rb.notes), { a: ra.notes, b: rb.notes });
+await back(A); await back(B);
 // Blair wipes the glass and changes the water while Alex has Care open
 await B.evaluate(() => window.__game.dispatch({ t: 'glass' })); await B.evaluate(() => window.__game.dispatch({ t: 'water' }));
 ra = await until(A, (v) => !v.due.includes('Clean the glass') && !v.due.includes('Change the water'));
@@ -29,16 +33,16 @@ ck("Blair cleans the glass and changes the water: Alex's open Care updates by it
 // Blair feeds the fish (shared): Alex's Feed row updates
 await B.evaluate(() => window.__game.dispatch({ t: 'feed', food: 'flakes', x: 0 }));
 ra = await until(A, (v) => !/the fish|Nori/i.test(JSON.stringify(v.due)) && v.groups.includes('Nori') === v.groups.includes('Nori'));
-const fishRow = await A.evaluate(() => [...document.querySelectorAll('#sheet .drawer .fg')].find((g) => /Nori|fish/i.test(g.querySelector('.fgh b')?.textContent ?? ''))?.querySelector('em')?.textContent);
-ck("Blair feeds the fish: on Alex's phone the fish are no longer hungry", fishRow !== 'Hungry', fishRow);
+const fishRow = await A.evaluate(() => window.__game.state.hunger);
+ck("Blair feeds the fish: on Alex's phone the fish are no longer hungry", fishRow < 0.3, fishRow);
 // Alex feeds Pip from the open menu; Blair's phone hears of it in its menu
 const fr = await A.evaluate(() => window.__game.dispatch({ t: 'feed', food: 'mysis', fish: 's1', x: 0 })); const srv = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(home.id).world).fish.find((f) => f.id === 's1').hunger; 
 let pipB = 1; for (let i = 0; i < 40 && pipB >= 0.3; i++) { await B.waitForTimeout(250); pipB = await B.evaluate(() => window.__game.state.fish.find((f) => f.id === 's1').hunger); }
 ck("Alex feeds Pip: Blair's phone has Pip fed", pipB < 0.3, pipB);
 // Blair feeds Inky: Alex's status count drops; both say the same about what is left
 await B.evaluate(() => window.__game.dispatch({ t: 'feed', food: 'crab', fish: 'o1', x: 0 }));
-ra = await until(A, (v) => /All looked after|need you/.test(v.hero ?? '') && !v.due.length); rb = await until(B, (v) => !v.due.length);
-ck('everything done between them: both phones say All looked after', /All looked after/.test(ra.hero) && /All looked after/.test(rb.hero), { a: ra.hero, b: rb.hero, ad: ra.due, bd: rb.due });
+ra = await until(A, (v) => !v.hero && !v.due.length); rb = await until(B, (v) => !v.hero && !v.due.length);
+ck('everything done between them: both phones have nothing under Needs you, and no count on Care', !ra.hero && !rb.hero && !ra.due.length && !rb.due.length, { a: ra.hero, b: rb.hero, ad: ra.due, bd: rb.due });
 ck('the menu stays open on the watching phone through all of it', ra.open);
 ck('no page errors', errs.length === 0, errs.slice(0, 3));
 console.log(fails ? `${fails} failed` : 'Care sync checks passed'); await br.close(); await S.close(); process.exit(0);
