@@ -5,6 +5,8 @@ import { genesOf, blendGenes, seededRandom } from './genes.js';
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
 import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
 export { keepStory, todOf, TOD, LIFE, decorStory };
+import { touchKeep, knowsKeep, historyDay, recordHistory, stayOffer, decideStay, dayOfTank, HIST } from './history.js';
+export { knowsKeep, dayOfTank, HIST };
 export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
 export { genesOf };
 export const SPECIES_DEF = {
@@ -138,7 +140,7 @@ export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].tra
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
 const APPETITE = { Greedy: 0.3, Playful: 0.1, Social: 0.05, Curious: 0.05, Lazy: -0.2, Calm: -0.1, Shy: -0.05, Brave: 0 };
 export const appetiteOf = (traits = [], seed = 0) => Math.max(-0.25, Math.min(0.35, (traits.reduce((a, x) => a + (APPETITE[x] ?? 0), 0)) + ((seed % 7) - 3) * 0.02));
-export function ensureFish(f) { if (ownHungry(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
+export function ensureFish(f) { if (f && f.arrived == null && Number.isFinite(f.born)) f.arrived = f.born;      /* when it joined the tank (born moves while it is run down; this never does) */ if (ownHungry(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
 const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).length;
 
 // ── reef themes ──
@@ -370,6 +372,13 @@ function makeFish(t, o, now, idx) {
 const HOUR = 3600e3, BOTTLE_PAY = 2;      // a bottle pays what it cost to send, so swapping bottles cannot make shells
 // A snapshot of a fish for its family record, so a family tree survives its members: identity, look, generation and its own parents' names.
 const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.seed, traits: f.traits ?? [], genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 0, owner: f.owner ?? null, ownerName: f.ownerName ?? null, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
+// a young one's temperament leans a little toward its parents' (beyond the one trait it takes from each): what both parents share it leans
+// toward more, and only sometimes. Kept as a small nudge on its own personality (profile.js personaOf), never a copy of theirs.
+const LEAN = { Curious: 'cur', Social: 'soc', Brave: 'bold', Shy: 'bold-', Playful: 'act', Lazy: 'act-', Calm: 'adapt' };
+export function leanOf(par, h) { const c = {}; for (const p of par.filter(Boolean)) for (const tr of p.traits ?? []) if (LEAN[tr]) c[LEAN[tr]] = (c[LEAN[tr]] ?? 0) + 1; const out = {}; for (const [k, n] of Object.entries(c)) { if (n < 2 && (h >> (k.length + 3)) % 3) continue; const [dim, neg] = k.split('-'); const v = (neg === '' ? -1 : 1) * 0.05 * n; out[k.endsWith('-') ? dim : dim] = +((out[dim] ?? 0) + v).toFixed(2); } return Object.keys(out).length ? { from: par.filter(Boolean).map((p) => p.name).slice(0, 2), ...out } : null; }
+const ordinal = (n) => ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'][n - 1] ?? `${n}${[11, 12, 13].includes(n % 100) ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+// links to an animal that has left the tank (rehomed or let go) are cleared from the others, so nobody follows or squabbles with a ghost
+const unlink = (o, id) => { if (o.buddy === id) delete o.buddy; if (o.rival === id) delete o.rival; if (o.grudge?.id === id) delete o.grudge; if (o.pal === id) delete o.pal; if (o.mate === id) delete o.mate; if (o.partner === id) delete o.partner; };
 const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
 export const parentsOf = (f) => f.parents ?? [];
 export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }
@@ -413,8 +422,9 @@ function visitors(t, now, ev) {
   t.visitWait = false;
   const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
-  t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR }; const vm = visitorArrives(t, t.visitor, now, ADVR);      // (a visitor that has been before goes back to its old place, and stays longer)
-  if ([2, 5, 10].includes(vm.n)) ev.push({ journal: `The ${d.label} is back. It has visited ${vm.n === 2 ? 'twice' : `${vm.n} times`} now, and went straight to its old spot.`, toast: `The ${d.label} is back! Tap it to say hello.`, visitor: true, adventure: { phase: 'small', kind: 'visitor' } });
+  t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR }; const vm = visitorArrives(t, t.visitor, now, ADVR); const stay = stayOffer(t, t.visitor, now, ADVR);      // (a visitor that has been before goes back to its old place, and stays longer)
+  if (stay) ev.push({ journal: `The ${d.label} is back again, for the ${ordinal(vm.n)} time. It looks as if it would like to stay.`, toast: `The ${d.label} looks as if it would like to stay. Tap it to decide.`, visitor: true, stayAsk: t.visitor.id });
+  else if ([2, 5, 10].includes(vm.n)) ev.push({ journal: `The ${d.label} is back. It has visited ${vm.n === 2 ? 'twice' : `${vm.n} times`} now, and went straight to its old spot.`, toast: `The ${d.label} is back! Tap it to say hello.`, visitor: true, adventure: { phase: 'small', kind: 'visitor' } });
   else ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
@@ -451,7 +461,7 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 function eggs(t, now, ev) {
   for (const e of [...t.eggs]) {
     // very rarely, an egg nobody has looked after at all is found by the octopus (only when it was flagged at laying, see below)
-    if (e.risk && !e.guard && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
+    if (e.risk && !e.guard && !(e.cared ?? []).length && now >= (e.laid ?? e.hatchAt) + 2 * DAY && now < e.hatchAt) { const o = t.fish.find((f) => f.species === 'octopus' && !f.dead && !f.away); if (o) { t.eggs.splice(t.eggs.indexOf(e), 1); ev.push({ journal: `${o.name} found the egg nobody was watching, and ate it.`, toast: `${o.name} ate the egg. Looking after the tank keeps eggs safe.` }); continue; } }
     eggGuard(t, e, ev, now);
     if (!e.eyes && e.laid && now - e.laid > 1.05 * DAY && now < e.hatchAt) { e.eyes = true; const M = t.fish.find((x) => x.id === e.a) ?? e.pa; ev.push({ journal: `Tiny eyes have appeared in ${M?.name ? `${M.name}'s` : 'the'} eggs.` }); }      // a little look at the eggs on their second day
     if (e.hatchAt > now) continue; t.eggs.splice(t.eggs.indexOf(e), 1);
@@ -459,7 +469,7 @@ function eggs(t, now, ev) {
     const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
     const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
     const genes = A && B ? blendGenes(A.genes, B.genes, seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
-    const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
+    const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
     const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
     const how = md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most were swept off as tiny larvae; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched in the night. Most of the tiny larvae drifted off; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. One little one made it: meet ${f.name}`;
@@ -555,7 +565,7 @@ function octoPartners(t, now, ev) {
   for (const f of os) if (f.partner && !byId.has(f.partner)) { const gone = (t.memorial ?? []).find((m) => m.id === f.partner)?.name ?? 'its partner'; delete f.partner; delete f.partneredAt; const line = `${f.name} keeps checking the den where ${gone} used to rest.`; ev.push({ journal: line, story: f.id, text: line }); }
   if (now < (t.octoBondAt ?? 0)) return; const step = Math.max(0, Math.min(now - (t.octoBondLast ?? now), 2 * DAY)); t.octoBondLast = now; t.octoBondAt = now + 3 * HOUR; t.octoBonds ||= {};
   const free = os.filter((f) => !f.partner && !f.away && stageOf(f, now) === 'adult');
-  for (const k of Object.keys(t.octoBonds)) { const [a, b] = k.split('|'); if (!free.some((f) => f.id === a) || !free.some((f) => f.id === b)) delete t.octoBonds[k]; }
+  for (const k of Object.keys(t.octoBonds)) { const [a, b] = k.split('|'), still = (id) => free.some((f) => f.id === id) || os.some((f) => f.id === id && f.away && !f.partner); if (!still(a) || !still(b)) delete t.octoBonds[k]; }      // (one of them out on an adventure: the bond waits, it is not lost)
   for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j], k = [x.id, y.id].sort().join('|'), calm = Math.min(x.happy ?? 0.7, y.happy ?? 0.7) > 0.45 ? 1 : 0.4; t.octoBonds[k] = (t.octoBonds[k] ?? 0) + step * calm; }
   for (const [k, ms] of Object.entries(t.octoBonds).sort((p, q) => q[1] - p[1])) { if (ms < OCTO_PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), x = byId.get(a), y = byId.get(b); if (!x || !y || x.partner || y.partner) continue;
     x.partner = y.id; y.partner = x.id; x.partneredAt = y.partneredAt = now; delete t.octoBonds[k];
@@ -1003,7 +1013,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('life', () => lifeDay(t, now, ev, ADVR)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => adventures(t, now, ev, ADVR)); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1011,10 +1021,12 @@ function _advance(t, now = Date.now()) {
   return ev;
 }
 // A fish earns these by growing up here: age counts from its arrival, and a run-down fish stops ageing (growth pauses), so only well-kept days count.
+const annivFacts = (t, f) => { const s = historyFacts(t, f); return s ? s + '.' : ''; };
+function historyFacts(t, f) { const out = [], k = (t.keeps ?? []).find((q) => q.id === f.advMem?.fav) ?? (t.keeps ?? []).find((q) => q.by === f.id), pal = t.fish.find((x) => x.id === f.pal); if (k) out.push(`It keeps the ${KEEPSAKES[k.k]?.label.toLowerCase()} it found`); if (pal) out.push(`${k ? 'and it' : 'It'} is best friends with ${pal.name}`); return out.join(' '); }
 function ageMilestones(t, now, ev) {
   for (const f of t.fish) {
     f.found ||= []; const days = (now - f.born) / DAY;
-    for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: `${f.name} is ${d} days old.`, toast: `${f.name} is ${d} days old. +${pay} shells`, milestone: f.id }); }
+    for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, toast: `${f.name} is ${d} days old. +${pay} shells`, milestone: f.id }); }
   }
 }
 function levelCheck(t, now, ev) {
@@ -1127,17 +1139,18 @@ export function nextUp(t, now = Date.now()) {
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
 }
-export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.events) recordStory(t, r.events, o?.now ?? Date.now()); return r; }
-export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); return ev; }
+export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
+export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); return ev; }
 const AWAY_BLOCK = new Set(['feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
 // what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
-const ADVR = { get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
+const ADVR = { get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), ensureFish: (...x) => ensureFish(...x), pending: (...x) => pending(...x), capacity: (...x) => capacity(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
 function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   if (AWAY_BLOCK.has(a.t) && t.fish.find((x) => x.id === (a.fish ?? a.id))?.away) return fail('AWAY');      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
   switch (a.t) {
+    case 'visitorStay': { const r = decideStay(t, a, now, uid, name, ADVR); if (!r.ok) return fail(r.reason); events.push(...(r.events ?? [])); return ok({ applied: r.applied, keep: r.keep, fish: r.fish }); }      // a visitor that keeps coming back: let it stay, or let it wander (the first answer decides)
     case 'keepMove': { const k = (t.keeps ?? []).find((q) => q.id === a.id); if (!k) return fail('NOT_FOUND'); if (a.idk && k.h?.last === a.idk) return ok({ applied: false });      // the octopus carried or dropped a keepsake (the phone running the animals reports it, once per move)
       if (!moveKeep(t, a.id, num(a.x), num(a.z), now)) return fail('NOT_FOUND'); const f = t.fish.find((x) => x.id === a.fish && !x.dead && !x.away) ?? null; carried(t, k, f, a.how === 'drop' ? 'drop' : a.how === 'carry' ? 'carry' : 'move', now, events, ADVR); if (a.idk) k.h.last = String(a.idk).slice(0, 40); return ok(); }      // the octopus carried a keepsake (the phone running the animals reports it)
     case 'dailyGift': {
@@ -1234,7 +1247,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       return ok({ applied: true });
     }
     case 'octoTouch': {                                             // an octopus really reached a decoration and handled it (the phone running the animals reports it): it knows it a little better
-      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor); if (!f || !d) return fail('NOT_FOUND');
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), d = t.decor.find((x) => x.id === a.decor);
+      { const k = !d && (t.keeps ?? []).find((q) => q.id === a.decor); if (f && k) return ok({ applied: touchKeep(t, f, k, now), keep: true, k: f.mem?.keeps?.[k.id]?.k ?? 0 }); }      // a keepsake it handled: it comes to know it (history.js)
+      if (!f || !d) return fail('NOT_FOUND');
       const m = memOf(f), e = (m.fam[d.id] ||= { k: 0, n: 0, x: d.x, z: d.z, at: 0 }); if (now - (e.at ?? 0) < 45e3) return ok({ applied: false });      // one go is one go: a second phone, or a handoff, cannot count it twice
       const k0 = e.k, M = octoMind(f), first = !e.n, wasMoved = !!e.mv, label = (DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
       e.k = +Math.min(1, e.k + (first ? 0.2 + 0.15 * M.cur : 0.1 + 0.06 * M.cur) * (1 - e.k) * (0.8 + 0.4 * Math.min(1.5, octoAffinity(f, d)) / 1.5)).toFixed(3); e.n++; noteVisit(t, f, e, now); decorVisit(t, d, f, now, events, ADVR); e.at = now; e.x = d.x; e.z = d.z; delete e.mv; delete e.gone;
@@ -1261,7 +1276,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const nameOf = (id) => t.fish.find((x) => x.id === id)?.name;
       const say = (k, text) => { const m = (f.moments ||= {}); if (now - (m[k] ?? 0) >= DAY) { m[k] = now; events.push({ journal: text }); } };      // a change of heart is kept at once, but written in the journal at most once a day
       if (buddy && buddy !== f.buddy) say('friend', `${f.name} and ${nameOf(buddy)} are friends now. It follows ${nameOf(buddy)} about.`);
-      if (rival && rival !== f.rival) say('rival', `${f.name} has it in for ${nameOf(rival)}.`);
+      if (rival && rival !== f.rival) { f.grudge = { id: rival, name: nameOf(rival), since: now, why: a.why === 'den' ? 'den' : null }; say('rival', a.why === 'den' ? `${f.name} has decided ${nameOf(rival)} is a nuisance. It keeps poking about round its den.` : `${f.name} has it in for ${nameOf(rival)}.`); }      // a grudge is kept, with the reason (an octopus remembers who keeps bothering its den)
+      if (!rival && f.rival && f.grudge?.id === f.rival && now - f.grudge.since > 2 * DAY) { events.push({ story: f.id, text: `Has made its peace with ${f.grudge.name}.` }); (f.grudges ||= []).push({ id: f.grudge.id, name: f.grudge.name, since: f.grudge.since, until: now }); if (f.grudges.length > 4) f.grudges.shift(); delete f.grudge; }      // and, in time, let go of
       if (buddy) f.buddy = buddy; else delete f.buddy; if (rival) f.rival = rival; else delete f.rival; return ok();
     }
     case 'moment': {
@@ -1280,8 +1296,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'moveDecor': {
       const it = t.decor.find((x) => x.id === a.id); if (!it) return fail('NOT_FOUND');
       const x = num(a.x), z = num(a.z); if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
-      const moved = Math.hypot(it.x - x, it.z - z) > 0.3; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.ry = +(num(a.ry) || 0).toFixed(2);
-      if (moved) { decorMoved(it, now); it.movedAt = now; for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e && !e.gone) e.mv = now; } }      // an octopus that knew it there still thinks it is there, until it finds it again
+      const moved = Math.hypot(it.x - x, it.z - z) > 0.3, from = { x: it.x, z: it.z }; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.ry = +(num(a.ry) || 0).toFixed(2);
+      if (moved) { decorMoved(it, now, from); it.movedAt = now; for (const f of t.fish) { const e = f.mem?.fam?.[it.id]; if (e && !e.gone) e.mv = now; } }      // an octopus that knew it there still thinks it is there, until it finds it again
       return ok();
     }
     case 'sellDecor': {
@@ -1425,8 +1441,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const c = N.cands.find((x) => x.id === a.baby); if (!c) return fail('NOT_FOUND');
       if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
       if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
-      const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
-      const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      // every phone watching sees the others swim off, once (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
+      const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, lean: leanOf([N.pa, N.ma], hash32(c.seed + 11)), birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
+      const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      /* every phone watching sees the others swim off, once */ (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
       if (!t.flags.firstHatch) t.flags.firstHatch = { at: now, fish: f.id, parents: [N.father, N.mother] };
       events.push({ journal: `${f.name} is staying in the tank, a little seahorse born here to ${N.pa?.name ?? 'its father'} and ${N.ma?.name ?? 'its mother'}. The other babies have swum off to new homes.`, toast: `${f.name} is staying!`, kept: f.id }); return ok();
     }
@@ -1436,7 +1452,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       if (f.preg) return fail('EXPECTING');                          // a father carrying his brood stays until they are born
       const pay = sellValue(f); t.fish.splice(t.fish.indexOf(f), 1); t.shells += pay; if (t.want?.fish === f.id) t.want = null;
-      for (const o of t.fish) { if (o.buddy === f.id) delete o.buddy; if (o.rival === f.id) delete o.rival; }
+      for (const o of t.fish) { const close = o.pal === f.id || o.buddy === f.id || o.mate === f.id || o.partner === f.id; unlink(o, f.id); if (close) o.loss = { id: f.id, name: f.name, at: now, until: now + 2 * DAY, place: o.spotId ?? null, rehomed: true }; }      // a friend that has gone to a new home is missed for a little while (not mourned: it is alive, elsewhere)
       const forOther = f.owner && f.owner !== uid && members?.some((m) => m.id === f.owner);      // the first caretaker selling someone else's fish says so
       events.push({ journal: forOther ? `${name} found ${f.name} a new home, for ${f.ownerName ?? 'its caretaker'}.` : `${name} found ${f.name} a new home.`, toast: pay ? `${f.name} went to a new home. +${pay} shells` : `${f.name} went to a new home.`, activity: { type: 'fish', text: `${name} sold ${f.name} to a new home.` }, released: f.id });
       return ok({ id: f.id, delta: pay });
@@ -1445,7 +1461,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (!members) return fail('FORBIDDEN'); const f = t.fish.find((x) => x.id === a.id); if (!f || !isSmart(f) || f.dead) return fail('NOT_FOUND');
       if (!f.owner || members.some((m) => m.id === f.owner)) return fail('NOT_YOURS');      // only one whose caretaker is gone; one that never had a caretaker (a tank restored from a file) is taken on, not let go
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
-      t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null;
+      t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
       events.push({ journal: `${f.name} was let go, and slipped away over the reef.`, toast: `${f.name} slipped away to the reef.`, activity: { type: 'fish', text: `${name} let ${f.name} go.` }, released: f.id }); return ok({ id: f.id });
     }
     case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
@@ -1541,7 +1557,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (a.what === 'shells') t.shells += 50;
       if (a.what === 'rush') { for (const o of t.orders) o.arrivesAt = now; events.push(...advance(t, now)); }
       if (a.what === 'neglect') { t.createdAt -= 10 * DAY; t.lastDeath = 0; t.hunger = 0.85; t.water = 0.45; t.fish.forEach((f, i) => { f.ail = i === 0 ? AIL_DIE : i === 1 ? AIL_WARN + 100 : f.ail; if (i === 0) f.health = 0.2; }); events.push(...advance(t, now)); }
-      if (a.what === 'visitor') { t.visitAt = now; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }
+      if (a.what === 'visitor') { t.visitAt = now; t.visitWait = true; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }
       if (a.what === 'egg') { t.eggAt = now; for (const f of t.fish) f.born -= 4 * DAY; events.push(...advance(t, now)); }
       if (a.what === 'hatch') { for (const e of t.eggs) e.hatchAt = now; events.push(...advance(t, now)); }
       if (a.what === 'drift') { t.driftAt = now; events.push(...advance(t, now)); }

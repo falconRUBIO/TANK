@@ -344,7 +344,7 @@ export class Fish3D {
       wsum = w.reduce((a2, c) => a2 + c, 0);
     for (let k = 0; k < 8; k++) {
       let r0 = rng() * wsum, want = LV[0]; for (let q = 0; q < 3; q++) { if (r0 < w[q]) { want = LV[q]; break; } r0 -= w[q]; }      // first which level, the emptier ones more likely, then a place on it
-      let x = 0, z = 0, okk = false; for (let tries = 0; tries < 12 && !okk; tries++) { x = b.x[0] + rng() * (b.x[1] - b.x[0]); z = want === 'front' && rng() < 0.5 ? OCT_FRONT - rng() * rng() * 2.4 : Math.max(OCT_BACK, b.z[0]) + rng() * (Math.min(OCT_FRONT, b.z[1]) - Math.max(OCT_BACK, b.z[0])); okk = walkable(x, z) && levelAt(x, z) === want; }      // on the floor, mostly the open sand down by the glass if (!okk) continue;
+      let x = 0, z = 0, okk = false; for (let tries = 0; tries < 12 && !okk; tries++) { x = b.x[0] + rng() * (b.x[1] - b.x[0]); z = want === 'front' && rng() < 0.5 ? OCT_FRONT - rng() * rng() * 2.4 : Math.max(OCT_BACK, b.z[0]) + rng() * (Math.min(OCT_FRONT, b.z[1]) - Math.max(OCT_BACK, b.z[0])); okk = walkable(x, z) && levelAt(x, z) === want; }      /* on the floor, mostly the open sand down by the glass */ if (!okk) continue;
       const lv = levelAt(x, z), crowd = octs.reduce((n, o) => n + (Math.hypot(o.pos.x - x, o.pos.z - z) < 1.8 ? 1 : 0) + (levelAt(o.pos.x, o.pos.z) === lv ? 0.35 : 0), 0);
       const v = rng() * 1.2 - crowd;
       if (v > bv) { bv = v; best = [x, z]; }
@@ -871,7 +871,7 @@ export class Fish3D {
       else for (let k = 0; k < 6; k++) { this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); if (this.target.distanceTo(this.pos) > 3) break; }
       this.idle = 0.2 + rng() * 0.5; this.retarget = 4 + this.target.distanceTo(this.pos) / Math.max(0.1, this.speed * 0.5); return;      // (time enough to get there)
     }
-    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy || (this.starve ?? 0) > 0.4)) return;      // (a hungry one, long unfed, goes back to a stem and clings there)      // (a nursery baby never grips: it perches, below)
+    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy || (this.starve ?? 0) > 0.4 || (this.brood ?? 0) > 0.8)) return;      // (a hungry one, long unfed, goes back to a stem and clings there)      // (a nursery baby never grips: it perches, below)
     // a nursery baby is still too small to coil its tail round a stem (grips.js finds none for it), so it perches: it settles close beside one
     // and stays there a while. The plant-lover goes back to its own plant, the others now and then to any
     this.perch = null;

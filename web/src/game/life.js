@@ -73,7 +73,7 @@ export function decorVisit(t, d, f, now, ev, R) {
   if (!par) return; h.gen = { a: par.id, an: par.name, b: f.id, bn: f.name, at: now }; const lbl = (R.DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase();
   const line = `The ${lbl} has seen two generations now: first ${par.name}, and now ${f.name}.`; ev.push({ journal: line, story: f.id, text: line, life: 'generations' });
 }
-export function decorMoved(d, now) { const h = (d.h ||= { by: {}, moves: [] }); h.moves.push({ x: d.x, z: d.z, at: now }); if (h.moves.length > 3) h.moves.shift(); }
+export function decorMoved(d, now, from = null) { const h = (d.h ||= { by: {}, moves: [] }); h.moves.push({ x: d.x, z: d.z, at: now, ...(from ? { from: { x: from.x, z: from.z } } : {}) }); if (h.moves.length > 3) h.moves.shift(); }
 export function decorStory(t, d, R, day0 = t.createdAt ?? 0) {
   const h = d?.h; if (!h?.first) return null; const day = (ms) => Math.floor((ms - day0) / DAY) + 1, top = Object.entries(h.by).sort((a, b) => b[1][0] - a[1][0])[0];
   const out = [`${h.first.name} found it first, on day ${day(h.first.at)}`]; if (top && top[1][0] >= 3) out.push(`${top[1][2]} has come back on ${top[1][0]} days`); if (h.gen) out.push(`two generations: ${h.gen.an}, then ${h.gen.bn}`); if (h.moves?.length) out.push(`moved ${h.moves.length === 3 ? '3 or more' : h.moves.length} time${h.moves.length === 1 ? '' : 's'}`);
@@ -96,6 +96,7 @@ export function keepStory(t, k, R, day0 = t.createdAt ?? 0) {
   const day = (ms) => Math.floor((ms - day0) / DAY) + 1, out = [], name = R.KEEPSAKES[k.k]?.label ?? 'Keepsake';
   out.push(k.byName ? `${k.byName} found it on day ${day(k.at)}` : `It turned up on day ${day(k.at)}`);
   if (k.h?.carries) out.push(`carried ${k.h.carries} time${k.h.carries === 1 ? '' : 's'}`);
+  { const o = Object.entries(k.h?.visits ?? {}).filter(([id, v]) => id !== k.by && v[0] >= 2).sort((a, b) => b[1][0] - a[1][0])[0]; if (o) out.push(`${o[1][2]} has come to look at it on ${o[1][0]} days`); }      // someone else's interest in it, from the record
   if (k.h?.denAt) { const end = (t.memorial ?? []).find((m) => m.id === k.by)?.died ?? Date.now(); const n = Math.max(1, Math.round((end - k.h.denAt) / DAY)); out.push(`kept beside its den for ${n} day${n === 1 ? '' : 's'}`); }
   return `${name}: ${out.join(', ')}.`;
 }

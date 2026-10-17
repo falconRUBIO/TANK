@@ -290,7 +290,7 @@ async function feedCrabTo(id) {
   if (r.applied && f && !f.dead && octoTrust(rec, game.you?.userId ?? 'me').lvl >= 3) { f.glassAt = { x, y: 3.6, until: performance.now() + 5000 }; setTimeout(() => ui.toast(`${rec.name} reaches up and takes it from your fingers.`, 2600), 900); }      // it trusts you completely: it comes up to take the crab from you
 }
 // an octopus that has come to trust you comes over to the glass when you look in
-function octoHello() { for (const f of fishes.list) if (f.species?.id === 'octopus' && !f.dead && (f.trust ?? 0) >= 2 && (f.shellK ?? 0) < 0.3 && !f.task && Math.random() < 0.8) f.glassAt = { x: (Math.random() - 0.5) * 2.4, y: 2.6 + Math.random(), until: performance.now() + 6000 }; }
+function octoHello() { fishes.greet?.(); }      // each octopus greets this caretaker by how well it knows them (FishManager.greet: the glass, its den, or carrying on)
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(octoHello, 1200); });
 async function giveCrab() {
   const me = game.you?.userId, mine = game.state.fish.filter((f) => f.species === 'octopus' && !f.dead && canFeedOcto(f, me, game.shared)), o = mine.find((f) => !(f.crabAt != null && Date.now() - f.crabAt < 2 * 3600e3)) ?? mine[0]; if (!o) { ui.toast(game.state.fish.some(canPuzzle) ? 'Only its own caretaker can give it a treat' : 'Only a grown octopus eats crabs'); return; }
@@ -424,12 +424,16 @@ function bottleHit(ev) { return bottleSp.visible && !bottleSp.userData.leave && 
 async function openBottle() {
   const id = bottleId; if (!id) return; const U0 = bottleSp.userData; U0.leave = { t0: performance.now() + 1e9, y: bottleSp.position.y };      // (held where it is while the state catches up)
   const r = await game.dispatch({ t: 'openBottle', id }); if (!r.ok || !r.applied) { U0.leave = null; return r.ok ? null : fail(r); }
-  sfx('pop'); haptic(14); bottleM.cork.visible = false; bottleSp.userData.popped = true; for (let i = 0; i < 3; i++) setTimeout(() => fishes.burst(bottleSp.position.clone().add(new THREE.Vector3(0.5, 0.1 * i, 0))), i * 140); const U = bottleSp.userData;      // the cork pops and a rush of bubbles comes out U.leave = { t0: performance.now() + 1e9, y: bottleSp.position.y }; bottleSp.visible = bottleGlow.visible = true;      // (stays put, uncorked, while the letter is open)
+  sfx('pop'); haptic(14); bottleM.cork.visible = false; bottleSp.userData.popped = true; for (let i = 0; i < 3; i++) setTimeout(() => fishes.burst(bottleSp.position.clone().add(new THREE.Vector3(0.5, 0.1 * i, 0))), i * 140); const U = bottleSp.userData;      /* the cork pops and a rush of bubbles comes out */ U.leave = { t0: performance.now() + 1e9, y: bottleSp.position.y }; bottleSp.visible = bottleGlow.visible = true;      // (stays put, uncorked, while the letter is open)
   const back = await ui.bottleLetter({ from: r.from ?? 'a friend', note: r.note ?? '', at: r.at, pay: r.delta ?? 0 }); flyShells(r.delta ?? 2);
   U.leave = { t0: performance.now(), y: bottleSp.position.y }; sfx('bubble');
   if (back && r.fromId) ui.sendBottle(r.fromId);
 }
+window.__greetV = (f) => greetVisitor(f);
 async function greetVisitor(f) {
+  { const v = game.state.visitor; if (v?.id === f.fid && v.stay && !v.decided) { const label = SPECIES_DEF[v.species]?.label ?? 'visitor', n = game.state.visitMem?.[v.species]?.n ?? 3;      // a visitor that keeps coming back: an optional choice, no hurry, the first answer decides
+    const keep = await ui.dialog({ title: 'IT WANTS TO STAY', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, ok: 'Let it stay', cancel: 'Let it wander' }); const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: !!keep });
+    if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); ui.toast(`The ${label} lives here now.`); } return; } }
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }
@@ -512,7 +516,7 @@ async function takePhoto(opts = {}) {      // opts.img: a moment's photo from th
   const ry = PH - 96; g.strokeStyle = 'rgba(120,96,50,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(M + 10, ry - 34); g.lineTo(PW - M - 10, ry - 34); g.stroke();
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
-  const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      // (a moment's postcard carries the day it happened) g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
+  const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      /* (a moment's postcard carries the day it happened) */ g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
   g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TANKLINGS', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
@@ -669,7 +673,7 @@ function eggCare(egg, dt, t) {
   if (C.s === 'chase') { if (C.t > 1.3 || C.o.dead) { C.s = 'watch'; C.t = 0; } else { G.target.copy(C.o.pos); G.retarget = 1; } return; }
   if (C.s === 'pick') { G.target.set(P.x, P.y + 0.18, P.z + 0.22); G.retarget = 1; G.lureCalm = 1; G.fanK = 0; if (C.t > 1.8) { C.s = 'watch'; C.t = 0; } return; }
   const a = t * 0.35 + egg.t0;
-  G.target.set(P.x + (egg.side ??= hashId(e.id) & 1 ? 1 : -1) * (0.75 + Math.sin(a) * 0.15), P.y + 0.5 + Math.sin(t * 0.8) * 0.08, P.z + 0.3 + Math.cos(a) * 0.12);      // beside the clutch, nose to it, so you see both G.retarget = 1; G.lureCalm = d < 1.7 ? 1 : 0; G.fanK = d < 1.4 ? 1 : 0;
+  G.target.set(P.x + (egg.side ??= hashId(e.id) & 1 ? 1 : -1) * (0.75 + Math.sin(a) * 0.15), P.y + 0.5 + Math.sin(t * 0.8) * 0.08, P.z + 0.3 + Math.cos(a) * 0.12);      /* beside the clutch, nose to it, so you see both */ G.retarget = 1; G.lureCalm = d < 1.7 ? 1 : 0; G.fanK = d < 1.4 ? 1 : 0;
   if (d < 1.4 && C.t > 7 && Math.random() < dt * 0.25) { C.s = 'pick'; C.t = 0; G.thought = 'Picking a bad egg out of the clutch.'; } else if (d < 1.4 && C.s === "watch") G.thought = 'Fanning fresh water over the eggs.';
   if ((C.mumT -= dt) <= 0) { C.mumT = 22 + Math.random() * 20; const M = fishes.byId.get(e.guard === e.a ? e.b : e.a); if (M && !M.dead && !M.seeking && M.species.move !== 'jet') { M.target.set(P.x + 0.8, P.y + 0.9, P.z + 0.5); M.retarget = 5; M.thought = `Checking on the eggs with ${G.name}.`; } }
 }
@@ -768,6 +772,9 @@ function clearView(cam, c, d, who) {
   }
   return best[1] > 0.75 ? best[0] : null;      // only partly hidden from every side: the clearest view, if most of it shows
 }
+// the whole tank, as it looks right now, without the interface (for a time capsule): a small jpeg
+function tankShot() { composer.render(); const src = stg.renderer.domElement, W = 540, H = Math.round(W * src.height / src.width), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(src, 0, 0, W, H); return cv.toDataURL('image/jpeg', 0.7); }
+window.__tankShot = tankShot;
 function shootAt(A) {
   const r = stg.renderer, W = 480, H = 360, rt = (shootAt.rt ||= new THREE.WebGLRenderTarget(W, H, { colorSpace: THREE.SRGBColorSpace })), cam = (shootAt.cam ||= new THREE.PerspectiveCamera(38, W / H, 0.1, 200));
   const box = new THREE.Box3(); (A.who ?? []).forEach((g) => box.expandByObject(g)); if (A.with && !A.who?.[1]) box.expandByPoint(A.with);      // framed to how the animals really look: a tall seahorse, a long fish
@@ -779,6 +786,7 @@ function shootAt(A) {
   g.putImageData(im, 0, 0); return cv.toDataURL('image/jpeg', 0.72);
 }
 game.on('journal', (e) => {
+  if (e?.text?.startsWith('Time capsule: day') && !document.hidden && (!game.shared || (isDirector() && e.id)) && Date.now() - (e.ts ?? Date.now()) < 6 * 3600e3) { setTimeout(() => { try { const img = tankShot(); if (!img) return; if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; } else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (er) { console.error('capsule photo', er); } }, 1500); return; }      // a time capsule's photo: the tank itself, right then (later, it stays a record without a photo)
   if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
   setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
@@ -871,9 +879,12 @@ function showCard(f) {
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
   const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
+    if (rec.grudge) out.push(`Has it in for ${esc(rec.grudge.name)}${rec.grudge.why === 'den' ? ', who keeps poking round its den' : ''}.`);
+    if (rec.lean?.from?.length) { const L = rec.lean, dim = [['cur', 'curious'], ['soc', 'sociable'], ['bold', 'bold'], ['act', 'lively'], ['adapt', 'easy-going']].filter(([k]) => Number.isFinite(L[k]) && L[k] !== 0).map(([k, w]) => (L[k] > 0 ? `a little more ${w}` : `a little less ${w}`)); if (dim.length) out.push(`Takes after ${esc(L.from.join(' and '))}: ${dim.slice(0, 2).join(', ')}.`); }
+    { const away = game.state.fish.find((o) => o.away && !o.away.inTank && (o.buddy === rec.id || o.id === rec.pal)); if (away) out.push(`Waiting for ${esc(away.name)} to come back.`); }
     for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}`);
     { const pid = rec.log?.fav ?? rec.spotId ?? rec.mem?.likes?.[0] ?? rec.habits?.[0]?.id, d = pid && game.state.decor.find((x) => x.id === pid), st = d && decorStory(game.state, d, { DECOR_DEF }); if (st) out.push(esc(st)); }      // its favourite place's own history
-    if (rec.loss && Date.now() < rec.loss.until) out.push(`Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
+    if (rec.loss && Date.now() < rec.loss.until) out.push(rec.loss.rehomed ? `Misses ${esc(rec.loss.name)}, who went to a new home.` : `Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
@@ -1592,7 +1603,7 @@ async function boot() {
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
-  welcomeBack().then((shown) => { if (!shown) setTimeout(eveningRecap, 6000); }); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame);
+  welcomeBack().then((shown) => { if (!shown) setTimeout(eveningRecap, 6000); }); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame); setTimeout(octoHello, 4000);
   // nudges: the subscription this phone holds is told to the server on every open (it may have been renewed, or the tank put back under new accounts) and whenever the browser renews it
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }
@@ -1602,7 +1613,7 @@ window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || (game.state?.flags?.tut ?? 0) < 5) return; const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)
 fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);
-fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      // what an octopus learns, kept with the tank fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
+fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector()) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      /* what an octopus learns, kept with the tank */ fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
 window.__eggs = eggSprites; window.__eggCare = eggCare; window.__showCard = (f) => { cardOpen = f.fid; showCard(f); }; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills

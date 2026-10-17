@@ -31,6 +31,7 @@ export function personaOf(f) {
   const tr = f.traits ?? [], h = (x) => (tr.includes(x) ? 1 : 0);
   const p = { cur: 0.45 + h('Curious') * 0.33 - h('Lazy') * 0.08, soc: 0.45 + h('Social') * 0.33 - h('Shy') * 0.14, bold: 0.47 + h('Brave') * 0.33 - h('Shy') * 0.28, act: 0.5 + h('Playful') * 0.3 - h('Lazy') * 0.28 - h('Calm') * 0.1 + h('Greedy') * 0.05, adapt: 0.5 + h('Calm') * 0.3 - h('Shy') * 0.1 + h('Brave') * 0.06 };
   if (f.species === 'seahorse') { p.act -= 0.16; p.cur += 0.05; }
+  const L = f.lean ?? {}; for (const k of ['cur', 'soc', 'bold', 'act', 'adapt']) if (Number.isFinite(L[k])) p[k] += L[k];      // a little of its parents in it (rules.js leanOf)
   return { cur: j(p.cur, 2), soc: j(p.soc, 3), bold: j(p.bold, 4), act: j(p.act, 5), adapt: j(p.adapt, 6) };
 }
 export function traitWords(f, k, v) { const w = OWN[f?.species]?.[k] ?? WORDS[k]; return w[v < 0.38 ? 0 : v < 0.68 ? 1 : 2]; }

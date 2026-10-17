@@ -236,7 +236,8 @@ function small(t, at, ev, R) {
   { const a = fish.filter((f) => f.rival && byId(f.rival));
     if (a.length) add('rival', 1, () => { const f = pick(a, 23), o = byId(f.rival), d = pick(t.decor, 24); return { line: `${f.name} and ${o.name} had a small standoff${d ? ` over the ${label(d)}` : ''}. Neither would give way.`, who: [f, o] }; }); }
   { const a = fish.filter((f) => (f.traits ?? []).some((x) => x === 'Brave' || x === 'Curious'));
-    if (a.length && (octos.length || t.visitor)) add('brave', 1, () => { const f = pick(a, 25), o = octos[0]; return { line: t.visitor ? `${f.name} swam right up to the visitor to have a look.` : `${f.name} swam right up to ${o.name} and looked it in the eye.`, who: [f] }; }); }
+    const vis = t.visitor && at < t.visitor.until;      // (a visitor really here at that time)
+    if (a.length && (octos.length || vis)) add('brave', 1, () => { const f = pick(a, 25), o = octos[0]; return { line: vis ? `${f.name} swam right up to the visitor to have a look.` : `${f.name} swam right up to ${o.name} and looked it in the eye.`, who: [f] }; }); }
   // seahorses
   if (horses.length && plants.length >= 2) add('holdfast', 2, () => { const f = pick(horses, 30), d = pick(plants, 31); return { line: `${f.name} tried a new holdfast today: the ${label(d)}.`, who: [f] }; });
   { const pr = horses.filter((f) => (f.mate || f.partner) && horses.some((g) => g.id === (f.mate ?? f.partner)));

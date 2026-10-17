@@ -409,13 +409,13 @@ await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;      // a phone whose local time is about noon right now
   const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'k1', auth: 'k2' } };
   assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
-  const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
+  const w = getW(tk.id); setW(tk.id, { simTs: Date.now() - 1000, visitor: null, visitWait: true, visitAt: Date.now() - 10, flags: { ...w.flags, tut: 5 } });
   pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /rare visitor/i); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the same event is not announced twice');
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'news can come twice a day');
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'but not three times');
+  setW(tk.id, { visitor: null, visitWait: true, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'news can come twice a day');
+  setW(tk.id, { visitor: null, visitWait: true, visitAt: Date.now() - 10 }); await S.pushSweep(Date.now()); assert.equal(pushed.length, 2, 'but not three times');
   const night = new Date(); night.setUTCHours(3, 0, 0, 0); S.db.prepare('DELETE FROM push_log').run(); S.db.prepare('UPDATE push_subs SET offset_min=0').run();
-  setW(tk.id, { visitor: null, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
+  setW(tk.id, { visitor: null, visitWait: true, visitAt: Date.now() - 10 }); await S.pushSweep(night.getTime() + 1); assert.equal(pushed.length, 2, 'quiet hours');
   await call('/api/push/unsubscribe', { endpoint: sub.endpoint }, x.token); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM push_subs WHERE user_id=?').get(x.userId).n, 0);
 });
 await t('every caretaker gets one free first fish of their own, with their name on it', async () => {

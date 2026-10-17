@@ -10,6 +10,7 @@ import { Fish3D } from './fish3d.js';
 import { gripWork, PLANTS } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
+const KEEPNAME = { cap: 'bottle cap', key: 'brass key', pebble: 'pebble', glass: 'sea glass', shard: 'painted shard', shell: 'spiral shell' };
 const HEAVY = new Set(['boulder', 'pillar', 'torii', 'wood', 'chest', 'arch', 'brain']);      // too big for an octopus to shift (it may try)
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
@@ -142,6 +143,24 @@ export class Fishes {
     };
     if (dir < 0) this.drips(path[2]);
   }
+  // where it puts a keepsake down, by its nature (probabilities in what it fetches, a place in where it goes): beside its den; a homebody exactly
+  // where it last kept it; a watcher out in front where it sits and watches; a show-off, with someone looking, near the glass; a trickster somewhere new
+  keepDest(f, q, den, watched) {
+    const ty = f.mind?.type, r = this.rng, last = [...(q.rec?.h?.places ?? [])].reverse().find((p) => Math.hypot(p.x - den.x, p.z - den.z) < 2);
+    if (ty === 'homebody' && last) return { x: last.x, z: last.z };
+    if (ty === 'watcher') return { x: den.x + (r() - 0.5) * 0.6, z: Math.min(3.0, den.z + 1.5) };
+    if (ty === 'showoff' && watched) return { x: Math.max(-3, Math.min(3, den.x * 0.5)), z: 3.0 };
+    if (ty === 'trickster') { const a = r() * 6.28; return { x: den.x + Math.cos(a) * 1.0, z: den.z + 0.4 + Math.sin(a) * 0.7 }; }
+    return { x: den.x + (r() - 0.5) * 0.9, z: den.z + 0.55 };
+  }
+  // an octopus seeing a caretaker open the tank: it depends on who. One it trusts comes to the glass; one it knows a little gets watched from the
+  // den; a stranger it mostly ignores (the trust is per caretaker, earned by that person's own care, kept on the server). Nothing is lost by anyone.
+  greet() {
+    for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.task || f.keepCarry) continue; const lvl = f.trust ?? 0, ty = f.mind?.type, r = this.rng();
+      if (lvl >= 3 || (lvl >= 2 && (ty === 'showoff' || ty === 'watcher') && r < 0.7)) { f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close: lvl >= 3 }; f.inspect = null; f.greeted = 'glass'; f.thought = 'It knows you'; }
+      else if (lvl >= 1 && f.den && f.st) { f.inspect = null; f.goDen?.(f.st, Math.random); f.greeted = 'den'; f.thought = 'Watching you from its den'; }
+      else f.greeted = 'busy'; }      // carries on with what it was doing
+  }
   denOf(f) { const sp = (this.spots?.() ?? []).find((x) => x.id === f.homeId); return sp ? { x: sp.x, z: sp.z } : f.fav ? { x: f.fav.x, z: f.fav.z } : null; }
   // an octopus taking a keepsake home: it goes to it, picks it up (the little thing rides under its arms), carries it to its den and leaves it
   // there. Now and then it drops it on the way (and may fetch it another time). Only the phone running the animals reports where it ended up.
@@ -153,13 +172,13 @@ export class Fishes {
       if (C.phase === 'go') {
         if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
         if (C.t > 45) { f.keepCarry = null; continue; }
-        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: den.x, z: den.z + 0.55, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
         else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' };
         continue;
       }
       const it = C.it; it.group.position.set(f.pos.x + Math.sin(f.heading ?? 0) * 0.15, Math.max(sandH(f.pos.x, f.pos.z) + 0.05, f.pos.y - 0.32), f.pos.z + 0.18);      // held low under its arms
-      if (!f.inspect) f.inspect = { x: den.x, z: den.z + 0.55, id: 'den', type: 'keep' };
-      const dd = Math.hypot(f.pos.x - den.x, f.pos.z - den.z);
+      const dest = C.dest ?? { x: den.x, z: den.z + 0.55 }; if (!f.inspect) f.inspect = { x: dest.x, z: dest.z, id: 'den', type: 'keep' };
+      const dd = Math.hypot(f.pos.x - dest.x, f.pos.z - dest.z);
       if (dd < 1.0 || (f.st?.s === 'work' && dd < 2.0)) { put('carry');      /* at its den (or as close as it gets: it stops an arm's length from where it was going) */ f.thought = 'Left its keepsake by its den'; }
       else if (C.t > 40) put('drop');
       else if (C.slip != null && C.t > C.slip) { put('drop'); f.inspect = null; f.thought = 'Dropped it'; }      // butterfingers: it lands on the sand where it slipped
@@ -173,6 +192,8 @@ export class Fishes {
       if (f.species?.move === 'jet') {
         f.nightOwl = ['explorer', 'trickster', 'collector'].includes(f.mind?.type);      // about more at night (fish3d), the others go home
         const S = f.st, den = f.den;
+        // a fish that keeps poking about round its den while it rests there: that is annoying, and it remembers who (fish3d memo; the reason goes with its rival to the tank)
+        if (den && S?.s === 'rest' && Math.hypot(f.pos.x - den.x, f.pos.z - den.z) < 0.9) for (const o of this.list) if (o !== f && !o.dead && !o.visitor && o.species?.move !== 'jet' && Math.hypot(o.pos.x - den.x, o.pos.z - den.z) < 1.3 && o.pos.y < 2.5) { f.memo?.(o, 'a', 0.3); (f.denPokes ||= {})[o.fid] = ((f.denPokes[o.fid] ?? 0) + 1); }
         // wrong entrance: coming home, it tries the den from an awkward side, backs out and goes round
         if (den && S?.s === 'crawl' && S.mode === 'den') { const d = Math.hypot(f.pos.x - den.x, f.pos.z - den.z); if (d > 2.2) f.denTry = false; else if (d < 1.6 && !f.denTry && !f.wrong) { f.denTry = true; if (r() < 0.2) { const side = f.pos.x < den.x ? -1 : 1; f.wrong = { t: 0, den, side, keep: f.target.clone() }; f.wrongs = (f.wrongs ?? 0) + 1; } } }
         // another octopus is handling something: a watching one may go and look at it after
@@ -183,7 +204,9 @@ export class Fishes {
           if (q) { f.checked = q.id + q.rec.h.movedBy.at; f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; f.thought = q.by === f.fid ? 'Checking where its keepsake went' : 'Looking at the keepsake that moved'; } }
         continue;
       }
-      if (f.sk === 'seahorse') { if (f.holdfast?.on && !f.mate && r() < 0.5 * 0.0015 * (1 + (f.persona?.cur ?? 0.5))) { f.release(2.4); f.vel.set((r() - 0.5) * 0.25, 0.05, (r() - 0.5) * 0.15); f.drifts = (f.drifts ?? 0) + 1; } continue; }      // lets go and drifts a moment before finding another stem
+      if (f.sk === 'seahorse') { const fav = f.rec?.log?.fav, D = fav && (this.state?.decor ?? []).find((x) => x.id === fav), mv = D?.h?.moves?.at(-1);
+        if (mv?.from && Date.now() - mv.at < 12 * 3600e3 && f.oldFor !== mv.at && !f.holdfast?.on) { f.oldFor = mv.at; f.searchedOld = (f.searchedOld ?? 0) + 1; f.target.set(mv.from.x, Math.max(f.pos.y, 2.5), mv.from.z + 0.4); f.retarget = 6; f.idle = 0; f.thought = 'Looking for its plant'; }      // its plant was moved: it goes to where it was first
+        if (f.holdfast?.on && !f.mate && (f.brood ?? 0) < 0.8 && r() < 0.5 * 0.0015 * (1 + (f.persona?.cur ?? 0.5))) { f.release(2.4); f.vel.set((r() - 0.5) * 0.25, 0.05, (r() - 0.5) * 0.15); f.drifts = (f.drifts ?? 0) + 1; } continue; }      // lets go and drifts a moment before finding another stem
       // fish: a sudden bubble, a curious approach that turns back, a schooling fish falling behind, a shy one turning from a bigger animal
       const tr = f.profile?.traits ?? [];
       if (this.hasBubbler?.() && Math.hypot(f.pos.x - this.bubbleAt.x, f.pos.z - this.bubbleAt.z) < 0.9 && f.pos.y < 9 && !tr.includes('Playful') && r() < 0.15) { const dx = f.pos.x - this.bubbleAt.x || 0.1; f.vel.x += Math.sign(dx) * 2.2; f.target.set(f.pos.x + Math.sign(dx) * 2, f.pos.y + 0.5, f.pos.z); f.retarget = 2; f.startles = (f.startles ?? 0) + 1; }
@@ -511,7 +534,7 @@ export class Fishes {
   touched(f, id) {
     const I = f.inv, kind = I?.id === id ? I.kind : f.fam?.[id]?.mv ? 'moved' : 'revisit';
     if (I?.id === id) { I.phase = 'feel'; I.t = 4; const L = (DECOR_DEF[I.type]?.label ?? 'thing').toLowerCase(); I.text = I.kind === 'moved' ? `Feeling the ${L} all over: yes, it is the same one.` : `Feeling the new ${L} all over with its arms.`; }
-    if (f.lead !== false) this.onTouchDecor?.({ fish: f.fid, decor: id, kind });
+    if (f.lead !== false && id !== 'den') this.onTouchDecor?.({ fish: f.fid, decor: id, kind });
   }
   loadOcto() { try { return JSON.parse(localStorage.getItem('ourtank.octo') || '{}'); } catch { return {}; } }
   // What each octopus makes of the world around it, thought over once a second: sulks in dirty water, notices who is watching, gets restless when nothing changes,
@@ -526,7 +549,7 @@ export class Fishes {
       f.lead = this.isLead ? this.isLead() : true;      // only the lead phone decides what it does next; the others are shown it
       if (f.lead) this.aware(f, f.st);
       if (f.lead && (f.camoK ?? 0) > 0.85 && f.st?.s === 'rest') this.momentOf?.('camo', f); if (f.lead && f.glassAt?.close && f.pos.z > 12) this.momentOf?.('glass', f);      // worth a line (and a photo) in the journal
-      if (f.lead && (f.buddy ?? null) + '|' + (f.rival ?? null) !== (f.sharedBuddy ?? null) + '|' + (f.sharedRival ?? null) && performance.now() - (f.memoSent ?? -1e9) > 20000) { f.memoSent = performance.now(); this.onMemo?.({ fish: f.fid, buddy: f.buddy ?? null, rival: f.rival ?? null }); }
+      if (f.lead && (f.buddy ?? null) + '|' + (f.rival ?? null) !== (f.sharedBuddy ?? null) + '|' + (f.sharedRival ?? null) && performance.now() - (f.memoSent ?? -1e9) > 20000) { f.memoSent = performance.now(); this.onMemo?.({ fish: f.fid, why: f.rival && (f.denPokes?.[f.rival] ?? 0) >= 4 ? 'den' : null, buddy: f.buddy ?? null, rival: f.rival ?? null }); }
       f.sulk = Math.max(0, Math.min(1, Math.max((0.62 - W.water) / 0.3, (W.glass - 0.6) / 0.3, (W.hunger - 0.7) / 0.3)));
       const bonded = (f.bondIds ?? []).some((i) => people.has(i)); f.audience = bonded ? 1 : people.size > 0 ? 0.35 : 0;
       f.bored = Math.max(0, Math.min(1, (calm - 8 * (1.4 - M.cur)) / 20)) * (0.4 + 0.6 * M.cur);
@@ -558,7 +581,7 @@ export class Fishes {
       }
       if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : f.task.kind === 'turn' ? 'Shoving its shell about to see how it likes it there.' : 'Moving a stone where it wants it.';
       f.thought = th;
-      if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.02 + 0.04 * M.tidy + 0.02 * M.cur) {
+      if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && (f.fatigue ?? 0) < 0.3 && !(f.scared > 0) && !f.keepCarry && !f.wrong && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.02 + 0.04 * M.tidy + 0.02 * M.cur) {
         const pl = this.planMove(f, M); if (pl) this.beginTask(f, pl);
       }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
@@ -622,6 +645,7 @@ export class Fishes {
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
       // the goby keeps watch low on the sand, and the dragonet picks over the rocks all day
       if (this.rain && (has('Curious') || has('Playful')) && !f.weak && r() < 0.4) return T(-3 + r() * 6, 11 + r() * 2, 0.8 + r() * 1.2, 3 + r() * 3);       // on a rainy day the curious ones drift up to look
+      { const rec = this.state?.fish?.find((d) => d.away && !d.away.inTank && (d.buddy === f.fid || d.id === f.palId)), gone = rec && this.out?.get(rec.id);      /* (the tank's own record: the away animal's copy here is from before it left) */ if (gone && r() < 0.3) { f.waitedFor = (f.waitedFor ?? 0) + 1; return T(gone.pos.x + (r() - 0.5) * 0.8, 9 + r() * 2, -1.8, 6); } }      // its friend is away (out over the rim on an adventure): it hangs about up at the back, where it went
       f.invert = false; const sk = f.sk, spot = (cats, types) => { const c = spots.filter((x) => (types && types.includes(x.type)) || (cats && cats.includes(DECOR_DEF[x.type]?.cat))); return c.length ? c[(f.seed ?? 0) % c.length] : null; };
       if (sk === 'goldfish') { const a = spot(null, ['anemone']); if (a && r() < 0.7) return T(a.x + (r() - 0.5) * 1.1, 1.0 + a.h * 0.5 + r() * 0.7, a.z + 0.5 + r() * 0.3, 3 + r() * 3); }
       if (sk === 'blue') { const c = spot(['ROCKS', 'STRUCTURES']); if (c && r() < 0.65) { f.invert = r() < 0.7; return T(c.x + (r() - 0.5) * 0.8, f.invert ? 0.9 + c.h * 0.75 : 1.0 + c.h * 0.4, c.z + 0.6, 5 + r() * 5); } }
@@ -634,6 +658,8 @@ export class Fishes {
       if (has('Shy') && r() < 0.2) { const lead = this.list.find((o) => o !== f && !o.dead && !o.visitor && o.species?.move !== 'jet' && o.sk !== 'seahorse' && (o.profile?.traits ?? []).includes('Brave') && (o.fid === f.palId || o.pos.distanceTo(f.pos) < 3)); if (lead) { f.followed = (f.followed ?? 0) + 1; return T(lead.target.x - 0.8, lead.target.y, lead.target.z, 4); } }      // a shy one goes where a bold one goes
       if (f.lossPlace && r() < 0.35) { const sp = spots.find((x) => x.id === f.lossPlace); if (sp) return T(sp.x + (r() - 0.5) * 0.6, 0.9 + sp.h * 0.4, sp.z + 0.8, 7); }      // keeps going back to where it used to be with a companion that has died (a few days)
       if (this.night && f.palId && r() < 0.6) { const o = this.byId.get(f.palId); if (o && !o.dead) { f.idle = 3; return T(o.pos.x + (r() - 0.5) * 0.7, o.pos.y + (r() - 0.5) * 0.4, o.pos.z + (r() - 0.5) * 0.4, 8); } }      // best friends settle down near each other for the night
+      { const D = f.spotId && (this.state?.decor ?? []).find((x) => x.id === f.spotId), mv = D?.h?.moves?.at(-1); if (mv && f.oldMove !== mv.at) { f.oldMove = mv.at; f.oldTries = 0; }      /* (a new move: a fresh search) */
+        if (mv?.from && Date.now() - mv.at < 12 * 3600e3 && (f.oldTries ?? 0) < 2 && r() < 0.5) { f.oldTries = (f.oldTries ?? 0) + 1; f.searchedOld = (f.searchedOld ?? 0) + 1; return T(mv.from.x + (r() - 0.5) * 0.5, 1.2, mv.from.z + 0.8, 5); } }      // its place was moved: it looks where it used to be, twice, then settles for the new spot
       if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
       if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
       if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
@@ -863,9 +889,12 @@ export class Fishes {
         const mine = ks.filter((k) => k.by === f.fid), fav = mine.find((k) => k.id === f.rec?.advMem?.fav), pool = mine.length ? mine : ks; if (this.rng() > (mine.length ? 0.5 : 0.15)) continue;
         const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0], den = this.denOf(f);
         // one it is attached to, lying away from its den: it may pick it up and take it home, more readily when nobody has been tapping or looking for a while
-        const quiet = Date.now() - (this.attnAt ?? 0) > 90e3, attach = q.by === f.fid ? 1 : 0.3, coll = f.mind?.type === 'collector' || f.mind?.type === 'trickster' ? 1.4 : f.mind?.type === 'homebody' ? 1.1 : 0.8;
-        if (den && Math.hypot(q.x - den.x, q.z - den.z) > 1.3 && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll) { f.keepCarry = { id: q.id, phase: 'go', t: 0 }; f.thought = 'Going to fetch its keepsake'; }
-        f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = 'Checking on its keepsake'; } }
+        // what it knows (Living History: f.rec.mem.keeps, earned by handling it): a known one it treats as its own, a strange one it only looks over
+        const known = (f.rec?.mem?.keeps?.[q.id]?.k ?? 0) >= 0.3, ty = f.mind?.type, watched = Date.now() - (this.attnAt ?? 0) < 60e3, quiet = !watched && Date.now() - (this.attnAt ?? 0) > 90e3;
+        const attach = known ? 1 : q.by === f.fid ? 0.6 : 0.15, coll = ty === 'collector' ? 1.5 : ty === 'trickster' ? 1.3 : ty === 'homebody' ? 1.1 : ty === 'showoff' && watched ? 1.6 : 0.8, far = den ? Math.hypot(q.x - den.x, q.z - den.z) : 0;
+        const reach = ty === 'explorer' ? 1.3 + Math.min(1, far / 4) : 1, tidy = ty === 'trickster' && far <= 1.3 && known && this.rng() < 0.3;      // an explorer goes further for things; a trickster rearranges what is already home
+        if (den && (far > 1.3 || tidy) && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll * reach) { f.keepCarry = { id: q.id, phase: 'go', t: 0, dest: this.keepDest(f, q, den, watched) }; f.thought = known ? `Going to fetch its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Going to fetch something new'; }
+        f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = known ? `Checking on its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Investigating a strange object'; f.keepWhy = { id: q.id, known, thought: f.thought }; } }
     this.carryTick(dt); this.tugTick(dt); this.quirkTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);

@@ -297,34 +297,39 @@ export function addActivity(db, tankId, userId, type, text, now = Date.now()) {
   return { id: Number(r.lastInsertRowid), userId, type, text, ts: now };
 }
 // Time passing for a tank nobody is acting on. Returns the events worth announcing (already saved to the journal).
+// what the game said happened, written to the journal and passed on, the same way on every path (a tick, an action, a failed or repeated
+// action whose time step still brought something: a return from an adventure, a birth, a time capsule must never be lost)
+const EVENT_FIELDS = ['adventure', 'major', 'capsule', 'stayAsk', 'resident', 'birth', 'ready', 'court', 'pair', 'toast', 'levelUp', 'grew', 'discovery', 'surprise', 'teamGlow', 'noticed', 'found', 'arrival', 'wish', 'visitor', 'warn', 'died', 'milestone', 'puzzle', 'crab', 'together', 'theme', 'wishDone', 'perfectDay', 'tired'];
+const pick = (e) => { const o = {}; for (const k of EVENT_FIELDS) if (e[k] !== undefined) o[k] = e[k]; return o; };
+function writeEvents(db, tankId, events, now, userId = null) {
+  const out = [];
+  for (const e of events) {
+    if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, e.adventure || !userId ? null : userId, Math.min(now, e.jat ?? now)), ...pick(e) });
+    else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, wish: e.wish, dailyDone: e.dailyDone, want: e.want });
+    if (e.activity) out.push({ activity: addActivity(db, tankId, e.activity.noUser || !userId ? null : userId, e.activity.type, e.activity.text, now) });
+  }
+  return out;
+}
 export function tickTank(db, tankId, now = Date.now()) {
   return tx(db, () => {
     const { w } = loadWorld(db, tankId), out = [];
-    for (const e of R.advance(w, now)) {
-      if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, null, Math.min(now, e.jat ?? now)), adventure: e.adventure, major: e.major, birth: e.birth, ready: e.ready, court: e.court, pair: e.pair, toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, noticed: e.noticed, arrival: e.arrival, wish: e.wish, visitor: e.visitor, warn: e.warn, died: e.died, milestone: e.milestone, puzzle: e.puzzle, crab: e.crab, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
-      else if (e.arrival || e.toast) out.push({ toast: e.toast, arrival: e.arrival, want: e.want });
-      if (e.activity) out.push({ activity: addActivity(db, tankId, null, e.activity.type, e.activity.text, now) });
-    }
+    out.push(...writeEvents(db, tankId, R.advance(w, now), now));
     saveWorld(db, tankId, w); return { world: w, events: out };
   });
 }
-export const ACTIONS = new Set(['moment', 'lookAfter', 'openGift', 'thankGift', 'octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'hide', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'keepMove', 'dev']);
+export const ACTIONS = new Set(['moment', 'lookAfter', 'openGift', 'thankGift', 'octoTouch', 'octoMem', 'play', 'glassNote', 'editNote', 'moveNote', 'keepNote', 'readNote', 'peelNote', 'devSea', 'keepBaby', 'collect', 'pet', 'note', 'feed', 'water', 'glass', 'buyFish', 'nameFish', 'buyDecor', 'moveDecor', 'octoMove', 'tankPref', 'sellDecor', 'style', 'greet', 'bottle', 'openBottle', 'scoop', 'firstFish', 'observe', 'tut', 'trim', 'fishNote', 'train', 'puzzle', 'hide', 'crab', 'chooseFirst', 'dailyGift', 'claimOcto', 'releaseOcto', 'sellFish', 'octoMemo', 'octoMoment', 'fishLog', 'keepMove', 'visitorStay', 'dev']);
 // Idempotent, atomic player action. Returns { ok, reason?, dup?, applied?, delta?, world, events[] } (events already persisted).
 export function act(db, user, action, { idem, now = Date.now(), dev = false, analytics = null, tank = null } = {}) {
-  const t0 = tank ?? tankOf(db, user.id), test = !!tank?.test;      // (tank: a developer's test aquarium, see testTankOf) if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+  const t0 = tank ?? tankOf(db, user.id), test = !!tank?.test;      /* (tank: a developer's test aquarium, see testTankOf) */ if (!t0) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
   if (!ACTIONS.has(action?.t)) throw new GameError('BAD_ACTION', 'Unknown action.');
   const key = clean(idem, 64); if (!key) throw new GameError('BAD_IDEM', 'Missing idempotency key.');
   return tx(db, () => {
     const { w } = loadWorld(db, t0.id), out = [];
     const ins = db.prepare('INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,?,0,?,?)').run(t0.id, user.id, action.t, now, key);
-    if (ins.changes === 0) { const ev = R.advance(w, now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: [] }; }
+    if (ins.changes === 0) { const ev = writeEvents(db, t0.id, R.advance(w, now), now); saveWorld(db, t0.id, w); return { ok: true, dup: true, delta: 0, world: w, events: ev }; }      // a repeat does nothing, but what time brought is still kept
     const shellsBefore = w.shells, r = R.applyAction(w, action, { name: user.name, now, dev, test, uid: user.id, members: members(db, t0.id) });
-    if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); saveWorld(db, t0.id, w); return { ...r, world: w, events: [] }; }
-    for (const e of r.events) {
-      if (e.journal) out.push({ journal: addJournal(db, t0.id, e.journal, e.adventure ? null : user.id, Math.min(now, e.jat ?? now)), adventure: e.adventure, major: e.major, toast: e.toast, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, noticed: e.noticed, found: e.found, arrival: e.arrival, wish: e.wish, died: e.died, warn: e.warn, milestone: e.milestone, puzzle: e.puzzle, crab: e.crab, together: e.together, theme: e.theme, wishDone: e.wishDone, perfectDay: e.perfectDay, tired: e.tired });
-      else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, wish: e.wish, dailyDone: e.dailyDone, want: e.want });
-      if (e.activity) out.push({ activity: addActivity(db, t0.id, e.activity.noUser ? null : user.id, e.activity.type, e.activity.text, now) });
-    }
+    if (!r.ok) { db.prepare('DELETE FROM transactions WHERE tank_id=? AND user_id=? AND idem=?').run(t0.id, user.id, key); const ev = writeEvents(db, t0.id, r.events ?? [], now); saveWorld(db, t0.id, w); return { ...r, world: w, events: ev }; }      // (a refused action's time step can still have brought something)
+    out.push(...writeEvents(db, t0.id, r.events, now, user.id));
     saveWorld(db, t0.id, w);
     db.prepare('UPDATE transactions SET amount=? WHERE tank_id=? AND user_id=? AND idem=?').run(r.delta ?? 0, t0.id, user.id, key);
     if (!test) analytics?.fromAction(user.id, t0.id, action, { ...r, events: r.events }, shellsBefore, w.shells, now);
