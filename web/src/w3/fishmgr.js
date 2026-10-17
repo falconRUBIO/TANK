@@ -112,15 +112,16 @@ export class Fishes {
     for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); }      // gone for good while it was away (sold, moved on)
     this.ready = true;
     if (state.visitor) { seen.add(state.visitor.id); if (!this.byId.has(state.visitor.id)) this.addVisitor(state.visitor); }
-    for (const f of [...this.list]) if (!seen.has(f.fid)) { if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.hoardGroup) { this.scene.remove(f.hoardGroup); f.hoardGroup = null; } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.letGo(f); if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else this.scene.remove(f.group); if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.hoardGroup) { this.scene.remove(f.hoardGroup); f.hoardGroup = null; } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
   }
   // Little Adventures: an octopus that has gone climbs out over the back rim if anyone is watching (otherwise it is simply not there), and
   // climbs back in the same way when it comes home. While it is away it is out of the list, so nothing in the tank looks for it.
+  letGo(f) { if (f.keepCarry?.it) f.keepCarry.it.carried = false; f.keepCarry = null; }      // (whatever it was holding stays in the tank, where it is)
   adventure(d) {
     this.out ||= new Map(); const f = this.byId.get(d.id) ?? this.out.get(d.id), watching = typeof document === 'undefined' || document.visibilityState === 'visible';
     if (d.away) {
       if (!f || this.out.has(d.id)) return true;
-      this.list.splice(this.list.indexOf(f), 1); this.out.set(d.id, f); if (f.emote) f.emote.visible = false;
+      this.list.splice(this.list.indexOf(f), 1); this.out.set(d.id, f); this.letGo(f); if (f.emote) f.emote.visible = false;
       if (watching && !d.away.inTank && this.ready) this.climb(f, -1); else this.scene.remove(f.group);
       return true;
     }

@@ -34,7 +34,7 @@ const game = new Game();
 window.__game = game;
 
 // ── managers ──
-const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders);
+const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders); decor.fishes = fishes;
 const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; sights.onSpawn = () => { if (game.shared && sights.cur) game.live?.send({ t: 'fx', kind: 'sight', what: sights.cur.kind, ...sights.cur.look }); try { if (localStorage.getItem('ourtank.memory')) return; localStorage.setItem('ourtank.memory', '1'); } catch { /* shown again next time */ } ui?.toast('The fish are remembering the open sea…', 5200); }; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
 const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
 const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
@@ -432,7 +432,7 @@ async function openBottle() {
 window.__greetV = (f) => greetVisitor(f);
 async function greetVisitor(f) {
   { const v = game.state.visitor; if (v?.id === f.fid && v.stay && !v.decided) { const label = SPECIES_DEF[v.species]?.label ?? 'visitor', n = game.state.visitMem?.[v.species]?.n ?? 3;      // a visitor that keeps coming back: an optional choice, no hurry, the first answer decides
-    const keep = await ui.dialog({ title: 'IT WANTS TO STAY', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, ok: 'Let it stay', cancel: 'Let it wander' }); const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: !!keep });
+    const keep = await ui.choose({ title: 'IT WANTS TO STAY', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, options: [{ label: 'Let it stay', value: 'stay' }, { label: 'Let it wander', value: 'wander' }], cancel: 'Not now' }); if (!keep) return;      /* (closing it decides nothing) */ const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: keep === 'stay' });
     if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); ui.toast(`The ${label} lives here now.`); } return; } }
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
@@ -773,7 +773,7 @@ function clearView(cam, c, d, who) {
   return best[1] > 0.75 ? best[0] : null;      // only partly hidden from every side: the clearest view, if most of it shows
 }
 // the whole tank, as it looks right now, without the interface (for a time capsule): a small jpeg
-function tankShot() { composer.render(); const src = stg.renderer.domElement, W = 540, H = Math.round(W * src.height / src.width), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(src, 0, 0, W, H); return cv.toDataURL('image/jpeg', 0.7); }
+function tankShot() { composer.render(); const src = stg.renderer.domElement, k = 480 / Math.max(src.width, src.height), W = Math.round(src.width * k), H = Math.round(src.height * k), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(src, 0, 0, W, H); let q = 0.7, img = cv.toDataURL('image/jpeg', q); while (img.length > 85000 && q > 0.3) img = cv.toDataURL('image/jpeg', (q -= 0.1)); return img.length > 85000 ? null : img; }      // (small enough for the server to keep)
 window.__tankShot = tankShot;
 function shootAt(A) {
   const r = stg.renderer, W = 480, H = 360, rt = (shootAt.rt ||= new THREE.WebGLRenderTarget(W, H, { colorSpace: THREE.SRGBColorSpace })), cam = (shootAt.cam ||= new THREE.PerspectiveCamera(38, W / H, 0.1, 200));
@@ -786,7 +786,7 @@ function shootAt(A) {
   g.putImageData(im, 0, 0); return cv.toDataURL('image/jpeg', 0.72);
 }
 game.on('journal', (e) => {
-  if (e?.text?.startsWith('Time capsule: day') && !document.hidden && (!game.shared || (isDirector() && e.id)) && Date.now() - (e.ts ?? Date.now()) < 6 * 3600e3) { setTimeout(() => { try { const img = tankShot(); if (!img) return; if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; } else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (er) { console.error('capsule photo', er); } }, 1500); return; }      // a time capsule's photo: the tank itself, right then (later, it stays a record without a photo)
+  if (e?.text?.startsWith('Time capsule: day') && !document.hidden && (!game.shared || (isDirector() && e.id)) && Date.now() - (e.ts ?? Date.now()) < 6 * 3600e3) { setTimeout(() => { try { const img = tankShot(); if (!img) return; if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; } else { const list = JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').filter((m) => m.text !== e.text); list.push({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.capsules', JSON.stringify(list.length > 12 ? [list[0], ...list.slice(-11)] : list)); } } catch (er) { console.error('capsule photo', er); } }, 1500); return; }      // a time capsule's photo: the tank itself, right then (later, it stays a record without a photo)
   if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
   setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;

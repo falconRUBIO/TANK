@@ -247,7 +247,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const jid = Math.floor(+m.jid), img = String(m.img ?? ''); if (!jid || !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 90000 || !lim.hit('ph:' + ws.userId, 20, 600e3)) return;
           const j = db.prepare('SELECT id FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId); if (!j || db.prepare('SELECT 1 FROM photos WHERE journal_id=?').get(jid)) return;
           db.prepare('INSERT INTO photos (journal_id,tank_id,ts,img) VALUES (?,?,?,?)').run(jid, ws.tankId, Date.now(), img);
-          db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60)').run(ws.tankId, ws.tankId);      // the newest sixty are kept
+          db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60) AND journal_id NOT IN (SELECT id FROM journal WHERE tank_id=? AND text LIKE \'Time capsule:%\')').run(ws.tankId, ws.tankId, ws.tankId);      // the newest sixty are kept (and every time capsule's)
           broadcast(ws.tankId, { t: 'photo', jid }); return;
         }
         if (m.t === 'photoDel') {      // a photo that came out badly: anyone in the tank can take it out of the journal (the moment's line stays)

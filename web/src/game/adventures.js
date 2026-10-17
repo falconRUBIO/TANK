@@ -64,7 +64,7 @@ const OUTCOMES = [
   { id: 'prize', kinds: ['short', 'night', 'long'], keep: 'glass', w: { collector: 5 }, line: (c) => `${c.n} came back with a piece of sea glass and set it with the rest of its collection.` },
   { id: 'favfind', kinds: ['night', 'long'], keep: 'shard', fav: true, w: { explorer: 2, collector: 3, showoff: 1 }, line: (c) => `${c.n} found a painted shard on its adventure. It will not let it out of its sight.` },
   { id: 'spiral', kinds: ['short', 'long'], keep: 'shell', w: { collector: 2, watcher: 1, showoff: 1 }, line: (c) => `${c.n} came back with a tiny spiral shell, much smaller than any in the tank.` },
-  { id: 'missing', kinds: ['short', 'night'], w: { collector: 3, trickster: 2 }, ok: (c) => !!c.collectible, line: (c) => `The ${c.collectible.label} went missing for a while. It turned up again beside ${c.n}'s den.` },
+  { id: 'missing', kinds: ['short', 'night'], w: { collector: 3, trickster: 2 }, ok: (c) => !!c.collectible && !!c.den, line: (c) => `The ${c.collectible.label} went missing for a while. It turned up again beside ${c.n}'s den.` },
   { id: 'rearrange', kinds: ['hide', 'short'], w: { trickster: 3, collector: 2 }, ok: (c) => !!c.movable, line: (c) => `While ${c.n} was out of sight, the ${c.movable.label} moved a little. ${c.n} looks very pleased with itself.` },
   { id: 'wrong', kinds: ['short', 'night'], w: { explorer: 2, trickster: 2, watcher: 1 }, ok: (c) => !!c.otherDen, line: (c) => `${c.n} came back and settled into the ${c.otherDen.label} first, then went home to its own den as if nothing had happened.` },
   { id: 'late', kinds: ['short', 'night'], late: 1.5, w: { explorer: 2, homebody: 1 }, line: (c) => `${c.n} took its time coming home, and slipped back in later than usual.` },
@@ -79,7 +79,7 @@ export const OUTCOME_IDS = OUTCOMES.map((o) => o.id);
 
 // What the tank holds that an adventure line can talk about (so every line names a real thing).
 function context(t, f, now, R) {
-  const label = (d) => R.DECOR_DEF[d.type]?.label ?? 'decoration', withL = (d) => (d ? { ...d, label: label(d) } : null);
+  const label = (d) => R.DECOR_DEF[d.type]?.label ?? 'decoration', withL = (d) => (d ? { ...d, label: label(d).toLowerCase() } : null);      // (a name in the middle of a sentence)
   const r = (n) => H(sid(f.id), now / MIN | 0, n);
   const coll = t.decor.filter((d) => ['shell', 'starfish', 'chest', 'crystal', 'skull', 'lantern'].includes(d.type) && d.id !== f.home);
   const mov = t.decor.filter((d) => !['coconut', 'pot'].includes(d.type) && R.DECOR_DEF[d.type]?.cat !== 'PLANTS' && d.id !== f.home);
@@ -88,17 +88,18 @@ function context(t, f, now, R) {
   const mine = (t.keeps ?? []).filter((k) => k.by === f.id), who = Object.values(t.care ?? {}).filter((c) => now - c.ts < 2 * HOUR).map((c) => c.name).filter(Boolean);
   return {
     n: f.name, collectible: withL(coll[Math.floor(r(1) * coll.length)]), movable: withL(mov[Math.floor(r(2) * mov.length)]), otherDen: withL(dens[Math.floor(r(3) * dens.length)]),
-    hideIn: withL(hides[Math.floor(r(4) * hides.length)]), keep: mine.length ? { ...mine[0], label: KEEPSAKES[mine.find((k) => k.id === advMemOf(f).fav)?.k ?? mine[0].k]?.label ?? 'keepsake' } : null, who: who[0] ?? null,
+    hideIn: withL(hides[Math.floor(r(4) * hides.length)]), keep: mine.length ? (() => { const k = mine.find((q) => q.id === advMemOf(f).fav) ?? mine[0]; return { ...k, label: KEEPSAKES[k.k]?.label ?? 'keepsake' }; })() : null, den: t.decor.some((d) => d.id === f.home), who: who[0] ?? null,
   };
 }
 
 // Who may go. Never a baby, never in the first days of a tank or before the tank is set up, never while hungry, unwell, busy, brooding, or
 // about to have young; an elder only goes for a short while.
-export function canAdventure(t, f, now, R) {
+const hungerAt = (f, at, cur, R) => Math.max(0, R.ownHunger(f) - Math.max(0, (cur ?? at) - at) / 1000 * (R.OHR ?? 0));      // hunger as it was then (catching up after the tank was closed reads the past, not now)
+export function canAdventure(t, f, now, R, cur) {
   if (!R.isOcto(f) || f.dead || f.away || f.restless) return false;
   if ((t.flags?.tut ?? 0) < 5 || now - (t.createdAt ?? now) < 3 * DAY) return false;
   if (R.stageOf(f, now) === 'baby' || (now - f.born) < 3 * DAY) return false;
-  if (R.ownHunger(f) > 0.55 || (f.ail ?? 0) > 0.25 * R.AIL_TIRED || (f.health ?? 1) < 0.8) return false;
+  if (hungerAt(f, now, cur, R) > 0.55 || (f.ail ?? 0) > 0.25 * R.AIL_TIRED || (f.health ?? 1) < 0.8) return false;
   if (f.puzzle || f.seek || f.preg || f.nursery || f.brood) return false;
   return true;
 }
@@ -135,18 +136,18 @@ export function adventures(t, now, ev, R) {
   // tidy anything left behind by an animal that is no longer here (sold, passed away, moved on)
   t.keeps = t.keeps.filter((k) => k && KEEPSAKES[k.k] && Number.isFinite(k.x) && Number.isFinite(k.z));
   for (const f of t.fish) {
-    if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R);
+    if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R, now);
     if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R);
     if (f.away && !R.isOcto(f)) delete f.away;
   }
   for (let i = 0; i < 6 && now >= t.adv.octoAt; i++) {       // catch up on missed chances (a long time closed), a few at most
     const at = t.adv.octoAt; t.adv.octoAt = at + span(ADV.OCTO_GAP, H(sid(t.id), at / MIN | 0, 3)) / rate(t);
     if (weekCount(t, at) >= ADV.WEEK_BUDGET || t.fish.some((f) => f.away || f.restless)) continue;
-    const os = t.fish.filter((f) => canAdventure(t, f, at, R)); if (!os.length) continue;
+    const os = t.fish.filter((f) => canAdventure(t, f, at, R, now)); if (!os.length) continue;
     const f = os[Math.floor(H(sid(t.id), at / MIN | 0, 4) * os.length)], nat = NATURE[R.octoMind(f).type] ?? NATURE.watcher;
     if (H(sid(f.id), at / MIN | 0, 5) > Math.min(0.95, 0.55 * nat.go)) continue;      // a homebody often stays in
     restless(t, f, at, ev, R);
-    if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R);
+    if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R, now);
     if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R);
   }
   for (let i = 0; i < 4 && now >= t.adv.smallAt; i++) {
@@ -162,14 +163,15 @@ function restless(t, f, at, ev, R) {
   f.restless = { id, at, until: at + span(ADV.RESTLESS, H(sid(f.id), at / MIN | 0, 9)), kind, out: out.id };
   if (kind !== 'hide') ev.push({ story: f.id, text: 'Seemed restless, pacing along the glass.', jat: at });
 }
-function leave(t, f, at, ev, R) {
-  const { id, kind, out } = f.restless; delete f.restless;
-  if (!R.isOcto(f) || f.dead || R.ownHunger(f) > 0.7) return;      // it got hungry while pacing: it stays (and nothing is lost)
+function leave(t, f, at, ev, R, cur) {
+  const { id, kind, out } = f.restless; delete f.restless; const h0 = hungerAt(f, at, cur, R);
+  if (!R.isOcto(f) || f.dead || h0 > 0.7) return;      // it got hungry while pacing: it stays (and nothing is lost)
+  if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || (f.health ?? 1) < 0.8) return;      // (something else came up while it paced: it stays for that)
   const o = OUTCOMES.find((x) => x.id === out) ?? OUTCOMES[0], dur = span(ADV_KINDS[kind].dur, H(sid(f.id), at / MIN | 0, 10)) * (o.late ?? 1);
-  f.away = { id, kind, at, until: at + dur, out: o.id, inTank: !!o.inTank, hunger: R.ownHunger(f), fedAt: f.fedAt ?? null };
+  f.away = { id, kind, at, until: at + dur, out: o.id, inTank: !!o.inTank || kind === 'hide', hunger: h0, fedAt: f.fedAt ?? null };
   remember(t, { id, kind, fish: f.id, at, out: o.id });
   const major = kind !== 'hide';
-  if (o.inTank) ev.push({ story: f.id, text: 'Disappeared from its den for a while.', jat: at, adventure: { phase: 'go', id, fish: f.id, kind } });
+  if (o.inTank || kind === 'hide') ev.push({ story: f.id, text: 'Disappeared from its den for a while.', jat: at, adventure: { phase: 'go', id, fish: f.id, kind } });
   else ev.push({ journal: `${f.name} climbed out over the top of the tank and slipped away.`, jat: at, story: f.id, text: 'Went out exploring.', adventure: { phase: 'go', id, fish: f.id, kind }, major, toast: major ? `${f.name} has gone out exploring.` : undefined });
 }
 function back(t, f, at, ev, R) {
@@ -202,7 +204,7 @@ function nudge(d, r) { const a = r * Math.PI * 2; return { x: +clampX(d.x + Math
 function addKeep(t, f, k, adv, at, R, ev) {
   const den = t.decor.find((x) => x.id === f.home) ?? { x: 0, z: 0.5 }, p = near(den, H(sid(f.id), at / MIN | 0, 11)), m = advMemOf(f);
   const keep = { id: 'k' + ((t.adv.seq = (t.adv.seq ?? 0) + 1)), k, adv, by: f.id, byName: f.name, at, x: p.x, z: p.z };
-  t.keeps.push(keep); m.items.push({ k, at, adv, id: keep.id }); if (m.items.length > 60) m.items.splice(0, m.items.length - 60);
+  t.keeps.push(keep); m.items.push({ k, at, adv, id: keep.id }); m.firstAt ??= at; if (m.items.length > 60) m.items.splice(0, m.items.length - 60);
   m.keepAt = { x: p.x, z: p.z }; m.moved = false;
   while (t.keeps.length > ADV.KEEP_MAX) {       // the oldest that is nobody's favorite goes to the record only
     const i = t.keeps.findIndex((x) => !t.fish.some((g) => g.advMem?.fav === x.id)); const gone = t.keeps.splice(i < 0 ? 0 : i, 1)[0];

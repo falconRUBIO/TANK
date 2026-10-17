@@ -30,12 +30,12 @@ export function historyDay(t, now, ev, R) {
   for (const f of t.fish) {
     if (f.dead) continue;
     // keepsakes it has not handled for a week slowly matter less, but one of its own stays known
-    for (const [id, e] of Object.entries(f.mem?.keeps ?? {})) { const k = (t.keeps ?? []).find((q) => q.id === id); if (!k) { delete f.mem.keeps[id]; continue; } if (now - e.at > 7 * DAY) e.k = +Math.max(k.by === f.id ? HIST.KEEP_FLOOR : 0, e.k * HIST.KEEP_FADE).toFixed(3); }
+    for (const [id, e] of Object.entries(f.mem?.keeps ?? {})) { const k = (t.keeps ?? []).find((q) => q.id === id); if (!k) { delete f.mem.keeps[id]; continue; } if (now - e.at > 7 * DAY) e.k = +Math.max(k.by === f.id && e.k >= 0.3 ? 0.3 : 0, e.k * HIST.KEEP_FADE).toFixed(3);      /* (one of its own it once knew stays known) */ }
     // an octopus's den: the shelter it uses, and the keepsakes really lying beside it
     if (R.isOcto(f) && !f.away) { const den = t.decor.find((x) => x.id === f.home);
       if (!den) { if (f.denMem) f.denMem = { ...f.denMem, id: null, objs: [] }; }
       else { const objs = (t.keeps ?? []).filter((k) => Math.hypot(k.x - den.x, k.z - den.z) < HIST.DEN_R).map((k) => k.id).slice(0, HIST.DEN_OBJS); const D = (f.denMem && f.denMem.id === den.id) ? f.denMem : (f.denMem = { id: den.id, objs: [], since: now });
-        D.objs = objs; if (objs.length >= 3 && !D.said) { D.said = now; const names = objs.slice(0, 3).map((id) => R.KEEPSAKES[(t.keeps.find((k) => k.id === id) ?? {}).k]?.label.toLowerCase()).filter(Boolean); const lbl = (R.DECOR_DEF[den.type]?.label ?? 'den').toLowerCase();
+        D.objs = objs; if (objs.length >= 3 && !D.said && objs.slice(0, 3).some((id) => R.KEEPSAKES[(t.keeps.find((k) => k.id === id) ?? {}).k])) { D.said = now; const names = objs.slice(0, 3).map((id) => R.KEEPSAKES[(t.keeps.find((k) => k.id === id) ?? {}).k]?.label.toLowerCase()).filter(Boolean); const lbl = (R.DECOR_DEF[den.type]?.label ?? 'den').toLowerCase();
           const line = `${f.name}'s ${lbl} has ${names.length > 1 ? `${names.slice(0, -1).map((x) => `a ${x}`).join(', ')} and a ${names.at(-1)}` : `a ${names[0]}`} beside it now. It is starting to look like home.`; ev.push({ journal: line, story: f.id, text: line, hist: 'den' }); } } }
     // anniversaries: how long it has been part of the tank, at days that suit its kind of life; only facts that are recorded
     const days = Math.floor((now - (f.arrived ?? f.born)) / DAY), L = R.lifeOf(f), told = ((f.moments ||= {}).anniv ||= []);
@@ -48,9 +48,9 @@ export function historyDay(t, now, ev, R) {
 }
 function anniversaryLine(t, f, a, R) {
   const day = (ms) => dayOfTank(t, ms), facts = [], m = f.advMem, pal = t.fish.find((x) => x.id === f.pal);
-  facts.push(`It arrived on day ${day(f.arrived ?? f.born)}`);
-  if (m?.items?.length) { const first = (t.adv?.hist ?? []).find((h) => h.fish === f.id && h.end); if (first) facts.push(`its first adventure was on day ${day(first.at)}`); }
-  const fav = (t.keeps ?? []).find((k) => k.id === m?.fav) ?? (t.keeps ?? []).find((k) => k.by === f.id); if (fav) facts.push(`it keeps the ${R.KEEPSAKES[fav.k]?.label.toLowerCase()} it found`);
+  facts.push(`It ${f.parents ? 'hatched' : 'arrived'} on day ${Math.max(1, day(f.arrived ?? f.born))}`);
+  if (m?.items?.length) { const first = m.firstAt ?? m.items.reduce((a, x) => Math.min(a, x.at ?? Infinity), Infinity); if (Number.isFinite(first)) facts.push(`its first adventure was on day ${Math.max(1, day(first))}`); }
+  const fav = (t.keeps ?? []).find((k) => k.by === f.id && R.KEEPSAKES[k.k]); if (fav) facts.push(`it keeps the ${R.KEEPSAKES[fav.k].label.toLowerCase()} it found`);
   const place = f.log?.fav ?? f.spotId ?? f.mem?.likes?.[0], d = place && t.decor.find((x) => x.id === place); if (d) facts.push(`its favorite place is the ${(R.DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase()}`);
   if (pal) facts.push(`it is best friends with ${pal.name}`);
   return `${a} days with ${f.name}. ${facts.slice(0, 3).join('; ')}.`.replace(/^(.)/, (c) => c.toUpperCase());
@@ -61,16 +61,16 @@ function capsule(t, now, day, R) {
   const events = (t.history ?? []).filter((h) => h.at > since && h.kind !== 'capsule').slice(-6).map((h) => ({ id: h.id, text: h.text }));
   const kinds = {}; for (const a of animals) kinds[a.species] = (kinds[a.species] ?? 0) + 1;
   const line = `${animals.length} animal${animals.length === 1 ? '' : 's'}, ${t.decor.length} decoration${t.decor.length === 1 ? '' : 's'}, level ${t.level}.`;
-  return { day, at: now, level: t.level, decor: t.decor.length, decorTypes: [...new Set(t.decor.map((x) => x.type))].slice(0, 30), keeps: (t.keeps ?? []).length, animals: animals.slice(0, 30), kinds, events, line };
+  return { day, at: now, level: t.level, decor: t.decor.length, decorTypes: [...new Set(t.decor.map((x) => x.type))].slice(0, 30), keeps: (t.keeps ?? []).length, animals: animals.slice(0, 30), n: animals.length, kinds, events, line };
 }
 
 // ── The tank's timeline: the lines that matter, with stable ids (the same event is never kept twice) ──
-const KINDS = (e) => e.capsule ? 'capsule' : e.died ? 'death' : e.birth || e.hatched ? 'birth' : e.arrival ? 'arrival' : e.resident ? 'resident' : e.anniv ? 'anniversary' : e.hist === 'den' ? 'den' : e.adventure?.phase === 'back' && e.major ? 'adventure' : e.life === 'family' || e.life === 'generations' ? 'family' : e.life === 'keepsake' ? 'keepsake' : /are friends|best friends|time together/.test(e.journal ?? '') ? 'friendship' : /is back\. It has visited/.test(e.journal ?? '') ? 'visitor' : /became partners|are a pair now/.test(e.journal ?? '') ? 'pair' : null;
+const KINDS = (e) => e.capsule ? 'capsule' : e.died ? 'death' : e.birth || e.hatched ? 'birth' : e.resident ? 'resident' : e.arrival ? 'arrival' : e.anniv ? 'anniversary' : e.hist === 'den' ? 'den' : e.adventure?.phase === 'back' && e.major ? 'adventure' : e.life === 'family' || e.life === 'generations' ? 'family' : e.life === 'keepsake' ? 'keepsake' : /are friends|best friends|time together/.test(e.journal ?? '') ? 'friendship' : e.hist === 'visitor' || /is back\. It has visited/.test(e.journal ?? '') ? 'visitor' : /became partners|are a pair now/.test(e.journal ?? '') ? 'pair' : null;
 export function recordHistory(t, ev, now) {
-  for (const e of ev) { if (!e.journal) continue; const kind = KINDS(e); if (!kind) continue; const at = Math.min(now, e.jat ?? now), id = `h${Math.floor(at / 1000)}:${e.journal.length}:${e.journal.charCodeAt(0)}`;
+  for (const e of ev) { if (!e.journal) continue; const kind = KINDS(e); if (!kind) continue; const at = Math.min(now, e.jat ?? now), id = `h${Math.floor(at / 1000)}:${e.journal.length}:${[...e.journal].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7).toString(36)}`;
     const H = (t.history ||= []); if (H.some((h) => h.id === id || (h.text === e.journal && Math.abs(h.at - at) < DAY))) continue;
     H.push({ id, day: dayOfTank(t, at), at, kind, text: e.journal, ref: e.story ?? e.died ?? e.birth ?? e.capsule ?? null });
-    if (H.length > HIST.MAX) { const i = H.findIndex((h) => !['capsule', 'birth', 'death', 'arrival', 'resident'].includes(h.kind)); H.splice(i < 0 ? 0 : i, 1); } }
+    if (H.length > HIST.MAX) { const i = H.findIndex((h) => !['capsule', 'birth', 'death', 'arrival', 'resident'].includes(h.kind)); if (i >= 0) H.splice(i, 1); } }
 }
 
 // ── A visitor that keeps coming back may want to stay. Only for a kind of animal the tank can really keep (it lives as an ordinary fish:
@@ -84,11 +84,12 @@ export function stayOffer(t, v, now, R) {
 export function decideStay(t, a, now, uid, name, R) {
   const v = t.visitor; if (!v || v.id !== a.id || !v.stay) return { ok: false, reason: v?.decided ? 'ALREADY' : 'NOT_FOUND' };
   if (v.decided) return { ok: true, applied: false, keep: v.decided === 'keep' };
-  const M = t.visitMem[v.species], d = R.SPECIES_DEF[v.species]; M.stay = { at: now, by: uid };
-  if (!a.keep) { v.decided = 'wander'; M.stay.no = now; return { ok: true, applied: true, keep: false, events: [{ journal: `The ${d.label} swam off again. It knows the way back.`, toast: 'It swam off. It may be back.' }] }; }
-  if (t.fish.length + R.pending(t) >= R.capacity(t.level)) return { ok: false, reason: 'TANK_FULL' };
+  const M = t.visitMem[v.species], d = R.SPECIES_DEF[v.species];
+  if (a.keep && t.fish.length + R.pending(t) >= R.capacity(t.level)) return { ok: false, reason: 'TANK_FULL' };
+  M.stay = { at: now, by: uid };
+  if (!a.keep) { v.decided = 'wander'; M.stay.no = now; return { ok: true, applied: true, keep: false, events: [{ journal: `The ${d.label} swam off again. It knows the way back.`, toast: 'It swam off. It may be back.', hist: 'visitor' }] }; }
   v.decided = 'keep'; M.kept = now; const id = `r${v.id}`;
   const f = R.ensureFish({ id, name: d.label.split(' ').pop(), species: v.species, seed: v.seed, born: now - 4 * DAY, arrived: now, stage: 'adult', traits: d.traits.slice(0, 2), happy: 0.8, health: 1, owner: null, resident: { from: v.id, visits: M.n, first: M.first } });
-  t.fish.push(f); t.visitor.until = now;      // it is not a visitor any more: it lives here now
-  return { ok: true, applied: true, keep: true, fish: id, events: [{ journal: `The ${d.label} has decided to stay. After ${M.n} visits, this is its home now.`, toast: `The ${d.label} is staying!`, resident: id, story: id, text: `Came ${M.n} times as a visitor, then stayed (${name}).`, arrival: [id] }] };
+  t.fish.push(f); t.visitor = null; t.visitAt = now + 48 * 3600e3;      // it is not a visitor any more: it lives here now
+  return { ok: true, applied: true, keep: true, fish: id, events: [{ journal: `The ${d.label} has decided to stay. After ${M.n} visits, this is its home now.`, toast: `The ${d.label} is staying!`, resident: id, story: id, text: `Came ${M.n} times as a visitor, then stayed${name ? ` (${name})` : ''}.`, arrival: [id] }] };
 }

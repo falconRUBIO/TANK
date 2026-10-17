@@ -13,7 +13,7 @@ function tank(type = 'explorer', { start = 10 * DAY, rate = 1 } = {}) {
   o.home = 'd0'; t.simTs = start; return t;
 }
 // make the octopus go now, on a chosen kind of adventure
-function sendOff(t, now, kind = 'short', out = 'cap') { R.advance(t, now); const f = t.fish[0]; if (f.hunger > 0.4) f.hunger = 0.1; f.restless = { id: 'aT', at: now, until: now + MIN, kind, out }; R.advance(t, now + 2 * MIN); return f; }
+function sendOff(t, now, kind = 'short', out = 'cap') { R.advance(t, now); const f = t.fish[0]; if (f.hunger > 0.4) f.hunger = 0.1; f.health = 1; f.restless = { id: 'aT', at: now, until: now + MIN, kind, out }; R.advance(t, now + 2 * MIN); return f; }
 console.log('Little Adventures');
 
 ok('state is created once and survives a save and load (JSON)', () => { const t = tank(); R.advance(t, 10 * DAY); assert.ok(t.adv && Number.isFinite(t.adv.octoAt) && Number.isFinite(t.adv.smallAt) && Array.isArray(t.keeps)); const c = JSON.parse(JSON.stringify(t)); assert.deepEqual(c.adv, t.adv); });
@@ -31,7 +31,7 @@ ok('safety while away: no hunger, no illness, no death, cannot be fed, played wi
   f.born = at - 200 * DAY; R.advance(t, at + 20 * H); assert.equal(t.fish.includes(f), true, 'not even old age while away'); assert.equal(f.hunger, h0); assert.equal(f.ail ?? 0, 0);
   for (const a of [{ t: 'feed', food: 'crab', fish: 'o1' }, { t: 'puzzle', id: 'o1' }, { t: 'hide', id: 'o1', spot: 'd1' }, { t: 'sellFish', id: 'o1' }, { t: 'pet', id: 'o1' }]) { const r = R.applyAction(t, a, { now: at + 21 * H, uid: 'me', solo: true }); assert.ok(!r.ok || r.applied === false, a.t); }
   assert.equal(R.applyAction(t, { t: 'crab' }, { now: at + 21 * H, uid: 'me', solo: true }).ok, false); });
-ok('no exploit: coming home does not reset hunger, and the meal clock picks up where it was', () => { const t = tank(), now = 10 * DAY; R.advance(t, now); const f = t.fish[0]; f.hunger = 0.35; f.fedAt = now - 5 * H; const g = sendOff(t, now, 'night', 'quiet'); const h = g.hunger, left = g.away.at - g.fedAt;
+ok('no exploit: coming home does not reset hunger, and the meal clock picks up where it was', () => { const t = tank(), now = 10 * DAY; R.advance(t, now); const f = t.fish[0]; f.hunger = 0.35; f.fedAt = now - 5 * H; const g = sendOff(t, now, 'night', 'quiet'); const h = g.away.hunger, left = g.away.at - g.fedAt;
   R.advance(t, g.away.until + MIN); assert.ok(g.hunger >= h - 1e-9, 'hunger is not lower'); assert.ok(Math.abs((g.away?.until ?? 0) || 0) === 0); assert.ok(Math.abs((now + 2 * MIN + (g.advMem.last.end - g.advMem.last.at)) - g.fedAt - left) < 2 * MIN + 1); });
 ok('ownership and trust are kept', () => { const t = tank(), f = t.fish[0]; f.bond = { me: 9 }; sendOff(t, 10 * DAY); R.advance(t, f.away.until + MIN); assert.equal(f.owner, 'me'); assert.equal(f.bond.me, 9); });
 ok('only one adventure at a time, and the octopus cannot start another while away', () => { const t = tank('explorer', { rate: 40 }), f = sendOff(t, 10 * DAY, 'long', 'quiet'); const id = f.away.id; for (let h = 1; h < 23; h++) R.advance(t, 10 * DAY + h * H); assert.equal(f.away.id, id); assert.ok(!f.restless); });

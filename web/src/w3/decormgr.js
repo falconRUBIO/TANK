@@ -31,7 +31,7 @@ export class DecorMgr {
   // keepsakes from the octopus's adventures: tiny things on the sand, not solid, never picked up by a player
   syncKeeps(list) {
     this.keeps ||= new Map(); const seen = new Set();
-    for (const k of list) { seen.add(k.id); let it = this.keeps.get(k.id); if (it?.carried) continue;
+    for (const k of list) { seen.add(k.id); let it = this.keeps.get(k.id); if (it?.carried && (!this.fishes || this.fishes.list.some((f) => f.keepCarry?.it === it))) continue; if (it) it.carried = false;
       if (!it) { it = buildKeep(k.k); it.id = k.id; it.kind = k.k; it.by = k.by; it.group.rotation.y = (seedOf(k.id) % 628) / 100; this.scene.add(it.group); this.keeps.set(k.id, it); }
       it.rec = k;
       if (it.x !== k.x || it.z !== k.z) { it.x = k.x; it.z = k.z; it.group.position.set(k.x, baseY(it, k.x, k.z), k.z); } }
