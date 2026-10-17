@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
 import { personaOf } from '../profile.js';
+import { stayOffer } from './history.js';
 const DAY = 864e5, H = 3600e3; let n = 0; const ok = (name, fn) => { fn(); n++; console.log('  ✓', name); };
 const seedFor = (type) => { for (let s = 1; s < 5000; s++) if (R.octoMind({ seed: s }).type === type) return s; };
 const T0 = Date.UTC(2026, 3, 6, 0);
@@ -67,4 +68,8 @@ ok('(audit) an away animal cannot be reached through another field of the action
 ok('(audit) a free starter decoration sells for nothing; a bought one for half', () => { const t = tank(); t.flags.starter = { fern: 1 }; t.shells = 50; const r = R.applyAction(t, { t: 'buyDecor', type: 'fern', x: 0, z: 1, free: true }, { now: T0 + H, uid: 'me' }); const id = t.decor.at(-1).id, s0 = t.shells;
   assert.equal(R.applyAction(t, { t: 'sellDecor', id }, { now: T0 + 2 * H, uid: 'me' }).delta, 0); assert.equal(t.shells, s0); R.applyAction(t, { t: 'buyDecor', type: 'boulder', x: 1, z: 1 }, { now: T0 + 3 * H, uid: 'me' }); assert.equal(R.applyAction(t, { t: 'sellDecor', id: t.decor.at(-1).id }, { now: T0 + 4 * H, uid: 'me' }).delta, Math.floor(R.DECOR_DEF.boulder.price / 2)); });
 ok('(audit) an old save with no clock and a half-written "seen" still runs', () => { const t = tank(); delete t.simTs; delete t.createdAt; t.seen = { fish: ['neon'] }; assert.doesNotThrow(() => R.advance(t, T0 + DAY)); const h0 = t.hunger; R.advance(t, T0 + 2 * DAY); assert.ok(t.hunger > h0 || t.hunger >= 0.85, 'time moves on'); assert.ok(Array.isArray(t.seen.decor)); });
+ok('a capsule day nobody was there for leaves one quiet note, so the gap is not a mystery', () => { const t = tank({ age: 20 }); feed(t); const ev = R.advance(t, T0 + 25 * DAY); feed(t); ev.push(...R.advance(t, T0 + 26 * DAY));
+  const notes = ev.filter((e) => /No time capsule for day 7/.test(e.journal ?? '')); assert.equal(notes.length, 1, JSON.stringify(ev.map((e) => e.journal).filter(Boolean))); assert.ok((t.history ?? []).some((h) => h.kind === 'quiet')); });
+ok('a visitor that would stay in a full tank says why, once', () => { const t = tank(); t.visitMem = { sunangel: { n: 3, first: T0 - 9 * DAY, last: T0 - DAY, met: [] } }; while (t.fish.length < R.capacity(t.level)) t.fish.push(R.ensureFish({ id: 'x' + t.fish.length, name: 'X', species: 'neon', seed: t.fish.length, born: T0 - 9 * DAY, stage: 'adult', traits: [] }));
+  const v = { id: 'v1', species: 'sunangel' }; assert.equal(stayOffer(t, v, T0, R), false); assert.ok(v.full); const v2 = { id: 'v2', species: 'sunangel' }; stayOffer(t, v2, T0 + DAY, R); assert.ok(!v2.full, 'once a month'); });
 console.log(`All ${n} Living History tests passed`);

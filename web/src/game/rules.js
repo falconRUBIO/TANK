@@ -426,6 +426,7 @@ function visitors(t, now, ev) {
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
   t.visitor = { id: 'v' + seq, species: sp, seed: hash32(seq * 13) % 90000, until: now + 3 * HOUR }; const vm = visitorArrives(t, t.visitor, now, ADVR); const stay = stayOffer(t, t.visitor, now, ADVR);      // (a visitor that has been before goes back to its old place, and stays longer)
   if (stay) ev.push({ journal: `The ${d.label} is back again, for the ${ordinal(vm.n)} time. It looks as if it would like to stay.`, toast: `The ${d.label} looks as if it would like to stay. Tap it to decide.`, visitor: true, stayAsk: t.visitor.id, hist: 'visitor' });
+  else if (t.visitor.full) ev.push({ journal: `The ${d.label} is back again, for the ${ordinal(vm.n)} time. It might have stayed, but the tank is full.`, toast: `The ${d.label} is back! Tap it to say hello.`, visitor: true, hist: 'visitor' });
   else if ([2, 5, 10].includes(vm.n)) ev.push({ journal: `The ${d.label} is back. It has visited ${vm.n === 2 ? 'twice' : `${vm.n} times`} now, and went straight to its old spot.`, toast: `The ${d.label} is back! Tap it to say hello.`, visitor: true });
   else ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }

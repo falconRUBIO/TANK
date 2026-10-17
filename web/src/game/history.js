@@ -43,6 +43,9 @@ export function historyDay(t, now, ev, R) {
   }
   // time capsules, by the tank's age: day 1, 7, 30 and every 30 days after. What it holds is what the tank really was that day.
   t.capsules ||= []; const due = [1, 7, 30].concat(d >= 60 ? [Math.floor(d / 30) * 30] : []).filter((x) => x <= d && x > d - 7 && !t.capsules.some((c) => c.day === x));
+  { const all = [1, 7, 30]; for (let x = 60; x <= d; x += 30) all.push(x);      // a capsule day that went by while nobody opened the tank: said once, quietly, so the gap is not a mystery
+    const miss = all.filter((x) => x <= d - 7 && x > d - 60 && !t.capsules.some((c) => c.day === x) && !(t.capMiss ?? []).includes(x)).at(-1);
+    if (miss) { t.capMiss = [...(t.capMiss ?? []), miss].slice(-12); ev.push({ journal: `No time capsule for day ${miss}: the tank was quiet that week.`, hist: 'quiet', jat: Math.min(now, (t.createdAt ?? now) + (miss - 1) * DAY) }); } }
   for (const x of due.slice(-1)) { const c = capsule(t, now, x, R); t.capsules.push(c); if (t.capsules.length > HIST.CAPSULES) t.capsules.splice(1, 1);      // (the first one is always kept)
     ev.push({ journal: `Time capsule: day ${x}. ${c.line}`, capsule: x, hist: 'capsule' }); }
 }
@@ -65,7 +68,7 @@ function capsule(t, now, day, R) {
 }
 
 // ── The tank's timeline: the lines that matter, with stable ids (the same event is never kept twice) ──
-const KINDS = (e) => e.capsule ? 'capsule' : e.died ? 'death' : e.birth || e.hatched ? 'birth' : e.resident ? 'resident' : e.arrival ? 'arrival' : e.anniv ? 'anniversary' : e.hist === 'den' ? 'den' : e.adventure?.phase === 'back' && e.major ? 'adventure' : e.life === 'family' || e.life === 'generations' ? 'family' : e.life === 'keepsake' ? 'keepsake' : /are friends|best friends|time together/.test(e.journal ?? '') ? 'friendship' : e.hist === 'visitor' || /is back\. It has visited/.test(e.journal ?? '') ? 'visitor' : /became partners|are a pair now/.test(e.journal ?? '') ? 'pair' : null;
+const KINDS = (e) => e.capsule ? 'capsule' : e.died ? 'death' : e.birth || e.hatched ? 'birth' : e.resident ? 'resident' : e.arrival ? 'arrival' : e.anniv ? 'anniversary' : e.hist === 'den' ? 'den' : e.hist === 'quiet' ? 'quiet' : e.adventure?.phase === 'back' && e.major ? 'adventure' : e.life === 'family' || e.life === 'generations' ? 'family' : e.life === 'keepsake' ? 'keepsake' : /are friends|best friends|time together/.test(e.journal ?? '') ? 'friendship' : e.hist === 'visitor' || /is back\. It has visited/.test(e.journal ?? '') ? 'visitor' : /became partners|are a pair now/.test(e.journal ?? '') ? 'pair' : null;
 export function recordHistory(t, ev, now) {
   for (const e of ev) { if (!e.journal) continue; const kind = KINDS(e); if (!kind) continue; const at = Math.min(now, e.jat ?? now), id = `h${Math.floor(at / 1000)}:${e.journal.length}:${[...e.journal].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7).toString(36)}`;
     const H = (t.history ||= []); if (H.some((h) => h.id === id || (h.text === e.journal && Math.abs(h.at - at) < DAY))) continue;
@@ -77,7 +80,8 @@ export function recordHistory(t, ev, now) {
 // the shared meals, a lifespan, growing old), only when there is room, and the first answer from anyone decides. ──
 export function stayOffer(t, v, now, R) {
   const M = t.visitMem?.[v.species], d = R.SPECIES_DEF[v.species]; if (!M || !d || d.resident === false) return false;
-  if (M.n < HIST.STAY_VISITS || M.kept || (M.stay?.no && now - M.stay.no < HIST.STAY_GAP) || t.fish.length + R.pending(t) >= R.capacity(t.level)) return false;
+  if (M.n < HIST.STAY_VISITS || M.kept || (M.stay?.no && now - M.stay.no < HIST.STAY_GAP)) return false;
+  if (t.fish.length + R.pending(t) >= R.capacity(t.level)) { if (!M.fullSaid || now - M.fullSaid > HIST.STAY_GAP) { M.fullSaid = now; v.full = true; } return false; }      // (it would like to stay, but there is no room: said once a month, so the reason is known)
   if (t.stayAskAt && now - t.stayAskAt < HIST.STAY_GAP) return false;      // one offer a month for the whole tank, answered or not: it stays special
   t.stayAskAt = now; M.asked = now; v.stay = true; return true;
 }

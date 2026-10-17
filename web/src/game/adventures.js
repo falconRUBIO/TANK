@@ -123,7 +123,7 @@ function chooseKind(t, f, now, R, r) {
 }
 function chooseOutcome(t, f, kind, c, R, r) {
   const type = R.octoMind(f).type, nat = NATURE[type] ?? NATURE.watcher, m = advMemOf(f), recent = (t.adv.hist ?? []).filter((h) => h.fish === f.id).slice(-3).map((h) => h.out);
-  const opts = OUTCOMES.filter((o) => o.kinds.includes(kind) && (!o.ok || o.ok(c))).map((o) => ({ o, w: (o.w[type] ?? 0.4) * (o.keep ? nat.items : 1) * (recent.includes(o.id) ? 0.25 : 1) * (o.id === 'favfind' && m.fav ? 0.3 : 1) }));
+  const opts = OUTCOMES.filter((o) => o.kinds.includes(kind) && (!o.ok || o.ok(c))).map((o) => ({ o, w: (o.w[type] ?? 0.4) * (o.keep ? nat.items * (kind === 'night' || kind === 'long' ? 2 : 1.3) : 1) * (o.id === 'rearrange' || o.id === 'hiding' ? 0.7 : 1) * (recent.includes(o.id) ? 0.25 : 1) * (o.id === 'favfind' && m.fav ? 0.3 : 1) }));
   return pickW(opts, r)?.o ?? OUTCOMES.find((o) => o.id === 'quiet');
 }
 
@@ -145,7 +145,7 @@ export function adventures(t, now, ev, R) {
     if (weekCount(t, at) >= ADV.WEEK_BUDGET || t.fish.some((f) => f.away || f.restless)) continue;
     const os = t.fish.filter((f) => canAdventure(t, f, at, R, now)); if (!os.length) continue;
     const f = os[Math.floor(H(sid(t.id), at / MIN | 0, 4) * os.length)], nat = NATURE[R.octoMind(f).type] ?? NATURE.watcher;
-    if (H(sid(f.id), at / MIN | 0, 5) > Math.min(0.95, 0.55 * nat.go)) continue;      // a homebody often stays in
+    if (H(sid(f.id), at / MIN | 0, 5) > Math.min(0.95, Math.max(0.4, 0.55 * nat.go))) continue;      // a homebody often stays in (but every octopus goes now and then)
     restless(t, f, at, ev, R);
     if (f.restless && now >= f.restless.until) leave(t, f, f.restless.until, ev, R, now);
     if (f.away && now >= f.away.until) back(t, f, f.away.until, ev, R, now);
@@ -232,14 +232,14 @@ function small(t, at, ev, R) {
   { const a = fish.filter((f) => !f.pal), pairs = []; for (const x of a) for (const y of a) if (x.id < y.id && x.species !== y.species && x.rival !== y.id && y.rival !== x.id) pairs.push([x, y]);
     if (pairs.length) add('friendship', 2, () => { const [x, y] = pick(pairs, 20); return { line: `${x.name} and ${y.name} spent the afternoon side by side. Nobody expected that.`, who: [x, y] }; }); }
   { const a = fish.filter((f) => f.spotId && t.decor.some((d) => d.id === f.spotId));
-    if (a.length) add('corner', 2, () => { const f = pick(a, 21), d = t.decor.find((x) => x.id === f.spotId); return { line: `${f.name} spent most of the day by the ${label(d)}, as if keeping it company.`, who: [f] }; }); }
+    if (a.length) add('corner', 1.2, () => { const f = pick(a, 21), d = t.decor.find((x) => x.id === f.spotId); return { line: pick([`${f.name} spent most of the day by the ${label(d)}, as if keeping it company.`, `${f.name} hardly left the ${label(d)} all day.`, `Whenever anyone looked, ${f.name} was by the ${label(d)} again.`, `${f.name} kept circling back to the ${label(d)} today.`], 26), who: [f] }; }); }
   { const a = fish.filter((f) => f.pal && byId(f.pal));
-    if (a.length) add('copycat', 1.5, () => { const f = pick(a, 22), o = byId(f.pal); return { line: `${f.name} copied every turn ${o.name} made, all morning.`, who: [f, o] }; }); }
+    if (a.length) add('copycat', 1, () => { const f = pick(a, 22), o = byId(f.pal); return { line: pick([`${f.name} copied every turn ${o.name} made, all morning.`, `${f.name} followed ${o.name} so closely they swam as one.`, `Wherever ${o.name} went this afternoon, ${f.name} went too.`, `${f.name} and ${o.name} took the same lap of the tank, over and over.`], 27), who: [f, o] }; }); }
   { const a = fish.filter((f) => f.rival && byId(f.rival));
     if (a.length) add('rival', 1, () => { const f = pick(a, 23), o = byId(f.rival), d = pick(t.decor, 24); return { line: `${f.name} and ${o.name} had a small standoff${d ? ` over the ${label(d)}` : ''}. Neither would give way.`, who: [f, o] }; }); }
   { const a = fish.filter((f) => (f.traits ?? []).some((x) => x === 'Brave' || x === 'Curious'));
     const vis = t.visitor && at < t.visitor.until;      // (a visitor really here at that time)
-    if (a.length && (octos.length || vis)) add('brave', 1, () => { const f = pick(a, 25), o = octos[0]; return { line: vis ? `${f.name} swam right up to the visitor to have a look.` : `${f.name} swam right up to ${o.name} and looked it in the eye.`, who: [f] }; }); }
+    if (a.length && (octos.length || vis)) add('brave', 1, () => { const f = pick(a, 25), o = octos[0]; return { line: vis ? `${f.name} swam right up to the visitor to have a look.` : pick([`${f.name} swam right up to ${o.name} and looked it in the eye.`, `${f.name} went nose to nose with ${o.name}, and did not back off.`, `${f.name} was the only one brave enough to go and inspect ${o.name} today.`], 28), who: [f] }; }); }
   // seahorses
   if (horses.length && plants.length >= 2) add('holdfast', 2, () => { const f = pick(horses, 30), d = pick(plants, 31); return { line: `${f.name} tried a new holdfast today: the ${label(d)}.`, who: [f] }; });
   { const pr = horses.filter((f) => (f.mate || f.partner) && horses.some((g) => g.id === (f.mate ?? f.partner)));
@@ -257,7 +257,7 @@ function small(t, at, ev, R) {
   { const b = (t.bottles ?? []).filter((x) => !x.opened && at - x.at > 2 * DAY);
     if (b.length) add('bottle', 1.5, () => { const x = b[0]; return { line: `The bottle from ${x.fromName ?? 'a friend'} has drifted to the back corner. It is still waiting to be opened.`, who: [] }; }); }
   { const st = t.decor.filter((d) => d.type === 'starfish'), mv = st.length ? st : octos.length ? t.decor.filter((d) => !['coconut', 'pot'].includes(d.type) && R.DECOR_DEF[d.type]?.cat !== 'PLANTS') : [];
-    if (mv.length) add('moved', 1, () => { const d = pick(mv, 44), p = nudge(d, r(45)); d.x = p.x; d.z = p.z; d.movedAt = at; for (const f of t.fish) { const e = f.mem?.fam?.[d.id]; if (e && !e.gone) e.mv = at; } return { line: d.type === 'starfish' ? 'The starfish is not where it was yesterday. It must have crept off in the night.' : `The ${label(d)} has moved a little overnight. Someone in the tank knows how.`, who: [] }; }); }
+    if (mv.length) add('moved', 1, () => { const d = pick(mv, 44), p = nudge(d, r(45)); d.x = p.x; d.z = p.z; d.movedAt = at; for (const f of t.fish) { const e = f.mem?.fam?.[d.id]; if (e && !e.gone) e.mv = at; } return { line: d.type === 'starfish' ? pick(['The starfish is not where it was yesterday. It must have crept off in the night.', 'The starfish has wandered again. It is a few hand-widths from where it was.', 'Someone noticed the starfish had crept to a new spot overnight.'], 46) : `The ${label(d)} has moved a little overnight. Someone in the tank knows how.`, who: [] }; }); }
   if (t.fish.length && !(t.adv.hist ?? []).some((h) => at - h.at < 3 * DAY)) add('quietnight', 0.5, () => ({ line: 'A quiet night. Everyone slept, and the water was still.', who: [] }));
   const p = pickW(pool, r(50)); if (!p) return;
   const res = p.run(); remember(t, { id: 's' + ((t.adv.seq = (t.adv.seq ?? 0) + 1)), kind: p.kind, at, end: at });
