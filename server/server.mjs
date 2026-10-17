@@ -376,12 +376,14 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (fresh) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name, G = w.fish.find((f) => f.id === fresh.guard && !f.dead), md = R.eggCareOf(fresh).mode;
           const text = md === 'mouth' && G ? `${G.name} is carrying eggs in his mouth! They hatch in ${R.EGG_DAYS} days.` : md === 'drift' ? `${nm(fresh.a, fresh.pa)} and ${nm(fresh.b, fresh.pb)} spawned. Their eggs are drifting in the tank, and they need you.` : `New eggs! ${G ? `${G.name} is guarding them.` : 'Come and see.'} They hatch in ${R.EGG_DAYS} days.`;
           for (const m of away) { const k = `push:laid:${id}:${fresh.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, text, { now })) mark(k); } }
+        // hunger is only news once an animal has started to suffer for it (a few hours of real neglect), not every time it gets peckish
+        const runDown = (f) => (f.ail ?? 0) > 0.3 * 86400;
         for (const m of away) {
-          const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);
-          if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry. Drop it a crab.`, { now })) mark(k); continue; }
-          const sh = w.fish.find((f) => f.species === 'seahorse' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7);      // a seahorse has its own hunger too, and its own caretaker
-          if (sh) { const k = `push:sea:${id}:${sh.id}`; if (!recent(k) && await push.notify(m.id, `${sh.name} is hungry. Give it some mysis shrimp.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
-          const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && !f.dead), foul = w.water < 0.45, k = `push:care:${id}:${m.id}`;
+          const oc = w.fish.find((f) => f.species === 'octopus' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7 && runDown(f));
+          if (oc) { const k = `push:octo:${id}:${oc.id}`, old = `push:octo:${oc.id}`; if (recent(old)) continue; if (!recent(k) && await push.notify(m.id, `${oc.name} is hungry and getting run down. Drop it a crab.`, { now })) mark(k); continue; }
+          const sh = w.fish.find((f) => f.species === 'seahorse' && !f.dead && f.owner === m.id && (f.hunger ?? 0) > 0.7 && runDown(f));      // a seahorse has its own hunger too, and its own caretaker
+          if (sh) { const k = `push:sea:${id}:${sh.id}`; if (!recent(k) && await push.notify(m.id, `${sh.name} is hungry and getting run down. Give it some mysis shrimp.`, { now })) mark(k); continue; }      // the 12-hour guard only starts once a nudge actually went out
+          const fishHungry = w.hunger > 0.75 && w.fish.some((f) => f.species !== 'octopus' && f.species !== 'seahorse' && !f.dead && runDown(f)), foul = w.water < 0.45 && w.fish.some((f) => !f.dead && runDown(f)), k = `push:care:${id}:${m.id}`;
           if ((fishHungry || foul) && !recent(k) && await push.notify(m.id, fishHungry ? 'The fish are hungry' : 'The water needs changing', { now })) mark(k);
         }
       } catch (e) { console.error('push sweep failed', e); }

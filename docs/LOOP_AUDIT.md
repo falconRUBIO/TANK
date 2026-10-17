@@ -1,4 +1,6 @@
-# Loop audit, October 2026 (audit pass: nothing in the game was changed)
+# Loop audit, October 2026
+
+> **Update:** every recommendation below except shared feeding has now been implemented (see "After the fixes" at the end).
 
 Each finding is marked:
 - **[code]**: confirmed by reading the code.
@@ -278,3 +280,45 @@ Each step can be released, tested and reverted on its own.
 - [ ] The new onboarding order (section 7).
 - [ ] The game's name in invites, postcards and notifications: Tanklings or Our Tank?
 - [ ] Hide a treat price: leave at 5 for now.
+
+
+---
+
+## After the fixes (implemented, tested, re-simulated)
+
+**What changed:**
+
+| Area | Before | Now |
+|---|---|---|
+| Visitors | every 9–15 hours | every 2–4 days (a new tank still gets its first within a day) |
+| Perfect day | +3 shells and a journal post | ticked on the checklist only |
+| Feeding | +1 per hungry feed | +1 once a day per tank |
+| Fish wishes | every 6 hours | every 18 hours |
+| Weekly birthday | +8 shells | journal line only |
+| Daily gift | one per caretaker | one per tank |
+| Journal | routine lines posted in full | "said hello", "both looked after", the birthday and "perfect day" fold into "Also:"; visitors, now rare, stay as posts |
+| Births in a full tank | stopped | 4 extra places for eggs and kept babies (the shop limit is unchanged) |
+| Neglect | could kill after 5 days | tired, then very unwell, never dies; recovers with care ("___ is back to its old self"); old age is unchanged |
+| Hunger notifications | at about 70% hunger | only once an animal has started to suffer for it |
+| Coming up | the last day of a pregnancy | the whole pregnancy, and "___ and ___ are getting close: they may pair up" |
+| First minutes | straight to "Time for a snack" | a quiet moment, "Say hello" (hold the glass, the octopus comes), then the snack |
+| Name | OUR TANK | Tanklings in invites, postcards, notifications, the home-screen name and the welcome screen |
+
+**Re-simulated** (`tools/econ4.mjs`, `tools/neglect_sim.mjs`):
+
+| | Before | After |
+|---|---|---|
+| Shells earned a day (solo / four) | 38 / 57 | 26 / 38 |
+| Balance at day 120 | 3,000–3,500 | 1,000–1,400 |
+| Level 8 reached | day 22–25 | day 31–34 |
+| Births in 120 days | 2–4 | 11–12 |
+| Deaths after 7 / 14 days away | 1 / all but one | 0 / 0 (full health two days after care) |
+| Kinds of journal line, days 60–120 | 16–68 | 50–108 |
+
+**Tests:** all 94 rule tests, 86 server tests and the 8 browser checks pass. Tests that relied on neglect killing now use old age.
+
+**Still open:**
+- Shells still pile up slowly after the tank is complete, about 8 a day.
+- After level 8, progression stands on births, aging and the octopus's learning. Real players will show whether that's enough.
+- Quiet hours are still fixed at 22:00–08:00.
+- The "Say hello" moment needs a look on a real phone: the octopus can stay high up behind the tip card.

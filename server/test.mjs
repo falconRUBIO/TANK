@@ -145,11 +145,11 @@ await t('replaying the same idempotency key never pays twice', async () => {
   assert.equal(wa.msgs.filter((m) => m.t === 'ack' && m.idem === 'f1' && m.dup).length, 2);
 });
 await t('two players acting at once with different keys are both applied atomically', async () => {
-  setW(tank.id, { hunger: 0.9, simTs: Date.now() });
+  setW(tank.id, { hunger: 0.9, simTs: Date.now(), flags: { ...getW(tank.id).flags, feedPay: null } }); const s0 = getW(tank.id).shells;
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'a1' })); wb.send(JSON.stringify({ t: 'feed', x: 0, idem: 'b1' }));
   await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'a1'); await waitFor(wb, (m) => m.t === 'ack' && m.idem === 'b1');
   const row = getW(tank.id);
-  assert.equal(row.shells, 13); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // 1 earlier + two paid feeds (0.9 → 0.6 → 0.3), no double-spend
+  assert.equal(row.shells, s0 + 1, 'both feeds count, the shell is paid once a day'); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // (0.9 → 0.6 → 0.3), no double-spend
 });
 await t('feeding a full tank is accepted but not rewarded', async () => {
   setW(tank.id, { hunger: 0.02, simTs: Date.now() });
@@ -215,7 +215,7 @@ await t('two players spending the last shells at once: exactly one purchase succ
   setW(tank.id, { shells: 10, simTs: Date.now() });
   const wsB = await open(b.token);
   const [r1, r2] = await Promise.all([ackOf(wsA, { t: 'buyFish', species: 'goldfish', name: 'Gus', idem: 'r1' }), ackOf(wsB, { t: 'buyFish', species: 'goldfish', name: 'Gil', idem: 'r2' })]);
-  assert.equal([r1, r2].filter((r) => r.ok).length, 1); assert.equal(getW(tank.id).shells, 0); wsB.close();
+  assert.equal([r1, r2].filter((r) => r.ok).length, 1); assert.equal(getW(tank.id).shells, 10 - (await import('../web/src/game/rules.js')).fishPrice('goldfish', Date.now())); wsB.close();      // (at the price of the day: a fish of the day is cheaper)
 });
 await t('buying a school adds four fish; selling decor refunds half; capacity is enforced', async () => {
   setW(tank.id, { shells: 200, level: 1, simTs: Date.now() });
@@ -278,7 +278,7 @@ await t('a tank put back after the server lost its data keeps who owns what: the
   const copy = JSON.parse(JSON.stringify(getW(tk.id)));
   S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id);       // the server forgets the tank
   const a2 = await mkUser('Ana'), r = await call('/api/import', { app: 'our-tank', tank: { name: 'Lost' }, world: copy, code: tk.code, heal: true, was: a1.userId }, a2.token); assert.equal(r.status, 200, JSON.stringify(r.body));
-  const w = getW(r.body.id); assert.equal(w.fish[0].owner, a2.userId, 'the octopus is still yours'); assert.ok(w.flags.gift[a2.userId], 'today\'s gift is remembered');
+  const w = getW(r.body.id); assert.equal(w.fish[0].owner, a2.userId, 'the octopus is still yours'); assert.ok(w.flags.gift.tank, 'today\'s gift is remembered');
   const ws2 = await open(a2.token), g2 = await ackOf(ws2, { t: 'dailyGift', tz: 0, idem: 'hl-3' }); assert.equal(g2.delta, 0, 'not paid again'); ws2.close();
 });
 await t('a fish already paid for still arrives after the server lost the tank and the phone put it back', async () => {
@@ -357,7 +357,7 @@ await t('push: a friend having the tank open does not stop the one who is away f
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
   const sub = { endpoint: 'https://fcm.googleapis.com/fcm/send/away1', keys: { p256dh: 'k1', auth: 'k2' } }; assert.equal((await call('/api/push/subscribe', { subscription: sub, offset: off }, x.token)).status, 200);
   const wx = await open(x.token); assert.equal((await ackOf(wx, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'aw-1' })).ok, true); wx.close(); await new Promise((r) => setTimeout(r, 100));
-  const w = getW(tk.id); setW(tk.id, { flags: { ...w.flags, tut: 5 }, fish: w.fish.map((f) => ({ ...f, hunger: 0.9 })) });
+  const w = getW(tk.id); setW(tk.id, { flags: { ...w.flags, tut: 5 }, fish: w.fish.map((f) => ({ ...f, hunger: 0.9, ail: 0.5 * 86400 })) });      // (hungry and starting to suffer for it)
   const wy = await open(y.token);                                                                                     // the friend is looking at the tank right now
   pushed.length = 0; await S.pushSweep(Date.now()); wy.close();
   assert.equal(pushed.length, 1, 'the one who is away still hears'); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
@@ -370,6 +370,8 @@ await t('push: a caretaker hears that their own octopus is hungry (once in 12 ho
   assert.equal(pushed.length, 1); assert.match(pushed[0].payload.body, /Pal joined your tank/);
   const ws = await open(x.token); assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'ph-1' })).ok, true); ws.close(); await new Promise((r) => setTimeout(r, 100));
   const w = getW(tk.id); w.fish[0].hunger = 0.8; setW(tk.id, { fish: w.fish, simTs: Date.now() - 1000, flags: { ...w.flags, tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(!pushed.some((q) => /Ink is hungry/.test(q.payload.body)), 'just hungry is not news');
+  { const w1 = getW(tk.id); w1.fish[0].ail = 0.5 * 86400; setW(tk.id, { fish: w1.fish, simTs: Date.now() - 1000 }); }      // (it has started to suffer for it)
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the owner is told: ' + JSON.stringify(pushed.map((q) => q.payload.body))); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'not again within 12 hours even with the daily cap cleared');
   { const w2 = getW(tk.id); w2.fish[0].born = Date.now() - 3 * 864e5 - 3600e3; w2.fish[0].hunger = 0; setW(tk.id, { fish: w2.fish, simTs: Date.now() - 1000 });
@@ -437,16 +439,12 @@ await t('four caretakers, one tank: seats, first fish ownership, and the world s
   const snap = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); assert.deepEqual(snap.fish.map((f) => f.id), w.fish.map((f) => f.id)); [wx, wy, wz].forEach((s) => s.close());
   globalThis.regress = { tk, x, y, z };
 });
-await t('mortality on the server: one death at a time, last fish protected, recovery, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
+await t('neglect on the server: very unwell but alive, recovery with care, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now();
   const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 9 * DAY, stage: 'adult' }));
   let w = getW(tk.id); setW(tk.id, { fish: sick(w), createdAt: now - 20 * DAY, simTs: now - 1000, hunger: 0.85, water: 0.45, lastDeath: 0, flags: { ...w.flags, tut: 5 }, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
-  tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 1, 'exactly one death'); assert.equal(w.memorial.length, 1); assert.ok(w.fish.length >= 2);
-  const first = w.floaters[0]; assert.ok(first.owner && first.ownerName, 'original caretaker recorded'); assert.equal(w.memorial[0].rested, null);
-  tickTank(S.db, tk.id, now + 3600e3); assert.equal(getW(tk.id).floaters.length, 1, 'no second death within 24 hours');
-  setW(tk.id, { lastDeath: now - 25 * 3600e3 }); tickTank(S.db, tk.id, now + 7200e3); assert.equal(getW(tk.id).floaters.length, 2, 'a second death after 24 hours');
-  // last fish protection: reduce to one very sick fish
-  w = getW(tk.id); setW(tk.id, { fish: [w.fish[0]], lastDeath: 0, floaters: [] }); tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).fish.length, 1, 'the last fish never dies');
+  tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 0, 'neglect does not kill'); assert.equal(w.memorial.length, 0); assert.ok(w.fish.every((f) => f.ail >= 3 * 86400), 'they are very unwell');
+  tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).floaters.length, 0, 'not even after days more');
   // recovery from neglect with real care
   const wx = await open(x.token), wy = await open(y.token); w = getW(tk.id); setW(tk.id, { simTs: Date.now(), hunger: 0.8, water: 0.5, fish: w.fish.map((f) => ({ ...f, ail: 3 * 86400, health: 0.3 })) });
   await ackOf(wx, { t: 'feed', x: 0, idem: 'rg-f' }); await ackOf(wx, { t: 'water', idem: 'rg-w' }); const rec = getW(tk.id); assert.ok(rec.hunger < 0.8 && rec.water > 0.9, 'care restored the tank');
@@ -457,10 +455,10 @@ await t('mortality on the server: one death at a time, last fish protected, reco
   const after = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); const mem = after.memorial.find((m) => m.id === 'dead1'); assert.ok(mem && mem.rested && mem.rested.by, 'memorial persisted with who laid it to rest'); assert.equal(mem.ownerName, 'Xan'); assert.deepEqual(mem.milestones, ['Reached the adult stage']);
   [wx, wy].forEach((s) => s.close());
 });
-await t('offline simulation: ten days away costs at most one fish and the tank is still there', async () => {
+await t('offline simulation: ten days away loses nobody and the tank is still there', async () => {
   const { tk } = globalThis.regress, DAY = 864e5, now = Date.now(); let w = getW(tk.id);
   setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 9 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
-  const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.ok(before - a2.fish.length <= 1, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
+  const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.equal(before - a2.fish.length, 0, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
 });
 console.log('Discoveries, thank-yous, journal split, analytics');
 await t('observed discoveries are checked, saved once, journalled, shared with everyone, and a repeat says nothing', async () => {
@@ -514,7 +512,7 @@ await t('economy integrity: milestones and the daily wish pay once even when car
   // one wallet: two caretakers try to buy with shells for only one fish
   setW(tk.id, { shells: 10, orders: [], fish: w.fish.slice(0, 1), simTs: Date.now() - 1000, flags: { ...w.flags, firsts: { ...w.flags.firsts } } });
   const buys = await Promise.all([ackOf(wx, { t: 'buyFish', species: 'goldfish', name: 'A', seed: 1, idem: 'ei-9' }), ackOf(wy, { t: 'buyFish', species: 'goldfish', name: 'B', seed: 2, idem: 'ei-10' })]);
-  assert.equal(buys.filter((m) => m.ok).length, 1, 'exactly one purchase succeeds'); assert.equal(getW(tk.id).shells, 0); assert.equal(getW(tk.id).orders.length, 1);
+  assert.equal(buys.filter((m) => m.ok).length, 1, 'exactly one purchase succeeds'); assert.equal(getW(tk.id).shells, 10 - (await import('../web/src/game/rules.js')).fishPrice('goldfish', Date.now()), 'paid once, at the price of the day (a fish of the day is cheaper)'); assert.equal(getW(tk.id).orders.length, 1);
   wx.close(); wy.close(); wz.close();
 });
 await t('food choice on the server: paid foods cost shells, a poor tank cannot buy them, and everyone sees what was dropped', async () => {

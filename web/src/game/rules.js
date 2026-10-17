@@ -125,6 +125,9 @@ export const STYLE_PRICE = { floor: { sand: 0, pearl: 20, gravel: 20, black: 30,
 export const styleOwned = (t, kind, key) => !(STYLE_PRICE[kind]?.[key] > 0) || !!t.flags.styles?.[kind]?.[key];
 export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
 export const capacity = (level) => 4 + 3 * level;
+// life goes on in a full tank: eggs, hatchlings and a kept seahorse baby may go a little over what the shop allows (bought fish never do),
+// so a finished tank still has births, and old age makes room again in time
+export const BIRTH_ROOM = 4;
 export function scoreOf(t, now = Date.now()) { return t.fish.length * 2 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 2 + ((t.seen?.fish.length ?? 0) + (t.seen?.decor.length ?? 0)) + 3 * (t.wishIdx ?? 0); }
 export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].traits, a = pool[seed % pool.length], b = pool[(seed * 7 + 3) % pool.length]; return a === b ? [a] : [a, b]; }
 
@@ -264,7 +267,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
     f.health = Math.max(0.2, Math.min(1, f.health + (ht - f.health) * Math.min(1, dt / (ht < f.health ? 5400 : 1800))));
     if (f.ail < AIL_TIRED) { f.warned = false; f.tiredSaid = false; }
     else if (!f.tiredSaid) { f.tiredSaid = true; ev.push({ journal: `${f.name} looks tired. It needs food and clean water.`, toast: `${f.name} looks tired. A little care would help.`, tired: f.id }); }
-    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is in a critical state. It needs food and clean water.`, toast: `${f.name} is in a critical state. The tank needs care.`, warn: f.id }); }
+    else if (f.ail >= AIL_WARN && !f.warned) { f.warned = true; ev.push({ journal: `${f.name} is very unwell. It needs food and clean water, then a little time to recover.`, toast: `${f.name} is very unwell. The tank needs care.`, warn: f.id }); }
     // old age: real lifespans, compressed about tenfold. From three quarters of its span an animal is an elder; past its full span, each day there is a
     // small and slowly rising chance it slips away peacefully (worked out from the day, so every phone agrees). Well looked-after ones live a little longer.
     { const L = lifeOf(f), age = (now - f.born) / DAY;
@@ -275,16 +278,11 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
           t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; const m = memorialOf(t, f, now); m.oldAge = true; (t.memorial ||= []).push(m);
           (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], oldAge: true });
           const yrs = Math.round(age); ev.push({ journal: `${f.name} passed away peacefully of old age, after ${yrs} days in the tank. A long, full life.`, toast: `${f.name} passed away peacefully of old age.`, died: f.id }); continue; } } }
-    // death follows the fish's real condition: five days of neglect AND health that has stayed critically low, then the guard rails
-    if (f.ail >= AIL_DIE && f.health <= 0.4 && t.flags.mortality !== false) {
-      const young = now - t.createdAt < 3 * 86400e3, rested = now - (t.lastDeath ?? 0) < 86400e3;
-      if (young || rested || t.fish.length <= 1) f.ail = AIL_DIE - 1;
-      else {
-        t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; (t.memorial ||= []).push(memorialOf(t, f, now));
-        (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [] });
-        ev.push({ journal: `${f.name} has passed away.`, toast: `${f.name} has passed away.`, died: f.id }); continue;
-      }
-    } else if (f.ail >= AIL_DIE) f.ail = AIL_DIE - 1;
+    // neglect never kills: a run-down animal stays very unwell (slow, pale, keeping to itself) until it is looked after, then recovers over a
+    // day or two and the journal says so. Only old age ends a life (above).
+    if (f.ail >= AIL_DIE) f.ail = AIL_DIE - 1;
+    if (f.ail >= AIL_WARN) f.wasUnwell = true;
+    else if (f.wasUnwell && f.ail < AIL_TIRED * 0.25) { f.wasUnwell = false; ev.push({ journal: `${f.name} is back to its old self.`, toast: `${f.name} has recovered.`, story: f.id, text: 'Recovered after a hard few days.' }); }
   }
 }
 
@@ -398,7 +396,7 @@ function puzzles(t, now, ev) {
   }
 }
 function visitors(t, now, ev) {
-  if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; }
+  if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
   const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor
   const seq = (t.seq = (t.seq ?? 10) + 1), sp = pool[hash32(seq * 17 + Math.floor(now / 6e4)) % pool.length], d = SPECIES_DEF[sp];
@@ -458,7 +456,7 @@ function eggs(t, now, ev) {
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.eggs.length) return;      // one egg at a time, so each one is an event
-  if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return;
+  if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return;
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
@@ -620,7 +618,7 @@ const STORY = {
 // ── fish wishes ──
 // One fish at a time quietly wants something that fits its personality. Granting it pays a little, cheers the fish, and is written to the journal.
 // A wish is only offered if it can be granted now, never expires with a penalty (it just fades after a day), and a new one waits a few hours.
-export const WANT_REWARD = 4, WANT_GAP = 6 * 3600e3, WANT_TTL = 24 * 3600e3;
+export const WANT_REWARD = 4, WANT_GAP = 18 * 3600e3, WANT_TTL = 24 * 3600e3;
 const catOpen = (t, cat) => Object.values(DECOR_DEF).some((d) => d.cat === cat && d.level <= t.level && d.price > 0);
 const likeWant = (trait, cat, n, text, gift) => ({ traits: [trait], ok: (t) => count(t, cat) < n && catOpen(t, cat), done: (t) => count(t, cat) >= n, text, gift });
 export const WANTS = {
@@ -879,7 +877,7 @@ export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.flo
 function dayCheck(t, now, ev, key = null) {
   if ((t.flags.tut ?? 0) < 5 || !t.fish.length) return; const l = dayLogOf(t, now);
   if (key === 'care' && lookedAfter(t)) l.care = true; if (key === 'bond') l.bond = true;
-  const k = dayTicks(t, now); if (k.care && k.wish && k.bond && !l.paid) { l.paid = true; t.shells += PERFECT_DAY_REWARD; ev.push({ journal: 'A perfect day: the tank is looked after, the wish is done and a fish got some attention.', toast: `A perfect day! +${PERFECT_DAY_REWARD} shells`, perfectDay: true }); }
+  const k = dayTicks(t, now); if (k.care && k.wish && k.bond && !l.paid) l.paid = true;      // (a full day is ticked on the checklist; it is not paid or posted: the day is its own reward)
 }
 // How the tank is doing right now, in one word and one sentence.
 export function tankMood(t, now = Date.now()) {
@@ -922,10 +920,12 @@ function deliver(t, now, ev) {
 // Chapters: quiet landmarks in the life of a tank. They pay nothing, so they cannot be farmed; they are a page in the journal and a moment to notice.
 // A small gift for every caretaker, once a day. No streak, nothing to catch up on: miss a day and nothing is lost or owed. It goes into the shared wallet.
 export const DAILY_GIFT = 2;
+// feeding a hungry animal pays one shell once a day for the tank (the care itself is the point; it is not a shell tap)
+const feedPayOnce = (t, now) => { const d = Math.floor(now / DAY); if (t.flags.feedPay === d) return false; t.flags.feedPay = d; return true; };
 const giftKey = (now, tz) => Math.floor((now + Math.max(-840, Math.min(840, Math.round(+tz) || 0)) * 60e3) / DAY);
 export function giftReady(t, uid, now = Date.now(), tz = 0) {
   if ((t.flags?.tut ?? 0) < 5 || !t.fish?.length) return false;
-  const last = t.flags?.gift?.[uid]; return !last || (last.key !== giftKey(now, tz) && now - last.at >= 20 * HOUR);      // a new local day AND at least 20 hours, so changing the phone's clock or zone cannot claim twice
+  const last = t.flags?.gift?.tank; return !last || (last.key !== giftKey(now, tz) && now - last.at >= 20 * HOUR);      // a new local day AND at least 20 hours, so changing the phone's clock or zone cannot claim twice
 }
 export const CHAPTERS = [
   { key: 'day1', title: 'Day One', text: 'A whole day of fish and water. The tank has found its rhythm.', when: (t, now) => now - t.createdAt >= 86400e3 },
@@ -990,7 +990,7 @@ function _advance(t, now = Date.now()) {
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
   guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
-  guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; t.shells += 8; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.`, toast: `Tank birthday! ${weeks} week${weeks > 1 ? 's' : ''} old. +8 shells` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
+  guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
   guard('level', () => levelCheck(t, now, ev));
@@ -1091,7 +1091,8 @@ export function milestonesOf(f) {
 export function forecast(t, now = Date.now(), n = 3) {
   const c = [], nm = (id, sn) => t.fish.find((f) => f.id === id)?.name ?? sn?.name;
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s egg` : 'The egg'} hatches`, '🥚']);
-  for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, `${f.name}'s babies are born`, '🌿', f]);
+  for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, f.preg.due - now > DAY ? `${f.name} is expecting: the babies are born` : `${f.name}'s babies are born`, '🌿', f]);
+  for (const [k, ms] of Object.entries(t.bonds ?? {})) { if (ms < 0.4 * SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|').map((id) => t.fish.find((f) => f.id === id && !f.dead)); if (a && b && !a.mate && !b.mate) c.push([SEA.PAIR_DAYS * DAY - ms, `${a.name} and ${b.name} are getting close: they may pair up`, '💞', a]); }      // (the pairing clock: a seahorse pair forming)
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? `A gift for ${o.ownerName ?? 'a friend'} arrives` : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, o.surprise ? '🎁' : '📦']);
   for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, s.to === 'adult' ? `${f.name} turns 3 days old and becomes an adult` : `${f.name} turns 1 day old and becomes a youngster`, '🌱', f]); }      // (what really happens, not just "grows up")
@@ -1099,7 +1100,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
-  return c.filter((x) => x[0] > 0 && x[0] <= ((x[2] === '🥚' || x[2] === '🌿') && /hatches|born/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours, or a day ahead for an egg or a birth) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
+  return c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🥚' && /hatches/.test(x[1]) ? 24 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }));      // (about an animal: the card shows that animal itself)
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];
@@ -1120,7 +1121,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   switch (a.t) {
     case 'dailyGift': {
       if (!giftReady(t, uid, now, a.tz)) return ok({ applied: false, delta: 0 });
-      (t.flags.gift ||= {})[uid] = { key: giftKey(now, a.tz), at: now }; t.shells += DAILY_GIFT;
+      (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += DAILY_GIFT;      // one gift a day for the tank, for whoever opens it first
       events.push({ toast: `A little gift for you: +${DAILY_GIFT} shells`, gift: true }); levelCheck(t, now, events); return ok({ applied: true, delta: DAILY_GIFT });
     }
     case 'feed': {
@@ -1131,7 +1132,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         if (food === 'mysis' && t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // (the nursery babies eat the shrimp too)
         ensureFish(f); t.lastFed = now; f.fedAt = now;
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
-        const needed = f.hunger > 0.25, pay = needed ? 1 : 0;
+        const needed = f.hunger > 0.25, pay = needed && feedPayOnce(t, now) ? 1 : 0;
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
@@ -1143,7 +1144,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
-      const needed = t.hunger > 0.25, pay = needed && price === 0 ? 1 : 0;
+      const needed = t.hunger > 0.25, pay = needed && price === 0 && feedPayOnce(t, now) ? 1 : 0;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
@@ -1400,7 +1401,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const N = t.nursery; if (!N || N.id !== a.nursery) return fail('NOT_FOUND');      // (already chosen, perhaps by someone else a moment ago)
       if (now < N.readyAt) return fail('NOT_READY');
       const c = N.cands.find((x) => x.id === a.baby); if (!c) return fail('NOT_FOUND');
-      if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
+      if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
       if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
       const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
       const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      // every phone watching sees the others swim off, once (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
@@ -1453,7 +1454,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });
       const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
-      t.visitor = null; t.visitAt = now + (9 + (hash32(now / 6e4) % 6)) * HOUR; t.shells += 4;
+      t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; t.shells += 4;
       events.push({ activity: { type: 'visitor', text: `${name} greeted a rare visitor.` }, journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
     }
     case 'lookAfter': {                                              // a friend has not been in for two weeks (or has left): someone else takes their animal on, so it is never left to fend for itself

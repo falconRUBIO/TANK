@@ -75,7 +75,7 @@ const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone'
 const social = {
   chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
-  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'OUR TANK', text: `Come help take care of our fish! Join my aquarium in OUR TANK. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
+  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tanklings', text: `Come help take care of our fish! Join my aquarium in Tanklings. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'MAKE A NEW CODE?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 
@@ -512,7 +512,7 @@ async function takePhoto(opts = {}) {      // opts.img: a moment's photo from th
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
   const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      // (a moment's postcard carries the day it happened) g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
-  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 OUR TANK', PW - M - 10, ry + 22); g.textAlign = 'left';
+  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TANKLINGS', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
@@ -1013,6 +1013,16 @@ const tut = (() => {
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
+        // first, the octopus itself: a few quiet seconds to watch it explore its new home, then one small thing to do with it (a finger held
+        // on the glass, which it already comes to), and only then the food. Once per phone; a returning player goes straight to the snack.
+        let met = navigator.webdriver && !/[?&]hello=1/.test(location.search); try { met ||= localStorage.getItem('ourtank.met') === '1'; } catch { /* none */ }      // (automated checks skip it unless they ask for it)
+        if (!met) { ui.hideCoach(); ui.pulse(null); const nm = s.fish[0]?.name ?? 'Your octopus';
+          await new Promise((r) => setTimeout(r, 9000));
+          ui.showCoach({ title: 'SAY HELLO', text: `Touch and hold the glass. ${nm} will come over to see who you are.`, skip: skip });
+          const t0 = Date.now(); let held = 0; await new Promise((res) => { const iv = setInterval(() => { held = lure?.on ? held + 0.3 : 0; if (held >= 1.5 || Date.now() - t0 > 40000 || (game.state?.flags.tut ?? 0) !== 1) { clearInterval(iv); res(); } }, 300); });
+          if (held >= 1.5) { ui.hideCoach(); ui.toast(`${nm} came to see you.`, 2600); await new Promise((r) => setTimeout(r, 3200)); }
+          try { localStorage.setItem('ourtank.met', '1'); } catch { /* none */ }
+          if ((game.state?.flags.tut ?? 0) !== 1) return; }
         ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then Feed on ${s.fish[0]?.species === 'octopus' ? 'its card: a crab drops in for it' : 'their card: the food drops in'}.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
@@ -1081,7 +1091,7 @@ async function offerGift() {
   if (giftBusy) return; giftBusy = true; giftOffered = Date.now();
   try {
     const n = game.shared ? game.members?.length ?? 1 : 1;
-    await ui.celebrate({ title: 'A GIFT FOR YOU', amount: DAILY_GIFT, why: n > 1 ? `Every caretaker gets a small gift each day for the shared wallet. Thank you for looking after the tank.` : 'A small gift each day for looking after the tank. Spend it on fish and decorations.', ok: 'Claim' });
+    await ui.celebrate({ title: 'A GIFT FOR YOU', amount: DAILY_GIFT, why: n > 1 ? `A small gift each day for the tank, for whoever comes by first. Thank you for looking after it.` : 'A small gift each day for looking after the tank. Spend it on fish and decorations.', ok: 'Claim' });
     const r = await game.dispatch({ t: 'dailyGift', tz: -new Date().getTimezoneOffset() }); game.giftTried = Date.now();
     if (r.ok && (r.delta ?? 0) > 0) { sfx('reward'); moment({ shells: r.delta, from: [window.innerWidth / 2, window.innerHeight * 0.45] }); } else if (r.ok) ui?.toast("Today's gift is already collected", 3000); else fail(r);
     ui?.updateHeader();

@@ -42,7 +42,7 @@ export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
         const pr = prioOf(body), lim = pr === 'high' ? Math.max(cap, 3) : pr === 'low' ? 1 : cap; if (db.prepare('SELECT COUNT(*) n FROM push_log WHERE user_id=? AND ts>?').get(userId, now - 24 * 3600e3).n >= lim) return false; }
       let sent = false;
       for (const s of subs) {
-        try { await deliver({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify({ title: 'OUR TANK', body: String(body).slice(0, 120), url })); sent = true; }
+        try { await deliver({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify({ title: 'Tanklings', body: String(body).slice(0, 120), url })); sent = true; }
         catch (e) { if (e?.statusCode === 404 || e?.statusCode === 410) db.prepare('DELETE FROM push_subs WHERE endpoint=?').run(s.endpoint); }
       }
       if (sent && !force) { db.prepare('INSERT INTO push_log (user_id,ts) VALUES (?,?)').run(userId, now); db.prepare('DELETE FROM push_log WHERE ts<?').run(now - 3 * 24 * 3600e3); }

@@ -1,4 +1,4 @@
-# Our Tank: the full game loop (for review)
+# Tanklings: the full game loop (for review)
 
 A calm, shared aquarium for phones. One tank, up to four caretakers (friends or family). The animals live on a real clock: they get hungry, grow up, make friends, lay eggs, have babies and die of old age whether or not anyone has the app open. No ads, no streaks, one soft currency (shells).
 
@@ -9,21 +9,20 @@ All numbers below come from the game rules (`web/src/game/rules.js`), which run 
 ## 1. First minutes
 
 1. **Welcome:** every tank starts with an octopus. The player picks one of six colors (Coral, Violet, Ocean, Amber, Kelp, Ink) and a name, then taps "Bring it home".
-2. **Tips:** four short cards on the first visit:
-   - *Time for a snack*: open Care, tap Feed.
-   - *Better together*: invite friends from the Crew tab.
-   - *A gift for the tank*: a free starter plant in the Shop.
-   - *You are all set*: "Show me what is coming" or "Done".
-3. A chapter banner reached during the tips (e.g. "Eight Arms Aboard") waits until they are done. The daily gift waits a further 45 seconds after that, so a new player sees one thing at a time.
+2. **Meet the octopus:** a few quiet seconds to watch it drop in and explore its new home.
+3. **Say hello:** "Touch and hold the glass": the octopus swims over to the finger.
+4. **Time for a snack:** open Care, tap Feed, tap Feed on its card; a crab drops in and it hunts it.
+5. **You are all set:** "Show me what is coming" or "Done". Inviting friends and the Shop's free plant come later, quietly.
+6. A chapter banner reached during the tips (e.g. "Eight Arms Aboard") waits until they are done. The daily gift waits a further 45 seconds after that, so a new player sees one thing at a time.
 
 ## 2. The daily loop
 
 | Step | What the player does | What they get |
 |---|---|---|
 | Open the app | Sees the tank; the Bell shows what happened while away | A welcome-back card ("Pip grew up", "Mimi dragged it out of its den") |
-| Daily gift | One tap on a card | +2 shells (once a day per caretaker) |
-| Care | Feed; wipe the glass and change the water when due; trim plants | Shells for each job (see section 4) |
-| Daily checklist | Small things to watch or do (watch a fish for 15 seconds, say hello to three fish, see two friends swim together...) | 3, 5 or 8 shells per item depending on tier; +3 for a perfect day |
+| Daily gift | One tap on a card | +2 shells, once a day for the tank (whoever comes first) |
+| Care | Feed (the meal drops in by itself); wipe the glass and change the water when due; trim plants | Shells for the chores (see section 4) |
+| Daily checklist | Small things to watch or do (watch a fish for 15 seconds, say hello to three fish, see two friends swim together...) | 3, 5 or 8 shells per item depending on tier (a full day is ticked, not paid) |
 | Today's request | One shared wish a day for the whole tank (e.g. "a plant for Pip") | +4 shells, the animal's happiness |
 | Play | Toys, Hide a treat, Puzzle jar | Bond, journal moments, discoveries |
 | Shop | Spend shells on fish, decorations, floors, backdrops | Tank level, new animals, themes |
@@ -53,7 +52,7 @@ Nothing is lost by skipping a day. The animals get hungrier and the water cloudi
 - **Life stages:** baby, then youngster at 1 day, adult at 3 days, then elder in the last quarter of its life. "All grown up" comes after 7 days in the tank.
 - **Character:** each fish has 1–2 traits (Calm, Shy, Brave, Social, Greedy, Curious...) and a favorite food. Over time it makes a best friend (or a rival), finds a favorite spot, learns two tricks with a caretaker (swim through a gate, ride the bubbles), and learns toys.
 - **Feeding:** the fish share one hunger. They are due about every 12 hours, and a meal can be given from 8% hunger.
-- **Eggs:** adult pairs of the same kind lay eggs, which hatch in 3 days. Many species really care for their eggs, and the game shows it: a clownfish or damselfish father guards and fans them, and some species carry them in their mouths. A father keeps the octopus away from his eggs. Caretakers can "look after" the eggs on two days for a strong hatch. The first hatch pays +5 shells.
+- **Eggs:** adult pairs of the same kind lay eggs, which hatch in 3 days. A tank full for the shop keeps 4 extra places for eggs and babies, so births go on. Many species really care for their eggs, and the game shows it: a clownfish or damselfish father guards and fans them, and some species carry them in their mouths. A father keeps the octopus away from his eggs. Caretakers can "look after" the eggs on two days for a strong hatch. The first hatch pays +5 shells.
 
 ### Octopus (every tank starts with one; more can be bought at level 4 for 52 shells)
 
@@ -99,7 +98,7 @@ Nothing is lost by skipping a day. The animals get hungrier and the water cloudi
 
 ### Visitors and finds
 
-- A rare visitor now and then (say hello: +4 shells).
+- A rare visitor every 2–4 days (say hello: +4 shells).
 - Finds in the tank: a pearl drifting down or a lost item (+1 to +4).
 - A message in a bottle between friends.
 - Wrapped gift bags: a fish bought for a friend waits wrapped on the sand until they open it.
@@ -108,13 +107,12 @@ Nothing is lost by skipping a day. The animals get hungrier and the water cloudi
 
 | Earn | Shells |
 |---|---|
-| Daily gift | +2 |
-| Feed a properly hungry animal with free food | +1 |
+| Daily gift (once a day per tank) | +2 |
+| Feed a properly hungry animal with free food | +1, once a day per tank |
 | Wipe the glass (every few days) | +4 (a pearl every 5th: +6) |
 | Change cloudy water (every few days) | +6 |
 | Trim grown plants | +1 each |
 | Daily checklist item | +3 / +5 / +8 |
-| Perfect day | +3 |
 | Today's request | +4 |
 | Rare visitor | +4 |
 | A fish grows up / turns 14 or 30 days | +1–2 / +5 / +8 |
@@ -130,7 +128,7 @@ Nothing is lost by skipping a day. The animals get hungrier and the water cloudi
 
 Toys are free: the ball from the start, bubbles after 3 plays, the light spot after 8.
 
-> Known issue: shells pile up in older tanks (one test tank had 406). Hide a treat was added as a steady use for them. More could be needed.
+> After the October rebalance (docs/LOOP_AUDIT.md): about 26–38 shells a day, level 8 around day 31–34, about 1,000–1,400 unspent by day 120 (was 3,000+). Hide a treat is the steady use for spare shells.
 
 ## 5. Progress
 
@@ -144,8 +142,8 @@ Toys are free: the ball from the start, bubbles after 3 plays, the light spot af
 
 - **Hunger:** fish are due about every 12 hours; each octopus and seahorse has its own hunger on the same rhythm.
 - **Water** gets cloudy and **glass** gets algae over about 66 hours. Each is a chore with a reward.
-- **Neglect:** it starts building up about 30 hours after an animal's last meal, or while the water is bad. After 2 days it looks tired; after 3 it is critical; after 5 days of neglect, with low health, it can die. Safeguards: at most one death a day, none in a tank's first 3 days, never the last animal. The simulated result: 3 days away is harmless, 7 days loses about one animal, 14 days all but the last. Care brings the others back to full health within two days. See docs/LOOP_AUDIT.md.
-- **Death:** a farewell card ("Rest well. The others stay close."). Animals also die of old age at the end of their lifespan. A memorial keeps them.
+- **Neglect never kills.** It starts building up about 30 hours after an animal's last meal, or while the water is bad. After 2 days the animal looks tired; after 3 it is very unwell (slow, pale, keeping to itself) and stays that way until someone cares for it. With care it recovers within about two days, and the journal says "___ is back to its old self". Hunger notifications only go out once an animal has started to suffer for it.
+- **Death comes only from old age**, at the end of each species' lifespan: a farewell card ("Rest well. The others stay close.") and a memorial that keeps its story.
 
 ## 7. Social (shared tanks)
 
@@ -193,7 +191,7 @@ Toys are free: the ball from the start, bubbles after 3 plays, the light spot af
 
 1. **Shells:** do they still pile up late in the game? What else is worth spending on, without a second currency or pay-to-win?
 2. **Late game:** after a month, what keeps a caretaker coming back besides upkeep (seahorse families, rare hatches, themes)?
-3. **Neglect:** is a 30-hour grace period too forgiving, or too harsh, for a casual game? Should death from neglect exist at all?
+3. **Neglect:** animals no longer die of it (they become very unwell and recover with care). Is that consequence strong enough?
 4. **Octopus ownership:** is "only its caretaker can feed it" right for a shared tank, or does it frustrate friends?
 5. **Daily checklist and request:** do they feel like chores? Too many small rewards at once?
 6. **Hide a treat:** is 5 shells and a 20-minute rest the right pace?
