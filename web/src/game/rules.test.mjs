@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
+// time goes by an hour at a time until an egg is laid and gets ready, and someone is there to watch it hatch (eggs wait to be watched)
+const watchHatch = (t, now, days = 7) => { for (let k = 0; k < days * 24; k++) { now += 3600e3; R.advance(t, now); const e = (t.eggs ?? []).find((x) => x.ready); if (e) { R.applyAction(t, { t: 'watchEggs', id: e.id }, { now: now + 1000 }); return now + 1000; } } return now; };
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
@@ -49,7 +51,7 @@ ok('eggs: one at a time; food and clean water on two days hatch it strong; a rar
   const mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.flags.tut = 5; t.fish = ['a', 'b', 'c', 'd'].map((id, i) => R.ensureFish({ id, name: id.toUpperCase(), species: 'goldfish', seed: 10 + i, sex: i % 2 ? 'm' : 'f', born: -5 * 864e5, stage: 'adult', traits: ['Shy'] })); return t; };
   let t = mk(); const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1); t.eggAt = 0; R.advance(t, now + 3600e3); assert.equal(t.eggs.length, 1, 'never two eggs at once');
   t.water = 0.5; R.applyAction(t, { t: 'water' }, { now: now + 2 * 3600e3 }); t.water = 0.5; R.applyAction(t, { t: 'water' }, { now: now + 864e5 + 3600e3 }); assert.equal(R.eggCare(t.eggs[0]), 2);
-  R.advance(t, now + 3 * 864e5 + 1000); const baby = t.fish.find((f) => f.stage === 'baby'); assert.ok(baby?.loved && baby.happy === 1, 'cared-for egg hatches strong');
+  { const at = t.eggs[0].hatchAt + 1000; R.advance(t, at); assert.ok(t.eggs[0]?.ready, 'ready: it waits for someone to watch'); R.applyAction(t, { t: 'watchEggs' }, { now: at + 1000 }); } const baby = t.fish.find((f) => f.stage === 'baby'); assert.ok(baby?.loved && baby.happy === 1, 'cared-for egg hatches strong');
   t = mk(); t.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: -9 * 864e5, stage: 'adult' })); t.eggAt = 0; R.advance(t, now); t.eggs[0].risk = true;
   { const g = structuredClone(t); R.advance(g, now + 2.1 * 864e5); assert.equal(g.eggs.length, 1, 'a father guarding the eggs keeps the octopus off'); }
   t.eggs[0].guard = null; for (const f of t.fish) if (f.species === 'goldfish') f.dead = true;      /* (no parent left to guard them, and nobody to lay another) */
@@ -118,7 +120,7 @@ ok('two adults of one species lay an egg that hatches into a blend of both', () 
   const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5;
   t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 10, born: -5 * 864e5, stage: 'adult', traits: ['Shy'] }), R.ensureFish({ id: 'b', name: 'B', species: 'goldfish', seed: 20, sex: 'm', born: -5 * 864e5, stage: 'adult', traits: ['Brave'] })];
   const now = 20 * 3600e3; t.eggAt = 0; R.advance(t, now); assert.equal(t.eggs.length, 1, 'egg laid');
-  R.advance(t, now + 2.9 * 864e5); assert.equal(t.eggs.length, 1, 'still an egg after almost three days'); R.advance(t, now + 3 * 864e5 + 1000); assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2]; assert.ok(!c.loved, 'an egg nobody looked after hatches plain');
+  R.advance(t, now + 2.9 * 864e5); assert.equal(t.eggs.length, 1, 'still an egg after almost three days'); { const at = t.eggs[0].hatchAt + 1000; R.advance(t, at); R.applyAction(t, { t: 'watchEggs' }, { now: at + 1000 }); } assert.equal(t.eggs.length, 0); assert.equal(t.fish.length, 3); const c = t.fish[2]; assert.ok(!c.loved, 'an egg nobody looked after hatches plain');
   assert.equal(c.species, 'goldfish'); assert.equal(c.stage, 'baby'); assert.ok(c.seed === 10 || c.seed === 20, 'pattern from one parent ' + c.seed); assert.ok(c.genes && c.gen === 1 && c.parents.length === 2); assert.ok(c.traits.every((x) => ['Shy', 'Brave'].includes(x)));
 });
 ok('the journal no longer invents stories on a timer, and routine care goes to the activity list', () => {
@@ -193,11 +195,11 @@ ok('one shared daily wish: feasible, replaced each day, paid once, never punishi
 ok('family trees: hatchlings keep their parents, grandparents, generation and blended colours; the record outlives the fish', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.createdAt = -50 * D; t.visitAt = t.storyAt = 1e15; const mk = (id, name, seed, extra = {}) => R.ensureFish({ id, name, species: 'goldfish', seed, born: -9 * D, stage: 'adult', traits: ['Calm'], owner: 'u1', ownerName: 'Alex', ...extra });
   t.fish = [mk('a', 'Ada', 4), mk('b', 'Bix', 9)]; t.eggAt = 0; let now = 20 * 3600e3; R.advance(t, now); assert.equal(t.eggs.length, 1); assert.equal(t.eggs[0].pa.name, 'Ada'); assert.ok(t.eggs[0].pa.genes && t.eggs[0].pb.genes);
-  now += 3 * D + 1000; const ev = R.advance(t, now); const kid = t.fish.find((f) => f.parents); assert.ok(kid && kid.gen === 1 && kid.parents.length === 2 && kid.parents.map((p) => p.name).sort().join() === 'Ada,Bix'); assert.ok(kid.genes && kid.ownerName === 'Alex');
+  now = t.eggs[0].hatchAt + 1000; const ev = [...R.advance(t, now), ...(R.applyAction(t, { t: 'watchEggs' }, { now: now + 1000 }).events ?? [])]; const kid = t.fish.find((f) => f.parents); assert.ok(kid && kid.gen === 1 && kid.parents.length === 2 && kid.parents.map((p) => p.name).sort().join() === 'Ada,Bix'); assert.ok(kid.genes && kid.ownerName === 'Alex');
   assert.ok(ev.some((e) => /child of/.test(e.journal ?? ''))); assert.ok(ev.some((e) => /first generation/.test(e.journal ?? '')));
   const ga = R.genesOf(4), gb = R.genesOf(9); assert.ok(Math.abs(kid.genes.dh - (ga.dh + gb.dh) / 2) <= 0.016 && kid.genes.size >= 0.9 && kid.genes.size <= 1.1, 'colours blend the parents');
   // a second generation: grandparents are remembered by name even after the grandparents are gone
-  kid.born = now - 9 * D; kid.stage = 'adult'; const kid2 = mk('k2', 'Kit', 5, { parents: [{ id: 'x', name: 'Zed', parents: [] }], gen: 1, genes: R.genesOf(5) }); t.fish = [kid, kid2]; t.eggAt = 0; t.eggs = []; now += 30 * 3600e3; R.advance(t, now); now += 3 * D + 1000; R.advance(t, now);
+  kid.born = now - 9 * D; kid.stage = 'adult'; const kid2 = mk('k2', 'Kit', 5, { parents: [{ id: 'x', name: 'Zed', parents: [] }], gen: 1, genes: R.genesOf(5), sex: R.sexOf(kid) === 'f' ? 'm' : 'f' }); t.fish = [kid, kid2]; t.eggAt = 0; t.eggs = []; now += 30 * 3600e3; R.advance(t, now); now = watchHatch(t, now);
   const grand = t.fish.find((f) => f.gen === 2); assert.ok(grand, 'a second generation'); const names = grand.parents.map((p) => p.name); assert.ok(names.includes(kid.name) && names.includes('Kit'));
   assert.ok(grand.parents.find((p) => p.name === kid.name).parents.map((q) => q.name).sort().join() === 'Ada,Bix', 'grandparents survive in the record');
   assert.ok(R.childrenOf(t, kid.id).some((c) => c.id === grand.id)); const rt = JSON.parse(JSON.stringify(t)); assert.deepEqual(rt.fish.find((f) => f.gen === 2).parents, grand.parents);
@@ -243,9 +245,25 @@ ok('first friendship: +3 once per pair, remembered by stable ids, never repeated
 ok('first successful breeding: +5 once per tank, on the hatch and not the egg, parents and child recorded', () => {
   const D = 864e5, t = quiet(2); t.fish.forEach((f, i) => { f.born = -5 * D; f.stage = 'adult'; f.seed = 3; f.sex = i % 2 ? 'm' : 'f'; }); t.simTs = 0; t.eggAt = 1 * D; t.createdAt = -9 * D; const s0 = t.shells;
   R.advance(t, 1.01 * D); assert.equal(t.eggs.length, 1, 'an egg was laid'); assert.ok(!t.flags.firstHatch, 'laying an egg pays nothing'); const s1 = t.shells;
-  R.advance(t, 4.02 * D); assert.equal(t.eggs.length, 0); const hatched = t.fish.find((f) => f.parents?.length === 2); assert.ok(hatched, 'hatchling keeps its parents'); assert.equal(t.flags.firstHatch.fish, hatched.id); assert.deepEqual(t.flags.firstHatch.parents.sort(), ['f0', 'f1']);
-  assert.ok(t.shells - s1 >= R.FIRST_HATCH_REWARD); const s2 = t.shells; t.eggAt = 0; t.eggs.push({ id: 'e9', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 2 * D }); R.advance(t, 3 * D); assert.ok(t.shells - s2 < R.FIRST_HATCH_REWARD + 50, 'a second hatch does not pay it again');
-  const second = t.shells; const w = quiet(2); w.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; }); w.flags.firstHatch = { at: 1 }; w.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 1 }); const wev = R.advance(w, 2); assert.ok(!wev.some((e) => /first baby/.test(e.toast ?? '')) && w.flags.firstHatch.at === 1, 'already recorded: no pay'); assert.ok(second > 0);
+  watchHatch(t, 1.01 * D); assert.equal(t.eggs.length, 0); const hatched = t.fish.find((f) => f.parents?.length === 2); assert.ok(hatched, 'hatchling keeps its parents'); assert.equal(t.flags.firstHatch.fish, hatched.id); assert.deepEqual(t.flags.firstHatch.parents.sort(), ['f0', 'f1']);
+  assert.ok(t.shells - s1 >= R.FIRST_HATCH_REWARD); const s2 = t.shells; t.eggAt = 0; t.eggs.push({ id: 'e9', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 2 * D, ready: 2 * D, watch: 2 * D }); R.advance(t, 3 * D); assert.ok(t.shells - s2 < R.FIRST_HATCH_REWARD + 50, 'a second hatch does not pay it again');
+  const second = t.shells; const w = quiet(2); w.fish.forEach((f) => { f.born = -5 * D; f.stage = 'adult'; }); w.flags.firstHatch = { at: 1 }; w.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, hatchAt: 1, ready: 1, watch: 1 }); const wev = R.advance(w, 2); assert.ok(!wev.some((e) => /first baby/.test(e.toast ?? '')) && w.flags.firstHatch.at === 1, 'already recorded: no pay'); assert.ok(second > 0);
+});
+ok('hatching: in the tank\'s daytime, ready eggs wait for someone to watch (or the next morning), the fry show, and one more little one can be kept', () => {
+  const D = 864e5, H = 3600e3, mk = (tz) => { const t = quiet(2); t.tzMin = tz; t.level = 6; t.fish.forEach((f, i) => { f.born = -5 * D; f.stage = 'adult'; f.sex = i % 2 ? 'm' : 'f'; }); return t; };
+  for (const at of [2 * H, 23 * H, 12 * H]) { const w = R.wakeAt(mk(0), 10 * D + at), h = new Date(w).getUTCHours(); assert.ok(h >= 9 && h < 20 && w >= 10 * D + at, `${at / H}h -> ${h}h`); }      // a 2am or 11pm hatch moves to the morning; noon stays
+  { const t = mk(-300), w = R.wakeAt(t, 10 * D + 13 * H), L = new Date(w - 300 * 60e3).getUTCHours(); assert.ok(L >= 9 && L < 20, 'in their own time zone: ' + L); }
+  const t = mk(0); t.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, laid: 7 * D + 12 * H, hatchAt: 10 * D + 12 * H, cared: [], guard: null });
+  const ev1 = R.advance(t, 10 * D + 12 * H + 1000); assert.ok(t.eggs[0].ready && ev1.some((e) => e.eggReady), 'ready, said once'); assert.ok(ev1.some((e) => /wriggling/.test(e.journal ?? '')));
+  R.advance(t, 10 * D + 16 * H); assert.equal(t.eggs.length, 1, 'nobody watching: they wait');
+  const r = R.applyAction(t, { t: 'watchEggs' }, { now: 10 * D + 16 * H + 1000, name: 'Alex' }); const h = r.events.find((e) => e.hatch); assert.ok(r.ok && !t.eggs.length && h && h.hatch.fry >= 5 && h.hatch.watched, 'watched: they hatch now, a little cloud of fry');
+  assert.ok(t.fryOffer && r.events.some((e) => e.fryOffer), 'one more is still by the eggs'); const n0 = t.fish.length;
+  const k = R.applyAction(t, { t: 'keepFry', id: t.fryOffer.id, keep: true }, { now: 10 * D + 16 * H + 60e3, name: 'Alex' }); assert.ok(k.ok && k.keep && t.fish.length === n0 + 1 && !t.fryOffer, 'kept: a twin');
+  const twin = t.fish.at(-1); assert.ok(twin.parents.length === 2 && twin.gen === 1 && twin.id !== t.fish.at(-2).id);
+  const u = mk(0); u.eggs.push({ id: 'e2', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, laid: 7 * D, hatchAt: 10 * D + 12 * H, cared: [], guard: null }); R.advance(u, 10 * D + 12 * H + 1000);
+  R.advance(u, 11 * D + 8 * H); assert.equal(u.eggs.length, 1, 'not in the night'); R.advance(u, 11 * D + 12 * H); assert.equal(u.eggs.length, 0, 'by the next morning they hatch anyway'); assert.ok(!u.fryOffer, 'nobody was there: no second one to keep');
+  const o = mk(0); o.eggs.push({ id: 'e3', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, laid: 7 * D, hatchAt: 10 * D, ready: 10 * D, watch: 10 * D, cared: [], guard: null }); R.advance(o, 10 * D + 1000); const id = o.fryOffer.id; R.advance(o, 10 * D + 2 * H);
+  assert.ok(!o.fryOffer && !R.applyAction(o, { t: 'keepFry', id, keep: true }, { now: 10 * D + 2 * H }).ok, 'the offer drifts off after a while');
 });
 ok('saves from before milestones: what a fish already reached is recorded, nothing is paid retroactively', () => {
   const D = 864e5, t = quiet(2); delete t.flags.msV; t.fish[0].born = -40 * D; t.fish[1].born = -20 * D; t.flags.topGen = 2; t.simTs = 0; const s0 = t.shells; R.norm(t, 0);

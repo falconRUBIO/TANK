@@ -633,6 +633,42 @@ function storyBlock(rec, n = 6) {
 }
 // an egg: tap it and the camera comes close like it does for a fish; the pill opens a small card with when it hatches and how it is doing
 function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + egg.e.id, pos: egg.group.position, radius: 0.95, mul: 1, species: { id: "egg" }, name: 'Egg' }); }
+// ready eggs hatch while someone is watching: with the tank open on the tank itself and nothing else on screen, the camera comes over to them,
+// they wriggle a few seconds more, and then they go (the first phone to ask makes it happen for everyone); Care's Watch button skips the wait
+function eggWatch(egg, dt) {
+  const free = !document.hidden && ui?.tab === 'tank' && !$('modal').classList.contains('on') && !$('reunion').classList.contains('on') && !play && !placing && !feedMode && !cleanMode && (game.state?.flags.tut ?? 0) >= 5;
+  const nowS = performance.now() / 1000, gap = Math.min(0.5, nowS - (egg.watchAt ?? nowS)); egg.watchAt = nowS;      /* (real seconds, however smoothly this phone draws) */
+  if (egg.asked) { window.__quietUntil = performance.now() + 4000; return; }      /* (asked: the hatching is on its way, still nothing over it) */
+  if (!free) { egg.watchT = Math.min(egg.watchT ?? 0, 1); return; }
+  const was = egg.watchT ?? 0; egg.watchT = was + gap; window.__quietUntil = performance.now() + 4000;      /* (while it happens, nothing else pops up over it) */
+  if (was < 2 && egg.watchT >= 2) { if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast("They're hatching. Stay and watch…", 3200); haptic(8); }
+  if (egg.watchT >= 6) { egg.asked = true; game.dispatch({ t: 'watchEggs', id: egg.e.id }).then((r) => { if (!r?.ok) egg.asked = false; }); }
+}
+window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = performance.now() + 8000; ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
+// a little cloud of larvae comes out of the eggs and rises, wriggling; most drift off on the current and fade, as in the sea (one stays: the baby)
+const fryCloud = [];
+function fryOut(at, n, tint) {
+  if (REDUCED || !n) return; const col = new THREE.Color(tint ?? 0xf06a9a).lerp(new THREE.Color(0xffffff), 0.45);
+  for (let i = 0; i < n; i++) { const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.95, emissive: col, emissiveIntensity: 0.25 }), body = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.12), mat), tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.08), mat), eye = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.025, 0.025), new THREE.MeshBasicMaterial({ color: 0x1a1020 }));
+    tail.position.z = -0.09; eye.position.set(0.03, 0.01, 0.04); g.add(body, tail, eye); g.position.copy(at); g.position.y += 0.08; scene.add(g);
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.6; fryCloud.push({ g, mat, tail, t: 0, life: 9 + Math.random() * 8, delay: i * 0.18, vx: Math.cos(a) * 0.35, vy: 0.45 + Math.random() * 0.3, vz: Math.sin(a) * 0.25, ph: Math.random() * 6, drift: (Math.random() - 0.5) * 0.25 }); }
+}
+function fryTick(dt) {
+  for (let i = fryCloud.length - 1; i >= 0; i--) { const k = fryCloud[i]; if ((k.delay -= dt) > 0) continue; k.t += dt; const P = k.g.position, w = Math.sin(k.t * 14 + k.ph);
+    k.vx += (k.drift + Math.sin(k.t * 1.3 + k.ph) * 0.08) * dt; k.vy = Math.max(0.12, k.vy - 0.04 * dt); P.x += k.vx * dt; P.y = Math.min(Fish3D.topY - 0.4, P.y + k.vy * dt); P.z += k.vz * dt * 0.5;
+    k.g.rotation.y = Math.atan2(k.vx, k.vz); k.tail.rotation.y = w * 0.6; k.g.rotation.z = w * 0.08;
+    const fade = Math.max(0, Math.min(1, (k.life - k.t) / 3)); k.mat.opacity = 0.95 * fade; k.g.scale.setScalar(1 + k.t * 0.02);
+    if (k.t > k.life) { scene.remove(k.g); k.g.traverse((o) => { o.geometry?.dispose(); }); k.mat.dispose(); fryCloud.splice(i, 1); } }
+}
+// you were there: one more little one is still by the eggs, for a while. Keep it too? (the first answer anyone gives decides)
+let fryAsked = null;
+async function fryOfferAsk() {
+  const O = game.state?.fryOffer; if (!O || fryAsked === O.id || document.hidden || Date.now() > O.until) return; fryAsked = O.id;
+  const first = game.state.fish.find((f) => f.id === O.first)?.name ?? 'the baby';
+  const k = await ui.choose({ moment: true, title: 'ONE MORE LITTLE ONE', text: `Most of the larvae drifted off, but one more is still by the eggs, close to ${first}. There is room for it. Keep it too?`, options: [{ label: 'Keep it too', value: 'keep' }, { label: 'Let it drift off', value: 'go' }], cancel: 'Not now' });
+  if (!k) { fryAsked = null; return; } const r = await game.dispatch({ t: 'keepFry', id: O.id, keep: k === 'keep' }); if (!r.ok) return r.reason === 'NOT_FOUND' ? null : fail(r);
+  if (r.keep && r.fish) setTimeout(() => { const tw = fishes.byId.get(r.fish), sib = fishes.byId.get(O.first); if (tw && sib) { tw.pos.copy(sib.pos).add(new THREE.Vector3(0.4, 0.1, 0.2)); fishes.burst(tw.pos); } sfx('arrive'); spotlightFish(r.fish, 4000, 300); setTimeout(() => nameBaby(r.fish), 4600); }, 400);
+}
 // the egg is gone: either it hatched (the shell cracks open, the baby swims out of it and, if you are watching, the camera follows it a moment) or the octopus found it
 const shards = [];
 function eggGone(egg, s) {
@@ -641,17 +677,17 @@ function eggGone(egg, s) {
   eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
   if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
-  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('arrive'), 400); haptic(12);
+  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('arrive'), 400); haptic(12); window.__quietUntil = performance.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint);      // the larvae rise from the eggs; one of them is the baby
   for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.fanK = 0; q.lureCalm = 0; q.brood = false; q.guarding = false; q.thought = null; } }      // the parents' watch is over
   for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
-  if (f3 && !document.hidden && !play) { spotlightFish(baby.id, 6000, 900); setTimeout(() => nameBaby(baby.id), 7400); }      // you saw it hatch: a close look at the new baby
+  if (f3 && !document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 1600); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 8600); }      // you saw it hatch: a close look at the new baby
 }
 function shardTick(dt) { for (let i = shards.length - 1; i >= 0; i--) { const k = shards[i]; k.age += dt; k.vy -= 3.2 * dt; k.m.position.x += k.vx * dt; k.m.position.y = Math.max(sandH(k.m.position.x, k.m.position.z) + 0.03, k.m.position.y + k.vy * dt); k.m.position.z += k.vz * dt; if (k.m.position.y <= sandH(k.m.position.x, k.m.position.z) + 0.04) { k.vx *= 0.8; k.vz *= 0.8; k.vy = 0; } else { k.m.rotation.x += k.rx * dt; k.m.rotation.z += k.rx * 0.7 * dt; } if (k.age > 4) { k.m.material.opacity = Math.max(0, 1 - (k.age - 4) / 2); } if (k.age > 6) { scene.remove(k.m); k.m.geometry.dispose(); k.m.material.dispose(); shards.splice(i, 1); } } }
 const eggBabies = new Set(); let glowT = 0;
 // you were there when it hatched: name the baby (a name is already chosen; keep it or type another)
 async function nameBaby(id) {
   const f = game.state.fish.find((x) => x.id === id); if (!f || f.named || play || placing || document.hidden) return;
-  const nm = await ui.dialog({ title: 'NAME YOUR BABY', text: `The new little one is called ${f.name} for now. Keep it, or give it a name of your own.`, input: { value: f.name }, ok: 'Name it', cancel: `Keep ${f.name}` });
+  window.__nameAt = Date.now(); const nm = await ui.dialog({ moment: true, title: 'NAME YOUR BABY', text: `The new little one is called ${f.name} for now. Keep it, or give it a name of your own.`, input: { value: f.name }, ok: 'Name it', cancel: `Keep ${f.name}` });
   if (!nm || nm === f.name || game.state.fish.find((x) => x.id === id)?.named) return; const r = await game.dispatch({ t: 'nameFish', id, name: nm }); if (!r.ok) fail(r); else ui.toast(`Welcome, ${nm}!`, 2600);
 }
 // a neglected egg the octopus has its eye on: the day before, it comes to sniff at it now and then (look after the tank and it loses interest)
@@ -746,6 +782,7 @@ function tipsTick() {
 const SHOT_SKIP = /settled into a daily routine|have begun swimming together|comfortable near the glass|keeps coming back to|took on the colou?r|^.{1,40} fed |changed the water|cleaned the glass|trimmed|restyled|ordered |^Chapter:|began\.?$|wish came true|request|looked after|left the tank|joined|passed away|still wrapped/i;
 function actorOf(text) {
   const names = fishes.list.filter((f) => !f.dead && f.name).sort((a, b) => b.name.length - a.name.length), hit = names.map((f) => ({ f, i: text.indexOf(f.name) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i);
+  { const m = /meet (\S+?)[,.]/.exec(text); const baby = m && /hatched|swam out|made it/.test(text) && names.find((f) => f.name === m[1]); if (baby) { const par = (baby.rec?.parents ?? []).map((p) => fishes.byId.get(p.id)).filter((o) => o && !o.dead).sort((x, y) => x.pos.distanceTo(baby.pos) - y.pos.distanceTo(baby.pos))[0]; const near = par && par.pos.distanceTo(baby.pos) < 1.8 ? par : null; return { at: baby.pos.clone(), with: near?.pos, r: 0.5, who: [baby.group, near?.group].filter(Boolean) }; } }      // a hatching: the baby, and the parent closest to it
   if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos, who: [eg.group, hit[0]?.f.group].filter(Boolean) }; }
   if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos, r: Math.max(a.radius ?? 1, b?.radius ?? 0), who: [a.group, b?.group].filter(Boolean) };      // two animals in it: frame both
 }
@@ -791,7 +828,7 @@ game.on('journal', (e) => {
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
   setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
     if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
-    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, 450);      // a moment later, while it is still happening
+    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, /hatched|swam out|made it/.test(e.text) ? 4600 : 450);      // a moment later, while it is still happening (a hatching: once the little one has swum out, with its parent beside it)
 });
 window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
 window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };
@@ -837,7 +874,7 @@ async function openGiftBag(b) {
 function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
 function showEggCard(fx) {
   const e = fx.egg.e, s = game.state, nm = (id, snap) => s.fish.find((x) => x.id === id)?.name ?? snap?.name ?? 'a fish', A = nm(e.a, e.pa), B = nm(e.b, e.pb), now = Date.now();
-  const left = Math.max(0, e.hatchAt - now), hrs = Math.round(left / 36e5), when = left < 36e5 ? 'Any minute now' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `In about ${Math.round(hrs / 24 * 2) / 2} days`;
+  const left = Math.max(0, e.hatchAt - now), hrs = Math.round(left / 36e5), when = e.ready ? 'Ready now: stay and watch' : left < 36e5 ? 'Any minute now' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `In about ${Math.round(hrs / 24 * 2) / 2} days`;
   const cared = e.cared?.length ?? 0, p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5, stage = p > 0.85 ? 'Silvery and trembling: nearly ready' : p > 0.6 ? 'Little eyes showing' : p > 0.35 ? 'Dark specks: the eyes are forming' : 'Just laid';
   const C = eggCareOf(e), G = s.fish.find((x) => x.id === e.guard && !x.dead), who = C.mode === 'drift' ? `Nobody: ${SPECIES_DEF[e.species]?.label ?? 'this kind'} parents leave their eggs to drift. It is up to you.` : G ? (C.mode === 'mouth' ? `${G.name}, carrying them in his mouth` : `${G.name}, on guard`) : 'No parent is left to watch them. It is up to you.';
   const pill = $('fishpill'); fx.name = `${A} & ${B}'s eggs`;
@@ -1384,8 +1421,8 @@ function frameBody(now) {
   else bottleM.group.visible = false;
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
-  giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick(); noteSeenTick();
-  for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); if (!REDUCED) egg.tick(t);
+  fryTick(Math.min(0.05, dt)); giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick(); noteSeenTick();
+  for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); egg.ready = !!e.ready; if (!REDUCED) egg.tick(t); if (e.ready) eggWatch(egg, Math.min(0.05, dt));
     if ((egg.sniffT = (egg.sniffT ?? 20) - 1 / 60) <= 0) { egg.sniffT = 30 + Math.random() * 30; egg.sniffy = eggSniff(egg); }
     eggCare(egg, Math.min(0.05, dt), t); }
   if (driftSp.visible) { driftSp.position.y = (driftSp.userData.y0 ?? 2.1) + Math.sin(t * 1.7) * 0.14; const sc = 1.3 + Math.sin(t * 3.1) * 0.06; driftSp.scale.set(sc, sc, 1); driftGlow.position.copy(driftSp.position); const gs = 3.2 + Math.sin(t * 2.2) * 0.5; driftGlow.scale.set(gs, gs, 1); }
@@ -1573,7 +1610,7 @@ async function boot() {
       try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
     devReset: async () => { const yes = await ui.dialog({ title: 'RESET TEST?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
-    gift: () => offerGift(), closeCard: () => { sfx('tap'); setFocus(null); },
+    gift: () => offerGift(), watchEggs: () => window.__watchEggs(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, momentPostcard: (img, text, tag, ts) => { const who = fishes.list.filter((f) => f.name && text.includes(f.name)).sort((a, b) => text.indexOf(a.name) - text.indexOf(b.name))[0]; return takePhoto({ img, title: who ? `${who.name}${tag ? ' · ' + tag.replace(/^\S+\s/, '') : ''}` : (tag.replace(/^\S+\s/, '') || 'A moment in the tank'), line: text, ts }); }, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {
         const k = await ensureRecoveryKey(), old = /^[A-Z0-9]{4}-[A-Z0-9]{4}/i.test(k) && !/^[a-z]+-[a-z]+-[a-z]+-[a-z]+$/.test(k);

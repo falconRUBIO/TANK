@@ -364,9 +364,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         w ??= L.loadWorld(db, id).w;
         // nothing happened, but something is overdue: each caretaker hears about their own octopus, everyone about the fish and the water (each at most once in 12 hours)
         const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
-        // an egg that hatches within six hours: everyone away hears it once, so they can be there for it
-        const egg = (w.eggs ?? []).find((e) => e.laid && e.hatchAt > now && e.hatchAt - now < 6 * 3600e3);
-        if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} have turned silvery and are trembling. They hatch in a few hours.`, { now })) mark(k); } }
+        // eggs ready to hatch: they wait for someone to watch (until the next morning), so everyone away hears it once and can be there for it
+        const egg = (w.eggs ?? []).find((e) => e.ready && !e.watch);
+        if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} are about to hatch! They are wriggling, and will wait for you to watch.`, { now })) mark(k); } }
         // an animal that grew up in the last few hours while a friend had the tank open: everyone away hears it once (a small reason to come and see), the one who looks after it first
         if (here.length) for (const f of w.fish ?? []) { if (f.dead || f.nursery || !f.born) continue; const at = f.born + 3 * 864e5;      /* (with nobody in the tank, the day's own news already says it) */ if (now < at || now - at > 6 * 3600e3) continue;
           for (const m of away) { const k = `push:grown:${id}:${f.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${f.name} is all grown up. Come and see.`, { now, kind: 'visitors' })) mark(k); } }

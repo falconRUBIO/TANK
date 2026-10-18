@@ -38,7 +38,9 @@ export function makeEgg(seed = 1, tint = 0xf06a9a, mode = 'guard') {
       shellMat.color.copy(base).lerp(silver, Math.max(0, (p - 0.6) / 0.4) * 0.4); shellMat.emissive.copy(shellMat.color).multiplyScalar(0.18 + (cared >= 2 ? 0.08 : 0));      // turning silvery near the end
       glow.material.opacity = cared >= 2 ? 0.26 : cared === 1 ? 0.13 : 0;
     },
-    tick(t) { const p = egg.p ?? 0, near = Math.max(0, (p - 0.85) / 0.15); pose(t, near * (Math.sin(t * 2.3 + egg.t0) > 0.3 ? 1 : 0.3)); if (drift) { group.rotation.y = t * 0.08 + egg.t0; } },
+    tick(t) { const p = egg.p ?? 0, near = Math.max(0, (p - 0.85) / 0.15);
+      if (egg.ready) { const beat = Math.max(0, Math.sin(t * 3.1 + egg.t0)); pose(t, 1.6 + 1.4 * beat * beat); glow.material.opacity = 0.22 + 0.2 * (0.5 + 0.5 * Math.sin(t * 2.2)); }      // ready: wriggling in little bursts, glowing softly in and out
+      else pose(t, near * (Math.sin(t * 2.3 + egg.t0) > 0.3 ? 1 : 0.3)); if (drift) { group.rotation.y = t * 0.08 + egg.t0; } },
     dispose() { group.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); }); },
   };
   egg.set(0, 0); pose(0, 0); return egg;
