@@ -415,10 +415,10 @@ function syncExtras() {
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const C = eggCareOf(e), mode = C.mode === 'mouth' && !e.guard ? 'guard' : C.mode;      // (a cardinalfish father gone: the eggs he dropped lie on the sand)
-    const h = hashId(e.id), den = C.mode === 'den' && s.decor.find((d) => d.id === e.den), at = den ? { x: den.x + 0.18, z: den.z + 0.42, by: den.type } : eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at), C.on ?? 'plant'), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a, mode);
-    egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, mode === 'drift' ? 5.2 + (h % 18) / 10 : eggY(at.x, at.z), at.z); egg.home = egg.group.position.clone(); egg.group.rotation.y = (h % 628) / 100; scene.add(egg.group); eggSprites.set(e.id, egg);
+    const h = hashId(e.id), den = C.mode === 'den' && s.decor.find((d) => d.id === e.den), at = den ? { x: den.x, z: den.z + 0.95, by: den.type } : eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at), C.on ?? 'plant'), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a, mode);
+    egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, mode === 'drift' ? 5.2 + (h % 18) / 10 : eggY(at.x, at.z), at.z); egg.home = egg.group.position.clone(); egg.group.rotation.y = mode === 'den' ? 0 : (h % 628) / 100;      /* (an octopus's strings face out of her den's mouth) */ scene.add(egg.group); eggSprites.set(e.id, egg);
   }
-  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
+  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (egg.mode !== 'den' && decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
 }
 function bottleHit(ev) { return bottleSp.visible && !bottleSp.userData.leave && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.4; }
 // tap it: the cork pops, the letter unrolls, and once it is read the empty bottle floats up and away
@@ -711,7 +711,7 @@ function eggCare(egg, dt, t) {
   const e = egg.e, P = egg.group.position, G = fishes.byId.get(e.guard), nm = (id, sn) => game.state.fish.find((f) => f.id === id)?.name ?? sn?.name;
   if (egg.mode === 'drift') { const H = egg.home; P.set(H.x + Math.sin(t * 0.07 + egg.t0) * 0.8, H.y + Math.sin(t * 0.23 + egg.t0) * 0.25, H.z + Math.cos(t * 0.05 + egg.t0) * 0.3); return; }      // carried slowly about on the current
   if (egg.mode === 'den') { if (!G || G.dead) return; G.thought = 'Guarding her eggs. She hardly leaves the den.'; G.longStay = true; if (isDirector() && G.st && G.den && !G.homing && !G.task && G.pos.distanceTo(P) > 1.6 && (egg.homeT = (egg.homeT ?? 0) - dt) <= 0) { egg.homeT = 6; G.goDen?.(G.st, Math.random); }
-    const Fa = fishes.byId.get(e.b); if (isDirector() && Fa && !Fa.dead && !Fa.task && !Fa.inspect && (egg.dadT = (egg.dadT ?? 20 + Math.random() * 30) - dt) <= 0) { egg.dadT = 50 + Math.random() * 60; Fa.inspect = { x: P.x - 0.5, z: P.z + 0.5, type: 'eggs', r: 0.3 }; Fa.thought = 'Checking on the eggs.'; }      /* the father drops by now and then */
+    const Fa = fishes.byId.get(e.b); if (isDirector() && Fa && !Fa.dead && !Fa.task && !Fa.inspect && (egg.dadT = (egg.dadT ?? 20 + Math.random() * 30) - dt) <= 0) { egg.dadT = 50 + Math.random() * 60; Fa.thought = 'Checking on the eggs.'; Fa.target.set(P.x - 0.7, Fa.pos.y, P.z + 0.4); Fa.retarget = 5;      /* (just heads that way: a plain swim target, nothing to grab) */ }      /* the father drops by now and then */
     return; }      // an octopus mother stays with her eggs in the den
   if (!G || G.dead || G.species.move === 'jet') return;
   if (egg.mode === 'mouth') { const m = G.mouth(); P.set(m.x, m.y - G.radius * 0.1, m.z); G.brood = true; G.lureCalm = 1; G.thought = 'Carrying the eggs in his mouth. He will not eat until they hatch.'; return; }
@@ -846,16 +846,26 @@ function shootAt(A) {
     let side = new THREE.Vector3(-u.z, 0, u.x); const near = spots.filter((d) => Math.hypot(d.x - f.pos.x, d.z - f.pos.z) < decor.reach(d.type) * 0.6 + 1.2).sort((a, b) => Math.hypot(a.x - f.pos.x, a.z - f.pos.z) - Math.hypot(b.x - f.pos.x, b.z - f.pos.z))[0];
     if (near ? side.dot(new THREE.Vector3(f.pos.x - near.x, 0, f.pos.z - near.z)) < 0 : side.dot(fw) < 0) side.negate();      /* (facing the open water, away from a plant or rock right beside it; otherwise the way it was going) */ const want = side.multiplyScalar(Math.cos(0.5)).add(u.clone().multiplyScalar(Math.sin(0.5))).normalize();      /* level, side-on, turned a little toward the lens (a three-quarter profile, the way it was already heading) */
     f.group.quaternion.setFromEuler(new THREE.Euler(0, Math.atan2(-want.z, want.x), 0, 'YZX')); f.group.updateMatrixWorld(true); return [f, q0]; });
-  try { return studio.shoot({ ...plan, aperture: plan.size < 0.8 ? 0.006 : 0.004 }); } finally { posed.forEach(([f, q0]) => f.group.quaternion.copy(q0)); hid.forEach((g) => (g.visible = true)); em.forEach(([e, v]) => { if (e) e.visible = v; }); }      // (a tiny subject: a shallower focus still)
+  try { return studio.shoot({ ...plan, aperture: plan.size < 0.8 ? 0.0045 : 0.004 }); } finally { posed.forEach(([f, q0]) => f.group.quaternion.copy(q0)); hid.forEach((g) => (g.visible = true)); em.forEach(([e, v]) => { if (e) e.visible = v; }); }      // (a tiny subject: a shallower focus still)
 }
 game.on('journal', (e) => {
   if (e?.text?.startsWith('Time capsule: day') && !document.hidden && (!game.shared || (isDirector() && e.id)) && Date.now() - (e.ts ?? Date.now()) < 6 * 3600e3) { setTimeout(() => { try { const img = tankShot(); if (!img) return; if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; } else { const list = JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').filter((m) => m.text !== e.text); list.push({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.capsules', JSON.stringify(list.length > 12 ? [list[0], ...list.slice(-11)] : list)); } } catch (er) { console.error('capsule photo', er); } }, 1500); return; }      // a time capsule's photo: the tank itself, right then (later, it stays a record without a photo)
   if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
-  setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
-    if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
-    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, /hatched|swam out|made it/.test(e.text) ? 4600 : /gave birth/.test(e.text) ? 3600 : 450);      // a moment later, while it is still happening (a hatching: once the little one has swum out, with its parent beside it)
+  if (Date.now() - (e.ts ?? Date.now()) > 60e3) return;      // only a moment happening now (lines caught up from while the tank was closed are not photographed: no burst of photos at launch)
+  shotQ.push({ e, at: Date.now() + (/hatched|swam out|made it/.test(e.text) ? 4600 : /gave birth/.test(e.text) ? 3600 : 450) }); shotPump();      // one photo at a time, spaced out, so the tank never stutters
 });
+const shotQ = []; let shotBusy = false;
+function shotPump() {
+  if (shotBusy || !shotQ.length) return; const wait = shotQ[0].at - Date.now(); if (wait > 0) { shotBusy = true; setTimeout(() => { shotBusy = false; shotPump(); }, wait); return; }
+  const e = shotQ.shift().e; shotBusy = true; try { if (!document.hidden) momentPhoto(e); } catch (err) { console.warn('moment photo', err); }
+  setTimeout(() => { shotBusy = false; shotPump(); }, 1800);
+}
+function momentPhoto(e) {
+  const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
+  if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
+  else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); }
+}
 window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
 window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──

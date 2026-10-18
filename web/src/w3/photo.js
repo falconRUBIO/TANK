@@ -65,18 +65,23 @@ export function planShot({ subjects, seen, clutter = () => 0, why = null, sizes 
   const box = new THREE.Box3(); subjects.forEach((o) => box.expandByObject(o)); if (box.isEmpty()) return null;
   let c = box.getCenter(new THREE.Vector3()), z = box.getSize(new THREE.Vector3()), s = Math.max(z.y * 1.3, Math.hypot(z.x, z.z) * 1.05, 0.22);
   if (sizes) { const ps = subjects.map((o) => o.getWorldPosition(new THREE.Vector3())); c = ps.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / ps.length); s = Math.max(0.12, ...sizes, ps.length > 1 ? ps[0].distanceTo(ps[1]) + Math.max(...sizes) : 0); }      // (the animals' own size, where known: a model's box can be far larger than the animal)
-  const d = (s < 0.3 ? 0.45 : 0.9) + s * 3.3;      // (a tiny one, fresh from the egg: in close, so it is the picture)      // a long lens: far enough for the background to fall away, close enough to fill the frame
+  const d = (s < 0.3 ? 0.45 : 0.9) + s * 3.3;      // a long lens: far enough for the background to fall away, close enough to fill the frame (a tiny one, fresh from the egg: in close)
   const fw = subjects[0].getWorldDirection(new THREE.Vector3()); let side = Math.atan2(fw.z, fw.x) + Math.PI / 2; if (Math.hypot(fw.x, fw.z) < 0.3) side = Math.PI / 2; if (Math.sin(side) < 0) side += Math.PI;      // side-on to the way it faces: of its two sides, the one toward the glass
   if (subjects.length > 1) { const a = new THREE.Vector3(), b = new THREE.Vector3(); subjects[0].getWorldPosition(a); subjects[1].getWorldPosition(b); const along = Math.atan2(b.x - a.x, b.z - a.z); side = along + Math.PI / 2; if (Math.sin(side) < 0) side += Math.PI; }      // two: side by side, both faces in the picture
   const tries = [];
   for (const yaw of [0.35, -0.35, 0.7, -0.7, 0, 1.05, -1.05]) for (const pitch of [0.12, -0.04, 0.3]) tries.push([side + yaw, pitch]);
   tries.push([Math.PI / 2, 0.15], [Math.PI / 2 + 0.5, 0.2], [Math.PI / 2 - 0.5, 0.2]);      // and, failing all of those, straight through the front glass
-  let best = null;
+  // the cheap tests first (where the lens would be, which way it looks, what stands in front of it); then the costly one, how much of the
+  // animals really shows, for at most a few of the best (a photo should never make the tank stutter)
+  const clear = [], cluttered = [];
   for (const [yaw, pitch] of tries) {
     const v = new THREE.Vector3(c.x + Math.cos(yaw) * Math.cos(pitch) * d, c.y + Math.sin(pitch) * d, c.z + Math.sin(yaw) * Math.cos(pitch) * d);
     if (v.z < bounds.back || v.z > bounds.front || Math.abs(v.x) > bounds.x || v.y < bounds.floor || v.y > bounds.top) { why?.push('bounds'); continue; }
-    const dx = (c.x - v.x) / d, dz = (c.z - v.z) / d; if (dz > -0.72 || Math.abs(c.x + dx * 9) > 6.5) { why?.push('angle'); continue; }      /* (mostly from the front: the tank is wide and shallow, so a side view shows a wall) */      // looking into the tank, toward the back: never out through the side glass
-    if (clutter(v, c) > 0) { why?.push('clutter'); continue; }      // nothing big right in front of the lens
+    const dx = (c.x - v.x) / d, dz = (c.z - v.z) / d; if (dz > -0.72 || Math.abs(c.x + dx * 9) > 6.5) { why?.push('angle'); continue; }      /* (mostly from the front: the tank is wide and shallow, so a side view shows a wall) */
+    (clutter(v, c) > 0 ? cluttered : clear).push(v);      // (with something in front of the lens: only if there is no clean view at all)
+  }
+  let best = null;
+  for (const v of [...clear.slice(0, 3), ...(clear.length ? [] : cluttered.slice(0, 2)), ...(clear.length ? cluttered.slice(0, 1) : [])].slice(0, 4)) {
     const f = seen ? seen(v, c) : 1; why?.push('seen ' + f.toFixed(2)); if (f > 0.85) return { from: v, at: c, focusDist: v.distanceTo(c), size: s };
     if (!best || f > best.f) best = { from: v, at: c, focusDist: v.distanceTo(c), size: s, f };
   }

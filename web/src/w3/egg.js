@@ -11,9 +11,10 @@ const RX = 0.4, RY = 0.5;                         // the room a clutch takes: ha
 const EGG = 0.105, EYE = 0.04;
 export function makeEgg(seed = 1, tint = 0xf06a9a, mode = 'guard') {
   let h = seed >>> 0; const rnd = () => ((h = (h * 1664525 + 1013904223) >>> 0) / 4294967296);
-  const group = new THREE.Group(), drift = mode === 'drift', mouth = mode === 'mouth', N = mouth ? 7 : drift ? 34 : 52, cells = [];
+  const group = new THREE.Group(), drift = mode === 'drift', mouth = mode === 'mouth', den = mode === 'den', N = mouth ? 7 : drift ? 34 : den ? 64 : 52, cells = [];
   for (let i = 0; i < N && cells.length < N; i++) {
     let x, y, z;
+    if (den) { const k = i % 8, j = Math.floor(i / 8), a = -0.9 + k * 0.26 + (rnd() - 0.5) * 0.06; x = Math.sin(a) * 0.48; z = Math.cos(a) * 0.16 - 0.05; y = 0.5 - j * EGG * 0.78 - (k % 2) * 0.03; cells.push({ x, y, z, s: 0.85 + 0.3 * Math.sin((j / 7) * Math.PI) + rnd() * 0.1, ph: rnd() * 6.28, st: k, dn: j }); continue; }      // an octopus's eggs: strings of tiny teardrops hung in an arc from the roof of her den, fattest in the middle of each string
     if (mouth) { x = (rnd() - 0.5) * 0.14; y = (rnd() - 0.5) * 0.1; z = (rnd() - 0.5) * 0.12; }
     else if (drift) { const a = rnd() * Math.PI * 2, b = Math.acos(2 * rnd() - 1), r = 0.75 * Math.cbrt(rnd()); x = r * Math.sin(b) * Math.cos(a); y = r * Math.cos(b) * 0.8; z = r * Math.sin(b) * Math.sin(a); }
     else { const a = (i * 2.399963) % (Math.PI * 2), r = Math.sqrt(i / N) * 0.5; x = Math.cos(a) * r * 1.25; z = Math.sin(a) * r * 0.8; y = -RY + EGG * 0.5 + (r < 0.2 ? EGG * 0.75 : 0) + rnd() * 0.012; }      // packed side by side in a low oval mound
@@ -21,13 +22,13 @@ export function makeEgg(seed = 1, tint = 0xf06a9a, mode = 'guard') {
   }
   const box = new THREE.BoxGeometry(EGG, EGG, EGG), tiny = new THREE.BoxGeometry(EYE, EYE, EYE);
   const base = new THREE.Color(tint), silver = new THREE.Color(0xdfe9f2);
-  const shellMat = new THREE.MeshLambertMaterial({ color: base.clone(), transparent: true, opacity: drift ? 0.5 : 0.92, depthWrite: false, emissive: base.clone().multiplyScalar(0.22) });
+  const shellMat = new THREE.MeshLambertMaterial({ color: base.clone(), transparent: true, opacity: drift ? 0.5 : den ? 0.78 : 0.92, depthWrite: false, emissive: base.clone().multiplyScalar(0.22) });
   const eyeMat = new THREE.MeshLambertMaterial({ color: 0x15121c, emissive: 0x050408 });
   const shell = new THREE.InstancedMesh(box, shellMat, cells.length), eyes = new THREE.InstancedMesh(tiny, eyeMat, cells.length); shell.renderOrder = 5;
   group.add(eyes, shell);
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 20), new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: 0, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = -RY + 0.01; glow.visible = !drift && !mouth; group.add(glow);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 20), new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: 0, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = -RY + 0.01; glow.visible = !drift && !mouth; if (den) { glow.position.y = -0.3; glow.scale.setScalar(0.6); } group.add(glow);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3();
-  const pose = (t, shake) => { for (let i = 0; i < cells.length; i++) { const c = cells[i], w = shake * Math.sin(t * 17 + c.ph * 3) * 0.012, bob = drift ? Math.sin(t * 0.9 + c.ph) * 0.02 : 0;
+  const pose = (t, shake) => { for (let i = 0; i < cells.length; i++) { const c = cells[i], sway = den ? Math.sin(t * 1.1 + c.st * 0.7) * 0.012 * c.dn : 0, w = shake * Math.sin(t * 17 + c.ph * 3) * 0.012 + sway, bob = drift ? Math.sin(t * 0.9 + c.ph) * 0.02 : 0;      /* (the strings sway in the current, more toward their tips) */
       v.set(c.x + w, c.y + bob, c.z); sc.setScalar(c.s); m.compose(v, q, sc); shell.setMatrixAt(i, m);
       v.y += EGG * 0.12 * c.s; v.z += EGG * 0.18 * c.s; sc.setScalar(c.s * Math.min(1, egg.eyeK ?? 0)); m.compose(v, q, sc); eyes.setMatrixAt(i, m); }
     shell.instanceMatrix.needsUpdate = eyes.instanceMatrix.needsUpdate = true; };

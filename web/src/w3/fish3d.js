@@ -117,7 +117,21 @@ export class Fish3D {
     const L = this.radius * 0.75, cp = Math.cos(this.pitch || 0), fx = Math.cos(this.heading) * L * cp, fz = -Math.sin(this.heading) * L * cp, fy = Math.sin(this.pitch || 0) * L, deep = Math.max(0, this.radius * 0.45 - 0.35) + (this.sp.tail ? (this.tailLow != null ? Math.max(0, -(this.holdfast ? Math.max(this.tailLow, this.tailLowHeld ?? -99) : this.tailLow) * this.scale - 0.3) : this.radius * 0.5) : 0);      // a seahorse's tail hangs below it; on its way to a stem it curls up ready to grip, so it can come down to where it will hold on      // a deep-bodied fish (and a seahorse's hanging tail) needs more room under it
     return deep + Math.max(sandUnder(this.pos.x, this.pos.z, this.radius * 0.28), sandH(this.pos.x + fx, this.pos.z + fz) - fy, sandH(this.pos.x - fx, this.pos.z - fz) + fy);
   }
-  setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * (this.species.move === 'jet' ? 0.25 : 0.3)); this.setPose(this.phase, true); }
+  setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * (this.species.move === 'jet' ? 0.25 : 0.3)); this.setPose(this.phase, true); this.babyFace(); }
+  // a baby octopus's face: big round eyes, dark and shining, with a sparkle each, and a little pink on its cheeks (voxels, like the rest of it; fading as it grows up)
+  babyFace() {
+    if (this.species.move !== 'jet' || !this.group || !this.vox) return; const c = this.cute ?? 0, F = this.babyEyes;
+    if (c < 0.05) { if (F) F.visible = false; return; }
+    if (!F) { const g = (this.babyEyes = new THREE.Group()), dark = new THREE.MeshBasicMaterial({ color: 0x1b0f1e }), shine = new THREE.MeshBasicMaterial({ color: 0xffffff }), blush = new THREE.MeshBasicMaterial({ color: 0xff8fa8, transparent: true, opacity: 0.75 }), box = new THREE.BoxGeometry(1, 1, 1);
+      g.eyes = [-1, 1].map((side) => { const e = new THREE.Mesh(box, dark), h = new THREE.Mesh(box, shine), h2 = new THREE.Mesh(box, shine), b = new THREE.Mesh(box, blush); g.add(e, h, h2, b); return { side, e, h, h2, b }; });
+      let x = 0, y = 0, z = 0, n = 0; for (const q of this.vox) if (q.tag === 'eye' || q.em) { x += q.x; y += q.y; z += Math.abs(q.z); n++; } g.at = n ? { x: x / n, y: y / n, z: z / n } : { x: 0, y: 0, z: 2 }; this.mesh.add(g); }      /* (in the body's own frame, so it moves with it) */
+    const g = this.babyEyes, s = this.scale, A = g.at; g.visible = true;
+    for (const E of g.eyes) { const r = (3 + 3.2 * c) * s, ex = (A.x + 0.6) * s, ey = (A.y + 1.0 * c) * s, ez = E.side * (A.z + 0.4) * s;
+      E.e.scale.set(r, r * 1.15, r * 0.5); E.e.position.set(ex, ey, ez);
+      E.h.scale.setScalar(r * 0.36); E.h.position.set(ex + r * 0.22, ey + r * 0.3, ez + E.side * r * 0.28);      // the sparkle, up and forward
+      E.h2.scale.setScalar(r * 0.16); E.h2.position.set(ex - r * 0.2, ey - r * 0.25, ez + E.side * r * 0.28);
+      E.b.scale.set(r * 0.7, r * 0.32, r * 0.3); E.b.position.set(ex + r * 0.15, ey - r * 0.95, ez + E.side * r * 0.05); E.b.material.opacity = 0.75 * c; }
+  }
   // write per-voxel transforms for a tail phase
   setPose(phase, all = false) {
     const b = this.sp.bend, s = this.scale, arr = this.mesh.instanceMatrix.array, jet = this.species.move === 'jet';
@@ -189,6 +203,10 @@ export class Fish3D {
         if (v.em) { x = E.x + (x - E.x) * (1 + 0.85 * c); y = E.y + 0.5 * c + (y - E.y) * (1 + 0.85 * c); z += Math.sign(z || 1) * 0.5 * c; grow *= 1 + 0.75 * c; }
         else if (!tailRig) { const back = E.x - x; if (back > 0) x = E.x - back * (1 - 0.38 * c * Math.min(1, back / (this.cuteSpan * 0.2))); y = this.cuteMid + (y - this.cuteMid) * (1 + 0.2 * c); if (back < this.cuteSpan * 0.3) grow *= 1 + 0.1 * c; }
         else if (v.tag !== 'tail' && y > E.y - 3) grow *= 1 + 0.1 * c; }
+      else if (this.cute > 0.01 && jet) { const c = this.cute, O = (this.octEye ||= (() => { let x = 0, y = 0, n = 0; for (const q of this.vox) if (q.tag === 'eye' || q.em) { x += q.x; y += q.y; n++; } return n ? { x: x / n, y: y / n } : { x: 0, y: 0 }; })());      // a baby octopus: huge shining eyes set wide, a round head too big for it, little arms
+        if (v.tag === 'eye' || v.em) { grow *= Math.max(0, 1 - 1.6 * c); }      /* (its grown-up slit eyes give way to big round baby eyes: babyFace) */
+        else if (v.arm < 0) { const dy = y - O.y; y = O.y + dy * (1 + 0.18 * c) + 0.3 * c; x *= 1 + 0.12 * c; z *= 1 + 0.12 * c; grow *= 1 + 0.18 * c; }
+        else grow *= 1 + 0.15 * c; }      /* (chubby little arms) */
       const o = i * 16, sg = s * grow;
       arr[o] = sg; arr[o + 5] = sg; arr[o + 10] = sg; arr[o + 15] = 1;
       arr[o + 12] = x * s; arr[o + 13] = y * s; arr[o + 14] = z * s;
