@@ -637,10 +637,10 @@ function eggFocusOf(egg) { return (egg.fx ||= { isEgg: true, egg, fid: 'egg:' + 
 // they wriggle a few seconds more, and then they go (the first phone to ask makes it happen for everyone); Care's Watch button skips the wait
 function eggWatch(egg, dt) {
   const free = !document.hidden && ui?.tab === 'tank' && !$('modal').classList.contains('on') && !$('reunion').classList.contains('on') && !play && !placing && !feedMode && !cleanMode && (game.state?.flags.tut ?? 0) >= 5;
-  const nowS = performance.now() / 1000, gap = Math.min(0.5, nowS - (egg.watchAt ?? nowS)); egg.watchAt = nowS;      /* (real seconds, however smoothly this phone draws) */
-  if (egg.asked) { window.__quietUntil = performance.now() + 4000; return; }      /* (asked: the hatching is on its way, still nothing over it) */
+  const nowS = Date.now() / 1000, gap = Math.min(0.5, nowS - (egg.watchAt ?? nowS)); egg.watchAt = nowS;      /* (real seconds, however smoothly this phone draws) */
+  if (egg.asked) { window.__quietUntil = Date.now() + 4000; return; }      /* (asked: the hatching is on its way, still nothing over it) */
   if (!free) { egg.watchT = Math.min(egg.watchT ?? 0, 1); return; }
-  const was = egg.watchT ?? 0; egg.watchT = was + gap; window.__quietUntil = performance.now() + 4000;      /* (while it happens, nothing else pops up over it) */
+  const was = egg.watchT ?? 0; egg.watchT = was + gap; window.__quietUntil = Date.now() + 4000;      /* (while it happens, nothing else pops up over it) */
   if (Math.floor(was / 1.4) !== Math.floor(egg.watchT / 1.4)) sfx('twitch');      /* (a little wriggle you can hear, every second or so) */
   if (was < 2 && egg.watchT >= 2) { if (egg.fish) { if (!focus) setFocus(egg.fish); egg.fish.thought = 'His pouch is twitching. Any moment now.'; } else if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast(egg.fish ? 'The babies are coming. Stay and watch…' : "They're hatching. Stay and watch…", 3200); haptic(8); }
   if (egg.watchT >= 6) { egg.asked = true; game.dispatch({ t: 'watchEggs', id: egg.e.id }).then((r) => { if (!r?.ok) egg.asked = false; }); }
@@ -652,7 +652,7 @@ function birthWatchTick() {
     const W = birthW.get(rec.id) ?? { egg: null }; birthW.set(rec.id, W); const pseudo = { e: { id: rec.id, ready: true }, group: f3.group, get asked() { return W.asked; }, set asked(v) { W.asked = v; }, get watchT() { return W.t; }, set watchT(v) { W.t = v; }, get watchAt() { return W.at; }, set watchAt(v) { W.at = v; }, fish: f3 };
     eggWatch(pseudo, 0); }
 }
-window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = performance.now() + 8000; ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } for (const [id, W] of birthW) if (!W.asked) { window.__quietUntil = performance.now() + 8000; ui.open('tank'); W.t = Math.max(W.t ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
+window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } for (const [id, W] of birthW) if (!W.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); W.t = Math.max(W.t ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
 // a little cloud of larvae comes out of the eggs and rises, wriggling; most drift off on the current and fade, as in the sea (one stays: the baby)
 const fryCloud = [];
 function fryOut(at, n, tint) {
@@ -685,7 +685,7 @@ function eggGone(egg, s) {
   eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
   if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
-  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = performance.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint);      // the larvae rise from the eggs; one of them is the baby
+  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = Date.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint);      // the larvae rise from the eggs; one of them is the baby
   for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.fanK = 0; q.lureCalm = 0; q.brood = false; q.guarding = false; q.thought = null; } }      // the parents' watch is over
   for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
   if (f3 && !document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 1600); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 8600); }      // you saw it hatch: a close look at the new baby

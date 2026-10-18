@@ -726,7 +726,7 @@ export function initUI({ game, social, cb }) {
   // how long until: a countdown that reads naturally at every distance (the [data-until] spans tick by themselves, once a second)
   const countdown = (at) => { const ms = Math.max(0, at - Date.now()), m = Math.floor(ms / 6e4), h = Math.floor(m / 60), d = Math.floor(h / 24); return ms < 6e4 ? 'any moment now' : h >= 24 ? `in ${d} d ${h % 24} h` : h >= 1 ? `in ${h} h ${m % 60} m` : `in ${m} m ${Math.floor(ms / 1000) % 60} s`; };
   setInterval(() => { for (const el of document.querySelectorAll('[data-until]')) { const t = countdown(+el.dataset.until); if (el.textContent !== t) el.textContent = t; } }, 1000);
-  const modalFree = (moment = false) => new Promise((res) => { const w = () => (modal.classList.contains('on') || performance.now() < modalClaim || (!moment && performance.now() < (window.__quietUntil ?? 0)) ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : (modalClaim = performance.now() + 250, res())); w(); });
+  const modalFree = (moment = false) => new Promise((res) => { const w = () => (modal.classList.contains('on') || performance.now() < modalClaim || (!moment && Date.now() < (window.__quietUntil ?? 0)) ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : (modalClaim = performance.now() + 250, res())); w(); });
   function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
     return modalFree().then(() => new Promise((res) => {
       const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${(i / 18) * 360}deg;--d:${70 + (i % 3) * 26}px;--t:${0.9 + (i % 4) * 0.12}s">${i % 3 ? '✦' : '🐚'}</i>`).join('');
