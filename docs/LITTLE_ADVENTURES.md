@@ -261,3 +261,13 @@ All in `ADV` and `ADV_KINDS` in `adventures.js`:
 - each outcome's weights.
 
 To test, use `advRate` (a dev action or `t.flags.advRate`): 10 makes everything ten times as often.
+
+## Later changes (October)
+
+- A hide stays inside the tank: no climb-out line or animation, and a story entry when it comes back.
+- Catching up after the tank was closed reads hunger as it was at the scheduled time. Time away costs no health, and an octopus home partway through a catch-up gets hungry as usual from then on.
+- Leaving is cancelled if a puzzle, a hide game, eggs or poor health came up while it paced.
+- Every nature goes out now and then (the chance to go never drops below 0.4). Real trips (night, long) bring keepsakes about twice as often; hides and rearranges are a little rarer. Hides count half toward a long trip, and 2 trips are enough.
+- Small moments: each kind at most every 45 days, several wordings for the common ones, a quiet night is not journal news, and visitors no longer count as small moments.
+- Four departure lines; short trips show no toast. The profile counts hides apart from adventures.
+- An octopus that trusts you comes to the glass about one visit in three, and swims back from it smoothly (`tools/glass_check.mjs` measures every frame).

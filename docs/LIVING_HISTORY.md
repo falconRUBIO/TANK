@@ -350,3 +350,12 @@ The drills also save `/tmp/living/1-greetings.png` and `/tmp/living/2-wants-to-s
 3. Den building with small decorations, through the existing octopus move system.
 4. Per-caretaker recognition for seahorses: approach the glass for the person who feeds them.
 5. A quiet visual cue for eggs about to hatch.
+
+## Later changes (October)
+
+- **Visitors who stay.** Whoever taps "Let it stay" names it. "Not now" decides nothing; only "Let it stay" or "Let it wander" counts, and the first answer wins. A kind that stayed never visits again. A resident is not sold: "Let it go" sends it back to the open water, and it may visit again later. Residents live 300–420 days, like other fish.
+- **Full tank.** A visitor that would like to stay in a full tank says so in the journal, at most once a month, so the missing offer is explained.
+- **History page.** It shows the newest 50 moments plus every birth, death, arrival and time capsule, with "Show older" for the rest. Trimming never removes those landmarks.
+- **Missed capsules.** A capsule day that passed while nobody opened the tank leaves one note: "No time capsule for day N: the tank was quiet that week."
+- **Capsule photos.** Each photo is sized to stay under the server's limit. Shared tanks keep every capsule photo (outside the 60-photo cleanup); solo tanks keep the first and the last eleven in their own store.
+- **Own keepsakes.** An octopus never forgets a keepsake it found itself once it has come to know it.

@@ -51,6 +51,7 @@ Environment: `PORT` (default 8080), `DB` (SQLite path, default `ourtank.db`). `D
 ## Rules the server enforces
 
 - Exactly four seats per tank (`CHECK slot 1..4` + `UNIQUE(tank, slot)`, claimed inside one write transaction). A fifth player gets "This tank is full". A database made when tanks held three is rebuilt to four seats the first time the new server opens it.
+- Taking a seat back after losing the sign-in (`/api/claim`) needs the tank code **and** that account's recovery key, so a friend with the code cannot take over an account. A seat nobody has used for 30 days can be taken back with the code alone, so a lost key is not the end.
 - Codes: 6 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ`, random, unique, regenerable by any member. A code only lets you ask for a seat; attempts are rate limited.
 - Every action carries an idempotency key, so a retry or a double tap never pays or charges twice. Two players spending the last shells at the same time: exactly one purchase succeeds.
 - Identity is an anonymous account token kept in the browser (only its hash is stored).
