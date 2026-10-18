@@ -653,6 +653,7 @@ function birthWatchTick() {
     const W = birthW.get(rec.id) ?? { egg: null }; birthW.set(rec.id, W); const pseudo = { e: { id: rec.id, ready: true }, group: f3.group, get asked() { return W.asked; }, set asked(v) { W.asked = v; }, get watchT() { return W.t; }, set watchT(v) { W.t = v; }, get watchAt() { return W.at; }, set watchAt(v) { W.at = v; }, fish: f3 };
     eggWatch(pseudo, 0); }
 }
+window.__onBirth = (dad) => { if (document.hidden) return; sfx('crack'); setTimeout(() => sfx('newlife'), 900); haptic(12); if (dad && !focus) setFocus(dad); if (dad) setTimeout(() => { if (focus === dad) setFocus(null); }, 9000); };      // a seahorse birth seen: the pouch opens, the chime, a close look at the father and his brood
 window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } for (const [id, W] of birthW) if (!W.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); W.t = Math.max(W.t ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
 // a little cloud of larvae comes out of the eggs and rises, wriggling; most drift off on the current and fade, as in the sea (one stays: the baby)
 const fryCloud = [];
@@ -792,6 +793,7 @@ const SHOT_SKIP = /settled into a daily routine|have begun swimming together|com
 function actorOf(text) {
   const names = fishes.list.filter((f) => !f.dead && f.name).sort((a, b) => b.name.length - a.name.length), hit = names.map((f) => ({ f, i: text.indexOf(f.name) })).filter((x) => x.i >= 0).sort((a, b) => a.i - b.i);
   { const m = /meet (\S+?)[,.]/.exec(text); const baby = m && /hatched|swam out|made it/.test(text) && names.find((f) => f.name === m[1]); if (baby) { const par = (baby.rec?.parents ?? []).map((p) => fishes.byId.get(p.id)).filter((o) => o && !o.dead).sort((x, y) => x.pos.distanceTo(baby.pos) - y.pos.distanceTo(baby.pos))[0]; const near = par && par.pos.distanceTo(baby.pos) < 1.8 ? par : null; return { at: baby.pos.clone(), with: near?.pos, r: 0.5, who: [baby.group, near?.group].filter(Boolean) }; } }      // a hatching: the baby, and the parent closest to it
+  if (/gave birth/.test(text) && hit.length) { const dad = hit[0].f, kids = fishes.list.filter((k) => k.nursery && !k.dead && k.pos.distanceTo(dad.pos) < 1.6); return { at: dad.pos.clone(), r: 0.9, who: [dad.group, ...kids.slice(0, 3).map((k) => k.group)] }; }      // a seahorse birth: the father with his newborns around him
   if (/\beggs?\b|clutch/i.test(text) && eggSprites.size) { const eg = [...eggSprites.values()][0]; return { at: eg.group.position.clone(), with: hit[0]?.f.pos, who: [eg.group, hit[0]?.f.group].filter(Boolean) }; }
   if (!hit.length) return null; const a = hit[0].f, b = hit.find((x) => x.f !== a)?.f; return { at: a.pos.clone(), with: b?.pos, r: Math.max(a.radius ?? 1, b?.radius ?? 0), who: [a.group, b?.group].filter(Boolean) };      // two animals in it: frame both
 }
@@ -846,7 +848,7 @@ game.on('journal', (e) => {
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
   setTimeout(() => { try { const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
     if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
-    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, /hatched|swam out|made it/.test(e.text) ? 4600 : 450);      // a moment later, while it is still happening (a hatching: once the little one has swum out, with its parent beside it)
+    else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); } } catch (err) { console.warn('moment photo', err); } }, /hatched|swam out|made it/.test(e.text) ? 4600 : /gave birth/.test(e.text) ? 3600 : 450);      // a moment later, while it is still happening (a hatching: once the little one has swum out, with its parent beside it)
 });
 window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
 window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };

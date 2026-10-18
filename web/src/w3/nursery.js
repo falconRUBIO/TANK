@@ -32,7 +32,7 @@ export class Nursery {
       const tint = base.map((v) => Math.max(0, Math.min(255, v + (rnd() - 0.5) * 50)));
       return { pos: at.clone().add(new THREE.Vector3((rnd() - 0.5) * (fresh ? 0.2 : 4), fresh ? -0.3 : rnd() * 2, (rnd() - 0.5) * (fresh ? 0.2 : 1.5))), vel: new THREE.Vector3(), head: rnd() * 6.28, ph: rnd() * 6.28, tgt: null, hold: 0, wait: fresh ? 1.2 + i * (5 / Math.max(1, n)) : 0, out: !fresh, bold: rnd(), col: [new THREE.Color(...tint.map((v) => v / 255)), new THREE.Color(...tint.map((v) => Math.min(255, v + 50) / 255)), new THREE.Color(0.05, 0.05, 0.08)] };
     });
-    if (fresh) { this.markPlayed(N.id); if (dad) dad.birthT = 7.5; if (typeof window !== 'undefined') window.__sawBirth = N.id; }      // the birth itself, once on this phone
+    if (fresh) { this.markPlayed(N.id); if (dad) dad.birthT = 7.5; if (typeof window !== 'undefined') { window.__sawBirth = N.id; window.__quietUntil = Date.now() + 9000; window.__onBirth?.(dad); } }      /* (nothing pops up over it; the sound and the close look are main's) */      // the birth itself, once on this phone
     this.mesh.count = n * CELLS.length;
     let j = 0; for (const f of this.fry) for (const c of CELLS) this.mesh.setColorAt(j++, f.col[c[2]]); if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   }
