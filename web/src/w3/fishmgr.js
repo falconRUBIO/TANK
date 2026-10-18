@@ -87,7 +87,8 @@ export class Fishes {
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
     [...state.fish.filter((d) => !d.gift?.wrapped), ...kids].forEach((d, idx) => {      // (a gift still wrapped is not in the water yet: it is in its bag)
       seen.add(d.id); const fryK = d.parents?.length && !d.nursery && stageOf(d) === 'baby' ? Math.max(0, Math.min(1, (Date.now() - (d.hatched ?? d.born)) / FRY_GROW)) : 1, k = d.nursery ? 0.3 + 0.32 * d.nk : fryK < 1 ? FRY_START + (STAGE_SCALE.baby - FRY_START) * fryK : STAGE_SCALE[stageOf(d)];      /* (fresh from the egg it is tiny, and grows into a baby over a day and a half) */ const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
-      if (this.adventure(d)) return;      // out on an adventure (or hiding where nobody can see): not in the water until it is back
+      if (this.adventure(d)) return;
+      if ((d.restUntil ?? 0) > Date.now()) { const q = this.byId.get(d.id); if (q) q.fatigue = Math.max(q.fatigue ?? 0, 0.9); }      // a mother worn out from guarding: sleepy, in her den      // out on an adventure (or hiding where nobody can see): not in the water until it is back
       let f = this.byId.get(d.id);
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;

@@ -282,7 +282,7 @@ ok('octopus partners: after some days together the mother lays her eggs in her d
   assert.ok(!R.canAdventure(t, t.fish[0], laid + H, R.ADVR ?? { isOcto: R.isOcto, stageOf: R.stageOf, ownHunger: R.ownHunger, AIL_TIRED: 3 }), 'she stays with them');
   R.norm(t, laid + H); assert.equal(t.eggs.length, 1, 'a den clutch survives a reload');
   const at = e.hatchAt + 1000; t.fish.forEach((f) => { f.hunger = 0.1; }); R.advance(t, at); assert.ok(t.eggs[0]?.ready); const r = R.applyAction(t, { t: 'watchEggs' }, { now: at + 1000, name: 'Alex' });
-  const kid = t.fish.find((f) => f.parents?.length); assert.ok(kid && kid.species === 'octopus' && kid.owner === 'me' && !t.fish[0].brood, JSON.stringify(kid)); assert.ok(r.events.some((x) => /Tiny octopuses jetted out/.test(x.journal ?? '')));
+  const kid = t.fish.find((f) => f.parents?.length); assert.ok(kid && kid.species === 'octopus' && kid.owner === 'me' && !t.fish[0].brood, JSON.stringify(kid)); assert.ok(r.events.some((x) => /Tiny octopuses jetted out/.test(x.journal ?? ''))); assert.ok(r.events.some((x) => /worn out after guarding her eggs/.test(x.journal ?? '')) && t.fish[0].restUntil > at, 'the mother rests a while after her watch');
   assert.deepEqual(R.childrenOf(t, 'oA').map((c) => c.id), [kid.id]);
   t.fish.push(R.ensureFish({ id: 'g9', name: 'Odd', species: 'goldfish', seed: 3, born: 0, stage: 'adult', traits: [], parents: [{ id: 'oA', name: 'Ada' }] })); assert.deepEqual(R.childrenOf(t, 'oA').map((c) => c.id), [kid.id], 'a goldfish is never an octopus\'s child');
 });

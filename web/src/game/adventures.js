@@ -100,7 +100,7 @@ export function canAdventure(t, f, now, R, cur) {
   if ((t.flags?.tut ?? 0) < 5 || now - (t.createdAt ?? now) < 3 * DAY) return false;
   if (R.stageOf(f, now) === 'baby' || (now - f.born) < 3 * DAY) return false;
   if (hungerAt(f, now, cur, R) > 0.55 || (f.ail ?? 0) > 0.25 * R.AIL_TIRED || (f.health ?? 1) < 0.8) return false;
-  if (f.puzzle || f.seek || f.preg || f.nursery || f.brood) return false;
+  if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || now < (f.restUntil ?? 0)) return false;      // (a mother resting after her eggs stays home too)
   return true;
 }
 // an extended one: a settled adult in its prime that has come home safely from several shorter ones

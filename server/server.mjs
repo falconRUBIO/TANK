@@ -381,7 +381,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         // eggs just laid: everyone away hears who laid them and who is looking after them, once
         const fresh = (w.eggs ?? []).find((e) => e.laid && now - e.laid < 3 * 3600e3);
         if (fresh) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name, G = w.fish.find((f) => f.id === fresh.guard && !f.dead), md = R.eggCareOf(fresh).mode;
-          const text = md === 'mouth' && G ? `${G.name} is carrying eggs in his mouth! They hatch in ${R.EGG_DAYS} days.` : md === 'drift' ? `${nm(fresh.a, fresh.pa)} and ${nm(fresh.b, fresh.pb)} spawned. Their eggs are drifting in the tank, and they need you.` : `New eggs! ${G ? `${G.name} is guarding them.` : 'Come and see.'} They hatch in ${R.EGG_DAYS} days.`;
+          const text = md === 'den' ? `${G?.name ?? nm(fresh.a, fresh.pa)} laid eggs in her den! She will guard them until they hatch in ${R.OCTO_EGG_DAYS} days.` : md === 'mouth' && G ? `${G.name} is carrying eggs in his mouth! They hatch in ${R.EGG_DAYS} days.` : md === 'drift' ? `${nm(fresh.a, fresh.pa)} and ${nm(fresh.b, fresh.pb)} spawned. Their eggs are drifting in the tank, and they need you.` : `New eggs! ${G ? `${G.name} is guarding them.` : 'Come and see.'} They hatch in ${R.EGG_DAYS} days.`;
           for (const m of away) { const k = `push:laid:${id}:${fresh.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, text, { now })) mark(k); } }
         // hunger is only news once an animal has started to suffer for it (a few hours of real neglect), not every time it gets peckish
         const runDown = (f) => (f.ail ?? 0) > 0.3 * 86400;

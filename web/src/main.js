@@ -657,8 +657,11 @@ window.__onBirth = (dad) => { if (document.hidden) return; sfx('crack'); setTime
 window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } for (const [id, W] of birthW) if (!W.asked) { window.__quietUntil = Date.now() + 8000; ui.open('tank'); W.t = Math.max(W.t ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
 // a little cloud of larvae comes out of the eggs and rises, wriggling; most drift off on the current and fade, as in the sea (one stays: the baby)
 const fryCloud = [];
-function fryOut(at, n, tint) {
-  if (REDUCED || !n) return; const col = new THREE.Color(tint ?? 0xf06a9a).lerp(new THREE.Color(0xffffff), 0.45);
+function fryOut(at, n, tint, octo = false) {
+  if (REDUCED || !n) return;
+  if (octo) { const col = new THREE.Color(tint ?? 0xf4ead6).lerp(new THREE.Color(0xffc8a8), 0.35); for (let i = 0; i < n; i++) { const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.9, emissive: col, emissiveIntensity: 0.3 }), head = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.09, 0.08), mat), tail = new THREE.Group();
+      for (let k = 0; k < 4; k++) { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.07, 0.015), mat); arm.position.set(Math.cos(k * 1.57) * 0.03, -0.07, Math.sin(k * 1.57) * 0.03); tail.add(arm); } g.add(head, tail); g.position.copy(at); g.position.y += 0.15; scene.add(g);      /* a tiny octopus: a round mantle and little arms, pulsing upward */
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.6; fryCloud.push({ g, mat, tail, t: 0, life: 9 + Math.random() * 8, delay: i * 0.18, vx: Math.cos(a) * 0.3, vy: 0.5 + Math.random() * 0.3, vz: Math.sin(a) * 0.22, ph: Math.random() * 6, drift: (Math.random() - 0.5) * 0.25, octo: true }); } return; } const col = new THREE.Color(tint ?? 0xf06a9a).lerp(new THREE.Color(0xffffff), 0.45);
   for (let i = 0; i < n; i++) { const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: col, transparent: true, opacity: 0.95, emissive: col, emissiveIntensity: 0.25 }), body = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.12), mat), tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.08), mat), eye = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.025, 0.025), new THREE.MeshBasicMaterial({ color: 0x1a1020 }));
     tail.position.z = -0.09; eye.position.set(0.03, 0.01, 0.04); g.add(body, tail, eye); g.position.copy(at); g.position.y += 0.08; scene.add(g);
     const a = (i / n) * Math.PI * 2 + Math.random() * 0.6; fryCloud.push({ g, mat, tail, t: 0, life: 9 + Math.random() * 8, delay: i * 0.18, vx: Math.cos(a) * 0.35, vy: 0.45 + Math.random() * 0.3, vz: Math.sin(a) * 0.25, ph: Math.random() * 6, drift: (Math.random() - 0.5) * 0.25 }); }
@@ -666,7 +669,7 @@ function fryOut(at, n, tint) {
 function fryTick(dt) {
   for (let i = fryCloud.length - 1; i >= 0; i--) { const k = fryCloud[i]; if ((k.delay -= dt) > 0) continue; k.t += dt; const P = k.g.position, w = Math.sin(k.t * 14 + k.ph);
     k.vx += (k.drift + Math.sin(k.t * 1.3 + k.ph) * 0.08) * dt; k.vy = Math.max(0.12, k.vy - 0.04 * dt); P.x += k.vx * dt; P.y = Math.min(Fish3D.topY - 0.4, P.y + k.vy * dt); P.z += k.vz * dt * 0.5;
-    k.g.rotation.y = Math.atan2(k.vx, k.vz); k.tail.rotation.y = w * 0.6; k.g.rotation.z = w * 0.08;
+    if (k.octo) { k.tail.scale.y = 0.8 + 0.4 * Math.max(0, w); k.g.rotation.z = w * 0.05; } else { k.g.rotation.y = Math.atan2(k.vx, k.vz); k.tail.rotation.y = w * 0.6; k.g.rotation.z = w * 0.08; }
     const fade = Math.max(0, Math.min(1, (k.life - k.t) / 3)); k.mat.opacity = 0.95 * fade; k.g.scale.setScalar(1 + k.t * 0.02);
     if (k.t > k.life) { scene.remove(k.g); k.g.traverse((o) => { o.geometry?.dispose(); }); k.mat.dispose(); fryCloud.splice(i, 1); } }
 }
@@ -687,7 +690,7 @@ function eggGone(egg, s) {
   eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
   if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
-  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = Date.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint);      // the larvae rise from the eggs; one of them is the baby
+  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = Date.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint, e.species === 'octopus');      // the larvae rise from the eggs; one of them is the baby
   for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.fanK = 0; q.lureCalm = 0; q.brood = false; q.guarding = false; q.thought = null; } }      // the parents' watch is over
   for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
   if (f3 && !document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 1600); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 8600); }      // you saw it hatch: a close look at the new baby
@@ -707,7 +710,9 @@ async function nameBaby(id) {
 function eggCare(egg, dt, t) {
   const e = egg.e, P = egg.group.position, G = fishes.byId.get(e.guard), nm = (id, sn) => game.state.fish.find((f) => f.id === id)?.name ?? sn?.name;
   if (egg.mode === 'drift') { const H = egg.home; P.set(H.x + Math.sin(t * 0.07 + egg.t0) * 0.8, H.y + Math.sin(t * 0.23 + egg.t0) * 0.25, H.z + Math.cos(t * 0.05 + egg.t0) * 0.3); return; }      // carried slowly about on the current
-  if (egg.mode === 'den') { if (!G || G.dead) return; G.thought = 'Guarding her eggs. She hardly leaves the den.'; G.longStay = true; if (isDirector() && G.st && G.den && !G.homing && !G.task && G.pos.distanceTo(P) > 1.6 && (egg.homeT = (egg.homeT ?? 0) - dt) <= 0) { egg.homeT = 6; G.goDen?.(G.st, Math.random); } return; }      // an octopus mother stays with her eggs in the den
+  if (egg.mode === 'den') { if (!G || G.dead) return; G.thought = 'Guarding her eggs. She hardly leaves the den.'; G.longStay = true; if (isDirector() && G.st && G.den && !G.homing && !G.task && G.pos.distanceTo(P) > 1.6 && (egg.homeT = (egg.homeT ?? 0) - dt) <= 0) { egg.homeT = 6; G.goDen?.(G.st, Math.random); }
+    const Fa = fishes.byId.get(e.b); if (isDirector() && Fa && !Fa.dead && !Fa.task && !Fa.inspect && (egg.dadT = (egg.dadT ?? 20 + Math.random() * 30) - dt) <= 0) { egg.dadT = 50 + Math.random() * 60; Fa.inspect = { x: P.x - 0.5, z: P.z + 0.5, type: 'eggs', r: 0.3 }; Fa.thought = 'Checking on the eggs.'; }      /* the father drops by now and then */
+    return; }      // an octopus mother stays with her eggs in the den
   if (!G || G.dead || G.species.move === 'jet') return;
   if (egg.mode === 'mouth') { const m = G.mouth(); P.set(m.x, m.y - G.radius * 0.1, m.z); G.brood = true; G.lureCalm = 1; G.thought = 'Carrying the eggs in his mouth. He will not eat until they hatch.'; return; }
   if (!isDirector()) { if (G.pos.distanceTo(P) < 1.6) G.thought = 'Guarding the eggs.'; return; }
