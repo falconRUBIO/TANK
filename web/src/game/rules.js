@@ -309,7 +309,7 @@ export function norm(t, now = Date.now()) {
   for (const f of t.fish) { if (!Array.isArray(f.traits)) f.traits = []; if (typeof f.name !== 'string' || !f.name) f.name = 'Fish'; if (!Number.isFinite(f.born)) f.born = now; if (typeof f.stage !== 'string') f.stage = 'baby'; if (typeof f.id !== 'string') f.id = 'f' + (t.seq = (t.seq ?? 10) + 1); if (!Number.isFinite(f.seed)) f.seed = 1; }
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
   t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); (t.fish ?? []).forEach((f) => { if (f?.mem && typeof f.mem === 'object') memCap(t, f, now); else if (f) delete f.mem; });      // (an octopus's memories, kept bounded)
-  t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && e.species !== 'octopus'); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
+  t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && (e.species !== 'octopus' || e.den)); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
@@ -382,7 +382,7 @@ const ordinal = (n) => ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 
 const unlink = (o, id) => { if (o.buddy === id) delete o.buddy; if (o.rival === id) delete o.rival; if (o.grudge?.id === id) delete o.grudge; if (o.pal === id) delete o.pal; if (o.mate === id) delete o.mate; if (o.partner === id) delete o.partner; };
 const lineOf = (p) => ({ id: p.id, name: p.name, parents: (p.parents ?? []).map((q) => ({ id: q.id, name: q.name })) });
 export const parentsOf = (f) => f.parents ?? [];
-export function childrenOf(t, id) { return [...t.fish.filter((f) => (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }
+export function childrenOf(t, id) { const me = t.fish.find((f) => f.id === id) ?? (t.memorial ?? []).find((m) => m.id === id), sp = me?.species; return [...t.fish.filter((f) => (!sp || f.species === sp) && (f.parents ?? []).some((p) => p.id === id)).map((f) => ({ id: f.id, name: f.name, alive: true })), ...(t.memorial ?? []).filter((m) => (!sp || !m.species || m.species === sp) && (m.parents ?? []).some((p) => p.id === id)).map((m) => ({ id: m.id, name: m.name, alive: false }))]; }      // (only its own kind: an id that matches by accident never makes a goldfish an octopus's child)
 // ── Hide a treat ── a caretaker hides a treat in one of the decorations and the octopus searches for it, spot by spot. Where it looks first
 // is what it has learnt about that caretaker: the spots they have used, and the last one, count for more with every hunt; with no history it
 // is mostly a guess. So it soon goes straight to a favorite hiding place, and the only way to fool it is to keep changing. Shells in, no shells out.
@@ -431,6 +431,7 @@ function visitors(t, now, ev) {
   else ev.push({ journal: `A ${d.label} is visiting the tank.`, toast: `A rare visitor: ${d.label}! Tap it to say hello.`, visitor: true });
 }
 export const EGG_DAYS = 3;
+export const OCTO_EGG_AFTER = 5, OCTO_EGG_DAYS = 5, OCTO_EGG_GAP = 25;      // octopus partners: days together before eggs, days the mother broods them, and days before she lays again
 export const EGG_WAIT = 10 * HOUR, FRY_KEEP = 45 * 60e3;      // ready eggs wait this long for someone to watch, then hatch anyway (in the morning); a second little one waits this long to be kept
 // a moment in the tank's own daytime (9 in the morning to 8 in the evening, its caretakers' clock): a hatching nobody has to set an alarm for
 export function wakeAt(t, ms) { const tz = (Number(t.tzMin) || 0) * 60e3, L = new Date(ms + tz), h = L.getUTCHours() + L.getUTCMinutes() / 60, j = (hash32(Math.floor(ms / 6e4)) % 90) * 60e3;
@@ -449,6 +450,7 @@ export const EGG_CARE = {
   platy: { mode: 'mouth', fact: 'Cardinalfish fathers carry the eggs in their mouths, and eat nothing until they hatch.' },
   angelfish: { mode: 'drift', fact: 'Angelfish pairs rise together at dusk and let their eggs drift away on the current.' },
   betta: { mode: 'drift', fact: 'Mandarin pairs rise together at dusk and release their eggs to drift.' },
+  octopus: { mode: 'den', fact: 'An octopus mother hangs her eggs in strings from the roof of her den and guards them: she cleans them, blows fresh water over them, and hardly leaves until they hatch.' },
 };
 export const eggCareOf = (e) => EGG_CARE[e?.species] ?? EGG_CARE.goldfish;
 // who is looking after an egg now: its guardian if still here, else the other parent, else nobody (the caretaker)
@@ -458,6 +460,7 @@ function eggGuard(t, e, ev, now = Date.now()) {
   if (e.guard === undefined) e.guard = [e.b, e.a].map(live).find((f) => f && sexOf(f) === 'm')?.id ?? [e.a, e.b].find(live) ?? null;      // (an egg from before parents looked after them: its father takes it on)
   if (e.guard && live(e.guard)) { const day = Math.floor(now / DAY); if (eggCareOf(e).mode !== 'drift' && e.said !== day && e.laid && now - e.laid > 20 * 3600e3) { e.said = day; ev.push({ journal: eggCareOf(e).mode === 'mouth' ? `${live(e.guard).name} is still carrying the eggs, and has not eaten.` : `${live(e.guard).name} has not left the eggs all day.` }); } return; }      // a line a day about the father's watch
   const was = e.guard, other = [e.a, e.b].find((id) => id !== was && live(id));
+  if (eggCareOf(e).mode === 'den') { if (e.guard !== null) { e.guard = null; if (was) ev.push({ journal: 'The octopus eggs have nobody guarding them now. Keep the water clean for them.' }); } return; }
   if (other && eggCareOf(e).mode === 'guard') { e.guard = other; if (was) ev.push({ journal: `${live(other).name} has taken over guarding the eggs.` }); return; }
   if (e.guard !== null) { e.guard = null; if (was) ev.push({ journal: 'The eggs have no parent watching them now. It is up to you to keep the water clean and the tank fed.' }); }
 }
@@ -471,7 +474,7 @@ function makeChild(t, e, now) {
   const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
   const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
   const genes = A && B ? blendGenes(A.genes ?? genesOf(A.seed ?? seed), B.genes ?? genesOf(B.seed ?? seed), seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
-  const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: A?.owner ?? null, ownerName: A?.ownerName ?? null }); t.fish.push(f);
+  const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: t.fish.find((x) => x.id === e.a && !x.dead)?.owner ?? A?.owner ?? null, ownerName: t.fish.find((x) => x.id === e.a && !x.dead)?.ownerName ?? A?.ownerName ?? null }); t.fish.push(f);
   return { f, A, B, h, gen };
 }
 function eggs(t, now, ev) {
@@ -489,7 +492,8 @@ function eggs(t, now, ev) {
     const { f, A, B, h, gen } = makeChild(t, e, now);
     f.hatched = now; const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
-    const how = md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most drifted off on the current, as larvae do; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched. A little cloud of larvae rose from them and most drifted off on the current; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. Most of the tiny larvae floated away; one little one stayed: meet ${f.name}`;
+    for (const o of t.fish) if (o.brood === e.id) delete o.brood;      // (her watch is over)
+    const how = md === 'den' ? `${G?.name ?? 'The mother'}'s eggs hatched. Tiny octopuses jetted out of the den in a little cloud, and most drifted up and away on the current; one stayed close to ${G?.name ?? 'the den'}: meet ${f.name}` : md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most drifted off on the current, as larvae do; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched. A little cloud of larvae rose from them and most drifted off on the current; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. Most of the tiny larvae floated away; one little one stayed: meet ${f.name}`;
     const fry = 5 + (h % 4), room = t.fish.length + pending(t) < capacity(t.level) + BIRTH_ROOM, watched = !!e.watch;
     ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id], hatch: { egg: e.id, fish: f.id, fry, mode: md, watched } });
     if (watched && room) { t.fryOffer = { id: 'fo' + e.id, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: f.id }; ev.push({ fryOffer: t.fryOffer.id }); }      // you were there: one more is still by the eggs, for a little while
@@ -500,6 +504,13 @@ function eggs(t, now, ev) {
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   if (t.eggs.length) return;      // one egg at a time, so each one is an event
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return;
+  // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
+  { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm');
+    if (Mo && Fa && ownHunger(Mo) < 0.5 && ownHunger(Fa) < 0.5 && (Mo.health ?? 1) >= 0.8 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
+      Mo.broodAt = now + OCTO_EGG_GAP * DAY;
+      t.eggs.push({ id: nextId(t, 'e'), species: 'octopus', a: Mo.id, b: Fa.id, seed: Mo.seed, pa: snap(Mo), pb: snap(Fa), laid: now, hatchAt: wakeAt(t, now + OCTO_EGG_DAYS * DAY), cared: [], guard: Mo.id, den: Mo.home }); Mo.brood = t.eggs.at(-1).id;      /* (she stays: no adventures while she broods) */
+      unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
+      ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, toast: `${Mo.name} laid eggs in her den! They hatch in ${OCTO_EGG_DAYS} days.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother

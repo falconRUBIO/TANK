@@ -402,7 +402,7 @@ toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fi
 const dimmer = document.createElement('div'); dimmer.id = 'dimmer'; canvas.after(dimmer);      // (right over the tank, under the header, the menus and the bar)
 function toScreen(p) { const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc, q = p.clone().project(camera); return [r.left + (r.width - dw) * 0.5 + (q.x + 1) / 2 * dw, r.top + (r.height - dh) + (1 - q.y) / 2 * dh]; }
 function spotDim() { const L = toys.light, on = !!(L && L.on); dimmer.classList.toggle('on', on); if (!L) return; const [x, y] = toScreen(L.m.position); dimmer.style.setProperty('--x', x + 'px'); dimmer.style.setProperty('--y', y + 'px'); }
-function armToy(k) { const T = TOYS[k]; if (!T) return; ui.open('tank'); toys.armed = k; ui.toast(T.how, 3200); } const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf2832e, guppy: 0xb04a8a, cory: 0xf0a060, blue: 0xf3d9a0, platy: 0xf2c94a, angelfish: 0xeaf2f0, betta: 0xeef4f2 };      // the colour each kind's eggs really are: clownfish orange, damselfish purple-red, cardinalfish yellow, open-water eggs almost clear
+function armToy(k) { const T = TOYS[k]; if (!T) return; ui.open('tank'); toys.armed = k; ui.toast(T.how, 3200); } const eggSprites = new Map(), EGG_TINT = { goldfish: 0xf2832e, guppy: 0xb04a8a, cory: 0xf0a060, blue: 0xf3d9a0, platy: 0xf2c94a, angelfish: 0xeaf2f0, betta: 0xeef4f2, octopus: 0xf4ead6 };      // the colour each kind's eggs really are: clownfish orange, damselfish purple-red, cardinalfish yellow, open-water eggs almost clear
 function syncExtras() {
   const s = game.state, me = game.you?.userId, b = (s.bottles ?? []).find((x) => x.to === me);
   // a bottle from a friend: it drops in at the surface with a splash, sinks slowly, and comes to rest tipped over on the sand, glinting now and then
@@ -415,7 +415,7 @@ function syncExtras() {
   const ids = new Set((s.eggs ?? []).map((e) => e.id));
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const C = eggCareOf(e), mode = C.mode === 'mouth' && !e.guard ? 'guard' : C.mode;      // (a cardinalfish father gone: the eggs he dropped lie on the sand)
-    const h = hashId(e.id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at), C.on ?? 'plant'), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a, mode);
+    const h = hashId(e.id), den = C.mode === 'den' && s.decor.find((d) => d.id === e.den), at = den ? { x: den.x + 0.18, z: den.z + 0.42, by: den.type } : eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at), C.on ?? 'plant'), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a, mode);
     egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, mode === 'drift' ? 5.2 + (h % 18) / 10 : eggY(at.x, at.z), at.z); egg.home = egg.group.position.clone(); egg.group.rotation.y = (h % 628) / 100; scene.add(egg.group); eggSprites.set(e.id, egg);
   }
   for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
@@ -707,6 +707,7 @@ async function nameBaby(id) {
 function eggCare(egg, dt, t) {
   const e = egg.e, P = egg.group.position, G = fishes.byId.get(e.guard), nm = (id, sn) => game.state.fish.find((f) => f.id === id)?.name ?? sn?.name;
   if (egg.mode === 'drift') { const H = egg.home; P.set(H.x + Math.sin(t * 0.07 + egg.t0) * 0.8, H.y + Math.sin(t * 0.23 + egg.t0) * 0.25, H.z + Math.cos(t * 0.05 + egg.t0) * 0.3); return; }      // carried slowly about on the current
+  if (egg.mode === 'den') { if (!G || G.dead) return; G.thought = 'Guarding her eggs. She hardly leaves the den.'; G.longStay = true; if (isDirector() && G.st && G.den && !G.homing && !G.task && G.pos.distanceTo(P) > 1.6 && (egg.homeT = (egg.homeT ?? 0) - dt) <= 0) { egg.homeT = 6; G.goDen?.(G.st, Math.random); } return; }      // an octopus mother stays with her eggs in the den
   if (!G || G.dead || G.species.move === 'jet') return;
   if (egg.mode === 'mouth') { const m = G.mouth(); P.set(m.x, m.y - G.radius * 0.1, m.z); G.brood = true; G.lureCalm = 1; G.thought = 'Carrying the eggs in his mouth. He will not eat until they hatch.'; return; }
   if (!isDirector()) { if (G.pos.distanceTo(P) < 1.6) G.thought = 'Guarding the eggs.'; return; }

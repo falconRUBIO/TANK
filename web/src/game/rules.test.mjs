@@ -273,6 +273,19 @@ ok('a hatchling\'s first day is told once, from what is true; growing up with it
   const ev2 = []; for (let d = 1; d <= 12; d++) { t.hunger = 0; t.water = 1; t.fish.forEach((f) => { f.health = 1; }); ev2.push(...R.advance(t, 11 * D + d * D)); }
   const fam = ev2.find((e) => /all grown up, with/.test(e.journal ?? '')); assert.ok(fam && fam.hist === 'family', JSON.stringify(ev2.map((e) => e.journal).filter(Boolean).slice(-6))); assert.ok((t.history ?? []).some((h) => h.kind === 'family' && /all grown up/.test(h.text)));
 });
+ok('octopus partners: after some days together the mother lays her eggs in her den and guards them; they hatch (watched) into one tiny octopus of their own; a stray id never makes another kind its child', () => {
+  const D = 864e5, H = 3600e3, t = quiet(0); t.level = 8; const sd = (want) => { for (let s = 1; s < 999; s++) if (R.sexOf({ seed: s }) === want) return s; };
+  t.fish = [R.ensureFish({ id: 'oA', name: 'Ada', species: 'octopus', seed: sd('f'), born: -60 * D, stage: 'adult', traits: ['Calm'], owner: 'me', home: 'c1', partner: 'oB', partneredAt: 0 }), R.ensureFish({ id: 'oB', name: 'Bo', species: 'octopus', seed: sd('m'), born: -60 * D, stage: 'adult', traits: ['Curious'], owner: 'me', partner: 'oA', partneredAt: 0 })];
+  t.decor = [{ id: 'c1', type: 'coconut', x: 1, z: 0.5, ry: 0 }]; t.eggAt = 0; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] };
+  let laid = null; for (let d = 1; d <= 30 && !laid; d++) for (let h = 0; h < 24 && !laid; h += 2) { const now = d * D + h * H; t.water = 1; t.hunger = 0; t.glass = 0; t.fish.forEach((f) => { f.hunger = 0.1; f.health = 1; f.happy = 0.9; }); const ev = R.advance(t, now); laid = ev.find((e) => /hung strings of tiny eggs/.test(e.journal ?? '')) && now; }
+  assert.ok(laid >= R.OCTO_EGG_AFTER * D, 'eggs, after some days as partners'); const e = t.eggs[0]; assert.ok(e.species === 'octopus' && e.den === 'c1' && e.guard === 'oA' && t.fish[0].brood === e.id);
+  assert.ok(!R.canAdventure(t, t.fish[0], laid + H, R.ADVR ?? { isOcto: R.isOcto, stageOf: R.stageOf, ownHunger: R.ownHunger, AIL_TIRED: 3 }), 'she stays with them');
+  R.norm(t, laid + H); assert.equal(t.eggs.length, 1, 'a den clutch survives a reload');
+  const at = e.hatchAt + 1000; t.fish.forEach((f) => { f.hunger = 0.1; }); R.advance(t, at); assert.ok(t.eggs[0]?.ready); const r = R.applyAction(t, { t: 'watchEggs' }, { now: at + 1000, name: 'Alex' });
+  const kid = t.fish.find((f) => f.parents?.length); assert.ok(kid && kid.species === 'octopus' && kid.owner === 'me' && !t.fish[0].brood, JSON.stringify(kid)); assert.ok(r.events.some((x) => /Tiny octopuses jetted out/.test(x.journal ?? '')));
+  assert.deepEqual(R.childrenOf(t, 'oA').map((c) => c.id), [kid.id]);
+  t.fish.push(R.ensureFish({ id: 'g9', name: 'Odd', species: 'goldfish', seed: 3, born: 0, stage: 'adult', traits: [], parents: [{ id: 'oA', name: 'Ada' }] })); assert.deepEqual(R.childrenOf(t, 'oA').map((c) => c.id), [kid.id], 'a goldfish is never an octopus\'s child');
+});
 ok('saves from before milestones: what a fish already reached is recorded, nothing is paid retroactively', () => {
   const D = 864e5, t = quiet(2); delete t.flags.msV; t.fish[0].born = -40 * D; t.fish[1].born = -20 * D; t.flags.topGen = 2; t.simTs = 0; const s0 = t.shells; R.norm(t, 0);
   assert.ok(t.fish[0].found.includes('age14') && t.fish[0].found.includes('age30') && t.fish[1].found.includes('age14') && !t.fish[1].found.includes('age30')); assert.ok(t.flags.firstHatch.legacy); assert.equal(t.shells, s0);
