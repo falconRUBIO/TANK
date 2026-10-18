@@ -524,9 +524,9 @@ export const BABY_ROLES = ['explore', 'plants', 'social'], ROLE_TRAIT = { explor
 export const babyRole = (N, c) => c?.role ?? BABY_ROLES[Math.max(0, N?.cands?.indexOf(c) ?? 0) % 3];
 export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nursery.readyAt;
 // a courtship that takes: he carries their young for six to nine days (the length comes from h, a number of the moment)
-function conceive(m, w, now, h, ev) {
+function conceive(m, w, now, h, ev, t = null) {
   const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
-  m.preg = { start: now, due: Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
+  m.preg = { start: now, due: t ? wakeAt(t, Math.round(now + days * DAY)) : Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
   ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, toast: `${m.name} is expecting! The babies will come in about a week.`, court: m.id });
 }
 // where a tank's seahorse family is now, for the developer's lifecycle test panel (read only)
@@ -560,13 +560,13 @@ function devSea(t, op, now, ev) {
   const { m, w } = fam();
   if (op === 'pregnant') {
     if (st.stage !== 'paired' || !m || !w) return 'NOT_NOW';
-    m.breedAt = 0; m.pairedAt = Math.min(m.pairedAt ?? now, now - SEA.COURT_AFTER * DAY); conceive(m, w, now, hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)), ev); return null;
+    m.breedAt = 0; m.pairedAt = Math.min(m.pairedAt ?? now, now - SEA.COURT_AFTER * DAY); conceive(m, w, now, hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)), ev, t); return null;
   }
   if (op === 'preg3' || op === 'preg6' || op === 'birth') {
     if (st.stage !== 'pregnant') return 'NOT_NOW';
     const P = m.preg, total = P.due - P.start, want = op === 'birth' ? total + 1000 : ((op === 'preg3' ? 3 : 6) - 1) * DAY + HOUR, have = now - P.start;      // how far into it he should be, and is
     if (have >= want || (op !== 'birth' && want >= total)) return 'NOT_NOW';      // only forward, and a day never past the birth
-    shift(have - want, [P, 'start', 'due']); ev.push(...advance(t, now)); return null;
+    shift(have - want, [P, 'start', 'due']); if (op === 'birth') P.watch = now; ev.push(...advance(t, now)); return null;
   }
   const N = t.nursery; if (!N || st.stage !== 'nursery') return 'NOT_NOW';
   const want = op === 'ready' ? N.readyAt - N.born + 1000 : ((op === 'nurs2' ? 2 : 4) - 1) * DAY + HOUR, have = now - N.born;
@@ -618,13 +618,15 @@ function seaFamilies(t, now, ev) {
     if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
       const w = byId.get(m.mate); if (m.sex !== 'm' || !w || w.sex !== 'f' || !adult(m) || !adult(w) || m.elder || w.elder || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
       const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
-      conceive(m, w, now, h, ev); break;
+      conceive(m, w, now, h, ev, t); break;
     }
   }
   // birth: on the day it is due, whether or not anyone is watching. The pregnancy ends here in the same change, so it happens once.
   for (const m of hs) {
     if (!m.preg || now < m.preg.due) continue;
-    const P = m.preg, born = P.due, w = byId.get(P.mother), ma = w ? snap(w) : P.ma, pa = snap(m), fam = nextId(t, 'n');
+    if (!m.preg.ready) { m.preg.ready = m.preg.due; m.preg.by = wakeAt(t, m.preg.due + EGG_WAIT); ev.push({ journal: `${m.name}'s pouch is twitching. The babies are coming.`, toast: `${m.name} is about to give birth! Stay and watch.`, birthReady: m.id, jat: m.preg.due }); }
+    if (!m.preg.watch && now < m.preg.by) continue;      // like eggs: born while someone is watching (or by the next morning)
+    const P = m.preg, born = Math.min(now, P.watch ?? P.by), w = byId.get(P.mother), ma = w ? snap(w) : P.ma, pa = snap(m), fam = nextId(t, 'n');
     m.preg = null; m.lastBirth = born; m.breedAt = born + SEA.COOLDOWN * DAY; m.births = (m.births ?? 0) + 1; if (w) w.births = (w.births ?? 0) + 1;
     const taken = new Set(t.fish.map((f) => f.name)), names = NAMES.filter((n) => !taken.has(n)), cands = [];
     for (let i = 0; i < 3; i++) { const h = hash32(P.seed + i * 7919), pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null), traits = [...new Set([pick(ma, 1), pick(pa, 3)].filter(Boolean))];
@@ -1026,10 +1028,15 @@ function _advance(t, now = Date.now()) {
         f.stage = s;
         const helpers = Object.values(t.care ?? {}).filter((c) => now - c.ts < 24 * HOUR).map((c) => c.name), crew = helpers.length ? { activity: { type: 'grow', text: `${helpers.join(' and ')} helped ${f.name} grow up.`, noUser: true } } : {};
         if (s === 'juvenile') { t.shells += 1; f.grewPay = (f.grewPay ?? 0) + 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+        if (s === 'adult' && f.hatched) { const P = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id && !x.dead)).filter(Boolean); if (P.length) ev.push({ journal: `${f.name} is all grown up, with ${P.map((x) => x.name).join(' and ')} close by. The whole family, together.`, hist: 'family', story: f.id, text: 'All grown up, with family close by.' }); }      // a family photo
         if (s === 'adult') { t.shells += 2; f.grewPay = (f.grewPay ?? 0) + 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id}, ...(helpers.length ? [crew] : [])); raised(t, f, now, ev); for (const pa of f.parents ?? []) if (pa?.id && t.fish.some((x) => x.id === pa.id)) ev.push({ story: pa.id, text: `${f.name}, one of its young, is all grown up.` }); }
       }
     }
   });
+  guard('dayone', () => { for (const f of t.fish) { if (!f.hatched || f.dayOne || f.dead || now - f.hatched < 20 * HOUR) continue; f.dayOne = now; if (now - f.hatched > 3 * DAY) continue;      /* its first day: a line about how it is doing, from what is true */
+    const par = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id && !x.dead)).filter(Boolean)[0], twin = t.fish.find((x) => x !== f && x.hatched && Math.abs(x.hatched - f.hatched) < HOUR && !x.dead);
+    const line = twin && f.id > twin.id ? null : `${f.name}'s first day: ${twin ? `${f.name} and ${twin.name} have grown a little, and` : 'it has grown a little, and'} ${par ? `stay${twin ? '' : 's'} close to ${par.name} wherever ${par.name} goes` : `${twin ? 'are' : 'is'} exploring the plants`}.`;
+    if (line) ev.push({ journal: line, story: f.id, text: line }); } });
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
@@ -1137,7 +1144,7 @@ export function milestonesOf(f) {
 export function forecast(t, now = Date.now(), n = 3) {
   const c = [], nm = (id, sn) => t.fish.find((f) => f.id === id)?.name ?? sn?.name;
   for (const e of t.eggs ?? []) if (!e.ready) c.push([e.hatchAt - now, `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s eggs are` : 'The eggs are'} ready to hatch`, '🥚']);
-  for (const f of t.fish) if (f.preg && !f.dead) c.push([f.preg.due - now, f.preg.due - now > DAY ? `${f.name} is expecting: the babies are born` : `${f.name}'s babies are born`, '🌿', f]);
+  for (const f of t.fish) if (f.preg && !f.preg.ready && !f.dead) c.push([f.preg.due - now, f.preg.due - now > DAY ? `${f.name} is expecting: the babies are born` : `${f.name}'s babies are born`, '🌿', f]);
   for (const [k, ms] of Object.entries(t.bonds ?? {})) { if (ms < 0.4 * SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|').map((id) => t.fish.find((f) => f.id === id && !f.dead)); if (a && b && !a.mate && !b.mate) c.push([SEA.PAIR_DAYS * DAY - ms, `${a.name} and ${b.name} are getting close: they may pair up`, '💞', a]); }      // (the pairing clock: a seahorse pair forming)
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? `A gift for ${o.ownerName ?? 'a friend'} arrives` : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, o.surprise ? '🎁' : '📦']);
@@ -1147,6 +1154,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
   const away = advForecast(t).map((x) => ({ ms: 0, text: x.text, icon: x.icon, when: '' }));
+  for (const f of t.fish) if (f.preg?.ready && !f.dead) away.unshift({ ms: 0, text: `${f.name} is about to give birth: stay and watch`, icon: '🌿', when: 'now' });
   for (const e of t.eggs ?? []) if (e.ready) away.unshift({ ms: 0, text: `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s eggs are` : 'The eggs are'} ready to hatch: stay and watch`, icon: '🥚', when: 'now' });      // (ready: no clock, it waits for you)      /* (an octopus out exploring: no time, nobody should be waiting on a clock) */
   return [...away, ...c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🥚' && /ready to hatch/.test(x[1]) ? 72 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }))].slice(0, n);      // (about an animal: the card shows that animal itself)
 }
@@ -1172,8 +1180,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   if (AWAY_BLOCK.has(a.t) && [a.id, a.fish, a.with].flat().filter((x) => typeof x === 'string').some((id) => t.fish.find((x) => x.id === id)?.away)) return fail('AWAY');      // (every animal the action names: one listed under another field once slipped through)      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
   switch (a.t) {
     case 'watchEggs': {      // someone has the tank open and is looking: ready eggs hatch now, in front of them
-      const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready); if (!e?.ready) return ok({ applied: false });
-      e.watch = now; e.watchBy = name; events.push(...advance(t, now)); return ok({ hatched: true });
+      const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready), m = t.fish.find((f) => f.preg?.ready && !f.dead && (!a.id || f.id === a.id));
+      if (e?.ready) { e.watch = now; e.watchBy = name; } else if (m) m.preg.watch = now; else return ok({ applied: false });      // (a seahorse father about to give birth is watched the same way)
+      events.push(...advance(t, now)); return ok({ hatched: true });
     }
     case 'keepFry': {      // one more little one was still by the eggs: keep it too (or let it go with the others); the first answer decides
       const O = t.fryOffer; if (!O || O.id !== a.id) return fail('NOT_FOUND'); t.fryOffer = null; if (now > O.until) return ok({ applied: false, gone: true });

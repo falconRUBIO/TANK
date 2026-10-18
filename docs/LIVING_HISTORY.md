@@ -359,3 +359,21 @@ The drills also save `/tmp/living/1-greetings.png` and `/tmp/living/2-wants-to-s
 - **Missed capsules.** A capsule day that passed while nobody opened the tank leaves one note: "No time capsule for day N: the tank was quiet that week."
 - **Capsule photos.** Each photo is sized to stay under the server's limit. Shared tanks keep every capsule photo (outside the 60-photo cleanup); solo tanks keep the first and the last eleven in their own store.
 - **Own keepsakes.** An octopus never forgets a keepsake it found itself once it has come to know it.
+
+## Hatching and births you cannot miss
+
+- **When.** Eggs hatch, and seahorse babies are born, in the tank's daytime (9am–8pm on its caretakers' clock, `wakeAt`).
+- **Ready waits.** Once due, the eggs wriggle and glow, and a seahorse father's pouch twitches. Each waits for someone to watch (`watchEggs`), or hatches by the next morning (`EGG_WAIT`). One push says they're about to hatch and will wait.
+- **Countdown.** Care shows a live countdown: days and hours, then minutes, then seconds in the last hour. Once ready, the row moves under Needs you with a Watch button. Coming up says "ready to hatch: stay and watch".
+- **The moment.**
+  - With the tank open, the camera comes over. A few seconds of wriggling (you can hear it), then the eggs crack.
+  - A little cloud of larvae rises and drifts off on the current, with a rising chime.
+  - The parents circle the baby, and you name it.
+  - Nothing else pops up over any of this (`__quietUntil`, with `moment` dialogs let through).
+- **Size.** A hatchling starts at a fifth of adult size (`FRY_START`) and grows into a baby over 36 hours.
+- **One more.** When there's room, whoever watched may keep a second little one (`keepFry`, 45 minutes, the first answer decides). It's named too.
+- **Photos.**
+  - The hatching's journal photo is a close-up of the baby, with its parent if it's close.
+  - Births, arrivals, family moments and adventures show their photo in Tank History.
+  - Growing up near its parents adds a family line (and photo) to the history.
+  - The first day adds one true line about how the little one is doing.

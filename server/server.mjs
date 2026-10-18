@@ -364,6 +364,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         w ??= L.loadWorld(db, id).w;
         // nothing happened, but something is overdue: each caretaker hears about their own octopus, everyone about the fish and the water (each at most once in 12 hours)
         const recent = (k) => now - +(db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v ?? 0) < 12 * 3600e3, mark = (k) => db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now));
+        // a seahorse father about to give birth: the same, his babies wait for someone to watch
+        { const f = (w.fish ?? []).find((x) => x.preg?.ready && !x.preg.watch && !x.dead); if (f) for (const m of away) { const k = `push:birth:${id}:${f.id}:${f.preg.start}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${f.name} is about to give birth! The babies will wait for you to watch.`, { now })) mark(k); } }
         // eggs ready to hatch: they wait for someone to watch (until the next morning), so everyone away hears it once and can be there for it
         const egg = (w.eggs ?? []).find((e) => e.ready && !e.watch);
         if (egg) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name; const A = nm(egg.a, egg.pa), B = nm(egg.b, egg.pb); for (const m of away) { const k = `push:egg:${id}:${egg.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${A && B ? `${A} and ${B}'s eggs` : 'The eggs'} are about to hatch! They are wriggling, and will wait for you to watch.`, { now })) mark(k); } }

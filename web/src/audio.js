@@ -77,6 +77,8 @@ const SFX = {
   love: () => { tone(988, 0, 0.1, { vol: 0.07, type: 'sine' }); tone(1319, 0.08, 0.22, { vol: 0.07, type: 'sine' }); },
   crack: () => { [0, 0.07, 0.15].forEach((d) => noise(d, 0.04, 2400, 0.12)); tone(1200, 0.2, 0.25, { vol: 0.05, type: 'sine', to: 1800 }); },      // an egg cracking open
   curl: () => tone(340, 0, 0.25, { vol: 0.05, type: 'sine', to: 220 }),      // a starfish curling up
+  newlife: () => { [523, 659, 784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.15 + i * 0.16, 0.9, { vol: 0.045 - i * 0.004, type: 'sine' })); [0.3, 0.7, 1.1, 1.5].forEach((d, i) => tone(1800 + i * 260, d, 0.12, { vol: 0.02, type: 'sine', to: 2400 + i * 260 })); },      // the larvae rising: a soft chime climbing, little bubbles of sound on top
+  twitch: () => { noise(0, 0.06, 900, 0.05); tone(300, 0.02, 0.12, { vol: 0.03, type: 'sine', to: 380 }); },      // ready eggs wriggling, a seahorse pouch twitching
 };
 export const sfx = (name) => { if (!on) return; if (!ensure()) return; if (ctx.state === 'suspended') ctx.resume(); try { SFX[name]?.(); } catch { /* audio is optional */ } };
 export const soundOn = () => on;

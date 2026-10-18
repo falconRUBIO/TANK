@@ -265,6 +265,14 @@ ok('hatching: in the tank\'s daytime, ready eggs wait for someone to watch (or t
   const o = mk(0); o.eggs.push({ id: 'e3', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, laid: 7 * D, hatchAt: 10 * D, ready: 10 * D, watch: 10 * D, cared: [], guard: null }); R.advance(o, 10 * D + 1000); const id = o.fryOffer.id; R.advance(o, 10 * D + 2 * H);
   assert.ok(!o.fryOffer && !R.applyAction(o, { t: 'keepFry', id, keep: true }, { now: 10 * D + 2 * H }).ok, 'the offer drifts off after a while');
 });
+ok('a hatchling\'s first day is told once, from what is true; growing up with its parents near gets a family line for the history', () => {
+  const D = 864e5, H = 3600e3, t = quiet(2); t.level = 6; t.fish.forEach((f, i) => { f.born = -5 * D; f.stage = 'adult'; f.sex = i % 2 ? 'm' : 'f'; }); t.eggs.push({ id: 'e1', species: 'goldfish', a: 'f0', b: 'f1', seed: 3, laid: 7 * D, hatchAt: 10 * D, ready: 10 * D, watch: 10 * D, cared: [], guard: null });
+  R.advance(t, 10 * D + 1000); const kid = t.fish.find((f) => f.hatched); assert.ok(kid);
+  const ev = []; for (let h = 1; h <= 30; h++) { t.hunger = 0; t.water = 1; ev.push(...R.advance(t, 10 * D + h * H)); } const day1 = ev.filter((e) => /first day/.test(e.journal ?? ''));
+  assert.equal(day1.length, 1, 'once'); assert.match(day1[0].journal, new RegExp(`^${kid.name}'s first day: it has grown a little, and stays close to (${t.fish[0].name}|${t.fish[1].name}) wherever`));
+  const ev2 = []; for (let d = 1; d <= 12; d++) { t.hunger = 0; t.water = 1; t.fish.forEach((f) => { f.health = 1; }); ev2.push(...R.advance(t, 11 * D + d * D)); }
+  const fam = ev2.find((e) => /all grown up, with/.test(e.journal ?? '')); assert.ok(fam && fam.hist === 'family', JSON.stringify(ev2.map((e) => e.journal).filter(Boolean).slice(-6))); assert.ok((t.history ?? []).some((h) => h.kind === 'family' && /all grown up/.test(h.text)));
+});
 ok('saves from before milestones: what a fish already reached is recorded, nothing is paid retroactively', () => {
   const D = 864e5, t = quiet(2); delete t.flags.msV; t.fish[0].born = -40 * D; t.fish[1].born = -20 * D; t.flags.topGen = 2; t.simTs = 0; const s0 = t.shells; R.norm(t, 0);
   assert.ok(t.fish[0].found.includes('age14') && t.fish[0].found.includes('age30') && t.fish[1].found.includes('age14') && !t.fish[1].found.includes('age30')); assert.ok(t.flags.firstHatch.legacy); assert.equal(t.shells, s0);
@@ -612,19 +620,19 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
   ok('birth happens on the server clock while nobody is there, once, and the nursery holds three babies with their own names, looks and parents', () => {
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg, 'pregnant');
     const due = m.preg.due, ev = R.advance(t, due + 20 * D);      // weeks pass with every phone closed
-    assert.equal(ev.filter((e) => e.birth).length, 1); assert.ok(t.nursery); assert.equal(t.nursery.cands.length, 3); assert.equal(t.nursery.born, due, 'born on the day it was due, not when someone looked');
+    assert.equal(ev.filter((e) => e.birth).length, 1); assert.ok(t.nursery); assert.equal(t.nursery.cands.length, 3); assert.equal(t.nursery.born, R.wakeAt(t, due + R.EGG_WAIT), 'nobody watched: born the next daytime morning after it was due, not when someone looked');
     assert.equal(new Set(t.nursery.cands.map((c) => c.name)).size, 3); assert.ok(t.nursery.cands.every((c) => c.genes && c.traits.length)); assert.ok(t.nursery.n >= 10 && t.nursery.n <= 15);
-    assert.equal(m.preg, null); assert.equal(m.breedAt, due + 14 * D, 'a fortnight before he can carry again');
+    assert.equal(m.preg, null); assert.equal(m.breedAt, t.nursery.born + 14 * D, 'a fortnight before he can carry again');
     assert.equal(R.advance(t, due + 21 * D).filter((e) => e.birth).length, 0, 'never born twice'); });
   ok('each nursery day one baby gets its own line in the journal, in turn, about the tank it lives in; never twice for a day', () => {
-    const t = tank(); t.decor.push({ id: 'dp', type: 'fern', x: 1, z: 1, ry: 0 }); live(t, 0, 4 * D); const m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const t = tank(); t.decor.push({ id: 'dp', type: 'fern', x: 1, z: 1, ry: 0 }); live(t, 0, 4 * D); const m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due); R.advance(t, due + H);
     const N = t.nursery, said = [];
     for (let k = 1; k <= 5; k++) { const ev = R.advance(t, due + k * D + H); said.push(...ev.filter((e) => e.nurseryDay).map((e) => e.journal)); live(t, due + k * D + 2 * H, due + k * D + 3 * H); }
     assert.equal(said.length, 4, 'days one to four, one line each: ' + JSON.stringify(said)); assert.ok(said.every((x, i) => x.startsWith(`Nursery, day ${i + 1}: `)));
     assert.deepEqual(said.slice(0, 3).map((x) => N.cands.find((c) => x.includes(c.name))?.id), N.cands.map((c) => c.id), 'each of the three babies in turn');
     assert.equal(R.advance(t, due + 4 * D + 5 * H).filter((e) => e.nurseryDay).length, 0, 'a day is told once'); });
   ok('choosing the baby: not before five days, one choice wins even if two caretakers choose at once, it keeps its name and parents, the others leave', () => {
-    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due); R.advance(t, due + H);
     const N = t.nursery, [c0, c1] = N.cands, now = due + 2 * H;
     assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c0.id }, { now }).reason, 'NOT_READY');
     const ready = due + 5 * D + H; live(t, due + 3 * H, ready);      // (the tank is looked after through the nursery days)
@@ -634,7 +642,7 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     assert.equal(R.stageOf(f, ready), 'baby', 'it starts its own growing up'); assert.equal(t.fish.filter((x) => x.species === 'seahorse').length, 3, 'one baby, not three'); });
   ok('a full tank: births still have a little room; past it the nursery still happens, the choice waits, and nothing is removed to make room', () => {
     const t = tank(); t.level = 8; while (t.fish.length < R.capacity(8)) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));
-    live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 40 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg); const due = m.preg.due; live(t, m.preg.start + H, due + 6 * D);
+    live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 40 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due + 6 * D);
     while (t.fish.length + R.pending(t) + t.eggs.length < R.capacity(t.level)) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));      // (the tank may have grown a level meanwhile: full again)
     { const T2 = structuredClone(t); assert.equal(R.applyAction(T2, { t: 'keepBaby', nursery: T2.nursery.id, baby: T2.nursery.cands[0].id }, { now: due + 6 * D }).ok, true, 'a tank full for the shop still has room for a baby born in it'); }
     while (t.fish.length + R.pending(t) + t.eggs.length < R.capacity(t.level) + R.BIRTH_ROOM) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));      // (and past that little extra room it waits)
@@ -644,9 +652,9 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
   ok('family polish: an expecting father cannot be sold; the three babies are three different characters; feeding is remembered for the nursery; the choice records who swam off, once', () => {
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg);
     const sh = t.shells, r = R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: m.preg.start + H }); assert.equal(r.reason, 'EXPECTING'); assert.ok(t.fish.some((f) => f.id === 'm')); assert.equal(t.shells, sh);
-    const due = m.preg.due; live(t, m.preg.start + H, due); R.advance(t, due + H); const N = t.nursery;
+    const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due); R.advance(t, due + H); const N = t.nursery;
     assert.deepEqual(N.cands.map((c) => c.role), ['explore', 'plants', 'social']);
-    for (let seed = 1; seed < 400; seed++) { const u = tank(); const m = u.fish[0]; m.preg = { start: 0, due: 7 * D, mother: 'w', seed: seed * 7919, n: 12 }; R.advance(u, 7 * D + 1); assert.equal(new Set(u.nursery.cands.map((c) => c.name)).size, 3, 'three different names, seed ' + seed); } assert.deepEqual(N.cands.map((c) => c.traits[0]), ['Curious', 'Calm', 'Social']);
+    for (let seed = 1; seed < 400; seed++) { const u = tank(); const m = u.fish[0]; m.preg = { start: 0, due: 7 * D, mother: 'w', seed: seed * 7919, n: 12, watch: 7 * D }; R.advance(u, 7 * D + 1); assert.equal(new Set(u.nursery.cands.map((c) => c.name)).size, 3, 'three different names, seed ' + seed); } assert.deepEqual(N.cands.map((c) => c.traits[0]), ['Curious', 'Calm', 'Social']);
     assert.equal(R.applyAction(t, { t: 'sellFish', id: N.cands[0].id }, { now: due + 2 * H }).reason, 'NOT_FOUND', 'a nursery baby is not in the shop list');
     t.hunger = 0.5; t.shells = 50; R.applyAction(t, { t: 'feed', food: 'flakes' }, { now: due + 2 * H }); assert.equal(N.fed, 1);
     live(t, due + 3 * H, due + 5 * D + H); assert.equal(R.applyAction(t, { t: 'sellFish', id: 'm' }, { now: due + 5 * D + H }).ok, true, 'after the birth he can go to a new home again');

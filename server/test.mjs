@@ -395,7 +395,7 @@ await t('push: a seahorse birth in a closed tank reaches the caretakers who are 
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
   assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/sea1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
   const now = Date.now(), born = now - 20 * 864e5, sea = (id, name, sex, extra = {}) => ({ id, name, species: 'seahorse', seed: id.length * 7, born, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, hunger: 0, owner: x.userId ?? x.id, ...extra });
-  setW(tk.id, { fish: [sea('sm', 'Sunny', 'm', { preg: { start: now - 7 * 864e5, due: now - 1000, mother: 'sf', ma: { id: 'sf', name: 'Pearl' }, seed: 12345, n: 11 } }), sea('sf', 'Pearl', 'f')], simTs: now - 2000, flags: { tut: 5 } });
+  setW(tk.id, { fish: [sea('sm', 'Sunny', 'm', { preg: { start: now - 7 * 864e5, due: now - 1000, ready: now - 1000, by: now - 500, mother: 'sf', ma: { id: 'sf', name: 'Pearl' }, seed: 12345, n: 11 } }), sea('sf', 'Pearl', 'f')], simTs: now - 2000, flags: { tut: 5 } });
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
   const b = pushed.find((q) => /gave birth/.test(q.payload.body)); assert.ok(b, 'told: ' + JSON.stringify(pushed.map((q) => q.payload.body)));
   const { kindOf } = await import('./push.mjs'); assert.equal(kindOf(b.payload.body), 'eggs'); assert.equal(kindOf("They're ready! Choose one baby seahorse to stay."), 'eggs'); assert.equal(kindOf('Sunny is expecting! The babies will come in about a week.'), 'eggs');
@@ -688,7 +688,7 @@ await t('seahorse family across phones: born with nobody connected, once; two ph
   const u = [await mkUser('F1'), await mkUser('F2'), await mkUser('F3')], tk = (await call('/api/tanks', { name: 'Family' }, u[0].token)).body; await call('/api/join', { code: tk.code }, u[1].token); await call('/api/join', { code: tk.code }, u[2].token);
   const now = Date.now(), D = 864e5, sh = (id, name, sex, extra = {}) => ({ id, name, species: 'seahorse', seed: id.length * 7, born: now - 40 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, sex, mate: sex === 'm' ? 'sf' : 'sm', pairedAt: now - 20 * D, owner: null, ...extra });
   setW(tk.id, { level: 8, shells: 100, hunger: 0, water: 1, glass: 0, simTs: now - 60e3, flags: { ...getW(tk.id).flags, tut: 5, firsts: Object.fromEntries(u.map((x) => [x.userId, true])) },
-    fish: [sh('sm', 'Sunny', 'm', { preg: { start: now - 7 * D, due: now - 30e3, mother: 'sf', ma: { id: 'sf', name: 'Pearl', seed: 14 }, seed: 99, n: 12 } }), sh('sf', 'Pearl', 'f')] });
+    fish: [sh('sm', 'Sunny', 'm', { preg: { start: now - 7 * D, due: now - 30e3, ready: now - 30e3, by: now - 20e3, mother: 'sf', ma: { id: 'sf', name: 'Pearl', seed: 14 }, seed: 99, n: 12 } }), sh('sf', 'Pearl', 'f')] });
   tickTank(S.db, tk.id); tickTank(S.db, tk.id);      // nobody connected: the server's own tick brings the birth
   let w = getW(tk.id); assert.ok(w.nursery, 'born while nobody was there'); assert.equal(w.fish.find((f) => f.id === 'sm').preg, null); const N = w.nursery;
   assert.equal(R_births(tk.id), 1, 'the birth is written once');

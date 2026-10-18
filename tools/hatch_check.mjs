@@ -59,6 +59,10 @@ ck('the journal tells it: wriggling, the larvae drifting off, the one that staye
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/6-twins.png` });
 const ph = await p.evaluate(() => { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]'); return list.find((m) => /hatched/.test(m.text))?.img ?? null; }); if (ph) fs.writeFileSync(`${out}/7-journal-photo.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
 ck('the hatching is in the journal with its photo (the baby and its parent)', ph?.startsWith('data:image/jpeg;base64,'), ph?.slice(0, 23));
+await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="journal"]')?.click()); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="history"]')?.click()); await p.waitForTimeout(700);
+const hist = await p.evaluate(() => [...document.querySelectorAll('#sheet .hrow')].filter((r) => /hatched/.test(r.textContent)).map((r) => !!r.querySelector('img.hpic')));
+await p.evaluate(() => { const r = [...document.querySelectorAll('#sheet .hrow')].find((x) => x.querySelector('img.hpic')); r?.scrollIntoView(); }); await p.waitForTimeout(400); await p.screenshot({ path: `${out}/8-history.png` });
+ck('Tank History shows the hatching with its photo', hist.length >= 1 && hist[0], hist);
 const top = await p.evaluate(() => { const m = document.querySelector('#modal.on'); return m ? m.innerText.slice(0, 40) : null; });
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Hatch checks passed'); process.exit(fails ? 1 : 0);
