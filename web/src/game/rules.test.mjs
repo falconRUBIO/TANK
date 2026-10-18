@@ -43,7 +43,7 @@ ok('one fish is cheaper each day and the price is charged', () => { const now = 
 ok('a rare visitor drops by, saying hello pays and adds it to the book, and it leaves otherwise', () => {
   const now = 1e9, t = R.newWorld(now - 3 * 864e5); R.norm(t, now); t.flags.tut = 5; t.visitAt = now - 1;
   R.advance(t, now); assert.ok(t.visitor, 'visitor arrived'); const v = t.visitor, sp = v.species; assert.ok(R.SPECIES_DEF[sp].visitor);
-  const s0 = t.shells, r = R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 1000 }); assert.ok(r.applied); assert.equal(t.shells, s0 + 4); assert.ok(t.seen.fish.includes(sp)); assert.equal(t.visitor, null);
+  const s0 = t.shells, r = R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 1000 }); assert.ok(r.applied); assert.equal(t.shells, s0 + 4 + R.FIELD_PAY, 'the visitor, and its Field Guide page the first time'); assert.ok(t.seen.fish.includes(sp)); assert.equal(t.visitor, null);
   assert.equal(R.applyAction(t, { t: 'greet', id: v.id }, { now: now + 2000 }).applied, false);
   const t2 = R.newWorld(now - 864e5); R.norm(t2, now); t2.flags.tut = 5; t2.visitAt = now - 1; R.advance(t2, now); assert.ok(t2.visitor); R.advance(t2, now + 3 * 3600e3 + 1000); assert.equal(t2.visitor, null);
 });

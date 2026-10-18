@@ -3,6 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
+import { FIELD } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -287,6 +288,12 @@ export function initUI({ game, social, cb }) {
       return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)}${f.species === 'seahorse' ? (sexOf(f) === 'm' ? ' ♂ male' : ' ♀ female') : ''} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
+  // the Field Guide: the remarkable things the animals do, each page filled in the first time someone sees it, with the photo of that very moment
+  const fieldHtml = () => { const F = S().field ?? {}, all = Object.entries(FIELD), got = all.filter(([k]) => F[k]).length, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const card = ([k, d]) => { const p = F[k]; if (!p) return `<div class="fg nope"><div class="fgpic">?</div><b>${esc(d.label)}</b><small>${esc(d.hint)}</small></div>`;
+      const j = p.text ? game.journal.find((x) => x.text === p.text) : null, im = j ? shotFor(j) : p.text ? shotOf(p.text) : null;
+      return `<div class="fg">${im ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${im}" alt=""></button>` : `<div class="fgpic seen">✓</div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
+    return `<div class="fghead"><b>Field Guide</b><span>${got} of ${all.length} seen</span></div><p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
   const bookHtml = () => {
     const s = S(), bred = (id) => [...s.fish, ...(s.memorial ?? [])].filter((f) => f.species === id && (f.parents ?? []).length).length;
     const cell = (kind, id, label) => { const got = s.seen[kind].includes(id), L = kind === 'fish' ? LIFESPAN[id] : null, nf = kind === 'fish' ? (FACTS[id] ?? []).length : 0, b = kind === 'fish' ? bred(id) : 0;      // a little field guide: how long it lives, how many facts, how many hatched here
@@ -488,7 +495,7 @@ export function initUI({ game, social, cb }) {
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
-      if (sub === 'book') return `<div class="crew"><h3>Collection</h3>${seg}${inTankHtml()}${bookHtml()}</div>`;
+      if (sub === 'book') return `<div class="crew"><h3>Collection</h3>${seg}${fieldHtml()}${inTankHtml()}${bookHtml()}</div>`;
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="crewbox"><div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>

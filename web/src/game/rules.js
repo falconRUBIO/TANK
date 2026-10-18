@@ -413,6 +413,7 @@ function puzzles(t, now, ev) {
     f.puzzle = null; f.solved = (f.solved ?? 0) + 1; f.disc ||= {}; f.disc.puzzle ??= now; f.bestSecs = Math.min(f.bestSecs ?? 1e9, p.secs); f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15);
     if (p.by) { f.bond ||= {}; f.bond[p.by] = (f.bond[p.by] ?? 0) + 1; }
     const first = f.solved === 1; if (first) t.shells += PUZZLE_FIRST_REWARD;
+    if (now - p.until < 120e3) witness(t, 'puzzle', f, now, ev, null, first ? `${f.name} worked out the puzzle jar.` : f.solved === 4 ? `${f.name} opens the puzzle jar in ${p.secs} seconds now.` : `${f.name} opened the puzzle jar in ${p.secs} seconds.`);      // (seen as it happened, not caught up afterwards)
     ev.push({ journal: first ? `${f.name} worked out the puzzle jar.` : f.solved === 4 ? `${f.name} opens the puzzle jar in ${p.secs} seconds now.` : `${f.name} opened the puzzle jar in ${p.secs} seconds.`, puzzle: f.id, ...(first ? { toast: `${f.name} worked out the jar! +${PUZZLE_FIRST_REWARD} shells`, milestone: f.id } : {}) });
   }
 }
@@ -496,6 +497,7 @@ function eggs(t, now, ev) {
     const how = md === 'den' ? `${G?.name ?? 'The mother'}'s eggs hatched. Tiny octopuses jetted out of the den in a little cloud, and most drifted up and away on the current; one stayed close to ${G?.name ?? 'the den'}: meet ${f.name}` : md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most drifted off on the current, as larvae do; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched. A little cloud of larvae rose from them and most drifted off on the current; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. Most of the tiny larvae floated away; one little one stayed: meet ${f.name}`;
     const fry = 5 + (h % 4), room = t.fish.length + pending(t) < capacity(t.level) + BIRTH_ROOM, watched = !!e.watch;
     ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id], hatch: { egg: e.id, fish: f.id, fry, mode: md, watched } });
+    if (watched) witness(t, md === 'den' ? 'octohatch' : 'hatch', f, now, ev, e.watchBy ?? null, A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`);
     if (watched && room) { t.fryOffer = { id: 'fo' + e.id, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: f.id }; ev.push({ fryOffer: t.fryOffer.id }); }      // you were there: one more is still by the eggs, for a little while
     if (A && B && [e.a, e.b].every((id) => t.fish.some((x) => x.id === id && !x.dead))) ev.push({ journal: `${A.name} and ${B.name} came over to meet ${f.name}.` });
     if (!t.flags.firstHatch) { t.flags.firstHatch = { at: now, fish: f.id, parents: [A?.id ?? null, B?.id ?? null] }; t.shells += FIRST_HATCH_REWARD; ev.push({ toast: `Your first baby fish hatched. +${FIRST_HATCH_REWARD} shells`, milestone: f.id }); }
@@ -645,6 +647,7 @@ function seaFamilies(t, now, ev) {
       let k = (h + i) % Math.max(1, names.length); while (names.length > cands.length && cands.some((c) => c.name === names[k])) k = (k + 1) % names.length;      // three different names
       cands.push({ id: nextId(t, 'f'), name: names[k] ?? NAMES[(h + i) % NAMES.length], seed: h % 90000, role, traits: tr, genes: ma && pa ? blendGenes(ma.genes, pa.genes, seededRandom(h)) : genesOf(h % 90000), sex: i === 0 ? 'm' : i === 1 ? 'f' : (h & 1 ? 'm' : 'f') }); }
     t.nursery = { id: fam, father: m.id, mother: P.mother, pa, ma, born, readyAt: wakeAt(t, born + SEA.NURSERY * DAY), n: P.n, gen: Math.max(pa.gen ?? 0, ma?.gen ?? 0) + 1, cands };
+    if (P.watch) witness(t, 'seabirth', m, now, ev, null, `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`);
     ev.push({ journal: `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n} tiny seahorses.`, birth: m.id });
   }
   // each nursery day, one baby's line in the journal, in turn: what its own way of living (roaming, the plants, staying near family) had it
@@ -749,6 +752,39 @@ export const OCTO_MOMENTS = {
   bury: { gap: 3 * DAY, text: (n) => `${n} dug itself into the sand until only its eyes showed.` },
   fish: { gap: 3 * DAY, other: true, text: (n, o) => `${n} took on ${o}'s colors and followed it about.` },
 };
+// ── The Field Guide ── the remarkable things the animals do, each one filled in the first time someone in the tank sees it happen (the phone
+// reports it while the tank is open and being watched; nothing is filled in from a line written while everyone was away). Each page keeps who did
+// it, when, and the line that was written, so the journal's photo of that very moment is its picture.
+export const FIELD = {
+  glass: { label: 'Face at the glass', who: 'any', hint: 'Someone curious comes right up to look at you.' },
+  camo: { label: 'Vanishing act', who: 'octopus', hint: 'An octopus matches the ground so well it disappears.' },
+  ink: { label: 'Ink cloud', who: 'octopus', hint: 'A startled octopus bursts away in a cloud of ink.' },
+  squirt: { label: 'Squirt!', who: 'octopus', hint: 'An octopus that is being watched sometimes answers back.' },
+  bury: { label: 'Buried to the eyes', who: 'octopus', hint: 'An octopus digs into soft sand.' },
+  flat: { label: 'Flatfish impression', who: 'octopus', hint: 'An octopus lies flat and slides across the sand.' },
+  kelp: { label: 'Pretending to be a plant', who: 'octopus', hint: 'An octopus among the plants, arms up.' },
+  lion: { label: 'Lionfish impression', who: 'octopus', hint: 'Arms out stiff, it passes for something dangerous.' },
+  jelly: { label: 'Jellyfish impression', who: 'octopus', hint: 'Puffed up, drifting in open water.' },
+  snake: { label: 'Sea snake impression', who: 'octopus', hint: 'Hidden in the sand, two striped arms showing.' },
+  fish: { label: 'Copying a fish', who: 'octopus', hint: 'An octopus takes on a fish\'s colors and follows it.' },
+  smack: { label: 'Too close!', who: 'octopus', hint: 'An octopus smacks a fish that crowds it.' },
+  arms: { label: 'Touching arms', who: 'octopus', hint: 'Two octopuses that know each other well.' },
+  ball: { label: 'Ball game', who: 'any', hint: 'Something sends the ball spinning across the tank.' },
+  eggchase: { label: 'Guarding the eggs', who: 'fish', hint: 'A parent chases off anyone who comes near its eggs.' },
+  chased: { label: 'Driven off', who: 'fish', hint: 'A brave parent charges at an octopus near its eggs.' },
+  puzzle: { label: 'Puzzle solved', who: 'octopus', hint: 'An octopus works out the puzzle jar.' },
+  visitor: { label: 'A rare visitor', who: 'any', hint: 'Now and then something from the open sea drops by. Tap it.' },
+  hatch: { label: 'A hatching', who: 'fish', hint: 'Eggs ready to hatch wait for someone to watch.' },
+  octohatch: { label: 'Baby octopuses', who: 'octopus', hint: 'Octopus partners, a den, and a lot of patience.' },
+  seabirth: { label: 'A seahorse birth', who: 'seahorse', hint: 'Seahorse fathers carry the young. Be there when they are born.' },
+};
+export const FIELD_PAY = 0;      // (a page is its own reward: the photo, and the page filled in; the economy stays as it is)
+function witness(t, id, f, now, ev, by = null, line = null) {
+  const F = (t.field ||= {}); if (!FIELD[id] || F[id]) return false;
+  if (by === 'You') by = null;      // (alone in the tank: no need to say who)
+  F[id] = { at: now, fish: f?.id ?? null, name: f?.name ?? null, by, text: line }; const n = Object.keys(F).length, N = Object.keys(FIELD).length;
+  ev.push({ journal: `Field Guide, page ${n} of ${N}: ${FIELD[id].label}.${by ? ` Seen first by ${by}.` : ''}`, toast: `New in the Field Guide: ${FIELD[id].label}!`, field: id }); return true;
+}
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -1340,13 +1376,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.fish && !x.dead), m = MOMENTS[a.kind]; if (!f || !m) return fail('NOT_FOUND');
       const o = a.other ? t.fish.find((x) => x.id === a.other && !x.dead && x.id !== f.id) : null; if (m.other && !o) return fail('NOT_FOUND');
       const at = (f.moments ||= {}); if (now - (at[a.kind] ?? 0) < m.gap) return ok({ applied: false });
-      at[a.kind] = now; events.push({ journal: m.text(f.name, o?.name) }); return ok();
+      at[a.kind] = now; const line = m.text(f.name, o?.name); events.push({ journal: line }); witness(t, a.kind, f, now, events, name, line); return ok();
     }
     case 'octoMoment': {                                            // something worth remembering an octopus did, written in the journal now and then (each kind of moment at most so often)
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead), m = OCTO_MOMENTS[a.kind]; if (!f || !m) return fail('NOT_FOUND');
       const o = a.other ? t.fish.find((x) => x.id === a.other && !x.dead && x.id !== f.id) : null; if (m.other && !o) return fail('NOT_FOUND');
       const at = (f.moments ||= {}); if (now - (at[a.kind] ?? 0) < m.gap) return ok({ applied: false });
-      at[a.kind] = now; events.push({ journal: m.text(f.name, o?.name) }); return ok();
+      at[a.kind] = now; const line = m.text(f.name, o?.name); events.push({ journal: line }); witness(t, a.kind, f, now, events, name, line); return ok();
     }
     case 'tankPref': { if (typeof a.rearrange === 'boolean') { if (a.rearrange) delete t.flags.noRearrange; else t.flags.noRearrange = true; } return ok(); }
     case 'moveDecor': {
@@ -1550,6 +1586,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });
       const d = SPECIES_DEF[v.species]; if (!t.seen.fish.includes(v.species)) t.seen.fish.push(v.species);
       t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; t.shells += 4;
+      witness(t, 'visitor', null, now, events, name, `${name} said hello to a ${d.label}.`);
       events.push({ activity: { type: 'visitor', text: `${name} greeted a rare visitor.` }, journal: `${name} said hello to a ${d.label}.`, toast: `${d.label} added to the book! +4 shells` }); levelCheck(t, now, events); return ok({ applied: true, delta: 4 });
     }
     case 'lookAfter': {                                              // a friend has not been in for two weeks (or has left): someone else takes their animal on, so it is never left to fend for itself
