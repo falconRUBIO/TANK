@@ -55,7 +55,7 @@ for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.ev
 const ask = await p.evaluate(() => ({ on: document.querySelector('#modal')?.classList.contains('on'), title: document.querySelector('#modal h2')?.textContent, opts: [...document.querySelectorAll('#modal [data-i]')].map((x) => x.textContent) }));
 await p.screenshot({ path: `${OUT}/5_ready.png` });
 ck("when they are ready: THEY'RE READY, with the three babies to choose from", ask.on && /READY/.test(ask.title ?? '') && ask.opts.length === 3, ask);
-await p.click('#modal [data-i="1"]'); await p.waitForTimeout(800);
+await p.click('#modal [data-i="1"]'); await p.waitForFunction(() => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? ''), null, { timeout: 8000, polling: 200 }).catch(() => {});      // (the confirmation comes once the choice has closed)
 const conf = await p.evaluate(() => ({ title: document.querySelector('#modal h2')?.textContent, ok: document.querySelector('#mok')?.textContent }));
 ck('choosing asks for a confirmation first', /KEEP/.test(conf.title ?? ''), conf);
 const pick = await p.evaluate(() => window.__game.state.nursery?.cands[1]);
