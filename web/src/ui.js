@@ -130,6 +130,8 @@ export function initUI({ game, social, cb }) {
     else if (D) nowRow(out, '✨', `${esc(D.turn.name)}'s call: ${esc(D.text)}`, 'nowcare');
     { const O = !D && s.omen && Date.now() - s.omen.at < 2.5 * 864e5 ? s.omen : null, [x, y] = O ? O.fish.map((id) => s.fish.find((f) => f.id === id)) : []; if (O && x) nowRow(out, '👀', esc(O.kind === 'lid' ? `${x.name} keeps reaching up to the lid` : O.kind === 'chase' ? `${x.name} keeps chasing ${y?.name ?? 'another fish'}` : O.kind === 'sick' ? `${x.name} looks a little pale` : `${x.name} and ${y?.name ?? 'another'} are eyeing the same den`), 'nowtank', 'watch'); }
     if ((s.eggs ?? []).some((e) => e.ready) || s.fish.some((f) => f.preg?.ready && !f.dead)) nowRow(out, '🥚', 'Ready to hatch: stay and watch', 'egg', 'now');
+    for (const f of s.fish.filter((x) => x.preg && !x.preg.ready && !x.dead).slice(0, 2)) { const d = Math.max(1, Math.round((f.preg.due - Date.now()) / 864e5)); nowRow(out, '🥚', `${esc(f.name)} is expecting`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`); }
+    for (const e of (s.eggs ?? []).filter((x) => !x.ready).slice(0, 2)) { const d = Math.max(1, Math.round((e.hatchAt - Date.now()) / 864e5)), a = s.fish.find((f) => f.id === e.a)?.name; nowRow(out, '🥚', e.species === 'octopus' ? `${esc(a ?? 'She')} is guarding her eggs` : `${esc(a ?? 'The fish')}'s eggs are growing`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`); }
     if (s.visitor && Date.now() < (s.visitor.until ?? 0)) nowRow(out, '🐠', `A ${esc((SPECIES_DEF[s.visitor.species]?.label ?? 'visitor').toLowerCase())} is visiting`, 'nowtank', 'look');
     for (const f of s.fish.filter((x) => !x.dead && x.away).slice(0, 2)) nowRow(out, '🐙', `${esc(f.name)}: ${esc(awayLine(f).toLowerCase())}`, 'nowtank');
     { const G = goalOf(s), sp = specialOf(s); if (G && MORPHS[G.id] && sp.color === G.id && G.next && /carrier/i.test(G.next.text)) nowRow(out, '🎁', `Today's special carries ${esc(MORPHS[G.id].label.toLowerCase())}, what your goal needs`, 'nowshop', 'shop'); }
@@ -834,6 +836,14 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); };
     }));
   }
+  // new life: a pregnancy, eggs laid. A card with the expecting animal's photo, what is happening and when, and a way to go and look
+  function newLife({ title, why, img, look = 'Go and see', icon = '🥚' }) {
+    return modalFree().then(() => new Promise((res) => {
+      modal.innerHTML = `<div class="box party life">${img ? `<div class="lifepic"><img alt="" src="${img}"></div>` : `<div class="big-ic">${icon}</div>`}<h2>${esc(title)}</h2>${why ? `<p>${esc(why)}</p>` : ''}<button class="big gold" id="mok">${esc(look)}</button><button class="lnk" id="mno">Later</button></div>`;
+      modal.classList.add('on', 'party'); sfx('arrive'); haptic(20);
+      $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); }; $('mno').onclick = () => { modal.classList.remove('on', 'party'); res(false); };
+    }));
+  }
   // an animal close to dying: said plainly, with the things that will save it as buttons
   function sick({ name, species, pal = null, why, acts }) {
     return modalFree().then(() => new Promise((res) => {
@@ -951,5 +961,5 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = async () => { sfx('tap'); if (await share()) done(); }; $('mno').onclick = done;
     }));
   }
-  return { weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

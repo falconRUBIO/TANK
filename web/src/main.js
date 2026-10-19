@@ -1288,6 +1288,20 @@ game.on('dilemmaDone', ({ kind, k, fish }) => { const [x, y] = (fish ?? []).map(
   else if (kind === 'lid' && x) { if (k === 'lid' && den) go(x, den.x, 0.8, den.z, 12); else if (k === 'let') x.glassAt = { x: 0, y: 3, until: performance.now() + 6000 }; spotlightFish(x.fid, 2800, 300); }
   else if (kind === 'den' && x && den) { go(k === 'y' ? y : x, den.x, 0.8, den.z, 12); }
   else if (x) { fishes.burst(x.pos); } });
+// ── new life: a seahorse father carrying young, eggs laid. Each one is told once on every phone, with a photo of the parent: when it happens if
+// the tank is open, otherwise the next time it is opened (after the replay). The journal keeps the line; this is the moment to go and look. ──
+const lifeSeen = (() => { try { return new Set(JSON.parse(localStorage.getItem('ourtank.lifeSeen') || '[]')); } catch { return new Set(); } })(); let lifeBusy = false;
+function lifeCheck() {
+  const s = game.state; if (!s || lifeBusy || document.hidden || (s.flags?.tut ?? 0) < 5 || (window.__quietUntil && Date.now() < window.__quietUntil)) return;
+  const name = (id) => s.fish.find((f) => f.id === id)?.name, days = (at) => Math.max(1, Math.round((at - Date.now()) / 864e5)), out = [];
+  for (const f of s.fish) if (f.preg && !f.dead && !f.preg.ready) out.push({ key: 'p' + f.id + ':' + f.preg.start, fish: f.id, title: `${f.name.toUpperCase()} IS EXPECTING`, why: `Seahorse fathers carry the young. ${f.name}${name(f.preg.mother) ? ` and ${name(f.preg.mother)}` : ''}'s babies come in about ${days(f.preg.due)} day${days(f.preg.due) > 1 ? 's' : ''}. Be there when they are born.` });
+  for (const e of s.eggs ?? []) if (!e.ready) { const a = name(e.a), b = name(e.b), octo = e.species === 'octopus'; out.push({ key: 'e' + e.id, fish: octo ? e.a : e.guard ?? e.a, title: octo ? `${(a ?? 'SHE').toUpperCase()} LAID EGGS` : `${a && b ? `${a.toUpperCase()} AND ${b.toUpperCase()}` : 'THE FISH'} HAVE EGGS`, why: octo ? `Strings of tiny eggs hang from the roof of her den. She will guard them for about ${days(e.hatchAt)} days; be there when they hatch.` : `They hatch in about ${days(e.hatchAt)} day${days(e.hatchAt) > 1 ? 's' : ''}, and wait for someone to watch.` }); }
+  const n = out.find((x) => !lifeSeen.has(x.key)); if (!n) return;
+  lifeSeen.add(n.key); try { localStorage.setItem('ourtank.lifeSeen', JSON.stringify([...lifeSeen].slice(-60))); } catch { /* storage unavailable */ }
+  const f = fishes.byId.get(n.fish); let img = null; try { img = f && !f.dead && f.group.visible ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; } catch { /* a photo is a nicety */ }
+  lifeBusy = true; ui.newLife({ title: n.title, why: n.why, img }).then((go) => { lifeBusy = false; if (go && f && !f.dead) setFocus(f); });
+}
+game.on('state', () => setTimeout(lifeCheck, 1500)); setInterval(lifeCheck, 5000);
 // before a decision is asked, the tank shows it for a day: the octopus reaching up to the lid, the chasing, the pale one keeping low, two at one den
 setInterval(() => { const s = game.state, O = s?.omen; if (!O || document.hidden || Date.now() - O.at > 2.5 * 864e5 || (s.dilemma && !s.dilemma.done)) return;
   const [x, y] = (O.fish ?? []).map((id) => fishes.byId.get(id)), go = (f, px, py, pz, k = 6) => { if (!f || f.dead || !f.target) return; f.target.set(px, py, pz); f.retarget = k; }, den = (s.decor ?? []).find((d) => ['coconut', 'pot'].includes(d.type));
