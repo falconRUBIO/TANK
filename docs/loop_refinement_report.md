@@ -219,7 +219,11 @@ Animal deaths: 0 in every household within 120 days (lifespans are longer). Negl
 - `npm test`:
   - 97 rule tests (the count printed mid-file), plus the care and selling checks, plus 10 `(refine)` tests appended after: all pass.
   - Adventures 27, Emergent Life 22, Living History 23, Biscuit 10, server 91: all pass.
-- **Browser drills** (`tools/check_all.sh`, quick set): see the run result in the commit or chat message that accompanies this report.
+- **Browser drills** (`tools/check_all.sh`, quick set): 23 of 26 passed on the first run.
+  - `dilemma_check` failed because its tank of two calm goldfish no longer produces an invented decision. I gave one goldfish a real illness; it now passes.
+  - `adventure_check` failed once while the simulation was running alongside it, then passed on its own (and passes on the old code). That looks like a timing problem under load, not a code change.
+  - `octo_baby_check` fails 2 checks on the code from before this work too ("eggs hang in her den", "staged photo"), so it was already failing. On the new code only the photo check fails.
+  - The full nightly set (`FULL=1`) was not run.
 
 ## 24. Remaining problems
 
