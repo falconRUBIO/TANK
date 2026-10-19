@@ -888,3 +888,9 @@ ok('breeding: rare colours are recessive, two carriers have about one baby in fo
   for (let i = 0; i < N; i++) { const g = G.blendGenes(a.genes, b.genes, G.seededRandom(i * 7919 + 1)); if (g.m[0] === 'gold' && g.m[1] === 'gold') gold++; }
   assert.ok(gold > N * 0.15 && gold < N * 0.35, `about a quarter golden: ${gold}/${N}`);
 });
+ok('raising: what you do with a young one decides who it grows up to be, and its card says which way it is leaning', () => {
+  const D = 864e5, H = 3600e3, t0 = 10 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.fish = [R.ensureFish({ id: 'p', name: 'Pip', species: 'goldfish', seed: 2, born: t0, stage: 'baby', traits: ['Lazy'] })]; return t; };
+  const a = mk(); for (let i = 0; i < 3; i++) R.applyAction(a, { t: 'play', id: 'p' }, { now: t0 + (i + 1) * H, name: 'You' });
+  assert.match(R.storyNext(a, a.fish[0], t0 + 4 * H), /would be playful/); let ev = []; for (let d = 1; d <= 8 && a.fish[0].stage !== 'adult'; d++) { a.hunger = 0; a.water = 1; ev.push(...R.advance(a, t0 + d * D)); } assert.ok(a.fish[0].traits.includes('Playful') && !a.fish[0].traits.includes('Lazy'), JSON.stringify(a.fish[0].traits)); assert.ok(ev.some((e) => /grew up Playful/.test(e.journal ?? '')));
+  const b = mk(); for (let d = 1; d <= 8 && b.fish[0].stage !== 'adult'; d++) { b.hunger = 0; b.water = 1; R.advance(b, t0 + d * D); } assert.ok(b.fish[0].traits.includes('Shy'), 'left to itself, it grows up shy');
+});

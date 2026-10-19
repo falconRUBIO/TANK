@@ -117,7 +117,7 @@ export function storyNext(t, f, now = Date.now()) {
   const egg = (t.eggs ?? []).find((e) => e.id === f.brood || e.guard === f.id || e.a === f.id || e.b === f.id);
   if (egg) return egg.ready ? 'The eggs are ready to hatch. Be there to watch.' : `${f.brood === egg.id ? 'Guarding' : 'Waiting on'} the eggs: they hatch in ${days(egg.hatchAt - now)}.`;
   if (f.preg) return f.preg.ready ? 'About to give birth. Be there to watch.' : `Carrying young in his pouch: due in ${days(f.preg.due - now)}.`;
-  const ns = nextStage(f, now); if (ns) return `Grows into ${ns.to === 'adult' ? 'an adult' : 'a juvenile'} in ${ns.label}.`;
+  const ns = nextStage(f, now); if (ns) { const L = raiseLean(f), how = L.pending ? (L.n ? ` Leaning ${L.tr.toLowerCase()} so far, from how you raise it.` : ' How you raise it now decides who it becomes: pet it, play, hide treats, feed it every day.') : ` If it grew up today it would be ${L.tr.toLowerCase()}.`; return `Grows into ${ns.to === 'adult' ? 'an adult' : 'a juvenile'} in ${ns.label}.${how}`; }
   if (isOcto(f) && f.partner && nm(f.partner)) { const tog = (now - (f.partneredAt ?? now)) / DAY; return tog < OCTO_EGG_AFTER ? `Partners with ${nm(f.partner)} for ${Math.floor(tog)} day${Math.floor(tog) === 1 ? '' : 's'}. Octopus partners lay after about ${OCTO_EGG_AFTER}, if they have a den.` : `Partners with ${nm(f.partner)}. ${f.home ? 'Eggs could come any day now.' : 'They need a den of their own for eggs.'}`; }
   if (f.mate && nm(f.mate)) return `Paired with ${nm(f.mate)}. Seahorses pair for life, and the father carries the young.`;
   const same = t.fish.filter((x) => x !== f && !x.dead && x.species === f.species);
@@ -1209,13 +1209,17 @@ function dailySurprise(t, now, ev) {
   if (!opts.length) return; const o = pick(opts, 6)(); ev.push({ story: o.f.id, text: o.text, toast: o.text, surprise: { fish: o.f.id, text: o.text } });      // (in that fish's own story, not the tank's journal: feeding stays quiet there)
 }
 // ── Growing up shaped by care ── a young fish that was fed often grows up content; one that was played with a lot grows up bold
+// How you raise a young one decides who it grows up to be. Each kind of attention while it is small counts (once an hour at most): petting
+// makes it bold, games make it playful, hiding treats and puzzles make it curious, being fed every day makes it calm; left to itself it grows up shy.
+const RAISE = [['pets', 5, 'Brave', (f) => `All that attention made ${f.name} bold: it grew up Brave.`], ['play', 3, 'Playful', (f) => `All those games: ${f.name} grew up Playful.`], ['seek', 2, 'Curious', (f) => `Hunting for hidden treats made ${f.name} grow up Curious.`], ['days', 4, 'Calm', (f) => `Well fed every day while it grew, ${f.name} grew up Calm and content.`]];
+export function raiseLean(f) { const R = f?.raise ?? {}, n = (k) => (k === 'days' ? (R.days ?? []).length + (R.meals ?? 0) : R[k] ?? 0); const sc = RAISE.map(([k, need, tr, line]) => ({ k, tr, line, n: n(k), need, r: n(k) / need })).sort((a, b) => b.r - a.r); const top = sc[0];
+  if (top.r >= 1) return top; if (sc.every((x) => x.n === 0) || (n('pets') + n('play') + n('seek') === 0 && n('days') < 2)) return { k: 'none', tr: 'Shy', line: (x) => `Left mostly to itself, ${x.name} grew up Shy.`, n: 0, r: 1 }; return { ...top, pending: true }; }
 function raised(t, f, now, ev) {
-  const R = f.raise; if (!R) return; const fed = (R.days ?? []).length + (R.meals ?? 0), pets = R.pets ?? 0, tr = f.traits ?? [];
-  const add = pets >= 5 && !tr.includes('Brave') ? ['Brave', `All that attention made ${f.name} bold: it grew up Brave.`] : fed >= 4 && !tr.includes('Calm') ? ['Calm', `Well fed while it grew, ${f.name} grew up Calm and content.`] : null;
-  if (add) { f.traits = [...tr.filter((x) => !(add[0] === 'Brave' && x === 'Shy')), add[0]].slice(-3); f.raisedAs = add[0]; ev.push({ journal: add[1], story: f.id, text: add[1] }); }
-  delete f.raise;
+  const L = raiseLean(f), tr = f.traits ?? []; delete f.raise; if (L.pending || tr.includes(L.tr)) return;
+  const opp = { Brave: 'Shy', Shy: 'Brave', Playful: 'Lazy', Calm: 'Playful' }[L.tr]; f.traits = [...tr.filter((x) => x !== opp), L.tr].slice(-3); f.raisedAs = L.tr; const line = L.line(f);
+  ev.push({ journal: line, story: f.id, text: line, toast: `${f.name} grew up ${L.tr.toLowerCase()}, the way you raised it.` });
 }
-function raiseNote(t, now, kind, f = null) { const d = Math.floor(now / DAY); for (const x of f ? [f] : t.fish) { if (x.dead || stageOf(x, now) === 'adult') continue; const R = (x.raise ||= {}); if (kind === 'fed') { R.days ||= []; if (!R.days.includes(d)) R.days.push(d); } else R.pets = (R.pets ?? 0) + 1; } }
+function raiseNote(t, now, kind, f = null) { const d = Math.floor(now / DAY), hr = Math.floor(now / HOUR); for (const x of f ? [f] : t.fish) { if (x.dead || stageOf(x, now) === 'adult') continue; const R = (x.raise ||= {}); if (kind === 'fed') { R.days ||= []; if (!R.days.includes(d)) R.days.push(d); continue; } const key = kind === 'pet' ? 'pets' : kind; R.at ||= {}; if (R.at[key] === hr) continue; R.at[key] = hr; R[key] = (R[key] ?? 0) + 1; } }
 // ── Each fish's milestones ── one path for every fish, from the day it came home to raising young of its own
 // ── An octopus learns to trust you ── slowly, from crabs and from time spent with it (each crab or play counts once): first it hides from you,
 // then it watches you from its shell, then it comes to the glass when you look in, and at last it takes a crab from your fingers
@@ -1292,6 +1296,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   if (AWAY_BLOCK.has(a.t) && [a.id, a.fish, a.with].flat().filter((x) => typeof x === 'string').some((id) => t.fish.find((x) => x.id === id)?.away)) return fail('AWAY');      // (every animal the action names: one listed under another field once slipped through)      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
+  { const kind = { play: 'play', hide: 'seek', puzzle: 'seek' }[a.t], yf = kind && t.fish.find((f) => f.id === (a.id ?? a.fish) && !f.dead); if (yf) raiseNote(t, now, kind, yf); }      // (raising: what you do with a young one counts toward who it becomes)
   switch (a.t) {
     case 'watchEggs': {      // someone has the tank open and is looking: ready eggs hatch now, in front of them
       const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready), m = t.fish.find((f) => f.preg?.ready && !f.dead && (!a.id || f.id === a.id));
