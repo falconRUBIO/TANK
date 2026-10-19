@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
+import * as G from './genes.js';
 // time goes by an hour at a time until an egg is laid and gets ready, and someone is there to watch it hatch (eggs wait to be watched)
 const watchHatch = (t, now, days = 7) => { for (let k = 0; k < days * 24; k++) { now += 3600e3; R.advance(t, now); const e = (t.eggs ?? []).find((x) => x.ready); if (e) { R.applyAction(t, { t: 'watchEggs', id: e.id }, { now: now + 1000 }); return now + 1000; } } return now; };
 import fs from 'node:fs';
@@ -874,4 +875,16 @@ ok('a find turns up as the day\'s mystery now: it pays what the find is worth on
   for (let d = 40; d < 200 && !seen; d++) { const t = R.newWorld(0); R.norm(t, d * D); t.flags.tut = 5; const at = d * D + 12 * 3600e3; R.advance(t, at); assert.equal(t.drift, null, 'no drift on its own'); const m = R.mysteryOf(t, at); if (m.kind !== 'find') continue; seen++;
     const s0 = t.shells, r = R.applyAction(t, { t: 'mystery', tz: 0 }, { now: at + 1, uid: 'u', name: 'Ana' }); assert.ok(r.applied && r.line.length > 8, r.line); assert.equal(t.shells - s0, r.delta); assert.ok(r.delta >= R.DAILY_GIFT, 'the gift, and the find'); }
   assert.ok(seen, 'a find came up');
+});
+ok('breeding: rare colours are recessive, two carriers have about one baby in four that shows it, and you can bring a pair together', () => {
+  const D = 864e5, now = 30 * D, t = R.newWorld(0); R.norm(t, now); t.flags.tut = 5; t.level = 8; t.simTs = now; t.flags.noWants = true;
+  const mk = (id, sex, m) => R.ensureFish({ id, name: id, species: 'goldfish', sex, seed: id.length * 7, born: now - 20 * D, stage: 'adult', traits: [], genes: { ...R.genesOf(3), m } });
+  const a = mk('Amy', 'f', ['gold', 'n']), b = mk('Bob', 'm', ['gold', 'n']), c = mk('Cy', 'm', ['n', 'n']); t.fish = [a, b, c];
+  assert.equal(R.morphOf(a), null); assert.deepEqual(R.carriesOf(a), ['gold']); assert.deepEqual(R.morphOdds(a, b), { gold: 0.25 }); assert.deepEqual(R.morphOdds(a, c), {});
+  assert.equal(R.applyAction(t, { t: 'matchmake', a: 'Amy', b: 'Bob' }, { now, name: 'You' }).ok, true); assert.equal(t.match.a, 'Amy'); assert.ok(t.eggAt <= now + 8 * 3600e3);
+  assert.equal(R.applyAction(t, { t: 'matchmake', a: 'Amy', b: 'Cy' }, { now: now + 1000 }).reason, 'TOO_SOON');
+  let gold = 0; const N = 400;
+  const founders = Array.from({ length: 400 }, (_, i) => R.genesOf(i * 13 + 1)); const carriers = founders.filter((g) => g.m.some((x) => x !== 'n')).length; assert.ok(carriers > 80 && carriers < 160, 'about a third of founders carry one: ' + carriers); assert.ok(founders.every((g) => g.m[0] !== g.m[1] || g.m[0] === 'n'), 'no founder shows one');
+  for (let i = 0; i < N; i++) { const g = G.blendGenes(a.genes, b.genes, G.seededRandom(i * 7919 + 1)); if (g.m[0] === 'gold' && g.m[1] === 'gold') gold++; }
+  assert.ok(gold > N * 0.15 && gold < N * 0.35, `about a quarter golden: ${gold}/${N}`);
 });

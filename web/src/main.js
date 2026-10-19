@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { harmonyOf, mysteryOf, MYSTERY, storyNext } from './game/rules.js';
+import { harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -982,6 +982,12 @@ function showCard(f) {
     if (rec.loss && Date.now() < rec.loss.until) out.push(rec.loss.rehomed ? `Misses ${esc(rec.loss.name)}, who went to a new home.` : `Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
     { const hm = harmonyOf(game.state); if (game.state.fish.length > 1 && hm?.note && hm.note.includes(rec.name)) out.push(`Tank harmony: ${esc(hm.label.toLowerCase())}. ${esc(hm.note)}`); }      // (how it gets on with the others: moved here from Care)
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
+  // its colour genes, plainly, and who it could be paired with (and what their babies might look like)
+  const geneLine = (() => { const live = game.state.fish.find((x) => x.id === rec.id); if (!live || live.dead) return ''; const mo = morphOf(live), car = carriesOf(live), out = [];
+    if (mo) out.push(`<b>${esc(MORPHS[mo].label)}</b>, a rare colour with two copies of the gene.`); if (car.length) out.push(`Carries ${car.map((x) => MORPHS[x].label.toLowerCase()).join(' and ')} (hidden: a baby needs a copy from each parent).`);
+    const adult = stageOf(live) === 'adult', mates = adult && live.species !== 'seahorse' ? game.state.fish.filter((o) => o !== live && !o.dead && o.species === live.species && stageOf(o) === 'adult' && (isOctoF(live) ? !o.partner && !live.partner : sexOf(o) !== sexOf(live))) : [];
+    const btns = mates.slice(0, 3).map((o) => { const od = Object.entries(morphOdds(live, o)).map(([k, v]) => `${Math.round(v * 100)}% ${MORPHS[k].label.toLowerCase()}`).join(', '); return `<button class="pair" data-pair="${esc(o.id)}">Pair with ${esc(o.name)}${od ? ` <small>${od}</small>` : ''}</button>`; }).join('');
+    return out.length || btns ? `<div class="genes">${out.length ? `<p class="mind">${out.join(' ')}</p>` : ''}${btns}</div>` : ''; })();
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
       if (rec.away) out.push(`<b>${rec.away.inTank ? 'HIDING SOMEWHERE' : 'OUT EXPLORING'}</b>`);
@@ -1013,7 +1019,7 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${geneLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
     <div class="needs one">${needsLine(p.needs)}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
@@ -1043,6 +1049,7 @@ function showCard(f) {
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
   card.querySelectorAll('[data-tip]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.tip, 3200); }; }); if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
+  card.querySelectorAll('[data-pair]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap'); const r = await game.dispatch({ t: 'matchmake', a: f.fid, b: b.dataset.pair }); if (!r.ok) return fail(r); haptic(14); ui.toast('Brought together. Give them time.', 3000); showCard(f); }; });
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }

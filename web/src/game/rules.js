@@ -1,7 +1,9 @@
 // OUR TANK game rules. Pure functions with no browser or server dependencies, so the exact same code
 // runs on the server (authoritative, shared tank) and in the browser (solo tank).
 import { skyOf } from './sky.js';
-import { genesOf, blendGenes, seededRandom } from './genes.js';
+import { genesOf, blendGenes, seededRandom, allelesOf, morphOf, carriesOf, morphOdds, MORPHS } from './genes.js';
+export { allelesOf, morphOf, carriesOf, morphOdds, MORPHS };
+const gOf = (p, seed) => ({ ...(p?.genes ?? genesOf(p?.seed ?? seed)), m: allelesOf(p ?? { seed }) });      // (a parent's genes, with its colour genes even if they were stored before there were any)
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
 import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
 export { keepStory, todOf, TOD, LIFE, decorStory };
@@ -485,11 +487,16 @@ export const NOTE_KEEP = 14 * 864e5, NOTE_COLORS = ['butter', 'blush', 'mint', '
 const careEgg = (t, now) => { const d = Math.floor(now / DAY); for (const e of t.eggs ?? []) { e.cared ||= []; if (!e.cared.includes(d) && now < e.hatchAt) e.cared.push(d); } };      // food or clean water on a day counts as looking after the egg that day
 export const eggCare = (e) => (e?.cared ?? []).length;
 // one little one from these eggs, its looks and nature from both parents (the same way for the first and for a second one that is kept)
+// a baby that shows a rare colour: a line in the journal, and the first of each colour is kept in the Field Guide's colour pages
+function morphBorn(t, f, now, ev) {
+  const m = morphOf(f); if (!m) return; const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
+  ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare colour, from both parents.'}`, toast: `${f.name} is ${M.label.toLowerCase()}!`, story: f.id, morph: m });
+}
 function makeChild(t, e, now) {
   const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
   const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
   const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
-  const genes = A && B ? blendGenes(A.genes ?? genesOf(A.seed ?? seed), B.genes ?? genesOf(B.seed ?? seed), seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
+  const genes = A && B ? blendGenes(gOf(A, seed), gOf(B, seed), seededRandom(h)) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
   const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: t.fish.find((x) => x.id === e.a && !x.dead)?.owner ?? A?.owner ?? null, ownerName: t.fish.find((x) => x.id === e.a && !x.dead)?.ownerName ?? A?.ownerName ?? null }); t.fish.push(f);
   return { f, A, B, h, gen };
 }
@@ -505,7 +512,7 @@ function eggs(t, now, ev) {
       ev.push({ journal: eggCareOf(e).mode === 'den' ? `${nmA ?? 'The mother'} is blowing water over her eggs, and tiny shapes are moving inside them. They are ready to hatch.` : `${nmA && nmB ? `${nmA} and ${nmB}'s eggs` : 'The eggs'} are wriggling. They are ready to hatch.`, toast: 'The eggs are ready to hatch! Stay and watch.', eggReady: e.id, jat: e.ready }); }
     if (!e.watch && now < e.by) continue;      // ready: they hatch while someone is watching (or, failing that, by the next morning)
     t.eggs.splice(t.eggs.indexOf(e), 1);
-    const { f, A, B, h, gen } = makeChild(t, e, now);
+    const { f, A, B, h, gen } = makeChild(t, e, now); morphBorn(t, f, now, ev);
     f.hatched = now; const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
     for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) { o.restUntil = now + 2 * DAY; ev.push({ journal: `${o.name} is worn out after guarding her eggs for days. She is resting in her den.`, story: o.id, text: 'Worn out after guarding her eggs; resting in her den.', jat: now + 60e3 }); } }      // (her watch is over; an octopus mother rests a while)
@@ -531,7 +538,8 @@ function eggs(t, now, ev) {
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
-  const g = pairs[hash32(now / 6e4) % pairs.length], A = g[0], B = g.find((f) => sexOf(f) !== sexOf(A)), [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
+  const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1];      // the pair you brought together, if they are still here and grown
+  const g = pairs[hash32(now / 6e4) % pairs.length], A = set ? Mt[0] : g[0], B = set ? Mt[1] : g.find((f) => sexOf(f) !== sexOf(A)), [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
   t.eggs.push({ id: nextId(t, 'e'), species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), laid: now, hatchAt: wakeAt(t, now + EGG_DAYS * DAY), cared: [], guard: C.mode === 'drift' ? null : Fa.id, risk: C.mode !== 'mouth' && t.fish.some((f) => f.species === 'octopus' && !f.dead) && hash32(now / 6e4 + 7) % 40 === 0 });      /* (and only while no parent is guarding it, see eggs()) */ t.eggAt = now + (EGG_DAYS + 2 + (hash32(now / 6e4 + 3) % 3)) * DAY; unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
   const say = C.mode === 'mouth' ? { journal: `${Mo.name} laid eggs and ${Fa.name} took them into his mouth. He will carry them, eating nothing, until they hatch.`, toast: `${Fa.name} is carrying eggs in his mouth! They hatch in ${EGG_DAYS} days.` }
     : C.mode === 'drift' ? { journal: `${A.name} and ${B.name} rose together and let their eggs go, as their kind do. The eggs drift by the plants now.`, toast: `${A.name} and ${B.name} spawned! Their eggs drift free. Food and clean water help them hatch strong.` }
@@ -660,7 +668,7 @@ function seaFamilies(t, now, ev) {
     for (let i = 0; i < 3; i++) { const h = hash32(P.seed + i * 7919), pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null), traits = [...new Set([pick(ma, 1), pick(pa, 3)].filter(Boolean))];
       const role = BABY_ROLES[i], tr = [ROLE_TRAIT[role], ...(traits.length ? traits : traitsFor('seahorse', h % 90000)).filter((x) => x !== ROLE_TRAIT[role])].slice(0, 2);      // each of the three is its own little character, and its first trait is the one it shows
       let k = (h + i) % Math.max(1, names.length); while (names.length > cands.length && cands.some((c) => c.name === names[k])) k = (k + 1) % names.length;      // three different names
-      cands.push({ id: nextId(t, 'f'), name: names[k] ?? NAMES[(h + i) % NAMES.length], seed: h % 90000, role, traits: tr, genes: ma && pa ? blendGenes(ma.genes, pa.genes, seededRandom(h)) : genesOf(h % 90000), sex: i === 0 ? 'm' : i === 1 ? 'f' : (h & 1 ? 'm' : 'f') }); }
+      cands.push({ id: nextId(t, 'f'), name: names[k] ?? NAMES[(h + i) % NAMES.length], seed: h % 90000, role, traits: tr, genes: ma && pa ? blendGenes(gOf(ma), gOf(pa), seededRandom(h)) : genesOf(h % 90000), sex: i === 0 ? 'm' : i === 1 ? 'f' : (h & 1 ? 'm' : 'f') }); }
     t.nursery = { id: fam, father: m.id, mother: P.mother, pa, ma, born, readyAt: wakeAt(t, born + SEA.NURSERY * DAY), n: P.n, gen: Math.max(pa.gen ?? 0, ma?.gen ?? 0) + 1, cands };
     if (P.watch) witness(t, 'seabirth', m, now, ev, null, `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`);
     ev.push({ journal: `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n} tiny seahorses.`, birth: m.id });
@@ -1294,7 +1302,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const O = t.fryOffer; if (!O || O.id !== a.id) return fail('NOT_FOUND'); t.fryOffer = null; if (now > O.until) return ok({ applied: false, gone: true });
       if (!a.keep) { events.push({ journal: 'The last little larva drifted off after the others.' }); return ok({ keep: false }); }
       if (t.fish.length + pending(t) >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');
-      const { f } = makeChild(t, O.egg, now); f.hatched = O.at ?? now; const sib = t.fish.find((x) => x.id === O.first);
+      const { f } = makeChild(t, O.egg, now); morphBorn(t, f, now, events); f.hatched = O.at ?? now; const sib = t.fish.find((x) => x.id === O.first);
       events.push({ journal: `${name} kept one more: ${f.name}${sib ? `, ${sib.name}'s twin` : ''}, stays too.`, toast: `${f.name} stays too!`, arrival: [f.id], hatch: { egg: O.egg.id, fish: f.id, fry: 0, twin: true } });
       return ok({ keep: true, fish: f.id });
     }
@@ -1592,7 +1600,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
       if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
       const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, lean: leanOf([N.pa, N.ma], hash32(c.seed + 11)), birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
-      const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      /* every phone watching sees the others swim off, once */ (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
+      const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); morphBorn(t, f, now, events); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      /* every phone watching sees the others swim off, once */ (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
       if (!t.flags.firstHatch) t.flags.firstHatch = { at: now, fish: f.id, parents: [N.father, N.mother] };
       events.push({ journal: `${f.name} is staying in the tank, a little seahorse born here to ${N.pa?.name ?? 'its father'} and ${N.ma?.name ?? 'its mother'}. The other babies have swum off to new homes.`, toast: `${f.name} is staying!`, kept: f.id }); return ok();
     }
@@ -1649,6 +1657,17 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (o.visit && !t.visitor) t.visitAt = Math.min(t.visitAt ?? Infinity, wakeAt(t, (day + 1) * DAY + 2 * HOUR));      // (the visitor it hinted at comes tomorrow)
       events.push({ journal: o.line, ...(o.fish ? { story: o.fish.id } : {}), mystery: { kind: m.kind, fish: m.fish, next: !!o.next }, activity: { type: 'mystery', text: `${name} looked into today's mystery.` } });
       levelCheck(t, now, events); return ok({ applied: true, line: o.line, fish: m.fish, next: !!(o.next || o.visit), delta: pay });
+    }
+    case 'matchmake': {      // bring two together: fish of a kind spawn sooner and it is these two; two octopuses get to know each other faster
+      const x = t.fish.find((f) => f.id === a.a && !f.dead), y = t.fish.find((f) => f.id === a.b && !f.dead); if (!x || !y || x === y) return fail('NOT_FOUND');
+      if (x.species !== y.species) return fail('NOT_SAME_KIND'); if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');
+      if (now - (t.flags.matchAt ?? -Infinity) < DAY) return fail('TOO_SOON'); t.flags.matchAt = now;
+      if (isOcto(x)) { if (x.partner || y.partner) return fail('ALREADY_PAIRED'); const k = [x.id, y.id].sort().join('|'); (t.octoBonds ||= {})[k] = (t.octoBonds[k] ?? 0) + 1.5 * DAY; events.push({ journal: `${name} brought ${x.name} and ${y.name} together. They are getting to know each other.` }); return ok(); }
+      if (x.species === 'seahorse') return fail('SEAHORSES_CHOOSE');
+      if (sexOf(x) === sexOf(y)) return fail('SAME_SEX');
+      t.match = { a: sexOf(x) === 'f' ? x.id : y.id, b: sexOf(x) === 'f' ? y.id : x.id, until: now + 5 * DAY, by: name }; t.eggAt = Math.min(t.eggAt ?? Infinity, now + 8 * HOUR);
+      const odds = morphOdds(x, y), best = Object.entries(odds).sort((p, q) => q[1] - p[1])[0];
+      events.push({ journal: `${name} brought ${x.name} and ${y.name} together.${best ? ` Their babies could be ${MORPHS[best[0]].label.toLowerCase()}.` : ''}` }); return ok({ odds });
     }
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });

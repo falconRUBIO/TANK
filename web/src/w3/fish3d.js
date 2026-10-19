@@ -7,7 +7,7 @@ import { gripsFor, gripsNow, PLANTS } from './grips.js';
 const SWIVEL = 0.15;      // how far a seahorse turns either way on its stem as it watches (radians)
 // a seahorse feeding: how far from its snout it notices food, how close food must come to be sucked in, and how long the strike takes (seconds)
 const SEA_WATCH = 2.4, SEA_REACH = 0.3, SEA_STRIKE = 0.16;
-import { genesOf } from '../game/genes.js';
+import { genesOf, MORPHS } from '../game/genes.js';
 import { patch } from './env.js';
 import { sandH, sandUnder, slopeAt, levelAt, routeBetween, crossesFace, GLASS_Z } from './terrain.js';
 const _m4 = new THREE.Matrix4(), _eu = new THREE.Euler(), _rq = [0, 0, 0], _snt = new THREE.Vector3();
@@ -78,9 +78,9 @@ export class Fish3D {
       this.mesh.setColorAt(i, col);
     });
     // every fish is its own: a small hue, saturation, brightness and size shift from its seed (neutral whites and eyes stay put)
-    { const gn = opts.genes ?? genesOf(seed), dh = gn.dh, ds = gn.ds, dl = gn.dl, hsl = {};
+    { const gn = opts.genes ?? genesOf(seed), dh = gn.dh, ds = gn.ds, dl = gn.dl, hsl = {}, M = gn.m && gn.m[0] === gn.m[1] ? MORPHS[gn.m[0]] : null;      // (a rare colour, two copies of it: the whole fish takes it on)
       this.size = gn.size;
-      this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
+      this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { if (M) col.setHSL(M.h ?? hsl.h, M.s, Math.min(0.95, hsl.l * 0.4 + M.l * 0.6)); else col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
     const nrm = new Float32Array(n * 3);
     this.vox.forEach((v, i) => {

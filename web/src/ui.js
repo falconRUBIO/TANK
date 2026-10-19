@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -298,6 +298,8 @@ export function initUI({ game, social, cb }) {
       return `<div class="fg">${im ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${im}" alt=""></button>` : `<div class="fgpic seen">✓</div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
     return `<div class="fghead"><b>Field Guide</b><span>${got} of ${all.length} seen</span></div><p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
   // what each animal has shown you about itself (its discoveries), as pages of the same book: who, and since when
+  // the rare colours bred in this tank: the first of each, and a hint for the rest
+  const morphHtml = () => { const got = S().morphs ?? {}; return `<h4>Rare colours bred</h4><div class="shown">${Object.entries(MORPHS).map(([k, M]) => got[k] ? `<div><b>${esc(M.label)}</b><small>${esc(got[k].name)} · ${esc((SPECIES_DEF[got[k].species]?.label ?? '').toLowerCase())}</small></div>` : `<div class="nope"><b>${esc(M.label)}</b><small>Pair two carriers</small></div>`).join('')}</div>`; };
   const shownHtml = () => { const by = new Map(); for (const f of S().fish) for (const [k, at] of Object.entries(f.disc ?? {})) { const d = DISCOVERIES[k.split(':')[0]]; if (!d || k.includes(':')) continue; const e = by.get(d.label) ?? { at, who: [] }; if (!e.who.includes(f.name)) e.who.push(f.name); e.at = Math.min(e.at, at); by.set(d.label, e); }
     return by.size ? `<h4>What they have shown you</h4><div class="shown">${[...by].sort((a, b) => b[1].at - a[1].at).map(([l, e]) => `<div><b>${esc(l)}</b><small>${esc(e.who.slice(0, 3).join(', '))}${e.who.length > 3 ? ` and ${e.who.length - 3} more` : ''}</small></div>`).join('')}</div>` : ''; };
   const bookHtml = () => {
@@ -504,7 +506,7 @@ export function initUI({ game, social, cb }) {
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
       if (sub === 'book') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
-      if (sub === 'book') return `<div class="crew"><h3>Field Guide</h3>${seg}${fieldHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;      // (one book: what they do, what they have shown you, and every kind of animal and decoration)
+      if (sub === 'book') return `<div class="crew"><h3>Field Guide</h3>${seg}${fieldHtml()}${morphHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;      // (one book: what they do, what they have shown you, and every kind of animal and decoration)
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="crewbox"><div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>
