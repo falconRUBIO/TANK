@@ -926,7 +926,7 @@ function rollDilemma(t, now, ev) {
   const LO = layoutOf(t);
   if (dens.length && dens.length < octos.length + (fish.length ? 1 : 0) && live.length >= 2 && (octos.length >= 2 || (octos.length && fish.length))) { const x = octos[0], y = live.find((f) => f !== x); c.push({ kind: 'den', fish: [x.id, y.id], decor: (homeOf(t, x) ?? dens[0]).id }); }
   const ill = live.filter((f) => (f.ail ?? 0) >= AIL_TIRED / 2 && !isOcto(f)); if (ill.length) c.push({ kind: 'sick', fish: [pick(ill, 3).id] });      /* (only a fish that really is off colour: its ail has been building for half a day or more) */
-  const restless = octos.filter((f) => { const M = octoMind(f); return !f.restUntil || f.restUntil < now ? M.cur + M.bold > 1.25 && (f.happy ?? 0.7) >= 0.5 : false; }); if (restless.length && !(t.adv?.octoAt > now + 5 * DAY)) c.push({ kind: 'lid', fish: [pick(restless, 5).id] });      /* (a bold, curious octopus that is well enough to want out, and is not already kept in) */
+  const restless = octos.filter((f) => (!f.restUntil || f.restUntil < now) && f.lid && now - f.lid.at < 3 * DAY && f.lid.n >= 2);      /* (only an octopus seen testing the lid, more than once in the last three days) */ if (restless.length && !(t.adv?.lidUntil > now)) c.push({ kind: 'lid', fish: [pick(restless, 5).id] });      /* (and not already kept in by a weighted lid) */
   const SO = (f) => SOCIAL[f.species] ?? {}, calm = fish.filter((f) => !(f.calmUntil > now));
   const pairs = calm.flatMap((x) => fish.filter((y) => y !== x && (y.grudge?.id === x.id || (SO(x).bully && (SO(y).shy || (SO(y).size ?? 1) < (SO(x).size ?? 1) || SO(y).kind === 'Peaceful')) || (SO(x).sameFoe && y.species === x.species))).map((y) => [x, y]));      /* (a real reason: a bully and a smaller or shy fish, two of a kind that will not share, or an old grudge) */
   if (pairs.length && !(LO.thicket && luckOf(h) < 70)) { const [x, y] = pick(pairs, 7); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
@@ -955,7 +955,7 @@ function settleDilemma(t, D, k, now, name) {
     else if (luck < 45) say(`${who} to wait and see. It was nothing: ${x.name} is back to itself.`);
     else { const others = t.fish.filter((f) => !f.dead && f !== x && !isOcto(f)).slice(0, 2); for (const f of [x, ...others]) f.ail = Math.min(AIL_DIE - 3600, Math.max(f.ail ?? 0, AIL_TIRED) + 0.5 * 86400);      /* (it spread: everyone it reached is unwell, never past what neglect allows) */ say(`${who} to wait and see. It spread: ${[x, ...others].map((f) => f.name).join(', ')} look unwell. Clean water and food will help.`); } }
   if (D.kind === 'lid') { t.adv ||= {};
-    if (k === 'lid') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 7 * DAY); hap(x, -0.2); say(`${who} to weigh the lid down. ${x.name} sulks in its den, but it stays in.`); }
+    if (k === 'lid') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 7 * DAY); t.adv.lidUntil = now + 7 * DAY; hap(x, -0.2); say(`${who} to weigh the lid down. ${x.name} sulks in its den, but it stays in.`); }
     else if (k === 'busy') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 3 * DAY); hap(x, 0.15); say(`${who} to keep ${x.name} busy. It forgets about the lid for now, and seems pleased with itself.`); }
     else { t.adv.octoAt = Math.min(t.adv.octoAt ?? Infinity, now + 2 * HOUR); hap(x, 0.2); say(`${who} to let ${x.name} explore. It will be off on an adventure soon.`); } }
   if (D.kind === 'chase') {
@@ -1631,6 +1631,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
       needsMet(t, needs0, a.type, now, events); themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);
       return ok({ id: item.id });
+    }
+    case 'octoLid': {                                               // the phone that runs the animals saw an octopus go up and test the lid (a real behavior: what a lid decision is about)
+      const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead && !x.away); if (!f || stageOf(f, now) === 'baby') return fail('NOT_FOUND');
+      const L = (f.lid ||= { n: 0, at: 0, first: now }); if (now - L.at < HOUR) return ok({ applied: false });
+      if (now - L.at > 3 * DAY) L.n = 0; L.n += 1; L.at = now; if (!f.disc?.lid) { (f.disc ||= {}).lid = now; const line = `${f.name} went up to the lid and tested it with its arms.`; events.push({ story: f.id, text: line }); }      /* (the first time goes in its story; after that it is only remembered) */
+      return ok();
     }
     case 'octoMove': {                                              // an octopus shifts a small decoration (the phone that is watching reports it)
       if (t.flags.noRearrange) return fail('OFF');

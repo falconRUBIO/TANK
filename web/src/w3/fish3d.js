@@ -927,7 +927,7 @@ export class Fish3D {
     if (gl && S.s !== 'glass' && S.s !== 'work' && S.s !== 'jet' && !this.seeking && !this.jarAt && !this.hunt && !this.dead) { S.s = 'glass'; S.mode = null; if (this.carryMesh) this.carryMesh.visible = false; }
     if (S.s === 'glass' && !gl) { S.s = 'drift'; S.t = 5; }
     if (S.s === 'glass') {
-      const GZ = gl.close ? 15.5 : 3.1, tx = gl.close ? Math.max(-1.6, Math.min(1.6, gl.x * 0.4)) : Math.max(-3.6, Math.min(3.6, gl.x)), ty = gl.close ? 10.6 + gl.y * 0.15 : Math.max(1.8, Math.min(9.5, gl.y)), to = _p2.set(tx, ty, GZ).sub(this.pos), d = to.length() || 1;
+      const GZ = gl.close ? 15.5 : gl.lid ? 0.9 : 3.1, tx = gl.close ? Math.max(-1.6, Math.min(1.6, gl.x * 0.4)) : Math.max(-3.6, Math.min(3.6, gl.x)), ty = gl.close ? 10.6 + gl.y * 0.15 : gl.lid ? Fish3D.topY - 1.1 : Math.max(1.8, Math.min(9.5, gl.y)),      /* (lid: up under the lid, testing it with its arms) */ to = _p2.set(tx, ty, GZ).sub(this.pos), d = to.length() || 1;
       to.multiplyScalar(Math.min(gl.close ? 3.4 : 2.4, 0.5 + d * 0.9) / d); this.vel.lerp(to, Math.min(1, dt * 2.2)); this.restK += (1 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 3);
       this.glassNear += ((1 - Math.max(0, Math.min(1, (d - 0.15) / 2.2))) - this.glassNear) * Math.min(1, dt * 3); if (d < 0.35) this.vel.multiplyScalar(Math.exp(-6 * dt));
     } else this.glassNear *= Math.exp(-dt * 2.5);

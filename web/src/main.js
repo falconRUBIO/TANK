@@ -1302,6 +1302,14 @@ function lifeCheck() {
   lifeBusy = true; ui.newLife({ title: n.title, why: n.why, img }).then((go) => { lifeBusy = false; if (go && f && !f.dead) setFocus(f); });
 }
 game.on('state', () => setTimeout(lifeCheck, 1500)); setInterval(lifeCheck, 5000);
+// ── the lid: now and then a curious octopus goes up and tests the lid with its arms (explorers and tricksters most, homebodies hardly ever).
+// It is a real behavior, reported once an hour at most by the phone that runs the animals, and a lid decision can only come from it. ──
+const LID_NATURE = { explorer: 1, trickster: 1, showoff: 0.6, watcher: 0.35, collector: 0.3, homebody: 0.1 };
+setInterval(() => { const s = game.state; if (!s || document.hidden || !isDirector() || (s.flags?.tut ?? 0) < 5 || play || (window.__quietUntil && Date.now() < window.__quietUntil)) return;
+  const kept = (s.adv?.lidUntil ?? 0) > Date.now(); for (const rec of s.fish) {      /* (a weighted lid: it tries far less) */ if (rec.species !== 'octopus' || rec.dead || rec.away || rec.brood || rec.seek || rec.puzzle || stageOf(rec) === 'baby') continue;
+    const f = fishes.byId.get(rec.id); if (!f || f.dead || f.glassAt || f.task || f.st?.s === 'work' || f.st?.s === 'jet') continue; const M = octoMind(rec), w = (LID_NATURE[M.type] ?? 0.3) * (0.5 + M.cur) * (kept ? 0.2 : 1);
+    const omen = s.omen?.kind === 'lid' && s.omen.fish?.[0] === rec.id; if (Math.random() > (omen ? 0.35 : 0.035 * w)) continue;      /* (about once an hour of watching for an explorer; often while it is building up to a decision) */
+    f.glassAt = { x: f.pos.x, y: 12, lid: true, until: performance.now() + 9000 }; setTimeout(() => { if (!f.dead && f.glassAt?.lid) { fishes.puff?.(f.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), new THREE.Vector3(0, 1, 0)); game.dispatch({ t: 'octoLid', fish: rec.id }).catch?.(() => {}); } }, 5500); break; } }, 30000);
 // before a decision is asked, the tank shows it for a day: the octopus reaching up to the lid, the chasing, the pale one keeping low, two at one den
 setInterval(() => { const s = game.state, O = s?.omen; if (!O || document.hidden || Date.now() - O.at > 2.5 * 864e5 || (s.dilemma && !s.dilemma.done)) return;
   const [x, y] = (O.fish ?? []).map((id) => fishes.byId.get(id)), go = (f, px, py, pz, k = 6) => { if (!f || f.dead || !f.target) return; f.target.set(px, py, pz); f.retarget = k; }, den = (s.decor ?? []).find((d) => ['coconut', 'pot'].includes(d.type));

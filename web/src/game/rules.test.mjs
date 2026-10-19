@@ -1029,3 +1029,11 @@ ok('(refine) the tank shows what is wrong a day before it asks; a sickness that 
   t.fish[0].ail = R.AIL_TIRED; R.advance(t, t0 + 0.95 * D); assert.equal(t.dilemma?.kind, 'sick', 'then it is asked');
   let spread = false; for (let s = 0; s < 40 && !spread; s++) { const u = structuredClone(t); u.dilemma.at = u.dilemma.at + s * 6e4; const r = R.applyAction(u, { t: 'decide', id: u.dilemma.id, k: 'wait' }, { now: t0 + D, name: 'You' }); if (/It spread/.test(r.line ?? r.events?.map((e) => e.journal).join(' ') ?? '')) { spread = true; assert.ok(u.fish.every((f) => f.ail >= R.AIL_TIRED), 'they are unwell'); } }
 });
+ok('(first 30) a lid decision only comes from an octopus really seen testing the lid, more than once in three days', () => {
+  const D = 864e5, t0 = 40 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.dilemmaAt = t0; return t; };
+  const a = mk(); omenThen(a, t0 + 1000); assert.ok(!a.dilemma && !a.omen, 'never seen at the lid: nothing to decide');
+  const b = mk(); for (const h of [3, 1]) R.applyAction(b, { t: 'octoLid', fish: 'o' }, { now: t0 - h * 3600e3 - 10, name: 'You' }); assert.equal(b.fish[0].lid.n, 2);
+  assert.equal(R.applyAction(b, { t: 'octoLid', fish: 'o' }, { now: t0 - 3600e3 + 60e3, name: 'You' }).applied, false, 'once an hour at most');
+  omenThen(b, t0 + 1000); assert.equal(b.dilemma?.kind, 'lid');
+  b.fish[0].away = { at: t0 }; assert.equal(R.applyAction(b, { t: 'octoLid', fish: 'o' }, { now: t0 + 5 * 3600e3, name: 'You' }).ok, false, 'not while it is away');
+});
