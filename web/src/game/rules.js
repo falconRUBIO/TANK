@@ -169,8 +169,11 @@ export function specialOf(t, now = Date.now()) {
   return pick ? { species: pick[0], color: pick[1] } : { species: open.length ? open[h % open.length] : dailyFish(now), color: cols[day % cols.length] };
 }
 export const specialColor = (now = Date.now(), t = null) => specialOf(t, now).color;
-export const fishPrice = (id, now = Date.now(), t = null, special = false) => { const p = SPECIES_DEF[id].price; return special && id === specialOf(t, now).species && !isOcto({ species: id }) ? specialPrice(id) : p; };
-export const specialPrice = (id) => Math.ceil(SPECIES_DEF[id].price * 1.4) + 8;      // (the carrier is a choice, beside the plain one at the usual price)
+export const fishPrice = (id, now = Date.now(), t = null, special = false) => { const p = SPECIES_DEF[id].price; return special && id === specialOf(t, now).species && !isOcto({ species: id }) ? specialPrice(id, t, now) : p; };
+export const specialPrice = (id, t = null, now = Date.now()) => (stuckOnColor(t, now) && specialOf(t, now).species === id ? SPECIES_DEF[id].price : Math.ceil(SPECIES_DEF[id].price * 1.4) + 8);      // (the carrier is a choice, beside the plain one at the usual price)
+// a color goal that has not moved for a week: the carrier it needs is sold at the usual price (still bought, still paired, still bred: nothing is given)
+export const STUCK_DAYS = 7;
+export function stuckOnColor(t, now = Date.now()) { const g = t?.goal; if (!g || !(MORPHS[g.id] || g.id === 'rare')) return false; const last = Math.max(g.at ?? 0, ...Object.values(g.done ?? {}).filter(Number.isFinite)); return now - last >= STUCK_DAYS * DAY; }
 // The first fish is free and chosen: one of these, named by the player who brings it in.
 export const FIRST_FISH = ['octopus'];                       // everyone starts with an octopus of their own, in a color they choose; fish come from the shop
 export const OCTO_PALS = 6;
@@ -584,7 +587,7 @@ function eggs(t, now, ev) {
       Mo.broodAt = now + OCTO_EGG_GAP * DAY;
       t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: 'octopus', a: Mo.id, b: Fa.id, seed: Mo.seed, pa: snap(Mo), pb: snap(Fa), laid: now, hatchAt: wakeAt(t, now + OCTO_EGG_DAYS * DAY), cared: [], guard: Mo.id, den: Mo.home }); Mo.brood = t.eggs.at(-1).id; bump(t, 'octoEggs');      /* (she stays: no adventures while she broods) */
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
-      ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, toast: `${Mo.name} laid eggs in her den! They hatch in ${OCTO_EGG_DAYS} days.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
+      ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
   if (busy) return;
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
@@ -592,9 +595,9 @@ function eggs(t, now, ev) {
   const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1];      // the pair you brought together, if they are still here and grown
   const g = pairs[hash32(now / 6e4) % pairs.length], A = set ? Mt[0] : g[0], B = set ? Mt[1] : g.find((f) => sexOf(f) !== sexOf(A)), [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
   t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), laid: now, hatchAt: wakeAt(t, now + EGG_DAYS * DAY), cared: [], guard: C.mode === 'drift' ? null : Fa.id, risk: C.mode !== 'mouth' && t.fish.some((f) => f.species === 'octopus' && !f.dead) && hash32(now / 6e4 + 7) % 40 === 0 });      /* (and only while no parent is guarding it, see eggs()) */ t.eggAt = now + (EGG_DAYS + 2 + (hash32(now / 6e4 + 3) % 3)) * DAY; unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
-  const say = C.mode === 'mouth' ? { journal: `${Mo.name} laid eggs and ${Fa.name} took them into his mouth. He will carry them, eating nothing, until they hatch.`, toast: `${Fa.name} is carrying eggs in his mouth! They hatch in ${EGG_DAYS} days.` }
-    : C.mode === 'drift' ? { journal: `${A.name} and ${B.name} rose together and let their eggs go, as their kind do. The eggs drift by the plants now.`, toast: `${A.name} and ${B.name} spawned! Their eggs drift free. Food and clean water help them hatch strong.` }
-    : { journal: `${Mo.name} laid a patch of eggs by the ${C.on === 'plant' ? 'seaweed' : 'rocks'}, and ${Fa.name} is guarding them.`, toast: `Eggs! ${Fa.name} is guarding them. They hatch in ${EGG_DAYS} days.` };
+  const say = C.mode === 'mouth' ? { journal: `${Mo.name} laid eggs and ${Fa.name} took them into his mouth. He will carry them, eating nothing, until they hatch.` }
+    : C.mode === 'drift' ? { journal: `${A.name} and ${B.name} rose together and let their eggs go, as their kind do. The eggs drift by the plants now.` }
+    : { journal: `${Mo.name} laid a patch of eggs by the ${C.on === 'plant' ? 'seaweed' : 'rocks'}, and ${Fa.name} is guarding them.` };
   ev.push({ ...say, egg: true });
 }
 // ── Seahorse families ── pairs form slowly between a male and a female that share the tank as adults (never parent and child, never brother
@@ -614,7 +617,7 @@ export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nur
 function conceive(m, w, now, h, ev, t = null) {
   const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
   m.preg = { start: now, due: t ? wakeAt(t, Math.round(now + days * DAY)) : Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
-  ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, toast: `${m.name} is expecting! The babies will come in about a week.`, court: m.id });
+  ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, court: m.id });      /* (told with its own card, on every phone: see lifeCheck in main.js) */
 }
 // where a tank's seahorse family is now, for the developer's lifecycle test panel (read only)
 export function seaStage(t, now = Date.now()) {
@@ -1437,7 +1440,7 @@ function dailySurprise(t, now, ev) {
   if (seas.length) opts.push(() => { const f = pick(seas, 3); return { f, text: `${f.name} snicked a flake right out of the water with a flick of its snout.` }; });
   if (fish.length) opts.push(() => { const f = pick(fish, 4); (f.disc ||= {}).glass ??= now; return { f, text: `${f.name} came right up to the glass to watch you feed.` }; });
   if (fish.length >= 3) opts.push(() => { const f = pick(fish, 5); return { f, text: `${f.name} led the whole tank in a little parade to the food.` }; });
-  if (!opts.length) return; const o = pick(opts, 6)(); ev.push({ story: o.f.id, text: o.text, toast: o.text, surprise: { fish: o.f.id, text: o.text } });      // (in that fish's own story, not the tank's journal: feeding stays quiet there)
+  if (!opts.length) return; const o = pick(opts, 6)(); ev.push({ story: o.f.id, text: o.text, surprise: { fish: o.f.id, text: o.text } });      /* (the surprise has its own card in the tank: no toast as well) */      // (in that fish's own story, not the tank's journal: feeding stays quiet there)
 }
 // ── Growing up shaped by care ── a young fish that was fed often grows up content; one that was played with a lot grows up bold
 // How you raise a young one decides who it grows up to be. Each kind of attention while it is small counts (once an hour, twice a day at most): petting

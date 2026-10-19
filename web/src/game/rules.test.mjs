@@ -829,10 +829,10 @@ ok('a profile: quiet species behaviours go in that animal\'s own journal only, a
 });
 ok('parents look after their eggs as their kind do: a father guards, a cardinalfish carries them, drifting eggs are the caretaker\'s; a parent takes over', () => {
   const D = 864e5, mk = (species) => { const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.flags.tut = 5; t.visitAt = t.storyAt = 1e15; t.fish = [0, 1].map((i) => R.ensureFish({ id: 'p' + i, name: i ? 'Dad' : 'Mum', species, seed: 5 + i, sex: i ? 'm' : 'f', born: -11 * D, stage: 'adult', traits: ['Calm'] })); t.eggAt = 0; return t; };
-  const g = mk('goldfish'), ev = R.advance(g, 20 * 3600e3); assert.equal(g.eggs[0].guard, 'p1', 'the clownfish father guards'); assert.ok(ev.some((e) => /Dad is guarding/.test(e.toast ?? '')));
+  const g = mk('goldfish'), ev = R.advance(g, 20 * 3600e3); assert.equal(g.eggs[0].guard, 'p1', 'the clownfish father guards'); assert.ok(ev.some((e) => /Dad/.test(e.journal ?? '') && e.egg));
   g.fish[1].dead = true; const ev2 = R.advance(g, 20 * 3600e3 + 6e5); assert.equal(g.eggs[0].guard, 'p0', 'the mother takes over'); assert.ok(ev2.some((e) => /Mum has taken over/.test(e.journal ?? '')));
-  const m = mk('platy'), evm = R.advance(m, 20 * 3600e3); assert.equal(m.eggs[0].guard, 'p1'); assert.ok(evm.some((e) => /in his mouth/.test(e.toast ?? '')), 'a cardinalfish father carries them');
-  const d = mk('betta'), evd = R.advance(d, 20 * 3600e3); assert.equal(d.eggs[0].guard, null, 'mandarins leave them to drift'); assert.ok(evd.some((e) => /drift/.test(e.toast ?? '')));
+  const m = mk('platy'), evm = R.advance(m, 20 * 3600e3); assert.equal(m.eggs[0].guard, 'p1'); assert.ok(evm.some((e) => /mouth/.test(e.journal ?? '')), 'a cardinalfish father carries them');
+  const d = mk('betta'), evd = R.advance(d, 20 * 3600e3); assert.equal(d.eggs[0].guard, null, 'mandarins leave them to drift'); assert.ok(evd.some((e) => /drift/.test(e.journal ?? '')));
   const s = mk('goldfish'); s.fish[1].sex = 'f'; R.advance(s, 20 * 3600e3); assert.equal(s.eggs.length, 0, 'two females lay no eggs');
 });
 ok('a surprise gift arrives wrapped and says nothing of what it is; only its friend opens it; thanks reach the giver', () => {

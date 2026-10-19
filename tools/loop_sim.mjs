@@ -18,11 +18,11 @@ const PROFILES = {
   regular: { slots: [[8, 0.6], [19, 0.9]], watch: 3, play: 0.5, notice: 0.9, save: 0.6 },
   engaged: { slots: [[8, 0.95], [13, 0.85], [20, 0.95]], watch: 5, play: 0.9, notice: 1, save: 0.7 },
 };
-const HOUSE = { casual: ['casual'], regular: ['regular'], engaged: ['engaged'], mixed: ['engaged', 'casual', 'regular', 'casual'], returning: ['regular'] };
+const HOUSE = { casual: ['casual'], regular: ['regular'], engaged: ['engaged'], mixed: ['engaged', 'casual', 'regular', 'casual'], returning: ['regular'], breeder: ['regular'], saver: ['regular'] };      /* (breeder: always takes a color goal; saver: saves every shell for the spire once it opens) */
 // Field Guide pages, by how often a watcher catches them (per minute watched, when the animal for it lives in the tank); an assumption
 const FIELD_RATE = { glass: 0.02, camo: 0.012, ink: 0.006, squirt: 0.004, bury: 0.006, flat: 0.003, kelp: 0.003, lion: 0.002, jelly: 0.002, snake: 0.0015, fish: 0.002, smack: 0.004, arms: 0.003, ball: 0.004, eggchase: 0.01, chased: 0.004 };
 
-const M_KEYS = ['first fish bought', 'first Field Guide page', 'first mystery', 'first decision', 'first pairing', 'first eggs', 'first hatching', 'first adult raised', 'first raised temperament', 'first octopus adventure', 'first rare color', 'first goal done', 'second generation adult', 'level 2', 'level 3', 'level 4', 'level 5', 'level 6', 'level 7', 'level 8'];
+const M_KEYS = ['spire open', 'spire affordable', 'bought spire', 'first fish bought', 'first Field Guide page', 'first mystery', 'first decision', 'first pairing', 'first eggs', 'first hatching', 'first adult raised', 'first raised temperament', 'first octopus adventure', 'first rare color', 'first goal done', 'second generation adult', 'level 2', 'level 3', 'level 4', 'level 5', 'level 6', 'level 7', 'level 8'];
 function rng(seed) { let x = seed * 2654435761 >>> 0 || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
 
 function run({ crew, profile, days, seed }) {
@@ -54,7 +54,7 @@ function run({ crew, profile, days, seed }) {
     // what is there to notice
     const m = R.mysteryOf(t, now); if (m && !m.done && rand() < p.notice) { const r = act(p, { t: 'mystery', tz: 0 }); if (r.ok && r.applied) { count.mysteries++; mark('first mystery'); } }
     const D = t.dilemma; if (D && !D.done && (!D.turn || D.turn.uid === p.uid || now > D.turn.until) && rand() < p.notice) { const r = act(p, { t: 'decide', id: D.id, k: D.opts[Math.floor(rand() * D.opts.length)].k }); if (r.ok && r.applied) { count.decisions++; mark('first decision'); } }
-    if (!t.goal && (t.goalOffer ?? []).length) { const g = t.goalOffer[Math.floor(rand() * t.goalOffer.length)]; if (act(p, { t: 'pickGoal', id: g }).ok) mark('first goal chosen'); }
+    if (!t.goal && (t.goalOffer ?? []).length) { const col = t.goalOffer.filter((k) => R.MORPHS[k] || k === 'rare'), g = profile === 'breeder' && col.length ? col[0] : t.goalOffer[Math.floor(rand() * t.goalOffer.length)]; if (act(p, { t: 'pickGoal', id: g }).ok) mark('first goal chosen'); }
     // care
     if (t.hunger > 0.3) act(p, { t: 'feed' });
     for (const f of live().filter((x) => R.ownFood(x) && mine(x) && R.ownHunger(x) >= R.OCTO_DUE)) act(p, { t: 'feed', food: R.ownFood(f), fish: f.id });
@@ -86,10 +86,11 @@ function run({ crew, profile, days, seed }) {
     const buyD = (type) => { const r = act(p, { t: 'buyDecor', type, x: -3 + rand() * 6, z: -1 + rand() * 3, ry: 0 }); if (r.ok) { mark('first decoration bought'); M['bought ' + type] ??= +day().toFixed(1); } return r.ok; };
     const buyF = (sp, extra = {}) => { const r = act(p, { t: 'buyFish', species: sp, name: sp, seed: Math.floor(rand() * 9973), ...extra }); if (r.ok) mark('first fish bought'); return r.ok; };
     if (!t.fish.some((f) => !f.dead && !R.isOcto(f)) && !R.pending(t)) { const first = Object.entries(R.SPECIES_DEF).filter(([k, d]) => !d.visitor && d.count === 1 && k !== 'octopus' && d.level <= lv && t.shells >= R.fishPrice(k, now, t)).sort((a, b) => a[1].price - b[1].price)[0]; if (first) return buyF(first[0]); }      /* (the first fish before anything else) */
+    if (profile === 'saver' && R.DECOR_DEF.spire.level <= lv && !t.decor.some((d) => d.type === 'spire')) { mark('spire open'); if (t.shells >= R.DECOR_DEF.spire.price) { mark('spire affordable'); buyD('spire'); } return; }      /* (from the day it opens, every shell goes to the spire) */
     if (dens < octos && R.DECOR_DEF.coconut.level <= lv && t.shells >= R.DECOR_DEF.coconut.price) return buyD('coconut');
     if (plants < 2 && t.shells >= R.DECOR_DEF.grass.price) return buyD('grass');
     const SP = R.specialOf(t, now), wantColor = t.goal && (R.MORPHS[t.goal.id] ? SP.color === t.goal.id : t.goal.id === 'rare');
-    if (wantColor && room(SP.species) && t.shells >= R.specialPrice(SP.species) && t.flags.simSp !== Math.floor(now / DAY)) { t.flags.simSp = Math.floor(now / DAY); const mate = t.fish.find((f) => !f.dead && f.species === SP.species); return buyF(SP.species, { special: true, sex: mate ? (R.sexOf(mate) === 'm' ? 'f' : 'm') : undefined }); }
+    if (wantColor && room(SP.species) && t.shells >= R.specialPrice(SP.species, t, now) && t.flags.simSp !== Math.floor(now / DAY)) { t.flags.simSp = Math.floor(now / DAY); const mate = t.fish.find((f) => !f.dead && f.species === SP.species); return buyF(SP.species, { special: true, sex: mate ? (R.sexOf(mate) === 'm' ? 'f' : 'm') : undefined }); }
     const single = Object.entries(kindsOf).find(([k, n]) => n === 1 && !R.isOcto({ species: k }) && R.SPECIES_DEF[k]?.count === 1 && room(k) && t.shells >= R.fishPrice(k, now, t));
     if (single) { const one = t.fish.find((f) => !f.dead && f.species === single[0]); return buyF(single[0], { sex: R.sexOf(one) === 'm' ? 'f' : 'm' }); }
     const fresh = Object.entries(R.SPECIES_DEF).filter(([k, d]) => !d.visitor && d.count === 1 && k !== 'octopus' && !kindsOf[k] && d.level <= lv && room(k)).sort((a, b) => a[1].price - b[1].price)[0];
@@ -121,10 +122,10 @@ function run({ crew, profile, days, seed }) {
 
 // ── the table ──
 const med = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; }, rangeOf = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); return s.length ? `${s[0]}–${s[s.length - 1]}` : '—'; };
-const DAYS = +arg('days', 120), SEEDS = +arg('seeds', 6), CREWS = arg('crew') ? [+arg('crew')] : [1, 2, 4], PROFS = arg('profile') ? [arg('profile')] : ['casual', 'regular', 'engaged', 'mixed', 'returning'];
+const DAYS = +arg('days', 120), SEEDS = +arg('seeds', 6), CREWS = arg('crew') ? [+arg('crew')] : [1, 2, 4], PROFS = arg('profile') ? [arg('profile')] : ['casual', 'regular', 'engaged', 'mixed', 'returning', 'breeder', 'saver'];
 const out = [];
 for (const crew of CREWS) for (const profile of PROFS) {
-  if (profile === 'mixed' && crew === 1) continue;
+  if (profile === 'mixed' && crew === 1) continue; if ((profile === 'breeder' || profile === 'saver') && crew === 4) continue;
   const runs = Array.from({ length: SEEDS }, (_, i) => run({ crew, profile, days: DAYS, seed: i + 1 }));
   const row = { crew, profile, milestones: {}, snaps: {} };
   for (const k of M_KEYS) { const v = runs.map((r) => r.M[k]); row.milestones[k] = { median: med(v), range: rangeOf(v), hit: v.filter((x) => x != null).length + '/' + SEEDS }; }
