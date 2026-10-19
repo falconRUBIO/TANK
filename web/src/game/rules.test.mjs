@@ -911,3 +911,12 @@ ok('layout matters: a thicket settles the shy ones, a den each for octopuses, an
   const open = JSON.parse(JSON.stringify(t)); t.decor[1].x = -2; t.decor.push({ id: 'c', type: 'coconut', x: 2, z: 1, ry: 0 }); L = R.layoutOf(t); assert.ok(L.thicket && !L.notes.length, JSON.stringify(L.notes));
   R.advance(open, t0 + D); const ev = R.advance(t, t0 + D); assert.ok(t.fish[0].happy > open.fish[0].happy, `a thicket settles the shy one (${t.fish[0].happy} vs ${open.fish[0].happy})`); assert.ok(ev.some((e) => /found the thicket/.test(e.journal ?? '')));
 });
+ok('play has stakes: fooling the octopus pays back double and it keeps score; a learned trick is performed when asked only if it trusts you and is in the mood', () => {
+  const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.dilemmaAt = 9e15; t.shells = 100;
+  const o = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 4, born: 0, stage: 'adult', traits: [], happy: 0.9 }); t.fish = [o]; t.decor = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, type: 'rock', x: i * 2 - 3, z: 1, ry: 0 }));
+  const order = R.hideOrder ? R.hideOrder(t, o, 'me') : null; const spot = order ? order[order.length - 1] : 'd';
+  const s0 = t.shells; R.applyAction(t, { t: 'hide', id: 'o', spot }, { now: t0 + 1000, uid: 'me', name: 'You' }); const ev = R.advance(t, t0 + 3600e3);
+  const sc = o.hideScore?.me; assert.ok(sc && sc.you + sc.it >= 0, JSON.stringify(o.hideScore)); if (sc.you) assert.ok(t.shells - s0 >= R.HIDE_COST, 'fooled: the treat pays back double'); assert.ok(sc.you === 1, 'hidden in the last place it looks: you win ' + JSON.stringify(sc)); assert.ok(ev.some((e) => /you \d · Inky \d/.test(e.journal ?? '')), JSON.stringify(ev.map((e) => e.journal)));
+  o.tricks = ['gate']; o.bond = { me: 0 }; o.happy = 0.3; let fails = 0; for (let i = 0; i < 10; i++) { const r = R.applyAction(t, { t: 'perform', id: 'o', trick: 'gate' }, { now: t0 + 2 * 3600e3 + i * 61e3, uid: 'me', name: 'You' }); if (!r.success) fails++; } assert.ok(fails >= 5, 'unhappy and a stranger: mostly refuses ' + fails);
+  o.bond = { me: 10 }; o.happy = 1; o.shows = { gate: 10 }; let ok2 = 0; for (let i = 0; i < 10; i++) { const r = R.applyAction(t, { t: 'perform', id: 'o', trick: 'gate' }, { now: t0 + 4 * 3600e3 + i * 61e3, uid: 'me', name: 'You' }); if (r.success) ok2++; } assert.ok(ok2 >= 8, 'trusted and happy: nearly always ' + ok2);
+});

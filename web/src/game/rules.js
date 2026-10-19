@@ -415,12 +415,13 @@ function hunts(t, now, ev) {
     const H = f.seek; if (!H || now < H.until) continue;
     f.seek = null; const by = H.by ?? 'solo', tries = H.path.length, L = hideLabel(t, H.spot);
     ((f.hides ||= {})[by] ||= {})[H.spot] = (f.hides[by][H.spot] ?? 0) + 1; (f.hidesAll ||= {})[H.spot] = (f.hidesAll[H.spot] ?? 0) + 1; (f.lastHide ||= {})[by] = H.spot;
+    { const sc = ((f.hideScore ||= {})[by] ||= { you: 0, it: 0 }); if (tries >= 3) { sc.you++; t.shells += HIDE_COST * 2; } else if (tries === 1) sc.it++; H.won = tries >= 3 ? 'you' : tries === 1 ? 'it' : null; H.score = { ...sc }; }      // a real contest: fool it (three tries or more) and the treat pays back double; let it find it first try and it scores
     f.seekN = (f.seekN ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.1); f.bond ||= {}; f.bond[by] = (f.bond[by] ?? 0) + 1; f.seekRun ||= {}; f.seekRun[by] = tries === 1 ? (f.seekRun[by] ?? 0) + 1 : 0;
     const who = H.name ?? 'You', before = H.path.slice(0, -1).slice(-2).map((id) => 'the ' + hideLabel(t, id));
     const you = who === 'You', whose = you ? 'your' : who + "'s", hides = you ? 'you hide' : who + ' hides';
     const line = tries === 1 ? (f.seekN > 2 ? `${f.name} went straight to the ${L}: it knows where ${hides} things.` : `${f.name} found ${whose} treat in the ${L} on the first try. A lucky guess?`)
       : tries === 2 ? `${f.name} found ${whose} treat in the ${L} on its second try.` : `${who} fooled ${f.name}: it searched ${before.join(' and ')} before finding the treat in the ${L}.`;
-    ev.push({ journal: line, story: f.id, text: line, toast: tries === 1 ? `${f.name} found it straight away!` : tries >= 3 ? `You fooled ${f.name}! Found on try ${tries}.` : `${f.name} found it on try ${tries}.`, hunt: f.id });
+    const tally = H.score ? ` (${who === 'You' ? 'you' : who} ${H.score.you} · ${f.name} ${H.score.it})` : ''; ev.push({ journal: line + tally, story: f.id, text: line, toast: tries === 1 ? `${f.name} found it straight away! It scores.${tally}` : tries >= 3 ? `You fooled ${f.name}! +${HIDE_COST * 2} shells${tally}` : `${f.name} found it on try ${tries}.${tally}`, hunt: f.id });
     if (f.seekRun[by] >= 3 && !(f.disc ||= {})['reader:' + by]) { f.disc['reader:' + by] = now; const l2 = `${f.name} has learned ${who === 'You' ? 'your' : who + "'s"} hiding places.`; ev.push({ journal: l2, story: f.id, text: l2, discovery: true }); }
   }
 }
@@ -1586,6 +1587,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const txt = String(a.text ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40); if (!txt) return fail('BAD_NAME');
       f.notes = [...(f.notes ?? []), { by: uid, name, text: txt, at: now }].slice(-3); dayCheck(t, now, events, 'bond');
       events.push({ journal: `${name} left ${f.name} a note: “${txt}”`, activity: { type: 'fish', text: `${name} left a note for ${f.name}.` } }); return ok();
+    }
+    case 'perform': {      // ask for a learned trick: it does it if it trusts you and is in the mood; each time it does, it gets surer
+      const f = t.fish.find((x) => x.id === a.id && !x.dead); if (!f || !(f.tricks ?? []).includes(a.trick)) return fail('NOT_FOUND'); if (now - (f.showAt ?? 0) < 60e3) return ok({ applied: false, wait: true });
+      f.showAt = now; const bond = Math.min(10, f.bond?.[uid] ?? 0), done = f.shows?.[a.trick] ?? 0, mood = f.happy ?? 0.7, hunger = ownFood(f) ? ownHunger(f) : t.hunger ?? 0.3;
+      const chance = Math.min(0.97, 0.25 + bond * 0.04 + Math.min(done, 10) * 0.03 + (mood - 0.5) * 0.5 - Math.max(0, hunger - 0.6) * 0.6), roll = (hash32(Math.floor(now / 1000) + (f.seed | 0)) % 1000) / 1000;
+      if (roll < chance) { f.shows = { ...(f.shows ?? {}), [a.trick]: done + 1 }; f.happy = Math.min(1, mood + 0.03); f.bond ||= {}; f.bond[uid] = (f.bond[uid] ?? 0) + (done < 3 ? 1 : 0); if (done + 1 === 10) events.push({ journal: `${f.name} will ${TRICKS[a.trick].label} whenever ${name === 'You' ? 'you ask' : name + ' asks'} now.`, story: f.id }); return ok({ applied: true, success: true, chance }); }
+      return ok({ applied: true, success: false, chance, why: hunger > 0.6 ? 'hungry' : mood < 0.5 ? 'mood' : 'trust' });
     }
     case 'train': {                                                 // practise a trick; five good sessions and it is learned for good
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const opt = trickOptions(t, f, now).find((o) => o.key === a.trick); if (!opt) return fail('CANT_TRAIN');

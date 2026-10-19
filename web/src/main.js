@@ -340,7 +340,12 @@ async function trainFish(f, key, spot) {
   if (!r.applied) { ui.toast(`${f.name} needs a rest. Try again in ${Math.max(1, Math.ceil((r.wait ?? 0) / 60e3))} min.`); return; }
   setFocus(null); fishes.perform(f, key, spot); sfx('tap'); if (!r.learned) ui.toast(`${f.name} practised: ${r.n} of ${r.need ?? 5}`);
 }
-function showTrick(f, key) { const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; } setFocus(null); fishes.perform(f, key, o.id); }
+async function showTrick(f, key) {      // ask for it: it does it if it trusts you and is in the mood (the rules decide, so it is the same on every phone)
+  const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; }
+  const r = await game.dispatch({ t: 'perform', id: f.fid, trick: key }); if (!r.ok) return fail(r); if (!r.applied) { ui.toast(`${f.name} just did one. Give it a minute.`); return; }
+  if (r.success) { setFocus(null); fishes.perform(f, key, o.id); sfx('reward'); ui.toast(`${f.name} did it!`, 2200); return; }
+  sfx('tap'); f.fleeT = 1.2; ui.toast(r.why === 'hungry' ? `${f.name} is too hungry to show off. Feed it first.` : r.why === 'mood' ? `${f.name} is not in the mood. A happier fish performs more.` : `${f.name} swam off. It needs to know you better: keep at it.`, 3600);
+}
 function trickBlock(rec) {
   const learned = (rec.tricks ?? []), opts = trickOptions(game.state, rec), done = learned.length ? `<div class="notes">Tricks: ${learned.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}</div>` : '';
   return learned.map((k) => `<button class="lnk" data-show="${k}">Show trick</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach a trick (${o.have}/${o.need})</button>`).join('');
@@ -988,6 +993,7 @@ function showCard(f) {
     const adult = stageOf(live) === 'adult', mates = adult && live.species !== 'seahorse' ? game.state.fish.filter((o) => o !== live && !o.dead && o.species === live.species && stageOf(o) === 'adult' && (isOctoF(live) ? !o.partner && !live.partner : sexOf(o) !== sexOf(live))) : [];
     const btns = mates.slice(0, 3).map((o) => { const od = Object.entries(morphOdds(live, o)).map(([k, v]) => `${Math.round(v * 100)}% ${MORPHS[k].label.toLowerCase()}`).join(', '); return `<button class="pair" data-pair="${esc(o.id)}">Pair with ${esc(o.name)}${od ? ` <small>${od}</small>` : ''}</button>`; }).join('');
     return out.length || btns ? `<div class="genes">${out.length ? `<p class="mind">${out.join(' ')}</p>` : ''}${btns}</div>` : ''; })();
+  const playLine = (() => { const S0 = rec.hideScore ?? {}, mine = S0[game.you?.userId] ?? S0.me ?? S0.solo ?? Object.values(S0)[0]; if (!mine) return ''; return `<p class="mind">Hide and seek: <b>you ${mine.you}</b> · <b>${esc(rec.name)} ${mine.it}</b>. ${mine.it > mine.you ? 'It knows your habits: hide somewhere new.' : 'Fool it in three tries or more and the treat pays back double.'}</p>`; })();      // the contest so far
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];
       if (rec.away) out.push(`<b>${rec.away.inTank ? 'HIDING SOMEWHERE' : 'OUT EXPLORING'}</b>`);
@@ -1019,7 +1025,7 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${geneLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${geneLine}${playLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
     <div class="needs one">${needsLine(p.needs)}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
