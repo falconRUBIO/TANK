@@ -552,7 +552,7 @@ function mystTick(dt) {
   if (/bubbles/.test(U.kind) && Math.random() < dt * 1.2) fishes.burst(mystGlow.position.clone());
 }
 game.on('state', () => mystSync());
-window.__reveal = (id) => revealFish(fishes.byId.get(id), game.state.fish.find((f) => f.id === id), 600, 2400);
+window.__reveal = (id, wait = 600) => revealFish(fishes.byId.get(id), game.state.fish.find((f) => f.id === id), wait, 2400);
 window.__mystery = () => ({ v: mystGlow.visible, at: mystGlow.position.toArray().map((x) => +x.toFixed(2)), m: game.state && mysteryOf(game.state) }); window.__openMystery = () => openMystery();
 window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBottle = () => openBottle(); window.__bottleSeen = () => ({ id: bottleId, v: bottleSp.visible, y: +bottleSp.position.y.toFixed(2), leave: !!bottleSp.userData.leave });
 
@@ -953,7 +953,7 @@ function showEggCard(fx) {
   pill.hidden = true;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
     <div class="chd"><h2>${esc(fx.name)}</h2><div class="sp">${SPECIES_DEF[e.species]?.label ?? e.species} eggs · <b class="mood">${stage}</b></div></div>
-    <dl><dt>Hatches</dt><dd>${when}</dd><dt>Parents</dt><dd>${esc(A)} and ${esc(B)}</dd><dt>Looking after them</dt><dd>${esc(who)}</dd>${e.laid ? `<dt>Laid</dt><dd>${new Date(e.laid).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</dd>` : ''}<dt>Looked after</dt><dd>${cared >= 2 ? `${cared} days ✓ It will hatch strong` : `${cared} of 2 days`}</dd></dl>
+    <dl><dt>Hatches</dt><dd>${when}</dd><dt>Parents</dt><dd>${esc(A)} and ${esc(B)}</dd>${(() => { const pa = e.pa ?? s.fish.find((x) => x.id === e.a), pb = e.pb ?? s.fish.find((x) => x.id === e.b), o = pa && pb ? Object.entries(morphOdds(pa, pb, !!e.moon)) : []; return o.length ? `<dt>Could hatch</dt><dd>${o.map(([k, v]) => `${Math.round(v * 100)}% ${MORPHS[k].label.toLowerCase()}`).join(', ')}${e.moon ? ' 🌕 laid under a full moon' : ''}</dd>` : ''; })()}<dt>Looking after them</dt><dd>${esc(who)}</dd>${e.laid ? `<dt>Laid</dt><dd>${new Date(e.laid).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</dd>` : ''}<dt>Looked after</dt><dd>${cared >= 2 ? `${cared} days ✓ It will hatch strong` : `${cared} of 2 days`}</dd></dl>
     ${e.risk && !cared && e.laid && now > e.laid + 864e5 ? `<p class="warn">${esc(s.fish.find((x) => x.species === 'octopus' && !x.dead)?.name ?? 'The octopus')} has been sniffing around it. Feed the fish or change the water today to keep it safe.</p>` : ''}<p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy, with a head start in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, with a head start in growing.'}</p><p class="dim">${esc(C.fact)}</p>`;
   card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
 }
@@ -1269,6 +1269,7 @@ game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arri
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says ${({ octo: `${name ?? 'your octopus'} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('crab', (id) => { fishes.dropCrab(id); });
+{ let told = false; game.on('state', () => { const s = game.state; if (told || !s || (s.flags.tut ?? 0) < 5 || s.goal || !(s.goalOffer ?? []).length || (s.goalsDone ?? []).length) return; told = true; try { if (localStorage.getItem('ourtank.goalTip')) return; localStorage.setItem('ourtank.goalTip', '1'); } catch { return; } setTimeout(() => ui?.toast('Your tank has goals now. Tap 🎯 to choose one.', 5200), 4000); }); }      // the first time goals are on offer, once
 game.on('goalStep', () => { haptic(16); sfx('reward'); ui?.updateHeader(); const q = $('quest'); q?.classList.add('pulse'); setTimeout(() => q?.classList.remove('pulse'), 1600); });
 game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'GOAL COMPLETE', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
