@@ -597,9 +597,9 @@ export function initUI({ game, social, cb }) {
     friends: () => {
       // Friends and Journal as tabs; Settings is the gear in the corner of the sheet
       const gear = `<button class="gear" data-sub="settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm8.2 4.6.1-1.2-.1-1.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.4 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6-.1 1.2.1 1.2-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button>`;
-      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['animals', 'Animals'], ['journal', 'Journal']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
+      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['animals', 'Sea life'], ['journal', 'Journal']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
-      if (sub === 'animals') return `<div class="crew"><h3>Your animals</h3>${seg}${animalsHtml()}</div>`;
+      if (sub === 'animals') return `<div class="crew"><h3>Your sea life</h3>${seg}${animalsHtml()}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
       if (sub === 'look') return lookHtml();
