@@ -298,8 +298,8 @@ export function initUI({ game, social, cb }) {
       return `<div class="fg">${im ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${im}" alt=""></button>` : `<div class="fgpic seen">✓</div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
     return `<div class="fghead"><b>Field Guide</b><span>${got} of ${all.length} seen</span></div><p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
   // what each animal has shown you about itself (its discoveries), as pages of the same book: who, and since when
-  // the rare colours bred in this tank: the first of each, and a hint for the rest
-  const morphHtml = () => { const got = S().morphs ?? {}; return `<h4>Rare colours bred</h4><div class="shown">${Object.entries(MORPHS).map(([k, M]) => got[k] ? `<div><b>${esc(M.label)}</b><small>${esc(got[k].name)} · ${esc((SPECIES_DEF[got[k].species]?.label ?? '').toLowerCase())}</small></div>` : `<div class="nope"><b>${esc(M.label)}</b><small>Pair two carriers</small></div>`).join('')}</div>`; };
+  // the rare colors bred in this tank: the first of each, and a hint for the rest
+  const morphHtml = () => { const got = S().morphs ?? {}; return `<h4>Rare colors bred</h4><div class="shown">${Object.entries(MORPHS).map(([k, M]) => got[k] ? `<div><b>${esc(M.label)}</b><small>${esc(got[k].name)} · ${esc((SPECIES_DEF[got[k].species]?.label ?? '').toLowerCase())}</small></div>` : `<div class="nope"><b>${esc(M.label)}</b><small>Pair two carriers</small></div>`).join('')}</div>`; };
   const shownHtml = () => { const by = new Map(); for (const f of S().fish) for (const [k, at] of Object.entries(f.disc ?? {})) { const d = DISCOVERIES[k.split(':')[0]]; if (!d || k.includes(':')) continue; const e = by.get(d.label) ?? { at, who: [] }; if (!e.who.includes(f.name)) e.who.push(f.name); e.at = Math.min(e.at, at); by.set(d.label, e); }
     return by.size ? `<h4>What they have shown you</h4><div class="shown">${[...by].sort((a, b) => b[1].at - a[1].at).map(([l, e]) => `<div><b>${esc(l)}</b><small>${esc(e.who.slice(0, 3).join(', '))}${e.who.length > 3 ? ` and ${e.who.length - 3} more` : ''}</small></div>`).join('')}</div>` : ''; };
   const bookHtml = () => {
@@ -431,7 +431,7 @@ export function initUI({ game, social, cb }) {
     for (const [who, os] of Object.entries(M.others.reduce((g, o) => { (g[o.ownerName ?? 'their caretaker'] ||= []).push(o); return g; }, {}))) out.push(`<p class="fnote">${esc(os.map((o) => o.name).join(' and '))} ${os.length === 1 ? 'is' : 'are'} fed by ${esc(who)}.</p>`);
     return `<div class="drawer">${out.join('')}${M.canEat.length ? `<p class="fhow">Pick a food, then tap the water. Each feed is up to 3 drops.${M.hungry.length ? ' A hungry animal fed for free earns 1 🐚.' : ''}</p>` : ''}</div>`;
   };
-  // the Feed screen (its own view, opened from the Feed row): a card for each animal this caretaker feeds, its state as a coloured pill, and
+  // the Feed screen (its own view, opened from the Feed row): a card for each animal this caretaker feeds, its state as a colored pill, and
   // its food; the fish share one card with their three foods. Tap a food (or the animal's Feed button): the menu closes and the meal drops in by itself.
   const FOODNAME = { crab: 'Crabs', mysis: 'Tiny shrimp' };
   let feedInfo = null;      // the card opened to say why it cannot eat now (a full animal is never fed: too much food clouds the water)

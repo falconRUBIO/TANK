@@ -1,4 +1,4 @@
-// Breeding, in the real game: a golden fish shows its colour, a carrier's card says what it carries and offers to pair it, with the odds,
+// Breeding, in the real game: a golden fish shows its color, a carrier's card says what it carries and offers to pair it, with the odds,
 // and pairing them is accepted. Needs the solo game on 8123.   node tools/breed_check.mjs
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 import fs from 'node:fs';

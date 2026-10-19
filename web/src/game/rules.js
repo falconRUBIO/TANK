@@ -3,7 +3,7 @@
 import { skyOf } from './sky.js';
 import { genesOf, blendGenes, seededRandom, allelesOf, morphOf, carriesOf, morphOdds, MORPHS } from './genes.js';
 export { allelesOf, morphOf, carriesOf, morphOdds, MORPHS };
-const gOf = (p, seed) => ({ ...(p?.genes ?? genesOf(p?.seed ?? seed)), m: allelesOf(p ?? { seed }) });      // (a parent's genes, with its colour genes even if they were stored before there were any)
+const gOf = (p, seed) => ({ ...(p?.genes ?? genesOf(p?.seed ?? seed)), m: allelesOf(p ?? { seed }) });      // (a parent's genes, with its color genes even if they were stored before there were any)
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
 import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
 export { keepStory, todOf, TOD, LIFE, decorStory };
@@ -226,7 +226,7 @@ export const DISCOVERIES = {
   hitch: { label: 'Tail hitching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} wrapped its tail round a stem and held on.` },
   eyes: { label: 'Independent eyes', kind: 'seahorse', quiet: true, line: (f) => `${f.name} watched two things at once, one eye each way.` },
   snick: { label: 'Snaps up plankton', kind: 'seahorse', quiet: true, line: (f) => `${f.name} snapped up a speck of plankton with a flick of its head.` },
-  blend: { label: 'Colour matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the color of the plant it was holding.` },
+  blend: { label: 'Color matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the color of the plant it was holding.` },
   favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favorite place to hold on.` },
   dance: { label: 'Greeting dance', kind: 'seahorse', quiet: true, line: (f) => `${f.name} met another seahorse and they circled each other, glowing.` },
   tails: { label: 'Holding tails', kind: 'seahorse', quiet: true, line: (f) => `${f.name} curled its tail round another seahorse's and they drifted along together.` },
@@ -488,10 +488,10 @@ export const NOTE_KEEP = 14 * 864e5, NOTE_COLORS = ['butter', 'blush', 'mint', '
 const careEgg = (t, now) => { const d = Math.floor(now / DAY); for (const e of t.eggs ?? []) { e.cared ||= []; if (!e.cared.includes(d) && now < e.hatchAt) e.cared.push(d); } };      // food or clean water on a day counts as looking after the egg that day
 export const eggCare = (e) => (e?.cared ?? []).length;
 // one little one from these eggs, its looks and nature from both parents (the same way for the first and for a second one that is kept)
-// a baby that shows a rare colour: a line in the journal, and the first of each colour is kept in the Field Guide's colour pages
+// a baby that shows a rare color: a line in the journal, and the first of each color is kept in the Field Guide's color pages
 function morphBorn(t, f, now, ev) {
   const m = morphOf(f); if (!m) return; const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
-  ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare colour, from both parents.'}`, toast: `${f.name} is ${M.label.toLowerCase()}!`, story: f.id, morph: m });
+  ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, toast: `${f.name} is ${M.label.toLowerCase()}!`, story: f.id, morph: m });
 }
 function makeChild(t, e, now) {
   const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);

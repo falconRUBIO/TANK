@@ -78,7 +78,7 @@ export class Fish3D {
       this.mesh.setColorAt(i, col);
     });
     // every fish is its own: a small hue, saturation, brightness and size shift from its seed (neutral whites and eyes stay put)
-    { const gn = opts.genes ?? genesOf(seed), dh = gn.dh, ds = gn.ds, dl = gn.dl, hsl = {}, M = gn.m && gn.m[0] === gn.m[1] ? MORPHS[gn.m[0]] : null;      // (a rare colour, two copies of it: the whole fish takes it on)
+    { const gn = opts.genes ?? genesOf(seed), dh = gn.dh, ds = gn.ds, dl = gn.dl, hsl = {}, M = gn.m && gn.m[0] === gn.m[1] ? MORPHS[gn.m[0]] : null;      // (a rare color, two copies of it: the whole fish takes it on)
       this.size = gn.size;
       this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { if (M) col.setHSL(M.h ?? hsl.h, M.s, Math.min(0.95, hsl.l * 0.4 + M.l * 0.6)); else col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
@@ -465,7 +465,7 @@ export class Fish3D {
   buildCostume(key, src) {
     const n = this.vox.length, tex = new Float32Array(n * 3), b = this.baseCol; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, ls = 0;
     for (let i = 0; i < n; i++) { const v = this.vox[i]; ls += b[i * 3] * 0.3 + b[i * 3 + 1] * 0.59 + b[i * 3 + 2] * 0.11; if (v.arm >= 0 || v.web) continue; x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
-    const lavg = ls / n, fishMap = key === 'fish' && src?.vox ? this.fishColours(src) : null, plant = PLANT_COLS[src] ?? PLANT_COLS.kelp;
+    const lavg = ls / n, fishMap = key === 'fish' && src?.vox ? this.fishColors(src) : null, plant = PLANT_COLS[src] ?? PLANT_COLS.kelp;
     for (let i = 0; i < n; i++) {
       const v = this.vox[i], o = i * 3, arm = v.arm >= 0 ? v.arm : v.web ? v.web.a : -1, onArm = arm >= 0, at = v.arm >= 0 ? v.at : v.web ? v.web.at * 0.4 : 0;
       const u = onArm ? at : (x1 - v.x) / Math.max(1, x1 - x0), h = onArm ? 0.5 : (v.y - y0) / Math.max(1, y1 - y0), q = h3(v.x * 3 + 1, v.y * 5, v.z * 7 + 2);
@@ -495,7 +495,7 @@ export class Fish3D {
     return tex;
   }
   // a fish's colors as a map from (along its length 0 head to 1 tail, up its side 0 belly to 1 back) to the color most of its voxels there have
-  fishColours(o) {
+  fishColors(o) {
     const NX = 20, NY = 4, vox = o.vox, b = o.baseCol; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
     for (const v of vox) { x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
     const bins = Array.from({ length: NX * NY }, () => new Map());
@@ -816,7 +816,7 @@ export class Fish3D {
     this.snickT = Math.max(0, (this.snickT ?? 0) - dt); const flick = this.snickT > 0 ? Math.sin(Math.PI * (1 - this.snickT / 0.32)) : 0;
     // leaning back from its stem; the head tips to follow its prey; a flick of the head for plankton, a much faster, deeper one to strike
     this.pitch += (((this.gripLean ?? SEAHORSE_LEAN) * (this.gripK ?? 0) + (this.prey ? aimP : 0) - 0.1 * flick - 0.2 * strike + Math.sin(t * 0.7 + this.phase) * 0.02) - this.pitch) * Math.min(1, dt * (strike ? 45 : flick ? 30 : this.prey ? 6 : 3));
-    // its colour: a little of its holdfast's, and darker through the night
+    // its color: a little of its holdfast's, and darker through the night
     if (H.held > 6 || this.sleepy) { const base = PLANT_COLS[H.type]?.[1] ?? HOLD_COLS[H.type] ?? [150, 140, 120], col = this.sleepy ? [Math.round(base[0] * 0.35 + 30), Math.round(base[1] * 0.35 + 28), Math.round(base[2] * 0.35 + 40)] : base;
       if (!this.tintCol || this.tintCol[0] !== col[0] || this.tintCol[1] !== col[1] || this.tintCol[2] !== col[2]) { this.tintCol = col; this.tintApplied = -1; }
       const want = this.sleepy ? 0.4 : 0.3; this.setTint(Math.min(want, (this.tintK ?? 0) + dt * (this.sleepy ? 0.03 : 0.012))); }
