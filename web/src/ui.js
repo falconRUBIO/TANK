@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -157,7 +157,7 @@ export function initUI({ game, social, cb }) {
       return;
     }
     const offer = (s.goalOffer ?? []).map((k) => [k, GOALS[k]]).filter(([, x]) => x);
-    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${offer.map(([k, x]) => `<button class="gch" data-goal="${esc(k)}"><b>${esc(x.title)}</b><small>${esc(x.blurb)} · ${x.steps.length} steps</small></button>`).join('')}${prizeLabel(nextPrize(s)) ? `<p class="gprize">Any of them unlocks the ${esc(prizeLabel(nextPrize(s)))}.</p>` : ''}<button class="lnk" id="mno">Later</button>${finished}</div>`;
+    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${offer.map(([k, x]) => `<button class="gch" data-goal="${esc(k)}"><b>${esc(x.title)}</b><small>${esc(x.blurb)}</small><em class="gpace">${esc(GOAL_PACE[k]?.[0] ?? '')} · ${x.steps.length} steps${GOAL_PACE[k]?.[1] ? ` · needs ${esc(GOAL_PACE[k][1])}` : ''}</em></button>`).join('')}${prizeLabel(nextPrize(s)) ? `<p class="gprize">Any of them unlocks the ${esc(prizeLabel(nextPrize(s)))}.</p>` : ''}<button class="lnk" id="mno">Later</button>${finished}</div>`;
     modal.classList.add('on'); $('mno').onclick = () => modal.classList.remove('on');
     modal.querySelectorAll('[data-goal]').forEach((b) => { b.onclick = async () => { const r = await game.dispatch({ t: 'pickGoal', id: b.dataset.goal }); modal.classList.remove('on'); if (!r.ok) { toast(REASONS[r.reason] ?? 'That did not work.'); return; } sfx('arrive'); updateHeader(); setTimeout(goalSheet, 450); }; });
   }

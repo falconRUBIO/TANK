@@ -829,6 +829,17 @@ await t('an oversized message drops only that connection, never the server; a jo
   w2.send(JSON.stringify({ t: 'heart', jid, on: false })); await waitFor(w2, (m) => m.t === 'hearts' && m.jid === jid && m.by.length === 0);
   w2.send(JSON.stringify({ t: 'heart', jid: jid + 999 })); await new Promise((r) => setTimeout(r, 100)); assert.ok(!S.db.prepare('SELECT 1 FROM hearts WHERE journal_id=?').get(jid + 999), 'no hearts on lines outside your tank'); w2.close();
 });
+await t('four caretakers at once: one decision is made once, the mystery plays out once, a lid sighting counts once', async () => {
+  const us = await Promise.all(['Ann', 'Bea', 'Cal', 'Dov'].map(mkUser)), tk = (await call('/api/tanks', { name: 'Four' }, us[0].token)).body;
+  for (const u of us.slice(1)) assert.equal((await call('/api/join', { code: tk.code }, u.token)).status, 200);
+  const ws = await Promise.all(us.map((u) => open(u.token))); assert.equal((await ackOf(ws[0], { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 5, idem: 'f4-0' })).ok, true);
+  const now = Date.now(), D = 864e5, o = { ...getW(tk.id).fish[0], born: now - 30 * D, stage: 'adult' };
+  setW(tk.id, { fish: [o], flags: { ...getW(tk.id).flags, tut: 5 }, dilemma: { id: 'dl4', kind: 'lid', fish: [o.id], at: now, until: now + D, text: 'Ink keeps pushing at the lid.', opts: [{ k: 'lid', label: 'a' }, { k: 'busy', label: 'b' }, { k: 'let', label: 'c' }], done: false }, myst: { day: Math.floor(now / D), kind: 'glint', x: 0, z: 0, done: false } });
+  const dec = await Promise.all(ws.map((w, i) => ackOf(w, { t: 'decide', id: 'dl4', k: ['lid', 'busy', 'let', 'lid'][i], idem: 'd4-' + i }))); assert.equal(dec.filter((r) => r.ok && r.applied !== false).length, 1, 'one decision: ' + JSON.stringify(dec.map((r) => [r.ok, r.applied, r.reason])));
+  const before = getW(tk.id).stats?.myst ?? 0, my = await Promise.all(ws.map((w, i) => ackOf(w, { t: 'mystery', idem: 'm4-' + i }))); assert.equal(my.filter((r) => r.ok && r.applied).length, 1); assert.equal((getW(tk.id).stats?.myst ?? 0) - before, 1, 'counted once');
+  await Promise.all(ws.slice(0, 2).map((w, i) => ackOf(w, { t: 'octoLid', fish: o.id, idem: 'l4-' + i }))); assert.equal(getW(tk.id).fish.find((f) => f.id === o.id).lid?.n, 1, 'two phones, one sighting');
+  ws.forEach((w) => w.close());
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

@@ -1050,6 +1050,8 @@ export const GOALS = {
     ] },
 };
 export const GOAL_SHELLS = 20;
+// how long each goal usually takes, measured in the simulation (tools/loop_sim.mjs, median days from choosing to finishing), and what it needs first
+export const GOAL_PACE = { family: ['A few days', 'two grown fish of a kind'], sleuth: ['About a week', ''], dynasty: ['About a week', 'a grown fish bred here'], ember: ['One to two weeks', 'a carrier in the tank'], ghost: ['Two to three weeks', 'a carrier in the tank'], peace: ['Two to three weeks', 'an octopus and room for plants'], guide: ['Two to three weeks', 'time spent watching'], blue: ['About three weeks', 'a carrier in the tank'], gold: ['About three weeks', 'a carrier in the tank'], rare: ['About four weeks', ''], octo: ['About four weeks', 'a female and a male octopus'], raise: ['Several weeks', 'young ones to raise, one at a time'] };
 // what finishing the current goal will unlock: the next floor or backdrop the tank does not have yet (alternating, so both kinds come)
 export function nextPrize(t) { const fl = Object.keys(FLOORS).filter((k) => !styleOwned(t, 'floor', k)).map((k) => ['floor', k]), bd = Object.keys(BACKDROPS).filter((k) => !styleOwned(t, 'backdrop', k)).map((k) => ['backdrop', k]); const n = (t.goalsDone ?? []).length; return (n % 2 ? bd[0] ?? fl[0] : fl[0] ?? bd[0]) ?? null; }
 export const prizeLabel = (p) => (p ? `${p[0] === 'floor' ? FLOORS[p[1]] : BACKDROPS[p[1]]} ${p[0]}` : null);
@@ -1060,6 +1062,7 @@ function goalOffer(t, now) { const h = hash32(Math.floor(now / DAY) * 13 + ((t.c
   const colors = ok.filter((k) => MORPHS[k]), rest = ok.filter((k) => !MORPHS[k] && k !== 'rare'), pick = [];
   pick.push(colors.length ? colors[h % colors.length] : ok.includes('rare') ? 'rare' : null);      // (one breeding goal is always among them when it can be)
   const off = (h >>> 5) % (rest.length || 1); for (let i = 0; i < rest.length && pick.filter(Boolean).length < 3; i++) { const k = rest[(off + i) % rest.length]; if (!pick.includes(k)) pick.push(k); }
+  if (!(t.goalsDone ?? []).length && !pick.some((k) => k === 'family' || k === 'sleuth')) { const quick = ['family', 'sleuth'].find((k) => ok.includes(k)); if (quick) pick[Math.min(2, pick.filter(Boolean).length)] = quick; }      /* (a first goal on offer that takes days, not weeks) */
   return pick.filter(Boolean).slice(0, 3); }
 const baseOf = (t) => ({ ...(t.stats ?? {}), field: Object.keys(t.field ?? {}).length });
 function goals(t, now, ev) {

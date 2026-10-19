@@ -29,7 +29,7 @@ function run({ crew, profile, days, seed }) {
   const rand = rng(seed * 97 + crew * 13 + profile.length), t0 = (100 + seed) * 7 * DAY + 6 * H, t = R.newWorld(t0, seed + 2, { empty: true }); R.norm(t, t0); t.tzMin = 0;
   const kinds = HOUSE[profile], people = Array.from({ length: crew }, (_, i) => ({ uid: 'u' + i, name: ['Ana', 'Ben', 'Cy', 'Dee'][i], ...PROFILES[kinds[i % kinds.length]], kind: kinds[i % kinds.length] }));
   const members = crew > 1 ? people.map((p, i) => ({ id: p.uid, name: p.name, slot: i })) : null;
-  const ledger = [], M = {}, snaps = {}, count = { toasts: 0, journal: 0, neglect: 0, deaths: 0, decisions: 0, mysteries: 0, goalFails: 0 };
+  const goalLog = [], ledger = [], M = {}, snaps = {}, count = { toasts: 0, journal: 0, neglect: 0, deaths: 0, decisions: 0, mysteries: 0, goalFails: 0 };
   let now = t0; const day = () => (now - t0) / DAY, mark = (k) => { M[k] ??= +day().toFixed(1); };
   const book = (who, what, fn) => { const before = t.shells, r = fn(), after = t.shells; if (after !== before) ledger.push({ at: +day().toFixed(2), who, what, amount: after - before, before, after }); tally(r?.events); return r; };
   const tally = (ev) => { for (const e of ev ?? []) { if (e.toast) count.toasts++; if (e.journal) count.journal++; } };
@@ -54,7 +54,7 @@ function run({ crew, profile, days, seed }) {
     // what is there to notice
     const m = R.mysteryOf(t, now); if (m && !m.done && rand() < p.notice) { const r = act(p, { t: 'mystery', tz: 0 }); if (r.ok && r.applied) { count.mysteries++; mark('first mystery'); } }
     const D = t.dilemma; if (D && !D.done && (!D.turn || D.turn.uid === p.uid || now > D.turn.until) && rand() < p.notice) { const r = act(p, { t: 'decide', id: D.id, k: D.opts[Math.floor(rand() * D.opts.length)].k }); if (r.ok && r.applied) { count.decisions++; mark('first decision'); } }
-    if (!t.goal && (t.goalOffer ?? []).length) { const col = t.goalOffer.filter((k) => R.MORPHS[k] || k === 'rare'), g = profile === 'breeder' && col.length ? col[0] : t.goalOffer[Math.floor(rand() * t.goalOffer.length)]; if (act(p, { t: 'pickGoal', id: g }).ok) mark('first goal chosen'); }
+    if (!t.goal && (t.goalOffer ?? []).length) { const col = t.goalOffer.filter((k) => R.MORPHS[k] || k === 'rare'), g = profile === 'breeder' && col.length ? col[0] : t.goalOffer[Math.floor(rand() * t.goalOffer.length)]; if (act(p, { t: 'pickGoal', id: g }).ok) { mark('first goal chosen'); goalLog.push({ id: g, from: day() }); } }
     // care
     if (t.hunger > 0.3) act(p, { t: 'feed' });
     for (const f of live().filter((x) => R.ownFood(x) && mine(x) && R.ownHunger(x) >= R.OCTO_DUE)) act(p, { t: 'feed', food: R.ownFood(f), fish: f.id });
@@ -107,9 +107,11 @@ function run({ crew, profile, days, seed }) {
     const St = t.stats ?? {}, n = (k) => St[k] ?? 0, raisedN = Object.keys(St).filter((k) => k.startsWith('raised_')).reduce((a, k) => a + St[k], 0);
     const W = R.SCORE_W, parts = { care: W.care * n('careDays'), mystery: W.myst * n('myst'), decisions: W.decided * n('decided'), hatched: W.hatched * n('hatched'), grown: W.grown * n('grewHere'), raised: W.raised * raisedN, morphs: W.morph * n('morphs'), goals: W.goal * (t.goalsDone ?? []).length, field: W.field * Object.keys(t.field ?? {}).length, species: W.species * (t.seen?.fish?.length ?? 0) };
     const G = R.goalOf(t), stuck = G ? `${G.id} since day ${((G.at - t0) / DAY).toFixed(0)}: ${G.steps.map((x) => (x.done ? '✓' : x.have + '/' + x.need)).join(' ')}` : (t.goalOffer ?? []).length ? 'choosing' : 'none';
-    return { stuck, parts, centerpieces: Object.fromEntries(['spire', 'crystal', 'bridge', 'arch'].map((k) => [k, t.decor.some((d) => d.type === k) ? (M['bought ' + k] ?? 'yes') : null])), level: t.level, score: R.scoreOf(t, now), shells: t.shells, earned, spent, by, decorOwned: owned.size, decorOpen: openD.length, centerAfford: openD.length ? Math.max(...openD.map((d) => d.price)) <= t.shells : false, fish: t.fish.filter((f) => !f.dead).length, field: Object.keys(t.field ?? {}).length, goals: (t.goalsDone ?? []).length, ...count };
+    const diffs = [t.fish.filter((f) => !f.dead && !R.isOcto(f)).length > 0 && 'a new fish', t.decor.length > 0 && 'decorations', Object.keys(t.field ?? {}).length > 0 && 'a Field Guide page', (t.stats?.myst ?? 0) > 0 && 'a mystery found', t.fish.some((f) => R.isOcto(f) && f.home) && 'a den of its own', t.fish.some((f) => f.pal) && 'a friendship', t.fish.some((f) => R.isOcto(f) && R.stageOf(f, now) !== 'baby') && 'the octopus grew', (t.eggs ?? []).length + (t.stats?.hatched ?? 0) > 0 && 'eggs or babies', (t.adv?.hist ?? []).some((h) => h.fish) && 'an adventure', t.fish.some((f) => R.isOcto(f) && Object.values(f.bond ?? {}).some((n) => n >= 3)) && 'the octopus knows you'].filter(Boolean);
+    return { diffs, stuck, parts, centerpieces: Object.fromEntries(['spire', 'crystal', 'bridge', 'arch'].map((k) => [k, t.decor.some((d) => d.type === k) ? (M['bought ' + k] ?? 'yes') : null])), level: t.level, score: R.scoreOf(t, now), shells: t.shells, earned, spent, by, decorOwned: owned.size, decorOpen: openD.length, centerAfford: openD.length ? Math.max(...openD.map((d) => d.price)) <= t.shells : false, fish: t.fish.filter((f) => !f.dead).length, field: Object.keys(t.field ?? {}).length, goals: (t.goalsDone ?? []).length, ...count };
   }
-  return { M, snaps, people: people.map((p) => p.kind) };
+  for (const G of goalLog) { const d = (t.goalsDone ?? []).find((x) => x.id === G.id && (x.at - t0) / DAY >= G.from); G.days = d ? +((d.at - t0) / DAY - G.from).toFixed(1) : null; }
+  return { M, snaps, goalLog, people: people.map((p) => p.kind) };
   // what the tank itself says has happened (read after every visit and at the end of each day)
   function readTank() {
     const S = t.stats ?? {}, live = t.fish.filter((f) => !f.dead);
@@ -129,7 +131,8 @@ for (const crew of CREWS) for (const profile of PROFS) {
   const runs = Array.from({ length: SEEDS }, (_, i) => run({ crew, profile, days: DAYS, seed: i + 1 }));
   const row = { crew, profile, milestones: {}, snaps: {} };
   for (const k of M_KEYS) { const v = runs.map((r) => r.M[k]); row.milestones[k] = { median: med(v), range: rangeOf(v), hit: v.filter((x) => x != null).length + '/' + SEEDS }; }
-  for (const d of [7, 30, 60, 120].filter((d) => d <= DAYS)) { const S = runs.map((r) => r.snaps[d]).filter(Boolean), m = (k) => med(S.map((x) => x[k])); row.snaps[d] = { level: m('level'), score: m('score'), shells: m('shells'), earned: m('earned'), spent: m('spent'), perDayEarned: +(m('earned') / d).toFixed(1), decor: `${m('decorOwned')}/${m('decorOpen')}`, fish: m('fish'), field: m('field'), goals: m('goals'), decisions: m('decisions'), mysteries: m('mysteries'), toasts: m('toasts'), neglect: m('neglect'), deaths: m('deaths'), earnedBy: S[0]?.by, parts: S[0]?.parts, stuck: S.map((x) => x.stuck), centerpieces: S.map((x) => x.centerpieces) }; }
+  for (const d of [7, 30, 60, 120].filter((d) => d <= DAYS)) { const S = runs.map((r) => r.snaps[d]).filter(Boolean), m = (k) => med(S.map((x) => x[k])); row.snaps[d] = { level: m('level'), score: m('score'), shells: m('shells'), earned: m('earned'), spent: m('spent'), perDayEarned: +(m('earned') / d).toFixed(1), decor: `${m('decorOwned')}/${m('decorOpen')}`, fish: m('fish'), field: m('field'), goals: m('goals'), decisions: m('decisions'), mysteries: m('mysteries'), toasts: m('toasts'), neglect: m('neglect'), deaths: m('deaths'), earnedBy: S[0]?.by, diffs: med(S.map((x) => x.diffs.length)), diffsEx: S[0]?.diffs, parts: S[0]?.parts, stuck: S.map((x) => x.stuck), centerpieces: S.map((x) => x.centerpieces) }; }
+  row.goalTimes = {}; for (const r of runs) for (const G of r.goalLog) (row.goalTimes[G.id] ||= []).push(G.days);
   out.push(row);
 }
 if (JSON_OUT) console.log(JSON.stringify(out, null, 1));
