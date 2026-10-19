@@ -583,7 +583,7 @@ function eggs(t, now, ev) {
   // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
   { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm');
     const fed = (f) => ownHunger(f) < 0.5 || now - (f.fedAt ?? 0) < DAY;      /* (well fed: fed today, not full at this very minute) */
-    if (Mo && Fa && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.8 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
+    if (Mo && Fa && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.55 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
       Mo.broodAt = now + OCTO_EGG_GAP * DAY;
       t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: 'octopus', a: Mo.id, b: Fa.id, seed: Mo.seed, pa: snap(Mo), pb: snap(Fa), laid: now, hatchAt: wakeAt(t, now + OCTO_EGG_DAYS * DAY), cared: [], guard: Mo.id, den: Mo.home }); Mo.brood = t.eggs.at(-1).id; bump(t, 'octoEggs');      /* (she stays: no adventures while she broods) */
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;

@@ -1,392 +1,558 @@
 
 === 1 caretaker, casual (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.6   0.5–0.6      6/6
-  first Field Guide page            4.6   0.6–10.6     6/6
-  first mystery                     0.6   0.6–4.6      6/6
-  first decision                    4.6   4.6–5.6      6/6
-  first pairing                     9.6   7.6–16.6     6/6
-  first eggs                          9   7–9.6        6/6
-  first hatching                   12.6   10.6–13.6    6/6
-  first adult raised               22.6   20.6–23.6    6/6
-  first raised temperament            8   3–10.6       6/6
-  first octopus adventure            65   26–93        5/6
-  first rare color                 43.6   23.6–49.6    6/6
-  first goal done                  24.5   11.6–58      5/6
-  second generation adult            42   40–50.6      6/6
-  level 2                           4.6   1.5–5.5      6/6
-  level 3                            11   8.6–12.6     6/6
-  level 4                          22.6   16.6–24.5    6/6
-  level 5                          38.6   37.6–40      6/6
-  level 6                            57   53–59.6      6/6
-  level 7                          67.6   64.5–71.6    6/6
-  level 8                            88   78.6–90.6    6/6
+  first Field Guide page            5.6   0.6–15.5     6/6
+  first mystery                     0.6   0.6–7.5      6/6
+  first decision                    4.6   4.5–10.6     6/6
+  first pairing                     8.6   8.5–12.6     6/6
+  first eggs                        8.6   7.6–11.6     6/6
+  first hatching                   12.6   11.6–14.6    6/6
+  first adult raised               22.6   21.6–24.6    6/6
+  first raised temperament         10.5   3–13         6/6
+  first octopus adventure            76   31–93        3/6
+  first rare color                 96.5   43.6–100.5   4/6
+  first goal done                  25.6   13.6–37.5    5/6
+  second generation adult          41.6   36–45        6/6
+  level 2                           4.5   1.5–5.6      6/6
+  level 3                            11   9.5–13       6/6
+  level 4                          23.6   20.5–24.6    6/6
+  level 5                          37.6   32.6–42      6/6
+  level 6                          65.6   53.6–72.6    6/6
+  level 7                          91.6   67.6–100.5   6/6
+  level 8                            86   81.5–107     3/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       2    34     13     39    48   5.6   2/10     3     1     0         1         4     22       0      0
-   30       4   182     22    291   293   9.7  12/18    12     5     1         3        19    115       0      0
-   60       6   402     76    656   597  10.9  18/24    23     7     2         6        31    250       0      0
-  120       8   736    114   1221  1150  10.2  25/27    32     9     3        11        65    484      26      0
+    7       2    33     15     40    44   5.7   2/10     3     1     0         1         4     16       0      0
+   30       4   187     37    283   284   9.4  10/18    15     4     1         3        18    100       0      0
+   60       6   363     19    669   663  11.2  19/24    23     6     1         5        32    185       0      0
+  120       8   722    105   1167  1068   9.7  26/27    32    10     3         8        60    282       0      0
 
 === 1 caretaker, regular (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.6   0.1–1.1      6/6
-  first Field Guide page            4.6   0.6–6.6      6/6
+  first Field Guide page            4.6   0.6–8.1      6/6
   first mystery                     0.6   0.1–1.1      6/6
-  first decision                    5.1   4.1–5.1      6/6
-  first pairing                     8.1   5.1–11.5     6/6
-  first eggs                        6.6   5.1–8        6/6
-  first hatching                   10.1   8.5–11.5     6/6
-  first adult raised                 20   18.6–21.6    6/6
-  first raised temperament         10.1   10.1–10.5    6/6
-  first octopus adventure          21.6   8.5–53.6     6/6
-  first rare color                 40.6   33.6–51.6    6/6
-  first goal done                  41.5   8.1–51.6     6/6
-  second generation adult            38   35.6–56.6    6/6
+  first decision                    4.6   4.1–5.6      6/6
+  first pairing                     8.1   4.6–9.1      6/6
+  first eggs                        6.6   5–8.5        6/6
+  first hatching                    9.6   8.6–11.6     6/6
+  first adult raised               19.6   18.6–21.6    6/6
+  first raised temperament         10.6   10.1–11      6/6
+  first octopus adventure          16.5   8.5–82.6     6/6
+  first rare color                 41.5   36.6–42.5    6/6
+  first goal done                    41   20.1–42.5    6/6
+  second generation adult          40.6   35.6–43.6    6/6
   level 2                           4.6   1.1–4.6      6/6
-  level 3                           8.6   5.1–9.6      6/6
-  level 4                          17.1   15.1–19.6    6/6
-  level 5                          30.5   29.1–32.6    6/6
-  level 6                          43.6   40.6–45      6/6
-  level 7                          53.6   50.6–58.6    6/6
-  level 8                          64.1   61.6–71.5    6/6
+  level 3                           9.6   7.1–11       6/6
+  level 4                          18.1   17–20.6      6/6
+  level 5                          31.1   26.5–33.6    6/6
+  level 6                          43.1   41.5–48.1    6/6
+  level 7                            55   51.6–57.6    6/6
+  level 8                          63.6   60.1–65.5    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       2    43     14     59    65   8.4   4/10     3     2     0         1         6     29       0      0
-   30       4   229     35    327   333  10.9   9/18    16     9     0         5        27    150       0      0
-   60       7   547     60    859   862  14.3  21/26    27    13     2         9        56    312       0      0
-  120       8   898     83   1412  1340  11.8  27/27    32    15     3        17       109    452       0      0
+    7       2    49     13     61    65   8.7   2/10     3     3     0         1         6     23       0      0
+   30       4   224     18    340   352  11.3  11/18    17     9     0         4        28    123       0      0
+   60       7   550     33    866   857  14.4  22/26    26    13     3         6        56    243       0      0
+  120       8   893    140   1446  1440  12.1  27/27    32    14     4        11       113    328       0      0
 
 === 1 caretaker, engaged (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            1.1   0.1–2.1      6/6
   first mystery                     0.1   0.1–0.1      6/6
-  first decision                    4.1   4.1–4.1      6/6
-  first pairing                     5.1   4.1–5.1      6/6
+  first decision                    4.1   4.1–4.6      6/6
+  first pairing                     5.1   4.3–6.1      6/6
   first eggs                          5   4–5.1        6/6
-  first hatching                    8.3   7.6–9        6/6
-  first adult raised                 18   17.3–19      6/6
-  first raised temperament         10.1   4–10.3       6/6
-  first octopus adventure          13.6   8.3–28.3     6/6
-  first rare color                 28.3   12.3–42.3    6/6
-  first goal done                  28.3   3.6–32.3     6/6
-  second generation adult            38   34–42        6/6
+  first hatching                    8.3   7.3–8.6      6/6
+  first adult raised                 18   17–18.3      6/6
+  first raised temperament         10.1   4–10.1       6/6
+  first octopus adventure          13.3   8.3–16.3     6/6
+  first rare color                 24.3   15.3–41.3    6/6
+  first goal done                  24.3   9.1–36.3     6/6
+  second generation adult            39   34–46        6/6
   level 2                           1.1   0.6–2.1      6/6
-  level 3                           5.1   3.1–5.1      6/6
-  level 4                          12.1   8.3–12.3     6/6
-  level 5                          22.3   20.1–26      6/6
-  level 6                          32.6   28.3–34.6    6/6
-  level 7                            42   38–43        6/6
-  level 8                          53.1   46–56        6/6
+  level 3                           4.3   3.1–7.3      6/6
+  level 4                          11.1   10–12.3      6/6
+  level 5                          22.1   19.3–24.3    6/6
+  level 6                          32.3   28.3–34.6    6/6
+  level 7                          40.1   35.3–43.1    6/6
+  level 8                          49.1   45–53.1      6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    80     18     87    90  12.4   5/14     5     8     0         1         7     42       0      0
-   30       5   333     22    453   462  15.1  14/21    20    15     1         4        30    188       0      0
-   60       8   677     61   1049  1015  17.5  24/27    32    17     3         8        60    355       0      0
-  120       8   935    124   1606  1513  13.4  28/27    32    17     3        18       120    488       0      0
+    7       3    84     13     82    89  11.7   5/14     4     8     0         1         7     35       0      0
+   30       5   347     37    459   463  15.3  15/21    21    13     2         5        30    169       0      0
+   60       8   705     81   1134  1113  18.9  24/27    32    16     4         7        60    312       0      0
+  120       8   941    164   1643  1578  13.7  28/27    32    17     4        14       120    371       0      0
 
 === 1 caretaker, returning (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–1.5      6/6
-  first Field Guide page            3.1   0.5–5.6      6/6
+  first Field Guide page            3.1   0.5–6.1      6/6
   first mystery                     0.1   0.1–1.5      6/6
-  first decision                    4.1   4.1–5.6      6/6
-  first pairing                     6.6   5.5–8.6      6/6
-  first eggs                        6.1   5.1–8        6/6
-  first hatching                    9.6   8.6–11.6     6/6
-  first adult raised                 23   22–25        6/6
-  first raised temperament         10.1   2.5–10.1     6/6
-  first octopus adventure            26   8.6–43       6/6
-  first rare color                 30.6   9.1–47.5     6/6
-  first goal done                  24.5   9.1–47.5     6/6
-  second generation adult          40.6   37–41.5      6/6
+  first decision                    4.6   4.1–5.5      6/6
+  first pairing                     7.1   5.1–8.1      6/6
+  first eggs                        6.6   5–7.5        6/6
+  first hatching                   10.1   8.6–10.6     6/6
+  first adult raised               23.6   21.6–24      6/6
+  first raised temperament         10.1   2.5–10.6     6/6
+  first octopus adventure          37.5   8.6–93       6/6
+  first rare color                 40.6   14–60.6      6/6
+  first goal done                  26.5   14–48.6      6/6
+  second generation adult          45.6   41.6–67.6    6/6
   level 2                           3.1   2.5–3.6      6/6
-  level 3                           7.6   4.6–8.6      6/6
-  level 4                          21.6   11.6–23      6/6
-  level 5                          31.6   26.6–32.6    6/6
-  level 6                            41   37–47.5      6/6
-  level 7                          51.1   48.1–60.1    6/6
-  level 8                          58.6   56.1–69.1    6/6
+  level 3                           8.1   4.1–9.6      6/6
+  level 4                          22.1   18.1–24      6/6
+  level 5                          34.1   29.6–36.1    6/6
+  level 6                          43.1   36.6–52.6    6/6
+  level 7                          54.1   46.1–63.5    6/6
+  level 8                          65.6   54–77.6      6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       2    50     14     64    70   9.1   4/10     3     3     0         1         7     32       0      0
-   30       4   218     14    328   334  10.9  11/18    16     8     1         4        22    165       9      0
-   60       8   610     44    869   871  14.5  23/27    29    12     4         8        50    311       9      0
-  120       8  1013    106   1466  1408  12.2  27/27    32    15     6        16       106    467       9      0
+    7       2    47     10     75    89  10.7   5/10     4     3     0         1         6     30       0      0
+   30       4   216     25    331   335    11  12/18    17     7     1         4        22    143       9      0
+   60       7   558     58    904   858  15.1  22/26    27    11     3         6        51    262       9      0
+  120       8   934    162   1511  1317  12.6  27/27    32    14     4        10       106    371       9      0
+
+=== 1 caretaker, breeder (6 seeds, 120 days) ===
+  milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
+  first fish bought                 0.6   0.1–1.1      6/6
+  first Field Guide page            4.1   0.6–5.1      6/6
+  first mystery                     0.6   0.1–1.1      6/6
+  first decision                    4.6   4.1–5.5      6/6
+  first pairing                     7.6   5.1–8.6      6/6
+  first eggs                        6.6   5–8.5        6/6
+  first hatching                   10.1   8.6–11.5     6/6
+  first adult raised                 20   18.5–21.6    6/6
+  first raised temperament         10.1   10.1–10.6    6/6
+  first octopus adventure          13.5   8.6–42.1     6/6
+  first rare color                 31.6   25.6–41      6/6
+  first goal done                  31.6   25.6–41      6/6
+  second generation adult          38.5   35–42        6/6
+  level 2                           3.6   1.1–4.6      6/6
+  level 3                           7.6   5.1–10.1     6/6
+  level 4                          16.6   15.1–20.6    6/6
+  level 5                          29.1   26.1–33.6    6/6
+  level 6                          42.1   37.5–48.1    6/6
+  level 7                          53.1   47.5–59.1    6/6
+  level 8                          66.1   57.6–70.1    6/6
+  day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
+    7       2    49     12     61    65   8.7   4/10     4     3     0         1         6     23       0      0
+   30       5   257     23    386   386  12.9  11/21    19     8     1         4        28    137       0      0
+   60       8   591     45    896   877  14.9  23/27    28    12     2         6        57    238       0      0
+  120       8   882    156   1400  1265  11.7  27/27    32    14     3         9       111    314       0      0
+
+=== 1 caretaker, saver (6 seeds, 120 days) ===
+  milestone                     median day   range        reached
+  spire open                       63.6   57.1–70.6    6/6
+  spire affordable                 81.1   76.1–104.6   6/6
+  bought spire                     81.1   76.1–104.6   6/6
+  first fish bought                 0.6   0.1–0.6      6/6
+  first Field Guide page            3.6   0.1–9.6      6/6
+  first mystery                     0.6   0.1–1.6      6/6
+  first decision                    4.6   4.1–5.1      6/6
+  first pairing                     6.6   6.1–7.5      6/6
+  first eggs                        6.6   5.6–7.6      6/6
+  first hatching                   10.6   8.6–11.6     6/6
+  first adult raised               20.6   18.5–21.5    6/6
+  first raised temperament         10.1   7–10.6       6/6
+  first octopus adventure          20.6   8.5–68       6/6
+  first rare color                 40.6   27.6–98.6    5/6
+  first goal done                  11.1   8.1–20.6     6/6
+  second generation adult          44.6   38–46.6      6/6
+  level 2                           3.6   0.5–4.5      6/6
+  level 3                           8.6   5.6–9.6      6/6
+  level 4                          16.1   13.1–19.6    6/6
+  level 5                          27.1   26.6–30.6    6/6
+  level 6                            42   38.5–45.6    6/6
+  level 7                          50.1   48.5–55.1    6/6
+  level 8                          63.6   57.1–70.6    6/6
+  day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
+    7       2    48     13     55    67   7.9   5/10     3     2     0         1         7     24       0      0
+   30       5   263     19    378   379  12.6  14/21    17     8     1         4        26    115       0      0
+   60       7   580     72    850   837  14.2  22/26    27    12     3         7        55    209       0      0
+  120       8   946     85   1487  1434  12.4  26/27    32    15     3         9       109    342       0      0
 
 === 2 caretakers, casual (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.6   0.5–0.6      6/6
   first Field Guide page            4.5   0.6–6.6      6/6
   first mystery                     0.6   0.5–1.5      6/6
-  first decision                    4.6   4.5–5.6      6/6
-  first pairing                    14.6   7.6–20.6     6/6
-  first eggs                          7   6.6–7.5      6/6
-  first hatching                   10.6   9.6–10.6     6/6
-  first adult raised               20.6   19.6–20.6    6/6
-  first raised temperament         10.5   7–10.6       6/6
-  first octopus adventure            29   6–97         6/6
-  first rare color                 48.6   33.5–99.6    5/6
-  first goal done                  25.6   11.6–48.6    6/6
-  second generation adult          43.5   37.5–48.6    6/6
-  level 2                           4.5   1.5–4.6      6/6
+  first decision                    5.5   4.5–5.6      6/6
+  first pairing                    26.6   6.6–34.6     6/6
+  first eggs                        7.6   6.6–9        6/6
+  first hatching                   10.6   9.6–12.5     6/6
+  first adult raised               20.6   19.6–23      6/6
+  first raised temperament         10.6   10.5–11      6/6
+  first octopus adventure            29   11–55        6/6
+  first rare color                 44.6   30.6–61.6    6/6
+  first goal done                  17.6   11.6–30.6    6/6
+  second generation adult          47.5   34.6–51      6/6
+  level 2                           4.5   1.5–5.6      6/6
   level 3                           9.6   8–10.6       6/6
-  level 4                            19   14–22.6      6/6
-  level 5                            33   29–35.6      6/6
-  level 6                          47.6   40.5–49.6    6/6
-  level 7                          59.6   55.6–62.6    6/6
-  level 8                            77   71.6–79.5    6/6
+  level 4                            18   13.6–22.5    6/6
+  level 5                          32.6   26.6–34.5    6/6
+  level 6                          48.6   40.6–51      6/6
+  level 7                          59.6   50.5–63      6/6
+  level 8                          73.5   64–81.6      6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       2    47     10     66    79   9.4   4/10     4     2     0         1         6     32       0      0
-   30       4   228      9    367   378  12.2  13/18    16     7     1         4        25    145       0      0
-   60       7   476     57    855   807  14.3  21/26    25    11     2         7        47    305       1      0
-  120       8   848    193   1563  1421    13  27/27    32    13     2        15        97    495       1      0
+    7       2    38     17     63    65     9   4/10     4     1     0         1         5     26       0      0
+   30       4   215     29    342   333  11.4  13/18    14     7     1         4        23    112       0      0
+   60       7   489     68    860   817  14.3  21/26    25    10     3         6        45    228       0      0
+  120       8   837    161   1442  1388    12  27/27    32    13     3        14        92    323       1      0
 
 === 2 caretakers, regular (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.5      6/6
   first Field Guide page            1.1   0.1–2.6      6/6
   first mystery                     0.1   0.1–0.5      6/6
-  first decision                    4.1   4.1–4.6      6/6
-  first pairing                     9.1   6.1–13.6     6/6
-  first eggs                          6   5–6.1        6/6
-  first hatching                    9.5   8.6–9.6      6/6
-  first adult raised               19.5   18.5–19.6    6/6
-  first raised temperament         10.1   10.1–10.1    6/6
-  first octopus adventure            14   5–21         6/6
-  first rare color                 39.6   13.5–72.6    6/6
-  first goal done                  23.6   12.6–39.6    6/6
-  second generation adult            41   36.6–45.6    6/6
+  first decision                    4.5   4.1–4.6      6/6
+  first pairing                    12.6   5.1–26.1     6/6
+  first eggs                        6.1   5–6.6        6/6
+  first hatching                    9.6   8.5–10.1     6/6
+  first adult raised               19.5   18.6–20      6/6
+  first raised temperament         10.1   10.1–10.5    6/6
+  first octopus adventure           8.6   8.5–14       6/6
+  first rare color                 34.6   20.6–48.5    5/6
+  first goal done                  20.6   10.1–29.5    6/6
+  second generation adult          40.6   38.5–48.6    6/6
   level 2                           1.6   0.5–2.6      6/6
-  level 3                           7.1   4.1–8.6      6/6
-  level 4                          13.5   11.1–17.1    6/6
-  level 5                          23.6   21.6–29.6    6/6
-  level 6                          35.6   31.6–41.6    6/6
-  level 7                          47.6   41.1–55.6    6/6
-  level 8                          62.6   51.1–66.6    6/6
+  level 3                           6.5   5.1–8.6      6/6
+  level 4                          14.6   11.1–17.1    6/6
+  level 5                          25.5   22.6–27.6    6/6
+  level 6                          36.1   33.5–39.6    6/6
+  level 7                            46   40.6–52.5    6/6
+  level 8                          55.6   50.1–65.6    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    66     12     78    87  11.1   4/14     5     5     0         1         7     43       0      0
-   30       5   300     25    403   398  13.4  14/21    18    12     1         5        30    175       0      0
-   60       8   643     39   1016  1016  16.9  22/27    29    15     2         9        60    364       0      0
-  120       8  1044    122   1836  1724  15.3  27/27    32    17     4        18       120    576       0      0
+    7       3    66     17     76    78  10.9   4/14     5     5     0         1         7     34       0      0
+   30       5   286     23    423   420  14.1  14/21    19    12     1         4        30    144       0      0
+   60       8   656     84   1019   919    17  23/27    30    15     4         8        60    291       0      0
+  120       8  1010    138   1766  1641  14.7  28/27    32    17     6        18       120    422       0      0
 
 === 2 caretakers, engaged (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            0.6   0.1–1.3      6/6
   first mystery                     0.1   0.1–0.1      6/6
-  first decision                    4.1   4.1–4.3      6/6
-  first pairing                    11.3   6.3–23.1     6/6
+  first decision                    4.1   4.1–4.1      6/6
+  first pairing                     8.1   5.3–18.6     6/6
   first eggs                          6   5–6.1        6/6
   first hatching                    9.3   8.3–9.3      6/6
   first adult raised                 19   18–19        6/6
-  first raised temperament          5.3   2.3–5.6      6/6
-  first octopus adventure           8.6   8.3–18.1     6/6
-  first rare color                 35.3   27.3–66.3    3/6
-  first goal done                  19.1   4.3–35.3     6/6
-  second generation adult            41   35.3–45      6/6
+  first raised temperament          6.1   2.3–8.3      6/6
+  first octopus adventure           8.3   8.3–12.3     6/6
+  first rare color                 29.3   22.3–34.3    6/6
+  first goal done                  17.1   3.3–34.3     6/6
+  second generation adult            37   33–44        6/6
   level 2                           1.1   0.1–1.3      6/6
-  level 3                           4.1   2.6–4.1      6/6
-  level 4                          10.1   6.3–12.1     6/6
-  level 5                          21.6   19.3–22.1    6/6
-  level 6                          34.3   31.3–37      6/6
-  level 7                          45.3   41.3–50.3    6/6
-  level 8                          59.1   55.1–66.1    6/6
+  level 3                           3.3   2.6–4.1      6/6
+  level 4                          10.1   5.6–11.3     6/6
+  level 5                          20.1   18.6–22.3    6/6
+  level 6                          33.3   27.3–34.3    6/6
+  level 7                          40.3   35.3–43      6/6
+  level 8                            52   47.6–56      6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    94      8    105   122    15   7/14     6     9     0         1         7     61       0      0
-   30       5   317     29    446   443  14.9  15/21    17    17     1         4        30    198       0      0
-   60       8   615     55   1050   987  17.5  23/27    29    18     2         9        60    413       0      0
-  120       8   888    188   1658  1542  13.8  27/27    32    18     2        18       120    561       0      0
+    7       3   102      6    102   121  14.6   7/14     6    10     0         1         7     49       0      0
+   30       6   360     24    513   508  17.1  16/24    20    17     1         4        30    204       0      0
+   60       8   700     87   1169  1102  19.5  25/27    32    18     3         9        60    382       0      0
+  120       8   947    232   1740  1538  14.5  28/27    32    18     3        19       120    465       0      0
 
 === 2 caretakers, mixed (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                    116.1   116.1–116.1  1/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            0.6   0.1–1.3      6/6
   first mystery                     0.1   0.1–0.1      6/6
   first decision                    4.1   4.1–4.3      6/6
-  first pairing                     6.1   4.6–6.1      6/6
+  first pairing                     5.6   4.6–6.3      6/6
   first eggs                          6   5–6.1        6/6
   first hatching                    9.3   8.3–9.3      6/6
   first adult raised                 19   18–19        6/6
   first raised temperament         10.1   2.6–10.1     6/6
-  first octopus adventure          13.3   8.3–20       6/6
-  first rare color                 29.6   12.3–67.3    5/6
-  first goal done                  20.1   11.1–37.3    6/6
-  second generation adult            37   33.3–40      6/6
+  first octopus adventure          13.3   8.3–41.3     6/6
+  first rare color                 33.3   16.3–56.6    6/6
+  first goal done                  16.5   8.1–33.3     6/6
+  second generation adult            37   33–50.6      6/6
   level 2                           1.1   0.6–1.6      6/6
-  level 3                           4.1   3–5.1        6/6
-  level 4                          11.6   10.1–12.3    6/6
-  level 5                          22.1   18–24        6/6
-  level 6                          34.1   27.3–39.1    6/6
-  level 7                            42   35.3–49.3    6/6
-  level 8                          58.1   42.6–63      6/6
+  level 3                           3.6   3–5.1        6/6
+  level 4                          10.1   10.1–11.6    6/6
+  level 5                          22.1   19.6–24.1    6/6
+  level 6                            34   29.1–37.3    6/6
+  level 7                          43.5   37.1–47.6    6/6
+  level 8                          52.3   45.6–58.3    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    72      7    104   117  14.9   6/14     6     6     0         1         7     51       0      0
-   30       5   352     29    478   469  15.9  15/21    19    15     2         4        30    189       0      0
-   60       8   710     60   1056  1042  17.6  24/27    32    17     2         8        60    376       0      0
-  120       8   975    156   1662  1526  13.8  28/27    32    18     3        18       120    521       0      0
+    7       3    84     11    100   107  14.3   6/14     5     8     0         1         7     42       0      0
+   30       5   322     33    477   479  15.9  16/21    21    14     1         4        30    169       0      0
+   60       8   695     48   1131  1091  18.9  25/27    31    17     3         9        60    320       0      0
+  120       8  1015    185   1766  1764  14.7  28/27    32    18     4        17       120    425       0      0
 
 === 2 caretakers, returning (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            1.1   0.1–1.6      6/6
   first mystery                     0.1   0.1–0.1      6/6
-  first decision                    4.6   4.1–4.6      6/6
-  first pairing                     7.1   5.1–36.5     6/6
-  first eggs                        6.1   5.1–6.6      6/6
-  first hatching                    9.6   8.5–9.6      6/6
-  first adult raised               22.6   22.1–23.6    6/6
+  first decision                    4.5   4.1–4.6      6/6
+  first pairing                    10.1   4.6–11.6     6/6
+  first eggs                        6.1   5–6.6        6/6
+  first hatching                    9.5   8.5–9.6      6/6
+  first adult raised               22.5   21.6–22.6    6/6
   first raised temperament         10.1   10.1–10.1    6/6
-  first octopus adventure           8.6   5–31         6/6
-  first rare color                 37.6   14–53.1      6/6
-  first goal done                  26.6   14–37.6      6/6
-  second generation adult          43.5   38.6–50.6    6/6
+  first octopus adventure           8.6   8.5–32       6/6
+  first rare color                 36.6   14–60.6      6/6
+  first goal done                  31.6   8.1–36.6     6/6
+  second generation adult          52.6   37.6–69.6    6/6
   level 2                           1.1   1.1–2        6/6
-  level 3                           6.1   4.6–7.1      6/6
-  level 4                          19.5   10.1–20      6/6
-  level 5                          29.5   28.6–32      6/6
-  level 6                          41.6   35.5–45.1    6/6
-  level 7                          51.1   44.5–54.1    6/6
-  level 8                          61.6   52.6–67.1    6/6
+  level 3                           6.6   5.1–7.6      6/6
+  level 4                          18.1   14–21.1      6/6
+  level 5                          30.6   26.6–32.6    6/6
+  level 6                          40.6   36.6–47.1    6/6
+  level 7                          49.6   44.1–60.6    6/6
+  level 8                            62   53.6–68.5    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    62     11     94   101  13.4   5/14     5     5     0         1         7     45       0      0
-   30       5   234     21    363   369  12.1  14/21    17    11     1         3        24    184       9      0
-   60       8   595     58    960   934    16  24/27    29    15     3         8        54    356       9      0
-  120       8   964    129   1585  1536  13.2  28/27    32    18     5        17       113    539       9      0
+    7       3    62      9     84    92    12   5/14     5     5     0         1         7     38       0      0
+   30       5   238     14    360   372    12  12/21    17    11     1         3        24    171       8      0
+   60       7   586     53    925   907  15.4  23/26    29    15     3         7        54    307       8      0
+  120       8   919     47   1533  1467  12.8  27/27    32    17     4        16       113    420       8      0
+
+=== 2 caretakers, breeder (6 seeds, 120 days) ===
+  milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
+  first fish bought                 0.1   0.1–0.5      6/6
+  first Field Guide page            1.1   0.1–2.6      6/6
+  first mystery                     0.1   0.1–0.5      6/6
+  first decision                    4.5   4.1–5.1      6/6
+  first pairing                    10.6   5.1–12.6     6/6
+  first eggs                        6.1   5–6.6        6/6
+  first hatching                    9.6   8.5–9.6      6/6
+  first adult raised               19.5   18.5–19.6    6/6
+  first raised temperament         10.5   10.1–10.6    6/6
+  first octopus adventure            10   8.6–21       6/6
+  first rare color                 31.6   19.6–37.6    6/6
+  first goal done                  31.6   19.6–37.6    6/6
+  second generation adult          37.6   33.6–47.5    6/6
+  level 2                           1.1   0.5–2.6      6/6
+  level 3                           7.1   4.6–9.6      6/6
+  level 4                          15.1   12.1–17.1    6/6
+  level 5                          27.6   22.6–29.1    6/6
+  level 6                          36.1   33.6–39.5    6/6
+  level 7                          44.6   42–51.6      6/6
+  level 8                            57   52.5–61.1    6/6
+  day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
+    7       3    56     14     81    91  11.6   4/14     5     4     0         1         7     36       0      0
+   30       5   276     28    418   415  13.9  13/21    20    12     0         5        30    160       0      0
+   60       8   612     30    965   956  16.1  24/27    30    14     3         9        60    283       0      0
+  120       8   950     86   1513  1487  12.6  28/27    32    17     3        17       119    381       0      0
+
+=== 2 caretakers, saver (6 seeds, 120 days) ===
+  milestone                     median day   range        reached
+  spire open                       58.1   52.1–63.6    6/6
+  spire affordable                 74.5   66.1–86.1    6/6
+  bought spire                     74.5   66.1–86.1    6/6
+  first fish bought                 0.1   0.1–0.6      6/6
+  first Field Guide page            1.6   0.1–7.1      6/6
+  first mystery                     0.1   0.1–0.6      6/6
+  first decision                    4.6   4.1–4.6      6/6
+  first pairing                    10.6   5.6–14.1     6/6
+  first eggs                          6   5–7          6/6
+  first hatching                    9.5   8.5–10.6     6/6
+  first adult raised               19.5   18.5–20.6    6/6
+  first raised temperament         10.1   10.1–10.6    6/6
+  first octopus adventure          12.5   8.5–50       6/6
+  first rare color                 31.6   12.6–66.5    6/6
+  first goal done                  31.6   9.5–47.6     6/6
+  second generation adult          45.5   37.6–45.6    6/6
+  level 2                             2   1.1–3.6      6/6
+  level 3                           7.1   4.1–9.1      6/6
+  level 4                          13.1   11.6–17.6    6/6
+  level 5                          24.6   22.6–29.6    6/6
+  level 6                          35.6   31.6–39.1    6/6
+  level 7                          47.6   41.6–49.6    6/6
+  level 8                          58.1   52.1–63.6    6/6
+  day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
+    7       2    50      8     68    82   9.7   5/10     5     3     0         1         7     31       0      0
+   30       5   302     16    432   446  14.4  13/21    19    14     1         4        30    152       0      0
+   60       8   644    114    997   907  16.6  23/27    29    15     3         8        60    291       0      0
+  120       8   982    127   1569  1453  13.1  27/27    32    17     4        18       119    384       0      0
 
 === 4 caretakers, casual (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                    118.5   118.5–118.5  1/6
   first fish bought                 0.6   0.5–0.6      6/6
   first Field Guide page            2.5   0.5–2.6      6/6
   first mystery                     0.6   0.5–0.6      6/6
-  first decision                    5.5   4.6–10.5     6/6
-  first pairing                    14.6   7.5–58.5     6/6
-  first eggs                          8   6.6–9.5      6/6
-  first hatching                   11.6   9.6–12.6     6/6
-  first adult raised               21.5   19.6–22.5    6/6
-  first raised temperament         10.5   10.5–10.6    6/6
-  first octopus adventure            45   6–104.6      6/6
-  first rare color                 51.6   35.6–65.6    6/6
-  first goal done                  44.5   17.6–54.5    6/6
-  second generation adult          41.6   35.6–75.6    6/6
+  first decision                    5.5   4.5–5.5      6/6
+  first pairing                     8.5   7.5–13.6     6/6
+  first eggs                        7.5   6.5–8.5      6/6
+  first hatching                   10.5   9.5–11.6     6/6
+  first adult raised               20.5   19.6–21.5    6/6
+  first raised temperament         10.6   10.5–11      6/6
+  first octopus adventure          29.5   11–98        6/6
+  first rare color                 44.6   11.6–63.5    6/6
+  first goal done                  21.5   8.6–44.6     6/6
+  second generation adult          39.5   35.5–41.5    6/6
   level 2                           2.6   1.5–2.6      6/6
-  level 3                           7.5   5.6–7.6      6/6
-  level 4                          15.6   14.5–17.5    6/6
-  level 5                          30.5   26.6–32.5    6/6
-  level 6                          45.6   37.5–51.6    6/6
-  level 7                          57.5   45.5–64.6    6/6
-  level 8                          68.6   57.6–73.6    6/6
+  level 3                           6.6   5.5–7.6      6/6
+  level 4                          13.6   11.6–19.6    6/6
+  level 5                          24.6   22.5–30.5    6/6
+  level 6                          39.5   35.6–44.6    6/6
+  level 7                          52.5   49–55.5      6/6
+  level 8                          64.6   58.5–66.5    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       2    50      9     81    85  11.6   4/10     6     3     0         1         7     44       0      0
-   30       5   251     17    427   418  14.2  13/21    19     8     0         4        30    174       0      0
-   60       8   600     57    999   962  16.6  23/27    27    12     2         8        58    355       0      0
-  120       8   911    115   1807  1713  15.1  28/27    32    15     3        16       114    537       2      0
+    7       3    56      9     86   100  12.3   5/14     6     4     0         1         7     41       0      0
+   30       5   289     27    460   465  15.3  14/21    19    10     2         4        29    151       0      0
+   60       7   566     25   1018   971    17  24/26    27    15     2         9        59    266       1      0
+  120       8   921    180   1700  1537  14.2  28/27    32    17     3        18       115    385       1      0
 
 === 4 caretakers, regular (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                    112.5   112.5–112.5  1/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            0.1   0.1–1.6      6/6
   first mystery                     0.1   0.1–0.1      6/6
-  first decision                    4.1   4.1–4.5      6/6
-  first pairing                    17.1   5.6–22.1     6/6
-  first eggs                          6   5–7.5        6/6
-  first hatching                    9.5   8.5–10.6     6/6
-  first adult raised               19.6   18.5–20.6    6/6
+  first decision                    4.1   4.1–4.6      6/6
+  first pairing                    11.6   6.6–55.6     6/6
+  first eggs                        6.1   5–7          6/6
+  first hatching                    9.5   8.5–10.5     6/6
+  first adult raised               19.5   18.5–20.5    6/6
   first raised temperament         10.1   10.1–10.1    6/6
-  first octopus adventure           8.6   8.5–31.1     6/6
-  first rare color                 48.5   27.5–119.6   6/6
-  first goal done                  29.6   6.6–52.6     6/6
-  second generation adult          43.6   34.5–54.5    6/6
+  first octopus adventure           8.5   8.5–8.5      6/6
+  first rare color                 30.5   26.5–45.5    6/6
+  first goal done                  17.5   6.6–45.5     5/6
+  second generation adult          37.6   36.5–47.5    5/6
   level 2                           1.1   0.5–2        6/6
-  level 3                           5.1   2.5–6.1      6/6
-  level 4                          11.1   8.6–13       6/6
-  level 5                          23.5   20.6–25.1    6/6
-  level 6                          34.1   33.5–41.6    6/6
-  level 7                          46.5   44.1–52.6    6/6
-  level 8                          61.1   54.5–62.6    6/6
+  level 3                           5.1   2.5–5.1      6/6
+  level 4                          11.1   9–11.1       6/6
+  level 5                          23.1   18.5–24.1    6/6
+  level 6                          34.6   28.5–37.1    6/6
+  level 7                          45.5   39.5–51.6    6/6
+  level 8                          56.1   49.1–66.6    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    92      5    109   124  15.6   6/14     7     7     0         1         7     68       0      0
-   30       5   318     10    489   497  16.3  15/21    20    16     1         4        30    226       0      0
-   60       8   618     52   1075  1044  17.9  23/27    29    17     2         9        60    415       0      0
-  120       8   920    111   1744  1632  14.5  28/27    32    18     3        18       120    614       0      0
+    7       3    92      9    108   124  15.4   6/14     7     7     0         1         7     58       0      0
+   30       5   309     16    465   458  15.5  15/21    21    15     1         5        30    190       0      0
+   60       8   652     84   1093  1035  18.2  25/27    30    17     3        10        60    347       0      0
+  120       8   938    178   1705  1495  14.2  28/27    32    18     4        18       120    457       0      0
 
 === 4 caretakers, engaged (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            0.1   0.1–0.1      6/6
   first mystery                     0.1   0.1–0.1      6/6
-  first decision                    4.1   4.1–4.1      6/6
-  first pairing                    13.3   3.3–19.3     6/6
-  first eggs                          5   4–6          6/6
+  first decision                    4.1   4.1–4.3      6/6
+  first pairing                    12.1   3.3–45.3     6/6
+  first eggs                          5   4–5.6        6/6
   first hatching                    8.3   7.3–9.3      6/6
   first adult raised                 18   17–19        6/6
   first raised temperament          5.1   2.3–10.1     6/6
-  first octopus adventure           8.3   8.3–34.6     6/6
-  first rare color                 36.3   29.3–71.3    4/6
-  first goal done                  22.3   16.1–29.3    5/6
-  second generation adult            36   32–42        6/6
+  first octopus adventure           8.3   8.3–26       6/6
+  first rare color                 41.3   8.3–107.3    5/6
+  first goal done                  11.1   8.1–29.3     5/6
+  second generation adult            47   35–58        5/6
   level 2                           0.3   0.1–0.3      6/6
   level 3                             2   1.1–3.1      6/6
-  level 4                           9.1   5.3–10.1     6/6
-  level 5                          18.1   17–22.1      6/6
-  level 6                          30.1   28.1–34.3    6/6
-  level 7                          40.3   36.1–46.1    6/6
-  level 8                          56.1   45.3–62.1    6/6
+  level 4                           8.1   7.3–8.6      6/6
+  level 5                          18.3   16.1–20.1    6/6
+  level 6                          32.3   29.3–34.3    6/6
+  level 7                          44.3   36.1–51      6/6
+  level 8                          58.1   47–67.1      6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3   114      9    112   126    16   6/14     7    13     0         1         7     81       0      0
-   30       6   373     23    504   497  16.8  16/24    21    18     1         4        30    262       0      0
-   60       8   624     83   1087  1096  18.1  23/27    29    18     2         9        60    462       0      0
-  120       8   918    150   1746  1616  14.6  27/27    32    18     2        18       120    640       0      0
+    7       3   108      9    101   114  14.4   6/14     6    12     0         1         7     69       0      0
+   30       5   359     30    490   502  16.3  15/21    20    18     1         4        30    218       0      0
+   60       8   628     84   1087  1082  18.1  24/27    29    18     2         9        60    374       0      0
+  120       8   919    225   1799  1551    15  27/27    32    18     2        18       120    524       0      0
 
 === 4 caretakers, mixed (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                        —   —            0/6
   first fish bought                 0.1   0.1–0.1      6/6
   first Field Guide page            0.5   0.1–0.6      6/6
   first mystery                     0.1   0.1–0.1      6/6
   first decision                    4.1   4.1–4.1      6/6
-  first pairing                    13.3   5.1–32.6     6/6
-  first eggs                          6   5–6          6/6
-  first hatching                    9.3   8.3–9.5      6/6
+  first pairing                    10.3   5.1–42.5     6/6
+  first eggs                          6   5–6.6        6/6
+  first hatching                    9.3   8.3–9.6      6/6
   first adult raised                 19   18–19.5      6/6
-  first raised temperament         10.1   5.6–10.1     6/6
-  first octopus adventure          11.3   8.3–17.3     6/6
-  first rare color                 38.3   26.3–58.6    6/6
-  first goal done                  22.3   18.3–38.3    6/6
-  second generation adult            48   32.3–61      6/6
+  first raised temperament         10.1   4.6–10.1     6/6
+  first octopus adventure           8.3   8.3–25.5     6/6
+  first rare color                 63.3   17.6–92.3    6/6
+  first goal done                  20.1   8.1–31.6     6/6
+  second generation adult            44   34–59        6/6
   level 2                           1.1   0.3–1.1      6/6
-  level 3                           4.1   2.6–5.1      6/6
-  level 4                          10.1   9.1–10.1     6/6
-  level 5                          22.1   19.6–25.3    6/6
-  level 6                          32.6   29.1–40.3    6/6
-  level 7                          42.1   38.1–49.1    6/6
-  level 8                          53.1   48.1–61.6    6/6
+  level 3                           3.3   2.6–5.1      6/6
+  level 4                           9.6   8.3–11.3     6/6
+  level 5                          20.1   18.1–22.1    6/6
+  level 6                          34.3   27.6–36.1    6/6
+  level 7                            47   36–48.1      6/6
+  level 8                          63.3   44.3–64.1    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    86      5    102   120  14.6   6/14     6     9     0         1         7     64       0      0
-   30       5   330     14    501   508  16.7  15/21    19    16     2         4        30    232       0      0
-   60       8   686     95   1209  1129  20.1  24/27    31    17     3         9        60    456       0      0
-  120       8   943    188   1816  1688  15.1  28/27    32    18     5        18       120    626       1      0
+    7       3    92     10    104   120  14.9   6/14     6    10     0         1         7     55       0      0
+   30       5   332     32    513   514  17.1  15/21    20    16     1         4        30    212       0      0
+   60       8   699     55   1155  1129  19.3  24/27    32    17     2         9        60    384       0      0
+  120       8   967    238   1743  1599  14.5  28/27    32    18     4        17       120    473       0      0
 
 === 4 caretakers, returning (6 seeds, 120 days) ===
   milestone                     median day   range        reached
+  spire open                          —   —            0/6
+  spire affordable                    —   —            0/6
+  bought spire                    112.6   112.6–112.6  1/6
   first fish bought                 0.1   0.1–0.6      6/6
   first Field Guide page            0.6   0.1–1.1      6/6
   first mystery                     0.1   0.1–0.6      6/6
   first decision                    4.5   4.1–4.6      6/6
-  first pairing                    26.1   18.1–44.1    6/6
-  first eggs                        6.1   5–7          6/6
-  first hatching                    9.5   8.5–10.5     6/6
-  first adult raised                 23   21.6–23.5    6/6
+  first pairing                    26.1   11.6–56.6    5/6
+  first eggs                        6.1   4.1–7        6/6
+  first hatching                    9.5   7.5–10.5     6/6
+  first adult raised               22.6   21–24        6/6
   first raised temperament         10.1   10.1–10.1    6/6
-  first octopus adventure           8.6   5–26         6/6
-  first rare color                 83.5   29.6–94.6    6/6
-  first goal done                  11.1   8.1–33.5     6/6
-  second generation adult          43.5   36.5–67.5    6/6
+  first octopus adventure           8.5   8.5–23       6/6
+  first rare color                 51.5   29.6–90.5    5/6
+  first goal done                   9.1   8.1–20.1     6/6
+  second generation adult          47.5   39.5–105.5   5/6
   level 2                           1.1   0.6–1.1      6/6
-  level 3                           4.1   2.6–5.1      6/6
-  level 4                          10.1   9.5–18.1     6/6
-  level 5                            28   26–30.1      6/6
-  level 6                          42.6   36.5–44.6    6/6
-  level 7                          54.5   45.1–58.6    6/6
-  level 8                          70.1   56.6–77.1    6/6
+  level 3                           4.1   2.6–5.6      6/6
+  level 4                          10.1   9.1–10.1     6/6
+  level 5                            28   25.1–28.6    6/6
+  level 6                          41.1   30.1–46.1    6/6
+  level 7                          57.6   41.1–59.1    6/6
+  level 8                          69.5   49.6–78.5    6/6
   day   level score shells earned spent  /day  decor  fish field goals decisions mysteries toasts neglect deaths
-    7       3    74      9     97   110  13.9   7/14     6     7     0         1         7     62       0      0
-   30       5   257     23    387   384  12.9  14/21    18    15     1         4        24    215      10      0
-   60       7   551     46    946   913  15.8  23/26    27    17     3         9        54    396      10      0
-  120       8  1085    112   1915  1812    16  27/27    32    18     5        18       114    705      10      0
+    7       3    84     11    121   130  17.3   7/14     7     8     0         1         7     64       0      0
+   30       5   252     29    409   400  13.6  15/21    16    14     1         4        24    182      11      0
+   60       7   587     53   1015   984  16.9  23/26    28    17     3         8        54    347      11      0
+  120       8  1004    133   1985  1917  16.5  28/27    32    18     6        17       114    586      11      0

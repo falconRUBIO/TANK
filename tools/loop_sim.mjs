@@ -9,6 +9,7 @@
 // not the rules). Field Guide pages are filled at assumed rates per minute watched (FIELD_RATE below), by rarity. Treat those numbers as a
 // stand-in. Nothing here predicts retention; it shows what the rules allow a household with these habits to reach, and when.
 import * as R from '../web/src/game/rules.js';
+import { canAdventure } from '../web/src/game/adventures.js';
 const H = 3600e3, DAY = 864e5, MIN = 60e3;
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; }, JSON_OUT = process.argv.includes('--json');
 
@@ -42,7 +43,7 @@ function run({ crew, profile, days, seed }) {
   for (let d = 0; d < days; d++) {
     const visits = []; for (const p of people) for (const [hr, pr] of p.slots) if (rand() < pr && !(away && d >= away[0] && d < away[1])) visits.push({ p, at: t0 + d * DAY + (hr - 6) * H + Math.floor(rand() * 50) * MIN });
     visits.sort((a, b) => a.at - b.at);
-    for (const { p, at } of visits) { now = at; book('world', 'time passing', () => ({ events: R.advance(t, now) })); visit(p); readTank(); }
+    for (const { p, at } of visits) { now = at; const oa = t.adv?.octoAt; book('world', 'time passing', () => ({ events: R.advance(t, now) })); if (process.env.DBGADV && oa && oa <= now) for (const f of t.fish.filter((x) => R.isOcto(x) && !x.dead)) console.log('ADV', d, f.name, R.octoMind(f).type, 'can', canAdventure(t, f, oa, R, now), JSON.stringify({ st: R.stageOf(f, oa), h: +R.ownHunger(f).toFixed(2), fed: f.fedAt ? +((oa - f.fedAt) / 3600e3).toFixed(1) : null, ail: +((f.ail ?? 0) / 86400).toFixed(2), hp: +(f.health ?? 1).toFixed(2), away: !!f.away, rest: !!f.restless, pz: !!f.puzzle, sk: !!f.seek, br: !!f.brood, ru: f.restUntil > oa, week: (t.adv.hist ?? []).filter((h) => oa - h.at < 7 * DAY).length })); visit(p); readTank(); }
     now = t0 + (d + 1) * DAY - MIN; book('world', 'time passing', () => ({ events: R.advance(t, now) })); readTank();
     for (const f of t.fish) { if (!f.dead && (f.ail ?? 0) >= R.AIL_WARN && !f._warned) { f._warned = true; count.neglect++; } if ((f.ail ?? 0) < R.AIL_TIRED) f._warned = false; }
     count.deaths = t.fish.filter((f) => f.dead).length + (t.memorial?.length ?? 0);

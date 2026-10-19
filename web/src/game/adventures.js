@@ -99,7 +99,7 @@ export function canAdventure(t, f, now, R, cur) {
   if (!R.isOcto(f) || f.dead || f.away || f.restless) return false;
   if ((t.flags?.tut ?? 0) < 5 || now - (t.createdAt ?? now) < 3 * DAY) return false;
   if (R.stageOf(f, now) === 'baby' || (now - f.born) < 3 * DAY) return false;
-  if (hungerAt(f, now, cur, R) > 0.55 || (f.ail ?? 0) > 0.25 * R.AIL_TIRED || (f.health ?? 1) < 0.8) return false;
+  if ((hungerAt(f, now, cur, R) > 0.55 && !(f.fedAt && now - f.fedAt >= 0 && now - f.fedAt < DAY)) ||      /* (well fed: fed in the last day, as for eggs, so a once-a-day caretaker's octopus still goes) */ (f.ail ?? 0) > 0.25 * R.AIL_TIRED || (f.health ?? 1) < 0.55) return false;      /* (0.55: an octopus fed once a day settles near 0.6, and still goes; a neglected one does not) */
   if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || now < (f.restUntil ?? 0)) return false;      // (a mother resting after her eggs stays home too)
   return true;
 }
@@ -165,8 +165,8 @@ function restless(t, f, at, ev, R) {
 }
 function leave(t, f, at, ev, R, cur) {
   const { id, kind, out } = f.restless; delete f.restless; const h0 = hungerAt(f, at, cur, R);
-  if (!R.isOcto(f) || f.dead || h0 > 0.7) return;      // it got hungry while pacing: it stays (and nothing is lost)
-  if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || (f.health ?? 1) < 0.8) return;      // (something else came up while it paced: it stays for that)
+  if (!R.isOcto(f) || f.dead || (h0 > 0.7 && !(f.fedAt && at - f.fedAt >= 0 && at - f.fedAt < DAY))) return;      // it got hungry while pacing: it stays (and nothing is lost)
+  if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || (f.health ?? 1) < 0.55) return;      // (something else came up while it paced: it stays for that)
   const o = OUTCOMES.find((x) => x.id === out) ?? OUTCOMES[0], dur = span(ADV_KINDS[kind].dur, H(sid(f.id), at / MIN | 0, 10)) * (o.late ?? 1);
   f.away = { id, kind, at, until: at + dur, out: o.id, inTank: !!o.inTank || kind === 'hide', hunger: h0, fedAt: f.fedAt ?? null };
   remember(t, { id, kind, fish: f.id, at, out: o.id });
