@@ -751,6 +751,21 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .crow .cbtn{all:unset;cursor:pointer;flex:none;padding:8px 18px;border-radius:999px;font-weight:700;font-size:14px;color:#2a1c00;background:linear-gradient(180deg,#ffd76a,#f0b43a);box-shadow:0 4px 12px -4px rgba(240,180,58,.7),inset 0 1px 0 rgba(255,255,255,.6)}
 #sheet .playsoon2{margin:8px 4px 0;font-size:13px;color:rgba(230,240,250,.6)}
 #sheet .ftile small{white-space:nowrap;font-size:11.5px}
+
+/* Crew, redone: each caretaker on a card of their own, a glowing ring when they are here, when they were last here otherwise */
+#sheet .crew .crewbox{background:none;overflow:visible}
+#sheet .crew .crewbox .slots{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;padding:0!important;background:none!important}
+#sheet .crew .slot{display:flex;flex-direction:column;align-items:center;padding:14px 6px 12px!important;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 6px 18px rgba(0,0,0,.12)!important}
+#sheet .crew .slot.me{background:linear-gradient(180deg,rgba(255,214,120,.16),rgba(255,255,255,.04))!important}
+#sheet .crew .slot.empty{background:none!important;box-shadow:inset 0 0 0 1.5px rgba(142,195,255,.28)!important;cursor:pointer}
+#sheet .crew .avw{width:64px;height:64px;margin-bottom:6px}#sheet .crew .avw canvas{width:58px!important;height:58px!important}
+#sheet .crew .avw.live{box-shadow:0 0 0 2.5px #4fe08a,0 0 16px rgba(79,224,138,.55)}#sheet .crew .avw.live::after{display:none}
+#sheet .crew .slot b{font:650 14px -apple-system,system-ui,sans-serif;display:flex;align-items:center;gap:5px;justify-content:center}
+#sheet .crew .slot b .youb{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:8px;background:rgba(255,214,120,.25);color:#ffe2a0}
+#sheet .crew .slot small{font-size:11px;margin:2px 0 8px;text-align:center;line-height:1.25;opacity:.85}#sheet .crew .slot small.here{color:#7df0a8;opacity:1;font-weight:600}
+#sheet .crew .slot small.here::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#4fe08a;margin-right:5px;vertical-align:1px;box-shadow:0 0 6px #4fe08a}
+#sheet .crew .slot .nudge{height:30px;min-width:34px;border-radius:15px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+#sheet .crew .pcmini{margin-top:10px;border-radius:18px!important;background:linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.04))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

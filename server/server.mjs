@@ -346,7 +346,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
     });
-    ws.on('close', () => { const nowT = Date.now(); if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
+    ws.on('close', () => { const nowT = Date.now(); try { L.touch(db, ws.userId, nowT); } catch { /* last seen is a nicety */ }      // (last seen: when they left, shown on the Crew tab)
+      if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref(); L.pruneOld(db); const pruner = setInterval(() => L.pruneOld(db), 24 * 3600e3); pruner.unref();      // (old rows the game no longer reads)
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
