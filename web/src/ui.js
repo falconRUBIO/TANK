@@ -74,7 +74,7 @@ export function initUI({ game, social, cb }) {
   // the game opens up gradually: a new tank shows only feeding, fish and a few decorations; food choices, themes, comfort, the daily checklist, floors and postcards appear once the tank has grown a little
   const adv = () => { const s = S(); return !!s && (s.level >= 2 || s.fish.length >= 2); };
   const eta = (ms) => { if (ms <= 0) return 'any moment now'; const m = Math.max(1, Math.ceil(ms / 60e3)); return m >= 2880 ? Math.round(m / 1440) + ' days' : m >= 90 ? Math.round(m / 60) + 'h' : m + ' min'; };
-  const PIX = { '🫙': 'feed', '🧽': 'glass', '💧': 'water', '✂️': 'trim', '🥚': 'hatched', '🧩': 'puzzle', '📷': 'camera', '🪨': 'rock', '🌿': 'spot', '🥥': 'coconut', '🫧': 'bubbles', '🌱': 'spot', '🪴': 'spot', '🦀': 'crab', '🦐': 'shrimp', '🍤': 'shrimp', '🟤': 'pellets', '🎁': 'gift', '📦': 'gift', '📝': 'note', '✏️': 'note', '🍾': 'bottle', '👋': 'hand', '🎂': 'cake', '🍽️': 'feed', '🐙': 'grown', '✨': 'trick', '🌙': 'wish' };
+  const PIX = { '🫙': 'feed', '🧽': 'glass', '💧': 'water', '✂️': 'trim', '🥚': 'hatched', '🧩': 'puzzle', '📷': 'camera', '🪨': 'rock', '🌿': 'spot', '🥥': 'coconut', '🫧': 'bubbles', '🌱': 'spot', '🪴': 'spot', '🦀': 'crab', '🦐': 'shrimp', '🍤': 'shrimp', '🟤': 'pellets', '🎁': 'gift', '📦': 'gift', '📝': 'note', '✏️': 'note', '🍾': 'bottle', '👋': 'hand', '🎂': 'cake', '🍽️': 'feed', '🐙': 'grown', '✨': 'trick', '🌙': 'wish', '🩹': 'hand', '🐠': 'visitor' };
   const pix = (e, n = 24) => (PIX[e] ? msIcon(PIX[e], true, n) : e);      // the emoji the menus used, drawn in the tank's own pixel style
   const tile = (icon, label, act, sub = '', cls = '') => `<button class="tile ${cls}" data-act="${act}"><span>${pix(icon, 26)}</span>${label}${sub ? `<small>${sub}</small>` : ''}</button>`;
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
@@ -115,15 +115,27 @@ export function initUI({ game, social, cb }) {
   // bell's sheet opens with the goal at the top. The tank itself stays clear.
   function questBar(s) { const b = $('bell'); if (!b) return; const g = goalOf(s), on = (s.flags.tut ?? 0) >= 5, offer = on && !g && (s.goalOffer ?? []).length;
     b.style.setProperty('--goal', on && g ? `${Math.round((g.done / g.of) * 360)}deg` : '0deg'); b.classList.toggle('goal', !!(on && g)); b.classList.toggle('offer', !!offer); const q = $('quest'); if (q) q.hidden = true; }
-  // what is happening in the tank right now, each one a tap away: a decision that is yours, eggs to watch, today's mystery, the next thing coming
-  const nowHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const me = game.you?.userId, out = [], row = (icon, text, act, when = '', extra = '') => out.push(`<div class="nowr${extra ? ' big' : ''}"><button class="nowb" data-act="${act}"><i>${pix(icon, 22)}</i><span>${text}</span>${when ? `<b>${when}</b>` : ''}<em>›</em></button>${extra}</div>`);
+  // Today, in three plain parts: what the animals need (care that is really due, nothing optional), what is happening in the tank (to look at
+  // if you like: a decision, eggs, the mystery, a visitor, an octopus out exploring), and what is coming up. Nothing appears twice.
+  const nowRow = (out, icon, text, act, when = '', extra = '') => out.push(`<div class="nowr${extra ? ' big' : ''}"><button class="nowb" data-act="${act}"><i>${pix(icon, 22)}</i><span>${text}</span>${when ? `<b>${when}</b>` : ''}<em>›</em></button>${extra}</div>`);
+  const careHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const me = game.you?.userId, live = s.fish.filter((f) => !f.dead && !f.away), out = [];
+    if (live.some((f) => !ownFood(f)) && s.hunger > 0.3) nowRow(out, '🫙', 'The fish are hungry', 'nowcare', 'feed');
+    for (const f of live.filter((x) => ownFood(x) && canFeedOwn(x, me, game.shared) && ownHunger(x) >= OCTO_DUE)) nowRow(out, ownFood(f) === 'crab' ? '🦀' : '🦐', `${esc(f.name)} is hungry for ${ownFood(f) === 'crab' ? 'a crab' : 'mysis shrimp'}`, 'nowcare', 'feed');
+    if (s.water < 0.7) nowRow(out, '💧', 'The water is cloudy', 'nowcare', 'change'); if (s.glass > 0.3) nowRow(out, '🧽', 'The glass needs a wipe', 'nowcare', 'clean');
+    for (const f of live.filter((x) => (x.ail ?? 0) >= AIL_TIRED).slice(0, 2)) nowRow(out, '🩹', `${esc(f.name)} is unwell: clean water and food help`, 'nowcare');
+    return `<h4 class="ntsh">Needs care</h4>${out.length ? `<div class="nowl">${out.join('')}</div>` : '<p class="calm">Everyone is fed and the water is clean.</p>'}`; };
+  const happenHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const me = game.you?.userId, out = [];
     const D = s.dilemma && !s.dilemma.done ? s.dilemma : null, mine = D && (!D.turn || D.turn.uid === me || Date.now() > D.turn.until);
-    if (D && mine) row('✨', `Your call: ${esc(D.text)}`, 'nowcare', 'decide', `<div class="nowopts">${D.opts.map((o) => `<button data-decide="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div>`);      // (decided right here)
-    else if (D) row('✨', `${esc(D.turn.name)}'s call: ${esc(D.text)}`, 'nowcare');
-    if ((s.eggs ?? []).some((e) => e.ready) || s.fish.some((f) => f.preg?.ready && !f.dead)) row('🥚', 'Ready to hatch: stay and watch', 'egg', 'now');
-    const m = mysteryOf(s); if (m) row('🫧', m.done ? esc(m.line) : `${esc(MYSTERY[m.kind]?.text ?? '')} Tap the glow.`, m.done ? 'nowtank' : 'nowmyst', m.done ? 'found' : 'today');
-    const f = forecast(s, Date.now(), 1)[0]; if (f) row(f.icon ?? '📦', esc(f.text), 'nowcare', f.when === 'now' ? 'now' : esc(f.when));
-    return `<h4 class="ntsh">Needs you</h4>${out.length ? `<div class="nowl">${out.join('')}</div>` : '<p class="calm">Nothing needs you right now. The tank is calm.</p>'}`; };
+    if (D && mine) nowRow(out, '✨', `Your call: ${esc(D.text)}`, 'nowcare', 'decide', `<div class="nowopts">${D.opts.map((o) => `<button data-decide="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div>`);      // (decided right here)
+    else if (D) nowRow(out, '✨', `${esc(D.turn.name)}'s call: ${esc(D.text)}`, 'nowcare');
+    if ((s.eggs ?? []).some((e) => e.ready) || s.fish.some((f) => f.preg?.ready && !f.dead)) nowRow(out, '🥚', 'Ready to hatch: stay and watch', 'egg', 'now');
+    if (s.visitor && Date.now() < (s.visitor.until ?? 0)) nowRow(out, '🐠', `A ${esc((SPECIES_DEF[s.visitor.species]?.label ?? 'visitor').toLowerCase())} is visiting`, 'nowtank', 'look');
+    for (const f of s.fish.filter((x) => !x.dead && x.away).slice(0, 2)) nowRow(out, '🐙', `${esc(f.name)}: ${esc(awayLine(f).toLowerCase())}`, 'nowtank');
+    const m = mysteryOf(s); if (m) nowRow(out, '🫧', m.done ? esc(m.line) : `${esc(MYSTERY[m.kind]?.text ?? '')} Tap the glow if you like.`, m.done ? 'nowtank' : 'nowmyst', m.done ? 'found' : '');
+    return out.length ? `<h4 class="ntsh">Happening in the tank</h4><div class="nowl">${out.join('')}</div>` : ''; };
+  const comingHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const out = [], ready = (s.eggs ?? []).some((e) => e.ready);
+    for (const f of forecast(s, Date.now(), 2).filter((x) => !(ready && /hatch/.test(x.text)))) nowRow(out, f.icon ?? '📦', esc(f.text), 'nowcare', f.when === 'now' ? 'now' : esc(f.when));
+    return out.length ? `<h4 class="ntsh">Coming up</h4><div class="nowl">${out.join('')}</div>` : ''; };
   // the tank in one line: its mood, and how far to the next level (and what earns it)
   const tankLine = () => { const s = S(); if (!s) return ''; const m = tankMood(s, Date.now()), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.max(3, Math.min(100, Math.round(((sc - a) / (b - a)) * 100))) : 100;
     return `<div class="tline"><span class="mood ${esc(m.key)}">${esc(m.label)}</span><span class="lvl"><b>Level ${lv}</b>${b ? `<i><b style="width:${pct}%"></b></i><small>${sc}/${b}</small>` : '<small>top level</small>'}</span></div>`; };
@@ -557,7 +569,7 @@ export function initUI({ game, social, cb }) {
       const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Field Guide']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
       // the Field Guide sits beside Today: everything about your own tank in one place (Crew is for people)
       if (nsub === 'guide') return `<div class="crew"><h3>${name}</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;
-      return `<div class="crew"><h3>${name}</h3>${seg}<h4 class="ntsh">How it's doing</h4>${tankLine()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${nowHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
+      return `<div class="crew"><h3>${name}</h3>${seg}${tankLine()}${careHtml()}${happenHtml()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${comingHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
@@ -772,7 +784,7 @@ export function initUI({ game, social, cb }) {
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
-    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Your tank: Today shows how it is doing, your goal and what needs you. The Field Guide holds everything you have discovered.' }, k = 'ourtank.first.' + t;
+    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Today: what the animals need, what is happening, your goal and what is coming. The Field Guide holds what you have seen.' }, k = 'ourtank.first.' + t;
       let seen = true; try { seen = !!localStorage.getItem(k); } catch { /* ignore */ } if (!seen && FIRST[t] && !quiet) { try { localStorage.setItem(k, '1'); } catch { /* ignore */ } setTimeout(() => toast(FIRST[t], 4200), 450); } }      // the first time you open a tab, one line about what it is for
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (t === 'care') flag('care', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;

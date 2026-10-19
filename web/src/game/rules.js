@@ -69,7 +69,7 @@ const SHOP_CURVE = {
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
   bridge: [7, 150], crystal: [7, 190],
-  spire: [8, 400],
+  spire: [8, 300],      /* (measured: about three weeks of a regular household's shells once level 8 opens) */
 };
 for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level, price });
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
@@ -190,7 +190,10 @@ export const BIRTH_ROOM = 4;
 // babies raised to adulthood, rare colors bred, goals finished, Field Guide pages and the kinds of animal it has known. (So spending
 // shells cannot buy the next level; looking after the tank and playing the game is what opens the shop's next shelf.)
 export function scoreOf(t, now = Date.now()) { const S = t.stats ?? {}, n = (k) => S[k] ?? 0, raised = Object.keys(S).filter((k) => k.startsWith('raised_')).reduce((a, k) => a + S[k], 0);
-  return 2 * n('careDays') + 2 * n('myst') + 3 * n('decided') + 4 * n('hatched') + 6 * n('grewHere') + 4 * raised + 10 * n('morphs') + 15 * (t.goalsDone ?? []).length + 3 * Object.keys(t.field ?? {}).length + 2 * (t.seen?.fish?.length ?? 0); }
+  const W = SCORE_W; return W.care * n('careDays') + W.myst * n('myst') + W.decided * n('decided') + W.hatched * n('hatched') + W.grown * n('grewHere') + W.raised * raised + W.morph * n('morphs') + W.goal * (t.goalsDone ?? []).length + W.field * Object.keys(t.field ?? {}).length + W.species * (t.seen?.fish?.length ?? 0); }
+// what each thing is worth toward the level: time spent caring counts steadily, the one-off things (a page of the Field Guide, a new kind of
+// animal, a rare color, a goal) count most, and what repeats every day or every clutch (the mystery, another hatching) counts least
+export const SCORE_W = { care: 2, myst: 1, decided: 3, hatched: 2, grown: 6, raised: 4, morph: 10, goal: 15, field: 6, species: 4 };
 export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].traits, a = pool[seed % pool.length], b = pool[(seed * 7 + 3) % pool.length]; return a === b ? [a] : [a, b]; }
 
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
@@ -572,15 +575,17 @@ function eggs(t, now, ev) {
     if (gen > (t.flags.topGen ?? 0)) { t.flags.topGen = gen; ev.push({ journal: gen === 1 ? 'The first generation hatched in this tank.' : `A ${['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'][gen] ?? gen + 'th'} generation has hatched in this tank.` }); }
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
-  if (t.eggs.length) return;      // one egg at a time, so each one is an event
+  const busy = t.eggs.length > 0;      // one clutch of fish eggs at a time, so each one is an event (an octopus's eggs hang in her own den, so they are not kept waiting by the fish)
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return;
   // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
-  { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm');
-    if (Mo && Fa && ownHunger(Mo) < 0.5 && ownHunger(Fa) < 0.5 && (Mo.health ?? 1) >= 0.8 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
+  { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm');
+    const fed = (f) => ownHunger(f) < 0.5 || now - (f.fedAt ?? 0) < DAY;      /* (well fed: fed today, not full at this very minute) */
+    if (Mo && Fa && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.8 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
       Mo.broodAt = now + OCTO_EGG_GAP * DAY;
       t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: 'octopus', a: Mo.id, b: Fa.id, seed: Mo.seed, pa: snap(Mo), pb: snap(Fa), laid: now, hatchAt: wakeAt(t, now + OCTO_EGG_DAYS * DAY), cared: [], guard: Mo.id, den: Mo.home }); Mo.brood = t.eggs.at(-1).id; bump(t, 'octoEggs');      /* (she stays: no adventures while she broods) */
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
       ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, toast: `${Mo.name} laid eggs in her den! They hatch in ${OCTO_EGG_DAYS} days.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
+  if (busy) return;
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
@@ -850,6 +855,7 @@ export const FIELD = {
 export const FIELD_PAY = 0;      // (a page is its own reward: the photo, and the page filled in; the economy stays as it is)
 function witness(t, id, f, now, ev, by = null, line = null) {
   const F = (t.field ||= {}); if (!FIELD[id] || F[id]) return false;
+  const who = FIELD[id].who; if (f && who !== 'any' && (who === 'fish' ? isOcto(f) || f.species === 'seahorse' : f.species !== who)) return false;      /* (a page is only filled by the kind of animal it is about) */
   if (by === 'You') by = null;      // (alone in the tank: no need to say who)
   F[id] = { at: now, fish: f?.id ?? null, name: f?.name ?? null, by, text: line }; const n = Object.keys(F).length, N = Object.keys(FIELD).length;
   ev.push({ journal: `Field Guide, page ${n} of ${N}: ${FIELD[id].label}.${by ? ` Seen first by ${by}.` : ''}`, toast: `New in the Field Guide: ${FIELD[id].label}!`, field: id }); return true;
@@ -982,13 +988,17 @@ export const bump = (t, k, n = 1) => { (t.stats ||= {})[k] = statOf(t, k) + n; }
 const since = (k) => (t, g) => statOf(t, k) - (g.base?.[k] ?? 0);
 const liveOf = (t) => t.fish.filter((f) => !f.dead && !f.away);
 const carrierOf = (t, m) => liveOf(t).some((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x])));
+// a full tank lays no eggs: every breeding step says so plainly, and what to do, rather than waiting in silence
+const fullTank = (t) => t.fish.length + pending(t) + (t.eggs ?? []).length >= capacity(t.level) + BIRTH_ROOM;
+const FULL_HINT = 'Your tank is full, so no eggs can be laid: find one of your shop fish a new home, or send a baby to a friend.';
+const roomy = (h) => (t) => (fullTank(t) ? FULL_HINT : typeof h === 'function' ? h(t) : h);
 const colorGoal = (m) => ({
   title: m ? `Breed a ${MORPHS[m].label} fish` : 'Breed a rare color', blurb: m ? `${MORPHS[m].label} is hidden in your tank's genes. Bring two carriers together and see.` : 'Somewhere in your tank a rare color is hiding in the genes. Find it and breed it out.',
   ok: (t) => !m || carrierOf(t, m), icon: 'hatched',
   steps: [
     { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your fishes' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
     { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? ' One carrier and a baby of its own can carry it too.' : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
-    { text: 'Hatch their babies', hint: (t) => (t.fish.length + pending(t) >= capacity(t.level) + BIRTH_ROOM ? 'Your tank is full, so no eggs can be laid: find one of your shop fish a new home, or send a baby to a friend.' : 'Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
+    { text: 'Hatch their babies', hint: roomy('Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
     { text: m ? `A ${MORPHS[m].label.toLowerCase()} baby` : 'A rare-colored baby', hint: 'About one baby in four from two carriers shows it. Keep trying: a full moon helps.', n: m ? since(`morph_${m}`) : since('morphs'), need: 1 },
   ] });
 export const GOALS = {
@@ -996,23 +1006,18 @@ export const GOALS = {
   family: { title: 'Raise a family', blurb: 'Eggs, a hatching you are there for, and one of the babies grown up in your care.', icon: 'friend', ok: (t) => liveOf(t).filter((f) => !isOcto(f) && f.species !== 'seahorse').length >= 2,
     steps: [
       { text: 'Bring a pair together', hint: 'Two grown fish of the same kind: tap "Pair with…" on one of their cards.', n: since('paired'), need: 1 },
-      { text: 'Watch a hatching', hint: 'When eggs are ready, open the tank and watch: they wait for you.', n: since('watchedHatch'), need: 1 },
+      { text: 'Watch a hatching', hint: roomy('When eggs are ready, open the tank and watch: they wait for you.'), n: since('watchedHatch'), need: 1 },
       { text: 'Raise a baby to adulthood', hint: 'Ten days: feed it, play with it, keep the water clean. How you raise it decides who it becomes.', n: since('grewHere'), need: 1 },
     ] },
-  raise: { title: 'Four temperaments', blurb: 'Raise babies four different ways and get four different grown-ups.', icon: 'grown', ok: (t) => liveOf(t).length >= 2,
-    steps: [
-      { text: 'Raise a Brave one', hint: 'Pet it often while it is small.', n: since('raised_Brave'), need: 1 },
-      { text: 'Raise a Playful one', hint: 'Play with it while it is small.', n: since('raised_Playful'), need: 1 },
-      { text: 'Raise a Curious one', hint: 'Hide treats and give it puzzles while it is small.', n: since('raised_Curious'), need: 1 },
-      { text: 'Raise a Calm one', hint: 'Feed it every day while it grows.', n: since('raised_Calm'), need: 1 },
-    ] },
+  raise: { title: 'Three temperaments', blurb: 'Raise three young ones three different ways, and get three different grown-ups.', icon: 'grown', ok: (t) => liveOf(t).length >= 2,
+    steps: [1, 2, 3].map((k) => ({ text: k === 1 ? 'Raise one the way you choose' : k === 2 ? 'A second, different temperament' : 'A third, different again', hint: 'While it is small: pet it often (Brave), play ball (Playful), let it chase the light or the bubbles (Curious), or feed it every day (Calm). Stick to one way.', n: (t, g) => ['Brave', 'Playful', 'Curious', 'Calm', 'Shy'].filter((x) => statOf(t, 'raised_' + x) > (g.base?.['raised_' + x] ?? 0)).length, need: k })) },      /* (any three, in any order: three childhoods, not a checklist of four) */
   guide: { title: 'Field naturalist', blurb: 'Catch your animals doing remarkable things and fill the Field Guide.', icon: 'spot', ok: (t) => Object.keys(t.field ?? {}).length < Object.keys(FIELD).length - 6,
     steps: [2, 4, 6].map((k) => ({ text: `${k} new Field Guide pages`, hint: 'Watch the tank: the Field Guide lists what to look for. A page fills the first time someone sees it.', n: (t, g) => Object.keys(t.field ?? {}).length - (g.base?.field ?? 0), need: k })) },
-  octo: { title: 'An octopus family', blurb: 'Win an octopus over, give it a partner and a den, and see its babies hatch.', icon: 'trust', ok: (t) => liveOf(t).some(isOcto),
+  octo: { title: 'An octopus family', blurb: 'Win an octopus over, give it a partner and a den, and see its babies hatch.', icon: 'trust', ok: (t) => { const os = liveOf(t).filter(isOcto); return os.some((f) => sexOf(f) === 'f') && os.some((f) => sexOf(f) === 'm'); },      /* (eggs need a mother and a father: never offered when they cannot come) */
     steps: [
       { text: 'Your octopus trusts you', hint: 'Crabs from your hand, play, and time: it comes to the glass for you when it trusts you.', n: (t) => (liveOf(t).some((f) => isOcto(f) && Object.keys(f.bond ?? {}).some((u) => octoTrust(f, u).lvl >= 3)) ? 1 : 0), need: 1 },
-      { text: 'Two octopus partners', hint: 'Two grown octopuses, a den each, both well fed: in a few days they become partners.', n: (t) => (liveOf(t).some((f) => isOcto(f) && f.partner) ? 1 : 0), need: 1 },
-      { text: 'Eggs in the den', hint: 'Partners lay after about five days together, if she has a den.', n: since('octoEggs'), need: 1 },
+      { text: 'A female and a male become partners', hint: 'Two grown octopuses, she and he, a den each, both well fed: in a few days they become partners.', n: (t) => (liveOf(t).some((f) => isOcto(f) && f.partner && sexOf(f) === 'f' && t.fish.some((m) => m.id === f.partner && !m.dead && sexOf(m) === 'm')) ? 1 : 0), need: 1 },
+      { text: 'Eggs in the den', hint: roomy('Partners lay after about five days together, if she has a den of her own and both are well fed.'), n: since('octoEggs'), need: 1 },
       { text: 'Baby octopuses hatch', hint: 'Five days of guarding, then be there to watch.', n: since('octoHatch'), need: 1 },
     ] },
   peace: { title: 'A peaceful tank', blurb: 'Arrange the tank so everyone gets on, and settle the squabbles.', icon: 'friend', ok: (t) => { const L = layoutOf(t); return liveOf(t).length >= 3 && L.octos >= 1 && !(L.thicket && L.dens >= L.octos); },      /* (not offered when the layout is already right: the steps would be free) */
@@ -1025,7 +1030,7 @@ export const GOALS = {
   dynasty: { title: 'Three generations', blurb: 'A baby you raised has babies of its own: a family line of your tank.', icon: 'grown', ok: (t) => t.fish.some((f) => !f.dead && (f.parents?.length || f.bornHere) && stageOf(f) === 'adult'),
     steps: [
       { text: 'Pair a fish you raised', hint: 'A grown baby from your tank: open its card and tap "Pair with…".', n: (t) => (t.match && [t.match.a, t.match.b].some((id) => t.fish.some((f) => f.id === id && (f.parents?.length || f.bornHere))) ? 1 : 0), need: 1 },
-      { text: 'A second generation hatches', hint: 'Its babies, born in your tank: keep the water clean and be there to watch.', n: since('gen2'), need: 1 },
+      { text: 'A second generation hatches', hint: roomy('Its babies, born in your tank: keep the water clean and be there to watch.'), n: since('gen2'), need: 1 },
     ] },
   sleuth: { title: 'Tank detective', blurb: 'Look into the daily mysteries and follow one to the end.', icon: 'bubbles', ok: () => true,
     steps: [
@@ -1241,9 +1246,9 @@ export const PERFECT_DAY_REWARD = 3;
 export const lookedAfter = (t) => t.fish.length > 0 && (t.hunger <= 0.45 || !t.fish.some((f) => !isOcto(f))) && t.water >= 0.7 && t.glass <= 0.45;      // the tank itself; each octopus is its own caretaker's job and pays on its own
 export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
 export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
-function dayCheck(t, now, ev, key = null) {
+function dayCheck(t, now, ev, key = null, due = false) {
   if ((t.flags.tut ?? 0) < 5 || !t.fish.length) return; const l = dayLogOf(t, now);
-  if (key === 'care' && lookedAfter(t)) { if (!l.care) bump(t, 'careDays'); l.care = true; } if (key === 'bond') l.bond = true;
+  if (key === 'care' && (lookedAfter(t) || due) && !l.counted) { bump(t, 'careDays'); l.counted = true; } if (key === 'care' && lookedAfter(t)) l.care = true;      /* (a day of care counts for the level when someone did care that was due: one feeding a day is enough, nobody has to top the tank up twice) */ if (key === 'bond') l.bond = true;
   const k = dayTicks(t, now); if (k.care && k.wish && k.bond && !l.paid) l.paid = true;      // (a full day is ticked on the checklist; it is not paid or posted: the day is its own reward)
 }
 // How the tank is doing right now, in one word and one sentence.
@@ -1429,8 +1434,8 @@ function dailySurprise(t, now, ev) {
 }
 // ── Growing up shaped by care ── a young fish that was fed often grows up content; one that was played with a lot grows up bold
 // How you raise a young one decides who it grows up to be. Each kind of attention while it is small counts (once an hour, twice a day at most): petting
-// makes it bold, games make it playful, hiding treats and puzzles make it curious, being fed every day makes it calm; left to itself it grows up shy.
-const RAISE = [['pets', 8, 'Brave', (f) => `All that attention made ${f.name} bold: it grew up Brave.`], ['play', 6, 'Playful', (f) => `All those games: ${f.name} grew up Playful.`], ['seek', 4, 'Curious', (f) => `Hunting for hidden treats made ${f.name} grow up Curious.`], ['days', 8, 'Calm', (f) => `Well fed every day while it grew, ${f.name} grew up Calm and content.`]];
+// makes it bold, games make it playful, chasing the light or the bubbles, hidden treats and puzzles make it curious, being fed every day makes it calm; left to itself it grows up shy.
+const RAISE = [['pets', 8, 'Brave', (f) => `All that attention made ${f.name} bold: it grew up Brave.`], ['play', 6, 'Playful', (f) => `All those games: ${f.name} grew up Playful.`], ['seek', 4, 'Curious', (f) => `All that chasing and hunting about made ${f.name} grow up Curious.`], ['days', 8, 'Calm', (f) => `Well fed every day while it grew, ${f.name} grew up Calm and content.`]];
 export function raiseLean(f) { const R = f?.raise ?? {}, n = (k) => (k === 'days' ? (R.days ?? []).length : R[k] ?? 0); const sc = RAISE.map(([k, need, tr, line]) => ({ k, tr, line, n: n(k), need, r: n(k) / need })).sort((a, b) => b.r - a.r); const top = sc[0];
   if (top.r >= 1) return top; if (sc.every((x) => x.n === 0) || (n('pets') + n('play') + n('seek') === 0 && n('days') < 2)) return { k: 'none', tr: 'Shy', line: (x) => `Left mostly to itself, ${x.name} grew up Shy.`, n: 0, r: 1 }; return { ...top, pending: true }; }
 function raised(t, f, now, ev) {
@@ -1439,6 +1444,10 @@ function raised(t, f, now, ev) {
   const opp = { Brave: 'Shy', Shy: 'Brave', Playful: 'Lazy', Calm: 'Playful' }[L.tr]; f.traits = [...tr.filter((x) => x !== opp), L.tr].slice(-3); f.raisedAs = L.tr; bump(t, 'raised_' + L.tr); const line = L.line(f);
   ev.push({ journal: line, story: f.id, text: line, toast: `${f.name} grew up ${L.tr.toLowerCase()}, the way you raised it.` });
 }
+// raising: what you did with a young one counts toward who it becomes, once it really happened (a refused or empty action counts for nothing).
+// A ball game makes it playful; chasing the light spot or the bubbles, hunting a hidden treat or working at a puzzle make it curious.
+function raiseFrom(t, a, now) { const kind = a.t === 'play' ? (['light', 'bubbles'].includes(a.toy) ? 'seek' : 'play') : { hide: 'seek', puzzle: 'seek' }[a.t]; if (!kind) return;
+  const ids = [a.id, ...(Array.isArray(a.fish) ? a.fish : [a.fish])].filter((x) => typeof x === 'string').slice(0, 10); for (const id of new Set(ids)) { const yf = t.fish.find((f) => f.id === id && !f.dead); if (yf) raiseNote(t, now, kind, yf); } }      /* (a toy game names everyone who joined in) */
 function raiseNote(t, now, kind, f = null) { const d = Math.floor(now / DAY), hr = Math.floor(now / HOUR); for (const x of f ? [f] : t.fish) { if (x.dead || stageOf(x, now) === 'adult') continue; const R = (x.raise ||= {}); if (kind === 'fed') { R.days ||= []; if (!R.days.includes(d)) R.days.push(d); continue; } const key = kind === 'pet' ? 'pets' : kind; R.at ||= {}; R.on ||= {}; if (R.at[key] === hr) continue; const dk = key + d; if ((R.on[dk] ?? 0) >= 2) continue; R.at[key] = hr; R.on = Object.fromEntries(Object.entries(R.on).filter(([k2]) => k2.endsWith(String(d)))); R.on[dk] = (R.on[dk] ?? 0) + 1; R[key] = (R[key] ?? 0) + 1; } }      /* (at most two of each kind a day count: a childhood is the whole ten days, not one afternoon of tapping) */
 // ── Each fish's milestones ── one path for every fish, from the day it came home to raising young of its own
 // ── An octopus learns to trust you ── slowly, from crabs and from time spent with it (each crab or play counts once): first it hides from you,
@@ -1507,7 +1516,7 @@ export function nextUp(t, now = Date.now()) {
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
 }
-export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
+export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now()); if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
   if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); return ev; }
 const AWAY_BLOCK = new Set(['observe', 'moment', 'feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
@@ -1518,7 +1527,6 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   if (AWAY_BLOCK.has(a.t) && [a.id, a.fish, a.with].flat().filter((x) => typeof x === 'string').some((id) => t.fish.find((x) => x.id === id)?.away)) return fail('AWAY');      // (every animal the action names: one listed under another field once slipped through)      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
-  { const kind = { play: 'play', hide: 'seek', puzzle: 'seek' }[a.t], ids = kind ? [a.id, ...(Array.isArray(a.fish) ? a.fish : [a.fish])].filter((x) => typeof x === 'string').slice(0, 10) : []; for (const id of new Set(ids)) { const yf = t.fish.find((f) => f.id === id && !f.dead); if (yf) raiseNote(t, now, kind, yf); } }      /* (a toy game names everyone who joined in) */      // (raising: what you do with a young one counts toward who it becomes)
   switch (a.t) {
     case 'watchEggs': {      // someone has the tank open and is looking: ready eggs hatch now, in front of them
       const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready), m = t.fish.find((f) => f.preg?.ready && !f.dead && (!a.id || f.id === a.id));
@@ -1554,7 +1562,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
-        dayCheck(t, now, events, 'care'); events.push({ activity: { type: 'feed', text: food === 'crab' ? `${name} fed ${f.name} a crab.` : `${name} fed ${f.name} mysis shrimp.` } });
+        dayCheck(t, now, events, 'care', needed); events.push({ activity: { type: 'feed', text: food === 'crab' ? `${name} fed ${f.name} a crab.` : `${name} fed ${f.name} mysis shrimp.` } });
         return ok({ applied: true, delta: pay, food, fish: f.id });
       }
       if (t.nursery) t.nursery.fed = (t.nursery.fed ?? 0) + 1;      // the babies eat with everyone else (no meter: just remembered for the nursery card)
@@ -1566,20 +1574,20 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
-      if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care');
+      if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care', needed);
       events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : food === 'crab' ? `${name} fed the octopus a crab.` : food === 'mysis' ? (() => { const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead); return `${name} fed ${hs.length === 1 ? hs[0].name : 'the seahorses'} mysis shrimp.`; })() : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });
       return ok({ applied: true, delta: pay - price, food });
     }
     case 'water': {
       if (t.water >= 0.7) return ok({ applied: false, delta: 0 });
-      t.water = 1; careEgg(t, now); teamCare(t, uid, name, now, events); t.shells += WATER_PAY; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water'); checkWant(t, now, events, { type: 'water' }); dayCheck(t, now, events, 'care');
+      t.water = 1; careEgg(t, now); teamCare(t, uid, name, now, events); t.shells += WATER_PAY; careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'water'); checkWant(t, now, events, { type: 'water' }); dayCheck(t, now, events, 'care', true);
       events.push({ activity: { type: 'water', text: `${name} changed the water.` } });
       return ok({ applied: true, delta: WATER_PAY });
     }
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
       t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? PEARL_PAY : GLASS_PAY; t.shells += gain;
-      careBy(t, uid, name, now); { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); dayCheck(t, now, events, 'care'); }
+      careBy(t, uid, name, now); { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); dayCheck(t, now, events, 'care', true); }
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
       return ok({ applied: true, delta: gain });
     }

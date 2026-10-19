@@ -1,0 +1,6751 @@
+[
+ {
+  "crew": 1,
+  "profile": "casual",
+  "milestones": {
+   "first fish bought": {
+    "median": 5.5,
+    "range": "3.5–15.6",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 2.6,
+    "range": "0.6–29.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.6,
+    "range": "0.6–6.6",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 20.6,
+    "range": "4.6–25.5",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 14.6,
+    "range": "7.6–24.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 10,
+    "range": "7.6–22",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 14,
+    "range": "10.6–25.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 24,
+    "range": "20.6–35.5",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.6,
+    "range": "6–18",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 21,
+    "range": "6–24",
+    "hit": "4/6"
+   },
+   "first rare color": {
+    "median": 27.6,
+    "range": "21.6–48.6",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 26.6,
+    "range": "21.6–37.5",
+    "hit": "5/6"
+   },
+   "second generation adult": {
+    "median": 44.6,
+    "range": "39–63",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 5.5,
+    "range": "3.5–6.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 15.6,
+    "range": "10–17.6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 26,
+    "range": "21–27.6",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 38.6,
+    "range": "33.5–48",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 56,
+    "range": "43.6–69.5",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 77,
+    "range": "57.6–109.6",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 93,
+    "range": "75.6–113.6",
+    "hit": "5/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 32,
+    "shells": 16,
+    "earned": 51,
+    "spent": 45,
+    "perDayEarned": 7.3,
+    "decor": "2/10",
+    "fish": 3,
+    "field": 1,
+    "goals": 0,
+    "decisions": 0,
+    "mysteries": 4,
+    "toasts": 30,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 24,
+     "buyDecor:coconut": -8,
+     "feed": 17,
+     "buyDecor:grass": -16,
+     "time passing": 9,
+     "buyFish:goldfish": -20
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 4,
+     "decisions": 0,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 6,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 4,
+    "score": 171,
+    "shells": 19,
+    "earned": 285,
+    "spent": 261,
+    "perDayEarned": 9.5,
+    "decor": "10/18",
+    "fish": 14,
+    "field": 4,
+    "goals": 1,
+    "decisions": 2,
+    "mysteries": 16,
+    "toasts": 171,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 124,
+     "buyDecor:coconut": -8,
+     "feed": 28,
+     "buyDecor:grass": -16,
+     "time passing": 106,
+     "buyFish:goldfish": -20,
+     "buyDecor:shell": -19,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "matchmake": 6,
+     "buyFish:cory": -34,
+     "buyDecor:fern": -10,
+     "buyDecor:anemone": -29,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -17,
+     "buyDecor:pot": -26
+    },
+    "parts": {
+     "care": 56,
+     "mystery": 20,
+     "decisions": 3,
+     "hatched": 12,
+     "grown": 24,
+     "raised": 20,
+     "morphs": 0,
+     "goals": 0,
+     "field": 24,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 6,
+    "score": 413,
+    "shells": 88,
+    "earned": 738,
+    "spent": 646,
+    "perDayEarned": 12.3,
+    "decor": "18/24",
+    "fish": 24,
+    "field": 8,
+    "goals": 3,
+    "decisions": 4,
+    "mysteries": 30,
+    "toasts": 345,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 257,
+     "buyDecor:coconut": -8,
+     "feed": 40,
+     "buyDecor:grass": -16,
+     "time passing": 383,
+     "buyFish:goldfish": -86,
+     "buyDecor:shell": -19,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "matchmake": 34,
+     "buyFish:cory": -34,
+     "buyDecor:fern": -10,
+     "buyDecor:anemone": -29,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -17,
+     "buyDecor:pot": -26,
+     "buyDecor:bubbler": -48,
+     "buyDecor:brain": -28,
+     "buyFish:blue": -42,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -57,
+     "watchEggs": 29,
+     "keepFry": 10,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bamboo": -55
+    },
+    "parts": {
+     "care": 104,
+     "mystery": 39,
+     "decisions": 6,
+     "hatched": 30,
+     "grown": 72,
+     "raised": 36,
+     "morphs": 30,
+     "goals": 60,
+     "field": 48,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 53.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 738,
+    "shells": 115,
+    "earned": 1212,
+    "spent": 1134,
+    "perDayEarned": 10.1,
+    "decor": "26/27",
+    "fish": 32,
+    "field": 10,
+    "goals": 3,
+    "decisions": 8,
+    "mysteries": 63,
+    "toasts": 618,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 487,
+     "buyDecor:coconut": -8,
+     "feed": 40,
+     "buyDecor:grass": -16,
+     "time passing": 675,
+     "buyFish:goldfish": -86,
+     "buyDecor:shell": -19,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "matchmake": 34,
+     "buyFish:cory": -34,
+     "buyDecor:fern": -10,
+     "buyDecor:anemone": -29,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -17,
+     "buyDecor:pot": -26,
+     "buyDecor:bubbler": -48,
+     "buyDecor:brain": -28,
+     "buyFish:blue": -42,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -57,
+     "watchEggs": 75,
+     "keepFry": 22,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bamboo": -55,
+     "buyDecor:chest": -85,
+     "buyDecor:crystal": -190,
+     "buyDecor:anchor": -92,
+     "water": 16,
+     "buyDecor:arch": -120
+    },
+    "parts": {
+     "care": 198,
+     "mystery": 73,
+     "decisions": 21,
+     "hatched": 46,
+     "grown": 138,
+     "raised": 48,
+     "morphs": 90,
+     "goals": 90,
+     "field": 66,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 73.6,
+      "bridge": null,
+      "arch": 100.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 115.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 53.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 60.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 1,
+  "profile": "regular",
+  "milestones": {
+   "first fish bought": {
+    "median": 4.1,
+    "range": "3.5–5.1",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 3.5,
+    "range": "0.6–7.1",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.6,
+    "range": "0.1–1.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.1,
+    "range": "3.5–6.1",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 9.1,
+    "range": "7.1–11.1",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7.6,
+    "range": "7–9",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 11.1,
+    "range": "10.5–12.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 21,
+    "range": "20.6–22.5",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.6",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 21,
+    "range": "4–34.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 31.1,
+    "range": "18.6–40.5",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 23.6,
+    "range": "8.1–40.5",
+    "hit": "6/6"
+   },
+   "second generation adult": {
+    "median": 43,
+    "range": "36.6–48.6",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 4,
+    "range": "1.1–5.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 8.6,
+    "range": "6–10.6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 17.5,
+    "range": "11.6–19.6",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 28.6,
+    "range": "26.6–31.5",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 40.1,
+    "range": "37–43.5",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 50,
+    "range": "45–60.5",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 61.6,
+    "range": "55.6–76.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 49,
+    "shells": 14,
+    "earned": 67,
+    "spent": 67,
+    "perDayEarned": 9.6,
+    "decor": "4/10",
+    "fish": 3,
+    "field": 3,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 6,
+    "toasts": 38,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 30,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 16,
+     "time passing": 9,
+     "buyFish:goldfish": -15,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -8
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 6,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 18,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 258,
+    "shells": 27,
+    "earned": 374,
+    "spent": 366,
+    "perDayEarned": 12.5,
+    "decor": "13/21",
+    "fish": 19,
+    "field": 9,
+    "goals": 1,
+    "decisions": 5,
+    "mysteries": 27,
+    "toasts": 208,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 148,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 26,
+     "time passing": 195,
+     "buyFish:goldfish": -125,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "buyFish:cory": -44,
+     "watchEggs": 12,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27
+    },
+    "parts": {
+     "care": 56,
+     "mystery": 27,
+     "decisions": 15,
+     "hatched": 18,
+     "grown": 36,
+     "raised": 28,
+     "morphs": 0,
+     "goals": 15,
+     "field": 54,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 8,
+    "score": 592,
+    "shells": 65,
+    "earned": 845,
+    "spent": 809,
+    "perDayEarned": 14.1,
+    "decor": "22/27",
+    "fish": 29,
+    "field": 13,
+    "goals": 1,
+    "decisions": 10,
+    "mysteries": 56,
+    "toasts": 392,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 293,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 26,
+     "time passing": 493,
+     "buyFish:goldfish": -125,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "buyFish:cory": -44,
+     "watchEggs": 12,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27,
+     "keepFry": 20,
+     "play": 3,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "hide": 15,
+     "buyDecor:pillar": -30,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85
+    },
+    "parts": {
+     "care": 116,
+     "mystery": 56,
+     "decisions": 30,
+     "hatched": 38,
+     "grown": 102,
+     "raised": 72,
+     "morphs": 70,
+     "goals": 30,
+     "field": 66,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 43.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 898,
+    "shells": 126,
+    "earned": 1332,
+    "spent": 1215,
+    "perDayEarned": 11.1,
+    "decor": "26/27",
+    "fish": 32,
+    "field": 15,
+    "goals": 1,
+    "decisions": 18,
+    "mysteries": 110,
+    "toasts": 589,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 567,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 38,
+     "time passing": 645,
+     "buyFish:goldfish": -125,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "buyFish:cory": -44,
+     "watchEggs": 12,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27,
+     "keepFry": 20,
+     "play": 3,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "hide": 15,
+     "buyDecor:pillar": -30,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "glass": 4,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150
+    },
+    "parts": {
+     "care": 230,
+     "mystery": 108,
+     "decisions": 60,
+     "hatched": 44,
+     "grown": 132,
+     "raised": 92,
+     "morphs": 100,
+     "goals": 30,
+     "field": 90,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 100.6,
+      "arch": 77.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 99.1,
+      "arch": 43.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 104.6,
+      "arch": 86.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 113.6,
+      "arch": 88.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 89.6,
+      "arch": 76.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 108.6,
+      "arch": 85.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 1,
+  "profile": "engaged",
+  "milestones": {
+   "first fish bought": {
+    "median": 2.3,
+    "range": "2.1–2.3",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 1.1,
+    "range": "0.1–1.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 3.3,
+    "range": "3.1–3.3",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 5.6,
+    "range": "4.6–8.1",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 6,
+    "range": "4.6–6.3",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 9.3,
+    "range": "8.3–9.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 19,
+    "range": "18–19.3",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 13.3,
+    "range": "8.3–19.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 56.3,
+    "range": "17.3–58.6",
+    "hit": "4/6"
+   },
+   "first goal done": {
+    "median": 8.6,
+    "range": "6.6–11.1",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 35,
+    "range": "34–39",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 1.6,
+    "range": "1.1–2.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 4.3,
+    "range": "3.1–6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 10.3,
+    "range": "9.6–11.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 22.6,
+    "range": "21.1–25.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 35.1,
+    "range": "29.3–38",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 46.1,
+    "range": "39–50.1",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 60.1,
+    "range": "47.3–64.6",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 78,
+    "shells": 14,
+    "earned": 103,
+    "spent": 90,
+    "perDayEarned": 14.7,
+    "decor": "5/14",
+    "fish": 5,
+    "field": 7,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 52,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 41,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 16,
+     "buyFish:goldfish": -14,
+     "time passing": 11,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyFish:cory": -22
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 54,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 321,
+    "shells": 33,
+    "earned": 464,
+    "spent": 455,
+    "perDayEarned": 15.5,
+    "decor": "16/21",
+    "fish": 18,
+    "field": 14,
+    "goals": 3,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 214,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 202,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 20,
+     "buyFish:goldfish": -14,
+     "time passing": 139,
+     "buyDecor:rock": -5,
+     "pet": 8,
+     "buyFish:cory": -44,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "glass": 8,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "watchEggs": 13,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "water": 8,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 15,
+     "hatched": 22,
+     "grown": 30,
+     "raised": 24,
+     "morphs": 0,
+     "goals": 0,
+     "field": 90,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 8,
+    "score": 590,
+    "shells": 86,
+    "earned": 1046,
+    "spent": 994,
+    "perDayEarned": 17.4,
+    "decor": "24/27",
+    "fish": 29,
+    "field": 17,
+    "goals": 3,
+    "decisions": 9,
+    "mysteries": 60,
+    "toasts": 423,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 393,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 34,
+     "buyFish:goldfish": -14,
+     "time passing": 450,
+     "buyDecor:rock": -5,
+     "pet": 8,
+     "buyFish:cory": -44,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "glass": 20,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "watchEggs": 28,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "water": 28,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -60,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "keepFry": 12,
+     "buyDecor:bamboo": -52,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 30,
+     "hatched": 44,
+     "grown": 114,
+     "raised": 80,
+     "morphs": 10,
+     "goals": 0,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 865,
+    "shells": 175,
+    "earned": 1574,
+    "spent": 1475,
+    "perDayEarned": 13.1,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 3,
+    "decisions": 19,
+    "mysteries": 120,
+    "toasts": 637,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 733,
+     "buyDecor:coconut": -8,
+     "buyDecor:grass": -16,
+     "feed": 42,
+     "buyFish:goldfish": -14,
+     "time passing": 624,
+     "buyDecor:rock": -5,
+     "pet": 10,
+     "buyFish:cory": -44,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -6,
+     "glass": 44,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -11,
+     "watchEggs": 28,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "water": 76,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -60,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "keepFry": 12,
+     "buyDecor:bamboo": -52,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -147,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 63,
+     "hatched": 50,
+     "grown": 150,
+     "raised": 104,
+     "morphs": 20,
+     "goals": 0,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 93.1,
+      "bridge": 73.1,
+      "arch": 62.1
+     },
+     {
+      "spire": null,
+      "crystal": 107.3,
+      "bridge": 84.3,
+      "arch": 72.1
+     },
+     {
+      "spire": null,
+      "crystal": 111.1,
+      "bridge": 81.6,
+      "arch": 67.1
+     },
+     {
+      "spire": null,
+      "crystal": 98.6,
+      "bridge": 73.6,
+      "arch": 60.1
+     },
+     {
+      "spire": null,
+      "crystal": 99.6,
+      "bridge": 80.6,
+      "arch": 69.3
+     },
+     {
+      "spire": null,
+      "crystal": 101.1,
+      "bridge": 77.6,
+      "arch": 66.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 1,
+  "profile": "returning",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.6,
+    "range": "2.5–4.6",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 4.5,
+    "range": "1.1–8.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–1.5",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 5.1,
+    "range": "3.5–6.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 8.6,
+    "range": "6.6–10.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 8.6,
+    "range": "6.6–9.6",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 13,
+    "range": "10.1–14",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 26,
+    "range": "23.1–26",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.6",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 21,
+    "range": "4.6–33.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 34.6,
+    "range": "32.6–79.6",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 35.1,
+    "range": "20.1–79.6",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 49,
+    "range": "42.6–52",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 3.6,
+    "range": "2.1–5.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 8.6,
+    "range": "6.6–10.5",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 24.1,
+    "range": "21.1–26.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 35.1,
+    "range": "33.6–40.6",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 50.5,
+    "range": "42.6–58.1",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 63,
+    "range": "51.5–76.5",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 75.1,
+    "range": "61–99.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 47,
+    "shells": 18,
+    "earned": 64,
+    "spent": 57,
+    "perDayEarned": 9.1,
+    "decor": "4/10",
+    "fish": 3,
+    "field": 3,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 6,
+    "toasts": 36,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 41,
+     "buyDecor:coconut": -12,
+     "feed": 16,
+     "buyDecor:grass": -16,
+     "buyDecor:fern": -10,
+     "time passing": 14,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 12,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 4,
+    "score": 181,
+    "shells": 20,
+    "earned": 279,
+    "spent": 274,
+    "perDayEarned": 9.3,
+    "decor": "9/18",
+    "fish": 15,
+    "field": 8,
+    "goals": 0,
+    "decisions": 4,
+    "mysteries": 23,
+    "toasts": 185,
+    "neglect": 7,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 125,
+     "buyDecor:coconut": -12,
+     "feed": 38,
+     "buyDecor:grass": -16,
+     "buyDecor:fern": -10,
+     "time passing": 96,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "buyDecor:starfish": -10,
+     "pet": 7,
+     "buyFish:cory": -44,
+     "watchEggs": 5,
+     "buyDecor:sword": -11,
+     "buyDecor:anemone": -32,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "matchmake": 7,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -22
+    },
+    "parts": {
+     "care": 46,
+     "mystery": 23,
+     "decisions": 12,
+     "hatched": 10,
+     "grown": 18,
+     "raised": 12,
+     "morphs": 0,
+     "goals": 0,
+     "field": 48,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 475,
+    "shells": 46,
+    "earned": 753,
+    "spent": 722,
+    "perDayEarned": 12.6,
+    "decor": "20/26",
+    "fish": 26,
+    "field": 12,
+    "goals": 1,
+    "decisions": 8,
+    "mysteries": 50,
+    "toasts": 379,
+    "neglect": 7,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 259,
+     "buyDecor:coconut": -12,
+     "feed": 52,
+     "buyDecor:grass": -16,
+     "buyDecor:fern": -10,
+     "time passing": 343,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "buyDecor:starfish": -10,
+     "pet": 11,
+     "buyFish:cory": -44,
+     "watchEggs": 5,
+     "buyDecor:sword": -11,
+     "buyDecor:anemone": -32,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "matchmake": 7,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -22,
+     "buyDecor:brain": -28,
+     "buyDecor:bubbler": -48,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -34,
+     "buyFish:blue": -84,
+     "buyDecor:table": -64,
+     "water": 4,
+     "buyDecor:pillar": -42,
+     "buyDecor:bamboo": -55
+    },
+    "parts": {
+     "care": 100,
+     "mystery": 50,
+     "decisions": 27,
+     "hatched": 34,
+     "grown": 84,
+     "raised": 56,
+     "morphs": 0,
+     "goals": 0,
+     "field": 84,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": 54.1,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 867,
+    "shells": 64,
+    "earned": 1332,
+    "spent": 1243,
+    "perDayEarned": 11.1,
+    "decor": "26/27",
+    "fish": 32,
+    "field": 15,
+    "goals": 2,
+    "decisions": 17,
+    "mysteries": 104,
+    "toasts": 605,
+    "neglect": 7,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 561,
+     "buyDecor:coconut": -12,
+     "feed": 63,
+     "buyDecor:grass": -16,
+     "buyDecor:fern": -10,
+     "time passing": 661,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -8,
+     "buyDecor:moss": -4,
+     "buyDecor:starfish": -10,
+     "pet": 11,
+     "buyFish:cory": -44,
+     "watchEggs": 5,
+     "buyDecor:sword": -11,
+     "buyDecor:anemone": -32,
+     "buyDecor:kelp": -27,
+     "buyDecor:red": -13,
+     "matchmake": 7,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -22,
+     "buyDecor:brain": -28,
+     "buyDecor:bubbler": -48,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -34,
+     "buyFish:blue": -84,
+     "buyDecor:table": -64,
+     "water": 20,
+     "buyDecor:pillar": -42,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "glass": 4,
+     "buyDecor:bridge": -147
+    },
+    "parts": {
+     "care": 210,
+     "mystery": 104,
+     "decisions": 57,
+     "hatched": 50,
+     "grown": 150,
+     "raised": 88,
+     "morphs": 50,
+     "goals": 0,
+     "field": 90,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 105.1,
+      "arch": 84.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 111.6,
+      "arch": 91.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 101.6,
+      "arch": 85.6
+     },
+     {
+      "spire": null,
+      "crystal": 54.1,
+      "bridge": null,
+      "arch": 111.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 112.1,
+      "arch": 94.5
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 119.1,
+      "arch": 99.1
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 2,
+  "profile": "casual",
+  "milestones": {
+   "first fish bought": {
+    "median": 4.6,
+    "range": "3.5–6.6",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 3.6,
+    "range": "1.5–8.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.6,
+    "range": "0.5–1.5",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.6,
+    "range": "3.6–10.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 13.6,
+    "range": "8.6–17.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 9.5,
+    "range": "7–11.5",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 12.6,
+    "range": "10.6–14.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 22.6,
+    "range": "20.5–24.5",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.6,
+    "range": "10.5–10.6",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 20,
+    "range": "6–32",
+    "hit": "5/6"
+   },
+   "first rare color": {
+    "median": 39.6,
+    "range": "25.6–65.6",
+    "hit": "4/6"
+   },
+   "first goal done": {
+    "median": 39.6,
+    "range": "35.6–65.6",
+    "hit": "3/6"
+   },
+   "second generation adult": {
+    "median": 45.5,
+    "range": "35.6–46.6",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 4,
+    "range": "3–4.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 9.6,
+    "range": "7–10.5",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 20.6,
+    "range": "15.5–25.6",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 35.6,
+    "range": "29.5–38.6",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 49.6,
+    "range": "43.6–57.6",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 66.5,
+    "range": "59–72.5",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 84.6,
+    "range": "72.5–96.6",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 42,
+    "shells": 8,
+    "earned": 71,
+    "spent": 72,
+    "perDayEarned": 10.1,
+    "decor": "3/10",
+    "fish": 5,
+    "field": 2,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 5,
+    "toasts": 44,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 30,
+     "feed": 20,
+     "buyDecor:coconut": -24,
+     "time passing": 18,
+     "buyDecor:grass": -16,
+     "buyDecor:rock": -8,
+     "buyFish:goldfish": -20,
+     "buyDecor:moss": -4
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 5,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 12,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 4,
+    "score": 203,
+    "shells": 17,
+    "earned": 335,
+    "spent": 331,
+    "perDayEarned": 11.2,
+    "decor": "11/18",
+    "fish": 16,
+    "field": 8,
+    "goals": 0,
+    "decisions": 4,
+    "mysteries": 25,
+    "toasts": 205,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 164,
+     "feed": 35,
+     "buyDecor:coconut": -24,
+     "time passing": 122,
+     "buyDecor:grass": -16,
+     "buyDecor:rock": -8,
+     "buyFish:goldfish": -218,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "pet": 4,
+     "buyDecor:boulder": -20
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 25,
+     "decisions": 12,
+     "hatched": 8,
+     "grown": 6,
+     "raised": 12,
+     "morphs": 0,
+     "goals": 0,
+     "field": 48,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 6,
+    "score": 463,
+    "shells": 55,
+    "earned": 786,
+    "spent": 757,
+    "perDayEarned": 13.1,
+    "decor": "22/24",
+    "fish": 25,
+    "field": 10,
+    "goals": 0,
+    "decisions": 8,
+    "mysteries": 44,
+    "toasts": 395,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 335,
+     "feed": 51,
+     "buyDecor:coconut": -24,
+     "time passing": 391,
+     "buyDecor:grass": -16,
+     "buyDecor:rock": -8,
+     "buyFish:goldfish": -240,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "pet": 4,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -64,
+     "buyDecor:lantern": -60,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45
+    },
+    "parts": {
+     "care": 118,
+     "mystery": 51,
+     "decisions": 24,
+     "hatched": 18,
+     "grown": 54,
+     "raised": 44,
+     "morphs": 0,
+     "goals": 0,
+     "field": 54,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 812,
+    "shells": 83,
+    "earned": 1297,
+    "spent": 1208,
+    "perDayEarned": 10.8,
+    "decor": "26/27",
+    "fish": 32,
+    "field": 13,
+    "goals": 1,
+    "decisions": 17,
+    "mysteries": 89,
+    "toasts": 655,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 621,
+     "feed": 76,
+     "buyDecor:coconut": -24,
+     "time passing": 571,
+     "buyDecor:grass": -16,
+     "buyDecor:rock": -8,
+     "buyFish:goldfish": -240,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 25,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "pet": 4,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -64,
+     "buyDecor:lantern": -60,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "buyDecor:chest": -82,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150
+    },
+    "parts": {
+     "care": 234,
+     "mystery": 97,
+     "decisions": 51,
+     "hatched": 36,
+     "grown": 108,
+     "raised": 80,
+     "morphs": 40,
+     "goals": 15,
+     "field": 72,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 116.6,
+      "arch": 95.5
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 107.6,
+      "arch": 89.5
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 108.6,
+      "arch": 90.6
+     },
+     {
+      "spire": null,
+      "crystal": 117.5,
+      "bridge": 94.5,
+      "arch": 77.5
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 90.6,
+      "arch": 76.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 107.6,
+      "arch": 88.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 2,
+  "profile": "regular",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.5,
+    "range": "3.1–5.1",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.6,
+    "range": "0.1–2.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.5",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.1,
+    "range": "3.1–4.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 10.1,
+    "range": "7.6–13.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7.6,
+    "range": "6–8.6",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 10.6,
+    "range": "9.6–12.1",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 20.6,
+    "range": "19.6–22",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.5",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 19,
+    "range": "8.6–31",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 36.6,
+    "range": "17.6–45.5",
+    "hit": "4/6"
+   },
+   "first goal done": {
+    "median": 36.6,
+    "range": "12.1–45.5",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 40.5,
+    "range": "34.6–55.6",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 3.1,
+    "range": "1.1–3.5",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 7.5,
+    "range": "5.1–9.1",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 15,
+    "range": "12.1–15.6",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 27.5,
+    "range": "24–29.6",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 41.6,
+    "range": "34.5–42.6",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 51.6,
+    "range": "43.1–55.6",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 66,
+    "range": "53–74.6",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 56,
+    "shells": 18,
+    "earned": 74,
+    "spent": 68,
+    "perDayEarned": 10.6,
+    "decor": "4/14",
+    "fish": 4,
+    "field": 4,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 56,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 35,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 24,
+     "time passing": 12,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "pet": 2
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 12,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 259,
+    "shells": 21,
+    "earned": 373,
+    "spent": 380,
+    "perDayEarned": 12.4,
+    "decor": "14/21",
+    "fish": 19,
+    "field": 11,
+    "goals": 0,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 249,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 164,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 46,
+     "time passing": 162,
+     "buyFish:goldfish": -152,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "pet": 6,
+     "water": 9,
+     "glass": 5,
+     "buyDecor:fern": -10,
+     "watchEggs": 5,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 15,
+     "hatched": 18,
+     "grown": 36,
+     "raised": 32,
+     "morphs": 0,
+     "goals": 0,
+     "field": 54,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 563,
+    "shells": 73,
+    "earned": 901,
+    "spent": 844,
+    "perDayEarned": 15,
+    "decor": "23/26",
+    "fish": 29,
+    "field": 14,
+    "goals": 1,
+    "decisions": 10,
+    "mysteries": 60,
+    "toasts": 469,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 342,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 60,
+     "time passing": 434,
+     "buyFish:goldfish": -152,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "pet": 6,
+     "water": 9,
+     "glass": 9,
+     "buyDecor:fern": -10,
+     "watchEggs": 5,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "keepFry": 20,
+     "buyDecor:lantern": -57,
+     "buyDecor:table": -64,
+     "buyDecor:chest": -82
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 30,
+     "hatched": 38,
+     "grown": 96,
+     "raised": 72,
+     "morphs": 40,
+     "goals": 15,
+     "field": 84,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 878,
+    "shells": 74,
+    "earned": 1433,
+    "spent": 1369,
+    "perDayEarned": 11.9,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 1,
+    "decisions": 20,
+    "mysteries": 120,
+    "toasts": 737,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 662,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 80,
+     "time passing": 613,
+     "buyFish:goldfish": -152,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "pet": 10,
+     "water": 29,
+     "glass": 9,
+     "buyDecor:fern": -10,
+     "watchEggs": 5,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "keepFry": 20,
+     "buyDecor:lantern": -57,
+     "buyDecor:table": -64,
+     "buyDecor:chest": -82,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 238,
+     "mystery": 119,
+     "decisions": 60,
+     "hatched": 44,
+     "grown": 132,
+     "raised": 96,
+     "morphs": 70,
+     "goals": 15,
+     "field": 96,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 106.5,
+      "bridge": 83.6,
+      "arch": 70.1
+     },
+     {
+      "spire": null,
+      "crystal": 106.6,
+      "bridge": 80.1,
+      "arch": 67.6
+     },
+     {
+      "spire": null,
+      "crystal": 110.6,
+      "bridge": 81.6,
+      "arch": 70.1
+     },
+     {
+      "spire": null,
+      "crystal": 111.5,
+      "bridge": 89.6,
+      "arch": 73.5
+     },
+     {
+      "spire": null,
+      "crystal": 119.1,
+      "bridge": 92.1,
+      "arch": 76.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 98.1,
+      "arch": 79.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 2,
+  "profile": "engaged",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.1,
+    "range": "3.1–4.1",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.6,
+    "range": "0.1–1.1",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.1,
+    "range": "3.1–4.3",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 8.3,
+    "range": "6.6–10.3",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 6.1,
+    "range": "6–6.3",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 9.3,
+    "range": "9.3–9.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 19,
+    "range": "19–19.3",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "6.6–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 10.6,
+    "range": "4.3–20.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 26.3,
+    "range": "25.3–47.3",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 29.3,
+    "range": "8–47.3",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 36,
+    "range": "35–40",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 1.6,
+    "range": "1.1–2",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 4.1,
+    "range": "3.3–5.3",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 11.6,
+    "range": "8.3–13.3",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 23,
+    "range": "19.6–25.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 35,
+    "range": "31.1–39.1",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 49,
+    "range": "45–53",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 63.1,
+    "range": "59–66.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 74,
+    "shells": 9,
+    "earned": 100,
+    "spent": 107,
+    "perDayEarned": 14.3,
+    "decor": "5/14",
+    "fish": 6,
+    "field": 7,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 69,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 47,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 23,
+     "time passing": 23,
+     "buyFish:goldfish": -42,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -4,
+     "glass": 4,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 36,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 316,
+    "shells": 26,
+    "earned": 469,
+    "spent": 475,
+    "perDayEarned": 15.6,
+    "decor": "16/21",
+    "fish": 22,
+    "field": 16,
+    "goals": 1,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 286,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 204,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 38,
+     "time passing": 159,
+     "buyFish:goldfish": -196,
+     "buyDecor:rock": -5,
+     "pet": 4,
+     "buyDecor:moss": -4,
+     "glass": 12,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 15,
+     "hatched": 20,
+     "grown": 24,
+     "raised": 24,
+     "morphs": 0,
+     "goals": 0,
+     "field": 90,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 577,
+    "shells": 104,
+    "earned": 1008,
+    "spent": 971,
+    "perDayEarned": 16.8,
+    "decor": "24/26",
+    "fish": 29,
+    "field": 17,
+    "goals": 2,
+    "decisions": 11,
+    "mysteries": 60,
+    "toasts": 498,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 401,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 46,
+     "time passing": 455,
+     "buyFish:goldfish": -196,
+     "buyDecor:rock": -5,
+     "pet": 14,
+     "buyDecor:moss": -4,
+     "glass": 25,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 45,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:table": -64,
+     "buyDecor:lantern": -60,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "buyDecor:chest": -82,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 30,
+     "hatched": 30,
+     "grown": 84,
+     "raised": 64,
+     "morphs": 10,
+     "goals": 30,
+     "field": 102,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 883,
+    "shells": 199,
+    "earned": 1617,
+    "spent": 1428,
+    "perDayEarned": 13.5,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 2,
+    "decisions": 21,
+    "mysteries": 120,
+    "toasts": 762,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 776,
+     "buyDecor:coconut": -20,
+     "buyDecor:grass": -16,
+     "feed": 69,
+     "time passing": 597,
+     "buyFish:goldfish": -196,
+     "buyDecor:rock": -5,
+     "pet": 18,
+     "buyDecor:moss": -4,
+     "glass": 49,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 45,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -19,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:table": -64,
+     "buyDecor:lantern": -60,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "buyDecor:chest": -82,
+     "buyDecor:anchor": -95,
+     "keepFry": 20,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -187
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 63,
+     "hatched": 40,
+     "grown": 120,
+     "raised": 88,
+     "morphs": 50,
+     "goals": 45,
+     "field": 102,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 97.1,
+      "bridge": 77.3,
+      "arch": 64.6
+     },
+     {
+      "spire": null,
+      "crystal": 112.1,
+      "bridge": 85.1,
+      "arch": 69.3
+     },
+     {
+      "spire": null,
+      "crystal": 92.3,
+      "bridge": 75.6,
+      "arch": 64.3
+     },
+     {
+      "spire": null,
+      "crystal": 101.1,
+      "bridge": 79.6,
+      "arch": 66.1
+     },
+     {
+      "spire": null,
+      "crystal": 95.1,
+      "bridge": 74.6,
+      "arch": 60.6
+     },
+     {
+      "spire": null,
+      "crystal": 93.1,
+      "bridge": 73.6,
+      "arch": 61.3
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 2,
+  "profile": "mixed",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.1,
+    "range": "2.3–3.3",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 1.1,
+    "range": "0.1–1.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 3.3,
+    "range": "3.1–3.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 6.3,
+    "range": "5.6–12.1",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 6.1,
+    "range": "6–7",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 9.3,
+    "range": "9.3–10.3",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 19,
+    "range": "19–20",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.3",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 8.3,
+    "range": "4–20.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 32.3,
+    "range": "16.3–40.3",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 32.3,
+    "range": "11.1–40.3",
+    "hit": "5/6"
+   },
+   "second generation adult": {
+    "median": 38.3,
+    "range": "34.3–50",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 2.6,
+    "range": "1.1–3.3",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 5.1,
+    "range": "3.1–7",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 13.1,
+    "range": "10.1–14.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 23.1,
+    "range": "22–27.6",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 37.1,
+    "range": "29.3–38.3",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 47.1,
+    "range": "39.1–49.6",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 59.6,
+    "range": "51.1–67",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 62,
+    "shells": 13,
+    "earned": 99,
+    "spent": 91,
+    "perDayEarned": 14.1,
+    "decor": "5/14",
+    "fish": 5,
+    "field": 5,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 58,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 42,
+     "buyDecor:coconut": -24,
+     "feed": 31,
+     "buyDecor:grass": -16,
+     "time passing": 24,
+     "buyFish:goldfish": -42,
+     "pet": 2,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 30,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 290,
+    "shells": 27,
+    "earned": 428,
+    "spent": 418,
+    "perDayEarned": 14.3,
+    "decor": "14/21",
+    "fish": 21,
+    "field": 15,
+    "goals": 0,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 259,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 191,
+     "buyDecor:coconut": -24,
+     "feed": 47,
+     "buyDecor:grass": -16,
+     "time passing": 181,
+     "buyFish:goldfish": -196,
+     "pet": 4,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "watchEggs": 5,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:table": -61
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 18,
+     "hatched": 20,
+     "grown": 30,
+     "raised": 28,
+     "morphs": 0,
+     "goals": 0,
+     "field": 96,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 8,
+    "score": 647,
+    "shells": 54,
+    "earned": 1030,
+    "spent": 971,
+    "perDayEarned": 17.2,
+    "decor": "24/27",
+    "fish": 30,
+    "field": 16,
+    "goals": 2,
+    "decisions": 10,
+    "mysteries": 60,
+    "toasts": 482,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 410,
+     "buyDecor:coconut": -24,
+     "feed": 62,
+     "buyDecor:grass": -16,
+     "time passing": 488,
+     "buyFish:goldfish": -196,
+     "pet": 4,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "watchEggs": 48,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -57,
+     "buyDecor:bamboo": -52,
+     "buyDecor:brain": -28,
+     "buyDecor:kelp": -30,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "pickGoal": 10,
+     "water": 4,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:chest": -85,
+     "glass": 4,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 33,
+     "hatched": 38,
+     "grown": 84,
+     "raised": 64,
+     "morphs": 80,
+     "goals": 60,
+     "field": 102,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 911,
+    "shells": 152,
+    "earned": 1561,
+    "spent": 1428,
+    "perDayEarned": 13,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 2,
+    "decisions": 21,
+    "mysteries": 120,
+    "toasts": 728,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 782,
+     "buyDecor:coconut": -24,
+     "feed": 66,
+     "buyDecor:grass": -16,
+     "time passing": 619,
+     "buyFish:goldfish": -196,
+     "pet": 8,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "watchEggs": 48,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:table": -61,
+     "buyDecor:lantern": -57,
+     "buyDecor:bamboo": -52,
+     "buyDecor:brain": -28,
+     "buyDecor:kelp": -30,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "pickGoal": 10,
+     "water": 12,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:chest": -85,
+     "glass": 16,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -187
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 63,
+     "hatched": 40,
+     "grown": 120,
+     "raised": 88,
+     "morphs": 90,
+     "goals": 60,
+     "field": 102,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 97.1,
+      "bridge": 77.6,
+      "arch": 65.3
+     },
+     {
+      "spire": null,
+      "crystal": 98.6,
+      "bridge": 83.5,
+      "arch": 65.6
+     },
+     {
+      "spire": null,
+      "crystal": 99.5,
+      "bridge": 79.3,
+      "arch": 66.6
+     },
+     {
+      "spire": null,
+      "crystal": 106.3,
+      "bridge": 81.1,
+      "arch": 67.6
+     },
+     {
+      "spire": null,
+      "crystal": 99.6,
+      "bridge": 75.6,
+      "arch": 62.6
+     },
+     {
+      "spire": null,
+      "crystal": 100.6,
+      "bridge": 79.1,
+      "arch": 66.1
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 2,
+  "profile": "returning",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.6,
+    "range": "2.1–4.6",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 1.1,
+    "range": "0.1–3.5",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 3.6,
+    "range": "3.5–4.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 9.6,
+    "range": "6.6–38.5",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7,
+    "range": "6.5–8.1",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 10.6,
+    "range": "9.6–11.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 23.6,
+    "range": "22.6–25",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 10,
+    "range": "8.5–28.5",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 36.6,
+    "range": "17–59.5",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 36.6,
+    "range": "7.1–39.6",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 45.5,
+    "range": "38–69.5",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 2.1,
+    "range": "1.6–3.5",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 7.1,
+    "range": "4.6–7.1",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 20.1,
+    "range": "10.6–21.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 30.5,
+    "range": "24.1–33.6",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 43.6,
+    "range": "35.5–45.1",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 51.6,
+    "range": "43.6–59.1",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 62,
+    "range": "51.6–74.5",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 50,
+    "shells": 11,
+    "earned": 80,
+    "spent": 70,
+    "perDayEarned": 11.4,
+    "decor": "4/10",
+    "fish": 4,
+    "field": 3,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 58,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 30,
+     "buyDecor:coconut": -15,
+     "buyDecor:grass": -16,
+     "feed": 16,
+     "time passing": 14,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 18,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 232,
+    "shells": 12,
+    "earned": 350,
+    "spent": 330,
+    "perDayEarned": 11.7,
+    "decor": "12/21",
+    "fish": 17,
+    "field": 11,
+    "goals": 0,
+    "decisions": 4,
+    "mysteries": 24,
+    "toasts": 238,
+    "neglect": 8,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 146,
+     "buyDecor:coconut": -15,
+     "buyDecor:grass": -16,
+     "feed": 29,
+     "time passing": 133,
+     "buyFish:goldfish": -86,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "pickGoal": 11,
+     "buyDecor:starfish": -6,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "watchEggs": 12,
+     "buyDecor:boulder": -20,
+     "matchmake": 20,
+     "buyFish:cory": -44,
+     "water": 4,
+     "buyFish:blue": -84,
+     "glass": 4,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -26
+    },
+    "parts": {
+     "care": 48,
+     "mystery": 24,
+     "decisions": 12,
+     "hatched": 12,
+     "grown": 18,
+     "raised": 12,
+     "morphs": 40,
+     "goals": 30,
+     "field": 66,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 571,
+    "shells": 50,
+    "earned": 910,
+    "spent": 873,
+    "perDayEarned": 15.2,
+    "decor": "24/26",
+    "fish": 29,
+    "field": 15,
+    "goals": 4,
+    "decisions": 9,
+    "mysteries": 54,
+    "toasts": 475,
+    "neglect": 8,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 330,
+     "buyDecor:coconut": -15,
+     "buyDecor:grass": -16,
+     "feed": 53,
+     "time passing": 406,
+     "buyFish:goldfish": -86,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "pickGoal": 11,
+     "buyDecor:starfish": -6,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "watchEggs": 36,
+     "buyDecor:boulder": -20,
+     "matchmake": 46,
+     "buyFish:cory": -44,
+     "water": 12,
+     "buyFish:blue": -84,
+     "glass": 4,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -35,
+     "keepFry": 22,
+     "buyFish:angelfish": -60,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -60,
+     "buyDecor:table": -64,
+     "hide": 11,
+     "buyDecor:chest": -85
+    },
+    "parts": {
+     "care": 108,
+     "mystery": 54,
+     "decisions": 27,
+     "hatched": 34,
+     "grown": 84,
+     "raised": 56,
+     "morphs": 80,
+     "goals": 45,
+     "field": 90,
+     "species": 20
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 903,
+    "shells": 110,
+    "earned": 1408,
+    "spent": 1364,
+    "perDayEarned": 11.7,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 4,
+    "decisions": 20,
+    "mysteries": 114,
+    "toasts": 742,
+    "neglect": 8,
+    "deaths": 0,
+    "earnedBy": {
+     "mystery": 645,
+     "buyDecor:coconut": -15,
+     "buyDecor:grass": -16,
+     "feed": 73,
+     "time passing": 587,
+     "buyFish:goldfish": -86,
+     "buyDecor:rock": -5,
+     "pet": 2,
+     "buyDecor:moss": -4,
+     "buyDecor:fern": -10,
+     "pickGoal": 11,
+     "buyDecor:starfish": -6,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "watchEggs": 36,
+     "buyDecor:boulder": -20,
+     "matchmake": 46,
+     "buyFish:cory": -44,
+     "water": 20,
+     "buyFish:blue": -84,
+     "glass": 4,
+     "buyDecor:shell": -19,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -35,
+     "keepFry": 22,
+     "buyFish:angelfish": -60,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -60,
+     "buyDecor:table": -64,
+     "hide": 11,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -92,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150
+    },
+    "parts": {
+     "care": 228,
+     "mystery": 114,
+     "decisions": 60,
+     "hatched": 40,
+     "grown": 120,
+     "raised": 80,
+     "morphs": 90,
+     "goals": 45,
+     "field": 102,
+     "species": 20
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 91.6,
+      "arch": 76.6
+     },
+     {
+      "spire": null,
+      "crystal": 116.6,
+      "bridge": 92.6,
+      "arch": 76.6
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 97.1,
+      "arch": 81.1
+     },
+     {
+      "spire": null,
+      "crystal": 119.1,
+      "bridge": 90.6,
+      "arch": 72.6
+     },
+     {
+      "spire": null,
+      "crystal": 109.1,
+      "bridge": 79.1,
+      "arch": 66.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": 105.6,
+      "arch": 88.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 4,
+  "profile": "casual",
+  "milestones": {
+   "first fish bought": {
+    "median": 5.6,
+    "range": "3.5–6.6",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 1.6,
+    "range": "0.5–2.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.6,
+    "range": "0.5–1.6",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.6,
+    "range": "3.6–4.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 21.6,
+    "range": "15.5–65.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 9.5,
+    "range": "7.6–12.6",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 12.6,
+    "range": "11.5–15.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 22.6,
+    "range": "21.6–25.6",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.6,
+    "range": "10.5–10.6",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 27,
+    "range": "11–35",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 43.5,
+    "range": "32.6–88.5",
+    "hit": "6/6"
+   },
+   "first goal done": {
+    "median": 36.6,
+    "range": "18.5–88.5",
+    "hit": "5/6"
+   },
+   "second generation adult": {
+    "median": 54,
+    "range": "38.5–79.6",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 3.6,
+    "range": "2.6–3.6",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 8.5,
+    "range": "5.6–10.6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 15,
+    "range": "12.5–18.6",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 30.6,
+    "range": "28.5–33.5",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 44.6,
+    "range": "40.5–49.6",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 57.5,
+    "range": "50.5–65.6",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 66.6,
+    "range": "64.6–84.5",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 2,
+    "score": 50,
+    "shells": 7,
+    "earned": 81,
+    "spent": 83,
+    "perDayEarned": 11.6,
+    "decor": "4/10",
+    "fish": 6,
+    "field": 3,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 6,
+    "toasts": 59,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 47,
+     "buyDecor:coconut": -41,
+     "time passing": 8,
+     "feed": 12,
+     "buyDecor:grass": -12,
+     "buyFish:goldfish": -20
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 18,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 234,
+    "shells": 32,
+    "earned": 418,
+    "spent": 404,
+    "perDayEarned": 13.9,
+    "decor": "14/21",
+    "fish": 18,
+    "field": 10,
+    "goals": 0,
+    "decisions": 5,
+    "mysteries": 29,
+    "toasts": 252,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 188,
+     "buyDecor:coconut": -41,
+     "time passing": 171,
+     "feed": 46,
+     "buyDecor:grass": -12,
+     "buyFish:goldfish": -174,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 29,
+     "decisions": 15,
+     "hatched": 12,
+     "grown": 18,
+     "raised": 28,
+     "morphs": 0,
+     "goals": 0,
+     "field": 66,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 513,
+    "shells": 62,
+    "earned": 943,
+    "spent": 860,
+    "perDayEarned": 15.7,
+    "decor": "23/26",
+    "fish": 26,
+    "field": 13,
+    "goals": 2,
+    "decisions": 10,
+    "mysteries": 57,
+    "toasts": 460,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 373,
+     "buyDecor:coconut": -41,
+     "time passing": 422,
+     "feed": 67,
+     "buyDecor:grass": -12,
+     "buyFish:goldfish": -174,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -39,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -57,
+     "water": 4,
+     "keepFry": 20,
+     "buyDecor:table": -64,
+     "buyDecor:chest": -82
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 58,
+     "decisions": 30,
+     "hatched": 28,
+     "grown": 66,
+     "raised": 60,
+     "morphs": 50,
+     "goals": 15,
+     "field": 78,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 881,
+    "shells": 121,
+    "earned": 1570,
+    "spent": 1449,
+    "perDayEarned": 13.1,
+    "decor": "28/27",
+    "fish": 32,
+    "field": 16,
+    "goals": 3,
+    "decisions": 19,
+    "mysteries": 115,
+    "toasts": 765,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 755,
+     "buyDecor:coconut": -41,
+     "time passing": 604,
+     "feed": 94,
+     "buyDecor:grass": -12,
+     "buyFish:goldfish": -174,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "watchEggs": 5,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -24,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -39,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -57,
+     "water": 8,
+     "keepFry": 20,
+     "buyDecor:table": -64,
+     "buyDecor:chest": -82,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 118,
+     "decisions": 63,
+     "hatched": 38,
+     "grown": 114,
+     "raised": 92,
+     "morphs": 90,
+     "goals": 15,
+     "field": 102,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 109.5,
+      "bridge": 87.6,
+      "arch": 73.5
+     },
+     {
+      "spire": null,
+      "crystal": 106.5,
+      "bridge": 86.6,
+      "arch": 74.6
+     },
+     {
+      "spire": null,
+      "crystal": 106.6,
+      "bridge": 88.6,
+      "arch": 77.6
+     },
+     {
+      "spire": null,
+      "crystal": 101.6,
+      "bridge": 85.6,
+      "arch": 74.5
+     },
+     {
+      "spire": null,
+      "crystal": 104.6,
+      "bridge": 83.6,
+      "arch": 69.5
+     },
+     {
+      "spire": null,
+      "crystal": 112.5,
+      "bridge": 95.6,
+      "arch": 83.5
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 4,
+  "profile": "regular",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.6,
+    "range": "2.1–4.5",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.1,
+    "range": "0.1–0.6",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.1,
+    "range": "3.1–4.5",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 13.5,
+    "range": "5.6–23.5",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7.1,
+    "range": "6–8.5",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 10.6,
+    "range": "9.5–11.5",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 20.5,
+    "range": "19.5–21.6",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 8.6,
+    "range": "8.5–31.6",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 49.5,
+    "range": "25.5–54.5",
+    "hit": "5/6"
+   },
+   "first goal done": {
+    "median": 54.5,
+    "range": "8.5–75.5",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 40.5,
+    "range": "35.6–42.5",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 1.1,
+    "range": "1–2.1",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 4.6,
+    "range": "3–5.6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 11.1,
+    "range": "10.1–12.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 23.6,
+    "range": "23.1–28.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 40.5,
+    "range": "35.1–45.1",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 52.1,
+    "range": "46.1–58.1",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 66.1,
+    "range": "59.5–72.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 68,
+    "shells": 8,
+    "earned": 99,
+    "spent": 101,
+    "perDayEarned": 14.1,
+    "decor": "4/14",
+    "fish": 7,
+    "field": 6,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 76,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 47,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 25,
+     "time passing": 21,
+     "buyFish:goldfish": -42,
+     "pet": 2,
+     "buyDecor:rock": -5
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 48,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 284,
+    "shells": 23,
+    "earned": 424,
+    "spent": 399,
+    "perDayEarned": 14.1,
+    "decor": "16/21",
+    "fish": 19,
+    "field": 14,
+    "goals": 0,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 271,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 179,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 49,
+     "time passing": 180,
+     "buyFish:goldfish": -152,
+     "pet": 2,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -6,
+     "watchEggs": 25,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyFish:cory": -44,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 12,
+     "hatched": 14,
+     "grown": 24,
+     "raised": 32,
+     "morphs": 10,
+     "goals": 15,
+     "field": 84,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 551,
+    "shells": 51,
+    "earned": 961,
+    "spent": 889,
+    "perDayEarned": 16,
+    "decor": "23/26",
+    "fish": 29,
+    "field": 16,
+    "goals": 1,
+    "decisions": 11,
+    "mysteries": 60,
+    "toasts": 496,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 366,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 84,
+     "time passing": 486,
+     "buyFish:goldfish": -152,
+     "pet": 25,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -6,
+     "watchEggs": 25,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyFish:cory": -44,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -32,
+     "water": 14,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 27,
+     "hatched": 30,
+     "grown": 84,
+     "raised": 72,
+     "morphs": 80,
+     "goals": 15,
+     "field": 102,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 871,
+    "shells": 180,
+    "earned": 1571,
+    "spent": 1433,
+    "perDayEarned": 13.1,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 1,
+    "decisions": 21,
+    "mysteries": 120,
+    "toasts": 780,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 740,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 112,
+     "time passing": 623,
+     "buyFish:goldfish": -152,
+     "pet": 29,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -6,
+     "watchEggs": 25,
+     "buyDecor:sword": -14,
+     "buyDecor:red": -13,
+     "buyDecor:boulder": -20,
+     "buyFish:cory": -44,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -22,
+     "buyDecor:kelp": -27,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -32,
+     "water": 34,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -187
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 60,
+     "hatched": 36,
+     "grown": 108,
+     "raised": 88,
+     "morphs": 110,
+     "goals": 15,
+     "field": 102,
+     "species": 12
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 100.1,
+      "bridge": 79.6,
+      "arch": 66.1
+     },
+     {
+      "spire": null,
+      "crystal": 107.1,
+      "bridge": 84.6,
+      "arch": 72.1
+     },
+     {
+      "spire": null,
+      "crystal": 95.6,
+      "bridge": 79.1,
+      "arch": 69.1
+     },
+     {
+      "spire": null,
+      "crystal": 106.1,
+      "bridge": 86.1,
+      "arch": 75.5
+     },
+     {
+      "spire": null,
+      "crystal": 95.1,
+      "bridge": 80.6,
+      "arch": 68.6
+     },
+     {
+      "spire": null,
+      "crystal": 96.1,
+      "bridge": 76.6,
+      "arch": 64.6
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 4,
+  "profile": "engaged",
+  "milestones": {
+   "first fish bought": {
+    "median": 2.3,
+    "range": "1.1–3.3",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.1,
+    "range": "0.1–0.3",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 3.1,
+    "range": "3.1–4.1",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 13.3,
+    "range": "4.6–32.1",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 6.1,
+    "range": "5–6.3",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 9.3,
+    "range": "8.3–9.6",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 19,
+    "range": "18–19.3",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 8.3,
+    "range": "4.3–16.1",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 56.3,
+    "range": "31.3–69.3",
+    "hit": "3/6"
+   },
+   "first goal done": {
+    "median": 14.3,
+    "range": "2.1–31.3",
+    "hit": "6/6"
+   },
+   "second generation adult": {
+    "median": 46,
+    "range": "33–50",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 0.6,
+    "range": "0.3–1.1",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 3.1,
+    "range": "1.6–3.3",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 9.3,
+    "range": "5.1–10.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 19.3,
+    "range": "18–25.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 34.3,
+    "range": "32–37",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 47.3,
+    "range": "45.1–52.1",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 65.1,
+    "range": "60.1–66.3",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 110,
+    "shells": 8,
+    "earned": 116,
+    "spent": 120,
+    "perDayEarned": 16.6,
+    "decor": "7/14",
+    "fish": 6,
+    "field": 13,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 86,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 42,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 20,
+     "time passing": 36,
+     "buyFish:goldfish": -20,
+     "buyDecor:rock": -5,
+     "decide": 5,
+     "pet": 2,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "glass": 4,
+     "buyDecor:starfish": -10
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 78,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 316,
+    "shells": 19,
+    "earned": 493,
+    "spent": 483,
+    "perDayEarned": 16.4,
+    "decor": "16/21",
+    "fish": 21,
+    "field": 17,
+    "goals": 1,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 301,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 187,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 64,
+     "time passing": 196,
+     "buyFish:goldfish": -130,
+     "buyDecor:rock": -5,
+     "decide": 25,
+     "pet": 14,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "glass": 8,
+     "buyDecor:starfish": -10,
+     "buyFish:cory": -44,
+     "water": 7,
+     "watchEggs": 5,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyFish:blue": -42,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 12,
+     "hatched": 16,
+     "grown": 24,
+     "raised": 36,
+     "morphs": 0,
+     "goals": 15,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 556,
+    "shells": 96,
+    "earned": 1076,
+    "spent": 998,
+    "perDayEarned": 17.9,
+    "decor": "24/26",
+    "fish": 29,
+    "field": 17,
+    "goals": 2,
+    "decisions": 10,
+    "mysteries": 60,
+    "toasts": 529,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 376,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 115,
+     "time passing": 490,
+     "buyFish:goldfish": -130,
+     "buyDecor:rock": -5,
+     "decide": 25,
+     "pet": 16,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "glass": 26,
+     "buyDecor:starfish": -10,
+     "buyFish:cory": -44,
+     "water": 7,
+     "watchEggs": 25,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyFish:blue": -42,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -64,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "hide": 15,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 27,
+     "hatched": 28,
+     "grown": 72,
+     "raised": 68,
+     "morphs": 20,
+     "goals": 30,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 56.3
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 860,
+    "shells": 260,
+    "earned": 1641,
+    "spent": 1454,
+    "perDayEarned": 13.7,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 2,
+    "decisions": 21,
+    "mysteries": 120,
+    "toasts": 813,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 776,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "feed": 147,
+     "time passing": 638,
+     "buyFish:goldfish": -130,
+     "buyDecor:rock": -5,
+     "decide": 25,
+     "pet": 20,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "glass": 46,
+     "buyDecor:starfish": -10,
+     "buyFish:cory": -44,
+     "water": 15,
+     "watchEggs": 48,
+     "buyDecor:sword": -11,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyFish:blue": -42,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -64,
+     "buyDecor:wood": -35,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "hide": 15,
+     "buyDecor:bamboo": -55,
+     "buyDecor:lantern": -54,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 60,
+     "hatched": 36,
+     "grown": 108,
+     "raised": 92,
+     "morphs": 50,
+     "goals": 60,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 87.3,
+      "bridge": 71.6,
+      "arch": 61.1
+     },
+     {
+      "spire": null,
+      "crystal": 84.3,
+      "bridge": 68.1,
+      "arch": 56.3
+     },
+     {
+      "spire": null,
+      "crystal": 95.6,
+      "bridge": 75.1,
+      "arch": 62.6
+     },
+     {
+      "spire": null,
+      "crystal": 85.1,
+      "bridge": 68.6,
+      "arch": 61.1
+     },
+     {
+      "spire": null,
+      "crystal": 90.1,
+      "bridge": 74.1,
+      "arch": 61.3
+     },
+     {
+      "spire": null,
+      "crystal": 99.3,
+      "bridge": 78.6,
+      "arch": 65.3
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 4,
+  "profile": "mixed",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.6,
+    "range": "3.1–4.1",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.6,
+    "range": "0.1–1.3",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.1",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 3.3,
+    "range": "3.1–4.3",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 12.3,
+    "range": "6.3–30.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7,
+    "range": "6–7.6",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 10.3,
+    "range": "9.3–11.3",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 20,
+    "range": "19–21",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.1",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 23,
+    "range": "3.6–35",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 33.6,
+    "range": "28.6–54.3",
+    "hit": "6/6"
+   },
+   "first goal done": {
+    "median": 22.1,
+    "range": "13.6–29.3",
+    "hit": "4/6"
+   },
+   "second generation adult": {
+    "median": 40,
+    "range": "35–44",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 1.6,
+    "range": "1.1–3.1",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 4,
+    "range": "3.1–6",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 10.3,
+    "range": "10.1–12.1",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 24,
+    "range": "21.1–25.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 36.1,
+    "range": "33.6–37.6",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 48.1,
+    "range": "44.1–53",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 61.1,
+    "range": "55.1–69.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 80,
+    "shells": 5,
+    "earned": 120,
+    "spent": 128,
+    "perDayEarned": 17.1,
+    "decor": "5/14",
+    "fish": 7,
+    "field": 8,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 82,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 42,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "time passing": 28,
+     "feed": 18,
+     "buyFish:goldfish": -20,
+     "pet": 7,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 48,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 304,
+    "shells": 22,
+    "earned": 473,
+    "spent": 457,
+    "perDayEarned": 15.8,
+    "decor": "15/21",
+    "fish": 19,
+    "field": 15,
+    "goals": 1,
+    "decisions": 5,
+    "mysteries": 30,
+    "toasts": 279,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 188,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "time passing": 193,
+     "feed": 84,
+     "buyFish:goldfish": -108,
+     "pet": 11,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyFish:cory": -37,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "water": 4,
+     "buyDecor:shell": -22,
+     "buyFish:blue": -42,
+     "glass": 4,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "matchmake": 8,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38
+    },
+    "parts": {
+     "care": 60,
+     "mystery": 30,
+     "decisions": 15,
+     "hatched": 20,
+     "grown": 24,
+     "raised": 32,
+     "morphs": 0,
+     "goals": 15,
+     "field": 96,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 8,
+    "score": 594,
+    "shells": 78,
+    "earned": 1040,
+    "spent": 979,
+    "perDayEarned": 17.3,
+    "decor": "24/27",
+    "fish": 29,
+    "field": 16,
+    "goals": 1,
+    "decisions": 10,
+    "mysteries": 60,
+    "toasts": 514,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 367,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "time passing": 506,
+     "feed": 104,
+     "buyFish:goldfish": -108,
+     "pet": 28,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyFish:cory": -37,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "water": 12,
+     "buyDecor:shell": -22,
+     "buyFish:blue": -42,
+     "glass": 16,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "matchmake": 8,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -43,
+     "buyDecor:lantern": -57,
+     "buyDecor:table": -61,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95
+    },
+    "parts": {
+     "care": 120,
+     "mystery": 60,
+     "decisions": 30,
+     "hatched": 32,
+     "grown": 78,
+     "raised": 68,
+     "morphs": 10,
+     "goals": 15,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 58.3
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": 58.1
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 905,
+    "shells": 233,
+    "earned": 1599,
+    "spent": 1419,
+    "perDayEarned": 13.3,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 1,
+    "decisions": 21,
+    "mysteries": 120,
+    "toasts": 790,
+    "neglect": 1,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 729,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -16,
+     "time passing": 633,
+     "feed": 143,
+     "buyFish:goldfish": -108,
+     "pet": 28,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "buyFish:cory": -37,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "water": 12,
+     "buyDecor:shell": -22,
+     "buyFish:blue": -42,
+     "glass": 32,
+     "buyDecor:pot": -23,
+     "buyDecor:brain": -25,
+     "matchmake": 8,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -37,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -48,
+     "buyDecor:bamboo": -43,
+     "buyDecor:lantern": -57,
+     "buyDecor:table": -61,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -95,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -147,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 240,
+     "mystery": 120,
+     "decisions": 63,
+     "hatched": 38,
+     "grown": 114,
+     "raised": 92,
+     "morphs": 40,
+     "goals": 15,
+     "field": 102,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 96.6,
+      "bridge": 76.5,
+      "arch": 62.1
+     },
+     {
+      "spire": 119.1,
+      "crystal": 85.5,
+      "bridge": 69.5,
+      "arch": 58.3
+     },
+     {
+      "spire": null,
+      "crystal": 84.5,
+      "bridge": 68.6,
+      "arch": 58.1
+     },
+     {
+      "spire": null,
+      "crystal": 84.1,
+      "bridge": 70.1,
+      "arch": 61.1
+     },
+     {
+      "spire": null,
+      "crystal": 98.1,
+      "bridge": 78.1,
+      "arch": 64.6
+     },
+     {
+      "spire": null,
+      "crystal": 92.5,
+      "bridge": 74.3,
+      "arch": 63.1
+     }
+    ]
+   }
+  }
+ },
+ {
+  "crew": 4,
+  "profile": "returning",
+  "milestones": {
+   "first fish bought": {
+    "median": 3.1,
+    "range": "2.6–5.1",
+    "hit": "6/6"
+   },
+   "first Field Guide page": {
+    "median": 0.6,
+    "range": "0.1–1.5",
+    "hit": "6/6"
+   },
+   "first mystery": {
+    "median": 0.1,
+    "range": "0.1–0.6",
+    "hit": "6/6"
+   },
+   "first decision": {
+    "median": 4.1,
+    "range": "3.1–4.6",
+    "hit": "6/6"
+   },
+   "first pairing": {
+    "median": 25.6,
+    "range": "18.1–45.6",
+    "hit": "6/6"
+   },
+   "first eggs": {
+    "median": 7,
+    "range": "6–13",
+    "hit": "6/6"
+   },
+   "first hatching": {
+    "median": 10.5,
+    "range": "9.5–18",
+    "hit": "6/6"
+   },
+   "first adult raised": {
+    "median": 23.5,
+    "range": "22.5–28",
+    "hit": "6/6"
+   },
+   "first raised temperament": {
+    "median": 10.1,
+    "range": "10.1–10.5",
+    "hit": "6/6"
+   },
+   "first octopus adventure": {
+    "median": 8.5,
+    "range": "4.5–25.5",
+    "hit": "6/6"
+   },
+   "first rare color": {
+    "median": 50.6,
+    "range": "24.5–51.5",
+    "hit": "4/6"
+   },
+   "first goal done": {
+    "median": 19.1,
+    "range": "11.1–27.1",
+    "hit": "3/6"
+   },
+   "second generation adult": {
+    "median": 51.5,
+    "range": "41.5–82.5",
+    "hit": "6/6"
+   },
+   "level 2": {
+    "median": 1.6,
+    "range": "1–2.1",
+    "hit": "6/6"
+   },
+   "level 3": {
+    "median": 4.1,
+    "range": "3.5–7.1",
+    "hit": "6/6"
+   },
+   "level 4": {
+    "median": 10.1,
+    "range": "9.1–19",
+    "hit": "6/6"
+   },
+   "level 5": {
+    "median": 28.1,
+    "range": "24.6–31.1",
+    "hit": "6/6"
+   },
+   "level 6": {
+    "median": 43.1,
+    "range": "37.1–47.1",
+    "hit": "6/6"
+   },
+   "level 7": {
+    "median": 57.1,
+    "range": "42.5–59.1",
+    "hit": "6/6"
+   },
+   "level 8": {
+    "median": 73.1,
+    "range": "53.5–78.1",
+    "hit": "6/6"
+   }
+  },
+  "snaps": {
+   "7": {
+    "level": 3,
+    "score": 74,
+    "shells": 8,
+    "earned": 106,
+    "spent": 110,
+    "perDayEarned": 15.1,
+    "decor": "6/14",
+    "fish": 6,
+    "field": 7,
+    "goals": 0,
+    "decisions": 1,
+    "mysteries": 7,
+    "toasts": 76,
+    "neglect": 0,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 36,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -11,
+     "feed": 21,
+     "buyFish:goldfish": -20,
+     "time passing": 21,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8
+    },
+    "parts": {
+     "care": 14,
+     "mystery": 7,
+     "decisions": 3,
+     "hatched": 0,
+     "grown": 0,
+     "raised": 0,
+     "morphs": 0,
+     "goals": 0,
+     "field": 42,
+     "species": 8
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "30": {
+    "level": 5,
+    "score": 240,
+    "shells": 15,
+    "earned": 377,
+    "spent": 383,
+    "perDayEarned": 12.6,
+    "decor": "14/21",
+    "fish": 17,
+    "field": 14,
+    "goals": 1,
+    "decisions": 4,
+    "mysteries": 24,
+    "toasts": 271,
+    "neglect": 10,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 139,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -11,
+     "feed": 63,
+     "buyFish:goldfish": -20,
+     "time passing": 166,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "watchEggs": 5,
+     "buyFish:cory": -44,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27
+    },
+    "parts": {
+     "care": 48,
+     "mystery": 24,
+     "decisions": 12,
+     "hatched": 14,
+     "grown": 18,
+     "raised": 28,
+     "morphs": 10,
+     "goals": 15,
+     "field": 96,
+     "species": 16
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "60": {
+    "level": 7,
+    "score": 489,
+    "shells": 65,
+    "earned": 917,
+    "spent": 901,
+    "perDayEarned": 15.3,
+    "decor": "23/26",
+    "fish": 26,
+    "field": 17,
+    "goals": 2,
+    "decisions": 9,
+    "mysteries": 54,
+    "toasts": 493,
+    "neglect": 10,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 340,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -11,
+     "feed": 85,
+     "buyFish:goldfish": -20,
+     "time passing": 441,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "watchEggs": 74,
+     "buyFish:cory": -44,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -61,
+     "buyFish:angelfish": -60,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "keepFry": 12,
+     "buyDecor:lantern": -60,
+     "buyDecor:chest": -85
+    },
+    "parts": {
+     "care": 108,
+     "mystery": 54,
+     "decisions": 27,
+     "hatched": 38,
+     "grown": 90,
+     "raised": 76,
+     "morphs": 110,
+     "goals": 45,
+     "field": 102,
+     "species": 20
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     },
+     {
+      "spire": null,
+      "crystal": null,
+      "bridge": null,
+      "arch": null
+     }
+    ]
+   },
+   "120": {
+    "level": 8,
+    "score": 876,
+    "shells": 94,
+    "earned": 1530,
+    "spent": 1453,
+    "perDayEarned": 12.8,
+    "decor": "27/27",
+    "fish": 32,
+    "field": 17,
+    "goals": 2,
+    "decisions": 20,
+    "mysteries": 114,
+    "toasts": 790,
+    "neglect": 10,
+    "deaths": 0,
+    "earnedBy": {
+     "firstFish": 4,
+     "mystery": 696,
+     "buyDecor:coconut": -41,
+     "buyDecor:grass": -11,
+     "feed": 109,
+     "buyFish:goldfish": -20,
+     "time passing": 625,
+     "buyDecor:rock": -5,
+     "buyDecor:moss": -8,
+     "buyDecor:fern": -10,
+     "buyDecor:starfish": -10,
+     "buyDecor:sword": -14,
+     "watchEggs": 74,
+     "buyFish:cory": -44,
+     "buyFish:blue": -84,
+     "buyDecor:red": -16,
+     "buyDecor:boulder": -20,
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -26,
+     "buyDecor:brain": -25,
+     "buyDecor:kelp": -27,
+     "buyDecor:anemone": -32,
+     "buyDecor:table": -61,
+     "buyFish:angelfish": -60,
+     "buyDecor:wood": -38,
+     "buyDecor:skull": -40,
+     "buyDecor:pillar": -42,
+     "buyDecor:bubbler": -45,
+     "buyDecor:bamboo": -55,
+     "keepFry": 12,
+     "buyDecor:lantern": -60,
+     "buyDecor:chest": -85,
+     "buyDecor:anchor": -92,
+     "buyDecor:arch": -120,
+     "buyDecor:bridge": -150,
+     "buyDecor:crystal": -190
+    },
+    "parts": {
+     "care": 228,
+     "mystery": 114,
+     "decisions": 60,
+     "hatched": 42,
+     "grown": 126,
+     "raised": 100,
+     "morphs": 130,
+     "goals": 45,
+     "field": 102,
+     "species": 20
+    },
+    "centerpieces": [
+     {
+      "spire": null,
+      "crystal": 109.1,
+      "bridge": 84.6,
+      "arch": 71.1
+     },
+     {
+      "spire": null,
+      "crystal": 106.6,
+      "bridge": 85.1,
+      "arch": 73.1
+     },
+     {
+      "spire": null,
+      "crystal": 111.6,
+      "bridge": 92.1,
+      "arch": 79.1
+     },
+     {
+      "spire": null,
+      "crystal": 107.1,
+      "bridge": 88.5,
+      "arch": 75.1
+     },
+     {
+      "spire": null,
+      "crystal": 107.6,
+      "bridge": 87.1,
+      "arch": 76.1
+     },
+     {
+      "spire": null,
+      "crystal": 104.1,
+      "bridge": 84.1,
+      "arch": 71.1
+     }
+    ]
+   }
+  }
+ }
+]
