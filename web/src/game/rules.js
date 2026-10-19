@@ -986,7 +986,7 @@ export const GOALS = {
       { text: 'Eggs in the den', hint: 'Partners lay after about five days together, if she has a den.', n: since('octoEggs'), need: 1 },
       { text: 'Baby octopuses hatch', hint: 'Five days of guarding, then be there to watch.', n: since('octoHatch'), need: 1 },
     ] },
-  peace: { title: 'A peaceful tank', blurb: 'Arrange the tank so everyone gets on, and settle the squabbles.', icon: 'friend', ok: (t) => { const L = layoutOf(t); return liveOf(t).length >= 3 && !(L.thicket && L.dens >= L.octos); },      /* (not offered when the layout is already right: the steps would be free) */
+  peace: { title: 'A peaceful tank', blurb: 'Arrange the tank so everyone gets on, and settle the squabbles.', icon: 'friend', ok: (t) => { const L = layoutOf(t); return liveOf(t).length >= 3 && L.octos >= 1 && !(L.thicket && L.dens >= L.octos); },      /* (not offered when the layout is already right: the steps would be free) */
     steps: [
       { text: 'Make a thicket', hint: 'Move two plants close together: the shy ones hide there.', n: (t) => (layoutOf(t).thicket ? 1 : 0), need: 1 },
       { text: 'A den for every octopus', hint: 'A coconut shell or a clay pot each, from the Shop.', n: (t) => { const L = layoutOf(t); return L.dens >= L.octos ? 1 : 0; }, need: 1 },
@@ -1250,7 +1250,7 @@ function deliver(t, now, ev) {
     if (o.arrivesAt > now) continue;
     t.orders.splice(t.orders.indexOf(o), 1); const d = SPECIES_DEF[o.species], made = [];
     for (let i = 0; i < d.count; i++) made.push(makeFish(t, o, now, i));
-    if (o.carry && made[0]) { const C = o.carry, f = made[0]; Object.assign(f, { name: C.name ?? f.name, seed: C.seed ?? f.seed, sex: C.sex ?? f.sex, traits: C.traits ?? f.traits, genes: C.genes ?? f.genes, gen: C.gen ?? 0, parents: C.parents ?? [], raisedAs: C.raisedAs ?? undefined, born: Math.min(now, C.born ?? now), from: { tank: C.fromTank, by: C.by } }); if (C.pal != null) f.pal = C.pal; f.stage = stageOf(f, now); f.fedAt = now; f.ail = 0;
+    if (o.carry && made[0]) { const C = o.carry, f = made[0]; Object.assign(f, { name: C.name ?? f.name, seed: C.seed ?? f.seed, sex: C.sex ?? f.sex, traits: C.traits ?? f.traits, genes: C.genes ?? f.genes, gen: C.gen ?? 0, parents: C.parents ?? [], raisedAs: C.raisedAs ?? undefined, born: Math.min(now, C.born ?? now), from: { tank: C.fromTank, by: C.by } }); f.stage = stageOf(f, now); f.fedAt = now; f.ail = 0;
       const mo = morphOf(f); ev.push({ journal: `${f.name} has arrived from ${C.fromTank}, sent by ${C.by}: ${mo ? `a ${MORPHS[mo].label.toLowerCase()} ` : 'a '}${d.label.toLowerCase()} bred there.`, toast: `${f.name} arrived from ${C.fromTank}!`, arrival: [f.id], story: f.id, text: `Came from ${C.fromTank}, sent by ${C.by}.` }); if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); continue; }      // an animal sent from a friend's tank: the same animal, with its genes, its parents and how it was raised
     if (o.giftFrom) for (const f of made) f.gift = { id: o.id, from: o.giftFrom, fromId: o.giftFromId ?? null, note: o.giftNote ?? null, at: now, ...(o.surprise ? { wrapped: true } : {}) };
     if (o.giftFrom && o.surprise) { ev.push({ journal: `A gift from ${o.giftFrom} arrived for ${o.ownerName}. It is still wrapped.`, toast: `A gift from ${o.giftFrom} has arrived for ${o.ownerName}!`, giftArrived: { for: o.owner } }); continue; }      // wrapped: nothing says what is inside
@@ -1260,11 +1260,11 @@ function deliver(t, now, ev) {
 // An animal bred here can be sent to a friend's tank (by its code): one a day per caretaker, never an octopus or a school, never one that is
 // guarding eggs or carrying young. It leaves with its genes, its parents' names and how it was raised, and arrives there within the hour.
 export const SEND_GAP = DAY;
-export function canSend(t, f, uid, now = Date.now()) { if (!f || f.dead || f.away || isOcto(f) || (SPECIES_DEF[f.species]?.count ?? 1) > 1 || SPECIES_DEF[f.species]?.visitor) return 'CANT_SEND'; if (!(f.parents?.length || f.bornHere)) return 'NOT_BRED_HERE'; if (f.owner && f.owner !== uid) return 'NOT_YOURS';
+export function canSend(t, f, uid, now = Date.now()) { if (!f || f.dead || f.away || isOcto(f) || (SPECIES_DEF[f.species]?.count ?? 1) > 1 || SPECIES_DEF[f.species]?.visitor) return 'CANT_SEND'; if (!(f.parents?.length || f.bornHere) || f.from) return 'NOT_BRED_HERE'; if (f.owner && f.owner !== uid) return 'NOT_YOURS'; if (t.fish.filter((x) => !x.dead).length <= 1) return 'LAST_FISH';      /* (one that came from another tank stays: it is not passed on again) */
   if (f.preg || f.brood || (t.eggs ?? []).some((e) => e.guard === f.id)) return 'BUSY'; if (now - ((t.flags.sentAt ?? {})[uid] ?? -Infinity) < SEND_GAP) return 'TOO_SOON'; return null; }
 export function sendOut(t, id, uid, name, toTank, now = Date.now()) { const f = t.fish.find((x) => x.id === id), why = canSend(t, f, uid, now); if (why) return { ok: false, reason: why };
-  t.fish.splice(t.fish.indexOf(f), 1); (t.flags.sentAt ||= {})[uid] = now; for (const o of t.fish) unlink(o, f.id); const mo = morphOf(f);
-  const carry = { name: f.name, seed: f.seed, sex: f.sex, traits: f.traits, genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 1, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })), raisedAs: f.raisedAs, born: f.born, pal: f.pal, fromTank: null, by: name };
+  t.fish.splice(t.fish.indexOf(f), 1); (t.flags.sentAt ||= {})[uid] = now; for (const o of t.fish) unlink(o, f.id); if (t.match && (t.match.a === f.id || t.match.b === f.id)) t.match = null; const mo = morphOf(f);
+  const carry = { name: f.name, seed: f.seed, sex: f.sex, traits: f.traits, genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 1, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })), raisedAs: f.raisedAs, born: f.born, fromTank: null, by: name };      // (its friends stay behind: ids mean nothing in another tank)
   bump(t, 'sent'); return { ok: true, carry, species: f.species, events: [{ journal: `${name} sent ${f.name}${mo ? ` the ${MORPHS[mo].label.toLowerCase()}` : ''} to ${toTank}. It will grow up there.`, activity: { type: 'sent', text: `${name} sent ${f.name} to ${toTank}.` } }] }; }
 // Chapters: quiet landmarks in the life of a tank. They pay nothing, so they cannot be farmed; they are a page in the journal and a moment to notice.
 // A small gift for every caretaker, once a day. No streak, nothing to catch up on: miss a day and nothing is lost or owed. It goes into the shared wallet.

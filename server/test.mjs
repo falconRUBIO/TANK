@@ -406,13 +406,13 @@ await t('a baby bred here can be sent to a friend\'s tank by its code: it leaves
   const now = Date.now(), kid = { id: 'kk', name: 'Sunny', species: 'goldfish', sex: 'm', seed: 7, born: now - 4 * 864e5, stage: 'juvenile', traits: ['Playful'], raisedAs: 'Playful', gen: 1, parents: [{ id: 'p1', name: 'Amy' }, { id: 'p2', name: 'Bob' }], genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'gold'] }, owner: a.userId ?? a.id, happy: 0.9, health: 1 };
   const shop = { ...kid, id: 'sh', name: 'Shoppy', parents: [], gen: 0, raisedAs: undefined };
   setW(ta.id, { fish: [kid, shop], simTs: now - 1000, flags: { tut: 5 } }); setW(tb.id, { fish: [], simTs: now - 1000, flags: { tut: 5 } });
-  assert.equal((await call('/api/send', { fish: 'kk', code: ta.code }, a.token)).status, 400, 'not your own tank');
-  assert.equal((await call('/api/send', { fish: 'sh', code: tb.code }, a.token)).body.code ?? 'NOT_BRED_HERE', 'NOT_BRED_HERE');
-  const r = await call('/api/send', { fish: 'kk', code: tb.code }, a.token); assert.equal(r.status, 200, JSON.stringify(r.body)); assert.ok(!getW(ta.id).fish.some((f) => f.id === 'kk'), 'it left');
+  const gA = (await call('/api/giftcode', null, a.token)).body.code, gB = (await call('/api/giftcode', null, b.token)).body.code; assert.ok(gB && gB !== tb.code, 'a gift code, not the join code'); assert.equal((await call('/api/send', { fish: 'kk', code: tb.code }, a.token)).status, 404, 'the join code does not work for sending'); assert.equal((await call('/api/send', { fish: 'kk', code: gA }, a.token)).status, 400, 'not your own tank');
+  assert.equal((await call('/api/send', { fish: 'sh', code: gB }, a.token)).status, 400, 'not bred here');
+  const r = await call('/api/send', { fish: 'kk', code: gB }, a.token); assert.equal(r.status, 200, JSON.stringify(r.body)); assert.ok(!('toTank' in r.body) && !('fromTank' in r.body), 'no internal ids'); assert.ok(!getW(ta.id).fish.some((f) => f.id === 'kk'), 'it left');
   const o = getW(tb.id).orders.find((x) => x.carry?.name === 'Sunny'); assert.ok(o, 'on its way'); const w = getW(tb.id); w.orders.forEach((x) => { x.arrivesAt = now; }); setW(tb.id, { orders: w.orders }); await call('/api/me', null, b.token);
   const ws = await open(b.token); await new Promise((q) => setTimeout(q, 300)); ws.close(); const { w: W } = S.L ? S.L.loadWorld(S.db, tb.id) : { w: getW(tb.id) }; const R2 = await import('../web/src/game/rules.js'); R2.advance(W, now + 1000);
   const got = W.fish.find((f) => f.name === 'Sunny'); assert.ok(got && R2.morphOf(got) === 'gold' && got.parents.length === 2 && got.raisedAs === 'Playful' && got.from?.tank === 'Reef', JSON.stringify(got));
-  setW(ta.id, { fish: [{ ...kid, id: 'k2' }] }); assert.equal((await call('/api/send', { fish: 'k2', code: tb.code }, a.token)).status, 400, 'one a day');
+  setW(ta.id, { fish: [{ ...kid, id: 'k2' }, shop] }); assert.equal((await call('/api/send', { fish: 'k2', code: gB }, a.token)).status, 400, 'one a day');
 });
 await t('the weekly board counts rare colors bred this week across every tank, names none but yours, and says where yours stands', async () => {
   const a = await mkUser('Boardy'), ta = (await call('/api/tanks', { name: 'Gold' }, a.token)).body, b = await mkUser('Other'), tb = (await call('/api/tanks', { name: 'Ghosts' }, b.token)).body, now = Date.now();

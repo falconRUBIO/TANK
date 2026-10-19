@@ -349,16 +349,22 @@ export function weeklyBoard(db, tankId, now = Date.now()) {
   return { colors: B.colors, tanks: B.per.length, total: B.per.reduce((n, [, k]) => n + k, 0), mine: i < 0 ? 0 : B.per[i][1], rank: i < 0 ? null : 1 + B.per.filter(([, k]) => k > B.per[i][1]).length };
 }
 // Send an animal bred in your tank to a friend's tank, by that tank's code. Both tanks are changed together, or neither.
+// A tank's gift code: it only lets someone send an animal in; it is not the code that lets people join the tank
+export function giftCodeOf(db, tankId) {
+  const k = 'giftcode:' + tankId, have = db.prepare('SELECT v FROM kv WHERE k=?').get(k)?.v; if (have) return have;
+  for (let i = 0; i < 20; i++) { const c = randomCode(); if (db.prepare('SELECT v FROM kv WHERE k=?').get('giftcode>' + c) || db.prepare('SELECT id FROM tanks WHERE code=?').get(c)) continue; db.prepare('INSERT INTO kv (k,v) VALUES (?,?)').run(k, c); db.prepare('INSERT INTO kv (k,v) VALUES (?,?)').run('giftcode>' + c, tankId); return c; }
+  throw new GameError('CODE_FAILED', 'Could not make a gift code.', 500);
+}
 export function sendFish(db, user, { fish, code }, now = Date.now()) {
   const mine = tankOf(db, user.id); if (!mine) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
-  const to = db.prepare('SELECT id, name FROM tanks WHERE code=?').get(normalizeCode(code)); if (!to) throw new GameError('BAD_CODE', 'No tank has that code.', 404); if (to.id === mine.id) throw new GameError('SAME_TANK', 'That is your own tank.', 400);
+  const toId = db.prepare('SELECT v FROM kv WHERE k=?').get('giftcode>' + normalizeCode(code))?.v, to = toId && db.prepare('SELECT id, name FROM tanks WHERE id=? AND test=0').get(toId); if (!to) throw new GameError('BAD_CODE', 'No tank has that gift code.', 404); if (to.id === mine.id) throw new GameError('SAME_TANK', 'That is your own tank.', 400);
   return tx(db, () => {
-    const A = loadWorld(db, mine.id).w, B = loadWorld(db, to.id).w; R.advance(A, now); R.advance(B, now);
-    if (B.fish.length + R.pending(B) >= R.capacity(B.level) + 2) throw new GameError('TANK_FULL', 'Their tank is full.', 409);
+    const A = loadWorld(db, mine.id).w, B = loadWorld(db, to.id).w; writeEvents(db, mine.id, R.advance(A, now), now); writeEvents(db, to.id, R.advance(B, now), now);      // (whatever was due in either tank happens, and is told, first)
+    if (B.fish.filter((f) => !f.dead).length + R.pending(B) + 1 > R.capacity(B.level)) throw new GameError('TANK_FULL', 'Their tank is full.', 409);
     const r = R.sendOut(A, String(fish ?? ''), user.id, user.name, to.name, now); if (!r.ok) throw new GameError(r.reason, 'That animal cannot be sent.', 400);
     r.carry.fromTank = mine.name; B.orders.push({ id: 'o' + (B.seq = (B.seq ?? 10) + 1), species: r.species, name: r.carry.name, seed: r.carry.seed, arrivesAt: now + 30 * 60e3, by: user.name, owner: null, ownerName: null, carry: r.carry });
     saveWorld(db, mine.id, A); saveWorld(db, to.id, B);
-    for (const e of r.events) if (e.journal) addJournal(db, mine.id, e.journal, user.id, now);
+    writeEvents(db, mine.id, r.events, now, user.id);
     addJournal(db, to.id, `${user.name} from ${mine.name} is sending you ${r.carry.name}. It arrives within the hour.`, null, now);
     return { ok: true, fromTank: mine.id, toTank: to.id, toName: to.name, name: r.carry.name };
   });

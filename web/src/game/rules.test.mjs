@@ -961,3 +961,11 @@ ok('regression: a rare-colored egg really hatches, in the tank, with its line in
   assert.ok(ev.some((e) => /is golden!/.test(e.journal ?? '')) && ev.some((e) => e.activity?.type === 'morph'), JSON.stringify(ev.filter((e) => e.journal).map((e) => e.journal)));
   assert.ok(t.morphs.gold && t.morphLog.length === 1); assert.equal(R.timeStepErrors().length, errs0, 'no time step failed');
 });
+ok('sending: only one bred here, never one that came from another tank, never the last one, and its old friendships stay behind', () => {
+  const D = 864e5, now = 30 * D, t = R.newWorld(0); R.norm(t, now); t.flags.tut = 5;
+  const kid = R.ensureFish({ id: 'k', name: 'Kit', species: 'goldfish', seed: 3, born: now - 4 * D, stage: 'juvenile', traits: [], parents: [{ id: 'a', name: 'A' }], pal: 'b', owner: 'u' }), other = R.ensureFish({ id: 'b', name: 'Bo', species: 'goldfish', seed: 4, born: 0, stage: 'adult', traits: [], pal: 'k' });
+  t.fish = [kid]; assert.equal(R.canSend(t, kid, 'u', now), 'LAST_FISH'); t.fish.push(other); assert.equal(R.canSend(t, kid, 'u', now), null);
+  const r = R.sendOut(t, 'k', 'u', 'Ana', 'Lagoon', now); assert.ok(r.ok && !('pal' in r.carry) && other.pal === undefined, 'friend links cleared');
+  const came = R.ensureFish({ id: 'c', name: 'Came', species: 'goldfish', seed: 5, born: now - 4 * D, traits: [], parents: [{ id: 'x', name: 'X' }], from: { tank: 'Reef', by: 'Bo' }, owner: 'u' }); t.fish.push(came); t.flags.sentAt = {};
+  assert.equal(R.canSend(t, came, 'u', now), 'NOT_BRED_HERE', 'not passed on again');
+});

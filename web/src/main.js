@@ -1070,8 +1070,8 @@ function showCard(f) {
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
   card.querySelectorAll('[data-tip]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.tip, 3200); }; }); if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
   card.querySelectorAll('[data-send]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap');
-    const code = await ui.dialog({ title: `SEND ${f.name.toUpperCase()}?`, text: `${f.name} will leave this tank for good and grow up in your friend's, with its colors and its family's names. Ask them for their tank code.`, input: { value: '', placeholder: 'Their tank code' }, ok: 'Send', cancel: 'Keep it here' }); if (!code) return;
-    try { const r = await api('/api/send', { fish: f.fid, code }); haptic(20); sfx('bubble'); ui.toast(`${f.name} is on the way to ${r.toName}.`, 4200); setFocus(null); } catch (err) { ui.toast(err.offline ? 'Sending needs the tank to be online.' : ({ BAD_CODE: 'No tank has that code.', SAME_TANK: 'That is your own tank.', TANK_FULL: 'Their tank is full.', TOO_SOON: 'One a day: try again tomorrow.', NOT_YOURS: 'Only its own caretaker can send it.', BUSY: 'Not while it is looking after young.' })[err.code] ?? 'That did not work.', 3600); } }; });
+    const code = await ui.dialog({ title: `SEND ${f.name.toUpperCase()}?`, text: `${f.name} will leave this tank for good and grow up in your friend's, with its colors and its family's names. Ask them for their tank's gift code: it is at the top of their Field Guide.`, input: { value: '', placeholder: 'Their gift code' }, ok: 'Send', cancel: 'Keep it here' }); if (!code) return;
+    try { const r = await api('/api/send', { fish: f.fid, code }); haptic(20); sfx('bubble'); ui.toast(`${f.name} is on the way to ${r.toName}.`, 4200); setFocus(null); } catch (err) { ui.toast(err.offline ? 'Sending needs the tank to be online.' : ({ BAD_CODE: 'No tank has that code.', SAME_TANK: 'That is your own tank.', TANK_FULL: 'Their tank is full.', TOO_SOON: 'One a day: try again tomorrow.', NOT_YOURS: 'Only its own caretaker can send it.', BUSY: 'Not while it is looking after young.', NOT_BRED_HERE: 'Only an animal bred in this tank can be sent (one that came from another tank stays).', LAST_FISH: 'It is the last one in your tank.', CANT_SEND: 'This one cannot be sent.' })[err.code] ?? 'That did not work.', 3600); } }; });
   card.querySelectorAll('[data-pair]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap'); const r = await game.dispatch({ t: 'matchmake', a: f.fid, b: b.dataset.pair }); if (!r.ok) return fail(r); haptic(14); ui.toast('Brought together. Give them time.', 3000); showCard(f); }; });
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
@@ -1694,6 +1694,7 @@ async function boot() {
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
     board: () => api('/api/board'),
+    giftCode: () => api('/api/giftcode'),
     // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
     devInfo: () => api('/api/dev/test'),
     devEnter: async () => { try { await api('/api/dev/test/open', {}); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not open the test aquarium'); } },
