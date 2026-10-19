@@ -1754,6 +1754,7 @@ async function boot() {
     storage: () => api('/api/storage'),
     board: () => api('/api/board'),
     giftCode: () => api('/api/giftcode'),
+    showAnimal: (id) => { const f = fishes.byId.get(id); if (!f || f.dead) return false; ui.open('tank'); setFocus(f); showCard(f); haptic(8); return true; },      // from Crew: the animal, up close, with its card
     lookMystery: () => { if (!mystGlow.visible) return; mystGlow.userData.ping = 3; fishes.burst(mystGlow.position.clone()); haptic(10); },      // from the bell: the glow on the sand swells for a moment, so it is easy to find
     // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
     devInfo: () => api('/api/dev/test'),

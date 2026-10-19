@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -341,6 +341,17 @@ export function initUI({ game, social, cb }) {
   const wishHtml = () => { const s = S(), w = WISHES[s.wishIdx]; return w ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(w.text)}</span><b>+${w.reward} 🐚</b></div>` : `<div class="wish"><small>THE TANK'S WISH</small><span>Every wish has come true.</span></div>`; };
   // the fish living in the tank now, your own octopus first; tap one to sell it to a new home
   const members = () => (game.shared ? game.members ?? [] : null);
+  // Crew · Animals: everyone living in the tank, as part of the crew. Tap one to go and see it (its card); its own button sells it or lets it go
+  const animalsHtml = () => {
+    const s = S(), me = game.you?.userId, live = s.fish.filter((f) => !f.dead), away = live.filter((f) => f.away);
+    const nature = (f) => (f.species === 'octopus' ? octoMind(f).label : f.raisedAs ? `Raised ${f.raisedAs.toLowerCase()}` : (f.traits ?? []).slice(0, 2).join(', '));
+    const age = (f) => { const d = Math.max(0, Math.floor((Date.now() - (f.arrived ?? f.hatched ?? f.born)) / 864e5)); return d < 1 ? 'new today' : `${f.arrived ? 'here ' : ''}${d} day${d > 1 ? 's' : ''}${f.arrived ? '' : ' old'}`; };      /* (a shop fish arrives nearly grown: how long it has been here) */
+    const row = (f) => { const d = SPECIES_DEF[f.species], can = canSell(f, me, members()), who = game.shared ? (f.owner === me ? 'yours' : f.owner ? `${esc(f.ownerName ?? 'a friend')}'s` : 'everyone\'s') : '', st = f.away ? 'out exploring' : f.preg ? 'expecting' : stageOf(f) !== 'adult' ? stageOf(f) : '';
+      return `<div class="anr"><button class="anb" data-animal="${f.id}"><img alt="" data-thumb="fish:${f.species}:${f.pal ?? ''}:${morphOf(f) ?? ''}"><span><b>${esc(f.name)}${f.parents?.length || f.bornHere ? ' <i class="bh">bred here</i>' : ''}</b><small>${esc(d?.label ?? f.species)}${f.species === 'seahorse' ? (sexOf(f) === 'm' ? ' ♂' : ' ♀') : ''} · ${esc(age(f))}${st ? ' · ' + esc(st) : ''}</small><small class="nat">${esc(nature(f))}${who ? ' · ' + who : ''}</small></span></button>${can && !f.away ? `<button class="ansell" data-sellfish="${f.id}">${f.resident ? 'Let go' : 'Sell'}</button>` : ''}</div>`; };
+    const grp = (title, list) => (list.length ? `<h4>${title} · ${list.length}</h4><div class="anl">${list.map(row).join('')}</div>` : '');
+    const by = (a, b) => (a.owner === me ? 0 : 1) - (b.owner === me ? 0 : 1) || a.born - b.born;
+    return `<p class="fgnote">Everyone living in your tank. Tap one to go and see it.${away.length ? ` ${esc(away.map((f) => f.name).join(' and '))} ${away.length > 1 ? 'are' : 'is'} out exploring.` : ''}</p>${grp('Octopuses', live.filter((f) => f.species === 'octopus').sort(by))}${grp('Seahorses', live.filter((f) => f.species === 'seahorse').sort(by))}${grp('Fish', live.filter((f) => f.species !== 'octopus' && f.species !== 'seahorse').sort(by))}`;
+  };
   const inTankHtml = () => {
     const s = S(), me = game.you?.userId, fish = s.fish.filter((f) => !f.dead), rank = (f) => (f.species === 'octopus' ? 0 : 2) + (f.owner === me ? 0 : 1);
     if (!fish.length) return '';
@@ -572,15 +583,16 @@ export function initUI({ game, social, cb }) {
     notices: () => { if (nsub === 'guide') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
       const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Field Guide']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
       // the Field Guide sits beside Today: everything about your own tank in one place (Crew is for people)
-      if (nsub === 'guide') return `<div class="crew"><h3>${name}</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;
+      if (nsub === 'guide') return `<div class="crew"><h3>${name}</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${bookHtml()}</div>`;
       return `<div class="crew"><h3>${name}</h3>${seg}${tankLine()}${careHtml()}${happenHtml()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${comingHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
       // Friends and Journal as tabs; Settings is the gear in the corner of the sheet
       const gear = `<button class="gear" data-sub="settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm8.2 4.6.1-1.2-.1-1.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.4 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6-.1 1.2.1 1.2-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button>`;
-      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
+      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['animals', 'Animals'], ['journal', 'Journal']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
+      if (sub === 'animals') return `<div class="crew"><h3>Your animals</h3>${seg}${animalsHtml()}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
       if (sub === 'look') return lookHtml();
@@ -733,7 +745,8 @@ export function initUI({ game, social, cb }) {
       const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
       dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, ...(x.parents?.length ? [`Parents: ${x.parents.map((q) => q.name).join(' & ')}`] : []), ...(x.gen ? [`Generation ${x.gen}`] : []), x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
     }));
-    sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async () => {
+    sheet.querySelectorAll('[data-animal]').forEach((b) => (b.onclick = () => { sfx('tap'); if (!cb.showAnimal?.(b.dataset.animal)) toast('Out exploring: it will be back.'); }));
+    sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async (e) => { e?.stopPropagation?.();
       const s = S(), f = s.fish.find((x) => x.id === b.dataset.sellfish); if (!f) return; sfx('tap'); const d = SPECIES_DEF[f.species], pay = sellValue(f), alive = s.fish.filter((x) => !x.dead).length;
       if (!canSell(f, game.you?.userId, members())) { dialog({ title: f.name.toUpperCase(), text: `${d?.label ?? f.species} · looked after by ${f.ownerName ?? 'a friend'}.`, lines: [`Only ${f.ownerName ?? 'its caretaker'}, or the tank's first caretaker, can sell ${f.name}.`], ok: 'OK' }); return; }
       if (f.preg) { dialog({ title: f.name.toUpperCase(), text: `${f.name} is expecting babies, so he stays until they are born.`, ok: 'OK' }); return; }
@@ -750,7 +763,7 @@ export function initUI({ game, social, cb }) {
       await sendBottle(b.dataset.bottle);
     }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
-    if (tab === 'decorate' || (tab === 'notices' && nsub === 'guide')) thumbs();
+    if (tab === 'decorate' || (tab === 'notices' && nsub === 'guide') || (tab === 'friends' && sub === 'animals')) thumbs();
     if (tab === 'notices' && nsub === 'guide' && $('giftcode')) cb.giftCode?.().then((r) => { const el = $('giftcode'); if (el && r?.code) el.innerHTML = `Your gift code: <b>${esc(r.code)}</b> · give it to a friend so they can send you a baby they bred. It does not let anyone join.`; }).catch(() => $('giftcode')?.remove());
     if (tab === 'notices' && nsub === 'guide' && $('board')) cb.board?.().then((B) => { const el = $('board'); if (!el || !B) return; const c = Object.entries(B.colors ?? {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${MORPHS[k]?.label.toLowerCase() ?? k}`), ord = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] ?? 'th');
       el.textContent = B.total ? `This week, everywhere: ${c.join(' · ')}, bred in ${B.tanks} tank${B.tanks === 1 ? '' : 's'}. ${B.mine ? `Yours: ${B.mine}, ${ord(B.rank)} of ${B.tanks}.` : 'None from yours yet.'}` : 'No rare colors bred anywhere this week yet. Be the first.'; }).catch(() => { $('board')?.remove(); });      // (counts only: no other tank is named)
@@ -783,7 +796,7 @@ export function initUI({ game, social, cb }) {
   }
   function open(t, quiet = false) {
     if (t !== 'friends' && sub === 'look') sub = 'friends';                    // the look editor is only ever open while you are on it
-    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'notices'; nsub = 'guide'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
+    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'notices'; nsub = 'guide'; } if (t === 'animals') { t = 'friends'; sub = 'animals'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
     if (t === 'decorate' && tab !== 'decorate' && !quiet) { if (newCount()) cat = 'NEW'; else if (cat === 'NEW') cat = 'FISH'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
