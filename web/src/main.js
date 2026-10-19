@@ -1274,6 +1274,14 @@ game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says ${({ octo: `${name ?? 'your octopus'} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('crab', (id) => { fishes.dropCrab(id); });
 { let told = false; game.on('state', () => { const s = game.state; if (told || !s || (s.flags.tut ?? 0) < 5 || s.goal || !(s.goalOffer ?? []).length || (s.goalsDone ?? []).length) return; told = true; try { if (localStorage.getItem('ourtank.goalTip')) return; localStorage.setItem('ourtank.goalTip', '1'); } catch { return; } setTimeout(() => ui?.toast('Your tank has goals now. Tap 🎯 to choose one.', 5200), 4000); }); }      // the first time goals are on offer, once
+// a decision, seen in the tank: the chased fish slips into the plants, the one given a time out slows down, the octopus heads for its den or the glass
+game.on('dilemmaDone', ({ kind, k, fish }) => { const [x, y] = (fish ?? []).map((id) => fishes.byId.get(id)), plant = (game.state.decor ?? []).find((d) => DECOR_DEF[d.type]?.cat === 'PLANTS'), den = (game.state.decor ?? []).find((d) => ['coconut', 'pot'].includes(d.type));
+  const go = (f, px, py, pz, s = 6) => { if (!f || f.dead) return; f.target?.set(px, py, pz); f.retarget = s; };
+  if (kind === 'chase' && k === 'cover' && y && plant) { go(y, plant.x, 1.6, plant.z, 10); spotlightFish(y.fid, 3000, 300); }
+  else if (kind === 'chase' && k === 'time' && x) { x.vigor = 0.55; setTimeout(() => { x.vigor = 1; }, 120e3); spotlightFish(x.fid, 2600, 300); }
+  else if (kind === 'lid' && x) { if (k === 'lid' && den) go(x, den.x, 0.8, den.z, 12); else if (k === 'let') x.glassAt = { x: 0, y: 3, until: performance.now() + 6000 }; spotlightFish(x.fid, 2800, 300); }
+  else if (kind === 'den' && x && den) { go(k === 'y' ? y : x, den.x, 0.8, den.z, 12); }
+  else if (x) { fishes.burst(x.pos); } });
 game.on('goalStep', () => { haptic(16); sfx('reward'); ui?.updateHeader(); const q = $('quest'); q?.classList.add('pulse'); setTimeout(() => q?.classList.remove('pulse'), 1600); });
 game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'GOAL COMPLETE', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });

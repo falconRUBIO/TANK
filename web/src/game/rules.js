@@ -893,7 +893,7 @@ function rollDilemma(t, now, ev) {
   if (dens.length && dens.length < octos.length + (fish.length ? 1 : 0) && live.length >= 2 && (octos.length >= 2 || (octos.length && fish.length))) { const x = octos[0], y = live.find((f) => f !== x); c.push({ kind: 'den', fish: [x.id, y.id], decor: (homeOf(t, x) ?? dens[0]).id }); }
   if (live.length >= 2) { const x = pick(live, 3); c.push({ kind: 'sick', fish: [x.id] }); }
   if (octos.length) c.push({ kind: 'lid', fish: [pick(octos, 5).id] });
-  if (fish.length >= 2 && !(LO.thicket && luckOf(h) < 70)) { const x = pick(fish, 7), y = fish.find((f) => f !== x); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
+  const calm = fish.filter((f) => !(f.calmUntil > now)); if (calm.length >= 1 && fish.length >= 2 && !(LO.thicket && luckOf(h) < 70)) { const x = pick(calm, 7), y = fish.find((f) => f !== x); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
   if (!c.length) return; const D = pick(c, 9), F = D.fish.map((id) => t.fish.find((f) => f.id === id)), dl = D.decor ? (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase() : '';
   const crew = Object.entries(t.care ?? {}).filter(([, c]) => now - c.ts < 4 * DAY).sort((a, b) => (a[0] < b[0] ? -1 : 1)), turn = crew.length > 1 ? crew[(t.dlTurn = ((t.dlTurn ?? -1) + 1) % crew.length)] : null;      // in a shared tank, the caretakers take turns: it is one person's call first (12 hours), then anyone's
   t.dilemma = { id: 'dl' + Math.floor(now / 6e4), ...D, at: now, until: now + 1.5 * DAY, ...(turn ? { turn: { uid: turn[0], name: turn[1].name, until: now + 12 * HOUR } } : {}), text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
@@ -921,6 +921,7 @@ function settleDilemma(t, D, k, now, name) {
     else if (k === 'time') { hap(x, -0.1); hap(y, 0.1); x.calmUntil = now + 2 * DAY; say(`${who} to give ${x.name} a time out. It is calmer for now.`); }
     else if (luck < 40) { hap(y, 0.05); if (y) { x.pal = y.id; y.pal = x.id; } say(`${who} to let them be. It was a game after all: ${x.name} and ${y?.name} are friends now.`); }
     else { hap(y, -0.25); if (y) y.grudge = { id: x.id, name: x.name, since: now }; say(`${who} to let them be. ${y?.name} is worn out and keeps away from ${x.name}.`, y); } }
+  events.push({ dilemmaDone: { kind: D.kind, k, fish: D.fish } });      // (the tank shows it: the chased one hides, the octopus goes to its den or the glass)
   D.done = true; D.chose = k; D.by = name; return { ok: true, events };
 }
 // ── Layout ── where things stand matters. Two plants close together make a thicket where shy fish feel safe (and a bully loses interest);
