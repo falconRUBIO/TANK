@@ -1654,6 +1654,7 @@ async function afterReplay() {
 }
 async function welcomeBack() {
   let seen = 0; try { seen = +localStorage.getItem(seenKey()) || 0; } catch { /* ignore */ }
+  if (seen && Date.now() - seen > 30 * 60e3) { try { localStorage.setItem('ourtank.away', JSON.stringify({ from: seen, to: Date.now() })); } catch { /* storage unavailable */ } }      // what happened while you were away goes in Today (until you clear it, or a day passes)
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
