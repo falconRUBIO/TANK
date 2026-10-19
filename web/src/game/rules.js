@@ -785,6 +785,47 @@ function witness(t, id, f, now, ev, by = null, line = null) {
   F[id] = { at: now, fish: f?.id ?? null, name: f?.name ?? null, by, text: line }; const n = Object.keys(F).length, N = Object.keys(FIELD).length;
   ev.push({ journal: `Field Guide, page ${n} of ${N}: ${FIELD[id].label}.${by ? ` Seen first by ${by}.` : ''}`, toast: `New in the Field Guide: ${FIELD[id].label}!`, field: id }); return true;
 }
+// ── The daily mystery ── one small thing in the tank each day, there to be found: a glint, a trail of bubbles, tracks across the sand. Tapping
+// it plays it out, and what it turns out to be differs from one day to the next; now and then it is not over, and tomorrow there is more.
+// Nothing is owed and nothing is lost if it is missed: it is simply gone the next day (no streak, no reward to chase).
+export const MYSTERY = {
+  bubbles: { text: 'A thin trail of bubbles is rising from the sand.' },
+  glint: { text: 'Something is glinting in the sand.' },
+  tracks: { text: 'Little tracks wind across the sand.' },
+  eyes: { text: 'Two small eyes are watching from the plants.', ok: (t) => t.decor.some((d) => DECOR_DEF[d.type]?.cat === 'PLANTS') },
+  bubbles2: { text: 'The bubbles are back, and stronger.', chain: true },
+  tracks2: { text: 'Fresh tracks lead to the same place again.', chain: true },
+};
+const mystLive = (t) => t.fish.filter((f) => !f.dead && !f.away && !SPECIES_DEF[f.species]?.visitor);
+function rollMystery(t, now) {
+  const day = Math.floor(now / DAY); if ((t.flags.tut ?? 0) < 5 || t.myst?.day === day) return;
+  const h = hash32(day * 71 + ((t.createdAt ?? 0) % 983)), N = t.mystNext?.day === day ? t.mystNext : null;
+  const base = Object.keys(MYSTERY).filter((k) => !MYSTERY[k].chain && (!MYSTERY[k].ok || MYSTERY[k].ok(t))), kind = N ? N.kind : base[h % base.length];
+  t.myst = { day, kind, x: N?.x ?? +(-3.8 + (h % 76) / 10).toFixed(1), z: N?.z ?? +(-0.8 + ((h >>> 8) % 22) / 10).toFixed(1), done: false, line: null, by: null }; t.mystNext = null;
+}
+export const mysteryOf = (t, now = Date.now()) => (t.myst && t.myst.day === Math.floor(now / DAY) ? t.myst : null);
+// what it turns out to be: fixed by the day, so every phone in a shared tank finds the same thing
+function mysteryOut(t, m, now) {
+  const h = hash32(m.day * 97 + ((t.createdAt ?? 0) % 991)), live = mystLive(t), pick = (a) => (a.length ? a[(h >>> 4) % a.length] : null);
+  const octo = pick(live.filter((f) => f.species === 'octopus')), any = pick(live), shy = pick(live.filter((f) => (f.traits ?? []).includes('Shy'))) ?? any, curious = pick(live.filter((f) => (f.traits ?? []).includes('Curious'))) ?? any;
+  const decor = t.decor.length ? t.decor[(h >>> 6) % t.decor.length] : null, dl = decor ? (DECOR_DEF[decor.type]?.label ?? 'stone').toLowerCase() : 'big rock', r = h % 3;
+  switch (m.kind) {
+    case 'bubbles': return r === 0 ? { line: 'It was a tiny snail, breathing under the sand. It sank back out of sight.' }
+      : r === 1 && curious ? { line: `${curious.name} came over to nose at the bubbles and dug up an old shell.`, fish: curious }
+      : { line: 'The bubbles stopped the moment you looked. Something is down there.', next: 'bubbles2' };
+    case 'bubbles2': return { line: 'A little sea cucumber pushed up out of the sand, looked about, and slowly buried itself again. It lives here now.' };
+    case 'glint': return r === 0 && octo ? { line: `It was ${octo.name}'s hidden stash: a shiny pebble, buried. ${octo.name} came straight over to take it back.`, fish: octo }
+      : r === 1 && any ? { line: `One of ${any.name}'s old scales, shining like a tiny coin.`, fish: any }
+      : { line: 'A piece of blue sea glass, worn smooth by the sea.' };
+    case 'tracks': return r === 0 && octo ? { line: `${octo.name} went for a long walk across the sand in the night.${homeOf(t, octo) ? ' The tracks end at its den.' : ''}`, fish: octo }
+      : r === 1 ? { line: 'A hermit crab passed through in the night and left by the far corner.' }
+      : { line: `The tracks lead under the ${dl}, and stop. Keep an eye on it.`, next: 'tracks2' };
+    case 'tracks2': return { line: `Under the ${dl}: a hermit crab has moved in, in a borrowed shell. It waved a claw at you.` };
+    case 'eyes': return r === 2 ? { line: 'The eyes blinked and were gone. Something from the open sea is curious about the tank.', visit: true }
+      : shy ? { line: `It was ${shy.name}, hiding in the plants to watch you.`, fish: shy } : { line: 'Only a shrimp, peering out. It hid again.' };
+  }
+  return { line: 'Whatever it was, it is gone.' };
+}
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -1087,7 +1128,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('mystery', () => rollMystery(t, now)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1581,6 +1622,14 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other })) did = true;
       }
       return ok({ applied: did });
+    }
+    case 'mystery': {      // someone tapped today's mystery: it plays out, once, for everyone in the tank
+      const m = mysteryOf(t, now); if (!m || m.done) return ok({ applied: false });
+      const o = mysteryOut(t, m, now); m.done = true; m.line = o.line; m.by = name; m.fish = o.fish?.id ?? null; const day = m.day;
+      if (o.next) t.mystNext = { day: day + 1, kind: o.next, x: m.x, z: m.z };
+      if (o.visit && !t.visitor) t.visitAt = Math.min(t.visitAt ?? Infinity, wakeAt(t, (day + 1) * DAY + 2 * HOUR));      // (the visitor it hinted at comes tomorrow)
+      events.push({ journal: o.line, ...(o.fish ? { story: o.fish.id } : {}), mystery: { kind: m.kind, fish: m.fish, next: !!o.next }, activity: { type: 'mystery', text: `${name} looked into today's mystery.` } });
+      return ok({ applied: true, line: o.line, fish: m.fish, next: !!(o.next || o.visit) });
     }
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });

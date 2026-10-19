@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { harmonyOf } from './game/rules.js';
+import { harmonyOf, mysteryOf } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -529,6 +529,25 @@ async function takePhoto(opts = {}) {      // opts.img: a moment's photo from th
     const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove(); ui.toast('Postcard saved'); return true; });
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
+// the daily mystery: a soft glow on the sand where today's thing is, with its own small sign (bubbles rise, a glint winks); tap it and it plays out
+const mystGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xffe3a0 })); mystGlow.visible = false; mystGlow.renderOrder = 5; scene.add(mystGlow); stg.hideForDepth.push(mystGlow);
+let mystBusy = false;
+function mystSync() { const s = game.state, m = s && mysteryOf(s), U = mystGlow.userData; if (m && !m.done && (s.flags?.tut ?? 0) >= 5) { mystGlow.position.set(m.x, sandH(m.x, m.z) + 0.3, m.z); U.kind = m.kind; mystGlow.visible = true; } else if (!(U.out > 0)) mystGlow.visible = false; }
+function mystHit(ev) { const m = game.state && mysteryOf(game.state); return !!(m && !m.done && mystGlow.visible && !(mystGlow.userData.out > 0) && rayFrom(ev).ray.distanceToPoint(mystGlow.position) < 1.3); }
+async function openMystery() {
+  if (mystBusy) return; mystBusy = true; const P = mystGlow.position.clone(); const r = await game.dispatch({ t: 'mystery' }); mystBusy = false; if (!r.ok) return fail(r); if (!r.applied) { mystSync(); return; }
+  sfx('pop'); haptic(14); for (let i = 0; i < 4; i++) setTimeout(() => fishes.burst(P.clone().add(new THREE.Vector3(0, 0.2 * i, 0))), i * 150);
+  const f = r.fish && fishes.byId.get(r.fish); if (f && !f.dead) { f.target?.set(P.x, P.y + 0.7, P.z); f.retarget = 4; spotlightFish(r.fish, 3200, 400); }      // (whoever it turned out to be comes over)
+  mystGlow.userData.out = 1; moment({ at: P, haptics: 16 }); ui.toast(r.line, 5600); if (r.next) setTimeout(() => ui.toast('To be continued tomorrow…', 3400), 5800); ui.refresh?.();
+}
+function mystTick(dt) {
+  if (!mystGlow.visible) return; const U = mystGlow.userData, t = performance.now() / 1000, M = mystGlow.material;
+  if (U.out > 0) { U.out = Math.max(0, U.out - dt * 0.7); M.opacity = U.out * 0.8; const sc = 2 + (1 - U.out) * 3; mystGlow.scale.set(sc, sc, 1); if (!U.out) mystSync(); return; }
+  const tw = /glint/.test(U.kind) ? (Math.sin(t * 3.1) > 0.8 ? 1 : 0.2) : 0.5 + 0.3 * Math.sin(t * 2); M.opacity = 0.2 + tw * 0.5; const sc = 1.4 + tw * 0.8; mystGlow.scale.set(sc, sc, 1);
+  if (/bubbles/.test(U.kind) && Math.random() < dt * 1.2) fishes.burst(mystGlow.position.clone());
+}
+game.on('state', () => mystSync());
+window.__mystery = () => ({ v: mystGlow.visible, at: mystGlow.position.toArray().map((x) => +x.toFixed(2)), m: game.state && mysteryOf(game.state) }); window.__openMystery = () => openMystery();
 window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBottle = () => openBottle(); window.__bottleSeen = () => ({ id: bottleId, v: bottleSp.visible, y: +bottleSp.position.y.toFixed(2), leave: !!bottleSp.userData.leave });
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
@@ -1038,6 +1057,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     const at = toys.sandHit(ray); if (!at) return; if (k === 'bubbles') { toys.blow(at); toys.armed = null; } else if (k === 'light') { toys.lightOn(at); lightHeld = true; canvas.setPointerCapture?.(ev.pointerId); } return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
+  if (!placing && !rearrange && !feedMode && !cleanMode && mystHit(ev)) { openMystery(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode) { const gb = giftHit(ev); if (gb) { openGiftBag(gb); return; } }
   if (!placing && !rearrange && !feedMode && !cleanMode && !pickFish(ev)) { const egg = eggHit(ev); if (egg) { const fx = eggFocusOf(egg); if (focus === fx) { cardOpen = fx.fid; showEggCard(fx); } else setFocus(fx); return; } }
   if (placing) { canvas.setPointerCapture?.(ev.pointerId); movePlace(ev); dragging = true; return; }
@@ -1443,7 +1463,7 @@ function frameBody(now) {
   fishBoost.value.set(0.36, 0.3, 0.22).multiplyScalar(0.3 + 0.7 * Math.min(1, cur.sunI / 12));
   if (window.__cam) { camGoal.set(...window.__cam.slice(0, 3)); lookGoal.set(...window.__cam.slice(3, 6)); }
   const kc = Math.min(1, dt * 3.2); camera.position.lerp(camGoal, kc); look.lerp(lookGoal, kc); camera.lookAt(look);
-  if (feedMode && (feedIdle += dt) > 12) endFeed();
+  if (feedMode && (feedIdle += dt) > 12) endFeed(); mystTick(dt);
   if (bottleSp.visible) { const U = bottleSp.userData, M = bottleSp.material, now = performance.now(), k = Math.min(1, (now - (U.t0 ?? -1e9)) / 2600), B = bottleM.group, P = bottleSp.position;
     if (U.leave && now >= U.leave.t0) {      // read and empty: it fills with water and sinks slowly away, then is gone
       const q = Math.min(1, (now - U.leave.t0) / 5200), floor = sandH(P.x, P.z) + 0.35; P.y = U.leave.y + (floor - U.leave.y) * (1 - Math.pow(1 - q, 2)); M.rotation = -1.3 + q * 0.9 + Math.sin(t * 2) * 0.05;

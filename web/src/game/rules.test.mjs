@@ -850,3 +850,13 @@ ok('an animal whose caretaker has been away two weeks (or left) can be taken on 
   const away = [{ id: 'ua', name: 'Ana', lastSeen: now - 15 * D }, { id: 'ub', name: 'Ben', last_seen: now }]; assert.equal(R.awayOwner(t.fish[0], away, now).name, 'Ana');
   const r = R.applyAction(t, { t: 'lookAfter', id: 'o' }, { now, uid: 'ub', name: 'Ben', members: away }); assert.ok(r.ok); assert.equal(t.fish[0].owner, 'ub'); assert.equal(t.fish[0].ownerWas.name, 'Ana'); assert.ok(/while Ana is away/.test(r.events[0].journal));
 });
+ok('a daily mystery: one a day, the same for everyone, played out once, sometimes carried on into tomorrow, and gone when missed', () => {
+  const D = 864e5, mk = (c) => { const t = R.newWorld(c); R.norm(t, c); t.flags.tut = 5; t.fish.push(R.ensureFish({ id: 'a', name: 'Goldie', species: 'goldfish', seed: 1, born: 0, stage: 'adult', traits: ['Curious'] })); return t; };
+  const t = mk(0), now = 30 * D + 13 * 3600e3; R.advance(t, now); const m = R.mysteryOf(t, now); assert.ok(m && R.MYSTERY[m.kind] && !R.MYSTERY[m.kind].chain, 'one mystery today');
+  const t2 = JSON.parse(JSON.stringify(t)); const r = R.applyAction(t, { t: 'mystery' }, { now: now + 1000, name: 'You' }); assert.ok(r.applied && r.line); assert.equal(R.applyAction(t, { t: 'mystery' }, { now: now + 2000 }).applied, false, 'only once');
+  assert.equal(R.applyAction(t2, { t: 'mystery' }, { now: now + 1500, name: 'Ana' }).line, r.line, 'another phone finds the same thing'); assert.ok(r.events.some((e) => e.journal === r.line));
+  const s0 = t.shells; assert.equal(s0, t2.shells, 'no reward to chase');
+  R.advance(t, now + D); assert.notEqual(R.mysteryOf(t, now + D)?.day, m.day, 'a new one tomorrow'); assert.equal(R.mysteryOf(t, now + 2 * D + 1)?.done ?? false, false);
+  let chained = 0, kinds = new Set(); for (let d = 31; d < 120; d++) { const T = mk(d * 7), at = d * D + 12 * 3600e3; R.advance(T, at); const M = R.mysteryOf(T, at); kinds.add(M.kind); const q = R.applyAction(T, { t: 'mystery' }, { now: at + 1 }); if (T.mystNext) { chained++; R.advance(T, at + D); const N = R.mysteryOf(T, at + D); assert.ok(R.MYSTERY[N.kind].chain, 'tomorrow it carries on'); assert.ok(!/undefined/.test(R.applyAction(T, { t: 'mystery' }, { now: at + D + 1 }).line)); } assert.ok(!/undefined|null/.test(q.line), q.line); }
+  assert.ok(chained > 3 && kinds.size >= 3, `varied: ${chained} carried on, ${[...kinds]}`);
+});
