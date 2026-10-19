@@ -4,6 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
+import { harmonyOf } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -958,6 +959,7 @@ function showCard(f) {
     for (const h of rec.habits ?? []) if (nm(h.id)) out.push(`Every ${DAYPART[h.tod]}: the ${esc(nm(h.id))}.`);
     { const pid = rec.log?.fav ?? rec.spotId ?? rec.mem?.likes?.[0] ?? rec.habits?.[0]?.id, d = pid && game.state.decor.find((x) => x.id === pid), st = d && decorStory(game.state, d, { DECOR_DEF }); if (st) out.push(esc(st)); }      // its favourite place's own history
     if (rec.loss && Date.now() < rec.loss.until) out.push(rec.loss.rehomed ? `Misses ${esc(rec.loss.name)}, who went to a new home.` : `Misses ${esc(rec.loss.name)}${rec.loss.place && nm(rec.loss.place) ? `, and keeps going back to the ${esc(nm(rec.loss.place))}` : ''}.`);
+    { const hm = harmonyOf(game.state); if (game.state.fish.length > 1 && hm?.note && hm.note.includes(rec.name)) out.push(`Tank harmony: ${esc(hm.label.toLowerCase())}. ${esc(hm.note)}`); }      // (how it gets on with the others: moved here from Care)
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const famLine = (() => { if (rec.species === 'octopus') { const m = rec.advMem; if (!m?.n && !rec.away) return '';      // its Little Adventures: where it is, how often it has gone, what it brought home
       const items = [...new Set((m?.items ?? []).map((x) => KEEPSAKES[x.k]?.label.toLowerCase()).filter(Boolean))], fav = (game.state.keeps ?? []).find((k) => k.id === m?.fav), out = [];

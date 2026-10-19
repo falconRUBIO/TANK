@@ -101,7 +101,8 @@ export function initUI({ game, social, cb }) {
     $('lvl').textContent = 'LV ' + lv; $('lvbar').style.width = Math.max(4, Math.min(100, pct)) + '%'; $('lvbar').parentElement.title = b ? `${score}/${b} to level ${lv + 1}` : 'Max level';
     const g = goalText(); if ($('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
-    { const me = game.you?.userId, due = s.hunger > 0.55 || s.water < 0.5 || s.glass < 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }      // a dot on Care when something needs you
+    { const me = game.you?.userId, due = s.hunger > 0.55 || s.water < 0.5 || s.glass < 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
+    { const n = Object.keys(s.field ?? {}).length, seen = fieldSeen(); flag('friends', n > seen); }      // a new Field Guide page: a dot on Crew until it is looked at      // a dot on Care when something needs you
   }
   function goalText() {
     const s = S(); if (!s) return { text: '' };
@@ -289,6 +290,7 @@ export function initUI({ game, social, cb }) {
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
   // the Field Guide: the remarkable things the animals do, each page filled in the first time someone sees it, with the photo of that very moment
+  const fieldSeen = () => { try { return +(localStorage.getItem('ourtank.fieldSeen') ?? 0) || 0; } catch { return 1e9; } };      // (how many Field Guide pages this phone has looked at)
   const fieldHtml = () => { const F = S().field ?? {}, all = Object.entries(FIELD), got = all.filter(([k]) => F[k]).length, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
     const card = ([k, d]) => { const p = F[k]; if (!p) return `<div class="fg nope"><div class="fgpic">?</div><b>${esc(d.label)}</b><small>${esc(d.hint)}</small></div>`;
       const j = p.text ? game.journal.find((x) => x.text === p.text) : null, im = j ? shotFor(j) : p.text ? shotOf(p.text) : null;
@@ -481,9 +483,10 @@ export function initUI({ game, social, cb }) {
       const openToys = Object.entries(TOYS).filter(([, T]) => plays >= T.unlock), nextToy = Object.entries(TOYS).filter(([, T]) => plays < T.unlock).sort((x, y) => x[1].unlock - y[1].unlock)[0];
       const toys2 = `<h4>Toy box</h4><div class="toybox">${openToys.map(([k, T]) => { const learned = s.fish.filter((f) => !f.dead && (f.toys?.[k] ?? 0) >= TOY_LEARN).length; return `<button class="toy" data-act="toy:${k}"><span>${msIcon(T.icon, true, 30)}</span><b>${T.label}</b><small>${T.who}</small>${learned ? `<em>${learned} know it</em>` : ''}</button>`; }).join('')}</div>${nextToy ? `<p class="playsoon2">More toys open as you play: ${nextToy[1].label.toLowerCase()} in ${nextToy[1].unlock - plays} play${nextToy[1].unlock - plays === 1 ? '' : 's'}.</p>` : ''}`;
       if (careSub === 'play') return `<h3>${esc(game.tankName ?? 'Your tank')}</h3>${seg}${octoName ? `<h4>With ${esc(octoName)}</h4><div class="grid2 acts mini">${hideT}${puzT}</div>` : ''}${toys2}<h4>Share</h4><div class="grid2 acts mini">${postT}</div>${wishes ? `<h4>They would love</h4><div class="soon">${wishes}</div>` : ''}`;
-      const comingCare = ahead.length ? `<div class="soon"><h5>Coming up</h5>${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.fish ? `<img alt="" class="fthumb" src="${fishThumb(x.species, x.pal ?? null)}">` : pix(x.icon, 22)}</i><span>${esc(x.text)}</span>${x.when ? `<b>${x.when}</b>` : ''}</div>`).join('')}</div>` : '';
+      const req = s.want ? `${esc(s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish')}: ${esc(s.want.text)}` : s.daily && !s.daily.done ? esc(s.daily.text) : null;      // today's request: one line in Coming up
+      const comingCare = ahead.length || req ? `<div class="soon"><h5>Coming up</h5>${req ? `<div><i>${pix('✨', 22)}</i><span>${req}</span><b>today</b></div>` : ''}${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.fish ? `<img alt="" class="fthumb" src="${fishThumb(x.species, x.pal ?? null)}">` : pix(x.icon, 22)}</i><span>${esc(x.text)}</span>${x.when ? `<b>${x.when}</b>` : ''}</div>`).join('')}</div>` : '';
       return `<h3>${esc(game.tankName ?? 'Your tank')}</h3>${seg}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
-        ${comingCare}<h4>Daily checklist</h4>${todayHtml(due.length > 0)}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;
+        ${comingCare}${lvRow()}${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;      // Care is two things: what needs you, and what is coming (no daily checklist: this is not a chore list)
     },
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
@@ -491,10 +494,11 @@ export function initUI({ game, social, cb }) {
     friends: () => {
       // Friends, Journal and Collection as tabs; Settings is the gear in the corner of the sheet
       const gear = `<button class="gear" data-sub="settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm8.2 4.6.1-1.2-.1-1.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.4 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6-.1 1.2.1 1.2-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button>`;
-      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
+      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}${k === 'book' && Object.keys(S().field ?? {}).length > (fieldSeen()) ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
+      if (sub === 'book') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
       if (sub === 'book') return `<div class="crew"><h3>Collection</h3>${seg}${fieldHtml()}${inTankHtml()}${bookHtml()}</div>`;
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();

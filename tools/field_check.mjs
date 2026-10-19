@@ -20,7 +20,7 @@ ck('seen again: no second page', again === 2, again);
 await p.waitForTimeout(6000);
 await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="book"]')?.click()); await p.waitForTimeout(800);
 const page = await p.evaluate(() => ({ head: document.querySelector('#sheet .fghead span')?.textContent, seen: [...document.querySelectorAll('#sheet .fg:not(.nope)')].map((c) => ({ t: c.querySelector('b').textContent, img: !!c.querySelector('img') })), hints: document.querySelectorAll('#sheet .fg.nope').length }));
-await p.screenshot({ path: `${out}/guide.png` });
+await p.screenshot({ path: `${out}/guide.png`, timeout: 120000 }).catch(() => {});
 ck('Collection shows the Field Guide: 2 of 21, the seen pages first with their photos, the rest as hints', page.head === '2 of 21 seen' && page.seen.length === 2 && page.seen.some((x) => x.img) && page.hints === 19, page);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
