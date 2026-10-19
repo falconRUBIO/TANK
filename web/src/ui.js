@@ -334,7 +334,7 @@ export function initUI({ game, social, cb }) {
       y += Math.ceil(shown.length / 3) * 78 + 34; }
     return c.toDataURL('image/jpeg', 0.88); }
   // the rare colors bred in this tank: the first of each, and a hint for the rest
-  const morphHtml = () => { const got = S().morphs ?? {}; return `<h4>Rare colors bred</h4><div class="shown">${Object.entries(MORPHS).map(([k, M]) => got[k] ? `<div><b>${esc(M.label)}</b><small>${esc(got[k].name)} · ${esc((SPECIES_DEF[got[k].species]?.label ?? '').toLowerCase())}</small></div>` : `<div class="nope"><b>${esc(M.label)}</b><small>Pair two carriers</small></div>`).join('')}</div>`; };
+  const morphHtml = () => { const got = S().morphs ?? {}; return `<h4>Rare colors bred</h4>${game.live ? '<p class="board dim" id="board">This week, everywhere…</p>' : ''}<div class="shown">${Object.entries(MORPHS).map(([k, M]) => got[k] ? `<div><b>${esc(M.label)}</b><small>${esc(got[k].name)} · ${esc((SPECIES_DEF[got[k].species]?.label ?? '').toLowerCase())}</small></div>` : `<div class="nope"><b>${esc(M.label)}</b><small>Pair two carriers</small></div>`).join('')}</div>`; };
   const shownHtml = () => { const by = new Map(); for (const f of S().fish) for (const [k, at] of Object.entries(f.disc ?? {})) { const d = DISCOVERIES[k.split(':')[0]]; if (!d || k.includes(':')) continue; const e = by.get(d.label) ?? { at, who: [] }; if (!e.who.includes(f.name)) e.who.push(f.name); e.at = Math.min(e.at, at); by.set(d.label, e); }
     return by.size ? `<h4>What they have shown you</h4><div class="shown">${[...by].sort((a, b) => b[1].at - a[1].at).map(([l, e]) => `<div><b>${esc(l)}</b><small>${esc(e.who.slice(0, 3).join(', '))}${e.who.length > 3 ? ` and ${e.who.length - 3} more` : ''}</small></div>`).join('')}</div>` : ''; };
   const bookHtml = () => {
@@ -709,6 +709,8 @@ export function initUI({ game, social, cb }) {
     }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     if (tab === 'decorate' || (tab === 'friends' && sub === 'book')) thumbs();
+    if (tab === 'friends' && sub === 'book' && $('board')) cb.board?.().then((B) => { const el = $('board'); if (!el || !B) return; const c = Object.entries(B.colors ?? {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${MORPHS[k]?.label.toLowerCase() ?? k}`), ord = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] ?? 'th');
+      el.textContent = B.total ? `This week, everywhere: ${c.join(' · ')}, bred in ${B.tanks} tank${B.tanks === 1 ? '' : 's'}. ${B.mine ? `Yours: ${B.mine}, ${ord(B.rank)} of ${B.tanks}.` : 'None from yours yet.'}` : 'No rare colors bred anywhere this week yet. Be the first.'; }).catch(() => { $('board')?.remove(); });      // (counts only: no other tank is named)
   }
   // the glass lens under the chosen tab slides to it
   function placeLens() { const nav = document.querySelector('nav'), lens = nav?.querySelector('.lens'), on = nav?.querySelector('div.on'); if (!lens || !on) return; lens.style.width = on.offsetWidth + 'px'; lens.style.transform = `translateX(${on.offsetLeft}px)`; lens.classList.add('on'); }

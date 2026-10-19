@@ -339,6 +339,15 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false, ana
     return { ...r, world: w, events: out };
   });
 }
+// The week's rare colors across every tank: counts only (no tank is named but your own), and where your tank stands among those breeding them.
+let boardCache = null;
+export function weeklyBoard(db, tankId, now = Date.now()) {
+  if (!boardCache || now - boardCache.at > 10 * 60e3) { const since = now - 7 * 864e5, per = [], colors = {};
+    for (const row of db.prepare('SELECT id, world FROM tanks').iterate()) { let n = 0; try { const w = row.world ? JSON.parse(row.world) : null; for (const x of w?.morphLog ?? []) if (x.at >= since) { n++; colors[x.m] = (colors[x.m] ?? 0) + 1; } } catch { /* a damaged save counts for nothing */ } if (n) per.push([row.id, n]); }
+    per.sort((a, b) => b[1] - a[1]); boardCache = { at: now, per, colors }; }
+  const B = boardCache, i = B.per.findIndex(([id]) => id === tankId);
+  return { colors: B.colors, tanks: B.per.length, total: B.per.reduce((n, [, k]) => n + k, 0), mine: i < 0 ? 0 : B.per[i][1], rank: i < 0 ? null : 1 + B.per.filter(([, k]) => k > B.per[i][1]).length };
+}
 // Send an animal bred in your tank to a friend's tank, by that tank's code. Both tanks are changed together, or neither.
 export function sendFish(db, user, { fish, code }, now = Date.now()) {
   const mine = tankOf(db, user.id); if (!mine) throw new GameError('NO_TANK', 'You are not in a tank.', 404);

@@ -1669,6 +1669,7 @@ async function boot() {
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
     note: async (text) => { const r = await game.dispatch({ t: 'note', text }); if (!r.ok) fail(r); else sfx('tap'); },
     storage: () => api('/api/storage'),
+    board: () => api('/api/board'),
     // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
     devInfo: () => api('/api/dev/test'),
     devEnter: async () => { try { await api('/api/dev/test/open', {}); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not open the test aquarium'); } },

@@ -495,7 +495,7 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 // one little one from these eggs, its looks and nature from both parents (the same way for the first and for a second one that is kept)
 // a baby that shows a rare color: a line in the journal, and the first of each color is kept in the Field Guide's color pages
 function morphBorn(t, f, now, ev) {
-  const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
+  const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); (t.morphLog ||= []).push({ m, at: now }); if (t.morphLog.length > 60) t.morphLog.splice(0, t.morphLog.length - 60);      // (kept for the weekly board across tanks) const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
   ev.push({ activity: { type: 'morph', text: `${f.name} hatched ${M.label.toLowerCase()}!` } }); ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, story: f.id, morph: m });      // (no toast: the reveal on screen says it, after a breath)
 }
 function makeChild(t, e, now) {

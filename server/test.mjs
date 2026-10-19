@@ -414,6 +414,11 @@ await t('a baby bred here can be sent to a friend\'s tank by its code: it leaves
   const got = W.fish.find((f) => f.name === 'Sunny'); assert.ok(got && R2.morphOf(got) === 'gold' && got.parents.length === 2 && got.raisedAs === 'Playful' && got.from?.tank === 'Reef', JSON.stringify(got));
   setW(ta.id, { fish: [{ ...kid, id: 'k2' }] }); assert.equal((await call('/api/send', { fish: 'k2', code: tb.code }, a.token)).status, 400, 'one a day');
 });
+await t('the weekly board counts rare colors bred this week across every tank, names none but yours, and says where yours stands', async () => {
+  const a = await mkUser('Boardy'), ta = (await call('/api/tanks', { name: 'Gold' }, a.token)).body, b = await mkUser('Other'), tb = (await call('/api/tanks', { name: 'Ghosts' }, b.token)).body, now = Date.now();
+  setW(ta.id, { morphLog: [{ m: 'gold', at: now - 3600e3 }, { m: 'gold', at: now - 9 * 864e5 }] }); setW(tb.id, { morphLog: [{ m: 'ghost', at: now - 3600e3 }, { m: 'blue', at: now - 7200e3 }] });
+  const L2 = await import('./logic.mjs'); const r = L2.weeklyBoard(S.db, ta.id, now + 11 * 60e3); assert.equal(r.mine, 1, 'only this week'); assert.ok(r.colors.gold >= 1 && r.colors.ghost >= 1 && r.colors.blue >= 1); assert.ok(r.rank >= 2, 'the other tank bred more'); assert.ok(!JSON.stringify(r).includes('Ghosts'), 'no other tank is named');
+});
 await t('push: a seahorse birth in a closed tank reaches the caretakers who are away, as eggs and babies news', async () => {
   const x = await mkUser('SeaDad'), tk = (await call('/api/tanks', { name: 'Brood' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
