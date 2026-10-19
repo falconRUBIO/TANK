@@ -390,6 +390,17 @@ await t('push: the day\'s limit keeps room for what matters: light news never bl
   assert.equal(await S.push.notify(x.userId ?? x.id, 'Sunny gave birth! 11 tiny seahorses.', { now }), true, 'and so does a birth');
   assert.equal(await S.push.notify(x.userId ?? x.id, 'Pearl is hungry. Give it some mysis shrimp.', { now }), false, 'but never more than three a day');
 });
+await t('push: cliffhangers reach a closed tank: a decision waiting, with how long before the tank decides, and eggs that could hatch a rare color, with the odds', async () => {
+  const x = await mkUser('Cliff'), tk = (await call('/api/tanks', { name: 'Cliff' }, x.token)).body;
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/cl1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
+  const now = Date.now(), fish = (id, name, sex, m) => ({ id, name, species: 'goldfish', seed: id.length * 7, born: now - 20 * 864e5, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id, genes: { dh: 0, ds: 1, dl: 1, size: 1, m } });
+  const A = fish('ga', 'Amy', 'f', ['gold', 'n']), B = fish('gb', 'Bob', 'm', ['gold', 'n']);
+  setW(tk.id, { fish: [A, B], eggs: [{ id: 'e9', species: 'goldfish', a: 'ga', b: 'gb', pa: A, pb: B, laid: now - 3600e3, hatchAt: now + 4 * 864e5, cared: [], guard: 'gb' }], dilemma: { id: 'dl1', kind: 'chase', fish: ['ga', 'gb'], at: now, until: now + 30 * 3600e3, text: 'Amy keeps chasing Bob around the tank.', opts: [], done: false }, dilemmaAt: now + 9e9, simTs: now - 2000, flags: { tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
+  const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /Your call: Amy keeps chasing Bob.*decides in 30 hours/.test(b)) || all.some((b) => /25% chance of a golden baby/.test(b)), JSON.stringify(all));
+  pushed.length = 0; S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(now + 1000); const again = pushed.map((q) => q.payload.body); assert.ok(!again.some((b) => /Your call/.test(b)) || !all.some((b) => /Your call/.test(b)), 'each is said once');
+});
 await t('push: a seahorse birth in a closed tank reaches the caretakers who are away, as eggs and babies news', async () => {
   const x = await mkUser('SeaDad'), tk = (await call('/api/tanks', { name: 'Brood' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
