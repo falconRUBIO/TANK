@@ -903,3 +903,11 @@ ok('decisions: every few days something needs you to choose, each choice changes
   assert.ok(kinds.size >= 3, [...kinds].join());
   const s = mk(); R.advance(s, t0 + 1000); const id = s.dilemma.id; const ev = R.advance(s, t0 + 2 * D); assert.ok(s.dilemma.id !== id || s.dilemma.done); assert.ok(ev.some((e) => /Nobody chose/.test(e.journal ?? '')), 'the tank decides');
 });
+ok('layout matters: a thicket settles the shy ones, a den each for octopuses, and a packed tank cramps the lively ones; Care says what would help', () => {
+  const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.dilemmaAt = 9e15;
+  t.fish = [R.ensureFish({ id: 's', name: 'Shelly', species: 'goldfish', seed: 3, born: 0, stage: 'adult', traits: ['Shy'], happy: 0.6 }), R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 4, born: 0, stage: 'adult', traits: [] })];
+  t.decor = [{ id: 'p1', type: 'grass', x: -3, z: 1, ry: 0 }, { id: 'p2', type: 'grass', x: 3, z: 1, ry: 0 }];
+  let L = R.layoutOf(t); assert.ok(!L.thicket && L.notes.some((n) => /close together/.test(n)) && L.notes.some((n) => /no den/.test(n)), JSON.stringify(L));
+  const open = JSON.parse(JSON.stringify(t)); t.decor[1].x = -2; t.decor.push({ id: 'c', type: 'coconut', x: 2, z: 1, ry: 0 }); L = R.layoutOf(t); assert.ok(L.thicket && !L.notes.length, JSON.stringify(L.notes));
+  R.advance(open, t0 + D); const ev = R.advance(t, t0 + D); assert.ok(t.fish[0].happy > open.fish[0].happy, `a thicket settles the shy one (${t.fish[0].happy} vs ${open.fish[0].happy})`); assert.ok(ev.some((e) => /found the thicket/.test(e.journal ?? '')));
+});
