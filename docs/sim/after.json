@@ -64,9 +64,9 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 76,
-    "range": "31–93",
-    "hit": "3/6"
+    "median": 21,
+    "range": "8.6–99",
+    "hit": "6/6"
    },
    "first rare color": {
     "median": 96.5,
@@ -249,7 +249,7 @@
      "buyDecor:sword": -14,
      "water": 4
     },
-    "diffs": 9,
+    "diffs": 10,
     "diffsEx": [
      "a new fish",
      "decorations",
@@ -259,6 +259,7 @@
      "a friendship",
      "the octopus grew",
      "eggs or babies",
+     "an adventure",
      "the octopus knows you"
     ],
     "parts": {
@@ -333,7 +334,7 @@
     "goals": 1,
     "decisions": 5,
     "mysteries": 32,
-    "toasts": 185,
+    "toasts": 187,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -363,7 +364,7 @@
      "buyDecor:lantern": -54,
      "buyDecor:kelp": -27
     },
-    "diffs": 9,
+    "diffs": 10,
     "diffsEx": [
      "a new fish",
      "decorations",
@@ -448,7 +449,7 @@
     "goals": 3,
     "decisions": 8,
     "mysteries": 60,
-    "toasts": 282,
+    "toasts": 286,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -528,7 +529,7 @@
      {
       "spire": null,
       "crystal": null,
-      "bridge": 98.5,
+      "bridge": 97.6,
       "arch": 67.5
      },
      {
@@ -660,8 +661,8 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 16.5,
-    "range": "8.5–82.6",
+    "median": 14,
+    "range": "8.5–19.1",
     "hit": "6/6"
    },
    "first rare color": {
@@ -711,7 +712,7 @@
    },
    "level 8": {
     "median": 63.6,
-    "range": "60.1–65.5",
+    "range": "60.1–65.1",
     "hit": "6/6"
    }
   },
@@ -1052,13 +1053,13 @@
    "120": {
     "level": 8,
     "score": 893,
-    "shells": 140,
-    "earned": 1446,
-    "spent": 1440,
-    "perDayEarned": 12.1,
+    "shells": 168,
+    "earned": 1439,
+    "spent": 1390,
+    "perDayEarned": 12,
     "decor": "27/27",
     "fish": 32,
-    "field": 14,
+    "field": 16,
     "goals": 4,
     "decisions": 11,
     "mysteries": 113,
@@ -1148,9 +1149,9 @@
      },
      {
       "spire": null,
-      "crystal": 114.1,
-      "bridge": 88.5,
-      "arch": 73.1
+      "crystal": 113.6,
+      "bridge": 86.5,
+      "arch": 76.5
      },
      {
       "spire": null,
@@ -1166,8 +1167,8 @@
      },
      {
       "spire": null,
-      "crystal": 115.6,
-      "bridge": 88.6,
+      "crystal": null,
+      "bridge": 93.6,
       "arch": 75.1
      },
      {
@@ -1336,12 +1337,12 @@
    },
    "level 7": {
     "median": 40.1,
-    "range": "35.3–43.1",
+    "range": "35.3–44.3",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 49.1,
-    "range": "45–53.1",
+    "median": 50,
+    "range": "45–62",
     "hit": "6/6"
    }
   },
@@ -1558,18 +1559,18 @@
    },
    "60": {
     "level": 8,
-    "score": 705,
-    "shells": 81,
-    "earned": 1134,
+    "score": 699,
+    "shells": 84,
+    "earned": 1126,
     "spent": 1113,
-    "perDayEarned": 18.9,
+    "perDayEarned": 18.8,
     "decor": "24/27",
     "fish": 32,
     "field": 16,
     "goals": 4,
     "decisions": 7,
     "mysteries": 60,
-    "toasts": 312,
+    "toasts": 309,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -1577,12 +1578,12 @@
      "buyFish:goldfish": -238,
      "buyDecor:coconut": -8,
      "buyDecor:grass": -16,
-     "feed": 65,
-     "time passing": 551,
+     "feed": 54,
+     "time passing": 557,
      "glass": 20,
      "buyDecor:rock": -5,
      "buyDecor:moss": -8,
-     "pet": 8,
+     "pet": 4,
      "buyDecor:fern": -6,
      "buyDecor:starfish": -10,
      "watchEggs": 65,
@@ -1630,13 +1631,13 @@
      "raised": 84,
      "morphs": 120,
      "goals": 30,
-     "field": 102,
+     "field": 96,
      "species": 12
     },
     "stuck": [
-     "guide since day 33: ✓ 3/4 3/6",
+     "guide since day 33: ✓ 2/4 2/6",
      "blue since day 29: ✓ 0/1 ✓ 0/1",
-     "blue since day 49: ✓ 0/1 ✓ 0/1",
+     "gold since day 37: ✓ ✓ ✓ 0/1",
      "raise since day 46: ✓ ✓ 2/3",
      "raise since day 32: ✓ 1/2 1/3",
      "raise since day 44: ✓ 1/2 1/3"
@@ -1676,7 +1677,7 @@
       "spire": null,
       "crystal": null,
       "bridge": null,
-      "arch": 59.3
+      "arch": 58.3
      }
     ]
    },
@@ -1684,29 +1685,29 @@
     "level": 8,
     "score": 941,
     "shells": 164,
-    "earned": 1643,
-    "spent": 1578,
+    "earned": 1638,
+    "spent": 1588,
     "perDayEarned": 13.7,
     "decor": "28/27",
     "fish": 32,
     "field": 17,
     "goals": 4,
-    "decisions": 14,
+    "decisions": 13,
     "mysteries": 120,
-    "toasts": 371,
+    "toasts": 373,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 702,
+     "mystery": 710,
      "buyFish:goldfish": -238,
      "buyDecor:coconut": -8,
      "buyDecor:grass": -16,
-     "feed": 69,
-     "time passing": 670,
-     "glass": 40,
+     "feed": 58,
+     "time passing": 675,
+     "glass": 36,
      "buyDecor:rock": -5,
      "buyDecor:moss": -8,
-     "pet": 10,
+     "pet": 6,
      "buyDecor:fern": -6,
      "buyDecor:starfish": -10,
      "watchEggs": 65,
@@ -1724,7 +1725,7 @@
      "buyDecor:anemone": -32,
      "buyDecor:wood": -35,
      "buyDecor:skull": -40,
-     "water": 18,
+     "water": 14,
      "buyDecor:pillar": -42,
      "buyDecor:bubbler": -48,
      "buyDecor:bamboo": -55,
@@ -1751,7 +1752,7 @@
     "parts": {
      "care": 240,
      "mystery": 120,
-     "decisions": 54,
+     "decisions": 57,
      "hatched": 42,
      "grown": 126,
      "raised": 96,
@@ -1763,7 +1764,7 @@
     "stuck": [
      "guide since day 33: ✓ 3/4 3/6",
      "blue since day 29: ✓ 0/1 ✓ 0/1",
-     "blue since day 49: ✓ 0/1 ✓ 0/1",
+     "raise since day 75: ✓ 1/2 1/3",
      "raise since day 46: ✓ ✓ 2/3",
      "raise since day 32: ✓ 1/2 1/3",
      "raise since day 44: ✓ 1/2 1/3"
@@ -1771,21 +1772,21 @@
     "centerpieces": [
      {
       "spire": null,
-      "crystal": 105.1,
-      "bridge": 75.3,
-      "arch": 64.3
+      "crystal": 104.3,
+      "bridge": 75.6,
+      "arch": 64.1
      },
      {
       "spire": null,
-      "crystal": 107.1,
-      "bridge": 81.1,
-      "arch": 69.1
+      "crystal": 111.1,
+      "bridge": 82.3,
+      "arch": 67.1
      },
      {
       "spire": null,
       "crystal": 110.1,
-      "bridge": 82.6,
-      "arch": 70.6
+      "bridge": 83.6,
+      "arch": 73.3
      },
      {
       "spire": null,
@@ -1801,9 +1802,9 @@
      },
      {
       "spire": null,
-      "crystal": 94.6,
-      "bridge": 71.6,
-      "arch": 59.3
+      "crystal": 90.6,
+      "bridge": 70.3,
+      "arch": 58.3
      }
     ]
    }
@@ -1825,6 +1826,7 @@
    ],
    "sleuth": [
     8,
+    8.5,
     10,
     11
    ],
@@ -1840,14 +1842,14 @@
    ],
    "blue": [
     null,
-    null,
     4,
     14.2
    ],
    "gold": [
-    11.7
+    29.7
    ],
    "raise": [
+    null,
     null,
     null,
     null
@@ -1919,8 +1921,8 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 37.5,
-    "range": "8.6–93",
+    "median": 21.5,
+    "range": "8.6–41.5",
     "hit": "6/6"
    },
    "first rare color": {
@@ -2111,7 +2113,7 @@
      "buyDecor:red": -16,
      "buyDecor:boulder": -20
     },
-    "diffs": 9,
+    "diffs": 10,
     "diffsEx": [
      "a new fish",
      "decorations",
@@ -2308,17 +2310,17 @@
    "120": {
     "level": 8,
     "score": 934,
-    "shells": 162,
-    "earned": 1511,
-    "spent": 1317,
-    "perDayEarned": 12.6,
+    "shells": 112,
+    "earned": 1520,
+    "spent": 1501,
+    "perDayEarned": 12.7,
     "decor": "27/27",
     "fish": 32,
     "field": 14,
     "goals": 4,
     "decisions": 10,
     "mysteries": 106,
-    "toasts": 371,
+    "toasts": 373,
     "neglect": 9,
     "deaths": 0,
     "earnedBy": {
@@ -2391,7 +2393,7 @@
      "raise since day 47: ✓ 1/2 1/3",
      "guide since day 70: ✓ ✓ 5/6",
      "blue since day 117: ✓ ✓ 0/1 0/1",
-     "blue since day 90: ✓ 0/1 ✓ 0/1",
+     "blue since day 89: ✓ 0/1 ✓ 0/1",
      "raise since day 47: ✓ ✓ 2/3"
     ],
     "centerpieces": [
@@ -2421,8 +2423,8 @@
      },
      {
       "spire": null,
-      "crystal": null,
-      "bridge": 98.6,
+      "crystal": 119.6,
+      "bridge": 102.1,
       "arch": 59.1
      },
      {
@@ -2463,7 +2465,7 @@
     9,
     14.6,
     6.5,
-    7.5,
+    7,
     6.5
    ],
    "dynasty": [
@@ -2482,7 +2484,7 @@
     70.9
    ],
    "gold": [
-    4.5
+    4
    ],
    "ember": [
     12.9
@@ -2555,7 +2557,7 @@
    },
    "first octopus adventure": {
     "median": 13.5,
-    "range": "8.6–42.1",
+    "range": "8.6–24.1",
     "hit": "6/6"
    },
    "first rare color": {
@@ -3113,12 +3115,12 @@
     "hit": "6/6"
    },
    "spire affordable": {
-    "median": 81.1,
+    "median": 82.1,
     "range": "76.1–104.6",
     "hit": "6/6"
    },
    "bought spire": {
-    "median": 81.1,
+    "median": 82.1,
     "range": "76.1–104.6",
     "hit": "6/6"
    },
@@ -3168,13 +3170,13 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 20.6,
-    "range": "8.5–68",
+    "median": 14,
+    "range": "8.5–51",
     "hit": "6/6"
    },
    "first rare color": {
     "median": 40.6,
-    "range": "27.6–98.6",
+    "range": "27.6–102.5",
     "hit": "5/6"
    },
    "first goal done": {
@@ -3213,7 +3215,7 @@
     "hit": "6/6"
    },
    "level 7": {
-    "median": 50.1,
+    "median": 51,
     "range": "48.5–55.1",
     "hit": "6/6"
    },
@@ -3336,7 +3338,7 @@
     "goals": 1,
     "decisions": 4,
     "mysteries": 26,
-    "toasts": 115,
+    "toasts": 116,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -3437,10 +3439,10 @@
    },
    "60": {
     "level": 7,
-    "score": 580,
-    "shells": 72,
+    "score": 577,
+    "shells": 63,
     "earned": 850,
-    "spent": 837,
+    "spent": 840,
     "perDayEarned": 14.2,
     "decor": "22/26",
     "fish": 27,
@@ -3448,17 +3450,17 @@
     "goals": 3,
     "decisions": 7,
     "mysteries": 55,
-    "toasts": 209,
+    "toasts": 210,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 288,
+     "mystery": 284,
      "buyFish:goldfish": -20,
-     "feed": 61,
+     "feed": 47,
      "buyDecor:coconut": -7,
      "buyDecor:grass": -16,
      "pet": 26,
-     "time passing": 437,
+     "time passing": 455,
      "buyDecor:rock": -5,
      "buyDecor:moss": -8,
      "buyDecor:fern": -6,
@@ -3480,7 +3482,8 @@
      "buyDecor:bubbler": -48,
      "buyDecor:bamboo": -55,
      "buyFish:angelfish": -120,
-     "buyDecor:lantern": -57
+     "buyDecor:lantern": -57,
+     "buyDecor:table": -64
     },
     "diffs": 10,
     "diffsEx": [
@@ -3496,19 +3499,19 @@
      "the octopus knows you"
     ],
     "parts": {
-     "care": 112,
-     "mystery": 53,
+     "care": 114,
+     "mystery": 54,
      "decisions": 21,
      "hatched": 36,
-     "grown": 90,
-     "raised": 68,
-     "morphs": 90,
+     "grown": 84,
+     "raised": 64,
+     "morphs": 100,
      "goals": 30,
-     "field": 60,
+     "field": 54,
      "species": 20
     },
     "stuck": [
-     "guide since day 25: ✓ 2/4 2/6",
+     "guide since day 25: 1/2 1/4 1/6",
      "raise since day 50: ✓ 1/2 1/3",
      "family since day 59: ✓ 0/1 0/1",
      "guide since day 51: ✓ 2/4 2/6",
@@ -3556,8 +3559,8 @@
    },
    "120": {
     "level": 8,
-    "score": 946,
-    "shells": 85,
+    "score": 954,
+    "shells": 111,
     "earned": 1487,
     "spent": 1434,
     "perDayEarned": 12.4,
@@ -3567,23 +3570,23 @@
     "goals": 3,
     "decisions": 9,
     "mysteries": 109,
-    "toasts": 342,
+    "toasts": 343,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 553,
+     "mystery": 582,
      "buyFish:goldfish": -20,
-     "feed": 77,
+     "feed": 55,
      "buyDecor:coconut": -7,
      "buyDecor:grass": -16,
      "pet": 26,
-     "time passing": 668,
+     "time passing": 704,
      "buyDecor:rock": -5,
      "buyDecor:moss": -8,
      "buyDecor:fern": -6,
      "buyDecor:anemone": -32,
      "buyDecor:starfish": -10,
-     "watchEggs": 27,
+     "watchEggs": 16,
      "buyFish:cory": -44,
      "buyDecor:kelp": -30,
      "buyDecor:sword": -11,
@@ -3601,12 +3604,11 @@
      "buyFish:angelfish": -120,
      "buyDecor:lantern": -57,
      "buyDecor:table": -64,
-     "buyDecor:spire": -300,
      "water": 8,
+     "buyDecor:spire": -300,
      "buyDecor:chest": -85,
      "buyDecor:anchor": -92,
-     "matchmake": 20,
-     "sellFish": 3
+     "matchmake": 20
     },
     "diffs": 10,
     "diffsEx": [
@@ -3623,18 +3625,18 @@
     ],
     "parts": {
      "care": 230,
-     "mystery": 107,
-     "decisions": 36,
+     "mystery": 109,
+     "decisions": 42,
      "hatched": 46,
      "grown": 138,
      "raised": 100,
-     "morphs": 140,
+     "morphs": 150,
      "goals": 45,
      "field": 84,
      "species": 20
     },
     "stuck": [
-     "gold since day 117: ✓ ✓ 0/1 0/1",
+     "choosing",
      "raise since day 50: ✓ 1/2 1/3",
      "guide since day 72: ✓ 3/4 3/6",
      "guide since day 51: ✓ ✓ 4/6",
@@ -3643,7 +3645,7 @@
     ],
     "centerpieces": [
      {
-      "spire": 84.6,
+      "spire": 82.6,
       "crystal": null,
       "bridge": null,
       "arch": null
@@ -3667,10 +3669,10 @@
       "arch": null
      },
      {
-      "spire": 81.1,
+      "spire": 82.1,
       "crystal": null,
-      "bridge": 118.6,
-      "arch": 105.1
+      "bridge": null,
+      "arch": 107.6
      },
      {
       "spire": 76.1,
@@ -3696,13 +3698,10 @@
     3.4
    ],
    "guide": [
-    92,
+    95,
     null,
     null,
     19
-   ],
-   "gold": [
-    null
    ],
    "sleuth": [
     7.6,
@@ -3716,7 +3715,7 @@
    ],
    "rare": [
     34.4,
-    20,
+    24,
     29.5
    ],
    "ghost": [
@@ -3727,7 +3726,7 @@
     15.5
    ],
    "ember": [
-    3.5
+    4
    ]
   }
  },
@@ -3796,13 +3795,13 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 29,
-    "range": "11–55",
+    "median": 13.5,
+    "range": "8.5–14",
     "hit": "6/6"
    },
    "first rare color": {
-    "median": 44.6,
-    "range": "30.6–61.6",
+    "median": 51.5,
+    "range": "30.6–118.6",
     "hit": "6/6"
    },
    "first goal done": {
@@ -3812,7 +3811,7 @@
    },
    "second generation adult": {
     "median": 47.5,
-    "range": "34.6–51",
+    "range": "34.6–57.6",
     "hit": "6/6"
    },
    "level 2": {
@@ -3831,22 +3830,22 @@
     "hit": "6/6"
    },
    "level 5": {
-    "median": 32.6,
+    "median": 33.6,
     "range": "26.6–34.5",
     "hit": "6/6"
    },
    "level 6": {
-    "median": 48.6,
+    "median": 49.6,
     "range": "40.6–51",
     "hit": "6/6"
    },
    "level 7": {
-    "median": 59.6,
-    "range": "50.5–63",
+    "median": 60.5,
+    "range": "50.5–64.5",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 73.5,
+    "median": 77.6,
     "range": "64–81.6",
     "hit": "6/6"
    }
@@ -3951,18 +3950,18 @@
    },
    "30": {
     "level": 4,
-    "score": 215,
-    "shells": 29,
-    "earned": 342,
-    "spent": 333,
-    "perDayEarned": 11.4,
+    "score": 214,
+    "shells": 20,
+    "earned": 359,
+    "spent": 368,
+    "perDayEarned": 12,
     "decor": "13/18",
-    "fish": 14,
+    "fish": 13,
     "field": 7,
     "goals": 1,
     "decisions": 4,
     "mysteries": 23,
-    "toasts": 112,
+    "toasts": 113,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -4021,7 +4020,7 @@
      "dynasty since day 12: 0/1 0/1",
      "rare since day 2: ✓ ✓ ✓ 0/1",
      "raise since day 18: ✓ 1/2 1/3",
-     "gold since day 28: ✓ 0/1 ✓ 0/1",
+     "guide since day 27: 0/2 0/4 0/6",
      "octo since day 26: ✓ ✓ 0/1 0/1"
     ],
     "centerpieces": [
@@ -4065,18 +4064,18 @@
    },
    "60": {
     "level": 7,
-    "score": 489,
-    "shells": 68,
-    "earned": 860,
-    "spent": 817,
-    "perDayEarned": 14.3,
+    "score": 476,
+    "shells": 57,
+    "earned": 773,
+    "spent": 743,
+    "perDayEarned": 12.9,
     "decor": "21/26",
-    "fish": 25,
+    "fish": 24,
     "field": 10,
-    "goals": 3,
+    "goals": 2,
     "decisions": 6,
-    "mysteries": 45,
-    "toasts": 228,
+    "mysteries": 47,
+    "toasts": 204,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -4143,8 +4142,8 @@
      "guide since day 19: ✓ 3/4 3/6",
      "guide since day 51: 1/2 1/4 1/6",
      "raise since day 35: ✓ 1/2 1/3",
-     "raise since day 18: ✓ ✓ 2/3",
-     "guide since day 45: 0/2 0/4 0/6",
+     "raise since day 18: ✓ 1/2 1/3",
+     "guide since day 27: ✓ ✓ 5/6",
      "raise since day 46: ✓ 1/2 1/3"
     ],
     "centerpieces": [
@@ -4188,19 +4187,19 @@
    },
    "120": {
     "level": 8,
-    "score": 837,
-    "shells": 161,
+    "score": 846,
+    "shells": 183,
     "earned": 1442,
-    "spent": 1388,
+    "spent": 1401,
     "perDayEarned": 12,
     "decor": "27/27",
     "fish": 32,
-    "field": 13,
-    "goals": 3,
-    "decisions": 14,
+    "field": 14,
+    "goals": 4,
+    "decisions": 15,
     "mysteries": 92,
-    "toasts": 323,
-    "neglect": 1,
+    "toasts": 347,
+    "neglect": 2,
     "deaths": 0,
     "earnedBy": {
      "mystery": 577,
@@ -4272,8 +4271,8 @@
      "raise since day 111: 0/1 0/2 0/3",
      "blue since day 76: ✓ 0/1 ✓ 0/1",
      "raise since day 35: ✓ 1/2 1/3",
-     "raise since day 18: ✓ ✓ 2/3",
-     "guide since day 45: 1/2 1/4 1/6",
+     "raise since day 18: ✓ 1/2 1/3",
+     "raise since day 120: 0/1 0/2 0/3",
      "raise since day 46: ✓ 1/2 1/3"
     ],
     "centerpieces": [
@@ -4285,27 +4284,27 @@
      },
      {
       "spire": null,
-      "crystal": 106.6,
-      "bridge": 92.5,
+      "crystal": 105.6,
+      "bridge": 91.6,
       "arch": 86.6
      },
      {
       "spire": null,
-      "crystal": 116.6,
+      "crystal": 114.6,
       "bridge": 93.6,
-      "arch": 73.5
+      "arch": 74.5
      },
      {
       "spire": null,
       "crystal": null,
-      "bridge": 100.5,
-      "arch": 88.6
+      "bridge": 96.5,
+      "arch": 82.6
      },
      {
       "spire": null,
       "crystal": null,
-      "bridge": 103.5,
-      "arch": 85.6
+      "bridge": 93.6,
+      "arch": 77.6
      },
      {
       "spire": null,
@@ -4323,9 +4322,10 @@
    "guide": [
     92,
     23,
-    null
+    45.4
    ],
    "raise": [
+    null,
     null,
     null,
     null,
@@ -4340,6 +4340,7 @@
    "dynasty": [
     26,
     4,
+    18,
     13
    ],
    "family": [
@@ -4354,7 +4355,7 @@
     29
    ],
    "gold": [
-    17
+    26
    ],
    "octo": [
     15
@@ -4431,18 +4432,18 @@
     "hit": "6/6"
    },
    "first rare color": {
-    "median": 34.6,
-    "range": "20.6–48.5",
-    "hit": "5/6"
+    "median": 42.6,
+    "range": "20.6–98.6",
+    "hit": "6/6"
    },
    "first goal done": {
     "median": 20.6,
-    "range": "10.1–29.5",
+    "range": "10.1–31.6",
     "hit": "6/6"
    },
    "second generation adult": {
     "median": 40.6,
-    "range": "38.5–48.6",
+    "range": "36.5–48.6",
     "hit": "6/6"
    },
    "level 2": {
@@ -4462,22 +4463,22 @@
    },
    "level 5": {
     "median": 25.5,
-    "range": "22.6–27.6",
+    "range": "22.6–28.6",
     "hit": "6/6"
    },
    "level 6": {
-    "median": 36.1,
-    "range": "33.5–39.6",
+    "median": 39.1,
+    "range": "33.5–41.6",
     "hit": "6/6"
    },
    "level 7": {
-    "median": 46,
-    "range": "40.6–52.5",
+    "median": 46.6,
+    "range": "44.5–56.1",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 55.6,
-    "range": "50.1–65.6",
+    "median": 59.5,
+    "range": "54.5–67.6",
     "hit": "6/6"
    }
   },
@@ -4581,17 +4582,17 @@
    "30": {
     "level": 5,
     "score": 286,
-    "shells": 23,
-    "earned": 423,
-    "spent": 420,
-    "perDayEarned": 14.1,
-    "decor": "14/21",
-    "fish": 19,
+    "shells": 22,
+    "earned": 406,
+    "spent": 409,
+    "perDayEarned": 13.5,
+    "decor": "13/21",
+    "fish": 18,
     "field": 12,
     "goals": 1,
     "decisions": 4,
     "mysteries": 30,
-    "toasts": 144,
+    "toasts": 145,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -4653,7 +4654,7 @@
      "blue since day 26: ✓ 0/1 0/1 0/1",
      "ember since day 18: ✓ 0/1 ✓ 0/1",
      "gold since day 21: ✓ 0/1 ✓ 0/1",
-     "ghost since day 30: ✓ 0/1 0/1 0/1",
+     "rare since day 1: ✓ ✓ ✓ 0/1",
      "dynasty since day 11: ✓ 0/1"
     ],
     "centerpieces": [
@@ -4697,18 +4698,18 @@
    },
    "60": {
     "level": 8,
-    "score": 656,
-    "shells": 84,
-    "earned": 1019,
-    "spent": 919,
-    "perDayEarned": 17,
+    "score": 600,
+    "shells": 83,
+    "earned": 986,
+    "spent": 913,
+    "perDayEarned": 16.4,
     "decor": "23/27",
-    "fish": 30,
+    "fish": 29,
     "field": 15,
     "goals": 4,
     "decisions": 8,
     "mysteries": 60,
-    "toasts": 291,
+    "toasts": 272,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -4775,9 +4776,9 @@
     "stuck": [
      "dynasty since day 49: ✓ 0/1",
      "raise since day 59: 0/1 0/2 0/3",
-     "raise since day 55: ✓ ✓ 2/3",
+     "raise since day 39: ✓ ✓ 2/3",
      "gold since day 21: ✓ 0/1 ✓ 0/1",
-     "raise since day 52: ✓ 1/2 1/3",
+     "guide since day 48: 1/2 1/4 1/6",
      "octo since day 36: ✓ ✓ ✓ 0/1"
     ],
     "centerpieces": [
@@ -4821,18 +4822,18 @@
    },
    "120": {
     "level": 8,
-    "score": 1010,
-    "shells": 138,
+    "score": 1078,
+    "shells": 156,
     "earned": 1766,
     "spent": 1641,
     "perDayEarned": 14.7,
     "decor": "28/27",
     "fish": 32,
-    "field": 17,
+    "field": 18,
     "goals": 6,
     "decisions": 18,
     "mysteries": 120,
-    "toasts": 422,
+    "toasts": 423,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -4904,10 +4905,10 @@
     "stuck": [
      "guide since day 77: 1/2 1/4 1/6",
      "ghost since day 76: ✓ 0/1 ✓ 0/1",
-     "gold since day 65: ✓ 0/1 ✓ 0/1",
+     "octo since day 77: ✓ ✓ 0/1 ✓",
      "gold since day 21: ✓ 0/1 ✓ 0/1",
-     "ember since day 76: ✓ 0/1 0/1 0/1",
-     "ghost since day 80: ✓ 0/1 ✓ 0/1"
+     "guide since day 48: ✓ ✓ 5/6",
+     "ghost since day 100: ✓ 0/1 ✓ 0/1"
     ],
     "centerpieces": [
      {
@@ -4924,9 +4925,9 @@
      },
      {
       "spire": null,
-      "crystal": 110.5,
-      "bridge": 82.1,
-      "arch": 67.1
+      "crystal": 98.1,
+      "bridge": 80.1,
+      "arch": 68.6
      },
      {
       "spire": null,
@@ -4936,15 +4937,15 @@
      },
      {
       "spire": null,
-      "crystal": 99.1,
-      "bridge": 77.1,
-      "arch": 67.1
+      "crystal": null,
+      "bridge": 92.5,
+      "arch": 80.1
      },
      {
       "spire": null,
-      "crystal": null,
-      "bridge": 101.1,
-      "arch": 79.1
+      "crystal": 113.1,
+      "bridge": 84.1,
+      "arch": 77.5
      }
     ]
    }
@@ -4956,39 +4957,39 @@
    "raise": [
     7,
     17,
-    10,
-    18,
+    32,
     16
    ],
    "family": [
     2,
     4,
-    4.6
+    4,
+    4
    ],
    "gold": [
     21.5,
     null,
-    null
+    15
    ],
    "dynasty": [
     12,
     4.5,
-    15,
     6,
     24.5
    ],
    "ghost": [
     16,
     null,
-    6,
     null
    ],
    "guide": [
     null,
-    8.5
+    8.5,
+    null
    ],
    "octo": [
     24,
+    null,
     16,
     28
    ],
@@ -5002,11 +5003,10 @@
    ],
    "ember": [
     16.5,
-    19.5,
-    null
+    19.5
    ],
    "rare": [
-    28.4
+    30.5
    ]
   }
  },
@@ -5076,7 +5076,7 @@
    },
    "first octopus adventure": {
     "median": 8.3,
-    "range": "8.3–12.3",
+    "range": "8.3–18.3",
     "hit": "6/6"
    },
    "first rare color": {
@@ -5481,16 +5481,16 @@
     "level": 8,
     "score": 947,
     "shells": 232,
-    "earned": 1740,
+    "earned": 1732,
     "spent": 1538,
-    "perDayEarned": 14.5,
+    "perDayEarned": 14.4,
     "decor": "28/27",
     "fish": 32,
     "field": 18,
     "goals": 3,
     "decisions": 19,
     "mysteries": 120,
-    "toasts": 465,
+    "toasts": 466,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -5588,8 +5588,8 @@
      },
      {
       "spire": null,
-      "crystal": 83.3,
-      "bridge": 65.6,
+      "crystal": 82.1,
+      "bridge": 65.3,
       "arch": 57.3
      },
      {
@@ -5720,12 +5720,12 @@
    },
    "first octopus adventure": {
     "median": 13.3,
-    "range": "8.3–41.3",
+    "range": "8.3–23.3",
     "hit": "6/6"
    },
    "first rare color": {
     "median": 33.3,
-    "range": "16.3–56.6",
+    "range": "16.3–62.3",
     "hit": "6/6"
    },
    "first goal done": {
@@ -5734,8 +5734,8 @@
     "hit": "6/6"
    },
    "second generation adult": {
-    "median": 37,
-    "range": "33–50.6",
+    "median": 43.3,
+    "range": "34.3–50.6",
     "hit": "6/6"
    },
    "level 2": {
@@ -5759,18 +5759,18 @@
     "hit": "6/6"
    },
    "level 6": {
-    "median": 34,
-    "range": "29.1–37.3",
+    "median": 33.5,
+    "range": "30.3–37.3",
     "hit": "6/6"
    },
    "level 7": {
     "median": 43.5,
-    "range": "37.1–47.6",
+    "range": "37.3–47.6",
     "hit": "6/6"
    },
    "level 8": {
     "median": 52.3,
-    "range": "45.6–58.3",
+    "range": "46.3–60.3",
     "hit": "6/6"
    }
   },
@@ -5877,15 +5877,15 @@
    },
    "30": {
     "level": 5,
-    "score": 322,
-    "shells": 33,
+    "score": 324,
+    "shells": 34,
     "earned": 477,
-    "spent": 479,
+    "spent": 478,
     "perDayEarned": 15.9,
     "decor": "16/21",
     "fish": 21,
-    "field": 14,
-    "goals": 1,
+    "field": 15,
+    "goals": 2,
     "decisions": 4,
     "mysteries": 30,
     "toasts": 169,
@@ -5948,9 +5948,9 @@
     "stuck": [
      "raise since day 26: ✓ 1/2 1/3",
      "octo since day 1: ✓ ✓ ✓ 0/1",
-     "guide since day 8: ✓ ✓ 5/6",
+     "blue since day 26: ✓ 0/1 ✓ 0/1",
      "dynasty since day 25: ✓ 0/1",
-     "guide since day 17: 1/2 1/4 1/6",
+     "guide since day 17: ✓ 2/4 2/6",
      "dynasty since day 17: ✓ 0/1"
     ],
     "centerpieces": [
@@ -5994,18 +5994,18 @@
    },
    "60": {
     "level": 8,
-    "score": 695,
+    "score": 682,
     "shells": 48,
-    "earned": 1131,
-    "spent": 1091,
-    "perDayEarned": 18.9,
-    "decor": "25/27",
+    "earned": 1116,
+    "spent": 1102,
+    "perDayEarned": 18.6,
+    "decor": "24/27",
     "fish": 31,
     "field": 17,
     "goals": 3,
     "decisions": 9,
     "mysteries": 60,
-    "toasts": 320,
+    "toasts": 325,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -6074,9 +6074,9 @@
     "stuck": [
      "raise since day 26: ✓ 1/2 1/3",
      "sleuth since day 57: 2/3 0/1 2/7",
-     "ghost since day 59: ✓ 0/1 0/1 0/1",
+     "blue since day 26: ✓ ✓ ✓ 0/1",
      "raise since day 38: ✓ 1/2 1/3",
-     "guide since day 17: ✓ 2/4 2/6",
+     "guide since day 17: ✓ ✓ 5/6",
      "family since day 59: 0/1 0/1 0/1"
     ],
     "centerpieces": [
@@ -6102,13 +6102,13 @@
       "spire": null,
       "crystal": null,
       "bridge": null,
-      "arch": 58.1
+      "arch": 56.6
      },
      {
       "spire": null,
       "crystal": null,
       "bridge": null,
-      "arch": 57.5
+      "arch": null
      },
      {
       "spire": null,
@@ -6121,7 +6121,7 @@
    "120": {
     "level": 8,
     "score": 1015,
-    "shells": 185,
+    "shells": 122,
     "earned": 1766,
     "spent": 1764,
     "perDayEarned": 14.7,
@@ -6129,9 +6129,9 @@
     "fish": 32,
     "field": 18,
     "goals": 4,
-    "decisions": 17,
+    "decisions": 18,
     "mysteries": 120,
-    "toasts": 425,
+    "toasts": 426,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -6203,9 +6203,9 @@
     "stuck": [
      "raise since day 26: ✓ 1/2 1/3",
      "gold since day 70: ✓ 0/1 ✓ 0/1",
-     "ghost since day 59: ✓ ✓ ✓ 0/1",
+     "ember since day 63: ✓ 0/1 ✓ 0/1",
      "raise since day 38: ✓ 1/2 1/3",
-     "guide since day 17: ✓ 3/4 3/6",
+     "guide since day 17: ✓ ✓ 5/6",
      "raise since day 62: ✓ ✓ 2/3"
     ],
     "centerpieces": [
@@ -6223,21 +6223,21 @@
      },
      {
       "spire": null,
-      "crystal": 100.6,
-      "bridge": 89.6,
-      "arch": 79.6
+      "crystal": null,
+      "bridge": 108.1,
+      "arch": 95.1
      },
      {
       "spire": null,
-      "crystal": 87.5,
-      "bridge": 68.6,
-      "arch": 58.1
+      "crystal": 89.6,
+      "bridge": 69.6,
+      "arch": 56.6
      },
      {
       "spire": null,
-      "crystal": 91.5,
-      "bridge": 69.3,
-      "arch": 57.5
+      "crystal": 96.6,
+      "bridge": 73.3,
+      "arch": 60.1
      },
      {
       "spire": 116.1,
@@ -6264,18 +6264,15 @@
    ],
    "octo": [
     32.2,
-    19.9,
     20.8
    ],
    "family": [
     3.7,
-    3.9,
     3.2,
     3.4
    ],
    "ghost": [
-    19,
-    null
+    19
    ],
    "sleuth": [
     13,
@@ -6288,14 +6285,18 @@
     15.4
    ],
    "guide": [
-    26.9,
+    18,
+    null
+   ],
+   "blue": [
+    36,
+    15.2
+   ],
+   "ember": [
     null
    ],
    "rare": [
     3.5
-   ],
-   "blue": [
-    15.2
    ]
   }
  },
@@ -6365,12 +6366,12 @@
    },
    "first octopus adventure": {
     "median": 8.6,
-    "range": "8.5–32",
+    "range": "8.5–26",
     "hit": "6/6"
    },
    "first rare color": {
     "median": 36.6,
-    "range": "14–60.6",
+    "range": "14–69.5",
     "hit": "6/6"
    },
    "first goal done": {
@@ -6405,17 +6406,17 @@
    },
    "level 6": {
     "median": 40.6,
-    "range": "36.6–47.1",
+    "range": "36.6–45.1",
     "hit": "6/6"
    },
    "level 7": {
-    "median": 49.6,
-    "range": "44.1–60.6",
+    "median": 51.6,
+    "range": "44.1–57.1",
     "hit": "6/6"
    },
    "level 8": {
     "median": 62,
-    "range": "53.6–68.5",
+    "range": "53.6–67.1",
     "hit": "6/6"
    }
   },
@@ -6535,9 +6536,9 @@
     "neglect": 8,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 128,
+     "mystery": 127,
      "buyFish:goldfish": -128,
-     "time passing": 133,
+     "time passing": 139,
      "buyDecor:coconut": -20,
      "buyDecor:grass": -16,
      "buyDecor:rock": -5,
@@ -6553,7 +6554,8 @@
      "buyDecor:boulder": -20,
      "matchmake": 7,
      "sellFish": 9,
-     "buyDecor:bubbler": -48
+     "buyDecor:shell": -22,
+     "buyDecor:pot": -23
     },
     "diffs": 10,
     "diffsEx": [
@@ -6577,7 +6579,7 @@
      "raised": 12,
      "morphs": 0,
      "goals": 0,
-     "field": 60,
+     "field": 54,
      "species": 12
     },
     "stuck": [
@@ -6630,51 +6632,52 @@
    "60": {
     "level": 7,
     "score": 586,
-    "shells": 53,
-    "earned": 925,
-    "spent": 907,
-    "perDayEarned": 15.4,
+    "shells": 38,
+    "earned": 928,
+    "spent": 912,
+    "perDayEarned": 15.5,
     "decor": "23/26",
     "fish": 29,
     "field": 15,
     "goals": 3,
-    "decisions": 7,
+    "decisions": 8,
     "mysteries": 54,
     "toasts": 307,
     "neglect": 8,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 272,
-     "buyFish:goldfish": -150,
-     "time passing": 475,
+     "mystery": 304,
+     "buyFish:goldfish": -128,
+     "time passing": 408,
      "buyDecor:coconut": -20,
      "buyDecor:grass": -16,
      "buyDecor:rock": -5,
      "buyDecor:moss": -4,
-     "pet": 14,
+     "pet": 6,
      "buyDecor:fern": -10,
-     "feed": 31,
+     "feed": 40,
      "buyDecor:starfish": -10,
-     "watchEggs": 67,
+     "watchEggs": 76,
      "buyDecor:sword": -14,
      "buyDecor:red": -13,
-     "buyFish:cory": -22,
+     "buyFish:cory": -44,
      "buyDecor:boulder": -20,
-     "matchmake": 17,
+     "matchmake": 7,
      "sellFish": 9,
-     "buyDecor:bubbler": -48,
      "buyDecor:shell": -22,
-     "buyDecor:pot": -26,
+     "buyDecor:pot": -23,
+     "buyDecor:bubbler": -45,
      "buyDecor:brain": -25,
-     "glass": 20,
      "buyDecor:kelp": -27,
-     "buyDecor:anemone": -32,
-     "buyDecor:wood": -35,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -29,
+     "buyDecor:wood": -38,
      "buyDecor:skull": -40,
      "buyDecor:pillar": -42,
      "buyDecor:bamboo": -55,
-     "buyDecor:lantern": -57,
-     "buyDecor:table": -61,
+     "keepFry": 12,
+     "buyDecor:lantern": -54,
+     "water": 4,
      "buyDecor:chest": -85
     },
     "diffs": 10,
@@ -6692,19 +6695,19 @@
     ],
     "parts": {
      "care": 108,
-     "mystery": 53,
-     "decisions": 21,
-     "hatched": 36,
-     "grown": 90,
-     "raised": 64,
-     "morphs": 90,
+     "mystery": 54,
+     "decisions": 24,
+     "hatched": 28,
+     "grown": 72,
+     "raised": 52,
+     "morphs": 30,
      "goals": 30,
-     "field": 78,
+     "field": 84,
      "species": 12
     },
     "stuck": [
-     "guide since day 40: 1/2 1/4 1/6",
-     "ghost since day 44: ✓ ✓ ✓ 0/1",
+     "guide since day 36: ✓ ✓ 5/6",
+     "ghost since day 47: ✓ ✓ ✓ 0/1",
      "octo since day 39: ✓ ✓ ✓ 0/1",
      "ember since day 37: ✓ 0/1 ✓ 0/1",
      "gold since day 53: ✓ 0/1 ✓ 0/1",
@@ -6751,57 +6754,59 @@
    },
    "120": {
     "level": 8,
-    "score": 919,
-    "shells": 47,
-    "earned": 1533,
+    "score": 942,
+    "shells": 154,
+    "earned": 1601,
     "spent": 1467,
-    "perDayEarned": 12.8,
-    "decor": "27/27",
+    "perDayEarned": 13.3,
+    "decor": "28/27",
     "fish": 32,
     "field": 17,
-    "goals": 4,
+    "goals": 5,
     "decisions": 16,
-    "mysteries": 113,
+    "mysteries": 114,
     "toasts": 420,
     "neglect": 8,
     "deaths": 0,
     "earnedBy": {
-     "mystery": 578,
-     "buyFish:goldfish": -150,
-     "time passing": 667,
+     "mystery": 638,
+     "buyFish:goldfish": -128,
+     "time passing": 703,
      "buyDecor:coconut": -20,
      "buyDecor:grass": -16,
      "buyDecor:rock": -5,
      "buyDecor:moss": -4,
      "pet": 14,
      "buyDecor:fern": -10,
-     "feed": 46,
+     "feed": 59,
      "buyDecor:starfish": -10,
-     "watchEggs": 67,
+     "watchEggs": 116,
      "buyDecor:sword": -14,
      "buyDecor:red": -13,
-     "buyFish:cory": -22,
+     "buyFish:cory": -44,
      "buyDecor:boulder": -20,
-     "matchmake": 17,
-     "sellFish": 9,
-     "buyDecor:bubbler": -48,
+     "matchmake": 27,
+     "sellFish": 18,
      "buyDecor:shell": -22,
-     "buyDecor:pot": -26,
+     "buyDecor:pot": -23,
+     "buyDecor:bubbler": -45,
      "buyDecor:brain": -25,
-     "glass": 20,
      "buyDecor:kelp": -27,
-     "buyDecor:anemone": -32,
-     "buyDecor:wood": -35,
+     "buyDecor:table": -64,
+     "buyDecor:anemone": -29,
+     "buyDecor:wood": -38,
      "buyDecor:skull": -40,
      "buyDecor:pillar": -42,
      "buyDecor:bamboo": -55,
-     "buyDecor:lantern": -57,
-     "buyDecor:table": -61,
+     "keepFry": 12,
+     "buyDecor:lantern": -54,
+     "water": 16,
      "buyDecor:chest": -85,
      "buyDecor:anchor": -95,
      "buyDecor:arch": -120,
-     "buyDecor:bridge": -150,
-     "buyDecor:crystal": -187
+     "buyDecor:bridge": -147,
+     "glass": 24,
+     "buyDecor:crystal": -190
     },
     "diffs": 10,
     "diffsEx": [
@@ -6819,18 +6824,18 @@
     "parts": {
      "care": 228,
      "mystery": 113,
-     "decisions": 42,
-     "hatched": 42,
-     "grown": 126,
-     "raised": 88,
+     "decisions": 48,
+     "hatched": 48,
+     "grown": 144,
+     "raised": 100,
      "morphs": 110,
-     "goals": 30,
-     "field": 90,
+     "goals": 105,
+     "field": 102,
      "species": 12
     },
     "stuck": [
-     "guide since day 40: ✓ 3/4 3/6",
-     "gold since day 65: ✓ 0/1 ✓ 0/1",
+     "raise since day 85: ✓ ✓ 2/3",
+     "gold since day 70: ✓ 0/1 ✓ 0/1",
      "gold since day 61: ✓ ✓ ✓ 0/1",
      "ember since day 37: ✓ 0/1 ✓ 0/1",
      "gold since day 53: ✓ 0/1 ✓ 0/1",
@@ -6839,15 +6844,15 @@
     "centerpieces": [
      {
       "spire": null,
-      "crystal": 110.1,
-      "bridge": 83.1,
-      "arch": 70.1
+      "crystal": 95.6,
+      "bridge": 79.6,
+      "arch": 69.6
      },
      {
       "spire": null,
-      "crystal": 119.1,
-      "bridge": 102.1,
-      "arch": 93.1
+      "crystal": 112.6,
+      "bridge": 96.1,
+      "arch": 86.1
      },
      {
       "spire": null,
@@ -6864,7 +6869,7 @@
      {
       "spire": null,
       "crystal": null,
-      "bridge": 94.1,
+      "bridge": 97.6,
       "arch": 77.5
      },
      {
@@ -6878,37 +6883,47 @@
   },
   "goalTimes": {
    "blue": [
-    30.4,
+    30.5,
     19.5
    ],
-   "ember": [
-    7,
-    null,
-    12.9
+   "dynasty": [
+    3.5,
+    16,
+    5
    ],
    "guide": [
-    null,
+    27,
     17
    ],
+   "family": [
+    7.5,
+    3.4,
+    4.5,
+    4
+   ],
    "sleuth": [
+    6.6,
     7,
     6.5,
     7.5
    ],
+   "ember": [
+    3.5,
+    null,
+    12.9
+   ],
+   "rare": [
+    4,
+    33.4,
+    9.5,
+    null
+   ],
    "raise": [
+    null,
     18.5
    ],
-   "dynasty": [
-    16,
-    5
-   ],
    "ghost": [
-    17
-   ],
-   "family": [
-    4,
-    4.5,
-    4
+    23
    ],
    "gold": [
     null,
@@ -6916,11 +6931,6 @@
     35.5,
     null,
     18
-   ],
-   "rare": [
-    33.4,
-    9.5,
-    null
    ],
    "octo": [
     21.5,
@@ -7028,23 +7038,23 @@
     "hit": "6/6"
    },
    "level 5": {
-    "median": 27.6,
+    "median": 28.1,
     "range": "22.6–29.1",
     "hit": "6/6"
    },
    "level 6": {
-    "median": 36.1,
-    "range": "33.6–39.5",
+    "median": 37.6,
+    "range": "33.6–39.6",
     "hit": "6/6"
    },
    "level 7": {
-    "median": 44.6,
+    "median": 45.6,
     "range": "42–51.6",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 57,
-    "range": "52.5–61.1",
+    "median": 57.1,
+    "range": "54.1–61.1",
     "hit": "6/6"
    }
   },
@@ -7149,18 +7159,18 @@
    },
    "30": {
     "level": 5,
-    "score": 276,
+    "score": 272,
     "shells": 28,
-    "earned": 418,
-    "spent": 415,
-    "perDayEarned": 13.9,
-    "decor": "13/21",
+    "earned": 411,
+    "spent": 413,
+    "perDayEarned": 13.7,
+    "decor": "12/21",
     "fish": 20,
     "field": 12,
     "goals": 0,
     "decisions": 5,
     "mysteries": 30,
-    "toasts": 160,
+    "toasts": 157,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -7220,7 +7230,7 @@
      "blue since day 2: ✓ 0/1 ✓ 0/1",
      "rare since day 2: ✓ ✓ ✓ 0/1",
      "gold since day 20: ✓ 0/1 ✓ 0/1",
-     "ghost since day 30: ✓ 0/1 0/1 0/1",
+     "rare since day 1: ✓ ✓ ✓ 0/1",
      "gold since day 2: ✓ ✓ ✓ 0/1"
     ],
     "centerpieces": [
@@ -7264,14 +7274,14 @@
    },
    "60": {
     "level": 8,
-    "score": 612,
-    "shells": 30,
-    "earned": 965,
-    "spent": 956,
-    "perDayEarned": 16.1,
+    "score": 618,
+    "shells": 54,
+    "earned": 960,
+    "spent": 946,
+    "perDayEarned": 16,
     "decor": "24/27",
     "fish": 30,
-    "field": 14,
+    "field": 16,
     "goals": 3,
     "decisions": 9,
     "mysteries": 60,
@@ -7346,7 +7356,7 @@
      "guide since day 57: 0/2 0/4 0/6",
      "ghost since day 42: ✓ 0/1 ✓ 0/1",
      "gold since day 20: ✓ 0/1 ✓ 0/1",
-     "peace since day 56: ✓ ✓ 0/3 ✓",
+     "family since day 57: ✓ ✓ 0/1",
      "raise since day 41: ✓ ✓ 2/3"
     ],
     "centerpieces": [
@@ -7391,7 +7401,7 @@
    "120": {
     "level": 8,
     "score": 950,
-    "shells": 86,
+    "shells": 82,
     "earned": 1513,
     "spent": 1487,
     "perDayEarned": 12.6,
@@ -7401,7 +7411,7 @@
     "goals": 3,
     "decisions": 17,
     "mysteries": 119,
-    "toasts": 381,
+    "toasts": 385,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -7476,7 +7486,7 @@
      "guide since day 57: ✓ ✓ 5/6",
      "ghost since day 42: ✓ 0/1 ✓ 0/1",
      "gold since day 20: ✓ 0/1 ✓ 0/1",
-     "guide since day 74: ✓ 2/4 2/6",
+     "raise since day 70: ✓ ✓ 2/3",
      "octo since day 87: ✓ ✓ 0/1 0/1"
     ],
     "centerpieces": [
@@ -7494,21 +7504,21 @@
      },
      {
       "spire": null,
-      "crystal": 116.6,
+      "crystal": 115.1,
       "bridge": 89.1,
       "arch": 77.1
      },
      {
       "spire": null,
-      "crystal": 112.6,
-      "bridge": 82.6,
-      "arch": 67.6
+      "crystal": 113.1,
+      "bridge": 83.6,
+      "arch": 68.1
      },
      {
       "spire": null,
-      "crystal": 97.5,
-      "bridge": 77.1,
-      "arch": 68.1
+      "crystal": 106.1,
+      "bridge": 82.6,
+      "arch": 69.6
      },
      {
       "spire": null,
@@ -7532,15 +7542,15 @@
    "rare": [
     8,
     29,
-    28.4,
+    30.5,
     9
    ],
    "dynasty": [
     10.5,
-    3
+    3,
+    10
    ],
    "guide": [
-    null,
     null
    ],
    "ember": [
@@ -7549,23 +7559,23 @@
    ],
    "ghost": [
     null,
-    5
+    8
    ],
    "octo": [
-    21,
+    6.5,
     null
    ],
-   "peace": [
-    18
-   ],
-   "raise": [
-    33
-   ],
    "family": [
+    6,
     6
    ],
    "sleuth": [
+    7,
     7
+   ],
+   "raise": [
+    null,
+    33
    ]
   }
  },
@@ -7574,18 +7584,18 @@
   "profile": "saver",
   "milestones": {
    "spire open": {
-    "median": 58.1,
-    "range": "52.1–63.6",
+    "median": 62.1,
+    "range": "53.1–64.5",
     "hit": "6/6"
    },
    "spire affordable": {
-    "median": 74.5,
-    "range": "66.1–86.1",
+    "median": 79.1,
+    "range": "66.1–85.1",
     "hit": "6/6"
    },
    "bought spire": {
-    "median": 74.5,
-    "range": "66.1–86.1",
+    "median": 79.1,
+    "range": "66.1–85.1",
     "hit": "6/6"
    },
    "first fish bought": {
@@ -7634,23 +7644,23 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 12.5,
-    "range": "8.5–50",
+    "median": 8.6,
+    "range": "8.5–18.6",
     "hit": "6/6"
    },
    "first rare color": {
     "median": 31.6,
-    "range": "12.6–66.5",
+    "range": "12.6–66.6",
     "hit": "6/6"
    },
    "first goal done": {
     "median": 31.6,
-    "range": "9.5–47.6",
+    "range": "9.5–35.6",
     "hit": "6/6"
    },
    "second generation adult": {
-    "median": 45.5,
-    "range": "37.6–45.6",
+    "median": 44.5,
+    "range": "41.6–45.5",
     "hit": "6/6"
    },
    "level 2": {
@@ -7679,13 +7689,13 @@
     "hit": "6/6"
    },
    "level 7": {
-    "median": 47.6,
+    "median": 48.1,
     "range": "41.6–49.6",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 58.1,
-    "range": "52.1–63.6",
+    "median": 62.1,
+    "range": "53.1–64.5",
     "hit": "6/6"
    }
   },
@@ -7787,18 +7797,18 @@
    },
    "30": {
     "level": 5,
-    "score": 302,
-    "shells": 16,
+    "score": 297,
+    "shells": 21,
     "earned": 432,
-    "spent": 446,
+    "spent": 426,
     "perDayEarned": 14.4,
     "decor": "13/21",
-    "fish": 19,
+    "fish": 20,
     "field": 14,
     "goals": 1,
     "decisions": 4,
     "mysteries": 30,
-    "toasts": 152,
+    "toasts": 151,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -7852,10 +7862,10 @@
     },
     "stuck": [
      "guide since day 13: ✓ ✓ 4/6",
-     "raise since day 28: 0/1 0/2 0/3",
+     "ghost since day 28: ✓ 0/1 0/1 0/1",
      "rare since day 2: ✓ 0/1 ✓ ✓",
      "gold since day 1: ✓ ✓ ✓ 0/1",
-     "octo since day 28: ✓ ✓ 0/1 0/1",
+     "raise since day 24: ✓ ✓ 2/3",
      "gold since day 1: ✓ 0/1 ✓ 0/1"
     ],
     "centerpieces": [
@@ -7899,18 +7909,18 @@
    },
    "60": {
     "level": 8,
-    "score": 644,
-    "shells": 114,
-    "earned": 997,
-    "spent": 907,
+    "score": 598,
+    "shells": 86,
+    "earned": 993,
+    "spent": 967,
     "perDayEarned": 16.6,
     "decor": "23/27",
-    "fish": 29,
+    "fish": 28,
     "field": 15,
     "goals": 3,
     "decisions": 8,
     "mysteries": 60,
-    "toasts": 291,
+    "toasts": 290,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -7974,10 +7984,10 @@
     },
     "stuck": [
      "blue since day 42: ✓ 0/1 ✓ 0/1",
-     "raise since day 28: ✓ ✓ 2/3",
-     "octo since day 50: ✓ ✓ ✓ 0/1",
-     "ghost since day 48: ✓ 0/1 ✓ 0/1",
-     "raise since day 56: ✓ 1/2 1/3",
+     "ghost since day 28: ✓ ✓ ✓ 0/1",
+     "raise since day 32: ✓ ✓ 2/3",
+     "raise since day 35: ✓ ✓ 2/3",
+     "ghost since day 47: ✓ 0/1 ✓ 0/1",
      "octo since day 49: ✓ ✓ 0/1 0/1"
     ],
     "centerpieces": [
@@ -8021,18 +8031,18 @@
    },
    "120": {
     "level": 8,
-    "score": 982,
+    "score": 954,
     "shells": 127,
-    "earned": 1569,
-    "spent": 1453,
-    "perDayEarned": 13.1,
+    "earned": 1669,
+    "spent": 1565,
+    "perDayEarned": 13.9,
     "decor": "27/27",
     "fish": 32,
     "field": 17,
     "goals": 4,
-    "decisions": 18,
-    "mysteries": 119,
-    "toasts": 384,
+    "decisions": 17,
+    "mysteries": 120,
+    "toasts": 386,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -8101,10 +8111,10 @@
     },
     "stuck": [
      "blue since day 42: ✓ 0/1 ✓ 0/1",
-     "raise since day 28: ✓ ✓ 2/3",
-     "guide since day 73: ✓ 3/4 3/6",
-     "ghost since day 48: ✓ ✓ ✓ 0/1",
-     "none",
+     "raise since day 88: 0/1 0/2 0/3",
+     "guide since day 90: ✓ 2/4 2/6",
+     "raise since day 35: ✓ ✓ 2/3",
+     "ghost since day 47: ✓ 0/1 ✓ 0/1",
      "octo since day 49: ✓ ✓ 0/1 0/1"
     ],
     "centerpieces": [
@@ -8115,28 +8125,28 @@
       "arch": 101.6
      },
      {
-      "spire": 84.6,
+      "spire": 79.1,
+      "crystal": null,
+      "bridge": null,
+      "arch": 98.1
+     },
+     {
+      "spire": 83.5,
+      "crystal": null,
+      "bridge": 109.1,
+      "arch": 92.1
+     },
+     {
+      "spire": 85.1,
+      "crystal": null,
+      "bridge": null,
+      "arch": 100.5
+     },
+     {
+      "spire": 76.6,
       "crystal": null,
       "bridge": null,
       "arch": 100.1
-     },
-     {
-      "spire": 70.1,
-      "crystal": null,
-      "bridge": 99.1,
-      "arch": 88.1
-     },
-     {
-      "spire": 86.1,
-      "crystal": null,
-      "bridge": null,
-      "arch": 103.6
-     },
-     {
-      "spire": 67.1,
-      "crystal": null,
-      "bridge": null,
-      "arch": 96.5
      },
      {
       "spire": 66.1,
@@ -8150,7 +8160,7 @@
   "goalTimes": {
    "ember": [
     11.4,
-    4
+    5
    ],
    "guide": [
     18,
@@ -8159,45 +8169,45 @@
    "sleuth": [
     7,
     8,
-    6.5
+    6.5,
+    6.6
    ],
    "family": [
     3.4,
-    4,
-    6,
+    9,
     4.4
    ],
    "blue": [
     null,
-    22.5,
+    22,
     8
    ],
    "octo": [
-    18,
-    11,
-    8,
+    17.6,
     null
+   ],
+   "ghost": [
+    39,
+    null
+   ],
+   "dynasty": [
+    4
+   ],
+   "peace": [
+    17
    ],
    "raise": [
     null,
-    17.5,
-    13
+    36.9,
+    null,
+    17
    ],
    "rare": [
-    30,
-    4
-   ],
-   "dynasty": [
-    4.5,
-    4
+    30
    ],
    "gold": [
-    46.5,
+    33.5,
     34.5
-   ],
-   "ghost": [
-    null,
-    9
    ]
   }
  },
@@ -8216,8 +8226,8 @@
     "hit": "0/6"
    },
    "bought spire": {
-    "median": 118.5,
-    "range": "118.5–118.5",
+    "median": 111.6,
+    "range": "111.6–111.6",
     "hit": "1/6"
    },
    "first fish bought": {
@@ -8266,13 +8276,13 @@
     "hit": "6/6"
    },
    "first octopus adventure": {
-    "median": 29.5,
-    "range": "11–98",
+    "median": 8.6,
+    "range": "8.5–20",
     "hit": "6/6"
    },
    "first rare color": {
     "median": 44.6,
-    "range": "11.6–63.5",
+    "range": "11.6–65.6",
     "hit": "6/6"
    },
    "first goal done": {
@@ -8281,8 +8291,8 @@
     "hit": "6/6"
    },
    "second generation adult": {
-    "median": 39.5,
-    "range": "35.5–41.5",
+    "median": 40.5,
+    "range": "36.5–43.6",
     "hit": "6/6"
    },
    "level 2": {
@@ -8306,18 +8316,18 @@
     "hit": "6/6"
    },
    "level 6": {
-    "median": 39.5,
+    "median": 37.6,
     "range": "35.6–44.6",
     "hit": "6/6"
    },
    "level 7": {
     "median": 52.5,
-    "range": "49–55.5",
+    "range": "49–55.6",
     "hit": "6/6"
    },
    "level 8": {
     "median": 64.6,
-    "range": "58.5–66.5",
+    "range": "58.5–68.5",
     "hit": "6/6"
    }
   },
@@ -8424,16 +8434,16 @@
    "30": {
     "level": 5,
     "score": 289,
-    "shells": 27,
+    "shells": 30,
     "earned": 460,
     "spent": 465,
     "perDayEarned": 15.3,
     "decor": "14/21",
     "fish": 19,
-    "field": 10,
+    "field": 12,
     "goals": 2,
     "decisions": 4,
-    "mysteries": 29,
+    "mysteries": 30,
     "toasts": 151,
     "neglect": 0,
     "deaths": 0,
@@ -8536,18 +8546,18 @@
    },
    "60": {
     "level": 7,
-    "score": 566,
-    "shells": 25,
-    "earned": 1018,
-    "spent": 971,
-    "perDayEarned": 17,
+    "score": 576,
+    "shells": 83,
+    "earned": 1002,
+    "spent": 970,
+    "perDayEarned": 16.7,
     "decor": "24/26",
-    "fish": 27,
+    "fish": 28,
     "field": 15,
     "goals": 2,
     "decisions": 9,
-    "mysteries": 59,
-    "toasts": 266,
+    "mysteries": 58,
+    "toasts": 276,
     "neglect": 1,
     "deaths": 0,
     "earnedBy": {
@@ -8613,9 +8623,9 @@
     },
     "stuck": [
      "guide since day 45: 1/2 1/4 1/6",
-     "guide since day 53: ✓ 2/4 2/6",
-     "raise since day 23: ✓ 1/2 1/3",
-     "octo since day 25: ✓ ✓ ✓ 0/1",
+     "sleuth since day 57: ✓ 0/1 3/7",
+     "raise since day 23: ✓ ✓ 2/3",
+     "sleuth since day 55: ✓ 0/1 4/7",
      "gold since day 18: ✓ ✓ ✓ 0/1",
      "gold since day 59: ✓ 0/1 0/1 0/1"
     ],
@@ -8660,19 +8670,19 @@
    },
    "120": {
     "level": 8,
-    "score": 921,
-    "shells": 180,
-    "earned": 1700,
-    "spent": 1537,
-    "perDayEarned": 14.2,
+    "score": 900,
+    "shells": 137,
+    "earned": 1785,
+    "spent": 1591,
+    "perDayEarned": 14.9,
     "decor": "28/27",
     "fish": 32,
-    "field": 17,
+    "field": 16,
     "goals": 3,
-    "decisions": 18,
-    "mysteries": 115,
-    "toasts": 385,
-    "neglect": 1,
+    "decisions": 17,
+    "mysteries": 116,
+    "toasts": 407,
+    "neglect": 4,
     "deaths": 0,
     "earnedBy": {
      "firstFish": 4,
@@ -8740,10 +8750,10 @@
     },
     "stuck": [
      "guide since day 45: ✓ 3/4 3/6",
-     "octo since day 115: ✓ ✓ ✓ 0/1",
-     "octo since day 78: ✓ ✓ 0/1 0/1",
-     "raise since day 77: ✓ ✓ 2/3",
-     "guide since day 68: 1/2 1/4 1/6",
+     "raise since day 71: ✓ 1/2 1/3",
+     "gold since day 65: ✓ 0/1 ✓ 0/1",
+     "guide since day 68: ✓ 2/4 2/6",
+     "raise since day 72: ✓ 1/2 1/3",
      "gold since day 59: ✓ 0/1 ✓ 0/1"
     ],
     "centerpieces": [
@@ -8755,33 +8765,33 @@
      },
      {
       "spire": null,
-      "crystal": 98.5,
-      "bridge": 79.5,
-      "arch": 66.6
+      "crystal": 95.6,
+      "bridge": 77.6,
+      "arch": 68.6
      },
      {
       "spire": null,
-      "crystal": 98.6,
-      "bridge": 82.6,
+      "crystal": 102.5,
+      "bridge": 84.6,
       "arch": 69.6
      },
      {
-      "spire": 118.5,
-      "crystal": 83.6,
-      "bridge": 68.6,
-      "arch": 60.5
+      "spire": 111.6,
+      "crystal": 85.6,
+      "bridge": 72.5,
+      "arch": 61.6
      },
      {
       "spire": null,
       "crystal": null,
-      "bridge": 101.6,
-      "arch": 89.6
+      "bridge": 108.6,
+      "arch": 95.6
      },
      {
       "spire": null,
-      "crystal": 93.5,
-      "bridge": 77.6,
-      "arch": 66.6
+      "crystal": 95.6,
+      "bridge": 80.6,
+      "arch": 70.6
      }
     ]
    }
@@ -8794,28 +8804,25 @@
    ],
    "guide": [
     null,
-    62,
     null,
     32
    ],
    "gold": [
-    9,
-    46,
+    14,
+    null,
+    48,
     null
    ],
-   "octo": [
-    null,
-    null,
-    36
-   ],
    "sleuth": [
+    14,
     7,
-    10,
+    9,
     16,
     10
    ],
    "raise": [
-    55,
+    null,
+    42,
     null
    ],
    "peace": [
@@ -8823,10 +8830,15 @@
    ],
    "family": [
     3,
+    5
+   ],
+   "octo": [
+    30
+   ],
+   "ghost": [
     4
    ],
    "dynasty": [
-    6,
     15
    ]
   }
@@ -8846,9 +8858,9 @@
     "hit": "0/6"
    },
    "bought spire": {
-    "median": 112.5,
-    "range": "112.5–112.5",
-    "hit": "1/6"
+    "median": null,
+    "range": "—",
+    "hit": "0/6"
    },
    "first fish bought": {
     "median": 0.1,
@@ -8872,7 +8884,7 @@
    },
    "first pairing": {
     "median": 11.6,
-    "range": "6.6–55.6",
+    "range": "6.6–25.5",
     "hit": "6/6"
    },
    "first eggs": {
@@ -8897,23 +8909,23 @@
    },
    "first octopus adventure": {
     "median": 8.5,
-    "range": "8.5–8.5",
+    "range": "8.5–26",
     "hit": "6/6"
    },
    "first rare color": {
-    "median": 30.5,
+    "median": 29.6,
     "range": "26.5–45.5",
     "hit": "6/6"
    },
    "first goal done": {
-    "median": 17.5,
+    "median": 29.6,
     "range": "6.6–45.5",
-    "hit": "5/6"
+    "hit": "6/6"
    },
    "second generation adult": {
-    "median": 37.6,
+    "median": 39.5,
     "range": "36.5–47.5",
-    "hit": "5/6"
+    "hit": "6/6"
    },
    "level 2": {
     "median": 1.1,
@@ -8931,23 +8943,23 @@
     "hit": "6/6"
    },
    "level 5": {
-    "median": 23.1,
-    "range": "18.5–24.1",
+    "median": 22.5,
+    "range": "18.5–23.5",
     "hit": "6/6"
    },
    "level 6": {
     "median": 34.6,
-    "range": "28.5–37.1",
+    "range": "31.6–36.1",
     "hit": "6/6"
    },
    "level 7": {
     "median": 45.5,
-    "range": "39.5–51.6",
+    "range": "38.1–49.5",
     "hit": "6/6"
    },
    "level 8": {
     "median": 56.1,
-    "range": "49.1–66.6",
+    "range": "51.1–67.1",
     "hit": "6/6"
    }
   },
@@ -9054,18 +9066,18 @@
    },
    "30": {
     "level": 5,
-    "score": 309,
+    "score": 319,
     "shells": 16,
-    "earned": 465,
-    "spent": 458,
-    "perDayEarned": 15.5,
-    "decor": "15/21",
-    "fish": 21,
+    "earned": 474,
+    "spent": 474,
+    "perDayEarned": 15.8,
+    "decor": "16/21",
+    "fish": 20,
     "field": 15,
     "goals": 1,
     "decisions": 5,
     "mysteries": 30,
-    "toasts": 190,
+    "toasts": 194,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -9121,11 +9133,11 @@
     },
     "stuck": [
      "blue since day 1: ✓ 0/1 ✓ 0/1",
-     "gold since day 1: ✓ 0/1 ✓ ✓",
+     "octo since day 30: ✓ ✓ 0/1 0/1",
      "rare since day 1: ✓ ✓ ✓ 0/1",
      "blue since day 18: ✓ 0/1 ✓ 0/1",
-     "ghost since day 8: ✓ ✓ ✓ 0/1",
-     "raise since day 25: ✓ 1/2 1/3"
+     "raise since day 27: ✓ 1/2 1/3",
+     "octo since day 19: ✓ ✓ 0/1 ✓"
     ],
     "centerpieces": [
      {
@@ -9168,18 +9180,18 @@
    },
    "60": {
     "level": 8,
-    "score": 652,
-    "shells": 84,
-    "earned": 1093,
-    "spent": 1035,
-    "perDayEarned": 18.2,
-    "decor": "25/27",
-    "fish": 30,
+    "score": 645,
+    "shells": 67,
+    "earned": 1084,
+    "spent": 1038,
+    "perDayEarned": 18.1,
+    "decor": "24/27",
+    "fish": 31,
     "field": 17,
-    "goals": 3,
-    "decisions": 10,
+    "goals": 2,
+    "decisions": 9,
     "mysteries": 60,
-    "toasts": 347,
+    "toasts": 348,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -9244,11 +9256,11 @@
     },
     "stuck": [
      "dynasty since day 50: ✓ 0/1",
-     "gold since day 1: ✓ 0/1 ✓ ✓",
-     "raise since day 41: ✓ 1/2 1/3",
-     "dynasty since day 60: ✓ 0/1",
-     "octo since day 48: ✓ ✓ ✓ 0/1",
-     "raise since day 25: ✓ 1/2 1/3"
+     "octo since day 30: ✓ ✓ 0/1 ✓",
+     "raise since day 34: ✓ 1/2 1/3",
+     "raise since day 53: ✓ 1/2 1/3",
+     "raise since day 27: ✓ ✓ 2/3",
+     "raise since day 34: ✓ 1/2 1/3"
     ],
     "centerpieces": [
      {
@@ -9267,7 +9279,7 @@
       "spire": null,
       "crystal": null,
       "bridge": null,
-      "arch": 59.1
+      "arch": null
      },
      {
       "spire": null,
@@ -9291,18 +9303,18 @@
    },
    "120": {
     "level": 8,
-    "score": 938,
-    "shells": 178,
-    "earned": 1705,
+    "score": 948,
+    "shells": 180,
+    "earned": 1661,
     "spent": 1495,
-    "perDayEarned": 14.2,
+    "perDayEarned": 13.8,
     "decor": "28/27",
     "fish": 32,
     "field": 18,
-    "goals": 4,
+    "goals": 3,
     "decisions": 18,
     "mysteries": 120,
-    "toasts": 457,
+    "toasts": 440,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -9370,11 +9382,11 @@
     },
     "stuck": [
      "raise since day 69: ✓ 1/2 1/3",
-     "gold since day 1: ✓ 0/1 ✓ ✓",
-     "raise since day 41: ✓ ✓ 2/3",
-     "dynasty since day 60: ✓ 0/1",
-     "rare since day 61: ✓ ✓ ✓ 0/1",
-     "gold since day 64: ✓ 0/1 ✓ 0/1"
+     "raise since day 69: ✓ ✓ 2/3",
+     "raise since day 34: ✓ ✓ 2/3",
+     "raise since day 53: ✓ ✓ 2/3",
+     "dynasty since day 66: ✓ 0/1",
+     "raise since day 34: ✓ ✓ 2/3"
     ],
     "centerpieces": [
      {
@@ -9385,33 +9397,33 @@
      },
      {
       "spire": null,
-      "crystal": 105.6,
-      "bridge": 84.1,
-      "arch": 69.1
-     },
-     {
-      "spire": null,
-      "crystal": 91.1,
-      "bridge": 71.5,
-      "arch": 59.1
-     },
-     {
-      "spire": null,
-      "crystal": 99.1,
-      "bridge": 78.1,
+      "crystal": 102.1,
+      "bridge": 83.5,
       "arch": 68.1
      },
      {
       "spire": null,
-      "crystal": 95.1,
-      "bridge": 76.1,
-      "arch": 63.5
+      "crystal": 93.6,
+      "bridge": 73.6,
+      "arch": 61.1
      },
      {
-      "spire": 112.5,
-      "crystal": 90.6,
-      "bridge": 77.6,
-      "arch": 62.6
+      "spire": null,
+      "crystal": 102.1,
+      "bridge": 79.1,
+      "arch": 68.5
+     },
+     {
+      "spire": null,
+      "crystal": 101.1,
+      "bridge": 83.1,
+      "arch": 68.6
+     },
+     {
+      "spire": null,
+      "crystal": 96.1,
+      "bridge": 74.1,
+      "arch": 64.1
      }
     ]
    }
@@ -9419,12 +9431,11 @@
   "goalTimes": {
    "blue": [
     44.4,
-    30
+    26
    ],
    "rare": [
     4,
-    29.5,
-    null
+    29.5
    ],
    "dynasty": [
     12,
@@ -9433,36 +9444,33 @@
    "family": [
     7,
     3,
-    4,
-    5.5
+    5.4
    ],
    "raise": [
     null,
     null,
-    39
-   ],
-   "gold": [
     null,
+    null,
+    39,
     null
    ],
-   "sleuth": [
-    7.5,
-    6.6,
-    6.5
+   "gold": [
+    28.5,
+    9
+   ],
+   "octo": [
+    39.4,
+    15.5
    ],
    "peace": [
     16.4
    ],
-   "octo": [
-    12,
-    13,
-    6
+   "sleuth": [
+    6.6,
+    6.5
    ],
    "ghost": [
-    23.4
-   ],
-   "ember": [
-    12
+    18.4
    ],
    "guide": [
     5
@@ -9510,7 +9518,7 @@
    },
    "first pairing": {
     "median": 12.1,
-    "range": "3.3–45.3",
+    "range": "3.3–64.3",
     "hit": "6/6"
    },
    "first eggs": {
@@ -9540,8 +9548,8 @@
    },
    "first rare color": {
     "median": 41.3,
-    "range": "8.3–107.3",
-    "hit": "5/6"
+    "range": "8.3–42.3",
+    "hit": "4/6"
    },
    "first goal done": {
     "median": 11.1,
@@ -9549,9 +9557,9 @@
     "hit": "5/6"
    },
    "second generation adult": {
-    "median": 47,
-    "range": "35–58",
-    "hit": "5/6"
+    "median": 58,
+    "range": "35–79",
+    "hit": "6/6"
    },
    "level 2": {
     "median": 0.3,
@@ -9580,12 +9588,12 @@
    },
    "level 7": {
     "median": 44.3,
-    "range": "36.1–51",
+    "range": "36.1–50.3",
     "hit": "6/6"
    },
    "level 8": {
     "median": 58.1,
-    "range": "47–67.1",
+    "range": "47–65.1",
     "hit": "6/6"
    }
   },
@@ -9693,13 +9701,13 @@
    },
    "30": {
     "level": 5,
-    "score": 359,
-    "shells": 30,
+    "score": 357,
+    "shells": 19,
     "earned": 490,
     "spent": 502,
     "perDayEarned": 16.3,
     "decor": "15/21",
-    "fish": 20,
+    "fish": 19,
     "field": 18,
     "goals": 1,
     "decisions": 4,
@@ -9813,18 +9821,18 @@
    },
    "60": {
     "level": 8,
-    "score": 628,
-    "shells": 84,
-    "earned": 1087,
+    "score": 634,
+    "shells": 81,
+    "earned": 1075,
     "spent": 1082,
-    "perDayEarned": 18.1,
+    "perDayEarned": 17.9,
     "decor": "24/27",
-    "fish": 29,
+    "fish": 30,
     "field": 18,
-    "goals": 2,
+    "goals": 3,
     "decisions": 9,
     "mysteries": 60,
-    "toasts": 374,
+    "toasts": 360,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -9892,7 +9900,7 @@
     },
     "stuck": [
      "raise since day 41: ✓ 1/2 1/3",
-     "blue since day 8: ✓ ✓ ✓ 0/1",
+     "dynasty since day 51: ✓ 0/1",
      "guide since day 8: ✓ ✓ 5/6",
      "sleuth since day 56: ✓ ✓ 3/7",
      "raise since day 1: ✓ 1/2 1/3",
@@ -9939,15 +9947,15 @@
    },
    "120": {
     "level": 8,
-    "score": 919,
-    "shells": 225,
+    "score": 941,
+    "shells": 160,
     "earned": 1799,
-    "spent": 1551,
+    "spent": 1573,
     "perDayEarned": 15,
     "decor": "27/27",
     "fish": 32,
     "field": 18,
-    "goals": 2,
+    "goals": 3,
     "decisions": 18,
     "mysteries": 120,
     "toasts": 524,
@@ -10021,9 +10029,9 @@
     },
     "stuck": [
      "raise since day 41: ✓ 1/2 1/3",
-     "dynasty since day 71: ✓ 0/1",
+     "ghost since day 72: ✓ 0/1 0/1 0/1",
      "guide since day 8: ✓ ✓ 5/6",
-     "raise since day 107: ✓ 1/2 1/3",
+     "ghost since day 63: ✓ 0/1 ✓ 0/1",
      "raise since day 1: ✓ 1/2 1/3",
      "raise since day 34: ✓ 1/2 1/3"
     ],
@@ -10036,27 +10044,27 @@
      },
      {
       "spire": null,
-      "crystal": 90.1,
-      "bridge": 73.6,
-      "arch": 62.1
+      "crystal": 91.3,
+      "bridge": 74.1,
+      "arch": 65.3
      },
      {
       "spire": null,
-      "crystal": 99.1,
-      "bridge": 77.1,
-      "arch": 65.6
+      "crystal": 102.1,
+      "bridge": 80.1,
+      "arch": 69.1
      },
      {
       "spire": null,
       "crystal": null,
-      "bridge": null,
-      "arch": 111.1
+      "bridge": 116.1,
+      "arch": 105.1
      },
      {
       "spire": null,
-      "crystal": 96.1,
-      "bridge": 81.6,
-      "arch": 70.1
+      "crystal": 104.1,
+      "bridge": 85.3,
+      "arch": 74.6
      },
      {
       "spire": null,
@@ -10070,18 +10078,17 @@
   "goalTimes": {
    "blue": [
     28.2,
-    63.2
+    34.2
    ],
    "dynasty": [
     4,
-    null,
+    16,
     9.7
    ],
    "rare": [
     8
    ],
    "raise": [
-    null,
     null,
     null,
     null
@@ -10092,18 +10099,23 @@
     6.8,
     10
    ],
+   "octo": [
+    8.7,
+    26.5,
+    23.2
+   ],
+   "family": [
+    4
+   ],
+   "ghost": [
+    null,
+    null
+   ],
    "guide": [
     null
    ],
    "peace": [
     19
-   ],
-   "octo": [
-    26.5,
-    23.2
-   ],
-   "ghost": [
-    44.2
    ]
   }
  },
@@ -10122,9 +10134,9 @@
     "hit": "0/6"
    },
    "bought spire": {
-    "median": null,
-    "range": "—",
-    "hit": "0/6"
+    "median": 116.1,
+    "range": "116.1–116.1",
+    "hit": "1/6"
    },
    "first fish bought": {
     "median": 0.1,
@@ -10147,7 +10159,7 @@
     "hit": "6/6"
    },
    "first pairing": {
-    "median": 10.3,
+    "median": 11.6,
     "range": "5.1–42.5",
     "hit": "6/6"
    },
@@ -10177,9 +10189,9 @@
     "hit": "6/6"
    },
    "first rare color": {
-    "median": 63.3,
-    "range": "17.6–92.3",
-    "hit": "6/6"
+    "median": 31.6,
+    "range": "19.3–68.3",
+    "hit": "5/6"
    },
    "first goal done": {
     "median": 20.1,
@@ -10187,8 +10199,8 @@
     "hit": "6/6"
    },
    "second generation adult": {
-    "median": 44,
-    "range": "34–59",
+    "median": 44.3,
+    "range": "34–63",
     "hit": "6/6"
    },
    "level 2": {
@@ -10202,28 +10214,28 @@
     "hit": "6/6"
    },
    "level 4": {
-    "median": 9.6,
+    "median": 10.1,
     "range": "8.3–11.3",
     "hit": "6/6"
    },
    "level 5": {
     "median": 20.1,
-    "range": "18.1–22.1",
+    "range": "19.3–22.1",
     "hit": "6/6"
    },
    "level 6": {
     "median": 34.3,
-    "range": "27.6–36.1",
+    "range": "29–36.1",
     "hit": "6/6"
    },
    "level 7": {
     "median": 47,
-    "range": "36–48.1",
+    "range": "36.3–52.5",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 63.3,
-    "range": "44.3–64.1",
+    "median": 63.1,
+    "range": "45.3–64.1",
     "hit": "6/6"
    }
   },
@@ -10339,11 +10351,11 @@
     "perDayEarned": 17.1,
     "decor": "15/21",
     "fish": 20,
-    "field": 16,
+    "field": 15,
     "goals": 1,
     "decisions": 4,
     "mysteries": 30,
-    "toasts": 212,
+    "toasts": 211,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
@@ -10352,12 +10364,12 @@
      "buyFish:goldfish": -20,
      "buyDecor:coconut": -41,
      "buyDecor:grass": -16,
-     "feed": 56,
+     "feed": 50,
      "buyDecor:rock": -5,
      "time passing": 184,
      "pet": 10,
      "buyDecor:moss": -8,
-     "octoLid": 6,
+     "octoLid": 12,
      "buyDecor:fern": -10,
      "buyDecor:starfish": -10,
      "buyDecor:sword": -14,
@@ -10407,7 +10419,7 @@
     "stuck": [
      "sleuth since day 20: ✓ 0/1 ✓",
      "raise since day 9: ✓ ✓ 2/3",
-     "rare since day 18: ✓ ✓ ✓ 0/1",
+     "gold since day 20: ✓ 0/1 ✓ 0/1",
      "gold since day 18: ✓ 0/1 ✓ 0/1",
      "dynasty since day 24: 0/1 0/1",
      "gold since day 1: ✓ ✓ ✓ 0/1"
@@ -10455,36 +10467,36 @@
     "level": 8,
     "score": 699,
     "shells": 55,
-    "earned": 1155,
+    "earned": 1147,
     "spent": 1129,
-    "perDayEarned": 19.3,
+    "perDayEarned": 19.1,
     "decor": "24/27",
-    "fish": 32,
+    "fish": 30,
     "field": 17,
     "goals": 2,
     "decisions": 9,
     "mysteries": 60,
-    "toasts": 384,
+    "toasts": 367,
     "neglect": 0,
     "deaths": 0,
     "earnedBy": {
      "firstFish": 4,
-     "mystery": 387,
+     "mystery": 384,
      "buyFish:goldfish": -20,
      "buyDecor:coconut": -41,
      "buyDecor:grass": -16,
-     "feed": 72,
+     "feed": 74,
      "buyDecor:rock": -5,
-     "time passing": 523,
-     "pet": 20,
+     "time passing": 488,
+     "pet": 14,
      "buyDecor:moss": -8,
-     "octoLid": 6,
+     "octoLid": 12,
      "buyDecor:fern": -10,
      "buyDecor:starfish": -10,
      "buyDecor:sword": -14,
-     "watchEggs": 63,
+     "watchEggs": 74,
      "matchmake": 7,
-     "buyFish:cory": -44,
+     "buyFish:cory": -200,
      "buyDecor:red": -16,
      "buyDecor:boulder": -20,
      "play": 18,
@@ -10506,10 +10518,9 @@
      "buyDecor:bamboo": -52,
      "buyDecor:lantern": -57,
      "buyDecor:table": -64,
-     "sellFish": 3,
+     "sellFish": 41,
      "buyDecor:chest": -85,
-     "buyDecor:anchor": -92,
-     "buyDecor:arch": -120
+     "buyDecor:anchor": -92
     },
     "diffs": 10,
     "diffsEx": [
@@ -10528,20 +10539,20 @@
      "care": 120,
      "mystery": 60,
      "decisions": 24,
-     "hatched": 44,
-     "grown": 126,
-     "raised": 108,
-     "morphs": 120,
+     "hatched": 42,
+     "grown": 114,
+     "raised": 104,
+     "morphs": 100,
      "goals": 60,
      "field": 102,
      "species": 20
     },
     "stuck": [
-     "raise since day 45: ✓ 1/2 1/3",
+     "gold since day 46: ✓ 0/1 ✓ 0/1",
      "raise since day 9: ✓ ✓ 2/3",
-     "ember since day 45: ✓ 0/1 ✓ 0/1",
+     "gold since day 20: ✓ 0/1 ✓ 0/1",
      "gold since day 18: ✓ ✓ ✓ 0/1",
-     "sleuth since day 48: ✓ 0/1 ✓",
+     "octo since day 54: ✓ ✓ ✓ 0/1",
      "raise since day 32: ✓ ✓ 2/3"
     ],
     "centerpieces": [
@@ -10549,7 +10560,7 @@
       "spire": null,
       "crystal": null,
       "bridge": null,
-      "arch": 56.3
+      "arch": null
      },
      {
       "spire": null,
@@ -10585,38 +10596,38 @@
    },
    "120": {
     "level": 8,
-    "score": 967,
-    "shells": 238,
-    "earned": 1743,
-    "spent": 1599,
-    "perDayEarned": 14.5,
-    "decor": "28/27",
+    "score": 965,
+    "shells": 142,
+    "earned": 1788,
+    "spent": 1611,
+    "perDayEarned": 14.9,
+    "decor": "27/27",
     "fish": 32,
     "field": 18,
     "goals": 4,
-    "decisions": 17,
+    "decisions": 18,
     "mysteries": 120,
     "toasts": 473,
-    "neglect": 0,
+    "neglect": 1,
     "deaths": 0,
     "earnedBy": {
      "firstFish": 4,
-     "mystery": 762,
+     "mystery": 757,
      "buyFish:goldfish": -20,
      "buyDecor:coconut": -41,
      "buyDecor:grass": -16,
-     "feed": 96,
+     "feed": 110,
      "buyDecor:rock": -5,
-     "time passing": 636,
-     "pet": 20,
+     "time passing": 683,
+     "pet": 14,
      "buyDecor:moss": -8,
-     "octoLid": 6,
+     "octoLid": 12,
      "buyDecor:fern": -10,
      "buyDecor:starfish": -10,
      "buyDecor:sword": -14,
-     "watchEggs": 63,
+     "watchEggs": 74,
      "matchmake": 7,
-     "buyFish:cory": -44,
+     "buyFish:cory": -200,
      "buyDecor:red": -16,
      "buyDecor:boulder": -20,
      "play": 18,
@@ -10638,13 +10649,12 @@
      "buyDecor:bamboo": -52,
      "buyDecor:lantern": -57,
      "buyDecor:table": -64,
-     "sellFish": 3,
+     "sellFish": 41,
      "buyDecor:chest": -85,
      "buyDecor:anchor": -92,
      "buyDecor:arch": -120,
      "buyDecor:bridge": -150,
-     "buyDecor:crystal": -190,
-     "glass": 4
+     "buyDecor:crystal": -190
     },
     "diffs": 10,
     "diffsEx": [
@@ -10663,57 +10673,57 @@
      "care": 240,
      "mystery": 120,
      "decisions": 48,
-     "hatched": 44,
-     "grown": 132,
-     "raised": 112,
+     "hatched": 46,
+     "grown": 138,
+     "raised": 120,
      "morphs": 120,
      "goals": 60,
      "field": 102,
      "species": 20
     },
     "stuck": [
-     "raise since day 45: ✓ 1/2 1/3",
+     "gold since day 46: ✓ 0/1 ✓ 0/1",
      "raise since day 9: ✓ ✓ 2/3",
-     "ember since day 45: ✓ 0/1 ✓ 0/1",
-     "octo since day 67: ✓ ✓ 0/1 0/1",
-     "ember since day 93: ✓ 0/1 ✓ 0/1",
+     "gold since day 20: ✓ 0/1 ✓ 0/1",
+     "blue since day 86: ✓ 0/1 0/1 0/1",
+     "ghost since day 72: ✓ 0/1 ✓ 0/1",
      "raise since day 32: ✓ ✓ 2/3"
     ],
     "centerpieces": [
      {
       "spire": null,
-      "crystal": 84.1,
-      "bridge": 65.1,
-      "arch": 56.3
+      "crystal": 93.1,
+      "bridge": 75.6,
+      "arch": 63.6
      },
      {
       "spire": null,
-      "crystal": 94.1,
+      "crystal": 93.6,
       "bridge": 76.1,
       "arch": 65.3
      },
      {
       "spire": null,
-      "crystal": 97.6,
-      "bridge": 76.6,
-      "arch": 63.1
+      "crystal": 101.1,
+      "bridge": 79.1,
+      "arch": 64.6
      },
      {
-      "spire": null,
-      "crystal": 89.3,
-      "bridge": 74.1,
+      "spire": 116.1,
+      "crystal": 88.1,
+      "bridge": 73.1,
       "arch": 64.1
      },
      {
       "spire": null,
-      "crystal": 113.6,
-      "bridge": 101.3,
-      "arch": 68.3
+      "crystal": null,
+      "bridge": 119.3,
+      "arch": 71.1
      },
      {
       "spire": null,
-      "crystal": 100.1,
-      "bridge": 78.6,
+      "crystal": 102.1,
+      "bridge": 78.5,
       "arch": 66.1
      }
     ]
@@ -10728,42 +10738,38 @@
     16,
     8,
     7,
-    16.5
+    6.5
    ],
    "dynasty": [
-    4.2,
+    4.4,
     3,
-    23.3
+    29
    ],
    "family": [
-    3.7,
-    3,
-    4.2
+    4.7,
+    3.8
+   ],
+   "gold": [
+    null,
+    null,
+    45.2,
+    30.4
    ],
    "raise": [
-    null,
     null,
     23.2,
     null
    ],
    "ghost": [
-    9.5,
-    23.8
-   ],
-   "rare": [
-    16.8
+    11.2,
+    null
    ],
    "octo": [
-    6.7,
-    null
+    19,
+    7.7
    ],
-   "ember": [
-    null,
+   "blue": [
     null
-   ],
-   "gold": [
-    45.2,
-    30.4
    ]
   }
  },
@@ -10782,9 +10788,9 @@
     "hit": "0/6"
    },
    "bought spire": {
-    "median": 112.6,
-    "range": "112.6–112.6",
-    "hit": "1/6"
+    "median": null,
+    "range": "—",
+    "hit": "0/6"
    },
    "first fish bought": {
     "median": 0.1,
@@ -10807,7 +10813,7 @@
     "hit": "6/6"
    },
    "first pairing": {
-    "median": 26.1,
+    "median": 25.6,
     "range": "11.6–56.6",
     "hit": "5/6"
    },
@@ -10833,12 +10839,12 @@
    },
    "first octopus adventure": {
     "median": 8.5,
-    "range": "8.5–23",
+    "range": "8.5–40.5",
     "hit": "6/6"
    },
    "first rare color": {
-    "median": 51.5,
-    "range": "29.6–90.5",
+    "median": 51.6,
+    "range": "29.6–68.6",
     "hit": "5/6"
    },
    "first goal done": {
@@ -10847,7 +10853,7 @@
     "hit": "6/6"
    },
    "second generation adult": {
-    "median": 47.5,
+    "median": 45.6,
     "range": "39.5–105.5",
     "hit": "5/6"
    },
@@ -10868,22 +10874,22 @@
    },
    "level 5": {
     "median": 28,
-    "range": "25.1–28.6",
+    "range": "25.1–28.1",
     "hit": "6/6"
    },
    "level 6": {
     "median": 41.1,
-    "range": "30.1–46.1",
+    "range": "31.1–45.1",
     "hit": "6/6"
    },
    "level 7": {
-    "median": 57.6,
-    "range": "41.1–59.1",
+    "median": 51.5,
+    "range": "42.6–58.1",
     "hit": "6/6"
    },
    "level 8": {
-    "median": 69.5,
-    "range": "49.6–78.5",
+    "median": 68.1,
+    "range": "52.5–75.1",
     "hit": "6/6"
    }
   },
@@ -11058,7 +11064,7 @@
     },
     "stuck": [
      "family since day 8: 0/1 ✓ ✓",
-     "rare since day 30: ✓ 0/1 0/1 0/1",
+     "octo since day 30: ✓ ✓ 0/1 0/1",
      "octo since day 8: ✓ ✓ ✓ 0/1",
      "octo since day 11: ✓ ✓ 0/1 0/1",
      "guide since day 20: ✓ 3/4 3/6",
@@ -11104,28 +11110,28 @@
     ]
    },
    "60": {
-    "level": 7,
-    "score": 587,
-    "shells": 53,
-    "earned": 1015,
-    "spent": 984,
-    "perDayEarned": 16.9,
-    "decor": "23/26",
+    "level": 8,
+    "score": 598,
+    "shells": 43,
+    "earned": 1071,
+    "spent": 1048,
+    "perDayEarned": 17.9,
+    "decor": "23/27",
     "fish": 28,
     "field": 17,
-    "goals": 3,
+    "goals": 4,
     "decisions": 8,
     "mysteries": 54,
-    "toasts": 347,
+    "toasts": 375,
     "neglect": 11,
     "deaths": 0,
     "earnedBy": {
      "firstFish": 4,
-     "mystery": 351,
+     "mystery": 359,
      "buyFish:goldfish": -20,
      "buyDecor:coconut": -40,
      "buyDecor:grass": -16,
-     "feed": 82,
+     "feed": 86,
      "time passing": 383,
      "buyDecor:rock": -1,
      "octoLid": 5,
@@ -11153,8 +11159,7 @@
      "buyDecor:bamboo": -55,
      "buyDecor:lantern": -57,
      "buyDecor:table": -61,
-     "buyDecor:chest": -85,
-     "glass": 4
+     "buyDecor:chest": -85
     },
     "diffs": 10,
     "diffsEx": [
@@ -11183,11 +11188,11 @@
     },
     "stuck": [
      "family since day 8: 0/1 ✓ ✓",
-     "peace since day 55: ✓ ✓ 1/3 ✓",
+     "ember since day 46: ✓ ✓ ✓ 0/1",
      "ember since day 48: ✓ 0/1 ✓ 0/1",
      "gold since day 38: ✓ 0/1 ✓ 0/1",
-     "guide since day 20: ✓ ✓ 5/6",
-     "raise since day 47: ✓ 1/2 1/3"
+     "ghost since day 45: ✓ 0/1 ✓ 0/1",
+     "raise since day 56: ✓ 1/2 1/3"
     ],
     "centerpieces": [
      {
@@ -11230,34 +11235,34 @@
    },
    "120": {
     "level": 8,
-    "score": 1004,
-    "shells": 133,
-    "earned": 1985,
-    "spent": 1917,
-    "perDayEarned": 16.5,
+    "score": 938,
+    "shells": 121,
+    "earned": 1884,
+    "spent": 1668,
+    "perDayEarned": 15.7,
     "decor": "28/27",
     "fish": 32,
     "field": 18,
-    "goals": 6,
+    "goals": 4,
     "decisions": 17,
     "mysteries": 114,
-    "toasts": 586,
+    "toasts": 556,
     "neglect": 11,
     "deaths": 0,
     "earnedBy": {
      "firstFish": 4,
-     "mystery": 718,
+     "mystery": 712,
      "buyFish:goldfish": -20,
      "buyDecor:coconut": -40,
      "buyDecor:grass": -16,
-     "feed": 114,
-     "time passing": 645,
+     "feed": 141,
+     "time passing": 634,
      "buyDecor:rock": -1,
      "octoLid": 5,
      "buyDecor:moss": -8,
      "buyFish:cory": -44,
      "buyDecor:fern": -10,
-     "pet": 14,
+     "pet": 10,
      "buyDecor:starfish": -10,
      "watchEggs": 5,
      "buyDecor:sword": -11,
@@ -11266,7 +11271,7 @@
      "decide:": -8,
      "buyFish:blue": -84,
      "buyDecor:shell": -22,
-     "water": 32,
+     "water": 12,
      "buyDecor:pot": -23,
      "buyDecor:brain": -25,
      "buyDecor:kelp": -27,
@@ -11279,9 +11284,9 @@
      "buyDecor:lantern": -57,
      "buyDecor:table": -61,
      "buyDecor:chest": -85,
-     "glass": 16,
      "buyFish:angelfish": -60,
      "buyDecor:anchor": -95,
+     "glass": 4,
      "buyDecor:arch": -120,
      "buyDecor:bridge": -147,
      "buyDecor:crystal": -190
@@ -11302,7 +11307,7 @@
     "parts": {
      "care": 228,
      "mystery": 114,
-     "decisions": 51,
+     "decisions": 48,
      "hatched": 42,
      "grown": 126,
      "raised": 104,
@@ -11313,28 +11318,28 @@
     },
     "stuck": [
      "family since day 8: 0/1 ✓ ✓",
-     "none",
+     "ember since day 46: ✓ ✓ ✓ 0/1",
      "ember since day 48: ✓ 0/1 ✓ 0/1",
      "raise since day 100: ✓ 1/2 1/3",
-     "dynasty since day 91: ✓ 0/1",
-     "gold since day 86: ✓ 0/1 ✓ 0/1"
+     "octo since day 69: ✓ ✓ 0/1 0/1",
+     "raise since day 56: ✓ 1/2 1/3"
     ],
     "centerpieces": [
      {
       "spire": null,
-      "crystal": 105.6,
-      "bridge": 90.1,
-      "arch": 76.1
+      "crystal": 107.6,
+      "bridge": 87.6,
+      "arch": 75.1
      },
      {
       "spire": null,
-      "crystal": 86.5,
-      "bridge": 71.1,
-      "arch": 63.6
+      "crystal": 96.1,
+      "bridge": 80.1,
+      "arch": 68.1
      },
      {
       "spire": null,
-      "crystal": 100.6,
+      "crystal": 101.1,
       "bridge": 83.1,
       "arch": 74.1
      },
@@ -11346,15 +11351,15 @@
      },
      {
       "spire": null,
-      "crystal": 109.1,
-      "bridge": 99.5,
-      "arch": 91.1
+      "crystal": 105.6,
+      "bridge": 88.6,
+      "arch": 78.6
      },
      {
-      "spire": 112.6,
-      "crystal": 86.6,
-      "bridge": 74.6,
-      "arch": 63.1
+      "spire": null,
+      "crystal": 97.1,
+      "bridge": 81.6,
+      "arch": 70.6
      }
     ]
    }
@@ -11370,54 +11375,45 @@
    ],
    "family": [
     null,
-    4,
-    4,
     4
    ],
    "raise": [
     16.9,
     null,
-    27.5
+    null
    ],
    "blue": [
     3.5,
     10,
-    4
-   ],
-   "rare": [
-    10,
-    4
+    8.5
    ],
    "octo": [
-    11,
+    16.4,
     25.5,
     26.4,
-    6,
+    null,
     31.4
    ],
-   "peace": [
-    13
+   "ember": [
+    null,
+    null
    ],
    "dynasty": [
     4,
-    4,
-    25,
-    null,
-    3
-   ],
-   "ember": [
-    null
+    25
    ],
    "gold": [
-    29,
-    null
+    29
+   ],
+   "rare": [
+    4
    ],
    "guide": [
-    41.5,
+    25,
     8
    ],
    "ghost": [
-    23
+    23.4
    ]
   }
  }
