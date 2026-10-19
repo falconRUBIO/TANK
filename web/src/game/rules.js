@@ -853,6 +853,54 @@ function mysteryOut(t, m, now) {
   }
   return { line: 'Whatever it was, it is gone.' };
 }
+// ── Decisions ── every few days something in the tank needs you to choose: two animals fighting over a den, one that looks unwell, an octopus
+// that keeps pushing at the lid, a fish that keeps chasing another. Each choice costs something and changes what happens next; left alone for a
+// day and a half, the tank decides for itself (and that is a choice too). What it turns out to be is fixed by the day, so every phone agrees.
+export const DILEMMA = {
+  den: { text: (x, y, d) => `${x.name} and ${y.name} keep fighting over the ${d}.`, opts: [['x', (x) => `Let ${x.name} have it`], ['y', (x, y) => `Let ${y.name} have it`], ['wait', () => 'Let them sort it out']] },
+  sick: { text: (x) => `${x.name} looks pale and is hiding. It might be catching something.`, opts: [['treat', () => `Treat the water (${8} shells)`], ['isolate', () => 'Keep it apart for a day'], ['wait', () => 'Wait and see']] },
+  lid: { text: (x) => `${x.name} keeps pushing at the lid. It wants out.`, opts: [['lid', () => 'Weigh the lid down'], ['busy', () => 'Keep it busy with a puzzle'], ['let', () => 'Let it explore']] },
+  chase: { text: (x, y) => `${x.name} keeps chasing ${y.name} around the tank.`, opts: [['cover', (x, y) => `Move a plant to hide ${y.name}`], ['time', (x) => `Give ${x.name} a time out`], ['wait', () => 'Let them be']] },
+};
+export const DILEMMA_TREAT = 8;
+function rollDilemma(t, now, ev) {
+  if ((t.flags.tut ?? 0) < 5) return; const D0 = t.dilemma;
+  if (D0 && !D0.done && now >= D0.until) { const r = settleDilemma(t, D0, 'wait', now, null); ev.push(...r.events); }      // nobody chose: the tank decides
+  if (now < (t.dilemmaAt ??= now + 2 * DAY)) return; t.dilemmaAt = now + (3 + (hash32(now / 6e4) % 2)) * DAY;
+  const live = t.fish.filter((f) => !f.dead && !f.away && !SPECIES_DEF[f.species]?.visitor && stageOf(f, now) !== 'baby'), h = hash32(Math.floor(now / DAY) * 131 + ((t.createdAt ?? 0) % 977)), pick = (a, k = 0) => a[(h >>> k) % a.length];
+  const dens = t.decor.filter((d) => ['coconut', 'pot'].includes(d.type)), octos = live.filter(isOcto), fish = live.filter((f) => !isOcto(f)), c = [];
+  if (dens.length && live.length >= 2 && (octos.length >= 2 || (octos.length && fish.length))) { const x = octos[0], y = live.find((f) => f !== x); c.push({ kind: 'den', fish: [x.id, y.id], decor: (homeOf(t, x) ?? dens[0]).id }); }
+  if (live.length >= 2) { const x = pick(live, 3); c.push({ kind: 'sick', fish: [x.id] }); }
+  if (octos.length) c.push({ kind: 'lid', fish: [pick(octos, 5).id] });
+  if (fish.length >= 2) { const x = pick(fish, 7), y = fish.find((f) => f !== x); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
+  if (!c.length) return; const D = pick(c, 9), F = D.fish.map((id) => t.fish.find((f) => f.id === id)), dl = D.decor ? (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase() : '';
+  t.dilemma = { id: 'dl' + Math.floor(now / 6e4), ...D, at: now, until: now + 1.5 * DAY, text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
+  ev.push({ journal: t.dilemma.text, toast: `${t.dilemma.text} What will you do?`, dilemma: t.dilemma.id });
+}
+function settleDilemma(t, D, k, now, name) {
+  const events = [], F = D.fish.map((id) => t.fish.find((f) => f.id === id && !f.dead)), [x, y] = F, h = hash32((D.at / 6e4) | 0), luck = h % 100, who = name ? `${name} chose` : 'Nobody chose, so';
+  const say = (line, f = x) => events.push({ journal: line, ...(f ? { story: f.id, text: line } : {}) }), hap = (f, d) => { if (f) f.happy = Math.max(0, Math.min(1, (f.happy ?? 0.7) + d)); };
+  if (!x) { D.done = true; D.chose = k; return { ok: true, events }; }
+  if (D.kind === 'den') { const dl = (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase();
+    if (k === 'x' || k === 'y') { const [win, lose] = k === 'x' ? [x, y] : [y, x]; if (win && isOcto(win)) win.home = D.decor; hap(win, 0.15); hap(lose, -0.15); if (lose) lose.grudge = { id: win.id, name: win.name, since: now, why: 'den' }; say(`${who} to give the ${dl} to ${win.name}. ${lose?.name ?? 'The other'} has not forgotten.`, win); }
+    else if (luck < 50 && y) { x.pal = y.id; y.pal = x.id; say(`${who} to let them sort it out. They did: ${x.name} and ${y.name} share the ${dl} now, and get on.`); }
+    else { hap(x, -0.2); hap(y, -0.2); if (y) y.grudge = { id: x.id, name: x.name, since: now, why: 'den' }; say(`${who} to let them sort it out. They did not: ${x.name} and ${y?.name} are both on edge.`); } }
+  if (D.kind === 'sick') {
+    if (k === 'treat') { if (t.shells < DILEMMA_TREAT) return { ok: false, reason: 'NOT_ENOUGH_SHELLS', events }; t.shells -= DILEMMA_TREAT; x.ail = 0; hap(x, 0.1); say(`${who} to treat the water. ${x.name} is bright again by evening.`); }
+    else if (k === 'isolate') { x.ail = Math.max(0, (x.ail ?? 0) - 0.1); const pal = t.fish.find((f) => f.id === x.pal && !f.dead); hap(pal, -0.15); hap(x, -0.1); say(`${who} to keep ${x.name} apart for a day. It did not spread${pal ? `, but ${pal.name} kept looking for it` : ''}.`); }
+    else if (luck < 45) say(`${who} to wait and see. It was nothing: ${x.name} is back to itself.`);
+    else { const others = t.fish.filter((f) => !f.dead && f !== x && !isOcto(f)).slice(0, 2); for (const f of [x, ...others]) f.ail = Math.min(0.9, (f.ail ?? 0) + 0.35); say(`${who} to wait and see. It spread: ${[x, ...others].map((f) => f.name).join(', ')} look unwell. Clean water and food will help.`); } }
+  if (D.kind === 'lid') { t.adv ||= {};
+    if (k === 'lid') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 7 * DAY); hap(x, -0.2); say(`${who} to weigh the lid down. ${x.name} sulks in its den, but it stays in.`); }
+    else if (k === 'busy') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 3 * DAY); hap(x, 0.15); say(`${who} to keep ${x.name} busy. It forgets about the lid for now, and seems pleased with itself.`); }
+    else { t.adv.octoAt = Math.min(t.adv.octoAt ?? Infinity, now + 2 * HOUR); hap(x, 0.2); say(`${who} to let ${x.name} explore. It will be off on an adventure soon.`); } }
+  if (D.kind === 'chase') {
+    if (k === 'cover') { hap(y, 0.15); say(`${who} to give ${y?.name} somewhere to hide. ${x.name} gave up the chase.`, y); }
+    else if (k === 'time') { hap(x, -0.1); hap(y, 0.1); x.calmUntil = now + 2 * DAY; say(`${who} to give ${x.name} a time out. It is calmer for now.`); }
+    else if (luck < 40) { hap(y, 0.05); if (y) { x.pal = y.id; y.pal = x.id; } say(`${who} to let them be. It was a game after all: ${x.name} and ${y?.name} are friends now.`); }
+    else { hap(y, -0.25); if (y) y.grudge = { id: x.id, name: x.name, since: now }; say(`${who} to let them be. ${y?.name} is worn out and keeps away from ${x.name}.`, y); } }
+  D.done = true; D.chose = k; D.by = name; return { ok: true, events };
+}
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -1154,7 +1202,7 @@ function _advance(t, now = Date.now()) {
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
   guard('drift', () => { if (!t.drift && now >= t.driftAt && now - (t.createdAt ?? now) < 2 * DAY) {      /* (after the first days, finds come as the daily mystery) */ t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
-  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('mystery', () => rollMystery(t, now)); guard('theme', () => themeCheck(t, now, ev));
+  guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('mystery', () => rollMystery(t, now)); guard('dilemma', () => rollDilemma(t, now, ev)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; if (weeks === 4) ev.push({ journal: 'Our tank is one month old.' }); else if (weeks % 52 === 0) ev.push({ journal: `Our tank is ${weeks / 52} year${weeks > 52 ? 's' : ''} old.` });      /* (only the real milestones: a month, then each year) */ } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
@@ -1663,6 +1711,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       events.push({ journal: o.line, ...(o.fish ? { story: o.fish.id } : {}), mystery: { kind: m.kind, fish: m.fish, next: !!o.next }, activity: { type: 'mystery', text: `${name} looked into today's mystery.` } });
       levelCheck(t, now, events); return ok({ applied: true, line: o.line, fish: m.fish, next: !!(o.next || o.visit), delta: pay });
     }
+    case 'decide': { const D = t.dilemma; if (!D || D.id !== a.id || D.done) return ok({ applied: false }); if (!D.opts.some((o) => o.k === a.k)) return fail('NOT_FOUND'); const r = settleDilemma(t, D, a.k, now, name); if (!r.ok) return fail(r.reason); events.push(...r.events); return ok({ applied: true, line: r.events[0]?.journal }); }
     case 'matchmake': {      // bring two together: fish of a kind spawn sooner and it is these two; two octopuses get to know each other faster
       const x = t.fish.find((f) => f.id === a.a && !f.dead), y = t.fish.find((f) => f.id === a.b && !f.dead); if (!x || !y || x === y) return fail('NOT_FOUND');
       if (x.species !== y.species) return fail('NOT_SAME_KIND'); if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');
