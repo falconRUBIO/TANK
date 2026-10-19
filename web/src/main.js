@@ -710,10 +710,18 @@ async function fryOfferAsk() {
 }
 // the egg is gone: either it hatched (the shell cracks open, the baby swims out of it and, if you are watching, the camera follows it a moment) or the octopus found it
 const shards = [];
+// the reveal: a baby comes out of the egg as a dark little shape, and its colors come up after a breath (for a rare color, a long breath, then sparkle)
+function revealFish(f3, rec, wait = 1400, rise = 1600) {
+  const ic = f3?.mesh?.instanceColor; if (!ic) return; const orig = Float32Array.from(ic.array), dark = 0.08, t0 = performance.now() + wait, rare = rec && morphOf(rec);
+  ic.array.forEach((v, i) => { ic.array[i] = v * dark; }); ic.needsUpdate = true;
+  const step = () => { const k = Math.max(0, Math.min(1, (performance.now() - t0) / rise)), e = k * k * (3 - 2 * k), m = dark + (1 - dark) * e; for (let i = 0; i < orig.length; i++) ic.array[i] = orig[i] * m; ic.needsUpdate = true;
+    if (k < 1) requestAnimationFrame(step); else if (rare) { sfx('reward'); haptic(30); for (let i = 0; i < 6; i++) setTimeout(() => fishes.burst(f3.pos.clone()), i * 120); moment({ at: f3.pos, haptics: 30 }); ui.toast(`${rec.name} is ${MORPHS[rare].label.toLowerCase()}!`, 5000); } };
+  requestAnimationFrame(step);
+}
 function eggGone(egg, s) {
   const at = egg.group.position.clone(), e = egg.e, baby = s.fish.filter((f) => f.stage === 'baby' && (f.parents ?? []).some((p) => p.id === e.a || p.id === e.b) && !eggBabies.has(f.id)).sort((a, b) => b.born - a.born)[0];      /* (the newest child of these parents) */
   if (!baby) { fishes.burst(at); return; }
-  eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
+  eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3 && !document.hidden) revealFish(f3, baby, morphOf(baby) ? 3200 : 900, morphOf(baby) ? 2600 : 1200); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
   const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
   if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
   fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = Date.now() + 9000; window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint, e.species === 'octopus');      // the larvae rise from the eggs; one of them is the baby
