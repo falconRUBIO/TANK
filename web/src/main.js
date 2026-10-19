@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { harmonyOf, mysteryOf } from './game/rules.js';
+import { harmonyOf, mysteryOf, MYSTERY, storyNext } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -535,10 +535,10 @@ let mystBusy = false;
 function mystSync() { const s = game.state, m = s && mysteryOf(s), U = mystGlow.userData; if (m && !m.done && (s.flags?.tut ?? 0) >= 5) { mystGlow.position.set(m.x, sandH(m.x, m.z) + 0.3, m.z); U.kind = m.kind; mystGlow.visible = true; } else if (!(U.out > 0)) mystGlow.visible = false; }
 function mystHit(ev) { const m = game.state && mysteryOf(game.state); return !!(m && !m.done && mystGlow.visible && !(mystGlow.userData.out > 0) && rayFrom(ev).ray.distanceToPoint(mystGlow.position) < 1.3); }
 async function openMystery() {
-  if (mystBusy) return; mystBusy = true; const P = mystGlow.position.clone(); const r = await game.dispatch({ t: 'mystery' }); mystBusy = false; if (!r.ok) return fail(r); if (!r.applied) { mystSync(); return; }
+  if (mystBusy) return; mystBusy = true; const P = mystGlow.position.clone(); const r = await game.dispatch({ t: 'mystery', tz: -new Date().getTimezoneOffset() }); mystBusy = false; if (!r.ok) return fail(r); if (!r.applied) { mystSync(); return; }
   sfx('pop'); haptic(14); for (let i = 0; i < 4; i++) setTimeout(() => fishes.burst(P.clone().add(new THREE.Vector3(0, 0.2 * i, 0))), i * 150);
   const f = r.fish && fishes.byId.get(r.fish); if (f && !f.dead) { f.target?.set(P.x, P.y + 0.7, P.z); f.retarget = 4; spotlightFish(r.fish, 3200, 400); }      // (whoever it turned out to be comes over)
-  mystGlow.userData.out = 1; moment({ at: P, haptics: 16 }); ui.toast(r.line, 5600); if (r.next) setTimeout(() => ui.toast('To be continued tomorrow…', 3400), 5800); ui.refresh?.();
+  mystGlow.userData.out = 1; moment({ at: P, haptics: 16, shells: r.delta ?? 0 }); ui.updateHeader?.(); ui.toast(r.line, 5600); if (r.next) setTimeout(() => ui.toast('To be continued tomorrow…', 3400), 5800); ui.refresh?.();
 }
 function mystTick(dt) {
   if (!mystGlow.visible) return; const U = mystGlow.userData, t = performance.now() / 1000, M = mystGlow.material;
@@ -971,6 +971,7 @@ function showCard(f) {
   const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
+  const nextLine = (() => { const n = storyNext(game.state, game.state.fish.find((x) => x.id === rec.id) ?? rec); return n ? `<p class="mind next"><b>Next</b> ${esc(n)}</p>` : ''; })();      // the next chapter of its life, first
   const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
     if (rec.grudge) out.push(`Has it in for ${esc(rec.grudge.name)}${rec.grudge.why === 'den' ? ', who keeps poking round its den' : ''}.`);
     if (rec.lean?.from?.length) { const L = rec.lean, dim = [['cur', 'curious'], ['soc', 'sociable'], ['bold', 'bold'], ['act', 'lively'], ['adapt', 'easy-going']].filter(([k]) => Number.isFinite(L[k]) && L[k] !== 0).map(([k, w]) => (L[k] > 0 ? `a little more ${w}` : `a little less ${w}`)); if (dim.length) out.push(`Takes after ${esc(L.from.join(' and '))}: ${dim.slice(0, 2).join(', ')}.`); }
@@ -1011,7 +1012,7 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
     <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
@@ -1221,6 +1222,7 @@ async function offerGift() {
 }
 let heldChapters = [], tipsDoneAt = 0, sawTips = false;
 function maybeGift() {
+  return;      // (the day's gift now comes with the daily mystery: no box of its own)
   const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || heldChapters.length || (tipsDoneAt && Date.now() - tipsDoneAt < 45e3) || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
   if (nurseryFx.going || fishes.list.some((f) => f.birthT > 0)) return;      // (a birth or the babies' send-off on screen: the gift waits)
   if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
@@ -1541,38 +1543,14 @@ game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
 let wbShown = false, wbPending = false;      // (pending: the welcome-back note is about to show, so nothing else pops up first)
 // once a week, in the evening: the week in a few plain lines, from the journal (no scores, nothing to keep up)
-window.__weekly = () => weeklyRecap();
-function weeklyRecap() {
-  const s = game.state, now = Date.now(), K = 'ourtank.weekly'; let last = 0; try { last = +localStorage.getItem(K) || 0; } catch { /* ignore */ }
-  if (!last) { try { localStorage.setItem(K, String(now)); } catch { /* ignore */ } return false; }      // (the first week starts counting now)
-  if (now - last < 7 * 864e5 || now - (s.createdAt ?? now) < 7 * 864e5) return false;
-  const wk = game.journal.filter((e) => e.ts >= now - 7 * 864e5), loved = wk.filter((e) => (e.hearts ?? []).length), names = (re) => [...new Set(wk.map((e) => e.text.match(re)?.[1]).filter(Boolean))];
-  const grew = names(/^(\w+) (?:reached adulthood|is an adult|grew up|is all grown up)/), came = names(/^(\w+)(?: the [\w ]+)? has arrived/), born = names(/^(\w+) gave birth/), list = (a) => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a.at(-1) : a[0];
-  const lines = [`${wk.length} moment${wk.length === 1 ? '' : 's'} in the journal${loved.length ? `, ${loved.length} of them loved` : ''}.`];
-  const best = [...loved].sort((a, b) => (b.hearts?.length ?? 0) - (a.hearts?.length ?? 0))[0]; if (best) lines.push(`Most loved: “${best.text.length > 70 ? best.text.slice(0, 67).trimEnd() + '…' : best.text}”`);
-  if (grew.length) lines.push(`${list(grew)} grew up.`); if (came.length) lines.push(`New in the tank: ${list(came)}.`); if (born.length) lines.push(`${list(born)} became a father.`);
-  if (wk.length < 3) return false; try { localStorage.setItem(K, String(now)); } catch { /* ignore */ }
-  ui.recap(lines.slice(0, 4), null, '🗓 THIS WEEK IN THE TANK'); return true;
-}
-function eveningRecap() {
-  const s = game.state, d = new Date(); if (!s || (s.flags.tut ?? 0) < 5 || d.getHours() < 18 || wbShown || document.hidden) return;
-  const key = 'ourtank.recap', day = d.toDateString(); try { if (localStorage.getItem(key) === day) return; } catch { /* ignore */ }
-  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(), lines = [];
-  for (const e of game.journal) if (e.ts >= start && !/began|wish came true|Today's/.test(e.text) && !lines.includes(e.text)) lines.push(e.text);
-  for (const f of s.fish) for (const x of f.story ?? []) { const t = x.text?.includes(f.name) ? x.text : `${f.name}: ${String(x.text ?? '').replace(/^\w/, (c) => c.toLowerCase())}`; if ((x.at ?? x.ts ?? 0) >= start && x.text && !/^Arrived in the tank/.test(x.text) && !lines.includes(t)) lines.push(t); }
-  if (weeklyRecap()) { try { localStorage.setItem(key, day); } catch { /* ignore */ } return; }      // (once a week the evening card looks back on the whole week)
-  if (lines.length < 2) return; try { localStorage.setItem(key, day); } catch { /* ignore */ }
-  const next = forecast(s, Date.now(), 1)[0]; ui.recap(lines.slice(-3), next ? (next.when === 'now' ? next.text : `${next.text}, ${next.when}`) : null);
-}
-document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(eveningRecap, 4000); });
 async function welcomeBack() {
   let seen = 0; try { seen = +localStorage.getItem(seenKey()) || 0; } catch { /* ignore */ }
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
   if (!seen) { if (game.shared && (game.state.flags.tut ?? 0) >= 5 && !game.isTutOwner) ui.toast(`Welcome to ${game.tankName}!`, 3600); return; }
   if (Date.now() - seen < 10 * 60e3 || (game.state.flags.tut ?? 0) < 5) return;
   const octoNames = game.state.fish.filter((f) => f.species === 'octopus').map((f) => f.name), moment = (t) => octoNames.some((n) => t.startsWith(n + ' ')) && /lionfish|jellyfish|sea snake|sole|pretending|dug itself|colors|smacked|squirted|friends now|has it in for|first crab|drove it away/.test(t);
-  const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /hatch|eggs|guarding|drove it away|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday|looking after/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
-  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).sort((a, b) => rank(a.t) - rank(b.t) || b.i - a.i).slice(0, 3).sort((a, b) => a.i - b.i).map((x) => x.t);
+  const mine = game.you?.userId, rank = (t) => (moment(t) ? -1 : /^A plant grew/.test(t) ? 2 : /hatch|eggs|guarding|drove it away|learned|worked out|jar|grew|adult|perfect|level|friends|visiting|birthday|looking after/i.test(t) ? 0 : /arrived|found|bottle|gift/i.test(t) ? 1 : 2);
+  const news = game.journal.filter((e) => e.ts > seen && (!game.shared || e.userId !== mine || moment(e.text)) && !/began/.test(e.text)).map((e, i) => ({ t: e.text, i })).filter((x, _, a) => !/^Time capsule/.test(x.t) && (rank(x.t) < 2 || a.length < 3)).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).slice(0, 5).map((x) => x.t);      /* (the best first; everyday lines only when there is little else) */
   const s = game.state, lines = [...news];
   if (game.shared) {      // who looked after the tank while you were away, one line each: "Alex fed Inky a crab and changed the water."
     const care = /^(.+?) (fed .+|changed the water|cleaned .+|trimmed .+)\.$/, by = new Map();
@@ -1584,13 +1562,15 @@ async function welcomeBack() {
   { const g = s.fish.find((f) => f.gift?.wrapped && f.owner === mine); if (g) lines.unshift(`A gift from ${g.gift.from} is waiting for you on the sand.`); }
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
-  const req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null; if (req) lines.push(`Today's request: ${req}`);
+  const next = [], my = mysteryOf(s), req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null;      // it ends on what is still to come: today's mystery, the request, and what the tank expects next
+  if (my && !my.done) next.push(`${MYSTERY[my.kind]?.text ?? ''} Tap the glow to find out.`); if (req) next.push(`Today's request: ${req}`);
+  for (const x of forecast(s, Date.now(), 2)) if (next.length < 3) next.push(x.when === 'now' ? x.text : `${x.text}, ${x.when}`);
   if (!lines.length) return;
   wbPending = true; await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
   ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
-  sfx('arrive'); ui.reunion(lines.slice(0, 4), takePhoto); wbShown = true; wbPending = false;
+  sfx('arrive'); ui.reunion(lines.slice(0, 6), takePhoto, next); wbShown = true; wbPending = false;
   { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
 }
 
@@ -1698,7 +1678,7 @@ async function boot() {
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
-  welcomeBack().then((shown) => { if (!shown) setTimeout(eveningRecap, 6000); }); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame); setTimeout(octoHello, 4000);
+  welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame); setTimeout(octoHello, 4000);
   // nudges: the subscription this phone holds is told to the server on every open (it may have been renewed, or the tank put back under new accounts) and whenever the browser renews it
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }

@@ -1,9 +1,9 @@
-// HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, collection, settings), shop, modals, toasts.
+// HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -296,11 +296,14 @@ export function initUI({ game, social, cb }) {
       const j = p.text ? game.journal.find((x) => x.text === p.text) : null, im = j ? shotFor(j) : p.text ? shotOf(p.text) : null;
       return `<div class="fg">${im ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${im}" alt=""></button>` : `<div class="fgpic seen">✓</div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
     return `<div class="fghead"><b>Field Guide</b><span>${got} of ${all.length} seen</span></div><p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
+  // what each animal has shown you about itself (its discoveries), as pages of the same book: who, and since when
+  const shownHtml = () => { const by = new Map(); for (const f of S().fish) for (const [k, at] of Object.entries(f.disc ?? {})) { const d = DISCOVERIES[k.split(':')[0]]; if (!d || k.includes(':')) continue; const e = by.get(d.label) ?? { at, who: [] }; if (!e.who.includes(f.name)) e.who.push(f.name); e.at = Math.min(e.at, at); by.set(d.label, e); }
+    return by.size ? `<h4>What they have shown you</h4><div class="shown">${[...by].sort((a, b) => b[1].at - a[1].at).map(([l, e]) => `<div><b>${esc(l)}</b><small>${esc(e.who.slice(0, 3).join(', '))}${e.who.length > 3 ? ` and ${e.who.length - 3} more` : ''}</small></div>`).join('')}</div>` : ''; };
   const bookHtml = () => {
     const s = S(), bred = (id) => [...s.fish, ...(s.memorial ?? [])].filter((f) => f.species === id && (f.parents ?? []).length).length;
     const cell = (kind, id, label) => { const got = s.seen[kind].includes(id), L = kind === 'fish' ? LIFESPAN[id] : null, nf = kind === 'fish' ? (FACTS[id] ?? []).length : 0, b = kind === 'fish' ? bred(id) : 0;      // a little field guide: how long it lives, how many facts, how many hatched here
       return `<div class="bk ${got ? '' : 'nope'}"><img alt="" data-thumb="${kind === 'fish' ? 'fish' : 'decor'}:${id}"><b>${got ? esc(label) : '???'}</b>${got && L ? `<small>~${Math.round(L / 30.4)} mo${nf ? ` · ${nf} facts` : ''}${b ? ` · ${b} born here` : ''}</small>` : ''}</div>`; };
-    return `<div class="bkhead"><b>${s.seen.fish.length + s.seen.decor.length} / ${COLLECTION_SIZE()}</b><small>Every 5 finds earns 3 shells</small></div><h4>Fish</h4><div class="bkg">${Object.entries(SPECIES_DEF).map(([id, d]) => cell('fish', id, d.label)).join('')}</div><h4>Decorations</h4><div class="bkg">${Object.entries(DECOR_DEF).map(([id, d]) => cell('decor', id, d.label)).join('')}</div>`;
+    return `<div class="bkhead"><b>Species and decorations</b><small>${s.seen.fish.length + s.seen.decor.length} of ${COLLECTION_SIZE()} found</small></div><h4>Fish</h4><div class="bkg">${Object.entries(SPECIES_DEF).map(([id, d]) => cell('fish', id, d.label)).join('')}</div><h4>Decorations</h4><div class="bkg">${Object.entries(DECOR_DEF).map(([id, d]) => cell('decor', id, d.label)).join('')}</div>`;
   };
   const memorialHtml = () => { const m = S().memorial ?? []; return m.length ? `<h4>Remembered</h4><div class="mem">${m.map((x, i) => [x, i]).reverse().map(([x, i]) => `<button data-mem="${i}">${esc(x.name)} · ${esc(SPECIES_DEF[x.species]?.label ?? x.species)}</button>`).join('')}</div>` : ''; };
   const PUSH_KINDS = [['eggs', 'Eggs and babies', 'laid, hatching, seahorse births'], ['gifts', 'Gifts and bottles', 'for you, opened, thanks'], ['hungry', 'Hungry animals', 'your animals need feeding'], ['friends', 'Friends', 'joins and nudges'], ['visitors', 'Visitors and news', 'rare visitors, arrivals']];
@@ -390,7 +393,7 @@ export function initUI({ game, social, cb }) {
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
       `;
   };
-  const EARN = [['Feed hungry fish or a hungry octopus', '+1 each'], ['Wipe the glass, every few days', `+${GLASS_PAY} (a pearl every 5th: +${PEARL_PAY})`], ['Change cloudy water, every few days', `+${WATER_PAY}`], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favorite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 things in the collection book', '+3'], ['Tank level up', '+4 and more']];
+  const EARN = [['Feed hungry fish or a hungry octopus', '+1 each'], ['Wipe the glass, every few days', `+${GLASS_PAY} (a pearl every 5th: +${PEARL_PAY})`], ['Change cloudy water, every few days', `+${WATER_PAY}`], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favorite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 species or decorations in the Field Guide', '+3'], ['Tank level up', '+4 and more']];
   let feedOpen = null;      // null: the food list opens by itself when someone is hungry; tapping Feed opens or closes it by hand
   // ── Feeding ── one model of who this caretaker can feed, used by the headline, the Feed button and the drawer, so they always agree.
   // A group is one octopus (its own hunger, a crab each), the seahorses or the fish (the two share one mealtime). For each: how full it is,
@@ -493,14 +496,14 @@ export function initUI({ game, social, cb }) {
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
-      // Friends, Journal and Collection as tabs; Settings is the gear in the corner of the sheet
+      // Friends, Journal and the Field Guide as tabs; Settings is the gear in the corner of the sheet
       const gear = `<button class="gear" data-sub="settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm8.2 4.6.1-1.2-.1-1.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.4 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6-.1 1.2.1 1.2-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button>`;
-      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Collection']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}${k === 'book' && Object.keys(S().field ?? {}).length > (fieldSeen()) ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
+      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Field Guide']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}${k === 'book' && Object.keys(S().field ?? {}).length > (fieldSeen()) ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
       if (sub === 'book') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
-      if (sub === 'book') return `<div class="crew"><h3>Collection</h3>${seg}${fieldHtml()}${inTankHtml()}${bookHtml()}</div>`;
+      if (sub === 'book') return `<div class="crew"><h3>Field Guide</h3>${seg}${fieldHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;      // (one book: what they do, what they have shown you, and every kind of animal and decoration)
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="crewbox"><div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>
@@ -816,9 +819,17 @@ export function initUI({ game, social, cb }) {
   const pulse = (tabName) => document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('pulse', n.dataset.tab === tabName));
 
   // a quiet message that lives in the tank (not a popup that has to be dismissed): it fades in, waits a few seconds, and fades out; a tap clears it early
-  const shelf = (id, html, ms, onLink, tries = 0) => { if (($('coach')?.classList.contains('on') || hushed() || ['settle', 'reunion'].some((o) => $(o).classList.contains('on') && $(o).innerHTML !== html)) && tries < 40) {      /* (a card already up gets its time: the next one waits its turn) */ setTimeout(() => shelf(id, html, ms, onLink, tries + 1), 800); return; }      // a tip on screen goes first; the card waits its turn
-    const el = $(id); clearTimeout(el._t); for (const o of ['settle', 'reunion']) if (o !== id) $(o).classList.remove('on'); toastEl.classList.remove('on'); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); };
-  const reunion = (lines, onPostcard) => { for (const l of lines) notice(l, { kind: 'card' }); return shelf('reunion', `<b>WELCOME BACK</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<button class="lk">Send a postcard of the tank</button>`, 11000, onPostcard); };
+  const shelf = (id, html, ms, onLink, tries = 0, onShow = null) => { if (($('coach')?.classList.contains('on') || hushed() || ['settle', 'reunion'].some((o) => $(o).classList.contains('on') && $(o).innerHTML !== html)) && tries < 40) {      /* (a card already up gets its time: the next one waits its turn) */ setTimeout(() => shelf(id, html, ms, onLink, tries + 1, onShow), 800); return; }      // a tip on screen goes first; the card waits its turn
+    const el = $(id); clearTimeout(el._t); for (const o of ['settle', 'reunion']) if (o !== id) $(o).classList.remove('on'); toastEl.classList.remove('on'); el.innerHTML = html; el.classList.add('on'); const off = () => el.classList.remove('on'); el.onclick = (e) => { if (e.target.closest('.lk')) { off(); onLink?.(); } else off(); }; el._t = setTimeout(off, ms); onShow?.(el, off); };
+  // while you were away: what happened, one moment at a time with its photo where one was taken (tap to go on), ending on what comes next
+  const reunion = (lines, onPostcard, next = []) => {
+    for (const l of lines) notice(l, { kind: 'card' }); const slides = [...lines.map((t) => ({ t, img: shotOf(t) })), ...(next.length ? [{ next }] : [])], STEP = 4200;
+    const html = `<b>WHILE YOU WERE AWAY</b><div class="rbar">${slides.map(() => '<i></i>').join('')}</div>${slides.map((x, i) => `<div class="rs${i ? '' : ' on'}">${x.next ? `<p class="nx">Next in the tank</p>${x.next.map((n) => `<p>${esc(n)}</p>`).join('')}` : `${x.img ? `<img alt="" src="${x.img}">` : ''}<p>${esc(x.t)}</p>`}</div>`).join('')}<button class="lk">Send a postcard of the tank</button>`;
+    return shelf('reunion', html, STEP * slides.length + 4000, onPostcard, 0, (el, off) => {
+      let i = 0; const go = (k) => { const rs = el.querySelectorAll('.rs'), bars = el.querySelectorAll('.rbar i'); clearTimeout(el._adv); if (k >= rs.length) { off(); return; } i = k; rs.forEach((r, j) => r.classList.toggle('on', j === i)); bars.forEach((b, j) => (b.className = j < i ? 'done' : j === i ? 'run' : '')); el._adv = setTimeout(() => go(i + 1), STEP); };
+      el.onclick = (e) => { if (e.target.closest('.lk')) { clearTimeout(el._adv); off(); onPostcard?.(); } else go(i + 1); }; go(0);
+    });
+  };
   const settle = (lines) => { $('settle').classList.add('top'); for (const l of lines) notice(l, { kind: 'card' }); shelf('settle', `<b>COMING UP</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000); };
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
   const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<p class="chap"><b>${esc(c.title)}</b> · ${esc(c.text)}</p>`, 4500); };      // a slim line, gone in a few seconds: the tank stays in view

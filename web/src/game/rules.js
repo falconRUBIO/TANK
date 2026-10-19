@@ -108,6 +108,21 @@ export function nextStage(fish, now = Date.now()) {
   const ms = (s === 'baby' ? 1 : 3) * DAY - age, h = Math.ceil(ms / 36e5);
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
 }
+// The next chapter of one animal's life, in a line, for the top of its card: what it is on its way to, and roughly when (from the rules, so it is true).
+export function storyNext(t, f, now = Date.now()) {
+  if (!f || f.dead) return null; const nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name, days = (ms) => { const d = Math.max(0, ms) / DAY; return d < 1 ? (ms < 3 * HOUR ? 'any time now' : 'later today') : d < 1.6 ? 'about a day' : `about ${Math.round(d)} days`; };
+  if (f.away) return null;
+  const egg = (t.eggs ?? []).find((e) => e.id === f.brood || e.guard === f.id || e.a === f.id || e.b === f.id);
+  if (egg) return egg.ready ? 'The eggs are ready to hatch. Be there to watch.' : `${f.brood === egg.id ? 'Guarding' : 'Waiting on'} the eggs: they hatch in ${days(egg.hatchAt - now)}.`;
+  if (f.preg) return f.preg.ready ? 'About to give birth. Be there to watch.' : `Carrying young in his pouch: due in ${days(f.preg.due - now)}.`;
+  const ns = nextStage(f, now); if (ns) return `Grows into ${ns.to === 'adult' ? 'an adult' : 'a juvenile'} in ${ns.label}.`;
+  if (isOcto(f) && f.partner && nm(f.partner)) { const tog = (now - (f.partneredAt ?? now)) / DAY; return tog < OCTO_EGG_AFTER ? `Partners with ${nm(f.partner)} for ${Math.floor(tog)} day${Math.floor(tog) === 1 ? '' : 's'}. Octopus partners lay after about ${OCTO_EGG_AFTER}, if they have a den.` : `Partners with ${nm(f.partner)}. ${f.home ? 'Eggs could come any day now.' : 'They need a den of their own for eggs.'}`; }
+  if (f.mate && nm(f.mate)) return `Paired with ${nm(f.mate)}. Seahorses pair for life, and the father carries the young.`;
+  const same = t.fish.filter((x) => x !== f && !x.dead && x.species === f.species);
+  if (!same.length && !SPECIES_DEF[f.species]?.visitor) return `The only ${(SPECIES_DEF[f.species]?.label ?? 'one').toLowerCase()} here. Another could become its friend, or more.`;
+  if (f.pal && nm(f.pal)) return `Best friends with ${nm(f.pal)}.`;
+  return null;
+}
 // What is coming, in plain words, for the end of the first session: a reason to come back that is actually true.
 export function firstPromises(t, now = Date.now()) {
   const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(`${f.name} grows up in ${n.label}.`);
@@ -695,12 +710,12 @@ export const WANTS = {
   meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3 && t.shells >= FOODS.treats.price, done: (t, f, g) => g?.type === 'feed' && g.food === 'treats', text: (f) => `${f.name} wants a treat. Choose Treats when you feed.`, gift: 'a treat' },
 };
 // ── one request a day ──
-// Each tank-day has exactly one request: either a fish's own wish (when one can be granted) or the tank's daily wish. Never both, so there is one thing to look at.
+// Each tank-day has exactly one request: a fish's own wish whenever one can be granted, and only failing that the tank's general daily wish. Never both, so there is one thing to look at.
 const wantCands = (t, now) => { const cand = []; if (t.flags.noWants) return cand; for (const f of t.fish) { if (now - f.born < 3600e3 || (f.ail ?? 0) >= AIL_TIRED) continue; for (const [k, w] of Object.entries(WANTS)) { const oct = f.species === 'octopus'; if (oct ? !w.octopus : w.octopus) continue; if ((oct || w.traits.some((x) => (f.traits ?? []).includes(x))) && w.ok(t, f)) cand.push([f, k]); } } return cand; };
 export function requestKind(t, now) {
   const day = Math.floor(now / DAY);
   if (!t.req || t.req.day !== day) { t.req = { day, kind: null, wantDone: false }; t.wantAt = Math.min(t.wantAt ?? now, now); }
-  if (!t.req.kind) t.req.kind = t.daily && t.daily.day === day ? 'daily' : wantCands(t, now).length && hash32(day * 53 + ((t.createdAt ?? 0) % 977)) % 100 < 45 ? 'want' : 'daily';
+  if (!t.req.kind) t.req.kind = t.daily && t.daily.day === day ? 'daily' : wantCands(t, now).length ? 'want' : 'daily';
   return t.req.kind;
 }
 function rollWant(t, now, ev) {
@@ -1078,7 +1093,7 @@ function chapters(t, now, ev) {
 function milestones(t, now, ev) {
   chapters(t, now, ev);
   const n = t.seen.fish.length + t.seen.decor.length, due = Math.floor(n / 5);
-  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `The collection book has ${t.flags.collMs * 5} entries.`, toast: `Collection: ${t.flags.collMs * 5} found! +3 shells` }); }
+  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `The Field Guide lists ${t.flags.collMs * 5} species and decorations.`, toast: `Field Guide: ${t.flags.collMs * 5} found! +3 shells` }); }
   const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
 }
 
@@ -1625,11 +1640,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     case 'mystery': {      // someone tapped today's mystery: it plays out, once, for everyone in the tank
       const m = mysteryOf(t, now); if (!m || m.done) return ok({ applied: false });
+      if (Number.isFinite(+a.tz)) t.tzMin = Math.max(-840, Math.min(840, Math.round(+a.tz)));      // (the phone's clock, for when the tank's events wake)
+      const pay = giftReady(t, uid, now, a.tz) ? DAILY_GIFT : 0; if (pay) { (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += pay; }      // the day's small gift comes with the mystery now, not as a box of its own
       const o = mysteryOut(t, m, now); m.done = true; m.line = o.line; m.by = name; m.fish = o.fish?.id ?? null; const day = m.day;
       if (o.next) t.mystNext = { day: day + 1, kind: o.next, x: m.x, z: m.z };
       if (o.visit && !t.visitor) t.visitAt = Math.min(t.visitAt ?? Infinity, wakeAt(t, (day + 1) * DAY + 2 * HOUR));      // (the visitor it hinted at comes tomorrow)
       events.push({ journal: o.line, ...(o.fish ? { story: o.fish.id } : {}), mystery: { kind: m.kind, fish: m.fish, next: !!o.next }, activity: { type: 'mystery', text: `${name} looked into today's mystery.` } });
-      return ok({ applied: true, line: o.line, fish: m.fish, next: !!(o.next || o.visit) });
+      levelCheck(t, now, events); return ok({ applied: true, line: o.line, fish: m.fish, next: !!(o.next || o.visit), delta: pay });
     }
     case 'greet': {
       const v = t.visitor; if (!v || v.id !== a.id) return ok({ applied: false, delta: 0 });

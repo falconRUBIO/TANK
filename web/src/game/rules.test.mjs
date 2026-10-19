@@ -181,11 +181,11 @@ ok('discoveries come from real behaviour: right trait, real decoration, once per
   assert.ok(t.fish[0].disc.hideaway && t.fish[0].disc['together:b'] && t.fish[1].disc.glass); const r = ob({ key: 'routine', fish: 'a' }); assert.ok(r.events.some((e) => /routine/.test(e.journal ?? '') && e.noticed));
   assert.equal(Object.values(R.DISCOVERIES).filter((d) => !d.kind).length, 15); assert.equal(ob({ key: 'food', fish: 'a' }).applied, false, 'a phone cannot report what only the server can see');
 });
-ok('one shared daily wish: feasible, replaced each day, paid once, never punishing', () => {
-  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: -D, stage: 'baby', traits: ['Calm'] })];
+ok('one shared daily wish when no fish has a wish of its own: feasible, replaced each day, paid once, never punishing', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.noWants = true; t.fish = [R.ensureFish({ id: 'a', name: 'A', species: 'goldfish', seed: 1, born: -D, stage: 'baby', traits: ['Calm'] })];
   R.advance(t, 2 * D + 10); const d1 = t.daily; assert.ok(d1 && d1.day === 2 && !d1.done); assert.ok(R.DAILY[d1.kind].ok(t), 'only wishes that can be done now');
   for (let day = 3; day < 40; day++) { R.advance(t, day * D + 10); assert.ok(R.DAILY[t.daily.kind].ok(t), 'feasible on day ' + day); if (day > 3) assert.notEqual(t.daily.kind, prev, 'no repeats back to back'); var prev = t.daily.kind; }
-  const c = R.newWorld(0); R.norm(c, 0); c.flags.tut = 5; c.fish = t.fish; c.daily = { day: 50, kind: 'care', text: R.DAILY.care.text, need: 1, have: 0, ids: [], done: false }; R.advance(c, 50 * D + 500); const s0 = c.shells;
+  const c = R.newWorld(0); R.norm(c, 0); c.flags.tut = 5; c.flags.noWants = true; c.fish = t.fish; c.daily = { day: 50, kind: 'care', text: R.DAILY.care.text, need: 1, have: 0, ids: [], done: false }; R.advance(c, 50 * D + 500); const s0 = c.shells;
   R.applyAction(c, { t: 'feed', x: 0 }, { now: 50 * D + 1000, name: 'Sam', uid: 'u2' }); assert.ok(c.daily.done && c.daily.by === 'Sam'); const after = c.shells; assert.equal(after - s0, 1 + R.DAILY_REWARD, 'one shell for feeding, plus the wish');
   R.applyAction(c, { t: 'feed', x: 0 }, { now: 50 * D + 2000, name: 'Sam', uid: 'u2' }); R.applyAction(c, { t: 'water' }, { now: 50 * D + 3000, name: 'Sam' }); assert.ok(c.shells - after <= 1 + R.WATER_PAY, 'the wish pays once a day');
   const g = R.newWorld(0); R.norm(g, 0); g.flags.tut = 5; g.fish = ['a', 'b', 'c'].map((n, i) => R.ensureFish({ id: n, name: n, species: 'goldfish', seed: i, born: -D, stage: 'baby', traits: [] })); g.simTs = 70 * D - 10; g.daily = { day: 70, kind: 'greet', text: R.DAILY.greet.text, need: 3, have: 0, ids: [], done: false };
@@ -859,4 +859,13 @@ ok('a daily mystery: one a day, the same for everyone, played out once, sometime
   R.advance(t, now + D); assert.notEqual(R.mysteryOf(t, now + D)?.day, m.day, 'a new one tomorrow'); assert.equal(R.mysteryOf(t, now + 2 * D + 1)?.done ?? false, false);
   let chained = 0, kinds = new Set(); for (let d = 31; d < 120; d++) { const T = mk(d * 7), at = d * D + 12 * 3600e3; R.advance(T, at); const M = R.mysteryOf(T, at); kinds.add(M.kind); const q = R.applyAction(T, { t: 'mystery' }, { now: at + 1 }); if (T.mystNext) { chained++; R.advance(T, at + D); const N = R.mysteryOf(T, at + D); assert.ok(R.MYSTERY[N.kind].chain, 'tomorrow it carries on'); assert.ok(!/undefined/.test(R.applyAction(T, { t: 'mystery' }, { now: at + D + 1 }).line)); } assert.ok(!/undefined|null/.test(q.line), q.line); }
   assert.ok(chained > 3 && kinds.size >= 3, `varied: ${chained} carried on, ${[...kinds]}`);
+});
+ok('each animal has a true next chapter: growing up, eggs, a birth, a partner, or company', () => {
+  const D = 864e5, now = 40 * D, t = R.newWorld(0); R.norm(t, now); const F = (o) => R.ensureFish({ seed: 1, traits: [], stage: 'adult', born: now - 30 * D, ...o });
+  const baby = F({ id: 'b', name: 'Pip', species: 'goldfish', born: now - 3600e3, stage: 'baby' }); t.fish = [baby]; assert.match(R.storyNext(t, baby, now), /Grows into a juvenile/);
+  const lone = F({ id: 'g', name: 'Goldie', species: 'goldfish' }); t.fish = [lone]; assert.match(R.storyNext(t, lone, now), /^The only clownfish here/);
+  const mo = F({ id: 'o1', name: 'Inky', species: 'octopus', sex: 'f', partner: 'o2', partneredAt: now - 2 * D, home: 'c1' }), fa = F({ id: 'o2', name: 'Pearl', species: 'octopus', sex: 'm', partner: 'o1', partneredAt: now - 2 * D });
+  t.fish = [mo, fa]; assert.match(R.storyNext(t, mo, now), /Partners with Pearl for 2 days.*about 5/);
+  t.eggs = [{ id: 'e1', species: 'octopus', a: 'o1', b: 'o2', guard: 'o1', hatchAt: now + 3 * D }]; mo.brood = 'e1'; assert.match(R.storyNext(t, mo, now), /Guarding the eggs: they hatch in about 3 days/);
+  const sh = F({ id: 's', name: 'Sid', species: 'seahorse', preg: { due: now + 2 * D } }); t.fish.push(sh); assert.match(R.storyNext(t, sh, now), /Carrying young.*about 2 days/);
 });
