@@ -197,17 +197,17 @@ const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {
   setW(tank.id, { shells: 3, simTs: Date.now() });
-  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 0, z: 1, idem: 'p1' })).reason, 'NOT_ENOUGH_SHELLS');
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'fern', x: 0, z: 1, idem: 'p1' })).reason, 'NOT_ENOUGH_SHELLS');
   setW(tank.id, { shells: 100, simTs: Date.now() });
-  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'torii', x: 0, z: 1, idem: 'p2' })).reason, 'LEVEL_TOO_LOW');
-  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 99, z: 1, idem: 'p3' })).reason, 'OUT_OF_BOUNDS');
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'spire', x: 0, z: 1, idem: 'p2' })).reason, 'LEVEL_TOO_LOW');
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'fern', x: 99, z: 1, idem: 'p3' })).reason, 'OUT_OF_BOUNDS');
   assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'angelfish', idem: 'p4' })).reason, 'LEVEL_TOO_LOW');
   assert.equal(getW(tank.id).shells, 100);
 });
 await t('a purchase takes shells once, shows for everyone, and a replay is ignored', async () => {
   const before = getW(tank.id);
-  const r = await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' }); assert.equal(r.ok, true);
-  await ackOf(wsA, { t: 'buyDecor', type: 'red', x: 1, z: 1, ry: 0, idem: 'p5' });
+  const r = await ackOf(wsA, { t: 'buyDecor', type: 'fern', x: 1, z: 1, ry: 0, idem: 'p5' }); assert.equal(r.ok, true);
+  await ackOf(wsA, { t: 'buyDecor', type: 'fern', x: 1, z: 1, ry: 0, idem: 'p5' });
   const w = getW(tank.id); assert.equal(w.shells, before.shells - 10); assert.equal(w.decor.length, before.decor.length + 1);
   const st = await waitFor(wb2 ?? wsA, (m) => m.t === 'state' && m.tank.decor.length === w.decor.length); assert.ok(st);
 });

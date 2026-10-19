@@ -213,11 +213,11 @@ ok('care is credited to the caretakers who helped a fish grow, without ranking a
 console.log('Economy refinement');
 const tend = (t, to) => { for (let x = t.simTs + 6 * 3600e3; x < to; x += 6 * 3600e3) { t.hunger = 0.1; t.water = 1; t.glass = 0; R.advance(t, x); } t.hunger = 0.1; t.water = 1; t.glass = 0; return R.advance(t, to); };
 const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; if (!o.wants) t.flags.noWants = true; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
-ok('level 8 can be reached: the wish chain no longer waits on level 8 and the best possible score clears the threshold with room to spare', () => {
+ok('levels come from playing, not buying: a tank full of shop things scores nothing for them; care, mysteries, hatchings, raising and goals do', () => {
   const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /level 8/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/level 8/i.test(w.text)), 'no earlier wish depends on level 8');
-  // the highest score reachable before level 8: a full level-7 tank (25 fish, all adults), 60 decorations, a complete book, every wish except the level-8 one
-  const best = 25 * 2 + 25 * 2 + R.MAX_DECOR + R.COLLECTION_SIZE() + 3 * last; assert.ok(best - R.LEVEL_AT[7] >= 5, `best ${best} vs threshold ${R.LEVEL_AT[7]}`);
-  assert.equal(R.LEVEL_AT.length, 8); assert.deepEqual(R.LEVEL_AT.slice(0, 7), [0, 14, 36, 66, 100, 140, 184], 'the lower levels are untouched');
+  const t = R.newWorld(0); R.norm(t, 0); const s0 = R.scoreOf(t); for (let i = 0; i < 20; i++) t.decor.push({ id: 'd' + i, type: 'grass', x: 0, z: 1, ry: 0 }); assert.equal(R.scoreOf(t), s0, 'buying decorations does not level the tank');
+  t.stats = { careDays: 30, myst: 30, decided: 8, hatched: 6, grewHere: 4, morphs: 2, raised_Calm: 2 }; t.goalsDone = [{}, {}, {}, {}]; assert.ok(R.scoreOf(t) >= R.LEVEL_AT[4], 'a month of playing reaches the middle levels: ' + R.scoreOf(t));
+  assert.equal(R.LEVEL_AT.length, 8); assert.ok(R.LEVEL_AT.every((x, i) => !i || x > R.LEVEL_AT[i - 1]));
 });
 ok('the happiness wish is reachable by a short visit: the average counts, not every fish at once', () => {
   const t = quiet(4); const w = R.WISHES.find((x) => /happy/i.test(x.text)); for (const f of t.fish) f.happy = 0.78; t.fish[0].happy = 0.55; assert.ok(w.done(t)); for (const f of t.fish) f.happy = 0.6; assert.ok(!w.done(t));
@@ -369,9 +369,10 @@ ok('notes on a fish: short, kept (last three), journalled, and checked', () => {
   assert.equal(a('   ').ok, false); assert.equal(R.applyAction(t, { t: 'fishNote', id: 'nope', text: 'hi' }, { now: 1, name: 'A', uid: 'u1' }).ok, false);
   const r = a('hello <b>Pip</b>'); assert.ok(r.ok && r.events.some((e) => /left Pip|left F0/.test(e.journal))); a('two', 2000); a('three', 3000); a('four', 4000); assert.equal(t.fish[0].notes.length, 3); assert.equal(t.fish[0].notes[2].text, 'four'); assert.ok(!/[<>]/.test(t.fish[0].notes[0].text)); assert.ok(a('x'.repeat(100), 5000).ok && t.fish[0].notes.at(-1).text.length === 40);
 });
-ok('landmarks are real purchases with levels, and old saves are untouched by the new fields', () => {
-  assert.ok(R.DECOR_DEF.lighthouse.price === 150 && R.DECOR_DEF.lighthouse.level === 7 && R.DECOR_DEF.spire.price === 250 && R.DECOR_DEF.spire.level === 8);
-  const t = quiet(2); t.level = 7; t.shells = 400; assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 250); t.level = 7; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
+ok('the spire is the shop\'s big save-up at level 8; the lighthouse and the torii gate are earned, never bought, and arrive in the tank when earned', () => {
+  assert.ok(R.DECOR_DEF.spire.price >= 300 && R.DECOR_DEF.spire.level === 8 && R.DECOR_DEF.lighthouse.earned && R.DECOR_DEF.torii.earned);
+  const t = quiet(2); t.level = 8; t.shells = 500; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).reason, 'EARNED_ONLY'); assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 500 - R.DECOR_DEF.spire.price); t.level = 7; t.shells = 300; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'crystal', x: 1, z: 1, ry: 0 }, { now: 3, name: 'A', uid: 'u1' }).ok, true); t.level = 6; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'bridge', x: 1, z: 1, ry: 0 }, { now: 4, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
+  t.goalsDone = [{}, {}]; t.goal = { id: 'sleuth', at: 0, base: {}, done: { 0: 1, 1: 1 } }; t.stats = { myst: 99, mystChain: 9 }; const ev = R.advance(t, 5000); assert.ok(t.decor.some((d) => d.type === 'lighthouse') && ev.some((e) => /lighthouse/i.test(e.journal ?? '')), 'the third goal brings the lighthouse');
   const old = R.newWorld(0); delete old.want; delete old.wantAt; R.norm(old, 0); assert.equal(old.want, null); assert.ok(old.wantAt > 0);
 });
 ok('food choice: flakes are free and pay as before, pellets and treats cost shells and cheer fish, favourites are noticed once', () => {
@@ -497,7 +498,7 @@ ok('one request a day: a fish\'s own wish or the daily wish, never both, and eit
   const H = 3600e3, D = 864e5; const mkw = (kind) => { const t = quiet(3, { traits: ['Shy'], wants: true }); t.fish.forEach((f) => { f.born = -12 * D; }); t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 10 * H; t.wantAt = 0; t.req = { day: 0, kind, wantDone: false }; return t; };
   const w = mkw('want'); R.advance(w, 10 * H + 5); assert.ok(w.want, 'a fish wish today'); assert.equal(w.daily, null, 'and no daily wish beside it'); assert.equal(R.dayTicks(w, 10 * H + 5).wish, false);
   const d = mkw('daily'); R.advance(d, 10 * H + 5); assert.equal(d.want, null, 'on a daily-wish day no fish wish appears'); assert.ok(d.daily, 'the daily wish is there');
-  const g = mkw('want'); R.advance(g, 10 * H + 5); for (let i = 0; i < 4; i++) R.applyAction(g, { t: 'buyDecor', type: 'grass', x: i - 2, z: 1, ry: 0 }, { now: 10 * H + 1000 * (i + 1), name: 'A', uid: 'u1' });
+  const g = mkw('want'); g.shells = 200; R.advance(g, 10 * H + 5); for (let i = 0; i < 4; i++) R.applyAction(g, { t: 'buyDecor', type: 'grass', x: i - 2, z: 1, ry: 0 }, { now: 10 * H + 1000 * (i + 1), name: 'A', uid: 'u1' });
   assert.equal(g.want, null); assert.equal(g.req.wantDone, true); assert.equal(R.dayTicks(g, 10 * H + 9000).wish, true, 'a granted fish wish is the day\'s wish'); R.advance(g, 12 * H); assert.equal(g.want, null, 'no second request that day');
   const nx = mkw('want'); R.advance(nx, 10 * H + 5); R.advance(nx, 10 * H + D); assert.ok(nx.req.day === 1, 'a new day decides again');
   assert.equal(R.WANT_REWARD, 4);

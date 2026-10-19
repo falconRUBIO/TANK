@@ -59,7 +59,25 @@ export const DECOR_DEF = {
   pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
-export const LEVEL_AT = [0, 14, 36, 66, 100, 140, 184, 220];                     // score needed for level 1..5
+// ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
+// two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
+const SHOP_CURVE = {
+  grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12],
+  sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
+  pot: [3, 26], brain: [3, 28], anemone: [3, 32], kelp: [3, 30],
+  wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
+  lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
+  chest: [6, 85], anchor: [6, 95], arch: [6, 120],
+  bridge: [7, 150], crystal: [7, 190],
+  spire: [8, 400],
+};
+for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level, price });
+// earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
+export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
+for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120] };
+for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
+export const LEVEL_AT = [0, 20, 52, 120, 230, 360, 470, 590];                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.9] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
@@ -166,7 +184,11 @@ export const capacity = (level) => 4 + 3 * level;
 // life goes on in a full tank: eggs, hatchlings and a kept seahorse baby may go a little over what the shop allows (bought fish never do),
 // so a finished tank still has births, and old age makes room again in time
 export const BIRTH_ROOM = 4;
-export function scoreOf(t, now = Date.now()) { return t.fish.length * 2 + t.decor.length + t.fish.filter((f) => stageOf(f, now) === 'adult').length * 2 + ((t.seen?.fish.length ?? 0) + (t.seen?.decor.length ?? 0)) + 3 * (t.wishIdx ?? 0); }
+// The tank's level grows from what you do with it, never from what you buy: days of care, mysteries solved, decisions made, eggs hatched,
+// babies raised to adulthood, rare colors bred, goals finished, Field Guide pages and the kinds of animal it has known. (So spending
+// shells cannot buy the next level; looking after the tank and playing the game is what opens the shop's next shelf.)
+export function scoreOf(t, now = Date.now()) { const S = t.stats ?? {}, n = (k) => S[k] ?? 0, raised = Object.keys(S).filter((k) => k.startsWith('raised_')).reduce((a, k) => a + S[k], 0);
+  return 2 * n('careDays') + 2 * n('myst') + 3 * n('decided') + 4 * n('hatched') + 6 * n('grewHere') + 4 * raised + 10 * n('morphs') + 15 * (t.goalsDone ?? []).length + 3 * Object.keys(t.field ?? {}).length + 2 * (t.seen?.fish?.length ?? 0); }
 export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].traits, a = pool[seed % pool.length], b = pool[(seed * 7 + 3) % pool.length]; return a === b ? [a] : [a, b]; }
 
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
@@ -508,9 +530,12 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 // one little one from these eggs, its looks and nature from both parents (the same way for the first and for a second one that is kept)
 // a baby that shows a rare color: a line in the journal, and the first of each color is kept in the Field Guide's color pages
 function morphBorn(t, f, now, ev) {
-  const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); (t.morphLog ||= []).push({ m, at: now }); if (t.morphLog.length > 60) t.morphLog.splice(0, t.morphLog.length - 60);      /* (kept for the weekly board across tanks) */ const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
+  const m = morphOf(f); if (!m) return; earn(t, 'torii', now, ev); bump(t, 'morphs'); bump(t, 'morph_' + m); (t.morphLog ||= []).push({ m, at: now }); if (t.morphLog.length > 60) t.morphLog.splice(0, t.morphLog.length - 60);      /* (kept for the weekly board across tanks) */ const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
   ev.push({ activity: { type: 'morph', text: `${f.name} hatched ${M.label.toLowerCase()}!` } }); ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, story: f.id, morph: m });      // (no toast: the reveal on screen says it, after a breath)
 }
+// an earned piece: placed in the tank as a present, once (it can be moved like any other)
+function earn(t, type, now, ev) { if (!DECOR_DEF[type] || (t.flags.earned ||= {})[type]) return; t.flags.earned[type] = now; const used = t.decor.map((d) => d.x), x = [-3, 3, -1.5, 1.5, 0].find((v) => !used.some((u) => Math.abs(u - v) < 1)) ?? 0;
+  t.decor.push({ id: nextId(t, 'd'), type, x, z: -0.6, ry: 0, at: now }); if (!t.seen.decor.includes(type)) t.seen.decor.push(type); ev.push({ journal: EARNED[type].line, toast: `Earned: ${DECOR_DEF[type].label}! It is in the tank now.`, placed: type, milestone: true }); }
 function makeChild(t, e, now) {
   const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
   const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
@@ -1027,7 +1052,7 @@ function goals(t, now, ev) {
     const st = nextPrize(t);
     if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; t.shells += GOAL_SHELLS;
     const prize = st ? `${st[0] === 'floor' ? FLOORS[st[1]] : BACKDROPS[st[1]]} ${st[0]}` : null;
-    (t.goalsDone ||= []).push({ id: g.id, at: now, title: GOALS[g.id].title, prize }); t.goal = null; t.goalOffer = goalOffer(t, now);
+    (t.goalsDone ||= []).push({ id: g.id, at: now, title: GOALS[g.id].title, prize }); if (t.goalsDone.length >= 3) earn(t, 'lighthouse', now, ev); t.goal = null; t.goalOffer = goalOffer(t, now);
     ev.push({ activity: { type: 'goal', text: `The tank finished a goal: ${GOALS[g.id].title}.` } }); ev.push({ journal: `Goal complete: ${GOALS[g.id].title}.${prize ? ` The ${prize} is yours.` : ''}`, toast: `Goal complete! +${GOAL_SHELLS} shells${prize ? ` and the ${prize}` : ''}`, goalDone: g.id, milestone: true });
   }
 }
@@ -1214,7 +1239,7 @@ export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.day
 export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
 function dayCheck(t, now, ev, key = null) {
   if ((t.flags.tut ?? 0) < 5 || !t.fish.length) return; const l = dayLogOf(t, now);
-  if (key === 'care' && lookedAfter(t)) l.care = true; if (key === 'bond') l.bond = true;
+  if (key === 'care' && lookedAfter(t)) { if (!l.care) bump(t, 'careDays'); l.care = true; } if (key === 'bond') l.bond = true;
   const k = dayTicks(t, now); if (k.care && k.wish && k.bond && !l.paid) l.paid = true;      // (a full day is ticked on the checklist; it is not paid or posted: the day is its own reward)
 }
 // How the tank is doing right now, in one word and one sentence.
@@ -1573,7 +1598,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const old = f.name; f.name = nm; f.named = true; events.push({ activity: { type: 'fish', text: `${name} renamed ${old} to ${nm}.` } }); return ok();
     }
     case 'buyDecor': {
-      const d = DECOR_DEF[a.type]; if (!d) return fail('UNKNOWN_ITEM');
+      const d = DECOR_DEF[a.type]; if (!d) return fail('UNKNOWN_ITEM'); if (d.earned) return fail('EARNED_ONLY');
       const x = num(a.x), z = num(a.z), ry = num(a.ry) || 0;
       if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');

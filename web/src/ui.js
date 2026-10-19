@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, morphOf, nextPrize, prizeLabel, specialOf } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -151,7 +151,7 @@ export function initUI({ game, social, cb }) {
     if (s.want) return { text: `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'} has a request: ${s.want.text}`, tab: 'care' };
     const dw = s.daily; if (dw && !dw.done) return { text: `Today's request (+${dw.reward ?? 3}): ${dw.text}${dw.need > 1 ? ` (${dw.have}/${dw.need})` : ''}`, tab: '' };
     const w = WISHES[s.wishIdx]; if (w) return { text: `Tank wish: ${w.text}`, tab: '' };
-    const b = LEVEL_AT[s.level]; return { text: b ? `Earn shells by caring · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
+    const b = LEVEL_AT[s.level]; return { text: b ? `Care, solve, raise and finish goals to grow the tank · ${scoreOf(s)}/${b} to level ${s.level + 1}` : 'Everything is calm. Enjoy your tank.', tab: '' };
   }
   $('goal').onclick = () => { if ($('goal').dataset.gift) { cb.gift(); return; } const t = $('goal').dataset.tab; if (t) open(t); };
 
@@ -272,13 +272,13 @@ export function initUI({ game, social, cb }) {
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor)) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id, Date.now(), S()), deal: id === specialOf(S()).species && id !== 'octopus', level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
-    if (!fishCat && cat !== 'FLOOR' && cat !== 'BACKDROP') for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat });
+    if (!fishCat && cat !== 'FLOOR' && cat !== 'BACKDROP') for (const [id, d] of Object.entries(DECOR_DEF)) if (showAll || d.cat === cat) out.push({ kind: 'decor', id, label: d.label, price: d.price, level: d.level, blurb: d.blurb, cat: d.cat, earned: d.earned ? (S().flags?.earned?.[id] ? 'got' : EARNED[id]?.why ?? 'Earned') : null });
     for (const [kind, names] of [['floor', FLOORS], ['backdrop', BACKDROPS]]) if (showAll || cat === kind.toUpperCase()) for (const [id, label] of Object.entries(names)) { const own = styleOwned(s, kind, id), cur = (s.style ?? {})[kind] === id; out.push({ kind, id, label: kind === 'floor' ? label + ' floor' : label + ' backdrop', price: STYLE_PRICE[kind][id], own, cur, level: 1, blurb: kind === 'floor' ? 'Changes the sand and the stones on the bottom of the tank.' : 'Changes the colors of the far water.', cat: kind.toUpperCase() }); }
     if (showAll) { const keep = out.filter((c) => isNew(s, c)); out.length = 0; out.push(...keep.sort((a, b) => a.price - b.price)); if (!out.length) return `<p class="dim newnone">Nothing new right now. Each time the tank levels up, the fish and decorations it unlocks wait here until you have them.</p>`; }      // NEW: only what the last level-up unlocked and you do not have yet
     return out.map((c) => {
       if (c.kind === 'floor' || c.kind === 'backdrop') { const key = c.kind + ':' + c.id; return `<button class="card ${selected === key ? 'sel' : ''}" data-k="${key}"><div class="sw" style="background:${SWATCH[c.kind][c.id]}"></div><b>${esc(c.label)}</b><span class="pr">${c.cur ? 'IN USE' : c.own || !c.price ? 'OWNED' : '🐚 ' + c.price}</span></button>`; }
-      const lock = s.level < c.level, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);
-      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}${(() => { const n = c.kind === 'decor' && tankNeeds(S()).find((x) => x.types.includes(c.id)); return n ? `<em class="wanttag">♥ ${esc(n.key === 'plants' ? 'Fish' : n.name)}</em>` : ''; })()}<b>${esc(c.label)}</b><span class="pr">${lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ` <em class="carrier">carries ${esc(MORPHS[specialOf(S()).color]?.label.toLowerCase() ?? '')}</em>` : ''}</span></button>`;
+      const lock = s.level < c.level || !!c.earned, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);      // (an earned piece is never for sale: it says how it is earned)
+      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}${(() => { const n = c.kind === 'decor' && tankNeeds(S()).find((x) => x.types.includes(c.id)); return n ? `<em class="wanttag">♥ ${esc(n.key === 'plants' ? 'Fish' : n.name)}</em>` : ''; })()}<b>${esc(c.label)}</b><span class="pr">${c.earned ? (c.earned === 'got' ? 'EARNED ✓' : `🏆 ${esc(c.earned)}`) : lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ` <em class="carrier">carries ${esc(MORPHS[specialOf(S()).color]?.label.toLowerCase() ?? '')}</em>` : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {
@@ -659,6 +659,7 @@ export function initUI({ game, social, cb }) {
       if (Date.now() - heldAt < 900) return; const [kind, id] = b.dataset.k.split(':'), s = S(); sfx('tap');
       if (kind === 'floor' || kind === 'backdrop') { const own = styleOwned(s, kind, id), price = STYLE_PRICE[kind][id]; if ((s.style ?? {})[kind] === id) { toast('Already in use'); return; } if (!own && price && s.shells < price) { toast(`${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; } const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; return; }
       const d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return; const price = kind === 'fish' ? fishPrice(id, Date.now(), S()) : d.price, free = kind === 'decor' && isFree(s, id);
+      if (d.earned) { toast(s.flags?.earned?.[id] ? `${d.label} is already in your tank: earned.` : `${d.label} cannot be bought. ${EARNED[id]?.why ?? 'It is earned'} to get it.`, 4000); return; }
       if (s.level < d.level) { toast(`${d.label} unlocks at tank level ${d.level}`); return; }
       if (!free && s.shells < price) { toast(`${d.label}: ${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; }
       if (kind === 'fish') { if (s.fish.length + d.count > capacity(s.level)) { toast('No room for more fish yet. Level up to grow the tank.'); return; } cb.adopt(id); return; }
