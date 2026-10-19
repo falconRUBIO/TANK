@@ -348,7 +348,7 @@ function trickBlock(rec) {
 // how well the tank suits this fish, a wish it has, and notes people left it
 function comfortBlock(rec) {
   const c = comfortOf(game.state, rec), w = game.state.want?.fish === rec.id ? game.state.want : null, notes = (rec.notes ?? []).map((n) => `<i>${esc(n.name)}:</i> ${esc(n.text)}`).join('<br>');
-  return `<div class="cmf">Comfort: <b>${c.label}</b> · ${c.score}%${c.tips[0] ? `<small>${esc(c.tips[0])}</small>` : ''}${w ? `<small>✨ ${esc(w.text)}</small>` : ''}</div>${notes ? `<div class="notes">${notes}</div>` : ''}`;
+  return `<div class="cmf">Comfort: <b>${c.label}</b>${c.tips[0] ? `<small>${esc(c.tips[0])}</small>` : ''}${w ? `<small>✨ ${esc(w.text)}</small>` : ''}</div>${notes ? `<div class="notes">${notes}</div>` : ''}`;
 }
 async function renameFish(f) {
   const nm = await ui.dialog({ title: 'RENAME', input: { value: f.name }, ok: 'Save', cancel: 'Cancel' }); if (!nm) return;
@@ -553,7 +553,8 @@ window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBo
 // ── tap a fish: the camera glides in and a profile card slides up ──
 const card = $('card'), look = new THREE.Vector3(0, stg.LOOK_Y, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
 function pickFish(ev) { const r = rayFrom(ev); let best = null, bd = 1e9; for (const f of fishes.list) { const h = r.ray.distanceToPoint(f.pos); if (h < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } } return best; }
-const bar = (l, v) => `<div class="nb"><span>${l}</span><i><b style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></b></i></div>`;
+// how it is doing, in one line instead of four bars: all well, or the one thing that is low
+const needsLine = (n) => { const low = [['hungry', n[0]], ['a little low', n[1]], ['tired', n[2]], ['unwell', n[3]]].filter(([, v]) => v < 0.45).sort((a, b) => a[1] - b[1]); return low.length ? `<span class="low">Feeling ${low.map(([w]) => w).slice(0, 2).join(' and ')}</span>` : '<span>Doing well</span>'; };
 let lastCard = 0, lastInspect = null;
 const DISC_LABEL = (k) => DISCOVERIES[k.split(':')[0]]?.label;
 function noticedRow(rec) {
@@ -1013,7 +1014,7 @@ function showCard(f) {
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
   const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
-    <div class="needs">${bar('Fed', p.needs[0])}${bar('Happy', p.needs[1])}${bar('Energy', p.needs[2])}${bar('Health', p.needs[3])}</div>${warn}
+    <div class="needs one">${needsLine(p.needs)}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
     <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>

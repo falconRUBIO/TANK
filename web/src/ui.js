@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -136,15 +136,16 @@ export function initUI({ game, social, cb }) {
   // ── sheets ──
   // the tank at a glance: one row per thing to look after, with a word for how it is, a colored bar, and a line saying what to do and how quickly it changes
   const meters = () => {
-    const s = S(), me = game.you?.userId, row = (icon, name, v, [word, lv], hint) => `<div class="meter ${lv}"><span class="mi">${icon}</span><div class="mb"><div class="mt"><b>${name}</b><em>${word}</em></div><i><b style="width:${Math.round(Math.max(0.02, Math.min(1, v)) * 100)}%"></b></i>${hint ? `<small>${hint}</small>` : ''}</div></div>`;
+    const s = S(), me = game.you?.userId, row = (icon, name, v, [word, lv], hint) => `<div class="meter ${lv}"><span class="mi">${icon}</span><div class="mb"><div class="mt"><b>${name}</b><em>${word}</em></div>${hint ? `<small>${hint}</small>` : ''}</div></div>`;
     const lvl = (v, a, b, words) => (v >= a ? [words[0], 'ok'] : v >= b ? [words[1], 'mid'] : [words[2], 'low']), rows = [];
     for (const f of s.fish.filter((x) => x.species === 'octopus' && !x.dead)) { const v = 1 - octoHunger(f), mine = canFeedOcto(f, me, game.shared); rows.push(row('🐙', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (dueIn(s, 'crab', f) <= 0 ? 'Drop a crab from Feed' : `Ready for a crab ${inTime(dueIn(s, 'crab', f))}. Only you feed it.`) : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
     for (const f of s.fish.filter((x) => x.species === 'seahorse' && !x.dead)) { const v = 1 - ownHunger(f), mine = canFeedOwn(f, me, game.shared); rows.push(row('🦐', esc(f.name), v, lvl(v, 0.6, 0.3, ['Full', 'Peckish', 'Hungry']), mine ? (dueIn(s, 'mysis', f) <= 0 ? 'Give it mysis shrimp from Feed' : `Ready for shrimp ${inTime(dueIn(s, 'mysis', f))}. Only you feed it.`) : `Only ${esc(f.ownerName ?? 'its caretaker')} can feed it`)); }
     if (hasFishOnly(s)) { const v = 1 - s.hunger; rows.push(row('🐟', 'The fish', v, lvl(v, 0.7, 0.4, ['Full', 'Peckish', 'Hungry']), dueIn(s, 'meal') <= 0 ? 'Feed them flakes from Feed' : `Next meal ${inTime(dueIn(s, 'meal'))}`)); }
-    rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? `Time for a water change (+${WATER_PAY} shells)` : `Due for a change ${inTime(dueIn(s, 'water'))}`));
-    rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? `Give it a wipe (+${GLASS_PAY} shells)` : `Due for a wipe ${inTime(dueIn(s, 'glass'))}`));
+    rows.push(row('💧', 'Water', s.water, lvl(s.water, 0.7, 0.5, ['Clean', 'Cloudy', 'Dirty']), s.water < 0.7 ? 'Time for a water change' : `Due for a change ${inTime(dueIn(s, 'water'))}`));
+    rows.push(row('🪟', 'Glass', 1 - s.glass, lvl(1 - s.glass, 0.7, 0.45, ['Clear', 'A little algae', 'Algae']), 1 - s.glass < 0.7 ? 'Give it a wipe' : `Due for a wipe ${inTime(dueIn(s, 'glass'))}`));
     const n = s.fish.length + (s.orders ?? []).reduce((a, o) => a + (SPECIES_DEF[o.species]?.count ?? 1), 0), cap = capacity(s.level);
-    return `<div class="meters">${rows.join('')}</div><p class="room">🐠 <b>${n} of ${cap}</b> places in the tank are taken${n < cap ? ` · room for ${cap - n} more` : ' · level up to make room'}</p>`;
+    const m = tankMood(s, Date.now());
+    return `${m.label === 'Could use a hand' ? '' : `<div class="moodchip ${m.key}"><b>${esc(m.label)}</b> · ${esc(m.note)}</div>`}<div class="meters">${rows.join('')}</div><p class="room">🐠 <b>${n} of ${cap}</b> places in the tank are taken${n < cap ? ` · room for ${cap - n} more` : ' · level up to make room'}</p>`;
   };
   const slotsHtml = () => {
     const s = game.members; if (!s) return '';
@@ -373,7 +374,7 @@ export function initUI({ game, social, cb }) {
   const fold = (id, summary, body) => `<details class="fold" data-fold="${id}" ${game.folds.has(id) ? 'open' : ''}><summary>${summary}</summary><div>${body}</div></details>`;
   const wantHtml = () => { const w = S().want; if (!w) return ''; return `<div class="wish"><small>TODAY'S REQUEST · ${esc((S().fish.find((f) => f.id === w.fish)?.name ?? 'A FISH').toUpperCase())}</small><span>${esc(w.text)}</span><b>+${WANT_REWARD} 🐚</b></div>`; };
   const comfortHtml = () => { const s = S(); if (!s.fish.length || !adv()) return ''; const all = s.fish.map((f) => ({ f, c: comfortOf(s, f) })), avg = Math.round(all.reduce((n, x) => n + x.c.score, 0) / all.length), tips = [...new Set(all.sort((a, b) => a.c.score - b.c.score).flatMap((x) => x.c.tips))].slice(0, 3);
-    return fold('tank', `<span>TANK · ${avg >= 80 ? 'Cosy' : avg >= 55 ? 'Comfortable' : 'Could be better'} ${avg}%</span>`, `${tips.map((t) => `<p class="dim">${esc(t)}</p>`).join('') || '<p class="dim">Everyone is comfortable.</p>'}${projectHtml()}`); };
+    return fold('tank', `<span>TANK · ${avg >= 80 ? 'Cosy' : avg >= 55 ? 'Comfortable' : 'Could be better'}</span>`, `${tips.map((t) => `<p class="dim">${esc(t)}</p>`).join('') || '<p class="dim">Everyone is comfortable.</p>'}${projectHtml()}`); };
   const projectHtml = () => { const s = S(), goal = Object.entries(DECOR_DEF).filter(([k, d]) => d.price >= 100 && d.level <= s.level + 1 && !s.decor.some((x) => x.type === k)).sort((a, b) => a[1].price - b[1].price)[0]; if (!goal) return '';
     const [k, d] = goal, pct = Math.min(100, Math.round((s.shells / d.price) * 100)), locked = d.level > s.level; return `<p class="dim">Saving for the ${esc(d.label)}: ${locked ? 'unlocks at level ' + d.level : `${s.shells} of ${d.price} 🐚`}</p><div class="pj"><i style="width:${locked ? 0 : pct}%"></i></div>`; };
   const todayHtml = (busy = false) => {
@@ -393,7 +394,7 @@ export function initUI({ game, social, cb }) {
       ${rest.length ? fold('more', `<span>${rest.length} more coming up</span>`, `<div class="orders flat">${rest.map(row).join('')}</div>`) : ''}${comfortHtml()}
       `;
   };
-  const EARN = [['Feed hungry fish or a hungry octopus', '+1 each'], ['Wipe the glass, every few days', `+${GLASS_PAY} (a pearl every 5th: +${PEARL_PAY})`], ['Change cloudy water, every few days', `+${WATER_PAY}`], ['Say hello to a rare visitor', '+4'], ['Collect a find in the tank', '+1 to +4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favorite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 species or decorations in the Field Guide', '+3'], ['Tank level up', '+4 and more']];
+  const EARN = [['Look into the daily mystery', `+${DAILY_GIFT} a day, more when it is a find`], ['Say hello to a rare visitor', '+4'], ["Today's request", '+3, +5 or +8 (a fish\'s own: +4)'], ['A fish grows up', '+1, +2'], ['A fish reaches 14 / 30 days', '+5 / +8'], ['Two fish become friends', '+3'], ['A fish finds its favorite spot', '+2'], ['The first egg hatches', '+5'], ['Open a friend\'s bottle', '+2'], ['Every 5 species or decorations in the Field Guide', '+3'], ['Tank level up', '+4 and more']];
   let feedOpen = null;      // null: the food list opens by itself when someone is hungry; tapping Feed opens or closes it by hand
   // ── Feeding ── one model of who this caretaker can feed, used by the headline, the Feed button and the drawer, so they always agree.
   // A group is one octopus (its own hunger, a crab each), the seahorses or the fish (the two share one mealtime). For each: how full it is,
@@ -421,7 +422,7 @@ export function initUI({ game, social, cb }) {
   const feedDrawer = () => {
     const M = feedModel(), cur = game.feedFood, sh = S().shells;
     if (!M.groups.length) return `<div class="drawer"><p class="fnote">${M.others.length ? `Only ${esc(M.others[0].ownerName ?? 'its caretaker')} can feed ${esc(M.others[0].name)}.` : 'Nothing to feed yet.'}</p></div>`;
-    const chip = (g, k) => { const d = FOODS[k]; return d.price ? `<i class="cost">${d.price} 🐚</i>` : g.pays ? '<i class="earn">free +1 🐚</i>' : '<i>free</i>'; };
+    const chip = (g, k) => { const d = FOODS[k]; return d.price ? `<i class="cost">${d.price} 🐚</i>` : '<i>free</i>'; };
     const food = (g, f) => { const d = FOODS[f.k], poor = sh < d.price; return `<button class="fd ${cur === f.k ? 'on' : ''}" data-feed="${f.k}"${g.id ? ` data-for="${esc(g.id)}"` : ''} ${poor ? 'disabled' : ''}><span>${ICON[f.k]}</span><b>${d.label}</b>${f.fav ? `<small>♥ ${f.fav}</small>` : ''}${poor ? '<small class="poor">not enough shells</small>' : chip(g, f.k)}</button>`; };
     const out = M.groups.map((g) => `<section class="fg ${g.eat ? '' : 'isfull'}"><div class="fgh"><img alt="" src="${g.thumb}"><div><b>${g.title}</b><small>${g.sub}</small></div><em class="${g.cls}">${g.word}</em><div class="fh ${g.cls}" role="img" aria-label="${g.pct}% full"><i style="width:${Math.max(4, g.pct)}%"></i></div><span class="fpct">${g.pct}% full</span></div>
       ${g.eat ? `<div class="fds">${g.foods.map((f) => food(g, f)).join('')}</div>` : `<p class="fwait">Full for now · can eat again ${soon(g.canIn)}</p>`}${g.eat && g.note ? `<p class="fnote">${g.note}</p>` : ''}${g.fed ? `<p class="fnote fby">${g.fed}</p>` : ''}</section>`);
@@ -433,7 +434,7 @@ export function initUI({ game, social, cb }) {
   const FOODNAME = { crab: 'Crabs', mysis: 'Tiny shrimp' };
   let feedInfo = null;      // the card opened to say why it cannot eat now (a full animal is never fed: too much food clouds the water)
   const feedView = () => {
-    const M = feedModel(), sh = S().shells, cost = (g, d) => (d.price ? `${d.price} shells` : g.pays ? 'Free +1 🐚' : 'Free');
+    const M = feedModel(), sh = S().shells, cost = (g, d) => (d.price ? `${d.price} shells` : 'Free');
     const head = `<div class="fhead"><h3>Feed</h3><p>Choose an animal to feed</p><button class="fx" data-act="feedclose" aria-label="Close">✕</button></div>`;
     const awayCards = M.away.map((o) => `<section class="fcard isfull away"><div class="ftop"><img class="fthumb" alt="" src="${fishThumb(o.species, o.pal ?? null)}"><span class="fmid"><b>${esc(o.name)}</b><small>Octopus · ${awayLine(o)}</small></span><em class="fpill">Away</em></div><p class="fwhy">${o.away.inTank ? 'Tucked away somewhere in the tank. It will come out when it is ready.' : 'It will be back. Nothing to do until then.'}</p></section>`);
     if (!M.groups.length && awayCards.length) return `${head}<div class="fcards">${awayCards.join('')}</div>`;
@@ -490,7 +491,7 @@ export function initUI({ game, social, cb }) {
       const my = mysteryOf(s), myst = my ? (my.done ? esc(my.line) : `${esc(MYSTERY[my.kind]?.text ?? '')} Tap the glow to find out.`) : null;
       const comingCare = ahead.length || req || myst ? `<div class="soon"><h5>Coming up</h5>${req ? `<div><i>${pix('✨', 22)}</i><span>${req}</span><b>today</b></div>` : ''}${myst ? `<div><i>${pix('🫧', 22)}</i><span>${myst}</span><b>${my.done ? 'found' : 'in the tank'}</b></div>` : ''}${ahead.map((x) => `<div${/surprise/.test(x.text) ? ' class="tap" role="button" data-act="feeddrawer"' : ''}><i>${x.fish ? `<img alt="" class="fthumb" src="${fishThumb(x.species, x.pal ?? null)}">` : pix(x.icon, 22)}</i><span>${esc(x.text)}</span>${x.when ? `<b>${x.when}</b>` : ''}</div>`).join('')}</div>` : '';
       return `<h3>${esc(game.tankName ?? 'Your tank')}</h3>${seg}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
-        ${comingCare}${lvRow()}${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${fold('tankstatus', `<span>Animals, water and glass</span>`, meters())}`;      // Care is two things: what needs you, and what is coming (no daily checklist: this is not a chore list)
+        ${comingCare}${lvRow()}${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${fold('tankstatus', `<span>Tank: ${esc(tankMood(S(), Date.now()).label)}</span>`, meters())}`;      // Care is two things: what needs you, and what is coming (no daily checklist: this is not a chore list)
     },
     notices: () => `<h3>Notices</h3><div class="jl nts">${noticesHtml()}</div>`,
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
@@ -704,7 +705,7 @@ export function initUI({ game, social, cb }) {
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
-    { const FIRST = { care: 'Everything that needs you, and what is coming. Each job earns shells.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Everything that has happened in the tank, newest first.' }, k = 'ourtank.first.' + t;
+    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Everything that has happened in the tank, newest first.' }, k = 'ourtank.first.' + t;
       let seen = true; try { seen = !!localStorage.getItem(k); } catch { /* ignore */ } if (!seen && FIRST[t] && !quiet) { try { localStorage.setItem(k, '1'); } catch { /* ignore */ } setTimeout(() => toast(FIRST[t], 4200), 450); } }      // the first time you open a tab, one line about what it is for
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (t === 'care') flag('care', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;

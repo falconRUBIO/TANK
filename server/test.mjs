@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { start } from './server.mjs';
 import { ALPHABET, tickTank } from './logic.mjs';
-import { DECOR_DEF, WATER_PAY, GLASS_PAY } from '../web/src/game/rules.js';
+import { DECOR_DEF, WATER_PAY, GLASS_PAY, DAILY_GIFT } from '../web/src/game/rules.js';
 
 const R_births = (id) => S.db.prepare('SELECT COUNT(*) AS n FROM journal WHERE tank_id=? AND text LIKE ?').get(id, '%gave birth%')?.n ?? 0;
 let pass = 0; let L_tick = () => null;
@@ -135,13 +135,13 @@ await t('snapshots show the shared tank and who is online', async () => {
 await t('unauthenticated sockets are refused', async () => { await assert.rejects(open('0'.repeat(64)), /401|HTTP/); });
 await t('a feed is validated by the server and seen by the other players', async () => {
   wa.send(JSON.stringify({ t: 'feed', x: 1.5, idem: 'f1' }));
-  const ack = await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'f1'); assert.equal(ack.ok, true); assert.equal(ack.delta, 1);
+  const ack = await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'f1'); assert.equal(ack.ok, true); assert.equal(ack.delta, 0, 'feeding is care: it pays nothing');
   const f = await waitFor(wb, (m) => m.t === 'feed'); assert.equal(f.x, 1.5); await waitFor(wc, (m) => m.t === 'feed');
-  const st = await waitFor(wb, (m) => m.t === 'state' && m.tank.shells === 11); assert.equal(st.tank.shells, 11);
+  const st = await waitFor(wb, (m) => m.t === 'state' && m.tank.shells === 10); assert.equal(st.tank.shells, 10);
 });
 await t('replaying the same idempotency key never pays twice', async () => {
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' })); wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' }));
-  await new Promise((r) => setTimeout(r, 200)); assert.equal(getW(tank.id).shells, 11);
+  await new Promise((r) => setTimeout(r, 200)); assert.equal(getW(tank.id).shells, 10);
   assert.equal(wa.msgs.filter((m) => m.t === 'ack' && m.idem === 'f1' && m.dup).length, 2);
 });
 await t('two players acting at once with different keys are both applied atomically', async () => {
@@ -149,7 +149,7 @@ await t('two players acting at once with different keys are both applied atomica
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'a1' })); wb.send(JSON.stringify({ t: 'feed', x: 0, idem: 'b1' }));
   await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'a1'); await waitFor(wb, (m) => m.t === 'ack' && m.idem === 'b1');
   const row = getW(tank.id);
-  assert.equal(row.shells, s0 + 1, 'both feeds count, the shell is paid once a day'); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // (0.9 → 0.6 → 0.3), no double-spend
+  assert.equal(row.shells, s0, 'both feeds count, and neither pays'); assert.ok(row.hunger < 0.4, 'hunger ' + row.hunger);   // (0.9 → 0.6 → 0.3), no double-spend
 });
 await t('feeding a full tank is accepted but not rewarded', async () => {
   setW(tank.id, { hunger: 0.02, simTs: Date.now() });
@@ -274,7 +274,7 @@ await t('an octopus whose caretaker leaves stays in the tank and anyone may feed
 await t('a tank put back after the server lost its data keeps who owns what: the daily gift is not paid twice and the octopus stays yours', async () => {
   const a1 = await mkUser('Ana'), tk = (await call('/api/tanks', { name: 'Lost' }, a1.token)).body, ws = await open(a1.token);
   assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3, idem: 'hl-1' })).ok, true); const w0 = getW(tk.id); setW(tk.id, { flags: { ...w0.flags, tut: 5 } });
-  const g1 = await ackOf(ws, { t: 'dailyGift', tz: 0, idem: 'hl-2' }); assert.equal(g1.delta, 2); ws.close();
+  const g1 = await ackOf(ws, { t: 'dailyGift', tz: 0, idem: 'hl-2' }); assert.equal(g1.delta, DAILY_GIFT); ws.close();
   const copy = JSON.parse(JSON.stringify(getW(tk.id)));
   S.db.prepare('DELETE FROM members WHERE tank_id=?').run(tk.id); S.db.prepare('DELETE FROM tanks WHERE id=?').run(tk.id);       // the server forgets the tank
   const a2 = await mkUser('Ana'), r = await call('/api/import', { app: 'our-tank', tank: { name: 'Lost' }, world: copy, code: tk.code, heal: true, was: a1.userId }, a2.token); assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -644,7 +644,7 @@ await t('a tank the server lost is put back under its old code by whichever phon
 });
 await t('the daily gift reaches the server: accepted, paid to the shared wallet once, and a second try the same day pays nothing', async () => {
   setW(tank.id, { flags: { ...getW(tank.id).flags, tut: 5, gift: {} }, fish: getW(tank.id).fish.length ? getW(tank.id).fish : [{ id: 'fg', name: 'Gift', species: 'goldfish', seed: 1, born: Date.now(), stage: 'baby', traits: [], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now() });
-  const s0 = getW(tank.id).shells, r1 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg1' }); assert.equal(r1.ok, true); assert.equal(r1.delta, 2); assert.ok(getW(tank.id).shells >= s0 + 2);
+  const s0 = getW(tank.id).shells, r1 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg1' }); assert.equal(r1.ok, true); assert.equal(r1.delta, DAILY_GIFT); assert.ok(getW(tank.id).shells >= s0 + DAILY_GIFT);
   const r2 = await ackOf(wsA, { t: 'dailyGift', tz: 0, idem: 'dg2' }); assert.equal(r2.delta, 0);
 });
 await t('a phone that connects catches the tank up for everyone: the phone already there is sent the same tank', async () => {

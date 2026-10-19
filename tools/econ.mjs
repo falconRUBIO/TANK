@@ -12,7 +12,7 @@ const sim = (visitsPerDay) => {
     now = day * DAY + hr * H + (day * 7919 % 31) * 60e3; const before = t.shells, act = (a) => { const r = R.applyAction(t, a, { now, name: 'Sim', uid: 'sim' }); return r; };
     act({ t: 'tut', step: 5 });
     if (hr === gaps[0]) for (let c = 0; c < +(process.env.GIFT || 0); c++) R.applyAction(t, { t: 'dailyGift', tz: 0 }, { now, name: 'Sim', uid: 'sim' + c });     // GIFT=n: n caretakers each collect the daily gift
-    if (t.drift) act({ t: 'collect', id: t.drift.id });
+    if (t.drift) act({ t: 'collect', id: t.drift.id }); if (R.mysteryOf(t, now) && !R.mysteryOf(t, now).done) act({ t: 'mystery', tz: 0 });      // (the day's mystery: its gift and, some days, a find)
     // the chores, done the moment the game says they are due; each one counted with what it paid
     const chore = (k, a) => { const s0 = t.shells, r = act(a); if (r?.ok && r.applied !== false) { log.chores[k] = (log.chores[k] ?? 0) + 1; log.chorePay += Math.max(0, t.shells - s0); } };
     if (R.needs(t).includes('feed') && t.hunger > 0.3) chore('fish meal', { t: 'feed' }); if (R.octoHunger(t.fish.find((f) => f.id === 'oct')) > R.OCTO_DUE) chore('crab', { t: 'feed', food: 'crab', fish: 'oct' }); if (process.env.TREATS) act({ t: 'crab', id: 'oct' }); if (R.needs(t).includes('glass')) chore('glass', { t: 'glass' }); if (R.needs(t).includes('water')) chore('water', { t: 'water' });

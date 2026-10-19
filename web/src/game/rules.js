@@ -70,7 +70,7 @@ export const CARE = {
   water: 66,        // hours until fresh water turns cloudy enough to change (1 to 0.7, with the little each meal leaves behind)
   glass: 66,        // hours until clean glass needs a wipe (0 to 0.3)
 };
-export const OCTO_DUE = 0.4, WATER_PAY = 6, GLASS_PAY = 4, PEARL_PAY = 6;      // a bigger job every three days pays about what the old daily ones did
+export const OCTO_DUE = 0.4, WATER_PAY = 0, GLASS_PAY = 0, PEARL_PAY = 0;      // care is care, not a job: it pays nothing (the shells come from the day's mystery, wishes and visitors)
 export const HR = 0.3 / (CARE.meal * 3600), WR = 0.29 / (CARE.water * 3600), GR = 0.3 / (CARE.glass * 3600);   // per second
 export const OHR = OCTO_DUE / (CARE.crab * 3600);                                 // an octopus has its own hunger, and only its own caretaker can feed it (a crab)
 // how long until each part of the care is due, in milliseconds (0 when it is due now); a fish's own octopus hunger if one is given
@@ -126,7 +126,7 @@ export function storyNext(t, f, now = Date.now()) {
 // What is coming, in plain words, for the end of the first session: a reason to come back that is actually true.
 export function firstPromises(t, now = Date.now()) {
   const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(`${f.name} grows up in ${n.label}.`);
-  if (!t.drift && t.driftAt > now) out.push('Something will turn up in the tank within a few hours.');
+  if (!t.drift && t.driftAt > now && now - (t.createdAt ?? now) < 2 * DAY) out.push('Something will turn up in the tank within a few hours.');
   if (t.visitAt && t.visitAt > now && t.visitAt - now < 30 * HOUR) out.push('A rare visitor may drop by tomorrow.');
   out.push('Tomorrow the tank has a new request for you.'); return out.slice(0, 4);
 }
@@ -807,6 +807,7 @@ export const MYSTERY = {
   bubbles: { text: 'A thin trail of bubbles is rising from the sand.' },
   glint: { text: 'Something is glinting in the sand.' },
   tracks: { text: 'Little tracks wind across the sand.' },
+  find: { text: 'Something has turned up on the sand.' },      // (what used to drift up on its own a few times a day: a pearl, lost shells, fish treats)
   eyes: { text: 'Two small eyes are watching from the plants.', ok: (t) => t.decor.some((d) => DECOR_DEF[d.type]?.cat === 'PLANTS') },
   bubbles2: { text: 'The bubbles are back, and stronger.', chain: true },
   tracks2: { text: 'Fresh tracks lead to the same place again.', chain: true },
@@ -817,6 +818,7 @@ function rollMystery(t, now) {
   const h = hash32(day * 71 + ((t.createdAt ?? 0) % 983)), N = t.mystNext?.day === day ? t.mystNext : null;
   const base = Object.keys(MYSTERY).filter((k) => !MYSTERY[k].chain && (!MYSTERY[k].ok || MYSTERY[k].ok(t))), kind = N ? N.kind : base[h % base.length];
   t.myst = { day, kind, x: N?.x ?? +(-3.8 + (h % 76) / 10).toFixed(1), z: N?.z ?? +(-0.8 + ((h >>> 8) % 22) / 10).toFixed(1), done: false, line: null, by: null }; t.mystNext = null;
+  if (kind === 'find') t.myst.find = makeDrift(t, now);
 }
 export const mysteryOf = (t, now = Date.now()) => (t.myst && t.myst.day === Math.floor(now / DAY) ? t.myst : null);
 // what it turns out to be: fixed by the day, so every phone in a shared tank finds the same thing
@@ -828,6 +830,8 @@ function mysteryOut(t, m, now) {
     case 'bubbles': return r === 0 ? { line: 'It was a tiny snail, breathing under the sand. It sank back out of sight.' }
       : r === 1 && curious ? { line: `${curious.name} came over to nose at the bubbles and dug up an old shell.`, fish: curious }
       : { line: 'The bubbles stopped the moment you looked. Something is down there.', next: 'bubbles2' };
+    case 'find': { const g = m.find ?? { kind: 'shells', amount: 2 }, why = driftBlame(g, h);
+      return g.kind === 'treat' ? { line: `Fish treats! ${why}`, treat: true } : g.kind === 'pearl' ? { line: `A pearl! ${why}`, pay: g.amount } : { line: `A few lost shells. ${why}`, pay: g.amount }; }
     case 'bubbles2': return { line: 'A little sea cucumber pushed up out of the sand, looked about, and slowly buried itself again. It lives here now.' };
     case 'glint': return r === 0 && octo ? { line: `It was ${octo.name}'s hidden stash: a shiny pebble, buried. ${octo.name} came straight over to take it back.`, fish: octo }
       : r === 1 && any ? { line: `One of ${any.name}'s old scales, shining like a tiny coin.`, fish: any }
@@ -1067,9 +1071,8 @@ function deliver(t, now, ev) {
 }
 // Chapters: quiet landmarks in the life of a tank. They pay nothing, so they cannot be farmed; they are a page in the journal and a moment to notice.
 // A small gift for every caretaker, once a day. No streak, nothing to catch up on: miss a day and nothing is lost or owed. It goes into the shared wallet.
-export const DAILY_GIFT = 2;
+export const DAILY_GIFT = 6;      // (comes with the day's mystery; it stands in for what feeding and cleaning used to pay)
 // feeding a hungry animal pays one shell once a day for the tank (the care itself is the point; it is not a shell tap)
-const feedPayOnce = (t, now) => { const d = Math.floor(now / DAY); if (t.flags.feedPay === d) return false; t.flags.feedPay = d; return true; };
 const giftKey = (now, tz) => Math.floor((now + Math.max(-840, Math.min(840, Math.round(+tz) || 0)) * 60e3) / DAY);
 export function giftReady(t, uid, now = Date.now(), tz = 0) {
   if ((t.flags?.tut ?? 0) < 5 || !t.fish?.length) return false;
@@ -1142,9 +1145,9 @@ function _advance(t, now = Date.now()) {
     if (line) ev.push({ journal: line, story: f.id, text: line }); } });
   guard('deliver', () => deliver(t, now, ev));
   guard('age', () => ageMilestones(t, now, ev));
-  guard('drift', () => { if (!t.drift && now >= t.driftAt) { t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
+  guard('drift', () => { if (!t.drift && now >= t.driftAt && now - (t.createdAt ?? now) < 2 * DAY) {      /* (after the first days, finds come as the daily mystery) */ t.drift = makeDrift(t, now); ev.push({ found: t.drift.id, toast: `${driftBlame(t.drift)} Tap it in the tank.` }); } });
   guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('mystery', () => rollMystery(t, now)); guard('theme', () => themeCheck(t, now, ev));
-  guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; ev.push({ journal: `Our tank is ${weeks} week${weeks > 1 ? 's' : ''} old.` }); } });   // a birthday every week of the tank's life; missing a week costs nothing
+  guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; if (weeks === 4) ev.push({ journal: 'Our tank is one month old.' }); else if (weeks % 52 === 0) ev.push({ journal: `Our tank is ${weeks / 52} year${weeks > 52 ? 's' : ''} old.` });      /* (only the real milestones: a month, then each year) */ } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
   guard('level', () => levelCheck(t, now, ev));
@@ -1266,7 +1269,7 @@ export function nextUp(t, now = Date.now()) {
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? 'A gift arrives' : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`]);
   for (const e of t.eggs ?? []) c.push([e.hatchAt - now, 'An egg hatches']);
   for (const f of t.fish) { const n = nextStage(f, now); if (n) c.push([n.ms, `${f.name} grows up`]); }
-  if (t.drift == null && t.driftAt > now) c.push([t.driftAt - now, 'Something turns up in the tank']);
+  if (t.drift == null && t.driftAt > now && now - (t.createdAt ?? now) < 2 * DAY) c.push([t.driftAt - now, 'Something turns up in the tank']);
   if (!t.visitor && t.visitAt > now && (t.flags.tut ?? 0) >= 5) c.push([t.visitAt - now, 'A rare visitor may drop by']);
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
@@ -1312,7 +1315,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         ensureFish(f);
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         f.fedAt = now;      /* (its own meal: it does not count as feeding the fish, and a full one is not fed at all) */
-        const needed = f.hunger > 0.25, pay = needed && feedPayOnce(t, now) ? 1 : 0;
+        const needed = f.hunger > 0.25, pay = 0;      // (feeding is care: no pay)
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
@@ -1324,7 +1327,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
-      const needed = t.hunger > 0.25, pay = needed && price === 0 && feedPayOnce(t, now) ? 1 : 0;
+      const needed = t.hunger > 0.25, pay = 0;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
@@ -1341,9 +1344,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'glass': {
       if (t.glass <= 0.12) return ok({ applied: false, delta: 0 });
       t.glass = 0; t.flags.cleans = (t.flags.cleans ?? 0) + 1; const find = t.flags.cleans % 5 === 0, gain = find ? PEARL_PAY : GLASS_PAY; t.shells += gain;
-      careBy(t, uid, name, now); if (gain) { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); dayCheck(t, now, events, 'care'); }
+      careBy(t, uid, name, now); { progress(t, 'care', events, name); progress(t, 'care2', events, name, 'glass'); checkWant(t, now, events, { type: 'glass' }); dayCheck(t, now, events, 'care'); }
       events.push({ activity: { type: 'glass', text: `${name} cleaned the glass.` } });
-      if (find) events.push({ journal: `${name} found a pearl while cleaning the glass.`, toast: `You found a pearl! +${PEARL_PAY - GLASS_PAY} bonus shells`, found: true });
       return ok({ applied: true, delta: gain });
     }
     case 'buyFish': {
@@ -1641,8 +1643,8 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'mystery': {      // someone tapped today's mystery: it plays out, once, for everyone in the tank
       const m = mysteryOf(t, now); if (!m || m.done) return ok({ applied: false });
       if (Number.isFinite(+a.tz)) t.tzMin = Math.max(-840, Math.min(840, Math.round(+a.tz)));      // (the phone's clock, for when the tank's events wake)
-      const pay = giftReady(t, uid, now, a.tz) ? DAILY_GIFT : 0; if (pay) { (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += pay; }      // the day's small gift comes with the mystery now, not as a box of its own
-      const o = mysteryOut(t, m, now); m.done = true; m.line = o.line; m.by = name; m.fish = o.fish?.id ?? null; const day = m.day;
+      let pay = giftReady(t, uid, now, a.tz) ? DAILY_GIFT : 0; if (pay) { (t.flags.gift ||= {}).tank = { key: giftKey(now, a.tz), at: now, by: uid }; t.shells += pay; }      // the day's small gift comes with the mystery now, not as a box of its own
+      const o = mysteryOut(t, m, now); m.done = true; if (o.pay) { t.shells += o.pay; pay += o.pay; } if (o.treat) for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.15); m.line = o.line; m.by = name; m.fish = o.fish?.id ?? null; const day = m.day;
       if (o.next) t.mystNext = { day: day + 1, kind: o.next, x: m.x, z: m.z };
       if (o.visit && !t.visitor) t.visitAt = Math.min(t.visitAt ?? Infinity, wakeAt(t, (day + 1) * DAY + 2 * HOUR));      // (the visitor it hinted at comes tomorrow)
       events.push({ journal: o.line, ...(o.fish ? { story: o.fish.id } : {}), mystery: { kind: m.kind, fish: m.fish, next: !!o.next }, activity: { type: 'mystery', text: `${name} looked into today's mystery.` } });
