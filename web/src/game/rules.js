@@ -139,7 +139,18 @@ export function firstPromises(t, now = Date.now()) {
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
-export const fishPrice = (id, now = Date.now()) => { const p = SPECIES_DEF[id].price; return id === dailyFish(now) ? Math.max(1, Math.ceil(p * 0.75)) : p; };
+// Today's special in the shop carries a rare color (hidden in its genes, named in the shop): it costs a little more, not less
+// For a tank it is picked to be useful: a kind already living there (so it can pair), carrying the color of the goal being worked on, or one
+// that a fish there already carries; with nothing to go on, the day's fish and a color of the day.
+export function specialOf(t, now = Date.now()) {
+  const day = Math.floor(now / DAY), cols = Object.keys(MORPHS), h = hash32(day * 41 + ((t?.createdAt ?? 0) % 997)), live = (t?.fish ?? []).filter((f) => !f.dead && !isOcto(f) && SPECIES_DEF[f.species]?.count === 1 && !SPECIES_DEF[f.species]?.visitor && (SPECIES_DEF[f.species]?.level ?? 99) <= (t?.level ?? 1));
+  const goalCol = t?.goal && MORPHS[t.goal.id] ? t.goal.id : null, carried = live.flatMap((f) => allelesOf(f).filter((x) => MORPHS[x]).map((c) => [f.species, c]));
+  const pick = goalCol ? carried.find(([, c]) => c === goalCol) ?? (live.length ? [live[h % live.length].species, goalCol] : null) : carried.length ? carried[h % carried.length] : live.length ? [live[h % live.length].species, cols[h % cols.length]] : null;
+  return pick ? { species: pick[0], color: pick[1] } : { species: dailyFish(now), color: cols[day % cols.length] };
+}
+export const specialColor = (now = Date.now(), t = null) => specialOf(t, now).color;
+export const fishPrice = (id, now = Date.now(), t = null, special = false) => { const p = SPECIES_DEF[id].price; return special && id === specialOf(t, now).species && !isOcto({ species: id }) ? specialPrice(id) : p; };
+export const specialPrice = (id) => Math.ceil(SPECIES_DEF[id].price * 1.4) + 8;      // (the carrier is a choice, beside the plain one at the usual price)
 // The first fish is free and chosen: one of these, named by the player who brings it in.
 export const FIRST_FISH = ['octopus'];                       // everyone starts with an octopus of their own, in a color they choose; fish come from the shop
 export const OCTO_PALS = 6;
@@ -263,9 +274,9 @@ function unlock(t, f, key, now, ev, x = {}) {
   ev.push({ journal: d.line(f, x), noticed: f.id, toast: d.line(f, x) }); return true;
 }
 function discover(t, now, ev) {
-  const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon');
+  const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon' && !f.gift?.wrapped);
   for (const f of t.fish) {
-    ensureFish(f); f.found ||= []; if (now - f.born < 2 * 3600e3 || f.happy < 0.7) continue;
+    ensureFish(f); f.found ||= []; if (now - Math.max(f.born, f.arrived ?? -Infinity) < 2 * 3600e3 || f.happy < 0.7 || f.gift?.wrapped) continue;      /* (settled in for a couple of hours first; a wrapped gift says nothing until it is opened) */
     const fav = favouriteOf(f, t);
     if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favorite spot near the ${fav.label}.`, toast: `${f.name} found a favorite spot! +2 shells`, discovery: f.id }); }
     else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f && !(o.found ?? []).includes('friend')) ?? social.find((o) => o !== f), key = [f.id, pal.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = pal.id; pal.pal ??= f.id; (f.disc ||= {}).friend ??= now; (pal.disc ||= {}).friend ??= now; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); if (first) t.shells += FRIEND_REWARD; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: first ? `${f.name} made a friend. +${FRIEND_REWARD} shells` : `${f.name} and ${pal.name} are friends now!`, discovery: f.id }); }
@@ -389,7 +400,9 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: now, stage: 'baby', traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg ? 'baby' : 'juvenile',      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
+  if (o.carries && MORPHS[o.carries]) f.genes = { ...genesOf(seed), m: [o.carries, 'n'] };      // today's special: it carries a rare color
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
 const HOUR = 3600e3, BOTTLE_PAY = 2;      // a bottle pays what it cost to send, so swapping bottles cannot make shells
@@ -502,7 +515,7 @@ function makeChild(t, e, now) {
   const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
   const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
   const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
-  const genes = A && B ? blendGenes(gOf(A, seed), gOf(B, seed), seededRandom(h), !!e.moon) : genesOf(seed), gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
+  const roll = (k) => blendGenes(gOf(A, seed), gOf(B, seed), seededRandom(h + k * 7919), !!e.moon), clutch = A && B ? [0, 1, 2].map(roll) : [], genes = A && B ? clutch.find((g) => g.m[0] === g.m[1] && MORPHS[g.m[0]]) ?? clutch[0] : genesOf(seed)      /* (a clutch is many eggs: of the three that hatch strongest, the one that stays is the rare one if there is one) */, gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
   const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: t.fish.find((x) => x.id === e.a && !x.dead)?.owner ?? A?.owner ?? null, ownerName: t.fish.find((x) => x.id === e.a && !x.dead)?.ownerName ?? A?.ownerName ?? null }); t.fish.push(f);
   return { f, A, B, h, gen };
 }
@@ -873,7 +886,7 @@ const luckOf = (h) => (h >>> 11) % 100;
 function rollDilemma(t, now, ev) {
   if ((t.flags.tut ?? 0) < 5) return; const D0 = t.dilemma;
   if (D0 && !D0.done && now >= D0.until) { const r = settleDilemma(t, D0, 'wait', now, null); ev.push(...r.events); }      // nobody chose: the tank decides
-  if (now < (t.dilemmaAt ??= now + 2 * DAY)) return; t.dilemmaAt = now + (3 + (hash32(now / 6e4) % 2)) * DAY;
+  if (now < (t.dilemmaAt ??= now + 3 * DAY)) return;      /* (the first one waits until the tank has settled: day three or four) */ t.dilemmaAt = now + (3 + (hash32(now / 6e4) % 2)) * DAY;
   const live = t.fish.filter((f) => !f.dead && !f.away && !SPECIES_DEF[f.species]?.visitor && stageOf(f, now) !== 'baby'), h = hash32(Math.floor(now / DAY) * 131 + ((t.createdAt ?? 0) % 977)), pick = (a, k = 0) => a[(h >>> k) % a.length];
   const dens = t.decor.filter((d) => ['coconut', 'pot'].includes(d.type)), octos = live.filter(isOcto), fish = live.filter((f) => !isOcto(f)), c = [];
   const LO = layoutOf(t);
@@ -945,17 +958,16 @@ const colorGoal = (m) => ({
   steps: [
     { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your fishes' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
     { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? ' One carrier and a baby of its own can carry it too.' : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
-    { text: 'Hatch their babies', hint: 'Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.', n: since('hatched'), need: 1 },
+    { text: 'Hatch their babies', hint: (t) => (t.fish.length + pending(t) >= capacity(t.level) + BIRTH_ROOM ? 'Your tank is full, so no eggs can be laid: find one of your shop fish a new home, or send a baby to a friend.' : 'Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
     { text: m ? `A ${MORPHS[m].label.toLowerCase()} baby` : 'A rare-colored baby', hint: 'About one baby in four from two carriers shows it. Keep trying: a full moon helps.', n: m ? since(`morph_${m}`) : since('morphs'), need: 1 },
   ] });
 export const GOALS = {
   rare: colorGoal(null), gold: colorGoal('gold'), ghost: colorGoal('ghost'), blue: colorGoal('blue'), ember: colorGoal('ember'),
-  family: { title: 'Raise a family', blurb: 'Eggs, babies, and one of them grown up in your care, then a family of its own.', icon: 'friend', ok: (t) => liveOf(t).filter((f) => !isOcto(f) && f.species !== 'seahorse').length >= 2,
+  family: { title: 'Raise a family', blurb: 'Eggs, a hatching you are there for, and one of the babies grown up in your care.', icon: 'friend', ok: (t) => liveOf(t).filter((f) => !isOcto(f) && f.species !== 'seahorse').length >= 2,
     steps: [
       { text: 'Bring a pair together', hint: 'Two grown fish of the same kind: tap "Pair with…" on one of their cards.', n: since('paired'), need: 1 },
       { text: 'Watch a hatching', hint: 'When eggs are ready, open the tank and watch: they wait for you.', n: since('watchedHatch'), need: 1 },
       { text: 'Raise a baby to adulthood', hint: 'Ten days: feed it, play with it, keep the water clean. How you raise it decides who it becomes.', n: since('grewHere'), need: 1 },
-      { text: 'Your grown baby has babies of its own', hint: 'Pair the one you raised. A second generation, born in your tank.', n: since('gen2'), need: 1 },
     ] },
   raise: { title: 'Four temperaments', blurb: 'Raise babies four different ways and get four different grown-ups.', icon: 'grown', ok: (t) => liveOf(t).length >= 2,
     steps: [
@@ -980,6 +992,11 @@ export const GOALS = {
       { text: 'Make three decisions', hint: 'When something needs your call, it waits in Care.', n: since('decided'), need: 3 },
       { text: 'Two pairs of friends', hint: 'Fish make friends when they are happy and the tank is calm.', n: (t) => Math.floor(liveOf(t).filter((f) => f.pal && t.fish.some((o) => o.id === f.pal && !o.dead)).length / 2), need: 2 },
     ] },
+  dynasty: { title: 'Three generations', blurb: 'A baby you raised has babies of its own: a family line of your tank.', icon: 'grown', ok: (t) => t.fish.some((f) => !f.dead && (f.parents?.length || f.bornHere) && stageOf(f) === 'adult'),
+    steps: [
+      { text: 'Pair a fish you raised', hint: 'A grown baby from your tank: open its card and tap "Pair with…".', n: (t) => (t.match && [t.match.a, t.match.b].some((id) => t.fish.some((f) => f.id === id && (f.parents?.length || f.bornHere))) ? 1 : 0), need: 1 },
+      { text: 'A second generation hatches', hint: 'Its babies, born in your tank: keep the water clean and be there to watch.', n: since('gen2'), need: 1 },
+    ] },
   sleuth: { title: 'Tank detective', blurb: 'Look into the daily mysteries and follow one to the end.', icon: 'bubbles', ok: () => true,
     steps: [
       { text: 'Solve 3 daily mysteries', hint: 'Each day something glows on the sand: tap it.', n: since('myst'), need: 3 },
@@ -1002,7 +1019,7 @@ function goalOffer(t, now) { const h = hash32(Math.floor(now / DAY) * 13 + ((t.c
 const baseOf = (t) => ({ ...(t.stats ?? {}), field: Object.keys(t.field ?? {}).length });
 function goals(t, now, ev) {
   if ((t.flags.tut ?? 0) < 5) return;
-  if (!t.goal) { if (!t.goalOffer?.length) t.goalOffer = goalOffer(t, now); return; }
+  if (!t.goal) { if (!t.goalOffer?.length && now - (t.flags.promised ?? t.createdAt ?? now) >= 20 * HOUR) t.goalOffer = goalOffer(t, now); return; }      // (goals come on the second day: the first is for getting to know the tank)
   const g = t.goal; if (!GOALS[g.id]) { t.goal = null; return; } g.done ||= {}; const S = stepsOf(t, g);
   S.forEach((s, i) => { if (!g.done[i] && s.have >= s.need) { g.done[i] = now; const n = Object.keys(g.done).length; if (n < S.length) ev.push({ journal: `Goal, ${n} of ${S.length}: ${s.text}.`, toast: `${s.text}! (${n} of ${S.length})`, goalStep: g.id }); } });
   if (Object.keys(g.done).length >= S.length) {
@@ -1338,7 +1355,7 @@ const annivFacts = (t, f) => { const s = historyFacts(t, f); return s ? s + '.' 
 function historyFacts(t, f) { const out = [], k = (t.keeps ?? []).find((q) => q.id === f.advMem?.fav) ?? (t.keeps ?? []).find((q) => q.by === f.id), pal = t.fish.find((x) => x.id === f.pal); if (k) out.push(`It keeps the ${KEEPSAKES[k.k]?.label.toLowerCase()} it found`); if (pal) out.push(`${k ? 'and it' : 'It'} is best friends with ${pal.name}`); return out.join(' '); }
 function ageMilestones(t, now, ev) {
   for (const f of t.fish) {
-    f.found ||= []; const days = (now - f.born) / DAY;
+    f.found ||= []; const days = (now - Math.max(f.born, f.arrived ?? -Infinity)) / DAY;      /* (counted from the day it came to this tank: a fish bought nearly grown starts at zero) */
     for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, toast: `${f.name} is ${d} days old. +${pay} shells`, milestone: f.id }); }
   }
 }
@@ -1470,7 +1487,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   const fail = (reason) => ({ ok: false, reason, events });
   const ok = (extra = {}) => ({ ok: true, events, ...extra });
   if (AWAY_BLOCK.has(a.t) && [a.id, a.fish, a.with].flat().filter((x) => typeof x === 'string').some((id) => t.fish.find((x) => x.id === id)?.away)) return fail('AWAY');      // (every animal the action names: one listed under another field once slipped through)      // an animal out on an adventure cannot be fed, played with, sold or let go until it is back
-  { const kind = { play: 'play', hide: 'seek', puzzle: 'seek' }[a.t], yf = kind && t.fish.find((f) => f.id === (a.id ?? a.fish) && !f.dead); if (yf) raiseNote(t, now, kind, yf); }      // (raising: what you do with a young one counts toward who it becomes)
+  { const kind = { play: 'play', hide: 'seek', puzzle: 'seek' }[a.t], ids = kind ? [a.id, ...(Array.isArray(a.fish) ? a.fish : [a.fish])].filter((x) => typeof x === 'string').slice(0, 10) : []; for (const id of new Set(ids)) { const yf = t.fish.find((f) => f.id === id && !f.dead); if (yf) raiseNote(t, now, kind, yf); } }      /* (a toy game names everyone who joined in) */      // (raising: what you do with a young one counts toward who it becomes)
   switch (a.t) {
     case 'watchEggs': {      // someone has the tank open and is looking: ready eggs hatch now, in front of them
       const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready), m = t.fish.find((f) => f.preg?.ready && !f.dead && (!a.id || f.id === a.id));
@@ -1539,12 +1556,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
       if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
-      const price = fishPrice(a.species, now);
+      const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker
-      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(a.species === 'seahorse' && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}), name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(special ? { carries: sp.color } : {}), ...(SPECIES_DEF[a.species].count === 1 && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}),      /* (any single fish can be chosen male or female: so a pair can be completed) */  name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
       events.push({ activity: { type: 'fish', text: to ? (a.surprise !== false ? `${name} sent ${to.name} a surprise gift.` : `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.`) : `${name} ordered a new fish.` },      /* (a surprise says nothing of what it is, anywhere, until it is opened) */ toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
@@ -1745,7 +1762,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'firstFish': {                                            // every caretaker gets a free first fish of their own
       if (members && !members.some((m) => m.id === uid)) return fail('FORBIDDEN');
       t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');
-      const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name }, now, 0); t.flags.firsts[uid] = true;
+      const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their own octopus.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} brought in their octopus.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
     // an octopus nobody in the crew looks after (its caretaker is gone, or the server once lost the tank and gave them a new identity)
@@ -1812,7 +1829,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
-        const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
+        const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
         events.push({ journal: `${name} brought in ${made.name}, the first fish.`, toast: `${made.name} has arrived!`, arrival: [made.id] }); return ok({ id: made.id });
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');

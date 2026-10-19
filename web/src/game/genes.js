@@ -25,5 +25,6 @@ export const allelesOf = (f) => f?.genes?.m ?? genesOf(f?.seed ?? 0).m;
 export const morphOf = (f) => { const m = allelesOf(f); return m[0] === m[1] && MORPHS[m[0]] ? m[0] : null; };
 export const carriesOf = (f) => [...new Set(allelesOf(f).filter((x) => MORPHS[x]))].filter((x) => x !== morphOf(f));
 // the chance that a baby of these two shows each color (for the hint on the card), exactly from their genes
-export function morphOdds(a, b, moon = false) { const A = allelesOf(a), B = allelesOf(b), out = {}; for (const x of A) for (const y of B) if (x === y && MORPHS[x]) out[x] = (out[x] ?? 0) + 0.25; if (moon) for (const k of Object.keys(out)) out[k] = Math.min(1, out[k] + (1 - out[k]) * 0.25); return out; }
+// the chance the baby that stays shows each color: three of the clutch are in the running, and a rare one is the one that stays
+export function morphOdds(a, b, moon = false) { const A = allelesOf(a), B = allelesOf(b), out = {}; for (const x of A) for (const y of B) if (x === y && MORPHS[x]) out[x] = (out[x] ?? 0) + 0.25; for (const k of Object.keys(out)) { let p = out[k]; if (moon) p = Math.min(1, p + (1 - p) * 0.25); out[k] = +(1 - (1 - p) ** 3).toFixed(2); } return out; }
 

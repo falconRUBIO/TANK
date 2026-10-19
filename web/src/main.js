@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
+import { specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -250,16 +250,20 @@ async function adopt(species) {
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
   { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'GOOD TO KNOW', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
+  let special = false; { const SP = specialOf(s, Date.now()); if (SP.species === species && species !== 'octopus') { const k = await ui.choose({ title: "TODAY'S SPECIAL", text: `This one carries ${MORPHS[SP.color].label.toLowerCase()}, hidden in its genes: paired with another carrier, their babies could be ${MORPHS[SP.color].label.toLowerCase()}. It costs ${specialPrice(species)} shells instead of ${SPECIES_DEF[species].price}.`, options: [{ label: `The carrier · ${specialPrice(species)} 🐚`, value: 'special' }, { label: `A plain one · ${SPECIES_DEF[species].price} 🐚`, value: 'plain' }], cancel: 'Not now' }); if (!k) return; special = k === 'special'; if (special && s.shells < specialPrice(species)) { ui.toast(REASONS.NOT_ENOUGH_SHELLS); return; } } }      // today's special: a carrier of a rare color, or a plain one at the usual price
   let sex; if (species === 'seahorse') {      // a seahorse is a male or a female: the caretaker chooses (pairs are a male and a female; the male carries the young)
     const hs = s.fish.filter((f) => f.species === 'seahorse' && !f.dead), m = hs.filter((f) => sexOf(f) === 'm').length, w = hs.length - m;
     sex = await ui.choose({ title: 'MALE OR FEMALE?', text: `Seahorses pair as a male and a female, and the male carries the young.${hs.length ? ` In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}.` : ''}`, options: [{ label: '♂ Male', value: 'm' }, { label: '♀ Female', value: 'f' }], cancel: 'Not now' });
     if (!sex) return;
+  } else if (SPECIES_DEF[species]?.count === 1 && species !== 'octopus') {      // a single fish: if the tank has some of its kind, it can be chosen to make a pair (or left to chance)
+    const same = s.fish.filter((f) => f.species === species && !f.dead), m = same.filter((f) => sexOf(f) === 'm').length, w = same.length - m;
+    if (same.length) { const need = m && !w ? 'f' : w && !m ? 'm' : null; const k = await ui.choose({ title: 'MALE OR FEMALE?', text: `In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}. A male and a female can have babies.`, options: [{ label: need === 'f' ? '♀ Female (makes a pair)' : '♀ Female', value: 'f' }, { label: need === 'm' ? '♂ Male (makes a pair)' : '♂ Male', value: 'm' }, { label: 'Either', value: 'any' }], cancel: 'Not now' }); if (!k) return; if (k !== 'any') sex = k; }
   }
   let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'WHO IS IT FOR?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
   let note, surprise; if (to) { const who = game.members?.find((m) => m.id === to)?.name ?? 'them';
     surprise = await ui.choose({ title: 'KEEP IT A SURPRISE?', text: `Wrapped, ${who} only finds out what it is when they open it in the tank.`, options: [{ label: '🎁 Keep it a surprise', value: true }, { label: `Tell ${who} what it is`, value: false }], cancel: 'Not now' }); if (surprise === undefined) return;
     note = await ui.dialog({ title: 'ADD A NOTE', text: `A few words to go with it, for ${who} to read when it arrives. You can leave it blank.`, input: { value: '', placeholder: 'Thought you would love this one!' }, ok: 'Send the gift', cancel: 'Skip the note' }); }
-  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}) });
+  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}), ...(special ? { special: true } : {}) });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
 }

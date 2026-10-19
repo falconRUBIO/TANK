@@ -13,7 +13,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
 await p.waitForTimeout(3000);
 await p.evaluate(() => { window.__game.profTab = 'over'; window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('a1'))); }); await p.waitForTimeout(1500);
 const c = await p.evaluate(() => ({ genes: document.querySelector('#card .genes')?.textContent ?? '', pairs: [...document.querySelectorAll('#card [data-pair]')].map((b) => b.textContent) }));
-ck('a carrier says what it carries, and offers its mates with the odds', /Carries golden/.test(c.genes) && c.pairs.some((x) => /Bob.*25% golden/.test(x)) && c.pairs.some((x) => /Sunny.*50% golden/.test(x)), c);
+ck('a carrier says what it carries, and offers its mates with the odds', /Carries golden/.test(c.genes) && c.pairs.some((x) => /Bob.*58% golden/.test(x)) && c.pairs.some((x) => /Sunny.*88% golden/.test(x)), c);
 await p.screenshot({ path: `${out}/card.png`, timeout: 120000 }).catch(() => {});
 await p.evaluate(() => [...document.querySelectorAll('#card [data-pair]')].find((b) => /Bob/.test(b.textContent))?.click()); await p.waitForTimeout(800);
 const m = await p.evaluate(() => window.__game.state.match); ck('pairing them is accepted', m?.a === 'a1' && m?.b === 'b1', m);

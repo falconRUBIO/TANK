@@ -398,7 +398,7 @@ await t('push: cliffhangers reach a closed tank: a decision waiting, with how lo
   const A = fish('ga', 'Amy', 'f', ['gold', 'n']), B = fish('gb', 'Bob', 'm', ['gold', 'n']);
   setW(tk.id, { fish: [A, B], eggs: [{ id: 'e9', species: 'goldfish', a: 'ga', b: 'gb', pa: A, pb: B, laid: now - 3600e3, hatchAt: now + 4 * 864e5, cared: [], guard: 'gb' }], dilemma: { id: 'dl1', kind: 'chase', fish: ['ga', 'gb'], at: now, until: now + 30 * 3600e3, text: 'Amy keeps chasing Bob around the tank.', opts: [], done: false }, dilemmaAt: now + 9e9, simTs: now - 2000, flags: { tut: 5 } });
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
-  const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /Your call: Amy keeps chasing Bob.*decides in 30 hours/.test(b)) || all.some((b) => /25% chance of a golden baby/.test(b)), JSON.stringify(all));
+  const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /Your call: Amy keeps chasing Bob.*decides in 30 hours/.test(b)) || all.some((b) => /58% chance of a golden baby/.test(b)), JSON.stringify(all));
   pushed.length = 0; S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(now + 1000); const again = pushed.map((q) => q.payload.body); assert.ok(!again.some((b) => /Your call/.test(b)) || !all.some((b) => /Your call/.test(b)), 'each is said once');
 });
 await t('a baby bred here can be sent to a friend\'s tank by its code: it leaves one tank and arrives in the other with its genes and parents; not your own tank, not twice a day, not an animal bought from the shop', async () => {
@@ -528,20 +528,21 @@ await t('analytics: sessions and actions are recorded without personal data, pla
 });
 await t('economy integrity: milestones and the daily wish pay once even when caretakers act at the same moment, and one wallet cannot be double-spent', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now(), wx = await open(x.token), wy = await open(y.token), wz = await open(z.token), w0 = getW(tk.id), tpl = w0.fish[0];
-  const fish = ['m1', 'm2', 'm3'].map((id, i) => ({ ...tpl, id, name: id.toUpperCase(), species: 'goldfish', traits: ['Calm'], born: now - 14 * DAY - 60e3, stage: 'adult', ail: 0, health: 1, happy: 0.8, found: [], disc: {}, bond: {}, petAt: {} }));
+  const fish = ['m1', 'm2', 'm3'].map((id, i) => ({ ...tpl, id, name: id.toUpperCase(), species: 'goldfish', traits: ['Calm'], born: now - 14 * DAY - 60e3, arrived: now - 14 * DAY - 60e3, stage: 'adult', ail: 0, health: 1, happy: 0.8, found: [], disc: {}, bond: {}, petAt: {} }));
   setW(tk.id, { fish, decor: [], orders: [], eggs: [], floaters: [], shells: 50, simTs: now - 2000, hunger: 0.3, water: 0.9, glass: 0, createdAt: now - 40 * DAY, lastDeath: now, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15, dayLog: { day: Math.floor(now / DAY), care: true, bond: true, paid: true }, flags: { ...w0.flags, tut: 5, msV: 1, pairs: {}, weeks: 5 }, daily: { day: Math.floor(now / DAY), kind: 'play', tier: 'normal', reward: 5, text: 'Play with a fish', need: 1, have: 0, ids: [], done: false } });
   const [r1, r2] = await Promise.all([ackOf(wx, { t: 'pet', id: 'm1', idem: 'ei-1' }), ackOf(wy, { t: 'pet', id: 'm2', idem: 'ei-2' })]); assert.ok(r1.ok && r2.ok);
   let w = getW(tk.id); assert.equal(w.daily.done, true, 'the shared wish is done'); assert.equal(w.shells, 50 + 15 + 5, 'three 14-day milestones (+5 each) and one wish (+5), each exactly once');
   assert.ok(w.fish.every((f) => f.found.includes('age14') && !f.found.includes('age30')), 'every fish records the milestone once');
   await Promise.all([ackOf(wz, { t: 'pet', id: 'm3', idem: 'ei-3' }), ackOf(wx, { t: 'pet', id: 'm1', idem: 'ei-4' }), ackOf(wy, { t: 'pet', id: 'm2', idem: 'ei-5' })]); assert.equal(getW(tk.id).shells, 70, 'nothing pays twice');
   // thirty days: a second milestone for the same fish, once
-  setW(tk.id, { fish: getW(tk.id).fish.map((f) => ({ ...f, born: now - 30 * DAY - 60e3 })), simTs: Date.now() - 2000 }); const before = getW(tk.id).shells;
+  setW(tk.id, { fish: getW(tk.id).fish.map((f) => ({ ...f, born: now - 30 * DAY - 60e3, arrived: now - 30 * DAY - 60e3 })), simTs: Date.now() - 2000 }); const before = getW(tk.id).shells;
   await Promise.all([ackOf(wx, { t: 'feed', x: 0, idem: 'ei-6' }), ackOf(wy, { t: 'feed', x: 0, idem: 'ei-7' }), ackOf(wz, { t: 'feed', x: 0, idem: 'ei-8' })]);
   w = getW(tk.id); assert.equal(w.fish.filter((f) => f.found.includes('age30')).length, 3); assert.ok(w.shells - before >= 24 && w.shells - before <= 24 + 3 + 5, 'three 30-day milestones (+8 each) paid once, plus at most the feeding shells and a perfect-day bonus');
   // one wallet: two caretakers try to buy with shells for only one fish
-  setW(tk.id, { shells: 10, orders: [], fish: w.fish.slice(0, 1), simTs: Date.now() - 1000, flags: { ...w.flags, firsts: { ...w.flags.firsts } } });
+  const RR = await import('../web/src/game/rules.js'), price = RR.fishPrice('goldfish', Date.now(), { ...w, fish: w.fish.slice(0, 1) }), wallet = price + 3;      // (enough for one, not two, at whatever today's price is)
+  setW(tk.id, { shells: wallet, orders: [], fish: w.fish.slice(0, 1), simTs: Date.now() - 1000, flags: { ...w.flags, firsts: { ...w.flags.firsts } } });
   const buys = await Promise.all([ackOf(wx, { t: 'buyFish', species: 'goldfish', name: 'A', seed: 1, idem: 'ei-9' }), ackOf(wy, { t: 'buyFish', species: 'goldfish', name: 'B', seed: 2, idem: 'ei-10' })]);
-  assert.equal(buys.filter((m) => m.ok).length, 1, 'exactly one purchase succeeds'); assert.equal(getW(tk.id).shells, 10 - (await import('../web/src/game/rules.js')).fishPrice('goldfish', Date.now()), 'paid once, at the price of the day (a fish of the day is cheaper)'); assert.equal(getW(tk.id).orders.length, 1);
+  assert.equal(buys.filter((m) => m.ok).length, 1, 'exactly one purchase succeeds'); assert.equal(getW(tk.id).shells, wallet - price, 'paid once, at the price of the day'); assert.equal(getW(tk.id).orders.length, 1);
   wx.close(); wy.close(); wz.close();
 });
 await t('food choice on the server: paid foods cost shells, a poor tank cannot buy them, and everyone sees what was dropped', async () => {
