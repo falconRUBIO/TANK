@@ -182,7 +182,7 @@ await t('a brand new tank is empty; its creator chooses and names the first fish
   assert.equal((await send({ t: 'chooseFirst', species: 'octopus', name: 'Two', idem: 'cf2' })).reason, 'ALREADY_HAVE', 'once'); wa.close();
 });
 await t('while players are connected the tank grows up and everyone is told', async () => {
-  const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 1.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
+  const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 3.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
   const r = L_tick(); assert.ok(r.events.some((e) => e.grew === pip.id), JSON.stringify(r.events.map((e) => e.journal?.text)));
   assert.ok(S.db.prepare("SELECT 1 FROM journal WHERE tank_id=? AND text LIKE '%growing up%'").get(tank.id));
 });
@@ -374,7 +374,7 @@ await t('push: a caretaker hears that their own octopus is hungry (once in 12 ho
   { const w1 = getW(tk.id); w1.fish[0].ail = 0.5 * 86400; setW(tk.id, { fish: w1.fish, simTs: Date.now() - 1000 }); }      // (it has started to suffer for it)
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the owner is told: ' + JSON.stringify(pushed.map((q) => q.payload.body))); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'not again within 12 hours even with the daily cap cleared');
-  { const w2 = getW(tk.id); w2.fish[0].born = Date.now() - 3 * 864e5 - 3600e3; w2.fish[0].hunger = 0; setW(tk.id, { fish: w2.fish, simTs: Date.now() - 1000 });
+  { const w2 = getW(tk.id); w2.fish[0].born = Date.now() - 10 * 864e5 - 3600e3; w2.fish[0].stage = "juvenile"; w2.fish[0].hunger = 0; setW(tk.id, { fish: w2.fish, simTs: Date.now() - 1000 });
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(pushed.some((q) => /Ink is an adult/.test(q.payload.body)), 'grown up is news: ' + JSON.stringify(pushed.map((q) => q.payload.body)));
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(!pushed.some((q) => /grown up|is an adult/.test(q.payload.body)), 'and told only once, not again in other words');
     const wo = await open(y.token); await new Promise((r) => setTimeout(r, 100)); const w3 = getW(tk.id); w3.fish[0].born = Date.now() - 3 * 864e5 - 1800e3; w3.fish[0].id += 'b'; setW(tk.id, { fish: w3.fish });
@@ -441,7 +441,7 @@ await t('four caretakers, one tank: seats, first fish ownership, and the world s
 });
 await t('neglect on the server: very unwell but alive, recovery with care, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now();
-  const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 9 * DAY, stage: 'adult' }));
+  const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 11 * DAY, stage: 'adult' }));
   let w = getW(tk.id); setW(tk.id, { fish: sick(w), createdAt: now - 20 * DAY, simTs: now - 1000, hunger: 0.85, water: 0.45, lastDeath: 0, flags: { ...w.flags, tut: 5 }, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 0, 'neglect does not kill'); assert.equal(w.memorial.length, 0); assert.ok(w.fish.every((f) => f.ail >= 3 * 86400), 'they are very unwell');
   tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).floaters.length, 0, 'not even after days more');
@@ -449,7 +449,7 @@ await t('neglect on the server: very unwell but alive, recovery with care, float
   const wx = await open(x.token), wy = await open(y.token); w = getW(tk.id); setW(tk.id, { simTs: Date.now(), hunger: 0.8, water: 0.5, fish: w.fish.map((f) => ({ ...f, ail: 3 * 86400, health: 0.3 })) });
   await ackOf(wx, { t: 'feed', x: 0, idem: 'rg-f' }); await ackOf(wx, { t: 'water', idem: 'rg-w' }); const rec = getW(tk.id); assert.ok(rec.hunger < 0.8 && rec.water > 0.9, 'care restored the tank');
   // floating dead fish, lay to rest: two caretakers at the same moment, exactly one succeeds
-  setW(tk.id, { floaters: [{ id: 'dead1', name: 'Gone', species: 'goldfish', seed: 1, stage: 'adult', born: now - 5 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'] }], memorial: [{ id: 'dead1', name: 'Gone', species: 'goldfish', born: now - 5 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'], milestones: ['Reached the adult stage'], rested: null }] });
+  setW(tk.id, { floaters: [{ id: 'dead1', name: 'Gone', species: 'goldfish', seed: 1, stage: 'adult', born: now - 12 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'] }], memorial: [{ id: 'dead1', name: 'Gone', species: 'goldfish', born: now - 12 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'], milestones: ['Reached the adult stage'], rested: null }] });
   const [r1, r2] = await Promise.all([ackOf(wx, { t: 'scoop', id: 'dead1', idem: 'sc-1' }), ackOf(wy, { t: 'scoop', id: 'dead1', idem: 'sc-2' })]);
   assert.equal([r1, r2].filter((r) => r.applied).length, 1, 'only one scoop applies'); assert.equal(getW(tk.id).floaters.length, 0);
   const after = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); const mem = after.memorial.find((m) => m.id === 'dead1'); assert.ok(mem && mem.rested && mem.rested.by, 'memorial persisted with who laid it to rest'); assert.equal(mem.ownerName, 'Xan'); assert.deepEqual(mem.milestones, ['Reached the adult stage']);
@@ -457,13 +457,13 @@ await t('neglect on the server: very unwell but alive, recovery with care, float
 });
 await t('offline simulation: ten days away loses nobody and the tank is still there', async () => {
   const { tk } = globalThis.regress, DAY = 864e5, now = Date.now(); let w = getW(tk.id);
-  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 9 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
+  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 11 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.equal(before - a2.fish.length, 0, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
 });
 console.log('Discoveries, thank-yous, journal split, analytics');
 await t('observed discoveries are checked, saved once, journalled, shared with everyone, and a repeat says nothing', async () => {
   const { tk, x, y } = globalThis.regress, wx = await open(x.token), wy = await open(y.token); let w = getW(tk.id);
-  const shy = { ...w.fish[0], id: 'shy1', name: 'Mouse', traits: ['Shy'], born: Date.now() - 3 * 864e5, stage: 'adult', ail: 0, health: 1, disc: {} }; setW(tk.id, { fish: [shy, ...w.fish.slice(1)], decor: [{ id: 'dd1', type: 'rock', x: 0, z: 1, ry: 0 }], simTs: Date.now(), floaters: [], lastDeath: 0 });
+  const shy = { ...w.fish[0], id: 'shy1', name: 'Mouse', traits: ['Shy'], born: Date.now() - 12 * 864e5, stage: 'adult', ail: 0, health: 1, disc: {} }; setW(tk.id, { fish: [shy, ...w.fish.slice(1)], decor: [{ id: 'dd1', type: 'rock', x: 0, z: 1, ry: 0 }], simTs: Date.now(), floaters: [], lastDeath: 0 });
   const nj = () => S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(tk.id).n, before = nj();
   const r = await ackOf(wx, { t: 'observe', key: 'hideaway', fish: 'shy1', spot: 'dd1', idem: 'ob1' }); assert.equal(r.ok, true); assert.equal(r.applied, true);
   const ev = await waitFor(wy, (m) => m.t === 'event' && m.noticed === 'shy1'); assert.match(ev.toast, /hiding place/); assert.equal(nj(), before + 1);
@@ -537,7 +537,7 @@ await t('your data is yours: backup downloads, restores into a new tank, and del
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
 await t('the octopus puzzle jar: costs shells once, cannot be doubled by two caretakers, and is solved on its own with the event delivered', async () => {
   const { tk, x, y } = globalThis.regress, now = Date.now(), wx = await open(x.token), wy = await open(y.token), w0 = getW(tk.id), tpl = w0.fish[0];
-  const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 5 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: [], disc: {}, bond: {}, petAt: {}, puzzle: null };
+  const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 12 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: [], disc: {}, bond: {}, petAt: {}, puzzle: null };
   setW(tk.id, { fish: [oct], decor: [], orders: [], eggs: [], floaters: [], shells: 20, simTs: Date.now() - 2000, hunger: 0.3, water: 0.9, glass: 0, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15 });
   const [a, b] = await Promise.all([ackOf(wx, { t: 'puzzle', id: 'oc1', idem: 'pz-1' }), ackOf(wy, { t: 'puzzle', id: 'oc1', idem: 'pz-2' })]);
   assert.ok(a.ok && b.ok); assert.equal([a, b].filter((r) => r.applied).length, 1, 'only one jar is given'); assert.equal(getW(tk.id).shells, 20 - 3, 'paid once');
