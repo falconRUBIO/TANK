@@ -552,7 +552,7 @@ async function openMystery() {
 function mystTick(dt) {
   if (!mystGlow.visible) return; const U = mystGlow.userData, t = performance.now() / 1000, M = mystGlow.material;
   if (U.out > 0) { U.out = Math.max(0, U.out - dt * 0.7); M.opacity = U.out * 0.8; const sc = 2 + (1 - U.out) * 3; mystGlow.scale.set(sc, sc, 1); if (!U.out) mystSync(); return; }
-  const tw = /glint/.test(U.kind) ? (Math.sin(t * 3.1) > 0.8 ? 1 : 0.2) : 0.5 + 0.3 * Math.sin(t * 2); M.opacity = 0.2 + tw * 0.5; const sc = 1.4 + tw * 0.8; mystGlow.scale.set(sc, sc, 1);
+  const tw = /glint/.test(U.kind) ? (Math.sin(t * 3.1) > 0.8 ? 1 : 0.2) : 0.5 + 0.3 * Math.sin(t * 2), pg = (U.ping = Math.max(0, (U.ping ?? 0) - dt)) > 0 ? 1 + Math.sin(U.ping * 6) * 0.5 + U.ping * 0.6 : 1; M.opacity = Math.min(1, (0.2 + tw * 0.5) * pg); const sc = (1.4 + tw * 0.8) * pg; mystGlow.scale.set(sc, sc, 1);
   if (/bubbles/.test(U.kind) && Math.random() < dt * 1.2) fishes.burst(mystGlow.position.clone());
 }
 game.on('state', () => mystSync());
@@ -1695,6 +1695,7 @@ async function boot() {
     storage: () => api('/api/storage'),
     board: () => api('/api/board'),
     giftCode: () => api('/api/giftcode'),
+    lookMystery: () => { if (!mystGlow.visible) return; mystGlow.userData.ping = 3; fishes.burst(mystGlow.position.clone()); haptic(10); },      // from the bell: the glow on the sand swells for a moment, so it is easy to find
     // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
     devInfo: () => api('/api/dev/test'),
     devEnter: async () => { try { await api('/api/dev/test/open', {}); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not open the test aquarium'); } },
