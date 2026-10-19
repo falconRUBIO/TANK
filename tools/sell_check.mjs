@@ -21,7 +21,7 @@ ck('the fish meter says when the next meal is', meters.some((t) => /^Next meal i
 ck('the octopus meter says when its next crab is', meters.some((t) => /^Ready for a crab in about 1[12] hours/.test(t)));
 ck('water and glass say they are days away', meters.some((t) => /^Due for a change in about 3 days$/.test(t)) && meters.some((t) => /^Due for a wipe in about 3 days$/.test(t)));
 // 2. Collection lists the fish in the tank, the octopus first
-await p.evaluate(() => window.__ui.open('friends')); await p.waitForTimeout(300); await p.click('#sheet [data-sub=book]'); await p.waitForTimeout(500);
+await p.evaluate(() => window.__ui.open('book')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .itf')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });
 ck('Collection lists every fish in the tank, the octopus first, each with Sell', list.length === 2 && /^Inky/.test(list[0]) && list.every((t) => /Sell$/.test(t)));
 // 3. selling Nori: a clear question with the price, then gone, and the shells added

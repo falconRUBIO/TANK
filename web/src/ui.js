@@ -23,7 +23,7 @@ const SWATCH = { floor: { sand: 'linear-gradient(#ecdcb0,#d6bf8a)', pearl: 'line
 
 export function initUI({ game, social, cb }) {
   const sheet = document.getElementById('sheet'), toastEl = document.getElementById('toast'), $ = (id) => document.getElementById(id);
-  let tab = 'tank', sub = 'friends', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '', bottleTo = null, careSub = 'care';
+  let tab = 'tank', sub = 'friends', nsub = 'today', tt, cat = 'NEW', selected = null, rearrange = false, composeMode = 'msg', crewDraft = '', bottleTo = null, careSub = 'care';
   // Toasts wait their turn: each one is read for a moment before the next, repeats are dropped, and a long backlog moves faster (newest kept).
   const tq = []; let showing = 0;
   const cardUp = () => ['settle', 'reunion', 'coach'].some((id) => $(id)?.classList.contains('on'));
@@ -58,7 +58,9 @@ export function initUI({ game, social, cb }) {
   const forYou = (n) => /gift|bottle|note|for you|waiting|is hungry|needs|says|nudge|wrote|could use someone|look after/i.test(n.text) && !/^Chapter:/.test(n.text);
   const unread = () => notices.filter((n) => n.ts > readAt && forYou(n)).length;
   const myCall = () => { const D = game.state?.dilemma; return D && !D.done && (!D.turn || D.turn.uid === game.you?.userId || Date.now() > D.turn.until) ? 1 : 0; };      // (a decision that is yours counts as waiting on you)
-  const bell = () => { const b = $('bell'); if (!b) return; const n = unread() + myCall(); b.classList.toggle('new', n > 0); b.querySelector('i').textContent = n > 9 ? '9+' : n ? String(n) : ''; };
+  // (a Field Guide page nobody on this phone has looked at yet)
+  const fieldNew = () => { try { return Object.keys(S()?.field ?? {}).length > (+(localStorage.getItem('ourtank.fieldSeen') ?? 0) || 0); } catch { return false; } };
+  const bell = () => { const b = $('bell'); if (!b) return; const n = unread() + myCall() + (fieldNew() ? 1 : 0); b.classList.toggle('new', n > 0); b.querySelector('i').textContent = n > 9 ? '9+' : n ? String(n) : ''; };
   let ntAll = false;
   const noticesHtml = () => {
     if (!notices.length) return '<p class="dim">Nothing yet. Hints, messages and moments in the tank will be kept here.</p>';
@@ -106,7 +108,7 @@ export function initUI({ game, social, cb }) {
     const g = goalText(); if ($('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
     { const me = game.you?.userId, due = (s.dilemma && !s.dilemma.done) || s.hunger > 0.55 || s.water < 0.5 || s.glass < 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
-    { const n = Object.keys(s.field ?? {}).length, seen = fieldSeen(); flag('friends', n > seen); }      // a new Field Guide page: a dot on Crew until it is looked at      // a dot on Care when something needs you
+    // (a new Field Guide page counts on the Today icon until it is looked at)
   }
   // the tank's goal, always in view: what it is, the next step and how far along (a choice waiting when there is none)
   // the tank's goal lives in the bell: a thin ring around it fills as the goal does (gold when a new one is waiting to be chosen), and the
@@ -331,12 +333,11 @@ export function initUI({ game, social, cb }) {
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
   // the Field Guide: the remarkable things the animals do, each page filled in the first time someone sees it, with the photo of that very moment
-  const fieldSeen = () => { try { return +(localStorage.getItem('ourtank.fieldSeen') ?? 0) || 0; } catch { return 1e9; } };      // (how many Field Guide pages this phone has looked at)
   const fieldHtml = () => { const F = S().field ?? {}, all = Object.entries(FIELD), got = all.filter(([k]) => F[k]).length, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
     const card = ([k, d]) => { const p = F[k]; if (!p) return `<div class="fg nope"><div class="fgpic">?</div><b>${esc(d.label)}</b><small>${esc(d.hint)}</small></div>`;
       const j = p.text ? game.journal.find((x) => x.text === p.text) : null, im = j ? shotFor(j) : p.text ? shotOf(p.text) : null;
       return `<div class="fg">${im ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${im}" alt=""></button>` : `<div class="fgpic seen">✓</div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
-    return `<div class="fghead"><b>Field Guide</b><span>${got} of ${all.length} seen</span></div>${game.live ? '<p class="board dim" id="giftcode"></p>' : ''}<p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
+    return `<div class="fghead"><b>Pages</b><span>${got} of ${all.length} seen</span></div>${game.live ? '<p class="board dim" id="giftcode"></p>' : ''}<p class="fgnote">Things worth catching your animals doing. A page fills in the first time someone sees it happen, with the photo.</p><div class="fgg">${[...all.filter(([k]) => F[k]), ...all.filter(([k]) => !F[k])].map(card).join('')}</div>`; };
   // what each animal has shown you about itself (its discoveries), as pages of the same book: who, and since when
   const goalsHtml = () => { const d = S().goalsDone ?? [], g = goalOf(S()); return d.length || g ? `<h4>Goals</h4><div class="shown">${g ? `<div><b>${esc(g.title)}</b><small>${g.done} of ${g.of} · now</small></div>` : ''}${d.slice().reverse().map((x) => `<div><b>✓ ${esc(x.title)}</b><small>${x.prize ? esc(x.prize) + ' · ' : ''}${new Date(x.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</small></div>`).join('')}</div>` : ''; };
   // every animal bred in this tank, generation by generation, with its color, how it was raised and its parents; shareable as one picture
@@ -549,18 +550,20 @@ export function initUI({ game, social, cb }) {
       return `<h3>${esc(game.tankName ?? 'Your tank')}</h3>${seg}${dl}${due.length ? `<h4>Needs you</h4><div class="cgroup">${due.map(row).join('')}</div>` : ''}${later.length ? `<h4>Later</h4><div class="cgroup quiet">${later.map(row).join('')}</div>` : ''}
         ${comingCare}${lvRow()}${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}${fold('tankstatus', `<span>Tank: ${esc(tankMood(S(), Date.now()).label)}</span>`, meters())}`;      // Care is two things: what needs you, and what is coming (no daily checklist: this is not a chore list)
     },
-    notices: () => `<h3>Today in ${esc(game.tankName ?? 'your tank')}</h3><h4 class="ntsh">How it's doing</h4>${tankLine()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${nowHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div>`,
+    notices: () => { if (nsub === 'guide') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
+      const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Field Guide']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
+      // the Field Guide sits beside Today: everything about your own tank in one place (Crew is for people)
+      if (nsub === 'guide') return `<div class="crew"><h3>${name}</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;
+      return `<div class="crew"><h3>${name}</h3>${seg}<h4 class="ntsh">How it's doing</h4>${tankLine()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${nowHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
-      // Friends, Journal and the Field Guide as tabs; Settings is the gear in the corner of the sheet
+      // Friends and Journal as tabs; Settings is the gear in the corner of the sheet
       const gear = `<button class="gear" data-sub="settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm8.2 4.6.1-1.2-.1-1.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2-1.2L15.4 3h-4l-.4 2.5a8 8 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6-.1 1.2.1 1.2-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2 1.2l.4 2.5h4l.4-2.5a8 8 0 0 0 2-1.2l2.4.9 2-3.4z"/></svg></button>`;
-      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal'], ['book', 'Field Guide']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}${k === 'book' && Object.keys(S().field ?? {}).length > (fieldSeen()) ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
+      const seg = `${gear}<div class="seg">${[['friends', 'Friends'], ['journal', 'Journal']].map(([k, l]) => `<button class="${sub === k ? 'on' : ''}" data-sub="${k}">${l}</button>`).join('')}</div>`;
       if (sub === 'settings') return `<div class="crew">${views.settings().replace('<h3>Settings</h3>', '<button class="back" data-sub="friends">‹ Crew</button><h3>Settings</h3>')}</div>`;
       if (sub === 'journal') return `<div class="crew"><h3>Journal</h3>${seg}<button class="histbtn" data-sub="history">Tank history ›</button>${journalHtml()}</div>`;
       if (sub === 'history') return `<div class="crew"><button class="back" data-sub="journal">‹ Journal</button><h3>Tank history</h3>${historyHtml()}</div>`;      // the story of the tank, its moments with their photos (what you need to know is under the bell)
-      if (sub === 'book') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
-      if (sub === 'book') return `<div class="crew"><h3>Field Guide</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${inTankHtml()}${bookHtml()}</div>`;      // (one book: what they do, what they have shown you, and every kind of animal and decoration)
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3><p class="crewsub">Just you for now</p>${seg}<div class="crewbox"><div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>
@@ -718,18 +721,19 @@ export function initUI({ game, social, cb }) {
       if (alive <= 1) { dialog({ title: f.name.toUpperCase(), text: `${f.name} is the only fish in the tank, so it stays. Bring in another fish first.`, ok: 'OK' }); return; }
       const yes = f.resident ? await dialog({ title: `LET ${f.name.toUpperCase()} GO?`, text: `${f.name} came to visit and stayed. It can go back to the open water, and may come visiting again.`, ok: 'Let it go', cancel: 'Keep it' }) : await dialog({ title: `SELL ${f.name.toUpperCase()}?`, text: `${f.name} the ${(d?.label ?? f.species).toLowerCase()} goes to a new home and leaves the tank for good.`, lines: [...(game.shared && f.owner && f.owner !== game.you?.userId && (game.members ?? []).some((m) => m.id === f.owner) ? [`${f.name} is ${f.ownerName ?? 'a friend'}'s. As the tank's first caretaker you can still sell it, for example if they have stopped playing.`] : []), pay ? `You get ${pay} shells, half of what ${f.name} cost.` : `${f.name} came free, so it fetches no shells.`], ok: pay ? `Sell for ${pay} 🐚` : 'Sell', cancel: 'Keep', danger: true });
       if (!yes) return; const y = sheet.scrollTop, r = await game.dispatch({ t: 'sellFish', id: f.id });
-      if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : r.reason === 'EXPECTING' ? 'He is expecting babies, so he stays.' : REASONS[r.reason] ?? 'Could not sell that.'); open('friends', true); sheet.scrollTop = y;
+      if (!r.ok) toast(r.reason === 'LAST_FISH' ? 'It is the last fish in the tank, so it stays.' : r.reason === 'NOT_YOURS' ? 'Only its caretaker can sell it.' : r.reason === 'EXPECTING' ? 'He is expecting babies, so he stays.' : REASONS[r.reason] ?? 'Could not sell that.'); open(tab, true); sheet.scrollTop = y;
     }));
     sheet.querySelectorAll('[data-csub]').forEach((b) => (b.onclick = () => { careSub = b.dataset.csub; sfx('tap'); open('care', true); sheet.scrollTop = 0; }));
+    sheet.querySelectorAll('[data-nsub]').forEach((b) => (b.onclick = () => { nsub = b.dataset.nsub; sfx('tap'); open('notices', true); sheet.scrollTop = 0; bell(); }));
     sheet.querySelectorAll('[data-sub]').forEach((b) => (b.onclick = () => { sub = b.dataset.sub; sfx('tap'); open('friends', true); sheet.scrollTop = 0; }));
     sheet.querySelectorAll('[data-thank]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.thank(b.dataset.to, +b.dataset.thank); if (r.ok) { sfx('tap'); b.textContent = '♥'; b.classList.add('on'); } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
     sheet.querySelectorAll('[data-bottle]').forEach((b) => (b.onclick = async () => {
       await sendBottle(b.dataset.bottle);
     }));
     sheet.querySelectorAll('[data-nudge]').forEach((b) => (b.onclick = async () => { b.disabled = true; const r = await game.nudge(b.dataset.nudge); if (r.ok) { toast('Nudge sent'); b.textContent = 'Sent'; } else { toast(REASONS[r.reason] ?? 'Could not send that.'); b.disabled = false; } }));
-    if (tab === 'decorate' || (tab === 'friends' && sub === 'book')) thumbs();
-    if (tab === 'friends' && sub === 'book' && $('giftcode')) cb.giftCode?.().then((r) => { const el = $('giftcode'); if (el && r?.code) el.innerHTML = `Your gift code: <b>${esc(r.code)}</b> · give it to a friend so they can send you a baby they bred. It does not let anyone join.`; }).catch(() => $('giftcode')?.remove());
-    if (tab === 'friends' && sub === 'book' && $('board')) cb.board?.().then((B) => { const el = $('board'); if (!el || !B) return; const c = Object.entries(B.colors ?? {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${MORPHS[k]?.label.toLowerCase() ?? k}`), ord = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] ?? 'th');
+    if (tab === 'decorate' || (tab === 'notices' && nsub === 'guide')) thumbs();
+    if (tab === 'notices' && nsub === 'guide' && $('giftcode')) cb.giftCode?.().then((r) => { const el = $('giftcode'); if (el && r?.code) el.innerHTML = `Your gift code: <b>${esc(r.code)}</b> · give it to a friend so they can send you a baby they bred. It does not let anyone join.`; }).catch(() => $('giftcode')?.remove());
+    if (tab === 'notices' && nsub === 'guide' && $('board')) cb.board?.().then((B) => { const el = $('board'); if (!el || !B) return; const c = Object.entries(B.colors ?? {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${MORPHS[k]?.label.toLowerCase() ?? k}`), ord = (n) => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] ?? 'th');
       el.textContent = B.total ? `This week, everywhere: ${c.join(' · ')}, bred in ${B.tanks} tank${B.tanks === 1 ? '' : 's'}. ${B.mine ? `Yours: ${B.mine}, ${ord(B.rank)} of ${B.tanks}.` : 'None from yours yet.'}` : 'No rare colors bred anywhere this week yet. Be the first.'; }).catch(() => { $('board')?.remove(); });      // (counts only: no other tank is named)
   }
   // the glass lens under the chosen tab slides to it
@@ -760,12 +764,12 @@ export function initUI({ game, social, cb }) {
   }
   function open(t, quiet = false) {
     if (t !== 'friends' && sub === 'look') sub = 'friends';                    // the look editor is only ever open while you are on it
-    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'friends'; sub = 'book'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
+    if (t === 'today') t = 'care'; if (t === 'journal') { t = 'friends'; sub = 'journal'; } if (t === 'book') { t = 'notices'; nsub = 'guide'; } if (t === 'settings') { t = 'friends'; sub = 'settings'; }
     if (t === 'decorate' && tab !== 'decorate' && !quiet) { if (newCount()) cat = 'NEW'; else if (cat === 'NEW') cat = 'FISH'; }
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
-    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Today: how your tank is doing, your goal, what needs you, and what happened.' }, k = 'ourtank.first.' + t;
+    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Your tank: Today shows how it is doing, your goal and what needs you. The Field Guide holds everything you have discovered.' }, k = 'ourtank.first.' + t;
       let seen = true; try { seen = !!localStorage.getItem(k); } catch { /* ignore */ } if (!seen && FIRST[t] && !quiet) { try { localStorage.setItem(k, '1'); } catch { /* ignore */ } setTimeout(() => toast(FIRST[t], 4200), 450); } }      // the first time you open a tab, one line about what it is for
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (t === 'care') flag('care', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;
@@ -779,7 +783,7 @@ export function initUI({ game, social, cb }) {
   document.querySelectorAll('nav [data-tab]').forEach((n) => n.addEventListener('click', () => { if ($('card').classList.contains('on')) { cb.closeCard?.(); return; } open(n.dataset.tab === tab ? 'tank' : n.dataset.tab); }));      // with a fish's card open, the bar first closes it, never piles a sheet on top
   $('pill').onclick = (e) => { if (e.target.closest('#conn')) return; sfx('tap'); dialog({ title: 'HOW SHELLS ARE EARNED', text: 'Looking after your fish, and watching them grow, pays the most.', lines: EARN.map(([a, b]) => `${a}: ${b}`), ok: 'Got it' }); };
   $('gear').onclick = () => open('settings');
-  $('bell').onclick = () => open(tab === 'notices' ? 'tank' : 'notices'); bell();
+  $('bell').onclick = () => { if (tab !== 'notices') nsub = fieldNew() && !unread() && !myCall() ? 'guide' : 'today'; open(tab === 'notices' ? 'tank' : 'notices'); }; bell();
 
   // header portraits
   function setMembers() {
