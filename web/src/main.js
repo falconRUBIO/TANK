@@ -552,6 +552,7 @@ function mystTick(dt) {
   if (/bubbles/.test(U.kind) && Math.random() < dt * 1.2) fishes.burst(mystGlow.position.clone());
 }
 game.on('state', () => mystSync());
+window.__reveal = (id) => revealFish(fishes.byId.get(id), game.state.fish.find((f) => f.id === id), 600, 2400);
 window.__mystery = () => ({ v: mystGlow.visible, at: mystGlow.position.toArray().map((x) => +x.toFixed(2)), m: game.state && mysteryOf(game.state) }); window.__openMystery = () => openMystery();
 window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBottle = () => openBottle(); window.__bottleSeen = () => ({ id: bottleId, v: bottleSp.visible, y: +bottleSp.position.y.toFixed(2), leave: !!bottleSp.userData.leave });
 

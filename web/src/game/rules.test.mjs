@@ -952,3 +952,12 @@ ok('scarcity: eggs laid under a full moon have better odds of the color both par
   assert.ok(moon > plain * 1.3, `${moon} vs ${plain}`);
   const full = Date.UTC(2024, 0, 25, 12), t = R.newWorld(0); R.norm(t, full - 2 * 864e5); assert.ok(R.forecast(t, full - 2 * 864e5, 9).some((x) => /Full moon/.test(x.text)), JSON.stringify(R.forecast(t, full - 2 * 864e5, 9)));
 });
+ok('regression: a rare-colored egg really hatches, in the tank, with its line in the journal, the color page, the weekly log and the crew told', () => {
+  const D = 864e5, t0 = 40 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = 9e15; t.dilemmaAt = 9e15; t.level = 6;
+  const G2 = { ...R.genesOf(3), m: ['gold', 'gold'] }; t.fish = [R.ensureFish({ id: 'a', name: 'Amy', species: 'goldfish', sex: 'f', seed: 3, born: 0, stage: 'adult', traits: [], genes: G2 }), R.ensureFish({ id: 'b', name: 'Bob', species: 'goldfish', sex: 'm', seed: 4, born: 0, stage: 'adult', traits: [], genes: G2 })];
+  t.eggAt = t0; R.advance(t, t0 + 1000); assert.equal(t.eggs.length, 1, 'laid'); const errs0 = R.timeStepErrors().length; const ev = []; let now = t0 + 1000;
+  for (let k = 0; k < 10 * 24 && !t.fish.some((f) => f.parents?.length); k++) { now += 3600e3; t.hunger = 0; t.water = 1; ev.push(...R.advance(t, now)); const e = (t.eggs ?? []).find((x) => x.ready); if (e) ev.push(...R.applyAction(t, { t: 'watchEggs', id: e.id }, { now: now + 1000, name: 'Ana' }).events); }
+  const kid = t.fish.find((f) => f.parents?.length); assert.ok(kid, 'it hatched'); assert.equal(R.morphOf(kid), 'gold');
+  assert.ok(ev.some((e) => /is golden!/.test(e.journal ?? '')) && ev.some((e) => e.activity?.type === 'morph'), JSON.stringify(ev.filter((e) => e.journal).map((e) => e.journal)));
+  assert.ok(t.morphs.gold && t.morphLog.length === 1); assert.equal(R.timeStepErrors().length, errs0, 'no time step failed');
+});

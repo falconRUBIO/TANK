@@ -1,6 +1,7 @@
 // Shop thumbnails that show the real in-game assets: decorations are rendered from their real models,
 // fish from their real voxel sprites. Everything is cached after the first draw.
 import * as THREE from 'three';
+import { MORPHS } from '../game/genes.js';
 import { buildItem } from './items.js';
 import { Fish } from '../voxel.js';
 import { SPECIES } from '../species.js';
@@ -23,9 +24,17 @@ export function decorThumb(type) {
     rr.render(sc, cam); const url = rr.domElement.toDataURL(); sc.remove(it.group); cache.set(key, url); return url;
   } catch (e) { console.warn('thumbnail failed', type, e); cache.set(key, ''); return ''; }
 }
-export function fishThumb(id, pal = null) {
-  const key = 'f:' + id + (pal != null ? ':' + pal : ''); if (cache.has(key)) return cache.get(key);
+// a rare color (MORPHS) is painted over the colored parts, the same way the fish in the tank takes it on (whites, blacks and eyes stay)
+function morphPaint(g, w, h, M) { const im = g.getImageData(0, 0, w, h), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { if (!d[i + 3]) continue; const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, sat = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)); if (sat <= 0.2) continue;
+    let hh = 0; if (mx !== mn) { hh = mx === r ? ((gg - b) / (mx - mn)) % 6 : mx === gg ? (b - r) / (mx - mn) + 2 : (r - gg) / (mx - mn) + 4; hh /= 6; if (hh < 0) hh += 1; }
+    const H = M.h ?? hh, S = M.s, L = Math.min(0.95, l * 0.4 + M.l * 0.6), C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs(((H * 6) % 2) - 1)), m = L - C / 2, sx = Math.floor(H * 6) % 6, [R, G, B] = [[C, X, 0], [X, C, 0], [0, C, X], [0, X, C], [X, 0, C], [C, 0, X]][sx];
+    d[i] = (R + m) * 255; d[i + 1] = (G + m) * 255; d[i + 2] = (B + m) * 255; }
+  g.putImageData(im, 0, 0); }
+export function fishThumb(id, pal = null, morph = null) {
+  const M = morph && MORPHS[morph], key = 'f:' + id + (pal != null ? ':' + pal : '') + (M ? ':' + morph : ''); if (cache.has(key)) return cache.get(key);
   const fr = new Fish(SPECIES[id], 2, pal != null ? { pal } : null).frame({ yaw: 0 }), c = document.createElement('canvas'); c.width = c.height = 160;
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false; const k = Math.floor(150 / Math.max(fr.width, fr.height) * 1.0) || 1;
-  g.drawImage(fr, (160 - fr.width * k) / 2, (160 - fr.height * k) / 2, fr.width * k, fr.height * k); const url = c.toDataURL(); cache.set(key, url); return url;
+  g.drawImage(fr, (160 - fr.width * k) / 2, (160 - fr.height * k) / 2, fr.width * k, fr.height * k); if (M) morphPaint(g, 160, 160, M); const url = c.toDataURL(); cache.set(key, url); return url;
 }
+

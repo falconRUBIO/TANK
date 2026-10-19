@@ -3,7 +3,7 @@ import { skyOf } from './game/sky.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
-import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, morphOf } from './game/rules.js';
+import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, morphOf, nextPrize, prizeLabel } from './game/rules.js';
 import { SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
@@ -115,13 +115,13 @@ export function initUI({ game, social, cb }) {
     const finished = done.length ? `<p class="gdone">Goals finished: ${done.map((d) => esc(d.title)).join(' · ')}</p>` : '';
     if (g) {
       const steps = g.steps.map((st, i) => { const nx = !st.done && g.steps.findIndex((x) => !x.done) === i; return `<div class="gst ${st.done ? 'done' : nx ? 'next' : ''}"><i>${st.done ? '✓' : i + 1}</i><span><b>${esc(st.text)}${st.need > 1 ? ` (${st.have}/${st.need})` : ''}</b>${nx ? `<small>${esc(st.hint)}</small>` : ''}</span></div>`; }).join('');
-      modal.innerHTML = `<div class="box gsheet"><h2>${esc(g.title)}</h2><p class="gbl">${esc(g.blurb)}</p>${steps}<p class="gprize">Reward: a new floor or backdrop for the tank, and ${GOAL_SHELLS} shells</p><button class="big gold" id="mok">Keep going</button><button class="lnk" id="mno">Set this goal aside</button>${finished}</div>`;
+      modal.innerHTML = `<div class="box gsheet"><h2>${esc(g.title)}</h2><p class="gbl">${esc(g.blurb)}</p>${steps}<p class="gprize">Reward: ${prizeLabel(nextPrize(s)) ? `the ${esc(prizeLabel(nextPrize(s)))}` : 'a gift for the tank'}, and ${GOAL_SHELLS} shells</p><button class="big gold" id="mok">Keep going</button><button class="lnk" id="mno">Set this goal aside</button>${finished}</div>`;
       modal.classList.add('on'); $('mok').onclick = () => modal.classList.remove('on');
       $('mno').onclick = async () => { const ok = await new Promise((r) => { modal.classList.remove('on'); setTimeout(() => dialog({ title: 'SET IT ASIDE?', text: 'Its progress is lost, and three goals are offered again.', ok: 'Set aside', cancel: 'Keep it' }).then(r), 300); }); if (!ok) return; const r = await game.dispatch({ t: 'pickGoal', drop: true }); if (r.ok) setTimeout(goalSheet, 400); };
       return;
     }
     const offer = (s.goalOffer ?? []).map((k) => [k, GOALS[k]]).filter(([, x]) => x);
-    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${offer.map(([k, x]) => `<button class="gch" data-goal="${esc(k)}"><b>${esc(x.title)}</b><small>${esc(x.blurb)} · ${x.steps.length} steps</small></button>`).join('')}<button class="lnk" id="mno">Later</button>${finished}</div>`;
+    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${offer.map(([k, x]) => `<button class="gch" data-goal="${esc(k)}"><b>${esc(x.title)}</b><small>${esc(x.blurb)} · ${x.steps.length} steps</small></button>`).join('')}${prizeLabel(nextPrize(s)) ? `<p class="gprize">Any of them unlocks the ${esc(prizeLabel(nextPrize(s)))}.</p>` : ''}<button class="lnk" id="mno">Later</button>${finished}</div>`;
     modal.classList.add('on'); $('mno').onclick = () => modal.classList.remove('on');
     modal.querySelectorAll('[data-goal]').forEach((b) => { b.onclick = async () => { const r = await game.dispatch({ t: 'pickGoal', id: b.dataset.goal }); modal.classList.remove('on'); if (!r.ok) { toast(REASONS[r.reason] ?? 'That did not work.'); return; } sfx('arrive'); updateHeader(); setTimeout(goalSheet, 450); }; });
   }
@@ -309,7 +309,7 @@ export function initUI({ game, social, cb }) {
     const s = S(), me = game.you?.userId, fish = s.fish.filter((f) => !f.dead), rank = (f) => (f.species === 'octopus' ? 0 : 2) + (f.owner === me ? 0 : 1);
     if (!fish.length) return '';
     const row = (f) => { const d = SPECIES_DEF[f.species], mine = canSell(f, me, members()), who = f.owner && f.owner !== me && game.shared ? `${esc(f.ownerName ?? 'a friend')}'s` : f.owner === me && game.shared ? 'yours' : '';
-      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)}${f.species === 'seahorse' ? (sexOf(f) === 'm' ? ' ♂ male' : ' ♀ female') : ''} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
+      return `<button class="itf" data-sellfish="${f.id}"><img alt="" data-thumb="fish:${f.species}:${f.pal ?? ''}:${morphOf(f) ?? ''}"><span><b>${esc(f.name)}</b><small>${esc(d?.label ?? f.species)}${f.species === 'seahorse' ? (sexOf(f) === 'm' ? ' ♂ male' : ' ♀ female') : ''} · ${esc(stageOf(f))}${who ? ' · ' + who : ''}</small></span><em class="${mine ? '' : 'off'}">${mine ? (f.preg ? 'Expecting' : 'Sell') : 'Theirs'}</em></button>`; };
     return `<h4>In the tank · ${fish.length}</h4><div class="intank">${fish.sort((a, b) => rank(a) - rank(b)).map(row).join('')}</div>`;
   };
   // the Field Guide: the remarkable things the animals do, each page filled in the first time someone sees it, with the photo of that very moment
@@ -322,9 +322,9 @@ export function initUI({ game, social, cb }) {
   // what each animal has shown you about itself (its discoveries), as pages of the same book: who, and since when
   const goalsHtml = () => { const d = S().goalsDone ?? [], g = goalOf(S()); return d.length || g ? `<h4>Goals</h4><div class="shown">${g ? `<div><b>${esc(g.title)}</b><small>${g.done} of ${g.of} · now</small></div>` : ''}${d.slice().reverse().map((x) => `<div><b>✓ ${esc(x.title)}</b><small>${x.prize ? esc(x.prize) + ' · ' : ''}${new Date(x.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</small></div>`).join('')}</div>` : ''; };
   // every animal bred in this tank, generation by generation, with its color, how it was raised and its parents; shareable as one picture
-  const bredHere = () => { const s = S(); return [...s.fish.filter((f) => !f.dead && (f.parents?.length || f.bornHere)).map((f) => ({ f, live: true })), ...(s.memorial ?? []).filter((m) => (m.parents ?? []).length).map((f) => ({ f, live: false }))].map(({ f, live }) => ({ id: f.id, name: f.name, species: f.species, pal: f.pal ?? null, gen: f.gen ?? 1, color: live && morphOf(f) ? MORPHS[morphOf(f)].label : null, raised: f.raisedAs ?? null, live, parents: (f.parents ?? []).map((p) => p.name).filter(Boolean) })); };
+  const bredHere = () => { const s = S(); return [...s.fish.filter((f) => !f.dead && (f.parents?.length || f.bornHere)).map((f) => ({ f, live: true })), ...(s.memorial ?? []).filter((m) => (m.parents ?? []).length).map((f) => ({ f, live: false }))].map(({ f, live }) => ({ id: f.id, name: f.name, species: f.species, pal: f.pal ?? null, gen: f.gen ?? 1, morph: live ? morphOf(f) : null, color: live && morphOf(f) ? MORPHS[morphOf(f)].label : null, raised: f.raisedAs ?? null, live, parents: (f.parents ?? []).map((p) => p.name).filter(Boolean) })); };
   const familyHtml = () => { const all = bredHere(); if (!all.length) return ''; const gens = [...new Set(all.map((x) => x.gen))].sort((a, b) => a - b);
-    return `<h4>Bred in your tank <button class="lnk fshare" data-act="famshare">Share</button></h4>${gens.map((g) => `<small class="gen">Generation ${g}</small><div class="fam">${all.filter((x) => x.gen === g).map((x) => `<div class="${x.color ? 'rare' : ''}${x.live ? '' : ' gone'}"><img alt="" class="fthumb" src="${fishThumb(x.species, x.pal)}"><b>${esc(x.name)}</b><small>${[x.color, x.raised ? x.raised.toLowerCase() : null, x.parents.length ? `of ${x.parents.map(esc).join(' & ')}` : null, x.live ? null : 'remembered'].filter(Boolean).join(' · ')}</small></div>`).join('')}</div>`).join('')}`; };
+    return `<h4>Bred in your tank <button class="lnk fshare" data-act="famshare">Share</button></h4>${gens.map((g) => `<small class="gen">Generation ${g}</small><div class="fam">${all.filter((x) => x.gen === g).map((x) => `<div class="${x.color ? 'rare' : ''}${x.live ? '' : ' gone'}"><img alt="" class="fthumb" src="${fishThumb(x.species, x.pal, x.morph)}"><b>${esc(x.name)}</b><small>${[x.color, x.raised ? x.raised.toLowerCase() : null, x.parents.length ? `of ${x.parents.map(esc).join(' & ')}` : null, x.live ? null : 'remembered'].filter(Boolean).join(' · ')}</small></div>`).join('')}</div>`).join('')}`; };
   function familyCard() {      // 4:3, like every postcard: the latest generations first if there are many, three names a row, the rare ones in gold
     const all = bredHere(), c = document.createElement('canvas'), W = 1200, H = 900; c.width = W; c.height = H; const g = c.getContext('2d'), gens = [...new Set(all.map((x) => x.gen))].sort((a, b) => a - b).slice(-3);
     const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d4f6b'); bg.addColorStop(1, '#06283d'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
@@ -635,7 +635,7 @@ export function initUI({ game, social, cb }) {
       </div>` : ''}
       <p class="dim foot"><button class="lnk" id="devback">‹ Settings</button></p></div>`;
   };
-  function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; im.src = k === 'fish' ? fishThumb(id) : decorThumb(id); }, i * 16)); }
+  function thumbs() { sheet.querySelectorAll('img[data-thumb]').forEach((im, i) => setTimeout(() => { const [k, id] = im.dataset.thumb.split(':'); if (!im.isConnected) return; const [, , pal, mo] = im.dataset.thumb.split(':'); im.src = k === 'fish' ? fishThumb(id, pal ? +pal : null, mo || null) : decorThumb(id); }, i * 16)); }
   function paint() {
     sheet.querySelectorAll('canvas.big').forEach((c) => { if (c.dataset.slot === 'me') drawAvatar(c, soloLook()); else { const m = game.members?.find((x) => x.slot === +c.dataset.slot); if (m) drawAvatar(c, m.avatar); } });
     sheet.querySelectorAll('[data-edit-me]').forEach((b) => (b.onclick = () => { sfx('tap'); sub = 'look'; open('friends', true); sheet.scrollTop = 0; }));

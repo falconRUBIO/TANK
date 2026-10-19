@@ -495,7 +495,7 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 // one little one from these eggs, its looks and nature from both parents (the same way for the first and for a second one that is kept)
 // a baby that shows a rare color: a line in the journal, and the first of each color is kept in the Field Guide's color pages
 function morphBorn(t, f, now, ev) {
-  const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); (t.morphLog ||= []).push({ m, at: now }); if (t.morphLog.length > 60) t.morphLog.splice(0, t.morphLog.length - 60);      // (kept for the weekly board across tanks) const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
+  const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); (t.morphLog ||= []).push({ m, at: now }); if (t.morphLog.length > 60) t.morphLog.splice(0, t.morphLog.length - 60);      /* (kept for the weekly board across tanks) */ const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
   ev.push({ activity: { type: 'morph', text: `${f.name} hatched ${M.label.toLowerCase()}!` } }); ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, story: f.id, morph: m });      // (no toast: the reveal on screen says it, after a breath)
 }
 function makeChild(t, e, now) {
@@ -973,7 +973,7 @@ export const GOALS = {
       { text: 'Eggs in the den', hint: 'Partners lay after about five days together, if she has a den.', n: since('octoEggs'), need: 1 },
       { text: 'Baby octopuses hatch', hint: 'Five days of guarding, then be there to watch.', n: since('octoHatch'), need: 1 },
     ] },
-  peace: { title: 'A peaceful tank', blurb: 'Arrange the tank so everyone gets on, and settle the squabbles.', icon: 'friend', ok: (t) => liveOf(t).length >= 3,
+  peace: { title: 'A peaceful tank', blurb: 'Arrange the tank so everyone gets on, and settle the squabbles.', icon: 'friend', ok: (t) => { const L = layoutOf(t); return liveOf(t).length >= 3 && !(L.thicket && L.dens >= L.octos); },      /* (not offered when the layout is already right: the steps would be free) */
     steps: [
       { text: 'Make a thicket', hint: 'Move two plants close together: the shy ones hide there.', n: (t) => (layoutOf(t).thicket ? 1 : 0), need: 1 },
       { text: 'A den for every octopus', hint: 'A coconut shell or a clay pot each, from the Shop.', n: (t) => { const L = layoutOf(t); return L.dens >= L.octos ? 1 : 0; }, need: 1 },
@@ -988,6 +988,9 @@ export const GOALS = {
     ] },
 };
 export const GOAL_SHELLS = 20;
+// what finishing the current goal will unlock: the next floor or backdrop the tank does not have yet (alternating, so both kinds come)
+export function nextPrize(t) { const fl = Object.keys(FLOORS).filter((k) => !styleOwned(t, 'floor', k)).map((k) => ['floor', k]), bd = Object.keys(BACKDROPS).filter((k) => !styleOwned(t, 'backdrop', k)).map((k) => ['backdrop', k]); const n = (t.goalsDone ?? []).length; return (n % 2 ? bd[0] ?? fl[0] : fl[0] ?? bd[0]) ?? null; }
+export const prizeLabel = (p) => (p ? `${p[0] === 'floor' ? FLOORS[p[1]] : BACKDROPS[p[1]]} ${p[0]}` : null);
 const stepsOf = (t, g) => GOALS[g.id].steps.map((s) => ({ ...s, hint: typeof s.hint === 'function' ? s.hint(t) : s.hint, have: Math.max(0, Math.min(s.need, s.n(t, g))) }));
 export function goalOf(t) { const g = t.goal; if (!g || !GOALS[g.id]) return null; const S = stepsOf(t, g), next = S.find((s) => !g.done?.[S.indexOf(s)] && s.have < s.need), done = S.filter((s, i) => g.done?.[i] || s.have >= s.need).length;
   return { id: g.id, ...GOALS[g.id], at: g.at, steps: S.map((s, i) => ({ text: s.text, hint: s.hint, have: s.have, need: s.need, done: !!g.done?.[i] || s.have >= s.need })), next: next ? { text: next.text, hint: next.hint, have: next.have, need: next.need } : null, done, of: S.length }; }
@@ -1003,7 +1006,7 @@ function goals(t, now, ev) {
   const g = t.goal; if (!GOALS[g.id]) { t.goal = null; return; } g.done ||= {}; const S = stepsOf(t, g);
   S.forEach((s, i) => { if (!g.done[i] && s.have >= s.need) { g.done[i] = now; const n = Object.keys(g.done).length; if (n < S.length) ev.push({ journal: `Goal, ${n} of ${S.length}: ${s.text}.`, toast: `${s.text}! (${n} of ${S.length})`, goalStep: g.id }); } });
   if (Object.keys(g.done).length >= S.length) {
-    const st = [...Object.keys(FLOORS).map((k) => ['floor', k]), ...Object.keys(BACKDROPS).map((k) => ['backdrop', k])].find(([kind, k]) => !styleOwned(t, kind, k));
+    const st = nextPrize(t);
     if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; t.shells += GOAL_SHELLS;
     const prize = st ? `${st[0] === 'floor' ? FLOORS[st[1]] : BACKDROPS[st[1]]} ${st[0]}` : null;
     (t.goalsDone ||= []).push({ id: g.id, at: now, title: GOALS[g.id].title, prize }); t.goal = null; t.goalOffer = goalOffer(t, now);
