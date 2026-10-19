@@ -1577,6 +1577,14 @@ game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
 let wbShown = false, wbPending = false;      // (pending: the welcome-back note is about to show, so nothing else pops up first)
 // once a week, in the evening: the week in a few plain lines, from the journal (no scores, nothing to keep up)
+// After the replay: the one thing that matters most now, said once, then the tank is quiet (what was in the replay is not repeated as toasts)
+async function afterReplay() {
+  await new Promise((r) => { const w = () => ($('reunion').classList.contains('on') ? setTimeout(w, 400) : r()); setTimeout(w, 1200); });
+  window.__quietUntil = 0; ui.clearToasts(); const s = game.state, me = game.you?.userId; if (!s) return;
+  const egg = (s.eggs ?? []).find((e) => e.ready), born = s.fish.find((f) => f.preg?.ready && !f.dead), D = s.dilemma && !s.dilemma.done ? s.dilemma : null, mine = D && (!D.turn || D.turn.uid === me || Date.now() > D.turn.until), m = mysteryOf(s), G = goalOf(s);
+  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you in Care.', 'care'] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
+  if (!say) return; setTimeout(() => { ui.toast(say[0], 4200); if (say[1]) ui.flag(say[1], true); if (egg) { const fx = [...eggSprites.values()].find((x) => x.e?.id === egg.id); if (fx) setFocus(eggFocusOf(fx)); } }, 600);
+}
 async function welcomeBack() {
   let seen = 0; try { seen = +localStorage.getItem(seenKey()) || 0; } catch { /* ignore */ }
   markSeen(); addEventListener('pagehide', markSeen); document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); });
@@ -1605,7 +1613,9 @@ async function welcomeBack() {
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
     if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
   ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
-  sfx('arrive'); ui.reunion(lines.slice(0, 6), takePhoto, next); wbShown = true; wbPending = false;
+  const shown = lines.slice(0, 6); window.__quietUntil = Date.now() + (shown.length + (next.length ? 1 : 0)) * 4200 + 2500;      // the replay has the screen: celebrations and pop-ups wait until it is done
+  sfx('arrive'); ui.reunion(shown, takePhoto, next); wbShown = true; wbPending = false;
+  afterReplay();
   { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
 }
 
