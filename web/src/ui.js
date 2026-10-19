@@ -839,9 +839,9 @@ export function initUI({ game, social, cb }) {
   // new life: a pregnancy, eggs laid. A card with the expecting animal's photo, what is happening and when, and a way to go and look
   function newLife({ title, why, img, look = 'Go and see', icon = '🥚' }) {
     return modalFree().then(() => new Promise((res) => {
-      modal.innerHTML = `<div class="box party life">${img ? `<div class="lifepic"><img alt="" src="${img}"></div>` : `<div class="big-ic">${icon}</div>`}<h2>${esc(title)}</h2>${why ? `<p>${esc(why)}</p>` : ''}<button class="big gold" id="mok">${esc(look)}</button><button class="lnk" id="mno">Later</button></div>`;
+      modal.innerHTML = `<div class="box party life">${img ? `<div class="lifepic"><img alt="" src="${img}"></div>` : `<div class="big-ic">${icon}</div>`}<h2>${esc(title)}</h2>${why ? `<p>${esc(why)}</p>` : ''}<button class="big gold" id="mok">${esc(look)}</button>${look === 'OK' ? '' : '<button class="lnk" id="mno">Later</button>'}</div>`;
       modal.classList.add('on', 'party'); sfx('arrive'); haptic(20);
-      $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); }; $('mno').onclick = () => { modal.classList.remove('on', 'party'); res(false); };
+      $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); }; if ($('mno')) $('mno').onclick = () => { modal.classList.remove('on', 'party'); res(false); };
     }));
   }
   // an animal close to dying: said plainly, with the things that will save it as buttons
