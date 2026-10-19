@@ -180,6 +180,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (req.method === 'POST' && p === '/api/push/unsubscribe' && !lim.hit('unsub:' + user.id, 30, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
       if (req.method === 'POST' && p === '/api/push/unsubscribe') { push.unsubscribe(user.id, (await readBody(req)).endpoint); return json(res, 200, { ok: true }); }
       if (req.method === 'POST' && p === '/api/recovery') { if (!lim.hit('rk:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); } if (req.method === 'POST' && p === '/api/recovery') return json(res, 200, { key: L.newRecoveryKey(db, user) });
+      if (req.method === 'POST' && p === '/api/send') { if (!lim.hit('send:' + user.id, 6, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); const r = L.sendFish(db, user, await readBody(req));      // an animal bred here goes to a friend's tank
+        for (const id of [r.fromTank, r.toTank]) { const { w } = L.loadWorld(db, id); broadcast(id, { t: 'state', tank: L.publicTank(w) }); }
+        const here = online(r.toTank); for (const m of L.listMembers(db, r.toTank)) if (!here.includes(m.id)) push.notify(m.id, `${user.name} is sending you ${r.name}. It arrives within the hour.`, { cap: 2, kind: 'gifts' }).catch(() => {});
+        return json(res, 200, r); }
       if (req.method === 'POST' && p === '/api/tanks/leave') {
         const t = L.tankOf(db, user.id); const r = L.leaveTank(db, user);
         for (const w of [...(rooms.get(r.tankId) ?? [])]) if (w.userId === user.id) { w.close(); } broadcast(r.tankId, { t: 'members', members: L.listMembers(db, r.tankId) }); return json(res, 200, { ok: true });

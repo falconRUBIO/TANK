@@ -339,6 +339,21 @@ export function act(db, user, action, { idem, now = Date.now(), dev = false, ana
     return { ...r, world: w, events: out };
   });
 }
+// Send an animal bred in your tank to a friend's tank, by that tank's code. Both tanks are changed together, or neither.
+export function sendFish(db, user, { fish, code }, now = Date.now()) {
+  const mine = tankOf(db, user.id); if (!mine) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
+  const to = db.prepare('SELECT id, name FROM tanks WHERE code=?').get(normalizeCode(code)); if (!to) throw new GameError('BAD_CODE', 'No tank has that code.', 404); if (to.id === mine.id) throw new GameError('SAME_TANK', 'That is your own tank.', 400);
+  return tx(db, () => {
+    const A = loadWorld(db, mine.id).w, B = loadWorld(db, to.id).w; R.advance(A, now); R.advance(B, now);
+    if (B.fish.length + R.pending(B) >= R.capacity(B.level) + 2) throw new GameError('TANK_FULL', 'Their tank is full.', 409);
+    const r = R.sendOut(A, String(fish ?? ''), user.id, user.name, to.name, now); if (!r.ok) throw new GameError(r.reason, 'That animal cannot be sent.', 400);
+    r.carry.fromTank = mine.name; B.orders.push({ id: 'o' + (B.seq = (B.seq ?? 10) + 1), species: r.species, name: r.carry.name, seed: r.carry.seed, arrivesAt: now + 30 * 60e3, by: user.name, owner: null, ownerName: null, carry: r.carry });
+    saveWorld(db, mine.id, A); saveWorld(db, to.id, B);
+    for (const e of r.events) if (e.journal) addJournal(db, mine.id, e.journal, user.id, now);
+    addJournal(db, to.id, `${user.name} from ${mine.name} is sending you ${r.carry.name}. It arrives within the hour.`, null, now);
+    return { ok: true, fromTank: mine.id, toTank: to.id, toName: to.name, name: r.carry.name };
+  });
+}
 export function addMessage(db, user, text, now = Date.now()) {
   const t = tankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You are not in a tank.', 404);
   const body = clean(text, 140); if (!body) throw new GameError('EMPTY', 'Empty message.');

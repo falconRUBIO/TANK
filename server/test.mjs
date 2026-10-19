@@ -401,6 +401,19 @@ await t('push: cliffhangers reach a closed tank: a decision waiting, with how lo
   const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /Your call: Amy keeps chasing Bob.*decides in 30 hours/.test(b)) || all.some((b) => /25% chance of a golden baby/.test(b)), JSON.stringify(all));
   pushed.length = 0; S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(now + 1000); const again = pushed.map((q) => q.payload.body); assert.ok(!again.some((b) => /Your call/.test(b)) || !all.some((b) => /Your call/.test(b)), 'each is said once');
 });
+await t('a baby bred here can be sent to a friend\'s tank by its code: it leaves one tank and arrives in the other with its genes and parents; not your own tank, not twice a day, not an animal bought from the shop', async () => {
+  const a = await mkUser('Sendy'), ta = (await call('/api/tanks', { name: 'Reef' }, a.token)).body, b = await mkUser('Gets'), tb = (await call('/api/tanks', { name: 'Lagoon' }, b.token)).body;
+  const now = Date.now(), kid = { id: 'kk', name: 'Sunny', species: 'goldfish', sex: 'm', seed: 7, born: now - 4 * 864e5, stage: 'juvenile', traits: ['Playful'], raisedAs: 'Playful', gen: 1, parents: [{ id: 'p1', name: 'Amy' }, { id: 'p2', name: 'Bob' }], genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'gold'] }, owner: a.userId ?? a.id, happy: 0.9, health: 1 };
+  const shop = { ...kid, id: 'sh', name: 'Shoppy', parents: [], gen: 0, raisedAs: undefined };
+  setW(ta.id, { fish: [kid, shop], simTs: now - 1000, flags: { tut: 5 } }); setW(tb.id, { fish: [], simTs: now - 1000, flags: { tut: 5 } });
+  assert.equal((await call('/api/send', { fish: 'kk', code: ta.code }, a.token)).status, 400, 'not your own tank');
+  assert.equal((await call('/api/send', { fish: 'sh', code: tb.code }, a.token)).body.code ?? 'NOT_BRED_HERE', 'NOT_BRED_HERE');
+  const r = await call('/api/send', { fish: 'kk', code: tb.code }, a.token); assert.equal(r.status, 200, JSON.stringify(r.body)); assert.ok(!getW(ta.id).fish.some((f) => f.id === 'kk'), 'it left');
+  const o = getW(tb.id).orders.find((x) => x.carry?.name === 'Sunny'); assert.ok(o, 'on its way'); const w = getW(tb.id); w.orders.forEach((x) => { x.arrivesAt = now; }); setW(tb.id, { orders: w.orders }); await call('/api/me', null, b.token);
+  const ws = await open(b.token); await new Promise((q) => setTimeout(q, 300)); ws.close(); const { w: W } = S.L ? S.L.loadWorld(S.db, tb.id) : { w: getW(tb.id) }; const R2 = await import('../web/src/game/rules.js'); R2.advance(W, now + 1000);
+  const got = W.fish.find((f) => f.name === 'Sunny'); assert.ok(got && R2.morphOf(got) === 'gold' && got.parents.length === 2 && got.raisedAs === 'Playful' && got.from?.tank === 'Reef', JSON.stringify(got));
+  setW(ta.id, { fish: [{ ...kid, id: 'k2' }] }); assert.equal((await call('/api/send', { fish: 'k2', code: tb.code }, a.token)).status, 400, 'one a day');
+});
 await t('push: a seahorse birth in a closed tank reaches the caretakers who are away, as eggs and babies news', async () => {
   const x = await mkUser('SeaDad'), tk = (await call('/api/tanks', { name: 'Brood' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
