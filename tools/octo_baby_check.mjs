@@ -21,8 +21,9 @@ await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); });
 const row = await p.evaluate(() => [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).find((t) => /eggs/.test(t)) ?? '');
 ck('Care counts them down', /Ada & Bo's eggs.*hatches in [45] h \d+ m/.test(row), row);
 await p.evaluate(() => { const s = window.__game.state; s.eggs[0].hatchAt = Date.now() - 1000; window.__game.emit('state'); }); await p.evaluate(() => window.__game.dispatch({ t: 'devSea', what: 'noop' }).catch(() => {})); await p.waitForTimeout(2000);
+for (let i = 0; i < 3; i++) { await p.evaluate(() => document.querySelector('#modal.on #mok')?.click()); await p.waitForTimeout(400); }      // (close the new-life card first, as a player would)
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(600); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
-let kid = null; for (let i = 0; i < 40 && !kid; i++) { await p.waitForTimeout(500); kid = await p.evaluate(() => { const k = window.__game.state.fish.find((f) => f.parents?.length); return k && !window.__game.state.eggs.length ? { id: k.id, name: k.name, species: k.species, owner: k.owner } : null; }); }
+let kid = null; for (let i = 0; i < 40 && !kid; i++) { await p.waitForTimeout(500); kid = await p.evaluate(() => { const k = window.__game.state.fish.find((f) => f.parents?.length); return k && !window.__game.state.eggs.some((e) => e.species === 'octopus') ? { id: k.id, name: k.name, species: k.species, owner: k.owner } : null; }); }
 ck('watched: they hatch, and one tiny octopus stays', kid?.species === 'octopus' && kid.owner === 'me', kid);
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-hatch.png` });
 const g = await p.evaluate((id) => +(window.__fishes.byId.get(id)?.growth ?? 0).toFixed(2), kid?.id); ck('it is tiny', g > 0 && g <= 0.25, g);

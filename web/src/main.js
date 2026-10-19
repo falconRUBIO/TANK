@@ -897,11 +897,12 @@ game.on('journal', (e) => {
 const shotQ = []; let shotBusy = false;
 function shotPump() {
   if (shotBusy || !shotQ.length) return; const wait = shotQ[0].at - Date.now(); if (wait > 0) { shotBusy = true; setTimeout(() => { shotBusy = false; shotPump(); }, wait); return; }
-  const e = shotQ.shift().e; shotBusy = true; try { if (!document.hidden) momentPhoto(e); } catch (err) { console.warn('moment photo', err); }
+  const q = shotQ.shift(), e = q.e; shotBusy = true; let got = true; try { if (!document.hidden) got = momentPhoto(e) !== false; } catch (err) { console.warn('moment photo', err); }
+  if (!got && (q.n ?? 0) < 3 && /hatched|swam out|jetted|gave birth|made it/.test(e.text)) shotQ.push({ e, n: (q.n ?? 0) + 1, at: Date.now() + 4000 });      /* (a newborn still coming out of its egg cannot be framed yet: try again in a moment) */
   setTimeout(() => { shotBusy = false; shotPump(); }, 1800);
 }
 function momentPhoto(e) {
-  const A = actorOf(e.text); if (!A) return; const img = shootAt(A); if (!img) return;
+  const A = actorOf(e.text); if (!A) return false; const img = shootAt(A); if (!img) return false;
   if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
   else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); }
 }
