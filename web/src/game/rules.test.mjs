@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import * as R from './rules.js';
+// a decision is shown in the tank first (an omen), then asked about: this plays both steps at once
+const omenThen = (t, at) => { const ev = R.advance(t, at); if (t.dilemma && !t.dilemma.done) return ev; t.dilemmaAt = at; return ev.concat(R.advance(t, at + 1)); };
 import * as G from './genes.js';
 // time goes by an hour at a time until an egg is laid and gets ready, and someone is there to watch it hatch (eggs wait to be watched)
 const watchHatch = (t, now, days = 7) => { for (let k = 0; k < days * 24; k++) { now += 3600e3; R.advance(t, now); const e = (t.eggs ?? []).find((x) => x.ready); if (e) { R.applyAction(t, { t: 'watchEggs', id: e.id }, { now: now + 1000 }); return now + 1000; } } return now; };
@@ -901,10 +903,10 @@ ok('decisions: every few days something needs you to choose, each choice changes
     t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'g', name: 'Goldie', species: 'goldfish', seed: 4, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'h', name: 'Pip', species: 'angelfish', seed: 5, born: 0, stage: 'adult', traits: [] })];
     t.fish[1].ail = R.AIL_TIRED;      // (each decision has a real cause: Goldie is off colour, the angelfish bullies the goldfish, Inky is bold and curious, one den for two)
     t.decor = [{ id: 'c1', type: 'coconut', x: 0, z: 1, ry: 0 }]; t.dilemmaAt = t0 + 1; return t; };
-  const kinds = new Set(); for (let d = 0; d < 30; d++) { const t = mk(), at = t0 + d * D + 1000; t.dilemmaAt = at - 1; const ev = R.advance(t, at); const Dl = t.dilemma; assert.ok(Dl && Dl.opts.length === 3 && ev.some((e) => e.dilemma === Dl.id), 'one arrives'); kinds.add(Dl.kind);
+  const kinds = new Set(); for (let d = 0; d < 30; d++) { const t = mk(), at = t0 + d * D + 1000; t.dilemmaAt = at - 1; const ev = omenThen(t, at); const Dl = t.dilemma; assert.ok(Dl && Dl.opts.length === 3 && ev.some((e) => e.dilemma === Dl.id), 'one arrives'); kinds.add(Dl.kind);
     const r = R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: at + 1000, name: 'Ana' }); assert.ok(r.ok && r.applied && /Ana chose/.test(r.line), JSON.stringify(r)); assert.equal(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[1].k }, { now: at + 2000 }).applied, false, 'once'); }
   assert.ok(kinds.size >= 3, [...kinds].join());
-  const s = mk(); R.advance(s, t0 + 1000); const id = s.dilemma.id; const ev = R.advance(s, t0 + 2 * D); assert.ok(s.dilemma.id !== id || s.dilemma.done); assert.ok(ev.some((e) => /Nobody chose/.test(e.journal ?? '')), 'the tank decides');
+  const s = mk(); omenThen(s, t0 + 1000); const id = s.dilemma.id; const ev = R.advance(s, t0 + 2 * D); assert.ok(s.dilemma.id !== id || s.dilemma.done); assert.ok(ev.some((e) => /Nobody chose/.test(e.journal ?? '')), 'the tank decides');
 });
 ok('layout matters: a thicket settles the shy ones, a den each for octopuses, and a packed tank cramps the lively ones; Care says what would help', () => {
   const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.dilemmaAt = 9e15;
@@ -944,10 +946,10 @@ ok('goals: three are offered, one is chosen, its steps count only what happens f
 ok('shared stakes: in a shared tank the caretakers take turns with decisions (one person first, then anyone), and a rare color or a finished goal is told to the whole crew', () => {
   const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
   t.fish = [R.ensureFish({ id: 'g', name: 'Goldie', species: 'goldfish', seed: 4, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'h', name: 'Pip', species: 'angelfish', seed: 5, born: 0, stage: 'adult', traits: [] })];      // (an angelfish pushes the goldfish around: something real to decide)
-  t.care = { ua: { name: 'Ana', ts: t0 - 1000 }, ub: { name: 'Ben', ts: t0 - 1000 } }; t.dilemmaAt = t0; R.advance(t, t0 + 1000); const Dl = t.dilemma; assert.ok(Dl.turn && ['Ana', 'Ben'].includes(Dl.turn.name));
+  t.care = { ua: { name: 'Ana', ts: t0 - 1000 }, ub: { name: 'Ben', ts: t0 - 1000 } }; t.dilemmaAt = t0; omenThen(t, t0 + 1000); const Dl = t.dilemma; assert.ok(Dl.turn && ['Ana', 'Ben'].includes(Dl.turn.name));
   const other = Dl.turn.uid === 'ua' ? 'ub' : 'ua'; assert.equal(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: t0 + 2000, uid: other, name: 'X' }).reason, 'NOT_YOUR_TURN');
   assert.ok(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: t0 + 13 * 3600e3, uid: other, name: 'X' }).applied, 'after twelve hours, anyone');
-  t.dilemmaAt = t0 + 2 * D; R.advance(t, t0 + 2 * D + 1000); assert.notEqual(t.dilemma.turn.uid, Dl.turn.uid, 'the next one is the other person\'s');
+  t.dilemmaAt = t0 + 2 * D; omenThen(t, t0 + 2 * D + 1000); assert.notEqual(t.dilemma.turn.uid, Dl.turn.uid, 'the next one is the other person\'s');
 });
 ok('scarcity: eggs laid under a full moon have better odds of the color both parents carry, and a full moon is shown coming up', () => {
   const a = { genes: { m: ['gold', 'n'] } }, b = { genes: { m: ['gold', 'n'] } }; assert.ok(R.morphOdds(a, b, true).gold > R.morphOdds(a, b).gold);
@@ -994,7 +996,7 @@ ok('(refine) decisions come only from something real, four to seven days apart; 
   const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
   t.fish = ['g', 'h'].map((id, i) => R.ensureFish({ id, name: id, species: 'goldfish', seed: 4 + i, born: 0, stage: 'adult', traits: [] })); t.decor = [];
   for (let d = 0; d < 20; d++) { t.hunger = 0; t.water = 1; t.glass = 0; R.advance(t, t0 + d * D); } assert.ok(!t.dilemma, 'two happy goldfish: nothing to decide');
-  t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0 + 20 * D; R.advance(t, t0 + 20 * D + 1000); assert.equal(t.dilemma?.kind, 'sick'); const gap = (t.dilemmaAt - (t0 + 20 * D)) / D; assert.ok(gap >= 4 && gap < 8, String(gap));
+  t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0 + 20 * D; omenThen(t, t0 + 20 * D + 1000); assert.equal(t.dilemma?.kind, 'sick'); const gap = (t.dilemmaAt - (t0 + 20 * D)) / D; assert.ok(gap >= 4 && gap < 8, String(gap));
 });
 ok('(refine) the daily mystery is never the same kind two days running, and never says an octopus did something it did not', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.keeps = [];
@@ -1019,4 +1021,11 @@ ok('(refine) a Field Guide page is only filled by the kind of animal it is about
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; const g = R.ensureFish({ id: 'g', name: 'Goldie', species: 'goldfish', seed: 4, born: -20 * 864e5, stage: 'adult' }), o = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: -20 * 864e5, stage: 'adult' }); t.fish = [g, o];
   const kinds = Object.keys(R.FIELD).filter((k) => R.FIELD[k].who === 'octopus'); let tried = 0;
   for (const k of kinds) { const r = R.applyAction(t, { t: 'octoMoment', fish: 'g', kind: k }, { now: 1000, name: 'You' }); if (r.ok) tried++; } assert.ok(!Object.keys(t.field ?? {}).some((k) => R.FIELD[k].who === 'octopus'), 'a goldfish files no octopus page');
+});
+ok('(refine) the tank shows what is wrong a day before it asks; a sickness that spreads leaves the others really unwell', () => {
+  const D = 864e5, t0 = 30 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
+  t.fish = ['g', 'h', 'i'].map((id, k) => R.ensureFish({ id, name: id.toUpperCase(), species: 'goldfish', seed: 4 + k, born: 0, stage: 'adult', traits: [] })); t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0;
+  const ev = R.advance(t, t0 + 1000); assert.ok(!t.dilemma && t.omen?.kind === 'sick' && ev.some((e) => e.omen === 'sick' && /pale/.test(e.journal)), 'first it is seen');
+  t.fish[0].ail = R.AIL_TIRED; R.advance(t, t0 + 0.95 * D); assert.equal(t.dilemma?.kind, 'sick', 'then it is asked');
+  let spread = false; for (let s = 0; s < 40 && !spread; s++) { const u = structuredClone(t); u.dilemma.at = u.dilemma.at + s * 6e4; const r = R.applyAction(u, { t: 'decide', id: u.dilemma.id, k: 'wait' }, { now: t0 + D, name: 'You' }); if (/It spread/.test(r.line ?? r.events?.map((e) => e.journal).join(' ') ?? '')) { spread = true; assert.ok(u.fish.every((f) => f.ail >= R.AIL_TIRED), 'they are unwell'); } }
 });

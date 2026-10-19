@@ -83,6 +83,7 @@ function run({ crew, profile, days, seed }) {
     const dens = t.decor.filter((d) => ['coconut', 'pot'].includes(d.type)).length, octos = t.fish.filter((f) => !f.dead && R.isOcto(f)).length, plants = t.decor.filter((d) => R.DECOR_DEF[d.type]?.cat === 'PLANTS').length;
     const buyD = (type) => { const r = act(p, { t: 'buyDecor', type, x: -3 + rand() * 6, z: -1 + rand() * 3, ry: 0 }); if (r.ok) { mark('first decoration bought'); M['bought ' + type] ??= +day().toFixed(1); } return r.ok; };
     const buyF = (sp, extra = {}) => { const r = act(p, { t: 'buyFish', species: sp, name: sp, seed: Math.floor(rand() * 9973), ...extra }); if (r.ok) mark('first fish bought'); return r.ok; };
+    if (!t.fish.some((f) => !f.dead && !R.isOcto(f)) && !R.pending(t)) { const first = Object.entries(R.SPECIES_DEF).filter(([k, d]) => !d.visitor && d.count === 1 && k !== 'octopus' && d.level <= lv && t.shells >= R.fishPrice(k, now, t)).sort((a, b) => a[1].price - b[1].price)[0]; if (first) return buyF(first[0]); }      /* (the first fish before anything else) */
     if (dens < octos && R.DECOR_DEF.coconut.level <= lv && t.shells >= R.DECOR_DEF.coconut.price) return buyD('coconut');
     if (plants < 2 && t.shells >= R.DECOR_DEF.grass.price) return buyD('grass');
     const SP = R.specialOf(t, now), wantColor = t.goal && (R.MORPHS[t.goal.id] ? SP.color === t.goal.id : t.goal.id === 'rare');

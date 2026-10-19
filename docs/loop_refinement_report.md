@@ -242,3 +242,41 @@ Animal deaths: 0 in every household within 120 days (lifespans are longer). Negl
 3. **A "pushing at the lid" animation** before the lid decision. That's new client behavior.
 4. **Folding more routine journal toasts** in shared tanks.
 5. **Easier carriers.** Offer the goal color's carrier as the special more than once a week while a color goal is stuck.
+
+## Follow-up: loop improvements
+
+**1. The first day.**
+- New tanks start with 20 shells instead of 10, so the first fish can come home in the first session.
+- In the simulation, the first fish now arrives on day 0.1–0.6, down from 3–6.6. That assumes the player buys a fish before plants.
+
+**2. Coming back points at the tank.**
+- After the away replay, if the octopus brought something back or rearranged the tank in the last day, the first line says so and the camera goes to it.
+- This only shows once per event.
+
+**3. You see a decision's cause before you're asked.**
+- When a real cause appears, the journal notes it first ("Inky keeps reaching up to the lid", "A keeps chasing B about", "C looks a little pale"). It also shows under Happening in the tank, and the animals act it out every few seconds while the tank is open.
+- About a day later, the decision is asked.
+- Decision timing now counts from when a decision was due, not from when the tank was opened. A tank checked hourly and one checked once a day get the same decisions at the same times, which also keeps phones in a shared tank in step.
+- **Bug found along the way:** illness is measured in seconds of neglect, but "It spread" capped it at 0.9 seconds, which effectively cured everyone. "Keep it apart" took off 0.1 seconds, which did nothing. Both now use real units: spreading leaves the others genuinely unwell, and keeping it apart helps by half a day.
+
+**4. Carriers for a stuck color goal are easier to find.** The daily special already carries the goal's color. Now the "Pair two carriers" hint says so, and Happening in the tank shows a row that opens the fish shop. Simulated first rare color is now about day 24–58, against 27–61 before.
+
+**5. Fewer routine messages.** These now go to the journal only:
+- a fish's request
+- "grew!"
+- birthdays under 30 days
+- the daily "you both looked after the tank" glow
+
+Simulated in-app messages dropped from about 5–8 a day to 3.5–5.4.
+
+**6. A weekly story.**
+- Once a week, in the evening, a card shows the week's highlights from the journal: a hatching, a baby grown up, a keepsake, a Field Guide page, a visitor, a goal.
+- It has a "Share the week" link that makes a postcard from a photo of the tank.
+- It needs at least two highlights, and nothing is owed if it's missed.
+
+**7. Field Guide hints say when and where to look.** Each comes from the behavior's actual trigger in the animal code. For example:
+- plant mimicry is likelier when the octopus is calm and fed
+- the lionfish and sea snake impressions are likelier after a fright
+- the jellyfish impression is rare and needs it to feel safe with nobody close
+
+Tests: all rule and server suites pass, with a new test for "seen first, then asked" and for the illness fix. `tools/sim_tables.mjs` rebuilds `docs/sim/tables.md` from `docs/sim/after.json`.

@@ -784,7 +784,7 @@ function rollWant(t, now, ev) {
   const cand = wantCands(t, now); if (!cand.length) { t.req.kind = 'daily'; return; }
   const [f, kind] = cand[hash32(Math.floor(now / 6e4) * 13 + (t.seq ?? 0)) % cand.length], seq = (t.seq = (t.seq ?? 10) + 1);
   t.want = { id: 'w' + seq, fish: f.id, kind, text: WANTS[kind].text(f), since: now };
-  ev.push({ toast: `${f.name} has a request. See the Care tab.`, want: f.id });
+  ev.push({ journal: `${f.name} has a request: see the Care tab.`, want: f.id });      /* (a request waits in Care and Today: no toast for it) */
 }
 // `grant` says what just happened ({ type: 'pet' | 'feed' | 'glass' | 'water', id }); wishes about the tank's contents are also checked on every change.
 function checkWant(t, now, ev, grant = null) {
@@ -830,21 +830,21 @@ export const OCTO_MOMENTS = {
 // reports it while the tank is open and being watched; nothing is filled in from a line written while everyone was away). Each page keeps who did
 // it, when, and the line that was written, so the journal's photo of that very moment is its picture.
 export const FIELD = {
-  glass: { label: 'Face at the glass', who: 'any', hint: 'Someone curious comes right up to look at you.' },
-  camo: { label: 'Vanishing act', who: 'octopus', hint: 'An octopus matches the ground so well it disappears.' },
-  ink: { label: 'Ink cloud', who: 'octopus', hint: 'A startled octopus bursts away in a cloud of ink.' },
-  squirt: { label: 'Squirt!', who: 'octopus', hint: 'An octopus that is being watched sometimes answers back.' },
-  bury: { label: 'Buried to the eyes', who: 'octopus', hint: 'An octopus digs into soft sand.' },
-  flat: { label: 'Flatfish impression', who: 'octopus', hint: 'An octopus lies flat and slides across the sand.' },
-  kelp: { label: 'Pretending to be a plant', who: 'octopus', hint: 'An octopus among the plants, arms up.' },
-  lion: { label: 'Lionfish impression', who: 'octopus', hint: 'Arms out stiff, it passes for something dangerous.' },
-  jelly: { label: 'Jellyfish impression', who: 'octopus', hint: 'Puffed up, drifting in open water.' },
-  snake: { label: 'Sea snake impression', who: 'octopus', hint: 'Hidden in the sand, two striped arms showing.' },
-  fish: { label: 'Copying a fish', who: 'octopus', hint: 'An octopus takes on a fish\'s colors and follows it.' },
-  smack: { label: 'Too close!', who: 'octopus', hint: 'An octopus smacks a fish that crowds it.' },
-  arms: { label: 'Touching arms', who: 'octopus', hint: 'Two octopuses that know each other well.' },
-  ball: { label: 'Ball game', who: 'any', hint: 'Something sends the ball spinning across the tank.' },
-  eggchase: { label: 'Guarding the eggs', who: 'fish', hint: 'A parent chases off anyone who comes near its eggs.' },
+  glass: { label: 'Face at the glass', who: 'any', hint: "Someone curious comes right up to the glass. Most likely when you have just opened the tank and stay a while." },
+  camo: { label: 'Vanishing act', who: 'octopus', hint: "A resting octopus matches the ground so well it disappears. Look where it rests, on the sand or by the rocks." },
+  ink: { label: 'Ink cloud', who: 'octopus', hint: "A startled octopus bursts away in a cloud of ink. Something sudden near it sets it off." },
+  squirt: { label: 'Squirt!', who: 'octopus', hint: "An octopus that is being watched sometimes answers back. Stay and watch it for a while." },
+  bury: { label: 'Buried to the eyes', who: 'octopus', hint: "An octopus digs into soft sand. Watch it out on the open sand floor." },
+  flat: { label: 'Flatfish impression', who: 'octopus', hint: "An octopus lies flat and slides across the sand, out on the open floor." },
+  kelp: { label: 'Pretending to be a plant', who: 'octopus', hint: "An octopus among the plants, arms up. Most often when it is calm and well fed, so look after a feed." },
+  lion: { label: 'Lionfish impression', who: 'octopus', hint: "Arms out stiff, it passes for something dangerous. More likely when it has been startled." },
+  jelly: { label: 'Jellyfish impression', who: 'octopus', hint: "Puffed up, drifting in open water. Rare: only when it feels safe and nobody is close by." },
+  snake: { label: 'Sea snake impression', who: 'octopus', hint: "Hidden in the sand, two striped arms showing. More likely when it has been startled." },
+  fish: { label: 'Copying a fish', who: 'octopus', hint: "An octopus takes on a fish's colors and tags along behind it. Easier with a fish it likes." },
+  smack: { label: 'Too close!', who: 'octopus', hint: "An octopus smacks a fish that crowds it. A busy tank makes it likelier." },
+  arms: { label: 'Touching arms', who: 'octopus', hint: "Two octopuses that are partners, resting close together." },
+  ball: { label: 'Ball game', who: 'any', hint: "Something sends the ball spinning across the tank. Play with the ball from the Toy box." },
+  eggchase: { label: 'Guarding the eggs', who: 'fish', hint: "A parent chases off anyone who comes near its eggs. Watch while eggs are waiting." },
   chased: { label: 'Driven off', who: 'fish', hint: 'A brave parent charges at an octopus near its eggs.' },
   puzzle: { label: 'Puzzle solved', who: 'octopus', hint: 'An octopus works out the puzzle jar.' },
   visitor: { label: 'A rare visitor', who: 'any', hint: 'Now and then something from the open sea drops by. Tap it.' },
@@ -918,9 +918,10 @@ export const DILEMMA_TREAT = 8;
 const luckOf = (h) => (h >>> 11) % 100;
 function rollDilemma(t, now, ev) {
   if ((t.flags.tut ?? 0) < 5) return; const D0 = t.dilemma;
-  if (D0 && !D0.done && now >= D0.until) { const r = settleDilemma(t, D0, 'wait', now, null); ev.push(...r.events); }      // nobody chose: the tank decides
-  if (now < (t.dilemmaAt ??= now + 3 * DAY)) return;      /* (the first one waits until the tank has settled: day three or four) */ t.dilemmaAt = now + (4 + (hash32(now / 6e4) % 4)) * DAY;      /* (four to seven days apart) */
-  const live = t.fish.filter((f) => !f.dead && !f.away && !SPECIES_DEF[f.species]?.visitor && stageOf(f, now) !== 'baby'), h = hash32(Math.floor(now / DAY) * 131 + ((t.createdAt ?? 0) % 977)), pick = (a, k = 0) => a[(h >>> k) % a.length];
+  if (D0 && !D0.done && now >= D0.until) { const r = settleDilemma(t, D0, 'wait', D0.until, null); ev.push(...r.events); }      /* (settled at the moment it ran out, however late the tank is opened) */      // nobody chose: the tank decides
+  if (now < (t.dilemmaAt ??= now + 3 * DAY)) return;      /* (the first one waits until the tank has settled: day three or four) */
+  const due = Math.max(t.dilemmaAt, now - DAY); t.dilemmaAt = due + (4 + (hash32(due / 6e4) % 4)) * DAY;      /* (four to seven days apart, counted from when it was due, so a tank opened hourly or once a day comes out the same) */
+  const live = t.fish.filter((f) => !f.dead && !f.away && !SPECIES_DEF[f.species]?.visitor && stageOf(f, due) !== 'baby'), h = hash32(Math.floor(due / DAY) * 131 + ((t.createdAt ?? 0) % 977)), pick = (a, k = 0) => a[(h >>> k) % a.length];
   const dens = t.decor.filter((d) => ['coconut', 'pot'].includes(d.type)), octos = live.filter(isOcto), fish = live.filter((f) => !isOcto(f)), c = [];
   const LO = layoutOf(t);
   if (dens.length && dens.length < octos.length + (fish.length ? 1 : 0) && live.length >= 2 && (octos.length >= 2 || (octos.length && fish.length))) { const x = octos[0], y = live.find((f) => f !== x); c.push({ kind: 'den', fish: [x.id, y.id], decor: (homeOf(t, x) ?? dens[0]).id }); }
@@ -929,9 +930,15 @@ function rollDilemma(t, now, ev) {
   const SO = (f) => SOCIAL[f.species] ?? {}, calm = fish.filter((f) => !(f.calmUntil > now));
   const pairs = calm.flatMap((x) => fish.filter((y) => y !== x && (y.grudge?.id === x.id || (SO(x).bully && (SO(y).shy || (SO(y).size ?? 1) < (SO(x).size ?? 1) || SO(y).kind === 'Peaceful')) || (SO(x).sameFoe && y.species === x.species))).map((y) => [x, y]));      /* (a real reason: a bully and a smaller or shy fish, two of a kind that will not share, or an old grudge) */
   if (pairs.length && !(LO.thicket && luckOf(h) < 70)) { const [x, y] = pick(pairs, 7); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
-  if (!c.length) { t.dilemmaAt = now + DAY; return; }      /* (nothing real to decide: look again tomorrow rather than inventing something) */ const D = pick(c, 9), F = D.fish.map((id) => t.fish.find((f) => f.id === id)), dl = D.decor ? (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase() : '';
+  if (!c.length) { t.dilemmaAt = now + DAY; delete t.omen; return; }      /* (nothing real to decide: look again tomorrow rather than inventing something) */
+  // first the tank shows it (a day of the octopus at the lid, the chasing, the pale fish hiding), and only then is anyone asked
+  const O = t.omen && due - t.omen.at < 2.5 * DAY ? t.omen : null, same = O && (c.find((x) => x.kind === O.kind && x.fish[0] === O.fish[0]) ?? c.find((x) => x.kind === O.kind));
+  if (!same) { const W = pick(c, 9), Fw = W.fish.map((id) => t.fish.find((f) => f.id === id)); t.omen = { kind: W.kind, fish: W.fish, at: due }; t.dilemmaAt = due + 0.9 * DAY;
+    const line = W.kind === 'lid' ? `${Fw[0].name} keeps reaching up to the lid and testing it.` : W.kind === 'chase' ? `${Fw[0].name} keeps chasing ${Fw[1].name} about.` : W.kind === 'sick' ? `${Fw[0].name} looks a little pale today and is keeping to itself.` : `${Fw[0].name} and ${Fw[1].name} are both hanging about the same den.`;
+    ev.push({ journal: line, story: Fw[0].id, text: line, omen: W.kind }); return; }
+  c.length = 0; c.push(same); delete t.omen; const D = pick(c, 9), F = D.fish.map((id) => t.fish.find((f) => f.id === id)), dl = D.decor ? (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase() : '';
   const crew = Object.entries(t.care ?? {}).filter(([, c]) => now - c.ts < 4 * DAY).sort((a, b) => (a[0] < b[0] ? -1 : 1)), turn = crew.length > 1 ? crew[(t.dlTurn = ((t.dlTurn ?? -1) + 1) % crew.length)] : null;      // in a shared tank, the caretakers take turns: it is one person's call first (12 hours), then anyone's
-  t.dilemma = { id: 'dl' + Math.floor(now / 6e4), ...D, at: now, until: now + 1.5 * DAY, ...(turn ? { turn: { uid: turn[0], name: turn[1].name, until: now + 12 * HOUR } } : {}), text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
+  t.dilemma = { id: 'dl' + Math.floor(due / 6e4), ...D, at: due, until: due + 1.5 * DAY, ...(turn ? { turn: { uid: turn[0], name: turn[1].name, until: due + 12 * HOUR } } : {}), text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
   ev.push({ journal: t.dilemma.text + (turn ? ` It is ${turn[1].name}'s call.` : ''), toast: `${t.dilemma.text} ${turn ? `${turn[1].name}'s call.` : 'What will you do?'}`, dilemma: t.dilemma.id });
 }
 function settleDilemma(t, D, k, now, name) {
@@ -944,9 +951,9 @@ function settleDilemma(t, D, k, now, name) {
     else { hap(x, -0.2); hap(y, -0.2); if (y) y.grudge = { id: x.id, name: x.name, since: now, why: 'den' }; say(`${who} to let them sort it out. They did not: ${x.name} and ${y?.name} are both on edge.`); } }
   if (D.kind === 'sick') {
     if (k === 'treat') { if (t.shells < DILEMMA_TREAT) return { ok: false, reason: 'NOT_ENOUGH_SHELLS', events }; t.shells -= DILEMMA_TREAT; x.ail = 0; hap(x, 0.1); say(`${who} to treat the water. ${x.name} is bright again by evening.`); }
-    else if (k === 'isolate') { x.ail = Math.max(0, (x.ail ?? 0) - 0.1); const pal = t.fish.find((f) => f.id === x.pal && !f.dead); hap(pal, -0.15); hap(x, -0.1); say(`${who} to keep ${x.name} apart for a day. It did not spread${pal ? `, but ${pal.name} kept looking for it` : ''}.`); }
+    else if (k === 'isolate') { x.ail = Math.max(0, (x.ail ?? 0) - 0.5 * 86400);      /* (ail is kept in seconds of neglect: half a day better) */ const pal = t.fish.find((f) => f.id === x.pal && !f.dead); hap(pal, -0.15); hap(x, -0.1); say(`${who} to keep ${x.name} apart for a day. It did not spread${pal ? `, but ${pal.name} kept looking for it` : ''}.`); }
     else if (luck < 45) say(`${who} to wait and see. It was nothing: ${x.name} is back to itself.`);
-    else { const others = t.fish.filter((f) => !f.dead && f !== x && !isOcto(f)).slice(0, 2); for (const f of [x, ...others]) f.ail = Math.min(0.9, (f.ail ?? 0) + 0.35); say(`${who} to wait and see. It spread: ${[x, ...others].map((f) => f.name).join(', ')} look unwell. Clean water and food will help.`); } }
+    else { const others = t.fish.filter((f) => !f.dead && f !== x && !isOcto(f)).slice(0, 2); for (const f of [x, ...others]) f.ail = Math.min(AIL_DIE - 3600, Math.max(f.ail ?? 0, AIL_TIRED) + 0.5 * 86400);      /* (it spread: everyone it reached is unwell, never past what neglect allows) */ say(`${who} to wait and see. It spread: ${[x, ...others].map((f) => f.name).join(', ')} look unwell. Clean water and food will help.`); } }
   if (D.kind === 'lid') { t.adv ||= {};
     if (k === 'lid') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 7 * DAY); hap(x, -0.2); say(`${who} to weigh the lid down. ${x.name} sulks in its den, but it stays in.`); }
     else if (k === 'busy') { t.adv.octoAt = Math.max(t.adv.octoAt ?? now, now + 3 * DAY); hap(x, 0.15); say(`${who} to keep ${x.name} busy. It forgets about the lid for now, and seems pleased with itself.`); }
@@ -997,7 +1004,7 @@ const colorGoal = (m) => ({
   ok: (t) => !m || carrierOf(t, m), icon: 'hatched',
   steps: [
     { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your fishes' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
-    { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? ' One carrier and a baby of its own can carry it too.' : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
+    { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? (m && specialOf(t).color === m ? ` Today's special in the Shop carries ${MORPHS[m].label.toLowerCase()}: a second carrier.` : ' One carrier and a baby of its own can carry it too.') : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
     { text: 'Hatch their babies', hint: roomy('Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
     { text: m ? `A ${MORPHS[m].label.toLowerCase()} baby` : 'A rare-colored baby', hint: 'About one baby in four from two carriers shows it. Keep trying: a full moon helps.', n: m ? since(`morph_${m}`) : since('morphs'), need: 1 },
   ] });
@@ -1334,7 +1341,7 @@ function milestones(t, now, ev) {
 // `empty` is a brand new tank: no fish at all until its first caretaker chooses one in the opening.
 export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
   return {
-    style: { floor: 'sand', backdrop: 'candy' }, shells: 10, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 2, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 20, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 2, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
     fish: empty ? [] : [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }],
     decor: [],
     seen: { fish: empty ? [] : ['goldfish'], decor: [] },
@@ -1364,7 +1371,7 @@ function _advance(t, now = Date.now()) {
       if (s !== f.stage) {
         f.stage = s;
         const helpers = Object.values(t.care ?? {}).filter((c) => now - c.ts < 24 * HOUR).map((c) => c.name), crew = helpers.length ? { activity: { type: 'grow', text: `${helpers.join(' and ')} helped ${f.name} grow up.`, noUser: true } } : {};
-        if (s === 'juvenile') { t.shells += 1; f.grewPay = (f.grewPay ?? 0) + 1; ev.push({ journal: `${f.name} is growing up.`, toast: `${f.name} grew! +1 shell`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
+        if (s === 'juvenile') { t.shells += 1; f.grewPay = (f.grewPay ?? 0) + 1; ev.push({ journal: `${f.name} is growing up.`, grew: f.id }, ...(helpers.length ? [crew] : [])); }
         if (s === 'adult' && (f.hatched || f.bornHere)) bump(t, 'grewHere');
         if (s === 'adult' && f.hatched) { const P = (f.parents ?? []).map((p) => t.fish.find((x) => x.id === p.id && !x.dead)).filter(Boolean); if (P.length) ev.push({ journal: `${f.name} is all grown up, with ${P.map((x) => x.name).join(' and ')} close by. The whole family, together.`, hist: 'family', story: f.id, text: 'All grown up, with family close by.' }); }      // a family photo
         if (s === 'adult') { t.shells += 2; f.grewPay = (f.grewPay ?? 0) + 2; ev.push({ journal: `${f.name} reached adulthood.`, toast: `${f.name} is an adult! +2 shells`, grew: f.id}, ...(helpers.length ? [crew] : [])); raised(t, f, now, ev); for (const pa of f.parents ?? []) if (pa?.id && t.fish.some((x) => x.id === pa.id)) ev.push({ story: pa.id, text: `${f.name}, one of its young, is all grown up.` }); }
@@ -1391,7 +1398,7 @@ function historyFacts(t, f) { const out = [], k = (t.keeps ?? []).find((q) => q.
 function ageMilestones(t, now, ev) {
   for (const f of t.fish) {
     f.found ||= []; const days = (now - Math.max(f.born, f.arrived ?? -Infinity)) / DAY;      /* (counted from the day it came to this tank: a fish bought nearly grown starts at zero) */
-    for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, toast: `${f.name} is ${d} days old. +${pay} shells`, milestone: f.id }); }
+    for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, ...(d >= 30 ? { toast: `${f.name} is ${d} days old. +${pay} shells` } : {}), milestone: f.id }); }      /* (the small birthdays go in the journal; a month or more is worth a toast) */
   }
 }
 function levelCheck(t, now, ev) {
@@ -1417,7 +1424,7 @@ function recordStory(t, ev, now) {
 // two different people looking after the tank on the same day: the tank glows that evening
 function teamCare(t, uid, name, now, ev) {
   const d = Math.floor(now / DAY); if (t.careDay?.d !== d) t.careDay = { d, by: {} }; t.careDay.by[uid] = name;
-  const who = Object.values(t.careDay.by); if (who.length >= 2 && t.teamDay !== d) { t.teamDay = d; t.glowUntil = Math.max(t.glowUntil ?? 0, now + 12 * HOUR); ev.push({ journal: `${who.slice(0, 2).join(' and ')} both looked after the tank today.`, toast: 'You both looked after the tank today. It glows tonight.', teamGlow: true }); }
+  const who = Object.values(t.careDay.by); if (who.length >= 2 && t.teamDay !== d) { t.teamDay = d; t.glowUntil = Math.max(t.glowUntil ?? 0, now + 12 * HOUR); ev.push({ journal: `${who.slice(0, 2).join(' and ')} both looked after the tank today.`, teamGlow: true });      /* (the glow itself says it: no toast every day) */ }
 }
 // ── A small surprise with the day's first feeding ── something real happens, different each day (worked out from the day, so every phone agrees)
 function dailySurprise(t, now, ev) {

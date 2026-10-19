@@ -9,7 +9,7 @@ const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x 
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 6; s.fish.length = 0; s.visitAt = s.eggAt = now + 9e9; s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.shells = 40;
   s.fish.push({ id: 'g1', name: 'Goldie', species: 'goldfish', seed: 3, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, ail: 2 * 86400 }, { id: 'g2', name: 'Pip', species: 'goldfish', seed: 4, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1 });
-  s.decor.length = 0; s.dilemma = null; s.dilemmaAt = now - 1; g.emit('state'); document.querySelectorAll('#goal,#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
+  s.decor.length = 0; s.dilemma = null; s.dilemmaAt = now - 1; s.omen = { kind: 'sick', fish: ['g1'], at: now - 864e5 }; g.emit('state'); document.querySelectorAll('#goal,#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
 await p.evaluate(() => window.__game.dispatch({ t: 'observe', key: 'watch' })).catch(() => {});
 await p.waitForFunction(() => window.__game.state.dilemma, null, { timeout: 60000 }).catch(() => {});
 await p.evaluate(() => { window.__ui.open('care'); }); await p.waitForTimeout(800);

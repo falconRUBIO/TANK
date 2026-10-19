@@ -137,11 +137,11 @@ await t('a feed is validated by the server and seen by the other players', async
   wa.send(JSON.stringify({ t: 'feed', x: 1.5, idem: 'f1' }));
   const ack = await waitFor(wa, (m) => m.t === 'ack' && m.idem === 'f1'); assert.equal(ack.ok, true); assert.equal(ack.delta, 0, 'feeding is care: it pays nothing');
   const f = await waitFor(wb, (m) => m.t === 'feed'); assert.equal(f.x, 1.5); await waitFor(wc, (m) => m.t === 'feed');
-  const st = await waitFor(wb, (m) => m.t === 'state' && m.tank.shells === 10); assert.equal(st.tank.shells, 10);
+  const st = await waitFor(wb, (m) => m.t === 'state' && m.tank.shells === 20); assert.equal(st.tank.shells, 20);
 });
 await t('replaying the same idempotency key never pays twice', async () => {
   wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' })); wa.send(JSON.stringify({ t: 'feed', x: 0, idem: 'f1' }));
-  await new Promise((r) => setTimeout(r, 200)); assert.equal(getW(tank.id).shells, 10);
+  await new Promise((r) => setTimeout(r, 200)); assert.equal(getW(tank.id).shells, 20);
   assert.equal(wa.msgs.filter((m) => m.t === 'ack' && m.idem === 'f1' && m.dup).length, 2);
 });
 await t('two players acting at once with different keys are both applied atomically', async () => {
@@ -192,7 +192,7 @@ await t('absence is bounded: 10 days away never starves the tank', async () => {
 });
 
 console.log('Shop & progression');
-await t('a new tank has the chosen first fish, no decor yet and 10 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
+await t('a new tank has the chosen first fish, no decor yet and 20 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
 const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {

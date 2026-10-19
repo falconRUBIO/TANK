@@ -1288,6 +1288,13 @@ game.on('dilemmaDone', ({ kind, k, fish }) => { const [x, y] = (fish ?? []).map(
   else if (kind === 'lid' && x) { if (k === 'lid' && den) go(x, den.x, 0.8, den.z, 12); else if (k === 'let') x.glassAt = { x: 0, y: 3, until: performance.now() + 6000 }; spotlightFish(x.fid, 2800, 300); }
   else if (kind === 'den' && x && den) { go(k === 'y' ? y : x, den.x, 0.8, den.z, 12); }
   else if (x) { fishes.burst(x.pos); } });
+// before a decision is asked, the tank shows it for a day: the octopus reaching up to the lid, the chasing, the pale one keeping low, two at one den
+setInterval(() => { const s = game.state, O = s?.omen; if (!O || document.hidden || Date.now() - O.at > 2.5 * 864e5 || (s.dilemma && !s.dilemma.done)) return;
+  const [x, y] = (O.fish ?? []).map((id) => fishes.byId.get(id)), go = (f, px, py, pz, k = 6) => { if (!f || f.dead || !f.target) return; f.target.set(px, py, pz); f.retarget = k; }, den = (s.decor ?? []).find((d) => ['coconut', 'pot'].includes(d.type));
+  if (O.kind === 'lid' && x) go(x, Math.max(-3, Math.min(3, x.pos.x)), 9.2, -1.5, 8);
+  else if (O.kind === 'chase' && x && y) { go(x, y.pos.x, y.pos.y, y.pos.z, 4); go(y, y.pos.x + (y.pos.x > 0 ? -3.5 : 3.5), Math.max(1.5, y.pos.y), y.pos.z, 4); }
+  else if (O.kind === 'sick' && x) { go(x, x.pos.x, 0.9, -2.4, 10); x.vigor = 0.6; setTimeout(() => { if (x) x.vigor = 1; }, 8000); }
+  else if (O.kind === 'den' && den) { go(x, den.x + 0.4, 0.9, den.z, 8); go(y, den.x - 0.4, 0.9, den.z, 8); } }, 9000);
 game.on('goalStep', () => { haptic(16); sfx('reward'); ui?.updateHeader(); const q = $('bell'); q?.classList.add('pulse'); setTimeout(() => q?.classList.remove('pulse'), 1600); });
 game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'GOAL COMPLETE', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
@@ -1591,12 +1598,28 @@ game.on('state', () => syncGlassNote()); setInterval(syncGlassNote, 1000);
 // ── the evening: once a day, after six, a quiet card with how the day went in the tank, and what is next ──
 let wbShown = false, wbPending = false;      // (pending: the welcome-back note is about to show, so nothing else pops up first)
 // once a week, in the evening: the week in a few plain lines, from the journal (no scores, nothing to keep up)
+function weekStory() {
+  const s = game.state; if (!s || (s.flags.tut ?? 0) < 5 || document.hidden) return; const now = Date.now(); if (new Date(now).getHours() < 18) return;
+  let last = 0; try { last = +localStorage.getItem('ourtank.weekStory') || 0; } catch { /* storage unavailable */ } if (!last) { try { localStorage.setItem('ourtank.weekStory', String(now)); } catch { /* storage unavailable */ } return; }      /* (the first one comes a week after this phone first saw the tank) */
+  if (now - last < 6.5 * 864e5) return;
+  const W = game.journal.filter((e) => e.ts > now - 7 * 864e5), pickL = (re, n = 1) => W.filter((e) => re.test(e.text)).slice(-n).map((e) => e.text);
+  const lines = [...pickL(/hatched|gave birth|swam out/, 1), ...pickL(/grew up|is an adult/, 1), ...pickL(/brought back|came back with/, 1), ...pickL(/^Field Guide, page/, 1), ...pickL(/rare visitor|said hello to/, 1), ...pickL(/^Goal complete|torii|lighthouse|a rare color/i, 1)].slice(0, 5);
+  if (lines.length < 2) return; try { localStorage.setItem('ourtank.weekStory', String(now)); } catch { /* storage unavailable */ }
+  ui.weekStory(lines, () => { const img = tankShot(); if (img) takePhoto({ img, title: `This week in ${game.tankName ?? 'the tank'}`, line: lines.join(' '), ts: now }); });
+}
+setInterval(() => { if (!window.__quietUntil || Date.now() > window.__quietUntil) weekStory(); }, 60e3); window.__weekStory = weekStory;
 // After the replay: the one thing that matters most now, said once, then the tank is quiet (what was in the replay is not repeated as toasts)
 async function afterReplay() {
   await new Promise((r) => { const w = () => ($('reunion').classList.contains('on') ? setTimeout(w, 400) : r()); setTimeout(w, 1200); });
   window.__quietUntil = 0; ui.clearToasts(); const s = game.state, me = game.you?.userId; if (!s) return;
   const egg = (s.eggs ?? []).find((e) => e.ready), born = s.fish.find((f) => f.preg?.ready && !f.dead), D = s.dilemma && !s.dilemma.done ? s.dilemma : null, mine = D && (!D.turn || D.turn.uid === me || Date.now() > D.turn.until), m = mysteryOf(s), G = goalOf(s);
-  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you in Care.', 'care'] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
+  // something changed in the tank itself while you were away: that comes before any menu (it is there to be looked at, now)
+  const day = Date.now() - 864e5, kp = (s.keeps ?? []).filter((k) => k.at > day).sort((a, b) => b.at - a.at)[0], kOcto = kp && s.fish.find((f) => f.id === kp.by && !f.dead);
+  const mv = !kp && [...game.journal].reverse().find((e) => e.ts > day && / (moved in|moved the|shoved its) /.test(e.text)), mvOcto = mv && s.fish.find((f) => f.species === 'octopus' && !f.dead && mv.text.startsWith(f.name + ' '));
+  const look = kOcto ? [`${kOcto.name} brought back a ${(KEEPSAKES[kp.k]?.label ?? 'keepsake').toLowerCase()}. Go and see it on the sand.`, kOcto.id] : mvOcto ? [`${mvOcto.name} has been rearranging. Go and see what it moved.`, mvOcto.id] : null;
+  const lookKey = kOcto ? 'k' + kp.id : mvOcto ? 'm' + mv.ts : ''; let lookSeen = ''; try { lookSeen = localStorage.getItem('ourtank.lookSeen') ?? ''; } catch { /* storage unavailable */ }
+  if (look && !egg && !born && lookKey !== lookSeen) { try { localStorage.setItem('ourtank.lookSeen', lookKey); } catch { /* storage unavailable */ } setTimeout(() => { ui.toast(look[0], 4200); const f = fishes.byId.get(look[1]); if (f && !f.dead) setFocus(f); }, 600); return; }
+  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you: tap the Today icon.', null] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
   if (!say) return; setTimeout(() => { ui.toast(say[0], 4200); if (say[1]) ui.flag(say[1], true); if (egg) { const fx = [...eggSprites.values()].find((x) => x.e?.id === egg.id); if (fx) setFocus(eggFocusOf(fx)); } }, 600);
 }
 async function welcomeBack() {
