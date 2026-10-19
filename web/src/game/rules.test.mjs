@@ -924,3 +924,17 @@ ok('growing up takes ten days now, and an animal that had already grown under th
   const D = 864e5, now = 50 * D, t = { fish: [{ id: 'a', name: 'A', species: 'goldfish', seed: 1, traits: [], born: now - 4 * D, stage: 'adult' }, { id: 'b', name: 'B', species: 'goldfish', seed: 2, traits: [], born: now - 2 * D, stage: 'juvenile' }, { id: 'c', name: 'C', species: 'goldfish', seed: 3, traits: [], born: now - D, stage: 'baby' }], decor: [], flags: {} };
   R.norm(t, now); assert.deepEqual(t.fish.map((f) => R.stageOf(f, now)), ['adult', 'juvenile', 'baby']); assert.equal(t.flags.growV, 2);
 });
+ok('goals: three are offered, one is chosen, its steps count only what happens from then, each step says how, and finishing unlocks a new look and offers three more', () => {
+  const D = 864e5, t0 = 30 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.dilemmaAt = 9e15;
+  t.fish = [R.ensureFish({ id: 'a', name: 'Amy', species: 'goldfish', sex: 'f', seed: 3, born: 0, stage: 'adult', traits: [], genes: { ...R.genesOf(3), m: ['gold', 'n'] } }), R.ensureFish({ id: 'b', name: 'Bob', species: 'goldfish', sex: 'm', seed: 4, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'c', name: 'Cy', species: 'goldfish', sex: 'm', seed: 5, born: 0, stage: 'adult', traits: [] })];
+  t.stats = { myst: 40 }; R.advance(t, t0 + 1000); assert.equal(t.goalOffer.length, 3, JSON.stringify(t.goalOffer)); assert.ok(t.goalOffer.some((k) => k === 'gold' || k === 'rare'), 'a breeding goal is always offered when a carrier lives here');
+  if (!t.goalOffer.includes('sleuth')) t.goalOffer[2] = 'sleuth';
+  assert.equal(R.applyAction(t, { t: 'pickGoal', id: 'nope' }, { now: t0 + 2000 }).ok, false); assert.ok(R.applyAction(t, { t: 'pickGoal', id: 'sleuth' }, { now: t0 + 2000, name: 'Ana' }).applied);
+  let g = R.goalOf(t); assert.equal(g.done, 0, 'an old tank starts fresh'); assert.ok(g.next.text && g.next.hint, 'the next step says how');
+  const owned0 = JSON.stringify(t.flags.styles ?? {}), s0 = t.shells; let sawStep = false, sawDone = false;
+  for (let d = 1; d <= 12 && t.goal; d++) { const at = t0 + d * D + 12 * 3600e3; R.advance(t, at); if (R.mysteryOf(t, at) && !R.mysteryOf(t, at).done) { const r = R.applyAction(t, { t: 'mystery', tz: 0 }, { now: at + 1, uid: 'u', name: 'Ana' }); if (r.events.some((e) => e.goalStep)) sawStep = true; if (r.events.some((e) => e.goalDone)) sawDone = true; } }
+  if (t.goal) { t.stats.mystChain = (t.stats.mystChain ?? 0) + 1; const ev = R.advance(t, t0 + 20 * D); if (ev.some((e) => e.goalDone)) sawDone = true; }
+  assert.ok(sawStep && sawDone && !t.goal, JSON.stringify(R.goalOf(t))); assert.notEqual(JSON.stringify(t.flags.styles ?? {}), owned0, 'a new look is unlocked'); assert.ok(t.shells >= s0 + R.GOAL_SHELLS);
+  assert.equal(t.goalsDone[0].id, 'sleuth'); assert.equal(t.goalOffer.length, 3); assert.ok(!t.goalOffer.includes('sleuth'), 'a finished goal is not offered again');
+  assert.ok(R.applyAction(t, { t: 'pickGoal', id: t.goalOffer[0] }, { now: t0 + 21 * D }).applied); assert.ok(R.applyAction(t, { t: 'pickGoal', drop: true }, { now: t0 + 21 * D + 1 }).applied); assert.equal(t.goalOffer.length, 3, 'setting a goal aside offers three again');
+});

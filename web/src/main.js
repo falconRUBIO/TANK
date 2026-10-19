@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
+import { goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -1256,6 +1256,8 @@ game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arri
 game.on('placed', () => tut.onPlaced());
 game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says ${({ octo: `${name ?? 'your octopus'} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('crab', (id) => { fishes.dropCrab(id); });
+game.on('goalStep', () => { haptic(16); sfx('reward'); ui?.updateHeader(); const q = $('quest'); q?.classList.add('pulse'); setTimeout(() => q?.classList.remove('pulse'), 1600); });
+game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'GOAL COMPLETE', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 // a chapter reached during the first tips waits until they are done, then shows on its own: one thing at a time on a new player's screen
@@ -1577,8 +1579,9 @@ async function welcomeBack() {
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const next = [], my = mysteryOf(s), req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null;      // it ends on what is still to come: today's mystery, the request, and what the tank expects next
+  { const G = goalOf(s); if (G?.next) next.push(`Goal: ${G.next.text}.`); }
   if (my && !my.done) next.push(`${MYSTERY[my.kind]?.text ?? ''} Tap the glow to find out.`); if (req) next.push(`Today's request: ${req}`);
-  for (const x of forecast(s, Date.now(), 2)) if (next.length < 3) next.push(x.when === 'now' ? x.text : `${x.text}, ${x.when}`);
+  for (const x of forecast(s, Date.now(), 2)) if (next.length < 4) next.push(x.when === 'now' ? x.text : `${x.text}, ${x.when}`);
   if (!lines.length) return;
   wbPending = true; await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
   { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;

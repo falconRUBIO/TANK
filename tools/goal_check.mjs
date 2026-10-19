@@ -1,0 +1,36 @@
+// Goals, in the real game: the home screen asks you to choose one, the sheet offers three, choosing one shows its steps with how to do
+// the next, a step done moves the bar, and a finished goal celebrates and unlocks a look. Needs the solo game on 8123.   node tools/goal_check.mjs
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+import fs from 'node:fs';
+const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/goal'; fs.mkdirSync(out, { recursive: true });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; let fails = 0; p.on('pageerror', (e) => errors.push(e.message));
+const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
+await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 6; s.fish.length = 0; s.visitAt = s.eggAt = now + 9e9; s.dilemmaAt = now + 9e9; s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] };
+  s.fish.push({ id: 'a1', name: 'Amy', species: 'goldfish', sex: 'f', seed: 3, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'n'] } }, { id: 'b1', name: 'Bob', species: 'goldfish', sex: 'm', seed: 4, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'n'] } }, { id: 'c1', name: 'Cy', species: 'goldfish', sex: 'm', seed: 5, born: now - 20 * D, stage: 'adult', traits: ['Shy'], happy: 0.9, health: 1 });
+  s.decor.length = 0; s.goal = null; s.goalOffer = null; s.goalsDone = []; s.stats = {}; g.emit('state'); document.querySelectorAll('#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
+await p.evaluate(() => window.__game.dispatch({ t: 'observe', key: 'watch' })).catch(() => {}); await p.waitForTimeout(1500);
+const q0 = await p.evaluate(() => ({ hidden: document.getElementById('quest').hidden, text: document.getElementById('quest').textContent }));
+ck('the home screen asks you to choose a goal', !q0.hidden && /Choose a goal/.test(q0.text), q0);
+await p.evaluate(() => document.querySelector('.box.party #mok')?.click()); await p.waitForTimeout(300);
+await p.click('#quest'); await p.waitForSelector('#modal.on [data-goal]', { timeout: 30000 });
+const offer = await p.evaluate(() => [...document.querySelectorAll('#modal [data-goal]')].map((b) => b.dataset.goal)); ck('three goals are offered, one of them breeding the color your fish carry', offer.length === 3 && offer.includes('gold'), offer);
+await p.screenshot({ path: `${out}/offer.png`, timeout: 120000 }).catch(() => {});
+await p.click('#modal [data-goal="gold"]'); await p.waitForSelector('#modal.on .gst', { timeout: 30000 });
+const sheet = await p.evaluate(() => ({ title: document.querySelector('#modal h2')?.textContent, steps: [...document.querySelectorAll('#modal .gst')].map((x) => x.className + ':' + x.textContent), hint: document.querySelector('#modal .gst.next small')?.textContent }));
+ck('the chosen goal shows its steps: the carrier is already found, and the next step says how', /Golden/.test(sheet.title) && /done/.test(sheet.steps[0]) && /next/.test(sheet.steps[1]) && /Pair with/.test(sheet.hint ?? ''), sheet);
+await p.screenshot({ path: `${out}/sheet.png`, timeout: 120000 }).catch(() => {});
+await p.click('#modal #mok'); await p.waitForTimeout(500);
+const q1 = await p.evaluate(() => ({ text: document.getElementById('quest').textContent, bar: document.querySelector('#quest .qb b').style.width }));
+ck('the home screen shows the goal, the next step and the bar', /Golden/.test(q1.text) && /Next: Pair two carriers/.test(q1.text) && q1.bar === '25%', q1);
+await p.screenshot({ path: `${out}/home.png`, timeout: 120000 }).catch(() => {});
+const r = await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'matchmake', a: 'a1', b: 'b1' }); return { bar: document.querySelector('#quest .qb b').style.width, j: g.journal.slice(-3).map((e) => e.text) }; }); await p.waitForTimeout(800);
+const q2 = await p.evaluate(() => document.querySelector('#quest .qb b').style.width); ck('pairing two carriers ticks the next step', q2 === '50%' && r.j.some((x) => /Goal, 2 of 4/.test(x)), { q2, j: r.j });
+await p.evaluate(() => { const s = window.__game.state; s.stats.hatched = (s.stats.hatched ?? 0) + 1; s.stats.morphs = (s.stats.morphs ?? 0) + 1; s.stats.morph_gold = (s.stats.morph_gold ?? 0) + 1; return window.__game.dispatch({ t: 'observe', key: 'watch' }); }).catch(() => {});
+await p.waitForSelector('#modal.on.party', { timeout: 60000 }).catch(() => {});
+const done = await p.evaluate(() => ({ party: document.querySelector('#modal.party')?.textContent ?? '', styles: window.__game.state.flags.styles, goal: window.__game.state.goal, offer: window.__game.state.goalOffer }));
+ck('finishing it celebrates, unlocks a look, and offers three more', /GOAL COMPLETE/.test(done.party) && done.styles && !done.goal && done.offer?.length === 3 && !done.offer.includes('gold'), done);
+await p.screenshot({ path: `${out}/done.png`, timeout: 120000 }).catch(() => {});
+ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
+await b.close(); console.log(fails ? `${fails} failed` : 'Goal checks passed'); process.exit(fails ? 1 : 0);
