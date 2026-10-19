@@ -496,7 +496,7 @@ export const eggCare = (e) => (e?.cared ?? []).length;
 // a baby that shows a rare color: a line in the journal, and the first of each color is kept in the Field Guide's color pages
 function morphBorn(t, f, now, ev) {
   const m = morphOf(f); if (!m) return; bump(t, 'morphs'); bump(t, 'morph_' + m); const M = MORPHS[m], first = !(t.morphs ||= {})[m]; if (first) t.morphs[m] = { at: now, fish: f.id, name: f.name, species: f.species };
-  ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, story: f.id, morph: m });      // (no toast: the reveal on screen says it, after a breath)
+  ev.push({ activity: { type: 'morph', text: `${f.name} hatched ${M.label.toLowerCase()}!` } }); ev.push({ journal: `${f.name} is ${M.label.toLowerCase()}! ${first ? `The first ${M.label.toLowerCase()} ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} ever bred in this tank.` : 'A rare color, from both parents.'}`, story: f.id, morph: m });      // (no toast: the reveal on screen says it, after a breath)
 }
 function makeChild(t, e, now) {
   const A = e.pa ?? snap(t.fish.find((f) => f.id === e.a)), B = e.pb ?? snap(t.fish.find((f) => f.id === e.b)), h = hash32(e.hatchAt / 1e3);
@@ -882,8 +882,9 @@ function rollDilemma(t, now, ev) {
   if (octos.length) c.push({ kind: 'lid', fish: [pick(octos, 5).id] });
   if (fish.length >= 2 && !(LO.thicket && luckOf(h) < 70)) { const x = pick(fish, 7), y = fish.find((f) => f !== x); c.push({ kind: 'chase', fish: [x.id, y.id] }); }
   if (!c.length) return; const D = pick(c, 9), F = D.fish.map((id) => t.fish.find((f) => f.id === id)), dl = D.decor ? (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase() : '';
-  t.dilemma = { id: 'dl' + Math.floor(now / 6e4), ...D, at: now, until: now + 1.5 * DAY, text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
-  ev.push({ journal: t.dilemma.text, toast: `${t.dilemma.text} What will you do?`, dilemma: t.dilemma.id });
+  const crew = Object.entries(t.care ?? {}).filter(([, c]) => now - c.ts < 4 * DAY).sort((a, b) => (a[0] < b[0] ? -1 : 1)), turn = crew.length > 1 ? crew[(t.dlTurn = ((t.dlTurn ?? -1) + 1) % crew.length)] : null;      // in a shared tank, the caretakers take turns: it is one person's call first (12 hours), then anyone's
+  t.dilemma = { id: 'dl' + Math.floor(now / 6e4), ...D, at: now, until: now + 1.5 * DAY, ...(turn ? { turn: { uid: turn[0], name: turn[1].name, until: now + 12 * HOUR } } : {}), text: DILEMMA[D.kind].text(F[0], F[1], dl), opts: DILEMMA[D.kind].opts.map(([k, l]) => ({ k, label: l(F[0], F[1]) })), done: false };
+  ev.push({ journal: t.dilemma.text + (turn ? ` It is ${turn[1].name}'s call.` : ''), toast: `${t.dilemma.text} ${turn ? `${turn[1].name}'s call.` : 'What will you do?'}`, dilemma: t.dilemma.id });
 }
 function settleDilemma(t, D, k, now, name) {
   const events = [], F = D.fish.map((id) => t.fish.find((f) => f.id === id && !f.dead)), [x, y] = F, h = hash32((D.at / 6e4) | 0), luck = h % 100, who = name ? `${name} chose` : 'Nobody chose, so';
@@ -1006,7 +1007,7 @@ function goals(t, now, ev) {
     if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; t.shells += GOAL_SHELLS;
     const prize = st ? `${st[0] === 'floor' ? FLOORS[st[1]] : BACKDROPS[st[1]]} ${st[0]}` : null;
     (t.goalsDone ||= []).push({ id: g.id, at: now, title: GOALS[g.id].title, prize }); t.goal = null; t.goalOffer = goalOffer(t, now);
-    ev.push({ journal: `Goal complete: ${GOALS[g.id].title}.${prize ? ` The ${prize} is yours.` : ''}`, toast: `Goal complete! +${GOAL_SHELLS} shells${prize ? ` and the ${prize}` : ''}`, goalDone: g.id, milestone: true });
+    ev.push({ activity: { type: 'goal', text: `The tank finished a goal: ${GOALS[g.id].title}.` } }); ev.push({ journal: `Goal complete: ${GOALS[g.id].title}.${prize ? ` The ${prize} is yours.` : ''}`, toast: `Goal complete! +${GOAL_SHELLS} shells${prize ? ` and the ${prize}` : ''}`, goalDone: g.id, milestone: true });
   }
 }
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
@@ -1834,7 +1835,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.goal || !(t.goalOffer ?? []).includes(a.id) || !GOALS[a.id]) return fail('NOT_FOUND');
       t.goal = { id: a.id, at: now, base: baseOf(t), done: {}, by: name }; t.goalOffer = null; events.push({ journal: `New goal: ${GOALS[a.id].title}.`, goalSet: a.id }); events.push(...advance(t, now)); return ok({ applied: true });
     }
-    case 'decide': { const D = t.dilemma; if (!D || D.id !== a.id || D.done) return ok({ applied: false }); if (!D.opts.some((o) => o.k === a.k)) return fail('NOT_FOUND'); const r = settleDilemma(t, D, a.k, now, name); if (!r.ok) return fail(r.reason); if (name && a.k) bump(t, 'decided'); events.push(...r.events); return ok({ applied: true, line: r.events[0]?.journal }); }
+    case 'decide': { const D = t.dilemma; if (!D || D.id !== a.id || D.done) return ok({ applied: false }); if (!D.opts.some((o) => o.k === a.k)) return fail('NOT_FOUND'); if (D.turn && D.turn.uid !== uid && now < D.turn.until) return fail('NOT_YOUR_TURN'); const r = settleDilemma(t, D, a.k, now, name); if (!r.ok) return fail(r.reason); if (name && a.k) bump(t, 'decided'); events.push(...r.events); return ok({ applied: true, line: r.events[0]?.journal }); }
     case 'matchmake': {      // bring two together: fish of a kind spawn sooner and it is these two; two octopuses get to know each other faster
       const x = t.fish.find((f) => f.id === a.a && !f.dead), y = t.fish.find((f) => f.id === a.b && !f.dead); if (!x || !y || x === y) return fail('NOT_FOUND');
       if (x.species !== y.species) return fail('NOT_SAME_KIND'); if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');

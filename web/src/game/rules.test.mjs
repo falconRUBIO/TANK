@@ -938,3 +938,11 @@ ok('goals: three are offered, one is chosen, its steps count only what happens f
   assert.equal(t.goalsDone[0].id, 'sleuth'); assert.equal(t.goalOffer.length, 3); assert.ok(!t.goalOffer.includes('sleuth'), 'a finished goal is not offered again');
   assert.ok(R.applyAction(t, { t: 'pickGoal', id: t.goalOffer[0] }, { now: t0 + 21 * D }).applied); assert.ok(R.applyAction(t, { t: 'pickGoal', drop: true }, { now: t0 + 21 * D + 1 }).applied); assert.equal(t.goalOffer.length, 3, 'setting a goal aside offers three again');
 });
+ok('shared stakes: in a shared tank the caretakers take turns with decisions (one person first, then anyone), and a rare color or a finished goal is told to the whole crew', () => {
+  const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
+  t.fish = [R.ensureFish({ id: 'g', name: 'Goldie', species: 'goldfish', seed: 4, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'h', name: 'Pip', species: 'goldfish', seed: 5, born: 0, stage: 'adult', traits: [] })];
+  t.care = { ua: { name: 'Ana', ts: t0 - 1000 }, ub: { name: 'Ben', ts: t0 - 1000 } }; t.dilemmaAt = t0; R.advance(t, t0 + 1000); const Dl = t.dilemma; assert.ok(Dl.turn && ['Ana', 'Ben'].includes(Dl.turn.name));
+  const other = Dl.turn.uid === 'ua' ? 'ub' : 'ua'; assert.equal(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: t0 + 2000, uid: other, name: 'X' }).reason, 'NOT_YOUR_TURN');
+  assert.ok(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: t0 + 13 * 3600e3, uid: other, name: 'X' }).applied, 'after twelve hours, anyone');
+  t.dilemmaAt = t0 + 2 * D; R.advance(t, t0 + 2 * D + 1000); assert.notEqual(t.dilemma.turn.uid, Dl.turn.uid, 'the next one is the other person\'s');
+});
