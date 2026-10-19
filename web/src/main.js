@@ -906,6 +906,12 @@ function momentPhoto(e) {
   else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); }
 }
 window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
+// a new Field Guide page, seen right now on this phone: a photo of the animal that did it (or of the tank), kept as the page's picture
+let fieldKnown = null;
+game.on('state', () => { const F = game.state?.field ?? {}; if (!fieldKnown) { fieldKnown = new Set(Object.keys(F)); return; }
+  for (const [id, p] of Object.entries(F)) { if (fieldKnown.has(id)) continue; fieldKnown.add(id); if (document.hidden || Date.now() - (p.at ?? 0) > 60e3) continue;
+    setTimeout(() => { try { const f = p.fish && fishes.byId.get(p.fish), img = (f && f.group.visible && shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] })) || tankShot(); if (!img) return;
+      const all = JSON.parse(localStorage.getItem('ourtank.fieldpics') || '{}'); all[id] = img; localStorage.setItem('ourtank.fieldpics', JSON.stringify(all)); } catch (err) { console.warn('field photo', err); } }, 600); } });
 window.__shootAt = (id) => { const f = fishes.byId.get(id); return f ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; };
 // ── each phone says how smoothly it draws, every few seconds; the server keeps the animals on a phone that can keep them smooth ──
 const perf = { t0: performance.now(), n: 0 };
