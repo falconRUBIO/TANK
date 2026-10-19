@@ -946,3 +946,9 @@ ok('shared stakes: in a shared tank the caretakers take turns with decisions (on
   assert.ok(R.applyAction(t, { t: 'decide', id: Dl.id, k: Dl.opts[0].k }, { now: t0 + 13 * 3600e3, uid: other, name: 'X' }).applied, 'after twelve hours, anyone');
   t.dilemmaAt = t0 + 2 * D; R.advance(t, t0 + 2 * D + 1000); assert.notEqual(t.dilemma.turn.uid, Dl.turn.uid, 'the next one is the other person\'s');
 });
+ok('scarcity: eggs laid under a full moon have better odds of the color both parents carry, and a full moon is shown coming up', () => {
+  const a = { genes: { m: ['gold', 'n'] } }, b = { genes: { m: ['gold', 'n'] } }; assert.ok(R.morphOdds(a, b, true).gold > R.morphOdds(a, b).gold);
+  let plain = 0, moon = 0; for (let i = 0; i < 2000; i++) { if (G.blendGenes({ ...R.genesOf(1), m: ['gold', 'n'] }, { ...R.genesOf(2), m: ['gold', 'n'] }, G.seededRandom(i * 31 + 7)).m.every((x) => x === 'gold')) plain++; if (G.blendGenes({ ...R.genesOf(1), m: ['gold', 'n'] }, { ...R.genesOf(2), m: ['gold', 'n'] }, G.seededRandom(i * 31 + 7), true).m.every((x) => x === 'gold')) moon++; }
+  assert.ok(moon > plain * 1.3, `${moon} vs ${plain}`);
+  const full = Date.UTC(2024, 0, 25, 12), t = R.newWorld(0); R.norm(t, full - 2 * 864e5); assert.ok(R.forecast(t, full - 2 * 864e5, 9).some((x) => /Full moon/.test(x.text)), JSON.stringify(R.forecast(t, full - 2 * 864e5, 9)));
+});

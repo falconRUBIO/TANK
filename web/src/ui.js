@@ -131,7 +131,7 @@ export function initUI({ game, social, cb }) {
     if ((s.flags.tut ?? 0) < 5 && game.isTutOwner) return { text: 'Follow the tips to get started', tab: '' };
     const fl = (s.floaters ?? [])[0]; if (fl) return { text: `${fl.name} has passed away. Tap to lay them to rest.`, tab: '' };
     const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: weak.species === 'octopus' ? `${weak.name} is in a critical state. ${canFeedOcto(weak, game.you?.userId, game.shared) ? 'Drop it a crab' : `Only ${weak.ownerName ?? 'its caretaker'} can feed it`}, and freshen the water.` : `${weak.name} is in a critical state. Feed the tank and freshen the water.`, tab: 'care' };
-    if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello.`, tab: '' };
+    if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello. It leaves in ${eta(s.visitor.until - game.now())}.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
         { const me = game.you?.userId, oc = s.fish.filter((f) => canFeedOcto(f, me, game.shared) && octoHunger(f) > 0.5).sort((a, b) => octoHunger(b) - octoHunger(a))[0]; if (oc) return { text: `${oc.name} is hungry. Drop it a crab from Care.`, tab: 'care' }; }

@@ -5,8 +5,8 @@ export function genesOf(seed) { const r = rng((((seed | 0) * 2654435761 + 977) >
   const k = r(), w = r(), m = k < 0.3 ? [RARE[Math.floor(w * RARE.length)], 'n'] : ['n', 'n'];      // (drawn after the others, so every fish's old look is unchanged; about one founder in three carries a rare color, hidden)
   return { dh, ds, dl, size, m }; }
 const cl = (v, a, b) => Math.max(a, Math.min(b, v));
-export function blendGenes(a, b, r) {
-  return { dh: cl((a.dh + b.dh) / 2 + (r() - 0.5) * 0.03, -0.06, 0.06), ds: cl((a.ds + b.ds) / 2 + (r() - 0.5) * 0.08, 0.85, 1.15), dl: cl((a.dl + b.dl) / 2 + (r() - 0.5) * 0.04, 0.93, 1.07), size: cl((a.size + b.size) / 2 + (r() - 0.5) * 0.05, 0.9, 1.1), m: inherit(a.m, b.m, r) };
+export function blendGenes(a, b, r, moon = false) {
+  return { dh: cl((a.dh + b.dh) / 2 + (r() - 0.5) * 0.03, -0.06, 0.06), ds: cl((a.ds + b.ds) / 2 + (r() - 0.5) * 0.08, 0.85, 1.15), dl: cl((a.dl + b.dl) / 2 + (r() - 0.5) * 0.04, 0.93, 1.07), size: cl((a.size + b.size) / 2 + (r() - 0.5) * 0.05, 0.9, 1.1), m: inherit(a.m, b.m, r, moon) };
 }
 export const seededRandom = rng;
 // Color morphs: a rare color shows only when a fish has two copies of it (one from each parent); with one copy it is carried, unseen.
@@ -18,10 +18,12 @@ export const MORPHS = {
   ember: { label: 'Ember', h: 0.01, s: 0.95, l: 0.5 },
 };
 const RARE = Object.keys(MORPHS);
-function inherit(a = ['n', 'n'], b = ['n', 'n'], r) { const m = [a[r() < 0.5 ? 0 : 1], b[r() < 0.5 ? 0 : 1]]; if (r() < 0.03) m[r() < 0.5 ? 0 : 1] = RARE[Math.floor(r() * RARE.length)]; return m; }
+function inherit(a = ['n', 'n'], b = ['n', 'n'], r, moon = false) { const m = [a[r() < 0.5 ? 0 : 1], b[r() < 0.5 ? 0 : 1]]; if (r() < (moon ? 0.12 : 0.03)) m[r() < 0.5 ? 0 : 1] = RARE[Math.floor(r() * RARE.length)];
+  if (moon && m[0] !== m[1]) { const both = a.filter((x) => MORPHS[x] && b.includes(x)); if (both.length && r() < 0.25) m[0] = m[1] = both[0]; }      // laid under a full moon: a second chance at the color both parents carry
+  return m; }
 export const allelesOf = (f) => f?.genes?.m ?? genesOf(f?.seed ?? 0).m;
 export const morphOf = (f) => { const m = allelesOf(f); return m[0] === m[1] && MORPHS[m[0]] ? m[0] : null; };
 export const carriesOf = (f) => [...new Set(allelesOf(f).filter((x) => MORPHS[x]))].filter((x) => x !== morphOf(f));
 // the chance that a baby of these two shows each color (for the hint on the card), exactly from their genes
-export function morphOdds(a, b) { const A = allelesOf(a), B = allelesOf(b), out = {}; for (const x of A) for (const y of B) if (x === y && MORPHS[x]) out[x] = (out[x] ?? 0) + 0.25; return out; }
+export function morphOdds(a, b, moon = false) { const A = allelesOf(a), B = allelesOf(b), out = {}; for (const x of A) for (const y of B) if (x === y && MORPHS[x]) out[x] = (out[x] ?? 0) + 0.25; if (moon) for (const k of Object.keys(out)) out[k] = Math.min(1, out[k] + (1 - out[k]) * 0.25); return out; }
 
