@@ -879,6 +879,25 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .hcard .fthumb{width:48px!important;height:48px!important;margin:0!important;padding:0!important;box-sizing:border-box}
 #sheet .hcard .ftop{grid-template-columns:48px 1fr auto!important}#sheet .hneeds{padding-left:60px}#sheet .hall{margin-left:60px}
 #sheet .hcard .fthumb{transform:none!important;background:radial-gradient(circle,rgba(255,255,255,.14),rgba(255,255,255,.04))!important}
+/* Crew: leave a sticky note or a message in a bottle */
+#sheet .compose2{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+#sheet .ctiles{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;background:none!important;padding:0!important;border:0!important}
+#sheet .ctile{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.03));-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);transition:background .2s,border-color .2s}
+#sheet .ctile b{font:650 15px -apple-system,system-ui,sans-serif;color:#fff}#sheet .ctile small{font:400 12px/1.3 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.7)}
+#sheet .ctile.on{border-color:rgba(255,255,255,.5);background:linear-gradient(135deg,rgba(255,255,255,.26),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 14px rgba(0,0,0,.15)}
+#sheet .ctile:disabled{opacity:.45;cursor:default}
+#sheet .compose2 .send{display:flex;align-items:center;gap:8px;margin:0;padding:6px 6px 6px 16px;border-radius:18px}
+#sheet .compose2 .send input{all:unset;flex:1;min-width:0;font:400 16px -apple-system,system-ui,sans-serif;padding:10px 0}
+#sheet .compose2 .send button{all:unset;cursor:pointer;padding:9px 16px;border-radius:999px;font:600 14px -apple-system,system-ui,sans-serif}
+#sheet .compose2 .send.paper{background:linear-gradient(180deg,#fff7b8,#ffe98a);box-shadow:0 6px 16px rgba(0,0,0,.22);transform:rotate(-.6deg)}
+#sheet .compose2 .send.paper input{color:#3a3010;font-family:'Comic Sans MS','Chalkboard SE','Marker Felt',cursive}#sheet .compose2 .send.paper input::placeholder{color:rgba(58,48,16,.5)}
+#sheet .compose2 .send.paper button{background:#3a3010;color:#fff7b8}
+#sheet .compose2 .send.glassy{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1)}
+#sheet .compose2 .send.glassy input{color:#fff}#sheet .compose2 .send.glassy input::placeholder{color:rgba(235,242,250,.5)}
+#sheet .compose2 .send.glassy button{background:linear-gradient(180deg,#7fd3ff,#3aa0e6);color:#04233a}
+#sheet .compose2 .bto{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#sheet .compose2 .bto small{color:rgba(235,242,250,.6);margin-right:2px}
+#sheet .compose2 .chint{font-size:12px;color:rgba(235,242,250,.6);padding:0 4px}
+#sheet .compose2 .send button{width:auto!important;height:auto!important;min-width:0!important;flex:none!important;line-height:1.2!important;border-radius:999px!important;padding:9px 16px!important;display:inline-flex!important;align-items:center;justify-content:center;white-space:nowrap}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

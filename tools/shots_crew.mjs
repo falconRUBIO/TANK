@@ -19,7 +19,7 @@ for (const [p, a] of [[B, { t: 'feed', food: 'crab' }], [B, { t: 'glass' }], [A,
 // messages go through the Crew tab's own box, the way a player sends one
 for (const [p, txt] of [[A, 'Morning! Inky is hiding under the coconut'], [B, 'Ha, mine just squirted water at me']]) { await p.evaluate(() => { document.querySelectorAll('#coach,#toast,#settle,#reunion,#modal').forEach((e) => e.classList.remove('on')); window.__ui.open('friends'); }); await p.waitForTimeout(500); await p.fill('form.feedsend input', txt); await p.evaluate(() => document.querySelector('form.feedsend').requestSubmit()); await p.waitForTimeout(700); }
 await A.waitForTimeout(2500);
-await A.evaluate(() => { document.querySelectorAll('#goal,#coach,#toast,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); window.__ui.open('friends'); }); await A.waitForTimeout(800);
+await A.evaluate(() => { document.querySelectorAll('.ncbtn .cancel').forEach((e) => e.click()); document.querySelectorAll('#modal').forEach((e) => e.classList.remove('on', 'party')); document.querySelectorAll('#goal,#coach,#toast,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); window.__ui.open('friends'); }); await A.waitForTimeout(800);
 const H = await A.evaluate(() => { const s = document.getElementById('sheet'); return s ? s.scrollHeight : 0; });
 console.log('sheet height', H, 'sections', await A.evaluate(() => [...document.querySelectorAll('#sheet h3, #sheet h4, #sheet .code small, #sheet .wish small')].map((e) => e.textContent).join(' | ')));
 for (let y = 0, k = 0; y < H && k < 5; y += 600, k++) { await A.evaluate((y) => { document.getElementById('sheet').scrollTop = y; }, y); await A.waitForTimeout(300); await A.screenshot({ path: `${out}/crew_${k}.png` }); }
