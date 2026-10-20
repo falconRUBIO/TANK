@@ -14,7 +14,7 @@ const KEEPNAME = { cap: 'bottle cap', key: 'brass key', pebble: 'pebble', glass:
 const HEAVY = new Set(['boulder', 'pillar', 'torii', 'wood', 'chest', 'arch', 'brain']);      // too big for an octopus to shift (it may try)
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
-import { octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
+import { wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
@@ -654,6 +654,22 @@ export class Fishes {
       if (this.rain && (has('Curious') || has('Playful')) && !f.weak && r() < 0.4) return T(-3 + r() * 6, 11 + r() * 2, 0.8 + r() * 1.2, 3 + r() * 3);       // on a rainy day the curious ones drift up to look
       { const rec = this.state?.fish?.find((d) => d.away && !d.away.inTank && (d.buddy === f.fid || d.id === f.palId)), gone = rec && this.out?.get(rec.id);      /* (the tank's own record: the away animal's copy here is from before it left) */ if (gone && r() < 0.3) { f.waitedFor = (f.waitedFor ?? 0) + 1; return T(gone.pos.x + (r() - 0.5) * 0.8, 9 + r() * 2, -1.8, 6); } }      // its friend is away (out over the rim on an adventure): it hangs about up at the back, where it went
       f.invert = false; const sk = f.sk, spot = (cats, types) => { const c = spots.filter((x) => (types && types.includes(x.type)) || (cats && cats.includes(DECOR_DEF[x.type]?.cat))); return c.length ? c[(f.seed ?? 0) % c.length] : null; };
+      // how it feels shows in how it moves (the same reading Health gives): stressed or uneasy, it slips off to its own kind of shelter and stays low and still;
+      // lonely, a shoaling fish hangs back near the glass corners; happy, it is out in open water more
+      { const now = Date.now(); if (!f.wellAt || now - f.wellAt > 8000) { f.wellAt = now; try { f.well = f.rec && this.state ? wellOf(this.state, f.rec, now) : null; } catch { f.well = null; } }
+        const md = f.well?.mood?.[0], C = ECO[sk]?.cover; if ((md === 'Stressed' || md === 'Uneasy') && r() < 0.55) { const hs = spot(C?.cats ?? ['PLANTS', 'ROCKS'], C?.types); if (hs) { f.idle = 3 + r() * 4; f.hiding = true; return T(hs.x + (r() - 0.5) * 0.6, 0.9 + hs.h * 0.45, hs.z + 0.45, 7 + r() * 5); } }
+        f.hiding = false; if (md === 'Lonely' && r() < 0.4) return T(r() < 0.5 ? -3.6 : 3.6, 2.5 + r() * 4, 0.4 + r() * 0.6, 6 + r() * 4); }
+      // a damselfish guards its patch of rock and chases off whatever swims into it; a big angelfish now and then pushes a small fish about; a clownfish and a
+      // damselfish spar near the anemone. The more crowded the tank, the more often (the same rules that make the victims Stressed in Health)
+      if ((sk === 'guppy' || sk === 'angelfish' || sk === 'goldfish') && this.state) { const cr = crowdOf(this.state), rate = (sk === 'guppy' ? 0.45 : sk === 'angelfish' ? 0.18 : 0.25) * (1 + Math.max(0, cr.r - 0.6) * 2), patch = sk === 'goldfish' ? spot(null, ['anemone']) : spot(['ROCKS']), home = patch ?? { x: f.pos.x, z: f.pos.z, h: 0 };
+        const prey = this.list.filter((o) => o !== f && !o.dead && !o.visitor && o.species?.move !== 'jet' && o.sk && (sk === 'goldfish' ? o.sk === 'guppy' : sk === 'guppy' ? (o.sk === 'goldfish' || (SOCIAL[o.sk]?.size ?? 1) <= 1 && !SOCIAL[o.sk]?.bully) : (SOCIAL[o.sk]?.size ?? 1) <= 1 && !SOCIAL[o.sk]?.bully) && Math.hypot(o.pos.x - home.x, o.pos.z - home.z) < (sk === 'angelfish' ? 4 : 2.4));
+        if (prey.length && r() < rate) { const o = prey[(r() * prey.length) | 0], cv = o.rec && this.state ? coverOf(this.state, o.rec) : { have: 0, need: 1 }, safe = cv.have >= cv.need;
+          f.dartT = 1.1; f.chasing = o.fid; o.fleeT = 1.8; o.chasedBy = f.fid; o.chasedAt = Date.now();
+          const away = Math.sign(o.pos.x - f.pos.x) || 1, hs = safe ? spots.find((x) => (ECO[o.sk]?.cover?.cats ?? []).includes(DECOR_DEF[x.type]?.cat) || (ECO[o.sk]?.cover?.types ?? []).includes(x.type)) : null;
+          if (hs) { o.target.set(hs.x, 0.9 + hs.h * 0.45, hs.z + 0.45); o.idle = 2; } else o.target.set(Math.max(-4, Math.min(4, o.pos.x + away * 2.6)), Math.min(12, o.pos.y + 1.2), o.pos.z);      /* with shelter of its own kind it ducks into it; without, it just flees */
+          o.retarget = 2.5; f.thought = sk === 'goldfish' ? `Sparring with ${o.name ?? 'the damselfish'} over the anemone.` : `Chasing ${o.name ?? 'a fish'} off its patch.`; return T(o.pos.x, o.pos.y, o.pos.z, 1.4); } }
+      if (sk === 'guppy' && r() < 0.5) { const c = spot(['ROCKS']); if (c) return T(c.x + (r() - 0.5) * 1.6, 1.0 + c.h * 0.5 + r() * 1.2, c.z + 0.5 + r() * 0.4, 3 + r() * 3); }      // the rest of the time it patrols its patch
+      if (sk === 'angelfish' && r() < 0.35) { const c = spot(['ROCKS']); if (c) { f.idle = 2 + r() * 2; return T(c.x + (r() - 0.5) * 1.0, 1.0 + c.h * 0.6, c.z + 0.6, 5 + r() * 3); } }      // it browses on the rock
       if (sk === 'goldfish') { const a = spot(null, ['anemone']); if (a && r() < 0.7) return T(a.x + (r() - 0.5) * 1.1, 1.0 + a.h * 0.5 + r() * 0.7, a.z + 0.5 + r() * 0.3, 3 + r() * 3); }
       if (sk === 'blue') { const c = spot(['ROCKS', 'STRUCTURES']); if (c && r() < 0.65) { f.invert = r() < 0.7; return T(c.x + (r() - 0.5) * 0.8, f.invert ? 0.9 + c.h * 0.75 : 1.0 + c.h * 0.4, c.z + 0.6, 5 + r() * 5); } }
       if (sk === 'platy' && !this.night) { const c = spot(['STRUCTURES', 'ROCKS']); if (c && r() < 0.6) return T(c.x + (r() - 0.5) * 0.9, 1.0 + c.h * 0.45, c.z + 0.5, 6 + r() * 5); }
