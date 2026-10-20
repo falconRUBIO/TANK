@@ -1550,7 +1550,20 @@ export function nextUp(t, now = Date.now()) {
 }
 export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now()); if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
   if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
-export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); return ev; }
+export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); wellLog(t, now); return ev; }
+// Each animal's wellbeing over time: a short log written only when something changes (a need comes to be missing or is met, it falls unwell
+// or recovers). Hunger is left out: it comes and goes every day and Feed looks after it. Kept on the animal, so every phone sees the same.
+export const WELL_KEEP = 30;
+export const wellWord = (t, f, now = Date.now()) => { const miss = needsChecklist(t, f, now).filter((x) => !x.met).map((x) => x.label); return { w: (f.ail ?? 0) >= AIL_TIRED ? 'unwell' : miss.length >= 2 ? 'off' : miss.length ? 'fine' : 'thriving', miss }; };
+function wellLog(t, now) {
+  for (const f of t.fish) { if (f.dead || f.away) continue; const { w, miss } = wellWord(t, f, now), L = (f.well ||= []), last = L.at(-1);
+    if (last && last.w === w && last.miss.length === miss.length && last.miss.every((m) => miss.includes(m))) continue;
+    const e = { at: now, w, miss, got: last ? last.miss.filter((m) => !miss.includes(m)) : [], lost: last ? miss.filter((m) => !last.miss.includes(m)) : miss.slice() };
+    if (last && now - last.at < 10 * 60e3 && L.length > 1) { const prev = L[L.length - 2]; L.pop(); e.got = prev.miss.filter((m) => !miss.includes(m)); e.lost = miss.filter((m) => !prev.miss.includes(m)); if (!e.got.length && !e.lost.length && prev.w === w) continue; }      // (a flicker within minutes: one entry, not two)
+    L.push(e); if (L.length > WELL_KEEP) L.splice(0, L.length - WELL_KEEP); }
+}
+// how long a need has been missing, from the log: since the first entry of the unbroken run that has it missing
+export function missingSince(f, label) { const L = f.well ?? []; let at = null; for (let i = L.length - 1; i >= 0; i--) { if (L[i].miss.includes(label)) at = L[i].at; else break; } return at; }
 const AWAY_BLOCK = new Set(['observe', 'moment', 'feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
 // what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
 const ADVR = { OHR, get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), ensureFish: (...x) => ensureFish(...x), pending: (...x) => pending(...x), capacity: (...x) => capacity(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };

@@ -1029,6 +1029,15 @@ ok('(refine) the tank shows what is wrong a day before it asks; a sickness that 
   t.fish[0].ail = R.AIL_TIRED; R.advance(t, t0 + 0.95 * D); assert.equal(t.dilemma?.kind, 'sick', 'then it is asked');
   let spread = false; for (let s = 0; s < 40 && !spread; s++) { const u = structuredClone(t); u.dilemma.at = u.dilemma.at + s * 6e4; const r = R.applyAction(u, { t: 'decide', id: u.dilemma.id, k: 'wait' }, { now: t0 + D, name: 'You' }); if (/It spread/.test(r.line ?? r.events?.map((e) => e.journal).join(' ') ?? '')) { spread = true; assert.ok(u.fish.every((f) => f.ail >= R.AIL_TIRED), 'they are unwell'); } }
 });
+ok('wellbeing log: a line only when a need goes missing or is met, and how long it has been missing', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.decor = [];
+  const f = R.ensureFish({ id: 's', name: 'Sal', species: 'seahorse', seed: 3, born: -40 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1 }); t.fish = [f]; t.hunger = 0; t.water = 1; t.glass = 0;
+  R.advance(t, 1000); assert.equal(f.well.length, 1); assert.ok(f.well[0].miss.includes('Plants to hold on to'));
+  R.advance(t, 2 * D); assert.equal(f.well.length, 1, 'nothing changed: no new line');
+  assert.equal(R.missingSince(f, 'Plants to hold on to'), 1000);
+  t.decor.push({ id: 'k', type: 'kelp', x: 0, z: 0, ry: 0 }, { id: 'k2', type: 'grass', x: 1, z: 0, ry: 0 }); R.advance(t, 2 * D + 3600e3);
+  const e = f.well.at(-1); assert.ok(e.got.includes('Plants to hold on to'), 'the plants are noted as given'); assert.equal(R.missingSince(f, 'Plants to hold on to'), null);
+});
 ok('(first 30) a lid decision only comes from an octopus really seen testing the lid, more than once in three days', () => {
   const D = 864e5, t0 = 40 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.dilemmaAt = t0; return t; };
   const a = mk(); omenThen(a, t0 + 1000); assert.ok(!a.dilemma && !a.omen, 'never seen at the lid: nothing to decide');

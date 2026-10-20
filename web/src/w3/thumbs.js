@@ -14,6 +14,15 @@ function setup() {
   sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xcfe8ff, 0x5a4a38, 1.7)); const d = new THREE.DirectionalLight(0xfff0d0, 2.6); d.position.set(-3, 5, 6); sc.add(d);
   cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 50);
 }
+// the item, cut to what was actually drawn and scaled up to fill the tile (with a little room), so a small shell is as easy to see as a pillar
+function fitThumb(src, N = 160, pad = 0.1) {
+  const w = src.width, h = src.height, a = document.createElement('canvas'); a.width = w; a.height = h; const ga = a.getContext('2d'); ga.drawImage(src, 0, 0);
+  const d = ga.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return src.toDataURL();
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, k = Math.min(6, (N * (1 - 2 * pad)) / Math.max(bw, bh)), o = document.createElement('canvas'); o.width = o.height = N; const go = o.getContext('2d'); go.imageSmoothingEnabled = false;
+  const dw = Math.round(bw * k), dh = Math.round(bh * k); go.drawImage(a, x0, y0, bw, bh, Math.round((N - dw) / 2), Math.round(N - N * pad - dh), dw, dh); return o.toDataURL();
+}
 export function decorThumb(type) {
   const key = 'd:' + type; if (cache.has(key)) return cache.get(key);
   try {
@@ -21,7 +30,7 @@ export function decorThumb(type) {
     const [cy, s] = VIEW[type] ?? [1, 1.5], it = buildItem(type, 3); sc.add(it.group);
     it.group.rotation.y = type === 'wood' || type === 'torii' ? 0 : -0.5;
     cam.left = -s; cam.right = s; cam.top = cy + s; cam.bottom = cy - s; cam.updateProjectionMatrix(); cam.position.set(0, cy + 0.6, 10); cam.lookAt(0, cy, 0);
-    rr.render(sc, cam); const url = rr.domElement.toDataURL(); sc.remove(it.group); cache.set(key, url); return url;
+    rr.render(sc, cam); const url = fitThumb(rr.domElement); sc.remove(it.group); cache.set(key, url); return url;
   } catch (e) { console.warn('thumbnail failed', type, e); cache.set(key, ''); return ''; }
 }
 // a rare color (MORPHS) is painted over the colored parts, the same way the fish in the tank takes it on (whites, blacks and eyes stay)
