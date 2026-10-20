@@ -1170,7 +1170,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Every tank starts with an octopus. Choose the color of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Raise a happy tank: care for each animal, discover what they do, and grow your aquarium together. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {

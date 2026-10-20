@@ -921,6 +921,14 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 /* Field Guide: a page not yet seen is a calm locked tile */
 #sheet .fg.nope .fgpic{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:rgba(235,242,250,.35);background:repeating-linear-gradient(135deg,rgba(255,255,255,.04) 0 8px,rgba(255,255,255,.07) 8px 16px)!important;border:1.5px dashed rgba(255,255,255,.18)!important}
 #sheet .fg.nope .fgpic span{font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:.04em;color:rgba(235,242,250,.45)}
+/* Today: the game's aim in a line, and its three long aims as chips */
+#sheet p.aim{margin:2px 8px 10px;text-align:center;font:500 13.5px/1.4 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.85)}
+#sheet .aims{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px}
+#sheet .aimc{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));min-width:0}
+#sheet .aimc i{font-style:normal;font-size:18px}#sheet .aimc span{display:flex;flex-direction:column;min-width:0}
+#sheet .aimc b{font:700 14px -apple-system,system-ui,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheet .aimc small{font:500 11px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheet .aimc{flex-direction:column;justify-content:center;gap:3px;padding:9px 6px;text-align:center}#sheet .aimc span{align-items:center}#sheet .aimc i{font-size:17px;line-height:1}#sheet .aimc b{font-size:14.5px}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
