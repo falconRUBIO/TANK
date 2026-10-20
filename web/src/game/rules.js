@@ -1554,7 +1554,7 @@ export function advance(t, now = Date.now()) { const ev = _advance(t, now); reco
 // Each animal's wellbeing over time: a short log written only when something changes (a need comes to be missing or is met, it falls unwell
 // or recovers). Hunger is left out: it comes and goes every day and Feed looks after it. Kept on the animal, so every phone sees the same.
 export const WELL_KEEP = 30;
-export const wellWord = (t, f, now = Date.now()) => { const miss = needsChecklist(t, f, now).filter((x) => !x.met).map((x) => x.label); return { w: (f.ail ?? 0) >= AIL_TIRED ? 'unwell' : miss.length >= 2 ? 'off' : miss.length ? 'fine' : 'thriving', miss }; };
+export const wellWord = (t, f, now = Date.now()) => { const miss = needsChecklist(t, f, now).filter((x) => !x.met && x.k !== 'food' && x.k !== 'play').map((x) => x.label);      /* (food and play come and go every day: Feed and Play look after them) */ return { w: (f.ail ?? 0) >= AIL_TIRED ? 'unwell' : miss.length >= 2 ? 'off' : miss.length ? 'fine' : 'thriving', miss }; };
 function wellLog(t, now) {
   for (const f of t.fish) { if (f.dead || f.away) continue; const { w, miss } = wellWord(t, f, now), L = (f.well ||= []), last = L.at(-1);
     if (last && last.w === w && last.miss.length === miss.length && last.miss.every((m) => miss.includes(m))) continue;
