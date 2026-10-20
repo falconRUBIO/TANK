@@ -1038,6 +1038,13 @@ ok('wellbeing log: a line only when a need goes missing or is met, and how long 
   t.decor.push({ id: 'k', type: 'kelp', x: 0, z: 0, ry: 0 }, { id: 'k2', type: 'grass', x: 1, z: 0, ry: 0 }); R.advance(t, 2 * D + 3600e3);
   const e = f.well.at(-1); assert.ok(e.got.includes('Plants to hold on to'), 'the plants are noted as given'); assert.equal(R.missingSince(f, 'Plants to hold on to'), null);
 });
+ok('health: a bully shows as trouble, with too few hiding places it is stressed, and plants calm it', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.decor = [];
+  t.fish = [R.ensureFish({ id: 'a', name: 'Apollo', species: 'seahorse', seed: 1, born: -4e9, stage: 'adult' }), R.ensureFish({ id: 'b', name: 'Bruno', species: 'guppy', seed: 2, born: -4e9, stage: 'adult' })];
+  let W = R.wellOf(t, t.fish[0]); assert.ok(W.trouble.some((x) => x.kind === 'bully' && x.name === 'Bruno')); assert.equal(W.mood[0], 'Stressed'); assert.ok(W.cover.helps);
+  for (let i = 0; i < 4; i++) t.decor.push({ id: 'p' + i, type: 'kelp', x: i - 2, z: 0, ry: 0 });
+  W = R.wellOf(t, t.fish[0]); assert.notEqual(W.mood[0], 'Stressed', 'with places to hide it is no longer stressed'); assert.equal(W.cover.helps, false);
+});
 ok('(first 30) a lid decision only comes from an octopus really seen testing the lid, more than once in three days', () => {
   const D = 864e5, t0 = 40 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.dilemmaAt = t0; return t; };
   const a = mk(); omenThen(a, t0 + 1000); assert.ok(!a.dilemma && !a.omen, 'never seen at the lid: nothing to decide');

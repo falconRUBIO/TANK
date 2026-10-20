@@ -940,6 +940,21 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #card .wl b{font:500 11.5px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.5)}
 #card .hw{font:600 11px -apple-system,system-ui,sans-serif;font-style:normal;padding:2px 8px;border-radius:999px;white-space:nowrap}#card .hw.good{background:rgba(120,220,150,.22);color:#a8f0c0}#card .hw.ok{background:rgba(255,255,255,.14);color:#e6f0fa}#card .hw.warn{background:rgba(255,190,90,.22);color:#ffd28a}#card .hw.bad{background:rgba(255,110,110,.25);color:#ffb3b3}
 #sheet .frep{all:unset;cursor:pointer;font:600 12px -apple-system,system-ui,sans-serif;color:#8fd0ff;padding:2px 2px}
+/* Health v2: mood, getting along, hiding places, space, nature, wants */
+#sheet .htank{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 12px}
+#sheet .htank div{display:flex;flex-direction:column;align-items:center;gap:1px;padding:10px 6px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04))}
+#sheet .htank small{font:600 10.5px -apple-system,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(235,242,250,.6)}#sheet .htank b{font:700 18px -apple-system,system-ui,sans-serif;color:#fff}#sheet .htank span{font:500 11px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.7);text-align:center}
+#sheet .hcard .htop{all:unset;cursor:pointer;display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:12px;width:100%;box-sizing:border-box}
+#sheet .hcard .hwhy{margin:8px 0 2px;font:500 13.5px/1.35 -apple-system,system-ui,sans-serif;color:rgba(240,246,252,.9)}
+#sheet .hcard .hs{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}
+#sheet .hcard .hs h6{margin:0 0 6px;font:700 11px -apple-system,system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:rgba(235,242,250,.55)}
+#sheet .hcard .hl{display:flex;align-items:flex-start;gap:8px;padding:3px 0;font:400 13.5px/1.35 -apple-system,system-ui,sans-serif;color:#eef5fb}#sheet .hcard .hl i{font-style:normal;width:20px;text-align:center}
+#sheet .hcard .hl.bad span{color:#ffd0a0}#sheet .hcard .hl b{font-weight:650}
+#sheet .hcard .hp{margin:4px 0 0;font:400 13px/1.4 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.82)}#sheet .hcard .hp b{color:#fff}
+#sheet .hcard .hbar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#sheet .hcard .hbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#7fe0a0,#b9f3c9)}
+#sheet .hcard .hshop{all:unset;cursor:pointer;margin-top:8px;display:inline-block;padding:7px 14px;border-radius:999px;background:linear-gradient(180deg,#ffe08a,#f0b23e);color:#3b2504;font:600 13px -apple-system,system-ui,sans-serif}
+#sheet .hcard .htr{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}#sheet .hcard .htr span{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.12);font:600 11.5px -apple-system,system-ui,sans-serif;color:#e6f0fa}
+#sheet .hw.warn{white-space:nowrap}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

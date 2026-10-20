@@ -1200,6 +1200,27 @@ export function adoptAdvice(t, species) {
   return msgs.length ? msgs.join(' ') : null;
 }
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
+// How an animal is really doing, for the Health screen: its mood and why, who it gets along with and who troubles it (fish fight, and some
+// kinds do not mix), the hiding places it has (cover takes the sting out of a bully: socialOf softens the penalty as the tank fills with
+// plants, rocks and structures), how crowded the tank is for its kind, and its nature. All from the same rules that set its happiness.
+export function wellOf(t, f, now = Date.now()) {
+  const S = SOCIAL[f.species] ?? {}, nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name ?? null, live = t.fish.filter((x) => !x.dead && !x.away), lab = (sp) => (SPECIES_DEF[sp]?.label ?? sp).toLowerCase();
+  const friends = [], trouble = [], seen = new Set(), addF = (name, why) => { if (name && !friends.some((x) => x.name === name)) friends.push({ name, why }); };
+  if (f.mate) addF(nm(f.mate), 'its partner for life'); if (f.partner) addF(nm(f.partner), 'its partner'); if (f.pal) addF(nm(f.pal), 'best friends'); if (f.buddy) addF(nm(f.buddy), 'follows it about');
+  const timid = (S.size ?? 1) <= 1 && !S.bully;
+  for (const o of live) { if (o === f) continue; const O = SOCIAL[o.species]; if (!O) continue;
+    if (o.species === f.species && S.sameFoe) trouble.push({ name: o.name, kind: 'squabble', text: `Squabbles with ${o.name}: ${lab(f.species)}s want to be the only one of their kind` });
+    else if (O.bully && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'bully', text: `${o.name} the ${lab(o.species)} pushes it around` }); }
+    else if (O.predator && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'wary', text: `Keeps a wary eye on ${o.name} the ${lab(o.species)}` }); }
+    if (S.likes?.includes(o.species)) addF(o.name, `gets on with ${lab(o.species)}s`); }
+  if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a rivalry with ${nm(f.rival)}` });
+  const have = hides(t), need = 4, threatened = trouble.some((x) => x.kind === 'bully' || x.kind === 'wary'), cover = { have, need, wants: !!S.shy || threatened, helps: threatened && have < need };
+  const n = live.length, cap = capacity(t.level ?? 1), r = n / cap, crowd = { n, cap, word: r >= 0.9 ? 'Crowded' : r >= 0.65 ? 'Busy' : 'Roomy', minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'likes company: it feels safe in a group' : S.bully ? 'likes room to claim its own patch' : null };
+  const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully') && have < need, uneasy = (S.shy || S.pair) && r >= 0.9;
+  const mood = bad ? ['Unwell', 'bad', 'Run down. Food and clean water, then time to recover.'] : stressed ? ['Stressed', 'warn', `${trouble.find((x) => x.kind === 'bully').name} pushes it around and it has too few places to hide.`] : ns.mood === 'Hungry' ? ['Hungry', 'warn', 'Ready for a meal.'] : uneasy ? ['Uneasy', 'warn', 'The tank is crowded for a shy one.'] : (f.happy ?? 0.6) >= 0.75 ? ['Happy', 'good', friends.length ? `Settled, and close to ${friends[0].name}.` : 'Settled and content.'] : (f.happy ?? 0.6) < 0.4 ? ['Gloomy', 'warn', 'Something is missing. See below.'] : ['Content', 'ok', 'Doing well.'];
+  const wants = needsChecklist(t, f, now).filter((x) => !['food', 'play', 'cover', 'peace'].includes(x.k));
+  return { mood, friends, trouble, cover, crowd, nature: S.nature ?? '', kind: S.kind ?? '', traits: f.traits ?? [], wants };
+}
 // Each animal's own needs, as a checklist: what its kind and its nature ask for, and whether the tank gives it now. No two kinds ask for the same
 // things (a seahorse wants plants to hold and a partner, a neon a shoal, a gramma a cave to itself, an octopus a den and puzzles), and the
 // tank-wide jobs (water, glass) are left to Tank upkeep. Each need says what would meet it.
