@@ -19,7 +19,7 @@ const phone = async (u) => { const ctx = await br.newContext({ viewport: { width
 const until = async (p, fn, secs = 120, arg) => { for (let i = 0; i < secs * 2; i++) { const v = await p.evaluate(fn, arg).catch(() => null); if (v) return v; await p.waitForTimeout(500); } return null; };
 const boot = async (p) => { await p.goto(base + '/?tod=noon'); await until(p, () => window.__game?.state && window.__game.mode === 'net'); await p.waitForTimeout(1500); await p.evaluate(() => { document.querySelectorAll('#modal.on #mok').forEach((x) => x.click()); }); };
 const A = await phone(a), B = await phone(b), P = await phone(plain);
-const clear = (p) => p.evaluate(() => { for (let i = 0; i < 4; i++) { const t = document.querySelector('#modal.on h2')?.textContent ?? ''; if (!t || /READY|KEEP|RESET|JOIN/.test(t)) break; document.querySelector('#modal.on #mok')?.click(); } });      // (a daily gift, a welcome: out of the way)
+const clear = (p) => p.evaluate(() => { for (let i = 0; i < 4; i++) { const t = document.querySelector('#modal.on h2')?.textContent ?? ''; if (!t || /READY|KEEP|RESET|JOIN/i.test(t)) break; document.querySelector('#modal.on #mok')?.click(); } });      // (a daily gift, a welcome: out of the way)
 const tap = async (p, sel) => { await clear(p); await p.evaluate((sel) => document.querySelector(sel)?.click(), sel); };
 await Promise.all([boot(A), boot(B), boot(P)]);
 const settings = async (p) => { await p.evaluate(() => window.__ui.open('settings')); await p.waitForTimeout(500); return p.evaluate(() => !!document.getElementById('devtools')); };
@@ -55,12 +55,12 @@ ck('the nursery: the three tracked babies (explorer, plant-lover, social) and th
 s = await press('nurs2'); ck('Advance nursery to day 2', s.stage.nurseryDay === 2, s.stage); s = await press('nurs4'); ck('Advance nursery to day 4', s.stage.nurseryDay === 4, s.stage);
 await A.evaluate(() => window.__ui.open('tank')); await B.evaluate(() => window.__ui.open('tank'));
 s = await press('ready'); await A.evaluate(() => window.__ui.open('tank'));
-const ready = (p) => until(p, () => { const t = document.querySelector('#modal.on h2')?.textContent ?? ''; if (/READY/.test(t)) return true; if (t && !/KEEP/.test(t)) document.querySelector('#modal.on #mok')?.click(); return null; }, 120);
+const ready = (p) => until(p, () => { const t = document.querySelector('#modal.on h2')?.textContent ?? ''; if (/READY/i.test(t)) return true; if (t && !/KEEP/i.test(t)) document.querySelector('#modal.on #mok')?.click(); return null; }, 120);
 const [ra, rb] = await Promise.all([ready(A), ready(B)]); await A.screenshot({ path: `${OUT}/5_ready.png` });
 const why = async (p) => p.evaluate(() => ({ modal: document.querySelector('#modal.on h2')?.textContent ?? null, tab: window.__ui?.tab ?? null, nursery: !!window.__game.state.nursery, ready: window.__game.state.nursery ? window.__game.now() >= window.__game.state.nursery.readyAt : null }));
 ck("Ready to choose: THEY'RE READY comes up on both phones, the player's own screen", ra && rb && s.stage.stage === 'ready', { ra, rb, a: ra ? null : await why(A), b: rb ? null : await why(B) });
 // both choose at the same moment, different babies
-await Promise.all([tap(A, '#modal [data-i="0"]'), tap(B, '#modal [data-i="1"]')]); await Promise.all([until(A, () => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? '')), until(B, () => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? ''))]);
+await Promise.all([tap(A, '#modal [data-i="0"]'), tap(B, '#modal [data-i="1"]')]); await Promise.all([until(A, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? '')), until(B, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''))]);
 await A.screenshot({ path: `${OUT}/6_confirm.png` });
 await Promise.all([tap(A, '#mok'), tap(B, '#mok')]);
 const done = async (p) => until(p, () => { const s = window.__game.state; return s.nursery === null && s.lastDepart ? { kept: s.fish.filter((f) => f.bornHere).map((f) => f.id), dep: s.lastDepart.nursery, departed: window.__departed ?? null } : null; }, 120);
@@ -71,7 +71,7 @@ await A.waitForTimeout(1500); await A.screenshot({ path: `${OUT}/7_departing.png
 await B.reload(); await until(B, () => window.__game?.state); await B.waitForTimeout(3000);
 ck('after a reload it does not leave again, and still one baby', await B.evaluate(() => !window.__departed && !window.__nursery?.going && window.__game.state.fish.filter((f) => f.bornHere).length === 1));
 // reset, then back to the real tank
-await panel(A); A.once('dialog', () => {}); await tap(A, '#devreset'); await until(A, () => /RESET TEST/.test(document.querySelector('#modal.on h2')?.textContent ?? '')); await tap(A, '#mok');
+await panel(A); A.once('dialog', () => {}); await tap(A, '#devreset'); await until(A, () => /RESET TEST/i.test(document.querySelector('#modal.on h2')?.textContent ?? '')); await tap(A, '#mok');
 ck('Reset test aquarium: clean on both phones', !!(await until(B, () => window.__game.state.fish.length === 0 && !window.__game.state.nursery)));
 await A.evaluate(() => { localStorage.setItem('ourtank.devfast', '0'); localStorage.removeItem('ourtank.testAq'); location.reload(); }); await until(A, () => window.__game?.state && window.__game.mode === 'net');
 const realAfter = await call('/api/export', null, a.token);

@@ -110,13 +110,13 @@ export function runOnboarding() {
       };
     };
     const pasteScreen = (err = '') => {
-      const s = screen(`<h2>PASTE YOUR BACKUP</h2><p>Paste the backup text you copied from Settings. It starts with OURTANK.</p><textarea id="bt" rows="5" style="width:100%;box-sizing:border-box;border-radius:14px;padding:10px;background:#0c1626;color:#dbe8f7;border:1px solid #2a3b55;font:12px ui-monospace,Menlo,monospace" placeholder="OURTANK1:..."></textarea>
+      const s = screen(`<h2>Paste your backup</h2><p>Paste the backup text you copied from Settings. It starts with OURTANK.</p><textarea id="bt" rows="5" style="width:100%;box-sizing:border-box;border-radius:14px;padding:10px;background:#0c1626;color:#dbe8f7;border:1px solid #2a3b55;font:12px ui-monospace,Menlo,monospace" placeholder="OURTANK1:..."></textarea>
         <div class="err" id="er">${err}</div><button class="big" id="go">RESTORE</button><button class="lnk" id="bk">Back</button>`);
       s.querySelector('#bk').onclick = welcome;
       s.querySelector('#go').onclick = async () => { try { const data = await backupFromText(s.querySelector('#bt').value); profile('restore', null, data); } catch (e) { s.querySelector('#er').textContent = e.message || 'That did not work.'; } };
     };
     const recoverScreen = (err = '') => {
-      const s = screen(`<h2>WELCOME BACK</h2><p>Type your recovery key: the four words you saved when you started (an older key of letters and numbers works too).</p><input id="rk" class="rk" maxlength="60" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="word word word word">
+      const s = screen(`<h2>Welcome back</h2><p>Type your recovery key: the four words you saved when you started (an older key of letters and numbers works too).</p><input id="rk" class="rk" maxlength="60" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="word word word word">
         <div class="err" id="er">${err}</div><button class="big" id="go">SIGN IN</button><button class="lnk" id="bk">Back</button>`);
       s.querySelector('#bk').onclick = welcome;
       s.querySelector('#go').onclick = async () => {
@@ -132,7 +132,7 @@ export function runOnboarding() {
       };
     };
     const codeScreen = (t) => {
-      const s = screen(`<h2>YOUR TANK CODE</h2><div class="codebig">${t.code}</div><p>Share it with up to three friends. They can join in seconds.</p>
+      const s = screen(`<h2>Your tank code</h2><div class="codebig">${t.code}</div><p>Share it with up to three friends. They can join in seconds.</p>
         <div class="rkbox" id="rk"><small>YOUR RECOVERY KEY · tap to copy</small><b>${session?.recoveryKey ?? ''}</b><span>Four words that sign you back in on a new phone. Keep them somewhere safe.</span></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
       s.querySelector('#rk').onclick = async () => { const k = session?.recoveryKey; if (!k) return; const sm = s.querySelector('#rk small'); try { await navigator.clipboard.writeText(k); sm.textContent = 'KEY COPIED ✓ · keep it somewhere safe'; } catch { sm.textContent = 'SELECT THE KEY AND COPY IT'; } };
       s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
@@ -141,12 +141,12 @@ export function runOnboarding() {
     };
     let lastPreview = [];
     const fullScreen = (code, members = []) => {
-      const s = screen(`<h2>THIS TANK IS FULL</h2><p>This aquarium already has four caretakers.${code ? ' Are you one of them?' : ''}</p>${code ? '<button class="big" id="me">I\'M ALREADY IN THIS TANK</button>' : ''}<button class="big alt" id="bk">BACK</button>`);
+      const s = screen(`<h2>This tank is full</h2><p>This aquarium already has four caretakers.${code ? ' Are you one of them?' : ''}</p>${code ? '<button class="big" id="me">I\'M ALREADY IN THIS TANK</button>' : ''}<button class="big alt" id="bk">BACK</button>`);
       s.querySelector('#bk').onclick = welcome; if (code) s.querySelector('#me').onclick = () => claimScreen(code, members);
     };
     // Lost the saved sign-in (crash, reinstall)? Pick which caretaker you are and take the seat back with the tank code.
     const claimScreen = (code, members, err = '') => {
-      const s = screen(`<h2>WHO ARE YOU?</h2><p>Type your recovery key, then pick yourself.</p><div class="claim"></div><input id="ck" class="codein" autocomplete="off" spellcheck="false" placeholder="Your recovery key"><div class="err" id="er">${err}</div><button class="lnk" id="rk">Use a recovery key instead</button><button class="lnk" id="bk">Back</button>`);
+      const s = screen(`<h2>Who are you?</h2><p>Type your recovery key, then pick yourself.</p><div class="claim"></div><input id="ck" class="codein" autocomplete="off" spellcheck="false" placeholder="Your recovery key"><div class="err" id="er">${err}</div><button class="lnk" id="rk">Use a recovery key instead</button><button class="lnk" id="bk">Back</button>`);
       const host = s.querySelector('.claim');
       members.forEach((m) => { const b = document.createElement('button'); b.className = 'big alt'; const c = document.createElement('canvas'); drawAvatar(c, m.avatar); b.append(c, Object.assign(document.createElement('span'), { textContent: ' ' + m.name }));
         b.onclick = async () => { const key = s.querySelector('#ck').value.trim(); try { const r = await api('/api/claim', { code, slot: m.slot, key: key || undefined }); session = { token: r.token, userId: r.userId }; store(session); const me = await api('/api/me'); try { session.recoveryKey = (await api('/api/recovery', {})).key; store(session); } catch { /* optional */ } done({ mode: 'net', user: me.user, tank: me.tank }); } catch (e) { claimScreen(code, members, e.message); } };
@@ -154,7 +154,7 @@ export function runOnboarding() {
       s.querySelector('#rk').onclick = () => recoverScreen(); s.querySelector('#bk').onclick = welcome;
     };
     const joinScreen = (err, prefill = '') => {
-      const s = screen(`<h2>JOIN YOUR FRIENDS</h2><p>Enter your six-character code.</p><input id="cd" class="codein" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="······" value="${prefill}">
+      const s = screen(`<h2>Join your friends</h2><p>Enter your six-character code.</p><input id="cd" class="codein" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="······" value="${prefill}">
         <div class="err" id="er">${err === 'notfound' ? 'TANK NOT FOUND — Check the code and try again.' : ''}</div><div id="pv"></div><button class="big" id="go" disabled>FIND TANK</button><button class="lnk" id="bk">Back</button>`);
       const inp = s.querySelector('#cd'), go = s.querySelector('#go');
       inp.oninput = () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); go.disabled = !CODE.test(inp.value); };

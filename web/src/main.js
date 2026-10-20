@@ -79,7 +79,7 @@ const social = {
   chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
   share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tanklings', text: `Come help take care of our fish! Join my aquarium in Tanklings. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
-  regen: async () => { const yes = await ui.dialog({ title: 'MAKE A NEW CODE?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
+  regen: async () => { const yes = await ui.dialog({ title: 'Make a new code?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 
 let feedMode = false, cleanMode = false, feedDrops = 0, feedIdle = 0, rearrange = false, focus = null;
@@ -246,23 +246,23 @@ async function adopt(species) {
   const d = SPECIES_DEF[species], s = game.state;
   const life = LIFESPAN[species], lifeTxt = life ? ` Lives about ${life >= 365 ? `${Math.round(life / 30.4)} months` : `${Math.round(life / 30.4)} months`} in the tank.` : '', fod = factOfDay(species);
   const about = `${d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}${lifeTxt}${fod ? ` Did you know? ${fod.text}` : ''}`;      // what it is like, how long it lives, and one real fact
-  const names = d.count === 1 ? await ui.dialog({ title: `NAME YOUR ${d.label.toUpperCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
+  const names = d.count === 1 ? await ui.dialog({ title: `Name your ${d.label.toLowerCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
-  { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'GOOD TO KNOW', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
+  { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'Good to know', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
   let special = false; { const SP = specialOf(s, Date.now()); if (SP.species === species && species !== 'octopus') { const k = await ui.choose({ title: "TODAY'S SPECIAL", text: `This one carries ${MORPHS[SP.color].label.toLowerCase()}, hidden in its genes: paired with another carrier, their babies could be ${MORPHS[SP.color].label.toLowerCase()}. ${specialPrice(species, s) > SPECIES_DEF[species].price ? `It costs ${specialPrice(species, s)} shells instead of ${SPECIES_DEF[species].price}.` : 'Your goal has waited a week for one, so today it costs the usual price.'}`, options: [{ label: `The carrier · ${specialPrice(species, s)} 🐚`, value: 'special' }, { label: `A plain one · ${SPECIES_DEF[species].price} 🐚`, value: 'plain' }], cancel: 'Not now' }); if (!k) return; special = k === 'special'; if (special && s.shells < specialPrice(species, s)) { ui.toast(REASONS.NOT_ENOUGH_SHELLS); return; } } }      // today's special: a carrier of a rare color, or a plain one at the usual price
   let sex; if (species === 'seahorse') {      // a seahorse is a male or a female: the caretaker chooses (pairs are a male and a female; the male carries the young)
     const hs = s.fish.filter((f) => f.species === 'seahorse' && !f.dead), m = hs.filter((f) => sexOf(f) === 'm').length, w = hs.length - m;
-    sex = await ui.choose({ title: 'MALE OR FEMALE?', text: `Seahorses pair as a male and a female, and the male carries the young.${hs.length ? ` In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}.` : ''}`, options: [{ label: '♂ Male', value: 'm' }, { label: '♀ Female', value: 'f' }], cancel: 'Not now' });
+    sex = await ui.choose({ title: 'Male or female?', text: `Seahorses pair as a male and a female, and the male carries the young.${hs.length ? ` In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}.` : ''}`, options: [{ label: '♂ Male', value: 'm' }, { label: '♀ Female', value: 'f' }], cancel: 'Not now' });
     if (!sex) return;
   } else if (SPECIES_DEF[species]?.count === 1 && species !== 'octopus') {      // a single fish: if the tank has some of its kind, it can be chosen to make a pair (or left to chance)
     const same = s.fish.filter((f) => f.species === species && !f.dead), m = same.filter((f) => sexOf(f) === 'm').length, w = same.length - m;
-    if (same.length) { const need = m && !w ? 'f' : w && !m ? 'm' : null; const k = await ui.choose({ title: 'MALE OR FEMALE?', text: `In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}. A male and a female can have babies.`, options: [{ label: need === 'f' ? '♀ Female (makes a pair)' : '♀ Female', value: 'f' }, { label: need === 'm' ? '♂ Male (makes a pair)' : '♂ Male', value: 'm' }, { label: 'Either', value: 'any' }], cancel: 'Not now' }); if (!k) return; if (k !== 'any') sex = k; }
+    if (same.length) { const need = m && !w ? 'f' : w && !m ? 'm' : null; const k = await ui.choose({ title: 'Male or female?', text: `In your tank now: ${m} male${m === 1 ? '' : 's'}, ${w} female${w === 1 ? '' : 's'}. A male and a female can have babies.`, options: [{ label: need === 'f' ? '♀ Female (makes a pair)' : '♀ Female', value: 'f' }, { label: need === 'm' ? '♂ Male (makes a pair)' : '♂ Male', value: 'm' }, { label: 'Either', value: 'any' }], cancel: 'Not now' }); if (!k) return; if (k !== 'any') sex = k; }
   }
-  let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'WHO IS IT FOR?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
+  let to; { const others = (game.members ?? []).filter((m) => m.id !== game.you?.userId); if (game.shared && others.length) { const pick = await ui.choose({ title: 'Who is it for?', text: 'A fish can be a gift. The friend you give it to becomes its first caretaker.', options: [{ label: 'For the tank', value: null }, ...others.map((m) => ({ label: `A gift for ${m.name}`, value: m.id }))], cancel: 'Not now' }); if (pick === undefined) return; to = pick ?? undefined; } }
   let note, surprise; if (to) { const who = game.members?.find((m) => m.id === to)?.name ?? 'them';
-    surprise = await ui.choose({ title: 'KEEP IT A SURPRISE?', text: `Wrapped, ${who} only finds out what it is when they open it in the tank.`, options: [{ label: '🎁 Keep it a surprise', value: true }, { label: `Tell ${who} what it is`, value: false }], cancel: 'Not now' }); if (surprise === undefined) return;
-    note = await ui.dialog({ title: 'ADD A NOTE', text: `A few words to go with it, for ${who} to read when it arrives. You can leave it blank.`, input: { value: '', placeholder: 'Thought you would love this one!' }, ok: 'Send the gift', cancel: 'Skip the note' }); }
+    surprise = await ui.choose({ title: 'Keep it a surprise?', text: `Wrapped, ${who} only finds out what it is when they open it in the tank.`, options: [{ label: '🎁 Keep it a surprise', value: true }, { label: `Tell ${who} what it is`, value: false }], cancel: 'Not now' }); if (surprise === undefined) return;
+    note = await ui.dialog({ title: 'Add a note', text: `A few words to go with it, for ${who} to read when it arrives. You can leave it blank.`, input: { value: '', placeholder: 'Thought you would love this one!' }, ok: 'Send the gift', cancel: 'Skip the note' }); }
   const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}), ...(special ? { special: true } : {}) });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
@@ -310,7 +310,7 @@ async function hideTreat() {
   if (!o) { ui.toast('An octopus loves this game. Get one first.'); return; }
   if (s.decor.length < 2) { ui.toast('Put at least two decorations in the tank to hide things in.'); return; }
   if (o.seek) { ui.toast(`${o.name} is still searching`); return; }
-  const where = await ui.choose({ title: 'HIDE A TREAT', text: `Pick a place. ${o.name} remembers where you hide things, so a new place fools it. ${HIDE_COST} 🐚`, options: s.decor.map((d) => ({ label: hideLabel(s, d.id).replace(/^\w/, (c) => c.toUpperCase()), value: d.id })) });
+  const where = await ui.choose({ title: 'Hide a treat', text: `Pick a place. ${o.name} remembers where you hide things, so a new place fools it. ${HIDE_COST} 🐚`, options: s.decor.map((d) => ({ label: hideLabel(s, d.id).replace(/^\w/, (c) => c.toUpperCase()), value: d.id })) });
   if (!where) return;
   const r = await game.dispatch({ t: 'hide', id: o.id, spot: where }); if (!r.ok) return fail(r);
   if (r.busy) { ui.toast(`${o.name} is still searching`); return; }
@@ -360,7 +360,7 @@ function comfortBlock(rec) {
   return `<div class="cmf">Comfort: <b>${c.label}</b>${c.tips[0] ? `<small>${esc(c.tips[0])}</small>` : ''}${w ? `<small>✨ ${esc(w.text)}</small>` : ''}</div>${notes ? `<div class="notes">${notes}</div>` : ''}`;
 }
 async function renameFish(f) {
-  const nm = await ui.dialog({ title: 'RENAME', input: { value: f.name }, ok: 'Save', cancel: 'Cancel' }); if (!nm) return;
+  const nm = await ui.dialog({ title: 'Rename', input: { value: f.name }, ok: 'Save', cancel: 'Cancel' }); if (!nm) return;
   const r = await game.dispatch({ t: 'nameFish', id: f.fid, name: nm }); if (!r.ok) fail(r); else showCard(f);
 }
 
@@ -443,8 +443,8 @@ async function openBottle() {
 window.__greetV = (f) => greetVisitor(f);
 async function greetVisitor(f) {
   { const v = game.state.visitor; if (v?.id === f.fid && v.stay && !v.decided) { const label = SPECIES_DEF[v.species]?.label ?? 'visitor', n = game.state.visitMem?.[v.species]?.n ?? 3;      // a visitor that keeps coming back: an optional choice, no hurry, the first answer decides
-    const keep = await ui.choose({ title: 'IT WANTS TO STAY', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, options: [{ label: 'Let it stay', value: 'stay' }, { label: 'Let it wander', value: 'wander' }], cancel: 'Not now' }); if (!keep) return;      /* (closing it decides nothing) */ const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: keep === 'stay' });
-    if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); const nm = await ui.dialog({ title: 'NAME IT', text: `The ${label} lives here now. What will you call it?`, input: { value: label.split(' ').pop(), max: 14 }, ok: 'Name it', cancel: 'Later' }); if (nm && r2.fish) await game.dispatch({ t: 'nameFish', id: r2.fish, name: nm }); } return; } }      /* (it came as a guest: whoever let it stay names it) */
+    const keep = await ui.choose({ title: 'It wants to stay', text: `This ${label} has come ${n} times now. Looks like it wants to stay.`, options: [{ label: 'Let it stay', value: 'stay' }, { label: 'Let it wander', value: 'wander' }], cancel: 'Not now' }); if (!keep) return;      /* (closing it decides nothing) */ const r2 = await game.dispatch({ t: 'visitorStay', id: v.id, keep: keep === 'stay' });
+    if (!r2.ok) return fail(r2); if (r2.applied && r2.keep) { sfx('place'); const nm = await ui.dialog({ title: 'Name it', text: `The ${label} lives here now. What will you call it?`, input: { value: label.split(' ').pop(), max: 14 }, ok: 'Name it', cancel: 'Later' }); if (nm && r2.fish) await game.dispatch({ t: 'nameFish', id: r2.fish, name: nm }); } return; } }      /* (it came as a guest: whoever let it stay names it) */
   const r = await game.dispatch({ t: 'greet', id: f.fid }); if (!r.ok) return fail(r); if (!r.applied) return;
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }
@@ -576,7 +576,7 @@ function showFamily(rec) {
   const t = game.state, p = rec.parents ?? [], gp = p.flatMap((x) => (x.parents ?? []).map((y) => y.name)), kids = childrenOf(t, rec.id), lines = [];
   lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the first fish'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
   lines.push(kids.length ? `Children: ${kids.map((k) => k.name + (k.alive ? '' : ' (passed away)')).join(', ')}` : 'Children: none yet');
-  ui.dialog({ title: `${rec.name.toUpperCase()}'S FAMILY`, lines, ok: 'Close' });
+  ui.dialog({ title: `${rec.name}'s family`, lines, ok: 'Close' });
 }
 // an octopus's chips are read from its temperament, strongest first: what you see on the card is what it does in the tank
 function octoChips(m) { const c = [[m.cur, 'Curious'], [m.bold, 'Bold'], [1 - m.bold, 'Shy'], [m.soc, 'Social'], [1 - m.soc, 'Loner'], [m.tidy, 'Tidy']].filter(([v]) => v >= 0.62).sort((a, b) => b[0] - a[0]).map(([, l]) => l); return c.length ? c.slice(0, 2) : ['Easygoing']; }
@@ -709,7 +709,7 @@ let fryAsked = null;
 async function fryOfferAsk() {
   const O = game.state?.fryOffer; if (!O || fryAsked === O.id || document.hidden || Date.now() > O.until) return; fryAsked = O.id;
   const first = game.state.fish.find((f) => f.id === O.first)?.name ?? 'the baby';
-  const k = await ui.choose({ moment: true, title: 'ONE MORE LITTLE ONE', text: `Most of the larvae drifted off, but one more is still by the eggs, close to ${first}. There is room for it. Keep it too?`, options: [{ label: 'Keep it too', value: 'keep' }, { label: 'Let it drift off', value: 'go' }], cancel: 'Not now' });
+  const k = await ui.choose({ moment: true, title: 'One more little one', text: `Most of the larvae drifted off, but one more is still by the eggs, close to ${first}. There is room for it. Keep it too?`, options: [{ label: 'Keep it too', value: 'keep' }, { label: 'Let it drift off', value: 'go' }], cancel: 'Not now' });
   if (!k) { fryAsked = null; return; } const r = await game.dispatch({ t: 'keepFry', id: O.id, keep: k === 'keep' }); if (!r.ok) return r.reason === 'NOT_FOUND' ? null : fail(r);
   if (r.keep && r.fish) setTimeout(() => { const tw = fishes.byId.get(r.fish), sib = fishes.byId.get(O.first); if (tw && sib) { tw.pos.copy(sib.pos).add(new THREE.Vector3(0.4, 0.1, 0.2)); fishes.burst(tw.pos); } sfx('arrive'); spotlightFish(r.fish, 4000, 300); setTimeout(() => nameBaby(r.fish), 4600); }, 400);
 }
@@ -739,7 +739,7 @@ const eggBabies = new Set(); let glowT = 0;
 // you were there when it hatched: name the baby (a name is already chosen; keep it or type another)
 async function nameBaby(id) {
   const f = game.state.fish.find((x) => x.id === id); if (!f || f.named || play || placing || document.hidden) return;
-  window.__nameAt = Date.now(); const nm = await ui.dialog({ moment: true, title: 'NAME YOUR BABY', text: `The new little one is called ${f.name} for now. Keep it, or give it a name of your own.`, input: { value: f.name }, ok: 'Name it', cancel: `Keep ${f.name}` });
+  window.__nameAt = Date.now(); const nm = await ui.dialog({ moment: true, title: 'Name your baby', text: `The new little one is called ${f.name} for now. Keep it, or give it a name of your own.`, input: { value: f.name }, ok: 'Name it', cancel: `Keep ${f.name}` });
   if (!nm || nm === f.name || game.state.fish.find((x) => x.id === id)?.named) return; const r = await game.dispatch({ t: 'nameFish', id, name: nm }); if (!r.ok) fail(r); else ui.toast(`Welcome, ${nm}!`, 2600);
 }
 // a neglected egg the octopus has its eye on: the day before, it comes to sniff at it now and then (look after the tank and it loses interest)
@@ -950,7 +950,7 @@ async function openGiftBag(b) {
   setTimeout(out, 1100);
   const rec = () => game.state.fish.find((x) => x.id === ids[0]), d = SPECIES_DEF[rec()?.species] ?? { label: 'fish' };
   setTimeout(async () => { const f = rec(); if (!f) return; const many = ids.length > 1;
-    const ok = await ui.dialog({ title: `A GIFT FROM ${String(b.gift.from).toUpperCase()}`, text: `${b.gift.note ? `“${b.gift.note}”\n\n` : ''}${many ? `${ids.length} ${d.label.toLowerCase()}s, for you to look after.` : `Meet ${f.name}, a ${d.label.toLowerCase()}, for you to look after.`}`, ok: 'Say thanks', cancel: 'Later' });
+    const ok = await ui.dialog({ title: `A gift from ${String(b.gift.from)}`, text: `${b.gift.note ? `“${b.gift.note}”\n\n` : ''}${many ? `${ids.length} ${d.label.toLowerCase()}s, for you to look after.` : `Meet ${f.name}, a ${d.label.toLowerCase()}, for you to look after.`}`, ok: 'Say thanks', cancel: 'Later' });
     if (ok) { const t = await game.dispatch({ t: 'thankGift', id: ids[0] }); if (t.ok) ui.toast(`${b.gift.from} will know you loved it.`, 2600); } }, 6800);
 }
 function eggHit(ev) { const ray = rayFrom(ev).ray; let best = null, bd = 1.3; for (const egg of eggSprites.values()) { const d = ray.distanceToPoint(egg.group.position); if (d < bd) { bd = d; best = egg; } } return best; }
@@ -1009,7 +1009,7 @@ function showCard(f) {
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   // its color genes, plainly, and who it could be paired with (and what their babies might look like)
   const geneLine = (() => { const live = game.state.fish.find((x) => x.id === rec.id); if (!live || live.dead) return ''; const mo = morphOf(live), car = carriesOf(live), out = [];
-    if (mo) out.push(`<b>${esc(MORPHS[mo].label)}</b>, a rare color with two copies of the gene.`); if (car.length) out.push(`Carries ${car.map((x) => MORPHS[x].label.toLowerCase()).join(' and ')} (hidden: a baby needs a copy from each parent).`);
+    if (mo) out.push(`<b>${esc(MORPHS[mo].label)}</b>, a rare color with two copies of the gene.`); if (car.length) out.push(`Carries a hidden ${car.map((x) => MORPHS[x].label.toLowerCase()).join(' and ')} color. It only shows in a baby that gets it from both parents.`);
     const adult = stageOf(live) === 'adult', mates = adult && live.species !== 'seahorse' ? game.state.fish.filter((o) => o !== live && !o.dead && o.species === live.species && stageOf(o) === 'adult' && (isOctoF(live) ? !o.partner && !live.partner : sexOf(o) !== sexOf(live))) : [];
     const btns = mates.slice(0, 3).map((o) => { const od = Object.entries(morphOdds(live, o, skyOf(Date.now()).event?.key === 'fullmoon')).map(([k, v]) => `${Math.round(v * 100)}% ${MORPHS[k].label.toLowerCase()}`).join(', '); return `<button class="pair" data-pair="${esc(o.id)}">Pair with ${esc(o.name)}${od ? ` <small>${od}</small>` : ''}</button>`; }).join('');
     const send = game.live && !canSend(game.state, live, game.you?.userId ?? 'me', Date.now()) ? `<button class="pair send" data-send="1">Send ${esc(live.name)} to a friend's tank</button>` : '';      // (bred here: it can go and grow up in a friend's tank)
@@ -1077,7 +1077,7 @@ function showCard(f) {
     <div class="tpane">${{ over, pers, stats, jour }[tab] ?? over}</div>`;
   card.querySelectorAll('[data-tip]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.tip, 3200); }; }); if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
   card.querySelectorAll('[data-send]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap');
-    const code = await ui.dialog({ title: `SEND ${f.name.toUpperCase()}?`, text: `${f.name} will leave this tank for good and grow up in your friend's, with its colors and its family's names. Ask them for their tank's gift code: it is at the top of their Field Guide.`, input: { value: '', placeholder: 'Their gift code' }, ok: 'Send', cancel: 'Keep it here' }); if (!code) return;
+    const code = await ui.dialog({ title: `Send ${f.name}?`, text: `${f.name} will leave this tank for good and grow up in your friend's, with its colors and its family's names. Ask them for their tank's gift code: it is at the top of their Field Guide.`, input: { value: '', placeholder: 'Their gift code' }, ok: 'Send', cancel: 'Keep it here' }); if (!code) return;
     try { const r = await api('/api/send', { fish: f.fid, code }); haptic(20); sfx('bubble'); ui.toast(`${f.name} is on the way to ${r.toName}.`, 4200); setFocus(null); } catch (err) { ui.toast(err.offline ? 'Sending needs the tank to be online.' : ({ BAD_CODE: 'No tank has that code.', SAME_TANK: 'That is your own tank.', TANK_FULL: 'Their tank is full.', TOO_SOON: 'One a day: try again tomorrow.', NOT_YOURS: 'Only its own caretaker can send it.', BUSY: 'Not while it is looking after young.', NOT_BRED_HERE: 'Only an animal bred in this tank can be sent (one that came from another tank stays).', LAST_FISH: 'It is the last one in your tank.', CANT_SEND: 'This one cannot be sent.' })[err.code] ?? 'That did not work.', 3600); } }; });
   card.querySelectorAll('[data-pair]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap'); const r = await game.dispatch({ t: 'matchmake', a: f.fid, b: b.dataset.pair }); if (!r.ok) return fail(r); haptic(14); ui.toast('Brought together. Give them time.', 3000); showCard(f); }; });
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
@@ -1085,7 +1085,7 @@ function showCard(f) {
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
-  if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'LET IT GO?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
+  if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'Let it go?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) f.poseHz = 60;      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
@@ -1170,7 +1170,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'WELCOME TO YOUR TANK', text: 'Every tank starts with an octopus. Choose the color of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Every tank starts with an octopus. Choose the color of yours, then give it a name. Everyone in the tank will look after it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
@@ -1179,20 +1179,20 @@ const tut = (() => {
         let met = navigator.webdriver && !/[?&]hello=1/.test(location.search); try { met ||= localStorage.getItem('ourtank.met') === '1'; } catch { /* none */ }      // (automated checks skip it unless they ask for it)
         if (!met) { ui.hideCoach(); ui.pulse(null); const nm = s.fish[0]?.name ?? 'Your octopus';
           await new Promise((r) => setTimeout(r, 9000));
-          ui.showCoach({ title: 'SAY HELLO', text: `Touch and hold the glass. ${nm} will come over to see who you are.`, skip: skip });
+          ui.showCoach({ title: 'Say hello', text: `Touch and hold the glass. ${nm} will come over to see who you are.`, skip: skip });
           const t0 = Date.now(); let held = 0; await new Promise((res) => { const iv = setInterval(() => { held = lure?.on ? held + 0.3 : 0; if (held >= 1.5 || Date.now() - t0 > 40000 || (game.state?.flags.tut ?? 0) !== 1) { clearInterval(iv); res(); } }, 300); });
           if (held >= 1.5) { ui.hideCoach(); ui.toast(`${nm} came to see you.`, 2600); await new Promise((r) => setTimeout(r, 3200)); }
           try { localStorage.setItem('ourtank.met', '1'); } catch { /* none */ }
           if ((game.state?.flags.tut ?? 0) !== 1) return; }
-        ui.showCoach({ title: 'TIME FOR A SNACK', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then Feed on ${s.fish[0]?.species === 'octopus' ? 'its card: a crab drops in for it' : 'their card: the food drops in'}.`, skip: skip }); ui.pulse('care');
+        ui.showCoach({ title: 'Time for a snack', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then Feed on ${s.fish[0]?.species === 'octopus' ? 'its card: a crab drops in for it' : 'their card: the food drops in'}.`, skip: skip }); ui.pulse('care');
       } else if (step === 2) {
         ui.pulse(null);
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Crew tab so three friends can join.` : 'Up to four friends can care for one tank. Tap Invite in the Crew tab and they join with a six-character code.';
-        ui.showCoach({ title: 'BETTER TOGETHER', text: share, button: 'Got it', onButton: () => set(3), skip: skip });
+        ui.showCoach({ title: 'Better together', text: share, button: 'Got it', onButton: () => set(3), skip: skip });
       } else if (step === 3) {
-        ui.showCoach({ title: 'A GIFT FOR THE TANK', text: 'You have a starter pack of free items. Open the Shop, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
+        ui.showCoach({ title: 'A gift for the tank', text: 'You have a starter pack of free items. Open the Shop, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
-        ui.pulse(null); ui.showCoach({ title: 'YOU ARE ALL SET', text: 'Nicely done. Care for your fish and tap one any time to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'COMING UP', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
+        ui.pulse(null); ui.showCoach({ title: 'You are all set', text: 'Nicely done. Care for your fish and tap one any time to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'Coming up', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
       }
     } finally { busy = false; setTimeout(run, 0); }
   }
@@ -1224,13 +1224,13 @@ async function openNursery(auto = false) {
   const N = game.state?.nursery; if (!N || $('modal').classList.contains('on')) { if (auto && N && readyShown === N.id) readyShown = null; return; }      // (something else was on screen: the choice comes up again on the next check)
   const day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }), who = (c) => `${c.name} · ${c.sex === 'm' ? 'a little male' : 'a little female'} · ${(c.traits ?? []).join(', ').toLowerCase() || 'still finding its way'}${ROLE_LINE[babyRole(N, c)] ? ' · ' + ROLE_LINE[babyRole(N, c)] : ''}`;
   const parents = `Born ${day(N.born)} to ${N.pa?.name ?? 'their father'} and ${N.ma?.name ?? 'their mother'}.`;
-  if (game.now() < N.readyAt) { const d = Math.min(5, Math.floor((game.now() - N.born) / 864e5) + 1); return ui.dialog({ title: 'THE NURSERY', text: `${N.n} baby seahorses, day ${d} of 5. ${parents} ${N.fed ? `They have been fed ${N.fed === 1 ? 'once' : N.fed + ' times'} so far, and catch the tiniest bits themselves. ` : 'They catch the tiniest bits of food themselves. '}Three of them you can already tell apart:`, lines: N.cands.map(who), ok: 'Lovely' }); }
+  if (game.now() < N.readyAt) { const d = Math.min(5, Math.floor((game.now() - N.born) / 864e5) + 1); return ui.dialog({ title: 'The nursery', text: `${N.n} baby seahorses, day ${d} of 5. ${parents} ${N.fed ? `They have been fed ${N.fed === 1 ? 'once' : N.fed + ' times'} so far, and catch the tiniest bits themselves. ` : 'They catch the tiniest bits of food themselves. '}Three of them you can already tell apart:`, lines: N.cands.map(who), ok: 'Lovely' }); }
   const pick = await ui.choose({ title: "THEY'RE READY", text: `Your baby seahorses are ready to leave the nursery. Choose one to stay in your aquarium. ${parents}`, options: N.cands.map((c) => ({ label: who(c), value: c.id })), cancel: 'Not yet' });
   if (!pick) return; const c = N.cands.find((x) => x.id === pick); if (!c) return;
-  const sure = await ui.dialog({ title: `KEEP ${c.name.toUpperCase()}?`, text: `${c.name} will stay in your aquarium for good. The other babies will swim off to new homes.`, ok: `Keep ${c.name}`, cancel: 'Go back' });
+  const sure = await ui.dialog({ title: `Keep ${c.name}?`, text: `${c.name} will stay in your aquarium for good. The other babies will swim off to new homes.`, ok: `Keep ${c.name}`, cancel: 'Go back' });
   if (!sure) return openNursery();
   const r = await game.dispatch({ t: 'keepBaby', nursery: N.id, baby: c.id });
-  if (!r.ok) { if (r.reason === 'TANK_FULL') ui.dialog({ title: 'NO ROOM YET', text: 'The tank is full. When there is room for one more, choose then: the babies will wait.', ok: 'OK' }); else if (r.reason === 'NOT_FOUND') ui.toast('Someone has already chosen a baby to keep.'); else fail(r); }
+  if (!r.ok) { if (r.reason === 'TANK_FULL') ui.dialog({ title: 'No room yet', text: 'The tank is full. When there is room for one more, choose then: the babies will wait.', ok: 'OK' }); else if (r.reason === 'NOT_FOUND') ui.toast('Someone has already chosen a baby to keep.'); else fail(r); }
 }
 function nurseryCheck() {      // the moment they are ready, once a session: the choice comes up by itself
   const N = game.state?.nursery; if (!N || game.now() < N.readyAt || readyShown === N.id || ui?.tab !== 'tank' || $('modal').classList.contains('on')) return;
@@ -1252,7 +1252,7 @@ async function offerGift() {
   if (giftBusy) return; giftBusy = true; giftOffered = Date.now();
   try {
     const n = game.shared ? game.members?.length ?? 1 : 1;
-    await ui.celebrate({ title: 'A GIFT FOR YOU', amount: DAILY_GIFT, why: n > 1 ? `A small gift each day for the tank, for whoever comes by first. Thank you for looking after it.` : 'A small gift each day for looking after the tank. Spend it on fish and decorations.', ok: 'Claim' });
+    await ui.celebrate({ title: 'A gift for you', amount: DAILY_GIFT, why: n > 1 ? `A small gift each day for the tank, for whoever comes by first. Thank you for looking after it.` : 'A small gift each day for looking after the tank. Spend it on fish and decorations.', ok: 'Claim' });
     const r = await game.dispatch({ t: 'dailyGift', tz: -new Date().getTimezoneOffset() }); game.giftTried = Date.now();
     if (r.ok && (r.delta ?? 0) > 0) { sfx('reward'); moment({ shells: r.delta, from: [window.innerWidth / 2, window.innerHeight * 0.45] }); } else if (r.ok) ui?.toast("Today's gift is already collected", 3000); else fail(r);
     ui?.updateHeader();
@@ -1295,15 +1295,15 @@ const lifeSeen = (() => { try { return new Set(JSON.parse(localStorage.getItem('
 function lifeCheck() {
   const s = game.state; if (!s || lifeBusy || document.hidden || (s.flags?.tut ?? 0) < 5 || (window.__quietUntil && Date.now() < window.__quietUntil)) return;
   const name = (id) => s.fish.find((f) => f.id === id)?.name, days = (at) => Math.max(1, Math.round((at - Date.now()) / 864e5)), out = [];
-  for (const f of s.fish) if (f.preg && !f.dead && !f.preg.ready) out.push({ key: 'p' + f.id + ':' + f.preg.start, fish: f.id, title: `${f.name.toUpperCase()} IS EXPECTING`, why: `Seahorse fathers carry the young. ${f.name}${name(f.preg.mother) ? ` and ${name(f.preg.mother)}` : ''}'s babies come in about ${days(f.preg.due)} day${days(f.preg.due) > 1 ? 's' : ''}. Be there when they are born.` });
+  for (const f of s.fish) if (f.preg && !f.dead && !f.preg.ready) out.push({ key: 'p' + f.id + ':' + f.preg.start, fish: f.id, title: `${f.name} is expecting`, why: `Seahorse fathers carry the young. ${f.name}${name(f.preg.mother) ? ` and ${name(f.preg.mother)}` : ''}'s babies come in about ${days(f.preg.due)} day${days(f.preg.due) > 1 ? 's' : ''}. Be there when they are born.` });
   for (const e of s.eggs ?? []) if (!e.ready) { const a = name(e.a), b = name(e.b), octo = e.species === 'octopus'; out.push({ key: 'e' + e.id, fish: octo ? e.a : e.guard ?? e.a, title: octo ? `${(a ?? 'SHE').toUpperCase()} LAID EGGS` : `${a && b ? `${a.toUpperCase()} AND ${b.toUpperCase()}` : 'THE FISH'} HAVE EGGS`, why: octo ? `Strings of tiny eggs hang from the roof of her den. She will guard them for about ${days(e.hatchAt)} days; be there when they hatch.` : `They hatch in about ${days(e.hatchAt)} day${days(e.hatchAt) > 1 ? 's' : ''}, and wait for someone to watch.` }); }
   // the other big things, told the same way: babies born, a baby grown up, the octopus out exploring or back (a very sick animal and a death have their own cards: sickCheck, mournCheck)
   const recent = (at) => at && Date.now() - at < 3 * 864e5;
   for (const f of s.fish) { if (f.dead) continue; const bred = f.parents?.length || f.bornHere;
-    if (bred && recent(f.hatched ?? f.born) && stageOf(f) === 'baby') out.push({ key: 'b' + (f.preg?.start ?? '') + f.id, fish: f.id, icon: '🐣', title: `${f.name.toUpperCase()} WAS BORN`, why: `A new ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} in your tank${f.parents?.length ? `, child of ${f.parents.map((p) => p.name).join(' and ')}` : ''}. How you raise it decides who it becomes.` });
-    if (bred && stageOf(f) === 'adult' && recent(f.born + ADULT_DAYS * 864e5)) out.push({ key: 'a' + f.id, fish: f.id, icon: '🌟', title: `${f.name.toUpperCase()} IS ALL GROWN UP`, why: f.raisedAs ? `Raised ${f.raisedAs.toLowerCase()}, the way you brought it up.` : 'From an egg to a grown fish, in your tank.' });
-    if (f.species === 'octopus' && f.away && !f.away.inTank) out.push({ key: 'o' + f.id + ':' + (f.away.at ?? ''), fish: null, icon: '🐙', title: `${f.name.toUpperCase()} SNUCK OUT`, why: `${f.name} climbed out over the top of the tank and is off exploring. Octopuses come back when they are ready: keep an eye on the lid.`, look: 'OK' }); }
-  for (const h of (s.adv?.hist ?? []).filter((x) => x.fish && x.end && recent(x.end)).slice(-1)) { const o = s.fish.find((f) => f.id === h.fish && !f.dead && !f.away); if (o) out.push({ key: 'r' + h.id, fish: o.id, icon: '🐙', title: `${o.name.toUpperCase()} IS BACK`, why: `${o.name} came home from its adventure.${(s.keeps ?? []).some((k) => k.adv === h.id) ? ' It brought something back: look on the sand by its den.' : ''}` }); }
+    if (bred && recent(f.hatched ?? f.born) && stageOf(f) === 'baby') out.push({ key: 'b' + (f.preg?.start ?? '') + f.id, fish: f.id, icon: '🐣', title: `${f.name} was born`, why: `A new ${(SPECIES_DEF[f.species]?.label ?? 'fish').toLowerCase()} in your tank${f.parents?.length ? `, child of ${f.parents.map((p) => p.name).join(' and ')}` : ''}. How you raise it decides who it becomes.` });
+    if (bred && stageOf(f) === 'adult' && recent(f.born + ADULT_DAYS * 864e5)) out.push({ key: 'a' + f.id, fish: f.id, icon: '🌟', title: `${f.name} is all grown up`, why: f.raisedAs ? `Raised ${f.raisedAs.toLowerCase()}, the way you brought it up.` : 'From an egg to a grown fish, in your tank.' });
+    if (f.species === 'octopus' && f.away && !f.away.inTank) out.push({ key: 'o' + f.id + ':' + (f.away.at ?? ''), fish: null, icon: '🐙', title: `${f.name} snuck out`, why: `${f.name} climbed out over the top of the tank and is off exploring. Octopuses come back when they are ready: keep an eye on the lid.`, look: 'OK' }); }
+  for (const h of (s.adv?.hist ?? []).filter((x) => x.fish && x.end && recent(x.end)).slice(-1)) { const o = s.fish.find((f) => f.id === h.fish && !f.dead && !f.away); if (o) out.push({ key: 'r' + h.id, fish: o.id, icon: '🐙', title: `${o.name} is back`, why: `${o.name} came home from its adventure.${(s.keeps ?? []).some((k) => k.adv === h.id) ? ' It brought something back: look on the sand by its den.' : ''}` }); }
   const n = out.find((x) => !lifeSeen.has(x.key)); if (!n) return;
   lifeSeen.add(n.key); try { localStorage.setItem('ourtank.lifeSeen', JSON.stringify([...lifeSeen].slice(-60))); } catch { /* storage unavailable */ }
   const f = n.fish ? fishes.byId.get(n.fish) : null; let img = null; try { img = f && !f.dead && f.group.visible ? shootAt({ at: f.pos.clone(), r: f.radius, who: [f.group] }) : null; } catch { /* a photo is a nicety */ }
@@ -1326,7 +1326,7 @@ setInterval(() => { const s = game.state, O = s?.omen; if (!O || document.hidden
   else if (O.kind === 'sick' && x) { go(x, x.pos.x, 0.9, -2.4, 10); x.vigor = 0.6; setTimeout(() => { if (x) x.vigor = 1; }, 8000); }
   else if (O.kind === 'den' && den) { go(x, den.x + 0.4, 0.9, den.z, 8); go(y, den.x - 0.4, 0.9, den.z, 8); } }, 9000);
 game.on('goalStep', () => { haptic(16); sfx('reward'); ui?.updateHeader(); const q = $('bell'); q?.classList.add('pulse'); setTimeout(() => q?.classList.remove('pulse'), 1600); });
-game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'GOAL COMPLETE', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
+game.on('goalDone', async (id) => { const d = (game.state.goalsDone ?? []).find((x) => x.id === id) ?? game.state.goalsDone?.at(-1); moment({ at: new THREE.Vector3(0, 5, 1.2), haptics: 30 }); await ui.celebrate({ title: 'Goal complete', amount: GOAL_SHELLS, why: `${d?.title ?? 'Goal'} done.${d?.prize ? ` The ${d.prize} is yours: find it under Shop, Style.` : ''}`, ok: 'Choose the next goal', icon: '🎯' }); ui.goalSheet(); });
 game.on('puzzle', (id) => { const f = fishes.byId.get(id); moment({ at: f?.pos, haptics: 16 }); if (f) { f.flush = 1; spotlightFish(id, 3600, 1200); } });
 game.on('together', () => { moment(); for (const f of fishes.list) if (!f.dead) { fishes.burst(f.pos); f.vigor = Math.max(f.vigor ?? 1, 1.25); f.flush = Math.max(f.flush ?? 0, 0.5); } ui?.toast('Fed together! The fish are delighted.', 3200); });
 // a chapter reached during the first tips waits until they are done, then shows on its own: one thing at a time on a new player's screen
@@ -1691,7 +1691,7 @@ async function welcomeBack() {
 async function offerNudges() {
   try { if (localStorage.getItem('ourtank.nudgeAsked')) return; localStorage.setItem('ourtank.nudgeAsked', '1'); } catch { /* ask next time */ }
   let st; try { st = await pushState(); } catch { return; } if (st !== 'off') { if (st === 'install') ui.toast('Add the game to your Home Screen to get gentle nudges', 5200); return; }
-  const yes = await ui.dialog({ title: 'A GENTLE NUDGE?', text: 'At most a couple a day, and only when something really happened: an egg hatched, a rare visitor, a puzzle solved. Never a reminder to come back.', ok: 'Yes, nudge me', cancel: 'Not now' });
+  const yes = await ui.dialog({ title: 'A gentle nudge?', text: 'At most a couple a day, and only when something really happened: an egg hatched, a rare visitor, a puzzle solved. Never a reminder to come back.', ok: 'Yes, nudge me', cancel: 'Not now' });
   if (yes) { try { const r = await pushToggle(true); ui.toast(r === 'on' ? 'Nudges are on' : 'Nudges are blocked in your browser settings'); } catch { ui.toast('Could not turn nudges on'); } }
 }
 // the end of a day: once the tank is looked after and today's request is done, the light softens and one quiet line says what comes next
@@ -1717,7 +1717,7 @@ async function firstFishPrompt() {
   if ($('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('settle')?.classList.contains('on') || focus || play || placing || (ui?.tab && ui.tab !== 'tank')) return;
   firstAsking = true;
   try {
-    const pk = await ui.pickFish({ title: 'YOUR OWN OCTOPUS', text: 'Every caretaker brings in an octopus of their own. Choose its color, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+    const pk = await ui.pickFish({ title: 'Your own octopus', text: 'Every caretaker brings in an octopus of their own. Choose its color, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
     const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') { fail(r); firstAskAfter = performance.now() + 10 * 60e3; } else if (r.ok) sfx('arrive');      // something went wrong: not again for a good while
   } catch { firstAskAfter = performance.now() + 60e3; } finally { firstAsking = false; }
 }
@@ -1761,19 +1761,19 @@ async function boot() {
     devInfo: () => api('/api/dev/test'),
     devEnter: async () => { try { await api('/api/dev/test/open', {}); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not open the test aquarium'); } },
     devLeave: () => { setTest(false); location.reload(); },
-    devJoin: async () => { const code = await ui.dialog({ title: 'JOIN A TEST AQUARIUM', text: 'The test code shown in Developer Tools on the other phone.', input: { max: 6, placeholder: 'Test code' }, ok: 'Join', cancel: 'Cancel' }); if (!code) return;
+    devJoin: async () => { const code = await ui.dialog({ title: 'Join a test aquarium', text: 'The test code shown in Developer Tools on the other phone.', input: { max: 6, placeholder: 'Test code' }, ok: 'Join', cancel: 'Cancel' }); if (!code) return;
       try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
-    devReset: async () => { const yes = await ui.dialog({ title: 'RESET TEST?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
+    devReset: async () => { const yes = await ui.dialog({ title: 'Reset test?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
     gift: () => offerGift(), watchEggs: () => window.__watchEggs(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, momentPostcard: (img, text, tag, ts) => { const who = fishes.list.filter((f) => f.name && text.includes(f.name)).sort((a, b) => text.indexOf(a.name) - text.indexOf(b.name))[0]; return takePhoto({ img, title: who ? `${who.name}${tag ? ' · ' + tag.replace(/^\S+\s/, '') : ''}` : (tag.replace(/^\S+\s/, '') || 'A moment in the tank'), line: text, ts }); }, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {
         const k = await ensureRecoveryKey(), old = /^[A-Z0-9]{4}-[A-Z0-9]{4}/i.test(k) && !/^[a-z]+-[a-z]+-[a-z]+-[a-z]+$/.test(k);
-        if (!old) { await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'Four words that sign you back in to your tank on a new phone. Write them down somewhere safe.', lines: [k], ok: 'Done' }); return; }
+        if (!old) { await ui.dialog({ title: 'Your recovery key', text: 'Four words that sign you back in to your tank on a new phone. Write them down somewhere safe.', lines: [k], ok: 'Done' }); return; }
         // an older key of letters and numbers: it still works, and can be swapped for four easy words
-        const swap = await ui.dialog({ title: 'YOUR RECOVERY KEY', text: 'This older key still works. Want an easier one? You get four simple words instead, and this key stops working.', lines: [k], ok: 'Get four words', cancel: 'Keep this one' });
+        const swap = await ui.dialog({ title: 'Your recovery key', text: 'This older key still works. Want an easier one? You get four simple words instead, and this key stops working.', lines: [k], ok: 'Get four words', cancel: 'Keep this one' });
         if (!swap) return; const n = await newRecoveryKey();
-        await ui.dialog({ title: 'YOUR NEW KEY', text: 'Write these four words down. The old key no longer works.', lines: [n], ok: 'Done' });
+        await ui.dialog({ title: 'Your new key', text: 'Write these four words down. The old key no longer works.', lines: [n], ok: 'Done' });
       } catch (e) { ui.toast(e.message); }
     },
     saveLook: async ({ avatar, name }) => {
@@ -1781,10 +1781,10 @@ async function boot() {
       const me = game.members?.find((x) => x.id === game.you.userId); const r = await api('/api/profile', { name: name || me?.name || 'Guest', avatar });
       if (me) { me.avatar = r.avatar ?? avatar; if (r.name) me.name = r.name; }
     },
-    backupText: async () => { const d = await api('/api/export'), text = await backupToText(d); try { await navigator.clipboard.writeText(text); ui?.toast('Backup copied. Paste it into Notes or a message to yourself.', 4200); } catch { await ui.dialog({ title: 'YOUR BACKUP', text: 'Select all of this text, copy it, and keep it somewhere safe.', ok: 'Done', input: { max: 400000, placeholder: '', value: text } }); } },
+    backupText: async () => { const d = await api('/api/export'), text = await backupToText(d); try { await navigator.clipboard.writeText(text); ui?.toast('Backup copied. Paste it into Notes or a message to yourself.', 4200); } catch { await ui.dialog({ title: 'Your backup', text: 'Select all of this text, copy it, and keep it somewhere safe.', ok: 'Done', input: { max: 400000, placeholder: '', value: text } }); } },
     backup: async () => { try { const d = await api('/api/export'), url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'our-tank-backup.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); ui.toast('Backup saved'); } catch (e) { ui.toast(e.message || 'Could not make a backup'); } },
-    deleteMe: async () => { const yes = await ui.dialog({ title: 'DELETE MY DATA?', text: 'This removes you from the tank and deletes your account. If you are the last player, the tank is deleted too. It cannot be undone. Download a backup first if you might want it back.', ok: 'Delete everything', cancel: 'Keep', danger: true }); if (!yes) return; try { await api('/api/me', null, 'DELETE'); try { localStorage.clear(); } catch { /* storage unavailable */ } location.href = '/'; } catch (e) { ui.toast(e.message || 'Could not delete'); } },
-    leaveTank: async () => { const yes = await ui.dialog({ title: 'LEAVE THIS TANK?', text: 'Your seat opens up for someone else. You can join another tank afterwards.', ok: 'Leave', cancel: 'Stay', danger: true }); if (!yes) return; try { await leaveTankNow(); location.href = '/'; } catch (e) { ui.toast(e.message); } },
+    deleteMe: async () => { const yes = await ui.dialog({ title: 'Delete my data?', text: 'This removes you from the tank and deletes your account. If you are the last player, the tank is deleted too. It cannot be undone. Download a backup first if you might want it back.', ok: 'Delete everything', cancel: 'Keep', danger: true }); if (!yes) return; try { await api('/api/me', null, 'DELETE'); try { localStorage.clear(); } catch { /* storage unavailable */ } location.href = '/'; } catch (e) { ui.toast(e.message || 'Could not delete'); } },
+    leaveTank: async () => { const yes = await ui.dialog({ title: 'Leave this tank?', text: 'Your seat opens up for someone else. You can join another tank afterwards.', ok: 'Leave', cancel: 'Stay', danger: true }); if (!yes) return; try { await leaveTankNow(); location.href = '/'; } catch (e) { ui.toast(e.message); } },
     quality: () => stage.quality, cycleQuality: () => stg.setQuality((stage.quality + 1) % 3), replayTutorial: () => tut.replay(),
   } });
   window.__ui = ui; syncWorld(); ui.setMembers();

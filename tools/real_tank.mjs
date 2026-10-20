@@ -34,7 +34,7 @@ for (const W of worlds) {
   const cB = await b.newContext({ viewport: { width: 390, height: 844 } }), B = await cB.newPage(); await B.goto(base + '/join/' + code + '?q=0'); await B.waitForSelector('#welcome.on', { timeout: 120000 });
   await B.waitForSelector('.pvt, #cd, #nm', { timeout: 90000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 90000 }); await B.click('#go'); }
   await B.waitForSelector('#nm', { timeout: 90000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
-  for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/.test(t)) { await B.click('#modal.on #mok'); break; } else if (t) await B.click('#modal.on #mok').catch(() => {}); }
+  for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.click('#modal.on #mok'); break; } else if (t) await B.click('#modal.on #mok').catch(() => {}); }
   await B.waitForTimeout(2000); await A.close(); await B.close();
   // then the saved animals and decorations go into that tank, as a restart would read them
   await stop(srv); { const d = new DatabaseSync(db), row = d.prepare('SELECT world FROM tanks WHERE code=?').get(code), x = JSON.parse(row.world); x.fish = W.fish; x.decor = W.decor ?? []; d.prepare('UPDATE tanks SET world=? WHERE code=?').run(JSON.stringify(x), code); d.close(); }

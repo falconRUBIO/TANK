@@ -27,7 +27,7 @@ const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')
 ck('Collection lists every fish in the tank, the octopus first, each with Sell', list.length === 2 && /^Inky/.test(list[0]) && list.every((t) => /Sell$/.test(t)));
 // 3. selling Nori: a clear question with the price, then gone, and the shells added
 await p.click('#sheet [data-sellfish=g1]'); await p.waitForTimeout(400); const q = await p.evaluate(() => document.getElementById('modal')?.textContent ?? ''); await p.screenshot({ path: `${out}/sell_ask.png` });
-ck('it asks first and says what it pays', /SELL NORI\?/.test(q) && /You get 6 shells/.test(q) && /Sell for 6/.test(q), q.slice(0, 160));
+ck('it asks first and says what it pays', /SELL NORI\?/i.test(q) && /You get 6 shells/.test(q) && /Sell for 6/.test(q), q.slice(0, 160));
 const s0 = await p.evaluate(() => window.__game.state.shells); await p.click('#mok'); await p.waitForTimeout(1200);
 const after = await p.evaluate(() => ({ fish: window.__game.state.fish.map((f) => f.name), shells: window.__game.state.shells, meshes: window.__fishes.list.filter((f) => !f.dead).length, list: [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent), journal: window.__game.journal.slice(-2).map((e) => e.text) }));
 await p.screenshot({ path: `${out}/sold.png` });

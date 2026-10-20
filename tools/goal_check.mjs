@@ -31,7 +31,7 @@ const q2 = await p.evaluate(() => getComputedStyle(document.getElementById('bell
 await p.evaluate(() => { const s = window.__game.state; s.stats.hatched = (s.stats.hatched ?? 0) + 1; s.stats.morphs = (s.stats.morphs ?? 0) + 1; s.stats.morph_gold = (s.stats.morph_gold ?? 0) + 1; return window.__game.dispatch({ t: 'observe', key: 'watch' }); }).catch(() => {});
 await p.waitForSelector('#modal.on.party', { timeout: 60000 }).catch(() => {});
 const done = await p.evaluate(() => ({ party: document.querySelector('#modal.party')?.textContent ?? '', styles: window.__game.state.flags.styles, goal: window.__game.state.goal, offer: window.__game.state.goalOffer }));
-ck('finishing it celebrates, unlocks a look, and offers three more', /GOAL COMPLETE/.test(done.party) && done.styles && !done.goal && done.offer?.length === 3 && !done.offer.includes('gold'), done);
+ck('finishing it celebrates, unlocks a look, and offers three more', /GOAL COMPLETE/i.test(done.party) && done.styles && !done.goal && done.offer?.length === 3 && !done.offer.includes('gold'), done);
 await p.screenshot({ path: `${out}/done.png`, timeout: 120000 }).catch(() => {});
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Goal checks passed'); process.exit(fails ? 1 : 0);

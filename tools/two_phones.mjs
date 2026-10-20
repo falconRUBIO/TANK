@@ -24,7 +24,7 @@ const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.wai
 await B.waitForSelector('.pvt, #cd, #nm', { timeout: 20000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 20000 }); await B.click('#go'); }
 await B.waitForSelector('#nm', { timeout: 30000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
 // a daily gift or welcome card may show first; the octopus offer must still come once it is out of the way
-let offered = false; for (let i = 0; i < 40 && !offered; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/.test(t)) offered = true; else if (t) await B.click('#modal.on #mok').catch(() => {}); }
+let offered = false; for (let i = 0; i < 40 && !offered; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) offered = true; else if (t) await B.click('#modal.on #mok').catch(() => {}); }
 await shot(B, '2_friend_offer'); ck('the friend is offered an octopus of their own', offered);
 if (offered) { await B.click('#modal.on .pk[data-pal="3"]').catch(() => {}); await B.click('#modal.on #mok'); }
 await B.waitForTimeout(1500); const quietB = await popups(B); await shot(B, '3_friend_octopus_drops'); ck('nothing pops up on the friend\'s phone while it drops in', quietB.length === 0, quietB.join(','));

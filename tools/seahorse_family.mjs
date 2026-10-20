@@ -12,7 +12,7 @@ const p = await (await b.newContext({ viewport: { width: 430, height: 932 }, dev
 p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /error/.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push(m.text().slice(0, 200)); });
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const until = async (fn, secs = 90) => { for (let i = 0; i < secs * 2; i++) { const v = await p.evaluate(fn).catch(() => null); if (v) return v; await p.waitForTimeout(500); } return null; };      // (a machine without a graphics chip draws about one frame a second: wait for things rather than for a fixed time)
-const hide = async () => { for (let i = 0; i < 4; i++) { const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent || (/A GIFT FOR YOU/.test(document.querySelector('#modal.on')?.textContent ?? '') ? 'GIFT' : '')); if (!t || /READY|KEEP/.test(t)) break; await p.click('#modal.on #mok').catch(() => {}); await p.waitForTimeout(400); } await p.evaluate(() => document.querySelectorAll('#coach,#toast,#settle,#reunion,#goal').forEach((e) => (e.style.display = 'none'))); };      // (a daily gift may show first)
+const hide = async () => { for (let i = 0; i < 4; i++) { const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent || (/A GIFT FOR YOU/i.test(document.querySelector('#modal.on')?.textContent ?? '') ? 'GIFT' : '')); if (!t || /READY|KEEP/i.test(t)) break; await p.click('#modal.on #mok').catch(() => {}); await p.waitForTimeout(400); } await p.evaluate(() => document.querySelectorAll('#coach,#toast,#settle,#reunion,#goal').forEach((e) => (e.style.display = 'none'))); };      // (a daily gift may show first)
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=noon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(1500);
 await p.evaluate(() => document.querySelector('#modal')?.classList.remove('on'));
@@ -51,13 +51,13 @@ ck('the tracked babies catch food themselves', fed.filter((k) => k.meals > 0).le
 // (the three characters are measured in tools/baby_personality.mjs)
 // the choice: when they are ready it comes up by itself, a baby is picked, confirmed, and kept
 await p.evaluate(() => { const s = window.__game.state; s.nursery.readyAt = Date.now() + 1500; window.__game.emit('state'); });
-for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/READY/.test(t)) break; if (t) await p.click('#modal.on #mok').catch(() => {}); }      // (a daily gift may be showing first)
+for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/READY/i.test(t)) break; if (t) await p.click('#modal.on #mok').catch(() => {}); }      // (a daily gift may be showing first)
 const ask = await p.evaluate(() => ({ on: document.querySelector('#modal')?.classList.contains('on'), title: document.querySelector('#modal h2')?.textContent, opts: [...document.querySelectorAll('#modal [data-i]')].map((x) => x.textContent) }));
 await p.screenshot({ path: `${OUT}/5_ready.png` });
-ck("when they are ready: THEY'RE READY, with the three babies to choose from", ask.on && /READY/.test(ask.title ?? '') && ask.opts.length === 3, ask);
-await p.click('#modal [data-i="1"]'); await p.waitForFunction(() => /KEEP/.test(document.querySelector('#modal.on h2')?.textContent ?? ''), null, { timeout: 8000, polling: 200 }).catch(() => {});      // (the confirmation comes once the choice has closed)
+ck("when they are ready: THEY'RE READY, with the three babies to choose from", ask.on && /READY/i.test(ask.title ?? '') && ask.opts.length === 3, ask);
+await p.click('#modal [data-i="1"]'); await p.waitForFunction(() => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''), null, { timeout: 8000, polling: 200 }).catch(() => {});      // (the confirmation comes once the choice has closed)
 const conf = await p.evaluate(() => ({ title: document.querySelector('#modal h2')?.textContent, ok: document.querySelector('#mok')?.textContent }));
-ck('choosing asks for a confirmation first', /KEEP/.test(conf.title ?? ''), conf);
+ck('choosing asks for a confirmation first', /KEEP/i.test(conf.title ?? ''), conf);
 const pick = await p.evaluate(() => window.__game.state.nursery?.cands[1]);
 await p.click('#mok'); await p.waitForTimeout(3000);
 const kept = await p.evaluate((id) => { const s = window.__game.state, f = s.fish.find((x) => x.id === id), F = window.__fishes; return { f: f && { name: f.name, bornHere: f.bornHere, birthDate: !!f.birthDate, parents: (f.parents ?? []).map((q) => q.name), stage: f.stage }, nursery: s.nursery, seahorses: s.fish.filter((x) => x.species === 'seahorse').length, onScreen: F.list.filter((x) => x.nursery).length, same: !!F.byId.get(id), fry: window.__nursery?.mesh?.count ?? -1 }; }, pick.id);
@@ -70,7 +70,7 @@ await p.evaluate((id) => { window.__game.profTab = 'over'; window.__focus(window
 await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
 const prof = await p.evaluate(() => document.querySelector('#card .tpane')?.innerText ?? '');
 await p.screenshot({ path: `${OUT}/6_profile.png` });
-ck('its profile says it was born here, with its mother, father and birth date', /BORN IN YOUR AQUARIUM/.test(prof) && /Mother: Pearl/.test(prof) && /Father: Sunny/.test(prof) && /Birth date/.test(prof), prof.slice(0, 160).replace(/\s+/g, ' '));
+ck('its profile says it was born here, with its mother, father and birth date', /BORN IN YOUR AQUARIUM/i.test(prof) && /Mother: Pearl/.test(prof) && /Father: Sunny/.test(prof) && /Birth date/.test(prof), prof.slice(0, 160).replace(/\s+/g, ' '));
 await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(3000);
 const again = await p.evaluate(() => ({ departed: window.__departed ?? null, going: !!window.__nursery?.going, kept: window.__game.state.fish.filter((f) => f.bornHere).length }));
 ck('after a reload it does not play again, and still one baby', !again.departed && !again.going && again.kept === 1, again);

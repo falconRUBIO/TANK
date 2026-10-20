@@ -44,16 +44,16 @@ await shots; ck('watched: they hatch, in front of you', !!hatched, hatched);
 const look = await p.evaluate((id) => { const f = window.__fishes.byId.get(id), par = window.__fishes.byId.get('g1'); return { kid: +(f?.growth ?? 0).toFixed(2), parent: +(par?.growth ?? 0).toFixed(2), focusEgg: false }; }, hatched?.kid);
 ck('fresh from the egg it is tiny (a fifth of a grown fish)', look.kid > 0 && look.kid <= 0.25, look);
 // 4. you name it, then one more little one may stay
-const other = () => p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !/NAME YOUR BABY|ONE MORE LITTLE ONE/.test(m.innerText)) m.querySelector('#mok')?.click(); });      // (a chapter or a gift may come first)
-let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/.test(document.querySelector('#modal.on')?.innerText ?? '')); }
+const other = () => p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !/NAME YOUR BABY|ONE MORE LITTLE ONE/i.test(m.innerText)) m.querySelector('#mok')?.click(); });      // (a chapter or a gift may come first)
+let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 ck('you are asked to name it, once the little one has swum out (not straight away)', named && (await p.evaluate(() => window.__nameAt - window.__crackAt)) > 7000, await p.evaluate(() => window.__nameAt - window.__crackAt));
 if (named) { await p.fill('#modal.on #mi', 'Pebble'); await p.click('#modal.on #mok'); }
-let offer = false; for (let i = 0; i < 30 && !offer; i++) { await p.waitForTimeout(500); await other(); offer = await p.evaluate(() => /ONE MORE LITTLE ONE/.test(document.querySelector('#modal.on')?.innerText ?? '')); }
+let offer = false; for (let i = 0; i < 30 && !offer; i++) { await p.waitForTimeout(500); await other(); offer = await p.evaluate(() => /ONE MORE LITTLE ONE/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 await p.screenshot({ path: `${out}/5-one-more.png` }); ck('then: one more little one is still by the eggs, keep it too?', offer);
 if (offer) await p.click('#modal.on [data-i="0"]');
 let twin = null; for (let i = 0; i < 20 && !twin; i++) { await p.waitForTimeout(500); twin = await p.evaluate(() => { const k = window.__game.state.fish.filter((f) => f.parents?.length); return k.length === 2 ? k.map((f) => f.name) : null; }); }
 ck('kept: two little ones now, named and close together', twin && twin.includes('Pebble'), twin);
-for (let i = 0; i < 12; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => /NAME YOUR BABY/.test(document.querySelector('#modal.on')?.innerText ?? ''))) { await p.click('#modal.on #mno'); break; } }
+for (let i = 0; i < 12; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? ''))) { await p.click('#modal.on #mno'); break; } }
 const j = await p.evaluate(() => window.__game.journal.slice(-12).map((e) => e.text));
 ck('the journal tells it: wriggling, the larvae drifting off, the one that stayed, and the twin', j.some((x) => /drifted off on the current/.test(x)) && j.some((x) => /kept one more/.test(x)), j);
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/6-twins.png` });

@@ -822,6 +822,18 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .crew .tline .lvl small:last-child{font-size:11.5px;text-transform:none;letter-spacing:0;font-weight:500;color:rgba(235,242,250,.65)}
 #sheet .crew .tline .mood.good b,#sheet .crew .tline .mood.great b{color:#a8f0c0}#sheet .crew .tline .mood.bad b,#sheet .crew .tline .mood.low b{color:#ffcf8a}
 #sheet .cat{text-transform:none!important;letter-spacing:0!important;white-space:nowrap}
+
+/* ── every pop-up reads like an iOS alert: a sentence-case title, calm body text, a full-width main button and a quiet second choice ── */
+#modal .box h2{font:700 19px/1.25 -apple-system,system-ui,sans-serif!important;letter-spacing:-.01em!important;text-transform:none!important;color:#fff}
+#modal .box.life h2{color:#ffe7a8!important}
+#modal .box p{font:400 14.5px/1.45 -apple-system,system-ui,sans-serif!important;color:rgba(235,242,250,.8)!important}
+#modal .box button.big{font:600 16px -apple-system,system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;padding:13px 16px!important;border-radius:14px!important}
+#modal .box button.lnk{all:unset;cursor:pointer;display:block;width:100%;text-align:center;padding:10px 0 2px;font:500 15px -apple-system,system-ui,sans-serif;color:rgba(160,215,255,.95);text-decoration:none}
+
+/* the animal card's tabs: the same rounded glass pills as every sheet */
+#card .tabs{gap:6px!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+#card .tabs>*{border-radius:999px!important;border:1px solid rgba(255,255,255,.18)!important;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04))!important;padding:8px 2px!important;font:600 12.5px -apple-system,system-ui,sans-serif!important;color:rgba(235,242,250,.85)!important;text-align:center}
+#card .tabs>.on{background:rgba(255,255,255,.26)!important;color:#fff!important;border-color:rgba(255,255,255,.45)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 12px rgba(0,0,0,.15)!important}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

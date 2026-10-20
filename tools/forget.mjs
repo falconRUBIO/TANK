@@ -8,7 +8,7 @@ const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefi
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const modalTitle = (p) => p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? '');
-const settle = async (p, wantOcto) => { let offered = false; for (let i = 0; i < 30; i++) { await p.waitForTimeout(500); const t = await modalTitle(p); if (/YOUR OWN OCTOPUS/.test(t)) { offered = true; if (wantOcto) await p.click('#modal.on #mok'); else break; } else if (t) await p.click('#modal.on #mok').catch(() => {}); } return offered; };
+const settle = async (p, wantOcto) => { let offered = false; for (let i = 0; i < 30; i++) { await p.waitForTimeout(500); const t = await modalTitle(p); if (/YOUR OWN OCTOPUS/i.test(t)) { offered = true; if (wantOcto) await p.click('#modal.on #mok'); else break; } else if (t) await p.click('#modal.on #mok').catch(() => {}); } return offered; };
 const me = (p) => p.evaluate(() => { const g = window.__game; return { code: g.code, members: (g.members ?? []).map((m) => m.name).sort(), fish: g.state.fish.map((f) => `${f.name}:${f.owner === g.you.userId ? 'mine' : g.members?.some((m) => m.id === f.owner) ? 'crew' : 'nobody'}`).sort() }; });
 // the creator and a friend
 const A = await mk(); await A.goto(base + '/?q=0'); await A.waitForSelector('#welcome.on', { timeout: 60000 });
