@@ -1,5 +1,6 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
+import { morphOdds } from './game/genes.js';
 import { eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
@@ -117,7 +118,7 @@ export function initUI({ game, social, cb }) {
     b.style.setProperty('--goal', on && g ? `${Math.round((g.done / g.of) * 360)}deg` : '0deg'); b.classList.toggle('goal', !!(on && g)); b.classList.toggle('offer', !!offer); const q = $('quest'); if (q) q.hidden = true; }
   // Today, in three plain parts: what the animals need (care that is really due, nothing optional), what is happening in the tank (to look at
   // if you like: a decision, eggs, the mystery, a visitor, an octopus out exploring), and what is coming up. Nothing appears twice.
-  const nowRow = (out, icon, text, act, when = '', extra = '') => out.push(`<div class="nowr${extra ? ' big' : ''}"><button class="nowb" data-act="${act}"><i>${pix(icon, 22)}</i><span>${text}</span>${when ? `<b>${when}</b>` : ''}<em>›</em></button>${extra}</div>`);
+  const nowRow = (out, icon, text, act, when = '', extra = '', info = '') => out.push(`<div class="nowr${extra ? ' big' : ''}"><button class="nowb" ${info ? `data-info="${info}"` : `data-act="${act}"`}><i>${pix(icon, 22)}</i><span>${text}</span>${when ? `<b>${when}</b>` : ''}<em>›</em></button>${extra}</div>`);
   const careHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const me = game.you?.userId, live = s.fish.filter((f) => !f.dead && !f.away), out = [];
     if (live.some((f) => !ownFood(f)) && s.hunger > 0.3) nowRow(out, '🫙', 'The fish are hungry', 'nowcare', 'feed');
     for (const f of live.filter((x) => ownFood(x) && canFeedOwn(x, me, game.shared) && ownHunger(x) >= OCTO_DUE)) nowRow(out, ownFood(f) === 'crab' ? '🦀' : '🦐', `${esc(f.name)} is hungry for ${ownFood(f) === 'crab' ? 'a crab' : 'mysis shrimp'}`, 'nowcare', 'feed');
@@ -128,14 +129,14 @@ export function initUI({ game, social, cb }) {
     const D = s.dilemma && !s.dilemma.done ? s.dilemma : null, mine = D && (!D.turn || D.turn.uid === me || Date.now() > D.turn.until);
     if (D && mine) nowRow(out, '✨', `Your call: ${esc(D.text)}`, 'nowcare', 'decide', `<div class="nowopts">${D.opts.map((o) => `<button data-decide="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div>`);      // (decided right here)
     else if (D) nowRow(out, '✨', `${esc(D.turn.name)}'s call: ${esc(D.text)}`, 'nowcare');
-    { const O = !D && s.omen && Date.now() - s.omen.at < 2.5 * 864e5 ? s.omen : null, [x, y] = O ? O.fish.map((id) => s.fish.find((f) => f.id === id)) : []; if (O && x) nowRow(out, '👀', esc(O.kind === 'lid' ? `${x.name} keeps reaching up to the lid` : O.kind === 'chase' ? `${x.name} keeps chasing ${y?.name ?? 'another fish'}` : O.kind === 'sick' ? `${x.name} looks a little pale` : `${x.name} and ${y?.name ?? 'another'} are eyeing the same den`), 'nowtank', 'watch'); }
+    { const O = !D && s.omen && Date.now() - s.omen.at < 2.5 * 864e5 ? s.omen : null, [x, y] = O ? O.fish.map((id) => s.fish.find((f) => f.id === id)) : []; if (O && x) nowRow(out, '👀', esc(O.kind === 'lid' ? `${x.name} keeps reaching up to the lid` : O.kind === 'chase' ? `${x.name} keeps chasing ${y?.name ?? 'another fish'}` : O.kind === 'sick' ? `${x.name} looks a little pale` : `${x.name} and ${y?.name ?? 'another'} are eyeing the same den`), 'nowtank', 'watch', '', 'omen:'); }
     if ((s.eggs ?? []).some((e) => e.ready) || s.fish.some((f) => f.preg?.ready && !f.dead)) nowRow(out, '🥚', 'Ready to hatch: stay and watch', 'egg', 'now');
-    for (const f of s.fish.filter((x) => x.preg && !x.preg.ready && !x.dead).slice(0, 2)) { const d = Math.max(1, Math.round((f.preg.due - Date.now()) / 864e5)); nowRow(out, '🥚', `${esc(f.name)} is expecting`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`); }
-    for (const e of (s.eggs ?? []).filter((x) => !x.ready).slice(0, 2)) { const d = Math.max(1, Math.round((e.hatchAt - Date.now()) / 864e5)), a = s.fish.find((f) => f.id === e.a)?.name; nowRow(out, '🥚', e.species === 'octopus' ? `${esc(a ?? 'She')} is guarding her eggs` : `${esc(a ?? 'The fish')}'s eggs are growing`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`); }
-    if (s.visitor && Date.now() < (s.visitor.until ?? 0)) nowRow(out, '🐠', `A ${esc((SPECIES_DEF[s.visitor.species]?.label ?? 'visitor').toLowerCase())} is visiting`, 'nowtank', 'look');
-    for (const f of s.fish.filter((x) => !x.dead && x.away).slice(0, 2)) nowRow(out, '🐙', `${esc(f.name)}: ${esc(awayLine(f).toLowerCase())}`, 'nowtank');
+    for (const f of s.fish.filter((x) => x.preg && !x.preg.ready && !x.dead).slice(0, 2)) { const d = Math.max(1, Math.round((f.preg.due - Date.now()) / 864e5)); nowRow(out, '🥚', `${esc(f.name)} is expecting`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`, '', 'preg:' + f.id); }
+    for (const e of (s.eggs ?? []).filter((x) => !x.ready).slice(0, 2)) { const d = Math.max(1, Math.round((e.hatchAt - Date.now()) / 864e5)), a = s.fish.find((f) => f.id === e.a)?.name; nowRow(out, '🥚', e.species === 'octopus' ? `${esc(a ?? 'She')} is guarding her eggs` : `${esc(a ?? 'The fish')}'s eggs are growing`, 'nowtank', `${d} day${d > 1 ? 's' : ''}`, '', 'eggs:' + e.id); }
+    if (s.visitor && Date.now() < (s.visitor.until ?? 0)) nowRow(out, '🐠', `A ${esc((SPECIES_DEF[s.visitor.species]?.label ?? 'visitor').toLowerCase())} is visiting`, 'nowtank', 'look', '', 'visitor:');
+    for (const f of s.fish.filter((x) => !x.dead && x.away).slice(0, 2)) nowRow(out, '🐙', `${esc(f.name)}: ${esc(awayLine(f).toLowerCase())}`, 'nowtank', '', '', 'away:' + f.id);
     { const G = goalOf(s), sp = specialOf(s); if (G && MORPHS[G.id] && sp.color === G.id && G.next && /carrier/i.test(G.next.text)) nowRow(out, '🎁', `Today's special carries ${esc(MORPHS[G.id].label.toLowerCase())}, what your goal needs`, 'nowshop', 'shop'); }
-    const m = mysteryOf(s); if (m) nowRow(out, '🫧', m.done ? esc(m.line) : `${esc(MYSTERY[m.kind]?.text ?? '')} Tap the glow if you like.`, m.done ? 'nowtank' : 'nowmyst', m.done ? 'found' : '');
+    const m = mysteryOf(s); if (m) nowRow(out, '🫧', m.done ? `Today's mystery: ${esc(m.line)}` : `Today's mystery: ${esc(MYSTERY[m.kind]?.text ?? '')}`, m.done ? 'nowtank' : 'nowmyst', m.done ? 'solved' : 'look', '', m.done ? 'myst:' : '');
     return out.length ? `<h4 class="ntsh">Happening in the tank</h4><div class="nowl">${out.join('')}</div>` : ''; };
   // while you were away: the meaningful things the journal recorded between your last look and this one (not routine care, not the chapters)
   const AWAY_SKIP = /^(.{1,40} (fed|changed the water|cleaned the glass|trimmed)|Chapter:|.* is \d+ days old\.$|.*has a request|.* is growing up\.$|.* both looked after the tank)/;
@@ -145,11 +146,11 @@ export function initUI({ game, social, cb }) {
     const h = Math.round((A.to - A.from) / 3600e3), span = h >= 48 ? `${Math.round(h / 24)} days` : h >= 1 ? `${h} hour${h > 1 ? 's' : ''}` : 'a little while';
     return `<h4 class="ntsh">While you were away <small>${span}</small><button class="lnk awayx" data-act="awayclear">Clear</button></h4><div class="awayl">${uniq.map((t) => `<p>${esc(t)}</p>`).join('')}</div>`; };
   const comingHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const out = [], ready = (s.eggs ?? []).some((e) => e.ready);
-    for (const f of forecast(s, Date.now(), 2).filter((x) => !(ready && /hatch/.test(x.text)))) nowRow(out, f.icon ?? '📦', esc(f.text), 'nowcare', f.when === 'now' ? 'now' : esc(f.when));
+    for (const [i, f] of forecast(s, Date.now(), 2).filter((x) => !(ready && /hatch/.test(x.text))).entries()) nowRow(out, f.icon ?? '📦', esc(f.text), 'nowcare', f.when === 'now' ? 'now' : esc(f.when), '', 'fc:' + i);
     return out.length ? `<h4 class="ntsh">Coming up</h4><div class="nowl">${out.join('')}</div>` : ''; };
   // the tank in one line: its mood, and how far to the next level (and what earns it)
   const tankLine = () => { const s = S(); if (!s) return ''; const m = tankMood(s, Date.now()), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.max(3, Math.min(100, Math.round(((sc - a) / (b - a)) * 100))) : 100;
-    return `<div class="tline"><span class="mood ${esc(m.key)}">${esc(m.label)}</span><span class="lvl"><b>Level ${lv}</b>${b ? `<i><b style="width:${pct}%"></b></i><small>${sc}/${b}</small>` : '<small>top level</small>'}</span></div>`; };
+    return `<div class="tline"><button class="mood ${esc(m.key)}" data-info="mood:">${esc(m.label)} ›</button><button class="lvl" data-info="level:"><b>Level ${lv}</b>${b ? `<i><b style="width:${pct}%"></b></i><small>${sc}/${b}</small>` : '<small>top level</small>'}</button></div>`; };
   const goalCard = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const g = goalOf(s), offer = s.goalOffer ?? [];
     if (g) return `<button class="gcard" data-act="goal"><span class="qi">🎯</span><span class="qt"><b>${esc(g.title)}</b><small>${g.next ? `Next: ${esc(g.next.text)}${g.next.need > 1 ? ` (${g.next.have}/${g.next.need})` : ''}` : 'Almost there'}</small>${g.next?.hint ? `<small class="how">${esc(g.next.hint)}</small>` : ''}<i class="qb"><b style="width:${Math.round((g.done / g.of) * 100)}%"></b></i></span><em>›</em></button>`;
     return offer.length ? `<button class="gcard offer" data-act="goal"><span class="qi">🎯</span><span class="qt"><b>Choose a goal for your tank</b><small>${offer.length} to choose from</small></span><em>›</em></button>` : ''; };
@@ -592,7 +593,7 @@ export function initUI({ game, social, cb }) {
       const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Field Guide']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
       // the Field Guide sits beside Today: everything about your own tank in one place (Crew is for people)
       if (nsub === 'guide') return `<div class="crew"><h3>${name}</h3>${seg}${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${bookHtml()}</div>`;
-      return `<div class="crew"><h3>${name}</h3>${seg}${tankLine()}${awayHtml()}${careHtml()}${happenHtml()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${comingHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
+      return `<div class="crew"><h3>${name}</h3>${seg}<p class="todaysub">How your tank is doing, what needs you, and what is going on. Tap anything for more.</p>${tankLine()}${awayHtml()}${careHtml()}${happenHtml()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}${comingHtml()}<h4 class="ntsh">What happened</h4><div class="jl nts">${noticesHtml()}</div></div>`; },
     decorate: () => `<h3>Shop</h3><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div>`,
     friends: () => {
@@ -753,6 +754,7 @@ export function initUI({ game, social, cb }) {
       const x = (S().memorial ?? [])[+b.dataset.mem]; if (!x) return; const d = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
       dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, ...(x.parents?.length ? [`Parents: ${x.parents.map((q) => q.name).join(' & ')}`] : []), ...(x.gen ? [`Generation ${x.gen}`] : []), x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
     }));
+    sheet.querySelectorAll('[data-info]').forEach((b) => (b.onclick = (e) => { e?.stopPropagation?.(); infoFor(b.dataset.info); }));
     sheet.querySelectorAll('[data-animal]').forEach((b) => (b.onclick = () => { sfx('tap'); if (!cb.showAnimal?.(b.dataset.animal)) toast('Out exploring: it will be back.'); }));
     sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async (e) => { e?.stopPropagation?.();
       const s = S(), f = s.fish.find((x) => x.id === b.dataset.sellfish); if (!f) return; sfx('tap'); const d = SPECIES_DEF[f.species], pay = sellValue(f), alive = s.fish.filter((x) => !x.dead).length;
@@ -864,6 +866,38 @@ export function initUI({ game, social, cb }) {
       modal.classList.add('on', 'party'); sfx('arrive'); haptic(20);
       $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); }; if ($('mno')) $('mno').onclick = () => { modal.classList.remove('on', 'party'); res(false); };
     }));
+  }
+  // ── Today's detail card: tap a row and it opens with what is really known about it, and the one thing to do next ──
+  const when = (ms) => { const d = ms / 864e5; return d < 1 / 24 ? 'within the hour' : d < 1 ? `in about ${Math.max(1, Math.round(d * 24))} h` : `in about ${Math.round(d)} day${Math.round(d) > 1 ? 's' : ''}`; };
+  const onDay = (ts) => new Date(ts).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  function infoCard({ title, img = null, icon = '', sub = '', facts = [], body = '', go = null, goLabel = 'Go and see' }) {
+    return modalFree().then(() => new Promise((res) => {
+      modal.innerHTML = `<div class="box party info">${img ? `<div class="ipic"><img alt="" src="${img}"></div>` : icon ? `<div class="big-ic">${icon}</div>` : ''}<h2>${esc(title)}</h2>${sub ? `<p class="isub">${esc(sub)}</p>` : ''}${facts.length ? `<dl class="ifacts">${facts.filter((x) => x[1] != null && x[1] !== '').map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`).join('')}</dl>` : ''}${body ? `<p class="ibody">${esc(body)}</p>` : ''}${go ? `<button class="big gold" id="mok">${esc(goLabel)}</button><button class="lnk" id="mno">Close</button>` : '<button class="big" id="mok">Close</button>'}</div>`;
+      modal.classList.add('on', 'party'); sfx('tap');
+      const off = () => modal.classList.remove('on', 'party'); $('mok').onclick = () => { off(); if (go) go(); res(true); }; if ($('mno')) $('mno').onclick = () => { off(); res(false); };
+    }));
+  }
+  function infoFor(key) {
+    const s = S(), [kind, id] = key.split(':'), fish = (x) => s.fish.find((f) => f.id === x), nm = (x, snap) => fish(x)?.name ?? snap?.name ?? null, thumb = (f) => (f ? fishThumb(f.species, f.pal ?? null, morphOf(f) ?? null) : null), see = (fid) => () => { if (!cb.showAnimal?.(fid)) open('tank'); };
+    if (kind === 'preg') { const f = fish(id); if (!f?.preg) return; const P = f.preg, mo = nm(P.mother, P.ma);
+      return infoCard({ title: `${f.name} is expecting`, img: thumb(f), sub: 'A seahorse father carries the young', facts: [['Father', f.name], ['Mother', mo], ['Babies due', `${when(P.due - Date.now())} · ${onDay(P.due)}`], ['How many', P.n ? `about ${P.n}` : null], ['Carrying since', onDay(P.start)]], body: `${f.name}'s belly pouch holds the eggs ${mo ?? 'his partner'} gave him. Feed them mysis shrimp and keep the water clean. When the day comes, open the tank: you can watch them being born, and keep one to raise.`, go: see(f.id) }); }
+    if (kind === 'eggs') { const e = (s.eggs ?? []).find((x) => x.id === id); if (!e) return; const a = fish(e.a), b = fish(e.b), A = nm(e.a, e.pa), B = nm(e.b, e.pb), octo = e.species === 'octopus', care = eggCareOf(e);
+      const od = a && b ? Object.entries(morphOdds(a, b, !!e.moon)).filter(([, p]) => p > 0).map(([k, p]) => `${MORPHS[k]?.label ?? k} ${Math.round(p * 100)}%`).join(', ') : '';
+      return infoCard({ title: octo ? `${A ?? 'She'}'s eggs` : `${A && B ? `${A} & ${B}` : 'The'}'s eggs`, img: thumb(a ?? b), sub: octo ? 'Hanging in her den, guarded day and night' : (care?.fact ?? 'Growing in the tank'), facts: [['Parents', [A, B].filter(Boolean).join(' & ')], ['Hatching', e.ready ? 'ready now: stay and watch' : `${when(e.hatchAt - Date.now())} · ${onDay(e.hatchAt)}`], ['Looked after', `${(e.cared ?? []).length} of 2 days`], ['Rare-color chances', od || 'none from these parents'], ['Full moon', e.moon ? 'yes: better odds' : null]], body: e.ready ? 'They wait for someone to watch. Open the tank and stay: they hatch in front of you.' : 'Feeding the tank and changing the water on two different days makes them hatch strong. When they are ready they wait for you to watch.', go: e.ready ? () => { open('tank'); cb.watchEggs?.(); } : see(octo ? e.a : (e.guard ?? e.a)), goLabel: e.ready ? 'Watch them hatch' : 'Go and see' }); }
+    if (kind === 'away') { const f = fish(id); if (!f?.away) return; const M = octoMind(f);
+      return infoCard({ title: `${f.name} is out exploring`, img: thumb(f), sub: f.away.inTank ? 'Hiding somewhere in the tank' : 'Climbed out over the top of the tank', facts: [['Left', onDay(f.away.at)], ['Nature', M.label], ['Adventures so far', (s.adv?.hist ?? []).filter((h) => h.fish === f.id).length]], body: 'Octopuses come back when they are ready, sometimes with something they found. Nothing is needed from you; when it is back you will see it, and anything it brings home stays in the tank.' }); }
+    if (kind === 'myst') { const m = mysteryOf(s); if (!m) return; const f = m.fish && fish(m.fish);
+      return infoCard({ title: "Today's mystery", icon: '🫧', sub: MYSTERY[m.kind]?.text ?? '', facts: [['Found by', m.by], ['Who it was about', f?.name]], body: m.line ?? '', go: f ? see(f.id) : null, goLabel: f ? `Go and see ${f.name}` : 'Go and see' }); }
+    if (kind === 'visitor') { const v = s.visitor; if (!v) return; const d = SPECIES_DEF[v.species];
+      return infoCard({ title: `A ${(d?.label ?? 'visitor').toLowerCase()} is visiting`, img: fishThumb(v.species), sub: 'From the open sea, for a little while', facts: [['Leaves', v.until ? when(v.until - Date.now()) : null]], body: 'Tap it in the tank to say hello: a first visit fills a Field Guide page, and now and then a visitor decides to stay.', go: () => open('tank') }); }
+    if (kind === 'omen') { const O = s.omen; if (!O) return; const f = fish(O.fish?.[0]), g = fish(O.fish?.[1]);
+      const txt = { lid: `${f?.name} has been seen testing the lid more than once. Octopuses do this before they try to get out.`, chase: `${f?.name} keeps going after ${g?.name ?? 'another fish'}. It may need sorting out.`, sick: `${f?.name} has been off colour for a while. Clean water and food help.`, den: `${f?.name} and ${g?.name ?? 'another'} both want the same den.` }[O.kind] ?? '';
+      return infoCard({ title: 'Something is building', img: thumb(f), facts: [['Since', onDay(O.at)]], body: `${txt} If it carries on, you will be asked what to do about it.`, go: f ? see(f.id) : null, goLabel: f ? `Watch ${f.name}` : 'Go and see' }); }
+    if (kind === 'fc') { const f = forecast(s, Date.now(), 2).filter((x) => !((s.eggs ?? []).some((e) => e.ready) && /hatch/.test(x.text)))[+id]; if (!f) return; const a = f.fish && fish(f.fish);
+      return infoCard({ title: f.text, img: a ? thumb(a) : null, icon: a ? '' : '📅', facts: [['When', f.when === 'now' ? 'now' : f.when]], body: 'Coming up in your tank. Nothing to do now: it will be there when you look.', go: a ? see(a.id) : null }); }
+    if (kind === 'mood') { const m = tankMood(s, Date.now()); return infoCard({ title: `The tank is ${m.label.toLowerCase()}`, icon: '💚', facts: [['Water', s.water >= 0.7 ? 'clean' : 'cloudy: change it'], ['Glass', s.glass <= 0.3 ? 'clear' : 'needs a wipe'], ['Fish food', s.hunger <= 0.3 ? 'fed' : 'hungry']], body: m.note ?? 'How everyone in the tank is getting on, at a glance. It changes with feeding, clean water and a clear glass.' }); }
+    if (kind === 'level') { const lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), nextOpen = b ? Object.values(DECOR_DEF).filter((d) => d.level === lv + 1 && !d.earned).map((d) => d.label).slice(0, 4).join(', ') : '';
+      return infoCard({ title: `Level ${lv}`, icon: '⭐', sub: b ? `${b - sc} more to level ${lv + 1}` : 'The top level', facts: [['Progress', b ? `${sc - a} of ${b - a}` : 'complete'], ['Opens next', nextOpen || null]], body: 'The tank grows by being lived in, never by buying: days of care, Field Guide pages, new kinds of animal, babies raised, rare colors, goals finished, decisions and mysteries all count. Each level opens new things in the Shop.' }); }
   }
   // an animal close to dying: said plainly, with the things that will save it as buttons
   function sick({ name, species, pal = null, why, acts }) {

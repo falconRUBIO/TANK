@@ -766,6 +766,17 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .crew .slot small.here::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#4fe08a;margin-right:5px;vertical-align:1px;box-shadow:0 0 6px #4fe08a}
 #sheet .crew .slot .nudge{height:30px;min-width:34px;border-radius:15px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
 #sheet .crew .pcmini{margin-top:10px;border-radius:18px!important;background:linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.04))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+
+/* Today: what the page is, tappable mood and level, and the detail card */
+#sheet .todaysub{margin:-6px 4px 12px;text-align:center;font-size:12.5px;color:var(--dim);line-height:1.4}
+#sheet .tline button{all:unset;cursor:pointer}#sheet .tline .lvl{display:flex;align-items:center;gap:8px;font-size:12px}
+#modal .box.info{text-align:left}#modal .box.info button{text-align:center;justify-content:center}#modal .box.info h2{text-align:center}#modal .box.info .big-ic{text-align:center}
+#modal .box.info .ipic{margin:-6px auto 12px;width:120px;height:120px;border-radius:28px;background:radial-gradient(circle at 50% 35%,rgba(140,220,255,.35),rgba(20,70,110,.5));display:grid;place-items:center}
+#modal .box.info .ipic img{width:96px;height:96px;object-fit:contain;image-rendering:pixelated}
+#modal .box.info .isub{text-align:center;margin:-4px 0 12px;color:var(--dim);font-size:13px}
+#modal .box.info .ifacts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.06);font-size:13.5px}
+#modal .box.info .ifacts dt{color:var(--dim)}#modal .box.info .ifacts dd{margin:0;font-weight:600}
+#modal .box.info .ibody{font-size:13.5px;line-height:1.45;margin:0 0 14px}#modal .box.info #mno{display:block;margin:10px auto 0}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
