@@ -777,6 +777,23 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #modal .box.info .ifacts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.06);font-size:13.5px}
 #modal .box.info .ifacts dt{color:var(--dim)}#modal .box.info .ifacts dd{margin:0;font-weight:600}
 #modal .box.info .ibody{font-size:13.5px;line-height:1.45;margin:0 0 14px}#modal .box.info #mno{display:block;margin:10px auto 0}
+
+/* Care in Liquid Glass: each job its own glass pane over the tank, the icon in a glass bubble, what is due glowing gold; the same title and tabs as Today and Crew */
+#sheet .care2 .seg{margin-bottom:8px}
+#sheet .care2 h4{margin:16px 4px 8px;font:700 12px -apple-system,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(235,242,250,.6)}
+#sheet .care2 .cgroup{display:flex;flex-direction:column;gap:8px;background:none!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}
+#sheet .care2 .crow{position:relative;display:flex;align-items:center;gap:12px;padding:13px 14px!important;border-radius:22px!important;border:1px solid rgba(255,255,255,.16)!important;background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 60%,rgba(255,255,255,.08))!important;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.14)!important;overflow:hidden}
+#sheet .care2 .crow::before{content:'';position:absolute;inset:0 0 55% 0;border-radius:22px 22px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,0));pointer-events:none}
+#sheet .care2 .crow.due,#sheet .care2 .crow.hot{border-color:rgba(255,214,120,.55)!important;background:linear-gradient(135deg,rgba(255,214,120,.24),rgba(255,255,255,.06) 65%)!important;box-shadow:inset 0 1px 0 rgba(255,240,200,.35),0 0 0 1px rgba(255,214,120,.12),0 10px 28px rgba(240,180,60,.16)!important}
+#sheet .care2 .crow .ci{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),rgba(255,255,255,.08) 60%,rgba(255,255,255,.04));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 3px 8px rgba(0,0,0,.12)}
+#sheet .care2 .crow .ct b{font:650 16px -apple-system,system-ui,sans-serif;color:#fff}#sheet .care2 .crow .ct small{font-size:12.5px;color:rgba(235,242,250,.72)}
+#sheet .care2 .crow .chev{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);font-style:normal;color:rgba(255,255,255,.8)}
+#sheet .care2 .crow .cbtn{background:linear-gradient(180deg,#ffe08a,#f0b23e)!important;color:#3b2504!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 4px 12px rgba(240,170,40,.35)}
+#sheet .care2 .soon{border-radius:22px!important;border:1px solid rgba(255,255,255,.14)!important;background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04))!important;-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)!important;margin-top:12px}
+#sheet .care2 .soon h5{font:700 12px -apple-system,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(235,242,250,.6)}
+
+/* the grab handle at the top of every sheet: frosted glass, not a dark slab */
+#sheet .x{background:linear-gradient(180deg,rgba(40,70,100,.42),rgba(40,70,100,.0))!important;-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);box-shadow:none!important}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
