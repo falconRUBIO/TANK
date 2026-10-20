@@ -1166,16 +1166,48 @@ export const SOCIAL = {
 const hides = (t) => count(t, 'PLANTS') + count(t, 'ROCKS') + count(t, 'STRUCTURES');
 const hasHome = (t, h) => !h || t.decor.some((d) => h.types?.includes(d.type) || h.cats?.includes(DECOR_DEF[d.type]?.cat));
 // How this fish is getting on with the others. `penalty` is the strain from bullies, rivals and a predator (0 to about 1), `notes` say why, `needs` are things it wants, `good` are friendships.
+// ── How each kind lives (the reef as it is) ── where in the tank it lives; what it hides in, and how many it needs; how full the tank can
+// get before it is uneasy (a share of the tank's room); whether it eats fast or slowly (slow eaters lose meals to fast ones); who it clashes
+// with, and why; and what it is like at its best. Used by socialOf (so it really moves happiness) and shown on the Health screen.
+export const ECO = {
+  goldfish: { zone: 'Middle water, around its anemone', cover: { types: ['anemone'], need: 1, word: 'an anemone to nestle in', cat: 'SPECIAL' }, tol: 0.85, feed: 'fast',
+    clash: { guppy: 'Damselfish and clownfish both guard a home patch and spar over it' }, best: 'A sea anemone of its own to sway in, and easygoing neighbours.' },
+  neon: { zone: 'Open water near the top', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'ROCKS' }, tol: 0.95, feed: 'fast',
+    clash: {}, best: 'A shoal of three or more and open water to swim in.' },
+  cory: { zone: 'The sand, by its burrow', cover: { cats: ['ROCKS'], need: 2, word: 'rocks to keep watch from', cat: 'ROCKS' }, tol: 0.8, feed: 'medium',
+    clash: {}, best: 'A rock burrow to watch from, and no other goby in its patch.' },
+  blue: { zone: 'In and around rock caves', cover: { cats: ['ROCKS', 'STRUCTURES'], need: 2, word: 'a rock cave to claim', cat: 'ROCKS' }, tol: 0.8, feed: 'medium',
+    clash: {}, best: 'A cave to call its own, and no other gramma to defend it from.' },
+  guppy: { zone: 'Its own patch of rock', cover: { cats: ['ROCKS'], need: 2, word: 'rocks to guard', cat: 'ROCKS' }, tol: 0.7, feed: 'fast', crowdMean: true,
+    clash: { goldfish: 'Clownfish and damselfish both guard a home patch and spar over it' }, best: 'A patch of rock all to itself, away from the others.' },
+  angelfish: { zone: 'Cruising the middle water', cover: { cats: ['ROCKS'], need: 3, word: 'rocks to graze', cat: 'ROCKS' }, tol: 0.7, feed: 'fast', crowdMean: true,
+    clash: { angelfish: 'Two big angelfish in one tank fight over who rules it' }, best: 'Room to cruise and plenty of rock to graze.' },
+  platy: { zone: 'Hovering in the shade', cover: { cats: ['STRUCTURES', 'PLANTS'], need: 2, word: 'shade to hover in', cat: 'STRUCTURES' }, tol: 0.85, feed: 'medium',
+    clash: {}, best: 'Shade to hover in by day, and calm company.' },
+  danio: { zone: 'Darting through the middle water', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
+    clash: {}, best: 'A group of its own kind and room to dart about.' },
+  betta: { zone: 'Over the rocks, picking at them', cover: { cats: ['ROCKS'], need: 3, word: 'rocks to pick tiny food from', cat: 'ROCKS' }, tol: 0.7, feed: 'slow',
+    clash: {}, best: 'Lots of rock to graze slowly, and no fast eaters beating it to food.' },
+  seahorse: { zone: 'Holding on to the plants', cover: { cats: ['PLANTS'], need: 2, word: 'plants to hold on to', cat: 'PLANTS' }, tol: 0.6, feed: 'slow',
+    clash: {}, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
+  octopus: { zone: 'Its den, and everywhere else', cover: { types: ['pot', 'coconut'], need: 1, word: 'a den of its own', cat: 'SPECIAL' }, tol: 0.8, feed: 'own',
+    clash: {}, best: 'A den of its own, puzzles to solve, and someone to know.' },
+};
+export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
+export const crowdOf = (t) => { const n = t.fish.filter((x) => !x.dead && !x.away).length, cap = capacity(t.level ?? 1); return { n, cap, r: n / cap }; };
 export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;
-  const cover = Math.min(1, hides(t) / 4), timid = S.size <= 1 && !S.bully, seen = new Set();
+  const E = ECO[f.species] ?? {}, cv = coverOf(t, f), cover = Math.min(1, cv.have / Math.max(1, cv.need)), timid = S.size <= 1 && !S.bully, seen = new Set(), cr = crowdOf(t), meanK = 1 + Math.max(0, cr.r - 0.6);      /* (a crowded tank makes its bullies meaner) */
   for (const o of t.fish) {
     if (o === f) continue; const O = SOCIAL[o.species]; if (!O) continue;
     if (o.species === f.species && S.sameFoe) { out.penalty += 0.35; out.notes.push(`${o.name} and ${f.name} squabble: ${SPECIES_DEF[f.species].label}s prefer to be the only one of their kind.`); }
-    else if (O.bully && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.3 * (1 - 0.6 * cover); out.notes.push(`${o.name} bullies ${f.name}.${cover < 1 ? ' More hiding places (plants, rocks) would help.' : ''}`); }
+    else if (E.clash?.[o.species] && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.2 * (1 - 0.5 * cover); out.notes.push(`${E.clash[o.species]}: ${f.name} and ${o.name} clash.`); }
+    else if (O.bully && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.3 * (1 - 0.6 * cover) * (ECO[o.species]?.crowdMean ? meanK : 1); out.notes.push(`${o.name} bullies ${f.name}.${cover < 1 ? ' More hiding places (plants, rocks) would help.' : ''}`); }
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.12; out.notes.push(`${f.name} keeps a wary eye on ${o.name}.`); }
     if (S.likes?.includes(o.species) && !out.good.some((g) => g.id === o.id)) out.good.push({ id: o.id, text: `${f.name} enjoys ${o.name}'s company.` });
   }
+  if (E.feed === 'slow') { const fast = [...new Set(t.fish.filter((o) => o !== f && !o.dead && ECO[o.species]?.feed === 'fast').map((o) => SPECIES_DEF[o.species]?.label ?? o.species))]; if (fast.length) { out.penalty += Math.min(0.2, 0.07 * fast.length); out.notes.push(`${fast.slice(0, 2).join(' and ')} eat quickly and beat ${f.name} to the food.`); } }
+  if (E.tol && cr.r > E.tol) { out.penalty += Math.min(0.3, (cr.r - E.tol) * 0.8); out.notes.push(`The tank is too crowded for ${f.name} (${cr.n} of ${cr.cap}).`); }
   const own = t.fish.filter((o) => o.species === f.species).length;
   if (S.shoal && own < S.shoal) out.needs.push(`${f.name} feels safest with at least ${S.shoal} of its own kind (${own} now).`);
   if (S.pair && own < 2) out.needs.push(`Seahorses pair for life. A partner would make ${f.name} happier.`);
@@ -1204,22 +1236,24 @@ export function adoptAdvice(t, species) {
 // kinds do not mix), the hiding places it has (cover takes the sting out of a bully: socialOf softens the penalty as the tank fills with
 // plants, rocks and structures), how crowded the tank is for its kind, and its nature. All from the same rules that set its happiness.
 export function wellOf(t, f, now = Date.now()) {
-  const S = SOCIAL[f.species] ?? {}, nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name ?? null, live = t.fish.filter((x) => !x.dead && !x.away), lab = (sp) => (SPECIES_DEF[sp]?.label ?? sp).toLowerCase();
+  const S = SOCIAL[f.species] ?? {}, E = ECO[f.species] ?? {}, nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name ?? null, live = t.fish.filter((x) => !x.dead && !x.away), lab = (sp) => (SPECIES_DEF[sp]?.label ?? sp).toLowerCase(), me = lab(f.species);
   const friends = [], trouble = [], seen = new Set(), addF = (name, why) => { if (name && !friends.some((x) => x.name === name)) friends.push({ name, why }); };
-  if (f.mate) addF(nm(f.mate), 'its partner for life'); if (f.partner) addF(nm(f.partner), 'its partner'); if (f.pal) addF(nm(f.pal), 'best friends'); if (f.buddy) addF(nm(f.buddy), 'follows it about');
-  const timid = (S.size ?? 1) <= 1 && !S.bully;
+  if (f.mate) addF(nm(f.mate), 'its partner for life'); if (f.partner) addF(nm(f.partner), 'its partner'); if (f.pal) addF(nm(f.pal), 'best friends'); if (f.buddy) addF(nm(f.buddy), 'it follows it about');
+  const timid = (S.size ?? 1) <= 1 && !S.bully, cr = crowdOf(t);
   for (const o of live) { if (o === f) continue; const O = SOCIAL[o.species]; if (!O) continue;
-    if (o.species === f.species && S.sameFoe) trouble.push({ name: o.name, kind: 'squabble', text: `Squabbles with ${o.name}: ${lab(f.species)}s want to be the only one of their kind` });
-    else if (O.bully && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'bully', text: `${o.name} the ${lab(o.species)} pushes it around` }); }
+    if (o.species === f.species && S.sameFoe) trouble.push({ name: o.name, kind: 'squabble', text: `Squabbles with ${o.name}: ${me}s want to be the only one of their kind` });
+    else if (E.clash?.[o.species] && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'clash', text: `Clashes with ${o.name}. ${E.clash[o.species]}` }); }
+    else if (O.bully && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'bully', text: `${o.name} the ${lab(o.species)} chases it${ECO[o.species]?.crowdMean && cr.r > 0.6 ? ', and the crowding makes it worse' : ''}` }); }
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'wary', text: `Keeps a wary eye on ${o.name} the ${lab(o.species)}` }); }
-    if (S.likes?.includes(o.species)) addF(o.name, `gets on with ${lab(o.species)}s`); }
-  if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a rivalry with ${nm(f.rival)}` });
-  const have = hides(t), need = 4, threatened = trouble.some((x) => x.kind === 'bully' || x.kind === 'wary'), cover = { have, need, wants: !!S.shy || threatened, helps: threatened && have < need };
-  const n = live.length, cap = capacity(t.level ?? 1), r = n / cap, crowd = { n, cap, word: r >= 0.9 ? 'Crowded' : r >= 0.65 ? 'Busy' : 'Roomy', minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'likes company: it feels safe in a group' : S.bully ? 'likes room to claim its own patch' : null };
-  const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully') && have < need, uneasy = (S.shy || S.pair) && r >= 0.9;
-  const mood = bad ? ['Unwell', 'bad', 'Run down. Food and clean water, then time to recover.'] : stressed ? ['Stressed', 'warn', `${trouble.find((x) => x.kind === 'bully').name} pushes it around and it has too few places to hide.`] : ns.mood === 'Hungry' ? ['Hungry', 'warn', 'Ready for a meal.'] : uneasy ? ['Uneasy', 'warn', 'The tank is crowded for a shy one.'] : (f.happy ?? 0.6) >= 0.75 ? ['Happy', 'good', friends.length ? `Settled, and close to ${friends[0].name}.` : 'Settled and content.'] : (f.happy ?? 0.6) < 0.4 ? ['Gloomy', 'warn', 'Something is missing. See below.'] : ['Content', 'ok', 'Doing well.'];
-  const wants = needsChecklist(t, f, now).filter((x) => !['food', 'play', 'cover', 'peace'].includes(x.k));
-  return { mood, friends, trouble, cover, crowd, nature: S.nature ?? '', kind: S.kind ?? '', traits: f.traits ?? [], wants };
+    if (S.likes?.includes(o.species)) addF(o.name, o.species === f.species ? `another ${me}` : `${me}s and ${lab(o.species)}s get on`); }
+  if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a running rivalry with ${nm(f.rival)}` });
+  if (E.feed === 'slow') { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
+  const cv = coverOf(t, f), threatened = trouble.some((x) => ['bully', 'wary', 'clash'].includes(x.kind)), cover = { ...cv, wants: !!S.shy || threatened || f.species === 'seahorse' || f.species === 'octopus', helps: threatened && cv.have < cv.need };
+  const tol = E.tol ?? 0.85, crowd = { n: cr.n, cap: cr.cap, word: cr.r >= 0.9 ? 'Crowded' : cr.r >= 0.65 ? 'Busy' : 'Roomy', over: cr.r > tol, room: Math.max(0, Math.floor(tol * cr.cap) - cr.n), minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'feels safe in a group' : S.bully ? 'gets meaner when the tank is packed' : null };
+  const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully' || x.kind === 'clash') && cv.have < cv.need, uneasy = crowd.over, lonely = (S.shoal && live.filter((o) => o.species === f.species).length < S.shoal) || (S.pair && live.filter((o) => o.species === f.species).length < 2);
+  const mood = bad ? ['Unwell', 'bad', 'Run down. Food and clean water, then time to recover.'] : stressed ? ['Stressed', 'warn', `${trouble.find((x) => x.kind === 'bully' || x.kind === 'clash').name} keeps after it, and it has too few places to get away.`] : ns.mood === 'Hungry' ? ['Hungry', 'warn', 'Ready for a meal.'] : uneasy ? ['Uneasy', 'warn', `The tank is too full for a ${me} (${cr.n} of ${cr.cap}).`] : lonely ? ['Lonely', 'warn', S.pair ? 'Seahorses pair for life. It is waiting for a partner.' : `It feels safe only in a group of ${S.shoal}.`] : (f.happy ?? 0.6) >= 0.75 ? ['Happy', 'good', friends.length ? `Settled, and close to ${friends[0].name}.` : 'Settled and content.'] : (f.happy ?? 0.6) < 0.4 ? ['Gloomy', 'warn', 'Something is missing. See below.'] : ['Content', 'ok', 'Doing well.'];
+  const wants = needsChecklist(t, f, now).filter((x) => !['food', 'play', 'cover', 'peace', 'home'].includes(x.k));
+  return { mood, friends, trouble, cover, crowd, zone: E.zone ?? '', best: E.best ?? '', feed: E.feed ?? '', nature: S.nature ?? '', kind: S.kind ?? '', traits: f.traits ?? [], wants };
 }
 // Each animal's own needs, as a checklist: what its kind and its nature ask for, and whether the tank gives it now. No two kinds ask for the same
 // things (a seahorse wants plants to hold and a partner, a neon a shoal, a gramma a cave to itself, an octopus a den and puzzles), and the

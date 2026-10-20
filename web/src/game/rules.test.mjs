@@ -1045,6 +1045,17 @@ ok('health: a bully shows as trouble, with too few hiding places it is stressed,
   for (let i = 0; i < 4; i++) t.decor.push({ id: 'p' + i, type: 'kelp', x: i - 2, z: 0, ry: 0 });
   W = R.wellOf(t, t.fish[0]); assert.notEqual(W.mood[0], 'Stressed', 'with places to hide it is no longer stressed'); assert.equal(W.cover.helps, false);
 });
+ok('reef dynamics: a seahorse loses meals to fast eaters, clownfish and damselfish clash, and a too-full tank unsettles a seahorse', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 1; t.decor = [];
+  const mk = (id, sp) => R.ensureFish({ id, name: id, species: sp, seed: 2, born: -4e9, stage: 'adult' });
+  t.fish = [mk('Sea', 'seahorse'), mk('Dam', 'guppy'), mk('Clo', 'goldfish')];
+  const sea = R.wellOf(t, t.fish[0]), dam = R.wellOf(t, t.fish[1]);
+  assert.ok(sea.trouble.some((x) => x.kind === 'food'), 'fast eaters beat the seahorse to food');
+  assert.ok(dam.trouble.some((x) => x.kind === 'clash' && x.name === 'Clo'), 'the damselfish and the clownfish clash');
+  const p0 = R.socialOf(t, t.fish[0]).penalty; for (let i = 0; i < 4; i++) t.fish.push(mk('N' + i, 'neon'));
+  assert.ok(R.wellOf(t, t.fish[0]).crowd.over, 'seven in a level-1 tank is too full for a seahorse'); assert.ok(R.socialOf(t, t.fish[0]).penalty > p0, 'and that weighs on it');
+  for (let i = 0; i < 2; i++) t.decor.push({ id: 'k' + i, type: 'kelp', x: i, z: 0, ry: 0 }); assert.equal(R.coverOf(t, t.fish[0]).have, 2, 'plants count as a seahorse\'s shelter');
+});
 ok('(first 30) a lid decision only comes from an octopus really seen testing the lid, more than once in three days', () => {
   const D = 864e5, t0 = 40 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.dilemmaAt = t0; return t; };
   const a = mk(); omenThen(a, t0 + 1000); assert.ok(!a.dilemma && !a.omen, 'never seen at the lid: nothing to decide');
