@@ -1,6 +1,17 @@
 // Milestone icons drawn in the tank's own pixel style (12×12), one per step of a fish's life. Each row is a string; a letter is a color from the palette, '.' is empty.
 const P = { o: '#3b2a1e', w: '#fff8ea', c: '#ffd9a8', y: '#ffcf4a', Y: '#f2a93b', g: '#5fcf7a', G: '#2f9e57', b: '#7cc7ff', B: '#3d8fe0', p: '#ff8fb1', P: '#e0476b', r: '#ff7a59', s: '#e9c79a', S: '#c99a62', k: '#24323f', v: '#c9a7ff' };
 const ART = {
+  bolt: ['......yyy...', '.....yyy....', '....yyY.....', '...yyY......', '..yyyyyyy...', '.....yyY....', '....yyY.....', '...yyY......', '..yyY.......', '.yyY........', '.yY.........', '............'],
+  clash: ['k..........k', '.kw......wk.', '..kw....wk..', '...kw..wk...', '....kwwk....', '.....kk.....', '....kwwk....', '...kw..wk...', '.SSk....kSS.', '.SS......SS.', '............', '............'],
+  eye: ['............', '............', '....kkkk....', '..kkwwwwkk..', '.kwwwBBwwwk.', 'kwwwBkkBwwwk', 'kwwwBkkBwwwk', '.kwwwBBwwwk.', '..kkwwwwkk..', '....kkkk....', '............', '............'],
+  crowd: ['............', '.rr....bb...', 'rrkr..bbkb..', '.rr....bb...', '....yy......', '...yyky.....', '....yy..gg..', '.pp....ggkg.', 'ppkp....gg..', '.pp.........', '............', '............'],
+  anemone: ['..p..p..p...', '..P.pP.pP.p.', '.pP.P..P..P.', '..P.P.pP.pP.', '..PpP.P..P..', '...PPpPpPP..', '....PPPPP...', '....PPPPP...', '...PPPPPPP..', '..sssssssss.', '.sSsssSsssS.', '............'],
+  cave: ['............', '....SSSS....', '..SSssssSS..', '.SsssssssS..', '.Ssskkkkss..', 'Sssk....ksS.', 'Ssk......kS.', 'Ssk......kS.', 'SSk......kSS', 'ssssssssssss', '.sSsssSsssS.', '............'],
+  shoal: ['............', '..bb........', '.bbkb.......', '..bb...bb...', '.......bbkb.', '.bb.....bb..', 'bbkb........', '.bb...bb....', '.....bbkb...', '......bb....', '............', '............'],
+  shelter: ['............', '.....GG.....', '....GggG....', '...GgGGgG...', '..GgG..GgG..', '..gG....Gg..', '.SSSS..SSSS.', '.SssS..SssS.', '.SssS..SssS.', '.SSSS..SSSS.', 'ssssssssssss', '............'],
+  book: ['............', '.SSSSS.SSSSS', '.SwwwwSwwwwS', '.SwkkwSwkkwS', '.SwwwwSwwwwS', '.SwkkwSwkkwS', '.SwwwwSwwwwS', '.SwkkwSwkkwS', '.SwwwwSwwwwS', '.SSSSSSSSSSS', '......S.....', '............'],
+  target: ['............', '...PPPPPP...', '..PwwwwwwP..', '.PwwPPPPwwP.', '.PwPwwwwPwP.', '.PwPwPPwPwP.', '.PwPwPPwPwP.', '.PwPwwwwPwP.', '.PwwPPPPwwP.', '..PwwwwwwP..', '...PPPPPP...', '............'],
+
   hatched: ['....oooo....', '...owwwwo...', '..owwccwwo..', '..owcwwwwo..', '.owwwwwcwwo.', '.owwcwwwwwo.', '.owwwwwwcwo.', '.owwwwwwwwo.', '..owwwcwwo..', '..owwwwwwo..', '...owwwwo...', '....oooo....'],
   home: ['............', '.....SS.....', '....SssS....', '...SssssS...', '..SsSssSsS..', '.SssSssSssS.', '.SssSssSssS.', '.SsSsssSsSS.', '..SssssssS..', '...SSSSSS...', '............', '............'],
   friend: ['............', '............', '.rr.....bb..', 'rrrr...bbbb.', 'rrkrr.rrkbbb', 'rrrrr.bbbbbb', 'rrrr.p.bbbb.', '.rr..PP.bb..', '.....pp.....', '............', '............', '............'],

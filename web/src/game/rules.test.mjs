@@ -1048,9 +1048,10 @@ ok('health: a bully shows as trouble, with too few hiding places it is stressed,
 ok('reef dynamics: a seahorse loses meals to fast eaters, clownfish and damselfish clash, and a too-full tank unsettles a seahorse', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.level = 1; t.decor = [];
   const mk = (id, sp) => R.ensureFish({ id, name: id, species: sp, seed: 2, born: -4e9, stage: 'adult' });
-  t.fish = [mk('Sea', 'seahorse'), mk('Dam', 'guppy'), mk('Clo', 'goldfish')];
+  t.fish = [mk('Sea', 'seahorse'), mk('Dam', 'guppy'), mk('Clo', 'goldfish')]; t.fish[0].hunger = 0.6;
   const sea = R.wellOf(t, t.fish[0]), dam = R.wellOf(t, t.fish[1]);
-  assert.ok(sea.trouble.some((x) => x.kind === 'food'), 'fast eaters beat the seahorse to food');
+  assert.ok(sea.trouble.some((x) => x.kind === 'food'), 'hungry, fast eaters beat the seahorse to food');
+  t.fish[0].hunger = 0.1; assert.ok(!R.wellOf(t, t.fish[0]).trouble.some((x) => x.kind === 'food'), 'fed its own mysis, it does not lose out'); t.fish[0].hunger = 0.6;
   assert.ok(dam.trouble.some((x) => x.kind === 'clash' && x.name === 'Clo'), 'the damselfish and the clownfish clash');
   const p0 = R.socialOf(t, t.fish[0]).penalty; for (let i = 0; i < 4; i++) t.fish.push(mk('N' + i, 'neon'));
   assert.ok(R.wellOf(t, t.fish[0]).crowd.over, 'seven in a level-1 tank is too full for a seahorse'); assert.ok(R.socialOf(t, t.fish[0]).penalty > p0, 'and that weighs on it');
