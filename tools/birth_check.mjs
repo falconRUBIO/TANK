@@ -25,8 +25,8 @@ ck('Care has him under Needs you, with Watch', r2.rows.some((t) => /Sunny is abo
 ck('Coming up says so, with no clock', r2.soon.some((t) => /about to give birth: stay and watch/.test(t)), r2.soon);
 await p.screenshot({ path: `${out}/1-care.png` });
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
-let born = null; for (let i = 0; i < 1000 && !born; i++) { await p.waitForTimeout(500); born = await p.evaluate(() => window.__game.state.nursery ? { n: window.__game.state.nursery.n, preg: window.__game.state.fish[0].preg } : null); }
-ck('watched: they are born, in front of you', born && !born.preg, born);
+let born = null; const seen = new Set(); for (let i = 0; i < 240 && !born; i++) { await p.waitForTimeout(500); const up = await p.evaluate(() => { const m = document.querySelector('#modal.on h2')?.textContent ?? ''; const r = document.getElementById('reunion')?.classList.contains('on'); document.querySelector('#modal.on #mok')?.click(); if (r) document.getElementById('reunion').click(); return m || (r ? 'reunion' : ''); }); if (up) seen.add(up); born = await p.evaluate(() => window.__game.state.nursery ? { n: window.__game.state.nursery.n, preg: window.__game.state.fish[0].preg } : null); }
+ck('watched: they are born, in front of you', born && !born.preg, { born, popups: [...seen] });
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-birth.png` });
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /gave birth/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
