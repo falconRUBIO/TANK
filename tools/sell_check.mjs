@@ -17,10 +17,10 @@ await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; 
 await p.evaluate(() => window.__ui.open('care')); await p.waitForTimeout(500);
 const meters = await p.evaluate(() => [...document.querySelectorAll('#sheet .meter small')].map((x) => x.textContent));
 console.log('  care says', JSON.stringify(meters)); await p.screenshot({ path: `${out}/care_meters.png` });
-ck('the fish meter says when the next meal is', meters.some((t) => /^Next meal in about 1[12] hours$/.test(t)));
-ck('the octopus meter says when its next crab is', meters.some((t) => /^Ready for a crab in about 1[12] hours/.test(t)));
+// (the Care meters gave way to the Health list: when the next meal is due is on the Feed row and on each animal's card)
+// (the Care meters gave way to the Health list: when the next meal is due is on the Feed row and on each animal's card)
 const careTxt = await p.evaluate(() => document.querySelector('#sheet').textContent);
-ck('Care still mentions water and glass', /water/i.test(careTxt) && /glass/i.test(careTxt));
+ck('Care has the tank upkeep row and a Health list', /Tank upkeep/.test(careTxt) && /Health/.test(careTxt));
 // 2. Collection lists the fish in the tank, the octopus first
 await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });

@@ -11,15 +11,15 @@ const set = (o) => p.evaluate((o) => { const g = window.__game, s = g.state, now
   s.hunger = o.h; s.water = o.w; s.glass = o.g; g.emit('state'); for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); }, o);
 const open = async () => { await p.evaluate(() => { for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); window.__ui.open('tank'); window.__ui.open('care'); document.getElementById('sheet').scrollTop = 0; }); await p.waitForTimeout(500); };
 const read = () => p.evaluate(() => ({ hero: document.querySelector('#sheet [data-csub="care"] .nc')?.textContent ?? '', heroSub: document.querySelector('#sheet .chero small')?.textContent, heads: [...document.querySelectorAll('#sheet h4')].map((x) => x.textContent),
-  due: (() => { const h = [...document.querySelectorAll('#sheet h4')].find((x) => /Needs you/.test(x.textContent)); const g = h?.nextElementSibling; return g ? [...g.querySelectorAll('.crow')].map((r) => r.querySelector('b').textContent + ' | ' + r.querySelector('small').textContent + ' | ' + (r.querySelector('.cbtn')?.textContent ?? '›')) : []; })(),
-  later: [...document.querySelectorAll('#sheet .cgroup.quiet .crow')].map((r) => r.querySelector('b').textContent + ' | ' + r.querySelector('small').textContent), drawer: !!document.querySelector('#sheet .cgroup .drawer'),
+  due: [...document.querySelectorAll('#sheet .crow.due, #sheet .crow.hot')].map((r) => r.querySelector('b').textContent + ' | ' + r.querySelector('small').textContent + ' | ' + (r.querySelector('.cbtn')?.textContent ?? '›')),
+  later: [...document.querySelectorAll('#sheet .crow:not(.due):not(.hot)')].map((r) => r.querySelector('b').textContent + ' | ' + r.querySelector('small').textContent), drawer: !!document.querySelector('#sheet .cgroup .drawer'),
   dupes: [...document.querySelectorAll('#sheet .wish.daily small')].map((x) => x.textContent).filter((t) => /WORTH/i.test(t)).length + [...document.querySelectorAll('#sheet .moodchip b')].filter((x) => /Could use a hand/.test(x.textContent)).length,
   carehead: !!document.querySelector('#sheet .carehead'), extras: [...document.querySelectorAll('#sheet .acts.mini .tile')].map((t) => t.textContent.trim().slice(0, 30)) }));
 // 1. a busy tank: octopus, seahorse and fish hungry, dirty water and glass
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.7 }, { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, hunger: 0.6, sex: 'm' }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.6, g: 0.5 });
 await open(); let r = await read(); console.log('busy', JSON.stringify(r));
-ck('busy: the Care tab says how many jobs need you', r.hero === '3', r.hero);
-ck('busy: Feed, Wipe and Change are the rows that need you (Feed opens the Feed screen, the others have one button)', r.due.length === 3 && /^Feed/.test(r.due[0]) && /Wipe$/.test(r.due[1]) && /Change$/.test(r.due[2]), r.due);
+ck('busy: the Care tab says how many jobs need you (feeding, and the tank upkeep)', r.hero === '2', r.hero);
+ck('busy: Feed and Tank upkeep need you; upkeep names both jobs and its button says 2 jobs', r.due.length === 2 && /^Feed/.test(r.due[0]) && /^Tank upkeep \| The glass needs a wipe · the water is cloudy \| 2 jobs$/.test(r.due[1]), r.due);
 ck('busy: no repeated messages (old headline, "worth doing now", "could use a hand")', !r.carehead && r.dupes === 0, r);
 await p.screenshot({ path: `${OUT}/v_busy_top.png` });
 // tapping Feed opens the Feed screen: a card for each animal that can eat; choosing the crab drops it in for Inky, no tap on the water needed
@@ -29,13 +29,13 @@ await p.evaluate(() => document.querySelector('#sheet [data-feed="crab"]')?.clic
 ck('choosing the crab closes the menu and drops it straight in for Inky', !feeding.sheet && feeding.food === 'crab' && feeding.inky < 0.5, feeding);
 await p.evaluate(() => document.querySelector('#foodbar [data-done]')?.click());
 // Wipe opens the glass cleaning; Change starts the water change
-await open(); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="clean"] .cbtn').click()); await p.waitForTimeout(600);
+await open(); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="upkeep"] .cbtn').click()); await p.waitForTimeout(500); await p.evaluate(() => document.querySelector('#modal.on [data-up="clean"]').click()); await p.waitForTimeout(600);
 const cleaning = await p.evaluate(() => ({ sheet: document.getElementById('sheet').classList.contains('on') })); ck('Wipe closes Care and starts cleaning', !cleaning.sheet, cleaning);
 await p.mouse.click(10, 10).catch(() => {}); await p.evaluate(() => { window.__ui.open('tank'); });
 // 2. all looked after
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.02 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.02, w: 0.95, g: 0.05 });
 await open(); r = await read(); console.log('calm', JSON.stringify(r));
-ck('calm: no count on the Care tab, nothing under Needs you, chores under Later with when they are due', !r.hero && !r.due.length && r.later.length === 3 && (r.heads.includes('Later') || r.heads.includes('All looked after')) && !r.heads.includes('Needs you'), r);
+ck('calm: no count on the Care tab, nothing needs you, Feed and Tank upkeep say when they are next due, and Health lists every animal', !r.hero && !r.due.length && r.later.length >= 2 && r.later.some((x) => /^Tank upkeep \| All clean · next:/.test(x)) && r.heads.some((h) => /^Health/.test(h)), r);
 ck('calm: the food list is folded away', !r.drawer);
 { await p.evaluate(() => document.querySelector('#sheet [data-csub="play"]')?.click()); await p.waitForTimeout(400); const ex = await p.evaluate(() => [...document.querySelectorAll('#sheet .acts.mini .tile')].map((t) => t.textContent.trim().slice(0, 30)));
   ck('calm: Puzzle jar and Postcard are on the Play tab', ex.some((x) => /Puzzle/.test(x)) && ex.some((x) => /Postcard/.test(x)), ex); await p.evaluate(() => document.querySelector('#sheet [data-csub="care"]')?.click()); await p.waitForTimeout(400); }
@@ -47,9 +47,9 @@ const tw = await p.evaluate(() => ({ sheet: document.getElementById('sheet').cla
 await set({ fish: [{ id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
 ck('fish only, hungry: one job on the Care tab, and Feed for the fish', r.hero === '1' && r.due.length === 1 && /1 animal could use food/.test(r.due[0]), r.due);
 await set({ fish: [], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
-ck('an empty tank does not break the page, and has no Feed row', (r.heads.includes('Later') || r.heads.includes('All looked after')) && !r.later.some((x) => /^Feed/.test(x)), r);
+ck('an empty tank does not break the page, and has no Feed row', r.later.some((x) => /^Tank upkeep/.test(x)) && !r.later.some((x) => /^Feed/.test(x)), r);
 // the Tank status fold opens to the meters
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.3 }], h: 0.1, w: 0.9, g: 0.1 }); await open();
-const meters = await p.evaluate(() => { const d = document.querySelector('#sheet details[data-fold="tankstatus"]'); d.open = true; return d.querySelectorAll('.meter').length; }); ck('the Who\'s hungry fold opens to the meters', meters >= 1, meters);
+const hl = await p.evaluate(() => [...document.querySelectorAll('#sheet .hrow')].map((r) => r.textContent)); ck('Health has a row for each animal, with a word for how it is', hl.length >= 1 && hl.every((t) => /Thriving|Doing fine|A bit off|Hungry|Unwell/.test(t)), hl);
 ck('no page errors', errs.length === 0, errs.slice(0, 3));
 console.log(fails ? `${fails} failed` : 'Care checks passed'); await b.close();

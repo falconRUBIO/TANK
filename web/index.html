@@ -848,6 +848,21 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #card h4.csec{font:700 13px -apple-system,system-ui,sans-serif!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:rgba(235,242,250,.6)!important;margin:22px 4px 8px!important}
 #card h4.csec:first-of-type{margin-top:10px!important}
 #card .mhead{margin:22px 4px 8px!important}#card .mhead span{font:700 13px -apple-system,system-ui,sans-serif!important;letter-spacing:.06em;text-transform:uppercase;color:rgba(235,242,250,.6)!important}#card .mhead b{font:600 13px -apple-system,system-ui,sans-serif}
+/* Care: Health, one row per animal: its picture, name, a word for how it is, and what it is missing */
+#sheet .care2 h4 .hsum{font:500 12px -apple-system,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:rgba(235,242,250,.55);margin-left:6px}
+#sheet .hlist{display:flex;flex-direction:column;gap:8px}
+#sheet .hrow{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04));-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%)}
+#sheet .hrow .hth{flex:none;width:44px;height:44px;border-radius:50%;object-fit:contain;background:rgba(255,255,255,.1);image-rendering:pixelated}
+#sheet .hrow .ht{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+#sheet .hrow .ht b{font:650 15.5px -apple-system,system-ui,sans-serif;color:#fff;display:flex;align-items:center;gap:8px}
+#sheet .hrow .ht small{font:400 12.5px/1.35 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.75)}
+#sheet .hrow .ht small.allmet{color:rgba(168,240,192,.8)}
+#sheet .hw{font:600 11.5px -apple-system,system-ui,sans-serif;font-style:normal;padding:2px 8px;border-radius:999px}
+#sheet .hw.good{background:rgba(120,220,150,.22);color:#a8f0c0}#sheet .hw.ok{background:rgba(255,255,255,.14);color:#e6f0fa}#sheet .hw.warn{background:rgba(255,190,90,.22);color:#ffd28a}#sheet .hw.bad{background:rgba(255,110,110,.25);color:#ffb3b3}
+#sheet .hrow .chev{font-style:normal;color:rgba(255,255,255,.5);font-size:20px}
+#modal .upk .upr{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid rgba(255,255,255,.1);text-align:left}
+#modal .upk .upr .ci{width:36px;height:36px;display:grid;place-items:center}#modal .upk .upr .ct{flex:1;display:flex;flex-direction:column}#modal .upk .upr .ct b{font:600 15px -apple-system,system-ui,sans-serif;color:#fff}#modal .upk .upr .ct small{font-size:12.5px;color:rgba(235,242,250,.7)}
+#modal .upk .okc{font-style:normal;color:#a8f0c0;font-weight:700}#modal .upk .cbtn{padding:7px 14px;border-radius:999px;border:0;background:linear-gradient(180deg,#ffe08a,#f0b23e);color:#3b2504;font:600 13px -apple-system,system-ui,sans-serif}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
