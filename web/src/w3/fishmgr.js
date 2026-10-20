@@ -396,11 +396,11 @@ export class Fishes {
       // the octopus opens it itself: only when it is really going in (at the rim, pushing under) or coming out (lifting the edge from inside);
       // passing by, the shell stays shut. Going in, the lid rises as it gets its arms under the rim; coming out, it drops once it is clear
       if (under) it.wasUnder = performance.now(); const leaving = !f.dead && !under && dist < 1.1 && performance.now() - (it.wasUnder ?? -1e9) < 6000;
-      const push = entering && dist < 1.05 ? Math.max(0, Math.min(1, (1.05 - dist) / 0.55)) : leaving ? Math.max(0, Math.min(1, (1.1 - dist) / 0.5)) : 0;
+      const push = entering && dist < 1.3 ? Math.max(0, Math.min(1, (1.3 - dist) / 0.45)) : leaving ? Math.max(0, Math.min(1, (1.1 - dist) / 0.5)) : 0;
       if (push > 0.05) { f.lidReach = { x: f.den.x, z: f.den.z - 0.2, k: push }; } else if (f.lidReach) f.lidReach = null;
       const open = push > 0 ? push : under ? (f.sleepK ?? 0) > 0.5 ? 0.02 : (f.trust ?? 0) >= 1 ? 0.24 + Math.sin(t * 0.7) * 0.04 : 0.07 : 0;      /* (an octopus that does not know you yet keeps the shell nearly shut; one that does watches you through the crack) */      // (asleep, it pulls the shell right down)
       if (it.flipK == null && ((this.flipped ||= new Set()).has(it.id ?? f.den.id) || performance.now() - (this.openedAt ??= performance.now()) < 15000)) { it.flipK = 1; it.lidK = open; }      // opening the app, a home it already had is shown as it was, not turned over again before your eyes
-      it.flipK = (it.flipK ?? 0) + (1 - (it.flipK ?? 0)) * Math.min(1, dt * 0.9); it.lidK = (it.lidK ?? 0) + (open - (it.lidK ?? 0)) * Math.min(1, dt * (open > (it.lidK ?? 0) ? 2.2 : 1.3));
+      it.flipK = (it.flipK ?? 0) + (1 - (it.flipK ?? 0)) * Math.min(1, dt * 0.9); it.lidK = (it.lidK ?? 0) + (open - (it.lidK ?? 0)) * Math.min(1, dt * (open > (it.lidK ?? 0) ? 4 : 1.3));
       if (it.flipK > 0.99) (this.flipped ||= new Set()).add(it.id ?? f.den.id);      // (and a shell rebuilt later keeps its side)
       const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
       const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand

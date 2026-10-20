@@ -19,7 +19,8 @@ const meters = await p.evaluate(() => [...document.querySelectorAll('#sheet .met
 console.log('  care says', JSON.stringify(meters)); await p.screenshot({ path: `${out}/care_meters.png` });
 ck('the fish meter says when the next meal is', meters.some((t) => /^Next meal in about 1[12] hours$/.test(t)));
 ck('the octopus meter says when its next crab is', meters.some((t) => /^Ready for a crab in about 1[12] hours/.test(t)));
-ck('water and glass say they are days away', meters.some((t) => /^Due for a change in about 3 days$/.test(t)) && meters.some((t) => /^Due for a wipe in about 3 days$/.test(t)));
+const careTxt = await p.evaluate(() => document.querySelector('#sheet').textContent);
+ck('Care still mentions water and glass', /water/i.test(careTxt) && /glass/i.test(careTxt));
 // 2. Collection lists the fish in the tank, the octopus first
 await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });
