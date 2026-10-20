@@ -15,7 +15,7 @@ await p.evaluate(() => document.querySelector('#welcome .scr')?.scrollTo(0, 9999
 await p.click('#go'); await p.waitForSelector('.codebig', { timeout: 30000 }); await shot(p, '04_code');
 const code = (await p.textContent('.codebig')).replace(/\s/g, '');
 await p.click('#en'); await p.waitForTimeout(4000); await shot(p, '05_first_octopus', 1500);
-await p.click('#modal.on #mok').catch(() => {}); await p.waitForTimeout(2500);
+await p.evaluate(() => document.querySelector('#modal.on #mok')?.click()); await p.waitForTimeout(2500);
 const q = await mk(); await q.goto(base + '/?q=1'); await q.waitForSelector('#welcome.on'); await q.click('[data-a=join]'); await q.fill('#cd', code); await q.click('#go'); await q.waitForSelector('.pvt', { timeout: 30000 }); await shot(q, '06_join_preview');
 await q.click('#go').catch(() => {}); await q.waitForTimeout(1200); await shot(q, '07_join_profile'); await q.fill('#nm', 'Ben').catch(() => {}); await q.click('#go').catch(() => {}); await q.waitForTimeout(3000);
 await p.evaluate(() => { const g = window.__game; if (g?.state?.flags) g.state.flags.tut = 5; }); await p.click('nav [data-tab=friends]', { force: true }); await shot(p, '08_crew', 1800); console.log('slot canvas', await p.evaluate(() => [...document.querySelectorAll('#sheet canvas.big')].map((c) => [c.width, c.height, c.clientWidth, c.clientHeight, getComputedStyle(c).padding, getComputedStyle(c).objectFit].join(' '))));

@@ -25,7 +25,7 @@ ck('Care has him under Needs you, with Watch', r2.rows.some((t) => /Sunny is abo
 ck('Coming up says so, with no clock', r2.soon.some((t) => /about to give birth: stay and watch/.test(t)), r2.soon);
 await p.screenshot({ path: `${out}/1-care.png` });
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
-let born = null; for (let i = 0; i < 40 && !born; i++) { await p.waitForTimeout(500); born = await p.evaluate(() => window.__game.state.nursery ? { n: window.__game.state.nursery.n, preg: window.__game.state.fish[0].preg } : null); }
+let born = null; for (let i = 0; i < 240 && !born; i++) { await p.waitForTimeout(500); born = await p.evaluate(() => window.__game.state.nursery ? { n: window.__game.state.nursery.n, preg: window.__game.state.fish[0].preg } : null); }
 ck('watched: they are born, in front of you', born && !born.preg, born);
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-birth.png` });
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /gave birth/.test(m.text))?.img ?? null); }

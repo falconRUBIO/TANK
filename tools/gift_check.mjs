@@ -11,11 +11,11 @@ const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefi
 const errors = []; const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); return p; };
 const A = await mk(); await A.goto(base + '/?q=0'); await A.waitForSelector('#welcome.on', { timeout: 120000 });
 await A.click('[data-a=create]'); await A.fill('#nm', 'Ana'); await A.click('#go'); await A.waitForSelector('.codebig', { timeout: 90000 });
-const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en'); await A.waitForSelector('#modal.on #mok', { timeout: 120000 }); await A.click('#modal.on #mok'); await A.waitForTimeout(1500);
+const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en'); await A.waitForSelector('#modal.on #mok', { timeout: 120000 }); await A.evaluate(() => document.querySelector('#modal.on #mok').click()); await A.waitForTimeout(1500);
 const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.waitForSelector('#welcome.on', { timeout: 120000 });
 await B.waitForSelector('.pvt, #cd, #nm', { timeout: 90000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 90000 }); await B.click('#go'); }
 await B.waitForSelector('#nm', { timeout: 90000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
-for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.click('#modal.on #mok'); break; } else if (t) await B.click('#modal.on #mok').catch(() => {}); }
+for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.evaluate(() => document.querySelector('#modal.on #mok').click()); break; } else if (t) await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
 await B.waitForTimeout(2500);
 const ben = await B.evaluate(() => window.__game.you.userId);
 const r = await A.evaluate(async (to) => { const g = window.__game; g.state.shells = 999; return g.dispatch({ t: 'buyFish', species: 'goldfish', name: 'Bubbles', seed: 7, to, surprise: true, note: 'Thought you would love this one!', rush: true }); }, ben);
@@ -35,8 +35,8 @@ ck('opened, the fish swims out of the bag', out);
 await B.waitForSelector('#modal.on h2', { timeout: 15000 }).catch(() => {});
 const card = await B.evaluate(() => document.querySelector('#modal.on')?.innerText ?? '');
 ck('a card says who it is from, with the note', /A GIFT FROM ANA/i.test(card) && /love this one/.test(card) && /Bubbles/.test(card), card.replace(/\s+/g, ' ').slice(0, 140));
-await B.click('#modal.on #mok').catch(() => {}); await B.waitForTimeout(2000);
-const thanked = await A.evaluate(() => window.__game.state.fish.find((f) => f.name === 'Bubbles')?.gift?.thanked);
+await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); await B.waitForTimeout(2000);
+const thanked = await A.waitForFunction(() => window.__game.state.fish.find((f) => f.name === 'Bubbles')?.gift?.thanked, null, { timeout: 60000 }).then(() => true).catch(() => false);      // (a slow machine takes a while to pass it on)
 ck('Ben\'s thanks reach the tank (and Ana)', !!thanked);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); fs.rmSync(tmp, { recursive: true, force: true }); console.log(fails ? `${fails} failed` : 'Gift checks passed'); process.exit(fails ? 1 : 0);

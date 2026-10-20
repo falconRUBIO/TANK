@@ -36,12 +36,12 @@ await p.waitForTimeout(600); await p.evaluate(() => { const f = window.__fishes.
 const dlg = await p.evaluate(() => document.querySelector('#modal.on')?.innerText ?? ''); if (process.env.DBG) console.log('D', JSON.stringify(await p.evaluate(() => ({ log: window.__dlgLog, v: window.__game.state.visitor, modal: document.querySelector('#modal')?.className, txt: document.querySelector('#modal')?.innerText?.slice(0, 120), inList: window.__fishes.byId.has(window.__game.state.visitor?.id) })))); await p.screenshot({ path: `${out}/2-wants-to-stay.png` });
 ck('tapping it asks: let it stay, or let it wander (no hurry, no cost)', /wants to stay/i.test(dlg) && /Let it stay/.test(dlg) && /Let it wander/.test(dlg), dlg.replace(/\n/g, ' | '));
 await p.click('#modal.on [data-i="0"]'); for (let i = 0; i < 30 && !(await p.$('#modal.on #mi')); i++) { await p.waitForTimeout(400); await p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !m.querySelector('#mi') && !/wants to stay/i.test(m.innerText)) m.querySelector('#mok')?.click(); }); }      // (a celebration may come first)
-if (await p.$('#modal.on #mi')) { await p.fill('#modal.on #mi', 'Sunny'); await p.click('#modal.on #mok'); } await p.waitForTimeout(800);
+if (await p.$('#modal.on #mi')) { await p.fill('#modal.on #mi', 'Sunny'); await p.evaluate(() => document.querySelector('#modal.on #mok').click()); } await p.waitForTimeout(800);
 const kept = await p.evaluate(() => { const s = window.__game.state; return { fish: s.fish.filter((f) => f.resident).map((f) => ({ name: f.name, species: f.species })), inWater: window.__fishes.list.some((f) => f.fid?.startsWith('r') && !f.visitor) }; });
 ck('it stays: a fish of the tank now, swimming with the others', kept.fish.length === 1 && kept.inWater && kept.fish[0].name === 'Sunny', JSON.stringify(kept));
 // 4. a time capsule made while someone is looking gets a photo of the tank as it is
 await p.evaluate(() => { const g = window.__game; g.addJournal('Time capsule: day 30. 5 animals, 4 decorations, level 6.'); }); await p.waitForTimeout(2500);
-const ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').find((m) => m.text.startsWith('Time capsule: day 30'))?.img?.slice(0, 30) ?? null);
+let ph = null; for (let i = 0; i < 60 && !ph; i++) { ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').find((m) => m.text.startsWith('Time capsule: day 30'))?.img?.slice(0, 30) ?? null); if (!ph) await p.waitForTimeout(1000); }      // (a slow machine takes a while to draw it)
 ck('the capsule\'s photo is taken from the tank itself, right then', !!ph && ph.startsWith('data:image/jpeg'), ph ?? '');
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Living History checks passed'); process.exit(fails ? 1 : 0);

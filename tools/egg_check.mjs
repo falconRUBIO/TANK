@@ -9,7 +9,7 @@ await pg.evaluate(() => { const g = window.__game, s = g.state, D = 864e5, now =
   s.decor = [{ id: 'g1', type: 'grass', x: 0.5, z: 0.2, ry: 0, at: now - D }, { id: 'c1', type: 'coconut', x: -3, z: 1.4, ry: 0, at: now - D }];
   s.eggs = [{ id: 'e1', species: 'goldfish', a: 'p1', b: 'p0', seed: 5, laid: now - D, hatchAt: now + 2 * D, cared: [1], guard: 'p0' }];
   g.emit('state'); }, null);
-for (let k = 0; k < 6; k++) { await pg.waitForTimeout(700); if (await pg.$('#modal.on #mok')) await pg.click('#modal.on #mok').catch(() => {}); }
+for (let k = 0; k < 6; k++) { await pg.waitForTimeout(700); if (await pg.$('#modal.on #mok')) await pg.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
 const r = await pg.evaluate(async () => { const F = window.__fishes, eg = [...window.__eggs.values()][0], P = eg.group.position, G = F.byId.get('p0'), o = F.byId.get('o1'), log = []; let t = 100, last = '';
   await new Promise((q) => setTimeout(q, 3000));
   o.pos.set(P.x + 3.2, o.pos.y, P.z + 0.3); o.inspect = { x: P.x, z: P.z };      // it goes for the eggs

@@ -29,7 +29,7 @@ await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-hatch.png` })
 const g = await p.evaluate((id) => +(window.__fishes.byId.get(id)?.growth ?? 0).toFixed(2), kid?.id); ck('it is tiny', g > 0 && g <= 0.25, g);
 const other = () => p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !/NAME YOUR BABY|ONE MORE LITTLE ONE/i.test(m.innerText)) m.querySelector('#mok')?.click(); });
 let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
-ck('you name it', named); if (named) { await p.fill('#modal.on #mi', 'Pip'); await p.click('#modal.on #mok'); }
+ck('you name it', named); if (named) { await p.fill('#modal.on #mi', 'Pip'); await p.evaluate(() => document.querySelector('#modal.on #mok').click()); }
 for (let i = 0; i < 10; i++) { await p.waitForTimeout(500); await p.evaluate(() => { const m = document.querySelector('#modal.on'); if (/ONE MORE/i.test(m?.innerText ?? '')) m.querySelector('#mno')?.click(); }); }
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /Tiny octopuses/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));

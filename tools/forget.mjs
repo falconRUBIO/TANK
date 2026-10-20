@@ -8,12 +8,12 @@ const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefi
 const errors = []; let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && /^(fish|tank|frame|sync|water change) error/.test(m.text())) errors.push(m.text()); }); return p; };
 const modalTitle = (p) => p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? '');
-const settle = async (p, wantOcto) => { let offered = false; for (let i = 0; i < 30; i++) { await p.waitForTimeout(500); const t = await modalTitle(p); if (/YOUR OWN OCTOPUS/i.test(t)) { offered = true; if (wantOcto) await p.click('#modal.on #mok'); else break; } else if (t) await p.click('#modal.on #mok').catch(() => {}); } return offered; };
+const settle = async (p, wantOcto) => { let offered = false; for (let i = 0; i < 30; i++) { await p.waitForTimeout(500); const t = await modalTitle(p); if (/YOUR OWN OCTOPUS/i.test(t)) { offered = true; if (wantOcto) await p.evaluate(() => document.querySelector('#modal.on #mok').click()); else break; } else if (t) await p.evaluate(() => document.querySelector('#modal.on #mok')?.click()); } return offered; };
 const me = (p) => p.evaluate(() => { const g = window.__game; return { code: g.code, members: (g.members ?? []).map((m) => m.name).sort(), fish: g.state.fish.map((f) => `${f.name}:${f.owner === g.you.userId ? 'mine' : g.members?.some((m) => m.id === f.owner) ? 'crew' : 'nobody'}`).sort() }; });
 // the creator and a friend
 const A = await mk(); await A.goto(base + '/?q=0'); await A.waitForSelector('#welcome.on', { timeout: 60000 });
 await A.click('[data-a=create]'); await A.fill('#nm', 'Ana'); await A.click('#go'); await A.waitForSelector('.codebig', { timeout: 30000 });
-const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en'); await A.waitForSelector('#modal.on #mok', { timeout: 60000 }); await A.click('#modal.on #mok'); await A.waitForTimeout(1500);
+const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en'); await A.waitForSelector('#modal.on #mok', { timeout: 60000 }); await A.evaluate(() => document.querySelector('#modal.on #mok').click()); await A.waitForTimeout(1500);
 const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.waitForSelector('#welcome.on', { timeout: 60000 });
 await B.waitForSelector('.pvt, #cd, #nm', { timeout: 20000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 20000 }); await B.click('#go'); }
 await B.waitForSelector('#nm', { timeout: 30000 }); await B.fill('#nm', 'Ben'); await B.click('#go');

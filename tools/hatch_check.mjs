@@ -47,7 +47,7 @@ ck('fresh from the egg it is tiny (a fifth of a grown fish)', look.kid > 0 && lo
 const other = () => p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !/NAME YOUR BABY|ONE MORE LITTLE ONE/i.test(m.innerText)) m.querySelector('#mok')?.click(); });      // (a chapter or a gift may come first)
 let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 ck('you are asked to name it, once the little one has swum out (not straight away)', named && (await p.evaluate(() => window.__nameAt - window.__crackAt)) > 7000, await p.evaluate(() => window.__nameAt - window.__crackAt));
-if (named) { await p.fill('#modal.on #mi', 'Pebble'); await p.click('#modal.on #mok'); }
+if (named) { await p.fill('#modal.on #mi', 'Pebble'); await p.evaluate(() => document.querySelector('#modal.on #mok').click()); }
 let offer = false; for (let i = 0; i < 30 && !offer; i++) { await p.waitForTimeout(500); await other(); offer = await p.evaluate(() => /ONE MORE LITTLE ONE/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 await p.screenshot({ path: `${out}/5-one-more.png` }); ck('then: one more little one is still by the eggs, keep it too?', offer);
 if (offer) await p.click('#modal.on [data-i="0"]');

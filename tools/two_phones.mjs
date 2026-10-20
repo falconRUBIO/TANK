@@ -13,7 +13,7 @@ const popups = (p) => p.evaluate(() => ['coach', 'toast', 'settle', 'reunion'].f
 const A = await mk(); await A.goto(base + '/?q=0'); await A.waitForSelector('#welcome.on', { timeout: 60000 });
 await A.click('[data-a=create]'); await A.fill('#nm', 'Ana'); await A.click('#go'); await A.waitForSelector('.codebig', { timeout: 30000 });
 const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en');
-await A.waitForSelector('#modal.on #mok', { timeout: 60000 }); await A.click('#modal.on #mok');
+await A.waitForSelector('#modal.on #mok', { timeout: 60000 }); await A.evaluate(() => document.querySelector('#modal.on #mok').click());
 await A.waitForTimeout(1500); const quietA = await popups(A); await shot(A, '1_creator_octopus_drops');
 ck('nothing pops up while the first octopus drops in', quietA.length === 0, quietA.join(','));
 await A.waitForTimeout(10500); ck('the first tip comes after the quiet moment', (await popups(A)).includes('coach'));
@@ -24,9 +24,9 @@ const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.wai
 await B.waitForSelector('.pvt, #cd, #nm', { timeout: 20000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 20000 }); await B.click('#go'); }
 await B.waitForSelector('#nm', { timeout: 30000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
 // a daily gift or welcome card may show first; the octopus offer must still come once it is out of the way
-let offered = false; for (let i = 0; i < 40 && !offered; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) offered = true; else if (t) await B.click('#modal.on #mok').catch(() => {}); }
+let offered = false; for (let i = 0; i < 40 && !offered; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) offered = true; else if (t) await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
 await shot(B, '2_friend_offer'); ck('the friend is offered an octopus of their own', offered);
-if (offered) { await B.click('#modal.on .pk[data-pal="3"]').catch(() => {}); await B.click('#modal.on #mok'); }
+if (offered) { await B.click('#modal.on .pk[data-pal="3"]').catch(() => {}); await B.evaluate(() => document.querySelector('#modal.on #mok').click()); }
 await B.waitForTimeout(1500); const quietB = await popups(B); await shot(B, '3_friend_octopus_drops'); ck('nothing pops up on the friend\'s phone while it drops in', quietB.length === 0, quietB.join(','));
 await B.waitForTimeout(8000);
 const fishOf = (p) => p.evaluate(() => window.__game.state.fish.map((f) => `${f.name}:${f.species}:${f.owner === window.__game.you.userId ? 'mine' : 'theirs'}`).sort());
