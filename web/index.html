@@ -622,9 +622,9 @@
 #sheet .capcmp{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}#sheet .capcmp td,#sheet .capcmp th{padding:4px 6px;text-align:right}#sheet .capcmp td:first-child{text-align:left;color:var(--dim)}#sheet .capcmp th{font-weight:600;color:#ffe2a8}
 #sheet .capwho,#sheet .capnoimg{font-size:13px;color:var(--dim);margin:6px 0}#sheet .capev{margin:6px 0 10px;padding-left:18px;font-size:13px}
 #sheet .crew h3{margin-bottom:2px}#sheet .crew .crewsub{margin:0 0 14px;text-align:center;font-size:13px;color:var(--dim)}
-#sheet .crew .seg{position:relative;gap:0;padding:2px;border-radius:10px;background:rgba(118,118,128,.24);margin:0 0 18px}
-#sheet .crew .seg button{border:0;border-radius:8px;padding:7px 2px;font:600 13px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.85);transition:background .25s,color .25s}
-#sheet .crew .seg button.on{background:rgba(255,255,255,.22);color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.04)}
+#sheet .seg{position:relative;gap:6px!important;padding:0;background:none;margin:0 0 16px}
+#sheet .seg button,#sheet .cat{border-radius:999px!important;border:1px solid rgba(255,255,255,.18)!important;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04))!important;padding:9px 6px;font:600 13.5px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.85);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);transition:background .25s,color .25s}
+#sheet .seg button.on,#sheet .cat.on{background:rgba(255,255,255,.26)!important;color:#fff;border-color:rgba(255,255,255,.45)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 12px rgba(0,0,0,.15)}
 #sheet .crew .slots{display:flex;justify-content:space-around;gap:6px;margin:0 0 6px;padding:14px 6px 12px;border-radius:18px;background:rgba(255,255,255,.06)}#dimmer{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .6s ease;background:radial-gradient(circle at var(--x,50%) var(--y,60%),rgba(0,6,18,0) 0,rgba(0,6,18,0) 42px,rgba(0,6,18,.35) 90px,rgba(0,6,18,.68) 190px)}#dimmer.on{opacity:1}#modal .pcprev{padding:14px 14px 12px;text-align:center}#modal .pcprev img{display:block;width:100%;max-height:58vh;object-fit:contain;border-radius:10px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);-webkit-touch-callout:default}#modal .pcprev small{display:block;margin-top:6px;font-size:11.5px}#modal .bletter{text-align:center;padding-top:22px}#modal .bletter .bpic{display:flex;justify-content:center;transform:rotate(-18deg);margin-bottom:6px;animation:bpop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes bpop{from{transform:rotate(-40deg) scale(.4);opacity:0}}
 #modal .bletter .scroll{position:relative;margin:4px 2px 12px;padding:18px 18px 14px;border-radius:6px;background:linear-gradient(#fbf1d6,#f1e2bb);color:#4a3a1e;box-shadow:inset 0 0 0 1px rgba(120,90,40,.25),0 8px 22px rgba(0,0,0,.25);transform-origin:top;animation:unroll .55s cubic-bezier(.2,.9,.3,1) .15s both}
 #modal .bletter .scroll::before,#modal .bletter .scroll::after{content:'';position:absolute;left:-6px;right:-6px;height:12px;border-radius:7px;background:linear-gradient(#e6cf9a,#c9a96a)}#modal .bletter .scroll::before{top:-6px}#modal .bletter .scroll::after{bottom:-6px}
@@ -769,7 +769,7 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 
 /* Today: what the page is, tappable mood and level, and the detail card */
 #sheet .todaysub{margin:-6px 4px 12px;text-align:center;font-size:12.5px;color:var(--dim);line-height:1.4}
-#sheet .tline button{all:unset;cursor:pointer}#sheet .tline .lvl{display:flex;align-items:center;gap:8px;font-size:12px}
+#sheet .tline button{all:unset;min-width:0;box-sizing:border-box;cursor:pointer}#sheet .tline .lvl{display:flex;align-items:center;gap:8px;font-size:12px}
 #modal .box.info{text-align:left}#modal .box.info button{text-align:center;justify-content:center}#modal .box.info h2{text-align:center}#modal .box.info .big-ic{text-align:center}
 #modal .box.info .ipic{margin:-6px auto 12px;width:120px;height:120px;border-radius:28px;background:radial-gradient(circle at 50% 35%,rgba(140,220,255,.35),rgba(20,70,110,.5));display:grid;place-items:center}
 #modal .box.info .ipic img{width:96px;height:96px;object-fit:contain;image-rendering:pixelated}
@@ -799,7 +799,7 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
    the same segmented control, and every row or tile a pane of frosted glass ── */
 #sheet .crew>h3{font:700 22px -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif!important;letter-spacing:-.02em!important;text-transform:none!important;color:#fff!important;text-align:center;margin:6px 0 2px!important;text-shadow:none!important}
 #sheet .crew .crewsub,#sheet .todaysub{font:400 13px -apple-system,system-ui,sans-serif!important;color:rgba(235,242,250,.66)!important;text-align:center;margin:2px 8px 14px!important;line-height:1.4}
-#sheet .crew .seg{margin:4px 0 6px!important}
+#sheet .crew .seg{margin:4px 0 14px!important}
 #sheet .crew h4,#sheet .crew h4.ntsh,#sheet .care2 h4{font:600 12.5px -apple-system,system-ui,sans-serif!important;letter-spacing:.05em!important;text-transform:uppercase;color:rgba(235,242,250,.58)!important;margin:20px 6px 8px!important}
 #sheet .crew .nowl,#sheet .crew .anl{gap:8px!important}
 #sheet .crew .nowr,#sheet .crew .anr,#sheet .crew .gcard,#sheet .crew .pcmini,#sheet .crew .tile,#sheet .crew .soon,#sheet .crew .awayl p,#sheet .shop2 .card,#sheet .crew .fg,#sheet .crew .shown>div,#sheet .crew .toybox>*{border-radius:20px!important;border:1px solid rgba(255,255,255,.16)!important;background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05) 60%,rgba(255,255,255,.08))!important;-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.12)!important}
@@ -812,6 +812,16 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .crew .jday h5{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;position:static!important;background:none!important;box-shadow:none!important;border:0!important;padding:0!important;margin:18px 6px 8px!important;font:600 12.5px -apple-system,system-ui,sans-serif!important;letter-spacing:.05em;text-transform:uppercase;color:rgba(235,242,250,.58)!important}
 #sheet .crew .histlnk{display:inline;padding:0 0 0 4px;font-size:13px;color:#9fd3ff;background:none!important;border:0!important}
 #sheet .crew .je,#sheet .crew .jl>div{border-radius:20px!important}
+
+/* ── Today's top row: two labelled glass tiles, so "mood" and "level" read as what they are ── */
+#sheet .crew .tline{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#sheet .crew .tline button{all:unset;min-width:0;box-sizing:border-box;cursor:pointer;display:flex!important;flex-direction:column;align-items:flex-start!important;text-align:left;gap:3px!important;padding:11px 14px!important;font-size:inherit!important;color:#fff!important;border-radius:20px!important;border:1px solid rgba(255,255,255,.16)!important;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04))!important;-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+#sheet .crew .tline button>small{font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:rgba(235,242,250,.6)}
+#sheet .crew .tline button>b{font:650 15.5px -apple-system,system-ui,sans-serif;color:#fff}
+#sheet .crew .tline .lvl i{display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;margin:3px 0 1px}#sheet .crew .tline .lvl i b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#7fe0ff,#b9f3ff)}
+#sheet .crew .tline .lvl small:last-child{font-size:11.5px;text-transform:none;letter-spacing:0;font-weight:500;color:rgba(235,242,250,.65)}
+#sheet .crew .tline .mood.good b,#sheet .crew .tline .mood.great b{color:#a8f0c0}#sheet .crew .tline .mood.bad b,#sheet .crew .tline .mood.low b{color:#ffcf8a}
+#sheet .cat{text-transform:none!important;letter-spacing:0!important;white-space:nowrap}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
