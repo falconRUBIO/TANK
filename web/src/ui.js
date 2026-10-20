@@ -1,7 +1,7 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { morphOdds } from './game/genes.js';
-import { needsOf, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
+import { needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
@@ -563,21 +563,19 @@ export function initUI({ game, social, cb }) {
     modal.classList.add('on'); $('mno').onclick = () => modal.classList.remove('on');
     modal.querySelectorAll('[data-up]').forEach((b) => (b.onclick = () => { modal.classList.remove('on'); open('tank'); cb.act(b.dataset.up); })); }
   // how each animal is doing: one word, and the needs that are not being met (not hunger alone: Feed is above)
-  const healthOf = (s, f) => { const n = needsOf(f, s), c = comfortOf(s, f), unmet = [];
-    if ((f.ail ?? 0) >= AIL_TIRED) unmet.push('Run down: it needs food and clean water, then time to recover');
-    if (n.mood === 'Hungry') unmet.push('Hungry');
-    for (const t of c.tips.filter((x) => !/different decorations/.test(x))) unmet.push(t.replace(new RegExp('^' + f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' '), '').replace(/^./, (x) => x.toUpperCase()).replace(/\.$/, ''));
+  const healthOf = (s, f) => { const n = needsOf(f, s), list = needsChecklist(s, f, Date.now(), game.you?.userId), miss = list.filter((x) => !x.met);
+    const unmet = miss.map((x) => x.label + (x.how ? ` · ${x.how}` : '')); if ((f.ail ?? 0) >= AIL_TIRED) unmet.unshift('Run down: food and clean water, then time to recover');
     if (f.preg && !f.preg.ready) unmet.push(`Expecting: babies in about ${Math.max(1, Math.round((f.preg.due - Date.now()) / 864e5))} days`);
-    const word = (f.ail ?? 0) >= AIL_TIRED ? ['Unwell', 'bad', 0] : n.mood === 'Hungry' ? ['Hungry', 'warn', 1] : c.score < 55 ? ['A bit off', 'warn', 2] : c.score >= 80 && n.happy > 0.7 ? ['Thriving', 'good', 4] : ['Doing fine', 'ok', 3];
-    return { word, unmet: unmet.filter((u) => !/^Expecting/.test(u) || true).slice(0, 3) }; };
+    const word = (f.ail ?? 0) >= AIL_TIRED ? ['Unwell', 'bad', 0] : n.mood === 'Hungry' ? ['Hungry', 'warn', 1] : miss.length >= 2 ? ['A bit off', 'warn', 2] : miss.length ? ['Doing fine', 'ok', 3] : ['Thriving', 'good', 4];
+    return { word, unmet, list, miss }; };
   const healthList = (s) => s.fish.filter((f) => !f.dead && !f.away && !f.visitor).map((f) => ({ f, h: healthOf(s, f), n: needsOf(f, s) })).sort((a, b) => a.h.word[2] - b.h.word[2] || b.h.unmet.length - a.h.unmet.length);
-  const healthRow = (s) => { const L = healthList(s); if (!L.length) return ''; const off = L.filter((x) => x.h.word[2] < 3), miss = L.filter((x) => x.h.unmet.some((u) => !/^Expecting/.test(u)));
+  const healthRow = (s) => { const L = healthList(s); if (!L.length) return ''; const off = L.filter((x) => x.h.word[2] < 3), miss = L.filter((x) => x.h.miss.length);
     const sub = off.length ? `${off.map((x) => esc(x.f.name)).slice(0, 2).join(' and ')}${off.length > 2 ? ` and ${off.length - 2} more` : ''} ${off.length === 1 ? 'needs' : 'need'} you` : miss.length ? `All well · ${miss.length} would like something` : `All ${L.length} are doing well`;
     return `<div class="crow ${off.some((x) => x.h.word[1] === 'bad') ? 'due' : ''}" role="button" tabindex="0" data-act="healthopen"><span class="ci">${pix('🩹')}</span><span class="ct"><b>Health</b><small>${sub}</small></span><span class="hdots">${L.slice(0, 5).map((x) => `<i class="hd ${x.h.word[1]}"></i>`).join('')}</span><i class="chev">›</i></div>`; };
   const healthView = () => { const s = S(), L = healthList(s);
-    const head = `<div class="fhead"><h3>Health</h3><p>How each animal is doing, and what it is missing</p><button class="fx" data-act="healthclose" aria-label="Close">✕</button></div>`;
+    const head = `<div class="fhead"><h3>Health</h3><p>Each animal needs its own things. Here is what each one has, and what it is missing.</p><button class="fx" data-act="healthclose" aria-label="Close">✕</button></div>`;
     const tally = ['bad', 'warn', 'ok', 'good'].map((k) => [k, L.filter((x) => x.h.word[1] === k).length]).filter(([, n]) => n), lab = { bad: 'unwell', warn: 'need you', ok: 'doing fine', good: 'thriving' };
-    return `${head}<div class="htally">${tally.map(([k, n]) => `<span class="hw ${k}">${n} ${lab[k]}</span>`).join('')}</div><div class="fcards">${L.map(({ f, h, n }) => `<button class="fcard hcard" data-animal="${esc(f.id)}"><div class="ftop"><img class="fthumb" alt="" src="${fishThumb(f.species, f.pal ?? null, morphOf(f) ?? null)}"><span class="fmid"><b>${esc(f.name)}</b><small>${esc(SPECIES_DEF[f.species]?.label ?? f.species)} · feeling ${esc(n.mood.toLowerCase())}</small></span><em class="hw ${h.word[1]}">${h.word[0]}</em></div>${h.unmet.length ? `<ul class="hneeds">${h.unmet.map((u) => `<li class="${/^Expecting/.test(u) ? 'info' : ''}">${esc(u)}</li>`).join('')}</ul>` : '<p class="hall">✓ All its needs are met</p>'}</button>`).join('')}</div><p class="fnote">Tap an animal to open its card.</p>`; };
+    return `${head}<div class="htally">${tally.map(([k, n]) => `<span class="hw ${k}">${n} ${lab[k]}</span>`).join('')}</div><div class="fcards">${L.map(({ f, h, n }) => `<button class="fcard hcard" data-animal="${esc(f.id)}"><div class="ftop"><img class="fthumb" alt="" src="${fishThumb(f.species, f.pal ?? null, morphOf(f) ?? null)}"><span class="fmid"><b>${esc(f.name)}</b><small>${esc(SPECIES_DEF[f.species]?.label ?? f.species)} · feeling ${esc(n.mood.toLowerCase())}</small></span><em class="hw ${h.word[1]}">${h.word[0]}</em></div><div class="hck">${(f.ail ?? 0) >= AIL_TIRED ? '<div class="hci bad"><i>!</i><span><b>Run down</b><small>Food and clean water, then time to recover</small></span></div>' : ''}${h.list.map((x) => `<div class="hci ${x.met ? 'met' : 'miss'}"><i>${x.met ? '✓' : ''}</i><span><b>${esc(x.label)}</b>${!x.met && x.how ? `<small>${esc(x.how)}</small>` : ''}</span></div>`).join('')}${f.preg && !f.preg.ready ? `<div class="hci info"><i>♥</i><span><b>Expecting</b><small>Babies in about ${Math.max(1, Math.round((f.preg.due - Date.now()) / 864e5))} days</small></span></div>` : ''}</div><p class="hmeta">${h.miss.length ? `${h.list.length - h.miss.length} of ${h.list.length} needs met` : `All ${h.list.length} needs met`}</p></button>`).join('')}</div><p class="fnote">Tap an animal to open its card.</p>`; };
   const views = {
     // Care, the way a well-made iPhone app would lay it out: one line that says how things are; the chores that need you now, each with its
     // one button; the rest as quiet rows saying when they will be due; the extras apart; then the tank's state and the day.

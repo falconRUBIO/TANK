@@ -1200,6 +1200,25 @@ export function adoptAdvice(t, species) {
   return msgs.length ? msgs.join(' ') : null;
 }
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
+// Each animal's own needs, as a checklist: what its kind and its nature ask for, and whether the tank gives it now. No two kinds ask for the same
+// things (a seahorse wants plants to hold and a partner, a neon a shoal, a gramma a cave to itself, an octopus a den and puzzles), and the
+// tank-wide jobs (water, glass) are left to Tank upkeep. Each need says what would meet it.
+export function needsChecklist(t, f, now = Date.now(), uid = null) {
+  const S = SOCIAL[f.species] ?? {}, out = [], add = (k, label, met, how = '') => out.push({ k, label, met: !!met, how });
+  const label = SPECIES_DEF[f.species]?.label ?? f.species, own = t.fish.filter((o) => o.species === f.species && !o.dead).length, food = FOODS[favFoodOf(f)]?.label ?? 'Flakes';
+  const n = needsOf(f, t, now); add('food', `Fed (${food.toLowerCase()})`, n.fed > 0.35, f.species === 'octopus' ? 'Drop it a crab from its card' : 'Feed the tank');
+  if (f.species === 'octopus') add('den', 'A den of its own', f.home || t.decor.some((d) => d.type === 'pot' || d.type === 'coconut'), 'A clay pot or a coconut shell from the Shop');
+  else if (S.home) add('home', S.home.text.replace(/^./, (c) => c.toUpperCase()), hasHome(t, S.home), 'From the Shop');
+  if (S.shoal) add('shoal', `A shoal: ${S.shoal} of its own kind`, own >= S.shoal, `${own} now · ${S.shoal - own > 0 ? `${S.shoal - own} more ${label.toLowerCase()}${S.shoal - own > 1 ? 's' : ''}` : ''}`);
+  if (S.pair) add('pair', 'A partner', own >= 2, `Another ${label.toLowerCase()}`);
+  if (S.sameFoe) add('alone', `No other ${label.toLowerCase()}s`, own <= 1, 'They squabble with their own kind');
+  { const so = socialOf(t, f), threat = so.notes.find((x) => /bullies|wary/.test(x)); if (S.shy || (S.size <= 1 && !S.bully && threat)) add('cover', 'Places to hide', hides(t) >= 4, `${Math.min(hides(t), 4)} of 4 plants, rocks or structures`); if (threat && /bullies/.test(threat)) add('peace', 'Left in peace', false, threat.replace(/ More hiding.*$/, '')); }
+  for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && !(S.home?.cats?.includes(sp[0]))) add('spot', `${tr === 'Shy' ? 'Plants to hide among' : tr === 'Curious' ? 'Something to explore' : tr === 'Lazy' ? 'Driftwood to rest by' : tr === 'Playful' ? 'Something fun' : 'Rocks to perch on'}`, count(t, sp[0]) >= sp[1], `${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]} · ${sp[2]}`); }
+  if ((f.traits ?? []).includes('Social') && f.species !== 'octopus') add('company', 'Company', t.fish.filter((o) => !o.dead).length >= 4, '4 animals in the tank');
+  if (f.species === 'octopus' && stageOf(f, now) !== 'baby') add('puzzle', 'Puzzles to solve', f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, 'A puzzle jar, every day or two');
+  if (f.species === 'octopus' || (f.traits ?? []).some((x) => x === 'Playful' || x === 'Social')) add('play', 'Time with you', Object.values(f.petAt ?? {}).some((x) => now - x < DAY), 'Play from its card');
+  return out;
+}
 export function comfortOf(t, f, now = Date.now()) {
   let pts = 0, max = 0; const tips = [];
   const add = (w, v, tip) => { v = Math.max(0, Math.min(1, v)); max += w; pts += w * v; if (v < 0.99) tips.push([w * (1 - v), tip]); };
