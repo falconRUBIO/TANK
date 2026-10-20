@@ -14,7 +14,7 @@ const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click
 const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.waitForSelector('#welcome.on', { timeout: 120000 });
 await B.waitForSelector('.pvt, #cd, #nm', { timeout: 90000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 90000 }); await B.click('#go'); }
 await B.waitForSelector('#nm', { timeout: 90000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
-for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.click('#modal.on #mok'); break; } else if (t) await B.click('#modal.on #mok').catch(() => {}); }
+for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.evaluate(() => document.querySelector('#modal.on #mok').click()); break; } else if (t) await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
 await B.waitForTimeout(2500);
 const ben = await B.evaluate(() => window.__game.you.userId), octo = await B.evaluate(() => window.__game.state.fish.find((f) => f.species === 'octopus' && f.owner === window.__game.you.userId)?.id);
 ck('Ben has his own octopus', !!octo);
