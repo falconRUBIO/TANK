@@ -60,7 +60,7 @@ const todNow = () => { const h = new Date().getHours(); return h >= 5 && h < 11 
 const OCTO_STYLE = {
   explorer: { roam: 1.9, den: 0.5, novel: 0.7, revisit: 0.35, greet: 1, carry: 0.8, dash: 1.2, glass: 1.2, watch: 1 },
   homebody: { roam: 0.35, den: 1.9, novel: 0.08, revisit: 0.88, greet: 0.8, carry: 1.2, dash: 0.5, glass: 0.4, watch: 1 },
-  showoff: { roam: 1.1, den: 0.7, novel: 0.4, revisit: 0.5, greet: 2.2, carry: 0.6, dash: 1.6, glass: 4, watch: 1 },
+  showoff: { roam: 1.1, den: 0.7, novel: 0.4, revisit: 0.5, greet: 1.1, carry: 0.6, dash: 1.6, glass: 1.3, watch: 1 },
   watcher: { roam: 0.6, den: 0.9, novel: 0.3, revisit: 0.6, greet: 1, carry: 0.8, dash: 0.35, glass: 0.8, watch: 3 },
   collector: { roam: 1, den: 1.1, novel: 0.35, revisit: 0.8, greet: 0.9, carry: 2.8, dash: 0.7, glass: 0.7, watch: 1 },
   trickster: { roam: 1.4, den: 0.6, novel: 0.6, revisit: 0.4, greet: 1.2, carry: 1, dash: 1.9, glass: 1.5, watch: 1 },
@@ -408,7 +408,7 @@ export class Fish3D {
   showNature(S, rng, others, M, floor) {
     const k = this.mind?.type, say = (t) => { this.actText = t; this.actFlash = 7; }, toGlass = (t) => { this.glassAt = { x: (rng() - 0.5) * 3, y: 2.2 + rng() * 1.4, until: performance.now() + 7000 }; say(t); return true; };
     if (rng() < 0.2 && this.pickAct(S, rng, others, M)) return true;      // now and then one of its other tricks instead, so there is always something new to see (and to fill the Field Guide)
-    if (k === 'showoff') return toGlass('Showing off at the glass.');
+    if (k === 'showoff') { if (rng() < 0.25) { const r = toGlass('Showing off at the glass.'); this.glassAt.until = performance.now() + 4000; return r; } if (this.pickAct(S, rng, others, M, rng() < 0.5 ? 'lion' : 'jelly')) { say('Showing off: a costume.'); return true; } return false; }      // (now and then at the glass, more often a costume: about 3% of its time at the glass)
     if (k === 'watcher') { if (this.pickAct(S, rng, others, M, 'watch')) { say('Watching the others closely.'); return true; } return toGlass('Watching you closely.'); }
     if (k === 'trickster') { if (rng() < 0.5 && this.pickAct(S, rng, others, M, 'squirt')) { say('Up to mischief.'); return true; } if (this.pickAct(S, rng, others, M, rng() < 0.5 ? 'lion' : 'snake')) { say('Playing a trick: a disguise.'); return true; } return toGlass('Up to mischief.'); }
     if (k === 'collector' && this.den) { S.mode = 'carry1'; S.s = 'crawl'; S.t = 12; const b = this.band, [gx, gz] = this.crawlGoal(b.x[0] + rng() * (b.x[1] - b.x[0]), b.z[0] + rng() * (b.z[1] - b.z[0]), rng); this.target.set(gx, floor, gz); say('Off to fetch a shell for its den.'); return true; }
