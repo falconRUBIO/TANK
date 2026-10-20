@@ -974,6 +974,14 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .havg{display:flex;align-items:center;gap:14px;padding:14px 16px;margin:4px 0 10px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.04));-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%)}
 #sheet .havg .hring b{font-size:17px}#sheet .havg span{display:flex;flex-direction:column;gap:3px}#sheet .havg span b{font:700 16px -apple-system,system-ui,sans-serif;color:#fff}#sheet .havg span small{font:400 13px/1.35 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.75)}
 #sheet .hring b{inset:0;display:grid;place-items:center}
+/* wellbeing, carried through: Today's tile, Sea life rows, the animal card */
+#sheet .crew .tline .mood.wellt .wrow{display:flex;align-items:center;gap:8px}#sheet .crew .tline .mood.wellt .hring b{font-size:11.5px}
+#sheet .anb{display:grid!important;grid-template-columns:auto 1fr auto;align-items:center}#sheet .anb .hring b,#sheet .crow .hring b{font-size:11px}
+#sheet .crow .hring{margin-right:6px}
+#card .cmf.well{all:unset;cursor:pointer;box-sizing:border-box;display:grid;grid-template-columns:44px 1fr 14px;align-items:center;gap:12px;width:100%;margin:10px 0;padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04))}
+#card .cmf.well .hring{position:relative;display:inline-grid;place-items:center}#card .cmf.well .hring b{position:absolute;inset:0;display:grid;place-items:center;font:700 13px -apple-system,system-ui,sans-serif;color:#fff}
+#card .cmf.well .wtx{display:flex;flex-direction:column;gap:2px;min-width:0}#card .cmf.well .wtx b{font:650 14.5px -apple-system,system-ui,sans-serif;color:#fff}#card .cmf.well .wtx small{font:400 12.5px/1.35 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.78)}#card .cmf.well .wtx small.req{color:#ffd98a}
+#card .cmf.well .chev{font-style:normal;color:rgba(255,255,255,.5);font-size:20px}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
