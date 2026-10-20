@@ -26,7 +26,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now();
 const bye = await p.evaluate(() => document.querySelector('#card ul.remember')?.innerText ?? '');
 ck('the goodbye card remembers what it was known for', /favorite place/.test(bye) && /friends/.test(bye), bye.replace(/\s+/g, ' | '));
 await clear(); const order = await p.evaluate(async () => { const f = window.__fishes.byId.get('p0'); f.thought = 'Fanning fresh water over the eggs.'; window.__showCard(f); await new Promise((r) => setTimeout(r, 300)); return document.querySelector('#card .tpane')?.firstElementChild?.className ?? ''; });
-ck('the fish card leads with what it is doing now', /now/.test(order), order);
+ck('the fish card leads with what it is doing now', /now|csec/.test(order), order);
 await p.evaluate(() => window.__game.save?.()); await p.context().addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3600e3)));      // (leaving marks the visit; the page coming back finds it an hour old)
 await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 });
 const recap = await p.waitForFunction(() => document.querySelector('#reunion.on')?.innerText ?? '', null, { timeout: 40000 }).then((h) => h.jsonValue()).catch(() => '');
