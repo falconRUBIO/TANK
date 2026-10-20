@@ -766,7 +766,7 @@ export const WANTS = {
   fun: likeWant('Playful', 'SPECIAL', 1, (f) => `${f.name} wants something fun to play with, like a bubbler.`, 'something fun to play with'),
   perch: likeWant('Brave', 'ROCKS', 2, (f) => `${f.name} wants a couple of rocks to perch on.`, 'rocks to perch on'),
   company: { traits: ['Social'], ok: (t) => t.fish.length < 4 && t.fish.length + pending(t) < capacity(t.level) - 1 && t.fish.length + pending(t) < 4, done: (t) => t.fish.length >= 4, text: (f) => `${f.name} wants more company (4 fish in all).`, gift: 'more company' },
-  play: { traits: ['Playful', 'Social', 'Curious', 'Brave'], ok: () => true, done: (t, f, g) => g?.type === 'pet' && g.id === f.id, text: (f) => `${f.name} wants to play. Open its card and play with it.`, gift: 'a game' },
+  play: { traits: ['Playful', 'Social', 'Curious', 'Brave'], ok: () => true, done: (t, f, g) => g?.type === 'pet' && g.id === f.id, text: (f) => `${f.name} wants to play. Tap ${f.name} in the tank, then Play.`, gift: 'a game' },
   view: { traits: ['Brave'], ok: (t) => t.glass > 0.3, done: (t, f, g) => g?.type === 'glass', text: (f) => `${f.name} wants a clear view of you. Wipe the glass.`, gift: 'a clear view' },
   fresh: { traits: ['Calm', 'Shy'], ok: (t) => t.water < 0.7, done: (t, f, g) => g?.type === 'water', text: (f) => `${f.name} would love fresher water.`, gift: 'fresher water' },
   meal: { traits: ['Greedy'], ok: (t) => t.hunger > 0.3 && t.shells >= FOODS.treats.price, done: (t, f, g) => g?.type === 'feed' && g.food === 'treats', text: (f) => `${f.name} wants a treat. Choose Treats when you feed.`, gift: 'a treat' },

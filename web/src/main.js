@@ -997,6 +997,7 @@ function showCard(f) {
   const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
+  const playBlk = () => rec.away || f.visitor ? '' : `<div class="acts2 playrow"><button class="act2 ${(game.state?.want?.fish === rec.id && game.state?.want?.kind === 'play') ? 'due' : ''}" id="pet">✋ ${f.species.id === 'octopus' ? `Let ${esc(rec.name)} follow your finger` : `Play with ${esc(rec.name)}`}<small>drag your finger along the glass</small></button></div>`;
   const nextLine = (() => { const n = storyNext(game.state, game.state.fish.find((x) => x.id === rec.id) ?? rec); return n ? `<p class="mind next"><b>Next</b> ${esc(n)}</p>` : ''; })();      // the next chapter of its life, first
   const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
     if (rec.grudge) out.push(`Has it in for ${esc(rec.grudge.name)}${rec.grudge.why === 'den' ? ', who keeps poking round its den' : ''}.`);
@@ -1046,13 +1047,12 @@ function showCard(f) {
   const FL = FACTS[rec.species] ?? [], fod = factOfDay(rec.species, game.factPeek ?? 0), fkey = 'ourtank.facts.' + rec.species, fseen = (() => { try { return new Set(JSON.parse(localStorage.getItem(fkey) || '[]')); } catch { return new Set(); } })();
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}s (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
-  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${geneLine}${playLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
+  const over = `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${nextLine}${playBlk()}${geneLine}${playLine}${path}${trustRow}${bondTile}${toysTile}${famLine}${lifeLine}
     <div class="needs one">${needsLine(p.needs)}</div>${warn}
     <h4>Favorites</h4><div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>
     <h4>Looking after ${esc(f.name)}</h4><div class="info">${careRows(rec)}</div>
     <h4>Basic information</h4><div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>
     ${factLine}${comfortBlock(rec)}
-    <p class="tip">👆 Hold a finger on the glass and move it slowly: ${esc(f.name)} will come over and play.</p>
     ${orphanBlock(rec, f)}${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`;
   // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
   const bondV = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15), bondW = bondV >= 0.9 ? 'Best friends' : bondV >= 0.5 ? 'Close' : bondV >= 0.2 ? 'Warming up' : 'Just met';
@@ -1672,7 +1672,7 @@ async function welcomeBack() {
   { const g = s.fish.find((f) => f.gift?.wrapped && f.owner === mine); if (g) lines.unshift(`A gift from ${g.gift.from} is waiting for you on the sand.`); }
   if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
-  const next = [], my = mysteryOf(s), req = s.want ? `${s.fish.find((f) => f.id === s.want.fish)?.name ?? 'A fish'}: ${s.want.text}` : s.daily && !s.daily.done ? s.daily.text : null;      // it ends on what is still to come: today's mystery, the request, and what the tank expects next
+  const next = [], my = mysteryOf(s), req = s.want ? s.want.text : s.daily && !s.daily.done ? s.daily.text : null;      // it ends on what is still to come: today's mystery, the request, and what the tank expects next
   { const G = goalOf(s); if (G?.next) next.push(`Goal: ${G.next.text}.`); }
   if (my && !my.done) next.push(`${MYSTERY[my.kind]?.text ?? ''} Tap the glow to find out.`); if (req) next.push(`Today's request: ${req}`);
   for (const x of forecast(s, Date.now(), 2)) if (next.length < 4) next.push(x.when === 'now' ? x.text : `${x.text}, ${x.when}`);
