@@ -373,7 +373,7 @@ export function initUI({ game, social, cb }) {
   // the picture this phone took the moment a page filled (main.js); a page filled before then, or on another phone, is staged: its animal, posed in the water
   const fieldPic = (k) => { try { return JSON.parse(localStorage.getItem('ourtank.fieldpics') || '{}')[k] ?? null; } catch { return null; } };
   const fieldHtml = () => { const F = S().field ?? {}, all = Object.entries(FIELD), got = all.filter(([k]) => F[k]).length, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-    const card = ([k, d]) => { const p = F[k]; if (!p) return `<div class="fg nope"><div class="fgpic">?</div><b>${esc(d.label)}</b><small>${esc(d.hint)}</small></div>`;
+    const card = ([k, d]) => { const p = F[k]; if (!p) return `<div class="fg nope"><div class="fgpic"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="5" y="10" width="14" height="10" rx="3" fill="currentColor"/></svg><span>Not seen yet</span></div><b>${esc(d.label)}</b><small>${esc(d.hint)}</small></div>`;
       const j = p.text ? game.journal.find((x) => x.text === p.text) : null, im = j ? shotFor(j) : p.text ? shotOf(p.text) : null;
       const pic = im ?? fieldPic(k), who = S().fish.find((f) => f.id === p.fish) ?? S().fish.find((f) => !f.dead && (d.who === 'any' || (d.who === 'fish' ? f.species !== 'octopus' && f.species !== 'seahorse' : f.species === d.who))) ?? { species: d.who === 'seahorse' ? 'seahorse' : d.who === 'fish' ? 'clownfish' : 'octopus' };
       return `<div class="fg">${pic ? `<button class="jimg fgpic" data-cap="${esc(p.text ?? d.label)}"${j?.id ? ` data-jid="${j.id}"` : ''}><img src="${pic}" alt=""></button>` : `<div class="fgpic staged"><img data-thumb="fish:${who.species}:${who.pal ?? ''}:${who.id ? morphOf(who) ?? '' : ''}" alt=""></div>`}<b>${esc(d.label)}</b><small>${esc([p.name, p.by ? `seen by ${p.by}` : null, day(p.at)].filter(Boolean).join(' · '))}</small></div>`; };
@@ -1009,7 +1009,7 @@ export function initUI({ game, social, cb }) {
   };
   const settle = (lines) => { $('settle').classList.add('top'); for (const l of lines) notice(l, { kind: 'card' }); shelf('settle', `<b>COMING UP</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}`, 12000); };
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
-  const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<p class="chap"><b>${esc(c.title)}</b> · ${esc(c.text)}</p>`, 4500); };      // a slim line, gone in a few seconds: the tank stays in view
+  const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<p class="chap"><small>New chapter</small><b>${esc(c.title)}</b><span>${esc(c.text)}</span></p>`, 5000); };      // a slim line, gone in a few seconds: the tank stays in view
   const surprise = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>✨ TODAY'S SURPRISE</b><p>${esc(text)}</p>`, 8000); };
   const together = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>💛 TOGETHER</b><p>${esc(text)}</p>`, 8000); };
   // once a week: the tank's week as a short story, with a link to share it as a postcard

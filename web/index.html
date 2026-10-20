@@ -907,6 +907,20 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #sheet .hci b{font:500 14px/1.3 -apple-system,system-ui,sans-serif;color:#f2f7fb}#sheet .hci.met b{color:rgba(235,242,250,.6)}
 #sheet .hci small{font:400 12.5px/1.3 -apple-system,system-ui,sans-serif;color:#ffd28a}
 #sheet .hcard .hmeta{margin:6px 0 0;font:500 12px -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.5);text-align:right}
+/* ── visual audit ── */
+/* the chapter card: a small label, the title, the line, centered over the tank */
+#settle:has(.chap){left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:min(320px,calc(100vw - 48px));padding:12px 18px 14px!important;border-radius:22px!important;text-align:center;border:1px solid rgba(255,230,160,.35)!important;box-shadow:0 10px 30px rgba(0,20,40,.3),inset 0 1px 0 rgba(255,255,255,.35)!important}
+#settle p.chap{display:flex;flex-direction:column;gap:3px}
+#settle p.chap small{font:700 10.5px -apple-system,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#ffd98a}
+#settle p.chap b{display:block!important;font:700 17px -apple-system,system-ui,sans-serif!important;letter-spacing:-.01em!important;color:#fff!important;margin:0!important}
+#settle p.chap span{font:400 13px/1.35 -apple-system,system-ui,sans-serif;color:rgba(235,242,250,.82)}
+/* Sea life: each animal in a round glass frame, not a dark box */
+#sheet .anr img{width:46px!important;height:46px!important;border-radius:50%!important;background:radial-gradient(circle at 50% 35%,rgba(170,232,255,.45),rgba(60,150,200,.25) 60%,rgba(14,60,100,.35))!important;object-fit:contain;image-rendering:pixelated;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1px rgba(255,255,255,.15)}
+/* Shop: the category row fades at the edges, so it is clear it scrolls */
+#sheet .cats{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:24px}
+/* Field Guide: a page not yet seen is a calm locked tile */
+#sheet .fg.nope .fgpic{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:rgba(235,242,250,.35);background:repeating-linear-gradient(135deg,rgba(255,255,255,.04) 0 8px,rgba(255,255,255,.07) 8px 16px)!important;border:1.5px dashed rgba(255,255,255,.18)!important}
+#sheet .fg.nope .fgpic span{font:600 11px -apple-system,system-ui,sans-serif;letter-spacing:.04em;color:rgba(235,242,250,.45)}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
