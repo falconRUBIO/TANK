@@ -834,6 +834,16 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 #card .tabs{gap:6px!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
 #card .tabs>*{border-radius:999px!important;border:1px solid rgba(255,255,255,.18)!important;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04))!important;padding:8px 2px!important;font:600 12.5px -apple-system,system-ui,sans-serif!important;color:rgba(235,242,250,.85)!important;text-align:center}
 #card .tabs>.on{background:rgba(255,255,255,.26)!important;color:#fff!important;border-color:rgba(255,255,255,.45)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 12px rgba(0,0,0,.15)!important}
+
+/* Today, settled: tiles of one height, an all-clear row like any other, the goal picker's choices clearly tappable */
+#sheet .crew .tline{align-items:stretch!important}
+#sheet .crew .tline .mood .mnote{font:400 12px/1.35 -apple-system,system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;color:rgba(235,242,250,.68)!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#sheet .nowr.calm .nowb{cursor:default}#sheet .nowr.calm i.ok{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(120,220,150,.25);color:#a8f0c0;font:700 14px -apple-system,system-ui,sans-serif;font-style:normal}
+#modal .gsheet .gch{position:relative;padding-right:40px!important;text-align:left}
+#modal .gsheet .gch .gchev{position:absolute;right:14px;top:50%;transform:translateY(-50%);font:400 22px -apple-system,system-ui,sans-serif;font-style:normal;color:rgba(255,255,255,.55)}
+#modal .gsheet .gch .gpace{font-style:normal!important;color:#ffd98a!important;font-size:12.5px!important}
+#modal .gsheet .gprize{margin-top:6px!important;font-size:13.5px!important;color:rgba(235,242,250,.85)!important}
+#modal .gsheet .gdone{font-size:12.5px!important;color:rgba(168,240,192,.85)!important}
 </style></head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

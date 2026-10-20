@@ -1003,7 +1003,7 @@ const fullTank = (t) => t.fish.length + pending(t) + (t.eggs ?? []).length >= ca
 const FULL_HINT = 'Your tank is full, so no eggs can be laid: find one of your shop fish a new home, or send a baby to a friend.';
 const roomy = (h) => (t) => (fullTank(t) ? FULL_HINT : typeof h === 'function' ? h(t) : h);
 const colorGoal = (m) => ({
-  title: m ? `Breed a ${MORPHS[m].label} fish` : 'Breed a rare color', blurb: m ? `${MORPHS[m].label} is hidden in your tank's genes. Bring two carriers together and see.` : 'Somewhere in your tank a rare color is hiding in the genes. Find it and breed it out.',
+  title: m ? `Breed ${/^[AEIOU]/.test(MORPHS[m].label) ? 'an' : 'a'} ${MORPHS[m].label} fish` : 'Breed a rare color', blurb: m ? `${MORPHS[m].label} is hidden in your tank's genes. Bring two carriers together and see.` : 'Somewhere in your tank a rare color is hiding in the genes. Find it and breed it out.',
   ok: (t) => !m || carrierOf(t, m), icon: 'hatched',
   steps: [
     { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your fishes' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
