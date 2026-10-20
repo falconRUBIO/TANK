@@ -1,170 +1,108 @@
-// Caretakers drawn the way the octopus and the fish are: a small voxel model (rounded normals, toon shading, the soft dark outline) rasterised to pixel art.
-// A head-and-shoulders bust, built from simple shapes and painted per voxel: face, hair style, hat, top and an extra.
-import { Fish } from './voxel.js';
+// Caretakers, drawn as small illustrated portraits: a head-and-shoulders bust with soft shading, a thin darker outline round every shape,
+// eyes with a catch-light, and hair, hat, top and extra each drawn as its own clean shape. Drawn at a high resolution, so it stays crisp
+// at any size. `yaw` turns the face a little to one side (the features slide across and the far side narrows), for the editor's drag.
 import { normAvatar } from './game/avatar.js';
 
 const rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
-const dark = (c, k) => mix(c, [20, 18, 34], k), light = (c, k) => mix(c, [255, 255, 255], k);
-const se = (x, y, z, rx, ry, rz, p) => Math.abs(x / rx) ** p + Math.abs(y / ry) ** p + Math.abs(z / rz) ** p;
-const hsh = (x, y, z) => { let h = (x * 374761393 + y * 668265263 + z * 1442695041) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const mixc = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+const css = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const INK = [28, 24, 44], WHITE = [255, 255, 255];
+const dk = (c, k) => mixc(c, INK, k), lt = (c, k) => mixc(c, WHITE, k);
 
-const HY = 9, RX = 10, RY = 10.5, RZ = 9.5;                   // head center and size, in voxels
-function inHeadAt(x, y, z, g = 0) { const dy = y - HY, t = Math.max(0, -dy / RY), j = 1 - 0.17 * t * t; return se(x / j, dy, z + 0.5, RX + g, RY + g, RZ + g, 2.5) <= 1; }
-const inEar = (x, y, z) => ((Math.abs(x) - RX + 0.2) / 1.5) ** 2 + ((y - (HY - 1)) / 2.5) ** 2 + ((z + 0.5) / 1.7) ** 2 <= 1;
-const inNeck = (x, y, z) => y <= HY - RY + 3 && y >= -7 && Math.hypot(x, z + 0.5) <= 3.6;
-function inTorso(x, y, z) {
-  if (y < -27 || y > -2) return false; const sh = y > -12 ? 1 - ((y + 12) / 10) ** 2 * 0.5 : 1;                      // the shoulders round in towards the neck
-  return se(x / sh, y + 16.5, z + 0.5, 17, 14, 8.6, 2.4) <= 1;
-}
-// the frontmost voxel of a shape at (x, y), for painting faces and fronts
-const frontOf = (fn) => { const m = new Map(); return (x, y) => { const k = x * 1000 + y; if (!m.has(k)) { let z = 16; while (z > -16 && !fn(x, y, z)) z--; m.set(k, z); } return m.get(k); }; };
+const S = 256;                                        // drawing size; the bust stands on the bottom edge
+function portrait(g, A, yaw) {
+  const skin = rgb(A.skin), hair = rgb(A.hair), hc = rgb(A.hat), tc = rgb(A.top);
+  const tw = Math.max(-1, Math.min(1, Math.sin(yaw))) * 0.9, back = Math.cos(yaw) < -0.2;      // how far the face is turned (-1 left, 1 right), and whether we see the back of the head
+  const cx = S / 2, cy = 104, rx = 62, ry = 66, fx = cx + tw * 20;                           // head center and size; fx: where the face's middle is
+  const LW = 5;
+  const fillStroke = (fill, line, w = LW) => { g.fillStyle = fill; g.fill(); g.lineWidth = w; g.strokeStyle = line; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); };
+  const shade = (c, x0, y0, r) => { const gr = g.createRadialGradient(x0, y0, r * 0.1, x0, y0, r); gr.addColorStop(0, css(lt(c, 0.18))); gr.addColorStop(0.65, css(c)); gr.addColorStop(1, css(dk(c, 0.16))); return gr; };
+  const headPath = (grow = 0) => { g.beginPath(); const n = 48; for (let i = 0; i <= n; i++) { const a = (i / n) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a); const jaw = sa > 0 ? 1 - 0.14 * sa * sa : 1;      // a softly squared head, narrowing a little to the chin
+      const x = cx + Math.sign(ca) * Math.abs(ca) ** 0.82 * (rx + grow) * jaw * (ca * tw > 0 ? 1 : 1 - Math.abs(tw) * 0.08), y = cy + Math.sign(sa) * Math.abs(sa) ** 0.9 * (ry + grow); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); };
+  const ell = (x, y, a, b, r = 0) => { g.beginPath(); g.ellipse(x, y, a, b, r, 0, Math.PI * 2); };
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
 
-function person(av) {
-  const A = normAvatar(av), skin = rgb(A.skin), hair = rgb(A.hair), hc = rgb(A.hat), tc = rgb(A.top);
-  const headFront = frontOf(inHeadAt), torsoFront = frontOf(inTorso);
-  const hs = A.hairStyle, hat = A.hatStyle, top = A.topStyle, ex = A.extra;
-  const lip = mix(skin, [110, 28, 40], 0.62), cheek = mix(skin, [255, 120, 130], ex === 'blush' ? 0.45 : 0.18), eyeC = [26, 22, 40];
-  // ── hats (drawn over everything, hair stays underneath) ──
-  const hatBase = { beanie: HY + 3.2, cap: HY + 4, bucket: HY + 3.4, captain: HY + 4, phones: 99, snorkel: 99, flower: 99, none: 99 }[hat];
-  function hatAt(x, y, z) {
-    if (hat === 'none') return null;
-    const shell = (g) => !inHeadAt(x, y, z) && inHeadAt(x, y, z, g);
-    if (hat === 'beanie') {
-      if (Math.hypot(x, y - (HY + RY + 3.6), z + 0.5) <= 2.7) return light(hc, 0.6 + 0.2 * hsh(x, y, z));                                   // pom-pom
-      const top = se(x, y - HY, z + 0.5, RX + 2.2, RY + 3.4, RZ + 2.2, 2.4) <= 1 && !inHeadAt(x, y, z);
-      if (top && y >= HY + 3.2 - Math.max(0, -z) * 0.22) return y < HY + 5.6 - Math.max(0, -z) * 0.22 ? (x & 1 ? dark(hc, 0.12) : dark(hc, 0.04)) : (((x + 40) % 3) === 0 ? dark(hc, 0.08) : hc);   // the folded, ribbed cuff, then knit
-    }
-    if (hat === 'cap') {
-      const dome = shell(1.6) && y >= HY + 4 - Math.max(0, -z) * 0.15;
-      if (dome) return Math.abs(x) < 0.6 || Math.abs(x - (z * 0.0)) < 0.4 ? dark(hc, 0.12) : hc;
-      if (Math.hypot(x, y - (HY + RY + 1.6), z + 0.5) <= 1.1) return dark(hc, 0.2);
-      if (y >= HY + 3 && y <= HY + 4 && z > RZ - 4 && (x / 7.8) ** 2 + ((z - (RZ - 4)) / 9.5) ** 2 <= 1) return dark(hc, 0.18);          // the brim, forward
-    }
-    if (hat === 'bucket') {
-      const crown = shell(2) && y >= HY + 3.4 && y <= HY + RY + 1.2;
-      if (crown) return y < HY + 5.2 ? dark(hc, 0.22) : hc;
-      const ru = Math.hypot(x / RX, (z + 0.5) / RZ); if (ru >= 0.92 && ru <= 1.5) { const by = HY + 3.6 - (ru - 0.92) * 5.2; if (Math.abs(y - by) <= 0.6) return mix(hc, [255, 255, 255], 0.08); }
-    }
-    if (hat === 'captain') {
-      const r = Math.hypot(x / (RX + 1.4), (z + 0.5) / (RZ + 1.4));
-      if (y >= HY + 4 && y <= HY + RY + 3 && r <= 1 + (y - HY - 4) * 0.012 && !inHeadAt(x, y, z)) {
-        if (y <= HY + 6) { if (Math.abs(x) <= 1.2 && z > RZ - 1 && y >= HY + 5) return [246, 204, 80]; return hc; }                         // the band and its gold badge
-        return y >= HY + RY + 2 ? [250, 250, 246] : [238, 238, 232];
-      }
-      if (y >= HY + 3 && y <= HY + 4 && z > RZ - 3 && (x / 7) ** 2 + ((z - (RZ - 3)) / 6.5) ** 2 <= 1) return [32, 34, 46];
-    }
-    if (hat === 'snorkel') {
-      const fz = headFront(x, y); const inBox = Math.abs(x) <= 8 && y >= HY - 4 && y <= HY + 2;
-      if (inBox && fz > 0 && z > fz && z <= fz + 2) { const edge = Math.abs(x) >= 7 || y <= HY - 4 || y >= HY + 2 || Math.abs(x) <= 1; if (edge) return z === fz + 2 ? dark(hc, 0.1) : hc; }   // the mask frame, standing off the face
-      if (y >= HY - 1 && y <= HY + 1 && shell(1.2) && z < 3) return dark(hc, 0.3);                                                           // the strap
-      if (Math.hypot(x - (RX + 2.2), z + 0.5) <= 1.2 && y >= HY - 2 && y <= HY + RY + 5) return y >= HY + RY + 3 ? [250, 220, 70] : hc;      // the snorkel
-    }
-    if (hat === 'flower') {
-      const cx = -(RX - 0.6), cy = HY + 3.6, cz = 2.2, nx = -0.72, nz = 0.69, px = x - cx, py = y - cy, pz = z - cz, d = px * nx + pz * nz;
-      if (Math.abs(d) <= 1.1) { const ux = px - d * nx, uz = pz - d * nz, u = Math.hypot(ux, uz) * Math.sign(ux + uz), r = Math.hypot(u, py), a = Math.atan2(py, u);
-        if (r <= 1.3) return [255, 220, 80]; if (r <= 4.2 + 0.9 * Math.cos(a * 5)) return r > 3.2 ? light(hc, 0.15) : hc; }
-      if (Math.abs(d + 1.4) <= 0.6 && Math.hypot(x - cx - 2, y - cy + 3.5) <= 2.2) return [70, 150, 80];
-    }
-    if (hat === 'phones') {
-      if (inHeadAt(x, y, z, 2.4) && !inHeadAt(x, y, z, 1.2) && Math.abs(z + 0.5) <= 1.3 && y >= HY + 1) return [44, 46, 58];
-      const ax = Math.abs(x); if (ax >= RX - 0.5 && ax <= RX + 2.6 && Math.hypot(y - (HY - 1), z + 0.5) <= 3.8) return ax >= RX + 1.8 ? hc : Math.hypot(y - (HY - 1), z + 0.5) > 2.6 ? dark(hc, 0.35) : [44, 46, 58];
-    }
-    return null;
+  // ── long hair falls behind the shoulders ──
+  if (A.hairStyle === 'long') { g.beginPath(); g.moveTo(cx - rx - 6, cy - 10); g.quadraticCurveTo(cx - rx - 16, cy + 70, cx - rx + 4, S - 34); g.lineTo(cx + rx - 4, S - 34); g.quadraticCurveTo(cx + rx + 16, cy + 70, cx + rx + 6, cy - 10); g.closePath(); fillStroke(shade(dk(hair, 0.12), cx, cy, 140), css(dk(hair, 0.5))); }
+  if (A.topStyle === 'hoodie') { ell(cx, S - 64, 70, 26); fillStroke(css(dk(tc, 0.12)), css(dk(tc, 0.5))); }        // the hood, bunched behind the neck
+
+  // ── shoulders and top ──
+  const body = () => { g.beginPath(); g.moveTo(cx - 118, S + 4); g.bezierCurveTo(cx - 118, S - 52, cx - 92, S - 70, cx - 40, S - 76); g.lineTo(cx + 40, S - 76); g.bezierCurveTo(cx + 92, S - 70, cx + 118, S - 52, cx + 118, S + 4); g.closePath(); };
+  const top = A.topStyle, base = top === 'wetsuit' ? [38, 44, 64] : top === 'stripes' ? [246, 244, 238] : top === 'overalls' ? [246, 242, 232] : tc;
+  body(); fillStroke(shade(base, cx - 30, S - 70, 170), css(dk(base, 0.55)));
+  g.save(); body(); g.clip();
+  if (top === 'stripes') { g.fillStyle = css(tc); for (let y = S - 70; y < S; y += 22) g.fillRect(0, y, S, 10); }
+  if (top === 'wetsuit') { g.fillStyle = css(tc); g.fillRect(cx - 120, S - 80, 44, 90); g.fillRect(cx + 76, S - 80, 44, 90); g.fillStyle = css([200, 206, 220]); g.fillRect(cx - 2 + tw * 10, S - 74, 4, 80); }
+  if (top === 'aloha' && !back) { for (const [x, y, r] of [[-70, 28, 9], [-34, 52, 8], [40, 30, 9], [76, 54, 8], [-6, 64, 7], [92, 20, 6], [-96, 60, 7]]) { g.fillStyle = css(lt(tc, 0.55)); for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2; ell(cx + x + Math.cos(a) * r * 0.7, S - 78 + y + Math.sin(a) * r * 0.7, r * 0.55, r * 0.55); g.fill(); } g.fillStyle = css([255, 214, 90]); ell(cx + x, S - 78 + y, r * 0.35, r * 0.35); g.fill(); }
+    g.beginPath(); g.moveTo(cx - 34 + tw * 10, S - 78); g.lineTo(cx + tw * 10, S - 30); g.lineTo(cx + 34 + tw * 10, S - 78); g.closePath(); g.fillStyle = css(skin); g.fill(); g.strokeStyle = css(dk(tc, 0.35)); g.lineWidth = 4; g.stroke(); }
+  if (top === 'overalls' && !back) { g.fillStyle = css(tc); rr(cx - 46 + tw * 10, S - 44, 92, 60, 10); g.fill(); g.fillRect(cx - 52 + tw * 10, S - 80, 18, 44); g.fillRect(cx + 34 + tw * 10, S - 80, 18, 44); g.fillStyle = css([250, 210, 90]); for (const x of [-42, 42]) { ell(cx + x + tw * 10, S - 40, 6, 6); g.fill(); } g.strokeStyle = css(dk(tc, 0.35)); g.lineWidth = 3; rr(cx - 22 + tw * 10, S - 30, 44, 24, 6); g.stroke(); }
+  if (top === 'hoodie' && !back) { g.strokeStyle = css([245, 245, 245]); g.lineWidth = 4; for (const x of [-14, 14]) { g.beginPath(); g.moveTo(cx + x + tw * 10, S - 74); g.lineTo(cx + x + tw * 10 + (x > 0 ? 3 : -3), S - 38); g.stroke(); ell(cx + x + tw * 10 + (x > 0 ? 3 : -3), S - 36, 3.5, 3.5); g.fillStyle = css([245, 245, 245]); g.fill(); } g.strokeStyle = css(dk(tc, 0.3)); g.lineWidth = 4; rr(cx - 44 + tw * 10, S - 26, 88, 40, 12); g.stroke(); }
+  if (top === 'tee') { g.strokeStyle = css(dk(tc, 0.18)); g.lineWidth = 3; for (const s2 of [-1, 1]) { g.beginPath(); g.moveTo(cx + s2 * 78, S - 66); g.quadraticCurveTo(cx + s2 * 86, S - 30, cx + s2 * 82, S + 2); g.stroke(); } }
+  g.restore();
+  // the neck, and its shadow under the chin
+  g.beginPath(); g.moveTo(cx - 24 + tw * 8, cy + ry - 22); g.lineTo(cx - 26 + tw * 8, S - 70); g.quadraticCurveTo(cx + tw * 8, S - 58, cx + 26 + tw * 8, S - 70); g.lineTo(cx + 24 + tw * 8, cy + ry - 22); g.closePath(); fillStroke(css(dk(skin, 0.1)), css(dk(skin, 0.5)));
+  { const nc = top === 'wetsuit' ? [38, 44, 64] : top === 'overalls' ? [246, 242, 232] : top === 'stripes' ? [246, 244, 238] : tc; g.beginPath(); g.moveTo(cx - 34 + tw * 8, S - 76); g.quadraticCurveTo(cx + tw * 8, S - 52, cx + 34 + tw * 8, S - 76); g.lineWidth = 7; g.strokeStyle = css(dk(nc, 0.3)); g.stroke(); }
+
+  // ── ears, then the head ──
+  if (!back) for (const s2 of [-1, 1]) { const vis = 1 - Math.max(0, s2 * tw) * 0.9; if (vis < 0.2) continue; const ex = cx + s2 * (rx - 4) - tw * 8; ell(ex, cy + 6, 12 * vis, 17); fillStroke(css(mixc(skin, [210, 110, 100], 0.12)), css(dk(skin, 0.5))); ell(ex, cy + 6, 6 * vis, 10); g.fillStyle = css(dk(skin, 0.14)); g.fill(); }
+  headPath(); fillStroke(shade(skin, cx - 18 + tw * 10, cy - 26, 120), css(dk(skin, 0.52)));
+
+  if (back) { g.save(); headPath(); g.clip(); g.fillStyle = shade(hair, cx, cy - 40, 120); g.fillRect(0, cy - ry - 10, S, A.hairStyle === 'buzz' ? ry * 1.2 : ry * 2.4); g.restore(); headPath(); g.lineWidth = LW; g.strokeStyle = css(dk(skin, 0.52)); g.stroke(); }      // from behind: the back of the head is hair
+  // ── the face ──
+  if (!back) {
+    const eY = cy + 6, eS = 23, squash = (s2) => 1 - Math.max(0, -s2 * tw) * 0.28;
+    const shades = A.extra === 'shades' && A.hatStyle !== 'snorkel';
+    if (A.extra === 'blush' || true) for (const s2 of [-1, 1]) { ell(fx + s2 * 34 * squash(s2), eY + 24, 11 * squash(s2), 6.5); g.fillStyle = css([255, 120, 130], A.extra === 'blush' ? 0.55 : 0.2); g.fill(); }
+    if (!shades) for (const s2 of [-1, 1]) { const k = squash(s2), x = fx + s2 * eS * k; ell(x, eY, 8.5 * k, 11); g.fillStyle = css(INK); g.fill(); ell(x + 3 * k, eY - 4.5, 3.4 * k, 3.6); g.fillStyle = '#fff'; g.fill(); ell(x - 2.5 * k, eY + 4.5, 1.6 * k, 1.6); g.fill(); }
+    // brows
+    if (A.hatStyle !== 'cap' && A.hatStyle !== 'captain' && A.hatStyle !== 'snorkel') for (const s2 of [-1, 1]) { const k = squash(s2); g.beginPath(); g.moveTo(fx + s2 * (eS - 11) * k, eY - 19); g.quadraticCurveTo(fx + s2 * eS * k, eY - 24, fx + s2 * (eS + 10) * k, eY - 19); g.lineWidth = 4.5; g.strokeStyle = css(dk(hair, 0.15)); g.stroke(); }
+    // nose and smile
+    g.beginPath(); g.moveTo(fx + tw * 4 - 3, eY + 18); g.quadraticCurveTo(fx + tw * 7 + 1, eY + 22, fx + tw * 4 + 4, eY + 17); g.lineWidth = 3.5; g.strokeStyle = css(dk(skin, 0.32)); g.stroke();
+    g.beginPath(); g.moveTo(fx - 12, eY + 31); g.quadraticCurveTo(fx, eY + 41, fx + 12, eY + 31); g.lineWidth = 4; g.strokeStyle = css(mixc(dk(skin, 0.5), [140, 30, 50], 0.4)); g.stroke();
+    if (A.extra === 'freckles') { g.fillStyle = css(mixc(skin, [120, 60, 40], 0.5)); for (const [x, y] of [[-30, 18], [-38, 22], [-24, 23], [30, 18], [38, 22], [24, 23], [-6, 16], [6, 16]]) { ell(fx + x, eY + y, 2.2, 2.2); g.fill(); } }
+    if ((A.extra === 'glasses' || shades) && A.hatStyle !== 'snorkel') { for (const s2 of [-1, 1]) { const k = squash(s2); rr(fx + s2 * eS * k - 16 * k, eY - 13, 32 * k, 25, 9); g.fillStyle = shades ? css([24, 26, 42], 0.94) : 'rgba(210,235,255,.22)'; g.fill(); g.lineWidth = 4.5; g.strokeStyle = css(shades ? [16, 16, 26] : [40, 36, 54]); g.stroke(); if (shades) { g.beginPath(); g.moveTo(fx + s2 * eS * k + 2 * k, eY - 8); g.lineTo(fx + s2 * eS * k + 9 * k, eY - 8); g.lineWidth = 3; g.strokeStyle = 'rgba(190,210,240,.8)'; g.stroke(); } }
+      g.beginPath(); g.moveTo(fx - eS + 16, eY - 4); g.quadraticCurveTo(fx, eY - 9, fx + eS - 16, eY - 4); g.lineWidth = 4; g.strokeStyle = css([40, 36, 54]); g.stroke(); }
   }
-  // ── hair ──
-  const hairline = (x, y, z) => { const nz = Math.max(-1, Math.min(1, (z + 0.5) / RZ)); return HY + (hs === 'buzz' ? 5.2 : 4.4 + 0.1 * x) + (nz < 0 ? nz * 12 : (nz - 1) * 6.2 * (1 - nz) * 1.6); };
-  const tone = (x, y, z) => { const n = hsh(x, y, z); return n > 0.82 ? light(hair, 0.16) : n < 0.18 ? dark(hair, 0.14) : hair; };
-  function hairAt(x, y, z) {
-    if (y >= hatBase + (hat === 'beanie' ? 0 : 0.5)) return null;
-    if (inHeadAt(x, y, z)) return null;
-    const th = { buzz: 0.8, short: 1.7, long: 1.7, curly: 1.4, bun: 1.2, spiky: 1.5 }[hs];
-    if (inHeadAt(x, y, z, th) && y >= hairline(x, y, z)) return tone(x, y, z);
-    if (hs === 'long') {
-      const r = Math.hypot(x / (RX + 2.3), (z + 0.8) / (RZ + 2.3));
-      if (r <= 1 && z <= 2.5 && y <= HY + 1 && y >= HY - 16 + Math.sin(x * 0.9) * 1.2 && !inEar(x, y, z) && (z < -1 || Math.abs(x) > RX - 1.5)) return tone(x, y, z);
-    }
-    if (hs === 'curly') {
-      const bump = 0.85 + 0.15 * Math.sin(x * 1.3) * Math.sin(y * 1.1 + 1) * Math.sin(z * 1.2 + 2);
-      if (se(x, y - HY - 1.6, z + 0.8, RX + 3.8, RY + 3.2, RZ + 3.6, 2.2) <= bump && y >= Math.min(hairline(x, y, z), HY - 3 + (z > 3 ? 7 : 0))) return hsh(x >> 1, y >> 1, z >> 1) > 0.6 ? light(hair, 0.12) : hair;
-    }
-    if (hs === 'bun' && (Math.hypot(x, y - (HY + RY + 2.4), z + 3) <= 4.4)) return tone(x, y, z);
-    if (hs === 'spiky') for (const [sx, sz, h, lx] of [[-5, 2, 5, -0.4], [0, 3, 6.5, 0], [5, 2, 5, 0.4], [-3, -3, 5, -0.2], [3, -3, 5, 0.2], [0, -6, 4, 0]]) {
-      const by = HY + RY - 2.2, u = (y - by) / h; if (u < 0 || u > 1) continue; const cx = sx + lx * u * h, cz = sz - u * 2.4;
-      if (Math.hypot(x - cx, z - cz) <= 2.8 * (1 - u) + 0.3) return u > 0.7 ? light(hair, 0.15) : hair;
-    }
-    return null;
+
+  // ── hair over the head ──
+  const hs = A.hairStyle, hat = A.hatStyle, hairFill = shade(hair, cx - 20, cy - 60, 110), hairLine = css(dk(hair, 0.55));
+  const cap = (depth, fringe) => { g.save(); headPath(5); g.clip(); g.beginPath(); g.moveTo(0, 0); g.lineTo(S, 0); g.lineTo(S, cy - ry * depth + 30);
+      for (let i = 0; i <= 20; i++) { const u = i / 20, x = S - u * S, w = Math.sin(u * Math.PI * (fringe ?? 3)) * 9; g.lineTo(x, cy - ry * depth + (Math.abs(x - fx) < rx * 0.75 ? 0 : 26) + w); }
+      g.closePath(); g.fillStyle = hairFill; g.fill(); g.lineWidth = LW * 2; g.strokeStyle = hairLine; g.stroke(); g.restore(); headPath(5); g.save(); g.clip(); g.restore(); };
+  if (!(hat === 'beanie' || hat === 'captain' || hat === 'bucket') || hs === 'long' || hs === 'curly') {
+    if (hs === 'curly') { for (const [a, r] of [[-2.9, 26], [-2.5, 28], [-2.0, 30], [-1.57, 30], [-1.1, 30], [-0.6, 28], [-0.2, 26], [0.15, 22], [-3.3, 22]]) { ell(cx + Math.cos(a) * rx * 0.95, cy - 6 + Math.sin(a) * ry * 0.95, r, r); fillStroke(hairFill, hairLine); } for (const [a, r] of [[-2.5, 20], [-1.57, 22], [-0.6, 20]]) { ell(cx + Math.cos(a) * rx * 0.62, cy - 12 + Math.sin(a) * ry * 0.62, r, r); g.fillStyle = css(lt(hair, 0.1)); g.fill(); } }
+    else if (hs === 'buzz') { cap(0.62, 6); }
+    else if (hs === 'spiky') { cap(0.5, 5); for (const [x, h, l] of [[-40, 34, -14], [-16, 44, -6], [10, 46, 4], [34, 38, 12], [52, 26, 18]]) { g.beginPath(); g.moveTo(cx + x - 18, cy - ry + 22); g.lineTo(cx + x + l, cy - ry + 18 - h); g.lineTo(cx + x + 18, cy - ry + 22); g.closePath(); fillStroke(hairFill, hairLine); } cap(0.5, 5); }
+    else { cap(hs === 'bun' ? 0.5 : 0.42, 2.5);      // short, long and bun share a swept fringe
+      g.beginPath(); g.moveTo(fx - rx * 0.85, cy - ry * 0.32); g.quadraticCurveTo(fx - 10, cy - ry * 0.05, fx + rx * 0.55, cy - ry * 0.55); g.quadraticCurveTo(fx + 6, cy - ry * 0.75, fx - rx * 0.85, cy - ry * 0.32); fillStroke(hairFill, hairLine, 4); }
+    if (hs === 'bun') { ell(cx - tw * 6, cy - ry - 14, 24, 22); fillStroke(hairFill, hairLine); }
+    if (hs === 'long') for (const s2 of [-1, 1]) { g.beginPath(); g.moveTo(cx + s2 * (rx - 6), cy - 30); g.quadraticCurveTo(cx + s2 * (rx + 12), cy + 40, cx + s2 * (rx - 2), cy + 84); g.lineTo(cx + s2 * (rx - 22), cy + 80); g.quadraticCurveTo(cx + s2 * (rx - 10), cy + 20, cx + s2 * (rx - 26), cy - 30); g.closePath(); fillStroke(hairFill, hairLine); }
   }
-  // ── face, on the front of the head ──
-  function faceAt(x, y, z) {
-    const fz = headFront(x, y); if (z < fz - 1) return null; const ax = Math.abs(x), dy = y - HY;
-    const glassBox = (ex === 'glasses' || ex === 'shades') && hat !== 'snorkel' && ax >= 2 && ax <= 7 && dy >= -3 && dy <= 1;
-    if (ax >= 4 && ax <= 5 && dy >= -2 && dy <= 0) { if (ex === 'shades' && hat !== 'snorkel') return null; const glint = dy === 0 && x === (x < 0 ? -5 : 4); return { c: glint ? [255, 255, 255] : eyeC, em: glint ? 2 : 1 }; }
-    if (glassBox && ex === 'shades') return null;
-    if (hat !== 'cap' && hat !== 'captain' && ax >= 3 && ax <= 6 && dy === 2 && hs !== 'curly') return { c: dark(hair, 0.1) };   // brows
-    if (ax <= 2 && dy === -6) return { c: lip }; if (ax === 3 && dy === -5) return { c: lip };                           // a small smile
-    if (ax >= 6 && ax <= 7 && dy >= -4 && dy <= -3) return { c: cheek };
-    if (ex === 'freckles' && [[-6, -2], [-7, -3], [-5, -3], [6, -2], [7, -3], [5, -3], [-1, -3], [1, -3]].some(([a, b]) => a === x && b === dy)) return { c: mix(skin, [120, 60, 40], 0.45) };
-    if (hat === 'snorkel' && Math.abs(x) <= 8 && dy >= -4 && dy <= 2) return { c: mix(skin, [120, 210, 240], 0.3) };
-    return null;
-  }
-  function extraAt(x, y, z) {
-    if ((ex !== 'glasses' && ex !== 'shades') || hat === 'snorkel') return null;
-    const ax = Math.abs(x), dy = y - HY, fz = headFront(x, y);
-    if (z === fz + 1 && ax >= 2 && ax <= 7 && dy >= -3 && dy <= 1) {
-      const edge = ax === 2 || ax === 7 || dy === -3 || dy === 1; if (edge) return ex === 'shades' ? [30, 32, 44] : [24, 22, 34];
-      if (ex === 'glasses' && ax === 6 && dy === 0) return [214, 236, 255];
-      if (ex === 'shades') return ax === 6 && dy === 0 ? [180, 200, 230] : [24, 26, 40];
-    }
-    if (z <= fz + 1 && ax <= 1 && dy === 0 && z >= fz) return [40, 36, 52];
-    if (dy === 0 && ax >= RX - 1.2 && ax <= RX + 0.6 && z > -4 && z < fz - 1 && !inHeadAt(x, y, z)) return [40, 36, 52];
-    return null;
-  }
-  // ── the top ──
-  function topAt(x, y, z) {
-    const fz = torsoFront(x, y), front = z >= fz - 1, ax = Math.abs(x);
-    if (Math.hypot(x, z + 0.5) <= 5.4 && y >= -8) return dark(top === 'wetsuit' ? [36, 40, 58] : tc, 0.22);                              // the neckline
-    if (top === 'stripes') return Math.floor((y + 40) / 2) % 2 ? [244, 242, 236] : tc;
-    if (top === 'wetsuit') { if (front && ax <= 0.5 && y < -7) return [190, 196, 210]; return ax >= 8 && ax <= 10.5 || (y > -10 && ax > 5) ? tc : [36, 40, 58]; }
-    if (top === 'hoodie') {
-      if (front && (x === -2 || x === 2) && y >= -15 && y <= -8) return [246, 246, 246];
-      if (front && ax <= 7 && y >= -25 && y <= -19) return ax === 7 || y === -19 ? dark(tc, 0.3) : dark(tc, 0.1);
-      return tc;
-    }
-    if (top === 'aloha') {
-      if (front && ax <= (y + 13) * 0.55 && y > -13) return y > -9 ? skin : light(tc, 0.35);
-      const p = Math.sin(x * 0.62 + z * 0.25) * Math.sin(y * 0.62 + 1.3); return p > 0.86 ? [255, 250, 236] : p > 0.74 ? light(tc, 0.45) : tc;
-    }
-    if (top === 'overalls') {
-      if (y < -20) return tc;
-      if (front && ax <= 7 && y <= -12) return ax === 5 && y === -13 ? [246, 204, 80] : tc;
-      if (ax >= 4 && ax <= 6.5 && y > -12 && z > -2) return dark(tc, 0.12);
-      return [244, 240, 230];
-    }
-    return Math.abs(x) >= 13.5 && y > -17 ? dark(tc, 0.08) : tc;                                                                  // a plain tee, the sleeves a shade darker
-  }
-  return {
-    bounds: { x: [-19, 19], y: [-27, 27], z: [-15, 17] }, center: [0, 0], dither: false,
-    sample(x, y, z) {
-      const h = hatAt(x, y, z); if (h) return { c: h, tag: 'hat' };
-      const e = extraAt(x, y, z); if (e) return { c: e, tag: 'extra' };
-      if (!inHeadAt(x, y, z) && inHeadAt(x, y, z - 1) && x === 0 && (y === HY - 3 || y === HY - 2) && z >= headFront(x, y) + 1 - 0.01) return { c: mix(skin, [180, 90, 70], 0.12), tag: 'nose' };
-      const hr = hairAt(x, y, z); if (hr) return { c: hr, tag: 'hair' };
-      if (inHeadAt(x, y, z)) { const f = faceAt(x, y, z); if (f) return { c: f.c, em: f.em, tag: 'face' }; return { c: y < HY - 6 ? mix(skin, [255, 230, 210], 0.05) : skin, tag: 'head' }; }
-      if (inEar(x, y, z)) return { c: mix(skin, [200, 100, 90], 0.12), tag: 'ear' };
-      if (inNeck(x, y, z)) return { c: dark(skin, y > HY - RY ? 0.05 : 0.14), tag: 'neck' };
-      if (inTorso(x, y, z)) return { c: topAt(x, y, z), tag: 'top' };
-      return null;
-    },
-  };
+
+  // ── hats ──
+  const dome = (lowY) => { g.beginPath(); g.moveTo(cx - rx - 8, lowY); g.bezierCurveTo(cx - rx - 8, cy - ry - 40, cx + rx + 8, cy - ry - 40, cx + rx + 8, lowY); g.closePath(); };
+  if (hat === 'beanie') { if (hs === 'long' || hs === 'curly') {} dome(cy - 14); fillStroke(shade(hc, cx - 20, cy - 80, 110), css(dk(hc, 0.55)));
+    g.save(); dome(cy - 14); g.clip(); g.strokeStyle = css(dk(hc, 0.12)); g.lineWidth = 3; for (let x = cx - rx - 10; x < cx + rx + 10; x += 12) { g.beginPath(); g.moveTo(x, cy - 40); g.lineTo(x + (x - cx) * 0.25, cy - ry - 30); g.stroke(); } g.restore();
+    rr(cx - rx - 10, cy - 38, (rx + 10) * 2, 28, 12); fillStroke(css(dk(hc, 0.1)), css(dk(hc, 0.55))); g.save(); rr(cx - rx - 10, cy - 38, (rx + 10) * 2, 28, 12); g.clip(); g.strokeStyle = css(dk(hc, 0.25)); g.lineWidth = 3; for (let x = cx - rx - 6; x < cx + rx + 10; x += 9) { g.beginPath(); g.moveTo(x, cy - 36); g.lineTo(x, cy - 12); g.stroke(); } g.restore();
+    ell(cx - tw * 8, cy - ry - 26, 18, 17); fillStroke(shade(lt(hc, 0.55), cx - 6, cy - ry - 32, 22), css(dk(hc, 0.4))); }
+  if (hat === 'cap') { dome(cy - 26); fillStroke(shade(hc, cx - 20, cy - 80, 110), css(dk(hc, 0.55))); g.beginPath(); g.moveTo(cx, cy - ry - 18); g.lineTo(cx, cy - 26); g.lineWidth = 3; g.strokeStyle = css(dk(hc, 0.25)); g.stroke(); ell(cx, cy - ry - 18, 6, 4); g.fillStyle = css(dk(hc, 0.3)); g.fill();
+    if (!back) ell(fx + tw * 30, cy - 26, rx * 0.78, 12, 0); if (!back) fillStroke(css(dk(hc, 0.18)), css(dk(hc, 0.6))); }
+  if (hat === 'bucket') { ell(cx, cy - 26, rx + 32, 16); fillStroke(css(dk(hc, 0.12)), css(dk(hc, 0.55))); g.beginPath(); g.moveTo(cx - rx + 2, cy - 28); g.bezierCurveTo(cx - rx + 4, cy - ry - 36, cx + rx - 4, cy - ry - 36, cx + rx - 2, cy - 28); g.closePath(); fillStroke(shade(hc, cx - 20, cy - 80, 100), css(dk(hc, 0.55))); rr(cx - rx + 2, cy - 44, (rx - 2) * 2, 12, 4); g.fillStyle = css(dk(hc, 0.25)); g.fill(); }
+  if (hat === 'captain') { g.beginPath(); g.moveTo(cx - rx - 4, cy - 40); g.lineTo(cx - rx - 14, cy - ry - 30); g.quadraticCurveTo(cx, cy - ry - 48, cx + rx + 14, cy - ry - 30); g.lineTo(cx + rx + 4, cy - 40); g.closePath(); fillStroke(shade([248, 248, 244], cx - 20, cy - 90, 120), css([90, 96, 110]));
+    rr(cx - rx - 4, cy - 56, (rx + 4) * 2, 18, 6); fillStroke(css(hc), css(dk(hc, 0.5))); if (!back) { ell(cx + tw * 14, cy - 47, 9, 9); fillStroke(css([248, 204, 80]), css([150, 110, 30]), 3); ell(fx + tw * 24, cy - 36, rx * 0.7, 8); fillStroke(css([30, 32, 44]), css([10, 10, 18])); } }
+  if (hat === 'flower') { const x0 = cx - rx + 10 - tw * 10, y0 = cy - ry + 26; for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 - 0.3; ell(x0 + Math.cos(a) * 14, y0 + Math.sin(a) * 14, 12, 12); fillStroke(css(hc), css(dk(hc, 0.45)), 3.5); } ell(x0, y0, 8, 8); fillStroke(css([255, 214, 90]), css([170, 120, 30]), 3); }
+  if (hat === 'phones') { g.beginPath(); g.arc(cx, cy - 6, rx + 10, Math.PI * 1.08, Math.PI * 1.92); g.lineWidth = 12; g.strokeStyle = css([46, 48, 62]); g.stroke(); for (const s2 of [-1, 1]) { rr(cx + s2 * (rx + 4) - 14 - tw * 8, cy - 14, 28, 44, 12); fillStroke(shade(hc, cx + s2 * rx, cy, 40), css(dk(hc, 0.55))); } }
+  if (hat === 'snorkel' && !back) { rr(fx - 50, cy - 16, 100, 42, 18); g.fillStyle = 'rgba(170,225,255,.45)'; g.fill(); g.lineWidth = 8; g.strokeStyle = css(hc); g.stroke(); g.beginPath(); g.moveTo(cx - rx - 2, cy + 4); g.lineTo(fx - 50, cy + 4); g.moveTo(fx + 50, cy + 4); g.lineTo(cx + rx + 2, cy + 4); g.lineWidth = 7; g.strokeStyle = css(dk(hc, 0.3)); g.stroke();
+    for (const s2 of [-1, 1]) { const x = fx + s2 * 22; ell(x, cy + 5, 6, 8); g.fillStyle = css(INK); g.fill(); ell(x + 2, cy + 1, 2.4, 2.6); g.fillStyle = '#fff'; g.fill(); }
+    rr(cx + rx + 4, cy - ry - 10, 12, ry + 24, 6); fillStroke(css(hc), css(dk(hc, 0.5)), 4); rr(cx + rx + 1, cy - ry - 18, 18, 14, 5); fillStroke(css([250, 214, 80]), css([160, 120, 30]), 4); }
 }
-const species = { id: 'person', make: (seed, look) => person(look) };
-// models are kept for the last few looks drawn, frames per model per angle
+function personCanvas(A, yaw) { const c = document.createElement('canvas'); c.width = S; c.height = S; const g = c.getContext('2d'); portrait(g, A, yaw); return c; }
+// portraits are kept for the last few looks drawn, one per look and angle
 const models = new Map();
 export function personSprite(av, yaw = -Math.PI / 8) {
-  const A = normAvatar(av), key = JSON.stringify(A); let m = models.get(key);
-  if (!m) { m = new Fish(species, 1, A); models.set(key, m); if (models.size > 40) models.delete(models.keys().next().value); }
-  return tight(m.frame({ yaw }));
+  const A = normAvatar(av), key = JSON.stringify(A) + '|' + yaw.toFixed(2); let m = models.get(key);
+  if (!m) { m = tight(personCanvas(A, yaw)); models.set(key, m); if (models.size > 60) models.delete(models.keys().next().value); }
+  return m;
 }
 // the sprite canvas is square around the model's center; cut it down to the pixels actually drawn
 const tights = new WeakMap();
@@ -175,10 +113,10 @@ function tight(f) {
   if (x1 < 0) { tights.set(f, f); return f; }
   t = document.createElement('canvas'); t.width = x1 - x0 + 1; t.height = y1 - y0 + 1; t.getContext('2d').drawImage(f, -x0, -y0); tights.set(f, t); return t;
 }
-// draws a caretaker into a canvas: a square with the bust standing on its bottom edge (CSS scales it up, pixelated)
+// draws a caretaker into a canvas: a square with the bust standing on its bottom edge
 export function drawAvatar(c, av, { yaw = -Math.PI / 8 } = {}) {
-  const f = personSprite(av, yaw), pad = 3, S = Math.max(f.width, f.height) + pad * 2;
-  c.width = S; c.height = S; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, S, S); g.drawImage(f, Math.round((S - f.width) / 2), S - f.height);
+  const f = personSprite(av, yaw), pad = 8, Q = Math.max(f.width, f.height) + pad * 2;
+  c.width = Q; c.height = Q; c.style.imageRendering = 'auto'; const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.clearRect(0, 0, Q, Q); g.drawImage(f, Math.round((Q - f.width) / 2), Q - f.height);
 }
 // playing offline there is no server profile: your look is kept on this phone
 const SOLO = 'ourtank.look';

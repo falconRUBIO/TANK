@@ -13,7 +13,7 @@ const TABS = [
 const CROP = { head: [0.12, 0, 0.76, 0.56], face: [0.2, 0.14, 0.6, 0.36], body: [0, 0.42, 1, 0.58] };
 function tileArt(c, look, crop) {
   const f = personSprite(look), [x, y, w, h] = CROP[crop] ?? [0, 0, 1, 1], sx = Math.round(f.width * x), sy = Math.round(f.height * y), sw = Math.round(f.width * w), sh = Math.round(f.height * h), s = Math.max(sw, sh);
-  c.width = c.height = s; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, s, s); g.drawImage(f, sx, sy, sw, sh, (s - sw) / 2, (s - sh) / 2, sw, sh);
+  c.width = c.height = s; const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.clearRect(0, 0, s, s); g.drawImage(f, sx, sy, sw, sh, (s - sw) / 2, (s - sh) / 2, sw, sh);
 }
 
 export function lookEditor(host, look, onChange = () => {}) {
@@ -35,7 +35,7 @@ export function lookEditor(host, look, onChange = () => {}) {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'pe-tile' + (look[key] === id ? ' on' : ''); b.innerHTML = `<canvas></canvas><b>${label}</b>`;
         b.onclick = () => { look[key] = id; styles.querySelectorAll('.pe-tile').forEach((x) => x.classList.toggle('on', x === b)); if (tab.k === 'hat') cols.hidden = id === 'none'; changed(); };
         styles.append(b);
-        setTimeout(() => { if (my === job) tileArt(b.querySelector('canvas'), { ...look, [key]: id }, tab.crop); }, 30 + i * 24);     // drawn one by one so the screen never stalls
+        setTimeout(() => { if (my === job) tileArt(b.querySelector('canvas'), { ...look, ...(tab.k === 'hair' ? { hatStyle: 'none' } : {}), [key]: id }, tab.crop); }, 30 + i * 24);     // drawn one by one so the screen never stalls
       });
       styles.querySelector('.on')?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
     }
@@ -49,7 +49,7 @@ export function lookEditor(host, look, onChange = () => {}) {
     }
   }
   // after a color change the tiles are redrawn in the new color
-  function refreshTiles() { const my = ++job, [key, list] = tab.styles; styles.querySelectorAll('.pe-tile canvas').forEach((c, i) => setTimeout(() => { if (my === job) tileArt(c, { ...look, [key]: list[i][0] }, tab.crop); }, 20 + i * 24)); }
+  function refreshTiles() { const my = ++job, [key, list] = tab.styles; styles.querySelectorAll('.pe-tile canvas').forEach((c, i) => setTimeout(() => { if (my === job) tileArt(c, { ...look, ...(tab.k === 'hair' ? { hatStyle: 'none' } : {}), [key]: list[i][0] }, tab.crop); }, 20 + i * 24)); }
   host.querySelectorAll('.pe-tabs button').forEach((b) => (b.onclick = () => { tab = TABS.find((t) => t.k === b.dataset.t); host.querySelectorAll('.pe-tabs button').forEach((x) => x.classList.toggle('on', x === b)); panel(); }));
   host.querySelector('.pe-dice').onclick = () => { Object.assign(look, randomAvatar()); turn = 15; changed(); panel(); host.querySelector('.pe-stage').animate?.([{ transform: 'scale(.94)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(.3,1.6,.5,1)' }); };
   // drag (or swipe) across the porthole to turn the person around
