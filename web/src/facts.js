@@ -15,6 +15,16 @@ export const FACTS = {
     'Most of an octopus\'s neurons are in its arms: each arm can taste and feel what it touches on its own.',
     'An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin.',
   ],
+  turtle: [
+    'A sea turtle cannot pull its head into its shell the way a land tortoise can.',
+    'Green turtles are named for the green color of their fat, not their shell: as adults they eat mostly sea grass and algae.',
+    'A sea turtle can hold its breath for hours while it sleeps, wedged under a ledge, then rises to the surface to breathe.',
+    'Sea turtles fly through the water with their long front flippers and steer with the small back ones.',
+    'A female green turtle comes back to the very beach she hatched on to lay her own eggs, decades later.',
+    'Whether a turtle egg hatches male or female depends on how warm the sand is: warm nests make mostly females.',
+    'Young sea turtles drift for years in floating seaweed in the open ocean. Scientists call them the lost years.',
+    'Sea turtles have lived in the oceans for over 100 million years, since the age of the dinosaurs.',
+  ],
   seahorse: [
     'A seahorse\'s eyes move on their own: it can watch something in front and something behind at the same time.',
     'In seahorses the male gets pregnant: the female puts her eggs in his pouch and he carries them until they hatch.',

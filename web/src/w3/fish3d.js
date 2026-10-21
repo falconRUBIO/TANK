@@ -110,7 +110,7 @@ export class Fish3D {
     this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
-    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
+    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
     this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null;
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
@@ -187,6 +187,12 @@ export class Fish3D {
       }
       if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
       if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
+      if (v.flip) {                                                       // a sea turtle's flipper: the front pair fly (a long stroke down and back, then up), the back pair steer
+        const F = v.flip, sw = this.strokeK ?? 0.5, ph = this.flipPh ?? phase, s = F.s, rest = this.restK ?? 0;
+        const th = (F.k === 0 ? (0.1 + 0.68 * sw) * Math.sin(ph) * (1 - 0.8 * rest) - 0.25 * rest : 0.18 * Math.sin(ph * 0.5 + 1.2) * (0.4 + sw)) * s, be = F.k === 0 ? (0.08 + 0.32 * sw) * Math.cos(ph) * (1 - rest) + 0.35 * rest : 0.12 * Math.cos(ph * 0.5) * s;
+        let dx = x - F.x, dy = y - F.y, dz = z - F.z; const c1 = Math.cos(th), s1 = Math.sin(th), ny = dy * c1 + dz * s1; dz = -dy * s1 + dz * c1; dy = ny;
+        const bs = F.k === 0 ? be * s : be, c2 = Math.cos(bs), s2 = Math.sin(bs), nx = dx * c2 - dz * s2; dz = dx * s2 + dz * c2; dx = nx; x = F.x + dx; y = F.y + dy; z = F.z + dz;
+      }
       if (tailRig && v.tag === 'tail') { const ti = v.at, k3 = ti * 3, T = tailRig.T, Nn = tailRig.N, B = tailRig.B, ot = v.off[0], on = v.off[1], oz = v.z; x = tailRig.x[ti] + ot * T[k3] + on * Nn[k3] + oz * B[k3]; y = tailRig.y[ti] + ot * T[k3 + 1] + on * Nn[k3 + 1] + oz * B[k3 + 1]; z = tailRig.z[ti] + ot * T[k3 + 2] + on * Nn[k3 + 2] + oz * B[k3 + 2]; }      // the seahorse's tail: each voxel keeps its place across the tail's own frame as the tail curls flat or wraps round a stem
       else if (tailRig && v.tag === 'glint') { const e = v.z > 0 ? this.eyeR : this.eyeL; if (e) { x += e.x; y += e.y; z += Math.sign(v.z) * 0.3; } }      // each eye looks its own way
       if (jet && v.pupil) { x += this.lookX; y += this.lookY; }
@@ -1251,6 +1257,7 @@ export class Fish3D {
   update(dt, rng, others) {
     if (this.puppet) return this.puppet(dt);      // climbing out of the tank or back in (see FishManager.climb)
     if (this.dead) return this.deadUpdate(dt);
+    if (this.species.id === 'turtle') { const v = this.vel.length(), want = Math.min(1, v / 0.9); this.strokeK = (this.strokeK ?? 0.4) + (want - (this.strokeK ?? 0.4)) * Math.min(1, dt * 1.5); this.flipPh = (this.flipPh ?? 0) + dt * (0.7 + 2.0 * this.strokeK); }      // slow, deep strokes: a beat every two or three seconds cruising, faster when it hurries, a glide in between
     { const T = this.target, gh = sandH(T.x, T.z); if (T.y < gh + Math.min(Math.max(T.y, 0.35), 1.0)) T.y = gh + Math.min(Math.max(T.y, 0.35), 1.0); }      // wherever it is heading, it is in the water above the sand there: over a bank a low swimmer swims as low above that sand as it would above the floor
     if (this.sp.tail) { if (!Number.isFinite(this.curlK)) this.curlK = 0; if (!Number.isFinite(this.gripK)) this.gripK = 0; }      // a seahorse's tail starts loose: an unset curl once turned its height into NaN and hid it
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading

@@ -840,4 +840,52 @@ const moonbetta = recolor(mandarin, 'moonbetta', 'Ghost Dragonet', (c) => mix(c,
 const sunangel = recolor(emperor, 'sunangel', 'Golden Angelfish', (c) => [Math.min(255, c[0] * 0.5 + 150), Math.min(255, c[1] * 0.6 + 100), Math.max(0, c[2] * 0.25)]);
 const rosecory = recolor(goby, 'rosecory', 'Rose Goby', (c) => mix(c, [255, 150, 190], 0.6));
 
-export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, moonbetta, sunangel, rosecory };
+// ───────────────────────── Green sea turtle: a domed shell of plates, a scaly head, long front flippers that fly ─────────────────────────
+// After a juvenile green turtle (Chelonia mydas): an olive-brown carapace of large plates, each streaked with gold rays from its center, a pale
+// yellow plastron, a blunt head covered in pale-edged scales, long paddle front flippers (it "flies" with these) and small rounded back ones
+// it steers with. Every flipper voxel knows the root it turns about, so the strokes are posed in Fish3D (v.flip).
+const turtle = {
+  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 70, vox: 0.085,
+  make(seed = 1) {
+    const rng = mulberry32(seed * 7211 + 41), off = [rng() * 40, rng() * 40, rng() * 40];
+    const PALS = [      // shell, seam, ray, skin, scale-edge
+      { sh: [104, 92, 46], se: [46, 40, 22], ray: [196, 160, 78], sk: [84, 96, 58], ed: [214, 206, 160] },
+      { sh: [120, 84, 44], se: [54, 34, 20], ray: [214, 162, 82], sk: [96, 86, 56], ed: [226, 210, 168] },
+      { sh: [78, 92, 54], se: [34, 42, 24], ray: [170, 168, 92], sk: [70, 92, 64], ed: [204, 214, 170] },
+    ];
+    const P = PALS[Math.floor(rng() * PALS.length)];
+    const SH = { cx: 0, cy: 1, rx: 14.5, ry: 6.5, rz: 11.5 };
+    const shell = (x, y, z) => { const dx = (x - SH.cx) / SH.rx, dz = z / SH.rz; if (y >= SH.cy) { const dy = (y - SH.cy) / SH.ry; return dx * dx + dy * dy + dz * dz <= 1; } return y >= SH.cy - 2.6 && dx * dx * 1.15 + dz * dz * 1.2 <= 1; };
+    const head = (x, y, z) => { const dx = (x - 19.5) / 5.4, dy = (y - 1.6) / 3.7, dz = z / 3.9; return dx * dx + dy * dy + dz * dz <= 1; };
+    const neck = (x, y, z) => x >= 12 && x <= 16.5 && Math.hypot((y - 0.8) / 2.8, z / 3.1) <= 1;
+    const skin = (x, y, z) => { const cx = Math.floor((x + off[0]) / 2.4), cy = Math.floor((y + z * 0.5 + off[1]) / 2.4), e = (x + off[0]) % 2.4 < 0.55 || (y + z * 0.5 + off[1]) % 2.4 < 0.55; return e ? mix(P.ed, P.sk, 0.25) : mix(P.sk, mix(P.sk, [40, 46, 28], 0.4), (cx * 7 + cy * 3) % 5 / 5); };
+    // a flipper: a flat tapering paddle from a root, out along a direction, its voxels turning about the root when it strokes
+    const FL = [
+      { r: [7, -0.6, 9.4], d: [-0.42, -0.12, 1], len: 17, w0: 4.2, w1: 1.1, kind: 0 }, { r: [7, -0.6, -9.4], d: [-0.42, -0.12, -1], len: 17, w0: 4.2, w1: 1.1, kind: 0 },
+      { r: [-11, -0.8, 6.8], d: [-0.85, -0.05, 0.72], len: 7.5, w0: 3.4, w1: 2.2, kind: 1 }, { r: [-11, -0.8, -6.8], d: [-0.85, -0.05, -0.72], len: 7.5, w0: 3.4, w1: 2.2, kind: 1 },
+    ].map((f) => { const m = Math.hypot(...f.d); return { ...f, d: f.d.map((q) => q / m) }; });
+    const flipAt = (x, y, z) => { for (const f of FL) { const px = x - f.r[0], py = y - f.r[1], pz = z - f.r[2], a = px * f.d[0] + py * f.d[1] + pz * f.d[2]; if (a < -1 || a > f.len) continue; const u = Math.max(0, a) / f.len, qx = px - f.d[0] * a, qy = py - f.d[1] * a, qz = pz - f.d[2] * a, across = Math.hypot(qx, qz), w = (f.w0 + (f.w1 - f.w0) * Math.pow(u, 1.3)) * (f.kind ? 1 : (u < 0.15 ? 0.75 + u * 1.6 : 1)); if (across <= w * 0.5 + 0.3 && Math.abs(qy) <= (u < 0.2 ? 1.2 : 0.7)) return { f, u }; } return null; };
+    return {
+      bounds: { x: [-20, 26], y: [-9, 9], z: [-26, 26] }, center: [0, 1],
+      sample(x, y, z) {
+        // the eye: dark, a little bulging, on each side of the head, with a bright catch-light
+        if (Math.abs(z) >= 2 && Math.abs(z) <= 4 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 21, y - 2.6) <= 1.3) return Math.hypot(x - 20.6, y - 3.1) < 0.6 ? { c: [255, 255, 255], em: 2 } : { c: [16, 14, 12], em: 1, tag: 'eye' };
+        if (head(x, y, z)) { const beak = x >= 23 && y <= 1.6; return { c: beak ? [214, 196, 140] : y < 0 ? mix(P.ed, [236, 226, 190], 0.4) : skin(x, y, z), tag: 'head' }; }
+        if (neck(x, y, z)) return { c: y < 0 ? [222, 212, 170] : skin(x, y, z), tag: 'head' };
+        if (shell(x, y, z)) {
+          if (y < SH.cy) { const rim = Math.abs(z) > 9.8 || Math.abs(x) > 12.5; return { c: rim ? mix(P.sh, P.se, 0.3) : mix([230, 214, 150], [204, 186, 120], ((Math.floor(x / 4) + Math.floor(Math.abs(z) / 4)) & 1) * 0.6) }; }
+          // plates: a row of five down the middle, four along each side, and small ones round the rim; each a little domed, with dark seams and gold rays from its center
+          const r = Math.hypot(x / SH.rx, z / SH.rz), row = r > 0.86 ? 2 : Math.abs(z) < 3.6 ? 0 : 1, len = row === 0 ? 5.6 : row === 1 ? 6.2 : 2.8, cxp = Math.round((x + (row === 1 ? 2.8 : 0)) / len) * len - (row === 1 ? 2.8 : 0), czp = row === 0 ? 0 : row === 1 ? Math.sign(z) * 7.2 : z;
+          const seam = row === 2 ? (Math.abs(((x + 1.4) % 2.8 + 2.8) % 2.8 - 1.4) > 1.15) : Math.abs(x - cxp) > len * 0.5 - 0.6 || (row === 0 ? Math.abs(z) > 2.9 : Math.abs(Math.abs(z) - 3.6) < 0.7);
+          if (seam) return { c: P.se, tag: 'shell' };
+          const ang = Math.atan2(z - czp, x - cxp), ray = Math.abs(Math.sin(ang * 3 + (fbm(x * 0.3 + off[0], z * 0.3, 1) - 0.5) * 4)) > 0.82, n = fbm(x * 0.22 + off[1], y * 0.2, z * 0.22 + off[2]);
+          return { c: mix(ray ? mix(P.sh, P.ray, 0.75) : P.sh, [255, 250, 220], Math.max(0, (y - 5) / 4) * 0.12 + (n - 0.5) * 0.15), tag: 'shell' };
+        }
+        const fl = flipAt(x, y, z); if (fl) { const edge = fl.u > 0.15 && Math.abs(z - fl.f.r[2]) % 3 < 0.6; return { c: y < fl.f.r[1] - 0.4 ? mix(P.ed, [236, 226, 190], 0.5) : edge ? mix(P.sk, P.ed, 0.6) : skin(x, y, z), flip: { x: fl.f.r[0], y: fl.f.r[1], z: fl.f.r[2], s: Math.sign(fl.f.r[2]), k: fl.f.kind, u: fl.u }, tag: 'flip' }; }
+        if (x <= -13.5 && x >= -17 && Math.hypot(y + 0.2, z) <= 1.4 * (1 - (-13.5 - x) / 4)) return { c: skin(x, y, z) };      // the short tail
+        return null;
+      },
+    };
+  },
+};
+export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, turtle, moonbetta, sunangel, rosecory };

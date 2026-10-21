@@ -23,6 +23,7 @@ export const SPECIES_DEF = {
   betta:     { label: 'Mandarin Dragonet', price: 52, level: 4, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
 SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
+SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A green sea turtle hatchling. Raise it, and one day set it free.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
 SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Clever, curious and always exploring.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
@@ -79,7 +80,7 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [7, 180] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
 export const LEVEL_AT = [0, 20, 52, 120, 230, 360, 470, 590];                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
@@ -124,7 +125,7 @@ const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
-export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
+export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, turtle: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
@@ -1169,6 +1170,7 @@ export const SOCIAL = {
   danio:     { kind: 'Peaceful', size: 1, shoal: 3, nature: 'A graceful shoaling fish that stays close to its own kind.', home: null, likes: ['neon', 'goldfish', 'danio'], line: 'Happiest with a few of its own kind.' },
   betta:     { kind: 'Gentle', size: 1, shy: true, sameFoe: true, nature: 'Slow and peaceful. Picks tiny food from the rocks all day, so quick eaters can crowd it out.', home: { cats: ['ROCKS'], text: 'rocks to pick over' }, likes: ['seahorse'], line: 'Needs quiet company, and only one dragonet.' },
   seahorse:  { kind: 'Gentle', size: 1, shy: true, pair: true, nature: 'Slow, upright and gentle. Pairs for life, greets its partner each morning, and holds on to plants.', home: { cats: ['PLANTS'], text: 'plants to hold on to' }, likes: ['betta', 'seahorse'], line: 'Pairs for life. Easily crowded out at mealtimes.' },
+  turtle:    { kind: 'Gentle', size: 3, nature: 'Slow and unhurried. Flies through the water on long front flippers, comes up to breathe, and sleeps wedged under a ledge.', home: { cats: ['ROCKS'], text: 'a ledge to sleep under' }, likes: ['angelfish', 'goldfish'], line: 'Needs room to swim and a ledge to sleep under.' },
   octopus:   { kind: 'Clever', size: 3, predator: true, nature: 'A curious problem-solver that explores everything. Small fish stay wary of it.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'a rock den' }, likes: [], line: 'Keep it busy: it loves puzzles and new things to explore.' },
 };
 const hides = (t) => count(t, 'PLANTS') + count(t, 'ROCKS') + count(t, 'STRUCTURES');
@@ -1198,6 +1200,8 @@ export const ECO = {
     clash: {}, best: 'Lots of rock to graze slowly, and no fast eaters beating it to food.' },
   seahorse: { zone: 'Holding on to the plants', cover: { cats: ['PLANTS'], need: 2, word: 'plants to hold on to', cat: 'PLANTS' }, tol: 0.6, feed: 'slow',
     clash: {}, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
+  turtle: { zone: 'Open water, and a ledge to sleep under', cover: { cats: ['ROCKS'], need: 2, word: 'rock to sleep under', cat: 'ROCKS' }, tol: 0.9, feed: 'calm',
+    clash: {}, best: 'Room to swim, a rock ledge to wedge under at night, plants to graze and clean water.' },
   octopus: { zone: 'Its den, and everywhere else', cover: { types: ['pot', 'coconut'], need: 1, word: 'a den of its own', cat: 'ROCKS' }, tol: 0.8, feed: 'own',
     clash: {}, best: 'A den of its own, puzzles to solve, and someone to know.' },
 };
@@ -1238,6 +1242,10 @@ export const KIND_NEEDS = {
     W_('pair', 'A partner for life', 'Seahorses pair for life and greet each other every morning with a little dance.', 'Another seahorse', (c) => c.own >= 2),
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
     W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Fewer animals, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
+  turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
+    W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'Two rocks from the Shop', (c) => c.cover >= 2),
+    W_('graze', 'Plants to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'Two plants from the Shop', (c) => (c.cats.PLANTS ?? 0) >= 2),
+    W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   octopus: [W_('den', 'A den of its own', 'An octopus always has a den to retreat to, and often decorates its doorway.', 'A clay pot or a coconut shell', (c) => c.cover >= 1),
     W_('puzzle', 'Puzzles to solve', 'Octopuses are clever and get bored; in the wild they open shells and pry into crevices.', 'A puzzle jar every day or two', (c) => c.puzzled),
     W_('you', 'Time with you', 'Octopuses come to know their keepers and seek them out.', 'Play with it from its card', (c) => c.played)],
@@ -1246,11 +1254,11 @@ export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
   return { own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
-    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY) };
+    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7 };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)
-export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
+export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return f.species === 'turtle' ? 2.5 : S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
 export const crowdOf = (t) => { const L = t.fish.filter((x) => !x.dead && !x.away), n = L.length, cap = capacity(t.level ?? 1), load = L.reduce((a, f) => a + roomOf(f), 0); return { n, cap, load, r: load / cap }; };
 export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;

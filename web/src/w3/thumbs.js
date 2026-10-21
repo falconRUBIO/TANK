@@ -40,9 +40,11 @@ function morphPaint(g, w, h, M) { const im = g.getImageData(0, 0, w, h), d = im.
     const H = M.h ?? hh, S = M.s, L = Math.min(0.95, l * 0.4 + M.l * 0.6), C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs(((H * 6) % 2) - 1)), m = L - C / 2, sx = Math.floor(H * 6) % 6, [R, G, B] = [[C, X, 0], [X, C, 0], [0, C, X], [0, X, C], [X, 0, C], [C, 0, X]][sx];
     d[i] = (R + m) * 255; d[i + 1] = (G + m) * 255; d[i + 2] = (B + m) * 255; }
   g.putImageData(im, 0, 0); }
+const trimFrame = (fr) => { const g = fr.getContext('2d'), d = g.getImageData(0, 0, fr.width, fr.height).data; let x0 = fr.width, y0 = fr.height, x1 = -1, y1 = -1; for (let y = 0; y < fr.height; y++) for (let x = 0; x < fr.width; x++) if (d[(y * fr.width + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } if (x1 < 0) return fr; const o = document.createElement('canvas'); o.width = x1 - x0 + 3; o.height = y1 - y0 + 3; o.getContext('2d').drawImage(fr, x0 - 1, y0 - 1, o.width, o.height, 0, 0, o.width, o.height); return o; };
 export function fishThumb(id, pal = null, morph = null) {
   const M = morph && MORPHS[morph], key = 'f:' + id + (pal != null ? ':' + pal : '') + (M ? ':' + morph : ''); if (cache.has(key)) return cache.get(key);
-  const fr = new Fish(SPECIES[id], 2, pal != null ? { pal } : null).frame({ yaw: 0 }), c = document.createElement('canvas'); c.width = c.height = 160;
+  let fr = new Fish(SPECIES[id], 2, pal != null ? { pal } : null).frame(id === 'turtle' ? { yaw: 0, pitch: 0 } : { yaw: 0 }); const c = document.createElement('canvas'); c.width = c.height = 160;
+  if (id === 'turtle') fr = trimFrame(fr);      // a turtle is seen from a little above, so you see its shell and flippers, and cropped to itself (its flippers make its box much bigger than it looks)
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false; const k = Math.floor(150 / Math.max(fr.width, fr.height) * 1.0) || 1;
   g.drawImage(fr, (160 - fr.width * k) / 2, (160 - fr.height * k) / 2, fr.width * k, fr.height * k); if (M) morphPaint(g, 160, 160, M); const url = c.toDataURL(); cache.set(key, url); return url;
 }

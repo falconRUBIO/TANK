@@ -71,4 +71,5 @@ export const SPECIES_INFO = {
   betta: { sci: 'Synchiropus splendidus', size: '6–7 cm' },
   seahorse: { sci: 'Hippocampus kuda', size: '14–17 cm' },
   octopus: { sci: 'Octopus vulgaris', size: '60–90 cm with arms' },
+  turtle: { sci: 'Chelonia mydas', size: 'hatchling 5 cm, grows to over 1 m' },
 };

@@ -617,6 +617,7 @@ const SPECIES_FACTS = {
   danio: ['Anthias live in groups led by one male; if he is lost, the biggest female becomes the new male.', 'An anthias shoal moves like a single orange-pink cloud.'],
   betta: ['Mandarin dragonets have no scales; a bitter slime protects them instead.', 'Mandarins dance in pairs at dusk, rising together off the reef.'],
   seahorse: ['A father seahorse carries the babies in a pouch until they are born.', 'A seahorse can move each eye on its own, looking two ways at once.', 'Seahorses have no stomach, so they eat almost all day.'],
+  turtle: ['A sea turtle comes up to breathe, then sinks back down to rest.', 'Green turtles graze sea grass like cows graze a meadow, and keep the grass beds healthy.'],
   octopus: ['An octopus has three hearts and blue blood.', 'Two-thirds of an octopus\'s nerve cells are in its arms; each arm can taste and decide a little on its own.', 'An octopus can squeeze through any gap bigger than its beak.', 'Octopuses can taste with their suckers.'],
 };
 function didYouKnow(rec, f) {

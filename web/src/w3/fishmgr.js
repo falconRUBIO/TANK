@@ -19,6 +19,7 @@ import { wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DE
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
 const BANDS = {
+  turtle: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] },      // a sea turtle uses the whole tank: down on the sand under a rock, and right up to the surface to breathe
   goldfish: { x: [-3.4, 3.6], y: [4, 11.6], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [9, 13.1], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
   angelfish: { x: [-3.0, 3.6], y: [5.5, 12], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [8, 13], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9.8], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [8.5, 13], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 11], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
 };
@@ -664,6 +665,13 @@ export class Fishes {
       { const now = Date.now(); if (!f.wellAt || now - f.wellAt > 8000) { f.wellAt = now; try { f.well = f.rec && this.state ? wellOf(this.state, f.rec, now) : null; } catch { f.well = null; } }
         const md = f.well?.mood?.[0], C = ECO[sk]?.cover; if ((md === 'Stressed' || md === 'Uneasy') && r() < 0.55) { const hs = spot(C?.cats ?? ['PLANTS', 'ROCKS'], C?.types); if (hs) { f.idle = 3 + r() * 4; f.hiding = true; return T(hs.x + (r() - 0.5) * 0.6, 0.9 + hs.h * 0.45, hs.z + 0.45, 7 + r() * 5); } }
         f.hiding = false; if (md === 'Lonely' && r() < 0.4) return T(r() < 0.5 ? -3.6 : 3.6, 2.5 + r() * 4, 0.4 + r() * 0.6, 6 + r() * 4); }
+      // a sea turtle: long, slow cruises across the tank on its front flippers; every few minutes up to the surface to breathe (more often when it is
+      // stressed or unwell, as a real one does); a nibble at the plants; and at night, or for a rest, wedged under a rock the way wild ones sleep under ledges
+      if (sk === 'turtle') { const nowT = performance.now(), md2 = f.well?.mood?.[0], uneasy = md2 === 'Stressed' || md2 === 'Uneasy' || (f.well?.score ?? 80) < 55; f.breathAt ??= nowT + (40 + r() * 50) * 1e3;
+        if (nowT > f.breathAt) { f.breathAt = nowT + (uneasy ? 60 + r() * 30 : 140 + r() * 120) * 1e3; f.thought = uneasy ? 'Up to the surface again: it is not settled.' : 'Coming up to breathe.'; f.idle = 1.5; return T(Math.max(-3, Math.min(3, f.pos.x + (r() - 0.5) * 2)), Fish3D.topY - 0.3, Math.max(0.2, Math.min(1.8, f.pos.z)), 22); }
+        const rock = spot(['ROCKS']); if (rock && (this.night || r() < 0.2)) { f.idle = this.night ? 25 + r() * 25 : 6 + r() * 8; f.thought = this.night ? 'Asleep, wedged under the rock.' : 'Resting against the rock.'; return T(rock.x + (r() - 0.5) * 0.5, 0.6 + rock.h * 0.15, rock.z + 0.7, 22); }
+        const pl = spot(['PLANTS']); if (pl && r() < 0.28) { f.idle = 3 + r() * 3; f.thought = 'Grazing on the plants.'; return T(pl.x + (r() - 0.5) * 0.4, 0.8 + pl.h * 0.45, pl.z + 0.45, 16); }
+        f.thought = null; return T((r() - 0.5) * 6.4, 2.6 + r() * 6, -0.4 + r() * 2.4, 10 + r() * 6); }
       // a damselfish guards its patch of rock and chases off whatever swims into it; a big angelfish now and then pushes a small fish about; a clownfish and a
       // damselfish spar near the anemone. The more crowded the tank, the more often (the same rules that make the victims Stressed in Health)
       if ((sk === 'guppy' || sk === 'angelfish' || sk === 'goldfish') && this.state) { const cr = crowdOf(this.state), rate = (sk === 'guppy' ? 0.45 : sk === 'angelfish' ? 0.18 : 0.25) * (1 + Math.max(0, cr.r - 0.6) * 2), patch = sk === 'goldfish' ? spot(null, ['anemone']) : spot(['ROCKS']), home = patch ?? { x: f.pos.x, z: f.pos.z, h: 0 };
