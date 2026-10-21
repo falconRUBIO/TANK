@@ -247,8 +247,8 @@ export const KINDS = {
 // what one kind needs on top of what every seahorse or octopus needs
 const SUBKIND_NEEDS = {
   zosterae: [{ k: 'seagrass', label: 'A meadow of sea grass', why: 'Dwarf seahorses live their whole lives in seagrass meadows, gripping the blades.', how: 'Three or more plants, or a Sea Grass Bed', met: (c) => (c.cats.PLANTS ?? 0) >= 3 || (c.types.seagrass ?? 0) >= 1 }],
-  reidi: [{ k: 'quiet', label: 'A quiet tank', why: 'Slender seahorses are easily stressed by busy water and quick fish.', how: 'Keep the tank roomy, under two-thirds full', met: (c) => c.r <= 0.66 }],
-  cyanea: [{ k: 'room', label: 'Room to prowl', why: 'A day octopus roams a big patch of reef every day, hunting in the open.', how: 'Keep the tank roomy, under two-thirds full', met: (c) => c.r <= 0.66 }],
+  reidi: [{ k: 'quiet', label: 'A quiet tank', why: 'Slender seahorses are easily stressed by busy water and quick fish.', how: 'Keep the tank under three-quarters full', met: (c) => c.r <= 0.75 }],
+  cyanea: [{ k: 'room', label: 'Room to prowl', why: 'A day octopus roams a big patch of reef every day, hunting in the open.', how: 'Keep the tank under three-quarters full', met: (c) => c.r <= 0.75 }],
   mimic: [{ k: 'sand', label: 'Open sand to burrow in', why: 'Mimic octopuses live on bare sand and dig burrows to hide in.', how: 'Leave plenty of open sand: no more than 12 decorations', met: (c) => c.decorN <= 12 }],
 };
 export const KIND_DEFAULT = { seahorse: 'kuda', octopus: 'vulgaris' };
@@ -696,7 +696,8 @@ function eggs(t, now, ev) {
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
       ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
   if (busy) return;
-  const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
+  if (crowdOf(t).r > 0.8) return;      // fish do not spawn in a crowded tank (and a tank kept full does not fill itself past bursting)
+  const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && !SOCIAL[f.species]?.sameFoe && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      /* (a fish that wants to be the only one of its kind does not raise a family of rivals) */      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
   const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1];      // the pair you brought together, if they are still here and grown
@@ -1365,7 +1366,7 @@ export const KIND_NEEDS = {
     W_('calm', 'Gentle company', 'A slow, peaceful fish, easily pushed about.', 'No damselfish', (c) => !c.has('guppy'))],
   neongoby: [W_('station', 'A rock for its station', 'Cleaner gobies set up shop on a coral head or rock, and fish queue there to be cleaned.', 'A rock or boulder from the Shop', (c) => c.cover >= 1),
     W_('clients', 'Fish to clean', 'A cleaner goby feeds on the parasites it picks off other fish.', 'Two or more other fish in the tank', (c) => c.others >= 2)],
-  tang: [W_('room', 'Room to swim', 'Tangs swim long laps of the reef all day; in a crowded tank they get stressed.', 'Keep the tank roomy', (c) => c.r <= 0.6),
+  tang: [W_('room', 'Room to swim', 'Tangs swim long laps of the reef all day; in a crowded tank they get stressed.', 'Keep the tank under three-quarters full', (c) => c.r <= 0.75),
     W_('sleep', 'Rocks to sleep in', 'At night a tang wedges into a crevice and turns paler.', 'Two rocks or a cave', (c) => c.cover >= 2),
     W_('alone', 'To be the only tang', 'Two tangs in one tank fight with the sharp spine by their tails.', 'Just one blue tang', (c) => c.own <= 1)],
   puffer: [W_('explore', 'Rocks to explore', 'Puffers poke into every crack looking for snails and worms.', 'Two rocks or structures', (c) => c.cover >= 2),
@@ -1446,6 +1447,10 @@ export function adoptAdvice(t, species) {
   if (S.bully && timidNames.length) msgs.push(`${d.label} can bully smaller, shy fish like ${timidNames.slice(0, 2).join(' and ')}.${hides(t) < 4 ? ' More plants and rocks would help them hide.' : ''}`);
   if (S.predator && timidNames.length) msgs.push(`Small fish will be wary of an octopus.`);
   const bully = t.fish.find((o) => SOCIAL[o.species]?.bully && o.species !== species); if (bully && S.size <= 1 && !S.bully) msgs.push(`${bully.name} the ${SPECIES_DEF[bully.species].label} may bully a ${d.label}.`);
+  const E = ECO[species] ?? {}, cr = crowdOf(t);
+  for (const [sp, why] of Object.entries(E.clash ?? {})) { const o = t.fish.find((x) => x.species === sp && !x.dead); if (o) msgs.push(`${o.name} the ${SPECIES_DEF[sp].label.toLowerCase()} would not get on with it: ${why} It may ask to leave.`); }
+  for (const o of t.fish.filter((x) => !x.dead && ECO[x.species]?.clash?.[species])) { msgs.push(`It would trouble ${o.name} the ${SPECIES_DEF[o.species].label.toLowerCase()}: ${ECO[o.species].clash[species]}`); break; }
+  if ((E.tol ?? 0.85) <= 0.6 && cr.r > 0.6) msgs.push(`It needs a roomy tank, and yours is already ${Math.round(cr.r * 100)}% full.`);
   return msgs.length ? msgs.join(' ') : null;
 }
 // ── comfort: how well the tank suits a fish, as a plain label and the most useful thing to change ──
