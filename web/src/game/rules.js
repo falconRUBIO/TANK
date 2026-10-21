@@ -256,7 +256,8 @@ export const kindOf = (f) => (KINDS[f?.species] ? (KINDS[f.species][f.kind] ? f.
 export const kindDef = (f) => (KINDS[f?.species]?.[kindOf(f)] ?? null);
 export const CARE_XP = { feed: 2, crab: 2, glass: 4, water: 6, pet: 2, play: 2, puzzle: 4, trim: 2, train: 2 };
 // most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
-export const XP_PER_HOUR = 0.3;      // (time alone grows the tank slowly: most of the growth comes from care)
+export const XP_PER_HOUR = 0.3;
+export const GROW = { unwellTime: 0, playCap: Infinity };      // playCap: the most care points a tank earns from petting, play, tricks and puzzles in one day (Infinity: no limit)      // how fast an Unwell tank grows with time (0: paused; only care counts). A setting, so it can be tuned and simulated      // (time alone grows the tank slowly: most of the growth comes from care)
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !TURTLES.has(k)); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
@@ -1683,7 +1684,7 @@ function _advance(t, now = Date.now()) {
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (t.fish.some((f) => f.species === 'tang' && !f.dead && !f.away) ? 0.7 : 1) * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
-    if (H0) guard('grow', () => { const H1 = tankHealth(t, now), tm = (H) => (H.score < 55 ? 0 : H.mult), mult = (tm(H0) + tm(H1)) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
+    if (H0) guard('grow', () => { const H1 = tankHealth(t, now), tm = (H) => (H.score < 55 ? GROW.unwellTime : H.mult), mult = (tm(H0) + tm(H1)) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
       if (H0.score >= 85 && H1.score >= 85) { const before = Math.floor((t.thriveSec ?? 0) / 86400); t.thriveSec = (t.thriveSec ?? 0) + Math.min(dt, 3 * DAY / 1000); const days = Math.floor(t.thriveSec / 86400);
         for (const k of [7, 30]) if (before < k && days >= k) { const st = nextPrize(t); if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; ev.push({ journal: `${k} thriving days in all. The tank has earned a new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'}.`, toast: `${k} thriving days! A new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'} for the tank.` }); } } });      // thriving days add up (they need not be in a row), and are rewarded with a new look, nothing more
   }
@@ -1870,7 +1871,7 @@ export function nextUp(t, now = Date.now()) {
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
 }
 export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now());
-  if (r?.ok && r.applied !== false && CARE_XP[a.t]) { const now = o?.now ?? Date.now(), H = tankHealth(t, now), got = CARE_XP[a.t] * H.mult; t.xp = (t.xp ?? 0) + got; r.xp = got; r.health = H.score; r.events ||= []; levelCheck(t, now, r.events); }      /* care raises the level, faster the healthier the tank */
+  if (r?.ok && r.applied !== false && CARE_XP[a.t]) { const now = o?.now ?? Date.now(), H = tankHealth(t, now), got0 = CARE_XP[a.t] * H.mult; let got = got0; if (['pet', 'play', 'puzzle', 'train'].includes(a.t) && Number.isFinite(GROW.playCap)) { const day = Math.floor(now / DAY), P = (t.flags.playXp ||= { day, n: 0 }); if (P.day !== day) { P.day = day; P.n = 0; } got = Math.max(0, Math.min(got0, GROW.playCap - P.n)); P.n += got; } t.xp = (t.xp ?? 0) + got; r.xp = got; r.health = H.score; r.events ||= []; levelCheck(t, now, r.events); }      /* care raises the level, faster the healthier the tank */
   if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
   if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); wellLog(t, now); return ev; }
