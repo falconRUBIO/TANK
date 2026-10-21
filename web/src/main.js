@@ -6,6 +6,7 @@ import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
 import { specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
+import { algaeTint } from './w3/decor.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
 import { Toys } from './w3/toys.js';
@@ -164,7 +165,13 @@ function film(g) {
   for (let i = 0; i < 380 * k; i++) { const edge = Math.random() < 0.6, x = edge ? (Math.random() < 0.5 ? Math.random() * 40 : 155 + Math.random() * 40) : Math.random() * 195, y = Math.pow(Math.random(), 0.6) * 346; gg.fillStyle = `rgba(${60 + Math.random() * 40},${120 + Math.random() * 40},${36 + Math.random() * 30},${0.2 + Math.random() * 0.3})`; gg.beginPath(); gg.arc(x, y, 0.6 + Math.random() * 2.4, 0, 6.3); gg.fill(); }      // and spots of algae on top
 }
 let shownGlass = -1;
-function syncGlass() { const g = game.state.glass; if (cleanMode || wiping) return; if (Math.abs(g - shownGlass) > 0.02 || (g < 0.05 && shownGlass !== 0)) { film(g); shownGlass = g < 0.05 ? 0 : g; } }
+// a blue tang grazing at the glass eats the film off where its mouth is: small clean bites you can watch appear along its path
+let grazeT = 0;
+function grazeGlass(dt) { if ((grazeT -= dt) > 0 || cleanMode || wiping || shownGlass <= 0) return; grazeT = 0.15;
+  for (const f of fishes.list) { if (f.sk !== 'tang' || !f.graze || f.graze.rock || f.dead) continue; if (f.pos.z < 1.6) continue;
+    const mouth = f.pos.clone().add(new THREE.Vector3(Math.cos(f.heading ?? 0) * 0.35, 0, 0)), [sx, sy] = toScreen(mouth), r = gcv.getBoundingClientRect(), x = (sx - r.left) / r.width * 195, y = (sy - r.top) / r.height * 346;
+    if (x < 0 || x > 195 || y < 0 || y > 346) continue; gg.globalCompositeOperation = 'destination-out'; const c = gg.createRadialGradient(x, y, 0, x, y, 9); c.addColorStop(0, "rgba(0,0,0,.95)"); c.addColorStop(1, "rgba(0,0,0,0)"); gg.fillStyle = c; gg.fillRect(x - 9, y - 9, 18, 18); gg.globalCompositeOperation = 'source-over'; } }
+function syncGlass() { const g = game.state.glass; algaeTint(Math.max(0, (g - 0.2) / 0.6)); fishes.algae = g; if (cleanMode || wiping) return; if (Math.abs(g - shownGlass) > 0.02 || (g < 0.05 && shownGlass !== 0)) { film(g); shownGlass = g < 0.05 ? 0 : g; } }
 function startClean() { cancelModes(); if (game.state.glass <= 0.12) { ui.toast('The glass is already clean'); return; } cleanMode = true; gcv.style.pointerEvents = 'auto'; ui.toast('Swipe the glass to wipe it clean'); }
 let wiping = false;
 let wipeLast = null;
@@ -1102,7 +1109,7 @@ function showCard(f) {
     + sec(`Looking after ${esc(f.name)}`, `<div class="info">${careRows(rec)}</div>${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`)
     + sec('What it likes', `<div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>${toysTile}${bondTile}`)
     + sec('Its story', `${geneLine}${famLine}${lifeLine}${orphanBlock(rec, f)}`)
-    + sec(`About the ${esc(f.species.label.toLowerCase())}`, `<div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Lives in', info.from ? esc(info.from) : null)}${row('Eats', info.eats ? esc(info.eats) : null)}${row('In the wild', info.wild ? esc(info.wild) : null)}${row('Care', info.care ? esc(info.care) : null)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>${factLine}`);
+    + sec(`About the ${esc(f.species.label.toLowerCase())}`, `<div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Helps the tank', info.helps ? esc(info.helps) : null)}${row('Lives in', info.from ? esc(info.from) : null)}${row('Eats', info.eats ? esc(info.eats) : null)}${row('In the wild', info.wild ? esc(info.wild) : null)}${row('Care', info.care ? esc(info.care) : null)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>${factLine}`);
   // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
   const bondV = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15), bondW = bondV >= 0.9 ? 'Best friends' : bondV >= 0.5 ? 'Close' : bondV >= 0.2 ? 'Warming up' : 'Just met';
   const tiles = [...TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return { label: b.label, col: b.col, w, v, tip: `${b.label}: ${w}. ${ex}` }; }), { label: 'Bond with you', col: '#ff8fb1', w: bondW, v: bondV, tip: `Bond with you: ${bondW}. It grows each time you feed or play with ${rec.name}.` }];      // six tiles, three even rows of two
@@ -1635,7 +1642,7 @@ function frameBody(now) {
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();
   if (!window.__simHold) {      /* (a check that runs the tank's clock itself holds this one, so a slow machine cannot move the animals in between) */
-  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
+  try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); grazeGlass(dt); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }

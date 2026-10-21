@@ -887,9 +887,15 @@ export class Fishes {
         f.mul = 1;
         const pool = this.list.filter((o) => o !== f && !o.dead && !o.visitor && !o.nursery && o.sk !== 'neongoby' && o.species?.move !== 'jet' && (performance.now() - (o.cleaned ?? 0)) > 60e3);
         const o = pool.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0]; if (o) { f.clean = { o, t: 6 + this.rng() * 4, ph: this.rng() * 6 }; this.onBehave?.(f, 'clean', o); } else f.cleanGap = 10; }
-      else if (f.sk === 'tang') {      // now and then it comes to the glass and grazes the film off it in little pecks
-        const G = f.graze; if (G) { G.t -= dt; if (G.t <= 0) { f.graze = null; f.grazeGap = 25 + this.rng() * 30; continue; } f.target.set(G.x + Math.sin(t * 0.7) * 0.6, G.y + Math.sin(t * 1.1) * 0.3, GLASS_Z - 0.35); f.retarget = Math.max(f.retarget ?? 0, 0.3); if (Math.abs(f.pos.z - (GLASS_Z - 0.35)) < 0.4) { f.pitch = Math.sin(t * 9) * 0.12; f.thought = 'Grazing algae off the glass'; } continue; }
-        if ((f.grazeGap = (f.grazeGap ?? 4 + this.rng() * 6) - dt) <= 0) f.graze = { t: 5 + this.rng() * 4, x: (this.rng() - 0.5) * 5, y: 5 + this.rng() * 6 }; }
+      else if (f.sk === 'tang') {      // where algae has grown it grazes: it comes to the glass and crops the film off in little pecks (you see the clean bites appear), or nibbles over the rocks
+        const al = this.algae ?? 0, G = f.graze; if (G) { G.t -= dt; if (G.t <= 0 || al < 0.08) { f.graze = null; f.grazeGap = (al > 0.5 ? 10 : 22) + this.rng() * 18; continue; }
+          const at = G.rock ? this.spots?.().find((q) => q.id === G.rock) : null;
+          if (G.rock && !at) { f.graze = null; continue; }
+          if (at) f.target.set(at.x + Math.sin(t * 0.8) * 0.35, (at.y ?? sandH(at.x, at.z)) + (at.h ?? 0.6) * 0.8 + 0.25, at.z + 0.3); else f.target.set(G.x + Math.sin(t * 0.55) * 1.4, G.y + Math.sin(t * 0.9) * 0.6, 2.0);      /* (the front of its swimming room, right against the glass as you see it) */
+          f.retarget = Math.max(f.retarget ?? 0, 0.3); if (f.pos.distanceTo(f.target) < 0.6) { f.pitch = Math.sin(t * 10) * 0.14; f.mul = 0.45; f.thought = at ? 'Grazing algae off the rock' : 'Grazing algae off the glass'; } else f.mul = 1; continue; }
+        f.mul = 1; if (al < 0.15) continue;
+        if ((f.grazeGap = (f.grazeGap ?? 4 + this.rng() * 6) - dt) <= 0) { const rocks = (this.spots?.() ?? []).filter((q) => DECOR_DEF[q.type]?.cat === 'ROCKS'), rock = rocks.length && this.rng() < 0.35 ? rocks[(this.rng() * rocks.length) | 0].id : null;
+          f.graze = { t: 6 + this.rng() * 5, rock, x: (this.rng() - 0.5) * 5, y: 4.5 + this.rng() * 6 }; this.onBehave?.(f, 'graze'); } }
       else if (f.sk === 'puffer') {      // a puffer that is startled blows itself up into a ball, holds it a few seconds, and slowly lets it go
         if (!(f.puffT > 0)) { for (const o of this.list) { if (o === f || o.dead) continue; const d = o.pos.distanceTo(f.pos), fast = (o.vel?.length?.() ?? 0) > 1.4; if (d < 1.1 && (fast || o.species?.move === 'jet' || SOCIAL[o.sk]?.bully)) { f.puffT = 4 + this.rng() * 2; this.onBehave?.(f, 'puff', o); break; } } }
         if (f.puffT > 0) f.puffT -= dt; const want = f.puffT > 0.8 ? 1 : 0; f.puffK = (f.puffK ?? 0) + (want - (f.puffK ?? 0)) * Math.min(1, dt * (want ? 6 : 0.8));

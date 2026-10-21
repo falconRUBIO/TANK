@@ -593,6 +593,7 @@ export function initUI({ game, social, cb }) {
     const pace = H.score < 55 ? ['Paused', 'Only care counts while the tank is unwell'] : H.mult > 1 ? ['×1.5', 'Thriving: growing fast'] : H.mult < 1 ? ['×0.5', 'Struggling: growing slowly'] : ['×1', 'Happy: growing steadily'];
     const live = s.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped), W = live.map((f) => { try { return [f, wellOf(s, f, now)]; } catch { return [f, null]; } }).filter(([, w]) => w).sort((x, y) => x[1].score - y[1].score);
     const water = Math.round(Math.max(0, Math.min(1, ((s.water ?? 1) - 0.45) / 0.5)) * 100), glass = Math.round((1 - Math.min(1, (s.glass ?? 0) / 0.8)) * 100), tankPart = Math.round(0.6 * water + 0.4 * glass);
+    const tg = s.fish.find((f) => f.species === 'tang' && !f.dead), hl = [tg ? tg.name + ' grazes the glass' : null, s.decor.some((d) => d.type === 'clam') ? 'the clam filters the water' : null].filter(Boolean), helpers = hl.length ? ' · ' + hl.join(', ') : '';
     const tone = (v) => (v >= 85 ? 'good' : v >= 75 ? 'ok' : v >= 55 ? 'warn' : 'bad');
     const row = (ic, label, v, hint, act) => `<button class="tc-row" ${act ? `data-act="${act}"` : 'disabled'}><i class="tc-ic">${ic}</i><span><b>${label}</b><small>${esc(hint)}</small></span>${ring(v, tone(v), 38)}</button>`;
     const asks = live.filter((f) => f.leaveAsk).map((f) => { const h = Math.max(1, Math.ceil((f.leaveAsk.by - now) / 36e5)); return `<button class="tc-ask" data-wellopen="${esc(f.id)}"><i class="tc-ic">${fishIcon(f)}</i><span><b>${esc(f.name)} is asking to leave</b><small>${f.leaveAsk.why ? `Missing ${esc(f.leaveAsk.why)}. ` : ''}Nurse it back within ${h > 36 ? Math.ceil(h / 24) + ' days' : h + ' hours'}, or let it go from its card.</small></span><em>›</em></button>`; }).join('');
@@ -616,7 +617,7 @@ export function initUI({ game, social, cb }) {
       <div class="tc-level"><div class="tc-lh"><b>The road to level 8</b><span>${b ? `${left} care point${left === 1 ? '' : 's'} to level ${lv + 1}` : 'All open'}</span></div><ol class="tc-road">${road}</ol>${nextCard}</div>
       <h4 class="tc-h">What makes the health</h4>
       ${row(fishIcon(W[0]?.[0] ?? {}), 'Animals · 60%', H.animals, W.length ? `${W.filter(([, w]) => w.score >= 75).length} of ${W.length} happy · fed, company, space, a home` : 'No animals yet', 'healthopen')}
-      ${row(msIcon('water', true, 22), 'Tank · 40%', tankPart, water < 70 && glass < 70 ? 'Water change and a glass wipe due' : water < 70 ? 'A water change is due' : glass < 70 ? 'The glass needs a wipe' : 'Clean water, clear glass', water < 70 || glass < 70 ? 'upkeep' : null)}
+      ${row(msIcon('water', true, 22), 'Tank · 40%', tankPart, (water < 70 && glass < 70 ? 'Water change and a glass wipe due' : water < 70 ? 'A water change is due' : glass < 70 ? 'The glass needs a wipe' : 'Clean water, clear glass') + helpers, water < 70 || glass < 70 ? 'upkeep' : null)}
       ${worst ? `<h4 class="tc-h">Could be happier</h4>${worst}` : ''}
       ${goalD ? `<div class="tc-thrive"><div><b>${days} of ${goalD} thriving days</b><small>A new look for the tank at ${goalD}. Days add up, they never reset.</small></div><div class="tc-bar good"><i style="width:${Math.max(3, Math.round((days / goalD) * 100))}%"></i></div></div>` : ''}
       ${cards ? `<h4 class="tc-h">Postcards</h4>${cards}` : ''}</div>`; };
