@@ -588,7 +588,7 @@ export class Fishes {
       }
       if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : f.task.kind === 'turn' ? 'Shoving its shell about to see how it likes it there.' : 'Moving a stone where it wants it.';
       f.thought = th;
-      if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && (f.fatigue ?? 0) < 0.3 && !(f.scared > 0) && !f.keepCarry && !f.wrong && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.02 + 0.04 * M.tidy + 0.02 * M.cur) {
+      if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !(f.homing && S.t > 8) && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && (f.fatigue ?? 0) < 0.3 && !(f.scared > 0) && !f.keepCarry && !f.wrong && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.02 + 0.04 * M.tidy + 0.02 * M.cur) {
         const pl = this.planMove(f, M); if (pl) this.beginTask(f, pl);
       }
       if (M.type === 'trickster' && S?.s === 'rest' && !S.mode && !f.shy && this.rng() < 0.12) { const o = this.list.filter((q) => q !== f && !q.dead && !q.visitor && q.species.id !== 'octopus' && q.pos.distanceTo(f.pos) < 4 && q.pos.y < 6); if (o.length) { f.prank = o[(this.rng() * o.length) | 0]; f.inspect = { x: f.prank.pos.x, z: f.prank.pos.z }; } }
