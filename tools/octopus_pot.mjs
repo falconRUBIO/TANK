@@ -1,5 +1,5 @@
-// The octopus and its clay pot: a pot it does not know yet it only settles in the mouth of, arms in; one it knows well (learned night by night)
-// it squeezes all the way into, flattened, through the mouth and never the wall. Steps the simulation by hand. Needs the solo game on 8123. OUT=dir node tools/octopus_pot.mjs
+// The octopus and its clay pot: an empty pot is irresistible, so known or not it goes in through the mouth (never the wall), curls up just
+// inside it facing out with its eyes at the opening, and stays a good while. Steps the simulation by hand. Needs the solo game on 8123. OUT=dir node tools/octopus_pot.mjs
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 import fs from 'node:fs';
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/pot'; fs.mkdirSync(out, { recursive: true });
@@ -12,15 +12,15 @@ const setup = (k) => p.evaluate((k) => { const g = window.__game, s = g.state; s
   s.decor.length = 0; s.decor.push({ id: 'p1', type: 'pot', x: 0.4, z: 1.2, ry: 0 }); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,header,nav,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, k);
 const step = (n, dt = 0.05) => p.evaluate(([n, dt]) => { const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(dt, (window.__t = (window.__t ?? 0) + dt)); F.list.forEach((f) => f.update(dt, Math.random, F.list)); } }, [n, dt]);
 const go = () => p.evaluate(() => { const f = window.__fishes.list[0]; f.pos.set(3.0, 0.6, 2.2); f.vel.set(0, 0, 0); f.camoWill = false; f.inspect = null; f.jarAt = null; f.hunt = null; f.st = { s: 'rest', t: 999, n: 0, pulse: 0 }; f.goDen(f.st, Math.random, 30); });
-const st = () => p.evaluate(() => { const f = window.__fishes.list[0], d = window.__game.state.decor[0]; return { s: f.st?.s, mode: f.st?.mode, home: !!f.den?.home, kind: f.den?.kind, inPot: f.potIn(), dz: +(f.pos.z - d.z).toFixed(2), dx: +(f.pos.x - d.x).toFixed(2), sy: +f.group.scale.y.toFixed(2), sx: +f.group.scale.x.toFixed(2), homing: !!f.homing }; });
+const st = () => p.evaluate(() => { const f = window.__fishes.list[0], d = window.__game.state.decor[0], [gx, gz] = f.denGoal(Math.random); return { g: +Math.hypot(f.pos.x - gx, f.pos.z - gz).toFixed(2), s: f.st?.s, mode: f.st?.mode, home: !!f.den?.home, kind: f.den?.kind, inPot: f.potIn(), dz: +(f.pos.z - d.z).toFixed(2), dx: +(f.pos.x - d.x).toFixed(2), sy: +f.group.scale.y.toFixed(2), sx: +f.group.scale.x.toFixed(2), homing: !!f.homing }; });
 const cam = () => p.evaluate(() => { window.__cam = [2.6, 2.6, 9.5, 0.4, 0.5, 1.2]; });
 const run = async (secs) => { const tr = []; for (let i = 0; i < secs * 4; i++) { await step(5); tr.push(await st()); } return tr; };
 for (const [k, name] of (process.env.ONLY === 'known' ? [[0.6, 'known']] : [[0, 'new'], [0.6, 'known']])) {
   await setup(k); await p.waitForTimeout(2500); await go(); const tr = await run(40), end = tr.at(-1); if (name === 'known') { await setup(0.6); await p.waitForTimeout(2000); await go(); await run(14); } await cam(); await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/pot_${name}.png` });
   const homeAt = tr.findIndex((x) => x.homing); if (process.env.TRACE) console.log(name, tr.filter((_, i) => i % 8 === 0).map((x) => `${x.s}/${x.mode ?? ''} ${x.dx},${x.dz} y${x.sy}${x.homing ? ' H' : ''}`).join(' | '));
-  if (name === 'new') { ck('a pot it does not know: it goes home to it and settles in the mouth', homeAt >= 0 && end.dz > 0.3 && !end.inPot, JSON.stringify(end)); }
-  else { const inside = tr.filter((x) => x.homing && Math.abs(x.dz) < 0.35 && Math.abs(x.dx) < 0.35); ck('a pot it knows well: it squeezes all the way inside, and stays a good while', inside.length >= 40, `${(inside.length / 4).toFixed(0)} s inside`);
-    ck('flattened to fit the hollow', inside.length && Math.max(...inside.slice(8).map((x) => x.sy)) < 0.4, `height x${inside.at(-1)?.sy}, width x${inside.at(-1)?.sx}`); }
+  const inside = tr.filter((x) => x.homing && x.g < 0.4 && x.dz > 0 && x.dz < 0.8);
+  ck(`a pot it ${name === 'new' ? 'does not know' : 'knows well'}: it goes in through the mouth and stays a good while`, homeAt >= 0 && inside.length >= 40, `${(inside.length / 4).toFixed(0)} s inside`);
+  ck(`curled up to fit (${name})`, inside.length && Math.max(...inside.slice(8).map((x) => x.sy)) < 0.8, `height x${inside.at(-1)?.sy}, width x${inside.at(-1)?.sx}`);
 }
 await setup(0.3); const r = await p.evaluate(async () => { const g = window.__game; return g.dispatch({ t: 'octoTouch', fish: 'x1', decor: 'p1', kind: 'revisit' }); });
 const j = await p.evaluate(() => window.__game.journal.slice(-3).map((e) => e.text));
