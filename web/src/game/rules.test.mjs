@@ -107,7 +107,7 @@ ok('taking out something an animal loved: it misses it, loses a little happiness
 ok('old age: an elder at three quarters of its lifespan, then a peaceful death some days past its full span; never the last animal', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -900 * D; t.visitAt = t.storyAt = t.eggAt = 1e15; const L = R.LIFESPAN.seahorse;
   const mk = (id, sp, born) => R.ensureFish({ id, name: id, species: sp, seed: 3, born, stage: 'adult', happy: 0.8, health: 1 });
-  t.fish = [mk('s', 'seahorse', 0), mk('g', 'goldfish', 0)]; let gone = null, elderSaid = false, elderDay = null;
+  t.fish = [mk('s', 'seahorse', 0), mk('g', 'goldfish', 0)]; t.decor.push({ id: 'p1', type: 'grass', x: 1, z: 1 }, { id: 'p2', type: 'fern', x: -1, z: 1 }, { id: 'p3', type: 'seafan', x: 0, z: 0.5 }, { id: 'p4', type: 'anemone', x: 2, z: 0.4 }); let gone = null, elderSaid = false, elderDay = null;      // (a seahorse with its plants: content enough to stay its whole life)
   for (let d = 1; d < L * 3 && !gone; d++) { t.hunger = 0; t.water = 1; t.glass = 1; for (const f of t.fish) { f.fedAt = d * D; f.hunger = 0; f.ail = 0; } const ev = R.advance(t, d * D + 3600e3);
     if (ev.some((e) => /getting old/.test(e.journal ?? '') && /^s /.test(e.journal))) { elderSaid = true; elderDay = d; } if (ev.some((e) => e.died === 's')) gone = d; }
   assert.ok(elderSaid && elderDay >= Math.floor(L * R.ELDER_AT) && elderDay <= Math.ceil(L * R.ELDER_AT) + 1, 'became an elder on day ' + elderDay);
@@ -130,7 +130,7 @@ ok('the journal no longer invents stories on a timer, and routine care goes to t
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.storyAt = 0; t.fish[0].traits = ['Lazy']; const ev = R.advance(t, 20 * 3600e3);
   assert.ok(!ev.some((e) => /napped|chased|swam together/.test(e.journal ?? '')), 'no artificial stories');
   const r = R.applyAction(t, { t: 'feed', x: 0 }, { now: 20 * 3600e3 + 1000, name: 'Alex', uid: 'u1' }); assert.ok(r.events.some((e) => e.activity && /fed the fish/.test(e.activity.text)) && !r.events.some((e) => e.journal));
-  t.water = 0.6; const w = R.applyAction(t, { t: 'water' }, { now: 20 * 3600e3 + 2000, name: 'Alex', uid: 'u1' }); assert.ok(w.events.some((e) => e.activity) && !w.events.some((e) => e.journal));
+  t.water = 0.6; const w = R.applyAction(t, { t: 'water' }, { now: 20 * 3600e3 + 2000, name: 'Alex', uid: 'u1' }); assert.ok(w.events.some((e) => e.activity) && !w.events.some((e) => e.journal && !e.levelUp));
 });
 ok('a bottle goes to one friend, costs two shells, once per six hours, and pays when opened', () => {
   const t = R.newWorld(0); R.norm(t, 0); t.shells = 20; const members = [{ id: 'u1', name: 'Alex' }, { id: 'u2', name: 'Sam' }], now = 1e6;
@@ -228,7 +228,8 @@ ok('14 and 30 day milestones: earned by growing up here, paid once, journalled, 
   const D = 864e5, t = quiet(2); t.fish[0].found = ['x']; t.fish[1].found = [];
   let ev = tend(t, 13.9 * D); assert.ok(!t.fish[0].found.includes('age14'), 'not before 14 days'); const s0 = t.shells; t.hunger = 0.1; t.water = 1; t.glass = 0; t.simTs = 13.9 * D;
   ev = tend(t, 14.1 * D); assert.equal(t.fish.filter((f) => f.found.includes('age14')).length, 2); assert.equal(t.shells - s0, 10 + 0 * 1, 'two fish, +5 each'); assert.ok(ev.filter((e) => e.milestone).length === 2 && ev.every((e) => !e.milestone || /14 days old/.test(e.journal)));
-  const s1 = t.shells; tend(t, 20 * D); assert.equal(t.shells - s1, 0, 'once only'); ev = tend(t, 30.1 * D); assert.ok(t.fish.every((f) => f.found.includes('age30'))); assert.ok(t.shells - s1 >= 16, '+8 each');
+  const lvBonus = (a, b) => { let n = 0; for (let l = a + 1; l <= b; l++) n += 3 + l; return n; };      // (time well kept raises the level now, and each level pays a little)
+  const s1 = t.shells, l1 = t.level; tend(t, 20 * D); assert.equal(t.shells - s1 - lvBonus(l1, t.level), 0, 'once only'); ev = tend(t, 30.1 * D); assert.ok(t.fish.every((f) => f.found.includes('age30'))); assert.ok(t.shells - s1 >= 16, '+8 each');
   const late = tend(t, 40 * D); assert.ok(!late.some((e) => e.milestone), 'no repeat'); assert.equal(t.fish[0].found.filter((x) => x === 'age14').length, 1, 'recorded once');
   // a purchased fish comes nearly grown, but its days here start at zero, so buying can never skip the wait
   const b = quiet(1); b.shells = 100; R.applyAction(b, { t: 'buyFish', species: 'goldfish', name: 'New', seed: 4 }, { now: 100 * D, dev: true }); R.advance(b, 100 * D + 11 * 60e3); const nf = b.fish.find((f) => f.name === 'New'); assert.ok(nf && nf.stage === 'juvenile' && !nf.found.includes('age14')); b.hunger = 0; b.water = 1; R.advance(b, 110 * D); assert.ok(!nf.found.includes('age14'), 'ten days here is not fourteen');
@@ -939,7 +940,7 @@ ok('goals: three are offered, one is chosen, its steps count only what happens f
   const owned0 = JSON.stringify(t.flags.styles ?? {}), s0 = t.shells; let sawStep = false, sawDone = false;
   for (let d = 1; d <= 12 && t.goal; d++) { const at = t0 + d * D + 12 * 3600e3; R.advance(t, at); if (R.mysteryOf(t, at) && !R.mysteryOf(t, at).done) { const r = R.applyAction(t, { t: 'mystery', tz: 0 }, { now: at + 1, uid: 'u', name: 'Ana' }); if (r.events.some((e) => e.goalStep)) sawStep = true; if (r.events.some((e) => e.goalDone)) sawDone = true; } }
   if (t.goal) { t.stats.mystChain = (t.stats.mystChain ?? 0) + 1; const ev = R.advance(t, t0 + 20 * D); if (ev.some((e) => e.goalDone)) sawDone = true; }
-  assert.ok(sawStep && sawDone && !t.goal, JSON.stringify(R.goalOf(t))); assert.notEqual(JSON.stringify(t.flags.styles ?? {}), owned0, 'a new look is unlocked'); assert.ok(t.shells >= s0 + R.GOAL_SHELLS);
+  assert.ok(sawStep && sawDone && !t.goal, JSON.stringify({ sawStep, sawDone, g: R.goalOf(t), fish: t.fish.length })); assert.notEqual(JSON.stringify(t.flags.styles ?? {}), owned0, 'a new look is unlocked'); assert.ok(t.shells >= s0 + R.GOAL_SHELLS);
   assert.equal(t.goalsDone[0].id, 'sleuth'); assert.equal(t.goalOffer.length, 3); assert.ok(!t.goalOffer.includes('sleuth'), 'a finished goal is not offered again');
   assert.ok(R.applyAction(t, { t: 'pickGoal', id: t.goalOffer[0] }, { now: t0 + 21 * D }).applied); assert.ok(R.applyAction(t, { t: 'pickGoal', drop: true }, { now: t0 + 21 * D + 1 }).applied); assert.equal(t.goalOffer.length, 3, 'setting a goal aside offers three again');
 });
@@ -1074,9 +1075,9 @@ ok('(first 30) a lid decision only comes from an octopus really seen testing the
   b.fish[0].away = { at: t0 }; assert.equal(R.applyAction(b, { t: 'octoLid', fish: 'o' }, { now: t0 + 5 * 3600e3, name: 'You' }).ok, false, 'not while it is away');
 });
 ok('a sea turtle comes as a hatchling at level 7, grows up, and is let go to the ocean for shells and a keepsake; later it comes back to visit', () => {
-  const D = 864e5, t = R.newWorld(0); t.shells = 500; t.level = 6;
-  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 1000 }).ok, false, 'not before level 7');
-  t.level = 7; const r = R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 2000 }); assert.ok(r.ok, JSON.stringify(r)); assert.equal(t.shells, 500 - 180);
+  const D = 864e5, t = R.newWorld(0); t.shells = 500; t.level = 7;
+  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 1000 }).ok, false, 'not before level 8');
+  t.level = 8; const r = R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 2000 }); assert.ok(r.ok, JSON.stringify(r)); assert.equal(t.shells, 500 - 180);
   R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'turtle'); assert.ok(f, 'it arrives'); assert.equal(R.stageOf(f, 2000 + 7 * 3600e3), 'baby', 'as a hatchling');
   const early = f.arrived + 5 * D; assert.equal(R.applyAction(t, { t: 'releaseTurtle', id: f.id }, { now: early }).reason, 'NOT_READY', 'not until it is grown and has had two weeks here');
   const at = f.arrived + 15 * D; for (let d = 1; d <= 15; d++) { R.advance(t, f.arrived + d * D); t.hunger = 0; t.water = 1; t.glass = 0; for (const x of t.fish) { x.ail = 0; x.hunger = 0; } }      // (looked after every day)
@@ -1085,17 +1086,22 @@ ok('a sea turtle comes as a hatchling at level 7, grows up, and is let go to the
   t.flags.tut = 5; t.visitor = null; let back = null; for (let h = 3 * 24; h < 30 * 24 && !back; h += 6) { const now = at + h * 3600e3; t.visitAt = Math.min(t.visitAt ?? now, now); R.advance(t, now); if (t.visitor?.back === f.id) back = t.visitor; else if (t.visitor) t.visitor.until = now; }
   assert.ok(back && back.species === 'turtle' && back.name === 'Shelly', 'it comes back to visit');
 });
-ok('the hawksbill opens only once the tank has set a turtle free', () => {
-  const t = R.newWorld(0); t.shells = 900; t.level = 7;
-  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'hawksbill', name: 'Amber' }, { now: 1000 }).reason, 'LOCKED');
-  t.released = [{ id: 'x', name: 'Shelly', species: 'turtle', seed: 3, at: 0 }]; const r = R.applyAction(t, { t: 'buyFish', species: 'hawksbill', name: 'Amber' }, { now: 2000 }); assert.ok(r.ok, JSON.stringify(r));
-  R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'hawksbill'); assert.ok(f && R.isTurtle(f) && R.favFoodOf(f) === 'greens' && R.stageOf(f, 2000 + 7 * 3600e3) === 'baby');
-  assert.equal(R.milestonesOf(f).at(-1).key, 'ocean');
+ok('every kind of sea turtle opens together at level 8 (a rescue, not a production line); the leatherback only ever visits', () => {
+  const t = R.newWorld(0); t.shells = 5000; t.level = 7; for (const sp of ['turtle', 'hawksbill', 'loggerhead', 'kemps']) assert.equal(R.applyAction(t, { t: 'buyFish', species: sp }, { now: 1000 }).reason, 'LEVEL_TOO_LOW');
+  t.level = 8; assert.ok(R.applyAction(t, { t: 'buyFish', species: 'hawksbill' }, { now: 2000 }).ok); assert.ok(R.SPECIES_DEF.leatherback.visitor && R.SPECIES_DEF.leatherback.resident === false);
 });
-ok('each new kind of turtle opens with one more turtle set free; the leatherback only ever visits', () => {
-  const t = R.newWorld(0); t.shells = 5000; t.level = 7; const buy = (sp, now) => R.applyAction(t, { t: 'buyFish', species: sp }, { now });
-  t.released = [1].map((i) => ({ id: 'x' + i })); assert.equal(buy('loggerhead', 1000).reason, 'LOCKED'); assert.equal(buy('kemps', 1001).reason, 'LOCKED');
-  t.released.push({ id: 'x2' }); assert.ok(buy('loggerhead', 1002).ok); assert.equal(buy('kemps', 1003).reason, 'LOCKED');
-  t.released.push({ id: 'x3' }); assert.ok(buy('kemps', 1004).ok);
-  assert.ok(R.SPECIES_DEF.leatherback.visitor && R.SPECIES_DEF.leatherback.resident === false); assert.ok(['loggerhead', 'kemps', 'leatherback'].every((k) => R.isTurtle(k)));
+ok('tank health: care keeps it high and grows the tank faster; neglect slows it but never stops it; levels never go down', () => {
+  const H = 3600e3, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.decor.push({ id: 'a', type: 'anemone', x: 1, z: 0 }, { id: 'r', type: 'rock', x: -1, z: 0 }); t.fish.push(R.ensureFish({ id: 'f2', name: 'Pal', species: 'goldfish', seed: 8, born: 0, stage: 'adult', traits: [] })); return t; };
+  const good = mk(), bad = mk();
+  for (let h = 1; h <= 10 * 24; h++) { R.advance(good, h * H); R.advance(bad, h * H); if (h % 12 === 0) { R.applyAction(good, { t: 'feed', x: 0 }, { now: h * H + 1 }); if (good.water < 0.7) R.applyAction(good, { t: 'water' }, { now: h * H + 2 }); if (good.glass > 0.3) R.applyAction(good, { t: 'glass' }, { now: h * H + 3 }); } }
+  assert.ok(R.tankHealth(good, 240 * H).score > R.tankHealth(bad, 240 * H).score + 10, 'care shows in the health');
+  assert.ok(good.xp > bad.xp * 1.4 && bad.xp > 0, `good care grows faster; neglect still grows a little (${Math.round(good.xp)} vs ${Math.round(bad.xp)})`);
+  const lv = good.level; good.water = 0.45; good.hunger = 0.85; R.advance(good, 250 * H); assert.ok(good.level >= lv, 'never ranks down');
+});
+ok('an animal left miserable for days asks to leave; put it right and it stays, leave it and it goes back to the sea', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.createdAt = -30 * D; t.fish.push(R.ensureFish({ id: 's', name: 'Sea', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: [] }));
+  let asked = false; for (let d = 1; d <= 6 && !asked; d++) { const ev = R.advance(t, d * D); t.hunger = 0.85; asked = ev.some((e) => /asking to leave/.test(e.journal ?? '')); }
+  const s = t.fish.find((f) => f.id === 's'); assert.ok(asked && s.leaveAsk, 'it asks');
+  const gone = t.fish.length; let left = false; for (let d = 7; d <= 10 && !left; d++) { const ev = R.advance(t, d * D); left = ev.some((e) => /went back to the sea/.test(e.journal ?? '')); }
+  assert.ok(left && t.fish.length === gone - 1, 'left uncared for, it goes');
 });

@@ -23,11 +23,11 @@ export const SPECIES_DEF = {
   betta:     { label: 'Mandarin Dragonet', price: 52, level: 4, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
 SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
-SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A green sea turtle hatchling. Raise it, and one day set it free.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
-SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. It opens once you have set your first turtle free.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9, needRel: 1 };
-SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 7, wait: 360, count: 1, blurb: 'A big-headed loggerhead hatchling with jaws that crack crabs and snails. It opens after you have set two turtles free.', traits: ['Brave', 'Greedy', 'Curious', 'Lazy'], speed: 0.8, needRel: 2 };
-SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 7, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. It opens after you have set three turtles free.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05, needRel: 3 };
-SPECIES_DEF.leatherback = { label: 'Leatherback', price: 0, level: 99, wait: 0, count: 1, blurb: 'The giant of the turtles, with a leathery shell instead of plates. Far too big to keep: it only ever passes by.', traits: ['Calm'], speed: 0.9, visitor: true, resident: false, minLevel: 7 };
+SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A rescued green sea turtle hatchling. Raise it until it is strong, then return it to the sea.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
+SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. Raise it from a rescued hatchling and return it to the sea.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9 };
+SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 7, wait: 360, count: 1, blurb: 'A big-headed loggerhead hatchling with jaws that crack crabs and snails. Raise it from a rescued hatchling and return it to the sea.', traits: ['Brave', 'Greedy', 'Curious', 'Lazy'], speed: 0.8 };
+SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 7, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. Raise it from a rescued hatchling and return it to the sea.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05 };
+SPECIES_DEF.leatherback = { label: 'Leatherback', price: 0, level: 99, wait: 0, count: 1, blurb: 'The giant of the turtles, with a leathery shell instead of plates. Far too big to keep: it only ever passes by.', traits: ['Calm'], speed: 0.9, visitor: true, resident: false, minLevel: 8 };
 SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Clever, curious and always exploring.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
@@ -75,7 +75,7 @@ const SHOP_CURVE = {
   grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12], anemone: [1, 14],      /* (a clownfish's home, from the start: the clownfish is a first fish) */
   sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
   pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
-  seafan: [4, 36], liverock: [5, 50], ledge: [7, 40], seagrass: [7, 30],
+  seafan: [4, 36], liverock: [5, 50], ledge: [8, 40], seagrass: [8, 30],
   wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
@@ -86,9 +86,9 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [7, 180], hawksbill: [7, 220], loggerhead: [7, 260], kemps: [7, 240] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
-export const LEVEL_AT = [0, 20, 52, 120, 230, 360, 470, 590];                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
+export const LEVEL_AT = [0, 20, 54, 105, 170, 255, 360, 480];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.9] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
@@ -172,6 +172,21 @@ export function firstPromises(t, now = Date.now()) {
   if (t.visitAt && t.visitAt > now && t.visitAt - now < 30 * HOUR) out.push('A rare visitor may drop by tomorrow.');
   out.push('Tomorrow the tank has a new request for you.'); return out.slice(0, 4);
 }
+// ── Tank health ── one number for how the tank is doing: every animal's wellbeing (the Health rings), and the tank itself (water, glass, food).
+// It decides how fast care raises the level: a thriving tank levels twice as fast, a struggling one slowly, an unwell one not at all. Levels never go down.
+export const HEALTH_BANDS = [[85, 'Thriving', 1.5], [75, 'Happy', 1], [55, 'Struggling', 0.5], [0, 'Unwell', 0.25]];      // (never fully stuck: a tank coming back from neglect still grows, slowly)
+export function tankHealth(t, now = Date.now()) {
+  const live = t.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped); let sum = 0;
+  for (const f of live) { try { sum += wellOf(t, f, now).score; } catch { sum += 60; } }
+  // (hunger is already in each animal's wellbeing, so it is not counted again here: the environment is the water, the glass and the room)
+  const animals = live.length ? sum / live.length : 70, water = Math.max(0, Math.min(1, ((t.water ?? 1) - 0.45) / 0.5)), cr = crowdOf(t), space = 1 - Math.min(1, Math.max(0, cr.r - 0.6) / 0.6), cond = 100 * (0.5 * water + 0.3 * (1 - Math.min(1, (t.glass ?? 0) / 0.8)) + 0.2 * space);
+  const score = Math.round(0.6 * animals + 0.4 * cond), b = HEALTH_BANDS.find(([min]) => score >= min);
+  return { score, word: b[1], mult: b[2], animals: Math.round(animals), tank: Math.round(cond) };
+}
+// what each kind of care is worth toward the level (before the health multiplier)
+export const CARE_XP = { feed: 1, crab: 1, glass: 2, water: 3, pet: 1, play: 1, puzzle: 2, trim: 1, train: 1 };
+// most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
+export const XP_PER_HOUR = 0.6;
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !TURTLES.has(k)); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
@@ -210,7 +225,7 @@ export const BIRTH_ROOM = 4;
 // babies raised to adulthood, rare colors bred, goals finished, Field Guide pages and the kinds of animal it has known. (So spending
 // shells cannot buy the next level; looking after the tank and playing the game is what opens the shop's next shelf.)
 export function scoreOf(t, now = Date.now()) { const S = t.stats ?? {}, n = (k) => S[k] ?? 0, raised = Object.keys(S).filter((k) => k.startsWith('raised_')).reduce((a, k) => a + S[k], 0);
-  const W = SCORE_W; return W.care * n('careDays') + W.myst * n('myst') + W.decided * n('decided') + W.hatched * n('hatched') + W.grown * n('grewHere') + W.raised * raised + W.morph * n('morphs') + W.goal * (t.goalsDone ?? []).length + W.field * Object.keys(t.field ?? {}).length + W.species * (t.seen?.fish?.length ?? 0); }
+  const W = SCORE_W; return W.care * n('careDays') + W.myst * n('myst') + W.decided * n('decided') + W.hatched * n('hatched') + W.grown * n('grewHere') + W.raised * raised + W.morph * n('morphs') + W.goal * (t.goalsDone ?? []).length + Math.round(t.xp ?? 0) + W.species * (t.seen?.fish?.length ?? 0); }
 // what each thing is worth toward the level: time spent caring counts steadily, the one-off things (a page of the Field Guide, a new kind of
 // animal, a rare color, a goal) count most, and what repeats every day or every clutch (the mystery, another hatching) counts least
 export const SCORE_W = { care: 2, myst: 1, decided: 3, hatched: 2, grown: 6, raised: 4, morph: 10, goal: 15, field: 6, species: 4 };
@@ -883,6 +898,7 @@ export const FIELD = {
 };
 export const FIELD_PAY = 0;      // (a page is its own reward: the photo, and the page filled in; the economy stays as it is)
 function witness(t, id, f, now, ev, by = null, line = null) {
+  return false;      // (the Field Guide is retired: the tank's health is what the game is about now)
   const F = (t.field ||= {}); if (!FIELD[id] || F[id]) return false;
   const who = FIELD[id].who; if (f && who !== 'any' && (who === 'fish' ? isOcto(f) || f.species === 'seahorse' : f.species !== who)) return false;      /* (a page is only filled by the kind of animal it is about) */
   if (by === 'You') by = null;      // (alone in the tank: no need to say who)
@@ -1047,7 +1063,7 @@ export const GOALS = {
     ] },
   raise: { title: 'Three temperaments', blurb: 'Raise three young ones three different ways, and get three different grown-ups.', icon: 'grown', ok: (t) => liveOf(t).length >= 2,
     steps: [1, 2, 3].map((k) => ({ text: k === 1 ? 'Raise one the way you choose' : k === 2 ? 'A second, different temperament' : 'A third, different again', hint: 'While it is small: pet it often (Brave), play ball (Playful), let it chase the light or the bubbles (Curious), or feed it every day (Calm). Stick to one way.', n: (t, g) => ['Brave', 'Playful', 'Curious', 'Calm', 'Shy'].filter((x) => statOf(t, 'raised_' + x) > (g.base?.['raised_' + x] ?? 0)).length, need: k })) },      /* (any three, in any order: three childhoods, not a checklist of four) */
-  guide: { title: 'Field naturalist', blurb: 'Catch your animals doing remarkable things and fill the Field Guide.', icon: 'spot', ok: (t) => Object.keys(t.field ?? {}).length < Object.keys(FIELD).length - 6,
+  guide: { title: 'Field naturalist', blurb: 'Catch your animals doing remarkable things and fill the Field Guide.', icon: 'spot', ok: (t) => false &&  Object.keys(t.field ?? {}).length < Object.keys(FIELD).length - 6,
     steps: [2, 4, 6].map((k) => ({ text: `${k} new Field Guide pages`, hint: 'Watch the tank: the Field Guide lists what to look for. A page fills the first time someone sees it.', n: (t, g) => Object.keys(t.field ?? {}).length - (g.base?.field ?? 0), need: k })) },
   octo: { title: 'An octopus family', blurb: 'Win an octopus over, give it a partner and a den, and see its babies hatch.', icon: 'trust', ok: (t) => { const os = liveOf(t).filter(isOcto); return os.some((f) => sexOf(f) === 'f') && os.some((f) => sexOf(f) === 'm'); },      /* (eggs need a mother and a father: never offered when they cannot come) */
     steps: [
@@ -1361,8 +1377,8 @@ export function wellOf(t, f, now = Date.now()) {
   const wants = needsChecklist(t, f, now).filter((x) => x.k !== 'food');
   // one number for how well it is: its own needs met (40), getting along (25; shelter of its own kind halves the hurt), space for its kind (10),
   // fed (15) and in good health (10). The mood word follows the number, so an animal missing something never reads the same as one that has it all
-  const met = wants.filter((x) => x.met).length, needP = wants.length ? (40 * met) / wants.length : 40, hurt = trouble.reduce((a, x) => a + ({ bully: 12, clash: 10, squabble: 10, rival: 6, food: 6, wary: 3 }[x.kind] ?? 4), 0) * (cv.have >= cv.need ? 0.5 : 1);
-  const score = Math.max(0, Math.min(100, Math.round(needP + Math.max(0, 25 - hurt) + (crowd.over ? 0 : 10) + 15 * Math.max(0, Math.min(1, ns.fed)) + (bad ? 0 : 10) - (lonely ? 12 : 0))));
+  const met = wants.filter((x) => x.met).length, needP = wants.length ? (32 * met) / wants.length : 32, hurt = trouble.reduce((a, x) => a + ({ bully: 12, clash: 10, squabble: 10, rival: 6, food: 6, wary: 3 }[x.kind] ?? 4), 0) * (cv.have >= cv.need ? 0.5 : 1);
+  const score = Math.max(0, Math.min(100, Math.round(needP + Math.max(0, 20 - hurt) + (crowd.over ? 0 : 10) + 28 * Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35)) +      /* (a hungry animal is not a happy one: fed counts for more, and it falls away as the meal goes overdue) */ (bad ? 0 : 10) - (lonely ? 12 : 0))));
   const missing = wants.filter((x) => !x.met), top = trouble.find((x) => x.kind === 'bully' || x.kind === 'clash') ?? trouble.find((x) => x.kind !== 'wary') ?? null;
   const why = bad ? mood[2] : stressed || uneasy || lonely || ns.mood === 'Hungry' ? mood[2] : top ? `${top.text}.` : missing.length ? `Missing ${missing.length === 1 ? '' : `${missing.length} things: `}${missing.slice(0, 2).map((x) => x.label.toLowerCase()).join(' and ')}.` : friends.length ? `Everything it needs, and close to ${friends[0].name}.` : 'Everything it needs.';
   const word = bad ? ['Unwell', 'bad'] : score >= 90 && !missing.length && !top ? ['Thriving', 'good'] : score >= 75 ? ['Happy', 'good'] : (stressed || lonely || uneasy) ? [stressed ? 'Stressed' : lonely ? 'Lonely' : 'Uneasy', score >= 45 ? 'warn' : 'bad'] : score >= 60 ? ['Content', 'ok'] : score >= 45 ? [stressed ? 'Stressed' : lonely ? 'Lonely' : uneasy ? 'Uneasy' : 'Unsettled', 'warn'] : [stressed ? 'Stressed' : lonely ? 'Lonely' : 'Unhappy', 'bad'];
@@ -1529,7 +1545,7 @@ function chapters(t, now, ev) {
 function milestones(t, now, ev) {
   chapters(t, now, ev);
   const n = t.seen.fish.length + t.seen.decor.length, due = Math.floor(n / 5);
-  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `The Field Guide lists ${t.flags.collMs * 5} species and decorations.`, toast: `Field Guide: ${t.flags.collMs * 5} found! +3 shells` }); }
+  while ((t.flags.collMs ?? 0) < due) { t.flags.collMs++; t.shells += 3; ev.push({ journal: `Your collection has ${t.flags.collMs * 5} species and decorations in it.`, toast: `Collection: ${t.flags.collMs * 5} found! +3 shells` }); }
   const w = WISHES[t.wishIdx]; if (w && w.done(t)) { t.wishIdx++; t.shells += w.reward; ev.push({ journal: `The tank's wish came true: ${w.text.toLowerCase()}.`, toast: `Tank wish complete! +${w.reward} shells`, wish: true }); }
 }
 
@@ -1558,7 +1574,11 @@ function _advance(t, now = Date.now()) {
     for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
+    let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
+    if (H0) guard('grow', () => { const H1 = tankHealth(t, now), mult = (H0.mult + H1.mult) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
+      if (H0.score >= 85 && H1.score >= 85) { const before = Math.floor((t.thriveSec ?? 0) / 86400); t.thriveSec = (t.thriveSec ?? 0) + Math.min(dt, 3 * DAY / 1000); const days = Math.floor(t.thriveSec / 86400);
+        for (const k of [7, 30]) if (before < k && days >= k) { const st = nextPrize(t); if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; ev.push({ journal: `${k} thriving days in all. The tank has earned a new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'}.`, toast: `${k} thriving days! A new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'} for the tank.` }); } } });      // thriving days add up (they need not be in a row), and are rewarded with a new look, nothing more
   }
   guard('growth', () => {
     for (const f of t.fish) {                                          // growth milestones
@@ -1585,6 +1605,7 @@ function _advance(t, now = Date.now()) {
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
   guard('level', () => levelCheck(t, now, ev));
+  guard('leave', () => leaveRequests(t, now, ev));
   return ev;
 }
 // A fish earns these by growing up here: age counts from its arrival, and a run-down fish stops ageing (growth pauses), so only well-kept days count.
@@ -1595,6 +1616,17 @@ function ageMilestones(t, now, ev) {
     f.found ||= []; const days = (now - Math.max(f.born, f.arrived ?? -Infinity)) / DAY;      /* (counted from the day it came to this tank: a fish bought nearly grown starts at zero) */
     for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, ...(d >= 30 ? { toast: `${f.name} is ${d} days old. +${pay} shells` } : {}), milestone: f.id }); }      /* (the small birthdays go in the journal; a month or more is worth a toast) */
   }
+}
+// an animal left miserable for three days asks to leave; put right what it is missing within two days and it stays, or it goes back to the sea
+function leaveRequests(t, now, ev) {
+  const live = t.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped); if (live.length <= 1) return;
+  if ((t.flags.tut ?? 0) < 5 || (t.level ?? 1) < 3 || now - (t.createdAt ?? now) < 7 * DAY || t.flags.noLeave) return;      // (a new tank is still learning: nobody asks to leave in the first week, or before level 3)
+  for (const f of live) { let W; try { W = wellOf(t, f, now); } catch { continue; }
+    if (W.score >= 55) { f.lowSince = null; if (f.leaveAsk) { f.leaveAsk = null; ev.push({ journal: `${f.name} is happier now, and has settled back in.`, toast: `${f.name} has decided to stay!`, hist: 'stay' }); } continue; }
+    if (W.score < 40) f.lowSince ??= now;
+    if (f.leaveAsk && now >= f.leaveAsk.by) { t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id); ev.push({ journal: `${f.name} was too unhappy to stay, and went back to the sea.`, toast: `${f.name} left the tank. It was missing too much.`, released: f.id }); return; }
+    if (!f.leaveAsk && f.lowSince && now - f.lowSince > 3 * DAY) { const miss = (W.wants ?? []).filter((x) => !x.met && x.k !== 'food' && x.k !== 'play').map((x) => x.label.toLowerCase())[0];
+      f.leaveAsk = { at: now, by: now + 2 * DAY, why: miss ?? null }; ev.push({ journal: `${f.name} has been unhappy for days and is asking to leave${miss ? `: it is missing ${miss}` : ''}. Put it right within two days and it will stay.`, toast: `${f.name} is asking to leave! ${miss ? `It needs ${miss}.` : 'Check Health.'}`, warn: f.id }); } }
 }
 function levelCheck(t, now, ev) {
   milestones(t, now, ev);
@@ -1718,7 +1750,9 @@ export function nextUp(t, now = Date.now()) {
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
 }
-export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now()); if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
+export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now());
+  if (r?.ok && r.applied !== false && CARE_XP[a.t]) { const now = o?.now ?? Date.now(), H = tankHealth(t, now), got = CARE_XP[a.t] * H.mult; t.xp = (t.xp ?? 0) + got; r.xp = got; r.health = H.score; r.events ||= []; levelCheck(t, now, r.events); }      /* care raises the level, faster the healthier the tank */
+  if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
   if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); wellLog(t, now); return ev; }
 // Each animal's wellbeing over time: a short log written only when something changes (a need comes to be missing or is met, it falls unwell

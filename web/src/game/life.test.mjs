@@ -5,7 +5,7 @@ const DAY = 864e5, H = 3600e3; let n = 0; const ok = (name, fn) => { fn(); n++; 
 const seedFor = (type) => { for (let s = 1; s < 5000; s++) if (R.octoMind({ seed: s }).type === type) return s; };
 const T0 = Date.UTC(2026, 3, 6, 0);      // a Monday, midnight UTC (the tank's time zone is UTC unless a phone says otherwise)
 function tank(type = 'collector') {
-  const t = R.newWorld(T0 - 10 * DAY, 4); R.norm(t, T0 - 10 * DAY); t.id = 'life-' + type; t.flags.tut = 5; t.shells = 100; t.level = 6; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] };
+  const t = R.newWorld(T0 - 10 * DAY, 4); R.norm(t, T0 - 10 * DAY); t.id = 'life-' + type; t.flags.tut = 5; t.flags.noLeave = true; t.shells = 100; t.level = 6; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] };
   t.fish = [R.ensureFish({ id: 'o1', name: 'Biscuit', species: 'octopus', seed: seedFor(type), born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.85, owner: 'me', hunger: 0.1 }),
     R.ensureFish({ id: 'f1', name: 'Dot', species: 'neon', seed: 2, born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.8 }), R.ensureFish({ id: 'f2', name: 'Pip', species: 'goldfish', seed: 3, born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.8 })];
   t.decor = [['coconut', 1.2, 0.4], ['boulder', -1.5, -0.8], ['shell', 0.2, 1.4], ['grass', -2.5, 1], ['fern', 2.4, -1]].map(([type, x, z], i) => ({ id: 'd' + i, type, x, z, ry: 0 }));
