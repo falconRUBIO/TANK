@@ -55,7 +55,7 @@ const AWARE = { explorer: { distract: 0.15, d: [1, 3], p: 0.95, watch: null, rev
   collector: { distract: 0.08, d: [2, 5], p: 0.75, watch: null, rev: 0.65, nov: 0.35 }, watcher: { distract: 0.25, d: [3, 5], p: 0.7, watch: [8, 14], rev: 0.55, nov: 0.2 }, homebody: { distract: 0.05, d: [6, 12], p: 0.5, watch: [25, 45], den: true, rev: 0.75, nov: 0.1 } };
 const HIDEY = new Set(['coconut', 'pot', 'rock', 'cave', 'castle', 'skull', 'chest']);      // somewhere to tuck into: a homebody takes an interest
 const COLLECTIBLE = new Set(['shell', 'pot', 'coconut', 'chest', 'crystal', 'starfish', 'anchor', 'skull', 'lantern']);
-const GRIP_R = { grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 0.8, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5 };
+const GRIP_R = { seafan: 0.2, urchin: 0.45, liverock: 0.45, grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 0.8, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5 };
 const CRAB = 1.15;                // a crab is a meal-sized thing next to an octopus, not as big as its head
 const spot = (v) => { const q = Math.sin(v * 127.1 + 311.7) * 43758.5453; return q - Math.floor(q); };          // a repeatable 0..1 from a number
 export class Fishes {

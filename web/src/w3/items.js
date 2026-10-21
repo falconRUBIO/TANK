@@ -43,6 +43,27 @@ const B = {
     g.add(v.mesh(true)); return [stem(0, 0, 3, 3)];
   },
 
+  // a long-spined sea urchin: a dark round test bristling with long, banded spines (Banggai cardinalfish hover among them for safety)
+  urchin: (g, seed) => {
+    const u = 0.075, v = new Vox(u), r = mulberry32(seed); v.ellipsoid(0, 4, 0, 5, 4, 5, (i, j, k) => mix([52, 30, 74], [98, 60, 128], 0.3 + 0.7 * hash(i, j, k, 7)), seed, 0.1);
+    for (let n = 0; n < 70; n++) { const th = r() * 6.283, ph = Math.acos(1 - r() * 1.15), dx = Math.sin(ph) * Math.cos(th), dy = Math.cos(ph), dz = Math.sin(ph) * Math.sin(th), L = 11 + r() * 9;
+      for (let t = 4.5; t < L; t += 0.7) v.set(Math.round(dx * t), Math.round(4 + dy * t), Math.round(dz * t), ((t | 0) % 4 < 2 ? mix([60, 34, 86], [120, 76, 150], t / L) : [196, 160, 220])); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); const c = new Vox(u); c.ellipsoid(0, 4, 0, 5, 4, 5, () => [0, 0, 0], seed, 0); return [{ v: c, x: 0, y: 0.02, z: 0, ry: 0 }];
+  },
+  // a sea fan (a gorgonian): a broad, flat, branching fan on a short trunk; a seahorse wraps its tail around its branches
+  seafan: (g, seed) => {
+    const v = new Vox(PU), r = mulberry32(seed), ph = r() * 6, hue = seed % 2 ? [[204, 74, 64], [252, 156, 104]] : [[150, 70, 170], [222, 140, 230]];
+    const put = (X, Y, Z) => v.set(X, Y, Z, mix(hue[0], hue[1], Math.min(1, Y / 46) * 0.8 + hash(X, Y, Z, 3) * 0.2), 1.05, Math.min(1, Y / 46), ph);
+    const br = (x, y, a, len, w, depth) => { for (let t = 0; t < len; t += 0.6) { const X = x + Math.sin(a) * t, Y = y + Math.cos(a) * t; for (let q = 0; q < w; q++) { put(Math.round(X + q * Math.cos(a)), Math.round(Y), 0); put(Math.round(X), Math.round(Y), q % 2); } }
+      if (depth < 5) { const ex = x + Math.sin(a) * len, ey = y + Math.cos(a) * len; br(ex, ey, a - 0.42 - r() * 0.22, len * 0.74, Math.max(1, w - 1), depth + 1); br(ex, ey, a + 0.42 + r() * 0.22, len * 0.74, Math.max(1, w - 1), depth + 1); if (r() < 0.5) br(ex, ey, a + (r() - 0.5) * 0.2, len * 0.6, 1, depth + 2); } };
+    for (let j = 0; j < 6; j++) for (const q of [0, 1]) v.set(q, j, 0, [120, 60, 60]); br(0.5, 5, 0, 12, 3, 0);
+    g.add(v.mesh(true)); return [stem(0, 0, 2, 26)];
+  },
+  // live rock: reef rock crusted pink and purple with coralline algae and pitted with holes, full of the tiny copepods a mandarin grazes all day
+  liverock: (g, seed) => {
+    const u = 0.1, v = new Vox(u); v.ellipsoid(0, 0, 0, 6.5, 4.6, 5.6, (i, j, k) => { const n = fbm(i * 0.25 + seed, j * 0.25, k * 0.25); return n > 0.6 ? [214, 110, 170] : n > 0.45 ? [168, 96, 182] : mix([130, 118, 108], [176, 160, 140], n); }, seed, 0.28);
+    topLit(v); const m = v.mesh(); m.position.y = 0.14; g.add(m); return [{ v, x: 0, y: 0.14, z: 0, ry: 0 }];
+  },
   bamboo: (g, seed) => {
     const v = new Vox(0.07), r = mulberry32(seed);
     for (const [x0, z0, H] of [[-4, 0, 70], [0, 2, 92], [4, -1, 80], [-1, -3, 56]]) {

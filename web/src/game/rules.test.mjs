@@ -1057,6 +1057,14 @@ ok('reef dynamics: a seahorse loses meals to fast eaters, clownfish and damselfi
   assert.ok(R.wellOf(t, t.fish[0]).crowd.over, 'seven in a level-1 tank is too full for a seahorse'); assert.ok(R.socialOf(t, t.fish[0]).penalty > p0, 'and that weighs on it');
   for (let i = 0; i < 2; i++) t.decor.push({ id: 'k' + i, type: 'kelp', x: i, z: 0, ry: 0 }); assert.equal(R.coverOf(t, t.fish[0]).have, 2, 'plants count as a seahorse\'s shelter');
 });
+ok('specific needs are in the Shop: an urchin for cardinalfish, a sea fan for seahorses, live rock for a mandarin, and a clownfish\'s anemone from level 1', () => {
+  assert.equal(R.DECOR_DEF.anemone.level, 1); for (const k of ['urchin', 'seafan', 'liverock']) assert.ok(R.DECOR_DEF[k] && !R.DECOR_DEF[k].earned, k + ' is for sale');
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 6; t.decor = []; const mk = (id, sp) => R.ensureFish({ id, name: id, species: sp, seed: 2, born: -4e9, stage: 'adult' });
+  t.fish = [mk('C', 'platy'), mk('S', 'seahorse'), mk('M', 'betta')]; const has = (f, k) => R.needsChecklist(t, f).find((x) => x.k === k)?.met;
+  assert.equal(has(t.fish[0], 'urchin'), false); assert.equal(has(t.fish[1], 'fan'), false); assert.equal(has(t.fish[2], 'live'), false);
+  t.decor.push({ id: 'u', type: 'urchin', x: 0, z: 0, ry: 0 }, { id: 'f', type: 'seafan', x: 1, z: 0, ry: 0 }, { id: 'l', type: 'liverock', x: -1, z: 0, ry: 0 });
+  assert.ok(has(t.fish[0], 'urchin') && has(t.fish[1], 'fan') && has(t.fish[2], 'live'));
+});
 ok('(first 30) a lid decision only comes from an octopus really seen testing the lid, more than once in three days', () => {
   const D = 864e5, t0 = 40 * D, mk = () => { const t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15; t.decor = []; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.dilemmaAt = t0; return t; };
   const a = mk(); omenThen(a, t0 + 1000); assert.ok(!a.dilemma && !a.omen, 'never seen at the lid: nothing to decide');

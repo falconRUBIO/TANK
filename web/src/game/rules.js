@@ -57,14 +57,18 @@ export const DECOR_DEF = {
   table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 20, level: 3, blurb: 'A wide shelf to hover under.' },
   coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A big hollow half-shell. An octopus may carry it off and move in.' },
   pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
+  urchin:   { label: 'Sea Urchin',    cat: 'ROCKS',      price: 24, level: 3, blurb: 'A long-spined urchin. Cardinalfish hover safely among its spines.' },
+  seafan:   { label: 'Sea Fan',       cat: 'PLANTS',     price: 36, level: 4, blurb: 'A branching gorgonian. A seahorse\'s favorite thing to wrap its tail around.' },
+  liverock: { label: 'Live Rock',     cat: 'ROCKS',      price: 50, level: 5, blurb: 'Reef rock alive with tiny copepods: a mandarin grazes it all day.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
 // ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
 // two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
 const SHOP_CURVE = {
-  grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12],
+  grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12], anemone: [1, 14],      /* (a clownfish's home, from the start: the clownfish is a first fish) */
   sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
-  pot: [3, 26], brain: [3, 28], anemone: [3, 32], kelp: [3, 30],
+  pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
+  seafan: [4, 36], liverock: [5, 50],
   wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
@@ -1170,7 +1174,7 @@ const hasHome = (t, h) => !h || t.decor.some((d) => h.types?.includes(d.type) ||
 // get before it is uneasy (a share of the tank's room); whether it eats fast or slowly (slow eaters lose meals to fast ones); who it clashes
 // with, and why; and what it is like at its best. Used by socialOf (so it really moves happiness) and shown on the Health screen.
 export const ECO = {
-  goldfish: { zone: 'Middle water, around its anemone', cover: { types: ['anemone'], need: 1, word: 'an anemone to nestle in', cat: 'SPECIAL' }, tol: 0.85, feed: 'fast',
+  goldfish: { zone: 'Middle water, around its anemone', cover: { types: ['anemone'], need: 1, word: 'an anemone to nestle in', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
     clash: { guppy: 'Damselfish and clownfish both guard a home patch and spar over it' }, best: 'A sea anemone of its own to sway in, and easygoing neighbours.' },
   neon: { zone: 'Open water near the top', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'ROCKS' }, tol: 0.95, feed: 'fast',
     clash: {}, best: 'A shoal of three or more and open water to swim in.' },
@@ -1182,7 +1186,7 @@ export const ECO = {
     clash: { goldfish: 'Clownfish and damselfish both guard a home patch and spar over it' }, best: 'A patch of rock all to itself, away from the others.' },
   angelfish: { zone: 'Cruising the middle water', cover: { cats: ['ROCKS'], need: 3, word: 'rocks to graze', cat: 'ROCKS' }, tol: 0.7, feed: 'fast', crowdMean: true,
     clash: { angelfish: 'Two big angelfish in one tank fight over who rules it' }, best: 'Room to cruise and plenty of rock to graze.' },
-  platy: { zone: 'Hovering in the shade', cover: { cats: ['STRUCTURES', 'PLANTS'], need: 2, word: 'shade to hover in', cat: 'STRUCTURES' }, tol: 0.85, feed: 'medium',
+  platy: { zone: 'Hovering in the shade', cover: { types: ['urchin'], cats: ['STRUCTURES', 'PLANTS'], need: 2, word: 'shade or spines to hover in', cat: 'STRUCTURES' }, tol: 0.85, feed: 'medium',
     clash: {}, best: 'Shade to hover in by day, and calm company.' },
   danio: { zone: 'Darting through the middle water', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
     clash: {}, best: 'A group of its own kind and room to dart about.' },
@@ -1190,7 +1194,7 @@ export const ECO = {
     clash: {}, best: 'Lots of rock to graze slowly, and no fast eaters beating it to food.' },
   seahorse: { zone: 'Holding on to the plants', cover: { cats: ['PLANTS'], need: 2, word: 'plants to hold on to', cat: 'PLANTS' }, tol: 0.6, feed: 'slow',
     clash: {}, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
-  octopus: { zone: 'Its den, and everywhere else', cover: { types: ['pot', 'coconut'], need: 1, word: 'a den of its own', cat: 'SPECIAL' }, tol: 0.8, feed: 'own',
+  octopus: { zone: 'Its den, and everywhere else', cover: { types: ['pot', 'coconut'], need: 1, word: 'a den of its own', cat: 'ROCKS' }, tol: 0.8, feed: 'own',
     clash: {}, best: 'A den of its own, puzzles to solve, and someone to know.' },
 };
 // What each kind truly needs, one by one: what it is, why it matters to that animal in the wild, and how to give it. Checked against the tank
@@ -1214,16 +1218,19 @@ export const KIND_NEEDS = {
   angelfish: [W_('room', 'Plenty of room to cruise', 'Emperor angelfish patrol a wide range of reef; cramped, they turn bossy.', 'A roomier tank', (c) => c.r <= 0.7),
     W_('graze', 'Rock to graze on', 'It browses on rock all day, picking at sponges and algae.', 'Three rocks or more', (c) => c.cover >= 3),
     W_('alone', 'To be the only big angelfish', 'Two large angelfish fight over who rules the tank.', 'Just one emperor angelfish', (c) => c.own <= 1)],
-  platy: [W_('shade', 'Shade to hover in', 'Cardinalfish hover motionless in shade by day and come out to feed at night.', 'A structure or plants to shade it', (c) => c.cover >= 2),
+  platy: [W_('urchin', 'A sea urchin to shelter by', 'In the wild, cardinalfish hover among the long spines of sea urchins, where nothing can reach them.', 'A sea urchin from the Shop', (c) => c.types.urchin >= 1),
+    W_('shade', 'Shade to hover in', 'Cardinalfish hover motionless in shade by day and come out to feed at night.', 'A structure or plants to shade it', (c) => c.cover >= 2),
     W_('group', 'Others of its kind', 'They gather in small, loose groups among the shade.', 'Another cardinalfish', (c) => c.own >= 2),
     W_('calm', 'Gentle company', 'A slow, peaceful fish, easily pushed about.', 'No damselfish', (c) => !c.has('guppy'))],
   danio: [W_('shoal', 'A group of three or more', 'Anthias live in big, busy shoals; on its own it is shy and pale.', 'More pink anthias', (c) => c.own >= 3),
     W_('meals', 'Small, frequent meals', 'In the wild it picks plankton all day long; it does best fed often.', 'Feed a little more often', (c) => c.fed >= 0.6),
     W_('room', 'Room to dart about', 'It is always on the move.', 'Keep the tank from getting crowded', (c) => c.r <= 0.85)],
-  betta: [W_('rock', 'Lots of rock to graze', 'A mandarin eats tiny creatures living on rock, picking all day; without enough rock it goes hungry.', 'Three rocks or more', (c) => c.cover >= 3),
-    W_('slow', 'No fast eaters stealing its food', 'It feeds slowly and loses meals to quick fish, unless there is rock enough to graze.', 'Plenty of rock, or no fast eaters', (c) => !c.fast || c.cover >= 3),
+  betta: [W_('live', 'Live rock to graze', 'A mandarin eats tiny copepods that live on reef rock, picking at it all day; without live rock it slowly starves.', 'Live rock from the Shop', (c) => c.types.liverock >= 1),
+    W_('rock', 'Plenty of rock', 'The more rock, the more copepods: a big reef keeps it fed.', 'Three rocks or more', (c) => c.cover >= 3),
+    W_('slow', 'No fast eaters stealing its food', 'It feeds slowly and loses meals to quick fish, unless it has live rock to graze.', 'Live rock, or no fast eaters', (c) => !c.fast || c.types.liverock >= 1),
     W_('alone', 'To be the only male', 'Male mandarins fight each other.', 'Just one mandarin', (c) => c.own <= 1)],
   seahorse: [W_('hold', 'Plants to hold on to', 'A seahorse wraps its tail around a plant and stays put; it is a poor swimmer.', 'Two plants from the Shop', (c) => c.cover >= 2),
+    W_('fan', 'A sea fan to hitch on', 'Its favorite holdfast in the wild is a branching sea fan, where it can sit and watch for food drifting past.', 'A sea fan from the Shop', (c) => c.types.seafan >= 1),
     W_('pair', 'A partner for life', 'Seahorses pair for life and greet each other every morning with a little dance.', 'Another seahorse', (c) => c.own >= 2),
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
     W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Fewer animals, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
@@ -1233,7 +1240,8 @@ export const KIND_NEEDS = {
 };
 export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
-  return { own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
+  const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
+  return { own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
     ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY) };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
@@ -1249,7 +1257,7 @@ export function socialOf(t, f) {
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.12; out.notes.push(`${f.name} keeps a wary eye on ${o.name}.`); }
     if (S.likes?.includes(o.species) && !out.good.some((g) => g.id === o.id)) out.good.push({ id: o.id, text: `${f.name} enjoys ${o.name}'s company.` });
   }
-  if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && cv.have >= 3)) { const fast = [...new Set(t.fish.filter((o) => o !== f && !o.dead && ECO[o.species]?.feed === 'fast').map((o) => SPECIES_DEF[o.species]?.label ?? o.species))]; if (fast.length) { out.penalty += Math.min(0.2, 0.07 * fast.length); out.notes.push(`${fast.slice(0, 2).join(' and ')} eat quickly and beat ${f.name} to the food.`); } }
+  if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = [...new Set(t.fish.filter((o) => o !== f && !o.dead && ECO[o.species]?.feed === 'fast').map((o) => SPECIES_DEF[o.species]?.label ?? o.species))]; if (fast.length) { out.penalty += Math.min(0.2, 0.07 * fast.length); out.notes.push(`${fast.slice(0, 2).join(' and ')} eat quickly and beat ${f.name} to the food.`); } }
   if (E.tol && cr.r > E.tol) { out.penalty += Math.min(0.3, (cr.r - E.tol) * 0.8); out.notes.push(`The tank is too crowded for ${f.name} (${cr.n} of ${cr.cap}).`); }
   const own = t.fish.filter((o) => o.species === f.species).length;
   if (S.shoal && own < S.shoal) out.needs.push(`${f.name} feels safest with at least ${S.shoal} of its own kind (${own} now).`);
@@ -1292,7 +1300,7 @@ export function wellOf(t, f, now = Date.now()) {
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'wary', text: `Keeps a wary eye on ${o.name} the ${lab(o.species)}` }); }
     if (S.likes?.includes(o.species)) addF(o.name, o.species === f.species ? (S.pair && live.filter((x) => x.species === f.species).length === 2 ? 'its partner' : `one of its own kind`) : `gets on well with ${plural(o.species)}`); }
   if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a running rivalry with ${nm(f.rival)}` });
-  if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && coverOf(t, f).have >= 3)) { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
+  if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
   const cv = coverOf(t, f), threatened = trouble.some((x) => ['bully', 'wary', 'clash'].includes(x.kind)), cover = { ...cv, wants: !!S.shy || threatened || f.species === 'seahorse' || f.species === 'octopus', helps: threatened && cv.have < cv.need };
   const tol = E.tol ?? 0.85, crowd = { n: cr.n, cap: cr.cap, word: cr.r >= 0.9 ? 'Crowded' : cr.r >= 0.65 ? 'Busy' : 'Roomy', over: cr.r > tol, room: Math.max(0, Math.floor(tol * cr.cap) - cr.n), minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'feels safe in a group' : S.bully ? 'gets meaner when the tank is packed' : null };
   const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully' || x.kind === 'clash') && cv.have < cv.need, uneasy = crowd.over, lonely = (S.shoal && live.filter((o) => o.species === f.species).length < S.shoal) || (S.pair && live.filter((o) => o.species === f.species).length < 2);

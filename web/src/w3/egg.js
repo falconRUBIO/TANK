@@ -47,7 +47,7 @@ export function makeEgg(seed = 1, tint = 0xf06a9a, mode = 'guard') {
   egg.set(0, 0); pose(0, 0); return egg;
 }
 
-const PLANTS = ['grass', 'fern', 'sword', 'red', 'kelp', 'anemone', 'bamboo'];
+const PLANTS = ['grass', 'fern', 'sword', 'red', 'kelp', 'anemone', 'bamboo', 'seafan'];
 // where to put it: at the foot of a plant (rocks next), beside it, at a depth the camera keeps sharp, clear of every other thing; else a clear patch of sand
 export function eggSpot(spots, reach, hash, taken = [], on = 'plant') {
   const clear = (x, z) => Math.abs(x) < 6.2 && z > -1.8 && z < 1.1 && spots.every((s) => Math.hypot(s.x - x, s.z - z) >= reach(s.type) * 0.5 + RX) && taken.every((p) => Math.hypot(p.x - x, p.z - z) > 0.9);

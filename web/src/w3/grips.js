@@ -9,7 +9,7 @@ import { sandH } from './terrain.js';
 import { SEAHORSE_GRIP_R, SEAHORSE_STEM, SEAHORSE_STEM_MAX, SEAHORSE_LEAN } from '../species.js';
 const POST_LEANS = [SEAHORSE_LEAN, 0.55, 0.75], PLANT_LEANS = [SEAHORSE_LEAN];      // on a post it leans further back if it must, to keep its head clear of the post above the grip
 
-export const PLANTS = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone']);
+export const PLANTS = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone', 'seafan']);
 export const FACES = [0, Math.PI, 0.5, Math.PI - 0.5, -0.5, Math.PI + 0.5, 1, Math.PI - 1, -1, Math.PI + 1, 1.5, -1.5, 0.25, -0.25, Math.PI + 0.25, Math.PI - 0.25];      // the ways it may face on its stem, side-on to the glass first
 const MAX_GRIPS = 6, MAX_CANDS = 40, C = 0.1;
 const cellKey = (a, b, c) => ((a + 512) * 1024 + (b + 512)) * 1024 + (c + 512);
