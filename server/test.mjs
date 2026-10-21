@@ -196,6 +196,13 @@ await t('while players are connected the tank grows up and everyone is told', as
   const r = L_tick(); assert.ok(r.events.some((e) => e.grew === pip.id), JSON.stringify(r.events.map((e) => e.journal?.text)));
   assert.ok(S.db.prepare("SELECT 1 FROM journal WHERE tank_id=? AND text LIKE '%growing up%'").get(tank.id));
 });
+await t('coming back after hours away: the snapshot carries that person\'s own time away; a quick reconnect does not', async () => {
+  const w0 = await open(b.token); await waitFor(w0, (m) => m.t === 'snapshot'); w0.close(); await new Promise((r) => setTimeout(r, 80));
+  const left = Date.now() - 6 * 3600e3; S.db.prepare('UPDATE members SET last_seen=? WHERE user_id=?').run(left, b.userId);
+  const w1 = await open(b.token); const s1 = await waitFor(w1, (m) => m.t === 'snapshot'); assert.equal(s1.away?.from, left, JSON.stringify(s1.away)); assert.ok(Date.now() - s1.away.to < 60e3);
+  w1.close(); await new Promise((r) => setTimeout(r, 80)); const w2 = await open(b.token); const s2 = await waitFor(w2, (m) => m.t === 'snapshot'); assert.equal(s2.away?.from, left, 'the same stretch, not a new one'); w2.close();
+  const wa2 = await open(a.token); const sa = await waitFor(wa2, (m) => m.t === 'snapshot'); assert.notEqual(sa.away?.from, left, 'another caretaker has their own'); wa2.close();
+});
 await t('absence is bounded: 10 days away never starves the tank', async () => {
   setW(tank.id, { hunger: 0.3, water: 0.9, glass: 0.1, simTs: Date.now() - 10 * 864e5 });
   const w = await open(a.token); const s = await waitFor(w, (m) => m.t === 'snapshot'); assert.ok(s.tank.hunger <= 0.85 && s.tank.water >= 0.45 && s.tank.glass <= 0.8, JSON.stringify(s.tank)); w.close();

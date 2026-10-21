@@ -34,10 +34,11 @@ const pathLen = (t) => t.slice(1).reduce((s, c, i) => s + Math.hypot(c[0] - t[i]
 const OCT = { species: 'octopus' };
 
 // 1. two natures, the same tank, the same 2 minutes: a homebody (seed 6) and an explorer (seed 5), each with its own den
-{ await stage(101, [{ ...OCT, id: 'oH', name: 'Hob', seed: 6, home: 'c1', bond: {} }, { ...OCT, id: 'oE', name: 'Exo', seed: 5, home: 'c2', bond: {} }],
-    [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: 'c2', type: 'coconut', x: 2.4, z: 0.6 }, { id: 'r1', type: 'boulder', x: 0, z: -1.6 }, { id: 'g1', type: 'grass', x: -0.6, z: 2.4 }, { id: 'g2', type: 'fern', x: 0.8, z: 2.3 }]);
+{ const D1 = [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: 'c2', type: 'coconut', x: 2.4, z: 0.6 }, { id: 'r1', type: 'boulder', x: 0, z: -1.6 }, { id: 'g1', type: 'grass', x: -0.6, z: 2.4 }, { id: 'g2', type: 'fern', x: 0.8, z: 2.3 }];
+  const known = () => ({ fav: null, likes: [], fish: {}, fam: Object.fromEntries(D1.map((d) => [d.id, { k: 0.9, n: 12, x: d.x, z: d.z, at: Date.now() - 5 * 864e5 }])) });      // (a tank it has lived in for days: nothing new to investigate)
+  await stage(101, [{ ...OCT, id: 'oH', name: 'Hob', seed: 6, home: 'c1', bond: {}, mem: known() }, { ...OCT, id: 'oE', name: 'Exo', seed: 5, home: 'c2', bond: {}, mem: known() }], D1);
   const st = await p.evaluate(() => ['oH', 'oE'].map((id) => window.__fishes.byId.get(id).mind?.type));
-  const { tr } = await run(2400, ['oH', 'oE'], 1);
+  await run(600, [], 11); const { tr } = await run(4800, ['oH', 'oE'], 1);
   const m = (t, dx) => ({ path: r2(pathLen(t)), far: r2(Math.max(...t.map((a) => xz(a, dx, 0.6)))), den: r2(mean(t.map((a) => (xz(a, dx, 0.6) < 1.2 ? 1 : 0)))), glass: r2(mean(t.map((a) => (a[2] > 2.6 ? 1 : 0)))) });
   const H = m(tr.oH, -2.4), E = m(tr.oE, 2.4); await shot('1-personalities');
   info('state', 'natures from octoMind(seed)', JSON.stringify(st));
@@ -56,21 +57,17 @@ const OCT = { species: 'octopus' };
   ck('the octopus that knows you comes forward to the front glass; the stranger does not (rendered z, glass ~3.7)', mz(tr.oF) > 3.0 && mz(tr.oF) - z0.z.oF > 1.5 && mz(tr.oS) < 2.6, 'rendered', `fond z ${z0.z.oF}→max ${mz(tr.oF)} (at glass ${gf(tr.oF)} of frames), stranger z ${z0.z.oS}→max ${mz(tr.oS)} (${gf(tr.oS)})`); }
 
 // 3. a favourite place: a goldfish whose spot is the boulder vs a goldfish with none; and a seahorse with a saved favourite holdfast (fish.log.hitch)
-{ const D = [{ id: 'r1', type: 'boulder', x: -2.6, z: -0.6 }, { id: 'p1', type: 'grass', x: 2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: -1.2, z: 2.3 }, { id: 'p3', type: 'sword', x: 1.2, z: -0.4 }, { id: 'p4', type: 'grass', x: -0.2, z: 1.0 }];
+{ const D = [{ id: 'r1', type: 'boulder', x: -2.6, z: -0.6 }, { id: 'r2', type: 'rock', x: 2.8, z: -1.0 }, { id: 's1', type: 'shell', x: 0.4, z: -1.8 }, { id: 'p1', type: 'grass', x: 2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: -1.2, z: 2.3 }, { id: 'p3', type: 'sword', x: 1.2, z: -0.4 }, { id: 'p4', type: 'grass', x: -0.2, z: 1.0 }];
   const HS = { species: 'seahorse', traits: ['Calm'] }, hitch = { p1: [900, 8, 2.6, 2.4] };
   const stg = () => stage(303, [{ id: 'fS', name: 'Spot', species: 'goldfish', seed: 3, spotId: 'r1', found: ['spot'] }, { id: 'fC', name: 'Ctrl', species: 'goldfish', seed: 3 },
     { ...HS, id: 'hF', name: 'Fav', seed: 4, sex: 'f', log: { hitch, fav: 'p1' } }, { ...HS, id: 'hC', name: 'Plain', seed: 4, sex: 'f' }], D);
-  await stg(); const { tr } = await run(3600, ['fS', 'fC', 'hF', 'hC'], 4); await shot('3-favourite-place');
+  await stg(); const { tr } = await run(6000, ['fS', 'fC', 'hF', 'hC'], 4); await shot('3-favourite-place');
   const nearR = (t) => r2(mean(t.slice(60).map((a) => (xz(a, -2.6, -0.6) < 1.8 ? 1 : 0)))), onP1 = (t) => r2(mean(t.slice(60).map((a) => (a[3] === 'p1' || xz(a, 2.6, 2.2) < 0.9 ? 1 : 0))));
   ck('the fish with a favourite spot is near its boulder far more often than a fish without one', nearR(tr.fS) > 2 * nearR(tr.fC) && nearR(tr.fS) > 0.2, 'rendered', `${nearR(tr.fS)} vs ${nearR(tr.fC)} of frames within 1.8`);
   const sv = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('hF'); return { savedLogWired: typeof f.savedLog === 'function', memP1: f.memOf('p1'), stateFav: window.__game.state.fish.find((x) => x.id === 'hF').log?.fav }; });
   info('state', 'seahorse hF has log.hitch.p1 = 900 s / 8 visits and log.fav = p1 in the tank state', JSON.stringify(sv));
   const sh = { fav: onP1(tr.hF), ctrl: onP1(tr.hC) };
-  ck('the seahorse with a saved favourite holdfast (p1) goes back to it more than one without (rendered)', sh.fav > sh.ctrl + 0.15, 'rendered', `${sh.fav} vs ${sh.ctrl} of frames on/at p1; savedLog wired: ${sv.savedLogWired}`);
-  // the same tank once more, with the saved log handed to the 3D seahorse at runtime (what fishmgr would have to do): shows the gap is only the wiring
-  await stg(); await p.evaluate(() => { const F = window.__fishes; for (const id of ['hF', 'hC']) { const f = F.byId.get(id); f.savedLog = () => f.rec?.log; f.holdfast = null; } });
-  const w = (await run(3600, ['hF', 'hC'], 4)).tr;
-  info('rendered', 'same run with f.savedLog = () => f.rec.log patched in at runtime', `${onP1(w.hF)} vs ${onP1(w.hC)} of frames on/at p1`); }
+  ck('the seahorse with a saved favourite holdfast (p1) goes back to it more than one without (rendered)', sh.fav > sh.ctrl + 0.15, 'rendered', `${sh.fav} vs ${sh.ctrl} of frames on/at p1; savedLog wired: ${sv.savedLogWired}`); }
 
 // 4. pals: two goldfish who are best friends (pal), two who are not, same species, same tank
 { await stage(404, [{ id: 'a1', name: 'Ann', species: 'goldfish', seed: 21, pal: 'a2' }, { id: 'a2', name: 'Abe', species: 'goldfish', seed: 22, pal: 'a1' }, { id: 'b1', name: 'Bea', species: 'goldfish', seed: 23 }, { id: 'b2', name: 'Bo', species: 'goldfish', seed: 24 }],
@@ -83,16 +80,16 @@ const OCT = { species: 'octopus' };
   ck('the pals swim closer together than two fish that are not pals (mean rendered distance)', mean(P) < 0.7 * mean(U), 'rendered', `pals ${r2(mean(P))} (within 2: ${cl(P)}) vs others ${r2(mean(U))} (${cl(U)})`); }
 
 // 5. a keepsake: a shell this octopus brought home and knows, lying across the tank from its den; it goes to it and carries it home
-{ await stage(505, [{ ...OCT, id: 'oK', name: 'Keeper', seed: 3, home: 'c1', bond: {}, advMem: { fav: 'k1', items: [{ k: 'shell', id: 'k1', at: Date.now() - 864e5 }] }, mem: { fav: null, fam: {}, likes: [], fish: {}, keeps: { k1: { k: 0.9, n: 4 } } } }],
+{ await stage(505, [{ ...OCT, id: 'oK', name: 'Keeper', seed: 3, home: 'c1', bond: {}, advMem: { fav: 'k1', items: [{ k: 'shell', id: 'k1', at: Date.now() - 864e5 }] }, mem: { fav: null, fam: { c1: { k: 0.9, n: 12, x: -2.4, z: 0.4, at: Date.now() - 5 * 864e5 }, g1: { k: 0.9, n: 12, x: 0, z: 2.4, at: Date.now() - 5 * 864e5 } }, likes: [], fish: {}, keeps: { k1: { k: 0.9, n: 4 } } } }],
     [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.4 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }], [{ id: 'k1', k: 'shell', adv: 'reef', by: 'oK', byName: 'Keeper', at: Date.now() - 864e5, x: 2.6, z: -1.2 }]);
   const k0 = await p.evaluate(() => { const F = window.__fishes; F.keeps0 = [...(window.__decor?.keeps ?? new Map())]; const ks = F.keepSpots(); F.attnAt = Date.now() - 3e5; F.keepT = 0.5; const f = F.byId.get('oK'); f.inspect = null; f.task = null; return { ks: ks.map((k) => [k.id, k.x, k.z]), groups: F.keeps0.length, type: f.mind?.type }; });
   if (!k0.groups) await p.evaluate(() => { const F = window.__fishes, it = F.keepSpots()[0]?.it; F.keeps0 = it ? [['k1', it]] : []; });
-  const { tr, kt } = await run(2400, ['oK'], 6, 'if (i % 100 === 0) F.attnAt = Date.now() - 3e5;'); await shot('5-keepsake');
+  const { tr, kt } = await run(3600, ['oK'], 6, 'F.attnAt = Date.now() - 3e5; if (i % 200 === 0 && !F.byId.get("oK").keepCarry) F.keepT = 0;'); await shot('5-keepsake');
   const K = kt.k1 ?? [], minD = r2(Math.min(...tr.oK.map((a) => xz(a, 2.6, -1.2)))), carried = K.filter((k) => k[2]).length, last = K.at(-1);
   const follow = r2(mean(K.map((k, i) => (k[2] ? Math.hypot(k[0] - tr.oK[i][0], k[1] - tr.oK[i][2]) : null)).filter((v) => v != null)));
   const st = await p.evaluate(() => ({ keep: window.__game.state.keeps.find((k) => k.id === 'k1'), thought: window.__fishes.byId.get('oK').thought }));
   info('state', 'keepsake k1 in the tank state after the run, and its thought', JSON.stringify(st) + ` nature ${k0.type}`);
-  ck('the octopus goes to its keepsake (rendered: it comes within reach of the shell)', minD < 1.3, 'rendered', `closest ${minD}`);
+  ck('the octopus goes to its keepsake (rendered: it comes within reach of the shell, 1.2)', minD < 1.2, 'rendered', `closest ${minD}`);
   ck('it carries it: the shell rides with it, then lies by its den', K.length > 0 && carried > 5 && follow < 0.5 && last && Math.hypot(last[0] + 2.4, last[1] - 0.4) < 1.6, 'rendered', `carried ${carried} of ${K.length} samples, mean ${follow} from the octopus while carried, ended at ${JSON.stringify(last)}`); }
 
 // 6. seahorses: a mated pair and two singles; the meeting scheduler is woken every 40 s of tank time so there are chances to meet
