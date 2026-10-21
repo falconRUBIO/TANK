@@ -462,7 +462,7 @@ export class Fish3D {
     if (kind === 'smack') this.onMoment?.('smack', o);
     this.actText = kind === 'smack' ? `Smacked ${o.name} with an arm.` : kind === 'shell' ? `Flung a shell at ${o.name}.` : kind === 'water' ? `Squirted water at ${o.name}.` : `Threw silt at ${o.name}.`; this.actFlash = 4;
   }
-  potIn() { const d = this.den; return d?.home && d.kind === 'pot' && (this.fam?.[d.id]?.k ?? 0) >= 0.35; }      // it has learned to squeeze all the way into its pot
+  potIn() { const d = this.den; return d?.home && d.kind === 'pot'; }      // a pot is a den: it squeezes all the way inside, every time
   denGoal(rng) { const d = this.den; return d.home ? [d.x, d.z + (d.kind === 'pot' ? (this.potIn() ? 0.3 : 0.5) : -0.2)] :      // in a coconut it sits well inside the hollow (the cut face is at the shell's center line), its arms spilling out of the mouth
      d.kind === 'rocks' ? [d.x, d.z] : [d.x + (rng() - 0.5) * 0.6, d.z + 0.85]; }
   // going home: first to the open side of the shell or pot (its mouth faces the front), then straight in through it. Never through the wall.
