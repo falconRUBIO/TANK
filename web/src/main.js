@@ -23,7 +23,7 @@ import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
-import { wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
+import { LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
@@ -338,6 +338,11 @@ setInterval(() => { const s = game.state; if (!s) return;
     if (d.seek) { const k = Math.min(d.seek.path.length - 1, Math.floor((game.now() - d.seek.at) / (HIDE_STEP * 1000))), sp = decor.spots().find((q) => q.id === d.seek.path[k]);
       if (sp && f.seekStep !== d.seek.at + ':' + k) { f.seekStep = d.seek.at + ':' + k; f.seekSpot = sp; f.inspect = { x: sp.x, z: sp.z }; } }
     else if (f.seekStep) { const sp = f.seekSpot; f.seekStep = null; f.seekSpot = null; if (sp) fishes.burst?.(new THREE.Vector3(sp.x, (sp.y ?? 0) + 0.9, sp.z + 0.3)); } } }, 1000);
+// an animal that has asked to leave: nurse it back (the card shows what it is missing) or let it go back to the sea
+function leaveBlock(rec) {
+  const L = rec?.leaveAsk; if (!L || rec.dead) return ''; const h = Math.max(1, Math.ceil((L.by - Date.now()) / 36e5));
+  return `<div class="leaveask"><b>${esc(rec.name)} is asking to leave</b><span>${L.why ? `It is missing ${esc(L.why)}. ` : 'It has been unhappy for days. '}Nurse it back to Happy within ${h > 36 ? Math.ceil(h / 24) + ' days' : h + ' hours'} and it stays. It can't be sold while it is unhappy.</span><button class="act2" id="letgo">Let it go to the sea</button></div>`;
+}
 // a sea turtle is raised to be let go: how long until it is ready for the ocean, and when it is, the button that sends it
 function turtleBlock(rec) {
   if (!isTurtleR(rec) || rec.dead) return '';
@@ -1089,7 +1094,7 @@ function showCard(f) {
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}${/s$/.test(f.species.label) ? '' : 's'} (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
   const sec = (t, body) => (body && body.replace(/\s+/g, '') ? `<h4 class="csec">${t}</h4>${body}` : '');      // one heading style for every part of the card; an empty part is left out
-  const over = sec('Right now', `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${comfortBlock(rec)}${turtleBlock(rec)}${nextLine}${playBlk()}${playLine}${trustRow}`)
+  const over = sec('Right now', `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${comfortBlock(rec)}${turtleBlock(rec)}${leaveBlock(rec)}${nextLine}${playBlk()}${playLine}${trustRow}`)
     + path
     + sec(`Looking after ${esc(f.name)}`, `<div class="info">${careRows(rec)}</div>${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`)
     + sec('What it likes', `<div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>${toysTile}${bondTile}`)
@@ -1127,7 +1132,7 @@ function showCard(f) {
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const tr = $('turtrel'); if (tr) tr.onclick = () => releaseTurtle(rec); } { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const tr = $('turtrel'); if (tr) tr.onclick = () => releaseTurtle(rec); } { const lg = $('letgo'); if (lg) lg.onclick = async () => { const yes = await ui.dialog({ title: `Let ${rec.name} go?`, text: `${rec.name} goes back to the sea to find what it was missing. It won't come back, but it may send a postcard.`, ok: 'Let it go', cancel: 'Keep trying' }); if (!yes) return; const r = await game.dispatch({ t: 'letGo', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; } { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'Let it go?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
@@ -1137,6 +1142,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (play) { playPoint(ev); return; }
   if (toys.armed && !placing && !feedMode && !cleanMode) { const k = toys.armed, ray = rayFrom(ev).ray;      // a toy from the Toy box: the ball is tossed in, bubbles rise from the sand, the light is held and dragged
     if (k === 'ball') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { toys.toss(hit.x, 0.3 + Math.random() * 0.8); toys.armed = null; } return; }
+    if (k === 'cube' || k === 'hoop') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { if (k === 'cube') toys.dropCube(hit.x); else toys.hangHoop(hit.x); toys.armed = null; } return; }
     const at = toys.sandHit(ray); if (!at) return; if (k === 'bubbles') { toys.blow(at); toys.armed = null; } else if (k === 'light') { toys.lightOn(at); lightHeld = true; canvas.setPointerCapture?.(ev.pointerId); } return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
@@ -1319,8 +1325,8 @@ game.on('levelup', (lv) => {
   let i = 0; for (const f of fishes.byId.values()) { if (!f.pos || !f.target) continue; const x = ((i++ % 7) - 3) * 1.4; f.target.set(x, 6 + (i % 3), 2.2); f.retarget = 4; }
   for (let k = 0; k < 6; k++) setTimeout(() => fishes.burst(new THREE.Vector3((k - 2.5) * 2, 1, 1.2)), k * 180);
   const ban = document.createElement('div'); ban.className = 'lvban';
-  const opens = Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label);
-  ban.innerHTML = `<b>Level ${lv}</b><span>${opens.length ? 'New friends can move in: ' + opens.slice(0, 3).join(', ') : 'Your care made the tank grow'}</span>`;
+  const P = LEVEL_PRIZE[lv];
+  ban.innerHTML = `<small>THE TANK GREW</small><b>Level ${lv}</b><span>${P ? (P.kind === 'play' ? 'New way to play: ' : 'New animals: ') + P.title : 'Your care made the tank grow'}</span>`;
   document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label + ' (fish)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
@@ -1852,7 +1858,7 @@ async function boot() {
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
-window.__fishes = fishes; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
+window.__fishes = fishes; window.__toys = toys; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || document.hidden || (game.state?.flags?.tut ?? 0) < 5) return;      /* (seen: the tank open in front of someone) */ const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)
 fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);

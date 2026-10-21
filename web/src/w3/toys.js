@@ -38,7 +38,7 @@ const glowTex = (() => { const c = document.createElement('canvas'); c.width = c
 
 export class Toys {
   constructor(scene, fishes) { this.scene = scene; this.fishes = fishes; this.ball = null; this.fount = null; this.bubbles = []; this.light = null; this.armed = null; this.onDone = null; this.onSound = null; }
-  get active() { return !!(this.ball || this.fount || this.light); }
+  get active() { return !!(this.ball || this.fount || this.light || this.cube || this.hoop); }
   // where a ray meets the sand (walked along it, so banks and slopes are right)
   sandHit(ray) { const p = new THREE.Vector3(); for (let s = 0; s < 60; s += 0.08) { ray.at(s, p); if (p.y <= sandH(p.x, p.z) + 0.02 && Math.abs(p.x) < X + 0.4 && p.z > ZB - 0.5 && p.z < ZF + 0.6) return p; } return null; }
   done(kind, who) { this.onDone?.(kind, [...who]); }
@@ -119,5 +119,50 @@ export class Toys {
       } }
   }
 
-  update(dt, t) { if (this.ball) this.stepBall(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
+  // ── the twist cube: a chunky puzzle cube dropped in from the top. It sinks to the sand; an octopus comes over, picks it up in its arms
+  // and turns it over and over, twisting a face now and then, the way aquarium octopuses work at puzzle toys. Fish only nose it ──
+  dropCube(x) {
+    if (this.cube) this.cubeEnd();
+    const g = new THREE.Group(), cols = [0xff5a4a, 0xffa53a, 0xfff2dc, 0xffd23f, 0x3fb6ff, 0x5fd38a], s = 0.15, slices = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+      const mats = [i > 0 ? cols[0] : 0x1a1a1a, i < 0 ? cols[1] : 0x1a1a1a, j > 0 ? cols[2] : 0x1a1a1a, j < 0 ? cols[3] : 0x1a1a1a, k > 0 ? cols[4] : 0x1a1a1a, k < 0 ? cols[5] : 0x1a1a1a].map((c) => new THREE.MeshLambertMaterial({ color: c, emissive: c === 0x1a1a1a ? 0 : 0x101010 }));
+      const m = new THREE.Mesh(new THREE.BoxGeometry(s * 0.94, s * 0.94, s * 0.94), mats); m.position.set(i * s, j * s, k * s); slices[j + 1].add(m); }
+    for (const sl of slices) g.add(sl); g.scale.setScalar(1.6);
+    g.position.set(Math.max(-X, Math.min(X, x)), Fish3D.topY + 0.4, 0.8); this.scene.add(g); this.fishes.burst?.(g.position.clone());
+    this.cube = { g, slices, vy: -1.4, life: 40, who: new Set(), held: null, twist: null, tw: 1.5 }; this.onSound?.('splash');
+  }
+  cubeEnd() { const C = this.cube; if (!C) return; this.scene.remove(C.g); C.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.forEach((m) => m.dispose()); } }); if (C.held) C.held.inspect = null; this.done('cube', C.who); this.cube = null; }
+  stepCube(dt) {
+    const C = this.cube, p = C.g.position; C.life -= dt; if (C.life <= 0) return this.cubeEnd();
+    if (C.held && (C.held.dead || !free(C.held))) C.held = null;
+    if (C.held) { const o = C.held; p.lerp(new THREE.Vector3(o.pos.x + Math.sin(C.life) * 0.2, o.pos.y + 0.55, o.pos.z + 0.35), Math.min(1, dt * 5)); C.g.rotation.x += dt * 0.9; C.g.rotation.y += dt * 1.3;      // held in the arms, turned over and over
+      C.tw -= dt; if (!C.twist && C.tw <= 0) { C.twist = { sl: C.slices[Math.floor(Math.random() * 3)], a: 0 }; this.onSound?.('bonk'); }      // now and then a face is twisted round a quarter turn
+      if (C.twist) { const d = Math.min(Math.PI / 2 - C.twist.a, dt * 5); C.twist.a += d; C.twist.sl.rotation.y += d; if (C.twist.a >= Math.PI / 2 - 1e-3) { C.twist = null; C.tw = 0.9 + Math.random() * 1.6; } }
+      o.flush = Math.max(o.flush ?? 0, 0.25); return; }
+    const floor = sandH(p.x, p.z) + 0.3; if (p.y > floor) { C.vy = Math.max(-1.6, C.vy - dt * 0.6); p.y = Math.max(floor, p.y + C.vy * dt); C.g.rotation.z += dt * 0.6; }
+    for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p);
+      if (k === 'octopus' && d < 8) { if (!f.inspect || f.inspect.toy) f.inspect = { x: p.x, z: p.z, toy: true }; if (d < 1.3) { C.held = f; C.who.add(f.fid); f.inspect = null; this.onSound?.('pounce'); return; } }      // it goes over and gathers it up
+      else if (k === 'fish' && d < 3) { f.target.set(p.x, p.y + 0.4, p.z + 0.3); f.retarget = Math.max(f.retarget ?? 0, 0.6); if (d < 1) C.who.add(f.fid); } }
+  }
+
+  // ── the hitching hoop: a ring that hangs on a line from the top and sways. Seahorses swim over, curl their tails round it and sway with it ──
+  hangHoop(x) {
+    if (this.hoop) this.hoopEnd();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 10, 28), new THREE.MeshLambertMaterial({ color: 0xff8fb1, emissive: 0x2a0a14 }));
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 5), new THREE.MeshBasicMaterial({ color: 0xdfeff5, transparent: true, opacity: 0.6 }));
+    const g = new THREE.Group(); g.add(ring); g.add(line); const top = Fish3D.topY + 0.3, y = 5.2, len = top - y - 0.42; line.scale.y = len; line.position.y = 0.42 + len / 2;
+    g.position.set(Math.max(-X + 0.5, Math.min(X - 0.5, x)), y, 0.5); this.scene.add(g); this.hoop = { g, ring, life: 45, who: new Set(), ph: 0 }; this.onSound?.('splash');
+  }
+  hoopEnd() { const H = this.hoop; if (!H) return; this.scene.remove(H.g); H.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } }); this.done('hoop', H.who); this.hoop = null; }
+  stepHoop(dt) {
+    const H = this.hoop; H.life -= dt; H.ph += dt; if (H.life <= 0) return this.hoopEnd();
+    H.g.rotation.z = Math.sin(H.ph * 0.9) * 0.18 + Math.sin(H.ph * 2.1) * 0.04;      // it sways in the current
+    const at = new THREE.Vector3(0, -0.42, 0).applyEuler(H.g.rotation).add(H.g.position);      // the bottom of the ring, where a tail curls on
+    for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(at);
+      if (k === 'seahorse' && d < 7) { f.target.set(at.x, at.y + 0.5, at.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); f.glance = H.g.position.clone(); f.glanceT = 0.5; if (d < 0.8) { f.vel.multiplyScalar(Math.exp(-dt * 4)); f.pos.lerp(new THREE.Vector3(at.x, at.y + 0.45, at.z), Math.min(1, dt * 2)); if (!H.who.has(f.fid)) this.onSound?.('pop'); H.who.add(f.fid); } }      // swims over and hangs on
+      else if (k === 'fish' && d < 2.5 && Math.random() < dt) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish swim through it now and then
+      else if (k === 'octopus' && d < 4 && !f.inspect) f.inspect = { x: at.x, z: at.z, toy: true }; }
+  }
+
+  update(dt, t) { if (this.ball) this.stepBall(dt); if (this.cube) this.stepCube(dt); if (this.hoop) this.stepHoop(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
 }

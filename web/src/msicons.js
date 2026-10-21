@@ -33,6 +33,8 @@ const ART = {
   rock: ['............', '............', '............', '....kkkk....', '...kSSSSk...', '..kSssSSSk..', '.kSsssgSSSk.', '.kSssgggSSk.', 'kSSsssSSSSSk', 'kSSSSSSSSSSk', '.kkkkkkkkkk.', '............'],
   coconut: ['............', '............', '....oooo....', '..ooSSSSoo..', '.oSSsSSsSSo.', '.oSSSSSSSSo.', 'oSSkSSSkSSSo', 'oSSSSSSSSSSo', 'owwwwwwwwwwo', 'wwccccccccww', '............', '............'],
   bubbles: ['.......bb...', '......bwbb..', '......bbbb..', '.......bb...', '..bb........', '.bwbb...b...', '.bbbb..bwb..', '..bb....b...', '.....bb.....', '....bwbb....', '....bbbb....', '.....bb.....'],
+  cube: ['............', '..rrrryyyy..', '.rrrrryyyyy.', '.rrrrryyYyy.', '.bbbbbggggk.', '.bbBbbggGgk.', '.bbbbbggggk.', '.wwwwwppppk.', '.wwswwppPpk.', '.wwwwwppppk.', '..kkkkkkkk..', '............'],
+  hoop: ['.....kk.....', '.....kk.....', '.....kk.....', '....pppp....', '...pP..pp...', '..pp....pp..', '..pp....pp..', '..pp....pp..', '...pp..Pp...', '....pppp....', '............', '............'],
   ball: ['............', '....rrww....', '..rrrrwwbb..', '.rrrrrwwbbb.', '.yyrrwwwbbb.', 'yyyyywwwgggg', 'yyyyywwwgggg', '.yyypppwggg.', '.yypppppgg..', '..pppppppg..', '....pppp....', '............'],
   light: ['............', '.....yy.....', '..y..yy..y..', '...y.yy.y...', '....yYYy....', '.yyyYwwYyyy.', '.yyyYwwYyyy.', '....yYYy....', '...y.yy.y...', '..y..yy..y..', '.....yy.....', '............'],
   postcard: ['............', '............', 'oooooooooooo', 'owwwwwwwPPPo', 'owkkkwwwPpPo', 'owwwwwwwPPPo', 'owkkkkwkwwwo', 'owwwwwwkwwwo', 'owkkkwwkkkwo', 'owwwwwwwwwwo', 'oooooooooooo', '............'],

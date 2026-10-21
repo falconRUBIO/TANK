@@ -1105,3 +1105,13 @@ ok('an animal left miserable for days asks to leave; put it right and it stays, 
   const gone = t.fish.length; let left = false; for (let d = 7; d <= 10 && !left; d++) { const ev = R.advance(t, d * D); left = ev.some((e) => /went back to the sea/.test(e.journal ?? '')); }
   assert.ok(left && t.fish.length === gone - 1, 'left uncared for, it goes');
 });
+ok('an animal asking to leave cannot be sold, can be let go, and sends a postcard a day later; an unwell tank stops growing with time; toys open by level', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.createdAt = -30 * D; t.fish.push(R.ensureFish({ id: 's', name: 'Sea', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: [] }));
+  let d = 1; for (; d <= 6 && !t.fish.find((f) => f.id === 's').leaveAsk; d++) { R.advance(t, d * D); t.hunger = 0.85; }
+  const now = d * D; assert.equal(R.applyAction(t, { t: 'sellFish', id: 's' }, { now }).reason, 'UNHAPPY', 'no selling an unhappy animal');
+  const xp0 = t.xp ?? 0; R.advance(t, now + 6 * 3600e3); assert.ok(R.tankHealth(t, now + 6 * 3600e3).score >= 55 || (t.xp ?? 0) === xp0, 'unwell: time adds nothing');
+  const r = R.applyAction(t, { t: 'letGo', id: 's' }, { now: now + 7 * 3600e3 }); assert.ok(r.ok && !t.fish.some((f) => f.id === 's'), 'let go');
+  const ev = R.advance(t, now + 7 * 3600e3 + D + 60e3); assert.ok(ev.some((e) => e.postcard) && t.postcards[0].got && /Sea here/.test(t.postcards[0].text), 'a postcard came');
+  t.level = 4; assert.ok(!R.toysOpen(t).includes('cube')); t.level = 5; assert.ok(R.toysOpen(t).includes('cube') && R.toysOpen(t).includes('hoop') && !R.toysOpen(t).includes('light'));
+  for (let l = 2; l <= 8; l++) assert.equal(R.LEVEL_PRIZE[l].kind, l % 2 ? 'play' : 'animal', 'levels take turns: animal, then play');
+});

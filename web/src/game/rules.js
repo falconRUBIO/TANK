@@ -86,7 +86,7 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [6, 80], octopus: [6, 120], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
 export const LEVEL_AT = [0, 20, 54, 105, 170, 255, 360, 480];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
@@ -1167,13 +1167,25 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 // by playing with it (five goes and it knows it, and has a favorite). Who likes what follows the real animals: fish chase and nose things,
 // an octopus bats and grabs, a seahorse snaps at small drifting things and watches the rest with its eyes.
 export const TOYS = {
-  ball: { label: 'Ball', unlock: 0, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
+  ball: { label: 'Ball', unlock: 1, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
   bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them.', fits: ['fish', 'seahorse', 'octopus'] },
-  light: { label: 'Light spot', unlock: 8, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it.', fits: ['fish', 'octopus', 'seahorse'] },
+  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and over and twists the faces. Aquariums give octopuses puzzle toys like this to keep their minds busy.', fits: ['octopus'] },
+  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse swims over, curls its tail round the hoop and sways with it. Keepers give seahorses hitching posts and target toys to explore.', fits: ['seahorse'] },
+  light: { label: 'Light spot', unlock: 7, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it.', fits: ['fish', 'octopus', 'seahorse'] },
 };
 export const TOY_LEARN = 5;
 export const toyKind = (f) => (f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : 'fish');
-export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.toyPlays ?? 0) >= TOYS[k].unlock);
+export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >= TOYS[k].unlock);
+// What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
+export const LEVEL_PRIZE = {
+  2: { kind: 'animal', title: 'New fish', text: 'Gobies, guppies, grammas and platies can move in' },
+  3: { kind: 'play', title: 'Bubbles', text: 'A bubble stone for the Toy box. Fish chase them and seahorses snap at them' },
+  4: { kind: 'animal', title: 'Seahorses', text: 'Seahorses and angelfish can move in' },
+  5: { kind: 'play', title: 'Twist cube and hitching hoop', text: 'A puzzle cube for the octopus to turn over and twist, and a hoop for seahorses to curl their tails round' },
+  6: { kind: 'animal', title: 'Bettas and danios', text: 'Bettas, danios, and a second octopus can move in' },
+  7: { kind: 'play', title: 'Light spot', text: 'A spot of light to drag across the sand. The octopus stalks it and pounces' },
+  8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and send back to the ocean' },
+};
 export const favToy = (f) => { const e = Object.entries(f?.toys ?? {}).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 ? e[0] : null; };
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
 export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
@@ -1576,7 +1588,7 @@ function _advance(t, now = Date.now()) {
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
-    if (H0) guard('grow', () => { const H1 = tankHealth(t, now), mult = (H0.mult + H1.mult) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
+    if (H0) guard('grow', () => { const H1 = tankHealth(t, now), tm = (H) => (H.score < 55 ? 0 : H.mult), mult = (tm(H0) + tm(H1)) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
       if (H0.score >= 85 && H1.score >= 85) { const before = Math.floor((t.thriveSec ?? 0) / 86400); t.thriveSec = (t.thriveSec ?? 0) + Math.min(dt, 3 * DAY / 1000); const days = Math.floor(t.thriveSec / 86400);
         for (const k of [7, 30]) if (before < k && days >= k) { const st = nextPrize(t); if (st) ((t.flags.styles ||= {})[st[0]] ||= {})[st[1]] = true; ev.push({ journal: `${k} thriving days in all. The tank has earned a new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'}.`, toast: `${k} thriving days! A new ${st ? (st[0] === 'floor' ? 'floor' : 'backdrop') : 'look'} for the tank.` }); } } });      // thriving days add up (they need not be in a row), and are rewarded with a new look, nothing more
   }
@@ -1617,21 +1629,33 @@ function ageMilestones(t, now, ev) {
     for (const [d, pay] of AGE_REWARDS) { const key = 'age' + d; if (days < d || f.found.includes(key)) continue; f.found.push(key); t.shells += pay; ev.push({ journal: d === 30 ? `${f.name} is 30 days old. ${annivFacts(t, f)}`.trim() : `${f.name} is ${d} days old.`, anniv: d === 30 ? 30 : undefined, ...(d >= 30 ? { toast: `${f.name} is ${d} days old. +${pay} shells` } : {}), milestone: f.id }); }      /* (the small birthdays go in the journal; a month or more is worth a toast) */
   }
 }
+// A postcard from an animal that went back to the sea arrives a day later: where it is now and what it remembers. A keepsake, not a reward
+const CARD_LINES = {
+  turtle: (n) => `${n} here! The ocean is SO big. I found sea grass as far as I can swim, and I still remember the ledge where I used to nap. Thank you for raising me.`,
+  leave: (n, why) => `${n} here. I found a quiet reef${why ? ` with ${why}` : ''}, and I am feeling much better. I have not forgotten you, or the tank.`,
+  letgo: (n) => `${n} here. Thank you for letting me go when I needed to. The reef is kind, and I am happy again.`,
+};
+export function sendPostcard(t, f, kind, now, why = null) {
+  (t.postcards ||= []).push({ id: nextId(t, 'pc'), name: f.name, species: f.species, kind, at: now + DAY, text: (CARD_LINES[kind] ?? CARD_LINES.letgo)(f.name, why) });
+  if (t.postcards.length > 30) t.postcards.shift();
+}
+function postcards(t, now, ev) { for (const c of t.postcards ?? []) if (!c.got && now >= c.at) { c.got = now; ev.push({ journal: `A postcard came from ${c.name}: "${c.text}"`, toast: `A postcard from ${c.name}!`, postcard: c.id }); } }
 // an animal left miserable for three days asks to leave; put right what it is missing within two days and it stays, or it goes back to the sea
 function leaveRequests(t, now, ev) {
+  postcards(t, now, ev);
   const live = t.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped); if (live.length <= 1) return;
   if ((t.flags.tut ?? 0) < 5 || (t.level ?? 1) < 3 || now - (t.createdAt ?? now) < 7 * DAY || t.flags.noLeave) return;      // (a new tank is still learning: nobody asks to leave in the first week, or before level 3)
   for (const f of live) { let W; try { W = wellOf(t, f, now); } catch { continue; }
     if (W.score >= 55) { f.lowSince = null; if (f.leaveAsk) { f.leaveAsk = null; ev.push({ journal: `${f.name} is happier now, and has settled back in.`, toast: `${f.name} has decided to stay!`, hist: 'stay' }); } continue; }
     if (W.score < 40) f.lowSince ??= now;
-    if (f.leaveAsk && now >= f.leaveAsk.by) { t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id); ev.push({ journal: `${f.name} was too unhappy to stay, and went back to the sea.`, toast: `${f.name} left the tank. It was missing too much.`, released: f.id }); return; }
+    if (f.leaveAsk && now >= f.leaveAsk.by) { sendPostcard(t, f, 'leave', now, f.leaveAsk.why); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id); ev.push({ journal: `${f.name} was too unhappy to stay, and went back to the sea.`, toast: `${f.name} left the tank. It was missing too much.`, released: f.id }); return; }
     if (!f.leaveAsk && f.lowSince && now - f.lowSince > 3 * DAY) { const miss = (W.wants ?? []).filter((x) => !x.met && x.k !== 'food' && x.k !== 'play').map((x) => x.label.toLowerCase())[0];
-      f.leaveAsk = { at: now, by: now + 2 * DAY, why: miss ?? null }; ev.push({ journal: `${f.name} has been unhappy for days and is asking to leave${miss ? `: it is missing ${miss}` : ''}. Put it right within two days and it will stay.`, toast: `${f.name} is asking to leave! ${miss ? `It needs ${miss}.` : 'Check Health.'}`, warn: f.id }); } }
+      f.leaveAsk = { at: now, by: now + 3 * DAY, why: miss ?? null }; ev.push({ journal: `${f.name} has been unhappy for days and is asking to leave${miss ? `: it is missing ${miss}` : ''}. Nurse it back within three days, or let it go.`, toast: `${f.name} is asking to leave! ${miss ? `It needs ${miss}.` : 'Check Health.'}`, warn: f.id }); } }
 }
 function levelCheck(t, now, ev) {
   milestones(t, now, ev);
   const lv = levelFor(scoreOf(t, now));
-  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; ev.push({ journal: `Our tank reached level ${lv}.`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
+  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; ev.push({ journal: `Our tank reached level ${lv}.${LEVEL_PRIZE[lv] ? ` New: ${LEVEL_PRIZE[lv].title.toLowerCase()}.` : ''}`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
 }
 const nextId = (t, p) => p + (t.seq = (t.seq ?? 10) + 1);
 const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);
@@ -1768,7 +1792,7 @@ function wellLog(t, now) {
 }
 // how long a need has been missing, from the log: since the first entry of the unbroken run that has it missing
 export function missingSince(f, label) { const L = f.well ?? []; let at = null; for (let i = L.length - 1; i >= 0; i--) { if (L[i].miss.includes(label)) at = L[i].at; else break; } return at; }
-const AWAY_BLOCK = new Set(['observe', 'moment', 'feed', 'puzzle', 'hide', 'crab', 'sellFish', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
+const AWAY_BLOCK = new Set(['observe', 'moment', 'feed', 'puzzle', 'hide', 'crab', 'sellFish', 'letGo', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
 // what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
 const ADVR = { OHR, get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), ensureFish: (...x) => ensureFish(...x), pending: (...x) => pending(...x), capacity: (...x) => capacity(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
 function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
@@ -2107,6 +2131,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (!canSell(f, uid, members)) return fail('NOT_YOURS');
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       if (f.preg) return fail('EXPECTING');                          // a father carrying his brood stays until they are born
+      if (f.leaveAsk || f.lowSince) return fail('UNHAPPY');      /* an unhappy animal cannot be sold on: nurse it back first, or let it go */
       const pay = sellValue(f); t.fish.splice(t.fish.indexOf(f), 1); t.shells += pay; if (t.want?.fish === f.id) t.want = null;
       for (const o of t.fish) { const close = o.pal === f.id || o.buddy === f.id || o.mate === f.id || o.partner === f.id; unlink(o, f.id); if (close) o.loss = { id: f.id, name: f.name, at: now, until: now + 2 * DAY, place: o.spotId ?? null, rehomed: true }; }      // a friend that has gone to a new home is missed for a little while (not mourned: it is alive, elsewhere)
       const forOther = f.owner && f.owner !== uid && members?.some((m) => m.id === f.owner);      // the first caretaker selling someone else's fish says so
@@ -2114,13 +2139,20 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       events.push({ journal: forOther ? `${name} found ${f.name} a new home, for ${f.ownerName ?? 'its caretaker'}.` : `${name} found ${f.name} a new home.`, toast: pay ? `${f.name} went to a new home. +${pay} shells` : `${f.name} went to a new home.`, activity: { type: 'fish', text: `${name} sold ${f.name} to a new home.` }, released: f.id });
       return ok({ id: f.id, delta: pay });
     }
+    case 'letGo': {                                                // an animal that asked to leave is let go to the sea: no shells, and a postcard later
+      const f = t.fish.find((x) => x.id === a.id); if (!f || f.dead || !f.leaveAsk) return fail('NOT_FOUND');
+      if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
+      sendPostcard(t, f, 'letgo', now); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
+      events.push({ journal: `${name} let ${f.name} go back to the sea, where it can find what it was missing.`, toast: `${f.name} swam off to the sea.`, released: f.id, hist: 'released' });
+      return ok({ id: f.id });
+    }
     case 'releaseTurtle': {                                        // a grown sea turtle is let go to the ocean: its keepers are paid, a scute is left behind, and it may come back to visit
       const f = t.fish.find((x) => x.id === a.id); if (!f || !isTurtle(f) || f.dead) return fail('NOT_FOUND');
       if (!turtleReady(f, now)) return fail('NOT_READY');
       if (!canSell(f, uid, members)) return fail('NOT_YOURS');
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       let well = 70; try { well = wellOf(t, f, now).score; } catch { /* (a score is a bonus, not a gate) */ }
-      const pay = TURTLE_PAY + Math.max(0, Math.round((well - 60) * 1.25)); t.shells += pay; t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
+      const pay = TURTLE_PAY + Math.max(0, Math.round((well - 60) * 1.25)); t.shells += pay; sendPostcard(t, f, 'turtle', now); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
       (t.released ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift();
       (t.keeps ||= []).push({ id: nextId(t, 'k'), k: 'scute', by: f.id, byName: f.name, at: now, x: (hash32(now / 6e4) % 500) / 100 - 2.5, z: 1.6 });
       events.push({ journal: `${name} let ${f.name} go to the ocean. It swam up and out into open water, and left a little shell scute behind.`, toast: `${f.name} swam off to the ocean. +${pay} shells`, activity: { type: 'fish', text: `${name} released ${f.name} to the ocean.` }, released: f.id, hist: 'released' });
