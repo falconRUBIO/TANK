@@ -95,7 +95,7 @@ export class Fishes {
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
-        f = new Fish3D(sp, d.seed, { look: d.pal != null || d.kind ? { pal: d.pal ?? null, kind: d.kind ?? null } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
+        f = new Fish3D(sp, d.seed, { look: d.pal != null || d.kind ? { pal: d.pal ?? null, kind: d.kind ?? null } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05) * (KINDS[d.species]?.[d.kind]?.speed ?? 1), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
         f.fid = d.id; f.sk = d.species; f.baseScale = KINDS[d.species]?.[d.kind]?.scale ?? 1; f.setGrowth(f.growth ?? 1); f.nursery = d.nursery ?? null; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.cute = cute; f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
@@ -896,6 +896,10 @@ export class Fishes {
         f.mul = 1; if (al < 0.15) continue;
         if ((f.grazeGap = (f.grazeGap ?? 4 + this.rng() * 6) - dt) <= 0) { const rocks = (this.spots?.() ?? []).filter((q) => DECOR_DEF[q.type]?.cat === 'ROCKS'), rock = rocks.length && this.rng() < 0.35 ? rocks[(this.rng() * rocks.length) | 0].id : null;
           f.graze = { t: 6 + this.rng() * 5, rock, x: (this.rng() - 0.5) * 5, y: 4.5 + this.rng() * 6 }; this.onBehave?.(f, 'graze'); } }
+      else if (f.sk === 'octopus' && f.rec?.kind === 'cyanea' && !f.isNight) {      // a day octopus on the prowl sends waves of dark color over its skin to flush out prey
+        if ((f.flashT = (f.flashT ?? 4) - dt) <= 0) { f.flashT = 5 + this.rng() * 6; if ((f.vel?.length?.() ?? 0) > 0.2) f.flush = Math.max(f.flush ?? 0, 0.55); } }
+      else if (f.sk === 'octopus' && f.rec?.kind === 'bimac' && !f.inspect && !f.hunt && !f.keepCarry && Date.now() - (this.attnAt ?? 0) < 25e3) {      // a two-spot octopus comes to the front when someone is there, and watches them
+        if ((f.peekT = (f.peekT ?? 2) - dt) <= 0) { f.peekT = 14 + this.rng() * 10; f.inspect = { x: Math.max(-3, Math.min(3, f.pos.x * 0.6)), z: 2.0, toy: true }; f.thought = 'Came to the front to see you'; } }
       else if (f.sk === 'puffer') {      // a puffer that is startled blows itself up into a ball, holds it a few seconds, and slowly lets it go
         if (!(f.puffT > 0)) { for (const o of this.list) { if (o === f || o.dead) continue; const d = o.pos.distanceTo(f.pos), fast = (o.vel?.length?.() ?? 0) > 1.4; if (d < 1.1 && (fast || o.species?.move === 'jet' || SOCIAL[o.sk]?.bully)) { f.puffT = 4 + this.rng() * 2; this.onBehave?.(f, 'puff', o); break; } } }
         if (f.puffT > 0) f.puffT -= dt; const want = f.puffT > 0.8 ? 1 : 0; f.puffK = (f.puffK ?? 0) + (want - (f.puffK ?? 0)) * Math.min(1, dt * (want ? 6 : 0.8));

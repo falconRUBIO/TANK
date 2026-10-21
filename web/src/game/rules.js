@@ -25,13 +25,13 @@ export const SPECIES_DEF = {
 SPECIES_DEF.neongoby = { label: 'Neon Goby', price: 30, level: 2, wait: 60, count: 1, blurb: 'A tiny cleaner fish. It runs a cleaning station on a rock, and every fish it cleans counts it as a friend.', traits: ['Brave', 'Curious', 'Social'], speed: 0.9 };
 SPECIES_DEF.tang = { label: 'Blue Tang', price: 64, level: 4, wait: 120, count: 1, blurb: 'Grazes algae off the glass and rocks, so the glass needs wiping about 40% less often. Needs plenty of room.', traits: ['Playful', 'Brave', 'Curious'], speed: 1.25 };
 SPECIES_DEF.puffer = { label: 'Valentini Puffer', price: 58, level: 6, wait: 120, count: 1, blurb: 'Puffs up into a ball when startled and comes to the glass to watch you. Nips seahorses: keep them apart.', traits: ['Curious', 'Brave', 'Greedy'], speed: 0.75 };
-SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
+SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Four real kinds to choose from: yellow, lined, slender and dwarf. Each pairs only with its own kind.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
 SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A rescued green sea turtle hatchling. Raise it until it is strong, then return it to the sea.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
 SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. Raise it from a rescued hatchling and return it to the sea.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9 };
 SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 7, wait: 360, count: 1, blurb: 'A big-headed loggerhead hatchling with jaws that crack crabs and snails. Raise it from a rescued hatchling and return it to the sea.', traits: ['Brave', 'Greedy', 'Curious', 'Lazy'], speed: 0.8 };
 SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 7, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. Raise it from a rescued hatchling and return it to the sea.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05 };
 SPECIES_DEF.leatherback = { label: 'Leatherback', price: 0, level: 99, wait: 0, count: 1, blurb: 'The giant of the turtles, with a leathery shell instead of plates. Far too big to keep: it only ever passes by.', traits: ['Calm'], speed: 0.9, visitor: true, resident: false, minLevel: 8 };
-SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Clever, curious and always exploring.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
+SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Four real kinds to choose from: the clever common octopus, the bold day octopus, the gentle two-spot and the mimic. Each looks, sizes up and behaves differently.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
 SPECIES_DEF.sunangel = { label: 'Golden Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
@@ -222,10 +222,10 @@ export const KINDS = {
     erectus: { label: 'Lined Seahorse', sci: 'Hippocampus erectus', size: '12–17 cm', from: 'The western Atlantic, from Nova Scotia to Venezuela', pals: [0, 2, 4], scale: 1.05, hardy: true,
       temper: 'Bold and hardy', note: 'White lines run down its neck like pinstripes. Captive-bred lined seahorses are among the hardiest seahorses kept, and they learn to come to the glass for food.',
       breed: 'Pairs for life and greets its mate every morning with a little dance. Broods of 250 to 650.', care: 'Easiest seahorse to keep. Its own food lasts it longer between meals.' },
-    reidi: { label: 'Slender Seahorse', sci: 'Hippocampus reidi', size: '15–18 cm', from: 'Caribbean and Brazilian reefs and mangroves', pals: [1, 2, 3], scale: 1.08, shy: true, bigBrood: true,
+    reidi: { label: 'Slender Seahorse', sci: 'Hippocampus reidi', size: '15–18 cm', from: 'Caribbean and Brazilian reefs and mangroves', pals: [1, 2, 3], scale: 1.08, speed: 1.1, shy: true, bigBrood: true,
       temper: 'Shy and showy', note: 'Long and slim with a long snout, in bright red, orange or yellow, often freckled with white. It flashes brighter colors when courting.',
       breed: 'Famous for huge broods: a male can release over 1,000 young at once.', care: 'Hard. Stressed by busy tanks, so it wants more room and fewer tankmates.' },
-    zosterae: { label: 'Dwarf Seahorse', sci: 'Hippocampus zosterae', size: '2–2.5 cm', from: 'Seagrass meadows of Florida, the Bahamas and the Gulf of Mexico', pals: [0, 4, 3], scale: 0.5, dwarf: true,
+    zosterae: { label: 'Dwarf Seahorse', sci: 'Hippocampus zosterae', size: '2–2.5 cm', from: 'Seagrass meadows of Florida, the Bahamas and the Gulf of Mexico', pals: [0, 4, 3], scale: 0.5, speed: 0.6, dwarf: true,
       temper: 'Busy and tiny', note: 'One of the smallest seahorses in the world, and the slowest fish ever measured: about 1.5 meters an hour.',
       breed: 'Breeds fast: small broods of 3 to 55, about every 10 days in the warm season.', care: 'Moderate. Needs plenty of sea grass to hold on to, and lives only about a year.' },
   },
@@ -233,13 +233,13 @@ export const KINDS = {
     vulgaris: { label: 'Common Octopus', sci: 'Octopus vulgaris', size: '60–90 cm with arms', from: 'Warm and temperate seas worldwide', scale: 1,
       temper: 'Clever and curious', note: 'The octopus of the puzzle-jar videos. It opens screw lids, remembers faces, and changes color and skin texture in a fraction of a second.',
       breed: 'The female hangs up to 500,000 tiny eggs in strings from her den and guards them until they hatch, then her life ends. In the game she rests instead.', care: 'Hard. Escapes through any gap, and needs puzzles every day or two.' },
-    cyanea: { label: 'Day Octopus', sci: 'Octopus cyanea', size: '80–100 cm with arms', from: 'Indo-Pacific reefs, from Hawaii to East Africa', scale: 1.15, dayActive: true,
+    cyanea: { label: 'Day Octopus', sci: 'Octopus cyanea', size: '80–100 cm with arms', from: 'Indo-Pacific reefs, from Hawaii to East Africa', scale: 1.15, speed: 1.2, dayActive: true,
       temper: 'Bold daytime hunter', note: 'Unlike most octopuses it hunts by day, prowling the reef and flashing waves of color as it goes. Fish follow it to catch what it flushes out.',
       breed: 'Lays up to 700,000 eggs in a den and guards them for about a month.', care: 'Hard. Big and restless: it needs more room than any other kind.' },
-    bimac: { label: 'Two-Spot Octopus', sci: 'Octopus bimaculoides', size: '30–40 cm with arms', from: 'The Pacific coast of California and Mexico', scale: 0.8, friendly: true,
+    bimac: { label: 'Two-Spot Octopus', sci: 'Octopus bimaculoides', size: '30–40 cm with arms', from: 'The Pacific coast of California and Mexico', scale: 0.8, speed: 0.9, friendly: true,
       temper: 'Gentle and friendly', note: 'Named for the two bright blue eyespots under its eyes, which can flicker like a warning. One of the calmest octopuses and the friendliest with its keepers.',
       breed: 'Lays a few hundred large eggs; the babies hatch big enough to crawl straight to the bottom.', care: 'The best octopus for a home tank. Bonds quickly and rarely tries to escape.' },
-    mimic: { label: 'Mimic Octopus', sci: 'Thaumoctopus mimicus', size: '50–60 cm with arms', from: 'Sandy river mouths of Indonesia and the Philippines', scale: 0.9, mimic: true,
+    mimic: { label: 'Mimic Octopus', sci: 'Thaumoctopus mimicus', size: '50–60 cm with arms', from: 'Sandy river mouths of Indonesia and the Philippines', scale: 0.9, speed: 1.05, mimic: true,
       temper: 'A master of disguise', note: 'Banded brown and white, it impersonates other animals: a lionfish, a flatfish, a sea snake. It picks the impression to scare whoever is watching.',
       breed: 'Little is known about its breeding in the wild. It was only discovered in 1998.', care: 'Hard. Rarely kept: it needs a big sandy floor to burrow in.' },
   },

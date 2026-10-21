@@ -777,11 +777,11 @@ const octopus = {
     return m; },
   make0(seed = 1, look = null) {
     const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
-    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null;
+    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null, ARM = { mimic: [1.45, 0.62], bimac: [0.85, 1.05], cyanea: [1.12, 1.12] }[KND] ?? [1, 1]; for (const a of arms) a.L *= ARM[0];      // the mimic is all long slender arms on a small body; the two-spot is compact; the day octopus heavy-armed
     // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its center line (so it can be re-posed)
     const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
     arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
-      const t = k / 90, rad = OCT.rad0 + (OCT.rad1 - OCT.rad0) * t, R = Math.ceil(rad); octoPose(a, t, REST, P);
+      const t = k / 90, rad = (OCT.rad0 + (OCT.rad1 - OCT.rad0) * t) * ARM[1], R = Math.ceil(rad); octoPose(a, t, REST, P);
       for (let dx = -R; dx <= R; dx++) for (let dy = -R; dy <= R; dy++) for (let dz = -R; dz <= R; dz++) {
         const x = Math.round(P[0]) + dx, y = Math.round(P[1]) + dy, z = Math.round(P[2]) + dz, d = Math.hypot(x - P[0], y - P[1], z - P[2]);
         if (d > rad) continue; const key = x + ',' + y + ',' + z, q = d / rad, old = armV.get(key);

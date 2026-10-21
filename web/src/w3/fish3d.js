@@ -444,7 +444,11 @@ export class Fish3D {
     const opts = [['flat', 0.06 * (0.6 + cur)], ['bury', onSand && this.restFor > 5 ? 0.06 : 0], ['lion', 0.05 * (0.5 + bold)], ['snake', 0.05], ['jelly', 0.05], ['kelp', plant ? 0.1 : 0], ['follow', fish.length ? 0.1 * (0.5 + soc) : 0], ['watch', fish.length ? 0.1 : 0], ['tour', 0.15 * (0.5 + bold)], ['grab', things.length ? 0.09 * (0.5 + cur) : 0], ['pounce', lair.length && !(this.scared > 0) ? 0.07 * (0.5 + cur) * (this.profile?.mood === 'Hungry' ? 2 : 1) : 0], ['tall', foe ? 0.25 * (0.6 + bold) : 0]];
     { const T = this.temper(), sig = this.signature(), watched = (this.audience ?? 0) > 0; if (watched && T && (this.squirtCool ?? 0) <= 0) opts.push(['squirt', 0.035 * T.squirt]);
       for (const o of opts) o[1] *= (T?.[o[0]] ?? 1) * (o[0] === sig ? 2.2 : 1) * (watched && (o[0] === 'lion' || o[0] === 'jelly') && this.mind?.type === 'showoff' ? 1.6 : 1); }      // its nature decides what it likes doing, and an audience brings out the show-off
-    { const kd = this.rec?.kind; if (kd === 'mimic') for (const o of opts) if (['lion', 'snake', 'flat', 'jelly', 'bury'].includes(o[0])) o[1] *= 3; }      // a mimic octopus is a master of disguise: impressions are what it does
+    { const KW = { mimic: { lion: 3, snake: 3, flat: 3, jelly: 2.5, bury: 3, tour: 0.6, kelp: 0.5, grab: 0.7 },      // a mimic is a master of disguise that keeps to the sand
+        cyanea: { tour: this.isNight ? 0.4 : 2.4, pounce: 1.8, grab: 1.3, follow: 1.3, flat: 0.6, bury: 0.5 },      // a day octopus prowls and hunts in the open in daylight, flashing color as it goes
+        bimac: { watch: 2.2, squirt: 0.25, tall: 0.4, lion: 0.5, snake: 0.5, tour: 0.8 },      // a two-spot is gentle and watchful: it sits and looks rather than threatens
+        vulgaris: { grab: 1.5, pounce: 1.2 } }[this.rec?.kind ?? 'vulgaris'];      // a common octopus handles everything it finds
+      if (KW) for (const o of opts) o[1] *= KW[o[0]] ?? 1; }
     // and what is going on decides too: it does not do the same thing twice running; calm by a plant it turns into one; a mimic is a defence, so it puts one on
     // when something has unsettled it (or someone is watching); hungry, it goes looking round the tank; curious with fish about, it watches them
     { const calm = (this.annoyT ?? 0) <= 0 && !(this.scared > 0), hungry = this.profile?.mood === 'Hungry', R0 = this.recent ?? [];
