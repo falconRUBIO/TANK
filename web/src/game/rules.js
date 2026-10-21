@@ -1360,7 +1360,7 @@ export function socialOf(t, f) {
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.12; out.notes.push(`${f.name} keeps a wary eye on ${o.name}.`); }
     if (S.likes?.includes(o.species) && !out.good.some((g) => g.id === o.id)) out.good.push({ id: o.id, text: `${f.name} enjoys ${o.name}'s company.` });
   }
-  if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = [...new Set(t.fish.filter((o) => o !== f && !o.dead && ECO[o.species]?.feed === 'fast').map((o) => SPECIES_DEF[o.species]?.label ?? o.species))]; if (fast.length) { out.penalty += Math.min(0.2, 0.07 * fast.length); out.notes.push(`${fast.slice(0, 2).join(' and ')} eat quickly and beat ${f.name} to the food.`); } }
+  if (E.feed === 'slow' && f.species !== 'seahorse' && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = [...new Set(t.fish.filter((o) => o !== f && !o.dead && ECO[o.species]?.feed === 'fast').map((o) => SPECIES_DEF[o.species]?.label ?? o.species))]; if (fast.length) { out.penalty += Math.min(0.2, 0.07 * fast.length); out.notes.push(`${fast.slice(0, 2).join(' and ')} eat quickly and beat ${f.name} to the food.`); } }
   if (E.tol && cr.r > E.tol) { out.penalty += Math.min(0.3, (cr.r - E.tol) * 0.8); out.notes.push(`The tank is too crowded for ${f.name} (${cr.n} of ${cr.cap}).`); }
   const own = t.fish.filter((o) => o.species === f.species).length;
   if (S.shoal && own < S.shoal) out.needs.push(`${f.name} feels safest with at least ${S.shoal} of its own kind (${own} now).`);
@@ -1411,7 +1411,8 @@ export function wellOf(t, f, now = Date.now()) {
   const wants = needsChecklist(t, f, now).filter((x) => x.k !== 'food');
   // one number for how well it is: its own needs met (40), getting along (25; shelter of its own kind halves the hurt), space for its kind (10),
   // fed (15) and in good health (10). The mood word follows the number, so an animal missing something never reads the same as one that has it all
-  const met = wants.filter((x) => x.met).length, needP = wants.length ? (32 * met) / wants.length : 32, hurt = trouble.reduce((a, x) => a + ({ bully: 12, clash: 10, squabble: 10, rival: 6, food: 6, wary: 3 }[x.kind] ?? 4), 0) * (cv.have >= cv.need ? 0.5 : 1);
+  const scored = wants.filter((x) => !(x.k === 'slow' && ownHungry(f))), met0 = scored.filter((x) => x.met).length, needP = scored.length ? (32 * met0) / scored.length : 32, met = wants.filter((x) => x.met).length,      /* (its own food is scored once, under Fed, not again as a need) */
+  hurt = trouble.reduce((a, x) => a + ({ bully: 12, clash: 10, squabble: 10, rival: 6, food: 6, wary: 3 }[x.kind] ?? 4), 0) * (cv.have >= cv.need ? 0.5 : 1);
   const score = Math.max(0, Math.min(100, Math.round(needP + Math.max(0, 20 - hurt) + (crowd.over ? 0 : 10) + 28 * Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35)) +      /* (a hungry animal is not a happy one: fed counts for more, and it falls away as the meal goes overdue) */ (bad ? 0 : 10) - (lonely ? 12 : 0))));
   const fedK = Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35));
   // where each point goes, so the card can say exactly what is holding it back (largest loss first)
