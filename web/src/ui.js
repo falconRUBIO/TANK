@@ -1,7 +1,7 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { morphOdds } from './game/genes.js';
-import { LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
+import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
@@ -600,11 +600,15 @@ export function initUI({ game, social, cb }) {
     const worst = W.filter(([, w]) => w.score < 75).slice(0, 3).map(([f, w]) => row(fishIcon(f), esc(f.name), w.score, w.mood[2], 'healthopen')).join('');
     const days = Math.floor((s.thriveSec ?? 0) / 86400), goalD = days < 7 ? 7 : days < 30 ? 30 : null;
     const cards = (s.postcards ?? []).filter((c) => c.got).slice(-2).reverse().map((c) => `<div class="tc-card"><i class="tc-ic">${msIcon(c.kind === 'turtle' ? 'turtle' : 'postcard', true, 20)}</i><span><small>POSTCARD FROM ${esc(c.name.toUpperCase())}</small><p>“${esc(c.text)}”</p></span></div>`).join('');
+    const st = bestStep(s, now), eta = levelEta(s, now), goal = LEVEL_PRIZE[lv + 1];
+    const stepHtml = `<button class="tc-step ${st.urgent ? 'urgent' : ''}" ${st.fid ? `data-wellopen="${esc(st.fid)}"` : `data-act="${st.act}"`}><small>${st.urgent ? 'DO THIS FIRST' : 'BEST NEXT STEP'}</small><b>${esc(st.title)}</b><span>${esc(st.why)}</span>${st.gain > 0 ? `<em>+${st.gain} health</em>` : ''}<i>›</i></button>`;
+    const objective = goal ? `<div class="tc-goal"><small>YOUR OBJECTIVE</small><b>Reach level ${lv + 1}: ${esc(goal.title)}</b><span>${eta ? `About ${eta} day${eta === 1 ? '' : 's'} at this health${H.mult < 1.5 ? `, sooner if it is Thriving` : ''}` : ''}</span></div>` : `<div class="tc-goal"><small>YOUR OBJECTIVE</small><b>Keep the tank thriving</b><span>Every level is open. Thriving days unlock new looks.</span></div>`;
     const say = { good: 'Your animals are thriving and the tank is spotless.', ok: 'Healthy and happy. A little more care makes it thrive.', warn: 'Some things need you. See below for what helps most.', bad: 'The tank is unwell. Care for it now: growth is paused.' }[cls];
     return `<div class="tchart">
       <div class="tc-hero ${cls}">${ring(H.score, cls, 96)}<div><small>TANK HEALTH</small><b>${H.word}</b><p>${say}</p><span class="tc-pace">${pace[0]} <em>${pace[1]}</em></span></div></div>
+      ${objective}${stepHtml}
       <div class="tc-how"><span>${msIcon('feed', true, 18)}<b>Care</b></span><i>→</i><span>${msIcon('wish', true, 18)}<b>Health</b></span><i>→</i><span>${msIcon('bolt', true, 18)}<b>Levels</b></span><p>Feed, clean, play and wipe the glass. A healthier tank levels up faster, and every level opens something new.</p></div>
-      ${asks}
+      ${st.urgent ? asks.split('</button>').slice(1).join('</button>') : asks}
       <div class="tc-level"><div class="tc-lh"><b>Level ${lv}</b><span>${b ? `${left} point${left === 1 ? '' : 's'} to level ${lv + 1}` : 'Top level'}</span></div><div class="tc-bar ${cls}"><i style="width:${pct}%"></i></div><ol class="tc-road">${road}</ol>${nextCard}</div>
       <h4 class="tc-h">What makes the health</h4>
       ${row(fishIcon(W[0]?.[0] ?? {}), 'Animals · 60%', H.animals, W.length ? `${W.filter(([, w]) => w.score >= 75).length} of ${W.length} happy · fed, company, space, a home` : 'No animals yet', 'healthopen')}

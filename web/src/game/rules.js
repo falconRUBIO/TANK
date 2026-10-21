@@ -184,6 +184,27 @@ export function tankHealth(t, now = Date.now()) {
   return { score, word: b[1], mult: b[2], animals: Math.round(animals), tank: Math.round(cond) };
 }
 // what each kind of care is worth toward the level (before the health multiplier)
+// The best next step for the Tank chart: each fix is tried on a copy of the tank and the one that lifts Tank Health most is offered first.
+// An animal asking to leave always comes first; with nothing to fix, playing is the step (it still earns care points)
+export function bestStep(t, now = Date.now()) {
+  const H = tankHealth(t, now), live = t.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped), out = [];
+  const ask = live.find((f) => f.leaveAsk); if (ask) return { act: 'wellopen', fid: ask.id, title: `Help ${ask.name}`, why: ask.leaveAsk.why ? `It is missing ${ask.leaveAsk.why} and wants to leave.` : 'It is unhappy and wants to leave.', gain: null, urgent: true };
+  const tryFix = (fn) => { try { const c = structuredClone(t); fn(c); return tankHealth(c, now).score - H.score; } catch { return 0; } };
+  const n = needs(t);
+  if (n.includes('feed')) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry animals pull the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
+  if (n.includes('water')) out.push({ act: 'water', title: 'Change the water', why: 'Old water makes up a big part of the tank score.', gain: tryFix((c) => applyAction(c, { t: 'water' }, { now })) });
+  if (n.includes('glass')) out.push({ act: 'clean', title: 'Wipe the glass', why: 'A clear view keeps the tank score up.', gain: tryFix((c) => applyAction(c, { t: 'glass' }, { now })) });
+  let cared = t; try { cared = structuredClone(t); for (const k of ['feed', 'water', 'glass']) applyAction(cared, { t: k }, { now }); } catch { cared = t; }      /* (judge each animal as it would be once fed and cleaned, so hunger is not counted twice) */
+  let worst = null; for (const f of cared.fish.filter((x) => live.some((y) => y.id === x.id))) { try { const w = wellOf(cared, f, now); if (w.score < 75 && (!worst || w.score < worst[1].score)) worst = [f, w]; } catch { /* */ } }
+  if (worst) { const miss = (worst[1].wants ?? []).find((x) => !x.met && x.k !== 'food'); out.push({ act: 'wellopen', fid: worst[0].id, title: `Help ${worst[0].name}`, why: miss ? `${worst[0].name} needs ${miss.label.toLowerCase()}.` : `${worst[0].name} could be happier.`, gain: Math.max(1, Math.round((75 - worst[1].score) * 0.6 / Math.max(1, live.length))) }); }
+  out.sort((x, y) => (x.act === 'feed') - (y.act === 'feed') ? (y.act === 'feed') - (x.act === 'feed') : (y.gain ?? 0) - (x.gain ?? 0));      /* (hungry animals are fed first, whatever the numbers say) */
+  return out[0] ?? { act: 'nowcare', title: 'Play with them', why: 'Everything is looked after. Play still earns care points and keeps them happy.', gain: null };
+}
+// About how many days to the next level at the current health: passive growth plus a usual day of care
+export function levelEta(t, now = Date.now()) {
+  const lv = t.level ?? 1, b = LEVEL_AT[lv]; if (!b) return null; const left = b - scoreOf(t, now), H = tankHealth(t, now);
+  const perDay = (H.score < 55 ? 0 : 24 * XP_PER_HOUR * H.mult) + 7 * Math.max(0.25, H.mult); return Math.max(1, Math.ceil(left / perDay));
+}
 export const CARE_XP = { feed: 1, crab: 1, glass: 2, water: 3, pet: 1, play: 1, puzzle: 2, trim: 1, train: 1 };
 // most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
 export const XP_PER_HOUR = 0.6;
