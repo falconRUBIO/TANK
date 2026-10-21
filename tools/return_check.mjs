@@ -16,7 +16,7 @@ await B.waitForSelector('.pvt, #cd, #nm', { timeout: 90000 }); if (!(await B.$('
 await B.waitForSelector('#nm', { timeout: 90000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
 for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.evaluate(() => document.querySelector('#modal.on #mok').click()); break; } else if (t) await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
 await B.waitForTimeout(2500);
-const bp = B.context(); await B.close(); await A.waitForTimeout(3000);
+const ben = await B.evaluate(() => window.__game.you.userId); const bp = B.context(); await B.close(); await A.waitForTimeout(3000);
 // while Ben is away: routine care by Ana, and a new fish for the tank
 await A.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'feed', x: 0 }); await g.dispatch({ t: 'glass' }); g.state.shells = Math.max(g.state.shells, 60); });
 const buy = await A.evaluate(async () => window.__game.dispatch({ t: 'buyFish', species: 'goldfish', name: 'Pip', seed: 7, rush: true })); await A.waitForTimeout(4000);
