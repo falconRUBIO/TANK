@@ -454,7 +454,7 @@ async function greetVisitor(f) {
 let cardOpen = null;                                                     // which fish's card is expanded; a card opens folded, showing the fish above it
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
-  if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek'); $('fishpill').hidden = true;
+  if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek', 'playing'); $('fishpill').hidden = true;      // the card gets right out of the way while you play: nothing between your finger and the fish
   $('pet').disabled = true; $('pet').textContent = `${f.name} is watching your finger…`; ui.toast(`Drag your finger along the glass`, 3000);
 }
 function playPoint(ev) {
@@ -465,19 +465,21 @@ function playPoint(ev) {
 // The card stays tucked away while there is any touching going on, and only opens again once the finger has been still for a moment.
 let lastTouch = 0;
 for (const ev of ['pointerdown', 'pointermove', 'pointerup']) addEventListener(ev, () => { lastTouch = performance.now(); }, true);
-function reopenWhenIdle(f, tries = 0) {
+addEventListener('pointerup', () => { if (play && play.moved > 0.5) finishPlay(true); });      // finger lifted after playing: the game ends there and the card comes straight back
+function reopenWhenIdle(f, tries = 0, now = false) {
+  card.classList.remove('playing'); if (now && !play && focus === f) { showCard(f); return; }
   if (play || focus !== f) { if (focus !== f) card.classList.remove('peek'); return; }
   if (performance.now() - lastTouch > 1600 || tries > 30) { showCard(f); return; }
   setTimeout(() => reopenWhenIdle(f, tries + 1), 400);
 }
-async function finishPlay() {
+async function finishPlay(lifted = false) {
   const { fish: f, moved } = play; play = null; f.mul = 0.35; f.glassAt = null; if ($('pet')) { $('pet').disabled = false; $('pet').textContent = f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`; }
-  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); reopenWhenIdle(f); return; }
-  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f); return fail(r); }
-  if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); reopenWhenIdle(f); return; }
+  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); reopenWhenIdle(f, 0, lifted); return; }
+  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f, 0, lifted); return fail(r); }
+  if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); reopenWhenIdle(f, 0, lifted); return; }
   fishes.burst(f.pos); sfx('arrive'); haptic(10); f.vigor = Math.max(f.vigor, 1.1);
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
-  reopenWhenIdle(f);
+  reopenWhenIdle(f, 0, lifted);
 }
 // postcard: the clean tank frame with a one-line caption about something that really happened, ready to send to a friend
 const HIGHLIGHT = /hatch|grew|grow|adult|learned|puzzle|jar|worked out|perfect|level|friends|first|visiting|birthday|days old|week/i;
@@ -806,12 +808,16 @@ function eggSniff(egg) {
 }
 // ── gifts: a fish given as a surprise waits wrapped in a gift bag on the sand until its friend opens it ──
 const giftBags = new Map(); let giftToldAt = 0;
+// a gift bag goes front and center on the sand, where it cannot be missed: the middle of the front floor, or the nearest clear spot beside it
+function giftSpot(taken, h) { const sp = decor.spots(), z = 1.95; for (const dx of [0, -0.75, 0.75, -1.5, 1.5, -2.2, 2.2]) { const x = dx + ((h % 7) - 3) * 0.04; if (sp.some((q) => Math.hypot(q.x - x, q.z - z) < 0.9) || taken.some((q) => q && Math.hypot(q.x - x, q.z - z) < 0.8)) continue; return { x, z }; } return { x: 0, z: 2.15 }; }
 function giftSync(s) {
   const want = new Map(); for (const f of s.fish ?? []) if (f.gift?.wrapped) { const g = want.get(f.gift.id) ?? { gift: f.gift, owner: f.owner, ownerName: f.ownerName, ids: [] }; g.ids.push(f.id); want.set(f.gift.id, g); }
   for (const [id, g] of want) { let b = giftBags.get(id);
-    if (!b) { const h = hashId(id), at = eggSpot(decor.spots(), (k) => decor.reach(k), h + 3, [...eggSprites.values(), ...giftBags.values()].map((x) => x.at)); b = { ...g, at, floor: s.style?.floor ?? 'sand', bag: makeGiftBag(ribbonOf(g.gift.fromId ?? g.gift.from), s.style?.floor ?? 'sand') }; b.bag.group.position.set(at.x, sandH(at.x, at.z), at.z); b.bag.group.rotation.y = ((h % 60) - 30) / 100; scene.add(b.bag.group); giftBags.set(id, b); }
+    if (!b) { const h = hashId(id), at = giftSpot([...eggSprites.values(), ...giftBags.values()].map((x) => x.at), h); b = { ...g, at, floor: s.style?.floor ?? 'sand', bag: makeGiftBag(ribbonOf(g.gift.fromId ?? g.gift.from), s.style?.floor ?? 'sand') }; b.bag.group.position.set(at.x, sandH(at.x, at.z), at.z); b.bag.group.rotation.y = ((h % 60) - 30) / 100; scene.add(b.bag.group); giftBags.set(id, b); }
     else { Object.assign(b, g); if (b.floor !== (s.style?.floor ?? 'sand') && !b.bag.opening) { const pos = b.bag.group.position.clone(), ry = b.bag.group.rotation.y; scene.remove(b.bag.group); b.bag.dispose(); b.floor = s.style?.floor ?? 'sand'; b.bag = makeGiftBag(ribbonOf(g.gift.fromId ?? g.gift.from), b.floor); b.bag.group.position.copy(pos); b.bag.group.rotation.y = ry; scene.add(b.bag.group); } } }      // the floor was restyled: new paper to stand out on it
   for (const [id, b] of [...giftBags]) if (!want.has(id) && !b.bag.opening) { scene.remove(b.bag.group); b.bag.dispose(); giftBags.delete(id); }      // opened on another phone, or gone
+  for (const b of giftBags.values()) if (!b.told && !b.bag.opening) { b.told = true; if (Date.now() - (b.gift.at ?? 0) < 3 * 60e3) {      // it has only just come: everyone looking is told, with a burst of bubbles round the bag so nobody misses it
+      const p = b.bag.group.position.clone(); setTimeout(() => { sfx('arrive'); haptic(20); for (let i = 0; i < 5; i++) setTimeout(() => fishes.burst(p.clone().add(new THREE.Vector3(0, 0.3 + i * 0.2, 0))), i * 160); moment({ at: p }); ui?.toast(b.owner === game.you?.userId ? `Your gift from ${b.gift.from} just arrived! It's on the sand at the front.` : `A gift from ${b.gift.from} for ${b.ownerName ?? 'a friend'} just arrived, at the front of the tank.`, 5200); }, 700); b.fresh = true; } }
   const mine = [...giftBags.values()].find((b) => b.owner === game.you?.userId && !b.bag.opening);
   if (mine && Date.now() - giftToldAt > 10 * 60e3 && s.flags?.tut >= 5) { giftToldAt = Date.now(); setTimeout(() => ui?.toast(`A gift from ${mine.gift.from} is waiting for you. Tap the gift bag to open it.`, 4200), 1800); }
 }
