@@ -5,7 +5,7 @@ import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, miss
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
-import { SCORE_W, SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, PERFECT_DAY_REWARD, STYLE_PRICE, styleOwned } from './game/rules.js';
+import { SCORE_W, SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
 import { decorThumb, fishThumb } from './w3/thumbs.js';
 import { sfx, haptic, setSound, soundOn, setMusic, musicOn } from './audio.js';
@@ -110,7 +110,7 @@ export function initUI({ game, social, cb }) {
     questBar(s); bell();
     const g = goalText(); if ($('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
-    { const me = game.you?.userId, due = (s.dilemma && !s.dilemma.done) || s.hunger > 0.55 || s.water < 0.5 || s.glass < 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
+    { const me = game.you?.userId, due = (s.dilemma && !s.dilemma.done) || s.hunger > 0.55 || s.water < 0.5 || s.glass > 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
     // (a new Field Guide page counts on the Today icon until it is looked at)
   }
   // the tank's goal, always in view: what it is, the next step and how far along (a choice waiting when there is none)
@@ -159,7 +159,6 @@ export function initUI({ game, social, cb }) {
   // what would take the tank to its next level, soonest first: the things it can do now, with what each is worth
   const lvWays = (s) => { const W = SCORE_W, out = [], N = Object.keys(FIELD).length, seen = Object.keys(s.field ?? {}).length, g = goalOf(s), kinds = new Set(s.fish.filter((f) => !f.dead).map((f) => f.species)).size;
     if (g) out.push([`Finish “${g.title}”`, W.goal]); else if ((s.goalOffer ?? []).length) out.push(['Pick a goal and finish it', W.goal]);
-    if (seen < N) out.push(['Discover a Field Guide page', W.field]);
     if (s.fish.some((f) => !f.dead && stageOf(f) !== 'adult')) out.push(['Raise a young one to grown-up', W.grown]);
     if (kinds < Object.keys(SPECIES_DEF).length) out.push(['Bring in a new kind of animal', W.species]);
     out.push(['Look after the tank all day', W.care]); return out; };
@@ -679,9 +678,9 @@ export function initUI({ game, social, cb }) {
     // ── the Tank chart: how healthy the tank is (the heart of the game), how fast that grows it, what the next level brings, and what to do about it
     chart: () => '',
     notices: () => { if (nsub === 'guide') { try { localStorage.setItem('ourtank.fieldSeen', String(Object.keys(S().field ?? {}).length)); } catch { /* storage unavailable */ } }
-      const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Field Guide']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
-      // the Field Guide sits beside Today: everything about your own tank in one place (Crew is for people)
-      if (nsub === 'guide') return `<div class="crew"><h3>Field Guide</h3>${seg}<p class="todaysub">The remarkable things your animals do. Each page fills the first time someone sees it.</p>${fieldHtml()}${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${bookHtml()}</div>`;
+      const name = esc(game.tankName ?? 'Your tank'), fn = fieldNew(), seg = `<div class="seg">${[['today', 'Today'], ['guide', 'Collection']].map(([k, l]) => `<button class="${nsub === k ? 'on' : ''}" data-nsub="${k}">${l}${k === 'guide' && fn ? ' <i class="nc">new</i>' : ''}</button>`).join('')}</div>`;
+      // the Collection sits beside Today: goals, colors and families of your own tank in one place (Crew is for people). The Field Guide is retired; old pages stay in the save
+      if (nsub === 'guide') return `<div class="crew"><h3>Collection</h3>${seg}<p class="todaysub">Goals, rare colors and the families raised in this tank.</p>${goalsHtml()}${morphHtml()}${familyHtml()}${shownHtml()}${bookHtml()}</div>`;
       return `<div class="crew"><h3>${name}</h3>${chartHtml()}${awayHtml()}${careHtml()}${happenHtml()}${goalCard() ? `<h4 class="ntsh">Your goal</h4>${goalCard()}` : ''}<h4 class="ntsh">Today's news</h4><div class="jl nts">${noticesHtml(true)}</div></div>`; },
     decorate: () => `<div class="crew shop2"><h3>Shop</h3><p class="todaysub">You have ${S().shells} shells. New things open as your tank levels up.</p><div class="shophead"><div class="cats">${[...CATS, 'THEMES'].filter((c) => adv() || (c !== 'FLOOR' && c !== 'BACKDROP')).map((c) => `<button class="cat ${c === cat ? 'on' : ''}" data-cat="${c}">${c === 'FISH' ? 'Sea life' : c[0] + c.slice(1).toLowerCase()}${c === 'NEW' && newCount() ? ` <i class="nc">${newCount()}</i>` : ''}</button>`).join('')}</div></div>
       ${cat === 'THEMES' ? themesPage() : `<div class="cards">${shopCards()}</div>`}${shopDetail()}<div class="shopfoot"><button class="lnk ${rearrange ? 'on' : ''}" id="rearr">${rearrange ? 'Tap a decoration to move or take it out · Done' : 'Move or take out decorations'}</button></div></div>`,

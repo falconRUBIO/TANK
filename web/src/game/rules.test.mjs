@@ -449,7 +449,7 @@ ok('looks are bought once with shells and then kept; free ones stay free; a tank
   const poor = go({ backdrop: 'sunset', floor: 'black' }); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(t.style.backdrop, 'candy', 'nothing changed'); assert.equal(t.shells, 10);
   assert.equal(go({ floor: 'nonsense' }).ok, false);
   const old = R.newWorld(0); old.style = { floor: 'black', backdrop: 'lagoon' }; delete old.flags.styles; R.norm(old, 0); assert.ok(R.styleOwned(old, 'floor', 'black') && R.styleOwned(old, 'backdrop', 'lagoon'), 'an old tank keeps its look');
-  assert.equal(R.PERFECT_DAY_REWARD, 3);
+  assert.equal(R.PERFECT_DAY_REWARD, undefined, 'a perfect day is celebrated, not paid');
 });
 ok('hide a treat: it costs shells, the octopus searches spot by spot, learns each caretaker\'s favorite places, and can be fooled by a new one', () => {
   const D = 864e5, t = quiet(2); t.level = 8; t.shells = 200; const oc = t.fish[0]; oc.species = 'octopus'; oc.born = -5 * D; oc.stage = 'adult';

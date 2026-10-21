@@ -978,14 +978,7 @@ export const FIELD = {
   seabirth: { label: 'A seahorse birth', who: 'seahorse', hint: 'Seahorse fathers carry the young. Be there when they are born.' },
 };
 export const FIELD_PAY = 0;      // (a page is its own reward: the photo, and the page filled in; the economy stays as it is)
-function witness(t, id, f, now, ev, by = null, line = null) {
-  return false;      // (the Field Guide is retired: the tank's health is what the game is about now)
-  const F = (t.field ||= {}); if (!FIELD[id] || F[id]) return false;
-  const who = FIELD[id].who; if (f && who !== 'any' && (who === 'fish' ? isOcto(f) || f.species === 'seahorse' : f.species !== who)) return false;      /* (a page is only filled by the kind of animal it is about) */
-  if (by === 'You') by = null;      // (alone in the tank: no need to say who)
-  F[id] = { at: now, fish: f?.id ?? null, name: f?.name ?? null, by, text: line }; const n = Object.keys(F).length, N = Object.keys(FIELD).length;
-  ev.push({ journal: `Field Guide, page ${n} of ${N}: ${FIELD[id].label}.${by ? ` Seen first by ${by}.` : ''}`, toast: `New in the Field Guide: ${FIELD[id].label}!`, field: id }); return true;
-}
+function witness() { return false; }      // (the Field Guide is retired: the tank's health is what the game is about now. The moment's own journal line is still written by its caller)
 // ── The daily mystery ── one small thing in the tank each day, there to be found: a glint, a trail of bubbles, tracks across the sand. Tapping
 // it plays it out, and what it turns out to be differs from one day to the next; now and then it is not over, and tomorrow there is more.
 // Nothing is owed and nothing is lost if it is missed: it is simply gone the next day (no streak, no reward to chase).
@@ -1574,9 +1567,8 @@ function rollDaily(t, now) {
   t.daily = { day, kind: pick, tier: DAILY[pick].tier, reward: DAILY_TIER[DAILY[pick].tier], text: DAILY[pick].text, need: DAILY[pick].need, have: 0, ids: [], done: false };
 }
 // ── a day's care, at a glance ──
-// Three small things every day: the tank is looked after, today's wish is done, and a fish got some attention. All three pays a small bonus once.
+// Three small things every day: the tank is looked after, today's wish is done, and a fish got some attention. All three marks a perfect day: it is celebrated on the card, never paid (no reward means no pressure).
 // It is per tank-day (UTC, like the daily wish), shared by everyone, and missing it costs nothing: there is no streak.
-export const PERFECT_DAY_REWARD = 3;
 export const lookedAfter = (t) => t.fish.length > 0 && (t.hunger <= 0.45 || !t.fish.some((f) => !isOcto(f))) && t.water >= 0.7 && t.glass <= 0.45;      // the tank itself; each octopus is its own caretaker's job and pays on its own
 export function dayLogOf(t, now) { const day = Math.floor(now / DAY); if (!t.dayLog || t.dayLog.day !== day) t.dayLog = { day, care: false, bond: false, paid: false }; return t.dayLog; }
 export const dayTicks = (t, now) => { const l = dayLogOf(t, now), day = Math.floor(now / DAY); return { care: !!l.care, wish: t.req && t.req.day === day && t.req.kind === 'want' ? !!t.req.wantDone : t.daily ? t.daily.day === day && !!t.daily.done : true, bond: !!l.bond, paid: !!l.paid }; };
