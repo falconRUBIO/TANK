@@ -1105,6 +1105,17 @@ ok('an animal left miserable for days asks to leave; put it right and it stays, 
   const gone = t.fish.length; let left = false; for (let d = 7; d <= 10 && !left; d++) { const ev = R.advance(t, d * D); left = ev.some((e) => /went back to the sea/.test(e.journal ?? '')); }
   assert.ok(left && t.fish.length === gone - 1, 'left uncared for, it goes');
 });
+ok('kinds: a seahorse is bought as a real species, pairs only with its own kind, and a lined seahorse goes longer between meals', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 6; t.shells = 999;
+  const r = R.applyAction(t, { t: 'buyFish', species: 'seahorse', kind: 'reidi', name: 'Rio', sex: 'm', rush: true }, { now: 1000, dev: true }); assert.ok(r.ok, JSON.stringify(r));
+  const rio = t.fish.find((f) => f.name === 'Rio'); assert.equal(rio.kind, 'reidi'); assert.equal(R.kindDef(rio).label, 'Slender Seahorse');
+  const mk = (id, sex, kind) => R.ensureFish({ id, name: id, species: 'seahorse', kind, sex, seed: id.length * 9, born: -60 * D, stage: 'adult', traits: [] });
+  t.fish.push(mk('ka', 'f', 'kuda')); for (let d = 1; d <= 6; d++) R.advance(t, d * D);
+  assert.ok(!rio.mate, 'a slender and a yellow seahorse do not pair');
+  t.fish.push(mk('rb', 'f', 'reidi')); for (let d = 7; d <= 14; d++) R.advance(t, d * D); assert.equal(rio.mate, 'rb', 'two slender seahorses pair');
+  const a = mk('h1', 'm', 'erectus'), b = mk('h2', 'm', 'kuda'); a.hunger = b.hunger = 0; const u = R.newWorld(0); R.norm(u, 0); u.fish.push(a, b); R.advance(u, 3 * 3600e3); assert.ok(a.hunger < b.hunger, `lined ${a.hunger} vs yellow ${b.hunger}`);
+  assert.equal(R.kindOf({ species: 'octopus' }), 'vulgaris', 'an octopus from before kinds is a common octopus');
+});
 ok('a giant clam keeps the water fresh longer, and a blue tang keeps the glass clear longer', () => {
   const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; return t; };
   const a = mk(), b = mk(); b.decor.push({ id: 'cl', type: 'clam', x: 0, z: 1 }); R.advance(a, 2 * D); R.advance(b, 2 * D); assert.ok(b.water > a.water + 0.05, `clam ${b.water} vs ${a.water}`);

@@ -24,7 +24,7 @@ import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
-import { LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
+import { KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
@@ -267,8 +267,14 @@ function setRearrange(on, silent = false) {
 async function adopt(species) {
   const d = SPECIES_DEF[species], s = game.state;
   const life = LIFESPAN[species], lifeTxt = life ? ` Lives about ${life >= 365 ? `${Math.round(life / 30.4)} months` : `${Math.round(life / 30.4)} months`} in the tank.` : '', fod = factOfDay(species);
-  const about = `${d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}${lifeTxt}${fod ? ` Did you know? ${fod.text}` : ''}`;      // what it is like, how long it lives, and one real fact
-  const names = d.count === 1 ? await ui.dialog({ title: `Name your ${d.label.toLowerCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
+  let kind = null; if (KINDS[species]) {      // a seahorse or an octopus is one of several real species: the caretaker picks which
+    const same = s.fish.filter((f) => f.species === species && !f.dead), have = (k) => same.filter((f) => kindOf(f) === k).length;
+    kind = await ui.choose({ title: `Which ${d.label.toLowerCase()}?`, text: species === 'seahorse' ? 'Each is a real species with its own look and temper. Seahorses only pair with their own kind.' : 'Each is a real species with its own look and temper. Two octopuses of different kinds can keep each other company, but only the same kind lay eggs.',
+      options: Object.entries(KINDS[species]).map(([k, K]) => ({ label: `${K.label} · ${K.temper}${have(k) ? ` · ${have(k)} in your tank` : ''}`, value: k })), cancel: 'Not now' });
+    if (!kind) return; }
+  const KD = kind ? KINDS[species][kind] : null;
+  const about = `${KD ? `${KD.note} ${KD.care}` : d.blurb}${SOCIAL[species] ? ` ${SOCIAL[species].kind}. ${SOCIAL[species].line}` : ''}${lifeTxt}${fod ? ` Did you know? ${fod.text}` : ''}`;      // what it is like, how long it lives, and one real fact
+  const names = d.count === 1 ? await ui.dialog({ title: `Name your ${(KD?.label ?? d.label).toLowerCase()}`, text: about, input: { value: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(s.fish.length * 3 + 1) % 8], placeholder: 'Name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' })
     : await ui.dialog({ title: `ADOPT A SCHOOL`, text: `${about} ${d.count} swim together; choose a name for the group.`, input: { value: d.label.split(' ')[0], placeholder: 'Group name' }, ok: `Adopt · 🐚 ${fishPrice(species)}`, cancel: 'Not now' });
   if (!names) return;
   { const adv = adoptAdvice(s, species); if (adv && !(await ui.dialog({ title: 'Good to know', text: adv, ok: 'Adopt anyway', cancel: 'Not now' }))) return; }
@@ -285,7 +291,7 @@ async function adopt(species) {
   let note, surprise; if (to) { const who = game.members?.find((m) => m.id === to)?.name ?? 'them';
     surprise = await ui.choose({ title: 'Keep it a surprise?', text: `Wrapped, ${who} only finds out what it is when they open it in the tank.`, options: [{ label: '🎁 Keep it a surprise', value: true }, { label: `Tell ${who} what it is`, value: false }], cancel: 'Not now' }); if (surprise === undefined) return;
     note = await ui.dialog({ title: 'Add a note', text: `A few words to go with it, for ${who} to read when it arrives. You can leave it blank.`, input: { value: '', placeholder: 'Thought you would love this one!' }, ok: 'Send the gift', cancel: 'Skip the note' }); }
-  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}), ...(special ? { special: true } : {}) });
+  const r = await game.dispatch({ t: 'buyFish', species, name: names, seed: (Math.random() * 90000) | 0, to, ...(to ? { surprise, note: typeof note === 'string' ? note : '' } : {}), ...(sex ? { sex } : {}), ...(kind ? { kind } : {}), ...(special ? { special: true } : {}) });
   if (!r.ok) return fail(r);
   ui.open('tank'); sfx('buy'); ui.refresh();
 }
@@ -1039,7 +1045,7 @@ function showCard(f) {
   const days = Math.max(1, Math.round((Date.now() - (rec.born ?? Date.now())) / 864e5)), denTxt = octo ? (f.den?.home ? (f.den.kind === 'pot' ? 'A clay pot' : 'A coconut shell') : f.den?.kind === 'rocks' ? 'A rock shelter it built' : f.den ? (DECOR_DEF[f.den.kind]?.label ?? 'A den') : 'Looking for one') : null;
   const owner = rec.ownerName || rec.owner ? (!game.shared || rec.owner === game.you?.userId ? 'You' : esc(game.members?.find((mm) => mm.id === rec.owner)?.name ?? rec.ownerName ?? 'A friend')) : null, close = bondLine(rec).replace(/^.*<dd>|<\/dd>$/g, '');
   // the profile: a header and a line about who it is, then four tabs
-  const P = personaOf(rec), sum = summaryOf({ ...rec, name: f.name }, P), fm = familiarityOf(rec), beh = behaviourList(rec), seen = beh.filter((x) => x.seen), info = SPECIES_INFO[rec.species] ?? {};
+  const P = personaOf(rec), sum = summaryOf({ ...rec, name: f.name }, P), fm = familiarityOf(rec), beh = behaviourList(rec), seen = beh.filter((x) => x.seen), KD = kindDef(rec), info = KD ? { ...(SPECIES_INFO[rec.species] ?? {}), sci: KD.sci, size: KD.size, from: KD.from, wild: KD.note, care: KD.care, temper: KD.temper, breed: KD.breed, kindLabel: KD.label } : SPECIES_INFO[rec.species] ?? {};
   const stage = rec.elder ? 'Elder' : { baby: 'Baby', juvenile: 'Young', adult: 'Adult' }[stageOf(rec)] ?? '', sea = rec.species === 'seahorse', LOG = rec.log ?? {}, live = f.dw?.log;
   const lv = { ...(LOG.lv ?? {}) }; for (const [k, v] of Object.entries(live?.lv ?? {})) lv[k] = (lv[k] ?? 0) + v;
   const AREA = { front: 'The front sand', middle: 'The middle bank', rear: 'The high back bank', top: 'Near the surface', mid: 'Mid-water', low: 'Near the bottom' }, topArea = Object.entries(lv).sort((x, y) => y[1] - x[1])[0];
@@ -1109,7 +1115,7 @@ function showCard(f) {
     + sec(`Looking after ${esc(f.name)}`, `<div class="info">${careRows(rec)}</div>${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`)
     + sec('What it likes', `<div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>${toysTile}${bondTile}`)
     + sec('Its story', `${geneLine}${famLine}${lifeLine}${orphanBlock(rec, f)}`)
-    + sec(`About the ${esc(f.species.label.toLowerCase())}`, `<div class="info">${row('Species', f.species.label)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Helps the tank', info.helps ? esc(info.helps) : null)}${row('Lives in', info.from ? esc(info.from) : null)}${row('Eats', info.eats ? esc(info.eats) : null)}${row('In the wild', info.wild ? esc(info.wild) : null)}${row('Care', info.care ? esc(info.care) : null)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>${factLine}`);
+    + sec(`About the ${esc(f.species.label.toLowerCase())}`, `<div class="info">${row('Species', info.kindLabel ?? f.species.label)}${row('Temper', info.temper ? esc(info.temper) : null)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Helps the tank', info.helps ? esc(info.helps) : null)}${row('Lives in', info.from ? esc(info.from) : null)}${row('Eats', info.eats ? esc(info.eats) : null)}${row('In the wild', info.wild ? esc(info.wild) : null)}${row('Care', info.care ? esc(info.care) : null)}${row('Breeding', info.breed ? esc(info.breed) : null)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>${factLine}`);
   // personality at a glance: a word and five dots for each trait, two to a row (tap one for what it means), then a real fact about the animal
   const bondV = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15), bondW = bondV >= 0.9 ? 'Best friends' : bondV >= 0.5 ? 'Close' : bondV >= 0.2 ? 'Warming up' : 'Just met';
   const tiles = [...TRAIT_BARS.map((b) => { const v = P[b.k], [w, ex] = traitWords(rec, b.k, v); return { label: b.label, col: b.col, w, v, tip: `${b.label}: ${w}. ${ex}` }; }), { label: 'Bond with you', col: '#ff8fb1', w: bondW, v: bondV, tip: `Bond with you: ${bondW}. It grows each time you feed or play with ${rec.name}.` }];      // six tiles, three even rows of two

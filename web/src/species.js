@@ -551,7 +551,7 @@ const mandarin = reef({                         // a mandarin dragonet: long and
 // ───────────────────────── Seahorse: drawn upright, nose forward, tail curled ─────────────────────────
 const seahorse = {
   id: 'seahorse', label: 'Seahorse', move: 'hover', length: 77, vox: 0.031,
-  make(seed = 1) {
+  make(seed = 1, look = null) {
     const rng = mulberry32(seed * 5099 + 17);
     // colors after real seahorses: the golden lined seahorse, a red spiny one, orange, violet and a dark one; some grow fleshy filaments along the back and the crown
     const PALS = [
@@ -561,7 +561,8 @@ const seahorse = {
       { body: [146, 96, 196], belly: [212, 180, 240], ring: [96, 52, 150], dark: [60, 30, 96], spot: [244, 230, 255] },
       { body: [92, 76, 64], belly: [150, 128, 104], ring: [60, 48, 40], dark: [34, 26, 22], spot: [236, 220, 196], spiny: true },
     ];
-    const pal = PALS[Math.floor(rng() * PALS.length)], spiny = pal.spiny || rng() < 0.2;
+    const kind = look?.kind ?? null, KP = { kuda: [0, 0, 4], erectus: [0, 2, 4], reidi: [1, 2, 1], zosterae: [0, 4, 0] }[kind], r0 = rng();      // each real kind comes in its own colors
+    const pal = KP ? PALS[KP[Math.floor(r0 * KP.length)]] : PALS[Math.floor(r0 * PALS.length)], spiny = kind === 'reidi' || kind === 'zosterae' ? false : pal.spiny || rng() < 0.2;
     // the trunk's center line, crown to the root of the tail, and how thick it is along it: a slim neck, a deep chest and a pot belly that bulges forward
     const SP = [[6, 40], [4.5, 33], [3.2, 26], [3, 19], [3.6, 11], [4.2, 3], [4, -4], [3, -9]];
     const spine = []; for (let i = 0; i < SP.length - 1; i++) for (let k = 0; k < 8; k++) { const t = k / 8; spine.push([SP[i][0] + (SP[i + 1][0] - SP[i][0]) * t, SP[i][1] + (SP[i + 1][1] - SP[i][1]) * t, (i + t) / (SP.length - 1)]); }
@@ -571,7 +572,10 @@ const seahorse = {
     const tail = seahorse.tailRest;
     const N = tail.n, TR = tailR;                          // the tail tapers from the trunk to a fine curled tip
     const ringAt = (s) => { const f = (s * 11 + 0.3) % 1; return f < 0.16 ? 1 : f < 0.3 ? 0.4 : 0; };      // the bony plates: a raised rim at each ring
-    const speck = (x, y, z, c) => { const n1 = fbm(x * 0.55 + seed, y * 0.55, z * 0.55), n2 = fbm(x * 1.3 + 7, y * 1.3 + seed, z * 1.3); if (n1 > 0.78) return mix(c, pal.spot, 0.45); if (n2 > 0.8) return mix(c, pal.dark, 0.4); return c; };
+    const speck = (x, y, z, c) => { const n1 = fbm(x * 0.55 + seed, y * 0.55, z * 0.55), n2 = fbm(x * 1.3 + 7, y * 1.3 + seed, z * 1.3);
+      if (kind === 'erectus' && y > 20 && y < 42 && Math.abs(Math.sin(y * 1.1 + x * 0.25)) > 0.86) return mix(c, [255, 252, 240], 0.85);      // the lined seahorse's white pinstripes down the neck
+      if (kind === 'reidi' && fbm(x * 1.1 + seed, y * 1.1, z * 1.1 + 3) > 0.7) return mix(c, [255, 255, 255], 0.75);      // a slender seahorse's white freckles
+      if (n1 > 0.78) return mix(c, pal.spot, 0.45); if (n2 > 0.8) return mix(c, pal.dark, 0.4); return c; };
     const hash = (a, b, c) => { let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791) ^ (seed * 2654435761); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h >>> 0) % 1000) / 1000; };
     // the trunk is drawn from its outline, the way a seahorse is drawn in profile: a curved back, an arched neck, a deep chest and a pot belly that bulges forward
     const BACK = prof([[-9, 0.2], [-3, -2.6], [4, -4.6], [11, -5.2], [18, -4.4], [25, -2.6], [30, -0.6], [34, 1.4], [37, 3.2]]), FRONT = prof([[-9, 5.8], [-3, 9.2], [3, 11.6], [9, 12.2], [15, 10.6], [21, 8.4], [27, 7.2], [31, 7.6], [35, 9.2]]);
@@ -764,9 +768,16 @@ export const OCTO_COLORS = [
 ];
 const octopus = {
   id: 'octopus', label: 'Octopus', move: 'jet', length: 64, vox: 0.057,
-  make(seed = 1, look = null) {
+  // a final paint pass for the real kinds: the mimic's brown-and-white bands, the day octopus's dark mottling (eyes, beak and the two-spot's eyespots are left alone)
+  make(seed = 1, look = null) { const m = this.make0(seed, look), K = look?.kind; if (K !== 'mimic' && K !== 'cyanea') return m; const s0 = m.sample;
+    m.sample = (x, y, z) => { const r = s0(x, y, z); if (!r || r.em || ['eye', 'beak'].includes(r.tag)) return r;
+      const lum = (r.c[0] + r.c[1] + r.c[2]) / 3;
+      if (K === 'mimic') { const band = Math.sin((x * 0.55 + y * 0.8 + Math.abs(z) * 0.55) * 1.9) > 0.1; return { ...r, c: band ? mix([70, 42, 28], r.c, 0.25) : mix([250, 242, 226], r.c, 0.3 + lum / 900) }; }
+      const n = fbm(x * 0.33 + 11, y * 0.33, Math.abs(z) * 0.33 + 5); return n < 0.5 ? { ...r, c: mix(r.c, [56, 30, 26], 0.75) } : n > 0.7 ? { ...r, c: mix(r.c, [250, 236, 210], 0.35) } : r; };
+    return m; },
+  make0(seed = 1, look = null) {
     const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
-    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed);
+    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null;
     // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its center line (so it can be re-posed)
     const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
     arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
@@ -804,6 +815,7 @@ const octopus = {
         if (part) {
           const n = fbm(x * 0.2 + off[0], y * 0.2 + off[1], Math.abs(z) * 0.2 + off[2]), spot = fbm(x * 0.7 + off[1], y * 0.7, Math.abs(z) * 0.7 + off[0]);
           let c = mix(skinC, pale, clamp((-(y - 4) / 14) * 0.55 + 0.05)); if (n > 0.6) c = mix(c, [255, 236, 214], 0.3); if (n < 0.34) c = mix(c, [96, 34, 46], 0.35);
+          if (KND === 'bimac') { const e = Math.hypot(x - 4.2, y - 0.2, Math.abs(z) - 7.4); if (e <= 2.5) return { c: e <= 1 ? [20, 30, 60] : e <= 1.9 ? [40, 150, 255] : [16, 22, 40], em: e > 1 && e <= 1.9 ? 1 : 0, tag: 'head' }; }      // the two blue eyespots under its eyes
           if (spot > 0.66) c = mix(c, [255, 232, 214], 0.45);                  // pale papillae
           c = mix(c, [c[0] * 0.66, c[1] * 0.6, c[2] * 0.62], clamp((y - 1) / 13) * 0.6);   // a darker back, so it stands out against pale sand
           return { c, tag: part };

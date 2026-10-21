@@ -138,7 +138,7 @@ const DAY = 864e5;
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
 export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, neongoby: 240, tang: 420, puffer: 300, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
-export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
+export const lifeOf = (f) => Math.round((LIFESPAN[f.species] ?? 300) * (kindDef(f)?.dwarf ? 0.6 : 1));      // (a dwarf seahorse lives about a year in the wild, much shorter than the big ones)
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
 // a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
 // keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
@@ -211,6 +211,49 @@ export function levelEta(t, now = Date.now()) {
   const lv = t.level ?? 1, b = LEVEL_AT[lv]; if (!b) return null; const left = b - scoreOf(t, now), H = tankHealth(t, now);
   const perDay = (H.score < 55 ? 0 : 24 * XP_PER_HOUR * H.mult) + 14 * Math.max(0.25, H.mult); return Math.max(1, Math.ceil(left / perDay));
 }
+// ── Kinds of seahorse and octopus ── real species, each with its own look, size, temper and needs. A seahorse pairs only with its own kind
+// (they pair for life, and in the wild they court only their own species; keepers never mix them, as hybrids have turned up in mixed tanks);
+// an octopus of any kind can keep another company, but only two of the same kind lay eggs. Babies are always their parents' kind.
+export const KINDS = {
+  seahorse: {
+    kuda: { label: 'Yellow Seahorse', sci: 'Hippocampus kuda', size: '14–17 cm', from: 'Indo-Pacific estuaries, lagoons and seagrass beds', pals: [0, 0, 4], scale: 1,
+      temper: 'Calm and steady', note: 'The classic yellow seahorse. It can change from bright yellow to near black over a few days to match its surroundings.',
+      breed: 'Pairs for life. The male carries 100 to 1,000 young in his pouch for 2 to 3 weeks.', care: 'Moderate. Needs slow, gentle tankmates and frozen mysis twice a day.' },
+    erectus: { label: 'Lined Seahorse', sci: 'Hippocampus erectus', size: '12–17 cm', from: 'The western Atlantic, from Nova Scotia to Venezuela', pals: [0, 2, 4], scale: 1.05, hardy: true,
+      temper: 'Bold and hardy', note: 'White lines run down its neck like pinstripes. Captive-bred lined seahorses are among the hardiest seahorses kept, and they learn to come to the glass for food.',
+      breed: 'Pairs for life and greets its mate every morning with a little dance. Broods of 250 to 650.', care: 'Easiest seahorse to keep. Its own food lasts it longer between meals.' },
+    reidi: { label: 'Slender Seahorse', sci: 'Hippocampus reidi', size: '15–18 cm', from: 'Caribbean and Brazilian reefs and mangroves', pals: [1, 2, 3], scale: 1.08, shy: true, bigBrood: true,
+      temper: 'Shy and showy', note: 'Long and slim with a long snout, in bright red, orange or yellow, often freckled with white. It flashes brighter colors when courting.',
+      breed: 'Famous for huge broods: a male can release over 1,000 young at once.', care: 'Hard. Stressed by busy tanks, so it wants more room and fewer tankmates.' },
+    zosterae: { label: 'Dwarf Seahorse', sci: 'Hippocampus zosterae', size: '2–2.5 cm', from: 'Seagrass meadows of Florida, the Bahamas and the Gulf of Mexico', pals: [0, 4, 3], scale: 0.5, dwarf: true,
+      temper: 'Busy and tiny', note: 'One of the smallest seahorses in the world, and the slowest fish ever measured: about 1.5 meters an hour.',
+      breed: 'Breeds fast: small broods of 3 to 55, about every 10 days in the warm season.', care: 'Moderate. Needs plenty of sea grass to hold on to, and lives only about a year.' },
+  },
+  octopus: {
+    vulgaris: { label: 'Common Octopus', sci: 'Octopus vulgaris', size: '60–90 cm with arms', from: 'Warm and temperate seas worldwide', scale: 1,
+      temper: 'Clever and curious', note: 'The octopus of the puzzle-jar videos. It opens screw lids, remembers faces, and changes color and skin texture in a fraction of a second.',
+      breed: 'The female hangs up to 500,000 tiny eggs in strings from her den and guards them until they hatch, then her life ends. In the game she rests instead.', care: 'Hard. Escapes through any gap, and needs puzzles every day or two.' },
+    cyanea: { label: 'Day Octopus', sci: 'Octopus cyanea', size: '80–100 cm with arms', from: 'Indo-Pacific reefs, from Hawaii to East Africa', scale: 1.15, dayActive: true,
+      temper: 'Bold daytime hunter', note: 'Unlike most octopuses it hunts by day, prowling the reef and flashing waves of color as it goes. Fish follow it to catch what it flushes out.',
+      breed: 'Lays up to 700,000 eggs in a den and guards them for about a month.', care: 'Hard. Big and restless: it needs more room than any other kind.' },
+    bimac: { label: 'Two-Spot Octopus', sci: 'Octopus bimaculoides', size: '30–40 cm with arms', from: 'The Pacific coast of California and Mexico', scale: 0.8, friendly: true,
+      temper: 'Gentle and friendly', note: 'Named for the two bright blue eyespots under its eyes, which can flicker like a warning. One of the calmest octopuses and the friendliest with its keepers.',
+      breed: 'Lays a few hundred large eggs; the babies hatch big enough to crawl straight to the bottom.', care: 'The best octopus for a home tank. Bonds quickly and rarely tries to escape.' },
+    mimic: { label: 'Mimic Octopus', sci: 'Thaumoctopus mimicus', size: '50–60 cm with arms', from: 'Sandy river mouths of Indonesia and the Philippines', scale: 0.9, mimic: true,
+      temper: 'A master of disguise', note: 'Banded brown and white, it impersonates other animals: a lionfish, a flatfish, a sea snake. It picks the impression to scare whoever is watching.',
+      breed: 'Little is known about its breeding in the wild. It was only discovered in 1998.', care: 'Hard. Rarely kept: it needs a big sandy floor to burrow in.' },
+  },
+};
+// what one kind needs on top of what every seahorse or octopus needs
+const SUBKIND_NEEDS = {
+  zosterae: [{ k: 'seagrass', label: 'A meadow of sea grass', why: 'Dwarf seahorses live their whole lives in seagrass meadows, gripping the blades.', how: 'Three or more plants, or a Sea Grass Bed', met: (c) => (c.cats.PLANTS ?? 0) >= 3 || (c.types.seagrass ?? 0) >= 1 }],
+  reidi: [{ k: 'quiet', label: 'A quiet tank', why: 'Slender seahorses are easily stressed by busy water and quick fish.', how: 'Keep the tank roomy, under two-thirds full', met: (c) => c.r <= 0.66 }],
+  cyanea: [{ k: 'room', label: 'Room to prowl', why: 'A day octopus roams a big patch of reef every day, hunting in the open.', how: 'Keep the tank roomy, under two-thirds full', met: (c) => c.r <= 0.66 }],
+  mimic: [{ k: 'sand', label: 'Open sand to burrow in', why: 'Mimic octopuses live on bare sand and dig burrows to hide in.', how: 'Leave plenty of open sand: no more than 12 decorations', met: (c) => c.decorN <= 12 }],
+};
+export const KIND_DEFAULT = { seahorse: 'kuda', octopus: 'vulgaris' };
+export const kindOf = (f) => (KINDS[f?.species] ? (KINDS[f.species][f.kind] ? f.kind : KIND_DEFAULT[f.species]) : null);
+export const kindDef = (f) => (KINDS[f?.species]?.[kindOf(f)] ?? null);
 export const CARE_XP = { feed: 2, crab: 2, glass: 4, water: 6, pet: 2, play: 2, puzzle: 4, trim: 2, train: 2 };
 // most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
 export const XP_PER_HOUR = 0.3;      // (time alone grows the tank slowly: most of the growth comes from care)
@@ -491,13 +534,14 @@ function makeDrift(t, now) {
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
   const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  if (KINDS[o.species]) f.kind = KINDS[o.species][o.kind] ? o.kind : (o.pa?.kind && KINDS[o.species][o.pa.kind] ? o.pa.kind : KIND_DEFAULT[o.species]);      // a seahorse or octopus is one real species
   if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
   if (o.carries && MORPHS[o.carries]) f.genes = { ...genesOf(seed), m: [o.carries, 'n'] };      // today's special: it carries a rare color
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
 const HOUR = 3600e3, BOTTLE_PAY = 2;      // a bottle pays what it cost to send, so swapping bottles cannot make shells
 // A snapshot of a fish for its family record, so a family tree survives its members: identity, look, generation and its own parents' names.
-const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, seed: f.seed, traits: f.traits ?? [], genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 0, owner: f.owner ?? null, ownerName: f.ownerName ?? null, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
+const snap = (f) => f && ({ id: f.id, name: f.name, species: f.species, kind: f.kind ?? null, seed: f.seed, traits: f.traits ?? [], genes: f.genes ?? genesOf(f.seed), gen: f.gen ?? 0, owner: f.owner ?? null, ownerName: f.ownerName ?? null, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
 // a young one's temperament leans a little toward its parents' (beyond the one trait it takes from each): what both parents share it leans
 // toward more, and only sometimes. Kept as a small nudge on its own personality (profile.js personaOf), never a copy of theirs.
 const LEAN = { Curious: 'cur', Social: 'soc', Brave: 'bold', Shy: 'bold-', Playful: 'act', Lazy: 'act-', Calm: 'adapt' };
@@ -612,7 +656,7 @@ function makeChild(t, e, now) {
   const seed = (h & 1 ? B?.seed : A?.seed) ?? e.seed, pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null);       // the pattern comes from one parent, the tint and size from both
   const traits = [...new Set([pick(A, 1), pick(B, 3)].filter(Boolean))];
   const roll = (k) => blendGenes(gOf(A, seed), gOf(B, seed), seededRandom(h + k * 7919), !!e.moon), clutch = A && B ? [0, 1, 2].map(roll) : [], genes = A && B ? clutch.find((g) => g.m[0] === g.m[1] && MORPHS[g.m[0]]) ?? clutch[0] : genesOf(seed)      /* (a clutch is many eggs: of the three that hatch strongest, the one that stays is the rare one if there is one) */, gen = Math.max(A?.gen ?? 0, B?.gen ?? 0) + 1;
-  const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: t.fish.find((x) => x.id === e.a && !x.dead)?.owner ?? A?.owner ?? null, ownerName: t.fish.find((x) => x.id === e.a && !x.dead)?.ownerName ?? A?.ownerName ?? null }); t.fish.push(f);
+  const f = ensureFish({ id: nextId(t, 'f'), name: NAMES[(t.seq + h) % NAMES.length], species: e.species, ...(KINDS[e.species] ? { kind: A?.kind ?? B?.kind ?? KIND_DEFAULT[e.species] } : {}), seed, born: now, stage: 'baby', lean: leanOf([A, B], h), traits: traits.length ? traits : traitsFor(e.species, seed), happy: 0.8, genes, gen, paid: 0, parents: [A, B].filter(Boolean).map(lineOf), owner: t.fish.find((x) => x.id === e.a && !x.dead)?.owner ?? A?.owner ?? null, ownerName: t.fish.find((x) => x.id === e.a && !x.dead)?.ownerName ?? A?.ownerName ?? null }); t.fish.push(f);
   return { f, A, B, h, gen };
 }
 function eggs(t, now, ev) {
@@ -644,7 +688,7 @@ function eggs(t, now, ev) {
   const busy = t.eggs.length > 0;      // one clutch of fish eggs at a time, so each one is an event (an octopus's eggs hang in her own den, so they are not kept waiting by the fish)
   if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return;
   // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
-  { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm');
+  { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm' && kindOf(f) === kindOf(Mo));      /* (partners of two different kinds keep each other company, but lay no eggs) */
     const fed = (f) => ownHunger(f) < 0.5 || now - (f.fedAt ?? 0) < DAY;      /* (well fed: fed today, not full at this very minute) */
     if (Mo && Fa && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.55 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
       Mo.broodAt = now + OCTO_EGG_GAP * DAY;
@@ -679,7 +723,7 @@ export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nur
 // a courtship that takes: he carries their young for six to nine days (the length comes from h, a number of the moment)
 function conceive(m, w, now, h, ev, t = null) {
   const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
-  m.preg = { start: now, due: t ? wakeAt(t, Math.round(now + days * DAY)) : Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: 10 + ((h >>> 4) % 6) };
+  m.preg = { start: now, due: t ? wakeAt(t, Math.round(now + days * DAY)) : Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: (10 + ((h >>> 4) % 6)) + (kindDef(m)?.bigBrood ? 4 : 0) - (kindDef(m)?.dwarf ? 5 : 0) };      /* (a slender seahorse's broods are huge, a dwarf's small) */
   ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, court: m.id });      /* (told with its own card, on every phone: see lifeCheck in main.js) */
 }
 // where a tank's seahorse family is now, for the developer's lifecycle test panel (read only)
@@ -754,7 +798,7 @@ function seaFamilies(t, now, ev) {
     for (const k of Object.keys(t.bonds)) { const [a, b] = k.split('|'); if (!byId.has(a) || !byId.has(b) || byId.get(a).mate || byId.get(b).mate) delete t.bonds[k]; }
     const ready = (f) => !f.mate && adult(f) && !f.elder && (f.widowAt == null || now - f.widowAt > 7 * DAY), free = hs.filter(ready);      // (not while grieving, and elders do not start again)
     // any two unrelated adults get to know each other: a male and a female become a pair; two males or two females, short of a partner, can bond as companions (as kept seahorses really do)
-    for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j]; if (relatedFish(x, y)) continue; const k = bondKey(x, y); t.bonds[k] = (t.bonds[k] ?? 0) + step; }
+    for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) { const x = free[i], y = free[j]; if (relatedFish(x, y) || kindOf(x) !== kindOf(y)) continue; const k = bondKey(x, y); t.bonds[k] = (t.bonds[k] ?? 0) + step; }
     for (const [k, ms] of Object.entries(t.bonds).sort((x, y) => y[1] - x[1])) {
       if (ms < SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), m = byId.get(a), w = byId.get(b); if (!m || !w || m.mate || w.mate) continue;
       m.mate = w.id; w.mate = m.id; m.pairedAt = w.pairedAt = now; delete t.bonds[k]; unlock(t, m, 'pair', now, ev); unlock(t, w, 'pair', now, ev);
@@ -1361,7 +1405,7 @@ export const KIND_NEEDS = {
 export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
-  return { others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
+  return { decorN: t.decor.length, others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
     ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7 };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
@@ -1425,7 +1469,7 @@ export function wellOf(t, f, now = Date.now()) {
   if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a running rivalry with ${nm(f.rival)}` });
   if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
   const cv = coverOf(t, f), threatened = trouble.some((x) => ['bully', 'wary', 'clash'].includes(x.kind)), cover = { ...cv, wants: !!S.shy || threatened || f.species === 'seahorse' || f.species === 'octopus', helps: threatened && cv.have < cv.need };
-  const tol = E.tol ?? 0.85, crowd = { n: cr.n, cap: cr.cap, pct: Math.round(cr.r * 100), limit: Math.round(tol * 100), word: cr.r >= 0.9 ? 'Crowded' : cr.r >= 0.65 ? 'Busy' : 'Roomy', over: cr.r > tol, room: Math.max(0, Math.floor(tol * cr.cap) - cr.n), minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'feels safe in a group' : S.bully ? 'gets meaner when the tank is packed' : null };
+  const KD = kindDef(f), tol = (E.tol ?? 0.85) * (KD?.shy ? 0.8 : KD?.dayActive ? 0.85 : 1), crowd = { n: cr.n, cap: cr.cap, pct: Math.round(cr.r * 100), limit: Math.round(tol * 100), word: cr.r >= 0.9 ? 'Crowded' : cr.r >= 0.65 ? 'Busy' : 'Roomy', over: cr.r > tol, room: Math.max(0, Math.floor(tol * cr.cap) - cr.n), minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'feels safe in a group' : S.bully ? 'gets meaner when the tank is packed' : null };
   const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully' || x.kind === 'clash') && cv.have < cv.need, uneasy = crowd.over, lonely = (S.shoal && live.filter((o) => o.species === f.species).length < S.shoal) || (S.pair && live.filter((o) => o.species === f.species).length < 2);
   const mood = bad ? ['Unwell', 'bad', 'Run down. Food and clean water, then time to recover.'] : stressed ? ['Stressed', 'warn', (() => { const x = trouble.find((y) => y.kind === 'bully') ?? trouble.find((y) => y.kind === 'clash'); return x.kind === 'bully' ? `${x.name} chases it, and it has too few places to get away.` : `It keeps clashing with ${x.name}, and has nowhere to retreat.`; })()] : ns.mood === 'Hungry' ? ['Hungry', 'warn', 'Ready for a meal.'] : uneasy ? ['Uneasy', 'warn', `The tank is too full for ${/^[aeiou]/.test(me) ? 'an' : 'a'} ${me}.`] : lonely ? ['Lonely', 'warn', S.pair ? 'Seahorses pair for life. It is waiting for a partner.' : `It feels safe only in a group of ${S.shoal}.`] : (f.happy ?? 0.6) >= 0.75 ? ['Happy', 'good', friends.length ? `Settled, and close to ${friends[0].name}.` : 'Settled and content.'] : (f.happy ?? 0.6) < 0.4 ? ['Gloomy', 'warn', 'Something is missing. See below.'] : ['Content', 'ok', 'Doing well.'];
   const wants = needsChecklist(t, f, now).filter((x) => x.k !== 'food');
@@ -1450,7 +1494,7 @@ export function needsChecklist(t, f, now = Date.now(), uid = null) {
   const S = SOCIAL[f.species] ?? {}, out = [], add = (k, label, met, how = '') => out.push({ k, label, met: !!met, how });
   const label = SPECIES_DEF[f.species]?.label ?? f.species, own = t.fish.filter((o) => o.species === f.species && !o.dead).length, food = FOODS[favFoodOf(f)]?.label ?? 'Flakes';
   const n = needsOf(f, t, now); add('food', `Fed (${food.toLowerCase()})`, n.fed > 0.35, f.species === 'octopus' ? 'Drop it a crab from its card' : 'Feed the tank');
-  if (KIND_NEEDS[f.species]) { const c = needCtx(t, f, now); for (const w of KIND_NEEDS[f.species]) out.push({ k: w.k, label: w.label, met: !!w.met(c), how: w.how, why: w.why }); for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp) add('trait', `${tr === 'Shy' ? 'Plants to hide among' : tr === 'Curious' ? 'Something to explore' : tr === 'Lazy' ? 'Driftwood to rest by' : tr === 'Playful' ? 'Something fun' : 'Rocks to perch on'} (it is ${tr.toLowerCase()})`, count(t, sp[0]) >= sp[1], `${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]} · ${sp[2]}`); } return out; }
+  if (KIND_NEEDS[f.species]) { const c = needCtx(t, f, now); for (const w of [...KIND_NEEDS[f.species], ...(SUBKIND_NEEDS[kindOf(f)] ?? [])]) out.push({ k: w.k, label: w.label, met: !!w.met(c), how: w.how, why: w.why }); for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp) add('trait', `${tr === 'Shy' ? 'Plants to hide among' : tr === 'Curious' ? 'Something to explore' : tr === 'Lazy' ? 'Driftwood to rest by' : tr === 'Playful' ? 'Something fun' : 'Rocks to perch on'} (it is ${tr.toLowerCase()})`, count(t, sp[0]) >= sp[1], `${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]} · ${sp[2]}`); } return out; }
   if (f.species === 'octopus') add('den', 'A den of its own', f.home || t.decor.some((d) => d.type === 'pot' || d.type === 'coconut'), 'A clay pot or a coconut shell from the Shop');
   else if (S.home) add('home', S.home.text.replace(/^./, (c) => c.toUpperCase()), hasHome(t, S.home), 'From the Shop');
   if (S.shoal) add('shoal', `A shoal: ${S.shoal} of its own kind`, own >= S.shoal, `${own} now · ${S.shoal - own > 0 ? `${S.shoal - own} more ${label.toLowerCase()}${S.shoal - own > 1 ? 's' : ''}` : ''}`);
@@ -1629,7 +1673,7 @@ function _advance(t, now = Date.now()) {
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
-    for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
+    for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR * (kindDef(f)?.hardy ? 0.8 : 1)); }      /* (a lined seahorse is hardy: its food lasts it longer) */
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * waterSlow(t) * (1 + 0.5 * Math.min(2, t.floaters.length)));      /* (a giant clam filters the water: it stays fresh longer) */   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (t.fish.some((f) => f.species === 'tang' && !f.dead && !f.away) ? 0.7 : 1) * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
@@ -1762,7 +1806,7 @@ export const OCTO_TRUST = [
   { at: 8, label: 'Comes to the glass', line: (n) => `${n} comes to the glass when you look in now.` },
   { at: 15, label: 'Takes a crab from your hand', line: (n) => `${n} trusts you enough to take a crab from your fingers.` },
 ];
-export function octoTrust(f, uid) { const b = f?.bond?.[uid] ?? 0, i = OCTO_TRUST.reduce((k, x, j) => (b >= x.at ? j : k), 0), nx = OCTO_TRUST[i + 1]; return { lvl: i, label: OCTO_TRUST[i].label, bond: b, next: nx ? { label: nx.label, need: nx.at - b } : null }; }
+export function octoTrust(f, uid) { const b = (f?.bond?.[uid] ?? 0) * (kindDef(f)?.friendly ? 1.5 : 1),      /* (a two-spot octopus warms to its keepers half as fast again) */ i = OCTO_TRUST.reduce((k, x, j) => (b >= x.at ? j : k), 0), nx = OCTO_TRUST[i + 1]; return { lvl: i, label: OCTO_TRUST[i].label, bond: b, next: nx ? { label: nx.label, need: nx.at - b } : null }; }
 function trustStep(f, uid, was, ev) { if (f.species !== 'octopus') return; const now = octoTrust(f, uid).lvl; if (now > was && OCTO_TRUST[now].line) { const t = OCTO_TRUST[now].line(f.name); ev.push({ journal: t, toast: t, trust: { fish: f.id, lvl: now } }); } }
 // ── What the animals would like in the tank ── a shy fish wants somewhere to hide, a seahorse a stem to hold, the octopus a shell to live under,
 // a playful fish bubbles, a crowd of fish some plants. Each names who wants it and which decorations would do; it goes away once the tank has one.
@@ -1920,7 +1964,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.shells -= price;
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker
-      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(special ? { carries: sp.color } : {}), ...(SPECIES_DEF[a.species].count === 1 && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}),      /* (any single fish can be chosen male or female: so a pair can be completed) */  name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
+      t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(KINDS[a.species]?.[a.kind] ? { kind: a.kind } : {}), ...(special ? { carries: sp.color } : {}), ...(SPECIES_DEF[a.species].count === 1 && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}),      /* (any single fish can be chosen male or female: so a pair can be completed) */  name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
       events.push({ activity: { type: 'fish', text: to ? (a.surprise !== false ? `${name} sent ${to.name} a surprise gift.` : `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.`) : `${name} ordered a new fish.` },      /* (a surprise says nothing of what it is, anywhere, until it is opened) */ toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
@@ -2167,7 +2211,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const c = N.cands.find((x) => x.id === a.baby); if (!c) return fail('NOT_FOUND');
       if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
       if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
-      const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: now, lean: leanOf([N.pa, N.ma], hash32(c.seed + 11)), birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
+      const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', kind: N.pa?.kind ?? N.ma?.kind ?? t.fish.find((x) => x.id === N.father)?.kind ?? 'kuda', seed: c.seed, born: now, lean: leanOf([N.pa, N.ma], hash32(c.seed + 11)), birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
       const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); morphBorn(t, f, now, events); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      /* every phone watching sees the others swim off, once */ (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);
       if (!t.flags.firstHatch) t.flags.firstHatch = { at: now, fish: f.id, parents: [N.father, N.mother] };
       events.push({ journal: `${f.name} is staying in the tank, a little seahorse born here to ${N.pa?.name ?? 'its father'} and ${N.ma?.name ?? 'its mother'}. The other babies have swum off to new homes.`, toast: `${f.name} is staying!`, kept: f.id }); return ok();
@@ -2255,7 +2299,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'decide': { const D = t.dilemma; if (!D || D.id !== a.id || D.done) return ok({ applied: false }); if (!D.opts.some((o) => o.k === a.k)) return fail('NOT_FOUND'); if (D.turn && D.turn.uid !== uid && now < D.turn.until) return fail('NOT_YOUR_TURN'); const r = settleDilemma(t, D, a.k, now, name); if (!r.ok) return fail(r.reason); if (name && a.k) bump(t, 'decided'); events.push(...r.events); return ok({ applied: true, line: r.events[0]?.journal }); }
     case 'matchmake': {      // bring two together: fish of a kind spawn sooner and it is these two; two octopuses get to know each other faster
       const x = t.fish.find((f) => f.id === a.a && !f.dead), y = t.fish.find((f) => f.id === a.b && !f.dead); if (!x || !y || x === y) return fail('NOT_FOUND');
-      if (x.species !== y.species) return fail('NOT_SAME_KIND'); if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');
+      if (x.species !== y.species || (x.species === 'seahorse' && kindOf(x) !== kindOf(y))) return fail('NOT_SAME_KIND');      /* (seahorses court only their own species) */ if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');
       if (now - (t.flags.matchAt ?? -Infinity) < DAY) return fail('TOO_SOON'); t.flags.matchAt = now;
       if (isOcto(x)) { if (x.partner || y.partner) return fail('ALREADY_PAIRED'); const k = [x.id, y.id].sort().join('|'); (t.octoBonds ||= {})[k] = (t.octoBonds[k] ?? 0) + 1.5 * DAY; events.push({ journal: `${name} brought ${x.name} and ${y.name} together. They are getting to know each other.` }); return ok(); }
       if (x.species === 'seahorse') return fail('SEAHORSES_CHOOSE');
