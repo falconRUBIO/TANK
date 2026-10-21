@@ -1068,6 +1068,13 @@ export function initUI({ game, social, cb }) {
       $('mok').onclick = async () => { sfx('tap'); if (await share()) done(); }; $('mno').onclick = done;
     }));
   }
+  // a gift on its way: the soonest gift order, counted down at the top of every screen, worded for whoever is looking (for you, from you, or for a friend)
+  { const gb = $('giftbar'); const tickGift = () => { const s = S(), me = game.you?.userId, now = Date.now(), o = (s?.orders ?? []).filter((x) => x.giftFrom && x.arrivesAt > now - 5000).sort((a, b) => a.arrivesAt - b.arrivesAt)[0];
+      if (!gb) return; if (!o) { gb.hidden = true; return; } const left = Math.max(0, o.arrivesAt - now), sec = Math.ceil(left / 1000), h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = sec % 60;
+      const clock = left < 1500 ? 'Now!' : h ? `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${m}:${String(ss).padStart(2, '0')}`;
+      const who = o.owner && o.owner === me ? `A gift from ${o.giftFrom} for you` : o.giftFromId && o.giftFromId === me ? `Your gift for ${o.ownerName ?? 'a friend'}` : `A gift for ${o.ownerName ?? 'a friend'}`;
+      gb.hidden = false; gb.classList.toggle('soon', left < 60e3); gb.innerHTML = `${msIcon('gift', true, 20)}<span><b>${clock}</b><small>${esc(who)} arrives</small></span>`; gb.setAttribute('aria-label', `${who} arrives ${clock}`); };
+    if (gb) { gb.onclick = () => { const s = S(), o = (s?.orders ?? []).filter((x) => x.giftFrom).sort((a, b) => a.arrivesAt - b.arrivesAt)[0]; if (!o) return; sfx('tap'); dialog({ title: 'A gift on its way', text: `${o.giftFrom} sent ${o.owner === game.you?.userId ? 'you' : o.ownerName ?? 'a friend'} ${o.surprise ? 'a surprise' : 'a fish'}${o.giftNote ? ` with a note` : ''}. It arrives ${countdown(o.arrivesAt)}, in a gift bag on the sand.${o.surprise ? ' Only they can open it.' : ''}`, ok: 'OK' }); }; tickGift(); setInterval(tickGift, 1000); } }
   const openHealth = (id = null) => { healthOpen = true; if (id) hOpen.add(id); open('care'); sheet.scrollTop = 0; };      // Health, with one animal's drawer open (from its card)
   return { openHealth, newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }
