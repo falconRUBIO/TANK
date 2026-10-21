@@ -925,8 +925,8 @@ const tang = reef({                             // regal blue tang: a tall oval,
   paint: ({ t, dy }) => { if (t < 0.1) return [255, 214, 30];      // the yellow wrist before the tail
     const win = t > 0.34 && t < 0.66 && dy > 0.1 && dy < 0.42, band = t > 0.12 && t < 0.86 && dy > -0.2 + Math.max(0, 0.5 - t) * 0.4 && dy < 0.58;
     if (band && !win) return [6, 8, 20];      // the black palette swoop from eye to tail, with a blue window inside its loop
-    return dy < -0.55 ? [70, 150, 245] : lerpc([16, 92, 220], [46, 150, 255], (-dy + 0.2) * 0.7); },      // a true royal blue leaning to cyan (a deeper blue reads purple under the tank light)
-  fin: ({ u, part }) => (part === 'tail' ? (u < 0.15 ? [255, 214, 30] : u > 0.85 ? [16, 18, 40] : [255, 220, 50]) : part === 'pec' ? [255, 214, 60] : u > 0.82 ? [14, 16, 34] : [24, 104, 225]),
+    return dy < -0.55 ? [80, 185, 250] : lerpc([0, 118, 222], [40, 172, 255], (-dy + 0.2) * 0.7); },      // a true royal blue leaning to cyan (a deeper blue reads purple under the tank light)
+  fin: ({ u, part }) => (part === 'tail' ? (u < 0.15 ? [255, 214, 30] : u > 0.85 ? [16, 18, 40] : [255, 220, 50]) : part === 'pec' ? [255, 214, 60] : u > 0.82 ? [14, 16, 34] : [10, 128, 230]),
 });
 const neongoby = reef({                         // neon goby: slim and torpedo-shaped, black with an electric-blue stripe from snout to tail, a white belly
   id: 'neongoby', label: 'Neon Goby', L: 24, vox: 0.04, length: 40, eye: [0.84, 2], ring: [80, 200, 255], ringR: 2.0, amp: 0.55,
