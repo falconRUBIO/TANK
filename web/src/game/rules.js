@@ -697,7 +697,7 @@ function eggs(t, now, ev) {
       ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
   if (busy) return;
   if (crowdOf(t).r > 0.8) return;      // fish do not spawn in a crowded tank (and a tank kept full does not fill itself past bursting)
-  const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && !SOCIAL[f.species]?.sameFoe && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      /* (a fish that wants to be the only one of its kind does not raise a family of rivals) */      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
+  const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'tang' && f.species !== 'cory' && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      /* (a fish that needs to be the only one of its kind, a tang or a goby, does not raise a family of rivals) */      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
   const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1];      // the pair you brought together, if they are still here and grown
