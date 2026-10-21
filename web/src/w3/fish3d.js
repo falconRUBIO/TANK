@@ -433,6 +433,7 @@ export class Fish3D {
     return false;
   }
   pickAct(S, rng, others, M, want = null) {
+    if (!want && this.mimicWant) { want = this.mimicWant; this.mimicWant = null; }      // (a mimic octopus answering a fish that came too close: see FishMgr.reefTick)
     const fish = others.filter((o) => o !== this && !o.dead && !o.visitor && o.species.move !== 'jet' && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < 4.5 && o.pos.y < 8);
     const plant = (this.getSpots?.() ?? []).find((q) => PLANTS.has(q.type) && Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 1.7);
     const things = (this.getSpots?.() ?? []).filter((q) => GRIP[q.type] && Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 3.5);

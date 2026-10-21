@@ -40,6 +40,8 @@ const H = (...n) => { let h = 0x9e3779b9; for (const x of n) { h = Math.imul(h ^
 const sid = (s) => [...String(s ?? '')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7);
 const span = ([a, b], r) => Math.round(a + (b - a) * r);
 const rate = (t) => { const r = Number(t.flags?.advRate); return Number.isFinite(r) && r > 0 ? r : 1; };      // a developer setting: 10 makes everything ten times as often
+// how much of an escape artist the tank's octopuses are: a common octopus is the famous one; a two-spot rarely bothers (it is the calm kind kept at home)
+const escRate = (t) => { const os = (t.fish ?? []).filter((f) => f.species === 'octopus' && !f.dead); if (!os.length) return 1; const k = (f) => ({ bimac: 0.5, mimic: 0.8, cyanea: 1.1 })[f.kind] ?? 1.25; return Math.max(...os.map(k)); };
 const pickW = (opts, r) => { const tot = opts.reduce((s, o) => s + o.w, 0); if (tot <= 0) return null; let x = r * tot; for (const o of opts) { if ((x -= o.w) < 0) return o; } return opts[opts.length - 1]; };
 
 export const isAway = (f) => !!f?.away;
@@ -132,7 +134,7 @@ function chooseOutcome(t, f, kind, c, R, r) {
 // octopus get restless, go and come back exactly as if someone had watched).
 export function adventures(t, now, ev, R) {
   t.adv ||= {}; t.keeps ||= [];
-  if (!Number.isFinite(t.adv.octoAt)) t.adv.octoAt = Math.max(now, (t.createdAt ?? now) + 3 * DAY) + span(ADV.OCTO_GAP, H(sid(t.id), 1)) / rate(t);
+  if (!Number.isFinite(t.adv.octoAt)) t.adv.octoAt = Math.max(now, (t.createdAt ?? now) + 3 * DAY) + span(ADV.OCTO_GAP, H(sid(t.id), 1)) / (rate(t) * escRate(t));
   if (!Number.isFinite(t.adv.smallAt)) t.adv.smallAt = Math.max(now, (t.createdAt ?? now) + 2 * DAY) + span(ADV.SMALL_GAP, H(sid(t.id), 2)) / rate(t);
   // tidy anything left behind by an animal that is no longer here (sold, passed away, moved on)
   t.keeps = t.keeps.filter((k) => k && KEEPSAKES[k.k] && Number.isFinite(k.x) && Number.isFinite(k.z));
@@ -142,7 +144,7 @@ export function adventures(t, now, ev, R) {
     if (f.away && !R.isOcto(f)) delete f.away;
   }
   for (let i = 0; i < 6 && now >= t.adv.octoAt; i++) {       // catch up on missed chances (a long time closed), a few at most
-    const at = t.adv.octoAt; t.adv.octoAt = at + span(ADV.OCTO_GAP, H(sid(t.id), at / MIN | 0, 3)) / rate(t);
+    const at = t.adv.octoAt; t.adv.octoAt = at + span(ADV.OCTO_GAP, H(sid(t.id), at / MIN | 0, 3)) / (rate(t) * escRate(t));
     if (weekCount(t, at) >= ADV.WEEK_BUDGET || t.fish.some((f) => f.away || f.restless)) continue;
     const os = t.fish.filter((f) => canAdventure(t, f, at, R, now)); if (!os.length) continue;
     const f = os[Math.floor(H(sid(t.id), at / MIN | 0, 4) * os.length)], nat = NATURE[R.octoMind(f).type] ?? NATURE.watcher;

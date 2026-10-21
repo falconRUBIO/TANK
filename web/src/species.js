@@ -777,7 +777,8 @@ const octopus = {
     return m; },
   make0(seed = 1, look = null) {
     const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
-    const skinC = pal.skin, pale = pal.pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null, ARM = { mimic: [1.45, 0.62], bimac: [0.85, 1.05], cyanea: [1.12, 1.12] }[KND] ?? [1, 1]; for (const a of arms) a.L *= ARM[0];      // the mimic is all long slender arms on a small body; the two-spot is compact; the day octopus heavy-armed
+    const KPAL = { cyanea: { skin: [126, 58, 52], pale: [236, 206, 186] }, bimac: { skin: [112, 112, 92], pale: [214, 212, 190] }, mimic: { skin: [176, 132, 96], pale: [250, 240, 224] } }[look?.kind];      // each kind's own natural colors: the day octopus maroon-brown, the two-spot olive-grey, the mimic sandy
+    const skinC = (KPAL ?? pal).skin, pale = (KPAL ?? pal).pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null, ARM = { mimic: [1.45, 0.62], bimac: [0.85, 1.05], cyanea: [1.12, 1.12] }[KND] ?? [1, 1]; for (const a of arms) a.L *= ARM[0];      // the mimic is all long slender arms on a small body; the two-spot is compact; the day octopus heavy-armed
     // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its center line (so it can be re-posed)
     const armV = new Map(), P = [0, 0, 0], REST = { rest: 1, crawl: 0, sq: 0, ph: 0 };
     arms.forEach((a, i) => { for (let k = 0; k <= 90; k++) {
@@ -795,7 +796,8 @@ const octopus = {
           const x = Math.round(P[0] + (Q[0] - P[0]) * u), y = Math.round(P[1] + (Q[1] - P[1]) * u - sag), z = Math.round(P[2] + (Q[2] - P[2]) * u), key = x + ',' + y + ',' + z;
           if (!armV.has(key) && !webV.has(key)) webV.set(key, { a: order[n], b: order[(n + 1) % 8], at: t, u, sag }); } } }
     const mantleX = (y) => -5 - (y - 7) * 0.35;
-    const fM = (x, y, z) => ((x - mantleX(y)) / 9.5) ** 2 + ((y - 7) / 11.5) ** 2 + (z / 8.5) ** 2;
+    const MS = { mimic: [7, 13.5, 6.2], bimac: [8.6, 9.4, 8.2], cyanea: [11, 12.2, 9.6] }[look?.kind] ?? [9.5, 11.5, 8.5];      // each kind's mantle: the mimic's long and narrow, the two-spot's small and round, the day octopus's big
+    const fM = (x, y, z) => ((x - mantleX(y)) / MS[0]) ** 2 + ((y - 7) / MS[1]) ** 2 + (z / MS[2]) ** 2;
     const fH = (x, y, z) => { const lo = Math.max(0, (-2.5 - y) / 5), w = Math.max(0.55, 1 - lo * lo * 0.5); return ((x - 3) / (9 * w)) ** 2 + ((y - 0.5) / 7) ** 2 + (z / (8.4 * w)) ** 2; };   // the underside tapers to a neck, so nothing flat hangs out when the arms are away
     // mantle and head are blended like two blobs of one body (a metaball union), so the crease where they meet underneath is filled in
     const body = (x, y, z) => { const m = fM(x, y, z), h = fH(x, y, z); return m <= 1 || h <= 1 || 1 / (m * m) + 1 / (h * h) >= 1 ? (m < h ? 'mantle' : 'head') : null; };
