@@ -375,6 +375,14 @@ export function addMessage(db, user, text, now = Date.now()) {
   const r = db.prepare('INSERT INTO messages (tank_id,user_id,text,ts) VALUES (?,?,?,?)').run(t.id, user.id, body, now);
   return { tankId: t.id, msg: { id: Number(r.lastInsertRowid), userId: user.id, name: user.name, text: body, ts: now } };
 }
+// A caretaker arrives: if they were gone half an hour or more (and are not already here on another phone), the stretch they missed is kept
+// for them on the server, so 'While you were away' follows the person, not the phone. Kept for a day, or until the next time away.
+export const AWAY_MIN = 30 * 60e3, AWAY_KEEP = 864e5;
+export function arrive(db, userId, now = Date.now(), already = false) {
+  const m = db.prepare('SELECT last_seen, away_from, away_to FROM members WHERE user_id=?').get(userId);
+  if (m && !already && now - (m.last_seen ?? now) >= AWAY_MIN) { db.prepare('UPDATE members SET away_from=?, away_to=? WHERE user_id=?').run(m.last_seen, now, userId); m.away_from = m.last_seen; m.away_to = now; }
+  touch(db, userId, now); return m?.away_to && now - m.away_to < AWAY_KEEP ? { from: m.away_from, to: m.away_to } : null;
+}
 export function touch(db, userId, now = Date.now()) { db.prepare('UPDATE members SET last_seen=? WHERE user_id=?').run(now, userId); }
 
 export function snapshot(db, user, online = [], tank = null) {

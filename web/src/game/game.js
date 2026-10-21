@@ -73,7 +73,7 @@ export class Game {
   onNet(m) {
     if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
-      this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
+      this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.away = m.away ?? null; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo, hearts: e.hearts ?? [] })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }

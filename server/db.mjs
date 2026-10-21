@@ -58,6 +58,7 @@ export function openDb(path = 'ourtank.db') {
     ); INSERT INTO members_v4 SELECT tank_id, user_id, slot, joined_at, last_seen FROM members; DROP TABLE members; ALTER TABLE members_v4 RENAME TO members; COMMIT;`);
   try { db.exec('ALTER TABLE tanks ADD COLUMN world TEXT'); } catch { /* column already there */ }
   try { db.exec('ALTER TABLE users ADD COLUMN recovery_hash TEXT'); } catch { /* column already there */ }
+  try { db.exec('ALTER TABLE members ADD COLUMN away_from INTEGER'); db.exec('ALTER TABLE members ADD COLUMN away_to INTEGER'); } catch { /* columns already there */ }      // each caretaker's last time away, so Today can say what changed since their own last visit, on any phone
   // a developer's test aquarium: a tank marked test, whose people are kept apart from the real caretakers (test_members), so being in one
   // never takes anyone out of their own tank, and no one can join a test tank the ordinary way
   try { db.exec('ALTER TABLE tanks ADD COLUMN test INTEGER NOT NULL DEFAULT 0'); } catch { /* column already there */ }

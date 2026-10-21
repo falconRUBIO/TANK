@@ -66,8 +66,8 @@ await t('a database made when tanks held three is widened to four on open', asyn
   old.close();
   const { openDb } = await import('./db.mjs'); const db = openDb(path);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM members').get().n, 1, 'rows survive');
-  db.prepare('INSERT INTO members VALUES (?,?,4,0,0)').run('t1', 'u4'); assert.equal(db.prepare('SELECT slot FROM members WHERE user_id=?').get('u4').slot, 4);
-  assert.throws(() => db.prepare('INSERT INTO members VALUES (?,?,5,0,0)').run('t1', 'u1'), /CHECK|constraint/i); db.close(); fs.unlinkSync(path);
+  db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,4,0,0)').run('t1', 'u4'); assert.equal(db.prepare('SELECT slot FROM members WHERE user_id=?').get('u4').slot, 4);
+  assert.throws(() => db.prepare('INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES (?,?,5,0,0)').run('t1', 'u1'), /CHECK|constraint/i); db.close(); fs.unlinkSync(path);
 });
 await t('10 simultaneous joins fill exactly the 3 free seats', async () => {
   const owner = await mkUser('Owner'); const tk = (await call('/api/tanks', { name: 'Race' }, owner.token)).body;
@@ -118,6 +118,16 @@ await t('recovery attempts are rate limited', async () => {
   const lim = await start({ port: 0, dbPath: ':memory:', limits: { recoverPerHour: 3 } }); const out = [];
   for (let i = 0; i < 5; i++) out.push((await fetch(`http://localhost:${lim.port}/api/recover`, { method: 'POST', body: JSON.stringify({ key: 'AAAA-BBBB-CCCC-DDDD' }) })).status);
   assert.deepEqual(out, [404, 404, 404, 429, 429]); await lim.close();
+});
+await t('each caretaker\'s time away is kept on the server: half an hour or more, not while already here on another phone, kept a day', async () => {
+  const fs = await import('node:fs'), { openDb } = await import('./db.mjs'), { arrive, touch } = await import('./logic.mjs'), path = '/tmp/ourtank-away-' + process.pid + '.db'; try { fs.unlinkSync(path); } catch {}
+  const db = openDb(path), H = 3600e3; db.exec(`INSERT INTO users (id,name,avatar,token_hash,created_at) VALUES ('a','A','{}','ha',0); INSERT INTO tanks (id,name,code,created_at,sim_ts) VALUES ('t','T','QWERTY',0,0); INSERT INTO members (tank_id,user_id,slot,joined_at,last_seen) VALUES ('t','a',1,0,0)`);
+  touch(db, 'a', 10 * H); assert.equal(arrive(db, 'a', 10 * H + 60e3), null, 'a minute is not away');
+  touch(db, 'a', 11 * H); assert.deepEqual(arrive(db, 'a', 20 * H), { from: 11 * H, to: 20 * H }, 'nine hours away, from when they left');
+  assert.deepEqual(arrive(db, 'a', 20 * H + 5e3, true), { from: 11 * H, to: 20 * H }, 'a second phone opening does not reset it');
+  touch(db, 'a', 21 * H); assert.deepEqual(arrive(db, 'a', 21 * H + 60e3), { from: 11 * H, to: 20 * H }, 'a short break the same day keeps the last real time away');
+  assert.equal(arrive(db, 'a', 20 * H + 25 * H, true), null, 'gone after a day');
+  db.close(); fs.unlinkSync(path);
 });
 await t('leaving a tank frees the seat for someone else', async () => {
   const o = await mkUser('Own'), m = await mkUser('Mid'), n = await mkUser('New'); const tk = (await call('/api/tanks', { name: 'Leave' }, o.token)).body; await call('/api/join', { code: tk.code }, m.token);

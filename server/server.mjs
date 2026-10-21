@@ -239,9 +239,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     const tankNow = () => (ws.test ? (isDev(ws.user) ? L.testTankOf(db, ws.userId) : null) : null);      // (looked up again for every action: a reset or a move to another test aquarium never reaches the wrong one)
     const tank = ws.test ? tankNow() : L.tankOf(db, ws.userId); if (!tank) return ws.close(); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
-    ws.joinedAt = Date.now(); ws.beat = ws.hidden ? 0 : Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
+    ws.joinedAt = Date.now(); ws.beat = ws.hidden ? 0 : Date.now(); ws.cid = Math.random().toString(36).slice(2); { let away = null; try { away = L.arrive(db, ws.userId, Date.now(), [...rooms.get(tank.id)].some((o) => o.userId === ws.userId)); } catch { /* a nicety */ } ws.away = away; } rooms.get(tank.id).add(ws);
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
-    { const { news = [], ...snap } = L.snapshot(db, ws.user, online(tank.id), ws.test ? tank : null) ?? {}; send(ws, { t: 'snapshot', ...snap }); for (const e of news) for (const o of rooms.get(tank.id) ?? []) if (o !== ws) send(o, { t: 'event', ...e }); if (news.length) an.fromTick?.(tank.id, news, Date.now()); }      // what time brought while catching up is told to the others too
+    { const { news = [], ...snap } = L.snapshot(db, ws.user, online(tank.id), ws.test ? tank : null) ?? {}; send(ws, { t: 'snapshot', ...snap, away: ws.away }); for (const e of news) for (const o of rooms.get(tank.id) ?? []) if (o !== ws) send(o, { t: 'event', ...e }); if (news.length) an.fromTick?.(tank.id, news, Date.now()); }      // what time brought while catching up is told to the others too
     // catching the tank up for the newcomer can change it (growth, a reward): everyone already here must see the same tank
     { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
