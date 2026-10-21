@@ -57,6 +57,7 @@ export class Game {
       if (due < this.now() - 4000 && (tries[due] = (tries[due] ?? 0) + (Date.now() - lastSync >= 8000 ? 1 : 0)) <= 40) resync();      // keeps asking while something is overdue (about every 8 seconds), but a phone clock far ahead of the server cannot reconnect forever
     }, 1000);
     addEventListener('pagehide', () => this.keepCopy(true));
+    setInterval(() => { if (!document.hidden) live.send({ t: 'beat' }); }, 20e3);      // still here, looking: without this the server stops counting a phone as in the tank after 50 seconds
     document.addEventListener('visibilitychange', () => { live.send({ t: 'vis', hidden: document.hidden }); if (document.hidden) this.keepCopy(true); if (!document.hidden) resync(); }); addEventListener('pageshow', resync); addEventListener('online', resync);
   }
   // The phone keeps its own copy of the shared tank. If the server ever loses its data (a restart on a host with no permanent disk), the copy puts the tank back under the same code.

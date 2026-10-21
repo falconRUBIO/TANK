@@ -72,7 +72,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const push = makePush(db, pushOpts ?? vapidFor(db));
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
-  const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].filter((w) => !w.hidden).map((w) => w.userId))];      // someone is "in the tank" only while it is open on their screen: a phone in a pocket keeping its connection alive is not them looking
+  // a phone put to sleep (an iPhone freezes a backgrounded app without a word) keeps its connection open for a long while; with no check-in for 50 seconds it is no longer counted, and everyone is told
+  const lastOnline = new Map(); setInterval(() => { for (const id of rooms.keys()) { const o = online(id), k = o.slice().sort().join(','); if (lastOnline.get(id) !== k) { lastOnline.set(id, k); broadcast(id, { t: 'presence', online: o }); } } for (const id of [...lastOnline.keys()]) if (!rooms.has(id)) lastOnline.delete(id); }, 10e3).unref?.();
+  const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].filter((w) => !w.hidden && Date.now() - (w.beat ?? w.joinedAt ?? 0) < 50e3).map((w) => w.userId))];      // someone is "in the tank" only while it is open on their screen: a phone in a pocket keeping its connection alive is not them looking
   // One phone per tank is the director: its fish positions and memories are what everyone sees. The one that has been connected longest; when it leaves, the next takes over.
   // the parts of a tank that people notice change; a tank whose key changed between checks is sent to everyone again
   const stateKeys = new Map();
@@ -237,7 +239,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     const tankNow = () => (ws.test ? (isDev(ws.user) ? L.testTankOf(db, ws.userId) : null) : null);      // (looked up again for every action: a reset or a move to another test aquarium never reaches the wrong one)
     const tank = ws.test ? tankNow() : L.tankOf(db, ws.userId); if (!tank) return ws.close(); ws.tankId = tank.id;
     if (!rooms.has(tank.id)) rooms.set(tank.id, new Set());
-    ws.joinedAt = Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
+    ws.joinedAt = Date.now(); ws.beat = ws.hidden ? 0 : Date.now(); ws.cid = Math.random().toString(36).slice(2); rooms.get(tank.id).add(ws); L.touch(db, ws.userId);
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
     { const { news = [], ...snap } = L.snapshot(db, ws.user, online(tank.id), ws.test ? tank : null) ?? {}; send(ws, { t: 'snapshot', ...snap }); for (const e of news) for (const o of rooms.get(tank.id) ?? []) if (o !== ws) send(o, { t: 'event', ...e }); if (news.length) an.fromTick?.(tank.id, news, Date.now()); }      // what time brought while catching up is told to the others too
     // catching the tank up for the newcomer can change it (growth, a reward): everyone already here must see the same tank
@@ -267,10 +269,11 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           broadcast(ws.tankId, { t: 'hearts', jid, by: db.prepare('SELECT user_id FROM hearts WHERE journal_id=? ORDER BY ts').all(jid).map((r) => r.user_id) }); return;
         }
         if (m.t === 'photoGet') { const ids = (Array.isArray(m.ids) ? m.ids : []).slice(0, 12).map((x) => Math.floor(+x)).filter(Boolean); for (const id of ids) { const r = db.prepare('SELECT img FROM photos WHERE journal_id=? AND tank_id=?').get(id, ws.tankId); if (r) send(ws, { t: 'photoData', jid: id, img: r.img }); } return; }
+        if (m.t === 'beat') { const was = Date.now() - (ws.beat ?? ws.joinedAt ?? 0) >= 50e3; ws.beat = Date.now(); if (ws.hidden) { ws.hidden = false; roles(ws.tankId); } if (was) { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }      // an open, awake screen checks in every 20 seconds
         if ((m.t === 'perf' || m.t === 'vis' || m.t === 'pushPrefs') && !lim.hit('soft:' + ws.userId, 60, 60e3)) return;      // (cheap messages, but each can wake every phone in the tank or write to the database: a sane cap)
         if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants
-        if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }
+        if (m.t === 'vis') { const h = !!m.hidden; if (!h) ws.beat = Date.now(); if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }
         if (m.t === 'snap') {
           if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
           const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 16).map((v) => n(v, 4)) } : {}), ...(f.c != null ? { c: n(f.c, 2) } : {}), ...(f.g != null ? { g: n(f.g, 1) } : {}), ...(f.sh != null ? { sh: String(f.sh).slice(0, 48) } : {}) }));      // sh: a seahorse's compact state (see main.js seaPack)
