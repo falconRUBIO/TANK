@@ -7,7 +7,7 @@
 import * as R from '../../web/src/game/rules.js';
 const H = 3600e3, D = 24 * H, SEEDS = +(process.argv[2] ?? 20), DAYS = +(process.argv[3] ?? 120), TURTLE = 'turtle';
 const START = ['grass', 'rock', 'coconut', 'cory', 'guppy', 'anemone'];
-const LIST = [...START, 'neongoby', 'grass', 'seafan', 'seahorse', 'seahorse', 'tang', 'boulder', 'liverock', 'betta', 'clam', 'puffer', 'ledge', 'seagrass'];
+const LIST = [...START, 'bubbler', 'neongoby', 'grass', 'seafan', 'seahorse', 'seahorse', 'tang', 'boulder', 'liverock', 'betta', 'clam', 'puffer', 'ledge', 'seagrass'];
 const EXTRA = ['fern', 'starfish', 'moss', 'shell', 'red', 'sword', 'kelp', 'urchin'];
 const STRAT = {
   save: { list: LIST, keep: 15, turtleFirst: true, saveFrom: 7 },      // shops as balanced, but from level 7 buys nothing else until the first turtle

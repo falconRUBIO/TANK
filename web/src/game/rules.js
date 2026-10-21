@@ -82,7 +82,7 @@ const SHOP_CURVE = {
   sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
   pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
   seafan: [4, 36], liverock: [5, 50], ledge: [7, 40], seagrass: [7, 30],
-  wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
+  wood: [4, 38], pillar: [4, 42], skull: [4, 40], bubbler: [3, 48],      /* (level 3 opens tricks and bubbles: the bubbler is the first trick spot) */
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
   bridge: [7, 150], crystal: [7, 190],
