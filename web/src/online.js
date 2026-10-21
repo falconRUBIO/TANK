@@ -38,7 +38,7 @@ export class Live {
   }
   open() {
     this.closed = false;
-    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws' + (inTest() ? '?test=1' : '');
+    const url = (base || location.origin).replace(/^http/, 'ws') + '/ws' + (inTest() ? '?test=1' : '?') + (document.hidden ? '&hid=1' : '');      // (a phone reconnecting in the background says so, so it is not counted as someone looking in)
     const ws = (this.ws = new WebSocket(url, ['ourtank.' + session.token]));
     ws.onopen = () => { this.retry = 0; this.onStatus(true); for (const m of this.pending.values()) ws.send(JSON.stringify(m)); };      // replay un-acked, idempotent actions
     ws.onmessage = (e) => { this.lastMsg = Date.now(); const m = JSON.parse(e.data); if (m.t === 'ack') this.pending.delete(m.idem); this.onMsg(m); };

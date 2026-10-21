@@ -1411,12 +1411,12 @@ game.on('died', (id) => {                         // a quiet beat, not an alarm:
   for (const o of fishes.list) if (o !== f && !o.dead) { o.mul = 0.6; setTimeout(() => { if (o.mul === 0.6) o.mul = 1; }, 9000); }
 });
 game.on('theme', () => { moment({ at: new THREE.Vector3(0, 5, 1.2) }); });
-let seenOnline = null;
+let seenOnline = null; const lastSeenOnline = new Map();
 game.on('members', () => {                                                    // a friend arrives: a greeting, and their favorite fish swims over to the glass
   if (!game.shared) return; const now = new Set(game.online ?? []); if (seenOnline) for (const id of now) if (!seenOnline.has(id) && id !== game.you?.userId) {
-    const m = game.members?.find((x) => x.id === id); if (!m) continue; ui?.toast(`${m.name} is in the tank`, 3200); sfx('arrive');
+    const m = game.members?.find((x) => x.id === id); if (!m || Date.now() - (lastSeenOnline.get(id) ?? 0) < 10 * 60e3) continue; ui?.toast(`${m.name} is in the tank`, 3200); sfx('arrive');
     const fav = game.state?.fish.map((f) => ({ f, b: f.bond?.[id] ?? 0 })).sort((a, b) => b.b - a.b)[0]; const fish = fav && fav.b > 0 ? fishes.byId.get(fav.f.id) : null; if (fish) { fish.target.set((Math.random() - 0.5) * 2.5, Math.max(1, Math.min(9, fish.pos.y)), 2.5); fish.retarget = 5; fishes.burst(fish.pos); }
-  } seenOnline = now;
+  } for (const id of seenOnline ?? []) if (!now.has(id)) lastSeenOnline.set(id, Date.now()); seenOnline = now;      // (someone who just stepped away and came back is not greeted again)
 });
 game.on('grew', (id) => { const f = fishes.byId.get(id); if (f) { moment({ at: f.pos, haptics: 25 }); spotlightFish(id, 3200, 500); } });
 game.on('surprise', (x) => { if (!x?.fish) return; setTimeout(() => ui?.surprise(x.text), 300); spotlightFish(x.fish, 4200, 1200); sfx('arrive'); });

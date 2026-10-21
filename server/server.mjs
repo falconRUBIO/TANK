@@ -72,7 +72,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const push = makePush(db, pushOpts ?? vapidFor(db));
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
   const rooms = new Map();                        // tankId -> Set<ws>
-  const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].map((w) => w.userId))];
+  const online = (tankId) => [...new Set([...(rooms.get(tankId) ?? [])].filter((w) => !w.hidden).map((w) => w.userId))];      // someone is "in the tank" only while it is open on their screen: a phone in a pocket keeping its connection alive is not them looking
   // One phone per tank is the director: its fish positions and memories are what everyone sees. The one that has been connected longest; when it leaves, the next takes over.
   // the parts of a tank that people notice change; a tank whose key changed between checks is sent to everyone again
   const stateKeys = new Map();
@@ -229,7 +229,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     const proto = String(req.headers['sec-websocket-protocol'] ?? '').split(',').map((x) => x.trim()).find((x) => x.startsWith('ourtank.')), user = L.authUser(db, proto ? proto.slice(8) : url.searchParams.get('token'));
     const test = url.searchParams.get('test') === '1';      // a developer's test aquarium instead of their own tank
     if (!user || !(test ? isDev(user) && L.testTankOf(db, user.id) : L.tankOf(db, user.id))) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return socket.destroy(); }
-    wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; ws.test = test; wss.emit('connection', ws, req); });
+    wss.handleUpgrade(req, socket, head, (ws) => { ws.user = user; ws.userId = user.id; ws.test = test; ws.hidden = url.searchParams.get('hid') === '1'; wss.emit('connection', ws, req); });
   });
   wss.on('connection', (ws) => {
     ws.on('error', () => { try { ws.terminate(); } catch { /* gone */ } });      // a bad message (too big, malformed) drops that one connection; it must never take the server down
@@ -270,7 +270,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if ((m.t === 'perf' || m.t === 'vis' || m.t === 'pushPrefs') && !lim.hit('soft:' + ws.userId, 60, 60e3)) return;      // (cheap messages, but each can wake every phone in the tank or write to the database: a sane cap)
         if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants
-        if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); } return; }
+        if (m.t === 'vis') { const h = !!m.hidden; if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }
         if (m.t === 'snap') {
           if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
           const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 16).map((v) => n(v, 4)) } : {}), ...(f.c != null ? { c: n(f.c, 2) } : {}), ...(f.g != null ? { g: n(f.g, 1) } : {}), ...(f.sh != null ? { sh: String(f.sh).slice(0, 48) } : {}) }));      // sh: a seahorse's compact state (see main.js seaPack)
