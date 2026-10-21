@@ -36,7 +36,7 @@ const SIG_TEXT = { grab: 'Taking hold of things', tour: 'A swim round the tank',
 // how wide a thing is where the arms take hold of it: round a plant's stem, a rock, the shell, a pillar
 const GRIP = { seafan: 0.2, urchin: 0.45, liverock: 0.45, grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 1.0, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5, wood: 0.5, bubbler: 0.3, lighthouse: 0.4, table: 0.6, torii: 0.3, arch: 0.4, bridge: 0.5 };
 const BOSSY = new Set(['angelfish', 'sunangel', 'guppy']);      // big or pushy fish an octopus will face down (the angelfish, and the damselfish that guards its patch)
-const TURTLE_IDS = new Set(['turtle', 'hawksbill']);
+const TURTLE_IDS = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 const LAIRS = new Set(['rock', 'liverock', 'boulder', 'brain', 'urchin', 'moss', 'wood']);      // where a crab or a shrimp would hide
 const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish: 0.08 };
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];

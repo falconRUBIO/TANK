@@ -15,6 +15,24 @@ export const FACTS = {
     'Most of an octopus\'s neurons are in its arms: each arm can taste and feel what it touches on its own.',
     'An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin.',
   ],
+  loggerhead: [
+    'A loggerhead has the biggest head of any hard-shelled turtle, with jaws strong enough to crush conch shells.',
+    'Loggerheads swim right across oceans: some hatched in Japan feed off Mexico before swimming home to nest.',
+    'A loggerhead shell often carries a whole little world of barnacles, crabs and algae along for the ride.',
+    'Loggerheads find their way home using Earth\'s magnetic field, like a built-in compass.',
+  ],
+  kemps: [
+    "Kemp's ridley is the smallest sea turtle and the most endangered; nearly all of them nest on one beach in Mexico.",
+    "Kemp's ridleys nest by day, thousands at once, in mass arrivals called arribadas.",
+    "A Kemp's ridley digs in the sandy bottom of shallow bays for crabs, its favorite food.",
+    "Kemp's ridleys are known for being feisty: they snap and flap when picked up.",
+  ],
+  leatherback: [
+    'The leatherback is the largest turtle alive: it can be over two meters long and weigh as much as a small car.',
+    'A leatherback has no hard plates: its shell is thick, oily skin over a mosaic of tiny bones, with seven ridges.',
+    'Leatherbacks eat jellyfish, and the inside of their throats is lined with backward-pointing spines to hold them.',
+    'Leatherbacks dive deeper than any other turtle, over a kilometer down.',
+  ],
   hawksbill: [
     'A hawksbill eats sponges, prying them out of the reef with its narrow, hooked beak. Few other animals can eat them.',
     'Hawksbill shells are the tortoiseshell people once made combs and glasses from; today the trade is banned to protect them.',

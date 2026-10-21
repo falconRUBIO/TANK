@@ -1092,3 +1092,10 @@ ok('the hawksbill opens only once the tank has set a turtle free', () => {
   R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'hawksbill'); assert.ok(f && R.isTurtle(f) && R.favFoodOf(f) === 'greens' && R.stageOf(f, 2000 + 7 * 3600e3) === 'baby');
   assert.equal(R.milestonesOf(f).at(-1).key, 'ocean');
 });
+ok('each new kind of turtle opens with one more turtle set free; the leatherback only ever visits', () => {
+  const t = R.newWorld(0); t.shells = 5000; t.level = 7; const buy = (sp, now) => R.applyAction(t, { t: 'buyFish', species: sp }, { now });
+  t.released = [1].map((i) => ({ id: 'x' + i })); assert.equal(buy('loggerhead', 1000).reason, 'LOCKED'); assert.equal(buy('kemps', 1001).reason, 'LOCKED');
+  t.released.push({ id: 'x2' }); assert.ok(buy('loggerhead', 1002).ok); assert.equal(buy('kemps', 1003).reason, 'LOCKED');
+  t.released.push({ id: 'x3' }); assert.ok(buy('kemps', 1004).ok);
+  assert.ok(R.SPECIES_DEF.leatherback.visitor && R.SPECIES_DEF.leatherback.resident === false); assert.ok(['loggerhead', 'kemps', 'leatherback'].every((k) => R.isTurtle(k)));
+});

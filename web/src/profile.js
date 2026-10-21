@@ -73,4 +73,7 @@ export const SPECIES_INFO = {
   octopus: { sci: 'Octopus vulgaris', size: '60–90 cm with arms' },
   turtle: { sci: 'Chelonia mydas', size: 'hatchling 5 cm, grows to over 1 m' },
   hawksbill: { sci: 'Eretmochelys imbricata', size: 'hatchling 4 cm, grows to about 90 cm' },
+  loggerhead: { sci: 'Caretta caretta', size: 'hatchling 5 cm, grows to about 1 m' },
+  kemps: { sci: 'Lepidochelys kempii', size: 'hatchling 4 cm, grows to about 65 cm' },
+  leatherback: { sci: 'Dermochelys coriacea', size: 'up to 2 m and more' },
 };

@@ -856,11 +856,14 @@ const turtleSpecies = (O) => ({
     ];
     // a hawksbill wears tortoiseshell: amber plates marbled with dark brown and black, the same pattern people once hunted it for
     const HAWK = [{ sh: [204, 132, 46], dp: [92, 46, 18], se: [40, 20, 10], ray: [250, 196, 96], sk: [74, 56, 36], ed: [236, 212, 160], tort: true }, { sh: [186, 108, 38], dp: [70, 34, 14], se: [34, 16, 8], ray: [240, 176, 80], sk: [66, 48, 30], ed: [230, 204, 150], tort: true }];
-    const P = O.hawk ? HAWK[Math.floor(rng() * HAWK.length)] : PALS[Math.floor(rng() * PALS.length)];
-    const SH = { cy: 1, rx: 14, ry: O.hawk ? 6.8 : 7.6, rz: O.hawk ? 9.8 : 10.6 };
+    // a loggerhead is reddish brown on top and yellow below, with a huge head; a Kemp's ridley is grey-olive and almost round; a leatherback has no plates at all, just black leathery skin over ridges, speckled white
+    const OWN = { logg: [{ sh: [132, 70, 36], dp: [84, 40, 20], se: [52, 24, 12], ray: [214, 136, 70], sk: [150, 104, 52], ed: [236, 206, 140] }, { sh: [120, 64, 34], dp: [74, 36, 18], se: [46, 22, 10], ray: [200, 124, 62], sk: [138, 96, 50], ed: [230, 200, 136] }],
+      kemp: [{ sh: [104, 112, 88], dp: [64, 70, 54], se: [36, 40, 30], ray: [150, 156, 124], sk: [118, 124, 112], ed: [226, 228, 214] }], leather: [{ sh: [34, 40, 52], dp: [20, 24, 32], se: [16, 18, 24], ray: [80, 92, 110], sk: [40, 46, 58], ed: [200, 208, 220] }] };
+    const P = O.kind && OWN[O.kind] ? OWN[O.kind][Math.floor(rng() * OWN[O.kind].length)] : O.hawk ? HAWK[Math.floor(rng() * HAWK.length)] : PALS[Math.floor(rng() * PALS.length)];
+    const SH = { cy: 1, rx: O.kind === 'kemp' ? 12.6 : O.kind === 'logg' ? 15 : O.kind === 'leather' ? 16 : 14, ry: O.hawk ? 6.8 : O.kind === 'leather' ? 7 : 7.6, rz: O.kind === 'kemp' ? 11.4 : O.kind === 'logg' ? 10.4 : O.kind === 'leather' ? 10 : O.hawk ? 9.8 : 10.6 }, HS = O.kind === 'logg' ? 1.32 : O.kind === 'kemp' ? 1.05 : 1;
     const PLATES = [[-9.5, 0], [-4.8, 0], [0, 0], [4.8, 0], [9.2, 0], ...[-7.4, -2.4, 2.6, 7.4].flatMap((px) => [[px, 6.4], [px, -6.4]])];
     const shellIn = (x, y, z) => { const dx = x / SH.rx, dz = z / SH.rz; if (y >= SH.cy) { const dy = (y - SH.cy) / SH.ry, k = dx * dx + dz * dz; return k + dy * dy * (1 + 0.25 * Math.max(0, dx)) <= 1; } return y >= SH.cy - 2.4 && dx * dx * 1.12 + dz * dz * 1.18 <= 1; };
-    const head = (x, y, z) => { const dx = (x - 18.8) / 5.2, dy = (y - 2.1) / 3.9, dz = z / 3.7; return dx * dx + dy * dy + dz * dz <= 1; };
+    const head = (x, y, z) => { const dx = (x - 18.8 - (HS - 1) * 4) / (5.2 * HS), dy = (y - 2.1) / (3.9 * HS), dz = z / (3.7 * HS);      /* (a loggerhead's head is a third bigger: the jaws that crush crabs and conch) */ return dx * dx + dy * dy + dz * dz <= 1; };
     const neck = (x, y, z) => x >= 11.5 && x <= 16 && Math.hypot((y - 1.2) / 2.9, z / 3.0) <= 1;
     // skin: big polygon scales, each dark with a pale cream edge, the way a turtle's head and flippers look close up
     const scale = (a, b, sz) => { const ax = (a + off[0]) / sz, bx = (b + off[1]) / sz, ix = Math.floor(ax + (Math.floor(bx) & 1) * 0.5), iy = Math.floor(bx), fx = ax + (iy & 1) * 0.5 - ix, fy = bx - iy, e = Math.min(fx, 1 - fx, fy, 1 - fy); return { e, n: ((ix * 7 + iy * 13) % 5) / 5 }; };
@@ -882,6 +885,8 @@ const turtleSpecies = (O) => ({
           if (y < SH.cy) { const rim = Math.abs(z) > 9 || Math.abs(x) > 12; return { c: rim ? mix(P.sh, P.se, 0.25) : mix([238, 222, 160], [212, 192, 128], ((Math.floor(x / 4) + Math.floor(Math.abs(z) / 4)) & 1) * 0.55) }; }
           // plates: five down the spine, four along each side, a ring of small ones round the rim; dark seams, gold rays bursting from each plate's center
           const r = Math.hypot(x / SH.rx, z / SH.rz), az = Math.abs(z);
+          if (O.kind === 'leather') { const ridge = [0, 3.4, 6.8, 9.4].some((q) => Math.abs(Math.abs(z) - q) < 0.7), spk = ((x * 73856093) ^ (Math.round(z * 3) * 19349663) ^ (y * 83492791)) % 19 === 0, back = x < -SH.rx * 0.6 ? 1 : 0;      // a leatherback: seven ridges down its back, black skin with white speckles, tapering to a point behind
+            return { c: spk ? [220, 226, 236] : ridge ? mix(P.sh, P.ray, 0.45) : mix(P.sh, P.dp, 0.3 + 0.3 * back), tag: 'shell' }; }
           if (O.hawk && r > 0.8 && x < -6 && ((Math.floor(Math.atan2(z, x) * 7.6) & 1) === 0) && r > 0.93) return null;      // a hawksbill's shell ends in a saw-toothed rim at the back
           if (r > 0.86) { const cell = Math.floor((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24), edge = ((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24) % 1; return { c: edge < 0.14 ? P.se : mix(mix(P.sh, P.ray, 0.35), [255, 240, 200], (cell & 1) * 0.1), tag: 'shell' }; }
           // each plate is the patch nearest its own center: five down the spine and four along each side, so the seams fall where two plates meet, the way real scutes tile
@@ -898,6 +903,7 @@ const turtleSpecies = (O) => ({
     };
   },
 });
-const turtle = turtleSpecies({ id: 'turtle', label: 'Sea Turtle' }), hawksbill = turtleSpecies({ id: 'hawksbill', label: 'Hawksbill Turtle', hawk: true, vox: 0.082 });
+const turtle = turtleSpecies({ id: 'turtle', label: 'Sea Turtle' }), hawksbill = turtleSpecies({ id: 'hawksbill', label: 'Hawksbill Turtle', hawk: true, vox: 0.082 }),
+  loggerhead = turtleSpecies({ id: 'loggerhead', label: 'Loggerhead Turtle', kind: 'logg', vox: 0.092 }), kemps = turtleSpecies({ id: 'kemps', label: "Kemp's Ridley", kind: 'kemp', vox: 0.074 }), leatherback = turtleSpecies({ id: 'leatherback', label: 'Leatherback', kind: 'leather', vox: 0.11 });
 
-export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, turtle, hawksbill, moonbetta, sunangel, rosecory };
+export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, turtle, hawksbill, loggerhead, kemps, leatherback, moonbetta, sunangel, rosecory };
