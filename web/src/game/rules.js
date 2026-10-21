@@ -1297,7 +1297,7 @@ export function needCtx(t, f, now = Date.now()) {
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)
-export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return f.species === 'kemps' ? 1.8 : isTurtle(f) ? 2.5 : S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
+export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return f.species === 'kemps' ? 3 : isTurtle(f) ? 4 :      /* (a sea turtle needs a great deal of room: one is plenty for most tanks) */ S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
 export const crowdOf = (t) => { const L = t.fish.filter((x) => !x.dead && !x.away), n = L.length, cap = capacity(t.level ?? 1), load = L.reduce((a, f) => a + roomOf(f), 0); return { n, cap, load, r: load / cap }; };
 export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;

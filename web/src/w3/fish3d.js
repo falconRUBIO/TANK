@@ -492,10 +492,11 @@ export class Fish3D {
   turtleTick(dt, others) {
     const v = this.vel.length(), want = Math.min(1, v / 0.9), t = this.tt ?? 0, low = this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3;
     this.strokeK = (this.strokeK ?? 0.4) + (want - (this.strokeK ?? 0.4)) * Math.min(1, dt * 1.5);
-    this.glideT = (this.glideT ?? 0) - dt; if (this.glideT <= 0) { this.gliding = !this.gliding && v > 0.25; this.glideT = this.gliding ? 1.5 + Math.random() * 2.5 : 1.8 + Math.random() * 2; }      // three or four strokes, then a long glide
+    this.glideT = (this.glideT ?? 0) - dt; if (this.glideT <= 0) { const gk = this.species.id === 'kemps' ? 0.5 : this.species.id === 'leatherback' ? 1.6 : 1; this.gliding = !this.gliding && v > 0.25; this.glideT = this.gliding ? (1.5 + Math.random() * 2.5) * gk : (1.8 + Math.random() * 2) / gk; }      // (a ridley barely glides; a leatherback glides for ages)      // three or four strokes, then a long glide
     this.glideK = (this.glideK ?? 0) + ((this.gliding ? 1 : 0) - (this.glideK ?? 0)) * Math.min(1, dt * 2);
     const resting = v < 0.12 && (low || this.toLedge); this.restK = (this.restK ?? 0) + ((resting ? 1 : 0) - (this.restK ?? 0)) * Math.min(1, dt * 0.8);
-    const ph0 = this.flipPh ?? 0; this.flipPh = ph0 + dt * (0.6 + 1.9 * this.strokeK) * (1 - 0.85 * this.glideK) * (1 - 0.9 * this.restK);
+    const kind = this.species.id, rate = kind === 'kemps' ? 1.45 : kind === 'leatherback' ? 0.7 : kind === 'loggerhead' ? 0.85 : 1;      // a little ridley beats its flippers fast; a loggerhead heavily; a leatherback in slow, enormous strokes
+    const ph0 = this.flipPh ?? 0; this.flipPh = ph0 + dt * (0.6 + 1.9 * this.strokeK) * rate * (1 - 0.85 * this.glideK) * (1 - 0.9 * this.restK);
     if (Math.sin(this.flipPh) > 0.6 && Math.sin(ph0) <= 0.6 && !this.gliding && this.restK < 0.3) this.vel.y += 0.06 * this.strokeK;      // each downstroke lifts it a little
     const dh = Math.atan2(Math.sin(this.heading - (this.prevH ?? this.heading)), Math.cos(this.heading - (this.prevH ?? this.heading))) / Math.max(dt, 1e-3); this.prevH = this.heading;
     this.steerK = (this.steerK ?? 0) + (Math.max(-1, Math.min(1, dh * 0.8)) - (this.steerK ?? 0)) * Math.min(1, dt * 3); this.roll = (this.roll ?? 0) + (-0.35 * this.steerK * (1 - this.restK) - (this.roll ?? 0)) * Math.min(1, dt * 2.5);      // it banks into a turn
