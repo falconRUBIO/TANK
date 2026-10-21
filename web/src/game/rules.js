@@ -130,6 +130,11 @@ export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, turtle: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
+// a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
+// keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
+export const TURTLE_DAYS = 14, TURTLE_PAY = 100;
+export const turtleReady = (f, now = Date.now()) => !!f && f.species === 'turtle' && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
+export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
 // how big it is, smoothly, from the day it hatched to the day it is grown: tiny fresh from the egg, half grown by the end of the baby days
 export function growthScale(fish, now = Date.now()) { const d = Math.max(0, (now - fish.born) / DAY),      /* (the same clock as stageOf: a strong hatchling's head start shows in its size too) */ lerp = (a, b, k) => a + (b - a) * Math.max(0, Math.min(1, k)); const start = fish.parents?.length ? 0.2 : STAGE_SCALE.baby;
@@ -437,7 +442,7 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg ? 'baby' : 'juvenile',      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || o.species === 'turtle' ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg || o.species === 'turtle' ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
   if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
   if (o.carries && MORPHS[o.carries]) f.genes = { ...genesOf(seed), m: [o.carries, 'n'] };      // today's special: it carries a rare color
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
@@ -493,6 +498,9 @@ function puzzles(t, now, ev) {
 function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
+  { const R = t.released?.filter((x) => now - x.at > 2 * DAY); if (R?.length && hash32(Math.floor(now / 6e4) * 7 + R.length) % 100 < 35) { const T = R[hash32(Math.floor(now / 36e5)) % R.length], seq = (t.seq = (t.seq ?? 10) + 1); T.visits = (T.visits ?? 0) + 1;      // a turtle let go comes back now and then, grown, to see the tank it grew up in
+    t.visitor = { id: 'v' + seq, species: 'turtle', seed: T.seed, until: now + 2 * HOUR, name: T.name, back: T.id };
+    ev.push({ journal: T.visits === 1 ? `${T.name} came back! The turtle you raised swam in from the ocean to visit, bigger than before.` : `${T.name} came back to visit again, for the ${ordinal(T.visits)} time.`, toast: `${T.name} is back to visit! Tap it to say hello.`, visitor: true, hist: 'visitor' }); return; } }
   if (todOf(t, now) < 2 && hash32(Math.floor(t.visitAt / 6e4)) % 10 < 4 && !t.visitWait) { t.visitWait = true; const h = new Date(now + (Number(t.tzMin) || 0) * 60e3).getUTCHours(); t.visitAt = now + ((22 - h + 24) % 24 || 24) * HOUR; return; }      // some visitors only come at night: this one waits for the evening (life.js)
   t.visitWait = false;
   const all = Object.keys(SPECIES_DEF).filter((k) => SPECIES_DEF[k].visitor && !t.visitMem?.[k]?.kept), fresh = all.filter((k) => !t.seen.fish.includes(k)), lure = themesOf(t).filter((x) => x.active && x.visitor && fresh.includes(x.visitor)).map((x) => x.visitor), pool = lure.length ? lure : fresh.length ? fresh : all;       // a theme draws its own kind of visitor (a kind that stayed lives here now: it never visits)
@@ -2040,6 +2048,18 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const forOther = f.owner && f.owner !== uid && members?.some((m) => m.id === f.owner);      // the first caretaker selling someone else's fish says so
       if (f.resident) { const M = t.visitMem?.[f.species]; if (M) { delete M.kept; M.stay = { no: now }; } events.push({ journal: `${name} let ${f.name} go back to the open water. It knows the way, and may visit again.`, toast: `${f.name} swam back out to the open water.` }); return ok({ id: f.id, delta: 0 }); }      // a visitor that stayed is not sold: it goes back where it came from, and may come visiting again
       events.push({ journal: forOther ? `${name} found ${f.name} a new home, for ${f.ownerName ?? 'its caretaker'}.` : `${name} found ${f.name} a new home.`, toast: pay ? `${f.name} went to a new home. +${pay} shells` : `${f.name} went to a new home.`, activity: { type: 'fish', text: `${name} sold ${f.name} to a new home.` }, released: f.id });
+      return ok({ id: f.id, delta: pay });
+    }
+    case 'releaseTurtle': {                                        // a grown sea turtle is let go to the ocean: its keepers are paid, a scute is left behind, and it may come back to visit
+      const f = t.fish.find((x) => x.id === a.id); if (!f || f.species !== 'turtle' || f.dead) return fail('NOT_FOUND');
+      if (!turtleReady(f, now)) return fail('NOT_READY');
+      if (!canSell(f, uid, members)) return fail('NOT_YOURS');
+      if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
+      let well = 70; try { well = wellOf(t, f, now).score; } catch { /* (a score is a bonus, not a gate) */ }
+      const pay = TURTLE_PAY + Math.max(0, Math.round((well - 60) * 1.25)); t.shells += pay; t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
+      (t.released ||= []).push({ id: f.id, name: f.name, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift();
+      (t.keeps ||= []).push({ id: nextId(t, 'k'), k: 'scute', by: f.id, byName: f.name, at: now, x: (hash32(now / 6e4) % 500) / 100 - 2.5, z: 1.6 });
+      events.push({ journal: `${name} let ${f.name} go to the ocean. It swam up and out into open water, and left a little shell scute behind.`, toast: `${f.name} swam off to the ocean. +${pay} shells`, activity: { type: 'fish', text: `${name} released ${f.name} to the ocean.` }, released: f.id, hist: 'released' });
       return ok({ id: f.id, delta: pay });
     }
     case 'releaseOcto': {                                          // it is let go: it slips over the back of the tank to the reef. Not a death, nothing is paid, and never the last fish

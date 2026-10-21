@@ -31,6 +31,7 @@ export const KEEPSAKES = {
   cap:   { label: 'Bottle cap' },
   key:   { label: 'Little brass key' },
   pebble:{ label: 'Smooth pebble' },
+  scute: { label: 'Turtle shell scute' },
   glass: { label: 'Piece of sea glass' },
   shard: { label: 'Painted shard' },
   shell: { label: 'Tiny spiral shell' },

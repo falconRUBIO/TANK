@@ -1073,3 +1073,15 @@ ok('(first 30) a lid decision only comes from an octopus really seen testing the
   omenThen(b, t0 + 1000); assert.equal(b.dilemma?.kind, 'lid');
   b.fish[0].away = { at: t0 }; assert.equal(R.applyAction(b, { t: 'octoLid', fish: 'o' }, { now: t0 + 5 * 3600e3, name: 'You' }).ok, false, 'not while it is away');
 });
+ok('a sea turtle comes as a hatchling at level 7, grows up, and is let go to the ocean for shells and a keepsake; later it comes back to visit', () => {
+  const D = 864e5, t = R.newWorld(0); t.shells = 500; t.level = 6;
+  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 1000 }).ok, false, 'not before level 7');
+  t.level = 7; const r = R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 2000 }); assert.ok(r.ok, JSON.stringify(r)); assert.equal(t.shells, 500 - 180);
+  R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'turtle'); assert.ok(f, 'it arrives'); assert.equal(R.stageOf(f, 2000 + 7 * 3600e3), 'baby', 'as a hatchling');
+  const early = f.arrived + 5 * D; assert.equal(R.applyAction(t, { t: 'releaseTurtle', id: f.id }, { now: early }).reason, 'NOT_READY', 'not until it is grown and has had two weeks here');
+  const at = f.arrived + 15 * D; for (let d = 1; d <= 15; d++) { R.advance(t, f.arrived + d * D); t.hunger = 0; t.water = 1; t.glass = 0; for (const x of t.fish) { x.ail = 0; x.hunger = 0; } }      // (looked after every day)
+  assert.ok(R.turtleReady(f, at)); const sh = t.shells, rel = R.applyAction(t, { t: 'releaseTurtle', id: f.id }, { now: at, name: 'You' });
+  assert.ok(rel.ok, JSON.stringify(rel)); assert.ok(rel.delta >= R.TURTLE_PAY && t.shells === sh + rel.delta); assert.ok(!t.fish.some((x) => x.id === f.id)); assert.ok(t.keeps.some((k) => k.k === 'scute' && k.byName === 'Shelly')); assert.equal(t.released[0].name, 'Shelly');
+  t.flags.tut = 5; t.visitor = null; let back = null; for (let h = 3 * 24; h < 30 * 24 && !back; h += 6) { const now = at + h * 3600e3; t.visitAt = Math.min(t.visitAt ?? now, now); R.advance(t, now); if (t.visitor?.back === f.id) back = t.visitor; else if (t.visitor) t.visitor.until = now; }
+  assert.ok(back && back.species === 'turtle' && back.name === 'Shelly', 'it comes back to visit');
+});

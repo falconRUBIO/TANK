@@ -23,7 +23,7 @@ import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
-import { wellOf } from './game/rules.js';
+import { wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
@@ -338,6 +338,19 @@ setInterval(() => { const s = game.state; if (!s) return;
     if (d.seek) { const k = Math.min(d.seek.path.length - 1, Math.floor((game.now() - d.seek.at) / (HIDE_STEP * 1000))), sp = decor.spots().find((q) => q.id === d.seek.path[k]);
       if (sp && f.seekStep !== d.seek.at + ':' + k) { f.seekStep = d.seek.at + ':' + k; f.seekSpot = sp; f.inspect = { x: sp.x, z: sp.z }; } }
     else if (f.seekStep) { const sp = f.seekSpot; f.seekStep = null; f.seekSpot = null; if (sp) fishes.burst?.(new THREE.Vector3(sp.x, (sp.y ?? 0) + 0.9, sp.z + 0.3)); } } }, 1000);
+// a sea turtle is raised to be let go: how long until it is ready for the ocean, and when it is, the button that sends it
+function turtleBlock(rec) {
+  if (rec?.species !== 'turtle' || rec.dead) return '';
+  if (!turtleReady(rec)) { const n = turtleDaysLeft(rec); return `<div class="now">${msIcon('turtle', true, 14)} <span>Growing up. Ready for the ocean in about ${n} day${n === 1 ? '' : 's'}; the better it is looked after, the more it is worth when it goes.</span></div>`; }
+  return `<div class="acts2 playrow"><button class="act2 due" id="turtrel">${msIcon('turtle', true, 18)} Release ${esc(rec.name)} to the ocean</button></div>`;
+}
+async function releaseTurtle(rec) {
+  const yes = await ui.choose({ title: `Release ${rec.name}?`, text: `${rec.name} is grown and ready for the open ocean. Its keepers get about ${TURTLE_PAY} shells (more if it is thriving), it leaves a keepsake behind, and it may come back to visit one day.`, options: [{ label: 'Let it go', value: true }, { label: 'Not yet', value: false }] });
+  if (!yes) return; const f = fishes.byId.get(rec.id); setFocus(null);
+  if (f) { f.retarget = 30; f.idle = 0; f.mul = 1.5; f.target.set(f.pos.x * 0.5, Fish3D.topY + 1, 0.6); f.thought = 'Off to the ocean.'; sfx('arrive'); for (let i = 0; i < 6; i++) setTimeout(() => fishes.burst(f.pos.clone()), 400 + i * 450); }      // up it goes, out through the surface, trailing bubbles
+  await new Promise((q) => setTimeout(q, 3600)); moment({ at: f?.pos.clone() ?? null, haptics: 30 });
+  const r = await game.dispatch({ t: 'releaseTurtle', id: rec.id }); if (!r.ok) return fail(r); if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.3]);
+}
 async function givePuzzle(id) {
   const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
   const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
@@ -1071,7 +1084,7 @@ function showCard(f) {
   if (fod) { fseen.add(fod.n - 1); try { localStorage.setItem(fkey, JSON.stringify([...fseen])); } catch { /* storage unavailable */ } }
   const factLine = fod ? `<div class="dyk" role="button" tabindex="0" id="dyk"><small>DID YOU KNOW? · ${fseen.size} of ${FL.length} found</small><p>${esc(fod.text)}</p><span>Tap for another</span></div>${fseen.size > 1 ? `<details class="flog"><summary>All you have found about ${esc(f.species.label.toLowerCase())}${/s$/.test(f.species.label) ? '' : 's'} (${fseen.size})</summary><ol>${[...fseen].sort((a, b) => a - b).map((i) => `<li>${esc(FL[i])}</li>`).join('')}</ol></details>` : ''}` : '';      // the day's fact, also on the first tab
   const sec = (t, body) => (body && body.replace(/\s+/g, '') ? `<h4 class="csec">${t}</h4>${body}` : '');      // one heading style for every part of the card; an empty part is left out
-  const over = sec('Right now', `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${comfortBlock(rec)}${nextLine}${playBlk()}${playLine}${trustRow}`)
+  const over = sec('Right now', `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${comfortBlock(rec)}${turtleBlock(rec)}${nextLine}${playBlk()}${playLine}${trustRow}`)
     + path
     + sec(`Looking after ${esc(f.name)}`, `<div class="info">${careRows(rec)}</div>${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`)
     + sec('What it likes', `<div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>${toysTile}${bondTile}`)
@@ -1109,7 +1122,7 @@ function showCard(f) {
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
-  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
+  pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const tr = $('turtrel'); if (tr) tr.onclick = () => releaseTurtle(rec); } { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'Let it go?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
