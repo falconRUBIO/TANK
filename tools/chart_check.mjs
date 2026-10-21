@@ -20,7 +20,7 @@ ck('no horizontal overflow', c.w, c);
 await p.screenshot({ path: `${out}/chart1.png` }); await p.evaluate(() => { document.querySelector('#sheet .tchart').scrollIntoView({ block: 'end' }); }); await p.waitForTimeout(200); await p.screenshot({ path: `${out}/chart2.png` });
 await p.evaluate(() => window.__ui.open('tank')); await p.waitForTimeout(400);
 const sell = await p.evaluate(() => window.__game.dispatch({ t: 'sellFish', id: 'g1' })); ck('an animal asking to leave cannot be sold', sell.reason === 'UNHAPPY', sell);
-await p.evaluate(() => window.__game.emit('levelup', 6)); await p.waitForTimeout(900); const ban = await p.evaluate(() => document.querySelector('.lvban')?.textContent); ck('level-up: a banner names what opened', /Level 6/.test(ban ?? '') && /Bettas/.test(ban ?? ''), ban); await p.screenshot({ path: `${out}/levelup.png` });
+await p.evaluate(() => window.__game.emit('levelup', 6)); await p.waitForTimeout(900); const ban = await p.evaluate(() => document.querySelector('.lvban')?.textContent); ck('level-up: a banner names what opened', /Level 6/.test(ban ?? '') && /Puffer/.test(ban ?? ''), ban); await p.screenshot({ path: `${out}/levelup.png` });
 await p.waitForTimeout(5200);
 await p.evaluate(() => { window.__toys?.dropCube?.(0); window.__toys?.hangHoop?.(1.5); }); const hasToys = await p.evaluate(() => !!window.__toys);
 if (hasToys) { await p.waitForTimeout(9000); await p.screenshot({ path: `${out}/toys.png` }); const st = await p.evaluate(() => ({ cube: !!window.__toys.cube, held: !!window.__toys.cube?.held, hoop: !!window.__toys.hoop, who: [...(window.__toys.hoop?.who ?? [])] })); ck('the twist cube and the hoop are in the tank', st.cube && st.hoop, st); }
