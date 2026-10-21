@@ -14,7 +14,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.2, z: 0.4, ry: 0 }, { id: 'p1', type: 'grass', x: -2, z: 0.2, ry: 0 });
   s.eggs = [{ id: 'e1', species: 'octopus', a: 'oA', b: 'oB', seed: 5, pa: { id: 'oA', name: 'Ada', seed: 5 }, pb: { id: 'oB', name: 'Bo', seed: 9 }, laid: now - 4 * D, hatchAt: now + 5 * 3600e3, cared: [], guard: 'oA', den: 'c1' }]; s.hunger = 0; s.water = 1; s.glass = 0; g.emit('state');
   document.querySelectorAll('#goal,#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
-await p.waitForTimeout(3000); await p.evaluate(() => { window.__cam = [1.2, 1.2, 4.2, 1.2, 0.7, 0.9]; }); await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/1-den.png` }); await p.evaluate(() => { window.__cam = null; });
+await p.waitForTimeout(3000); await p.evaluate(() => { window.__cam = [1.2, 1.2, 4.2, 1.2, 0.7, 0.9]; }); await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/1-den.png`, timeout: 180000 }); await p.evaluate(() => { window.__cam = null; });
 const den = await p.evaluate(() => { const st = window.__game.state; return { eggs: st.eggs.length, thought: window.__fishes.byId.get('oA')?.thought ?? null }; });
 ck('the eggs hang in her den and she stays with them', den.eggs === 1 && /eggs/.test(den.thought ?? ''), den);
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(800);
@@ -25,7 +25,7 @@ for (let i = 0; i < 3; i++) { await p.evaluate(() => document.querySelector('#mo
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(600); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
 let kid = null; for (let i = 0; i < 40 && !kid; i++) { await p.waitForTimeout(500); kid = await p.evaluate(() => { const k = window.__game.state.fish.find((f) => f.parents?.length); return k && !window.__game.state.eggs.some((e) => e.species === 'octopus') ? { id: k.id, name: k.name, species: k.species, owner: k.owner } : null; }); }
 ck('watched: they hatch, and one tiny octopus stays', kid?.species === 'octopus' && kid.owner === 'me', kid);
-await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-hatch.png` });
+await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-hatch.png`, timeout: 180000 });
 const g = await p.evaluate((id) => +(window.__fishes.byId.get(id)?.growth ?? 0).toFixed(2), kid?.id); ck('it is tiny', g > 0 && g <= 0.25, g);
 const other = () => p.evaluate(() => { const m = document.querySelector('#modal.on'); if (m && !/NAME YOUR BABY|ONE MORE LITTLE ONE/i.test(m.innerText)) m.querySelector('#mok')?.click(); });
 let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
