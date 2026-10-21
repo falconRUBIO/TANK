@@ -6,7 +6,7 @@ import { placeable, levelAt } from './terrain.js';
 import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
 
-const PICK = { ledge: [2.4, 1.9], seagrass: [2.0, 1.4], grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [1.1, 0.3], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.36, 1.2], pot: [2.1, 1.7] };
+const PICK = { clam: [0.8, 0.6], ledge: [2.4, 1.9], seagrass: [2.0, 1.4], grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [1.1, 0.3], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.36, 1.2], pot: [2.1, 1.7] };
 export const LANES = [-3.0, -0.4, 2.2];      // a likely spot on each level of the sand: the back bank, the terrace, the front floor
 const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100000; };
 

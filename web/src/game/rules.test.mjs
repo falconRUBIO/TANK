@@ -1105,6 +1105,12 @@ ok('an animal left miserable for days asks to leave; put it right and it stays, 
   const gone = t.fish.length; let left = false; for (let d = 7; d <= 10 && !left; d++) { const ev = R.advance(t, d * D); left = ev.some((e) => /went back to the sea/.test(e.journal ?? '')); }
   assert.ok(left && t.fish.length === gone - 1, 'left uncared for, it goes');
 });
+ok('a giant clam keeps the water fresh longer, and a blue tang keeps the glass clear longer', () => {
+  const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; return t; };
+  const a = mk(), b = mk(); b.decor.push({ id: 'cl', type: 'clam', x: 0, z: 1 }); R.advance(a, 2 * D); R.advance(b, 2 * D); assert.ok(b.water > a.water + 0.05, `clam ${b.water} vs ${a.water}`);
+  assert.ok(R.dueIn(b, 'water') > R.dueIn(a, 'water') * 1.3, 'the next change is due later');
+  const c = mk(), d = mk(); d.fish.push(R.ensureFish({ id: 'tg', name: 'Dory', species: 'tang', seed: 3, born: -20 * D, stage: 'adult', traits: [] })); R.advance(c, 2 * D); R.advance(d, 2 * D); assert.ok(d.glass < c.glass, `tang ${d.glass} vs ${c.glass}`);
+});
 ok('an animal asking to leave cannot be sold, can be let go, and sends a postcard a day later; an unwell tank stops growing with time; toys open by level', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.createdAt = -30 * D; t.fish.push(R.ensureFish({ id: 's', name: 'Sea', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: [] }));
   let d = 1; for (; d <= 6 && !t.fish.find((f) => f.id === 's').leaveAsk; d++) { R.advance(t, d * D); t.hunger = 0.85; }

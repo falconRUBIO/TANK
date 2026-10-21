@@ -67,6 +67,14 @@ const B = {
     for (let i = -21; i <= 21; i++) for (let k = -10; k <= 10; k++) { const e = Math.pow(Math.abs(i) / 21.5, 4) + Math.pow(Math.abs(k) / 10.5, 4); if (e > 1) continue; const top = 17 + Math.round(1.6 * (1 - e) + (fbm(i * 0.3 + seed, k * 0.3, 2) - 0.5) * 2); for (let j = 14; j <= top; j++) v.set(i, j, k, j === top && hash(i, j, k, 6) > 0.8 ? [118, 150, 84] : col(i, j, k)); }
     topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); return [{ v, x: 0, y: 0.02, z: 0, ry: 0 }];
   },
+  clam: (g, seed) => {      // a maxima clam: two fluted cream valves with a zigzag rim, gaping open along the top; the mantle between them is a brilliant blue (or teal) mottled with dark spots: the color is algae living in it
+    const u = 0.07, v = new Vox(u), r = mulberry32(seed), teal = r() < 0.35;
+    const mA = teal ? [20, 160, 150] : [24, 90, 230], mB = teal ? [120, 240, 200] : [110, 220, 255];
+    v.ellipsoid(0, 0, 0, 8.5, 5, 5.5, (i, j, k) => { const zig = Math.abs(((i + 40) % 3) - 1.5) * 0.9, lip = j >= 1.2 + zig - Math.abs(k) * 0.15, rib = ((i + 40) % 3) === 0;
+      if (lip && Math.abs(k) <= 3.2) { if (hash(i, j, k, 7) > 0.86) return [16, 30, 50]; return mix(mA, mB, Math.min(1, hash(i, k, j, 3) * 0.5 + (Math.abs(k) < 1.2 ? 0.5 : 0) + (j > 3.5 ? 0.2 : 0))); }      // the mantle in the gape, brightest along the middle
+      return rib ? mix([150, 136, 112], [176, 160, 134], hash(i, j, k, 4)) : mix([238, 230, 206], [252, 248, 232], hash(i, j, k, 2)); }, seed, 0.1);      // pale fluted ribs with darker grooves between
+    topLit(v); const m = v.mesh(); m.position.y = 0.16; g.add(m); return [{ v, x: 0, y: 0.16, z: 0, ry: 0 }];
+  },
   liverock: (g, seed) => {
     const u = 0.1, v = new Vox(u); v.ellipsoid(0, 0, 0, 6.5, 4.6, 5.6, (i, j, k) => { const n = fbm(i * 0.25 + seed, j * 0.25, k * 0.25); return n > 0.6 ? [214, 110, 170] : n > 0.45 ? [168, 96, 182] : mix([130, 118, 108], [176, 160, 140], n); }, seed, 0.28);
     topLit(v); const m = v.mesh(); m.position.y = 0.14; g.add(m); return [{ v, x: 0, y: 0.14, z: 0, ry: 0 }];

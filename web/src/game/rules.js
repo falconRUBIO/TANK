@@ -36,6 +36,8 @@ SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count:
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
 SPECIES_DEF.sunangel = { label: 'Golden Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
 SPECIES_DEF.rosecory = { label: 'Rose Goby', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pink bottom dweller passing through.', traits: ['Social', 'Lazy'], speed: 0.6, visitor: true };
+// A giant clam is a filter feeder: it draws water through its body all day and takes up the waste that clouds it, so a tank with one needs its water changed less often
+export const waterSlow = (t) => ((t?.decor ?? []).some((d) => d.type === 'clam') ? 0.65 : 1);
 export const DECOR_DEF = {
   grass:    { label: 'Sea Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
   fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
@@ -67,6 +69,7 @@ export const DECOR_DEF = {
   pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
   urchin:   { label: 'Sea Urchin',    cat: 'ROCKS',      price: 24, level: 3, blurb: 'A long-spined urchin. Cardinalfish hover safely among its spines.' },
   seafan:   { label: 'Sea Fan',       cat: 'PLANTS',     price: 36, level: 4, blurb: 'A branching gorgonian. A seahorse\'s favorite thing to wrap its tail around.' },
+  clam:     { label: 'Maxima Clam',   cat: 'SPECIAL',    price: 150, level: 5, blurb: 'A living giant clam that filters the water all day. Water stays fresh about 50% longer.' },
   liverock: { label: 'Live Rock',     cat: 'ROCKS',      price: 50, level: 5, blurb: 'Reef rock alive with tiny copepods: a mandarin grazes it all day.' },
   ledge:    { label: 'Turtle Ledge',  cat: 'ROCKS',      price: 40, level: 7, blurb: 'A flat shelf of rock with a gap beneath: a sea turtle wedges itself under it to sleep.' },
   seagrass: { label: 'Sea Grass Bed', cat: 'PLANTS',     price: 30, level: 7, blurb: 'A meadow of long, ribbon-like sea grass. Green turtles graze it like a lawn.' },
@@ -109,7 +112,7 @@ export const HR = 0.3 / (CARE.meal * 3600), WR = 0.29 / (CARE.water * 3600), GR 
 export const OHR = OCTO_DUE / (CARE.crab * 3600);                                 // an octopus has its own hunger, and only its own caretaker can feed it (a crab)
 // how long until each part of the care is due, in milliseconds (0 when it is due now); a fish's own octopus hunger if one is given
 export const dueIn = (t, what, f = null) => {
-  const left = what === 'meal' ? (0.3 - t.hunger) / HR : what === 'crab' || what === 'mysis' ? (OCTO_DUE - ownHunger(f)) / OHR : what === 'water' ? (t.water - 0.7) / (WR * (1 + 0.5 * Math.min(2, t.floaters?.length ?? 0))) : what === 'glass' ? (0.3 - t.glass) / GR : 0;
+  const left = what === 'meal' ? (0.3 - t.hunger) / HR : what === 'crab' || what === 'mysis' ? (OCTO_DUE - ownHunger(f)) / OHR : what === 'water' ? (t.water - 0.7) / (WR * waterSlow(t) * (1 + 0.5 * Math.min(2, t.floaters?.length ?? 0))) : what === 'glass' ? (0.3 - t.glass) / GR : 0;
   return Number.isFinite(left) ? Math.max(0, Math.round(left * 1000)) : 0;
 };                                        // an octopus has its own hunger: it goes from fed to starving in about eight hours, and only its own caretaker can feed it (a crab)
 export const isOcto = (f) => f?.species === 'octopus';
@@ -1627,7 +1630,7 @@ function _advance(t, now = Date.now()) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
     for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
-    t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
+    t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * waterSlow(t) * (1 + 0.5 * Math.min(2, t.floaters.length)));      /* (a giant clam filters the water: it stays fresh longer) */   // a fish left floating fouls the water faster
     t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (t.fish.some((f) => f.species === 'tang' && !f.dead && !f.away) ? 0.7 : 1) * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;

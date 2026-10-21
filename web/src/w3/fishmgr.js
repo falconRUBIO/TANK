@@ -880,7 +880,11 @@ export class Fishes {
         const C = f.clean; if (C) { const o = C.o; C.t -= dt; if (!o || o.dead || C.t <= 0) { f.clean = null; f.cleanGap = 18 + this.rng() * 24; if (o) { o.mul = 1; o.cleaned = performance.now(); } continue; }
           const side = Math.sin(t * 1.3 + C.ph) * 0.5, up = Math.cos(t * 0.9 + C.ph) * 0.25; f.target.set(o.pos.x + side, o.pos.y + up, o.pos.z + 0.35); f.retarget = Math.max(f.retarget ?? 0, 0.3);
           if (f.pos.distanceTo(o.pos) < 1.3) { o.mul = 0.12; o.vel.multiplyScalar(Math.exp(-dt * 3)); o.target.copy(o.pos); o.retarget = Math.max(o.retarget ?? 0, 0.4); f.thought = `Cleaning ${o.rec?.name ?? o.name ?? 'a fish'}`; } continue; }
-        if ((f.cleanGap = (f.cleanGap ?? 3 + this.rng() * 5) - dt) > 0) continue;
+        if ((f.cleanGap = (f.cleanGap ?? 3 + this.rng() * 5) - dt) > 0) {      // between clients it perches on top of its rock, propped on its fins, and waits
+          const R = (f.perch && this.spots?.().find((q) => q.id === f.perch)) || (() => { const r = (this.spots?.() ?? []).filter((q) => DECOR_DEF[q.type]?.cat === 'ROCKS').sort((a, b) => Math.hypot(a.x - f.pos.x, a.z - f.pos.z) - Math.hypot(b.x - f.pos.x, b.z - f.pos.z))[0]; f.perch = r?.id ?? null; return r; })();
+          if (R) { const top = (R.y ?? sandH(R.x, R.z)) + (R.h ?? 0.6) * 0.9 + 0.12; f.target.set(R.x, top, R.z + 0.1); f.retarget = Math.max(f.retarget ?? 0, 0.5); if (f.pos.distanceTo(f.target) < 0.35) { f.vel.multiplyScalar(Math.exp(-dt * 5)); f.mul = 0.15; f.pitch = 0; f.thought = 'Waiting at its cleaning station'; } else f.mul = 1; }
+          continue; }
+        f.mul = 1;
         const pool = this.list.filter((o) => o !== f && !o.dead && !o.visitor && !o.nursery && o.sk !== 'neongoby' && o.species?.move !== 'jet' && (performance.now() - (o.cleaned ?? 0)) > 60e3);
         const o = pool.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0]; if (o) { f.clean = { o, t: 6 + this.rng() * 4, ph: this.rng() * 6 }; this.onBehave?.(f, 'clean', o); } else f.cleanGap = 10; }
       else if (f.sk === 'tang') {      // now and then it comes to the glass and grazes the film off it in little pecks

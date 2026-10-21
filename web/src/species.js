@@ -905,11 +905,11 @@ const turtleSpecies = (O) => ({
 });
 // ── three more reef animals, each with something of its own to do (see FishMgr.reefTick) ──
 const tang = reef({                             // regal blue tang: a tall oval, royal blue with the black "palette" swoop, a lemon-yellow tail
-  id: 'tang', label: 'Blue Tang', L: 34, vox: 0.042, length: 62, eye: [0.82, 3], ring: [20, 40, 120], ringR: 2.2, amp: 0.45,
+  id: 'tang', label: 'Blue Tang', L: 34, vox: 0.042, length: 62, eye: [0.84, 2], ring: [120, 190, 255], ringR: 2.2, amp: 0.28,      // (a tang rows with its pectoral fins: the body stays stiff)
   hy: [[0, 2.6], [0.12, 6], [0.35, 9.4], [0.6, 9.8], [0.82, 8], [0.95, 4.6], [1, 2.6]], hz: [[0, 1.2], [0.3, 3], [0.6, 3.6], [0.9, 2.6], [1, 1.4]],
   tail: { kind: 'fork', len: 10, spread: 8.5, notch: 0.62, depth: 1.2 }, dorsal: [{ a: 0.14, b: 0.95, h: 3.6 }], anal: { a: 0.3, b: 0.92, h: 3.2 }, pelvic: [0.55, 0.66], pec: [0.68, -0.5],
   paint: ({ t, dy }) => { if (t < 0.1) return [255, 214, 30];      // the yellow wrist before the tail
-    const win = t > 0.34 && t < 0.66 && dy > 0.1 && dy < 0.42, band = t > 0.12 && t < 0.86 && dy > -0.2 + Math.max(0, 0.5 - t) * 0.4 && dy < 0.82;
+    const win = t > 0.34 && t < 0.66 && dy > 0.1 && dy < 0.42, band = t > 0.12 && t < 0.86 && dy > -0.2 + Math.max(0, 0.5 - t) * 0.4 && dy < 0.58;
     if (band && !win) return [6, 8, 20];      // the black palette swoop from eye to tail, with a blue window inside its loop
     return dy < -0.55 ? [60, 120, 240] : lerpc([18, 64, 210], [52, 120, 250], (-dy + 0.2) * 0.7); },
   fin: ({ u, part }) => (part === 'tail' ? (u < 0.15 ? [255, 214, 30] : u > 0.85 ? [16, 18, 40] : [255, 220, 50]) : part === 'pec' ? [255, 214, 60] : u > 0.82 ? [14, 16, 34] : [30, 80, 210]),
@@ -918,11 +918,11 @@ const neongoby = reef({                         // neon goby: slim and torpedo-s
   id: 'neongoby', label: 'Neon Goby', L: 24, vox: 0.04, length: 40, eye: [0.84, 2], ring: [80, 200, 255], ringR: 2.0, amp: 0.55,
   hy: [[0, 2], [0.2, 3.2], [0.5, 3.9], [0.8, 3.7], [1, 2.6]], hz: [[0, 1.4], [0.3, 2.6], [0.6, 3], [0.9, 2.6], [1, 1.6]],
   tail: { kind: 'round', len: 7, spread: 4.2 }, dorsal: [{ a: 0.3, b: 0.5, h: 2.6 }, { a: 0.54, b: 0.86, h: 2.2 }], anal: { a: 0.52, b: 0.84, h: 2 }, pelvic: [0.55, 0.68], pec: [0.7, -0.6],
-  paint: ({ dy }) => (dy > -0.02 && dy < 0.36 ? [70, 220, 255] : dy < -0.45 ? [236, 240, 244] : [28, 30, 40]),
+  paint: ({ dy }) => (dy > -0.02 && dy < 0.36 ? [70, 220, 255] : dy < -0.45 ? [236, 240, 244] : [12, 14, 20]),
   fin: ({ u, part }) => (part === 'tail' ? (Math.abs(u - 0.5) < 0.5 ? [30, 34, 44] : [60, 210, 255]) : [40, 44, 56]),
 });
 const puffer = reef({                           // valentini puffer: a round little body, white with four dark saddles over the back, orange freckles, a green-gold tail
-  id: 'puffer', label: 'Valentini Puffer', L: 24, vox: 0.045, length: 44, eye: [0.8, 2], ring: [60, 200, 140], ringR: 2.4, amp: 0.35,
+  id: 'puffer', label: 'Valentini Puffer', L: 24, vox: 0.045, length: 44, eye: [0.8, 2], ring: [60, 200, 140], ringR: 2.4, amp: 0.12,      // (a puffer sculls with its little fins; the body hardly bends)
   hy: [[0, 2.2], [0.15, 4.6], [0.4, 6.6], [0.65, 6.8], [0.88, 5.4], [1, 3.4]], hz: [[0, 1.6], [0.3, 4.4], [0.6, 5.4], [0.9, 4.2], [1, 2.4]],
   tail: { kind: 'round', len: 6, spread: 4.6 }, dorsal: [{ a: 0.18, b: 0.32, h: 2.6 }], anal: { a: 0.2, b: 0.32, h: 2.4 }, pec: [0.66, 0],
   paint: ({ t, dy, x, y, z }) => { const sad = [0.15, 0.36, 0.56, 0.76].some((c) => Math.abs(t - c) < 0.075) && dy > 0.05;
