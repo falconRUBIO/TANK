@@ -1510,7 +1510,7 @@ function _advance(t, now = Date.now()) {
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
     for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
-    t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR);
+    t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
   }
   guard('growth', () => {

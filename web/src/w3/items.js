@@ -149,7 +149,7 @@ const B = {
     const y0 = (R - sink) * u; const m = v.mesh(); m.position.y = y0; g.add(m); return [{ v, x: 0, y: y0, z: 0, ry: 0 }];      // it rests on the sand with the bottom of the husk just buried
   },
   pot: (g) => {                         // a clay octopus pot lying on its side (the kind fishermen lower on a line: an octopus finds an empty one irresistible): round belly, narrow neck, a flared lip; the mouth faces the front
-    const u = 0.1, v = new Vox(u), C = 8;
+    const u = 0.125, v = new Vox(u), C = 8;
     const rad = (i) => i <= -9 ? 4.2 + (i + 10) * 1.6 : i <= 3 ? 8 - Math.pow(Math.abs(i + 2) / 7.5, 2) * 1.6 : i <= 7 ? 7.3 - (i - 3) * 0.6 : i <= 8 ? 5.6 : 6.6;      // base, belly, shoulder, neck, lip
     const clay = (i, j, k) => { const h = hash(i, j, k, 3), band = i > -6 && i < 2 && (i + 9) % 5 === 0; return band ? [118, 54, 34] : mix([158, 78, 46], [194, 108, 64], h * 0.7 + (j / 16) * 0.3); };
     for (let i = -10; i <= 10; i++) { const r = rad(i); for (let j = 0; j <= 16; j++) for (let k = -C; k <= C; k++) { const d = Math.hypot(j - C, k); if (d > r) continue;

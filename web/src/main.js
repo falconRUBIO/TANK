@@ -152,17 +152,31 @@ async function dropFood(x) {
 }
 // glass cleaning
 const gcv = $('glass'), gg = gcv.getContext('2d'); gcv.width = 195; gcv.height = 346;
-function algae(n) { for (let i = 0; i < n; i++) { const edge = Math.random() < 0.6, x = edge ? (Math.random() < 0.5 ? Math.random() * 40 : 155 + Math.random() * 40) : Math.random() * 195, y = Math.pow(Math.random(), 0.6) * 346; gg.fillStyle = `rgba(${70 + Math.random() * 40},${130 + Math.random() * 40},${40 + Math.random() * 30},${0.12 + Math.random() * 0.2})`; gg.beginPath(); gg.arc(x, y, 1.2 + Math.random() * 4.5, 0, 6.3); gg.fill(); } }
+// the glass grows a film: a soft green-grey haze over the whole pane (thicker low down and at the edges, where it really builds up), with
+// spots of algae on top. Wiping takes the film off in clean, soft-edged streaks, so you can see exactly where you have been
+function film(g) {
+  gg.clearRect(0, 0, 195, 346); if (g < 0.05) return; const k = Math.min(1, g / 0.8);
+  const base = gg.createLinearGradient(0, 0, 0, 346); base.addColorStop(0, `rgba(176,196,178,${0.1 + 0.32 * k})`); base.addColorStop(0.6, `rgba(150,176,146,${0.16 + 0.4 * k})`); base.addColorStop(1, `rgba(112,140,92,${0.24 + 0.5 * k})`);
+  gg.fillStyle = base; gg.fillRect(0, 0, 195, 346);
+  for (const [x0, x1] of [[0, 34], [161, 195]]) { const e = gg.createLinearGradient(x0 ? x1 : x0, 0, x0 ? x0 : x1, 0); e.addColorStop(0, `rgba(96,128,74,${0.28 * k})`); e.addColorStop(1, 'rgba(96,128,74,0)'); gg.fillStyle = e; gg.fillRect(x0, 0, x1 - x0, 346); }      // thicker in the corners of the pane
+  for (let i = 0; i < 60 + 180 * k; i++) { const x = Math.random() * 195, y = Math.pow(Math.random(), 0.7) * 346, r = 6 + Math.random() * 22, c = gg.createRadialGradient(x, y, 0, x, y, r); c.addColorStop(0, `rgba(${110 + Math.random() * 50},${140 + Math.random() * 40},${90 + Math.random() * 30},${(0.05 + Math.random() * 0.12) * k})`); c.addColorStop(1, 'rgba(120,150,100,0)'); gg.fillStyle = c; gg.fillRect(x - r, y - r, r * 2, r * 2); }      // the haze is blotchy, never a flat tint
+  for (let i = 0; i < 40 * k; i++) { gg.strokeStyle = `rgba(230,240,230,${0.05 + Math.random() * 0.06})`; gg.lineWidth = 0.6 + Math.random(); const x = Math.random() * 195, y = Math.random() * 346; gg.beginPath(); gg.moveTo(x, y); gg.lineTo(x + 6 + Math.random() * 16, y + 2 + Math.random() * 10); gg.stroke(); }      // faint streaks where the light catches the film
+  for (let i = 0; i < 380 * k; i++) { const edge = Math.random() < 0.6, x = edge ? (Math.random() < 0.5 ? Math.random() * 40 : 155 + Math.random() * 40) : Math.random() * 195, y = Math.pow(Math.random(), 0.6) * 346; gg.fillStyle = `rgba(${60 + Math.random() * 40},${120 + Math.random() * 40},${36 + Math.random() * 30},${0.2 + Math.random() * 0.3})`; gg.beginPath(); gg.arc(x, y, 0.6 + Math.random() * 2.4, 0, 6.3); gg.fill(); }      // and spots of algae on top
+}
 let shownGlass = -1;
-function syncGlass() { const g = game.state.glass; if (Math.abs(g - shownGlass) > 0.02 || g < 0.05) { if (g > shownGlass || shownGlass < 0) { gg.clearRect(0, 0, 195, 346); algae(Math.round(g * 900)); } else if (g < 0.05) gg.clearRect(0, 0, 195, 346); shownGlass = g; } }
+function syncGlass() { const g = game.state.glass; if (cleanMode || wiping) return; if (Math.abs(g - shownGlass) > 0.02 || (g < 0.05 && shownGlass !== 0)) { film(g); shownGlass = g < 0.05 ? 0 : g; } }
 function startClean() { cancelModes(); if (game.state.glass <= 0.12) { ui.toast('The glass is already clean'); return; } cleanMode = true; gcv.style.pointerEvents = 'auto'; ui.toast('Swipe the glass to wipe it clean'); }
 let wiping = false;
-const wipe = (e) => { const r = gcv.getBoundingClientRect(); gg.globalCompositeOperation = 'destination-out'; gg.beginPath(); gg.arc((e.clientX - r.left) / r.width * 195, (e.clientY - r.top) / r.height * 346, 16, 0, 6.3); gg.fill(); gg.globalCompositeOperation = 'source-over'; sfx('wipe'); };
-gcv.addEventListener('pointerdown', (e) => { wiping = true; wipe(e); }); gcv.addEventListener('pointermove', (e) => { if (wiping) wipe(e); });
+let wipeLast = null;
+const wipeDot = (x, y) => { const c = gg.createRadialGradient(x, y, 0, x, y, 19); c.addColorStop(0, 'rgba(0,0,0,1)'); c.addColorStop(0.62, 'rgba(0,0,0,0.95)'); c.addColorStop(1, 'rgba(0,0,0,0)'); gg.fillStyle = c; gg.fillRect(x - 19, y - 19, 38, 38); };
+const wipe = (e) => { const r = gcv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 195, y = (e.clientY - r.top) / r.height * 346; gg.globalCompositeOperation = 'destination-out';
+  const p = wipeLast ?? { x, y }, n = Math.max(1, Math.ceil(Math.hypot(x - p.x, y - p.y) / 5)); for (let i = 1; i <= n; i++) wipeDot(p.x + (x - p.x) * i / n, p.y + (y - p.y) * i / n);      // a continuous clean streak, however fast the finger goes
+  gg.globalCompositeOperation = 'source-over'; wipeLast = { x, y }; sfx('wipe'); };
+gcv.addEventListener('pointerdown', (e) => { wiping = true; wipeLast = null; wipe(e); }); gcv.addEventListener('pointermove', (e) => { if (wiping) wipe(e); });
 addEventListener('pointerup', async () => {
-  if (!wiping) return; wiping = false;
-  const d = gg.getImageData(0, 0, 195, 346).data; let left = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 14) left++;
-  if (left / (d.length / 16) * 6 < 0.06) { cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
+  if (!wiping) return; wiping = false; wipeLast = null;
+  const d = gg.getImageData(0, 0, 195, 346).data; let left = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 40) left++;
+  if (left / (d.length / 16) < 0.12) {      /* (most of the pane done: the last wisps go with it) */ cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
 const wc = makeWaterChange({ canvas: $('wc'), camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx, haptic });
