@@ -830,6 +830,7 @@ export const MOMENTS = {
   glass: { gap: 12 * 3600e3, text: (n) => `${n} swam right up to the glass and looked in at you.` },
   eggchase: { gap: 4 * 3600e3, other: true, text: (n, o) => `${n} chased ${o} away from the eggs.` },
   ball: { gap: 12 * 3600e3, text: (n) => `${n} sent the ball spinning across the tank!` },
+  clean: { gap: DAY, text: (n) => `${n} hung still by the rock with its flippers out while a fish picked its shell clean, the way wild turtles visit a cleaning station.` },
 };
 export const OCTO_MOMENTS = {
   squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
@@ -853,6 +854,7 @@ export const FIELD = {
   glass: { label: 'Face at the glass', who: 'any', hint: "Someone curious comes right up to the glass. Most likely when you have just opened the tank and stay a while." },
   camo: { label: 'Vanishing act', who: 'octopus', hint: "A resting octopus matches the ground so well it disappears. Look where it rests, on the sand or by the rocks." },
   ink: { label: 'Ink cloud', who: 'octopus', hint: "A startled octopus bursts away in a cloud of ink. Something sudden near it sets it off." },
+  clean: { label: 'Cleaning station', who: 'turtle', hint: "A sea turtle rests by a rock and holds still while a fish picks its shell clean. Keep an angelfish, a goby or a clownfish with it." },
   pounce: { label: 'Web-over hunt', who: 'octopus', hint: "An octopus pounces on a rock or a plant and spreads its web over it like a net to catch what hides beneath. More likely when it is hungry." },
   tall: { label: 'Standing tall', who: 'octopus', hint: "Crowded by a rival or a big fish, an octopus rises up on its arms and goes dark. The other one usually backs off." },
   squirt: { label: 'Squirt!', who: 'octopus', hint: "An octopus that is being watched sometimes answers back. Stay and watch it for a while." },

@@ -110,7 +110,7 @@ export class Fish3D {
     this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
-    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
+    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || (v.tag === 'head' && species.id === 'turtle') || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
     this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null;
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
@@ -188,9 +188,14 @@ export class Fish3D {
       }
       if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
       if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
+      if (v.tag === 'head' && this.species.id === 'turtle') {             // a sea turtle's head on its neck: it reaches out, turns to look, tips up to breathe and dips to bite
+        const px = 11.5, py = 1.2, hy = this.headYaw ?? 0, hp = this.headPitch ?? 0, ext = (this.neckK ?? 0) * Math.max(0, Math.min(1, (x - px) / 3));
+        let dx = x - px + ext * 1.6, dy = y - py, dz = z; const cp = Math.cos(hp), sp2 = Math.sin(hp), nx = dx * cp - dy * sp2; dy = dx * sp2 + dy * cp; dx = nx; const cy = Math.cos(hy), sy = Math.sin(hy), nx2 = dx * cy - dz * sy; dz = dx * sy + dz * cy; dx = nx2;
+        x = px + dx; y = py + dy; z = dz; if ((this.chewK ?? 0) > 0.01 && v.y < 1.6 && v.x > 20) y -= this.chewK * (0.5 + 0.5 * Math.sin((this.tt ?? 0) * 11));      // the lower jaw snaps when it bites
+      }
       if (v.flip) {                                                       // a sea turtle's flipper: the front pair fly (a long stroke down and back, then up), the back pair steer
         const F = v.flip, sw = this.strokeK ?? 0.5, ph = this.flipPh ?? phase, s = F.s, rest = this.restK ?? 0;
-        const th = (F.k === 0 ? (0.1 + 0.68 * sw) * Math.sin(ph) * (1 - 0.8 * rest) - 0.25 * rest : 0.18 * Math.sin(ph * 0.5 + 1.2) * (0.4 + sw)) * s, be = F.k === 0 ? (0.08 + 0.32 * sw) * Math.cos(ph) * (1 - rest) + 0.35 * rest : 0.12 * Math.cos(ph * 0.5) * s;
+        const glide = this.glideK ?? 0, steer = (this.steerK ?? 0) * s, th = (F.k === 0 ? (0.1 + 0.68 * sw) * Math.sin(ph) * (1 - 0.8 * rest) * (1 - 0.75 * glide) + 0.24 * rest + 0.2 * glide : (0.18 * Math.sin(ph * 0.5 + 1.2) * (0.4 + sw) + 0.35 * steer) * (1 - 0.6 * rest)) * s, be = F.k === 0 ? ((0.08 + 0.32 * sw) * Math.cos(ph) * (1 - glide) + 0.32 * glide) * (1 - rest) + 1.15 * rest : 0.12 * Math.cos(ph * 0.5) * s + 0.3 * rest * s;      // gliding the front flippers are held out and swept back; at rest they fold back along the shell; the back flippers steer into a turn
         let dx = x - F.x, dy = y - F.y, dz = z - F.z; const c1 = Math.cos(th), s1 = Math.sin(th), ny = dy * c1 + dz * s1; dz = -dy * s1 + dz * c1; dy = ny;
         const bs = F.k === 0 ? be * s : be, c2 = Math.cos(bs), s2 = Math.sin(bs), nx = dx * c2 - dz * s2; dz = dx * s2 + dz * c2; dx = nx; x = F.x + dx; y = F.y + dy; z = F.z + dz;
       }
@@ -480,6 +485,29 @@ export class Fish3D {
     this.actText = kind === 'smack' ? `Smacked ${o.name} with an arm.` : kind === 'shell' ? `Flung a shell at ${o.name}.` : kind === 'water' ? `Squirted water at ${o.name}.` : `Threw silt at ${o.name}.`; this.actFlash = 4;
   }
   potIn() { const d = this.den; return d?.home && d.kind === 'pot'; }      // a pot is a den: it squeezes all the way inside, every time
+  // a sea turtle's body language, each frame: a few deep strokes then a long glide; a slight rise with each downstroke; banking into a turn with the back
+  // flippers steering; the head reaching out, looking about, tipping up to breathe at the surface (a puff of breath), down to bite the sea grass,
+  // and turned to look out through the glass at whoever is there
+  turtleTick(dt, others) {
+    const v = this.vel.length(), want = Math.min(1, v / 0.9), t = this.tt ?? 0, low = this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3;
+    this.strokeK = (this.strokeK ?? 0.4) + (want - (this.strokeK ?? 0.4)) * Math.min(1, dt * 1.5);
+    this.glideT = (this.glideT ?? 0) - dt; if (this.glideT <= 0) { this.gliding = !this.gliding && v > 0.25; this.glideT = this.gliding ? 1.5 + Math.random() * 2.5 : 1.8 + Math.random() * 2; }      // three or four strokes, then a long glide
+    this.glideK = (this.glideK ?? 0) + ((this.gliding ? 1 : 0) - (this.glideK ?? 0)) * Math.min(1, dt * 2);
+    const resting = v < 0.12 && (low || this.toLedge); this.restK = (this.restK ?? 0) + ((resting ? 1 : 0) - (this.restK ?? 0)) * Math.min(1, dt * 0.8);
+    const ph0 = this.flipPh ?? 0; this.flipPh = ph0 + dt * (0.6 + 1.9 * this.strokeK) * (1 - 0.85 * this.glideK) * (1 - 0.9 * this.restK);
+    if (Math.sin(this.flipPh) > 0.6 && Math.sin(ph0) <= 0.6 && !this.gliding && this.restK < 0.3) this.vel.y += 0.06 * this.strokeK;      // each downstroke lifts it a little
+    const dh = Math.atan2(Math.sin(this.heading - (this.prevH ?? this.heading)), Math.cos(this.heading - (this.prevH ?? this.heading))) / Math.max(dt, 1e-3); this.prevH = this.heading;
+    this.steerK = (this.steerK ?? 0) + (Math.max(-1, Math.min(1, dh * 0.8)) - (this.steerK ?? 0)) * Math.min(1, dt * 3); this.roll = (this.roll ?? 0) + (-0.35 * this.steerK * (1 - this.restK) - (this.roll ?? 0)) * Math.min(1, dt * 2.5);      // it banks into a turn
+    // where the head goes
+    const top = this.pos.y > Fish3D.topY - 1.2, glass = this.pos.z > 1.55 && this.restK < 0.5, graze = this.grazing && low, face = Math.atan2(Math.sin(Math.PI / 2 - this.heading), Math.cos(Math.PI / 2 - this.heading));
+    let yaw = 0.28 * Math.sin(t * 0.31 + (this.phase ?? 0)) * (1 - this.restK * 0.6), pitch = -0.05, neck = 0.35 + 0.4 * this.strokeK;
+    if (top) { pitch = 0.65; neck = 1; yaw *= 0.3; if (!this.breathed) { this.breathed = true; this.onBreath?.(this.pos); } } else if (this.pos.y < Fish3D.topY - 2.5) this.breathed = false;      // at the surface: head up out of the water, a breath (and a puff of bubbles)
+    else if (graze) { pitch = -0.45; neck = 0.9; this.chewK = Math.min(1, (this.chewK ?? 0) + dt * 2); }
+    else if (glass) { yaw = Math.max(-0.85, Math.min(0.85, face)); pitch = 0.08; neck = 0.8; }      // at the front of the tank it turns its head to look out at you
+    else if (this.restK > 0.5) { neck = 0; pitch = -0.12; }      // asleep: head drawn in
+    if (!graze) this.chewK = Math.max(0, (this.chewK ?? 0) - dt * 2);
+    this.headYaw = (this.headYaw ?? 0) + (yaw - (this.headYaw ?? 0)) * Math.min(1, dt * 2.2); this.headPitch = (this.headPitch ?? 0) + (pitch - (this.headPitch ?? 0)) * Math.min(1, dt * 2); this.neckK = (this.neckK ?? 0) + (neck - (this.neckK ?? 0)) * Math.min(1, dt * 1.6);
+  }
   potAt(a) { const d = this.den, r = d.ry ?? 0; return [d.x + Math.sin(r) * a, d.z + Math.cos(r) * a]; }      // a point along the pot's length, out through its mouth (the pot can lie turned a little either way)
   denGoal(rng) { const d = this.den; return d.kind === 'pot' && d.home ? this.potAt(0.66) : d.home ? [d.x, d.z - 0.2] :      // in a coconut it sits well inside the hollow (the cut face is at the shell's center line), its arms spilling out of the mouth
      d.kind === 'rocks' ? [d.x, d.z] : [d.x + (rng() - 0.5) * 0.6, d.z + 0.85]; }
@@ -1259,7 +1287,7 @@ export class Fish3D {
   update(dt, rng, others) {
     if (this.puppet) return this.puppet(dt);      // climbing out of the tank or back in (see FishManager.climb)
     if (this.dead) return this.deadUpdate(dt);
-    if (this.species.id === 'turtle') { const v = this.vel.length(), want = Math.min(1, v / 0.9); this.strokeK = (this.strokeK ?? 0.4) + (want - (this.strokeK ?? 0.4)) * Math.min(1, dt * 1.5); this.flipPh = (this.flipPh ?? 0) + dt * (0.7 + 2.0 * this.strokeK); }      // slow, deep strokes: a beat every two or three seconds cruising, faster when it hurries, a glide in between
+    if (this.species.id === 'turtle') this.turtleTick(dt, others);      // slow, deep strokes: a beat every two or three seconds cruising, faster when it hurries, a glide in between
     { const T = this.target, gh = sandH(T.x, T.z); if (T.y < gh + Math.min(Math.max(T.y, 0.35), 1.0)) T.y = gh + Math.min(Math.max(T.y, 0.35), 1.0); }      // wherever it is heading, it is in the water above the sand there: over a bank a low swimmer swims as low above that sand as it would above the floor
     if (this.sp.tail) { if (!Number.isFinite(this.curlK)) this.curlK = 0; if (!Number.isFinite(this.gripK)) this.gripK = 0; }      // a seahorse's tail starts loose: an unset curl once turned its height into NaN and hid it
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading

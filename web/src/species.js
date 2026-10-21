@@ -872,7 +872,7 @@ const turtle = {
       bounds: { x: [-19, 25], y: [-9, 10], z: [-25, 25] }, center: [0, 1.5],
       sample(x, y, z) {
         // the eye: big and dark, set well back on the side of the head under a pale brow scale, with a bright catch-light
-        if (Math.abs(z) >= 2 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 20.2, y - 3.0) <= 1.55) return Math.hypot(x - 19.8, y - 3.6) < 0.62 ? { c: [255, 255, 255], em: 2 } : Math.hypot(x - 20.2, y - 3.0) <= 1.05 ? { c: [12, 10, 8], em: 1, tag: 'eye' } : { c: [60, 44, 24], em: 1, tag: 'eye' };
+        if (Math.abs(z) >= 2 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 20.2, y - 3.0) <= 1.55) return Math.hypot(x - 19.8, y - 3.6) < 0.62 ? { c: [255, 255, 255], em: 2, tag: 'head' } : Math.hypot(x - 20.2, y - 3.0) <= 1.05 ? { c: [12, 10, 8], em: 1, tag: 'head' } : { c: [60, 44, 24], em: 1, tag: 'head' };      // (the eye is part of the head, so it turns with it)
         if (head(x, y, z)) { const beak = x >= 22.4 && y <= 2.2, jaw = y < 1.1; return { c: beak ? (y < 1.4 ? [236, 222, 176] : [190, 170, 120]) : jaw ? mix(P.ed, [244, 236, 204], 0.5) : skin(x, y + Math.abs(z) * 0.6, 3.1), tag: 'head' }; }
         if (neck(x, y, z)) return { c: y < 0.4 ? [228, 218, 178] : skin(x, y + Math.abs(z) * 0.5, 2.2), tag: 'head' };
         if (shellIn(x, y, z)) {

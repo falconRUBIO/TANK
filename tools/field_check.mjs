@@ -14,13 +14,13 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
 await p.waitForTimeout(3000);
 const r = await p.evaluate(async () => { const g = window.__game, r1 = await g.dispatch({ t: 'octoMoment', fish: 'o1', kind: 'lion' }); const r2 = await g.dispatch({ t: 'moment', fish: 'g1', kind: 'glass' }); return { f: g.state.field, j: g.journal.slice(-6).map((e) => e.text) }; });
 ck('two behaviors seen: two pages filled, with who and the line', r.f?.lion?.name === 'Inky' && !r.f.lion.by && r.f?.glass?.name === 'Goldie' && /stiff/.test(r.f.lion.text ?? ''), r.f);
-ck('the journal says which page', r.j.some((x) => /Field Guide, page 1 of 23: Lionfish impression\.$/.test(x)) && r.j.some((x) => /page 2 of 23: Face at the glass/.test(x)), r.j);
+ck('the journal says which page', r.j.some((x) => /Field Guide, page 1 of 24: Lionfish impression\.$/.test(x)) && r.j.some((x) => /page 2 of 24: Face at the glass/.test(x)), r.j);
 const again = await p.evaluate(async () => { const g = window.__game; g.state.fish[0].moments = {}; await g.dispatch({ t: 'octoMoment', fish: 'o1', kind: 'lion' }); return g.journal.filter((e) => /Field Guide/.test(e.text)).length; });
 ck('seen again: no second page', again === 2, again);
 await p.waitForTimeout(6000);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(400); await p.evaluate(() => 0); await p.waitForTimeout(800);
 const page = await p.evaluate(() => ({ head: document.querySelector('#sheet .fghead span')?.textContent, seen: [...document.querySelectorAll('#sheet .fg:not(.nope)')].map((c) => ({ t: c.querySelector('b').textContent, img: !!c.querySelector('img') })), hints: document.querySelectorAll('#sheet .fg.nope').length }));
 await p.screenshot({ path: `${out}/guide.png`, timeout: 120000 }).catch(() => {});
-ck('Collection shows the Field Guide: 2 of 23, the seen pages first with their photos, the rest as hints', page.head === '2 of 23 seen' && page.seen.length === 2 && page.seen.some((x) => x.img) && page.hints === 21, page);
+ck('Collection shows the Field Guide: 2 of 24, the seen pages first with their photos, the rest as hints', page.head === '2 of 24 seen' && page.seen.length === 2 && page.seen.some((x) => x.img) && page.hints === 22, page);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
