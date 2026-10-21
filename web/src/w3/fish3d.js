@@ -36,6 +36,7 @@ const SIG_TEXT = { grab: 'Taking hold of things', tour: 'A swim round the tank',
 // how wide a thing is where the arms take hold of it: round a plant's stem, a rock, the shell, a pillar
 const GRIP = { seafan: 0.2, urchin: 0.45, liverock: 0.45, grass: 0.16, fern: 0.16, sword: 0.18, red: 0.16, kelp: 0.3, bamboo: 0.3, anemone: 0.3, rock: 0.42, boulder: 0.95, coconut: 0.85, pot: 1.0, skull: 0.4, pillar: 0.3, lantern: 0.3, starfish: 0.35, moss: 0.3, shell: 0.25, chest: 0.6, anchor: 0.35, crystal: 0.35, spire: 0.3, brain: 0.5, wood: 0.5, bubbler: 0.3, lighthouse: 0.4, table: 0.6, torii: 0.3, arch: 0.4, bridge: 0.5 };
 const BOSSY = new Set(['angelfish', 'sunangel', 'guppy']);      // big or pushy fish an octopus will face down (the angelfish, and the damselfish that guards its patch)
+const TURTLE_IDS = new Set(['turtle', 'hawksbill']);
 const LAIRS = new Set(['rock', 'liverock', 'boulder', 'brain', 'urchin', 'moss', 'wood']);      // where a crab or a shrimp would hide
 const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish: 0.08 };
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -110,7 +111,7 @@ export class Fish3D {
     this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
-    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || (v.tag === 'head' && species.id === 'turtle') || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
+    this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || (v.tag === 'head' && TURTLE_IDS.has(species.id)) || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
     this.sq = 0; this.restK = 0; this.crawlK = 0; { const mc = this.sp.mantleC ?? [3, 7]; this.mcx = mc[0] - this.cx; this.mcy = mc[1] - (this.sp.center?.[1] ?? 0); this.rig = this.sp.rig ?? null; this.rs = { rest: 0, crawl: 0, sq: 0, ph: 0, work: 0, greet: 0 }; this.workK = 0; this.greetK = 0; this.glowK = 0; this.greet = null; this.jar = null;
     // the octopus's body language and its own arms: each arm has a mind (it probes the floor, reaches for a passing fish), it can press itself flat against the glass, it shows mood in its skin, and it keeps a den
     this.minds = Array.from({ length: 8 }, () => ({ k: 0, until: 0, next: 1 + Math.random() * 5, x: 0, y: 0, z: 0 })); this.rs.minds = this.minds; this.rs.glass = 0; this.glassNear = 0; this.glassAt = null; this.hunt = null; this.den = null; this.hoard = 0;
@@ -123,7 +124,7 @@ export class Fish3D {
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3(1, 0, 0); this.target = new THREE.Vector3();
     this.phase = Math.random() * 6; this.retarget = 0; this.heading = 0; this.pitch = 0; this.roll = 0;
     this.speed = opts.speed ?? 1; this.band = opts.band ?? { x: [-3.6, 3.6], y: [2, 13], z: [0.4, 1.9] };
-    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cool = 0; this.baseScale = (opts.scale ?? 1) * (this.size ?? 1); this.cr = Math.max(0.2, this.radius * (this.species.id === 'turtle' ? 0.22 : 0.3));
+    this.name = opts.name ?? species.label; this.profile = opts.profile; this.radius = (species.length ?? 50) * (species.vox ?? VOX) * GLOBAL * (opts.scale ?? 1) * 0.55; this.accum = 0; this.cool = 0; this.baseScale = (opts.scale ?? 1) * (this.size ?? 1); this.cr = Math.max(0.2, this.radius * (TURTLE_IDS.has(species.id) ? 0.22 : 0.3));
   }
   // growth: baby -> juvenile -> adult changes the fish's size
   // the sand its body has to stay above: under an octopus, the highest sand across its mantle and head; under a fish, along its length from nose to tail
@@ -133,7 +134,7 @@ export class Fish3D {
     const L = this.radius * 0.75, cp = Math.cos(this.pitch || 0), fx = Math.cos(this.heading) * L * cp, fz = -Math.sin(this.heading) * L * cp, fy = Math.sin(this.pitch || 0) * L, deep = Math.max(0, this.radius * 0.45 - 0.35) + (this.sp.tail ? (this.tailLow != null ? Math.max(0, -(this.holdfast ? Math.max(this.tailLow, this.tailLowHeld ?? -99) : this.tailLow) * this.scale - 0.3) : this.radius * 0.5) : 0);      // a seahorse's tail hangs below it; on its way to a stem it curls up ready to grip, so it can come down to where it will hold on      // a deep-bodied fish (and a seahorse's hanging tail) needs more room under it
     return deep + Math.max(this.toLedge ? sandH(this.pos.x, this.pos.z) : sandUnder(this.pos.x, this.pos.z, this.radius * 0.28),      /* (a turtle going in under its ledge: the slab over it is not sand under it) */ sandH(this.pos.x + fx, this.pos.z + fz) - fy, sandH(this.pos.x - fx, this.pos.z - fz) + fy);
   }
-  setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * (this.species.move === 'jet' ? 0.25 : this.species.id === 'turtle' ? 0.22 : 0.3)); this.setPose(this.phase, true); this.babyFace(); }
+  setGrowth(k) { this.growth = k; this.scale = k * (this.species.vox ?? VOX) * GLOBAL * (this.baseScale ?? 1); this.radius = (this.species.length ?? 50) * (this.species.vox ?? VOX) * GLOBAL * k * (this.baseScale ?? 1) * 0.55; this.cr = Math.max(0.2, this.radius * (this.species.move === 'jet' ? 0.25 : TURTLE_IDS.has(this.species.id) ? 0.22 : 0.3)); this.setPose(this.phase, true); this.babyFace(); }
   // a baby octopus's face: big round eyes, dark and shining, with a sparkle each, and a little pink on its cheeks (voxels, like the rest of it; fading as it grows up)
   babyFace() {
     if (this.species.move !== 'jet' || !this.group || !this.vox) return; const c = this.cute ?? 0, F = this.babyEyes;
@@ -188,7 +189,7 @@ export class Fish3D {
       }
       if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
       if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
-      if (v.tag === 'head' && this.species.id === 'turtle') {             // a sea turtle's head on its neck: it reaches out, turns to look, tips up to breathe and dips to bite
+      if (v.tag === 'head' && TURTLE_IDS.has(this.species.id)) {             // a sea turtle's head on its neck: it reaches out, turns to look, tips up to breathe and dips to bite
         const px = 11.5, py = 1.2, hy = this.headYaw ?? 0, hp = this.headPitch ?? 0, ext = (this.neckK ?? 0) * Math.max(0, Math.min(1, (x - px) / 3));
         let dx = x - px + ext * 1.6, dy = y - py, dz = z; const cp = Math.cos(hp), sp2 = Math.sin(hp), nx = dx * cp - dy * sp2; dy = dx * sp2 + dy * cp; dx = nx; const cy = Math.cos(hy), sy = Math.sin(hy), nx2 = dx * cy - dz * sy; dz = dx * sy + dz * cy; dx = nx2;
         x = px + dx; y = py + dy; z = dz; if ((this.chewK ?? 0) > 0.01 && v.y < 1.6 && v.x > 20) y -= this.chewK * (0.5 + 0.5 * Math.sin((this.tt ?? 0) * 11));      // the lower jaw snaps when it bites
@@ -1287,7 +1288,7 @@ export class Fish3D {
   update(dt, rng, others) {
     if (this.puppet) return this.puppet(dt);      // climbing out of the tank or back in (see FishManager.climb)
     if (this.dead) return this.deadUpdate(dt);
-    if (this.species.id === 'turtle') this.turtleTick(dt, others);      // slow, deep strokes: a beat every two or three seconds cruising, faster when it hurries, a glide in between
+    if (TURTLE_IDS.has(this.species.id)) this.turtleTick(dt, others);      // slow, deep strokes: a beat every two or three seconds cruising, faster when it hurries, a glide in between
     { const T = this.target, gh = sandH(T.x, T.z); if (T.y < gh + Math.min(Math.max(T.y, 0.35), 1.0)) T.y = gh + Math.min(Math.max(T.y, 0.35), 1.0); }      // wherever it is heading, it is in the water above the sand there: over a bank a low swimmer swims as low above that sand as it would above the floor
     if (this.sp.tail) { if (!Number.isFinite(this.curlK)) this.curlK = 0; if (!Number.isFinite(this.gripK)) this.gripK = 0; }      // a seahorse's tail starts loose: an unset curl once turned its height into NaN and hid it
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading
@@ -1338,7 +1339,7 @@ export class Fish3D {
       const wantYaw = Math.atan2(-this.vel.z, this.vel.x);
       let dy = wantYaw - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       this.heading += dy * Math.min(1, dt * 2.2);
-      const wantPitch = this.species.id === 'turtle' ? Math.max(-0.45, Math.min(0.55, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.25))) : Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));      // (a turtle tilts, it never stands on its nose: it climbs and dives at a shallow angle)
+      const wantPitch = TURTLE_IDS.has(this.species.id) ? Math.max(-0.45, Math.min(0.55, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.25))) : Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));      // (a turtle tilts, it never stands on its nose: it climbs and dives at a shallow angle)
       this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3);
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }

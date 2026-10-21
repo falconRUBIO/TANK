@@ -24,6 +24,7 @@ export const SPECIES_DEF = {
 };
 SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
 SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A green sea turtle hatchling. Raise it, and one day set it free.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
+SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. It opens once you have set your first turtle free.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9, needs: 'released' };
 SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Clever, curious and always exploring.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
@@ -82,7 +83,7 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [7, 180] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [3, 36], blue: [3, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [5, 50], betta: [5, 80], octopus: [6, 120], turtle: [7, 180], hawksbill: [7, 220] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
 export const LEVEL_AT = [0, 20, 52, 120, 230, 360, 470, 590];                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
@@ -127,13 +128,14 @@ const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
-export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, turtle: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
+export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, turtle: 900, hawksbill: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
 // a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
 // keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
-export const TURTLE_DAYS = 14, TURTLE_PAY = 100;
-export const turtleReady = (f, now = Date.now()) => !!f && f.species === 'turtle' && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
+export const TURTLE_DAYS = 14, TURTLE_PAY = 100, TURTLES = new Set(['turtle', 'hawksbill']);
+export const isTurtle = (x) => TURTLES.has(typeof x === 'string' ? x : x?.species);
+export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
 // how big it is, smoothly, from the day it hatched to the day it is grown: tiny fresh from the egg, half grown by the end of the baby days
@@ -169,7 +171,7 @@ export function firstPromises(t, now = Date.now()) {
 }
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
-export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
+export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !TURTLES.has(k)); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
 // Today's special in the shop carries a rare color (hidden in its genes, named in the shop): it costs a little more, not less
 // For a tank it is picked to be useful: a kind already living there (so it can pair), carrying the color of the goal being worked on, or one
 // that a fish there already carries; with nothing to go on, the day's fish and a color of the day.
@@ -177,7 +179,7 @@ export function specialOf(t, now = Date.now()) {
   const day = Math.floor(now / DAY), cols = Object.keys(MORPHS), h = hash32(day * 41 + ((t?.createdAt ?? 0) % 997)), live = (t?.fish ?? []).filter((f) => !f.dead && !isOcto(f) && SPECIES_DEF[f.species]?.count === 1 && !SPECIES_DEF[f.species]?.visitor && (SPECIES_DEF[f.species]?.level ?? 99) <= (t?.level ?? 1));
   const goalCol = t?.goal && MORPHS[t.goal.id] ? t.goal.id : null, carried = live.flatMap((f) => allelesOf(f).filter((x) => MORPHS[x]).map((c) => [f.species, c]));
   const pick = goalCol ? carried.find(([, c]) => c === goalCol) ?? (live.length ? [live[h % live.length].species, goalCol] : null) : carried.length ? carried[h % carried.length] : live.length ? [live[h % live.length].species, cols[h % cols.length]] : null;
-  const open = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !isOcto({ species: k }) && SPECIES_DEF[k].count === 1 && (SPECIES_DEF[k].level ?? 99) <= (t?.level ?? 1));      /* (never a fish the tank's level has not opened yet) */
+  const open = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !isOcto({ species: k }) && !TURTLES.has(k) && SPECIES_DEF[k].count === 1 && (SPECIES_DEF[k].level ?? 99) <= (t?.level ?? 1));      /* (never a fish the tank's level has not opened yet) */
   return pick ? { species: pick[0], color: pick[1] } : { species: open.length ? open[h % open.length] : dailyFish(now), color: cols[day % cols.length] };
 }
 export const specialColor = (now = Date.now(), t = null) => specialOf(t, now).color;
@@ -258,7 +260,7 @@ export function needsOf(f, t, now = Date.now()) {
 export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, mysis: { label: 'Mysis shrimp', price: 0, sea: true }, crab: { label: 'Crab', price: 0, octo: true }, greens: { label: 'Sea greens', price: 3, turtle: true } };
 export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.dead), hasFishOnly = (t) => t.fish.some((f) => f.species !== 'octopus' && !f.dead);
 export const hasSeahorse = (t) => t.fish.some((f) => f.species === 'seahorse' && !f.dead);
-export const favFoodOf = (f) => (f.species === 'turtle' ? 'greens' : f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
+export const favFoodOf = (f) => (isTurtle(f) ? 'greens' : f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favorite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
 export function favouriteOf(f, t) {
@@ -442,7 +444,7 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || o.species === 'turtle' ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg || o.species === 'turtle' ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
   if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
   if (o.carries && MORPHS[o.carries]) f.genes = { ...genesOf(seed), m: [o.carries, 'n'] };      // today's special: it carries a rare color
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
@@ -499,7 +501,7 @@ function visitors(t, now, ev) {
   if (t.visitor && now >= t.visitor.until) { t.visitor = null; t.visitAt = now + (48 + (hash32(now / 6e4) % 49)) * HOUR; }
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
   { const R = t.released?.filter((x) => now - x.at > 2 * DAY); if (R?.length && hash32(Math.floor(now / 6e4) * 7 + R.length) % 100 < 35) { const T = R[hash32(Math.floor(now / 36e5)) % R.length], seq = (t.seq = (t.seq ?? 10) + 1); T.visits = (T.visits ?? 0) + 1;      // a turtle let go comes back now and then, grown, to see the tank it grew up in
-    t.visitor = { id: 'v' + seq, species: 'turtle', seed: T.seed, until: now + 2 * HOUR, name: T.name, back: T.id };
+    t.visitor = { id: 'v' + seq, species: T.species ?? 'turtle', seed: T.seed, until: now + 2 * HOUR, name: T.name, back: T.id };
     ev.push({ journal: T.visits === 1 ? `${T.name} came back! The turtle you raised swam in from the ocean to visit, bigger than before.` : `${T.name} came back to visit again, for the ${ordinal(T.visits)} time.`, toast: `${T.name} is back to visit! Tap it to say hello.`, visitor: true, hist: 'visitor' }); return; } }
   if (todOf(t, now) < 2 && hash32(Math.floor(t.visitAt / 6e4)) % 10 < 4 && !t.visitWait) { t.visitWait = true; const h = new Date(now + (Number(t.tzMin) || 0) * 60e3).getUTCHours(); t.visitAt = now + ((22 - h + 24) % 24 || 24) * HOUR; return; }      // some visitors only come at night: this one waits for the evening (life.js)
   t.visitWait = false;
@@ -1183,6 +1185,7 @@ export const SOCIAL = {
   betta:     { kind: 'Gentle', size: 1, shy: true, sameFoe: true, nature: 'Slow and peaceful. Picks tiny food from the rocks all day, so quick eaters can crowd it out.', home: { cats: ['ROCKS'], text: 'rocks to pick over' }, likes: ['seahorse'], line: 'Needs quiet company, and only one dragonet.' },
   seahorse:  { kind: 'Gentle', size: 1, shy: true, pair: true, nature: 'Slow, upright and gentle. Pairs for life, greets its partner each morning, and holds on to plants.', home: { cats: ['PLANTS'], text: 'plants to hold on to' }, likes: ['betta', 'seahorse'], line: 'Pairs for life. Easily crowded out at mealtimes.' },
   turtle:    { kind: 'Gentle', size: 3, nature: 'Slow and unhurried. Flies through the water on long front flippers, comes up to breathe, and sleeps wedged under a ledge.', home: { cats: ['ROCKS'], text: 'a ledge to sleep under' }, likes: ['angelfish', 'goldfish'], line: 'Needs room to swim and a ledge to sleep under.' },
+  hawksbill: { kind: 'Curious', size: 3, nature: 'A reef turtle with a hooked beak. Pries sponges from the rock, explores every crevice, and sleeps under a ledge.', home: { cats: ['ROCKS'], text: 'reef rock and a ledge' }, likes: ['angelfish', 'goldfish'], line: 'Needs room, reef rock to forage, and a ledge.' },
   octopus:   { kind: 'Clever', size: 3, predator: true, nature: 'A curious problem-solver that explores everything. Small fish stay wary of it.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'a rock den' }, likes: [], line: 'Keep it busy: it loves puzzles and new things to explore.' },
 };
 const hides = (t) => count(t, 'PLANTS') + count(t, 'ROCKS') + count(t, 'STRUCTURES');
@@ -1214,6 +1217,8 @@ export const ECO = {
     clash: {}, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
   turtle: { zone: 'Open water, and a ledge to sleep under', cover: { cats: ['ROCKS'], need: 2, word: 'rock to sleep under', cat: 'ROCKS' }, tol: 0.9, feed: 'calm',
     clash: {}, best: 'Room to swim, a rock ledge to wedge under at night, plants to graze and clean water.' },
+  hawksbill: { zone: 'Over the reef rock, and a ledge to sleep under', cover: { cats: ['ROCKS'], need: 2, word: 'rock to sleep under', cat: 'ROCKS' }, tol: 0.9, feed: 'calm',
+    clash: {}, best: 'Room to swim, reef rock with sponges to pry at, a ledge to sleep under and clean water.' },
   octopus: { zone: 'Its den, and everywhere else', cover: { types: ['pot', 'coconut'], need: 1, word: 'a den of its own', cat: 'ROCKS' }, tol: 0.8, feed: 'own',
     clash: {}, best: 'A den of its own, puzzles to solve, and someone to know.' },
 };
@@ -1258,6 +1263,10 @@ export const KIND_NEEDS = {
     W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('graze', 'Sea grass to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'A Sea Grass Bed, or two plants', (c) => (c.types.seagrass ?? 0) >= 1 || (c.cats.PLANTS ?? 0) >= 2),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
+  hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
+    W_('ledge', 'A ledge to sleep under', 'Hawksbills sleep wedged under reef ledges and in caves.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
+    W_('reef', 'Reef rock to forage', 'Hawksbills eat sponges, prying them out of the reef with their narrow, hooked beaks.', 'Live rock or brain coral from the Shop', (c) => (c.types.liverock ?? 0) + (c.types.brain ?? 0) >= 1),
+    W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   octopus: [W_('den', 'A den of its own', 'An octopus always has a den to retreat to, and often decorates its doorway.', 'A clay pot or a coconut shell', (c) => c.cover >= 1),
     W_('puzzle', 'Puzzles to solve', 'Octopuses are clever and get bored; in the wild they open shells and pry into crevices.', 'A puzzle jar every day or two', (c) => c.puzzled),
     W_('you', 'Time with you', 'Octopuses come to know their keepers and seek them out.', 'Play with it from its card', (c) => c.played)],
@@ -1270,7 +1279,7 @@ export function needCtx(t, f, now = Date.now()) {
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)
-export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return f.species === 'turtle' ? 2.5 : S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
+export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return isTurtle(f) ? 2.5 : S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
 export const crowdOf = (t) => { const L = t.fish.filter((x) => !x.dead && !x.away), n = L.length, cap = capacity(t.level ?? 1), load = L.reduce((a, f) => a + roomOf(f), 0); return { n, cap, load, r: load / cap }; };
 export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;
@@ -1659,7 +1668,7 @@ export function milestonesOf(f) {
     { key: 'trust', icon: '🤝', label: 'Trusts you', done: !!(D.bond || D.trust) },
     { key: 'trick', icon: '✨', label: 'Learned a trick', done: (f.tricks ?? []).length > 0 || !!(f.solved) },
     { key: 'grown', icon: '🌟', label: 'All grown up', done: grown },
-    f.species === 'turtle' ? { key: 'ocean', icon: '🌊', label: 'Ready for the ocean', done: turtleReady(f) } : { key: 'parent', icon: '👪', label: 'Became a parent', done: !!D.parent },      // a sea turtle is raised to be let go, not to breed: its last milestone is the open ocean
+    isTurtle(f) ? { key: 'ocean', icon: '🌊', label: 'Ready for the ocean', done: turtleReady(f) } : { key: 'parent', icon: '👪', label: 'Became a parent', done: !!D.parent },      // a sea turtle is raised to be let go, not to breed: its last milestone is the open ocean
   ];
 }
 // everything coming up, soonest first, as short lines with when
@@ -1782,6 +1791,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'buyFish': {
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
+      if (d.needs === 'released' && !(t.released?.length)) return fail('LOCKED');      // the hawksbill opens once the tank has raised a turtle and let it go
       if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
       const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
@@ -2053,13 +2063,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       return ok({ id: f.id, delta: pay });
     }
     case 'releaseTurtle': {                                        // a grown sea turtle is let go to the ocean: its keepers are paid, a scute is left behind, and it may come back to visit
-      const f = t.fish.find((x) => x.id === a.id); if (!f || f.species !== 'turtle' || f.dead) return fail('NOT_FOUND');
+      const f = t.fish.find((x) => x.id === a.id); if (!f || !isTurtle(f) || f.dead) return fail('NOT_FOUND');
       if (!turtleReady(f, now)) return fail('NOT_READY');
       if (!canSell(f, uid, members)) return fail('NOT_YOURS');
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       let well = 70; try { well = wellOf(t, f, now).score; } catch { /* (a score is a bonus, not a gate) */ }
       const pay = TURTLE_PAY + Math.max(0, Math.round((well - 60) * 1.25)); t.shells += pay; t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
-      (t.released ||= []).push({ id: f.id, name: f.name, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift();
+      (t.released ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift();
       (t.keeps ||= []).push({ id: nextId(t, 'k'), k: 'scute', by: f.id, byName: f.name, at: now, x: (hash32(now / 6e4) % 500) / 100 - 2.5, z: 1.6 });
       events.push({ journal: `${name} let ${f.name} go to the ocean. It swam up and out into open water, and left a little shell scute behind.`, toast: `${f.name} swam off to the ocean. +${pay} shells`, activity: { type: 'fish', text: `${name} released ${f.name} to the ocean.` }, released: f.id, hist: 'released' });
       return ok({ id: f.id, delta: pay });

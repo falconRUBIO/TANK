@@ -1085,3 +1085,10 @@ ok('a sea turtle comes as a hatchling at level 7, grows up, and is let go to the
   t.flags.tut = 5; t.visitor = null; let back = null; for (let h = 3 * 24; h < 30 * 24 && !back; h += 6) { const now = at + h * 3600e3; t.visitAt = Math.min(t.visitAt ?? now, now); R.advance(t, now); if (t.visitor?.back === f.id) back = t.visitor; else if (t.visitor) t.visitor.until = now; }
   assert.ok(back && back.species === 'turtle' && back.name === 'Shelly', 'it comes back to visit');
 });
+ok('the hawksbill opens only once the tank has set a turtle free', () => {
+  const t = R.newWorld(0); t.shells = 900; t.level = 7;
+  assert.equal(R.applyAction(t, { t: 'buyFish', species: 'hawksbill', name: 'Amber' }, { now: 1000 }).reason, 'LOCKED');
+  t.released = [{ id: 'x', name: 'Shelly', species: 'turtle', seed: 3, at: 0 }]; const r = R.applyAction(t, { t: 'buyFish', species: 'hawksbill', name: 'Amber' }, { now: 2000 }); assert.ok(r.ok, JSON.stringify(r));
+  R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'hawksbill'); assert.ok(f && R.isTurtle(f) && R.favFoodOf(f) === 'greens' && R.stageOf(f, 2000 + 7 * 3600e3) === 'baby');
+  assert.equal(R.milestonesOf(f).at(-1).key, 'ocean');
+});

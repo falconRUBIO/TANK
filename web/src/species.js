@@ -844,8 +844,8 @@ const rosecory = recolor(goby, 'rosecory', 'Rose Goby', (c) => mix(c, [255, 150,
 // After a juvenile green turtle (Chelonia mydas): an olive-brown carapace of large plates, each streaked with gold rays from its center, a pale
 // yellow plastron, a blunt head covered in pale-edged scales, long paddle front flippers (it "flies" with these) and small rounded back ones
 // it steers with. Every flipper voxel knows the root it turns about, so the strokes are posed in Fish3D (v.flip).
-const turtle = {
-  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 40, vox: 0.088,      /* (length: nose to tail, for its size in the water; the flippers reach far wider) */
+const turtleSpecies = (O) => ({
+  id: O.id, label: O.label, move: 'swim', length: 40, vox: O.vox ?? 0.088,      /* (length: nose to tail, for its size in the water; the flippers reach far wider) */
   make(seed = 1) {
     const rng = mulberry32(seed * 7211 + 41), off = [rng() * 40, rng() * 40, rng() * 40];
     // after real green turtles: an olive-to-mahogany shell of big plates, each streaked with gold rays from its center; dark skin edged in cream
@@ -854,8 +854,10 @@ const turtle = {
       { sh: [126, 78, 40], dp: [80, 44, 22], se: [40, 24, 14], ray: [234, 170, 90], sk: [82, 70, 46], ed: [236, 214, 172] },
       { sh: [82, 98, 52], dp: [48, 62, 32], se: [28, 36, 20], ray: [196, 196, 104], sk: [58, 84, 60], ed: [214, 226, 184] },
     ];
-    const P = PALS[Math.floor(rng() * PALS.length)];
-    const SH = { cy: 1, rx: 14, ry: 7.6, rz: 10.6 };
+    // a hawksbill wears tortoiseshell: amber plates marbled with dark brown and black, the same pattern people once hunted it for
+    const HAWK = [{ sh: [204, 132, 46], dp: [92, 46, 18], se: [40, 20, 10], ray: [250, 196, 96], sk: [74, 56, 36], ed: [236, 212, 160], tort: true }, { sh: [186, 108, 38], dp: [70, 34, 14], se: [34, 16, 8], ray: [240, 176, 80], sk: [66, 48, 30], ed: [230, 204, 150], tort: true }];
+    const P = O.hawk ? HAWK[Math.floor(rng() * HAWK.length)] : PALS[Math.floor(rng() * PALS.length)];
+    const SH = { cy: 1, rx: 14, ry: O.hawk ? 6.8 : 7.6, rz: O.hawk ? 9.8 : 10.6 };
     const PLATES = [[-9.5, 0], [-4.8, 0], [0, 0], [4.8, 0], [9.2, 0], ...[-7.4, -2.4, 2.6, 7.4].flatMap((px) => [[px, 6.4], [px, -6.4]])];
     const shellIn = (x, y, z) => { const dx = x / SH.rx, dz = z / SH.rz; if (y >= SH.cy) { const dy = (y - SH.cy) / SH.ry, k = dx * dx + dz * dz; return k + dy * dy * (1 + 0.25 * Math.max(0, dx)) <= 1; } return y >= SH.cy - 2.4 && dx * dx * 1.12 + dz * dz * 1.18 <= 1; };
     const head = (x, y, z) => { const dx = (x - 18.8) / 5.2, dy = (y - 2.1) / 3.9, dz = z / 3.7; return dx * dx + dy * dy + dz * dz <= 1; };
@@ -873,18 +875,20 @@ const turtle = {
       sample(x, y, z) {
         // the eye: big and dark, set well back on the side of the head under a pale brow scale, with a bright catch-light
         if (Math.abs(z) >= 2 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 20.2, y - 3.0) <= 1.55) return Math.hypot(x - 19.8, y - 3.6) < 0.62 ? { c: [255, 255, 255], em: 2, tag: 'head' } : Math.hypot(x - 20.2, y - 3.0) <= 1.05 ? { c: [12, 10, 8], em: 1, tag: 'head' } : { c: [60, 44, 24], em: 1, tag: 'head' };      // (the eye is part of the head, so it turns with it)
+        if (O.hawk && x > 22.5 && x <= 26 && Math.abs(z) <= 1.6 - (x - 22.5) * 0.35 && y <= 2.6 - (x - 22.5) * 0.45 && y >= 0.4 - (x - 22.5) * 0.55) return { c: y < 1.2 - (x - 22.5) * 0.3 ? [214, 190, 130] : [150, 122, 76], tag: 'head' };      // a hawksbill's narrow, hooked beak, for prying sponges out of the reef
         if (head(x, y, z)) { const beak = x >= 22.4 && y <= 2.2, jaw = y < 1.1; return { c: beak ? (y < 1.4 ? [236, 222, 176] : [190, 170, 120]) : jaw ? mix(P.ed, [244, 236, 204], 0.5) : skin(x, y + Math.abs(z) * 0.6, 3.1), tag: 'head' }; }
         if (neck(x, y, z)) return { c: y < 0.4 ? [228, 218, 178] : skin(x, y + Math.abs(z) * 0.5, 2.2), tag: 'head' };
         if (shellIn(x, y, z)) {
           if (y < SH.cy) { const rim = Math.abs(z) > 9 || Math.abs(x) > 12; return { c: rim ? mix(P.sh, P.se, 0.25) : mix([238, 222, 160], [212, 192, 128], ((Math.floor(x / 4) + Math.floor(Math.abs(z) / 4)) & 1) * 0.55) }; }
           // plates: five down the spine, four along each side, a ring of small ones round the rim; dark seams, gold rays bursting from each plate's center
           const r = Math.hypot(x / SH.rx, z / SH.rz), az = Math.abs(z);
+          if (O.hawk && r > 0.8 && x < -6 && ((Math.floor(Math.atan2(z, x) * 7.6) & 1) === 0) && r > 0.93) return null;      // a hawksbill's shell ends in a saw-toothed rim at the back
           if (r > 0.86) { const cell = Math.floor((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24), edge = ((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24) % 1; return { c: edge < 0.14 ? P.se : mix(mix(P.sh, P.ray, 0.35), [255, 240, 200], (cell & 1) * 0.1), tag: 'shell' }; }
           // each plate is the patch nearest its own center: five down the spine and four along each side, so the seams fall where two plates meet, the way real scutes tile
           let b1 = 1e9, b2 = 1e9, cxp = 0, czp = 0; for (const [px, pz] of PLATES) { const d = Math.hypot(x - px, (z - pz) * 1.08); if (d < b1) { b2 = b1; b1 = d; cxp = px; czp = pz; } else if (d < b2) b2 = d; }
           if (b2 - b1 < 0.95) return { c: P.se, tag: 'shell' };
           const ang = Math.atan2(z - czp, x - cxp), d0 = Math.hypot(x - cxp, (z - czp) * 1.1), ray = Math.abs(Math.sin(ang * 2.5 + (fbm(x * 0.3 + off[0], z * 0.3, 1) - 0.5) * 1.5)) > 0.9 && d0 > 1.4, n = fbm(x * 0.2 + off[1], y * 0.2, z * 0.2 + off[2]);
-          const edgeK = Math.max(0, Math.min(1, (b1 - 1.5) / 3)), base = mix(mix(P.sh, P.ray, 0.18), P.dp, edgeK * 0.65), c = ray ? mix(base, P.ray, 0.45) : base;      // each plate light in the middle, darkening to its seams, with a few gold streaks
+          const edgeK = Math.max(0, Math.min(1, (b1 - 1.5) / 3)), tort = P.tort ? fbm(x * 0.28 + cxp + off[2], z * 0.28 + czp, 3) : 0, base = P.tort ? (tort > 0.58 ? mix(P.dp, [20, 12, 6], (tort - 0.58) * 2) : tort > 0.46 ? mix(P.sh, P.dp, 0.5) : mix(P.sh, P.ray, 0.3 - edgeK * 0.3)) : mix(mix(P.sh, P.ray, 0.18), P.dp, edgeK * 0.65), c = ray && !P.tort ? mix(base, P.ray, 0.45) : base;      // (tortoiseshell: amber marbled with dark brown and black; a green turtle's plates have gold rays)      // each plate light in the middle, darkening to its seams, with a few gold streaks
           return { c: mix(c, [255, 248, 220], Math.max(0, (y - 6) / 3) * 0.14 + (n - 0.5) * 0.12), tag: 'shell' };
         }
         const fl = flipAt(x, y, z); if (fl) { const under = y < fl.f.r[1] - 0.35 - fl.u * 1.5; return { c: under ? mix(P.ed, [240, 232, 200], 0.4) : fl.lead && fl.f.kind === 0 ? mix(P.ed, P.sk, 0.35) : skin(x, z, 2.4), flip: { x: fl.f.r[0], y: fl.f.r[1], z: fl.f.r[2], s: Math.sign(fl.f.r[2]), k: fl.f.kind, u: fl.u }, tag: 'flip' }; }
@@ -893,5 +897,7 @@ const turtle = {
       },
     };
   },
-};
-export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, turtle, moonbetta, sunangel, rosecory };
+});
+const turtle = turtleSpecies({ id: 'turtle', label: 'Sea Turtle' }), hawksbill = turtleSpecies({ id: 'hawksbill', label: 'Hawksbill Turtle', hawk: true, vox: 0.082 });
+
+export const SPECIES = { goldfish: clownfish, blue: gramma, angelfish: emperor, neon: chromis, cory: goby, guppy: damsel, platy: cardinal, danio: anthias, betta: mandarin, seahorse, octopus, turtle, hawksbill, moonbetta, sunangel, rosecory };

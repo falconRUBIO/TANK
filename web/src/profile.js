@@ -72,4 +72,5 @@ export const SPECIES_INFO = {
   seahorse: { sci: 'Hippocampus kuda', size: '14–17 cm' },
   octopus: { sci: 'Octopus vulgaris', size: '60–90 cm with arms' },
   turtle: { sci: 'Chelonia mydas', size: 'hatchling 5 cm, grows to over 1 m' },
+  hawksbill: { sci: 'Eretmochelys imbricata', size: 'hatchling 4 cm, grows to about 90 cm' },
 };

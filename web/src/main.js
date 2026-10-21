@@ -23,7 +23,7 @@ import { skyOf } from './game/sky.js';
 import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
-import { wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY } from './game/rules.js';
+import { wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
 import { makeWaterChange } from './waterchange.js';
@@ -111,7 +111,7 @@ const shellToast = (r) => { if (r?.delta > 0) { ui.toast(`+${r.delta} shell${r.d
 // the octopuses this caretaker may feed: their own (in a shared tank), or any in a solo tank; the hungriest first
 function myOctos() { const s = game.state, me = game.you?.userId, l = s.fish.filter((f) => canFeedOcto(f, me, game.shared)).sort((a, b) => octoHunger(b) - octoHunger(a)), pick = l.find((f) => f.id === game.feedFor); return pick ? [pick, ...l.filter((f) => f !== pick)] : l; }      // the one chosen in the menu first
 function mySeas() { const s = game.state, me = game.you?.userId, l = s.fish.filter((f) => f.species === 'seahorse' && canFeedOwn(f, me, game.shared)).sort((a, b) => ownHunger(b) - ownHunger(a)), pick = l.find((f) => f.id === game.feedFor); return pick ? [pick, ...l.filter((f) => f !== pick)] : l; }      // the seahorses this caretaker feeds (their own, or any in a solo tank)
-function foodsFor() { const s = game.state, octo = myOctos().length > 0, sea = mySeas().length > 0, fish = s.fish.some((f) => !f.dead && f.species !== 'octopus' && f.species !== 'seahorse') || !s.fish.some((f) => !f.dead); return Object.entries(FOODS).filter(([, d]) => (d.turtle ? s.fish.some((f) => !f.dead && f.species === 'turtle') : d.octo ? octo : d.sea ? sea : fish)); }
+function foodsFor() { const s = game.state, octo = myOctos().length > 0, sea = mySeas().length > 0, fish = s.fish.some((f) => !f.dead && f.species !== 'octopus' && f.species !== 'seahorse') || !s.fish.some((f) => !f.dead); return Object.entries(FOODS).filter(([, d]) => (d.turtle ? s.fish.some((f) => !f.dead && isTurtleR(f)) : d.octo ? octo : d.sea ? sea : fish)); }
 function defaultFood() { const ks = foodsFor().map(([k]) => k); if (!ks.includes(game.feedFood ?? 'flakes')) game.feedFood = ks[0] ?? 'flakes'; return game.feedFood ?? 'flakes'; }
 const dropWord = (k) => { if (k === 'crab') return `a crab for ${myOctos()[0]?.name ?? 'the octopus'}`; if (k === 'mysis') return `mysis shrimp for ${mySeas()[0]?.name ?? 'the seahorse'}`; return FOODS[k].label.toLowerCase(); };
 const FOOD_ICON = { flakes: '🫧', pellets: '🟤', treats: '🍤', mysis: '🦐', crab: '🦀' };
@@ -340,7 +340,7 @@ setInterval(() => { const s = game.state; if (!s) return;
     else if (f.seekStep) { const sp = f.seekSpot; f.seekStep = null; f.seekSpot = null; if (sp) fishes.burst?.(new THREE.Vector3(sp.x, (sp.y ?? 0) + 0.9, sp.z + 0.3)); } } }, 1000);
 // a sea turtle is raised to be let go: how long until it is ready for the ocean, and when it is, the button that sends it
 function turtleBlock(rec) {
-  if (rec?.species !== 'turtle' || rec.dead) return '';
+  if (!isTurtleR(rec) || rec.dead) return '';
   if (!turtleReady(rec)) { const n = turtleDaysLeft(rec); return `<div class="now">${msIcon('turtle', true, 14)} <span>Growing up. Ready for the ocean in about ${n} day${n === 1 ? '' : 's'}; the better it is looked after, the more it is worth when it goes.</span></div>`; }
   return `<div class="acts2 playrow"><button class="act2 due" id="turtrel">${msIcon('turtle', true, 18)} Release ${esc(rec.name)} to the ocean</button></div>`;
 }

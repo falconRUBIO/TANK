@@ -15,6 +15,12 @@ export const FACTS = {
     'Most of an octopus\'s neurons are in its arms: each arm can taste and feel what it touches on its own.',
     'An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin.',
   ],
+  hawksbill: [
+    'A hawksbill eats sponges, prying them out of the reef with its narrow, hooked beak. Few other animals can eat them.',
+    'Hawksbill shells are the tortoiseshell people once made combs and glasses from; today the trade is banned to protect them.',
+    'By eating sponges, hawksbills keep them from crowding out the corals on a reef.',
+    'Some hawksbills glow: their shells fluoresce red and green under blue light, the first reptile seen to do it.',
+  ],
   turtle: [
     'A sea turtle cannot pull its head into its shell the way a land tortoise can.',
     'Green turtles are named for the green color of their fat, not their shell: as adults they eat mostly sea grass and algae.',
