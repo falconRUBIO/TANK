@@ -586,6 +586,11 @@ export class Fishes {
         else if (M.soc >= 0.55 && o.mind.soc >= 0.55 && S?.s === 'rest' && !S.mode && !f.inspect && this.rng() < 0.2) { f.inspect = { x: o.pos.x, z: o.pos.z }; th = `Getting to know ${o.name}.`; }
         break;
       }
+      // how it is doing shows in how it lives (the same reading Health gives): well looked after it is busy and richly colored; missing what its kind needs,
+      // it goes dull and listless and keeps to its den, and says what is missing
+      { const now = Date.now(); if (!f.wellAt || now - f.wellAt > 8000) { f.wellAt = now; try { f.well = f.rec && this.state ? wellOf(this.state, f.rec, now) : null; } catch { f.well = null; } }
+        const W = f.well; f.wellK = W ? W.score / 100 : 0.75;
+        if (W && !f.task && (!th || S?.s === 'rest')) { const miss = (W.wants ?? []).filter((x) => !x.met && x.k !== 'food' && x.k !== 'play').map((x) => x.label.toLowerCase()); if (W.score < 55 && miss.length) th = `Dull and listless. It is missing ${miss[0]}.`; else if (W.score >= 90 && !th) th = 'Content and curious, its colors rich.'; } }
       if (f.task) th = f.task.kind === 'home' ? `Carrying a ${(DECOR_DEF[(f.getSpots?.() ?? []).find((q) => q.id === f.task.id)?.type]?.label ?? 'shell').toLowerCase()} to a quiet corner.` : f.task.kind === 'build' ? 'Building a shelter out of rocks.' : f.task.kind === 'turn' ? 'Shoving its shell about to see how it likes it there.' : 'Moving a stone where it wants it.';
       f.thought = th;
       if (!f.task && this.moveOn && this.canMove?.() && f.adultish && !f.shy && f.sulk < 0.5 && S?.s === 'rest' && !S.mode && !(f.homing && S.t > 8) && !f.hunt && !f.jarAt && !f.inspect && !f.isNight && (f.sleepK ?? 0) < 0.2 && (f.fatigue ?? 0) < 0.3 && !(f.scared > 0) && !f.keepCarry && !f.wrong && Date.now() - (f.movedAt ?? 0) > MOVE_GAP && this.rng() < 0.02 + 0.04 * M.tidy + 0.02 * M.cur) {

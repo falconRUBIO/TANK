@@ -60,7 +60,7 @@ for (const act of ['flat', 'bury', 'lion', 'snake', 'jelly', 'kelp', 'follow', '
 }
 // 4. left alone for eight minutes of tank time, it does these things by itself
 {
-  const log = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); f.pos.set(0, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 1, n: 0, pulse: 0, mode: null }; f.isNight = false; f.restFor = 10; f.shy = false; f.sleepK = 0;
+  const log = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); f.pos.set(0, 0.6, 1.6); f.vel.set(0, 0, 0); f.st = { s: 'rest', t: 1, n: 0, pulse: 0, mode: null }; f.isNight = false; f.restFor = 10; f.shy = false; f.sleepK = 0; f.fatigue = 0;      /* (starts rested: a worn-out octopus rightly sleeps it off) */
     const acts = {}, gaits = {}; let last = null, lastG = null; for (let i = 0; i < 9600; i++) { F.update(0.05, (window.__t += 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); const a = f.act; if (a && a !== last) acts[a] = (acts[a] ?? 0) + 1; last = a; const g = f.st?.s === 'crawl' ? f.gait : null; if (g && g !== lastG) { const name = Object.keys({ stroll: 1, creep: 1, stilt: 1, bounce: 1 }).find((k) => g.stride === ({ stroll: 1, creep: 0.6, stilt: 1.35, bounce: 1.1 })[k]); gaits[name] = (gaits[name] ?? 0) + 1; } lastG = g; }
     return { acts, gaits }; });
   const kinds = Object.keys(log.acts), n = Object.values(log.acts).reduce((a, c) => a + c, 0);
