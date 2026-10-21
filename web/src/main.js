@@ -4,7 +4,7 @@ import { Game, REASONS } from './game/game.js';
 import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 import { makeStudio, planShot } from './w3/photo.js';
-import { specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
+import { GROW, specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
 import { algaeTint } from './w3/decor.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
@@ -371,7 +371,7 @@ async function releaseTurtle(rec) {
 }
 async function givePuzzle(id) {
   const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
-  const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r);
+  const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r); capNote();
   if (r.busy) { ui.toast(`${o.name} is still working on the jar`); return; }
   if (!r.applied) { const h = Math.max(1, Math.ceil((r.wait ?? 0) / 3600e3)); ui.toast(`${o.name} needs a rest. Try again in about ${h} hour${h > 1 ? 's' : ''}.`); return; }
   sfx('splash'); haptic(8); ui.refresh(); spotlightFish(o.id, 4200, 1600);
@@ -455,7 +455,7 @@ const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + c
 let bottleId = null; const sentBottles = new Map();
 const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
 toys.onSound = (k) => sfx({ splash: 'bubble', bubble: 'bubble', bonk: 'tap', pop: 'click', pounce: 'tap' }[k] ?? 'tap');
-toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fish: ids }).catch(() => null); };      // who joined in learns the toy a little more
+toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fish: ids }).then(capNote).catch(() => null); };      // who joined in learns the toy a little more
 // while the light spot is on, the tank goes dark around it: a dark veil over the tank with a soft hole where the light falls, following your finger
 const dimmer = document.createElement('div'); dimmer.id = 'dimmer'; canvas.after(dimmer);      // (right over the tank, under the header, the menus and the bar)
 function toScreen(p) { const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc, q = p.clone().project(camera); return [r.left + (r.width - dw) * 0.5 + (q.x + 1) / 2 * dw, r.top + (r.height - dh) + (1 - q.y) / 2 * dh]; }
@@ -497,6 +497,8 @@ async function greetVisitor(f) {
   sfx('level'); haptic(20); fishes.burst(f.pos); flyShells(4, [window.innerWidth / 2, window.innerHeight * 0.4]);
 }
 // playing: fish follow a fingertip along the glass. Five seconds of it builds the bond.
+// once a day, when play has given all the level points it can for the day: said once, gently, and play goes on just the same
+const capNote = () => { const P = game.state?.flags?.playXp; if (!P || !(P.n >= GROW.playCap)) return; try { if (localStorage.getItem('ourtank.capSeen') === String(P.day)) return; localStorage.setItem('ourtank.capSeen', String(P.day)); } catch { return; } setTimeout(() => ui?.toast('That is all the level points play gives today. They still love the attention.', 4200), 900); };
 let cardOpen = null;                                                     // which fish's card is expanded; a card opens folded, showing the fish above it
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
@@ -521,7 +523,7 @@ function reopenWhenIdle(f, tries = 0, now = false) {
 async function finishPlay(lifted = false) {
   const { fish: f, moved } = play; play = null; f.mul = 0.35; f.glassAt = null; if ($('pet')) { $('pet').disabled = false; $('pet').textContent = f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`; }
   if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); reopenWhenIdle(f, 0, lifted); return; }
-  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f, 0, lifted); return fail(r); }
+  const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f, 0, lifted); return fail(r); } capNote();
   if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); reopenWhenIdle(f, 0, lifted); return; }
   fishes.burst(f.pos); sfx('arrive'); haptic(10); f.vigor = Math.max(f.vigor, 1.1);
   if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.4]);
