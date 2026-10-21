@@ -1191,8 +1191,8 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 export const TOYS = {
   ball: { label: 'Ball', unlock: 1, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
   bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them.', fits: ['fish', 'seahorse', 'octopus'] },
-  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and over and twists the faces. Aquariums give octopuses puzzle toys like this to keep their minds busy.', fits: ['octopus'] },
-  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse swims over, curls its tail round the hoop and sways with it. Keepers give seahorses hitching posts and target toys to explore.', fits: ['seahorse'] },
+  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and twists the faces.', fits: ['octopus'] },
+  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse curls its tail round it and sways.', fits: ['seahorse'] },
   light: { label: 'Light spot', unlock: 7, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it.', fits: ['fish', 'octopus', 'seahorse'] },
 };
 export const TOY_LEARN = 5;
