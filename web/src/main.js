@@ -631,6 +631,10 @@ const SPECIES_FACTS = {
   danio: ['Anthias live in groups led by one male; if he is lost, the biggest female becomes the new male.', 'An anthias shoal moves like a single orange-pink cloud.'],
   betta: ['Mandarin dragonets have no scales; a bitter slime protects them instead.', 'Mandarins dance in pairs at dusk, rising together off the reef.'],
   seahorse: ['A father seahorse carries the babies in a pouch until they are born.', 'A seahorse can move each eye on its own, looking two ways at once.', 'Seahorses have no stomach, so they eat almost all day.'],
+  hawksbill: ['A hawksbill pries sponges out of the reef with its narrow, hooked beak.', 'Hawksbill shells are tortoiseshell, once made into combs; today the trade is banned to protect them.'],
+  loggerhead: ['A loggerhead has the biggest head of any hard-shelled turtle, with jaws that crush conch shells.', 'Loggerheads cross whole oceans and find their way home by Earth\'s magnetic field.'],
+  kemps: ["Kemp's ridley is the smallest and most endangered sea turtle.", 'Ridleys nest by day, thousands at once, in mass arrivals called arribadas.'],
+  leatherback: ['The leatherback is the biggest turtle alive, with a leathery shell instead of plates.', 'Leatherbacks eat jellyfish and dive over a kilometer deep.'],
   turtle: ['A sea turtle comes up to breathe, then sinks back down to rest.', 'Green turtles graze sea grass like cows graze a meadow, and keep the grass beds healthy.'],
   octopus: ['An octopus has three hearts and blue blood.', 'Two-thirds of an octopus\'s nerve cells are in its arms; each arm can taste and decide a little on its own.', 'An octopus can squeeze through any gap bigger than its beak.', 'Octopuses can taste with their suckers.'],
 };
