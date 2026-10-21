@@ -427,6 +427,7 @@ export function norm(t, now = Date.now()) {
   t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); (t.fish ?? []).forEach((f) => { if (f?.mem && typeof f.mem === 'object') memCap(t, f, now); else if (f) delete f.mem; });      // (an octopus's memories, kept bounded)
   t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && (e.species !== 'octopus' || e.den)); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
   if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
+  if (!Number.isFinite(t.xp)) { t.xp = 0; const gap = (LEVEL_AT[t.level - 1] ?? 0) - scoreOf(t); if (gap > 0) t.xp = gap; }      /* a tank from before care points starts its level at the beginning of it, not below it */
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
   t.seen ||= {}; if (!Array.isArray(t.seen.fish)) t.seen.fish = [...new Set((t.fish ?? []).map((f) => f?.species).filter(Boolean))]; if (!Array.isArray(t.seen.decor)) t.seen.decor = [...new Set((t.decor ?? []).map((d) => d?.type).filter(Boolean))];      // (repairs a half-written one too)

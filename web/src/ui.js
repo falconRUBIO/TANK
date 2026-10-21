@@ -587,7 +587,7 @@ export function initUI({ game, social, cb }) {
   // The Tank chart (the ring at top right): one page that says how the tank is, why, what to do about it, and what the next level brings.
   // Care → Health → Growth: everything on it reads in that order
   const chartHtml = () => { const s = S(); if (!s) return ''; const now = Date.now(), H = tankHealth(s, now), cls = H.score >= 85 ? 'good' : H.score >= 75 ? 'ok' : H.score >= 55 ? 'warn' : 'bad';
-    const sc = scoreOf(s, now), lv = s.level, a = LEVEL_AT[lv - 1] ?? 0, b = LEVEL_AT[lv], pct = b ? Math.max(2, Math.min(100, Math.round(((sc - a) / (b - a)) * 100))) : 100, left = b ? Math.max(1, Math.ceil(b - sc)) : 0;
+    const sc = scoreOf(s, now), lv = s.level, a = LEVEL_AT[lv - 1] ?? 0, b = LEVEL_AT[lv], pct = b ? Math.max(0, Math.min(100, Math.round(((sc - a) / (b - a)) * 100))) : 100, left = b ? Math.max(1, Math.ceil(b - sc)) : 0;
     const pace = H.score < 55 ? ['Paused', 'Only care counts while the tank is unwell'] : H.mult > 1 ? ['×1.5', 'Thriving: growing fast'] : H.mult < 1 ? ['×0.5', 'Struggling: growing slowly'] : ['×1', 'Happy: growing steadily'];
     const live = s.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped), W = live.map((f) => { try { return [f, wellOf(s, f, now)]; } catch { return [f, null]; } }).filter(([, w]) => w).sort((x, y) => x[1].score - y[1].score);
     const water = Math.round(Math.max(0, Math.min(1, ((s.water ?? 1) - 0.45) / 0.5)) * 100), glass = Math.round((1 - Math.min(1, (s.glass ?? 0) / 0.8)) * 100), tankPart = Math.round(0.6 * water + 0.4 * glass);
