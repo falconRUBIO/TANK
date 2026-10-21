@@ -1659,7 +1659,7 @@ export function milestonesOf(f) {
     { key: 'trust', icon: '🤝', label: 'Trusts you', done: !!(D.bond || D.trust) },
     { key: 'trick', icon: '✨', label: 'Learned a trick', done: (f.tricks ?? []).length > 0 || !!(f.solved) },
     { key: 'grown', icon: '🌟', label: 'All grown up', done: grown },
-    { key: 'parent', icon: '👪', label: 'Became a parent', done: !!D.parent },
+    f.species === 'turtle' ? { key: 'ocean', icon: '🌊', label: 'Ready for the ocean', done: turtleReady(f) } : { key: 'parent', icon: '👪', label: 'Became a parent', done: !!D.parent },      // a sea turtle is raised to be let go, not to breed: its last milestone is the open ocean
   ];
 }
 // everything coming up, soonest first, as short lines with when

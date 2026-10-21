@@ -39,6 +39,7 @@ const ART = {
   camera: ['............', '............', '...kkk......', '.kkkkkkkkkk.', '.kSSSkkSSSk.', '.kSSkbbkSSk.', '.kSkbwbbkSk.', '.kSkbbbbkSk.', '.kSSkbbkSSk.', '.kSSSkkSSSk.', '.kkkkkkkkkk.', '............'],
   hand: ['............', '...c.c.c....', '..cc.c.c.c..', '..cc.c.c.c..', '..cc.c.c.c..', '..ccccccccc.', 'cccccccccc..', '.cccccccccc.', '..ccccccccc.', '...cccccccc.', '....cccccc..', '............'],
   crab: ['............', 'r.r......r.r', 'rrr......rrr', '.r..rrrr..r.', '..rrrrrrrr..', '.rrkrrrrkrr.', 'rrrrrrrrrrrr', '.rrrrrrrrrr.', '..r.r..r.r..', '.r..r..r..r.', '............', '............'],
+  ocean: ['............', '...yy.......', '..yyyy......', '...yy.......', '............', '.bb...bb....', 'bBBb.bBBb.bb', 'BbbBbBbbBbBB', '............', '.bb...bb....', 'bBBb.bBBb.bb', 'BbbBbBbbBbBB'],
   greens: ['............', '.....G......', '....GgG..G..', '...GgG..GgG.', '...Gg..GgG..', '..GgG.GgG...', '..Gg..Gg..G.', '..Gg.GgG.GgG', '.GgG.Gg..Gg.', '.Gg..Gg.GgG.', 'sssssssssss.', '............'],
   turtle: ['............', '............', '....GGGG....', '..GGgGGgGG..', '.cGgGGGGgGcc', 'ccGGgGGgGGcw', '.cGGGGGGGGcc', '..GGgGGgGG..', '..c......c..', '.cc......cc.', '............', '............'],
   shrimp: ['............', '....rr......', '...rwrr.....', '..rrrrrr....', '..r..rrrr...', '.......rrr..', '........rr..', '.......rrr..', '.....rrrr...', '...rrrr.....', '..rr.r......', '............'],
