@@ -391,7 +391,7 @@ async function trainFish(f, key, spot) {
   setFocus(null); fishes.perform(f, key, spot); sfx('tap'); if (!r.learned) ui.toast(`${f.name} practised: ${r.n} of ${r.need ?? 5}`);
 }
 async function showTrick(f, key) {      // ask for it: it does it if it trusts you and is in the mood (the rules decide, so it is the same on every phone)
-  const o = (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)); if (!o) { ui.toast('Needs the decoration to be in the tank'); return; }
+  const o = TRICKS[key].types.length ? (game.state.decor ?? []).find((d) => TRICKS[key].types.includes(d.type)) : { id: 'glass' }; if (!o) { ui.toast('Needs the decoration to be in the tank'); return; }
   const r = await game.dispatch({ t: 'perform', id: f.fid, trick: key }); if (!r.ok) return fail(r); if (!r.applied) { ui.toast(`${f.name} just did one. Give it a minute.`); return; }
   if (r.success) { setFocus(null); fishes.perform(f, key, o.id); sfx('reward'); ui.toast(`${f.name} did it!`, 2200); return; }
   sfx('tap'); f.fleeT = 1.2; ui.toast(r.why === 'hungry' ? `${f.name} is too hungry to show off. Feed it first.` : r.why === 'mood' ? `${f.name} is not in the mood. A happier fish performs more.` : `${f.name} swam off. It needs to know you better: keep at it.`, 3600);

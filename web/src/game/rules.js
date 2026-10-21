@@ -914,7 +914,8 @@ function checkWant(t, now, ev, grant = null) {
 }
 
 // ── tricks: a fish that trusts you can be taught to do something with a decoration ──
-export const TRICKS = { gate: { label: 'swim through the gate', types: ['arch', 'torii', 'wood', 'bridge'] }, bubbles: { label: 'ride the bubbles', types: ['bubbler'] } };
+// (the twirl needs nothing but the front glass: the first trick, right when level 3 opens; the others need their decoration, something to save for)
+export const TRICKS = { twirl: { label: 'twirl at the glass', types: [] }, gate: { label: 'swim through the gate', types: ['arch', 'torii', 'wood', 'bridge'] }, bubbles: { label: 'ride the bubbles', types: ['bubbler'] } };
 export const TRAIN_NEED = 5, TRAIN_GAP = 20 * 60e3, TRICK_REWARD = 3, TRICK_BOND = 3;
 // The octopus is the clever one: it learns a trick in two lessons instead of five, remembers whoever looks after it, and can be given a puzzle jar
 // with a crab inside. The first jar takes minutes to work out; every one after is quicker, down to seconds, because it remembers how.
@@ -1272,7 +1273,7 @@ export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x,
 export const TRICK_LEVEL = 3;
 export function trickOptions(t, f, now = Date.now()) {
   if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND || (t.level ?? 1) < TRICK_LEVEL) return [];      // (tricks open at level 3: tricks already learned are kept whatever the level)
-  return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: t.decor.find((x) => d.types.includes(x.type))?.id ?? null, have: f.skill?.[k] ?? 0, need: trainNeed(f) })).filter((o) => o.spot);
+  return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: d.types.length ? t.decor.find((x) => d.types.includes(x.type))?.id ?? null : 'glass', have: f.skill?.[k] ?? 0, need: trainNeed(f) })).filter((o) => o.spot);
 }
 
 

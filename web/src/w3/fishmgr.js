@@ -757,6 +757,8 @@ export class Fishes {
   }
   // Show a trick: a scripted route through or around a decoration, then back to normal wandering.
   perform(f, kind, spotId) {
+    if (spotId === 'glass' && !f.dead) { const x = Math.max(-3, Math.min(3, f.pos.x)), y = Math.max(1.6, Math.min(4.5, f.pos.y)), z = 1.9;      // the twirl: up to the front glass, a full loop facing whoever asked, and a little bow
+      f.script = [{ x, y, z }, { x: x + 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y: y + 1.4, z, rt: 0.9 }, { x: x - 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y, z, rt: 0.9 }, { x, y: y - 0.4, z: z - 0.3 }]; f.pick(this.rng); return true; }
     const s = (this.spots?.() ?? []).find((x) => x.id === spotId); if (!s || f.dead) return false; const y = 0.9 + s.h * 0.35, z = s.z + 0.15;
     f.script = kind === 'bubbles'
       ? [{ x: s.x, y: 1.4, z }, { x: s.x, y: 8, z }, { x: s.x + 0.9, y: 5, z }, { x: s.x - 0.4, y: 8.5, z }, { x: s.x, y: 2, z }]

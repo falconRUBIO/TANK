@@ -10,7 +10,7 @@ const t = R.newWorld(0); R.norm(t, 0); t.createdAt = seed0 * 7919;
 { const r = R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 5 }, { now: 1000, name: 'a', uid: 'a' }); if (!r.ok) { t.fish.push(R.ensureFish({ id: 'oc', name: 'Ink', species: 'octopus', seed: 5, born: -20 * D, stage: 'adult', traits: [], owner: 'a' })); console.log('note: chooseFirst refused (' + r.reason + '); octopus placed as the tutorial would'); } t.flags.tut = 5; }
 const M = {}, at = (k, day) => { M[k] ??= +day.toFixed(1); }, fails = []; let wi = 0, trickTries = 0, trickRefused = {};
 for (let h = 1; h <= DAYS * 24; h++) { const now = h * H, day = h / 24;
-  for (const e of R.advance(t, now)) { if (e.levelUp || /reached level/.test(e.journal ?? '')) at('level ' + t.level, day); if (/came back to visit|is back to visit/i.test(e.journal ?? '')) at('turtle came back to visit', day); }
+  for (const e of R.advance(t, now)) { if (process.env.JOURNAL && e.journal) console.log('J', (h / 24).toFixed(1), typeof e.journal === 'string' ? e.journal : JSON.stringify(e.journal)); if (e.levelUp || /reached level/.test(e.journal ?? '')) at('level ' + t.level, day); if (/came back to visit|is back to visit/i.test(e.journal ?? '')) at('turtle came back to visit', day); }
   if (![9, 20].includes(h % 24) || rnd() < 0.1) continue;
   const u = { now: now + 1, name: 'a', uid: 'a' }, act = (a, x = {}) => R.applyAction(t, a, { ...u, ...x });
   act({ t: 'mystery' }); for (let k = 0; k < 3 && t.hunger > 0.25; k++) act({ t: 'feed', x: k - 1 }, { now: now + 1 + k * 1000 });
