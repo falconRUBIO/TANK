@@ -67,6 +67,9 @@ export const FACTS = {
   guppy: ['Damselfish farm their own patch of algae and chase off anything that comes to graze on it.', 'For their size, damselfish are some of the boldest fish on the reef.'],
   angelfish: ['A young emperor angelfish has blue and white rings; it changes completely into stripes as it grows up.', 'Angelfish can make a loud knocking sound to warn others off.'],
   platy: ['In cardinalfish the dad keeps the eggs safe in his mouth until they hatch, and does not eat until they do.', 'Cardinalfish rest in quiet groups by day and hunt at night.'],
+  neongoby: ['Neon gobies run cleaning stations: big fish, even predators, hold still and let them pick parasites off their skin and gills.', 'Aquarium neon gobies are bred in captivity, so keeping one takes nothing from the reef.'],
+  tang: ['A tang has a scalpel-sharp spine at the base of its tail, which is where the name surgeonfish comes from.', 'Blue tangs graze algae all day and help keep the reef from being overgrown.'],
+  puffer: ['A puffer gulps water to blow itself up two or three times bigger, so a predator cannot swallow it.', 'The valentini puffer is poisonous to eat, and its saddle pattern warns predators off.'],
   danio: ['Anthias live in groups of many females and one male. If he goes, a female can turn into the new male.', 'Anthias hover above the reef, picking plankton out of the current.'],
   betta: ['Mandarin dragonets are among the few animals that make true blue color in their skin.', 'A mandarin dragonet picks tiny copepods off the rocks all day long, one by one.', 'Mandarins have no scales: a slimy coat protects them instead.'],
 };

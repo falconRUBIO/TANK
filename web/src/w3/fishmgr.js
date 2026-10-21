@@ -21,6 +21,7 @@ const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
 const TURTLE_SK = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 const BANDS = {
   turtle: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, hawksbill: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, loggerhead: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, kemps: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, leatherback: { x: [-3.2, 3.2], y: [3, 13.6], z: [-1.4, 1.6] },      // a sea turtle uses the whole tank: down on the sand under a rock, and right up to the surface to breathe
+  neongoby: { x: [-3.2, 3.4], y: [1.6, 6], z: [0.6, 1.9] }, tang: { x: [-3.4, 3.6], y: [5, 12.6], z: [0.4, 2.0] }, puffer: { x: [-3.2, 3.4], y: [3, 9.5], z: [0.8, 2.0] },
   goldfish: { x: [-3.4, 3.6], y: [4, 11.6], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [9, 13.1], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
   angelfish: { x: [-3.0, 3.6], y: [5.5, 12], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [8, 13], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9.8], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [8.5, 13], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [4.5, 11], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
 };
@@ -872,6 +873,26 @@ export class Fishes {
     } for (const f of this.list) if (f.species.move === 'jet' && !f.dead && !f.jarAt) f.inspect = { x: spot.x, z: spot.z }; }       // the octopus goes to look at anything new; other curious fish are handled in wrapPick
   squirt(f) { for (let k = 0; k < 6; k++) setTimeout(() => { if (f.dead) return; this.burst(f.pos.clone().add(new THREE.Vector3(0, 0.5 + k * 0.05, 0.6 + k * 0.55))); }, k * 80); f.flush = Math.max(f.flush ?? 0, 0.6); }
   // living with each other: bullies chase the timid, a predator makes small fish keep their distance, and territorial rivals turn on each other
+  // ── what the newer reef animals do: the neon goby runs a cleaning station, the blue tang grazes the glass, the puffer puffs up when startled ──
+  reefTick(dt, t) {
+    for (const f of this.list) { if (f.dead || f.visitor || f.nursery || f.puppet) continue;
+      if (f.sk === 'neongoby') {      // a fish comes to its rock and holds still while the goby works over it, flank, gills and fins
+        const C = f.clean; if (C) { const o = C.o; C.t -= dt; if (!o || o.dead || C.t <= 0) { f.clean = null; f.cleanGap = 18 + this.rng() * 24; if (o) { o.mul = 1; o.cleaned = performance.now(); } continue; }
+          const side = Math.sin(t * 1.3 + C.ph) * 0.5, up = Math.cos(t * 0.9 + C.ph) * 0.25; f.target.set(o.pos.x + side, o.pos.y + up, o.pos.z + 0.35); f.retarget = Math.max(f.retarget ?? 0, 0.3);
+          if (f.pos.distanceTo(o.pos) < 1.3) { o.mul = 0.12; o.vel.multiplyScalar(Math.exp(-dt * 3)); o.target.copy(o.pos); o.retarget = Math.max(o.retarget ?? 0, 0.4); f.thought = `Cleaning ${o.rec?.name ?? o.name ?? 'a fish'}`; } continue; }
+        if ((f.cleanGap = (f.cleanGap ?? 3 + this.rng() * 5) - dt) > 0) continue;
+        const pool = this.list.filter((o) => o !== f && !o.dead && !o.visitor && !o.nursery && o.sk !== 'neongoby' && o.species?.move !== 'jet' && (performance.now() - (o.cleaned ?? 0)) > 60e3);
+        const o = pool.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0]; if (o) { f.clean = { o, t: 6 + this.rng() * 4, ph: this.rng() * 6 }; this.onBehave?.(f, 'clean', o); } else f.cleanGap = 10; }
+      else if (f.sk === 'tang') {      // now and then it comes to the glass and grazes the film off it in little pecks
+        const G = f.graze; if (G) { G.t -= dt; if (G.t <= 0) { f.graze = null; f.grazeGap = 25 + this.rng() * 30; continue; } f.target.set(G.x + Math.sin(t * 0.7) * 0.6, G.y + Math.sin(t * 1.1) * 0.3, GLASS_Z - 0.35); f.retarget = Math.max(f.retarget ?? 0, 0.3); if (Math.abs(f.pos.z - (GLASS_Z - 0.35)) < 0.4) { f.pitch = Math.sin(t * 9) * 0.12; f.thought = 'Grazing algae off the glass'; } continue; }
+        if ((f.grazeGap = (f.grazeGap ?? 4 + this.rng() * 6) - dt) <= 0) f.graze = { t: 5 + this.rng() * 4, x: (this.rng() - 0.5) * 5, y: 5 + this.rng() * 6 }; }
+      else if (f.sk === 'puffer') {      // a puffer that is startled blows itself up into a ball, holds it a few seconds, and slowly lets it go
+        if (!(f.puffT > 0)) { for (const o of this.list) { if (o === f || o.dead) continue; const d = o.pos.distanceTo(f.pos), fast = (o.vel?.length?.() ?? 0) > 1.4; if (d < 1.1 && (fast || o.species?.move === 'jet' || SOCIAL[o.sk]?.bully)) { f.puffT = 4 + this.rng() * 2; this.onBehave?.(f, 'puff', o); break; } } }
+        if (f.puffT > 0) f.puffT -= dt; const want = f.puffT > 0.8 ? 1 : 0; f.puffK = (f.puffK ?? 0) + (want - (f.puffK ?? 0)) * Math.min(1, dt * (want ? 6 : 0.8));
+        if ((f.puffK ?? 0) < 0.01) f.puffS0 = f.group.scale.x; else { f.group.scale.setScalar((f.puffS0 ?? 1) * (1 + 0.55 * f.puffK)); f.mul = 1 - 0.7 * f.puffK; if (f.puffK > 0.5) f.thought = 'Puffed up!'; }
+        if (Date.now() - (this.attnAt ?? 0) < 20e3 && !(f.puffT > 0) && this.rng() < dt * 0.3) { f.target.set(f.pos.x * 0.6, f.pos.y, GLASS_Z - 0.5); f.retarget = 2; }      // someone is looking: it comes to the glass to look back
+      } }
+  }
   socialTick(dt) {
     this.stT = (this.stT ?? 0) - dt; if (this.stT > 0) return; this.stT = 0.6;
     const L = this.list.filter((f) => !f.dead && !f.visitor && SOCIAL[f.sk]), away = (o, from, d = 2.6) => { const v = o.pos.clone().sub(from); v.y *= 0.3; if (v.lengthSq() < 1e-4) v.set(1, 0, 0); v.normalize().multiplyScalar(d); o.target.set(Math.max(-4, Math.min(4, o.pos.x + v.x)), Math.max(0.9, Math.min(Fish3D.topY - 0.3, o.pos.y + v.y)), Math.max(-2, Math.min(2.8, o.pos.z + v.z))); o.retarget = 1.1; o.fleeT = 1.4; };
@@ -956,7 +977,7 @@ export class Fishes {
         f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = known ? `Checking on its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Investigating a strange object'; f.keepWhy = { id: q.id, known, thought: f.thought }; } }
     this.carryTick(dt); this.tugTick(dt); this.quirkTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
-    this.socialTick(dt); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
+    this.socialTick(dt); this.reefTick(dt, t); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
     if (this.inks?.length) this.inks = this.inks.filter((k) => { if (k.age < (k.life ?? 4)) return true; this.scene.remove(k.m); this.onSpriteGone?.(k.m); return false; });
     if (this.thrown?.length) this.thrown = this.thrown.filter((k) => { k.age += dt; k.vy -= 4.5 * dt; k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.position.z += k.vz * dt; k.m.rotation.x += 7 * dt; if (k.m.position.y <= 0.1 && k.age > 0.2) { this.scene.remove(k.m); this.looseShell({ x: Math.max(-4, Math.min(4, k.m.position.x)) - 0.45, z: Math.max(0.3, Math.min(2.6, k.m.position.z)) - 0.5 }); return false; } return true; });      // a flung shell flies, lands and lies there

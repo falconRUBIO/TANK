@@ -22,6 +22,9 @@ export const SPECIES_DEF = {
   danio:     { label: 'Pink Anthias', price: 32, level: 4, wait: 60, count: 4, blurb: 'A pink school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
   betta:     { label: 'Mandarin Dragonet', price: 52, level: 4, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
+SPECIES_DEF.neongoby = { label: 'Neon Goby', price: 30, level: 2, wait: 60, count: 1, blurb: 'A tiny cleaner with an electric-blue stripe. It sets up a cleaning station.', traits: ['Brave', 'Curious', 'Social'], speed: 0.9 };
+SPECIES_DEF.tang = { label: 'Blue Tang', price: 64, level: 4, wait: 120, count: 1, blurb: 'Royal blue with a yellow tail. Always on the move, grazing algae as it goes.', traits: ['Playful', 'Brave', 'Curious'], speed: 1.25 };
+SPECIES_DEF.puffer = { label: 'Valentini Puffer', price: 58, level: 6, wait: 120, count: 1, blurb: 'A little saddled pufferfish that puffs up into a ball when startled.', traits: ['Curious', 'Brave', 'Greedy'], speed: 0.75 };
 SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Upright, gentle and a little shy.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
 SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A rescued green sea turtle hatchling. Raise it until it is strong, then return it to the sea.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
 SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. Raise it from a rescued hatchling and return it to the sea.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9 };
@@ -86,7 +89,7 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [6, 80], octopus: [6, 120], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [6, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
 export const LEVEL_AT = [0, 22, 60, 116, 187, 280, 396, 528];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
@@ -131,7 +134,7 @@ const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
-export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
+export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, neongoby: 240, tang: 420, puffer: 300, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => LIFESPAN[f.species] ?? 300;
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
 // a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
@@ -1200,11 +1203,11 @@ export const toyKind = (f) => (f.species === 'octopus' ? 'octopus' : f.species =
 export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >= TOYS[k].unlock);
 // What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
 export const LEVEL_PRIZE = {
-  2: { kind: 'animal', title: 'New fish', text: 'Gobies, guppies, grammas and platies can move in' },
+  2: { kind: 'animal', title: 'New sea life', text: 'Yellow gobies, damselfish, royal grammas, cardinalfish and the neon goby cleaner can move in' },
   3: { kind: 'play', title: 'Bubbles', text: 'A bubble stone for the Toy box. Fish chase them and seahorses snap at them' },
-  4: { kind: 'animal', title: 'Seahorses', text: 'Seahorses and angelfish can move in' },
+  4: { kind: 'animal', title: 'Seahorses and the blue tang', text: 'Seahorses, the emperor angelfish and the blue tang can move in' },
   5: { kind: 'play', title: 'Twist cube and hitching hoop', text: 'A puzzle cube for the octopus to turn over and twist, and a hoop for seahorses to curl their tails round' },
-  6: { kind: 'animal', title: 'Bettas and danios', text: 'Bettas, danios, and a second octopus can move in' },
+  6: { kind: 'animal', title: 'Puffer, dragonet and anthias', text: 'The valentini puffer, mandarin dragonets, pink anthias and a second octopus can move in' },
   7: { kind: 'play', title: 'Light spot', text: 'A spot of light to drag across the sand. The octopus stalks it and pounces' },
   8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and send back to the ocean' },
 };
@@ -1234,6 +1237,9 @@ export const SOCIAL = {
   cory:      { kind: 'Peaceful', size: 1, sameFoe: true, nature: 'Sits on the sand keeping watch, ready to dart into a burrow. Territorial only with other gobies.', home: { cats: ['ROCKS'], text: 'rocks to keep watch from' }, likes: ['goldfish'], line: 'Easygoing, but only one goby to a tank.' },
   guppy:     { kind: 'Aggressive', size: 1, bully: true, nature: 'Bold, tough and territorial. Guards its patch of reef and chases other fish away.', home: { cats: ['ROCKS'], text: 'rocks to guard' }, likes: [], line: 'Bullies shy fish. Best with bold fish and lots of rocks.' },
   platy:     { kind: 'Calm', size: 1, shy: true, nature: 'Calm, a little shy by day, and most active after dark. Likes shade.', home: { cats: ['STRUCTURES', 'ROCKS'], text: 'a shady structure' }, likes: ['blue', 'neon'], line: 'Gentle. Comes out more at night.' },
+  neongoby:  { kind: 'Helpful', size: 1, nature: 'A tiny cleaner goby. It keeps a station on a rock and picks parasites off any fish that comes by.', home: { cats: ['ROCKS'], text: 'a rock for its cleaning station' }, likes: ['goldfish', 'angelfish', 'tang', 'puffer'], line: 'Gets on with everyone: they come to it to be cleaned.' },
+  tang:      { kind: 'Busy', size: 2, sameFoe: true, nature: 'A restless swimmer that grazes algae all day and needs room to cruise. It wedges itself into the rocks to sleep.', home: { cats: ['ROCKS'], text: 'rock crevices to sleep in' }, likes: ['neon', 'danio', 'neongoby'], line: 'Needs room. Keep only one tang.' },
+  puffer:    { kind: 'Cheeky', size: 1, nature: 'Curious and greedy. It hovers at the glass to watch you, and puffs up into a spiky ball when something startles it.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'rocks to poke about in' }, likes: ['neongoby'], line: 'Nips at slow, frilly fish like seahorses.' },
   danio:     { kind: 'Peaceful', size: 1, shoal: 3, nature: 'A graceful shoaling fish that stays close to its own kind.', home: null, likes: ['neon', 'goldfish', 'danio'], line: 'Happiest with a few of its own kind.' },
   betta:     { kind: 'Gentle', size: 1, shy: true, sameFoe: true, nature: 'Slow and peaceful. Picks tiny food from the rocks all day, so quick eaters can crowd it out.', home: { cats: ['ROCKS'], text: 'rocks to pick over' }, likes: ['seahorse'], line: 'Needs quiet company, and only one dragonet.' },
   seahorse:  { kind: 'Gentle', size: 1, shy: true, pair: true, nature: 'Slow, upright and gentle. Pairs for life, greets its partner each morning, and holds on to plants.', home: { cats: ['PLANTS'], text: 'plants to hold on to' }, likes: ['betta', 'seahorse'], line: 'Pairs for life. Easily crowded out at mealtimes.' },
@@ -1265,12 +1271,15 @@ export const ECO = {
     clash: { angelfish: 'Two big angelfish in one tank fight over who rules it' }, best: 'Room to cruise and plenty of rock to graze.' },
   platy: { zone: 'Hovering in the shade', cover: { types: ['urchin'], cats: ['STRUCTURES', 'PLANTS'], need: 2, word: 'shade or spines to hover in', cat: 'STRUCTURES' }, tol: 0.85, feed: 'medium',
     clash: {}, best: 'Shade to hover in by day, and calm company.' },
+  neongoby: { zone: 'Perched on a rock at its cleaning station', cover: { cats: ['ROCKS'], need: 1, word: 'a rock to run its station from', cat: 'ROCKS' }, tol: 0.9, feed: 'fast', clash: {}, best: 'A rock of its own and plenty of fish to clean.' },
+  tang: { zone: 'Cruising the open water', cover: { cats: ['ROCKS'], need: 2, word: 'rock crevices to sleep in', cat: 'ROCKS' }, tol: 0.6, feed: 'fast', clash: {}, best: 'Room to swim, rock to sleep in, and algae to graze.' },
+  puffer: { zone: 'Hovering by the glass and the rocks', cover: { cats: ['ROCKS', 'STRUCTURES'], need: 2, word: 'rocks to poke about in', cat: 'ROCKS' }, tol: 0.8, feed: 'fast', clash: { seahorse: 'Puffers nip at slow, frilly fish.' }, best: 'Rocks to explore, crunchy food, and no slow, frilly tankmates.' },
   danio: { zone: 'Darting through the middle water', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
     clash: {}, best: 'A group of its own kind and room to dart about.' },
   betta: { zone: 'Over the rocks, picking at them', cover: { cats: ['ROCKS'], need: 3, word: 'rocks to pick tiny food from', cat: 'ROCKS' }, tol: 0.7, feed: 'slow',
     clash: {}, best: 'Lots of rock to graze slowly, and no fast eaters beating it to food.' },
   seahorse: { zone: 'Holding on to the plants', cover: { cats: ['PLANTS'], need: 2, word: 'plants to hold on to', cat: 'PLANTS' }, tol: 0.6, feed: 'slow',
-    clash: {}, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
+    clash: { puffer: 'A puffer nips at its fins.' }, best: 'Plants to hold, a partner to greet each morning, and slow, gentle tankmates.' },
   turtle: { zone: 'Open water, and a ledge to sleep under', cover: { cats: ['ROCKS'], need: 2, word: 'rock to sleep under', cat: 'ROCKS' }, tol: 0.9, feed: 'calm',
     clash: {}, best: 'Room to swim, a rock ledge to wedge under at night, plants to graze and clean water.' },
   hawksbill: { zone: 'Over the reef rock, and a ledge to sleep under', cover: { cats: ['ROCKS'], need: 2, word: 'rock to sleep under', cat: 'ROCKS' }, tol: 0.9, feed: 'calm',
@@ -1307,6 +1316,13 @@ export const KIND_NEEDS = {
     W_('shade', 'Shade to hover in', 'Cardinalfish hover motionless in shade by day and come out to feed at night.', 'A structure or plants to shade it', (c) => c.cover >= 2),
     W_('group', 'Others of its kind', 'They gather in small, loose groups among the shade.', 'Another cardinalfish', (c) => c.own >= 2),
     W_('calm', 'Gentle company', 'A slow, peaceful fish, easily pushed about.', 'No damselfish', (c) => !c.has('guppy'))],
+  neongoby: [W_('station', 'A rock for its station', 'Cleaner gobies set up shop on a coral head or rock, and fish queue there to be cleaned.', 'A rock or boulder from the Shop', (c) => c.cover >= 1),
+    W_('clients', 'Fish to clean', 'A cleaner goby feeds on the parasites it picks off other fish.', 'Two or more other fish in the tank', (c) => c.others >= 2)],
+  tang: [W_('room', 'Room to swim', 'Tangs swim long laps of the reef all day; in a crowded tank they get stressed.', 'Keep the tank roomy', (c) => c.r <= 0.6),
+    W_('sleep', 'Rocks to sleep in', 'At night a tang wedges into a crevice and turns paler.', 'Two rocks or a cave', (c) => c.cover >= 2),
+    W_('alone', 'To be the only tang', 'Two tangs in one tank fight with the sharp spine by their tails.', 'Just one blue tang', (c) => c.own <= 1)],
+  puffer: [W_('explore', 'Rocks to explore', 'Puffers poke into every crack looking for snails and worms.', 'Two rocks or structures', (c) => c.cover >= 2),
+    W_('nofrill', 'No slow, frilly tankmates', 'Puffers nip at long fins; seahorses are an easy target.', 'Keep it apart from seahorses', (c) => !c.has('seahorse'))],
   danio: [W_('shoal', 'A group of three or more', 'Anthias live in big, busy shoals; on its own it is shy and pale.', 'More pink anthias', (c) => c.own >= 3),
     W_('meals', 'Small, frequent meals', 'In the wild it picks plankton all day long; it does best fed often.', 'Feed a little more often', (c) => c.fed >= 0.6),
     W_('room', 'Room to dart about', 'It is always on the move.', 'Keep the tank from getting crowded', (c) => c.r <= 0.85)],
@@ -1342,7 +1358,7 @@ export const KIND_NEEDS = {
 export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
-  return { own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
+  return { others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
     ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7 };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
@@ -1402,6 +1418,7 @@ export function wellOf(t, f, now = Date.now()) {
     else if (O.bully && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'bully', text: `${o.name} the ${lab(o.species)} chases it${ECO[o.species]?.crowdMean && cr.r >= 0.65 ? ', and the busy tank makes it worse' : ''}` }); }
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.id)) { seen.add(o.id); trouble.push({ name: o.name, kind: 'wary', text: `Keeps a wary eye on ${o.name} the ${lab(o.species)}` }); }
     if (S.likes?.includes(o.species)) addF(o.name, o.species === f.species ? (S.pair && live.filter((x) => x.species === f.species).length === 2 ? 'its partner' : `one of its own kind`) : `gets on well with ${plural(o.species)}`); }
+  if (f.species !== 'neongoby' && f.species !== 'octopus') { const cg = live.find((o) => o.species === 'neongoby' && o !== f); if (cg) addF(cg.name, 'cleans it at its station'); }
   if (f.rival && nm(f.rival) && !trouble.some((x) => x.name === nm(f.rival))) trouble.push({ name: nm(f.rival), kind: 'rival', text: `Has a running rivalry with ${nm(f.rival)}` });
   if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
   const cv = coverOf(t, f), threatened = trouble.some((x) => ['bully', 'wary', 'clash'].includes(x.kind)), cover = { ...cv, wants: !!S.shy || threatened || f.species === 'seahorse' || f.species === 'octopus', helps: threatened && cv.have < cv.need };
@@ -1611,7 +1628,7 @@ function _advance(t, now = Date.now()) {
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
     for (const f of t.fish) if (ownHungry(f) && !f.away) { ensureFish(f); oh0.set(f.id, f.hunger); f.hunger = Math.min(Math.max(f.hunger, 0.9), f.hunger + dt * OHR); }
     t.water = Math.max(Math.min(t.water, 0.45), t.water - dt * WR * (1 + 0.5 * Math.min(2, t.floaters.length)));   // a fish left floating fouls the water faster
-    t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
+    t.glass = Math.min(Math.max(t.glass, 0.8), t.glass + dt * GR * (t.fish.some((f) => f.species === 'tang' && !f.dead && !f.away) ? 0.7 : 1) * (1 + 0.8 * Math.max(0, Math.min(1, (0.8 - w0) / 0.35))));      // old water feeds the algae: a tank whose water is overdue grows its film up to nearly twice as fast
     let H0 = null; if (dt >= 30 && (t.flags.tut ?? 0) >= 5) { try { H0 = tankHealth(t, now); } catch { H0 = null; } }
     guard('tend', () => tendFish(t, dt, now, ev, h0, w0, oh0)); t.simTs = now;
     if (H0) guard('grow', () => { const H1 = tankHealth(t, now), tm = (H) => (H.score < 55 ? 0 : H.mult), mult = (tm(H0) + tm(H1)) / 2, hrs = Math.min(dt, 3 * DAY / 1000) / 3600; t.xp = (t.xp ?? 0) + hrs * XP_PER_HOUR * mult;      // time well kept grows the tank (the health before and after the time away, averaged)
