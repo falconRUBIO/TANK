@@ -876,6 +876,9 @@ export class Fishes {
   // ── what the newer reef animals do: the neon goby runs a cleaning station, the blue tang grazes the glass, the puffer puffs up when startled ──
   reefTick(dt, t) {
     for (const f of this.list) { if (f.dead || f.visitor || f.nursery || f.puppet) continue;
+      { const L = f.rec?.leaveAsk; if (!L && f.distress) { f.mul = 1; f.thought = null; } f.distress = !!L; if (L) {      // an animal asking to leave looks it: slow and listless, keeping low toward the back, and says what it is missing
+        f.mul = Math.min(f.mul ?? 1, 0.55); if ((f.sulkT = (f.sulkT ?? 0) - dt) <= 0 && !f.inspect && !f.hunt) { f.sulkT = 8 + this.rng() * 8; const B = BANDS[f.sk] ?? BANDS.goldfish; f.target.set(f.pos.x * 0.7, B.y[0] + 0.4 + this.rng() * 0.8, B.z[0] + 0.2); f.retarget = 6; }
+        f.thought = L.why ? `Unhappy. It is missing ${L.why}` : 'Unhappy, and keeping to itself'; } }
       if (f.sk === 'neongoby') {      // a fish comes to its rock and holds still while the goby works over it, flank, gills and fins
         const C = f.clean; if (C) { const o = C.o; C.t -= dt; if (!o || o.dead || C.t <= 0) { f.clean = null; f.cleanGap = 18 + this.rng() * 24; if (o) { o.mul = 1; o.cleaned = performance.now(); } continue; }
           const side = Math.sin(t * 1.3 + C.ph) * 0.5, up = Math.cos(t * 0.9 + C.ph) * 0.25; f.target.set(o.pos.x + side, o.pos.y + up, o.pos.z + 0.35); f.retarget = Math.max(f.retarget ?? 0, 0.3);

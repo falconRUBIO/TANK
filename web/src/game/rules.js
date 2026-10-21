@@ -81,7 +81,7 @@ const SHOP_CURVE = {
   grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12], anemone: [1, 14],      /* (a clownfish's home, from the start: the clownfish is a first fish) */
   sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
   pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
-  seafan: [4, 36], liverock: [5, 50], ledge: [8, 40], seagrass: [8, 30],
+  seafan: [4, 36], liverock: [5, 50], ledge: [7, 40], seagrass: [7, 30],
   wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
@@ -92,9 +92,16 @@ for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) 
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [6, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
+const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [5, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
-export const LEVEL_AT = [0, 22, 60, 116, 187, 280, 396, 528];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
+// ── Levels ── the one place levels are defined: the care points to reach each, how many animals the tank holds there, and what it opens
+// (what opens is listed under LEVEL_PRIZE; species and decorations carry their own level). A new level is a new row here plus its content:
+// nothing else assumes a top level. Players never go past the last row; at the top, care points keep banking for when the next level arrives.
+export const LEVELS = [
+  { at: 0, room: 7 }, { at: 18, room: 10 }, { at: 50, room: 13 }, { at: 115, room: 16 }, { at: 215, room: 19 }, { at: 350, room: 22 }, { at: 520, room: 25 }, { at: 740, room: 28 },
+];
+export const LEVEL_AT = LEVELS.map((L) => L.at);      // (kept for the readers that only need the thresholds)
+export const TOP_LEVEL = LEVELS.length;
 export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.9] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
@@ -257,7 +264,7 @@ export const kindDef = (f) => (KINDS[f?.species]?.[kindOf(f)] ?? null);
 export const CARE_XP = { feed: 2, crab: 2, glass: 4, water: 6, pet: 2, play: 2, puzzle: 4, trim: 2, train: 2 };
 // most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
 export const XP_PER_HOUR = 0.3;
-export const GROW = { unwellTime: 0, playCap: Infinity };      // playCap: the most care points a tank earns from petting, play, tricks and puzzles in one day (Infinity: no limit)      // how fast an Unwell tank grows with time (0: paused; only care counts). A setting, so it can be tuned and simulated      // (time alone grows the tank slowly: most of the growth comes from care)
+export const GROW = { unwellTime: 0.25, playCap: 8 };      // playCap: the most care points a tank earns from petting, play, tricks and puzzles in one day (Infinity: no limit)      // how fast an Unwell tank grows with time (0: paused; only care counts). A setting, so it can be tuned and simulated      // (time alone grows the tank slowly: most of the growth comes from care)
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !TURTLES.has(k)); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
@@ -288,7 +295,7 @@ export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', m
 export const STYLE_PRICE = { floor: { sand: 0, pearl: 20, gravel: 20, black: 30, coral: 40 }, backdrop: { candy: 0, lagoon: 25, sunset: 25, mint: 25 } };
 export const styleOwned = (t, kind, key) => !(STYLE_PRICE[kind]?.[key] > 0) || !!t.flags.styles?.[kind]?.[key];
 export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
-export const capacity = (level) => 4 + 3 * level;
+export const capacity = (level) => LEVELS[Math.max(1, Math.min(TOP_LEVEL, level | 0)) - 1].room;      // set per level in LEVELS, so a new level never overcrowds a tank by formula
 // life goes on in a full tank: eggs, hatchlings and a kept seahorse baby may go a little over what the shop allows (bought fish never do),
 // so a finished tank still has births, and old age makes room again in time
 export const BIRTH_ROOM = 4;
@@ -476,8 +483,8 @@ export function norm(t, now = Date.now()) {
   t.decor = t.decor.filter((d) => d && DECOR_DEF[d.type] && typeof d.id === 'string');
   t.orders = t.orders.filter((o) => o && SPECIES_DEF[o.species] && Number.isFinite(o.arrivesAt)); (t.fish ?? []).forEach((f) => { if (f?.mem && typeof f.mem === 'object') memCap(t, f, now); else if (f) delete f.mem; });      // (an octopus's memories, kept bounded)
   t.eggs = t.eggs.filter((e) => e && Number.isFinite(e.hatchAt) && (e.species !== 'octopus' || e.den)); t.noteLog = (t.noteLog ?? []).filter((n) => n && now - n.at < NOTE_KEEP); t.notes = (t.notes ?? []).filter((n) => { if (!n || typeof n.text !== 'string') return false; if (now - n.at < NOTE_LIFE) return true; logNote(t, n); return false; });      // (octopuses never lay eggs in the tank: an old one from before that rule just goes)
-  if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(8, t.level | 0));
-  if (!Number.isFinite(t.xp)) { t.xp = 0; const gap = (LEVEL_AT[t.level - 1] ?? 0) - scoreOf(t); if (gap > 0) t.xp = gap; }      /* a tank from before care points starts its level at the beginning of it, not below it */
+  if (!Number.isFinite(t.shells)) t.shells = 10; if (!Number.isFinite(t.level)) t.level = 1; t.level = Math.max(1, Math.min(TOP_LEVEL, t.level | 0));
+  if (!Number.isFinite(t.xp)) t.xp = 0; { const gap = (LEVEL_AT[t.level - 1] ?? 0) - scoreOf(t); if (gap > 0) t.xp += gap; }      /* a tank whose points are below its level (from before care points, or from a change of thresholds) starts its level at the beginning of it: never below it, never a level lost */      /* a tank from before care points starts its level at the beginning of it, not below it */
   for (const k of ['hunger', 'water', 'glass']) if (!Number.isFinite(t[k])) t[k] = k === 'water' ? 1 : 0.5;
   t.schema = 1;
   t.seen ||= {}; if (!Array.isArray(t.seen.fish)) t.seen.fish = [...new Set((t.fish ?? []).map((f) => f?.species).filter(Boolean))]; if (!Array.isArray(t.seen.decor)) t.seen.decor = [...new Set((t.decor ?? []).map((d) => d?.type).filter(Boolean))];      // (repairs a half-written one too)
@@ -504,7 +511,7 @@ export const WISHES = [
   { text: 'Fill the tank with twenty-five fish', done: (t) => t.fish.length >= 25, reward: 15 },
   { text: 'Discover 20 things for the collection book', done: (t) => t.seen.fish.length + t.seen.decor.length >= 20, reward: 12 },
   { text: 'Find every fish and decoration in the book', done: (t) => t.seen.fish.length + t.seen.decor.length >= COLLECTION_SIZE(), reward: 25 },
-  { text: 'Reach tank level 8', done: (t) => t.level >= 8, reward: 15 },        // last: a wish that needs level 8 must not stand in front of wishes that count toward it
+  { text: 'Reach the top tank level', done: (t) => t.level >= TOP_LEVEL, reward: 15 },        // last: a wish that needs level 8 must not stand in front of wishes that count toward it
 ];
 export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
 // It is a tank, not the sea: whatever turns up was brought by something that lives in it, or dropped in from above.
@@ -1253,12 +1260,12 @@ export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >=
 // What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
 export const LEVEL_PRIZE = {
   2: { kind: 'animal', title: 'New sea life', text: 'Yellow gobies, damselfish, royal grammas, cardinalfish and the neon goby cleaner can move in' },
-  3: { kind: 'play', title: 'Bubbles', text: 'A bubble stone for the Toy box. Fish chase them and seahorses snap at them' },
-  4: { kind: 'animal', title: 'Seahorses and the blue tang', text: 'Seahorses, the emperor angelfish and the blue tang can move in' },
-  5: { kind: 'play', title: 'Twist cube and hitching hoop', text: 'A puzzle cube for the octopus to turn over and twist, and a hoop for seahorses to curl their tails round' },
-  6: { kind: 'animal', title: 'Puffer, dragonet and anthias', text: 'The valentini puffer, mandarin dragonets, pink anthias and a second octopus can move in' },
-  7: { kind: 'play', title: 'Light spot', text: 'A spot of light to drag across the sand. The octopus stalks it and pounces' },
-  8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and send back to the ocean' },
+  3: { kind: 'play', title: 'Tricks and bubbles', text: 'Teach your octopus tricks, and a bubble stone for the Toy box' },
+  4: { kind: 'animal', title: 'Seahorses and the blue tang', text: 'Seahorses (they pair for life, and the father carries the young), the emperor angelfish and the blue tang' },
+  5: { kind: 'play', title: 'New habitats and toys', text: 'Live rock and the mandarin dragonet that grazes it, the giant clam that filters the water, a twist cube for the octopus and a hitching hoop for seahorses' },
+  6: { kind: 'animal', title: 'Puffer, anthias and a second octopus', text: 'The valentini puffer, pink anthias, and a second octopus of any of four kinds' },
+  7: { kind: 'play', title: 'A turtle sanctuary corner', text: 'Get ready for turtles: the Turtle Ledge and Sea Grass Bed, and a light spot to play with' },
+  8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and release back to the ocean' },
 };
 export const favToy = (f) => { const e = Object.entries(f?.toys ?? {}).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 ? e[0] : null; };
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
@@ -1269,8 +1276,9 @@ export const CRAB_PRICE = 4, CRAB_GAP = 2 * 3600e3;
 export const hoardOf = (f, now = Date.now()) => (isSmart(f) ? Math.min(14, Math.floor(Math.max(0, now - f.born) / (2 * 864e5)) + (f.solved ?? 0) + (f.crabs ?? 0)) : 0);
 export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x, 0);
 // what this fish can be taught right now: it has to be past the baby stage, trust someone, and the tank needs the decoration
+export const TRICK_LEVEL = 3;
 export function trickOptions(t, f, now = Date.now()) {
-  if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND) return [];
+  if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND || (t.level ?? 1) < TRICK_LEVEL) return [];      // (tricks open at level 3: tricks already learned are kept whatever the level)
   return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: t.decor.find((x) => d.types.includes(x.type))?.id ?? null, have: f.skill?.[k] ?? 0, need: trainNeed(f) })).filter((o) => o.spot);
 }
 
@@ -1744,9 +1752,9 @@ function leaveRequests(t, now, ev) {
   for (const f of live) { let W; try { W = wellOf(t, f, now); } catch { continue; }
     if (W.score >= 55) { f.lowSince = null; if (f.leaveAsk) { f.leaveAsk = null; ev.push({ journal: `${f.name} is happier now, and has settled back in.`, toast: `${f.name} has decided to stay!`, hist: 'stay' }); } continue; }
     if (W.score < 40) f.lowSince ??= now;
-    if (f.leaveAsk && now >= f.leaveAsk.by) { sendPostcard(t, f, 'leave', now, f.leaveAsk.why); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id); ev.push({ journal: `${f.name} was too unhappy to stay, and went back to the sea.`, toast: `${f.name} left the tank. It was missing too much.`, released: f.id }); return; }
+    if (false && f.leaveAsk) { sendPostcard(t, f, 'leave', now, f.leaveAsk.why); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id); ev.push({ journal: `${f.name} was too unhappy to stay, and went back to the sea.`, toast: `${f.name} left the tank. It was missing too much.`, released: f.id }); return; }
     if (!f.leaveAsk && f.lowSince && now - f.lowSince > 3 * DAY) { const miss = (W.wants ?? []).filter((x) => !x.met && x.k !== 'food' && x.k !== 'play').map((x) => x.label.toLowerCase())[0];
-      f.leaveAsk = { at: now, by: now + 3 * DAY, why: miss ?? null }; ev.push({ journal: `${f.name} has been unhappy for days and is asking to leave${miss ? `: it is missing ${miss}` : ''}. Nurse it back within three days, or let it go.`, toast: `${f.name} is asking to leave! ${miss ? `It needs ${miss}.` : 'Check Health.'}`, warn: f.id }); } }
+      f.leaveAsk = { at: now, why: miss ?? null }; ev.push({ journal: `${f.name} has been unhappy for days and is asking to leave${miss ? `: it is missing ${miss}` : ''}. It will stay until it is nursed back to health, or a caretaker lets it go.`, toast: `${f.name} is asking to leave! ${miss ? `It needs ${miss}.` : 'Check Health.'}`, warn: f.id }); } }
 }
 function levelCheck(t, now, ev) {
   milestones(t, now, ev);
@@ -1870,8 +1878,9 @@ export function nextUp(t, now = Date.now()) {
   c.sort((a, b) => a[0] - b[0]); const x = c.find((q) => q[0] > 0); if (!x) return 'Tomorrow brings a new request.';
   const h = Math.max(1, Math.round(x[0] / 3600e3)); return `${x[1]} ${h >= 20 ? 'tomorrow' : h <= 1 ? 'within the hour' : `in about ${h} hours`}.`;
 }
-export function applyAction(t, a, o) { const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now());
-  if (r?.ok && r.applied !== false && CARE_XP[a.t]) { const now = o?.now ?? Date.now(), H = tankHealth(t, now), got0 = CARE_XP[a.t] * H.mult; let got = got0; if (['pet', 'play', 'puzzle', 'train'].includes(a.t) && Number.isFinite(GROW.playCap)) { const day = Math.floor(now / DAY), P = (t.flags.playXp ||= { day, n: 0 }); if (P.day !== day) { P.day = day; P.n = 0; } got = Math.max(0, Math.min(got0, GROW.playCap - P.n)); P.n += got; } t.xp = (t.xp ?? 0) + got; r.xp = got; r.health = H.score; r.events ||= []; levelCheck(t, now, r.events); }      /* care raises the level, faster the healthier the tank */
+let careNeed = null;      // (set by a feed: whether the animals really needed it; a top-up of a fed tank earns no care points)
+export function applyAction(t, a, o) { careNeed = null; const r = _applyAction(t, a, o); if (r?.ok && r.applied !== false) raiseFrom(t, a, o?.now ?? Date.now());
+  if (r?.ok && r.applied !== false && CARE_XP[a.t] && !(a.t === 'feed' && careNeed === false)) { const now = o?.now ?? Date.now(), H = tankHealth(t, now), got0 = CARE_XP[a.t] * H.mult; let got = got0; if (['pet', 'play', 'puzzle', 'train'].includes(a.t) && Number.isFinite(GROW.playCap)) { const day = giftKey(now, t.tzMin ?? 0), P = (t.flags.playXp ||= { day, n: 0 });      /* (the tank's own day, the same boundary as the daily gift: shared by every caretaker, kept in the tank) */ if (P.day !== day) { P.day = day; P.n = 0; } got = Math.max(0, Math.min(got0, GROW.playCap - P.n)); P.n += got; } t.xp = (t.xp ?? 0) + got; r.xp = got; r.health = H.score; r.events ||= []; levelCheck(t, now, r.events); }      /* care raises the level, faster the healthier the tank */
   if (r?.ok && r.events && t.goal) { try { goals(t, o?.now ?? Date.now(), r.events); } catch { /* a goal never stops an action */ } }      // (a step finished by this very action is told at once)
   if (r?.events) { recordStory(t, r.events, o?.now ?? Date.now()); recordHistory(t, r.events, o?.now ?? Date.now()); } return r; }
 export function advance(t, now = Date.now()) { const ev = _advance(t, now); recordStory(t, ev, now); recordHistory(t, ev, now); wellLog(t, now); return ev; }
@@ -1927,7 +1936,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         ensureFish(f);
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         f.fedAt = now;      /* (its own meal: it does not count as feeding the fish, and a full one is not fed at all) */
-        const needed = f.hunger > 0.25, pay = 0;      // (feeding is care: no pay)
+        const needed = f.hunger > 0.25, pay = 0; careNeed = needed;      // (feeding is care: no pay)
         f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
@@ -1939,7 +1948,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       { const lf = t.lastFeedBy; if (lf && lf.uid !== uid && now - lf.at < 90e3 && (t.flags.togetherAt == null || now - t.flags.togetherAt > 3 * HOUR) && (t.flags.tut ?? 0) >= 5 && t.fish.length) { t.flags.togetherAt = now; for (const f of t.fish) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.05); events.push({ journal: `${lf.name} and ${name} fed the fish together.`, toast: 'Fed together! The fish are delighted.', together: true }); } t.lastFeedBy = { uid, name, at: now }; }
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
-      const needed = t.hunger > 0.25, pay = 0;
+      const needed = t.hunger > 0.25, pay = 0; careNeed = needed;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }

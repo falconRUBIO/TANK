@@ -216,7 +216,7 @@ console.log('Economy refinement');
 const tend = (t, to) => { for (let x = t.simTs + 6 * 3600e3; x < to; x += 6 * 3600e3) { t.hunger = 0.1; t.water = 1; t.glass = 0; R.advance(t, x); } t.hunger = 0.1; t.water = 1; t.glass = 0; return R.advance(t, to); };
 const quiet = (n = 3, o = {}) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.flags.weeks = 999; if (!o.wants) t.flags.noWants = true; t.visitAt = t.eggAt = t.storyAt = t.driftAt = 1e15; t.fish = Array.from({ length: n }, (_, i) => R.ensureFish({ id: 'f' + i, name: 'F' + i, species: 'goldfish', seed: i + 1, born: 0, stage: 'baby', traits: o.traits ?? ['Calm'], owner: 'u1' })); t.simTs = 0; return t; };
 ok('levels come from playing, not buying: a tank full of shop things scores nothing for them; care, mysteries, hatchings, raising and goals do', () => {
-  const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /level 8/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/level 8/i.test(w.text)), 'no earlier wish depends on level 8');
+  const last = R.WISHES.length - 1; assert.match(R.WISHES[last].text, /top tank level/i); assert.ok(R.WISHES.slice(0, last).every((w) => !/top tank level/i.test(w.text)), "no earlier wish depends on the top level");
   const t = R.newWorld(0); R.norm(t, 0); const s0 = R.scoreOf(t); for (let i = 0; i < 20; i++) t.decor.push({ id: 'd' + i, type: 'grass', x: 0, z: 1, ry: 0 }); assert.equal(R.scoreOf(t), s0, 'buying decorations does not level the tank');
   t.stats = { careDays: 30, myst: 30, decided: 8, hatched: 6, grewHere: 4, morphs: 2, raised_Calm: 2 }; t.goalsDone = [{}, {}, {}, {}]; assert.ok(R.scoreOf(t) >= R.LEVEL_AT[4], 'a month of playing reaches the middle levels: ' + R.scoreOf(t));
   assert.equal(R.LEVEL_AT.length, 8); assert.ok(R.LEVEL_AT.every((x, i) => !i || x > R.LEVEL_AT[i - 1]));
@@ -374,7 +374,7 @@ ok('notes on a fish: short, kept (last three), journalled, and checked', () => {
 });
 ok('the spire is the shop\'s big save-up at level 8; the lighthouse and the torii gate are earned, never bought, and arrive in the tank when earned', () => {
   assert.ok(R.DECOR_DEF.spire.price >= 300 && R.DECOR_DEF.spire.level === 8 && R.DECOR_DEF.lighthouse.earned && R.DECOR_DEF.torii.earned);
-  const t = quiet(2); t.level = 8; t.shells = 500; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).reason, 'EARNED_ONLY'); assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 500 - R.DECOR_DEF.spire.price); t.level = 7; t.shells = 300; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'crystal', x: 1, z: 1, ry: 0 }, { now: 3, name: 'A', uid: 'u1' }).ok, true); t.level = 6; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'bridge', x: 1, z: 1, ry: 0 }, { now: 4, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
+  const t = quiet(2); t.level = 8; t.shells = 500; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'lighthouse', x: 0, z: 1, ry: 0 }, { now: 1, name: 'A', uid: 'u1' }).reason, 'EARNED_ONLY'); assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'spire', x: 1, z: 1, ry: 0 }, { now: 2, name: 'A', uid: 'u1' }).ok); assert.equal(t.shells, 500 - R.DECOR_DEF.spire.price); t.level = 7; t.shells = 300; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'crystal', x: 1, z: 1, ry: 0 }, { now: 3, name: 'A', uid: 'u1' }).ok, true); t.level = 6; t.xp = 0; t.shells = 999; assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'bridge', x: 1, z: 1, ry: 0 }, { now: 4, name: 'A', uid: 'u1' }).reason, 'LEVEL_TOO_LOW');
   t.goalsDone = [{}, {}]; t.goal = { id: 'sleuth', at: 0, base: {}, done: { 0: 1, 1: 1 } }; t.stats = { myst: 99, mystChain: 9 }; const ev = R.advance(t, 5000); assert.ok(t.decor.some((d) => d.type === 'lighthouse') && ev.some((e) => /lighthouse/i.test(e.journal ?? '')), 'the third goal brings the lighthouse');
   const old = R.newWorld(0); delete old.want; delete old.wantAt; R.norm(old, 0); assert.equal(old.want, null); assert.ok(old.wantAt > 0);
 });
@@ -1102,8 +1102,11 @@ ok('an animal left miserable for days asks to leave; put it right and it stays, 
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.createdAt = -30 * D; t.fish.push(R.ensureFish({ id: 's', name: 'Sea', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: [] }));
   let asked = false; for (let d = 1; d <= 6 && !asked; d++) { const ev = R.advance(t, d * D); t.hunger = 0.85; asked = ev.some((e) => /asking to leave/.test(e.journal ?? '')); }
   const s = t.fish.find((f) => f.id === 's'); assert.ok(asked && s.leaveAsk, 'it asks');
-  const gone = t.fish.length; let left = false; for (let d = 7; d <= 10 && !left; d++) { const ev = R.advance(t, d * D); left = ev.some((e) => /went back to the sea/.test(e.journal ?? '')); }
-  assert.ok(left && t.fish.length === gone - 1, 'left uncared for, it goes');
+  const n0 = t.fish.length; for (let d = 7; d <= 30; d++) { R.advance(t, d * D); t.hunger = 0.85; }
+  assert.ok(t.fish.length === n0 && s.leaveAsk, 'left uncared for, it does not leave on its own: it waits, asking');
+  const P = t.decor.length; t.decor.push({ id: 'sg1', type: 'seagrass', x: 0, z: 1 }, { id: 'sf1', type: 'seafan', x: 1, z: 1 }, { id: 'gr1', type: 'grass', x: -1, z: 1 });
+  let settled = false; for (let h = 31 * 24; h <= 40 * 24 && !settled; h += 12) { const now = h * 3600e3, u = { now, name: 'A', uid: s.owner ?? 'me' }; R.applyAction(t, { t: 'feed', x: 0 }, u); R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's', x: 0 }, u); if (t.water < 0.7) R.applyAction(t, { t: 'water' }, u); R.advance(t, now + 6 * 3600e3); settled = !s.leaveAsk; }
+  assert.ok(settled && !s.leaveAsk, 'normal care (food and what it was missing) settles it again');
 });
 ok('kinds: a seahorse is bought as a real species, pairs only with its own kind, and a lined seahorse goes longer between meals', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 6; t.shells = 999;
@@ -1116,17 +1119,31 @@ ok('kinds: a seahorse is bought as a real species, pairs only with its own kind,
   const a = mk('h1', 'm', 'erectus'), b = mk('h2', 'm', 'kuda'); a.hunger = b.hunger = 0; const u = R.newWorld(0); R.norm(u, 0); u.fish.push(a, b); R.advance(u, 3 * 3600e3); assert.ok(a.hunger < b.hunger, `lined ${a.hunger} vs yellow ${b.hunger}`);
   assert.equal(R.kindOf({ species: 'octopus' }), 'vulgaris', 'an octopus from before kinds is a common octopus');
 });
+ok('level points: no duplicates from repeated care, play points capped at 8 a tank day for everyone together while the animals keep responding, health multiplies only care, and points bank at the top level', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = -10 * D; let now = 2 * D; R.advance(t, now); const x = () => t.xp ?? 0;
+  for (let i = 0; i < 4 && t.hunger > 0.25; i++) R.applyAction(t, { t: 'feed', x: 0 }, { now: now - 5000 + i * 100, name: 'A', uid: 'a' }); let a = x(); for (let i = 1; i <= 5; i++) R.applyAction(t, { t: 'feed', x: 0 }, { now: now + i * 1000, name: 'B', uid: 'b' });
+  assert.equal(x(), a, 'topping up a fed tank earns nothing');
+  a = x(); R.applyAction(t, { t: 'glass' }, { now: now + 9000, name: 'A', uid: 'a' }); const a2 = x(); R.applyAction(t, { t: 'glass' }, { now: now + 9500, name: 'B', uid: 'b' }); assert.equal(x(), a2, 'a second wipe earns nothing');
+  const f = t.fish[0]; f.happy = 0.4; a = x(); const mult = R.tankHealth(t, now).mult;
+  let won = 0; for (let i = 0; i < 30; i++) for (const uid of ['a', 'b', 'c']) won += R.applyAction(t, { t: 'pet', id: f.id }, { now: now + 20e3 + i * 120e3, name: uid, uid }).xp ?? 0;
+  assert.ok(won <= R.GROW.playCap + 1e-9 && won > 0, `three caretakers together earn at most the cap (${won})`); assert.ok(f.happy > 0.6, 'the animal still responded to every pet');
+  const r = R.applyAction(t, { t: 'pet', id: f.id }, { now: now + 5 * 3600e3, name: 'a', uid: 'a' }); assert.ok(r.ok && r.applied !== false && !r.xp, 'after the cap petting still works, it just earns no points');
+  const next = now + D; R.advance(t, next); a = x(); R.applyAction(t, { t: 'pet', id: f.id }, { now: next + 1000, name: 'a', uid: 'a' }); assert.ok(x() > a, 'a new tank day, points again');
+  const s0 = R.scoreOf(t, next); t.stats = { ...(t.stats ?? {}), hatched: (t.stats?.hatched ?? 0) + 1 }; assert.equal(R.scoreOf(t, next) - s0, R.SCORE_W.hatched, 'a hatching adds its fixed points, whatever the health');
+  t.level = R.TOP_LEVEL; t.xp = R.LEVEL_AT[R.TOP_LEVEL - 1] + 50; R.advance(t, next + 2 * D); assert.equal(t.level, R.TOP_LEVEL, 'never past the last defined level'); assert.ok(x() > R.LEVEL_AT[R.TOP_LEVEL - 1] + 50, 'points keep banking at the top');
+  assert.equal(R.capacity(R.TOP_LEVEL + 5), R.capacity(R.TOP_LEVEL), 'capacity comes from the level table, not a formula');
+});
 ok('a giant clam keeps the water fresh longer, and a blue tang keeps the glass clear longer', () => {
   const D = 864e5, mk = () => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; return t; };
   const a = mk(), b = mk(); b.decor.push({ id: 'cl', type: 'clam', x: 0, z: 1 }); R.advance(a, 2 * D); R.advance(b, 2 * D); assert.ok(b.water > a.water + 0.05, `clam ${b.water} vs ${a.water}`);
   assert.ok(R.dueIn(b, 'water') > R.dueIn(a, 'water') * 1.3, 'the next change is due later');
   const c = mk(), d = mk(); d.fish.push(R.ensureFish({ id: 'tg', name: 'Dory', species: 'tang', seed: 3, born: -20 * D, stage: 'adult', traits: [] })); R.advance(c, 2 * D); R.advance(d, 2 * D); assert.ok(d.glass < c.glass, `tang ${d.glass} vs ${c.glass}`);
 });
-ok('an animal asking to leave cannot be sold, can be let go, and sends a postcard a day later; an unwell tank stops growing with time; toys open by level', () => {
+ok('an animal asking to leave cannot be sold, can be let go, and sends a postcard a day later; an unwell tank grows with time at a quarter speed; toys open by level', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 4; t.createdAt = -30 * D; t.fish.push(R.ensureFish({ id: 's', name: 'Sea', species: 'seahorse', seed: 4, born: -20 * D, stage: 'adult', traits: [] }));
   let d = 1; for (; d <= 6 && !t.fish.find((f) => f.id === 's').leaveAsk; d++) { R.advance(t, d * D); t.hunger = 0.85; }
   const now = d * D; assert.equal(R.applyAction(t, { t: 'sellFish', id: 's' }, { now }).reason, 'UNHAPPY', 'no selling an unhappy animal');
-  const xp0 = t.xp ?? 0; R.advance(t, now + 6 * 3600e3); assert.ok(R.tankHealth(t, now + 6 * 3600e3).score >= 55 || (t.xp ?? 0) === xp0, 'unwell: time adds nothing');
+  const xp0 = t.xp ?? 0; R.advance(t, now + 6 * 3600e3); { const g = (t.xp ?? 0) - xp0, H6 = R.tankHealth(t, now + 6 * 3600e3); assert.ok(H6.score >= 55 || (g > 0 && g <= 6 * R.XP_PER_HOUR * 0.25 + 1e-9), `unwell: time still grows the tank, at a quarter speed (${g})`); }
   const r = R.applyAction(t, { t: 'letGo', id: 's' }, { now: now + 7 * 3600e3 }); assert.ok(r.ok && !t.fish.some((f) => f.id === 's'), 'let go');
   const ev = R.advance(t, now + 7 * 3600e3 + D + 60e3); assert.ok(ev.some((e) => e.postcard) && t.postcards[0].got && /Sea here/.test(t.postcards[0].text), 'a postcard came');
   t.level = 4; assert.ok(!R.toysOpen(t).includes('cube')); t.level = 5; assert.ok(R.toysOpen(t).includes('cube') && R.toysOpen(t).includes('hoop') && !R.toysOpen(t).includes('light'));

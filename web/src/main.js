@@ -353,8 +353,8 @@ setInterval(() => { const s = game.state; if (!s) return;
     else if (f.seekStep) { const sp = f.seekSpot; f.seekStep = null; f.seekSpot = null; if (sp) fishes.burst?.(new THREE.Vector3(sp.x, (sp.y ?? 0) + 0.9, sp.z + 0.3)); } } }, 1000);
 // an animal that has asked to leave: nurse it back (the card shows what it is missing) or let it go back to the sea
 function leaveBlock(rec) {
-  const L = rec?.leaveAsk; if (!L || rec.dead) return ''; const h = Math.max(1, Math.ceil((L.by - Date.now()) / 36e5));
-  return `<div class="leaveask"><b>${esc(rec.name)} is asking to leave</b><span>${L.why ? `It is missing ${esc(L.why)}. ` : 'It has been unhappy for days. '}Nurse it back to Happy within ${h > 36 ? Math.ceil(h / 24) + ' days' : h + ' hours'} and it stays. It can't be sold while it is unhappy.</span><button class="act2" id="letgo">Let it go to the sea</button></div>`;
+  const L = rec?.leaveAsk; if (!L || rec.dead) return ''; 
+  return `<div class="leaveask"><b>${esc(rec.name)} is asking to leave</b><span>${L.why ? `It is missing ${esc(L.why)}. ` : 'It has been unhappy for days. '}Give it what it is missing and keep it fed, and it will settle back in: it will not leave on its own. It can't be sold while it is unhappy.</span><button class="act2" id="letgo">Let it go to the sea</button></div>`;
 }
 // a sea turtle is raised to be let go: how long until it is ready for the ocean, and when it is, the button that sends it
 function turtleBlock(rec) {

@@ -43,7 +43,7 @@ ok('a visitor that has come three times may stay; the first answer decides, a se
   R.advance(t, v.until + DAY); assert.ok(t.fish.includes(f), 'it lives on'); assert.ok(R.lifeOf(f) > 0); });
 ok('no offer when the tank is full, and "let it wander" is respected for a month', () => { const t = tank(); t.visitMem = { sunangel: { first: T0 - 20 * DAY, n: 5, last: T0 - 5 * DAY, met: [], spot: 'd2' } }; t.seen.fish.push('sunangel', 'moonbetta', 'rosecory');
   for (let i = 0; i < R.capacity(t.level); i++) t.fish.push(R.ensureFish({ id: 'x' + i, name: 'N' + i, species: 'neon', seed: i, born: T0 - 9 * DAY, stage: 'adult', traits: [] }));
-  for (let i = 0; i < 12; i++) { t.visitor = null; t.visitWait = true; t.visitAt = T0 + i * DAY; R.advance(t, T0 + i * DAY + 1); assert.ok(!t.visitor?.stay); }
+  for (let i = 0; i < 12; i++) { while (t.fish.length < R.capacity(t.level)) t.fish.push(R.ensureFish({ id: "y" + t.fish.length, name: "M" + t.fish.length, species: "neon", seed: t.fish.length, born: T0 - 9 * DAY, stage: "adult", traits: [] })); t.visitor = null; t.visitWait = true; t.visitAt = T0 + i * DAY; R.advance(t, T0 + i * DAY + 1); assert.ok(!t.visitor?.stay); }
   t.fish = t.fish.slice(0, 2); let v; for (let i = 12; i < 40 && !v; i++) { t.visitor = null; t.visitWait = true; t.visitAt = T0 + i * DAY; R.advance(t, T0 + i * DAY + 1); if (t.visitor?.stay) v = t.visitor; }
   assert.ok(v); R.applyAction(t, { t: 'visitorStay', id: v.id, keep: false }, { now: v.until - H, uid: 'a', name: 'Ana' }); const at = v.until;
   for (let i = 1; i < 25; i++) { t.visitor = null; t.visitWait = true; t.visitAt = at + i * DAY; R.advance(t, at + i * DAY + 1); if (t.visitor?.species === v.species) assert.ok(!t.visitor.stay, 'not asked again so soon'); } });

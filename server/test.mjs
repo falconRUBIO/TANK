@@ -192,7 +192,7 @@ await t('absence is bounded: 10 days away never starves the tank', async () => {
 });
 
 console.log('Shop & progression');
-await t('a new tank has the chosen first fish, no decor yet and 20 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level === 1); });
+await t('a new tank has the chosen first fish, no decor yet and 20 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level <= 2, JSON.stringify({ lv: w.level, xp: w.xp })); });      // (level 2 comes within the first day, and the tests before this one already ran the clock on)
 const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {
