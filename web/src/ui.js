@@ -603,7 +603,7 @@ export function initUI({ game, social, cb }) {
     const say = { good: 'Your animals are thriving and the tank is spotless.', ok: 'Healthy and happy. A little more care makes it thrive.', warn: 'Some things need you. See below for what helps most.', bad: 'The tank is unwell. Care for it now: growth is paused.' }[cls];
     return `<div class="tchart">
       <div class="tc-hero ${cls}">${ring(H.score, cls, 96)}<div><small>TANK HEALTH</small><b>${H.word}</b><p>${say}</p><span class="tc-pace">${pace[0]} <em>${pace[1]}</em></span></div></div>
-      <div class="tc-how"><span>${msIcon('feed', true, 18)}<b>Care</b></span><i>→</i><span>${msIcon('wish', true, 18)}<b>Health</b></span><i>→</i><span>${msIcon('bolt', true, 18)}<b>Levels</b></span><p>Feeding, cleaning, playing and wiping the glass keep the animals happy and the tank clean. The healthier the tank, the faster it levels up, and every level opens something new.</p></div>
+      <div class="tc-how"><span>${msIcon('feed', true, 18)}<b>Care</b></span><i>→</i><span>${msIcon('wish', true, 18)}<b>Health</b></span><i>→</i><span>${msIcon('bolt', true, 18)}<b>Levels</b></span><p>Feed, clean, play and wipe the glass. A healthier tank levels up faster, and every level opens something new.</p></div>
       ${asks}
       <div class="tc-level"><div class="tc-lh"><b>Level ${lv}</b><span>${b ? `${left} point${left === 1 ? '' : 's'} to level ${lv + 1}` : 'Top level'}</span></div><div class="tc-bar ${cls}"><i style="width:${pct}%"></i></div><ol class="tc-road">${road}</ol>${nextCard}</div>
       <h4 class="tc-h">What makes the health</h4>
