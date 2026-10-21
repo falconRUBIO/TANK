@@ -148,11 +148,15 @@ const B = {
     for (let n = 0; n < 12; n++) { const i = Math.round((r() - 0.5) * 16), k = -Math.round(1 + r() * 9), j = Math.round(Math.sqrt(Math.max(0, R * R - i * i - k * k))); if (j > 5) { v.set(i, j + 1, k, [96, 140, 60]); if (r() < 0.5) v.set(i + 1, j + 1, k, [122, 164, 76]); } }      // a little algae along the top
     const y0 = (R - sink) * u; const m = v.mesh(); m.position.y = y0; g.add(m); return [{ v, x: 0, y: y0, z: 0, ry: 0 }];      // it rests on the sand with the bottom of the husk just buried
   },
-  pot: (g) => {                         // a clay pot lying on its side, mouth towards the front, big enough to curl up inside
-    const u = 0.12, v = new Vox(u); const rad = (i) => 7 - Math.abs(i - 1) * 0.28 + (i < -3 ? (i + 3) * 0.6 : 0);
-    for (let i = -9; i <= 8; i++) { const r = Math.max(2.5, rad(i)); for (let j = 0; j <= 14; j++) for (let k = -8; k <= 8; k++) { const d = Math.hypot(j - 7, k), inner = i > 3 && d < r - 2 || (i > -2 && d < r - 2.4); if (d > r || inner) continue; v.set(i, j, k, hash(i, j, k, 3) > 0.7 ? [150, 78, 48] : [128, 62, 40]); } }
-    for (let k = -7; k <= 7; k++) for (let j = 0; j <= 14; j++) { const d = Math.hypot(j - 7, k); if (d <= 7 && d > 5.3 && hash(j, k, 1, 4) > 0.2) v.set(9, j, k, [104, 50, 34]); }
-    topLit(v); const m = v.mesh(); m.position.y = 0.04; m.rotation.y = -Math.PI / 2; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: -Math.PI / 2 }];
+  pot: (g) => {                         // a clay octopus pot lying on its side (the kind fishermen lower on a line: an octopus finds an empty one irresistible): round belly, narrow neck, a flared lip; the mouth faces the front
+    const u = 0.1, v = new Vox(u), C = 8;
+    const rad = (i) => i <= -9 ? 4.2 + (i + 10) * 1.6 : i <= 3 ? 8 - Math.pow(Math.abs(i + 2) / 7.5, 2) * 1.6 : i <= 7 ? 7.3 - (i - 3) * 0.6 : i <= 8 ? 5.6 : 6.6;      // base, belly, shoulder, neck, lip
+    const clay = (i, j, k) => { const h = hash(i, j, k, 3), band = i > -6 && i < 2 && (i + 9) % 5 === 0; return band ? [118, 54, 34] : mix([158, 78, 46], [194, 108, 64], h * 0.7 + (j / 16) * 0.3); };
+    for (let i = -10; i <= 10; i++) { const r = rad(i); for (let j = 0; j <= 16; j++) for (let k = -C; k <= C; k++) { const d = Math.hypot(j - C, k); if (d > r) continue;
+      const hollow = i > -9 && d < (i >= 9 ? 5.3 : i >= 7 ? 4.4 : r - 1.4); if (hollow) continue;
+      const inside = i > -9 && d < r - 0.9 && i < 9; v.set(i, j, k, inside ? mix([128, 66, 42], [150, 80, 50], hash(i, j, k, 5)) : i >= 9 ? mix([184, 100, 62], [214, 128, 80], hash(i, j, k, 7)) : clay(i, j, k)); } }
+    for (const q of v.m.values()) if (q.j >= 13 && q.i < 6 && hash(q.i, q.j, q.k, 9) > 0.86) q.c = mix([96, 120, 60], [140, 160, 80], hash(q.k, q.i, 2));      // a little weed on its back from years on the sea floor
+    topLit(v); const m = v.mesh(); m.position.y = 0.02; m.rotation.y = -Math.PI / 2; g.add(m); return [{ v, x: 0, y: 0.02, z: 0, ry: -Math.PI / 2 }];
   },
   skull: (g) => {
     const u = 0.065, v = new Vox(u), bone = (i, j, k) => mix([214, 206, 184], [240, 232, 208], hash(i, j, k, 2));

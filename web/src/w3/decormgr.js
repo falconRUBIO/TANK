@@ -48,7 +48,7 @@ export class DecorMgr {
       requestAnimationFrame(step); }
   }
   // where decorations stand, for fish that like to hide behind or inspect them
-  spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, type: it.type, x: it.at.x, z: it.at.z, h: PICK[it.type]?.[1] ?? 1, y: baseY(it, it.at.x, it.at.z) }); return o; }
+  spots() { const o = []; for (const it of this.items.values()) if (it.type !== 'starfish' && it.type !== 'moss' && it.type !== 'shell') o.push({ id: it.id, type: it.type, x: it.at.x, z: it.at.z, ry: it.at.ry ?? 0, h: PICK[it.type]?.[1] ?? 1, y: baseY(it, it.at.x, it.at.z) }); return o; }
   // world position of the first lantern, for the lamp light
   lamp() { for (const it of this.items.values()) if (it.lamp && it !== this.preview?.item) { const p = it.lamp.clone(); p.applyMatrix4(it.group.matrixWorld.identity().compose(it.group.position, new THREE.Quaternion().setFromEuler(it.group.rotation), new THREE.Vector3(1, 1, 1))); return p; } return null; }
 
