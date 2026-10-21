@@ -511,7 +511,7 @@ export function initUI({ game, social, cb }) {
   // A group is one octopus (its own hunger, a crab each), the seahorses or the fish (the two share one mealtime). For each: how full it is,
   // whether it can eat now, whether a free food would earn a shell (only when it is properly hungry), its foods and whose favorite each is,
   // and, in a shared tank, who fed it last. The thresholds are the rules' own: a meal can be given from 8% hunger and pays from 25%.
-  const ICON = { flakes: msIcon('feed', true, 22), pellets: msIcon('pellets', true, 22), treats: msIcon('shrimp', true, 22), mysis: msIcon('shrimp', true, 22), crab: msIcon('crab', true, 22) };      // (the tank's own pixel pictures)
+  const ICON = { flakes: msIcon('feed', true, 22), pellets: msIcon('pellets', true, 22), treats: msIcon('shrimp', true, 22), mysis: msIcon('shrimp', true, 22), crab: msIcon('crab', true, 22), greens: msIcon('greens', true, 22) };      // (the tank's own pixel pictures)
   const names = (xs) => (xs.length > 2 ? `${xs.slice(0, 2).join(', ')} and ${xs.length - 2} more` : xs.join(' and '));
   const soon = (sec) => { const h = sec / 3600; return h < 0.75 ? 'in a few minutes' : h < 1.5 ? 'in about an hour' : h < 36 ? `in about ${Math.round(h)} hours` : `in about ${Math.round(h / 24)} days`; };
   const feedModel = () => {
@@ -564,7 +564,7 @@ export function initUI({ game, social, cb }) {
     for (const [who, os] of Object.entries(M.others.reduce((g, o) => { (g[o.ownerName ?? 'their caretaker'] ||= []).push(o); return g; }, {}))) cards.push(`<p class="fnote">${esc(os.map((o) => o.name).join(' and '))} ${os.length === 1 ? 'is' : 'are'} fed by ${esc(who)}.</p>`);
     return `${head}<div class="fcards">${awayCards.join('')}${cards.join('')}</div>${M.canEat.length ? '<div class="finfo"><i>i</i><p>Choose a food and it drops in by itself, right where they are.</p></div>' : ''}`;      // (the hint only when there is something to feed)
   };
-  const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.octo ? hasOcto(S()) : d.sea ? hasSeahorse(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
+  const foodRow = () => { if (!adv()) return ''; const cur = game.feedFood ?? 'flakes', sh = S().shells; return `<div class="foodrow"><small>FOOD</small>${Object.entries(FOODS).filter(([, d]) => (d.turtle ? S().fish.some((f) => !f.dead && f.species === 'turtle') : d.octo ? hasOcto(S()) : d.sea ? hasSeahorse(S()) : hasFishOnly(S()) || !hasOcto(S()))).map(([k, d]) => `<button data-food="${k}" class="${k === cur ? 'on' : ''} ${sh < d.price ? 'no' : ''}">${d.label}${d.price ? ` · ${d.price} 🐚` : ''}</button>`).join('')}</div>`; };
   let devInfo = null; const devFast = () => { try { return localStorage.getItem('ourtank.devfast') === '1'; } catch { return false; } };
   const devLoad = async () => { if (!game.dev) return; try { devInfo = await cb.devInfo(); } catch (e) { devInfo = { tank: null }; } if (tab === 'friends' && sub === 'devtools') { const y = sheet.scrollTop; open('friends', true); sheet.scrollTop = y; } };
   // the tank's own jobs (glass, water, plants) in one row: what is due, or when the next one comes; tapping it lists all three

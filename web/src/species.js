@@ -845,7 +845,7 @@ const rosecory = recolor(goby, 'rosecory', 'Rose Goby', (c) => mix(c, [255, 150,
 // yellow plastron, a blunt head covered in pale-edged scales, long paddle front flippers (it "flies" with these) and small rounded back ones
 // it steers with. Every flipper voxel knows the root it turns about, so the strokes are posed in Fish3D (v.flip).
 const turtle = {
-  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 70, vox: 0.085,
+  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 40, vox: 0.085,      /* (length: nose to tail, for its size in the water; the flippers reach far wider) */
   make(seed = 1) {
     const rng = mulberry32(seed * 7211 + 41), off = [rng() * 40, rng() * 40, rng() * 40];
     const PALS = [      // shell, seam, ray, skin, scale-edge

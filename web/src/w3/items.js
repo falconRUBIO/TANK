@@ -60,6 +60,13 @@ const B = {
     g.add(v.mesh(true)); return [stem(0, 0, 2, 26)];
   },
   // live rock: reef rock crusted pink and purple with coralline algae and pitted with holes, full of the tiny copepods a mandarin grazes all day
+  // a turtle ledge: a broad flat slab of rock propped on two boulders, with a low gap underneath for a turtle to wedge itself into
+  ledge: (g, seed) => {
+    const u = 0.1, v = new Vox(u), col = (i, j, k) => { const n = fbm(i * 0.22 + seed, j * 0.3, k * 0.22); return mix([108, 100, 88], [164, 150, 128], n) ; };
+    v.ellipsoid(-15, 6, 0, 6, 8, 7.5, col, seed, 0.25); v.ellipsoid(15, 6, 0, 6, 8, 7.5, col, seed + 3, 0.25);
+    for (let i = -21; i <= 21; i++) for (let k = -10; k <= 10; k++) { const e = Math.pow(Math.abs(i) / 21.5, 4) + Math.pow(Math.abs(k) / 10.5, 4); if (e > 1) continue; const top = 17 + Math.round(1.6 * (1 - e) + (fbm(i * 0.3 + seed, k * 0.3, 2) - 0.5) * 2); for (let j = 14; j <= top; j++) v.set(i, j, k, j === top && hash(i, j, k, 6) > 0.8 ? [118, 150, 84] : col(i, j, k)); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); return [{ v, x: 0, y: 0.02, z: 0, ry: 0 }];
+  },
   liverock: (g, seed) => {
     const u = 0.1, v = new Vox(u); v.ellipsoid(0, 0, 0, 6.5, 4.6, 5.6, (i, j, k) => { const n = fbm(i * 0.25 + seed, j * 0.25, k * 0.25); return n > 0.6 ? [214, 110, 170] : n > 0.45 ? [168, 96, 182] : mix([130, 118, 108], [176, 160, 140], n); }, seed, 0.28);
     topLit(v); const m = v.mesh(); m.position.y = 0.14; g.add(m); return [{ v, x: 0, y: 0.14, z: 0, ry: 0 }];
@@ -171,6 +178,8 @@ const B = {
     for (const q of v.m.values()) if (!v.has(q.i, q.j + 1, q.k) && hash(q.i, q.j, q.k, 8) > 0.4) q.c = mix([96, 134, 54], [150, 176, 64], hash(q.i, q.k, 4));
     topLit(v); const m = v.mesh(); m.position.y = 0.04; g.add(m); return [{ v, x: 0, y: 0.04, z: 0, ry: 0 }];
   },
+  // a meadow of sea grass: many long ribbon blades in clumps across a wide patch, the kind a green turtle grazes like a lawn
+  seagrass: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); for (let i = 0; i < 7; i++) plantVox(v, r, [Math.round((i - 3) * 9 + (r() - 0.5) * 6), Math.round((r() - 0.5) * 14)], 'grass', { h: 26 + ((r() * 18) | 0), n: 4, low: [52, 120, 60], high: [140, 206, 110] }); g.add(v.mesh(true)); return [stem(-18, 0, 2, 18), stem(0, 0, 2, 18), stem(18, 0, 2, 18)]; },
   grass: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'grass', { h: 32 + ((r() * 10) | 0), n: 5, low: [40, 112, 84], high: [150, 222, 150] }); g.add(v.mesh(true)); return [stem(0, 0, 2, 24)]; },
   fern: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'fern', { h: 50 + ((r() * 12) | 0), side: seed & 1 ? 1 : -1, low: [124, 48, 156], high: [246, 140, 210] }); tint(v, (c) => (c[1] > c[0] && c[1] > c[2] ? mix(c, [150, 70, 150], 0.7) : c)); g.add(v.mesh(true)); return [stem(0, 0, 2, 34)]; },
   sword: (g, seed) => { const v = new Vox(PU), r = mulberry32(seed); plantVox(v, r, [0, 0], 'sword'); tint(v, (c) => mix(c, [168, 138, 56], 0.6)); g.add(v.mesh(true)); return [stem(0, 0, 2, 34)]; },

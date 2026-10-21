@@ -61,6 +61,8 @@ export const DECOR_DEF = {
   urchin:   { label: 'Sea Urchin',    cat: 'ROCKS',      price: 24, level: 3, blurb: 'A long-spined urchin. Cardinalfish hover safely among its spines.' },
   seafan:   { label: 'Sea Fan',       cat: 'PLANTS',     price: 36, level: 4, blurb: 'A branching gorgonian. A seahorse\'s favorite thing to wrap its tail around.' },
   liverock: { label: 'Live Rock',     cat: 'ROCKS',      price: 50, level: 5, blurb: 'Reef rock alive with tiny copepods: a mandarin grazes it all day.' },
+  ledge:    { label: 'Turtle Ledge',  cat: 'ROCKS',      price: 40, level: 7, blurb: 'A flat shelf of rock with a gap beneath: a sea turtle wedges itself under it to sleep.' },
+  seagrass: { label: 'Sea Grass Bed', cat: 'PLANTS',     price: 30, level: 7, blurb: 'A meadow of long, ribbon-like sea grass. Green turtles graze it like a lawn.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
 };
 // ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
@@ -69,7 +71,7 @@ const SHOP_CURVE = {
   grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12], anemone: [1, 14],      /* (a clownfish's home, from the start: the clownfish is a first fish) */
   sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
   pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
-  seafan: [4, 36], liverock: [5, 50],
+  seafan: [4, 36], liverock: [5, 50], ledge: [7, 40], seagrass: [7, 30],
   wood: [4, 38], pillar: [4, 42], bubbler: [4, 48], skull: [4, 40],
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
@@ -248,10 +250,10 @@ export function needsOf(f, t, now = Date.now()) {
 // Food: flakes are free, pellets and treats cost shells per drop and make fish happier. Each fish has a favorite.
 // an octopus eats crabs, not flakes. A seahorse eats tiny shrimp: mysis is what seahorses are fed, so it is on the menu whenever there is one.
 // It feeds the same shared meal as flakes and costs the same (nothing), so it changes nothing in the economy; only a seahorse is cheered by it.
-export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, mysis: { label: 'Mysis shrimp', price: 0, sea: true }, crab: { label: 'Crab', price: 0, octo: true } };
+export const FOODS = { flakes: { label: 'Flakes', price: 0 }, pellets: { label: 'Pellets', price: 2 }, treats: { label: 'Treats', price: 4 }, mysis: { label: 'Mysis shrimp', price: 0, sea: true }, crab: { label: 'Crab', price: 0, octo: true }, greens: { label: 'Sea greens', price: 3, turtle: true } };
 export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.dead), hasFishOnly = (t) => t.fish.some((f) => f.species !== 'octopus' && !f.dead);
 export const hasSeahorse = (t) => t.fish.some((f) => f.species === 'seahorse' && !f.dead);
-export const favFoodOf = (f) => (f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
+export const favFoodOf = (f) => (f.species === 'turtle' ? 'greens' : f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favorite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
 const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
 export function favouriteOf(f, t) {
@@ -1243,8 +1245,8 @@ export const KIND_NEEDS = {
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
     W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Fewer animals, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
   turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
-    W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'Two rocks from the Shop', (c) => c.cover >= 2),
-    W_('graze', 'Plants to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'Two plants from the Shop', (c) => (c.cats.PLANTS ?? 0) >= 2),
+    W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
+    W_('graze', 'Sea grass to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'A Sea Grass Bed, or two plants', (c) => (c.types.seagrass ?? 0) >= 1 || (c.cats.PLANTS ?? 0) >= 2),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   octopus: [W_('den', 'A den of its own', 'An octopus always has a den to retreat to, and often decorates its doorway.', 'A clay pot or a coconut shell', (c) => c.cover >= 1),
     W_('puzzle', 'Puzzles to solve', 'Octopuses are clever and get bored; in the wild they open shells and pry into crevices.', 'A puzzle jar every day or two', (c) => c.puzzled),
