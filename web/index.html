@@ -990,7 +990,21 @@ nav [data-tab].dot2::after{background:#ff6b6b!important}
 body.gifting #toast{top:calc(var(--top) + 46px)}
 #giftbar.soon{animation:gbpulse 1.6s ease-in-out infinite}@keyframes gbpulse{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 4px rgba(255,214,120,.25),0 6px 16px rgba(0,20,40,.25)}}
 #card.playing{transform:translateY(115%)!important;opacity:0!important;pointer-events:none!important;transition:transform .25s ease,opacity .2s}
-</style></head><body><div id="app">
+/* the Tank chart */
+.chart{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.chero{display:flex;align-items:center;gap:16px;padding:16px;border-radius:22px;background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.14)}
+.chero .hring b{font-size:26px}.chero small{font:700 10.5px -apple-system,system-ui,sans-serif;letter-spacing:.12em;opacity:.7}.chero>div>b{display:block;font:800 26px -apple-system,system-ui,sans-serif;letter-spacing:-.02em;margin:2px 0 4px}.chero p{margin:0;font-size:13.5px;opacity:.85;line-height:1.35}
+.chero.good>div>b{color:#7ff0a8}.chero.ok>div>b{color:#a8dcff}.chero.warn>div>b{color:#ffcf7a}.chero.bad>div>b{color:#ff9a9a}
+.clevel{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)}.clhead{display:flex;justify-content:space-between;align-items:baseline}.clhead b{font:800 17px -apple-system,system-ui,sans-serif}.clhead span{font-size:12.5px;opacity:.75}
+.cbar{height:10px;border-radius:99px;background:rgba(255,255,255,.12);margin:9px 0 7px;overflow:hidden}.cbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#5fd0ff,#7ff0a8);box-shadow:0 0 12px rgba(127,240,168,.5)}.cspeed{font-size:12px;opacity:.75}
+.cnext{display:flex;gap:10px;align-items:baseline;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.06)}.cnext b{min-width:58px;font-size:13.5px}.cnext span{font-size:13px;opacity:.85}
+.crow{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.06);cursor:pointer}.crow:disabled{cursor:default}.crow>i{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.08);flex:none}.crow>i img{width:30px;height:30px;object-fit:contain;image-rendering:pixelated}
+.crow>span{flex:1;min-width:0;display:flex;flex-direction:column}.crow b{font-size:14.5px}.crow small{font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.crow .hring b{font-size:11px}
+.cask{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;padding:13px 15px;border-radius:16px;background:rgba(255,107,107,.16);border:1px solid rgba(255,140,140,.45);cursor:pointer}.cask b{color:#ffb0b0;font-size:14.5px}.cask small{font-size:12.5px;opacity:.85}
+.cthrive{display:flex;gap:8px;align-items:center;font-size:12.5px;opacity:.85;padding:4px 6px}
+#bell .hbell{width:30px;height:30px}
+</style><style>.lvban{position:fixed;left:50%;top:22%;transform:translateX(-50%) scale(.6);opacity:0;z-index:60;pointer-events:none;text-align:center;padding:14px 26px;border-radius:18px;background:rgba(10,40,60,.82);color:#fff;box-shadow:0 0 40px rgba(120,220,255,.6);animation:lvin .6s cubic-bezier(.2,1.6,.4,1) forwards;transition:opacity .8s}.lvban b{display:block;font-size:34px;letter-spacing:1px;color:#ffe08a}.lvban span{font-size:15px}.lvban.off{opacity:0!important}@keyframes lvin{to{opacity:1;transform:translateX(-50%) scale(1)}}</style>
+</head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <button id="giftbar" type="button" hidden></button><div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
 <main><canvas id="tank"></canvas>

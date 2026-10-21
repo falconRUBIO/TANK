@@ -1315,6 +1315,13 @@ let lastLive = 0, advSig = null; game.on('tick', () => { ui?.updateHeader(); may
 game.on('toast', (m) => ui?.toast(m, 3200));
 game.on('levelup', (lv) => {
   moment({ at: new THREE.Vector3(0, 6, 1), haptics: 30 });
+  /* the level-up is a moment in the tank itself: everyone swims up to the glass, bubbles rise, and a banner names what opened */
+  let i = 0; for (const f of fishes.byId.values()) { if (!f.pos || !f.target) continue; const x = ((i++ % 7) - 3) * 1.4; f.target.set(x, 6 + (i % 3), 2.2); f.retarget = 4; }
+  for (let k = 0; k < 6; k++) setTimeout(() => fishes.burst(new THREE.Vector3((k - 2.5) * 2, 1, 1.2)), k * 180);
+  const ban = document.createElement('div'); ban.className = 'lvban';
+  const opens = Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label);
+  ban.innerHTML = `<b>Level ${lv}</b><span>${opens.length ? 'New friends can move in: ' + opens.slice(0, 3).join(', ') : 'Your care made the tank grow'}</span>`;
+  document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label + ' (fish)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
   if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: `The tank is bigger. New in the shop:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 1200);
