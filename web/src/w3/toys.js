@@ -159,7 +159,8 @@ export class Toys {
     H.g.rotation.z = Math.sin(H.ph * 0.9) * 0.18 + Math.sin(H.ph * 2.1) * 0.04;      // it sways in the current
     const at = new THREE.Vector3(0, -0.42, 0).applyEuler(H.g.rotation).add(H.g.position);      // the bottom of the ring, where a tail curls on
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(at);
-      if (k === 'seahorse' && d < 7) { f.target.set(at.x, at.y + 0.5, at.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); f.glance = H.g.position.clone(); f.glanceT = 0.5; if (d < 0.8) { f.vel.multiplyScalar(Math.exp(-dt * 4)); f.pos.lerp(new THREE.Vector3(at.x, at.y + 0.45, at.z), Math.min(1, dt * 2)); if (!H.who.has(f.fid)) this.onSound?.('pop'); H.who.add(f.fid); } }      // swims over and hangs on
+      if (k === 'seahorse' && d < 7) { f.target.set(at.x, at.y + 0.5, at.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); f.glance = H.g.position.clone(); f.glanceT = 0.5; if (d >= 1.3) { const want = new THREE.Vector3(at.x, at.y + 0.45, at.z), step = want.sub(f.pos); const k = Math.min(1, (dt * 0.7) / step.length()); f.pos.addScaledVector(step, k); f.vel.multiplyScalar(Math.exp(-dt * 2)); }      /* (a seahorse's own swimming keeps to its perches, so the hoop draws it over itself, at a seahorse's slow pace) */
+        if (d < 1.3) { f.vel.multiplyScalar(Math.exp(-dt * 4)); f.pos.lerp(new THREE.Vector3(at.x, at.y + 0.45, at.z), Math.min(1, dt * 2)); if (!H.who.has(f.fid)) this.onSound?.('pop'); H.who.add(f.fid); } }      // swims over and hangs on
       else if (k === 'fish' && d < 2.5 && Math.random() < dt) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish swim through it now and then
       else if (k === 'octopus' && d < 4 && !f.inspect) f.inspect = { x: at.x, z: at.z, toy: true }; }
   }

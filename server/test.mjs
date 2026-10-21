@@ -840,6 +840,18 @@ await t('four caretakers at once: one decision is made once, the mystery plays o
   await Promise.all(ws.slice(0, 2).map((w, i) => ackOf(w, { t: 'octoLid', fish: o.id, idem: 'l4-' + i }))); assert.equal(getW(tk.id).fish.find((f) => f.id === o.id).lid?.n, 1, 'two phones, one sighting');
   ws.forEach((w) => w.close());
 });
+await t('two caretakers let the same unhappy animal go at the same moment: it goes once, one postcard, no selling it meanwhile', async () => {
+  const us = await Promise.all(['Eli', 'Fay'].map(mkUser)), tk = (await call('/api/tanks', { name: 'Two' }, us[0].token)).body;
+  assert.equal((await call('/api/join', { code: tk.code }, us[1].token)).status, 200);
+  const ws = await Promise.all(us.map((u) => open(u.token))); assert.equal((await ackOf(ws[0], { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 5, idem: 'lg-0' })).ok, true);
+  const now = Date.now(), D = 864e5, o = { ...getW(tk.id).fish[0], born: now - 30 * D, stage: 'adult' }, g = { ...o, id: 'gx', name: 'Goldie', species: 'goldfish', owner: null, leaveAsk: { at: now, by: now + 3 * D, why: null }, lowSince: now - 4 * D };
+  setW(tk.id, { fish: [o, g], flags: { ...getW(tk.id).flags, tut: 5 } });
+  const sell = await ackOf(ws[1], { t: 'sellFish', id: 'gx', idem: 'lg-s' }); assert.equal(sell.reason, 'UNHAPPY', 'no selling it: ' + JSON.stringify(sell));
+  const r = await Promise.all(ws.map((w, i) => ackOf(w, { t: 'letGo', id: 'gx', idem: 'lg-' + (i + 1) })));
+  assert.equal(r.filter((x) => x.ok && x.applied !== false).length, 1, 'let go once: ' + JSON.stringify(r.map((x) => [x.ok, x.applied, x.reason])));
+  const W = getW(tk.id); assert.ok(!W.fish.some((f) => f.id === 'gx'), 'it is gone'); assert.equal((W.postcards ?? []).filter((c) => c.name === 'Goldie').length, 1, 'one postcard');
+  ws.forEach((w) => w.close());
+});
 wsA.close();
 wa.close(); await S.close();
 console.log(process.exitCode ? '\nFAILED' : `\nAll ${pass} tests passed`);

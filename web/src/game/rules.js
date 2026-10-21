@@ -88,7 +88,7 @@ export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A to
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
 const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [6, 80], octopus: [6, 120], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
-export const LEVEL_AT = [0, 20, 54, 105, 170, 255, 360, 480];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
+export const LEVEL_AT = [0, 22, 60, 116, 187, 280, 396, 528];      // care points for each level: a well-kept tank reaches level 8 (the turtles) in about three weeks                     // score needed for each level (see scoreOf: it grows by playing, not by buying)
 export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.9] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
@@ -203,11 +203,11 @@ export function bestStep(t, now = Date.now()) {
 // About how many days to the next level at the current health: passive growth plus a usual day of care
 export function levelEta(t, now = Date.now()) {
   const lv = t.level ?? 1, b = LEVEL_AT[lv]; if (!b) return null; const left = b - scoreOf(t, now), H = tankHealth(t, now);
-  const perDay = (H.score < 55 ? 0 : 24 * XP_PER_HOUR * H.mult) + 7 * Math.max(0.25, H.mult); return Math.max(1, Math.ceil(left / perDay));
+  const perDay = (H.score < 55 ? 0 : 24 * XP_PER_HOUR * H.mult) + 14 * Math.max(0.25, H.mult); return Math.max(1, Math.ceil(left / perDay));
 }
-export const CARE_XP = { feed: 1, crab: 1, glass: 2, water: 3, pet: 1, play: 1, puzzle: 2, trim: 1, train: 1 };
+export const CARE_XP = { feed: 2, crab: 2, glass: 4, water: 6, pet: 2, play: 2, puzzle: 4, trim: 2, train: 2 };
 // most of the progress comes with time, at the rate the tank's health earned over that time (so neglect all day and a burst of care at the end does not earn a thriving day)
-export const XP_PER_HOUR = 0.6;
+export const XP_PER_HOUR = 0.3;      // (time alone grows the tank slowly: most of the growth comes from care)
 export const levelFor = (score) => LEVEL_AT.reduce((l, need, i) => (score >= need ? i + 1 : l), 1);
 // one fish is a quarter cheaper each day; a reason to look in the shop, never a penalty for missing a day
 export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !TURTLES.has(k)); return ids[Math.floor(now / 864e5 + 3) % ids.length]; };
