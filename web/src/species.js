@@ -845,44 +845,50 @@ const rosecory = recolor(goby, 'rosecory', 'Rose Goby', (c) => mix(c, [255, 150,
 // yellow plastron, a blunt head covered in pale-edged scales, long paddle front flippers (it "flies" with these) and small rounded back ones
 // it steers with. Every flipper voxel knows the root it turns about, so the strokes are posed in Fish3D (v.flip).
 const turtle = {
-  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 40, vox: 0.085,      /* (length: nose to tail, for its size in the water; the flippers reach far wider) */
+  id: 'turtle', label: 'Sea Turtle', move: 'swim', length: 40, vox: 0.088,      /* (length: nose to tail, for its size in the water; the flippers reach far wider) */
   make(seed = 1) {
     const rng = mulberry32(seed * 7211 + 41), off = [rng() * 40, rng() * 40, rng() * 40];
-    const PALS = [      // shell, seam, ray, skin, scale-edge
-      { sh: [104, 92, 46], se: [46, 40, 22], ray: [196, 160, 78], sk: [84, 96, 58], ed: [214, 206, 160] },
-      { sh: [120, 84, 44], se: [54, 34, 20], ray: [214, 162, 82], sk: [96, 86, 56], ed: [226, 210, 168] },
-      { sh: [78, 92, 54], se: [34, 42, 24], ray: [170, 168, 92], sk: [70, 92, 64], ed: [204, 214, 170] },
+    // after real green turtles: an olive-to-mahogany shell of big plates, each streaked with gold rays from its center; dark skin edged in cream
+    const PALS = [      // shell, deep, seam, ray, skin, scale edge
+      { sh: [112, 96, 44], dp: [70, 58, 26], se: [36, 30, 16], ray: [226, 182, 86], sk: [66, 78, 46], ed: [228, 220, 176] },
+      { sh: [126, 78, 40], dp: [80, 44, 22], se: [40, 24, 14], ray: [234, 170, 90], sk: [82, 70, 46], ed: [236, 214, 172] },
+      { sh: [82, 98, 52], dp: [48, 62, 32], se: [28, 36, 20], ray: [196, 196, 104], sk: [58, 84, 60], ed: [214, 226, 184] },
     ];
     const P = PALS[Math.floor(rng() * PALS.length)];
-    const SH = { cx: 0, cy: 1, rx: 14.5, ry: 6.5, rz: 11.5 };
-    const shell = (x, y, z) => { const dx = (x - SH.cx) / SH.rx, dz = z / SH.rz; if (y >= SH.cy) { const dy = (y - SH.cy) / SH.ry; return dx * dx + dy * dy + dz * dz <= 1; } return y >= SH.cy - 2.6 && dx * dx * 1.15 + dz * dz * 1.2 <= 1; };
-    const head = (x, y, z) => { const dx = (x - 19.5) / 5.4, dy = (y - 1.6) / 3.7, dz = z / 3.9; return dx * dx + dy * dy + dz * dz <= 1; };
-    const neck = (x, y, z) => x >= 12 && x <= 16.5 && Math.hypot((y - 0.8) / 2.8, z / 3.1) <= 1;
-    const skin = (x, y, z) => { const cx = Math.floor((x + off[0]) / 2.4), cy = Math.floor((y + z * 0.5 + off[1]) / 2.4), e = (x + off[0]) % 2.4 < 0.55 || (y + z * 0.5 + off[1]) % 2.4 < 0.55; return e ? mix(P.ed, P.sk, 0.25) : mix(P.sk, mix(P.sk, [40, 46, 28], 0.4), (cx * 7 + cy * 3) % 5 / 5); };
-    // a flipper: a flat tapering paddle from a root, out along a direction, its voxels turning about the root when it strokes
+    const SH = { cy: 1, rx: 14, ry: 7.6, rz: 10.6 };
+    const PLATES = [[-9.5, 0], [-4.8, 0], [0, 0], [4.8, 0], [9.2, 0], ...[-7.4, -2.4, 2.6, 7.4].flatMap((px) => [[px, 6.4], [px, -6.4]])];
+    const shellIn = (x, y, z) => { const dx = x / SH.rx, dz = z / SH.rz; if (y >= SH.cy) { const dy = (y - SH.cy) / SH.ry, k = dx * dx + dz * dz; return k + dy * dy * (1 + 0.25 * Math.max(0, dx)) <= 1; } return y >= SH.cy - 2.4 && dx * dx * 1.12 + dz * dz * 1.18 <= 1; };
+    const head = (x, y, z) => { const dx = (x - 18.8) / 5.2, dy = (y - 2.1) / 3.9, dz = z / 3.7; return dx * dx + dy * dy + dz * dz <= 1; };
+    const neck = (x, y, z) => x >= 11.5 && x <= 16 && Math.hypot((y - 1.2) / 2.9, z / 3.0) <= 1;
+    // skin: big polygon scales, each dark with a pale cream edge, the way a turtle's head and flippers look close up
+    const scale = (a, b, sz) => { const ax = (a + off[0]) / sz, bx = (b + off[1]) / sz, ix = Math.floor(ax + (Math.floor(bx) & 1) * 0.5), iy = Math.floor(bx), fx = ax + (iy & 1) * 0.5 - ix, fy = bx - iy, e = Math.min(fx, 1 - fx, fy, 1 - fy); return { e, n: ((ix * 7 + iy * 13) % 5) / 5 }; };
+    const skin = (a, b, sz = 2.6) => { const q = scale(a, b, sz); return q.e < 0.16 ? P.ed : mix(P.sk, mix(P.sk, [24, 30, 18], 0.5), q.n * 0.6); };
     const FL = [
-      { r: [7, -0.6, 9.4], d: [-0.42, -0.12, 1], len: 17, w0: 4.2, w1: 1.1, kind: 0 }, { r: [7, -0.6, -9.4], d: [-0.42, -0.12, -1], len: 17, w0: 4.2, w1: 1.1, kind: 0 },
-      { r: [-11, -0.8, 6.8], d: [-0.85, -0.05, 0.72], len: 7.5, w0: 3.4, w1: 2.2, kind: 1 }, { r: [-11, -0.8, -6.8], d: [-0.85, -0.05, -0.72], len: 7.5, w0: 3.4, w1: 2.2, kind: 1 },
+      { r: [6.5, -0.4, 8.8], d: [-0.36, -0.28, 1], len: 16, w0: 5.2, w1: 1.4, kind: 0 }, { r: [6.5, -0.4, -8.8], d: [-0.36, -0.28, -1], len: 16, w0: 5.2, w1: 1.4, kind: 0 },
+      { r: [-10.5, -0.6, 6.4], d: [-0.85, -0.12, 0.7], len: 6.5, w0: 3.8, w1: 2.6, kind: 1 }, { r: [-10.5, -0.6, -6.4], d: [-0.85, -0.12, -0.7], len: 6.5, w0: 3.8, w1: 2.6, kind: 1 },
     ].map((f) => { const m = Math.hypot(...f.d); return { ...f, d: f.d.map((q) => q / m) }; });
-    const flipAt = (x, y, z) => { for (const f of FL) { const px = x - f.r[0], py = y - f.r[1], pz = z - f.r[2], a = px * f.d[0] + py * f.d[1] + pz * f.d[2]; if (a < -1 || a > f.len) continue; const u = Math.max(0, a) / f.len, qx = px - f.d[0] * a, qy = py - f.d[1] * a, qz = pz - f.d[2] * a, across = Math.hypot(qx, qz), w = (f.w0 + (f.w1 - f.w0) * Math.pow(u, 1.3)) * (f.kind ? 1 : (u < 0.15 ? 0.75 + u * 1.6 : 1)); if (across <= w * 0.5 + 0.3 && Math.abs(qy) <= (u < 0.2 ? 1.2 : 0.7)) return { f, u }; } return null; };
+    const flipAt = (x, y, z) => { for (const f of FL) { const px = x - f.r[0], py = y - f.r[1], pz = z - f.r[2], a = px * f.d[0] + py * f.d[1] + pz * f.d[2]; if (a < -1 || a > f.len) continue; const u = Math.max(0, a) / f.len, qx = px - f.d[0] * a, qy = py - f.d[1] * a, qz = pz - f.d[2] * a, across = Math.hypot(qx, qz), sw = f.kind ? 1 : Math.sin(Math.min(1, u * 1.25 + 0.2) * Math.PI * 0.62), w = (f.w0 + (f.w1 - f.w0) * Math.pow(u, 1.4)) * (f.kind ? 1 : 0.55 + 0.6 * sw); if (across <= w * 0.5 + 0.3 && Math.abs(qy) <= (u < 0.2 ? 1.3 : 0.75)) return { f, u, lead: qx > w * 0.18 }; } return null; };
     return {
-      bounds: { x: [-20, 26], y: [-9, 9], z: [-26, 26] }, center: [0, 1],
+      bounds: { x: [-19, 25], y: [-9, 10], z: [-25, 25] }, center: [0, 1.5],
       sample(x, y, z) {
-        // the eye: dark, a little bulging, on each side of the head, with a bright catch-light
-        if (Math.abs(z) >= 2 && Math.abs(z) <= 4 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 21, y - 2.6) <= 1.3) return Math.hypot(x - 20.6, y - 3.1) < 0.6 ? { c: [255, 255, 255], em: 2 } : { c: [16, 14, 12], em: 1, tag: 'eye' };
-        if (head(x, y, z)) { const beak = x >= 23 && y <= 1.6; return { c: beak ? [214, 196, 140] : y < 0 ? mix(P.ed, [236, 226, 190], 0.4) : skin(x, y, z), tag: 'head' }; }
-        if (neck(x, y, z)) return { c: y < 0 ? [222, 212, 170] : skin(x, y, z), tag: 'head' };
-        if (shell(x, y, z)) {
-          if (y < SH.cy) { const rim = Math.abs(z) > 9.8 || Math.abs(x) > 12.5; return { c: rim ? mix(P.sh, P.se, 0.3) : mix([230, 214, 150], [204, 186, 120], ((Math.floor(x / 4) + Math.floor(Math.abs(z) / 4)) & 1) * 0.6) }; }
-          // plates: a row of five down the middle, four along each side, and small ones round the rim; each a little domed, with dark seams and gold rays from its center
-          const r = Math.hypot(x / SH.rx, z / SH.rz), row = r > 0.86 ? 2 : Math.abs(z) < 3.6 ? 0 : 1, len = row === 0 ? 5.6 : row === 1 ? 6.2 : 2.8, cxp = Math.round((x + (row === 1 ? 2.8 : 0)) / len) * len - (row === 1 ? 2.8 : 0), czp = row === 0 ? 0 : row === 1 ? Math.sign(z) * 7.2 : z;
-          const seam = row === 2 ? (Math.abs(((x + 1.4) % 2.8 + 2.8) % 2.8 - 1.4) > 1.15) : Math.abs(x - cxp) > len * 0.5 - 0.6 || (row === 0 ? Math.abs(z) > 2.9 : Math.abs(Math.abs(z) - 3.6) < 0.7);
-          if (seam) return { c: P.se, tag: 'shell' };
-          const ang = Math.atan2(z - czp, x - cxp), ray = Math.abs(Math.sin(ang * 3 + (fbm(x * 0.3 + off[0], z * 0.3, 1) - 0.5) * 4)) > 0.82, n = fbm(x * 0.22 + off[1], y * 0.2, z * 0.22 + off[2]);
-          return { c: mix(ray ? mix(P.sh, P.ray, 0.75) : P.sh, [255, 250, 220], Math.max(0, (y - 5) / 4) * 0.12 + (n - 0.5) * 0.15), tag: 'shell' };
+        // the eye: big and dark, set well back on the side of the head under a pale brow scale, with a bright catch-light
+        if (Math.abs(z) >= 2 && head(x, y, z) && !head(x, y, z + Math.sign(z)) && Math.hypot(x - 20.2, y - 3.0) <= 1.55) return Math.hypot(x - 19.8, y - 3.6) < 0.62 ? { c: [255, 255, 255], em: 2 } : Math.hypot(x - 20.2, y - 3.0) <= 1.05 ? { c: [12, 10, 8], em: 1, tag: 'eye' } : { c: [60, 44, 24], em: 1, tag: 'eye' };
+        if (head(x, y, z)) { const beak = x >= 22.4 && y <= 2.2, jaw = y < 1.1; return { c: beak ? (y < 1.4 ? [236, 222, 176] : [190, 170, 120]) : jaw ? mix(P.ed, [244, 236, 204], 0.5) : skin(x, y + Math.abs(z) * 0.6, 3.1), tag: 'head' }; }
+        if (neck(x, y, z)) return { c: y < 0.4 ? [228, 218, 178] : skin(x, y + Math.abs(z) * 0.5, 2.2), tag: 'head' };
+        if (shellIn(x, y, z)) {
+          if (y < SH.cy) { const rim = Math.abs(z) > 9 || Math.abs(x) > 12; return { c: rim ? mix(P.sh, P.se, 0.25) : mix([238, 222, 160], [212, 192, 128], ((Math.floor(x / 4) + Math.floor(Math.abs(z) / 4)) & 1) * 0.55) }; }
+          // plates: five down the spine, four along each side, a ring of small ones round the rim; dark seams, gold rays bursting from each plate's center
+          const r = Math.hypot(x / SH.rx, z / SH.rz), az = Math.abs(z);
+          if (r > 0.86) { const cell = Math.floor((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24), edge = ((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 24) % 1; return { c: edge < 0.14 ? P.se : mix(mix(P.sh, P.ray, 0.35), [255, 240, 200], (cell & 1) * 0.1), tag: 'shell' }; }
+          // each plate is the patch nearest its own center: five down the spine and four along each side, so the seams fall where two plates meet, the way real scutes tile
+          let b1 = 1e9, b2 = 1e9, cxp = 0, czp = 0; for (const [px, pz] of PLATES) { const d = Math.hypot(x - px, (z - pz) * 1.08); if (d < b1) { b2 = b1; b1 = d; cxp = px; czp = pz; } else if (d < b2) b2 = d; }
+          if (b2 - b1 < 0.95) return { c: P.se, tag: 'shell' };
+          const ang = Math.atan2(z - czp, x - cxp), d0 = Math.hypot(x - cxp, (z - czp) * 1.1), ray = Math.abs(Math.sin(ang * 2.5 + (fbm(x * 0.3 + off[0], z * 0.3, 1) - 0.5) * 1.5)) > 0.9 && d0 > 1.4, n = fbm(x * 0.2 + off[1], y * 0.2, z * 0.2 + off[2]);
+          const edgeK = Math.max(0, Math.min(1, (b1 - 1.5) / 3)), base = mix(mix(P.sh, P.ray, 0.18), P.dp, edgeK * 0.65), c = ray ? mix(base, P.ray, 0.45) : base;      // each plate light in the middle, darkening to its seams, with a few gold streaks
+          return { c: mix(c, [255, 248, 220], Math.max(0, (y - 6) / 3) * 0.14 + (n - 0.5) * 0.12), tag: 'shell' };
         }
-        const fl = flipAt(x, y, z); if (fl) { const edge = fl.u > 0.15 && Math.abs(z - fl.f.r[2]) % 3 < 0.6; return { c: y < fl.f.r[1] - 0.4 ? mix(P.ed, [236, 226, 190], 0.5) : edge ? mix(P.sk, P.ed, 0.6) : skin(x, y, z), flip: { x: fl.f.r[0], y: fl.f.r[1], z: fl.f.r[2], s: Math.sign(fl.f.r[2]), k: fl.f.kind, u: fl.u }, tag: 'flip' }; }
-        if (x <= -13.5 && x >= -17 && Math.hypot(y + 0.2, z) <= 1.4 * (1 - (-13.5 - x) / 4)) return { c: skin(x, y, z) };      // the short tail
+        const fl = flipAt(x, y, z); if (fl) { const under = y < fl.f.r[1] - 0.35 - fl.u * 1.5; return { c: under ? mix(P.ed, [240, 232, 200], 0.4) : fl.lead && fl.f.kind === 0 ? mix(P.ed, P.sk, 0.35) : skin(x, z, 2.4), flip: { x: fl.f.r[0], y: fl.f.r[1], z: fl.f.r[2], s: Math.sign(fl.f.r[2]), k: fl.f.kind, u: fl.u }, tag: 'flip' }; }
+        if (x <= -13 && x >= -16.5 && Math.hypot(y + 0.2, z) <= 1.3 * (1 - (-13 - x) / 4)) return { c: skin(x, z, 2) };      // the short tail
         return null;
       },
     };

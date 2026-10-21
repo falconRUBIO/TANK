@@ -385,6 +385,7 @@ function trickBlock(rec) {
 // how well the tank suits this fish, a wish it has, and notes people left it
 // its wellbeing, the same as Health gives: the ring, the word, what is missing or wrong, and a way to the full picture
 function comfortBlock(rec) {
+  if (!rec?.species) return '';
   const W = wellOf(game.state, rec), w = game.state.want?.fish === rec.id ? game.state.want : null, notes = (rec.notes ?? []).map((n) => `<i>${esc(n.name)}:</i> ${esc(n.text)}`).join('<br>'), col = { good: '#5fdc8f', ok: '#7cc7ff', warn: '#ffb84d', bad: '#ff6b6b' }[W.mood[1]], C = 2 * Math.PI * 18;
   return `<button class="cmf well" data-wellopen="1"><span class="hring"><svg viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="5"/><circle cx="22" cy="22" r="18" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C * W.score) / 100} ${C}" transform="rotate(-90 22 22)"/></svg><b>${W.score}</b></span><span class="wtx"><b>${esc(W.mood[0])} · ${W.met} of ${W.of} needs met</b><small>${esc(W.mood[2])}</small>${w ? `<small class="req">${esc(w.text)}</small>` : ''}</span><i class="chev">›</i></button>${notes ? `<div class="notes">${notes}</div>` : ''}`;
 }

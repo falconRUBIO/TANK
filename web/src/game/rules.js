@@ -1313,7 +1313,7 @@ export function adoptAdvice(t, species) {
 // a kind's name for many of them: clownfish stay clownfish, a goby becomes gobies, an octopus octopuses
 export const plural = (sp) => { const l = (SPECIES_DEF[sp]?.label ?? sp).toLowerCase(); return /fish$|chromis$|anthias$/.test(l) ? l : /y$/.test(l) ? l.slice(0, -1) + 'ies' : /us$/.test(l) ? l + 'es' : l + 's'; };
 export function wellOf(t, f, now = Date.now()) {
-  const S = SOCIAL[f.species] ?? {}, E = ECO[f.species] ?? {}, nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name ?? null, live = t.fish.filter((x) => !x.dead && !x.away), lab = (sp) => (SPECIES_DEF[sp]?.label ?? sp).toLowerCase(), me = lab(f.species);
+  const S = SOCIAL[f.species] ?? {}, E = ECO[f.species] ?? {}, nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name ?? null, live = t.fish.filter((x) => !x.dead && !x.away), lab = (sp) => String(SPECIES_DEF[sp]?.label ?? sp ?? 'fish').toLowerCase(), me = lab(f.species);
   const friends = [], trouble = [], seen = new Set(), addF = (name, why) => { if (name && !friends.some((x) => x.name === name)) friends.push({ name, why }); };
   if (f.mate) addF(nm(f.mate), 'its partner for life'); if (f.partner) addF(nm(f.partner), 'its partner'); if (f.pal) addF(nm(f.pal), 'best friends'); if (f.buddy) addF(nm(f.buddy), 'it follows it about');
   const timid = (S.size ?? 1) <= 1 && !S.bully, cr = crowdOf(t);
