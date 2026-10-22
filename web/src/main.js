@@ -362,7 +362,7 @@ function turtleBlock(rec) {
   return `<div class="acts2 playrow"><button class="act2 due" id="turtrel">${msIcon('turtle', true, 18)} Release ${esc(rec.name)} to the ocean</button></div>`;
 }
 async function releaseTurtle(rec) {
-  const yes = await ui.choose({ title: `Release ${rec.name}?`, text: `${rec.name} is grown and ready for the open ocean. Its keepers get about ${TURTLE_PAY} shells (more if it is thriving), it leaves a keepsake behind, and it may come back to visit one day.`, options: [{ label: 'Let it go', value: true }, { label: 'Not yet', value: false }] });
+  const yes = await ui.dialog({ title: `Release ${rec.name}?`, text: `${rec.name} is grown and ready for the open ocean. Its keepers get about ${TURTLE_PAY} shells (more if it is thriving), it leaves a keepsake behind, and it may come back to visit one day.`, ok: 'Let it go', cancel: 'Not yet' });      // (a yes or no is a dialog, not a list to pick from)
   if (!yes) return; const f = fishes.byId.get(rec.id); setFocus(null);
   if (f) { f.retarget = 30; f.idle = 0; f.mul = 1.5; f.target.set(f.pos.x * 0.5, Fish3D.topY + 1, 0.6); f.thought = 'Off to the ocean.'; sfx('arrive'); for (let i = 0; i < 6; i++) setTimeout(() => fishes.burst(f.pos.clone()), 400 + i * 450); }      // up it goes, out through the surface, trailing bubbles
   await new Promise((q) => setTimeout(q, 3600)); moment({ at: f?.pos.clone() ?? null, haptics: 30 });
