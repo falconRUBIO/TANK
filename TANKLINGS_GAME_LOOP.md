@@ -1,4 +1,4 @@
-# TANKLINGS — Full Game Loop (current build, 2026-10-22)
+# TANKLINGS — Full Game Loop (current build, 2026-10-22, updated after the first-60-seconds and shop passes)
 
 Tanklings is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
 
@@ -15,7 +15,27 @@ Tanklings is a shared virtual aquarium for up to **4 caretakers** (friends or fa
 | **5 minutes** | Plus: teach a trick, shop, open an animal's card (friends, troubles, what it wants), make a decision if one is waiting. |
 | **15 minutes** | Plus: watch seahorse pairs, octopus adventures and keepsakes, breeding and babies, work on a goal. |
 
-Coming back: **Today** opens with **While you were away**, the real big news since *your own* last visit (stored per caretaker on the server): births, eggs, pairings, best friends, favorite spots, octopus trips and keepsakes, animals growing up, arrivals. Routine care and daily rituals are left out.
+Coming back: the tank opens with nothing over it (see section 1a). One small line, *"N things happened while you were away · Today ›"*, shows for a few seconds, only if something big happened. **Today** opens with **While you were away**, the real big news since *your own* last visit (stored per caretaker on the server): births, eggs, pairings, best friends, favorite spots, octopus trips and keepsakes, animals growing up, arrivals. Routine care and daily rituals are left out.
+
+---
+
+## 1a. The first 60 seconds of opening the app (new this pass)
+
+- **Nothing covers the tank automatically for the first 15 seconds**, or until the player's first touch. Pop-ups, banners, coach tips and toasts wait. Menus the player opens work at once.
+- **No blocking sick warning.** A sick animal shows calmly: the Care tab's dot, Care's to-do list, the Tank chart's "Best next step", and the animal's own pale look. The wording is *"Pip is unwell. Food and clean water will bring it back."* Nothing says an animal could die from neglect (only old age ends a life).
+- **One return-news line, not a replay.** The old on-tank "While you were away" replay is gone. If big things happened, one small line links to Today, which has the full list.
+- **The octopus's own greeting is the only greeting.** The old forced "favorite swims to the glass" is removed. About a second after the tank appears, each octopus answers by trust, personality and what it is doing (measured over 200 tries each, idle and awake):
+
+| Trust | Homebody | Watcher | Show-off | Explorer, collector, trickster |
+|---|---|---|---|---|
+| 0 (stranger) | carries on | carries on | carries on | carries on |
+| 1 | watches you from its den | from its den | from its den | from its den |
+| 2 | from its den | watches you | comes to the glass | glass about 45%, otherwise looks up |
+| 3 | from its den | comes to the glass | comes to the glass | glass about 68%, otherwise looks up |
+
+  A busy octopus (carrying a keepsake, hunting, at a puzzle, mid-trick) is left alone. A sleeping one that trusts you opens an eye.
+- **Tapping an animal says what it is really doing**, from its live state, e.g. *"Ink · at its den"*, *"guppy4 1 · swimming with guppy4 2, its best friend"*, *"Neo · cleaning Pip"*. If it is doing nothing notable, only the name shows; nothing is invented.
+- **A small reaction to a tap:** an octopus's eyes widen (and it flushes with color if it trusts you), a seahorse swivels an eye toward you, a fish gives a quick flick. Feeding, cleaning and following are never interrupted.
 
 ---
 
@@ -99,6 +119,15 @@ Clownfish (anemone, pairs), chromis (shoal), gobies (burrow), royal gramma (cave
 
 Decorations matter: each animal's needs name what helps.
 
+**Tapping any item opens its card** (buying is the button on the card). Everything on the card is worked out from the game's own rules, not written by hand:
+- **In your tank now** (decorations): Tank Health before and after placing it (e.g. *32 → 36*), each animal whose wellbeing would rise and by how much, and which of its needs it meets (*"guppy4 1 · Something to explore · wellbeing +11"*), plus theme progress (*"Sunken Ruins theme: this makes it 2 of 3"*) or *"Completes the Coral Garden theme: every fish a little happier, +3 shells"*. If you already own some, it says *"You have 2 · another one would do"*, because a second copy often adds less or nothing.
+- **Who it's for:** the kinds of animal whose needs one piece meets (e.g. Reef Cave: royal gramma *a cave to claim*, blue tang *rocks to sleep in*, puffer *rocks to explore*), marked *in your tank*.
+- **Also counts toward:** animals that want several pieces like it.
+- **Also:** the reef theme it belongs to and the octopus tricks it opens (gate, bubbles).
+- **Animals' cards** show their nature and every need with what provides it.
+- Tiles show a green **+N health** tag under the price when placing it would raise Tank Health now.
+- **Verified:** for every item, placing it through the real purchase gives exactly the Tank Health the card promised, for a first copy and a second (a permanent unit test).
+
 | Item | Level | Shells | For |
 |---|---|---|---|
 | Cleaning Station | 2 | 22 | the neon goby's station |
@@ -139,7 +168,7 @@ Plus plants, rocks, structures (arch, bridge, lighthouse…), the Coral Spire (3
 
 - 3D voxel aquarium with underwater light: sunbeams, drifting caustics on the sand and the animals, rim light, light motes, time of day (morning, afternoon, evening, night, with moonlight).
 - Dirty glass shows as algae spots; old water turns a little murky (both kept light so the tank stays vibrant).
-- Menus follow one iOS-like design: one font, gold primary buttons, grouped lists; every choice is a list of options with circles, pick one, then confirm.
+- Menus follow one iOS-like design: one font, gold primary buttons, grouped lists; every choice is a list of options with circles, pick one, then confirm. Shop items open a card first; nothing is bought by a single tap.
 
 ---
 
@@ -152,7 +181,9 @@ No second currency, no leaderboards, no streak pressure, no animals dying or lea
 ## 11. Known gaps and open questions (for review)
 
 1. After level 8 nothing new unlocks yet (levels 9–20 are planned, not built). Breeding, turtles, goals and stories carry the late game.
-2. The first real-player test on iPhone has not happened yet; all checks so far are simulations and a headless browser.
+2. The first real-player test on iPhone has not happened yet; all checks so far are simulations and a headless browser (which draws about 0.3 frames per second, so timings and the small tap reactions are not verified on screen).
+6. Known test failures that predate this pass: three in `loop_check` and two in `care_check` (Care screen wording, the hungry-octopus glass visit), and three in `playthrough` (feeding pays a shell, shells fly to the counter, one plant shows as free). They fail the same way on the code from before these changes.
+7. Not done yet: a clean re-recording of the opening after the last quiet-window fix.
 3. Are care requirements rewarding or repetitive after week 3?
 4. Is it clear to a new player what to do in the first 5 minutes?
 5. Do the animals feel like *individuals* to a player who never opens a profile?
