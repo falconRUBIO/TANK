@@ -9,7 +9,7 @@ const rgb = (c, k = 1) => new THREE.Color().setRGB(Math.min(1.6, c[0] / 255 * k)
 export const hash = (i, j, k, s = 0) => { let h = (i * 374761393 + j * 668265263 + k * 2147483647 + s * 1274126177) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 const vmat = voxShading(new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0 }));
 // algae: as the tank goes unwiped, every rock and ornament takes on a soft green-brown cast (the same film that grows on the glass); a wipe-and-change takes it off
-export function algaeTint(k) { k = Math.max(0, Math.min(1, k)); vmat.color.setRGB(1 - 0.22 * k, 1 - 0.06 * k, 1 - 0.34 * k); }
+export function algaeTint(k) { k = Math.max(0, Math.min(1, k)); vmat.color.setRGB(1 - 0.14 * k, 1 - 0.04 * k, 1 - 0.22 * k); }
 const pmat = voxShading(new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, side: THREE.DoubleSide }), { sway: true, boost: 1.1 });
 
 // ── tiny voxel modeller ──

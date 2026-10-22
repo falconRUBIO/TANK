@@ -156,11 +156,10 @@ const gcv = $('glass'), gg = gcv.getContext('2d'); gcv.width = 195; gcv.height =
 // the glass grows a film: a soft green-grey haze over the whole pane (thicker low down and at the edges, where it really builds up), with
 // spots of algae on top. Wiping takes the film off in clean, soft-edged streaks, so you can see exactly where you have been
 function film(g) {
-  gg.clearRect(0, 0, 195, 346); if (g < 0.05) return; const k = Math.min(1, g / 0.8);
-  const base = gg.createLinearGradient(0, 0, 0, 346); base.addColorStop(0, `rgba(176,196,178,${0.1 + 0.32 * k})`); base.addColorStop(0.6, `rgba(150,176,146,${0.16 + 0.4 * k})`); base.addColorStop(1, `rgba(112,140,92,${0.24 + 0.5 * k})`);
-  gg.fillStyle = base; gg.fillRect(0, 0, 195, 346);
-  for (const [x0, x1] of [[0, 34], [161, 195]]) { const e = gg.createLinearGradient(x0 ? x1 : x0, 0, x0 ? x0 : x1, 0); e.addColorStop(0, `rgba(96,128,74,${0.28 * k})`); e.addColorStop(1, 'rgba(96,128,74,0)'); gg.fillStyle = e; gg.fillRect(x0, 0, x1 - x0, 346); }      // thicker in the corners of the pane
-  for (let i = 0; i < 60 + 180 * k; i++) { const x = Math.random() * 195, y = Math.pow(Math.random(), 0.7) * 346, r = 6 + Math.random() * 22, c = gg.createRadialGradient(x, y, 0, x, y, r); c.addColorStop(0, `rgba(${110 + Math.random() * 50},${140 + Math.random() * 40},${90 + Math.random() * 30},${(0.05 + Math.random() * 0.12) * k})`); c.addColorStop(1, 'rgba(120,150,100,0)'); gg.fillStyle = c; gg.fillRect(x - r, y - r, r * 2, r * 2); }      // the haze is blotchy, never a flat tint
+  gg.clearRect(0, 0, 195, 346); if (g < 0.05) return; const k = Math.min(1, g / 0.8), w = Math.max(0, Math.min(1, (g - 0.3) / 0.5));      // (k: the spots; w: the haze, only once a wipe is due and never a heavy wash: the tank's own colors stay bright)
+  if (w > 0) { const base = gg.createLinearGradient(0, 0, 0, 346); base.addColorStop(0, `rgba(176,196,178,${0.12 * w})`); base.addColorStop(0.6, `rgba(150,176,146,${0.16 * w})`); base.addColorStop(1, `rgba(112,140,92,${0.22 * w})`); gg.fillStyle = base; gg.fillRect(0, 0, 195, 346); }
+  for (const [x0, x1] of [[0, 34], [161, 195]]) { const e = gg.createLinearGradient(x0 ? x1 : x0, 0, x0 ? x0 : x1, 0); e.addColorStop(0, `rgba(96,128,74,${0.22 * k})`); e.addColorStop(1, 'rgba(96,128,74,0)'); gg.fillStyle = e; gg.fillRect(x0, 0, x1 - x0, 346); }      // thicker in the corners of the pane
+  for (let i = 0; i < 60 + 180 * k; i++) { const x = Math.random() * 195, y = Math.pow(Math.random(), 0.7) * 346, r = 6 + Math.random() * 22, c = gg.createRadialGradient(x, y, 0, x, y, r); c.addColorStop(0, `rgba(${110 + Math.random() * 50},${140 + Math.random() * 40},${90 + Math.random() * 30},${(0.03 + Math.random() * 0.07) * w})`); c.addColorStop(1, 'rgba(120,150,100,0)'); gg.fillStyle = c; gg.fillRect(x - r, y - r, r * 2, r * 2); }      // the haze is blotchy, never a flat tint
   for (let i = 0; i < 40 * k; i++) { gg.strokeStyle = `rgba(230,240,230,${0.05 + Math.random() * 0.06})`; gg.lineWidth = 0.6 + Math.random(); const x = Math.random() * 195, y = Math.random() * 346; gg.beginPath(); gg.moveTo(x, y); gg.lineTo(x + 6 + Math.random() * 16, y + 2 + Math.random() * 10); gg.stroke(); }      // faint streaks where the light catches the film
   for (let i = 0; i < 380 * k; i++) { const edge = Math.random() < 0.6, x = edge ? (Math.random() < 0.5 ? Math.random() * 40 : 155 + Math.random() * 40) : Math.random() * 195, y = Math.pow(Math.random(), 0.6) * 346; gg.fillStyle = `rgba(${60 + Math.random() * 40},${120 + Math.random() * 40},${36 + Math.random() * 30},${0.2 + Math.random() * 0.3})`; gg.beginPath(); gg.arc(x, y, 0.6 + Math.random() * 2.4, 0, 6.3); gg.fill(); }      // and spots of algae on top
 }
@@ -1605,7 +1604,7 @@ function frameBody(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
   swayTime.value = t; cTick += dt; if (cTick > 0.05) { cTick = 0; stg.caustic.update(t * 0.7); }
   const lit = rain.light(t); stg.beams.update(t, lit); stg.env.setCaustic(stg.caustic.tex, t, safeNoCaustic ? 0 : (0.05 + 0.17 * Math.min(1, cur.sunI / 10)) * (stg.cur.shaft > 0.18 ? 1 : 0.5) * lit);      // light on the sand follows the sun
-  if (game.state) stage.murk += ((1 - game.state.water) - stage.murk) * Math.min(1, dt * 1.5);
+  if (game.state) stage.murk += (Math.max(0, (0.8 - game.state.water) / 0.8) - stage.murk) * Math.min(1, dt * 1.5);      // (fresh-ish water stays clear: the murk comes in only once the water is really due)
   stg.applyTod(dt);
   if (focus) {
     // frame the fish in the open water between the top bar and the profile card
