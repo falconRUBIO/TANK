@@ -57,6 +57,7 @@ export const shafts = new Shafts(); shafts.rebuild();   // god-ray streaks remov
 export const beams = new Beams(6); scene.add(beams.group);      // broad, slow sunbeams from the surface
 export const surf = waterSurface(); scene.add(surf.mesh);
 export const snow = new Snow(); scene.add(snow.pts); { const m = snow.pts.material; if (m) { if (m.size) m.size *= 0.7; if (m.opacity != null) m.opacity *= 0.75; } }      // marine snow: small and soft, never a sparkle
+export const motes = new Snow(110); scene.add(motes.pts); { const m = motes.pts.material; m.size = 0.085; m.color.set(0xfff0c8); m.opacity = 0.3; m.blending = THREE.AdditiveBlending; for (let i = 0; i < motes.n; i++) motes.s[i] *= 0.25; }      // light motes: warm specks that catch the light, drifting slowly
 export const bubbles = new Bubbles(-3.6, 0.5, 18), bubbles2 = new Bubbles(3.3, -0.8, 16); scene.add(bubbles.mesh, bubbles2.mesh);
 
 // ── post: bloom -> tonemap -> PS1 15-bit dither + grade ──
@@ -80,19 +81,20 @@ composer.addPass(bokeh); composer.addPass(scrub());
 export const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 export const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 }, uWarm: { value: 1 }, uT: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 }, uWarm: { value: 1 }, uT: { value: 0 }, uSat: { value: 1.2 }, uVib: { value: 0.3 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool, uWarm, uT;
+  fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool, uWarm, uT, uSat, uVib;
     const mat4 B = mat4(0.,8.,2.,10., 12.,4.,14.,6., 3.,11.,1.,9., 15.,7.,13.,5.);
     float bayer(vec2 p){ int x = int(mod(p.x,4.)), y = int(mod(p.y,4.)); return B[y][x]/16.; }
     void main(){
       vec3 c = texture2D(tDiffuse, vUv).rgb;
       float l = dot(c, vec3(.299,.587,.114));
       c = mix(c*vec3(.92,1.0,1.1), c*vec3(1.08,1.02,.93), smoothstep(.25,.8,l));  // cool shadows / warm highlights
-      c = mix(vec3(l), c, 1.2) * uTint;
+      float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b));
+      c = mix(vec3(l), c, uSat + uVib * (1. - clamp((mx - mn) / max(mx, .001), 0., 1.))) * uTint;      // saturation, plus vibrance: dull colors lifted most, bright ones left alone
       // depth: bright, clearer water near the surface fading to deep, cool darkness below
       float dep = smoothstep(.0, 1., vUv.y);
-      c *= mix(vec3(.74,.86,1.0), vec3(1.05,1.04,1.0), dep);
+      c *= mix(vec3(.82,.92,1.02), vec3(1.05,1.04,1.0), dep);
       // warm foreground / cool distance: the color of the pixels carries the light, like the reference
       float cool = smoothstep(.3, .95, vUv.y*.75 + vUv.x*.35);
       c *= mix(mix(vec3(1.0), vec3(1.06,1.02,.9), uWarm), vec3(.92,1.0,1.1), cool);
@@ -117,10 +119,10 @@ composer.addPass(grade);
 
 // ── time of day ──
 export const TOD = {
-  morning:   { sunCol: 0xf2f0d0, sunI: 9.5, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.35, fog: 0x1e7896, fogNear: 28, fogFar: 66, bgTop: 0x62c8c8, bgBot: 0x116a88, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
-  afternoon: { sunCol: 0xffe8a4, sunI: 10, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.35, fog: 0x1a7398, fogNear: 28, fogFar: 66, bgTop: 0x5cc4cc, bgBot: 0x0e6284, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
-  evening:   { sunCol: 0xff9a78, sunI: 11, sunPos: [11, 9, 10], hemiSky: 0xd0a0b0, hemiGnd: 0x58404a, hemiI: 1.0, ambI: 0.32, rimCol: 0xffa0a0, rimI: 0.45, fog: 0x7a5a9c, fogNear: 22, fogFar: 62, bgTop: 0xff9ec0, bgBot: 0x6a52b0, lampI: 50, shaft: 0.2, surf: 0.4, exposure: 1.04, bloom: 0.3, glow: 1.4, tint: 0xfff0f0, pool: 0.2, warm: 1.2 },
-  night:     { sunCol: 0x8aa4ff, sunI: 4.5, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.4, fog: 0x1a2868, fogNear: 18, fogFar: 54, bgTop: 0x4a5cc0, bgBot: 0x182060, lampI: 130, shaft: 0.16, surf: 0.15, exposure: 1.12, bloom: 0.39, glow: 3.0, tint: 0xeef2ff, pool: 0.15, warm: 0.2 },
+  morning:   { sat: 1.18, vib: 0.32, sunCol: 0xf2f0d0, sunI: 10.45, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.8, fog: 0x1e7896, fogNear: 28, fogFar: 66, bgTop: 0x62c8c8, bgBot: 0x116a88, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
+  afternoon: { sat: 1.22, vib: 0.35, sunCol: 0xffe8a4, sunI: 11.0, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.85, fog: 0x1a7398, fogNear: 28, fogFar: 66, bgTop: 0x5cc4cc, bgBot: 0x0e6284, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
+  evening:   { sat: 1.2, vib: 0.3, sunCol: 0xff9a78, sunI: 12.1, sunPos: [11, 9, 10], hemiSky: 0xd0a0b0, hemiGnd: 0x58404a, hemiI: 1.0, ambI: 0.32, rimCol: 0xffa0a0, rimI: 0.7, fog: 0x7a5a9c, fogNear: 22, fogFar: 62, bgTop: 0xff9ec0, bgBot: 0x6a52b0, lampI: 50, shaft: 0.2, surf: 0.4, exposure: 1.04, bloom: 0.3, glow: 1.4, tint: 0xfff0f0, pool: 0.2, warm: 1.2 },
+  night:     { sat: 1.12, vib: 0.28, sunCol: 0x8aa4ff, sunI: 4.95, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.6, fog: 0x1a2868, fogNear: 18, fogFar: 54, bgTop: 0x4a5cc0, bgBot: 0x182060, lampI: 130, shaft: 0.16, surf: 0.15, exposure: 1.12, bloom: 0.39, glow: 3.0, tint: 0xeef2ff, pool: 0.15, warm: 0.2 },
 };
 export const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];
 export const qs = new URLSearchParams(location.search);
@@ -145,7 +147,7 @@ export function applyTod(dt) {
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI * (target === 'night' ? 1 + 0.4 * stage.moonlit : 1); amb.intensity = cur.ambI;
   const murk = stage.murk; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
-  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
+  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; grade.uniforms.uSat.value = cur.sat; grade.uniforms.uVib.value = cur.vib; caustic.tex.offset.x += dt * 0.012; caustic.tex.offset.y += dt * 0.006;      /* (the caustics drift slowly, like light through moving water) */ lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
   beams.mat.uniforms.uI.value = cur.shaft * 2.2; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
