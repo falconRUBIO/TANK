@@ -1046,7 +1046,38 @@ body.gifting #toast{top:calc(var(--top) + 46px)}
 .leaveask{margin:8px 0;padding:12px;border-radius:16px;background:rgba(255,107,107,.18);border:1px solid rgba(255,140,140,.5);display:flex;flex-direction:column;gap:6px}.leaveask span{font-size:13px;line-height:1.35}
 #bell.rings{width:auto;height:44px;padding:0 5px;gap:4px;border-radius:999px;background:rgba(8,22,38,.88)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid rgba(255,255,255,.18);box-shadow:0 4px 14px rgba(0,0,0,.35)}#bell.rings::before{display:none}
 #bell .hudr{display:flex;gap:4px}#bell .hring{position:relative;display:inline-grid;place-items:center}#bell .hring svg{width:34px;height:34px;stroke:none;fill:none}#bell .hring b{position:absolute;inset:0;display:grid;place-items:center;font:800 13px -apple-system,system-ui,sans-serif;color:#fff;letter-spacing:-.03em;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-</style><style>.lvban{position:fixed;left:50%;top:22%;transform:translateX(-50%) scale(.6);opacity:0;z-index:60;pointer-events:none;text-align:center;padding:14px 26px;border-radius:18px;background:rgba(10,40,60,.82);color:#fff;box-shadow:0 0 40px rgba(120,220,255,.6);animation:lvin .6s cubic-bezier(.2,1.6,.4,1) forwards;transition:opacity .8s}.lvban b{display:block;font-size:34px;letter-spacing:1px;color:#ffe08a}.lvban span{font-size:15px}.lvban small{display:block;font-size:11px;letter-spacing:.16em;opacity:.75}.lvban.off{opacity:0!important}@keyframes lvin{to{opacity:1;transform:translateX(-50%) scale(1)}}</style>
+</style><style>.lvban{position:fixed;left:50%;top:22%;transform:translateX(-50%) scale(.6);opacity:0;z-index:60;pointer-events:none;text-align:center;padding:14px 26px;border-radius:18px;background:rgba(10,40,60,.82);color:#fff;box-shadow:0 0 40px rgba(120,220,255,.6);animation:lvin .6s cubic-bezier(.2,1.6,.4,1) forwards;transition:opacity .8s}.lvban b{display:block;font-size:34px;letter-spacing:1px;color:#ffe08a}.lvban span{font-size:15px}.lvban small{display:block;font-size:11px;letter-spacing:.16em;opacity:.75}.lvban.off{opacity:0!important}@keyframes lvin{to{opacity:1;transform:translateX(-50%) scale(1)}}
+/* ── Design system (one layer, last, so it wins): what every sheet, drawer, dialog and button looks like ──
+   One font (the system's), one primary action (filled gold), one secondary (gray), one dialog material, one way to head a
+   section, and information shown as plain grouped lists (only things you can tap look like buttons). Codes stay monospace. */
+:root{--ds-font:-apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;--ds-label:#fff;--ds-label2:rgba(235,235,245,.64);--ds-label3:rgba(235,235,245,.36);
+  --ds-fill:rgba(118,118,128,.28);--ds-group:rgba(255,255,255,.08);--ds-sep:rgba(255,255,255,.13);--ds-accent:#ffcf5c;--ds-on-accent:#2a1c00;--ds-r:14px;--ds-r-l:22px}
+#app,#modal,#sheet,#card,#toast,#coach,#reunion,#settle,.lvban{font-family:var(--ds-font)}
+.pill,.tod button,.rk,.rkbox small,.rkbox b,#toast,.je small,#sheet h4,.lv b,.cat,.card .pr,.orders small,.wish small,.foodrow small,.foodrow button,.fold summary,.orders b,.wish b,.bkhead b,.sty small,.lvrow b,#sheet h3,.themes small,#reunion b,#settle b,#sheet .dilemma>b,.mind.next b,.drawer .fd i,#foodbar button small,#sheet > h3,#sheet .je small,#card h4,#sheet button.nt small,.card .newtag{font-family:var(--ds-font)!important;letter-spacing:.02em!important}
+/* titles and section headers */
+#sheet h3,#sheet > h3{font:700 20px/1.2 var(--ds-font)!important;letter-spacing:-.01em!important;text-transform:none}
+#sheet h4,#sheet h4.ntsh,#sheet .tc-h,#card h4{font:600 13px/1.2 var(--ds-font)!important;letter-spacing:.03em!important;text-transform:uppercase;color:var(--ds-label2)!important;margin:20px 4px 8px!important}
+/* buttons: primary gold, secondary gray, destructive red text; all the same size and shape */
+.big,#modal .box .big,#sheet .big{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;min-height:50px;padding:13px 18px;border-radius:var(--ds-r)!important;cursor:pointer;
+  font:600 17px/1.2 var(--ds-font)!important;letter-spacing:0!important;text-transform:none!important;text-align:center;background:var(--ds-accent)!important;color:var(--ds-on-accent)!important;box-shadow:none!important;border:0!important;-webkit-tap-highlight-color:transparent;transition:transform .1s,filter .1s}
+.big:active{transform:scale(.98);filter:brightness(.92)}
+.big.alt,#modal .box .big.alt{background:var(--ds-fill)!important;color:var(--ds-label)!important}
+.big.warn{background:var(--ds-fill)!important;color:#ff6961!important}
+.big.sm{min-height:40px;padding:9px 14px;font-size:15px!important}
+.big:disabled{opacity:.45;cursor:default;transform:none}
+.lnk,#modal .box .lnk{font:500 16px/1.3 var(--ds-font)!important;letter-spacing:0!important;text-transform:none!important;color:var(--ds-accent)!important;background:none!important;border:0!important;padding:10px!important}
+/* dialogs: one material */
+#modal .box{width:min(340px,90vw);border-radius:var(--ds-r-l)!important;padding:22px 18px 14px!important;gap:12px;background:rgba(26,32,44,.82)!important;-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 0 .5px rgba(255,255,255,.16)!important;color:var(--ds-label)}
+#modal .box h2{font:700 20px/1.25 var(--ds-font)!important;letter-spacing:-.01em!important;margin:2px 0 0;text-transform:none}
+#modal .box > p{font:400 15px/1.4 var(--ds-font);color:var(--ds-label2);margin:0}
+#modal .box input{font:400 17px var(--ds-font)!important;border-radius:12px!important;background:var(--ds-fill)!important;border:0!important;color:#fff;padding:12px 14px!important}
+/* information lists (how shells are earned, what a level brings): a plain grouped list, not buttons */
+#modal .box ul.away,#modal .box ul.capev,#modal .box .lvlist{list-style:none;margin:2px 0;padding:0;text-align:left;border-radius:12px;overflow:hidden;background:var(--ds-group)}
+#modal .box ul.away li,#modal .box ul.capev li,#modal .box .lvrow{margin:0!important;padding:11px 14px!important;border:0!important;border-top:.5px solid var(--ds-sep)!important;border-radius:0!important;background:none!important;box-shadow:none!important;font:400 15px/1.35 var(--ds-font)!important;color:var(--ds-label)!important;text-align:left}
+#modal .box ul.away li:first-child,#modal .box ul.capev li:first-child,#modal .box .lvrow:first-child{border-top:0!important}
+/* banners (toast, tips, chapters): same material as dialogs, readable type */
+#toast{font:500 14px/1.35 var(--ds-font)!important;letter-spacing:0!important;border-radius:16px!important}
+</style>
 </head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <button id="giftbar" type="button" hidden></button><div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>

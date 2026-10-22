@@ -1348,7 +1348,7 @@ game.on('levelup', (lv) => {
   document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label), ...Object.values(TOYS).filter((T) => T.unlock === lv).map((T) => T.label + ' (Toy box)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
-  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `LEVEL ${lv}`, text: LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].text}. New for you:` : `New for you:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 5200);
+  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `Level ${lv}`, text: LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].text}. New for you:` : `New for you:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 5200);
 });
 game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arrival gets the screen to itself for a moment: tips and toasts wait
   for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
