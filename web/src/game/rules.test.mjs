@@ -1153,7 +1153,8 @@ ok('an animal asking to leave cannot be sold, can be let go, and sends a postcar
 ok('the shop card tells the truth: the Tank Health it promises for a piece is what placing it gives', () => {
   const t0 = R.newWorld(0), now = Date.now(); t0.level = 8; t0.shells = 1e5; for (const [i, sp] of ['goldfish', 'guppy', 'blue', 'platy', 'tang'].entries()) t0.fish.push(R.ensureFish({ id: 'f' + i, name: 'F' + i, species: sp, seed: i, born: now - 20 * 864e5, stage: 'adult', traits: ['Curious'] }));
   let ups = 0; for (const id of Object.keys(R.DECOR_DEF)) { if (R.DECOR_DEF[id].earned) continue; const t = JSON.parse(JSON.stringify(t0)), r = R.applyAction(t, { t: 'buyDecor', type: id, x: 1.1, z: 0.4 }, { now }); assert.ok(r.ok, id);
-    const w = JSON.parse(JSON.stringify(t)); w.decor = w.decor.slice(0, -1); const e = R.decorEffect(w, id, now); assert.equal(R.tankHealth(t, now).score, e.after, id); if (e.after > e.before) ups++; }
+    const w = JSON.parse(JSON.stringify(t)); w.decor = w.decor.slice(0, -1); const e = R.decorEffect(w, id, now); assert.equal(R.tankHealth(t, now).score, e.after, id); if (e.after > e.before) ups++; 
+    const e2 = R.decorEffect(t, id, now); R.applyAction(t, { t: 'buyDecor', type: id, x: -1.3, z: 0.9 }, { now }); assert.equal(R.tankHealth(t, now).score, e2.after, id + ' (a second one)'); }
   assert.ok(ups > 0, 'some pieces raise Tank Health');
   assert.ok(R.decorUses('cave').meets.some((m) => m.sp === 'blue') && R.decorUses('seafan').meets.some((m) => m.sp === 'seahorse'), 'who a piece is for comes from the needs');
 });
