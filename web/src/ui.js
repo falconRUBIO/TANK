@@ -1,7 +1,7 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { morphOdds } from './game/genes.js';
-import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES } from './game/rules.js';
+import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES, decorUses, KIND_NEEDS } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
@@ -356,14 +356,27 @@ export function initUI({ game, social, cb }) {
     const L = kind === 'fish' ? LIFESPAN[id] : null, facts = kind === 'fish' ? FACTS[id] ?? [] : [], fact = facts.length ? facts[Math.floor(Date.now() / 864e5) % facts.length] : null, lovers = kind === 'decor' ? tankNeeds(S()).filter((n) => n.types.includes(id)) : [];
     const lock = S().level < d.level, price = kind === 'fish' ? fishPrice(id, Date.now(), S()) : d.price, el = document.createElement('div'); el.className = 'notesheet deco';
     el.innerHTML = `<div class="nsw"><button class="grab" aria-label="Close"></button><div class="dch"><img class="pvimg" alt="" data-thumb="${key}"><h3>${esc(d.label)}</h3><p>${esc(d.blurb ?? '')}${kind === 'fish' && d.count > 1 ? ` Comes as a school of ${d.count}.` : ''}</p>
-      ${L ? `<p class="pvl">Lives about ${Math.round(L / 30.4)} months in the tank</p>` : ''}${lovers.length ? `<p class="dlove">♥ ${esc(lovers.map((n) => n.name).join(' and '))} would love this</p>` : ''}${fact ? `<div class="pvf"><small>DID YOU KNOW?</small><p>${esc(fact)}</p></div>` : ''}</div>
-      <div class="nsact"><button class="close"><span>Close</span></button><button class="buy" ${lock ? 'disabled' : ''}><span>${lock ? `Unlocks at level ${d.level}` : kind === 'decor' && isFree(S(), id) ? 'Place it · Free' : `${kind === 'fish' ? 'Adopt' : 'Buy'} · 🐚 ${price}`}</span></button></div></div>`;
+      ${L ? `<p class="pvl">Lives about ${Math.round(L / 30.4)} months in the tank</p>` : ''}${lovers.length ? `<p class="dlove">♥ ${esc(lovers.map((n) => n.name).join(' and '))} would love this</p>` : ''}${usesHtml(kind, id)}${fact ? `<div class="pvf"><small>DID YOU KNOW?</small><p>${esc(fact)}</p></div>` : ''}</div>
+      <div class="nsact"><button class="close"><span>Close</span></button><button class="buy ${lock || d.earned ? 'dim' : ''}"><span>${d.earned ? (S().flags?.earned?.[id] ? 'Earned ✓' : `🏆 ${esc(EARNED[id]?.why ?? 'Earned')}`) : lock ? `Unlocks at level ${d.level}` : kind === 'decor' && isFree(S(), id) ? 'Place it · Free' : S().shells < price ? `${price - S().shells} more shells needed` : `${kind === 'fish' ? 'Adopt' : 'Buy'} · 🐚 ${price}`}</span></button></div></div>`;
     document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('on')); { const im = el.querySelector('.pvimg'); im.src = kind === 'fish' ? fishThumb(id) : decorThumb(id); }
     const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
     el.onclick = (e) => { if (e.target === el) close(); }; el.querySelector('.grab').onclick = close; el.querySelector('.close').onclick = close;
     const t0 = Date.now(); el.addEventListener('click', (e) => { if (Date.now() - t0 < 500) { e.stopPropagation(); e.preventDefault(); } }, true);      // (the finger lifting from the hold is not a tap on what just opened under it)
-    el.querySelector('.buy').onclick = () => { close(); heldAt = 0; const c = sheet.querySelector(`.card[data-k="${key}"]`); if (c) c.click(); };
+    el.querySelector('.buy').onclick = () => { close(); heldAt = 0; const c = sheet.querySelector(`.card[data-k="${key}"]`); c?.onclick?.(null, true); };
   }
+  // what a piece is for, from the rules (decorUses): whose needs one meets, who it counts toward, its themes and tricks; for an animal, its nature and needs
+  function usesHtml(kind, id) {
+    const have = new Set(S().fish.filter((f) => !f.dead).map((f) => f.species)), mine = (sp) => (have.has(sp) ? ' <i>in your tank</i>' : '');
+    if (kind === 'fish') { const N = KIND_NEEDS[id] ?? [], nat = SOCIAL[id]?.nature; return `${nat ? `<p class="pvnat">${esc(nat)}</p>` : ''}${N.length ? `<div class="pvuse"><small>WHAT IT NEEDS</small><ul>${N.map((w) => `<li><b>${esc(w.label)}</b><span>${esc(w.how)}</span></li>`).join('')}</ul></div>` : ''}`; }
+    const u = decorUses(id), own = (a) => [...a].sort((x, y) => have.has(y.sp) - have.has(x.sp)), tw = own(u.toward.filter((x) => !u.meets.some((m) => m.sp === x.sp)));
+    let h = '';
+    if (u.meets.length) h += `<div class="pvuse"><small>WHO IT'S FOR</small><ul>${own(u.meets).map((m) => `<li><b>${esc(m.label)}${mine(m.sp)}</b><span>${esc(m.need)}</span></li>`).join('')}</ul></div>`;
+    if (tw.length) h += `<div class="pvuse"><small>${u.meets.length ? 'ALSO COUNTS TOWARD' : 'WHO IT HELPS'}</small><p>${esc(tw.length > 6 ? `${tw.slice(0, 6).map((x) => x.label).join(', ')} and ${tw.length - 6} more` : D_(tw.map((x) => x.label)))}: ${tw.length === 1 ? 'it wants' : 'they want'} a few pieces like this.</p></div>`;
+    const ex = [...u.themes.map((t) => `Part of the ${t.label} theme (${t.need} pieces from it make the theme).`), ...u.tricks.map((t) => `Your octopus can learn to ${t} with it.`)];
+    if (ex.length) h += `<div class="pvuse"><small>ALSO</small>${ex.map((x) => `<p>${esc(x)}</p>`).join('')}</div>`;
+    return h || '<div class="pvuse"><small>WHO IT\'S FOR</small><p>No animal needs it. It is there to make the tank yours.</p></div>';
+  }
+  const D_ = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
     if (showAll || fishCat) for (const [id, d] of Object.entries(SPECIES_DEF).filter(([, x]) => !x.visitor && !((S().released?.length ?? 0) < (x.needRel ?? 0)))) out.push({ kind: 'fish', id, label: d.label, price: fishPrice(id, Date.now(), S()), deal: id === specialOf(S()).species && id !== 'octopus', level: d.level, blurb: d.blurb + (d.count > 1 ? '' : ''), count: d.count, cat: 'FISH' });
@@ -846,8 +859,10 @@ export function initUI({ game, social, cb }) {
     sheet.querySelectorAll('[data-cat]').forEach((b) => (b.onclick = () => { cat = b.dataset.cat; selected = null; sfx('tap'); open('decorate', true); }));
     { const on = sheet.querySelector('.cats .cat.on'), row = on?.parentElement; if (on && row) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }      // keep the chosen shelf in view in the row
     sheet.querySelectorAll('.card').forEach((b) => { let ht = null; b.onpointerdown = () => { ht = setTimeout(() => { ht = 'held'; heldAt = Date.now(); shopPreview(b.dataset.k); }, 450); }; b.onpointerup = b.onpointerleave = b.onpointercancel = () => { if (ht && ht !== 'held') clearTimeout(ht); setTimeout(() => (ht = null), 60); }; b.oncontextmenu = (e) => e.preventDefault(); b.__held = () => ht === 'held'; });      // press and hold: a closer look first
-    sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async () => {
-      if (Date.now() - heldAt < 900) return; const [kind, id] = b.dataset.k.split(':'), s = S(); sfx('tap');
+    sheet.querySelectorAll('.card').forEach((b) => (b.onclick = async (e, go) => {
+      if (Date.now() - heldAt < 900) return; const [kind, id] = b.dataset.k.split(':'), s = S();
+      if (!go && (kind === 'fish' || kind === 'decor')) { shopPreview(b.dataset.k); return; }      // a tap shows what it is and who it is for; its button buys it
+      sfx('tap');
       if (kind === 'floor' || kind === 'backdrop') { const own = styleOwned(s, kind, id), price = STYLE_PRICE[kind][id]; if ((s.style ?? {})[kind] === id) { toast('Already in use'); return; } if (!own && price && s.shells < price) { toast(`${price - s.shells} more shell${price - s.shells === 1 ? '' : 's'} needed`); return; } const y = sheet.scrollTop, r = await game.dispatch({ t: 'style', [kind]: id }); if (!r.ok) toast(REASONS[r.reason] ?? 'Could not change that'); else if (r.delta < 0) toast(`Unlocked! ${r.delta} shells`); open('decorate', true); sheet.scrollTop = y; return; }
       const d = kind === 'fish' ? SPECIES_DEF[id] : DECOR_DEF[id]; if (!d) return; const price = kind === 'fish' ? fishPrice(id, Date.now(), S()) : d.price, free = kind === 'decor' && isFree(s, id);
       if (d.earned) { toast(s.flags?.earned?.[id] ? `${d.label} is already in your tank: earned.` : `${d.label} cannot be bought. ${EARNED[id]?.why ?? 'It is earned'} to get it.`, 4000); return; }

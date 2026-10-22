@@ -40,8 +40,8 @@ SPECIES_DEF.rosecory = { label: 'Rose Goby', price: 0, level: 99, wait: 0, count
 export const waterSlow = (t) => ((t?.decor ?? []).some((d) => d.type === 'clam') ? 0.65 : 1);
 export const DECOR_DEF = {
   grass:    { label: 'Sea Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
-  fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A lime frond with tiny leaves.' },
-  sword:    { label: 'Broadleaf Seaweed',   cat: 'PLANTS',     price: 7,  level: 1, blurb: 'Broad green leaves.' },
+  fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A purple fan of fine, lacy branches that sways in the current.' },
+  sword:    { label: 'Broadleaf Seaweed',   cat: 'PLANTS',     price: 7,  level: 1, blurb: 'Broad golden-brown leaves of seaweed.' },
   red:      { label: 'Red Gorgonian',     cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A bright pop of color.' },
   rock:     { label: 'Reef Rock',   cat: 'ROCKS',      price: 6,  level: 1, blurb: 'Small and mossy.' },
   boulder:  { label: 'Reef Boulder',       cat: 'ROCKS',      price: 12,  level: 1, blurb: 'A big rock to hide behind.' },
@@ -51,13 +51,13 @@ export const DECOR_DEF = {
   lantern:  { label: 'Stone Lantern', cat: 'STRUCTURES', price: 20, level: 2, blurb: 'Glows warm at dusk.' },
   chest:    { label: 'Treasure Chest',cat: 'SPECIAL',    price: 24, level: 2, blurb: 'Lid open, gold inside.' },
   torii:    { label: 'Torii Gate',    cat: 'STRUCTURES', price: 34, level: 3, blurb: 'A red gate to swim through.' },
-  moss:     { label: 'Coralline Ball',     cat: 'PLANTS',     price: 6,  level: 1, blurb: 'A soft green cushion.' },
+  moss:     { label: 'Coralline Ball',     cat: 'PLANTS',     price: 6,  level: 1, blurb: 'A round cushion of pink coralline algae.' },
   kelp:     { label: 'Giant Kelp',    cat: 'PLANTS',     price: 14,  level: 3, blurb: 'Tall ribbons in the current.' },
   bubbler:  { label: 'Bubbler',       cat: 'SPECIAL',    price: 16, level: 2, blurb: 'A stream of bubbles. Playful fish love it.' },
   shell:    { label: 'Giant Clam',    cat: 'SPECIAL',    price: 14,  level: 2, blurb: 'A clam with a tiny pearl.' },
   skull:    { label: 'Mossy Skull',   cat: 'SPECIAL',    price: 10,  level: 2, blurb: 'Spooky, but very cute.' },
   anchor:   { label: 'Old Anchor',    cat: 'SPECIAL',    price: 24, level: 5, blurb: 'Rusty, mossy, and full of stories.' },
-  bamboo:   { label: 'Orange Sea Whip',        cat: 'PLANTS',     price: 18, level: 5, blurb: 'Tall green stalks that creak softly.' },
+  bamboo:   { label: 'Orange Sea Whip',        cat: 'PLANTS',     price: 18, level: 5, blurb: 'Tall orange whips of soft coral that bend with the current.' },
   bridge:   { label: 'Little Bridge', cat: 'STRUCTURES', price: 44, level: 6, blurb: 'A wooden arch to swim under.' },
   crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 56, level: 7, blurb: 'A cluster that glows blue in the dark.' },
   lighthouse: { label: 'Little Lighthouse', cat: 'STRUCTURES', price: 150, level: 7, blurb: 'A landmark the whole tank saves for. Its lamp glows at night.' },
@@ -2404,4 +2404,18 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     default: return fail('UNKNOWN_ACTION');
   }
+}
+// What a shop piece is really for, read from the rules themselves (never written by hand): which kinds' needs one of it meets outright,
+// which it counts toward (it is the right kind of thing, they want more than one), the reef themes it belongs to, and the octopus tricks it opens.
+export function decorUses(id) {
+  const D = DECOR_DEF[id]; if (!D) return { meets: [], toward: [], themes: [], tricks: [] };
+  const base = { decorN: 0, others: 0, own: 1, r: 0.5, cover: 0, cats: {}, types: {}, has: () => false, fast: false, ownFed: false, fed: 1, puzzled: false, played: false, cleanWater: true }, meets = [], toward = [];
+  for (const [sp, wants] of Object.entries(KIND_NEEDS)) {
+    const S = SPECIES_DEF[sp]; if (!S || S.visitor) continue; const C = ECO[sp]?.cover, counts = C ? C.types?.includes(id) || C.cats?.includes(D.cat) : false;
+    const one = { ...base, decorN: 1, cats: { [D.cat]: 1 }, types: { [id]: 1 }, cover: counts ? 1 : 0 }, many = { ...one, cover: counts ? 9 : 0, cats: { [D.cat]: 9 }, types: { [id]: 9 }, decorN: 9 };
+    for (const W of wants) { if (W.met(base)) continue; if (W.met(one)) meets.push({ sp, label: S.label, need: W.label }); else if (W.met(many)) toward.push({ sp, label: S.label, need: W.label }); }
+  }
+  const themes = Object.values(THEMES).filter((T) => T.types.includes(id)).map((T) => ({ label: T.label, need: T.need }));
+  const tricks = Object.values(TRICKS).filter((T) => T.types.includes(id)).map((T) => T.label);
+  return { meets, toward, themes, tricks };
 }
