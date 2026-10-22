@@ -758,13 +758,16 @@ export class Fishes {
   // Show a trick: a scripted route through or around a decoration, then back to normal wandering.
   perform(f, kind, spotId) {
     if (spotId === 'glass' && !f.dead) { const x = Math.max(-3, Math.min(3, f.pos.x)), y = Math.max(1.6, Math.min(4.5, f.pos.y)), z = 1.9;      // the twirl: up to the front glass, a full loop facing whoever asked, and a little bow
-      f.script = [{ x, y, z }, { x: x + 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y: y + 1.4, z, rt: 0.9 }, { x: x - 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y, z, rt: 0.9 }, { x, y: y - 0.4, z: z - 0.3 }]; f.pick(this.rng); return true; }
+      f.script = [{ x, y, z }, { x: x + 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y: y + 1.4, z, rt: 0.9 }, { x: x - 0.7, y: y + 0.7, z, rt: 0.9 }, { x, y, z, rt: 0.9 }, { x, y: y - 0.4, z: z - 0.3 }]; return this.route(f); }
     const s = (this.spots?.() ?? []).find((x) => x.id === spotId); if (!s || f.dead) return false; const y = 0.9 + s.h * 0.35, z = s.z + 0.15;
     f.script = kind === 'bubbles'
       ? [{ x: s.x, y: 1.4, z }, { x: s.x, y: 8, z }, { x: s.x + 0.9, y: 5, z }, { x: s.x - 0.4, y: 8.5, z }, { x: s.x, y: 2, z }]
       : [{ x: s.x - 2.4, y, z }, { x: s.x, y, z, rt: 1.1 }, { x: s.x + 2.4, y, z }, { x: s.x, y, z, rt: 1.1 }, { x: s.x - 2.4, y: y + 0.6, z }];
-    f.pick(this.rng); return true;
+    return this.route(f);
   }
+  // a fish follows a trick's route as its next swimming targets; an octopus moves by its own states, so it is steered point by point
+  // through the same open-water steering that brings it to the glass (fish3d: S.s 'glass' with gl.trick), one point after another
+  route(f) { if (f.species.move !== 'jet') { f.pick(this.rng); return true; } f.trickPts = f.script.map((w) => ({ x: w.x, y: w.y, z: w.z })); f.script = null; const w = f.trickPts.shift(); f.glassAt = { ...w, until: performance.now() + 6000, trick: true }; return true; }
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
   drop(x, n = 7, kind = 'flakes') {

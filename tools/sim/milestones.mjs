@@ -5,11 +5,12 @@ import * as R from '../../web/src/game/rules.js';
 const H = 3600e3, D = 24 * H, seed0 = +(process.argv[2] ?? 1000), DAYS = 120;
 const LIST = ['grass', 'rock', 'coconut', 'cory', 'guppy', 'anemone', 'bubbler', 'neongoby', 'grass', 'seafan', 'seahorse', 'seahorse', 'tang', 'boulder', 'liverock', 'ledge', 'seagrass', 'betta', 'clam', 'puffer'];
 let seed = seed0; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-const t = R.newWorld(0); R.norm(t, 0); t.createdAt = seed0 * 7919;
+// ORIGIN=ms starts the tank's clock there (for a save a browser can open); SAVE=file writes the tank the moment the first trick is offered, and stops
+const O = +(process.env.ORIGIN ?? 0), t = R.newWorld(O); R.norm(t, O); t.createdAt = O + seed0 * 7919;
 // the opening, as a new player does it: choose the first animal (the free octopus)
-{ const r = R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 5 }, { now: 1000, name: 'a', uid: 'a' }); if (!r.ok) { t.fish.push(R.ensureFish({ id: 'oc', name: 'Ink', species: 'octopus', seed: 5, born: -20 * D, stage: 'adult', traits: [], owner: 'a' })); console.log('note: chooseFirst refused (' + r.reason + '); octopus placed as the tutorial would'); } t.flags.tut = 5; }
+{ const r = R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 5 }, { now: O + 1000, name: 'a', uid: 'a' }); if (!r.ok) { t.fish.push(R.ensureFish({ id: 'oc', name: 'Ink', species: 'octopus', seed: 5, born: O - 20 * D, stage: 'adult', traits: [], owner: 'a' })); console.log('note: chooseFirst refused (' + r.reason + '); octopus placed as the tutorial would'); } t.flags.tut = 5; }
 const M = {}, at = (k, day) => { M[k] ??= +day.toFixed(1); }, fails = []; let wi = 0, trickTries = 0, trickRefused = {};
-for (let h = 1; h <= DAYS * 24; h++) { const now = h * H, day = h / 24;
+for (let h = 1; h <= DAYS * 24; h++) { const now = O + h * H, day = h / 24;
   for (const e of R.advance(t, now)) { if (process.env.JOURNAL && e.journal) console.log('J', (h / 24).toFixed(1), typeof e.journal === 'string' ? e.journal : JSON.stringify(e.journal)); if (e.levelUp || /reached level/.test(e.journal ?? '')) at('level ' + t.level, day); if (/came back to visit|is back to visit/i.test(e.journal ?? '')) at('turtle came back to visit', day); }
   if (![9, 20].includes(h % 24) || rnd() < 0.1) continue;
   const u = { now: now + 1, name: 'a', uid: 'a' }, act = (a, x = {}) => R.applyAction(t, a, { ...u, ...x });
@@ -20,7 +21,8 @@ for (let h = 1; h <= DAYS * 24; h++) { const now = h * H, day = h / 24;
   if (t.visitor) act({ t: 'greet', id: t.visitor.id }); act({ t: 'trim' });
   // level 3: tricks. Train the octopus whenever it has a trick to learn
   const oc = t.fish.find((f) => f.species === 'octopus' && !f.dead);
-  if (oc) { const opts = R.trickOptions(t, oc, now); if (t.level >= 3 && !opts.length) trickRefused[t.level] = (trickRefused[t.level] ?? 0) + 1; if (opts.length) { at('tricks offered', day); trickTries++; const r = act({ t: 'train', id: oc.id, trick: opts[0].key }); if (!r.ok) fails.push('train refused: ' + r.reason); }
+  if (oc) { const opts = R.trickOptions(t, oc, now); if (t.level >= 3 && !opts.length) trickRefused[t.level] = (trickRefused[t.level] ?? 0) + 1; if (opts.length && process.env.SAVE) { (await import('node:fs')).writeFileSync(process.env.SAVE, JSON.stringify({ state: t, journal: [], activity: [] })); console.log(`saved at day ${day.toFixed(1)}, level ${t.level}, ${t.fish.length} animals, octopus bond ${R.bondOf(oc)}`); process.exit(0); }
+    if (opts.length) { at('tricks offered', day); trickTries++; const r = act({ t: 'train', id: oc.id, trick: opts[0].key }); if (!r.ok) fails.push('train refused: ' + r.reason); }
     if ((oc.tricks ?? []).length) at('first trick learned (' + oc.tricks[0] + ')', day); }
   const lv = t.level; at('level ' + lv, day);
   const sh = t.fish.filter((f) => f.species === 'seahorse' && !f.dead); if (sh.length) at('seahorse in the tank', day); if (sh.some((f) => f.mate)) at('seahorses paired', day);
