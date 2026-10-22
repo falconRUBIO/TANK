@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
 import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
+window.__quietUntil = Date.now() + 15000; addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
 import { makeStudio, planShot } from './w3/photo.js';
 import { GROW, specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH } from './w3/terrain.js';
@@ -1148,12 +1149,51 @@ function showCard(f) {
   card.querySelectorAll('[data-pair]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap'); const r = await game.dispatch({ t: 'matchmake', a: f.fid, b: b.dataset.pair }); if (!r.ok) return fail(r); haptic(14); ui.toast('Brought together. Give them time.', 3000); showCard(f); }; });
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
-  const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
+  const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = f.name; pillDoing(f); pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const tr = $('turtrel'); if (tr) tr.onclick = () => releaseTurtle(rec); } { const lg = $('letgo'); if (lg) lg.onclick = async () => { const yes = await ui.dialog({ title: `Let ${rec.name} go?`, text: `${rec.name} goes back to the sea to find what it was missing. It won't come back, but it may send a postcard.`, ok: 'Let it go', cancel: 'Keep trying' }); if (!yes) return; const r = await game.dispatch({ t: 'letGo', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; } { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'Let it go?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
 }
-function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) f.poseHz = 60;      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
+// What an animal is doing right now, in a few words, read from its own state (nothing made up: with no clear activity, just its name)
+const nm3 = (o) => o?.rec?.name ?? o?.name ?? null;
+const decorLabel = (id) => { const d = (fishes.spots?.() ?? []).find((q) => q.id === id); return d ? (DECOR_DEF[d.type]?.label ?? d.type).toLowerCase() : null; };
+function doingOf(f) {
+  if (!f || f.dead) return null; const S = f.st, octo = f.species?.move === 'jet', rec = f.rec ?? {};
+  if (octo) {
+    const C = f.keepCarry; if (C) return C.phase === 'carry' ? 'carrying its keepsake home' : 'going to fetch its keepsake';
+    if (f.hunt) return 'hunting a crab'; if (f.jarAt) return 'working on a puzzle jar'; if (f.glassAt?.trick) return 'doing a trick';
+    if (f.glassAt) return f.greeted === 'glass' ? 'at the glass, looking at you' : 'at the glass';
+    if ((f.sleepK ?? 0) > 0.5) return 'asleep';
+    if (f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.4) return f.greeted === 'den' && (f.gazeT ?? 0) > 0 ? 'watching you from its den' : S?.s === 'rest' ? 'resting in its den' : 'at its den';
+    if ((f.costumeK ?? 0) > 0.5 && f.costume) return { lion: 'pretending to be a lionfish', jelly: 'pretending to be a jellyfish', snake: 'pretending to be a sea snake', flat: 'lying flat as a sole', kelp: 'pretending to be seaweed', fish: 'copying a fish' }[f.costume] ?? null;
+    if (S?.s === 'crawl' && S?.mode === 'inspect') return 'investigating something'; return S?.s === 'rest' ? 'resting' : null;
+  }
+  if (f.sk === 'seahorse') {
+    if (f.greet) return f.mateId ? `dancing with ${nm3(fishes.byId.get(f.mateId)) ?? 'its mate'}` : 'greeting another seahorse';
+    if (f.holdfast?.on) { const mate = f.mateId && fishes.byId.get(f.mateId), near = mate?.holdfast?.on && Math.hypot(mate.holdfast.x - f.holdfast.x, mate.holdfast.z - f.holdfast.z) < 2.6;
+      return near ? `resting beside ${f.rec?.sex === 'm' ? 'his' : f.rec?.sex === 'f' ? 'her' : 'its'} mate` : `holding on to the ${decorLabel(f.holdfast.id) ?? 'plant'}`; }
+    if (f.seeking) return 'going after food'; return f.sleepy ? 'asleep' : null;
+  }
+  if (f.clean?.o) return `cleaning ${nm3(f.clean.o) ?? 'a fish'}`;
+  if (f.sk === 'neongoby' && f.perch && (f.mul ?? 1) < 0.3) return `waiting at its ${decorLabel(f.perch) ?? 'station'}`;
+  if (f.graze) return 'grazing algae'; if (f.seeking) return 'eating';
+  if (f.follow && !f.follow.dead) return `swimming with ${nm3(f.follow) ?? 'a friend'}`;
+  { const pal = rec.pal && fishes.byId.get(rec.pal); if (pal && !pal.dead && f.pos.distanceTo(pal.pos) < 2.2) return `swimming with ${nm3(pal)}, its best friend`; }
+  if (rec.spotId) { const d = (fishes.spots?.() ?? []).find((q) => q.id === rec.spotId); if (d && Math.hypot(f.pos.x - d.x, f.pos.z - d.z) < 1.6) return `at its favorite spot, the ${decorLabel(d.id)}`; }
+  if (f.sleepy || (f.sleepK ?? 0) > 0.5) return 'asleep'; return null;
+}
+// noticed: a tapped animal answers in its own way, without leaving what it is doing (never a teleport, never an interrupted meal, cleaning or trick)
+function tapReact(f) {
+  if (!f || f.dead) return; const front = { x: f.pos.x, y: f.pos.y, z: 20 };
+  if (f.species?.move === 'jet') { f.gazeT = Math.max(f.gazeT ?? 0, 2.2); if ((f.trust ?? 0) >= 2) f.flush = Math.max(f.flush ?? 0, 0.3); return; }      // its eyes go wide at you
+  if (f.sk === 'seahorse') { f.glance = front; f.glanceT = 1.6; return; }      // one eye swivels round to you; it keeps hold
+  if (f.seeking || f.clean || f.script?.length || f.follow) return;
+  f.vigor = Math.max(f.vigor ?? 1, 1.25); setTimeout(() => { if ((f.vigor ?? 1) > 1) f.vigor = 1; }, 700);      // a flick of the tail
+  if (f.target && !f.holdfast?.on) { f.target.z = Math.min(f.target.z + 0.8, 2.2); f.retarget = Math.max(f.retarget ?? 0, 1.5); }      // and it drifts a little toward the glass
+}
+function pillDoing(f) { const pill = $('fishpill'); let sm = pill.querySelector('small'); if (!sm) { sm = document.createElement('small'); pill.querySelector('b').after(sm); } const d = doingOf(f); sm.textContent = d ? `· ${d}` : ''; sm.hidden = !d; }
+setInterval(() => { const p = $('fishpill'); if (p && !p.hidden && focus) pillDoing(focus); }, 1000);      // (it keeps up: a seahorse that lets go, a goby that starts cleaning)
+function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) { f.poseHz = 60; tapReact(f); }      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   fishes.attnAt = Date.now();      // someone is looking and touching: an octopus about to fetch a keepsake leaves it for later (Emergent Life)
   if (play) { playPoint(ev); return; }
@@ -1455,7 +1495,7 @@ async function mournCheck() {
   } finally { mourning = false; }
 }
 game.on('state', () => setTimeout(mournCheck, 600));
-// Before it comes to that: an animal in a critical state gets a card too, once per spell of illness on this phone, with the care that saves it
+// (unused now: an unwell animal is shown in Care and the Tank chart, never as a pop-up) An animal in a critical state got a card, once per spell of illness on this phone, with the care that saves it
 let warning = false;
 async function sickCheck() {
   const s = game.state; if (!s || warning || mourning || !ui) return; const key = 'ourtank.sickSeen', me = game.you?.userId;
@@ -1474,7 +1514,7 @@ async function sickCheck() {
     else if (r === 'water') { ui.open('tank'); changeWater(); } else if (r === 'care') ui.open('care');
   } finally { warning = false; }
 }
-game.on('state', () => setTimeout(sickCheck, 900));
+// (no pop-up for an unwell animal: it would cover the tank. Care's to-do list, the Care tab's dot and the Tank chart's best next step say it, calmly)
 game.on('died', (id) => {                         // a quiet beat, not an alarm: the light dims, the others slow down and stay near
   const f = fishes.byId.get(id), name = f?.name ?? 'A fish'; ui?.farewell(name); stg.stage.settle = 1; setTimeout(() => { stg.stage.settle = 0; }, 9000);
   for (const o of fishes.list) if (o !== f && !o.dead) { o.mul = 0.6; setTimeout(() => { if (o.mul === 0.6) o.mul = 1; }, 9000); }
@@ -1751,14 +1791,10 @@ async function welcomeBack() {
   if (my && !my.done) next.push(`${MYSTERY[my.kind]?.text ?? ''} Tap the glow to find out.`); if (req) next.push(`Today's request: ${req}`);
   for (const x of forecast(s, Date.now(), 2)) if (next.length < 4) next.push(x.when === 'now' ? x.text : `${x.text}, ${x.when}`);
   if (!lines.length) return;
-  wbPending = true; await new Promise((r) => setTimeout(r, 1400));                                  // the reunion lives in the tank: your most-loved fish swims over to say hello while a quiet card says what changed
-  { const fav = s.fish.map((f) => ({ f, b: f.bond?.[mine] ?? 0 })).sort((a, b) => b.b - a.b)[0], fish = fav ? fishes.byId.get(fav.f.id) : null;
-    if (fish && !fish.dead && fish.species.move !== 'jet') { fish.target.set((Math.random() - 0.5) * 2, Math.max(3, Math.min(8, fish.pos.y)), 2.6); fish.retarget = 6; fishes.burst(fish.pos); } else if (fish?.species.move === 'jet') fish.glassAt = { x: 0, y: 3.2, until: performance.now() + 5000 }; }
-  ui.clearToasts();                                                                 // the card says it all; do not repeat it as toasts
-  const shown = lines.slice(0, 6); window.__quietUntil = Date.now() + (shown.length + (next.length ? 1 : 0)) * 4200 + 2500;      // the replay has the screen: celebrations and pop-ups wait until it is done
-  sfx('arrive'); ui.reunion(shown, takePhoto, next); wbShown = true; wbPending = false;
-  afterReplay();
-  { const kid = s.fish.filter((f) => f.parents?.length && f.born > seen && !f.dead).sort((a, b) => b.born - a.born)[0]; if (kid) spotlightFish(kid.id, 5000, 2400); }      // a baby hatched while you were away: a close look at it
+  // coming back: no replay over the tank and no animal sent to the glass. One small chip if there is real news (it opens Today), and after the
+  // quiet start the one thing that matters most now (afterReplay). Each octopus greets you by its own trust and nature (octoHello).
+  wbPending = false; ui.clearToasts(); setTimeout(() => ui.awayChip?.(), 1500); wbShown = true;
+  setTimeout(afterReplay, Math.max(1500, (window.__quietUntil ?? 0) - Date.now()));
 }
 
 // one gentle, opt-in nudge a day, only for something that really happened (never "come back!")
@@ -1869,7 +1905,9 @@ async function boot() {
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
-  welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame); setTimeout(octoHello, 4000);
+  // the first 15 seconds belong to the tank: nothing pops up by itself (the first touch ends that at once, so anything you open works straight away)
+  if ((game.state?.flags?.tut ?? 0) < 5) window.__quietUntil = 0;      // (a brand-new tank: the opening card is the first thing, straight away)
+  welcomeBack(); setTimeout(firstFishPrompt, 2500); setInterval(firstFishPrompt, 2000); requestAnimationFrame(frame); setTimeout(octoHello, 1200);
   // nudges: the subscription this phone holds is told to the server on every open (it may have been renewed, or the tank put back under new accounts) and whenever the browser renews it
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }

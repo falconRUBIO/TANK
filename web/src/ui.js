@@ -38,7 +38,8 @@ export function initUI({ game, social, cb }) {
     clearTimeout(hushT); hushT = setTimeout(() => { if (coachLater) { const a = coachLater; coachLater = null; showCoach(a); } if (tq.length) nextToast(); else showing = 0; }, hushUntil - performance.now() + 50);
   };
   const nextToast = () => { if (hushed()) { showing = 1; clearTimeout(tt); tt = setTimeout(nextToast, hushUntil - performance.now() + 60); return; } if (cardUp() && tq.length) { showing = 1; toastEl.classList.remove('on'); clearTimeout(tt); tt = setTimeout(nextToast, 700); return; } const n = tq.shift(); if (!n) { showing = 0; toastEl.classList.remove('on'); return; } showing = 1; toastEl.textContent = n.m; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(nextToast, tq.length > 1 ? Math.min(n.ms, 1300) : n.ms); };
-  const toast = (m, ms = 2400) => { notice(m, { kind: 'toast' }); if (tq.some((x) => x.m === m) || (showing && toastEl.textContent === m && toastEl.classList.contains('on'))) return; tq.push({ m, ms }); while (tq.length > 4) tq.splice(1, 1); if (!showing) nextToast(); };
+  const quiet = () => Date.now() < (window.__quietUntil ?? 0);
+  const toast = (m, ms = 2400) => { if (quiet()) { setTimeout(() => toast(m, ms), (window.__quietUntil ?? 0) - Date.now() + 300); return; } notice(m, { kind: 'toast' }); if (tq.some((x) => x.m === m) || (showing && toastEl.textContent === m && toastEl.classList.contains('on'))) return; tq.push({ m, ms }); while (tq.length > 4) tq.splice(1, 1); if (!showing) nextToast(); };
   const clearToasts = () => { tq.length = 0; showing = 0; clearTimeout(tt); toastEl.classList.remove('on'); };
   const S = () => { const s = game.state; if (!s?.fish?.some((f) => f.gift?.wrapped)) return s; return { ...s, fish: s.fish.filter((f) => !f.gift?.wrapped) }; };      // a wrapped gift is shown nowhere until it is opened
   // ── notices: every hint, message and card is kept on this phone, newest first, with a bell that counts the new ones ──
@@ -108,7 +109,7 @@ export function initUI({ game, social, cb }) {
     const score = scoreOf(s), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, pct = b ? Math.round(((score - a) / (b - a)) * 100) : 100;
     $('lvl').textContent = 'LV ' + lv; $('lvbar').style.width = Math.max(4, Math.min(100, pct)) + '%'; $('lvbar').parentElement.title = b ? `${score}/${b} to level ${lv + 1}` : 'Max level';
     questBar(s); bell();
-    const g = goalText(); if ($('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
+    const g = goalText(); if (!quiet() && $('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
     { const me = game.you?.userId, due = (s.dilemma && !s.dilemma.done) || s.hunger > 0.55 || s.water < 0.5 || s.glass > 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
     // (a new Field Guide page counts on the Today icon until it is looked at)
@@ -169,9 +170,13 @@ export function initUI({ game, social, cb }) {
   const awayOf = () => { let A = null; try { A = game.shared && game.away ? game.away : JSON.parse(localStorage.getItem('ourtank.away') || 'null'); if (A && +localStorage.getItem('ourtank.awayCleared') === A.to) A = null; } catch { /* storage unavailable */ } return A && Date.now() - A.to <= 864e5 ? A : null; };
   // (matched against the journal's own wording, checked on a 120-day run of the real rules: tools/sim/milestones.mjs with JOURNAL=1)
   const AWAY_BIG = /gave birth|hatched|pouch is twitching|carrying their young|laid (a patch of )?eggs|strings of tiny eggs|paired up|has arrived|brought in|reached adulthood|all grown up|is growing up|best friends|spending more time together|found a favorite spot|new holdfast|out of sight|out exploring|came back holding|took it straight to its den|reached level|decided to stay|went back to the sea|let .{1,20} go|learned to|wants to leave|asking to leave|settled back in|back to its old self/i;
-  const awayHtml = () => { const A = awayOf(); if (!A) return '';
-    const me = game.you?.userId, lines = game.journal.filter((e) => e.ts > A.from && e.ts <= A.to + 60e3 && !AWAY_SKIP.test(e.text) && (!game.shared || e.userId !== me)).map((e) => e.text);
-    const all = [...new Set(lines)], big = all.filter((x) => AWAY_BIG.test(x)), uniq = [...big.slice(-5), ...all.filter((x) => !AWAY_BIG.test(x)).slice(-(5 - Math.min(5, big.length)))].slice(0, 5); if (!uniq.length) return '';
+  const awayLines = () => { const A = awayOf(); if (!A) return { A: null, all: [], big: [] }; const me = game.you?.userId, lines = game.journal.filter((e) => e.ts > A.from && e.ts <= A.to + 60e3 && !AWAY_SKIP.test(e.text) && (!game.shared || e.userId !== me)).map((e) => e.text);
+    const all = [...new Set(lines)]; return { A, all, big: all.filter((x) => AWAY_BIG.test(x)) }; };
+  // one small chip over the tank when you come back to real news (a birth, a pairing, an arrival...): it says how much, and a tap opens Today. Gone by itself
+  const awayChip = () => { const n = awayLines().big.length; if (!n) return false; let el = $('awaychip'); if (!el) { el = document.createElement('button'); el.id = 'awaychip'; document.body.appendChild(el); }
+    el.innerHTML = `<b>${n === 1 ? '1 thing' : `${n} things`} happened while you were away</b><span>Today ›</span>`; el.onclick = () => { el.classList.remove('on'); open('notices'); }; requestAnimationFrame(() => el.classList.add('on')); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 7000); return true; };
+  const awayHtml = () => { const { A, all, big } = awayLines(); if (!A) return '';
+    const uniq = [...big.slice(-5), ...all.filter((x) => !AWAY_BIG.test(x)).slice(-(5 - Math.min(5, big.length)))].slice(0, 5); if (!uniq.length) return '';
     const h = Math.round((A.to - A.from) / 3600e3), span = h >= 48 ? `${Math.round(h / 24)} days` : h >= 1 ? `${h} hour${h > 1 ? 's' : ''}` : 'a little while';
     return `<h4 class="ntsh">While you were away <small>${span}</small><button class="lnk awayx" data-act="awayclear">Clear</button></h4><div class="awayl">${uniq.map((t) => `<p>${esc(t)}</p>`).join('')}</div>`; };
   const comingHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const out = [], ready = (s.eggs ?? []).some((e) => e.ready);
@@ -218,7 +223,7 @@ export function initUI({ game, social, cb }) {
     const s = S(); if (!s) return { text: '' };
     if ((s.flags.tut ?? 0) < 5 && game.isTutOwner) return { text: 'Follow the tips to get started', tab: '' };
     const fl = (s.floaters ?? [])[0]; if (fl) return { text: `${fl.name} has passed away. Tap to lay them to rest.`, tab: '' };
-    const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: weak.species === 'octopus' ? `${weak.name} is in a critical state. ${canFeedOcto(weak, game.you?.userId, game.shared) ? 'Drop it a crab' : `Only ${weak.ownerName ?? 'its caretaker'} can feed it`}, and freshen the water.` : `${weak.name} is in a critical state. Feed the tank and freshen the water.`, tab: 'care' };
+    const weak = s.fish.find((f) => (f.ail ?? 0) >= AIL_WARN); if (weak) return { text: weak.species === 'octopus' ? `${weak.name} is unwell. ${canFeedOcto(weak, game.you?.userId, game.shared) ? 'A crab' : `A crab from ${weak.ownerName ?? 'its caretaker'}`} and fresh water will bring it back.` : `${weak.name} is unwell. Food and fresh water will bring it back.`, tab: 'care' };
     if (s.visitor) return { text: `A rare visitor! Tap the ${SPECIES_DEF[s.visitor.species].label} to say hello. It leaves in ${eta(s.visitor.until - game.now())}.`, tab: '' };
     if ((s.bottles ?? []).some((b) => b.to === game.you?.userId)) return { text: 'A bottle turned up for you. Tap it.', tab: '' };
     if (s.drift) return { text: `${driftBlame(s.drift)} Tap it in the tank.`, tab: '' };
@@ -989,13 +994,14 @@ export function initUI({ game, social, cb }) {
     }));
   }
   // new life: a pregnancy, eggs laid. A card with the expecting animal's photo, what is happening and when, and a way to go and look
+  // something new in the tank (eggs, a birth, grown up, back from an adventure): a card at the top that leaves the tank in view, never a
+  // pop-up over it; 'Go and see' takes you to the animal, a tap elsewhere puts it away. It waits out the quiet start like every card.
   function newLife({ title, why, img, look = 'Go and see', icon = '🥚' }) {
-    return modalFree().then(() => new Promise((res) => {
-      modal.innerHTML = `<div class="box party life">${img ? `<div class="lifepic"><img alt="" src="${img}"></div>` : `<div class="big-ic">${icon}</div>`}<h2>${esc(title)}</h2>${why ? `<p>${esc(why)}</p>` : ''}<button class="big gold" id="mok">${esc(look)}</button>${look === 'OK' ? '' : '<button class="lnk" id="mno">Later</button>'}</div>`;
-      modal.classList.add('on', 'party'); sfx('arrive'); haptic(20);
-      $('mok').onclick = () => { modal.classList.remove('on', 'party'); res(true); }; if ($('mno')) $('mno').onclick = () => { modal.classList.remove('on', 'party'); res(false); };
-    }));
+    return new Promise((res) => { const show = () => { if (quiet()) { setTimeout(show, (window.__quietUntil ?? 0) - Date.now() + 300); return; } let done = false; const fin = (v) => { if (!done) { done = true; res(v); } };
+      shelf('settle', `<p class="chap life">${img ? `<img alt="" src="${img}">` : `<i>${icon}</i>`}<span><small>Just now</small><b>${esc(title.charAt(0) + title.slice(1).toLowerCase())}</b>${why ? `<span>${esc(why)}</span>` : ''}</span></p><p class="nx"><span class="lk">${esc(look)} ›</span></p>`, 12000, () => fin(true), 0, (el) => { const t = setTimeout(() => fin(false), 12500); el.addEventListener('click', () => { clearTimeout(t); setTimeout(() => fin(false), 50); }, { once: true }); });
+      sfx('arrive'); haptic(12); }; show(); });
   }
+
   // ── Today's detail card: tap a row and it opens with what is really known about it, and the one thing to do next ──
   const when = (ms) => { const d = ms / 864e5; return d < 1 / 24 ? 'within the hour' : d < 1 ? `in about ${Math.max(1, Math.round(d * 24))} h` : `in about ${Math.round(d)} day${Math.round(d) > 1 ? 's' : ''}`; };
   const onDay = (ts) => new Date(ts).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -1032,7 +1038,7 @@ export function initUI({ game, social, cb }) {
   function sick({ name, species, pal = null, why, acts }) {
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box party mourn sick"><div class="mpic"><img alt="" src="${fishThumb(species, pal)}"><span>⚠️</span></div><h2>${esc(name.toUpperCase())} IS VERY SICK</h2>
-        <p>${esc(why)} Without help it could die within a day or two.</p>${acts.map((x, i) => `<button class="big ${i ? 'alt' : 'gold'}" data-i="${i}">${esc(x.label)}</button>`).join('')}<button class="lnk" id="mno">Later</button></div>`;
+        <p>${esc(why)} Food and clean water will bring it back.</p>${acts.map((x, i) => `<button class="big ${i ? 'alt' : 'gold'}" data-i="${i}">${esc(x.label)}</button>`).join('')}<button class="lnk" id="mno">Later</button></div>`;
       modal.classList.add('on', 'party'); sfx('tap');
       const done = (v) => { modal.classList.remove('on', 'party'); res(v); };
       modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => done(acts[+b.dataset.i].value); }); $('mno').onclick = () => done(null);
@@ -1111,7 +1117,7 @@ export function initUI({ game, social, cb }) {
   };
   const settle = (lines) => { $('settle').classList.add('top'); for (const l of lines) notice(l, { kind: 'card' }); shelf('settle', `<b>COMING UP</b>${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<small class="rhint">Tap to close</small>`, 60e3); };
   const place = () => $('settle').classList.add('top');        // never sit on top of an open menu: use the top of the screen then
-  const chapter = (c) => { place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<p class="chap"><small>New chapter</small><b>${esc(c.title)}</b><span>${esc(c.text)}</span><em class="rhint">Tap to close</em></p>`, 8e3); };      // a slim line, gone in a few seconds: the tank stays in view
+  const chapter = (c) => { if (quiet()) { setTimeout(() => chapter(c), (window.__quietUntil ?? 0) - Date.now() + 300); return; } place(); notice(`Chapter: ${c.title}. ${c.text}`, { kind: 'card' }); shelf('settle', `<p class="chap"><small>New chapter</small><b>${esc(c.title)}</b><span>${esc(c.text)}</span><em class="rhint">Tap to close</em></p>`, 8e3); };      // a slim line, gone in a few seconds: the tank stays in view
   const surprise = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>✨ TODAY'S SURPRISE</b><p>${esc(text)}</p>`, 8000); };
   const together = (text) => { place(); clearToasts(); notice(text, { kind: 'card' }); shelf('settle', `<b>💛 TOGETHER</b><p>${esc(text)}</p>`, 8000); };
   // once a week: the tank's week as a short story, with a link to share it as a postcard
@@ -1155,5 +1161,5 @@ export function initUI({ game, social, cb }) {
       gb.hidden = false; document.body.classList.add('gifting'); gb.classList.toggle('soon', left < 60e3); gb.innerHTML = `${msIcon('gift', true, 20)}<span><small>${esc(who)}</small><b>${left < 1500 ? clock : `Arrives in ${clock}`}</b></span>`; gb.setAttribute('aria-label', `${who}, arrives ${left < 1500 ? 'now' : `in ${clock}`}`); };
     if (gb) { gb.onclick = () => { const s = S(), o = (s?.orders ?? []).filter((x) => x.giftFrom).sort((a, b) => a.arrivesAt - b.arrivesAt)[0]; if (!o) return; sfx('tap'); dialog({ title: 'A gift on its way', text: `${o.giftFromId === game.you?.userId ? 'You' : o.giftFrom} sent ${o.owner === game.you?.userId ? 'you' : o.ownerName ?? 'a friend'} ${o.surprise ? 'a surprise' : 'a fish'}${o.giftNote ? ` with a note` : ''}. It arrives ${countdown(o.arrivesAt)} in a gift bag on the sand.${o.surprise ? (o.owner === game.you?.userId ? ' It stays wrapped until you open it.' : ` It stays wrapped until ${o.ownerName ?? 'they'} opens it.`) : ''}`, ok: 'OK' }); }; tickGift(); setInterval(tickGift, 1000); } }
   const openHealth = (id = null) => { healthOpen = true; if (id) hOpen.add(id); open('care'); sheet.scrollTop = 0; };      // Health, with one animal's drawer open (from its card)
-  return { openHealth, newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { awayChip, openHealth, newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }

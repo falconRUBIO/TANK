@@ -1089,6 +1089,14 @@ body.gifting #toast{top:calc(var(--top) + 46px)}
 #modal .box ul.away li:first-child,#modal .box ul.capev li:first-child,#modal .box .lvrow:first-child{border-top:0!important}
 /* banners (toast, tips, chapters): same material as dialogs, readable type */
 #toast{font:500 14px/1.35 var(--ds-font)!important;letter-spacing:0!important;border-radius:16px!important}
+
+/* the one quiet sign of news on coming back: a small glass pill under the top bar, gone by itself, a tap opens Today */
+#awaychip{all:unset;box-sizing:border-box;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:30;transform:translate(-50%,-8px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:9px 14px;border-radius:999px;background:rgba(26,32,44,.72);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:0 6px 20px rgba(0,0,0,.3),inset 0 0 0 .5px rgba(255,255,255,.18);color:#fff;font:500 14px/1.25 var(--ds-font,-apple-system,system-ui,sans-serif);cursor:pointer;transition:opacity .35s,transform .35s}
+#awaychip.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}#awaychip b{font-weight:600}#awaychip span{color:#ffcf5c;font-weight:600;white-space:nowrap}
+
+#fishpill{max-width:calc(100vw - 32px)}#fishpill b{flex:none}#fishpill small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 14px var(--ds-font,-apple-system,system-ui,sans-serif);color:rgba(235,235,245,.78);margin-left:-4px}#fishpill small[hidden]{display:none}
+
+#settle p.chap.life{flex-direction:row;align-items:center;gap:12px;text-align:left}#settle p.chap.life img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none}#settle p.chap.life>i{font-size:30px;font-style:normal;flex:none}#settle p.chap.life>span{display:flex;flex-direction:column;gap:2px;min-width:0}
 </style>
 </head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>

@@ -160,11 +160,23 @@ export class Fishes {
   }
   // an octopus seeing a caretaker open the tank: it depends on who. One it trusts comes to the glass now and then; one it knows a little gets watched from the
   // den; a stranger it mostly ignores (the trust is per caretaker, earned by that person's own care, kept on the server). Nothing is lost by anyone.
-  greet() {
-    for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.task || f.keepCarry) continue; const lvl = f.trust ?? 0, ty = f.mind?.type, r = this.rng();
-      if ((lvl >= 3 && r < 0.35) || (lvl >= 2 && (ty === 'showoff' || ty === 'watcher') && r < 0.25)) {      /* (only some times: an old friend does not need to say hello at every visit) */ f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close: lvl >= 3 }; f.inspect = null; f.greeted = 'glass'; f.thought = 'It knows you'; }
-      else if (lvl >= 1 && f.den && f.st && (lvl < 3 || r < 0.7)) { f.inspect = null; f.goDen?.(f.st, Math.random); f.greeted = 'den'; f.thought = 'Watching you from its den'; }
-      else f.greeted = 'busy'; }      // carries on with what it was doing
+  greet() {      // the caretaker opens the tank: each octopus answers by how well it knows them, its nature, and what it is doing (never forced)
+    for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.away) continue;
+      const lvl = f.trust ?? 0, ty = f.mind?.type, r = this.rng(), S = f.st, den = f.den ? Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) : 9, far = f.pos.z < -1.2;
+      const busy = f.task || f.keepCarry || f.hunt || f.jarAt || f.glassAt?.trick || S?.mode === 'tgo' || S?.mode === 'thaul' || S?.s === 'jet';
+      const asleep = (f.sleepK ?? 0) > 0.5 || (S?.s === 'rest' && (f.restK ?? 0) > 0.6 && f.isNight);
+      const look = (t, flush = 0) => { f.gazeT = Math.max(f.gazeT ?? 0, t); if (flush) f.flush = Math.max(f.flush ?? 0, flush); };      // its eyes go wide at you (and, glad, a flush of color)
+      if (busy || lvl < 1) { f.greeted = 'busy'; continue; }                                                     // a stranger, or busy with something: it carries on
+      if (asleep) { if (lvl >= 2) { look(3); f.greeted = 'stirs'; f.thought = 'Opened an eye at you'; } else f.greeted = 'asleep'; continue; }
+      const toGlass = (close) => { f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close }; f.inspect = null; f.greeted = 'glass'; f.thought = 'Came to the glass to see you'; look(4, close ? 0.5 : 0); };
+      const fromDen = () => { look(4, lvl >= 2 ? 0.45 : 0); f.greeted = 'den'; f.thought = 'Watching you from its den'; if (den > 1.6 && f.st) { f.inspect = null; f.goDen?.(f.st, Math.random); } };
+      if (lvl === 1) { if (f.den && f.st) fromDen(); else { look(2.5); f.greeted = 'noticed'; f.thought = 'Noticed you'; } continue; }
+      if (ty === 'homebody') { fromDen(); continue; }                                                              // a homebody answers from home
+      if (ty === 'watcher') { if (lvl >= 3 && !far) toGlass(false); else { look(6); f.greeted = 'watching'; f.thought = 'Watching you'; } continue; }
+      if (ty === 'showoff') { toGlass(lvl >= 3); continue; }
+      const p = lvl >= 3 ? 0.7 : 0.45;
+      if (r < (far ? p * 0.5 : p)) toGlass(lvl >= 3); else { look(3.5); f.greeted = 'noticed'; f.thought = 'Looked up at you'; }      // far back in the tank it often just looks up
+    }
   }
   denOf(f) { const sp = (this.spots?.() ?? []).find((x) => x.id === f.homeId); return sp ? { x: sp.x, z: sp.z } : f.fav ? { x: f.fav.x, z: f.fav.z } : null; }
   // an octopus taking a keepsake home: it goes to it, picks it up (the little thing rides under its arms), carries it to its den and leaves it
