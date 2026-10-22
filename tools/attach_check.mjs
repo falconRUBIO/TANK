@@ -33,8 +33,9 @@ const xz = (a, x, z) => Math.hypot(a[0] - x, a[2] - z), mean = (a) => a.reduce((
 const pathLen = (t) => t.slice(1).reduce((s, c, i) => s + Math.hypot(c[0] - t[i][0], c[1] - t[i][1], c[2] - t[i][2]), 0);
 const OCT = { species: 'octopus' };
 
+const on = (n) => !process.env.ONLY || process.env.ONLY.split(',').includes(String(n));      // ONLY=5 node tools/attach_check.mjs: just the keepsake
 // 1. two natures, the same tank, the same 5 minutes: a homebody (seed 6) and an explorer (seed 5), each in turn with the coconut den on the left
-{ const D1 = [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: 'c2', type: 'coconut', x: 2.4, z: 0.6 }, { id: 'r1', type: 'boulder', x: 0, z: -1.6 }, { id: 'g1', type: 'grass', x: -0.6, z: 2.4 }, { id: 'g2', type: 'fern', x: 0.8, z: 2.3 }];
+if (on(1)) { const D1 = [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: 'c2', type: 'coconut', x: 2.4, z: 0.6 }, { id: 'r1', type: 'boulder', x: 0, z: -1.6 }, { id: 'g1', type: 'grass', x: -0.6, z: 2.4 }, { id: 'g2', type: 'fern', x: 0.8, z: 2.3 }];
   const known = () => ({ fav: null, likes: [], fish: {}, fam: Object.fromEntries(D1.map((d) => [d.id, { k: 0.9, n: 12, x: d.x, z: d.z, at: Date.now() - 5 * 864e5 }])) });      // (a tank it has lived in for days: nothing new to investigate)
   // each alone in the same tank, from the same den, for the same frames (two octopuses together start to avoid each other, which muddies it)
   const tr = {}, st = []; for (const [id, name, seed] of [['oH', 'Hob', 6], ['oE', 'Exo', 5]]) { await stage(101, [{ ...OCT, id, name, seed, home: 'c1', bond: {}, mem: known() }], D1);
@@ -46,7 +47,7 @@ const OCT = { species: 'octopus' };
   ck('the homebody spends more of its frames at its den than the explorer does', H.den > E.den, 'rendered', `${H.den} vs ${E.den}`); }
 
 // 2. the caretaker looks in: an octopus that trusts them (bond 20) and a stranger (no bond), side by side, both resting at the back
-{ await stage(202, [{ ...OCT, id: 'oF', name: 'Fond', seed: 5, home: 'c1', bond: { me: 20 } }, { ...OCT, id: 'oS', name: 'Strange', seed: 13, home: 'c2', bond: {} }],
+if (on(2)) { await stage(202, [{ ...OCT, id: 'oF', name: 'Fond', seed: 5, home: 'c1', bond: { me: 20 } }, { ...OCT, id: 'oS', name: 'Strange', seed: 13, home: 'c2', bond: {} }],
     [{ id: 'c1', type: 'coconut', x: -2.0, z: -0.8 }, { id: 'c2', type: 'coconut', x: 2.0, z: -0.8 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }]);
   await run(400, ['oF', 'oS'], 2);
   const z0 = await p.evaluate(() => { const F = window.__fishes; F.rng = window.__seed(7); const o = {}; for (const id of ['oF', 'oS']) { const f = F.byId.get(id); f.inspect = null; f.task = null; f.greeted = null; o[id] = +f.group.position.z.toFixed(2); } F.rng = () => 0.3; F.greet(); F.rng = window.__seed(8);
@@ -59,7 +60,7 @@ const OCT = { species: 'octopus' };
 
 // 3. a favourite place: a goldfish whose spot is a sword plant, one whose spot is the big boulder, and one with none; two seahorses each with a
 //    saved favourite holdfast (fish.log.hitch / log.fav, from earlier days), at opposite ends of the tank, plus one with no history
-{ const D = [{ id: 'r1', type: 'boulder', x: -2.6, z: -0.6 }, { id: 'r2', type: 'rock', x: 2.8, z: -1.0 }, { id: 's1', type: 'shell', x: 0.4, z: -1.8 }, { id: 'p1', type: 'grass', x: 2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: -1.2, z: 2.3 }, { id: 'p3', type: 'sword', x: 1.2, z: -0.4 }, { id: 'p4', type: 'grass', x: -0.2, z: 1.0 }];
+if (on(3)) { const D = [{ id: 'r1', type: 'boulder', x: -2.6, z: -0.6 }, { id: 'r2', type: 'rock', x: 2.8, z: -1.0 }, { id: 's1', type: 'shell', x: 0.4, z: -1.8 }, { id: 'p1', type: 'grass', x: 2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: -1.2, z: 2.3 }, { id: 'p3', type: 'sword', x: 1.2, z: -0.4 }, { id: 'p4', type: 'grass', x: -0.2, z: 1.0 }];
   const HS = { species: 'seahorse', traits: ['Calm'], sex: 'f' }, G = { species: 'goldfish', seed: 3 };
   await stage(303, [{ ...G, id: 'fS', name: 'Sword', spotId: 'p3', found: ['spot'] }, { ...G, id: 'fB', name: 'Rocky', spotId: 'r1', found: ['spot'] }, { ...G, id: 'fC', name: 'Ctrl' },
     { ...HS, id: 'hA', name: 'Ama', seed: 4, log: { hitch: { p1: [900, 8, 2.6, 2.4] }, fav: 'p1' } }, { ...HS, id: 'hB', name: 'Bel', seed: 9, log: { hitch: { p2: [900, 8, -1.2, 2.5] }, fav: 'p2' } }, { ...HS, id: 'hN', name: 'New', seed: 11 }], D);
@@ -76,7 +77,7 @@ const OCT = { species: 'octopus' };
   ck('seahorses with a saved favourite holdfast spend their time on their own favourite, not on the other one\'s (rendered, both pooled)', A[0] + B[0] > 2 * (A[1] + B[1]) + 0.1, 'rendered', `Ama p1 ${A[0]} / p2 ${A[1]}; Bel p2 ${B[0]} / p1 ${B[1]}; no-history seahorse p1 ${N[0]} / p2 ${N[1]}`); }
 
 // 4. pals: two goldfish who are best friends (pal), two who are not, same species, same tank
-{ await stage(404, [{ id: 'a1', name: 'Ann', species: 'goldfish', seed: 21, pal: 'a2' }, { id: 'a2', name: 'Abe', species: 'goldfish', seed: 22, pal: 'a1' }, { id: 'b1', name: 'Bea', species: 'goldfish', seed: 23 }, { id: 'b2', name: 'Bo', species: 'goldfish', seed: 24 }],
+if (on(4)) { await stage(404, [{ id: 'a1', name: 'Ann', species: 'goldfish', seed: 21, pal: 'a2' }, { id: 'a2', name: 'Abe', species: 'goldfish', seed: 22, pal: 'a1' }, { id: 'b1', name: 'Bea', species: 'goldfish', seed: 23 }, { id: 'b2', name: 'Bo', species: 'goldfish', seed: 24 }],
     [{ id: 'r1', type: 'rock', x: -2.4, z: 0 }, { id: 'p1', type: 'grass', x: 2.4, z: 1.8 }]);
   const pal = await p.evaluate(() => ['a1', 'a2', 'b1', 'b2'].map((id) => window.__fishes.byId.get(id).palId));
   const { tr } = await run(3000, ['a1', 'a2', 'b1', 'b2'], 5); await shot('4-companions');
@@ -86,7 +87,7 @@ const OCT = { species: 'octopus' };
   ck('the pals swim closer together than two fish that are not pals (mean rendered distance)', mean(P) < 0.7 * mean(U), 'rendered', `pals ${r2(mean(P))} (within 2: ${cl(P)}) vs others ${r2(mean(U))} (${cl(U)})`); }
 
 // 5. a keepsake: a shell this octopus brought home and knows, lying across the tank from its den; it goes to it and carries it home
-{ await stage(505, [{ ...OCT, id: 'oK', name: 'Keeper', seed: 3, home: 'c1', bond: {}, advMem: { fav: 'k1', items: [{ k: 'shell', id: 'k1', at: Date.now() - 864e5 }] }, mem: { fav: null, fam: { c1: { k: 0.9, n: 12, x: -2.4, z: 0.4, at: Date.now() - 5 * 864e5 }, g1: { k: 0.9, n: 12, x: 0, z: 2.4, at: Date.now() - 5 * 864e5 } }, likes: [], fish: {}, keeps: { k1: { k: 0.9, n: 4 } } } }],
+if (on(5)) { await stage(505, [{ ...OCT, id: 'oK', name: 'Keeper', seed: 3, home: 'c1', bond: {}, advMem: { fav: 'k1', items: [{ k: 'shell', id: 'k1', at: Date.now() - 864e5 }] }, mem: { fav: null, fam: { c1: { k: 0.9, n: 12, x: -2.4, z: 0.4, at: Date.now() - 5 * 864e5 }, g1: { k: 0.9, n: 12, x: 0, z: 2.4, at: Date.now() - 5 * 864e5 } }, likes: [], fish: {}, keeps: { k1: { k: 0.9, n: 4 } } } }],
     [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.4 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }], [{ id: 'k1', k: 'shell', adv: 'reef', by: 'oK', byName: 'Keeper', at: Date.now() - 864e5, x: 2.6, z: -1.2 }]);
   const k0 = await p.evaluate(() => { const F = window.__fishes; F.keeps0 = [...(window.__decor?.keeps ?? new Map())]; const ks = F.keepSpots(); F.attnAt = Date.now() - 3e5; F.keepT = 0.5; const f = F.byId.get('oK'); f.inspect = null; f.task = null; return { ks: ks.map((k) => [k.id, k.x, k.z]), groups: F.keeps0.length, type: f.mind?.type }; });
   if (!k0.groups) await p.evaluate(() => { const F = window.__fishes, it = F.keepSpots()[0]?.it; F.keeps0 = it ? [['k1', it]] : []; });
@@ -99,7 +100,7 @@ const OCT = { species: 'octopus' };
   ck('it carries it: the shell rides with it, then lies by its den', K.length > 0 && carried > 5 && follow < 0.5 && last && Math.hypot(last[0] + 2.4, last[1] - 0.4) < 1.6, 'rendered', `carried ${carried} of ${K.length} samples, mean ${follow} from the octopus while carried, ended at ${JSON.stringify(last)}`); }
 
 // 6. seahorses: a mated pair and two singles; the meeting scheduler is woken every 40 s of tank time so there are chances to meet
-{ const HS = { species: 'seahorse', traits: ['Social'] };
+if (on(6)) { const HS = { species: 'seahorse', traits: ['Social'] };
   await stage(606, [{ ...HS, id: 'm1', name: 'Mo', seed: 4, sex: 'm', mate: 'm2' }, { ...HS, id: 'm2', name: 'Mia', seed: 11, sex: 'f', mate: 'm1' }, { ...HS, id: 's1', name: 'Sol', seed: 15, sex: 'm' }, { ...HS, id: 's2', name: 'Sue', seed: 19, sex: 'f' }],
     [{ id: 'p1', type: 'grass', x: -2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: 2.6, z: 2.2 }, { id: 'p3', type: 'sword', x: -1.0, z: -0.4 }, { id: 'p4', type: 'grass', x: 1.2, z: -0.4 }, { id: 'p5', type: 'kelp', x: 0, z: 1.6 }]);
   const mates = await p.evaluate(() => ['m1', 'm2', 's1', 's2'].map((id) => window.__fishes.byId.get(id).mateId));
