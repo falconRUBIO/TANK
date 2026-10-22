@@ -24,10 +24,10 @@ await p.screenshot({ path: `${out}/sheet.png`, timeout: 120000 }).catch(() => {}
 await p.click('#modal #mok'); await p.waitForTimeout(500);
 await p.evaluate(() => { window.__ui.open('notices'); }); await p.waitForTimeout(500);
 const q1 = await p.evaluate(() => ({ text: document.querySelector('#sheet .gcard')?.textContent ?? '', bar: document.querySelector('#sheet .gcard .qb b')?.style.width, ring: getComputedStyle(document.getElementById('bell')).getPropertyValue('--goal').trim() }));
-ck('the bell shows the goal, the next step and the bar, and its ring a quarter full', /Golden/.test(q1.text) && /Next: Pair two carriers/.test(q1.text) && q1.bar === '25%' && q1.ring === '90deg', q1); await p.evaluate(() => { window.__ui.open('tank'); });
+ck('the bell shows the goal, the next step and its bar a quarter full (no second gold ring on the bell: that reads as the level)', /Golden/.test(q1.text) && /Next: Pair two carriers/.test(q1.text) && q1.bar === '25%' && (q1.ring === '0deg' || q1.ring === ''), q1); await p.evaluate(() => { window.__ui.open('tank'); });
 await p.screenshot({ path: `${out}/home.png`, timeout: 120000 }).catch(() => {});
 const r = await p.evaluate(async () => { const g = window.__game; await g.dispatch({ t: 'matchmake', a: 'a1', b: 'b1' }); return { j: g.journal.slice(-3).map((e) => e.text) }; }); await p.waitForTimeout(800);
-const q2 = await p.evaluate(() => getComputedStyle(document.getElementById('bell')).getPropertyValue('--goal').trim()); ck('pairing two carriers ticks the next step: the ring is half full', q2 === '180deg' && r.j.some((x) => /Goal, 2 of 4/.test(x)), { q2, j: r.j });
+const q2 = await p.evaluate(() => { const g = window.__game.state.goal; return g ? `${g.step ?? ''}` : ''; }); ck('pairing two carriers ticks the next step: goal 2 of 4', r.j.some((x) => /Goal, 2 of 4/.test(x)), { q2, j: r.j });
 await p.evaluate(() => { const s = window.__game.state; s.stats.hatched = (s.stats.hatched ?? 0) + 1; s.stats.morphs = (s.stats.morphs ?? 0) + 1; s.stats.morph_gold = (s.stats.morph_gold ?? 0) + 1; return window.__game.dispatch({ t: 'observe', key: 'watch' }); }).catch(() => {});
 await p.waitForSelector('#modal.on.party', { timeout: 60000 }).catch(() => {});
 const done = await p.evaluate(() => ({ party: document.querySelector('#modal.party')?.textContent ?? '', styles: window.__game.state.flags.styles, goal: window.__game.state.goal, offer: window.__game.state.goalOffer }));

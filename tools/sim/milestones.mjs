@@ -40,4 +40,4 @@ console.log(`  turtle wellbeing while raised: ${tw.length ? `min ${Math.min(...t
 console.log(`  tricks: ${trickTries} training sessions; no trick to train at level ≥3 on ${Object.values(trickRefused).reduce((a, b) => a + b, 0)} visits`);
 console.log(`  refusals: ${fails.length ? [...new Set(fails)].join('; ') : 'none'}`);
 const need = ['level 3', 'tricks offered', 'first trick learned', 'level 4', 'seahorse in the tank', 'level 7', 'turtle corner ready', 'level 8', 'turtle bought', 'turtle grown', 'turtle released'];
-const miss = need.filter((k) => !Object.keys(M).some((x) => x.startsWith(k))); console.log(miss.length ? `MISSING: ${miss.join(', ')}` : 'All level 1-8 milestones reached'); process.exit(miss.length ? 1 : 0);
+const miss = need.filter((k) => !Object.keys(M).some((x) => x.startsWith(k))); console.log(miss.length ? `MISSING: ${miss.join(', ')}` : 'Level 1-8 milestone checks passed'); process.exit(miss.length ? 1 : 0);

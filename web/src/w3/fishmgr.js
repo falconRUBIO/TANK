@@ -177,8 +177,8 @@ export class Fishes {
       if (C.phase === 'go') {
         if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
         if (C.t > 45) { f.keepCarry = null; continue; }
-        { const kd = Math.hypot(f.pos.x - k.x, f.pos.z - k.z); if (kd < 1.2 || (f.st?.s === 'work' && kd < 2.0)) {      /* within an arm's reach (an inspect walk stops about 1.3 away, in its work pose: that is close enough to reach out) */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
-        else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' }; }
+        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach (the walk there has r set, so it stops 0.8 away, not the usual 1.3) */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep', r: 1 };
         continue;
       }
       const it = C.it; it.group.position.set(f.pos.x + Math.sin(f.heading ?? 0) * 0.15, Math.max(sandH(f.pos.x, f.pos.z) + 0.05, f.pos.y - 0.32), f.pos.z + 0.18);      // held low under its arms
@@ -996,7 +996,7 @@ export class Fishes {
         const attach = known ? 1 : q.by === f.fid ? 0.6 : 0.15, coll = ty === 'collector' ? 1.5 : ty === 'trickster' ? 1.3 : ty === 'homebody' ? 1.1 : ty === 'showoff' && watched ? 1.6 : 0.8, far = den ? Math.hypot(q.x - den.x, q.z - den.z) : 0;
         const reach = ty === 'explorer' ? 1.3 + Math.min(1, far / 4) : 1, tidy = ty === 'trickster' && far <= 1.3 && known && this.rng() < 0.3;      // an explorer goes further for things; a trickster rearranges what is already home
         if (den && (far > 1.3 || tidy) && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll * reach) { f.keepCarry = { id: q.id, phase: 'go', t: 0, dest: this.keepDest(f, q, den, watched) }; f.thought = known ? `Going to fetch its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Going to fetch something new'; }
-        f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = known ? `Checking on its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Investigating a strange object'; f.keepWhy = { id: q.id, known, thought: f.thought }; } }
+        f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep', r: 1 }; if (!f.keepCarry) f.thought = known ? `Checking on its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Investigating a strange object'; f.keepWhy = { id: q.id, known, thought: f.thought }; } }
     this.carryTick(dt); this.tugTick(dt); this.quirkTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.reefTick(dt, t); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
