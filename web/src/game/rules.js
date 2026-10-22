@@ -74,6 +74,12 @@ export const DECOR_DEF = {
   ledge:    { label: 'Turtle Ledge',  cat: 'ROCKS',      price: 40, level: 7, blurb: 'A flat shelf of rock with a gap beneath: a sea turtle wedges itself under it to sleep.' },
   seagrass: { label: 'Sea Grass Bed', cat: 'PLANTS',     price: 30, level: 7, blurb: 'A meadow of long, ribbon-like sea grass. Green turtles graze it like a lawn.' },
   arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
+  // what the newer animals really look for (each meets a need on the Health screen, and the animals use it)
+  station:  { label: 'Cleaning Station', cat: 'ROCKS',   price: 22, level: 2, blurb: 'A coral head where a neon goby sets up shop. Other fish come and wait their turn to be cleaned.' },
+  cave:     { label: 'Reef Cave',     cat: 'ROCKS',      price: 32, level: 3, blurb: 'A hollow rock with a dark way in. A royal gramma claims it; a tang sleeps in it at night.' },
+  mangrove: { label: 'Mangrove Roots', cat: 'PLANTS',    price: 34, level: 4, blurb: 'Arching roots, the nursery of the sea. Seahorses wrap their tails round them and young fish hide among them.' },
+  sponge:   { label: 'Sponge Garden', cat: 'ROCKS',      price: 34, level: 7, blurb: 'Barrel and tube sponges in orange and purple. A hawksbill turtle pries them off the reef to eat.' },
+  rubble:   { label: 'Shell Rubble',  cat: 'ROCKS',      price: 26, level: 7, blurb: 'Broken shell and coral chips. A loggerhead crunches through it for snails and crabs; a puffer forages in it.' },
 };
 // ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
 // two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
@@ -86,6 +92,7 @@ const SHOP_CURVE = {
   lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
   chest: [6, 85], anchor: [6, 95], arch: [6, 120],
   bridge: [7, 150], crystal: [7, 190],
+  station: [2, 22], cave: [3, 32], mangrove: [4, 34], sponge: [7, 34], rubble: [7, 26],
   spire: [8, 300],      /* (measured: about three weeks of a regular household's shells once level 8 opens) */
 };
 for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level, price });
@@ -1355,7 +1362,7 @@ export const KIND_NEEDS = {
   cory: [W_('burrow', 'Rocks to burrow under', 'A goby digs a burrow under a rock and sits at its mouth, keeping watch.', 'Two rocks on the sand', (c) => c.cover >= 2),
     W_('alone', 'To be the only goby', 'Gobies defend their burrow from other gobies.', 'Just one yellow goby', (c) => c.own <= 1),
     W_('calm', 'Calm neighbours', 'It darts into its burrow at any threat; a bully keeps it hiding all day.', 'No damselfish or big angelfish', (c) => !c.has('guppy') && !c.has('angelfish'))],
-  blue: [W_('cave', 'A cave to claim', 'A royal gramma claims a cave or overhang and often hangs upside down beneath it.', 'Rocks or a structure with an overhang', (c) => c.cover >= 2),
+  blue: [W_('cave', 'A cave to claim', 'A royal gramma claims a cave or overhang and often hangs upside down beneath it.', 'A Reef Cave, or rocks with an overhang', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
     W_('alone', 'To be the only gramma', 'Grammas fight other grammas for the best cave.', 'Just one royal gramma', (c) => c.own <= 1),
     W_('dim', 'A shady corner', 'It prefers dim spots out of the brightest light.', 'A structure to cast some shade', (c) => c.cats.STRUCTURES >= 1)],
   guppy: [W_('patch', 'A patch of rock all its own', 'A damselfish guards a small patch of reef and chases off anything that comes near.', 'Two rocks it can claim', (c) => c.cover >= 2),
@@ -1367,12 +1374,12 @@ export const KIND_NEEDS = {
     W_('shade', 'Shade to hover in', 'Cardinalfish hover motionless in shade by day and come out to feed at night.', 'A structure or plants to shade it', (c) => c.cover >= 2),
     W_('group', 'Others of its kind', 'They gather in small, loose groups among the shade.', 'Another cardinalfish', (c) => c.own >= 2),
     W_('calm', 'Gentle company', 'A slow, peaceful fish, easily pushed about.', 'No damselfish', (c) => !c.has('guppy'))],
-  neongoby: [W_('station', 'A rock for its station', 'Cleaner gobies set up shop on a coral head or rock, and fish queue there to be cleaned.', 'A rock or boulder from the Shop', (c) => c.cover >= 1),
+  neongoby: [W_('station', 'A rock for its station', 'Cleaner gobies set up shop on a coral head or rock, and fish queue there to be cleaned.', 'A Cleaning Station, or a rock', (c) => c.cover >= 1 || (c.types.station ?? 0) >= 1),
     W_('clients', 'Fish to clean', 'A cleaner goby feeds on the parasites it picks off other fish.', 'Two or more other fish in the tank', (c) => c.others >= 2)],
   tang: [W_('room', 'Room to swim', 'Tangs swim long laps of the reef all day; in a crowded tank they get stressed.', 'Keep the tank under three-quarters full', (c) => c.r <= 0.75),
-    W_('sleep', 'Rocks to sleep in', 'At night a tang wedges into a crevice and turns paler.', 'Two rocks or a cave', (c) => c.cover >= 2),
+    W_('sleep', 'Rocks to sleep in', 'At night a tang wedges into a crevice and turns paler.', 'A Reef Cave, or two rocks', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
     W_('alone', 'To be the only tang', 'Two tangs in one tank fight with the sharp spine by their tails.', 'Just one blue tang', (c) => c.own <= 1)],
-  puffer: [W_('explore', 'Rocks to explore', 'Puffers poke into every crack looking for snails and worms.', 'Two rocks or structures', (c) => c.cover >= 2),
+  puffer: [W_('explore', 'Rocks to explore', 'Puffers poke into every crack looking for snails and worms.', 'Shell Rubble, a Reef Cave, or two rocks', (c) => c.cover >= 2 || (c.types.rubble ?? 0) + (c.types.cave ?? 0) >= 1),
     W_('nofrill', 'No slow, frilly tankmates', 'Puffers nip at long fins; seahorses are an easy target.', 'Keep it apart from seahorses', (c) => !c.has('seahorse'))],
   danio: [W_('shoal', 'A group of three or more', 'Anthias live in big, busy shoals; on its own it is shy and pale.', 'More pink anthias', (c) => c.own >= 3),
     W_('meals', 'Small, frequent meals', 'In the wild it picks plankton all day long; it does best fed often.', 'Feed a little more often', (c) => c.fed >= 0.6),
@@ -1381,7 +1388,7 @@ export const KIND_NEEDS = {
     W_('rock', 'Plenty of rock', 'The more rock, the more copepods: a big reef keeps it fed.', 'Three rocks or more', (c) => c.cover >= 3),
     W_('slow', 'No fast eaters stealing its food', 'It feeds slowly and loses meals to quick fish, unless it has live rock to graze.', 'Live rock, or no fast eaters', (c) => !c.fast || c.types.liverock >= 1),
     W_('alone', 'To be the only male', 'Male mandarins fight each other.', 'Just one mandarin', (c) => c.own <= 1)],
-  seahorse: [W_('hold', 'Plants to hold on to', 'A seahorse wraps its tail around a plant and stays put; it is a poor swimmer.', 'Two plants from the Shop', (c) => c.cover >= 2),
+  seahorse: [W_('hold', 'Plants to hold on to', 'A seahorse wraps its tail around a plant and stays put; it is a poor swimmer.', 'Mangrove Roots, or two plants', (c) => c.cover >= 2 || (c.types.mangrove ?? 0) >= 1),
     W_('fan', 'A sea fan to hitch on', 'Its favorite holdfast in the wild is a branching sea fan, where it can sit and watch for food drifting past.', 'A sea fan from the Shop', (c) => c.types.seafan >= 1),
     W_('pair', 'A partner for life', 'Seahorses pair for life and greet each other every morning with a little dance.', 'Another seahorse', (c) => c.own >= 2),
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
@@ -1392,11 +1399,11 @@ export const KIND_NEEDS = {
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
     W_('ledge', 'A ledge to sleep under', 'Hawksbills sleep wedged under reef ledges and in caves.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
-    W_('reef', 'Reef rock to forage', 'Hawksbills eat sponges, prying them out of the reef with their narrow, hooked beaks.', 'Live rock or brain coral from the Shop', (c) => (c.types.liverock ?? 0) + (c.types.brain ?? 0) >= 1),
+    W_('reef', 'Reef rock to forage', 'Hawksbills eat sponges, prying them out of the reef with their narrow, hooked beaks.', 'A Sponge Garden, live rock or brain coral', (c) => (c.types.liverock ?? 0) + (c.types.brain ?? 0) + (c.types.sponge ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   loggerhead: [W_('room', 'Room to roam', 'Loggerheads travel widely along the sea floor; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
     W_('ledge', 'A ledge to sleep under', 'Loggerheads sleep wedged under ledges and in reef holes.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
-    W_('crunch', 'Things to crunch', 'Loggerheads crack crabs, snails and clams with their huge jaws, foraging among shells and rubble.', 'Shells or live rock to forage', (c) => (c.types.shell ?? 0) + (c.types.liverock ?? 0) + (c.types.chest ?? 0) >= 1),
+    W_('crunch', 'Things to crunch', 'Loggerheads crack crabs, snails and clams with their huge jaws, foraging among shells and rubble.', 'Shell Rubble, shells or live rock', (c) => (c.types.rubble ?? 0) + (c.types.shell ?? 0) + (c.types.liverock ?? 0) + (c.types.chest ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   kemps: [W_('sand', 'Open sand to dig', "A Kemp's ridley digs in sandy bottoms for crabs; a tank packed with decorations leaves it nowhere to forage.", 'Keep some of the floor clear: no more than about ten pieces', (c) => Object.values(c.types).reduce((a, n) => a + n, 0) <= 10),
     W_('rock', 'A rock to rest by', 'It rests against a rock between bursts of digging.', 'A rock or a Turtle Ledge', (c) => c.cover >= 1),

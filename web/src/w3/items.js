@@ -79,6 +79,50 @@ const B = {
     const u = 0.1, v = new Vox(u); v.ellipsoid(0, 0, 0, 6.5, 4.6, 5.6, (i, j, k) => { const n = fbm(i * 0.25 + seed, j * 0.25, k * 0.25); return n > 0.6 ? [214, 110, 170] : n > 0.45 ? [168, 96, 182] : mix([130, 118, 108], [176, 160, 140], n); }, seed, 0.28);
     topLit(v); const m = v.mesh(); m.position.y = 0.14; g.add(m); return [{ v, x: 0, y: 0.14, z: 0, ry: 0 }];
   },
+  // a cleaning station: a rounded coral head with a flat, worn top where the gobies sit, ringed with tiny striped cleaner shrimp
+  station: (g, seed) => {
+    const u = 0.08, v = new Vox(u), r = mulberry32(seed);
+    v.ellipsoid(0, 0, 0, 8, 6.5, 7, (i, j, k) => { const n = fbm(i * 0.3 + seed, j * 0.3, k * 0.3); return j > 4 ? mix([206, 150, 120], [236, 190, 150], n) : mix([150, 104, 96], [196, 140, 118], n); }, seed, 0.18);
+    for (const q of [...v.m.values()]) if (q.j > 5) v.m.delete(q.i + ',' + q.j + ',' + q.k);      // the flat top, worn smooth
+    for (const q of v.m.values()) if (q.j === 5) q.c = mix([224, 196, 160], [244, 220, 186], hash(q.i, q.j, q.k, 2));
+    for (let n = 0; n < 6; n++) { const a = (n / 6) * Math.PI * 2 + r(), I = Math.round(Math.cos(a) * 7.6), K = Math.round(Math.sin(a) * 6.6), J = 2 + ((r() * 3) | 0);      // cleaner shrimp: red and white, with long white feelers
+      for (let t = 0; t < 4; t++) v.set(I + Math.round(Math.cos(a) * t * 0.4), J + (t >> 1), K + Math.round(Math.sin(a) * t * 0.4), t % 2 ? [250, 246, 240] : [214, 44, 52]);
+      v.set(I + Math.round(Math.cos(a) * 2), J + 3, K + Math.round(Math.sin(a) * 2), [250, 250, 250]); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.12; g.add(m); return [{ v, x: 0, y: 0.12, z: 0, ry: 0 }];
+  },
+  // a reef cave: a big hollow rock with a dark way in at the front, deep enough for a small fish to vanish into
+  cave: (g, seed) => {
+    const u = 0.1, v = rock(1.05, 0.85, 0.9, seed);
+    for (const q of [...v.m.values()]) { const di = q.i / 4.2, dj = (q.j - 1.5) / 4.6; if (di * di + dj * dj < 1 && q.k > -5 && q.j > -6) v.m.delete(q.i + ',' + q.j + ',' + q.k); }      // the hollow, open at the front
+    for (const q of v.m.values()) { const di = q.i / 5.4, dj = (q.j - 1.5) / 5.8; if (di * di + dj * dj < 1 && q.k > -6) q.c = mix(q.c, [40, 46, 52], 0.6); }      // dark inside
+    const m = v.mesh(); m.position.y = 0.3; g.add(m); return [{ v, x: 0, y: 0.3, z: 0, ry: 0 }];
+  },
+  // mangrove roots: arching prop roots rising from the sand and meeting in a knot, thin enough for a seahorse to wrap its tail round
+  mangrove: (g, seed) => {
+    const v = new Vox(0.07), r = mulberry32(seed), bark = (t) => mix([92, 66, 44], [150, 116, 80], t);
+    const H = 58, top = [0, H, 0];
+    for (let n = 0; n < 7; n++) { const a = (n / 7) * Math.PI * 2 + r() * 0.5, R0 = 22 + r() * 10, foot = [Math.cos(a) * R0, 0, Math.sin(a) * R0 * 0.7];
+      for (let t = 0; t <= 1.0001; t += 0.012) { const arc = Math.sin(t * Math.PI) * 14, x = foot[0] + (top[0] - foot[0]) * t, z = foot[2] + (top[2] - foot[2]) * t, y = foot[1] + (top[1] - foot[1]) * Math.pow(t, 0.8) + arc * 0.4;
+        const I = Math.round(x * (1 - 0.15 * Math.sin(t * Math.PI))), J = Math.round(y), K = Math.round(z), c = bark(hash(I, J, K, 3));
+        v.set(I, J, K, c); if (t < 0.4 || t > 0.85) { v.set(I + 1, J, K, mix(c, [60, 44, 30], 0.3)); v.set(I, J, K + 1, mix(c, [70, 52, 36], 0.2)); } if (t < 0.15) v.set(I + 1, J, K + 1, mix(c, [60, 44, 30], 0.35)); } }      // thick where they enter the sand, thin enough higher up for a seahorse's tail
+    for (let j = H - 4; j <= H + 10; j++) for (let i = -2; i <= 2; i++) for (let k = -2; k <= 2; k++) if (i * i + k * k <= 4) v.set(i, j, k, bark(0.4 + hash(i, j, k, 5) * 0.3));      // the knot where the roots meet
+    for (let n = 0; n < 160; n++) { const a = r() * 6.28, d = 2 + r() * 13, I = Math.round(Math.cos(a) * d), K = Math.round(Math.sin(a) * d * 0.7), J = H + 6 + ((r() * 10) | 0) - Math.round(d * 0.35); v.set(I, J, K, mix([70, 140, 60], [130, 190, 90], r())); v.set(I + 1, J, K, mix([60, 120, 50], [110, 170, 80], r())); }      // a crown of leaves
+    topLit(v); const m = v.mesh(); g.add(m); return [stem(0, 0, 2, 30)];
+  },
+  // a sponge garden: barrel and tube sponges, open at the top, in orange, purple and yellow
+  sponge: (g, seed) => {
+    const u = 0.08, v = new Vox(u), r = mulberry32(seed), cols = [[232, 120, 50], [150, 80, 170], [236, 196, 70], [210, 90, 120]];
+    for (let n = 0; n < 6; n++) { const x0 = Math.round((r() - 0.5) * 20), z0 = Math.round((r() - 0.5) * 12), R0 = 2 + ((r() * 3) | 0), H = 6 + ((r() * 14) | 0), c = cols[n % cols.length];
+      for (let j = 0; j <= H; j++) { const Rj = R0 + (j > H * 0.6 ? 1 : 0); for (let i = -Rj; i <= Rj; i++) for (let k = -Rj; k <= Rj; k++) { const d = i * i + k * k; if (d <= Rj * Rj + 0.5 && (d >= (Rj - 1) * (Rj - 1) || j === 0)) v.set(x0 + i, j, z0 + k, mix(c, [255, 240, 220], hash(i, j, k, 9) * 0.25 + (j === H ? 0.15 : 0))); } } }
+    topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); return [{ v, x: 0, y: 0.02, z: 0, ry: 0 }];
+  },
+  // shell rubble: a low, wide scatter of broken shell and coral chips on the sand
+  rubble: (g, seed) => {
+    const u = 0.07, v = new Vox(u), r = mulberry32(seed), cols = [[236, 226, 204], [220, 170, 150], [190, 180, 160], [244, 210, 190], [160, 150, 136]];
+    for (let n = 0; n < 70; n++) { const a = r() * 6.28, d = Math.sqrt(r()) * 20, I = Math.round(Math.cos(a) * d), K = Math.round(Math.sin(a) * d * 0.6), c = cols[(r() * cols.length) | 0], w = 1 + ((r() * 2) | 0);
+      for (let i = 0; i < w; i++) for (let k = 0; k < 1 + ((r() * 2) | 0); k++) v.set(I + i, (r() < 0.3 ? 1 : 0), K + k, mix(c, [255, 255, 255], hash(I, i, K, 2) * 0.2)); }
+    topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); return [];
+  },
   bamboo: (g, seed) => {
     const v = new Vox(0.07), r = mulberry32(seed);
     for (const [x0, z0, H] of [[-4, 0, 70], [0, 2, 92], [4, -1, 80], [-1, -3, 56]]) {
