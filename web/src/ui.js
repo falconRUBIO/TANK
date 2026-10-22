@@ -1,7 +1,7 @@
 // HTML chrome: header, bottom-sheet tabs (Care / Shop / Crew: friends, journal, Field Guide, settings), shop, modals, toasts.
 import { skyOf } from './game/sky.js';
 import { morphOdds } from './game/genes.js';
-import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES, decorUses, KIND_NEEDS } from './game/rules.js';
+import { bestStep, levelEta, LEVEL_PRIZE, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES, decorUses, decorEffect, KIND_NEEDS } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
 import { FIELD, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
@@ -368,14 +368,19 @@ export function initUI({ game, social, cb }) {
   function usesHtml(kind, id) {
     const have = new Set(S().fish.filter((f) => !f.dead).map((f) => f.species)), mine = (sp) => (have.has(sp) ? ' <i>in your tank</i>' : '');
     if (kind === 'fish') { const N = KIND_NEEDS[id] ?? [], nat = SOCIAL[id]?.nature; return `${nat ? `<p class="pvnat">${esc(nat)}</p>` : ''}${N.length ? `<div class="pvuse"><small>WHAT IT NEEDS</small><ul>${N.map((w) => `<li><b>${esc(w.label)}</b><span>${esc(w.how)}</span></li>`).join('')}</ul></div>` : ''}`; }
+    const E = effectOf(id); let now = '';
+    if (E) { const up = E.after - E.before, rows = E.animals.slice(0, 5).map((x) => `<li><b>${esc(x.name)}</b><span>${x.met.length ? esc(x.met.join(', ')) + ' · ' : ''}${x.d > 0 ? `wellbeing +${x.d}` : 'happier'}</span></li>`).join('');
+      now = `<div class="pvuse pvnow"><small>IN YOUR TANK NOW</small><p class="pvh">${up > 0 ? `Tank Health <b>${E.before} → ${E.after}</b>` : `Tank Health stays at <b>${E.before}</b>`}</p>${rows ? `<ul>${rows}</ul>` : `<p>${up > 0 ? '' : 'Your animals already have what this gives them.'}</p>`}${E.themesDone.map((l) => `<p>✦ Completes the <b>${esc(l)}</b> theme: every fish a little happier, +${E.themeReward} shells.</p>`).join('')}${E.themeProgress.map((x) => `<p>${esc(x.label)} theme: this makes it ${x.have} of ${x.need}.</p>`).join('')}</div>`; }
     const u = decorUses(id), own = (a) => [...a].sort((x, y) => have.has(y.sp) - have.has(x.sp)), tw = own(u.toward.filter((x) => !u.meets.some((m) => m.sp === x.sp)));
-    let h = '';
+    let h = now;
     if (u.meets.length) h += `<div class="pvuse"><small>WHO IT'S FOR</small><ul>${own(u.meets).map((m) => `<li><b>${esc(m.label)}${mine(m.sp)}</b><span>${esc(m.need)}</span></li>`).join('')}</ul></div>`;
     if (tw.length) h += `<div class="pvuse"><small>${u.meets.length ? 'ALSO COUNTS TOWARD' : 'WHO IT HELPS'}</small><p>${esc(tw.length > 6 ? `${tw.slice(0, 6).map((x) => x.label).join(', ')} and ${tw.length - 6} more` : D_(tw.map((x) => x.label)))}: ${tw.length === 1 ? 'it wants' : 'they want'} a few pieces like this.</p></div>`;
     const ex = [...u.themes.map((t) => `Part of the ${t.label} theme (${t.need} pieces from it make the theme).`), ...u.tricks.map((t) => `Your octopus can learn to ${t} with it.`)];
     if (ex.length) h += `<div class="pvuse"><small>ALSO</small>${ex.map((x) => `<p>${esc(x)}</p>`).join('')}</div>`;
-    return h || '<div class="pvuse"><small>WHO IT\'S FOR</small><p>No animal needs it. It is there to make the tank yours.</p></div>';
+    return h !== now ? h : h + '<div class="pvuse"><small>WHO IT\'S FOR</small><p>No animal needs it. It is there to make the tank yours.</p></div>';
   }
+  let effC = { k: '', m: new Map() };
+  const effectOf = (id) => { const s = S(), k = `${s.decor.length}|${s.fish.length}|${s.fish.filter((f) => f.dead).length}|${Math.floor(Date.now() / 6e4)}`; if (effC.k !== k) effC = { k, m: new Map() }; if (!effC.m.has(id)) { let e = null; try { e = decorEffect(s, id); } catch { /* the preview is best-effort */ } effC.m.set(id, e); } return effC.m.get(id); };
   const D_ = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
   function shopCards() {
     const s = S(), out = [], showAll = cat === 'NEW', fishCat = cat === 'FISH';
@@ -386,7 +391,7 @@ export function initUI({ game, social, cb }) {
     return out.map((c) => {
       if (c.kind === 'floor' || c.kind === 'backdrop') { const key = c.kind + ':' + c.id; return `<button class="card ${selected === key ? 'sel' : ''}" data-k="${key}"><div class="sw" style="background:${SWATCH[c.kind][c.id]}"></div><b>${esc(c.label)}</b><span class="pr">${c.cur ? 'IN USE' : c.own || !c.price ? 'OWNED' : '🐚 ' + c.price}</span></button>`; }
       const lock = s.level < c.level || !!c.earned, key = c.kind + ':' + c.id, free = c.kind === 'decor' && isFree(s, c.id);      // (an earned piece is never for sale: it says how it is earned)
-      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}${(() => { const n = c.kind === 'decor' && tankNeeds(S()).find((x) => x.types.includes(c.id)); return n ? `<em class="wanttag">♥ ${esc(n.key === 'plants' ? 'Fish' : n.name)}</em>` : ''; })()}<b>${esc(c.label)}${c.kind === 'fish' && (c.id === 'seahorse' || c.id === 'octopus') ? ' <i class="kinds">4 kinds</i>' : ''}</b><span class="pr">${c.earned ? (c.earned === 'got' ? 'EARNED ✓' : `🏆 ${esc(c.earned)}`) : lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ` <em class="carrier">carries ${esc(MORPHS[specialOf(S()).color]?.label.toLowerCase() ?? '')}</em>` : ''}</span></button>`;
+      return `<button class="card ${selected === key ? 'sel' : ''} ${lock ? 'lock' : ''}" data-k="${key}"><img alt="" data-thumb="${key}">${!lock && isNew(S(), c) ? '<em class="newtag">NEW</em>' : ''}${(() => { const n = c.kind === 'decor' && tankNeeds(S()).find((x) => x.types.includes(c.id)); return n ? `<em class="wanttag">♥ ${esc(n.key === 'plants' ? 'Fish' : n.name)}</em>` : ''; })()}${(() => { if (c.kind !== 'decor' || lock || tankNeeds(S()).some((x) => x.types.includes(c.id))) return ''; const e = effectOf(c.id), up = e ? e.after - e.before : 0; return up > 0 ? `<em class="hptag">+${up} health</em>` : e?.themesDone.length ? '<em class="hptag">✦ theme</em>' : ''; })()}<b>${esc(c.label)}${c.kind === 'fish' && (c.id === 'seahorse' || c.id === 'octopus') ? ' <i class="kinds">4 kinds</i>' : ''}</b><span class="pr">${c.earned ? (c.earned === 'got' ? 'EARNED ✓' : `🏆 ${esc(c.earned)}`) : lock ? 'Lv ' + c.level : free ? 'FREE' : '🐚 ' + c.price}${c.deal && !lock ? ` <em class="carrier">carries ${esc(MORPHS[specialOf(S()).color]?.label.toLowerCase() ?? '')}</em>` : ''}</span></button>`;
     }).join('');
   }
   function shopDetail() {

@@ -2419,3 +2419,15 @@ export function decorUses(id) {
   const tricks = Object.values(TRICKS).filter((T) => T.types.includes(id)).map((T) => T.label);
   return { meets, toward, themes, tricks };
 }
+// What placing one more of a piece would really do to this tank right now: the Tank Health before and after, which animals' wellbeing
+// rises (and which needs it meets for them), and a theme it would complete. Worked out by trying it on a copy of the tank, with the same rules.
+export function decorEffect(t, id, now = Date.now()) {
+  if (!DECOR_DEF[id] || !t) return null; const c = JSON.parse(JSON.stringify(t)); c.decor = [...(c.decor ?? []), { id: '__try', type: id, x: 0, z: 0, ry: 0, at: now }];
+  const h0 = tankHealth(t, now).score, h1 = tankHealth(c, now).score, live = t.fish.filter((f) => !f.dead && !f.away && !f.nursery), out = [];
+  for (const f of live) { const g = c.fish.find((x) => x.id === f.id); let A, B; try { A = wellOf(t, f, now); B = wellOf(c, g, now); } catch { continue; }
+    const was = new Set((A.wants ?? []).filter((w) => w.met).map((w) => w.k)), met = (B.wants ?? []).filter((w) => w.met && !was.has(w.k)).map((w) => w.label);      // the needs this piece meets for it, as its Health screen lists them
+    if (B.score - A.score >= 1 || met.length) out.push({ name: f.name, species: f.species, d: Math.round(B.score - A.score), met }); }
+  const th0 = themesOf(t), done = themesOf(c).filter((x, i) => x.active && !th0[i].active).map((x) => x.label);
+  const th = themesOf(c).filter((x) => DECOR_DEF[id] && THEMES[x.key].types.includes(id) && !x.active).map((x) => ({ label: x.label, have: x.have, need: x.need }));
+  return { before: h0, after: h1, animals: out.sort((x, y) => y.d - x.d), themesDone: done, themeProgress: th, themeReward: done.length ? THEME_REWARD : 0 };
+}
