@@ -16,7 +16,7 @@ await p.goto(base + '/?q=1&tod=afternoon'); await p.waitForFunction(() => window
 const s0 = await p.evaluate(() => { const s = window.__game.state; return { level: s.level, fish: s.fish.map((f) => f.species), dev: new URLSearchParams(location.search).has('dev') }; });
 ck('a normal level 3 save, opened without dev mode', s0.level === 3 && !s0.dev, s0);
 // close whatever greets a returning player, then open the octopus's card the way a tap does
-for (let i = 0; i < 6; i++) { await p.evaluate(() => { document.querySelectorAll('#modal.on #mok, #modal.on [data-i="0"]').forEach((b) => b.click()); document.querySelectorAll('#coach,#toast,#reunion').forEach((e) => e.classList.remove('on')); }); await p.waitForTimeout(500); }
+for (let i = 0; i < 6; i++) { await p.evaluate(() => { document.querySelectorAll('#modal.on [data-i="0"]').forEach((b) => b.click()); document.querySelectorAll('#modal.on #mok').forEach((b) => b.click()); document.querySelectorAll('#coach,#toast,#reunion').forEach((e) => e.classList.remove('on')); }); await p.waitForTimeout(500); }
 const fed = await p.evaluate(async () => { const f = window.__fishes.list.find((x) => x.species.id === 'octopus'); return window.__game.dispatch({ t: 'crab', id: f.fid }); });      // (it was hungry after the time away, and pale with it: fed first, as a player would)
 console.log('  · fed a crab first:', fed.ok ? 'ok' : fed.reason);
 await p.evaluate(() => { window.__simClock(true); const F = window.__fishes; for (let i = 0; i < 2400; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); } const f = F.list.find((x) => x.species.id === 'octopus'); window.__oc = f; window.__showCard(f); }); await p.waitForTimeout(1500);

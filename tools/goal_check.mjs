@@ -15,9 +15,9 @@ const q0 = await p.evaluate(() => ({ offer: document.getElementById('bell').clas
 ck('the bell glows: a goal is waiting to be chosen (and nothing covers the tank)', q0.offer && !q0.strip, q0);
 await p.evaluate(() => document.querySelector('.box.party #mok')?.click()); await p.waitForTimeout(300);
 await p.click('#bell'); await p.waitForSelector('#sheet .gcard', { timeout: 30000 }); const gc0 = await p.evaluate(() => document.querySelector('#sheet .gcard').textContent); ck('the bell opens with the goal first', /Choose a goal/.test(gc0), gc0); await p.click('#sheet .gcard'); await p.waitForSelector('#modal.on [data-goal]', { timeout: 30000 });
-const offer = await p.evaluate(() => [...document.querySelectorAll('#modal [data-goal]')].map((b) => b.dataset.goal)); ck('three goals are offered, one of them breeding the color your fish carry', offer.length === 3 && offer.includes('gold'), offer);
+const offer = await p.evaluate(() => [...document.querySelectorAll('#modal [data-gpick]')].map((b) => b.dataset.gpick)); ck('three goals are offered, one of them breeding the color your fish carry', offer.length === 3 && offer.includes('gold'), offer);
 await p.screenshot({ path: `${out}/offer.png`, timeout: 120000 }).catch(() => {});
-await p.click('#modal [data-goal="gold"]'); await p.waitForSelector('#modal.on .gst', { timeout: 30000 });
+await p.click('#modal [data-gpick="gold"]'); await p.click('#modal #mgo');      // (pick, then start) await p.waitForSelector('#modal.on .gst', { timeout: 30000 });
 const sheet = await p.evaluate(() => ({ title: document.querySelector('#modal h2')?.textContent, steps: [...document.querySelectorAll('#modal .gst')].map((x) => x.className + ':' + x.textContent), hint: document.querySelector('#modal .gst.next small')?.textContent }));
 ck('the chosen goal shows its steps: the carrier is already found, and the next step says how', /Golden/.test(sheet.title) && /done/.test(sheet.steps[0]) && /next/.test(sheet.steps[1]) && /Pair with/.test(sheet.hint ?? ''), sheet);
 await p.screenshot({ path: `${out}/sheet.png`, timeout: 120000 }).catch(() => {});

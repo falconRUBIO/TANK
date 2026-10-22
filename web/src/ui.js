@@ -208,9 +208,10 @@ export function initUI({ game, social, cb }) {
       return;
     }
     const offer = (s.goalOffer ?? []).map((k) => [k, GOALS[k]]).filter(([, x]) => x);
-    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${choiceList(offer.map(([k, x]) => ({ title: x.title, sub: x.blurb, meta: `${GOAL_PACE[k]?.[0] ?? ''} · ${x.steps.length} steps${GOAL_PACE[k]?.[1] ? ` · needs ${GOAL_PACE[k][1]}` : ''}`, attr: `data-goal="${esc(k)}"` })))}${prizeLabel(nextPrize(s)) ? `<p class="gprize">${msIcon('gift', true, 16)} Finishing any of them unlocks the ${esc(prizeLabel(nextPrize(s)))}.</p>` : ''}${finished}<button class="lnk" id="mno">Not now</button></div>`;
+    modal.innerHTML = `<div class="box gsheet"><h2>Choose a goal</h2><p class="gbl">A long aim for the tank. Each one takes days, and each step tells you how.</p>${choiceList(offer.map(([k, x]) => ({ title: x.title, sub: x.blurb, meta: `${GOAL_PACE[k]?.[0] ?? ''} · ${x.steps.length} steps${GOAL_PACE[k]?.[1] ? ` · needs ${GOAL_PACE[k][1]}` : ''}`, attr: `data-gpick="${esc(k)}"` })), true)}<button class="big" id="mgo" data-goal="" disabled>Pick a goal above</button>${prizeLabel(nextPrize(s)) ? `<p class="gprize">${msIcon('gift', true, 16)} Finishing any of them unlocks the ${esc(prizeLabel(nextPrize(s)))}.</p>` : ''}${finished}<button class="lnk" id="mno">Not now</button></div>`;
     modal.classList.add('on'); $('mno').onclick = () => modal.classList.remove('on');
-    modal.querySelectorAll('[data-goal]').forEach((b) => { b.onclick = async () => { const r = await game.dispatch({ t: 'pickGoal', id: b.dataset.goal }); modal.classList.remove('on'); if (!r.ok) { toast(REASONS[r.reason] ?? 'That did not work.'); return; } sfx('arrive'); updateHeader(); setTimeout(goalSheet, 450); }; });
+    modal.querySelectorAll('[data-gpick]').forEach((b) => { b.onclick = () => { sfx('tap'); modal.querySelectorAll('[data-gpick]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); const g = $('mgo'); g.dataset.goal = b.dataset.gpick; g.disabled = false; g.textContent = 'Start this goal'; }; });
+    modal.querySelectorAll('[data-goal]').forEach((b) => { b.onclick = async () => { if (!b.dataset.goal) return; const r = await game.dispatch({ t: 'pickGoal', id: b.dataset.goal }); modal.classList.remove('on'); if (!r.ok) { toast(REASONS[r.reason] ?? 'That did not work.'); return; } sfx('arrive'); updateHeader(); setTimeout(goalSheet, 450); }; });
   }
   $('quest') && ($('quest').onclick = () => { sfx('tap'); goalSheet(); });
   function goalText() {
@@ -1063,9 +1064,11 @@ export function initUI({ game, social, cb }) {
   // a small chooser: one tap on one of a few options (or Not now)
   function choose({ title, text = '', options, cancel = 'Not now', moment = false }) {
     return modalFree(moment).then(() => new Promise((res) => {
-      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${choiceList(options.map((o, i) => { const [t, ...rest] = String(o.label).split(' · '); return { title: t, sub: o.sub ?? rest.join(' · '), attr: `data-i="${i}"` }; }))}${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
+      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${choiceList(options.map((o, i) => { const [t, ...rest] = String(o.label).split(' · '); return { title: t, sub: o.sub ?? rest.join(' · '), attr: `data-i="${i}"` }; }), true)}<button class="big" id="mok" disabled>Pick one above</button>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
       modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); res(v); };
-      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => done(options[+b.dataset.i].value); }); const no = $('mno'); if (no) no.onclick = () => done(undefined);
+      let pick = null; const ok = $('mok');      // a choice is picked first (its circle fills), then confirmed
+      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { sfx('tap'); pick = +b.dataset.i; modal.querySelectorAll('[data-i]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); ok.disabled = false; ok.textContent = 'Confirm'; }; });
+      ok.onclick = () => { if (pick != null) done(options[pick].value); }; const no = $('mno'); if (no) no.onclick = () => done(undefined);
     }));
   }
   // The opening of a tank: choose the free first fish, then name it, all in one card. The first one is preselected so it can be accepted straight away.

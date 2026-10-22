@@ -60,7 +60,7 @@ const [ra, rb] = await Promise.all([ready(A), ready(B)]); await A.screenshot({ p
 const why = async (p) => p.evaluate(() => ({ modal: document.querySelector('#modal.on h2')?.textContent ?? null, tab: window.__ui?.tab ?? null, nursery: !!window.__game.state.nursery, ready: window.__game.state.nursery ? window.__game.now() >= window.__game.state.nursery.readyAt : null }));
 ck("Ready to choose: THEY'RE READY comes up on both phones, the player's own screen", ra && rb && s.stage.stage === 'ready', { ra, rb, a: ra ? null : await why(A), b: rb ? null : await why(B) });
 // both choose at the same moment, different babies
-await Promise.all([tap(A, '#modal [data-i="0"]'), tap(B, '#modal [data-i="1"]')]); await Promise.all([until(A, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? '')), until(B, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''))]);
+await Promise.all([tap(A, '#modal [data-i="0"]'), tap(B, '#modal [data-i="1"]')]); await Promise.all([tap(A, '#modal #mok'), tap(B, '#modal #mok')]);      // (pick, then confirm) await Promise.all([until(A, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? '')), until(B, () => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''))]);
 await A.screenshot({ path: `${OUT}/6_confirm.png` });
 await Promise.all([tap(A, '#mok'), tap(B, '#mok')]);
 const done = async (p) => until(p, () => { const s = window.__game.state; return s.nursery === null && s.lastDepart ? { kept: s.fish.filter((f) => f.bornHere).map((f) => f.id), dep: s.lastDepart.nursery, departed: window.__departed ?? null } : null; }, 120);

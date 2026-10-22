@@ -50,7 +50,7 @@ ck('you are asked to name it, once the little one has swum out (not straight awa
 if (named) { await p.fill('#modal.on #mi', 'Pebble'); await p.evaluate(() => document.querySelector('#modal.on #mok').click()); }
 let offer = false; for (let i = 0; i < 30 && !offer; i++) { await p.waitForTimeout(500); await other(); offer = await p.evaluate(() => /ONE MORE LITTLE ONE/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 await p.screenshot({ path: `${out}/5-one-more.png` }); ck('then: one more little one is still by the eggs, keep it too?', offer);
-if (offer) await p.click('#modal.on [data-i="0"]');
+if (offer) { await p.click('#modal.on [data-i="0"]'); await p.click('#modal.on #mok'); }      // (pick, then confirm)
 let twin = null; for (let i = 0; i < 20 && !twin; i++) { await p.waitForTimeout(500); twin = await p.evaluate(() => { const k = window.__game.state.fish.filter((f) => f.parents?.length); return k.length === 2 ? k.map((f) => f.name) : null; }); }
 ck('kept: two little ones now, named and close together', twin && twin.includes('Pebble'), twin);
 for (let i = 0; i < 12; i++) { await p.waitForTimeout(500); if (await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? ''))) { await p.click('#modal.on #mno'); break; } }
