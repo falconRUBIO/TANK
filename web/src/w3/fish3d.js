@@ -776,6 +776,7 @@ export class Fish3D {
       w *= 1 + (bold - 0.5) * 0.9 * Math.max(0, Math.min(1, (q.z + 0.5) / 2.5));               // out in front near the glass: a bold one likes it, a cautious one hangs back
       if (moved) w *= 0.25 + 0.75 * adapt;                                                      // its old place stands somewhere new: an adaptable one takes to it at once, another needs time
       if (others.some((o) => o.holdfast?.on && Math.hypot(o.holdfast.x - q.x, o.holdfast.z - q.z) < 1.6)) w *= 0.6 + 0.9 * soc;      // near another seahorse
+      { const mate = this.mateId && others.find((o) => o.fid === this.mateId); if (mate) { const mx = mate.holdfast?.on ? mate.holdfast.x : mate.pos.x, mz = mate.holdfast?.on ? mate.holdfast.z : mate.pos.z, md = Math.hypot(mx - q.x, mz - q.z); if (md < 2.4) w *= roost ? 6 : 3.5; } }      // its mate: a pair keeps to the same patch of plants, and settles side by side for the night
       if (q.id === this.novel) w *= 1 + 2 * cur;
       if (q.id === this.familyPlant && !m.visits) w *= 1.8;                                   // young, it is drawn to the plant its family used (only until it has tried it: after that, its own experience decides)                                                // something new it has just been to look at
       pool.push([q, w, e]); tot += w;

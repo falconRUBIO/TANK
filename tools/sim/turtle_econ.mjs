@@ -13,6 +13,7 @@ const STRAT = {
   save: { list: LIST, keep: 15, turtleFirst: true, saveFrom: 7 },      // shops as balanced, but from level 7 buys nothing else until the first turtle
   hoard: { list: START, keep: 0, turtleFirst: true },                    // (a reference point: a starter set, then nothing at all until the turtle)
   balanced: { list: LIST, keep: 15 },
+  shared: { list: LIST, keep: 15, turtleFirst: true, saveFrom: 7, visits: { 8: 'a', 18: 'a', 12: 'b', 21: 'b', 10: 'c', 16: 'c' } },      // three caretakers, two visits each, saving from level 7 together
   spender: { list: LIST, keep: 0, extra: 0.5 },
 };
 export function run(strat, seed0) {
@@ -23,8 +24,9 @@ export function run(strat, seed0) {
   let wi = 0; const price = R.SPECIES_DEF[TURTLE].price;
   for (let h = 1; h <= DAYS * 24; h++) { const now = h * H, day = h / 24;
     R.advance(t, now);
-    if (![9, 20].includes(h % 24) || rnd() < 0.1) { if (t.level >= 8) o.l8 ??= +day.toFixed(1); continue; }
-    const u = { now: now + 1, name: 'a', uid: 'a' }, act = (a, x = {}) => { const s0 = t.shells, r = R.applyAction(t, a, { ...u, ...x }); if (t.shells > s0) { o.earned += t.shells - s0; o.src[a.t] = (o.src[a.t] ?? 0) + t.shells - s0; } return r; };
+    const V = S.visits ?? { 9: 'a', 20: 'a' }, who = V[h % 24];
+    if (!who || rnd() < 0.1) { if (t.level >= 8) o.l8 ??= +day.toFixed(1); continue; }
+    const u = { now: now + 1, name: who, uid: who }, act = (a, x = {}) => { const s0 = t.shells, r = R.applyAction(t, a, { ...u, ...x }); if (t.shells > s0) { o.earned += t.shells - s0; o.src[a.t] = (o.src[a.t] ?? 0) + t.shells - s0; } return r; };
     act({ t: 'mystery' });
     for (let k = 0; k < 3 && t.hunger > 0.25; k++) act({ t: 'feed', x: k - 1 }, { now: now + 1 + k * 1000 });
     for (const f of t.fish) if (R.ownHungry?.(f) && !f.dead && R.ownHunger(f) > 0.25) act({ t: 'feed', food: R.ownFood(f), fish: f.id, x: 0 });

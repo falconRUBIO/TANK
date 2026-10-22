@@ -33,16 +33,16 @@ const xz = (a, x, z) => Math.hypot(a[0] - x, a[2] - z), mean = (a) => a.reduce((
 const pathLen = (t) => t.slice(1).reduce((s, c, i) => s + Math.hypot(c[0] - t[i][0], c[1] - t[i][1], c[2] - t[i][2]), 0);
 const OCT = { species: 'octopus' };
 
-// 1. two natures, the same tank, the same 2 minutes: a homebody (seed 6) and an explorer (seed 5), each with its own den
+// 1. two natures, the same tank, the same 5 minutes: a homebody (seed 6) and an explorer (seed 5), each in turn with the coconut den on the left
 { const D1 = [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: 'c2', type: 'coconut', x: 2.4, z: 0.6 }, { id: 'r1', type: 'boulder', x: 0, z: -1.6 }, { id: 'g1', type: 'grass', x: -0.6, z: 2.4 }, { id: 'g2', type: 'fern', x: 0.8, z: 2.3 }];
   const known = () => ({ fav: null, likes: [], fish: {}, fam: Object.fromEntries(D1.map((d) => [d.id, { k: 0.9, n: 12, x: d.x, z: d.z, at: Date.now() - 5 * 864e5 }])) });      // (a tank it has lived in for days: nothing new to investigate)
-  await stage(101, [{ ...OCT, id: 'oH', name: 'Hob', seed: 6, home: 'c1', bond: {}, mem: known() }, { ...OCT, id: 'oE', name: 'Exo', seed: 5, home: 'c2', bond: {}, mem: known() }], D1);
-  const st = await p.evaluate(() => ['oH', 'oE'].map((id) => window.__fishes.byId.get(id).mind?.type));
-  await run(600, [], 11); const { tr } = await run(4800, ['oH', 'oE'], 1);
+  // each alone in the same tank, from the same den, for the same frames (two octopuses together start to avoid each other, which muddies it)
+  const tr = {}, st = []; for (const [id, name, seed] of [['oH', 'Hob', 6], ['oE', 'Exo', 5]]) { await stage(101, [{ ...OCT, id, name, seed, home: 'c1', bond: {}, mem: known() }], D1);
+    st.push(await p.evaluate((id) => window.__fishes.byId.get(id).mind?.type, id)); await run(600, [], 11); tr[id] = (await run(6000, [id], 1)).tr[id]; if (id === 'oE') await shot('1-personalities'); }
   const m = (t, dx) => ({ path: r2(pathLen(t)), far: r2(Math.max(...t.map((a) => xz(a, dx, 0.6)))), den: r2(mean(t.map((a) => (xz(a, dx, 0.6) < 1.2 ? 1 : 0)))), glass: r2(mean(t.map((a) => (a[2] > 2.6 ? 1 : 0)))) });
-  const H = m(tr.oH, -2.4), E = m(tr.oE, 2.4); await shot('1-personalities');
+  const H = m(tr.oH, -2.4), E = m(tr.oE, -2.4);
   info('state', 'natures from octoMind(seed)', JSON.stringify(st));
-  ck('the homebody roams less than the explorer over the same frames (rendered path length, furthest from its den)', st[0] === 'homebody' && st[1] === 'explorer' && H.path < E.path && H.far < E.far, 'rendered', `homebody ${JSON.stringify(H)} explorer ${JSON.stringify(E)}`);
+  ck('the homebody roams less than the explorer over the same frames (rendered path length)', st[0] === 'homebody' && st[1] === 'explorer' && H.path < 0.8 * E.path, 'rendered', `homebody ${JSON.stringify(H)} explorer ${JSON.stringify(E)}`);
   ck('the homebody spends more of its frames at its den than the explorer does', H.den > E.den, 'rendered', `${H.den} vs ${E.den}`); }
 
 // 2. the caretaker looks in: an octopus that trusts them (bond 20) and a stranger (no bond), side by side, both resting at the back
@@ -57,18 +57,23 @@ const OCT = { species: 'octopus' };
   const pr = (t) => r2(mean(t.map((a) => (a[2] > 4.0 ? 1 : 0))));      // (only a greeting 'close' brings it up against the front pane, past z 3.5: fish3d.js zMax)
   ck('the octopus that knows you comes right up to the front glass for you; the stranger never does (rendered z past the pane line)', pr(tr.oF) > 0.3 && pr(tr.oS) === 0, 'rendered', `fond z ${z0.z.oF}→max ${mz(tr.oF)}, pressed to the glass ${pr(tr.oF)} of frames; stranger z ${z0.z.oS}→max ${mz(tr.oS)}, ${pr(tr.oS)}`); }
 
-// 3. a favourite place: a goldfish whose spot is the boulder vs a goldfish with none; and a seahorse with a saved favourite holdfast (fish.log.hitch)
+// 3. a favourite place: a goldfish whose spot is a sword plant, one whose spot is the big boulder, and one with none; two seahorses each with a
+//    saved favourite holdfast (fish.log.hitch / log.fav, from earlier days), at opposite ends of the tank, plus one with no history
 { const D = [{ id: 'r1', type: 'boulder', x: -2.6, z: -0.6 }, { id: 'r2', type: 'rock', x: 2.8, z: -1.0 }, { id: 's1', type: 'shell', x: 0.4, z: -1.8 }, { id: 'p1', type: 'grass', x: 2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: -1.2, z: 2.3 }, { id: 'p3', type: 'sword', x: 1.2, z: -0.4 }, { id: 'p4', type: 'grass', x: -0.2, z: 1.0 }];
-  const HS = { species: 'seahorse', traits: ['Calm'] }, hitch = { p1: [900, 8, 2.6, 2.4] };
-  const stg = () => stage(303, [{ id: 'fS', name: 'Spot', species: 'goldfish', seed: 3, spotId: 'r1', found: ['spot'] }, { id: 'fC', name: 'Ctrl', species: 'goldfish', seed: 3 },
-    { ...HS, id: 'hF', name: 'Fav', seed: 4, sex: 'f', log: { hitch, fav: 'p1' } }, { ...HS, id: 'hC', name: 'Plain', seed: 4, sex: 'f' }], D);
-  await stg(); const { tr } = await run(6000, ['fS', 'fC', 'hF', 'hC'], 4); await shot('3-favourite-place');
-  const nearR = (t) => r2(mean(t.slice(60).map((a) => (xz(a, -2.6, -0.6) < 1.8 ? 1 : 0)))), onP1 = (t) => r2(mean(t.slice(60).map((a) => (a[3] === 'p1' || xz(a, 2.6, 2.2) < 0.9 ? 1 : 0))));
-  ck('the fish with a favourite spot is near its boulder clearly more often than a fish without one', nearR(tr.fS) > 1.5 * nearR(tr.fC) && nearR(tr.fS) - nearR(tr.fC) > 0.1, 'rendered', `${nearR(tr.fS)} vs ${nearR(tr.fC)} of frames within 1.8`);
-  const sv = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('hF'); return { savedLogWired: typeof f.savedLog === 'function', memP1: f.memOf('p1'), stateFav: window.__game.state.fish.find((x) => x.id === 'hF').log?.fav }; });
-  info('state', 'seahorse hF has log.hitch.p1 = 900 s / 8 visits and log.fav = p1 in the tank state', JSON.stringify(sv));
-  const sh = { fav: onP1(tr.hF), ctrl: onP1(tr.hC) };
-  ck('the seahorse with a saved favourite holdfast (p1) goes back to it more than one without (rendered)', sh.fav > sh.ctrl + 0.15, 'rendered', `${sh.fav} vs ${sh.ctrl} of frames on/at p1; savedLog wired: ${sv.savedLogWired}`); }
+  const HS = { species: 'seahorse', traits: ['Calm'], sex: 'f' }, G = { species: 'goldfish', seed: 3 };
+  await stage(303, [{ ...G, id: 'fS', name: 'Sword', spotId: 'p3', found: ['spot'] }, { ...G, id: 'fB', name: 'Rocky', spotId: 'r1', found: ['spot'] }, { ...G, id: 'fC', name: 'Ctrl' },
+    { ...HS, id: 'hA', name: 'Ama', seed: 4, log: { hitch: { p1: [900, 8, 2.6, 2.4] }, fav: 'p1' } }, { ...HS, id: 'hB', name: 'Bel', seed: 9, log: { hitch: { p2: [900, 8, -1.2, 2.5] }, fav: 'p2' } }, { ...HS, id: 'hN', name: 'New', seed: 11 }], D);
+  const { tr } = await run(6000, ['fS', 'fB', 'fC', 'hA', 'hB', 'hN'], 4); await shot('3-favourite-place');
+  const near = (t, x, z, r) => r2(mean(t.slice(60).map((a) => (xz(a, x, z) < r ? 1 : 0)))), on = (t, id, x, z) => r2(mean(t.slice(60).map((a) => (a[3] === id || xz(a, x, z) < 0.9 ? 1 : 0))));
+  const sw = [near(tr.fS, 1.2, -0.4, 1.5), near(tr.fC, 1.2, -0.4, 1.5)], bo = [near(tr.fB, -2.6, -0.6, 1.8), near(tr.fC, -2.6, -0.6, 1.8)];
+  ck('the fish whose spot is the sword plant is by it far more often than a fish without a spot', sw[0] > 1.5 * sw[1] && sw[0] - sw[1] > 0.1, 'rendered', `${sw[0]} vs ${sw[1]} of frames within 1.5`);
+  const tg = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('fB'); let n = 0, gap = 0; for (let i = 0; i < 200; i++) { f.retarget = 0; f.pick(Math.random); if (Math.hypot(f.target.x + 2.6, f.target.z + 0.6) < 1.8) { n++; gap += Math.hypot(f.target.x + 2.6, f.target.z + 0.6); } } return { aimsThere: n / 200, meanTargetFromBoulder: +(gap / Math.max(1, n)).toFixed(2) }; });
+  info('state', 'the boulder fish\'s chosen targets (f.pick): how often it aims at its boulder, and how far from the boulder centre (boulder pick radius 1.2)', JSON.stringify(tg));
+  ck('the fish whose spot is the big boulder is by it more often than a fish without a spot', bo[0] > 1.5 * bo[1] && bo[0] - bo[1] > 0.1, 'rendered', `${bo[0]} vs ${bo[1]} of frames within 1.8`);
+  const sv = await p.evaluate(() => ['hA', 'hB', 'hN'].map((id) => { const f = window.__fishes.byId.get(id); return [id, typeof f.savedLog === 'function', f.favourite(f.getSpots())]; }));
+  info('state', 'seahorses: saved log handed to the 3D animal, and the favourite it reads from it', JSON.stringify(sv));
+  const A = [on(tr.hA, 'p1', 2.6, 2.2), on(tr.hA, 'p2', -1.2, 2.3)], B = [on(tr.hB, 'p2', -1.2, 2.3), on(tr.hB, 'p1', 2.6, 2.2)], N = [on(tr.hN, 'p1', 2.6, 2.2), on(tr.hN, 'p2', -1.2, 2.3)];
+  ck('seahorses with a saved favourite holdfast spend their time on their own favourite, not on the other one\'s (rendered, both pooled)', A[0] + B[0] > 2 * (A[1] + B[1]) + 0.1, 'rendered', `Ama p1 ${A[0]} / p2 ${A[1]}; Bel p2 ${B[0]} / p1 ${B[1]}; no-history seahorse p1 ${N[0]} / p2 ${N[1]}`); }
 
 // 4. pals: two goldfish who are best friends (pal), two who are not, same species, same tank
 { await stage(404, [{ id: 'a1', name: 'Ann', species: 'goldfish', seed: 21, pal: 'a2' }, { id: 'a2', name: 'Abe', species: 'goldfish', seed: 22, pal: 'a1' }, { id: 'b1', name: 'Bea', species: 'goldfish', seed: 23 }, { id: 'b2', name: 'Bo', species: 'goldfish', seed: 24 }],
@@ -103,7 +108,7 @@ const OCT = { species: 'octopus' };
   const P = dd('m1', 'm2'), S = dd('s1', 's2'), meet = (a) => a.filter((d) => d < 1.2).length;
   info('state', 'mateId on the 3D seahorses', JSON.stringify(mates));
   ck('the mated pair meets and circles together (rendered: frames within 1.2 of each other); the singles do not', meet(P) > 10 && meet(P) > 3 * meet(S), 'rendered', `pair ${meet(P)} close samples (greeting in ${gr('m1')}), singles ${meet(S)} (greeting in ${gr('s1')}); mean distance ${r2(mean(P))} vs ${r2(mean(S))}`);
-  info('rendered', 'outside their meetings the pair keeps no closer than the singles', `pair mean ${r2(mean(P.filter((d, i) => !tr.m1[i][4])))} vs singles ${r2(mean(S.filter((d, i) => !tr.s1[i][4])))}`); }
+  { const po = mean(P.filter((d, i) => !tr.m1[i][4])), so = mean(S.filter((d, i) => !tr.s1[i][4])); ck('outside their meetings the pair keeps closer than two singles (rendered: mean distance)', po < 0.8 * so, 'rendered', `pair mean ${r2(po)} vs singles ${r2(so)}`); } }
 
 ck('no page errors', errors.length === 0, 'page', errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Attachment checks passed'); process.exit(fails ? 1 : 0);

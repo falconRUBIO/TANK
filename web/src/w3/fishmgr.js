@@ -177,8 +177,8 @@ export class Fishes {
       if (C.phase === 'go') {
         if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
         if (C.t > 45) { f.keepCarry = null; continue; }
-        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
-        else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' };
+        { const kd = Math.hypot(f.pos.x - k.x, f.pos.z - k.z); if (kd < 1.2 || (f.st?.s === 'work' && kd < 2.0)) {      /* within an arm's reach (an inspect walk stops about 1.3 away, in its work pose: that is close enough to reach out) */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' }; }
         continue;
       }
       const it = C.it; it.group.position.set(f.pos.x + Math.sin(f.heading ?? 0) * 0.15, Math.max(sandH(f.pos.x, f.pos.z) + 0.05, f.pos.y - 0.32), f.pos.z + 0.18);      // held low under its arms
