@@ -281,7 +281,8 @@ export function initUI({ game, social, cb }) {
     };
   }
   // what counts as new: unlocked by the tank's latest level-up (never at level 1, where everything is new) and not yet in the tank
-  const isNew = (s, c) => (c.kind === 'fish' || c.kind === 'decor') && s.level > 1 && c.level === s.level && !(c.kind === 'fish' ? s.fish.some((f) => f.species === c.id) || (s.orders ?? []).some((o) => o.species === c.id) : s.decor.some((d) => d.type === c.id));
+  const FRESH = new Set(['station', 'cave', 'mangrove', 'sponge', 'rubble']), FRESH_UNTIL = Date.UTC(2026, 10, 5);      // new in the Shop for everyone who already has the level for them, for two weeks (or until they buy one)
+  const isNew = (s, c) => (c.kind === 'fish' || c.kind === 'decor') && s.level > 1 && (c.level === s.level || (c.kind === 'decor' && FRESH.has(c.id) && c.level <= s.level && Date.now() < FRESH_UNTIL)) && !(c.kind === 'fish' ? s.fish.some((f) => f.species === c.id) || (s.orders ?? []).some((o) => o.species === c.id) : s.decor.some((d) => d.type === c.id));
   const newCount = () => { const s = S(); if (!s || s.level < 2) return 0; return Object.entries(SPECIES_DEF).filter(([id, d]) => !d.visitor && !((s.released?.length ?? 0) < (d.needRel ?? 0)) && isNew(s, { kind: 'fish', id, level: d.level })).length + Object.entries(DECOR_DEF).filter(([id, d]) => isNew(s, { kind: 'decor', id, level: d.level })).length; };
   // ── notes on the glass ── little sticky notes the crew leave each other; one each, gone after three days
   const NOTE_BG = { butter: '#ffeaa6', blush: '#ffd3de', mint: '#cff3dc', sky: '#d3e7ff', lilac: '#e6d9ff' };

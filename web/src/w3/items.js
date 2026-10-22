@@ -82,11 +82,11 @@ const B = {
   // a cleaning station: a rounded coral head with a flat, worn top where the gobies sit, ringed with tiny striped cleaner shrimp
   station: (g, seed) => {
     const u = 0.08, v = new Vox(u), r = mulberry32(seed);
-    v.ellipsoid(0, 0, 0, 8, 6.5, 7, (i, j, k) => { const n = fbm(i * 0.3 + seed, j * 0.3, k * 0.3); return j > 4 ? mix([206, 150, 120], [236, 190, 150], n) : mix([150, 104, 96], [196, 140, 118], n); }, seed, 0.18);
-    for (const q of [...v.m.values()]) if (q.j > 5) v.m.delete(q.i + ',' + q.j + ',' + q.k);      // the flat top, worn smooth
-    for (const q of v.m.values()) if (q.j === 5) q.c = mix([224, 196, 160], [244, 220, 186], hash(q.i, q.j, q.k, 2));
-    for (let n = 0; n < 6; n++) { const a = (n / 6) * Math.PI * 2 + r(), I = Math.round(Math.cos(a) * 7.6), K = Math.round(Math.sin(a) * 6.6), J = 2 + ((r() * 3) | 0);      // cleaner shrimp: red and white, with long white feelers
-      for (let t = 0; t < 4; t++) v.set(I + Math.round(Math.cos(a) * t * 0.4), J + (t >> 1), K + Math.round(Math.sin(a) * t * 0.4), t % 2 ? [250, 246, 240] : [214, 44, 52]);
+    v.ellipsoid(0, 4, 0, 8, 10, 7, (i, j, k) => { const n = fbm(i * 0.3 + seed, j * 0.3, k * 0.3), ridge = Math.sin(i * 1.2 + k * 0.7 + j * 0.4) > 0.55; return ridge ? mix([238, 170, 140], [250, 206, 170], n) : j > 8 ? mix([206, 150, 120], [236, 190, 150], n) : mix([150, 104, 96], [196, 140, 118], n); }, seed, 0.18);      // a tall coral head, ridged
+    for (const q of [...v.m.values()]) if (q.j > 11) v.m.delete(q.i + ',' + q.j + ',' + q.k);      // the flat top, worn smooth
+    for (const q of v.m.values()) if (q.j === 11) q.c = mix([224, 196, 160], [244, 220, 186], hash(q.i, q.j, q.k, 2));
+    for (let n = 0; n < 8; n++) { const a = (n / 8) * Math.PI * 2 + r(), I = Math.round(Math.cos(a) * 7.8), K = Math.round(Math.sin(a) * 6.8), J = 5 + ((r() * 5) | 0);      // cleaner shrimp: red and white, with long white feelers
+      for (let t = 0; t < 4; t++) for (const dj of [0, 1]) v.set(I + Math.round(Math.cos(a) * t * 0.5), J + (t >> 1) + dj, K + Math.round(Math.sin(a) * t * 0.5), t % 2 ? [250, 246, 240] : [214, 44, 52]);
       v.set(I + Math.round(Math.cos(a) * 2), J + 3, K + Math.round(Math.sin(a) * 2), [250, 250, 250]); }
     topLit(v); const m = v.mesh(); m.position.y = 0.12; g.add(m); return [{ v, x: 0, y: 0.12, z: 0, ry: 0 }];
   },
@@ -120,7 +120,7 @@ const B = {
   rubble: (g, seed) => {
     const u = 0.07, v = new Vox(u), r = mulberry32(seed), cols = [[236, 226, 204], [220, 170, 150], [190, 180, 160], [244, 210, 190], [160, 150, 136]];
     for (let n = 0; n < 70; n++) { const a = r() * 6.28, d = Math.sqrt(r()) * 20, I = Math.round(Math.cos(a) * d), K = Math.round(Math.sin(a) * d * 0.6), c = cols[(r() * cols.length) | 0], w = 1 + ((r() * 2) | 0);
-      for (let i = 0; i < w; i++) for (let k = 0; k < 1 + ((r() * 2) | 0); k++) v.set(I + i, (r() < 0.3 ? 1 : 0), K + k, mix(c, [255, 255, 255], hash(I, i, K, 2) * 0.2)); }
+      const hgt = d < 8 ? 1 + ((r() * 3) | 0) : 1 + ((r() * 2) | 0); for (let i = 0; i < w; i++) for (let k = 0; k < 1 + ((r() * 2) | 0); k++) for (let j = 0; j < hgt; j++) v.set(I + i, j, K + k, mix(c, [255, 255, 255], hash(I, i, K, 2) * 0.2 + j * 0.05)); }      // heaped higher in the middle
     topLit(v); const m = v.mesh(); m.position.y = 0.02; g.add(m); return [];
   },
   bamboo: (g, seed) => {
