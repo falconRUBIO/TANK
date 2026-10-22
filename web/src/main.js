@@ -1755,7 +1755,7 @@ setInterval(() => { if (!window.__quietUntil || Date.now() > window.__quietUntil
 // After the replay: the one thing that matters most now, said once, then the tank is quiet (what was in the replay is not repeated as toasts)
 async function afterReplay() {
   await new Promise((r) => { const w = () => ($('reunion').classList.contains('on') ? setTimeout(w, 400) : r()); setTimeout(w, 1200); });
-  window.__quietUntil = 0; ui.clearToasts(); const s = game.state, me = game.you?.userId; if (!s) return;
+  ui.clearToasts(); const s = game.state, me = game.you?.userId; if (!s) return;
   const egg = (s.eggs ?? []).find((e) => e.ready), born = s.fish.find((f) => f.preg?.ready && !f.dead), D = s.dilemma && !s.dilemma.done ? s.dilemma : null, mine = D && (!D.turn || D.turn.uid === me || Date.now() > D.turn.until), m = mysteryOf(s), G = goalOf(s);
   // something changed in the tank itself while you were away: that comes before any menu (it is there to be looked at, now)
   const day = Date.now() - 864e5, kp = (s.keeps ?? []).filter((k) => k.at > day).sort((a, b) => b.at - a.at)[0], kOcto = kp && s.fish.find((f) => f.id === kp.by && !f.dead);
