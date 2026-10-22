@@ -644,7 +644,7 @@ export class Fish3D {
       this.pos.x += (wantX - this.pos.x) * Math.min(1, dt * 1.6); this.pos.y += (wantY - this.pos.y) * Math.min(1, dt * 1.6); this.pos.z += (wantZ - this.pos.z) * Math.min(1, dt * 1.6);
       let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.5); this.vel.multiplyScalar(Math.exp(-3 * dt));
       this.glowK += ((G.t > 1.2 ? 1 : 0) - this.glowK) * Math.min(1, dt * 1.2);
-      if (G.t <= 0) { this.greet = null; this.idle = 4 + rng() * 4; this.retarget = 6; this.pickHover(rng); }
+      if (G.t <= 0) { this.greet = null; this.idle = 4 + rng() * 4; this.retarget = 6; const near = this.mateId && this.sp.tail && !this.nursery ? (this.getSpots?.() ?? []).filter((q) => Math.hypot(q.x - G.cx, q.z - G.cz) < 2.8) : null; if (!(near?.length && this.pickHold(rng, near))) this.pickHover(rng); }      // after their dance a pair settles on plants close by, near each other; others drift off
     } else if (!(this.netGlowAt > performance.now() - 2000)) this.glowK += (0 - this.glowK) * Math.min(1, dt * 1.2);      // (on another phone the glow comes from the lead phone)
     if (Math.abs(this.glowK - (this.glowApplied ?? 0)) > 0.03) { this.glowApplied = this.glowK; this.applyGlow(); }
     if (G) { this.pitch += (Math.sin(t * 0.8 + this.phase) * 0.04 - this.pitch) * Math.min(1, dt * 2); this.phase += dt * 14; this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, this.pitch, 'YZX')); this.accum += dt; if (this.accum > 1 / (this.poseHz ?? 30)) { this.accum = 0; this.setPose(this.phase); } return; }
@@ -786,7 +786,11 @@ export class Fish3D {
       const favId = this.favourite(spots); if (pool.some((x) => x[0].id !== this.lastHold && dq(x) < 3.2)) for (let i = pool.length - 1; i >= 0; i--) if (dq(pool[i]) > 4.5 && pool[i][0].id !== favId) { /* its favorite is home, however far */ tot -= pool[i][1]; pool.splice(i, 1); } }
     if (!pool.length) return false;
     const fav = this.favourite(spots), fq = fav && spots.find((q) => q.id === fav), fd = fq ? Math.hypot(fq.x - this.pos.x, fq.z - this.pos.z) : 0;
-    let pick = fav && rng() < (roost ? (fd < 2.5 ? 0.85 : 0.35) : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;      // for the night, its favorite if it is not far; otherwise somewhere near it knows
+    let pick = null;
+    { const mate = this.mateId && others.find((o) => o.fid === this.mateId);      // a settled pair: often (not always) it goes to hold on beside its mate (where its mate holds, or is heading to hold), more so for the night
+      const mx = mate?.holdfast?.x ?? mate?.pos.x, mz = mate?.holdfast?.z ?? mate?.pos.z;
+      if (mate && rng() < (roost ? 0.6 : 0.35)) { const near = pool.map((x) => [x, Math.hypot(x[0].x - mx, x[0].z - mz)]).filter(([, d]) => d < 2.6).sort((a, b) => a[1] - b[1])[0]; if (near) pick = near[0]; } }
+    if (!pick) pick = fav && rng() < (roost ? (fd < 2.5 ? 0.85 : 0.35) : 0.2 + 0.4 * cautious) ? pool.find(([q]) => q.id === fav) : null;      // for the night, its favorite if it is not far; otherwise somewhere near it knows
     if (!pick) { let r = rng() * tot; for (const x of pool) { r -= x[1]; if (r <= 0) { pick = x; break; } } pick ||= pool[0]; }
     const [q, , e] = pick, want = 0.15 + 0.45 * bold;      // a bold seahorse holds on higher up, a cautious one lower down
     const free = e.grips.filter((g) => !others.some((o) => o.holdfast && Math.hypot(o.holdfast.x - g.x, o.holdfast.z - g.z) < 0.6 && Math.abs(o.holdfast.y - g.y) < 0.9)); if (!free.length) return false;
