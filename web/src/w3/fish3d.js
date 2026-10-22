@@ -25,7 +25,7 @@ const PLANT_COLS = { grass: [[40, 112, 84], [150, 222, 150]], fern: [[124, 48, 1
 // a collector handles everything, a trickster tags along behind the fish and plays the snake.
 const TEMPER = {
   explorer:  { grab: 1.8, tour: 1.6, follow: 1.0, watch: 0.8, flat: 1.0, bury: 0.6, lion: 0.9, snake: 1.0, jelly: 1.0, kelp: 0.8, squirt: 0.6, tempo: 1.2, sig: ['grab', 'tour', 'snake'] },
-  homebody:  { grab: 0.8, tour: 0.4, follow: 0.5, watch: 1.0, flat: 1.2, bury: 2.2, lion: 0.5, snake: 1.2, jelly: 0.5, kelp: 1.6, squirt: 0.2, tempo: 0.75, sig: ['bury', 'kelp', 'flat'] },
+  homebody:  { grab: 0.8, tour: 0.15, follow: 0.25, watch: 1.0, flat: 1.2, bury: 2.2, lion: 0.5, snake: 1.2, jelly: 0.5, kelp: 1.6, squirt: 0.2, tempo: 0.75, sig: ['bury', 'kelp', 'flat'] },
   showoff:   { grab: 0.9, tour: 1.4, follow: 1.0, watch: 0.7, flat: 0.8, bury: 0.4, lion: 2.2, snake: 1.0, jelly: 1.8, kelp: 0.8, squirt: 1.2, tempo: 1.1, sig: ['lion', 'jelly'] },
   watcher:   { grab: 0.8, tour: 0.7, follow: 1.4, watch: 2.2, flat: 1.0, bury: 1.0, lion: 0.6, snake: 0.8, jelly: 0.8, kelp: 1.4, squirt: 0.3, tempo: 0.85, sig: ['watch', 'kelp', 'follow'] },
   collector: { grab: 2.0, tour: 0.8, follow: 0.7, watch: 0.8, flat: 1.0, bury: 1.2, lion: 0.6, snake: 0.8, jelly: 0.6, kelp: 1.0, squirt: 0.4, tempo: 1.0, sig: ['grab', 'flat'] },
@@ -62,7 +62,7 @@ const todNow = () => { const h = new Date().getHours(); return h >= 5 && h < 11 
 // a show-off is at the glass, a watcher sits and studies the others, a collector keeps fetching, a trickster never stops. Natural variation stays.
 const OCTO_STYLE = {
   explorer: { roam: 1.9, den: 0.5, novel: 0.7, revisit: 0.35, greet: 1, carry: 0.8, dash: 1.2, glass: 1.2, watch: 1 },
-  homebody: { roam: 0.35, den: 1.9, novel: 0.08, revisit: 0.88, greet: 0.8, carry: 1.2, dash: 0.5, glass: 0.4, watch: 1 },
+  homebody: { roam: 0.2, den: 2.4, novel: 0.08, revisit: 0.88, greet: 0.8, carry: 1.2, dash: 0.5, glass: 0.4, watch: 1 },
   showoff: { roam: 1.1, den: 0.7, novel: 0.4, revisit: 0.5, greet: 1.1, carry: 0.6, dash: 1.6, glass: 1.3, watch: 1 },
   watcher: { roam: 0.6, den: 0.9, novel: 0.3, revisit: 0.6, greet: 1, carry: 0.8, dash: 0.35, glass: 0.8, watch: 3 },
   collector: { roam: 1, den: 1.1, novel: 0.35, revisit: 0.8, greet: 0.9, carry: 2.8, dash: 0.7, glass: 0.7, watch: 1 },
