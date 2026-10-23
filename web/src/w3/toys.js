@@ -7,7 +7,8 @@ import { sandH } from './terrain.js';
 import { Fish3D } from './fish3d.js';
 
 const p0x = (L) => L.at.x;
-const kindOf = (f) => (f.sk === 'octopus' ? 'octopus' : f.sk === 'seahorse' ? 'seahorse' : 'fish');
+const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
+const kindOf = (f) => (f.crab ? 'crab' : f.sk === 'octopus' ? 'octopus' : f.sk === 'seahorse' ? 'seahorse' : TURTLES.has(f.sk) ? 'turtle' : 'fish');      // every kind knows a toy is there, and each takes to it its own way
 const free = (f) => !f.dead && !f.visitor && !f.nursery && !f.sleepy && !f.weak;
 const X = 4.4, ZB = -1.8, ZF = 2.5;
 
@@ -59,7 +60,7 @@ export class Toys {
     else { v.y -= 0.9 * dt; }      // in water a ball sinks slowly (a little heavier than water)
     v.multiplyScalar(Math.exp(-0.9 * dt)); p.addScaledVector(v, dt);
     if (!B.splashed && p.y < Fish3D.topY) { B.splashed = true; this.fishes.burst?.(p.clone()); }
-    const floor = sandH(p.x, p.z) + r; if (p.y < floor) { p.y = floor; if (v.y < -0.25) { v.y = -v.y * 0.38; this.onSound?.('bonk'); } else v.y = 0; v.x *= Math.exp(-1.6 * dt); v.z *= Math.exp(-1.6 * dt);      // a soft bounce, then it rolls and settles
+    const floor = sandH(p.x, p.z) + r; if (p.y < floor + 0.05) B.downT = (B.downT ?? 0) + dt; if (p.y < floor) { p.y = floor; if (v.y < -0.25) { v.y = -v.y * 0.38; this.onSound?.('bonk'); } else v.y = 0; v.x *= Math.exp(-1.6 * dt); v.z *= Math.exp(-1.6 * dt);      // a soft bounce, then it rolls and settles
       const dx = sandH(p.x + 0.2, p.z) - sandH(p.x - 0.2, p.z), dz = sandH(p.x, p.z + 0.2) - sandH(p.x, p.z - 0.2); v.x -= dx * 3 * dt; v.z -= dz * 3 * dt; }      // and rolls down a slope
     if (Math.abs(p.x) > X) { p.x = Math.sign(p.x) * X; v.x = -v.x * 0.5; } if (p.z < ZB || p.z > ZF) { p.z = Math.max(ZB, Math.min(ZF, p.z)); v.z = -v.z * 0.5; } if (p.y > Fish3D.topY + 0.8 && B.leaving == null) { p.y = Fish3D.topY + 0.8; v.y = Math.min(0, v.y); }
     B.m.rotation.z -= v.x * dt / r; B.m.rotation.x += v.z * dt / r;      // it rolls the way it moves
@@ -74,6 +75,13 @@ export class Toys {
         if ((!f.inspect || f.inspect.toy) && !cd && d > 1.0) f.inspect = { x: p.x, z: p.z, toy: true };      // (it keeps after the ball as it rolls)
         if (d < 1.5 && !cd && p.y < sandH(p.x, p.z) + 1.3) { const away = p.clone().sub(f.pos).setY(0).normalize(); v.addScaledVector(away, 1.8); v.y += 2.6 + Math.random(); B.cool.set(f, now + 2600); B.who.add(f.fid); if (f.inspect?.toy) f.inspect = null; f.flush = Math.max(f.flush ?? 0, 0.4); this.fishes.burst?.(p.clone()); this.onSound?.('bonk'); }
       } else if (k === 'seahorse' && d < 4) { f.glance = p.clone(); f.glanceT = 1.5; if (d < 2.5) B.who.add(f.fid); }      // a seahorse just watches it go by
+      else if (k === 'turtle' && d < 5) {      // a turtle swims over slowly and gives it a shove with its nose, or a bite to see what it is
+        f.target.set(p.x - Math.sign(v.x || 1) * 0.4, Math.max(p.y, sandH(p.x, p.z) + 0.6), p.z); f.retarget = Math.max(f.retarget ?? 0, 0.8);
+        if (d < r + (f.radius ?? 0.8) * 0.5 && !cd) { const push = p.clone().sub(f.pos).setY(0.1).normalize(); v.addScaledVector(push, 2.2); v.y += 0.4; B.cool.set(f, now + 1800); B.who.add(f.fid); this.onSound?.('bonk'); }
+      } else if (k === 'crab' && d < 5 && p.y < sandH(p.x, p.z) + 1) {      // a crab on the sand: a timid one tucks in when it lands close, a curious one walks up and pokes it (it rocks a little)
+        const landed = (B.downT ?? 0) < 1.5;      /* (it has only just come down) */  if (f.toy?.(p, 'the ball', landed) || f.cs?.toy) B.who.add(f.fid);
+        if (d < r + 0.3 && !cd && f.cs?.toy) { const push = p.clone().sub(f.pos).setY(0).normalize(); v.addScaledVector(push, 0.35); B.cool.set(f, now + 1500); }
+      }
     }
   }
 
@@ -95,9 +103,12 @@ export class Toys {
       for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p);
         if (k === 'fish' && d < 3 && Math.random() < dt * 2) { f.target.copy(p).y += 0.4; f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish dart after them
         if (k === 'seahorse' && d < 1.8) { f.glance = p.clone(); f.glanceT = 0.8; }
+        if (k === 'turtle' && d < 2 && Math.random() < dt * 0.6) { f.target.copy(p); f.retarget = Math.max(f.retarget ?? 0, 0.8); }      // a turtle drifts up through them, snapping now and then
+        if (k === 'crab') continue;      // (a crab watches the stream from the sand: below)
         const reach = k === 'octopus' ? 1.2 : k === 'seahorse' ? 0.75 : 0.35 + (f.radius ?? 0.4) * 0.35;
         if (d < reach && (k !== 'seahorse' || Math.random() < 0.5)) { if (k === 'seahorse') f.snicks = (f.snicks ?? 0) + 1; this.fount?.who.add(f.fid); this.onSound?.('pop'); pop(b, i); break; }      // popped: nosed by a fish, snapped by a seahorse, poked by an arm
       } }
+    if (this.fount?.t > 0 && Math.random() < dt * 2) for (const f of this.fishes.list) if (free(f) && kindOf(f) === 'crab' && f.pos.distanceTo(this.fount.at) < 4 && f.toy?.(this.fount.at, 'the bubbles')) this.fount.who.add(f.fid);      // a crab comes to the air stone and watches it puff
     if (this.fount?.t > 0) for (const f of this.fishes.list) if (free(f) && kindOf(f) === 'octopus' && f.pos.distanceTo(this.fount.at) < 5 && !f.inspect && Math.random() < dt * 0.5) f.inspect = { x: this.fount.at.x, z: this.fount.at.z, toy: true };
   }
 
@@ -113,6 +124,8 @@ export class Toys {
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = Math.hypot(f.pos.x - p.x, f.pos.z - p.z);
       if (k === 'fish' && d < 6) { f.target.set(p.x + Math.sin(t * 2 + f.fid.length) * 0.35, p.y + 0.7 + Math.cos(t * 1.7 + (f.radius ?? 0)) * 0.3, p.z); f.retarget = Math.max(f.retarget ?? 0, 0.4); if (d < 0.9) L.who.add(f.fid); }      // they follow it, circling just above
       else if (k === 'seahorse' && d < 5) { f.glance = p.clone(); f.glanceT = 0.6; if (d < 3) L.who.add(f.fid); }
+      else if (k === 'turtle' && d < 5) { if (Math.random() < dt) { f.target.set(p.x, p.y + 0.9, p.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); } if (d < 1.2) L.who.add(f.fid); }      // a turtle cruises after it, lazily
+      else if (k === 'crab' && d < 4) { if (f.toy?.(p, 'the light') || (f.cs?.toy && d < 1)) L.who.add(f.fid); }      // a crab turns its eyes to the bright spot; a bold one walks into it and reaches for it
       else if (k === 'octopus' && d < 7) {      // it stalks the spot, then pounces when it holds still close by
         if (d > 1.1 && (!f.inspect || f.inspect.toy)) f.inspect = { x: p.x, z: p.z, toy: true };
         if (d < 1.4 && L.want.distanceTo(L.at) < 0.05 && (L.pounce.get(f) ?? 0) < now) { L.pounce.set(f, now + 2200); f.vel.x += (p.x - f.pos.x) * 2.2; f.vel.z += (p.z - f.pos.z) * 2.2; f.vel.y += 1.6; f.flush = Math.max(f.flush ?? 0, 0.6); L.who.add(f.fid); this.onSound?.('pounce'); }
@@ -142,7 +155,8 @@ export class Toys {
     const floor = sandH(p.x, p.z) + 0.3; if (p.y > floor) { C.vy = Math.max(-1.6, C.vy - dt * 0.6); p.y = Math.max(floor, p.y + C.vy * dt); C.g.rotation.z += dt * 0.6; }
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p);
       if (k === 'octopus' && d < 8) { if (!f.inspect || f.inspect.toy) f.inspect = { x: p.x, z: p.z, toy: true }; if (d < 1.3) { C.held = f; C.who.add(f.fid); f.inspect = null; this.onSound?.('pounce'); return; } }      // it goes over and gathers it up
-      else if (k === 'fish' && d < 3) { f.target.set(p.x, p.y + 0.4, p.z + 0.3); f.retarget = Math.max(f.retarget ?? 0, 0.6); if (d < 1) C.who.add(f.fid); } }
+      else if ((k === 'fish' || k === 'turtle') && d < 3) { f.target.set(p.x, p.y + 0.4, p.z + 0.3); f.retarget = Math.max(f.retarget ?? 0, 0.6); if (d < 1) C.who.add(f.fid); }
+      else if (k === 'crab' && d < 4 && p.y < sandH(p.x, p.z) + 0.6) { if (f.toy?.(p, 'the cube', C.vy < -0.5) || (f.cs?.toy && d < 1)) C.who.add(f.fid); } }      // a crab climbs up to it and feels it over
   }
 
   // ── the hitching hoop: a ring that hangs on a line from the top and sways. Seahorses swim over, curl their tails round it and sway with it ──
@@ -162,7 +176,9 @@ export class Toys {
       if (k === 'seahorse' && d < 7) { f.target.set(at.x, at.y + 0.5, at.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); f.glance = H.g.position.clone(); f.glanceT = 0.5; if (d >= 1.3) { const want = new THREE.Vector3(at.x, at.y + 0.45, at.z), step = want.sub(f.pos); const k = Math.min(1, (dt * 0.7) / step.length()); f.pos.addScaledVector(step, k); f.vel.multiplyScalar(Math.exp(-dt * 2)); }      /* (a seahorse's own swimming keeps to its perches, so the hoop draws it over itself, at a seahorse's slow pace) */
         if (d < 1.3) { f.vel.multiplyScalar(Math.exp(-dt * 4)); f.pos.lerp(new THREE.Vector3(at.x, at.y + 0.45, at.z), Math.min(1, dt * 2)); if (!H.who.has(f.fid)) this.onSound?.('pop'); H.who.add(f.fid); } }      // swims over and hangs on
       else if (k === 'fish' && d < 2.5 && Math.random() < dt) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish swim through it now and then
-      else if (k === 'octopus' && d < 4 && !f.inspect) f.inspect = { x: at.x, z: at.z, toy: true }; }
+      else if (k === 'octopus' && d < 4 && !f.inspect) f.inspect = { x: at.x, z: at.z, toy: true };
+      else if (k === 'turtle' && d < 3 && Math.random() < dt * 0.4) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.6); }
+      else if (k === 'crab' && Math.random() < dt * 0.3) { f.lookAt = H.g.position.clone(); f.lookT = 1; } }      // (it hangs out of a crab's reach: it only looks up at it)
   }
 
   update(dt, t) { if (this.ball) this.stepBall(dt); if (this.cube) this.stepCube(dt); if (this.hoop) this.stepHoop(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }

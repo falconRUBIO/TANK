@@ -1257,14 +1257,14 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 // by playing with it (five goes and it knows it, and has a favorite). Who likes what follows the real animals: fish chase and nose things,
 // an octopus bats and grabs, a seahorse snaps at small drifting things and watches the rest with its eyes.
 export const TOYS = {
-  ball: { label: 'Ball', unlock: 1, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about.', fits: ['fish', 'octopus'] },
-  bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them.', fits: ['fish', 'seahorse', 'octopus'] },
-  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and twists the faces.', fits: ['octopus'] },
-  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse curls its tail round it and sways.', fits: ['seahorse'] },
-  light: { label: 'Light spot', unlock: 7, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it.', fits: ['fish', 'octopus', 'seahorse'] },
+  ball: { label: 'Ball', unlock: 1, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about, a turtle shoves it with its nose; crabs walk up and poke it (a timid one tucks in when it lands close).', fits: ['fish', 'octopus', 'turtle', 'crab'] },
+  bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them; a turtle drifts up through them; a crab comes to watch the stone puff.', fits: ['fish', 'seahorse', 'octopus', 'turtle', 'crab'] },
+  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and twists the faces. Fish and turtles nose it; a crab feels it over on the sand.', fits: ['octopus', 'crab'] },
+  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse curls its tail round it and sways. Fish swim through it; crabs only look up at it.', fits: ['seahorse'] },
+  light: { label: 'Light spot', unlock: 7, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it, a turtle cruises after it, and a crab walks into it and reaches for it.', fits: ['fish', 'octopus', 'seahorse', 'turtle', 'crab'] },
 };
 export const TOY_LEARN = 5;
-export const toyKind = (f) => (f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : 'fish');
+export const toyKind = (f) => (isCrab(f) ? 'crab' : f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : ['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback'].includes(f.species) ? 'turtle' : 'fish');
 export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >= TOYS[k].unlock);
 // What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
 export const LEVEL_PRIZE = {
