@@ -294,10 +294,10 @@ export class Fishes {
         if (mv?.from && Date.now() - mv.at < 12 * 3600e3 && f.oldFor !== mv.at && !f.holdfast?.on) { f.oldFor = mv.at; f.searchedOld = (f.searchedOld ?? 0) + 1; f.target.set(mv.from.x, Math.max(f.pos.y, 2.5), mv.from.z + 0.4); f.retarget = 6; f.idle = 0; f.thought = 'Looking for its plant'; }      // its plant was moved: it goes to where it was first
         if (f.holdfast?.on && !f.mate && (f.brood ?? 0) < 0.8 && r() < 0.5 * 0.0015 * (1 + (f.persona?.cur ?? 0.5))) { f.release(2.4); f.vel.set((r() - 0.5) * 0.25, 0.05, (r() - 0.5) * 0.15); f.drifts = (f.drifts ?? 0) + 1; } continue; }      // lets go and drifts a moment before finding another stem
       // fish: a sudden bubble, a curious approach that turns back, a schooling fish falling behind, a shy one turning from a bigger animal
-      const tr = f.profile?.traits ?? [];
-      if (this.hasBubbler?.() && Math.hypot(f.pos.x - this.bubbleAt.x, f.pos.z - this.bubbleAt.z) < 0.9 && f.pos.y < 9 && !tr.includes('Playful') && r() < 0.15) { const dx = f.pos.x - this.bubbleAt.x || 0.1; f.vel.x += Math.sign(dx) * 2.2; f.target.set(f.pos.x + Math.sign(dx) * 2, f.pos.y + 0.5, f.pos.z); f.retarget = 2; f.startles = (f.startles ?? 0) + 1; }
-      if (tr.includes('Curious') && !f.seeking && (f.backAt ?? 0) < now - 30e3) { const sp = (this.spots?.() ?? []).find((q) => Math.hypot(q.x - f.target.x, q.z + 0.6 - f.target.z) < 1.2 && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 1.6); if (sp && r() < 0.12) { f.backAt = now; f.target.set(f.pos.x + (f.pos.x - sp.x) * 1.2, f.pos.y + 0.3, f.pos.z + 0.8); f.retarget = 2.5; f.retreats = (f.retreats ?? 0) + 1; } }
-      if (f.species?.school && !f.lagT && r() < 0.004) { f.lagT = 4; f.lags = (f.lags ?? 0) + 1; }
+      const tr = f.profile?.traits ?? [], resting = !!f.settle || (f.restK && f.idle > 0);      // (a fish resting, or on its way to rest, isn't drawn off by these small whims; a fright still moves it)
+      if (!resting && this.hasBubbler?.() && Math.hypot(f.pos.x - this.bubbleAt.x, f.pos.z - this.bubbleAt.z) < 0.9 && f.pos.y < 9 && !tr.includes('Playful') && r() < 0.15) { const dx = f.pos.x - this.bubbleAt.x || 0.1; f.vel.x += Math.sign(dx) * 2.2; f.target.set(f.pos.x + Math.sign(dx) * 2, f.pos.y + 0.5, f.pos.z); f.retarget = 2; f.startles = (f.startles ?? 0) + 1; }
+      if (!resting && tr.includes('Curious') && !f.seeking && (f.backAt ?? 0) < now - 30e3) { const sp = (this.spots?.() ?? []).find((q) => Math.hypot(q.x - f.target.x, q.z + 0.6 - f.target.z) < 1.2 && Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 1.6); if (sp && r() < 0.12) { f.backAt = now; f.target.set(f.pos.x + (f.pos.x - sp.x) * 1.2, f.pos.y + 0.3, f.pos.z + 0.8); f.retarget = 2.5; f.retreats = (f.retreats ?? 0) + 1; } }
+      if (!resting && f.species?.school && !f.lagT && r() < 0.004) { f.lagT = 4; f.lags = (f.lags ?? 0) + 1; }
       if (f.lagT) { f.lagT = Math.max(0, f.lagT - 0.5); f.mul = f.lagT > 2 ? 0.5 : f.lagT > 0 ? 1.5 : 1; if (!f.lagT) f.mul = 1; }      // drops back, then hurries to catch up
       if (tr.includes('Shy')) { const big = this.list.find((o) => o !== f && !o.dead && (o.species?.move === 'jet' || o.sk === 'angelfish') && o.pos.distanceTo(f.pos) < 1.4); if (big && (f.shyAt ?? 0) < now - 8000) { f.shyAt = now; f.target.set(f.pos.x + (f.pos.x - big.pos.x) * 2, f.pos.y, f.pos.z + (f.pos.z - big.pos.z)); f.retarget = 2; f.turns = (f.turns ?? 0) + 1; } }
     }
@@ -732,6 +732,7 @@ export class Fishes {
     f.baseT = f.tmul; f.tmul = this.mulFor(f);
     f.isShy = has('Shy');
     f.pick = (r) => {
+      if (f.restK && f.idle > 0 && !f.seeking && !((f.fleeT ?? 0) > 0)) { f.retarget = Math.min(f.idle, 2); return; }      // resting at its place or by its friend: it stays (a 'stuck' check or a timer doesn't move it on)
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
       const T = (x, y, z, rt) => { const rv = f.rivalId && this.byId.get(f.rivalId); if (rv && !rv.dead && Math.hypot(rv.pos.x - x, rv.pos.y - y) < 1.6) x += (x >= rv.pos.x ? 1 : -1) * 1.8;      /* a rival: it picks somewhere else rather than swim into it */
         f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
@@ -797,7 +798,9 @@ export class Fishes {
       if (this.night && f.palId && r() < 0.6) { const o = this.byId.get(f.palId); if (o && !o.dead) { f.idle = 3; return T(o.pos.x + (r() - 0.5) * 0.7, o.pos.y + (r() - 0.5) * 0.4, o.pos.z + (r() - 0.5) * 0.4, 8); } }      // best friends settle down near each other for the night
       { const D = f.spotId && (this.state?.decor ?? []).find((x) => x.id === f.spotId), mv = D?.h?.moves?.at(-1); if (mv && f.oldMove !== mv.at) { f.oldMove = mv.at; f.oldTries = 0; }      /* (a new move: a fresh search) */
         if (mv?.from && Date.now() - mv.at < 12 * 3600e3 && (f.oldTries ?? 0) < 2 && r() < 0.5) { f.oldTries = (f.oldTries ?? 0) + 1; f.searchedOld = (f.searchedOld ?? 0) + 1; return T(mv.from.x + (r() - 0.5) * 0.5, 1.2, mv.from.z + 0.8, 5); } }      // its place was moved: it looks where it used to be, twice, then settles for the new spot
-      if (f.spotId && r() < 0.12 + 0.4 * temperOf({ species: sk, traits: f.profile?.traits }).keep) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
+      if (f.spotId && r() < 0.12 + 0.4 * temperOf({ species: sk, traits: f.profile?.traits }).keep) { const sp = spots.find((x) => x.id === f.spotId); if (sp && r() < 0.5) f.settle = { dur: 8 + r() * 6, why: 'spot' }; if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
+      if (f.palId && !this.night && r() < 0.18) { const o = this.byId.get(f.palId), free = (q) => q && !q.dead && !q.seeking && !q.clean && !(q.fleeT > 0) && !(q.coverT > 0) && !q.settle && !(q.restK && q.idle > 0) && !q.sleepy;      // best friends, by day: now and then both stop and rest side by side a while
+        if (free(o) && o.pos.distanceTo(f.pos) < 5) { const mx = (f.pos.x + o.pos.x) / 2, my = Math.max(1.2, (f.pos.y + o.pos.y) / 2), mz = (f.pos.z + o.pos.z) / 2, dur = 10 + r() * 6; f.settle = { dur, why: 'pal', o }; o.settle = { dur, why: 'pal', o: f }; o.target.set(mx - 0.6, my, mz); o.retarget = 8; return T(mx + 0.6, my, mz, 8);      /* (side by side, a body's width apart: their own personal space keeps them from touching) */ } }
       if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
       if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
       if (this.night && !has('Playful')) {
@@ -996,7 +999,7 @@ export class Fishes {
         if (!(f.puffT > 0)) { for (const o of this.list) { if (o === f || o.dead) continue; const d = o.pos.distanceTo(f.pos), fast = (o.vel?.length?.() ?? 0) > 1.4; if (d < 1.1 && (fast || o.species?.move === 'jet' || SOCIAL[o.sk]?.bully)) { f.puffT = 4 + this.rng() * 2; this.onBehave?.(f, 'puff', o); break; } } }
         if (f.puffT > 0) f.puffT -= dt; const want = f.puffT > 0.8 ? 1 : 0; f.puffK = (f.puffK ?? 0) + (want - (f.puffK ?? 0)) * Math.min(1, dt * (want ? 6 : 0.8));
         if ((f.puffK ?? 0) < 0.01) f.puffS0 = f.group.scale.x; else { f.group.scale.setScalar((f.puffS0 ?? 1) * (1 + 0.55 * f.puffK)); f.mul = 1 - 0.7 * f.puffK; if (f.puffK > 0.5) f.thought = 'Puffed up!'; }
-        if (Date.now() - (this.attnAt ?? 0) < 20e3 && !(f.puffT > 0) && this.rng() < dt * 0.3) { f.target.set(f.pos.x * 0.6, f.pos.y, GLASS_Z - 0.5); f.retarget = 2; }      // someone is looking: it comes to the glass to look back
+        if (Date.now() - (this.attnAt ?? 0) < 20e3 && !(f.puffT > 0) && !f.settle && !(f.restK && f.idle > 0) && this.rng() < dt * 0.3) { f.target.set(f.pos.x * 0.6, f.pos.y, GLASS_Z - 0.5); f.retarget = 2; }      // someone is looking: it comes to the glass to look back
       } }
   }
   socialTick(dt) {
@@ -1070,17 +1073,21 @@ export class Fishes {
     if (!this.seenDecor) this.seenDecor = ids; else if (decor.length !== this.seenDecor.size || decor.some((d) => !this.seenDecor.has(d.id))) { const fresh = decor.filter((d) => !this.seenDecor.has(d.id)); this.seenDecor = ids; this.fresh = fresh.map((d) => ({ d, until: performance.now() + 90e3 })); }
     for (const f of this.list) {
       if (f.dead || f.visitor || f.crab || f.nursery || f.sleepy) continue; f.senseT = (f.senseT ?? Math.random() * 0.5) - dt; if (f.senseT > 0) continue; f.senseT = 0.5;
-      const k = habitKind(f.sk), T = (f.temper ??= temperOf({ species: f.sk, traits: f.profile?.traits })), cx = Math.floor(f.pos.x / C), cz = Math.floor(f.pos.z / C), near = [];
+      const k = habitKind(f.sk), T = (f.htemper ??= temperOf({ species: f.sk, traits: f.profile?.traits })), cx = Math.floor(f.pos.x / C), cz = Math.floor(f.pos.z / C), near = [];
       for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const o of this.grid?.get(cx + i + ',' + (cz + j)) ?? []) if (o !== f && Math.abs(o.pos.y - f.pos.y) < 2.5 && o.pos.distanceTo(f.pos) < 2.4) near.push(o);
       for (const o of near) (f.knowT ||= {})[o.fid] = (f.knowT[o.fid] ?? 0) + 0.5;      // seconds spent near each other (relationships grow from this)
       if ((k === 'fish' || k === 'bottom') && T.cover >= 0.5 && !(f.coverT > 0)) {
         const size = (o) => (o.species?.move === 'jet' ? 4 : habitKind(o.sk) === 'turtle' ? 6 : (o.species?.length ?? 40) * (o.species?.vox ?? 0.04)) * (o.growth ?? 1), big = near.find((o) => o.sk !== f.sk && size(o) > size(f) * 1.8 && o.pos.distanceTo(f.pos) < 1.7);      // (body size, from the model)
         if (big && Math.random() < T.cover) { const hide = decor.filter((d) => affordOf(d.type).shelter >= 0.6).map((d) => ({ d, n: Math.hypot(d.x - f.pos.x, d.z - f.pos.z) })).filter((q) => q.n < 5).sort((a, b) => a.n - b.n)[0];
-          if (hide) { f.target.set(hide.d.x + (Math.random() - 0.5) * 0.5, Math.max(sandH(hide.d.x, hide.d.z) + 0.5, 0.9), hide.d.z + 0.45); f.retarget = 4; f.idle = 3; f.coverT = 10; f.coverAt = hide.d.id; f.thought = `Took cover by the ${(DECOR_DEF[hide.d.type]?.label ?? 'rock').toLowerCase()}`; f.coverFrom = big.fid;
+          if (hide) { f.target.set(hide.d.x + (Math.random() - 0.5) * 0.5, Math.max(sandH(hide.d.x, hide.d.z) + 0.5, 0.9), hide.d.z + 0.45); f.retarget = 4; f.idle = 3; f.coverT = 10; f.coverAt = hide.d.id; f.restK = 0; f.settle = null; f.thought = `Took cover by the ${(DECOR_DEF[hide.d.type]?.label ?? 'rock').toLowerCase()}`; f.coverFrom = big.fid;
             if (big.species?.move === 'jet') big.gazeT = Math.max(big.gazeT ?? 0, 1.2); else if (big.sk === 'seahorse') { big.glance = f.pos.clone(); big.glanceT = 1; } } }      // (and the big one turns to watch it go)
       }
       f.coverT = Math.max(0, (f.coverT ?? 0) - 0.5);
-      if (this.fresh?.length && (k === 'fish' || k === 'turtle' || k === 'bottom') && !(f.lookedNew > performance.now())) { const q = this.fresh.find((x) => x.until > performance.now() && !(f.sawNew ||= new Set()).has(x.d.id));
+      if (f.settle) { const S = f.settle; if (f.seeking || f.clean || (f.fleeT ?? 0) > 0 || (f.coverT ?? 0) > 0 || (S.o && (S.o.dead || S.o.seeking))) f.settle = null;      /* food, fright or work comes first */
+        else if (f.pos.distanceTo(f.target) < (S.why === 'pal' ? 1.5 : 0.9)) { const wait = S.why === 'pal' && S.o?.settle ? 4 : 0; f.idle = S.dur + wait; f.retarget = S.dur + wait;      /* (the first there waits for its friend) */ f.restK = 1; f.restWith = S.why === 'pal' ? S.o : null; f.settle = null; }      // there: it stays, barely moving its fins (the slow idle swim), for several seconds
+        else if ((S.age = (S.age ?? 0) + 0.5) > 20) f.settle = null; }
+      if (f.restK && (f.seeking || (f.fleeT ?? 0) > 0)) { f.restK = 0; f.idle = 0; f.restWith = null; } if (f.restK && !(f.idle > 0)) { f.restK = 0; f.restWith = null; }
+      if (this.fresh?.length && (k === 'fish' || k === 'turtle' || k === 'bottom') && !(f.lookedNew > performance.now()) && !(f.restK && f.idle > 0)) {      /* (a resting fish finishes its rest first) */ const q = this.fresh.find((x) => x.until > performance.now() && !(f.sawNew ||= new Set()).has(x.d.id));
         if (q) { f.sawNew.add(q.d.id); if (Math.random() < 0.15 + 0.6 * T.roam - 0.3 * T.cover) { const d = q.d; f.target.set(d.x + (Math.random() - 0.5) * 0.6, Math.max(sandH(d.x, d.z) + 0.8, 1), d.z + 0.6); f.retarget = 4; f.lookedNew = performance.now() + 20e3; f.thought = `Came to look at the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()}`; }
           else if (T.cover >= 0.5 && Math.random() < 0.6) { const d = q.d, a = Math.atan2(f.pos.z - d.z, f.pos.x - d.x); f.target.set(d.x + Math.cos(a) * 2.3, Math.max(sandH(d.x, d.z) + 1.4, 1.6), d.z + Math.sin(a) * 2.3); f.retarget = 5; f.idle = 3; f.lookedNew = performance.now() + 20e3; f.thought = `Watching the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()} from a distance`; } } }      // a shy one keeps its distance and watches      // a curious one comes to look; a shy one hangs back
     }

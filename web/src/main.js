@@ -1193,6 +1193,7 @@ function doingOf(f) {
   }
   if ((f.coverT ?? 0) > 0 && f.thought?.startsWith('Took cover')) return f.thought.replace('Took cover', 'taking cover');      // (the sensing layer, fishmgr.senseTick)
   if ((f.lookedNew ?? 0) > performance.now() && /^(Came to look|Watching the new)/.test(f.thought ?? '')) return f.thought.replace(/^Came to look/, 'looking').replace(/^Watching/, 'watching');
+  if (f.restK && f.idle > 0) { if (f.restWith && !f.restWith.dead) return `resting with ${nm3(f.restWith) ?? 'a friend'}, its best friend`; if (rec.spotId) return `resting at its favorite spot, the ${decorLabel(rec.spotId) ?? 'rock'}`; }
   if (f.clean?.o) return `cleaning ${nm3(f.clean.o) ?? 'a fish'}`;
   if (f.sk === 'neongoby' && f.perch && (f.mul ?? 1) < 0.3) return `waiting at its ${decorLabel(f.perch) ?? 'station'}`;
   if (f.graze) return 'grazing algae'; if (f.seeking) return 'eating';

@@ -1312,7 +1312,7 @@ export class Fish3D {
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
     if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding) { const fl = Math.min(Fish3D.topY - 1, 6.3 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl; }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
     this.retarget -= dt;
-    if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm))) this.pick(rng);
+    if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm && !(this.restK && this.idle > 0)))) this.pick(rng);      // (a fish resting at its place or by its friend stays until its rest is over)
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
     this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt; this.dartT = (this.dartT ?? 0) - dt;
     desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.55 : this.lureCalm ? 0.45 : 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
