@@ -947,13 +947,13 @@ export function initUI({ game, social, cb }) {
       if (!d) return; const { box, dy, moved } = d; d = null; box.classList.remove('drag'); box.style.removeProperty('--pull');
       if (dy > 72) { sfx('open'); (box.querySelector('.x') ?? box.querySelector('.grab'))?.click(); } else if (moved) { box._drag = true; setTimeout(() => { box._drag = false; }, 60); }
     };
-    document.addEventListener('touchstart', (e) => { const box = e.target.closest?.('#sheet.on, #card.on'); if (box && !e.target.closest('input,textarea,select')) begin(box, e.touches[0].clientY); }, { passive: true });
+    document.addEventListener('touchstart', (e) => { const box = e.target.closest?.('#sheet.on, #card.on, .notesheet.on .nsw'); if (box && !e.target.closest('input,textarea,select')) begin(box, e.touches[0].clientY); }, { passive: true });
     document.addEventListener('touchmove', (e) => { if (d) move(e.touches[0].clientY, e); }, { passive: false });
     document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
-    document.addEventListener('mousedown', (e) => { const box = e.target.closest?.('#sheet.on, #card.on'); if (box && e.button === 0 && !e.target.closest('input,textarea,select,button:not(.x):not(.grab)')) begin(box, e.clientY); });
+    document.addEventListener('mousedown', (e) => { const box = e.target.closest?.('#sheet.on, #card.on, .notesheet.on .nsw'); if (box && e.button === 0 && !e.target.closest('input,textarea,select,button:not(.x):not(.grab)')) begin(box, e.clientY); });
     document.addEventListener('mousemove', (e) => { if (d) move(e.clientY, e); }); document.addEventListener('mouseup', end);
     // a pull must not also count as a tap on whatever the finger started on
-    document.addEventListener('click', (e) => { const box = e.target.closest?.('#sheet, #card'); if (box && box._drag) { e.stopImmediatePropagation(); e.preventDefault(); box._drag = false; } }, true);
+    document.addEventListener('click', (e) => { const box = e.target.closest?.('#sheet, #card, .notesheet .nsw'); if (box && box._drag) { e.stopImmediatePropagation(); e.preventDefault(); box._drag = false; } }, true);
     boxes();
   }
   function open(t, quiet = false) {
