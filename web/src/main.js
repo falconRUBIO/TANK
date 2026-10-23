@@ -1207,7 +1207,7 @@ function doingOf(f) {
 // noticed: a tapped animal answers in its own way, without leaving what it is doing (never a teleport, never an interrupted meal, cleaning or trick)
 function tapReact(f) {
   if (!f || f.dead) return; if (f.crab) { f.react(); return; }      /* (a crab: into its shell if it is timid, claws up if it is bold, otherwise a look and a step back) */ const front = { x: f.pos.x, y: f.pos.y, z: 20 };
-  if (f.species?.move === 'jet') { f.gazeT = Math.max(f.gazeT ?? 0, 2.2); if ((f.trust ?? 0) >= 2) f.flush = Math.max(f.flush ?? 0, 0.3); return; }      // its eyes go wide at you
+  if (f.species?.move === 'jet') { f.gazeT = Math.max(f.gazeT ?? 0, 2.2); f.gazeFace = true; if ((f.trust ?? 0) >= 2) f.flush = Math.max(f.flush ?? 0, 0.3); return; }      // its eyes go wide at you
   if (f.sk === 'seahorse') { f.glance = front; f.glanceT = 1.6; return; }      // one eye swivels round to you; it keeps hold
   if (f.seeking || f.clean || f.script?.length || f.follow) return;
   f.vigor = Math.max(f.vigor ?? 1, 1.25); setTimeout(() => { if ((f.vigor ?? 1) > 1) f.vigor = 1; }, 700);      // a flick of the tail
