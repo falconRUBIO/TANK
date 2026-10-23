@@ -89,17 +89,17 @@ export class Crab3D extends Fish3D {
     if (rapT && r() < 0.25) { this.rapCool = Date.now() + 10 * 60e3; this.cs = { s: 'rap', t: 12, o: rapT }; return; }
     const W8 = { gather: crabsHere.length && !night ? 0.7 : 0, shell: cand.length ? (tight ? 6 : recent ? 0.15 : 0.5 * (0.5 + T.collect + 0.3 * T.pick)) : 0, wander: 1.2 * T.roam, fav: C.fav && spots.some((s) => s.id === C.fav) ? 1.2 * (0.4 + T.hide) * (T.roam < 0.8 ? 2 : 1) : 0, climb: spots.some((s) => this.W.climbable?.(s)) ? 0.9 * T.climb * (this.sk === 'halloween' ? 2 : 1) : 0,
       follow: others.some((o) => o.crab && o !== this && o.cs?.s === 'walk' && o.pos.distanceTo(this.pos) < 1.8) ? 0.35 : 0, dig: 0.18 * (0.5 + T.collect), visit: 0.35 * T.bold, rest: 0.6 };
-    if (night) { W8.wander *= 1.7; W8.dig *= 1.5; W8.rest *= 0.5; W8.shell *= 1.3; } else { W8.rest *= 1.4; W8.wander *= 0.8; }      // hermit crabs are about most at night (and dusk and dawn); by day they rest up, often together
+    if (night) { W8.wander *= 1.7; W8.dig *= 1.5; W8.rest *= 0.5; W8.shell *= 1.3; } else { W8.rest *= 2; W8.wander *= 0.55; W8.climb *= 0.6; W8.dig *= 0.6; }      // hermit crabs are about most at night (and dusk and dawn); by day they rest up, often together
     if (this.postMolt()) { W8.visit = 0; W8.climb *= 0.3; W8.fav *= 2; }
     let sum = 0; for (const k in W8) sum += W8[k]; let x = r() * sum, pick = 'rest'; for (const k in W8) { x -= W8[k]; if (x <= 0) { pick = k; break; } }
     if (pick === 'shell') { const d = cand[0]; this.cs = { s: 'walk', to: this.frontOf(d, 0.55), then: { s: 'inspect', t: 0, d }, why: 'shell' }; return; }
     if (pick === 'fav') { const sp = spots.find((s) => s.id === C.fav), a = r() * 6.28; this.cs = { s: 'walk', to: { x: sp.x + Math.cos(a) * 0.7, z: sp.z + Math.sin(a) * 0.6 }, then: { s: 'rest', t: 15 + r() * 30, fav: sp }, why: 'fav' }; return; }
     if (pick === 'climb') { const opts = spots.filter((s) => this.W.climbable(s)), sp = opts[Math.floor(r() * opts.length)], a = Math.atan2(this.pos.z - sp.z, this.pos.x - sp.x), base = { x: sp.x + Math.cos(a) * (0.45 + sp.h * 0.25), z: sp.z + Math.sin(a) * (0.45 + sp.h * 0.25) }; this.cs = { s: 'walk', to: base, then: { s: 'climb', t: 0, sp, base }, why: null }; return; }
     if (pick === 'follow') { const o = others.find((q) => q.crab && q !== this && q.cs?.s === 'walk' && q.pos.distanceTo(this.pos) < 1.8); if (o) { this.cs = { s: 'follow', t: 8 + r() * 8, o }; return; } }
-    if (pick === 'gather') { const o = crabsHere.sort((a, b) => ((this.rec?.crab?.met?.[b.fid] ?? 0) - (this.rec?.crab?.met?.[a.fid] ?? 0)) || a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0], a = r() * 6.28; this.cs = { s: 'walk', to: { x: o.pos.x + Math.cos(a) * 0.55, z: o.pos.z + Math.sin(a) * 0.55 }, then: { s: 'rest', t: 20 + r() * 40 }, why: 'gather', o }; return; }      // by day it goes and rests with the crab it knows best
+    if (pick === 'gather') { const o = crabsHere.sort((a, b) => ((this.rec?.crab?.met?.[b.fid] ?? 0) - (this.rec?.crab?.met?.[a.fid] ?? 0)) || a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0], a = r() * 6.28; this.cs = { s: 'walk', to: { x: o.pos.x + Math.cos(a) * 0.55, z: o.pos.z + Math.sin(a) * 0.55 }, then: { s: 'rest', t: 40 + r() * 60 }, why: 'gather', o }; return; }      // by day it goes and rests with the crab it knows best
     if (pick === 'dig') { this.cs = { s: 'dig', t: 4 + r() * 4 }; return; }
     if (pick === 'visit') { const o = others.filter((q) => !q.crab && !q.dead && !q.visitor && q.group?.visible !== false && q.pos.y < sandH(q.pos.x, q.pos.z) + 1.4 && q.pos.distanceTo(this.pos) < 4).sort((a, b) => a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0]; if (o) { const a = Math.atan2(this.pos.z - o.pos.z, this.pos.x - o.pos.x); this.cs = { s: 'walk', to: { x: o.pos.x + Math.cos(a) * 1.1, z: o.pos.z + Math.sin(a) * 1.1 }, then: { s: 'watch', t: 3 + r() * 3, o }, why: null }; return; } }
-    if (pick === 'rest') { this.cs = { s: 'idle', t: 3 + r() * 6 }; return; }
+    if (pick === 'rest') { this.cs = { s: 'idle', t: (night ? 3 : 8) + r() * (night ? 6 : 14) }; return; }      // (by day it sits a good while between outings)
     const R = 1 + 2.4 * T.roam; let to = null; for (let k = 0; k < 8 && !to; k++) { const p = { x: Math.max(-3.9, Math.min(3.9, this.pos.x + (r() - 0.5) * 2 * R)), z: Math.max(-2.8, Math.min(3.5, this.pos.z + (r() - 0.5) * 2 * R)) }; if (!this.W?.avoid?.(p.x, p.z, this)) to = p; }
     this.cs = { s: 'walk', to: to ?? { x: this.pos.x, z: this.pos.z }, then: { s: 'idle', t: 1 + r() * 3 }, why: null };
   }
@@ -190,7 +190,7 @@ export class Crab3D extends Fish3D {
     if (fit === 'big' && (tight || others.some((o) => o.crab && o !== this && o.cs?.s === 'queue'))) { this.cs = { s: 'queue', t: 40 + this.rng() * 80, d }; return; }      // it waits by it: a bigger crab may come for it and leave a shell that fits
     if (fit !== 'fits') { this.reject(d); return; }
     const better = shellSz(d) > (C.shell?.sz ?? 0) + 0.04, picky = this.inspected.size >= Math.round(T.pick) || tight, rested = Date.now() - (C.swapAt ?? 0) > 3 * 3600e3 || tight;
-    if (better && picky && rested && (tight || this.rng() < 0.55 + 0.3 * T.collect) && this.W?.isLead?.()) { this.cs = { s: 'swap', ph: 'align', k: 0, d }; return; }
+    if (better && (S.quick || (picky && rested && (tight || this.rng() < 0.55 + 0.3 * T.collect))) && this.W?.isLead?.())      /* (it waited in line for this one: it takes it) */ { this.cs = { s: 'swap', ph: 'align', k: 0, d }; return; }
     this.reject(d);
   }
   reject(d) { const a = Math.atan2(this.pos.z - d.z, this.pos.x - d.x) + (this.rng() - 0.5); this.cs = { s: 'walk', to: { x: d.x + Math.cos(a) * 1.6, z: d.z + Math.sin(a) * 1.6 }, then: { s: 'idle', t: 2 }, why: null, rejected: true }; this.W?.note?.(this, 'reject', d); }
