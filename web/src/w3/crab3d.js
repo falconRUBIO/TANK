@@ -135,6 +135,7 @@ export class Crab3D extends Fish3D {
   }
   update0(dt, rng, others) {
     if (this.puppet) return this.puppet(dt);
+    this.h0 = this.heading;      // (where it faced at the start of the frame: its turning is given weight at the end of pose())
     const rec = this.rec, C = rec?.crab;
     if (C?.shell && this.cs.s !== 'swap') { if (this.shellKey && this.shellKey !== C.shell.t + ':' + C.shell.sz && !this.mirrorT) this.mirrorT = 2.4; if (!this.mirrorT || this.mirrorT < 1.2) this.wear(C.shell.t, C.shell.sz); }      // another phone saw it move house: it settles into the new shell here too
     if (this.mirrorT) { this.mirrorT = Math.max(0, this.mirrorT - dt); this.doing = 'settling into a new shell'; this.outK = Math.sin(Math.PI * (1 - this.mirrorT / 2.4)) * 0.8; this.abd.visible = this.outK > 0.3; if (!this.mirrorT) { this.outK = 0; this.abd.visible = false; } }      // (seen from another phone: out of the old shell and into the new, where it stands)
@@ -228,13 +229,14 @@ export class Crab3D extends Fish3D {
   step(to, dt, others, mul = 1) {
     const dx = to.x - this.pos.x, dz = to.z - this.pos.z, d = Math.hypot(dx, dz); if (d < 0.02) return 0;
     const playing = this.cs?.why === 'finger'; if (playing) { mul *= 1.5; this.pauseT = 0; this.burstT = 1; }      // after your finger: eager, no stopping to look about
-    if ((this.pauseT ?? 0) > 0) { this.pauseT -= dt; return 0; } if ((this.burstT = (this.burstT ?? 1) - dt) <= 0) { this.burstT = 0.8 + this.rng() * 2.2 * this.ctype.roam; this.pauseT = 0.2 + this.rng() * (0.5 + this.ctype.hide); this.flick = 0.3; }      // crabs walk in bursts: a few steps, a stop (antennae busy), a few more
+    const paused = (this.pauseT ?? 0) > 0; if (paused) this.pauseT -= dt; else if ((this.burstT = (this.burstT ?? 1) - dt) <= 0) { this.burstT = 0.8 + this.rng() * 2.2 * this.ctype.roam; this.pauseT = 0.2 + this.rng() * (0.5 + this.ctype.hide); this.flick = 0.3; }      // crabs walk in bursts: a few steps, a stop (antennae busy), a few more
+    this.spK = (this.spK ?? 0) + ((paused ? 0 : 1) - (this.spK ?? 0)) * Math.min(1, dt * 10); if (paused && this.spK < 0.05) return 0;      // each burst of steps starts and stops over a tenth of a second or so, not between one frame and the next
     const heavy = Math.max(0.6, Math.min(1, (this.need / Math.max(0.5, this.rec?.crab?.shell?.sz ?? 1)) * 1.12));      // a roomy shell is a heavy one to drag
     const sp = (this.species?.id === 'blueleg' ? 0.36 : this.sk === 'halloween' ? 0.3 : 0.26) * mul * (this.vigor ?? 1) * (0.7 + 0.3 * this.ctype.roam) * (1 - this.retK);
     let vx = dx / d, vz = dz / d;
     for (const o of others) { if (o === this || o.dead) continue; const ex = this.pos.x - o.pos.x, ez = this.pos.z - o.pos.z, e = Math.hypot(ex, ez), min = o.crab ? 0.42 : big.has(o.sk) && o.pos.y < this.pos.y + 1.2 ? 0.9 : 0; if (e < min && e > 1e-3) { vx += (ex / e) * (min - e) / min * 1.5; vz += (ez / e) * (min - e) / min * 1.5; } }
     const Wd = Fish3D.world; if (Wd?.push && !(this.cs?.way?.length > 1)) {      /* (on a planned way it is already clear of things: no nudging off it in a narrow gap) */ const p = new THREE.Vector3(this.pos.x + vx * 0.25, this.pos.y + 0.15, this.pos.z + vz * 0.25), o = new THREE.Vector3(); if (Wd.push(p, 0.18, o) && o.length() > 1e-4) { o.normalize(); const into = vx * o.x + vz * o.z; if (into < 0) { vx -= o.x * into * 1.2; vz -= o.z * into * 1.2; } vx += o.x * 0.4; vz += o.z * 0.4; } }
-    const m = Math.hypot(vx, vz) || 1; vx /= m; vz /= m; const s = Math.min(sp * heavy, d * 2);
+    const m = Math.hypot(vx, vz) || 1; vx /= m; vz /= m; const s = Math.min(sp * heavy, d * 2) * this.spK;
     { const nx = this.pos.x + vx * s * dt, nz = this.pos.z + vz * s * dt; const w0 = this.cs?.way?.[0]; if (this.clearAt(nx, nz) || (!this.clearAt(this.pos.x, this.pos.z) && (!w0 || Math.hypot(w0.x - nx, w0.z - nz) < Math.hypot(w0.x - this.pos.x, w0.z - this.pos.z)))) { this.pos.x = nx; this.pos.z = nz; }      /* (inside something, only steps along its way out) */ else { const sx = this.pos.x + vx * s * dt, sz = this.pos.z; if (this.clearAt(sx, this.pos.z)) this.pos.x = sx; else if (this.clearAt(this.pos.x, nz)) this.pos.z = nz; } }      // never a step from clear sand into something, whatever it is doing (it slides along the edge instead); from inside something it may step out
     const want = Math.atan2(-vz, vx) + (this.sk === 'blueleg' ? 0.35 : 0.2) * Math.sin(this.ph * 0.4); let dy = want - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 4);
     return s / sp;
@@ -317,6 +319,8 @@ export class Crab3D extends Fish3D {
     const sway = mk * Math.sin(t * 8.5) * 0.05 * Math.max(1, (this.rec?.crab?.shell?.sz ?? 1) / this.need); this.shellG.rotation.x = sway; this.shellG.rotation.z = mk * Math.abs(Math.sin(t * 8.5)) * 0.03;      // the shell rocks with each step, more if it is roomy
     this.happyT = Math.max(0, this.happyT - dt); const wig = this.wig ? Math.sin(t * 22) * 0.12 : 0, hop = this.happyT > 0 ? Math.abs(Math.sin(t * 11)) * 0.035 * Math.min(1, this.happyT) : 0, bob = mk * Math.abs(Math.sin(t * 8.5)) * 0.008;
     this.root.rotation.set(wig, 0, this.pitchK); this.root.position.y = 0.01 + hop + bob;
+    // a crab wheels round quickly, but not in a frame: its turning eases up to speed and is capped
+    { const h0 = this.h0 ?? this.heading; let dh = this.heading - h0; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); const want = dh / Math.max(dt, 1e-3), cap = 3.6; this.hvel = (this.hvel ?? 0) + (Math.max(-cap, Math.min(cap, want)) - (this.hvel ?? 0)) * Math.min(1, dt * 8); if (Math.abs(this.hvel) * dt > Math.abs(dh) && Math.sign(this.hvel) === Math.sign(dh)) this.hvel = want; this.heading = h0 + this.hvel * dt; }
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, 0, 'YZX'));
   }
   disposeTemps() { for (const m of this.temps) m.parent?.remove(m); this.temps = []; }

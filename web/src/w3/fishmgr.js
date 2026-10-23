@@ -1061,7 +1061,7 @@ export class Fishes {
     const [a, b] = hs, spots = (this.spots?.() ?? []).filter((x) => DECOR_DEF[x.type]?.cat === 'PLANTS'), mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
     let sp = null, bd = 1e9; for (const x of spots) { const d = Math.hypot(x.x - mid.x, x.z - mid.z); if (d < bd) { bd = d; sp = x; } }
     const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = Math.max(sandUnder(cx, cz, 0.7) + 2.4, sp ? (sp.y ?? 0) + sp.h + 1.4 : Math.max(2.5, Math.min(8, mid.y)));      // above the plant, so their tails hang clear of it and of the sand
-    const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, T0: T, court }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, T0: T, court }; this.burst(new THREE.Vector3(cx, y, cz)); this.onDance?.();      /* a soft click as they meet */      // courting, they circle closer and longer
+    const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, T0: T, court, o: b }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, T0: T, court, o: a };      /* (each knows its partner: the circling waits until both have swum to their places) */ this.burst(new THREE.Vector3(cx, y, cz)); this.onDance?.();      /* a soft click as they meet */      // courting, they circle closer and longer
   }
   // ── sensing, shared by every kind: a coarse grid of who is where (rebuilt four times a second, not an all-to-all check every frame), then each
   // animal takes a look round on its own staggered beat. What it does about what it sees comes from its kind and its temperament: a shy fish

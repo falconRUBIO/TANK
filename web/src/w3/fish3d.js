@@ -247,7 +247,7 @@ export class Fish3D {
   resolve(others) {
     const W = Fish3D.world, R = this.radius, cp = Math.cos(this.pitch), fx = cp * Math.cos(this.heading), fy = Math.sin(this.pitch), fz = -cp * Math.sin(this.heading);
     // a fish is solid down its length; an octopus only in its mantle and head (its arms wrap round things, they do not hold it off them), and one frame can only ever nudge it, never throw it
-    const jet = this.species.move === 'jet', sea = !!this.sp?.tail, offs = jet ? [-0.3, 0, 0.3] : sea ? [-0.55, -0.25, 0.05, 0.35] : [-0.8, -0.4, 0, 0.4, 0.8]; if (jet) _p2.copy(this.pos);
+    const jet = this.species.move === 'jet', sea = !!this.sp?.tail, offs = jet ? [-0.3, 0, 0.3] : sea ? [-0.55, -0.25, 0.05, 0.35] : [-0.8, -0.4, 0, 0.4, 0.8]; _p2.copy(this.pos);
     // a seahorse is upright and slim: it is felt for from its tail up to its head and snout. Swimming, it keeps off leaves too, but not on the last stretch
     // onto its own holdfast, nor while it holds on, greets or holds tails (its grip was found clear of every leaf already)
     const Hf = this.holdfast, seaSoft = sea && !this.link && !this.greet && !(Hf && (Hf.on || Hf.settle || this.pos.distanceTo(this.target) < 1.0));
@@ -267,11 +267,12 @@ export class Fish3D {
       }
       if (!moved) break;
     }
-    if (jet) { const L = this.pos.distanceTo(_p2); if (L > 0.08) this.pos.lerpVectors(_p2, this.pos, 0.08 / L); if (this.pos.z < OCT_BACK && this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3) this.pos.z = OCT_BACK; }      // and on the sand it is never pushed off the back of the bank
+    { const L = this.pos.distanceTo(_p2), capL = jet ? 0.08 : 2.0 * (this.rdt ?? 1 / 60); if (L > capL) this.pos.lerpVectors(_p2, this.pos, capL / L); }      // whatever pushed it this frame moved it no more than a nudge: it eases out of a rock or a clump of leaves over a few frames rather than jumping clear (which read as a twitch)
+    if (jet && this.pos.z < OCT_BACK && this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3) this.pos.z = OCT_BACK;      // and on the sand it is never pushed off the back of the bank
     for (const o of others) {                                               // fish are solid too
       if (o === this || (jet && o.species.move !== 'jet') || this.link?.o === o) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
       const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.5, dd = Math.hypot(dx, dy, dz), min = this.sp.tail && o.sp?.tail ? 0.9 * (this.cr + o.cr) : Math.max(0.5, 0.42 * (this.radius + o.radius));      // two seahorses are slim and may hold on side by side
-      if (dd < min * 0.92 && dd > 1e-3) { const k = (min * 0.92 - dd) / dd * (!jet && o.species.move === 'jet' ? 1 : 0.5); this.pos.x += dx * k; this.pos.y += dy * k; this.pos.z += dz * k / 1.5; const into = -(this.vel.x * dx + this.vel.y * dy + this.vel.z * dz / 1.5) / dd; if (into > 0) { this.vel.x += dx / dd * into; this.vel.y += dy / dd * into; this.vel.z += dz / dd * into / 1.5; } }      // (and stops pressing into the other one)
+      if (dd < min * 0.92 && dd > 1e-3) { const k = Math.min((min * 0.92 - dd) * (!jet && o.species.move === 'jet' ? 1 : 0.5), 1.6 * (this.rdt ?? 1 / 60)) / dd; this.pos.x += dx * k;      /* (eased apart at no more than 1.6 units a second: one frame's shove read as a jolt) */ this.pos.y += dy * k; this.pos.z += dz * k / 1.5; const into = -(this.vel.x * dx + this.vel.y * dy + this.vel.z * dz / 1.5) / dd; if (into > 0) { this.vel.x += dx / dd * into; this.vel.y += dy / dd * into; this.vel.z += dz / dd * into / 1.5; } }      // (and stops pressing into the other one)
     }
     this.pos.x = Math.max(-4.7, Math.min(4.7, this.pos.x)); this.pos.y = Math.max(0.35 + this.sandBelow(), Math.min(Fish3D.topY - Math.min(0.9, this.radius * 0.35), this.pos.y)); { const zMax = this.st?.s === 'glass' && this.glassAt?.close ? 17 : GLASS_Z - 0.2; this.pos.z = Math.max(-3.8, this.pos.z > zMax ? (zMax > GLASS_Z ? zMax : Math.max(zMax, this.pos.z - Math.min(0.3, Math.max(0.04, (this.pos.z - zMax) * 0.04)))) : this.pos.z); if (this.pos.z > GLASS_Z - 0.2 && this.vel.z > 0 && zMax <= GLASS_Z) this.vel.z = 0; }      // (a close visit: it swims right up to your screen, and back again afterwards, never in one jump)
   }
@@ -642,6 +643,14 @@ export class Fish3D {
     if (G) {                                                                         // the morning greeting: two partners meet at a plant and circle each other, glowing, then part
       if (this.holdfast) this.letGo(); if (G.t < 6 && G.t + dt >= 6) this.greeted = true;      // half way through, glowing: a real greeting, for its journal and its log
       if (this.sp.tail) { this.curlK = (this.curlK ?? 0) + (0.5 - (this.curlK ?? 0)) * Math.min(1, dt * 1.5); this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 3); }      // a seahorse lets go of its stem to dance, its tail loosening
+      if (!G.on) {      // on its way: it swims to its own place by the plant (where the dance will start, nose to nose), facing the way it goes, and waits there, turned to its partner, until both have arrived. Before this they slid across the tank sideways after a circle already turning
+        G.trip = (G.trip ?? 0) + dt; const o = G.o, oG = o && !o.dead ? o.greet : null, wx = G.cx + Math.cos(G.ang) * G.r * 0.3, wz = G.cz + Math.sin(G.ang) * G.r * 0.3 * 0.7, wy = Math.max(G.y, 0.35 + this.sandBelow()), d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
+        _p2.set(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z).multiplyScalar(Math.min(0.6, d * 1.4) / (d || 1)); this.vel.lerp(_p2, Math.min(1, dt * 2)); this.pos.addScaledVector(this.vel, dt);
+        if (d > 0.6) { let mh = Math.atan2(-this.vel.z, this.vel.x) - this.heading; mh = Math.atan2(Math.sin(mh), Math.cos(mh)); if (Math.hypot(this.vel.x, this.vel.z) > 0.05) this.heading += mh * Math.min(1, dt * 2); } else { let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2); }
+        if (d < 0.25) G.here = true; const both = G.here && (!oG || oG.here); if (both) { G.on = true; if (oG) oG.on = true; this.vel.set(0, 0, 0); }
+        else if (G.trip > 25) { this.greet = null; if (oG) o.greet = null; this.idle = 3; this.retarget = 3; this.pickHover(rng); return; }      // could not get there: another time
+        this.glowK += (0 - this.glowK) * Math.min(1, dt * 1.2); this.pitch *= 0.9; this.phase += dt * 12; this.place(dt); return;
+      }
       G.t -= dt; G.ang += dt * 0.85 * G.side; const rr = G.r * (G.T0 ? Math.min(1, 0.3 + 0.7 * Math.max(0, (G.T0 - G.t - 1.2) / 1.2)) : 1), wantX = G.cx + Math.cos(G.ang) * rr, wantZ = G.cz + Math.sin(G.ang) * rr * 0.7,      /* (they start nose to nose, then open out into the circle) */ wantY = Math.max(G.y + Math.sin(t * 1.4 + G.side) * 0.12, 0.35 + this.sandBelow());
       this.pos.x += (wantX - this.pos.x) * Math.min(1, dt * 1.6); this.pos.y += (wantY - this.pos.y) * Math.min(1, dt * 1.6); this.pos.z += (wantZ - this.pos.z) * Math.min(1, dt * 1.6);
       let dy = Math.atan2(-(G.cz - this.pos.z), G.cx - this.pos.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 2.5); this.vel.multiplyScalar(Math.exp(-3 * dt));
@@ -669,7 +678,7 @@ export class Fish3D {
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
     this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1) * (this.holdfast && !this.holdfast.on ? 1.6 : 1);      /* (on its way to a stem it goes there, it does not dawdle in the open) */ if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
-    const sp = this.face(dt, 0.9);
+    const sp = this.face(dt, this.sp.tail ? 1.8 : 0.9);      // (a seahorse pivots easily: it faces the way it swims within half a second, instead of sliding along side-on)
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
     this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
     if (this.sp.tail) {
@@ -845,10 +854,10 @@ export class Fish3D {
       if (!H.via) { let ox = wx - H.x, oz = wz - H.z, ol = Math.hypot(ox, oz); if (ol < 0.05) { ox = Math.cos(H.face); oz = -Math.sin(H.face); ol = 1; } H.via = { x: wx + (ox / ol) * 0.8, y: wy + 0.3, z: Math.min(GLASS_Z - 0.4, wz + (oz / ol) * 0.8), done: Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z) < 1.0 }; }
       if (!H.via.done && Math.hypot(H.via.x - this.pos.x, H.via.y - this.pos.y, H.via.z - this.pos.z) < 0.35) H.via.done = true;
       if (H.via.done) this.target.set(wx, wy, wz); else this.target.set(H.via.x, H.via.y, H.via.z); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
-      if (d < 0.9) { let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 2); }
+      if (d < 0.55) { let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 2); }      // (only in the last little glide does it turn side-on to its stem; before that it faces the way it swims)
       if (d < 0.6 && H.via.done) H.settle = true;
       if (H.settle) {                                                               // close enough to reach: it glides the last little way onto its spot, leans back and wraps its tail round the stem
-        const k = Math.min(1, dt * 4); this.pos.x += (wx - this.pos.x) * k; this.pos.y += (wy - this.pos.y) * k; this.pos.z += (wz - this.pos.z) * k; this.vel.set(0, 0, 0);
+        const k = Math.min(1, dt * 2.5); this.pos.x += (wx - this.pos.x) * k; this.pos.y += (wy - this.pos.y) * k; this.pos.z += (wz - this.pos.z) * k; this.vel.set(0, 0, 0);      /* (eased in at a seahorse's own pace, not drawn in) */
         const g0 = this.gripK ?? 0; this.curlK += (1 - this.curlK) * Math.min(1, dt * 3); this.gripK = d < 0.2 ? Math.min(1, g0 + dt * 2.2) : g0;
         let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 3); this.pitch += ((this.gripLean ?? SEAHORSE_LEAN) * this.gripK - this.pitch) * Math.min(1, dt * 4);
         if (this.gripK >= 1 && d < 0.03 && !H.missed && Math.random() < 0.12) { H.missed = true; this.gripK = 0; this.pos.y -= 0.22; this.vel.set((Math.random() - 0.5) * 0.3, -0.15, 0); this.misses = (this.misses ?? 0) + 1; }      // the tail slips off: it swings down, and curls round again
@@ -917,7 +926,7 @@ export class Fish3D {
     this.phase += dt * (this.sleepy ? 3.5 : 10);                                    // the dorsal fin still flutters, slowly at night
     // the body turns and tilts about the grip itself (placed after this frame's turning and tilting), so the stem stays inside the coil through every flick and strike
     { const cp2 = Math.cos(this.pitch), sp2 = Math.sin(this.pitch), gx2 = gl[0] * cp2 - gl[1] * sp2, gy2 = gl[0] * sp2 + gl[1] * cp2, ch2 = Math.cos(this.heading), sh2 = Math.sin(this.heading), x = H.x - ch2 * gx2 * sc, y = H.y - gy2 * sc, z = H.z + sh2 * gx2 * sc;
-      if (H.held > 0.6) this.pos.set(x, y, z); else { const k = Math.min(1, dt * 6); this.pos.x += (x - this.pos.x) * k; this.pos.y += (y - this.pos.y) * k; this.pos.z += (z - this.pos.z) * k; } }
+      if (H.held > 0.6) this.pos.set(x, y, z); else { const k = Math.min(1, dt * 4); this.pos.x += (x - this.pos.x) * k; this.pos.y += (y - this.pos.y) * k; this.pos.z += (z - this.pos.z) * k; } }
     this.place(dt); return true;
   }
   // not holding on: off to look at something new, or (when nothing else is going on) the usual slow hovering, choosing where to hold on next
@@ -998,6 +1007,7 @@ export class Fish3D {
   // Octopus: rests on the bottom with its arms spread flat, crawls along it, and now and then jets through the water in pulses (mantle squeezes, arms stream back) before drifting down again.
   jetUpdate(dt, rng, others) {
     this.tt = (this.tt ?? 0) + dt; const mul = (this.mul ?? 1) * (this.vigor ?? 1) * (this.tmul ?? 1); const S = (this.st ||= { s: 'rest', t: 1 + rng() * 3, n: 0, pulse: 0 }); S.t -= dt * (S.s === 'rest' ? (this.temper()?.tempo ?? 1) : 1);
+    const h0 = this.heading; if (S.s !== 'jet') S.thr = null;      // (where it faced at the start of the frame: its turning is given weight at the end; a push that was under way ends with the jet)
     const floor = 0.55 + this.sandBelow(), onFloor = this.pos.y < floor + 0.5;      // the sand under it, on whichever level it is
     if (this.task && (S.s === 'jet' || S.s === 'dash' || S.s === 'glass' || this.seeking || this.hunt || this.jarAt || this.scareT > 0 || (performance.now() - this.task.t0 > 240000))) { this.onTask?.(this, 'abort'); this.task = null; if (S.mode === 'tgo' || S.mode === 'thaul' || S.mode === 'tsettle') S.mode = null; }
     if (this.seeking && S.s !== 'jet') { S.s = 'jet'; S.n = 2; S.t = 6; S.pulse = 0; }
@@ -1104,7 +1114,7 @@ export class Fish3D {
         if (!this.noSwimTrips && L > 4 && L > 1.8 * Math.hypot(this.target.x - this.pos.x, this.target.z - this.pos.z) && S.mode !== 'hunt' && !(S.mode ?? '').startsWith('t') && S.mode !== 'carry2' && rng() < 0.7) { const gx = this.target.x, gz = this.target.z; S.route = []; S.s = 'jet'; S.n = 2; S.t = 9; S.pulse = 0; S.after = S.mode ? { x: gx, z: gz, mode: S.mode, n: 1 } : null; S.mode = null; this.target.set(gx, Math.max(sandH(gx, gz), sandH(this.pos.x, this.pos.z)) + 1.7, gz); } }
       if (S.route?.length) S.t = Math.max(S.t, 3);      // the long way takes longer: it is not given up on halfway
       if (S.detour) S.detour.left -= dt; const det = S.detour && S.detour.left > 0 ? S.detour : null, goal = det ? _g.set(det.x, floor, det.z) : S.route?.length ? _g.set(S.route[0].x, floor, S.route[0].z) : this.target;      // a detour is a sidestep around something in the way
-      const to = goal.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1, sp = 0.5 * this.speed * mul * (S.mode === 'hunt' ? (this.hunt?.run?.burst > 0 ? 2.1 : 1.5) : (this.gait?.sp ?? 1) * (0.8 + 0.2 * (this.temper()?.tempo ?? 1))); to.multiplyScalar(sp / d);
+      const to = goal.clone().sub(this.pos); to.y = (floor - this.pos.y) * 2; const d = to.length() || 1, sp = 0.5 * this.speed * mul * (S.mode === 'hunt' ? (this.hunt?.run?.burst > 0 ? 2.1 : 1.5) : (this.gait?.sp ?? 1) * (0.8 + 0.2 * (this.temper()?.tempo ?? 1)) * (det || S.route?.length ? 1 : Math.min(1, 0.45 + d / 1.2))); to.multiplyScalar(sp / d);      /* (it eases into its goal over the last body length or so) */
       // going in through the mouth of its den the walls are allowed to brush it; anywhere else it feels for what is ahead and slides along it rather than pushing into it
       this.homing = (S.mode === 'den' || S.mode === 'tsettle') && !!this.den?.home && d < 1.5;
       const W = Fish3D.world; let side = 0, sliding = false;
@@ -1170,8 +1180,9 @@ export class Fish3D {
       if (S.pulse <= 0 && S.n > 0 && this.aimErr < 0.55 && (S.wind = (S.wind ?? 0) + dt) > 0.24) {
         S.wind = 0;
         S.n--; S.pulse = (1.5 + rng() * 0.7) * (1.15 - 0.3 * this.bold); const vy = Math.max(-0.3, Math.min(0.8, (this.target.y - this.pos.y) * 0.35 + 0.25)), dir = _p2.set(Math.cos(this.heading), vy, -Math.sin(this.heading)).normalize();
-        this.vel.addScaledVector(dir, 2.6 * this.speed * Math.max(0.5, mul) * (0.9 + 0.25 * this.bold)); this.sq = 1; this.onPush?.(this.pos, dir);
+        S.thr = { left: 0.45, T: 0.45, I: 2.9 * this.speed * Math.max(0.5, mul) * (0.9 + 0.25 * this.bold), x: dir.x, y: dir.y, z: dir.z }; this.sq = 1; this.onPush?.(this.pos, dir);      // the mantle squeezes and the push builds and fades with it (below), rather than a kick
       }
+      if (S.thr) { const T = S.thr, step = Math.min(dt, T.left), u0 = 1 - T.left / T.T, u1 = 1 - (T.left - step) / T.T, w = (Math.cos(Math.PI * u0) - Math.cos(Math.PI * u1)) / 2;      /* this step's share of the push: a sine-shaped build and fade over the squeeze */ this.vel.x += T.x * T.I * w; this.vel.y += T.y * T.I * w; this.vel.z += T.z * T.I * w; T.left -= step; if (T.left <= 1e-6) S.thr = null; }
       this.vel.multiplyScalar(Math.exp(-1.25 * dt)); if (!this.seeking) this.vel.y -= 0.12 * dt;
       if (this.seeking) { const to = this.target.clone().sub(this.pos); if (to.length() > 0.2) this.vel.addScaledVector(to.normalize(), 0.8 * dt * this.speed); }
       if (this.follow) { const to = this.target.clone().sub(this.pos); if (to.length() > 0.5) this.vel.addScaledVector(to.normalize(), 1.1 * dt * this.speed); }      // and steers after the fish between pulses
@@ -1213,7 +1224,7 @@ export class Fish3D {
     this.throwCool = Math.max(0, this.throwCool - dt);
     if (S.s === 'rest' || S.s === 'watch' || S.s === 'kelp' || S.s === 'flat') { let near = null; for (const o of others) if (o !== this && !o.dead && !o.visitor && o.species.move !== 'jet' && Math.hypot(o.pos.x - this.pos.x, o.pos.z - this.pos.z) < 2.2 && Math.abs(o.pos.y - this.pos.y) < 3.2) { near = o; break; } this.nearFor = near ? this.nearFor + dt : 0;
       if (near && this.nearFor > (near.fid === this.rival ? 0.5 : 1.5) && this.throwCool <= (near.fid === this.rival ? 60 : 0) && this.lead !== false && this.bold > 0.35 && this.sleepK < 0.2 && rng() < dt * 1.6) { this.throwCool = 90 + rng() * 120; this.nearFor = 0; this.throwAt(near, rng); } } else this.nearFor = 0;
-    this.sq = Math.max(0, this.sq - dt * 2.4); this.separate(others, 3);
+    this.sq = Math.max(0, this.sq - dt * 2.4); this.separate(others, 3); this.rdt = dt;
     { const px = this.px ?? this.pos.x, pz = this.pz ?? this.pos.z; this.pos.addScaledVector(this.vel, dt); this.resolve(others); { const fl2 = 0.55 + this.sandBelow(); if (this.pos.y < fl2) { this.pos.y = fl2; if (this.vel.y < 0) this.vel.y = 0; } }
       this.realSp = (this.realSp ?? 0) + (Math.hypot(this.pos.x - px, this.pos.z - pz) / Math.max(dt, 1e-3) - (this.realSp ?? 0)) * Math.min(1, dt * 6); this.px = this.pos.x; this.pz = this.pos.z; }      // how fast it is really getting along the floor
     const sp = this.face(dt, S.s === 'jet' ? 3 : 1.6);
@@ -1301,8 +1312,10 @@ export class Fish3D {
     if (this.shellK > 0.01) { const q = this.shellK; this.group.scale.y *= 1 - 0.68 * q; this.group.scale.x *= 1 + 0.15 * q; this.group.scale.z *= 1 + 0.15 * q; this.lift -= 0.3 * q; }      // squeezed flat under its upturned shell, the way a real one fits under anything
     { const ls = Math.max(0, sandUnder(this.pos.x, this.pos.z, Math.min(0.45, this.radius * 0.25)) - sandH(this.pos.x, this.pos.z)); this.liftSand = (this.liftSand ?? 0) + (ls - (this.liftSand ?? 0)) * Math.min(1, dt * 6); }      // drawn lifted clear of the sand beside it, so its head and mantle never sink into a slope or the face of a bank
     if (this.stillLie) { this.heading = this.stillLie.h; this.vel.set(0, 0, 0); this.pos.copy(this.stillLie.p); }      // (and does not turn)
+    // a body this size does not snap round: whatever asked for the turn this frame, the turn itself eases up to speed, never beyond a cap, and eases out (a half turn takes over a second; a startled squirt or a pounce a little less)
+    if (!this.stillLie) { let dh = this.heading - h0; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); const want = dh / Math.max(dt, 1e-3), cap = S.s === 'squirt' || S.s === 'pounce' || S.s === 'tall' ? 2.9 : S.s === 'jet' || S.s === 'glass' ? 2.4 : 1.9; this.hvel = (this.hvel ?? 0) + (Math.max(-cap, Math.min(cap, want)) - (this.hvel ?? 0)) * Math.min(1, dt * 6); if (Math.abs(this.hvel) * dt > Math.abs(dh) && Math.sign(this.hvel) === Math.sign(dh)) this.hvel = dh / Math.max(dt, 1e-3); this.heading = h0 + this.hvel * dt; }
     this.group.position.copy(this.pos); this.group.position.y += this.lift + this.liftSand; this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
-    this.accum += dt; if (this.accum > (1 / 20) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.35 : 1)) { this.accum = 0; this.setPose(this.phase); }
+    this.accum += dt; if (this.accum > (1 / 30) * Fish3D.poseScale * (S.s === 'rest' && !this.glassNear && this.mw.scared < 0.1 ? 1.5 : 1)) { this.accum = 0; this.setPose(this.phase); }      // the arms are posed 30 times a second (20 at rest): the body moves every frame, and the arms kept up with it badly at 20
   }
   update(dt, rng, others) {
     if (this.puppet) return this.puppet(dt);      // climbing out of the tank or back in (see FishManager.climb)
@@ -1349,15 +1362,17 @@ export class Fish3D {
       } else this.blocked = Math.max(0, (this.blocked ?? 0) - dt);
       this.cool -= dt;
     }
-    this.vel.lerp(desired, Math.min(1, dt * 1.5));
+    this.vel.lerp(desired, Math.min(1, dt * 1.5)); this.rdt = dt;
     const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.5 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
-    const sp = this.vel.length();
+    const sp = this.vel.length(), h0 = this.heading;
     if (sp > 0.25) {
       const wantYaw = Math.atan2(-this.vel.z, this.vel.x);
       let dy = wantYaw - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       this.heading += dy * Math.min(1, dt * 2.2);
+      // the turn has weight: it eases up to speed and is capped (a fish turning round takes about a second, a fleeing one much less, a turtle longer), instead of snapping through the first part of a big turn
+      { const turtle = TURTLE_IDS.has(this.species.id), cap = turtle ? 1.3 : this.fleeT > 0 || this.dartT > 0 ? 7 : 3.2; let dh = this.heading - h0; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); const want = dh / Math.max(dt, 1e-3); this.hvel = (this.hvel ?? 0) + (Math.max(-cap, Math.min(cap, want)) - (this.hvel ?? 0)) * Math.min(1, dt * (turtle ? 4 : 7)); if (Math.abs(this.hvel) * dt > Math.abs(dh) && Math.sign(this.hvel) === Math.sign(dh)) this.hvel = want; this.heading = h0 + this.hvel * dt; dy = this.hvel / 2.2; }      /* (the bank below follows the turn it really makes) */
       const wantPitch = TURTLE_IDS.has(this.species.id) ? Math.max(-0.45, Math.min(0.55, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.25))) : Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));      // (a turtle tilts, it never stands on its nose: it climbs and dives at a shallow angle)
       this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3);
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);

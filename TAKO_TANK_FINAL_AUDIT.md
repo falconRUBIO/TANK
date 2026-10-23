@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v321** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v322** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -59,6 +59,14 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 - **Graphics, three passes, voxel look kept:** sand ripples and contact shadows under decorations, banks shaded on their faces and lit on top, far sand sinking into the water's color, stronger caustics and sunbeams, distant kelp that reads as kelp, brighter rim light, crisper voxel faces, edge shading on every voxel thing, water that deepens toward the sand, a calmer amber-and-blue dusk, more contrast, less blur in the distance. Before/after: `docs/audit/gfx_before_*.png`, `gfx_after_*.png`. **Frame cost not measured on a phone**; the added shader work is a handful of instructions per sand pixel and one `pow` per voxel pixel.
 
 ---
+
+## 3b. Movement pass (how everything moves)
+Measured with the new `tools/motion_check.mjs` (the same scenario on the old code and this one, 20 simulation steps a second):
+- **Octopus:** its turning now has weight: angular speed eases up and down and is capped (1.9 rad/s crawling or resting, 2.4 jetting, 2.9 for a squirt or pounce). Before, a turn could snap at **8–16 rad/s** in a frame; now **max 2.4–2.9**, 0 frames over 2.5 rad/s in 4 minutes (was 84–136). A jet pulse is a push that builds and fades over 0.45 s with the mantle squeeze, not a kick: peak acceleration **7.5** (was **44.6**). It eases into a crawl goal over the last body length instead of walking at full pace and stopping dead. Arms are posed 30 times a second (20 at rest), up from 20/15, so they keep up with the body.
+- **Seahorses:** before a greeting dance each now swims to its own place by the plant facing the way it goes, and the circling waits until both are there (before, each slid sideways across the tank after a circle that was already turning: heading error **1.2–1.3 rad**, now **0.19–0.22**; the dance starts when both arrive, 5–6 s, instead of at once). Between stems a seahorse turns to face its way within half a second (mean heading error while swimming **0.10**, was **0.54–0.86**), turns side-on to its stem only in the last little glide, and is eased onto the grip at its own pace, not drawn in.
+- **Fish and turtles:** turns have the same weight (fish capped at 3.2 rad/s, 7 when fleeing; turtles 1.3): fish max **3.19** (was 6.2, 46 frames over), turtle max **1.30** (was 6.7, 143 frames over). Two overlapping animals are eased apart at no more than 1.6 units/s, and whatever pushes an animal out of a rock or a clump of leaves moves it no more than a nudge per frame (worst one-frame acceleration for a fish **33**, was **148**; turtle **41**, was **96**).
+- **Crabs:** turning capped at 3.6 rad/s with ease-in (max **3.59**, was **12.5**, 335 frames over); each burst of steps starts and stops over about a tenth of a second rather than between frames.
+- **Not verified on screen:** all of this is from the simulation numbers and the drills (`octopus_den`, `habitat_check`, `motion_check` pass); the headless browser cannot show motion. The iPhone test is where it will be judged.
 
 ## 4. Unresolved
 1. Pre-existing drill failures: `attach_check` seahorse favorite, `living_check` glass expectation, `care_sync`, `sell_check`. None is from this work; the first three need their expectations updated or a separate look at the behavior.
