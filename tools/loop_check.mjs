@@ -12,13 +12,13 @@ await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); 
 const setup = (hunger) => p.evaluate((hunger) => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 4; s.fish.length = 0; s.hunger = 0; s.water = 1; s.glass = 0; const born = Date.now() - 12 * 864e5;
   s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', hunger, puzzleAt: Date.now() - 3600e3 });
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, hunger);
-const careText = async () => { await p.evaluate(() => window.__ui.open('care')); await p.waitForTimeout(400); return p.evaluate(() => ({ head: document.querySelector('#sheet .carehead')?.textContent ?? null, due: !!document.querySelector('#sheet .carehead.due'), treat: /Crab treat/.test(document.querySelector('#sheet')?.textContent ?? '') })); };
+const careText = async () => { await p.evaluate(() => window.__ui.open('care')); await p.waitForTimeout(400); return p.evaluate(() => { const rows = (q) => [...document.querySelectorAll(q)].map((r) => r.querySelector('b')?.textContent + ' | ' + (r.querySelector('small')?.textContent ?? '')); return { due: rows('#sheet .crow.due, #sheet .crow.hot'), later: rows('#sheet .crow:not(.due):not(.hot)'), treat: /Crab treat/.test(document.querySelector('#sheet')?.textContent ?? '') }; }); };      // (Care is rows now: what needs you, then what is fine and when it is next due; the old one-line headline is gone)
 // 1. Care leads with the one thing that matters, and there is no separate crab treat
 await setup(0.6); let c = await careText(); await p.screenshot({ path: `${out}/care_hungry.png` });
-ck('Care opens with who is hungry and what to do, as a button', /Inky is hungry\. Feed Inky a crab/.test(c.head ?? '') && c.due, JSON.stringify(c));
+ck('Care leads with feeding when the octopus is hungry, as a row that needs you', c.due.some((x) => /^Feed \| /.test(x)), JSON.stringify(c));
 ck('there is no separate "crab treat" any more', !c.treat);
 await setup(0.02); c = await careText(); await p.screenshot({ path: `${out}/care_done.png` });
-ck('when all is done, Care says so and what the octopus is up to', /^All looked after/.test(c.head ?? '') && !c.due, JSON.stringify(c));
+ck('when all is done, nothing needs you and Feed says when it is next due', !c.due.some((x) => /^Feed/.test(x)) && c.later.some((x) => /^Feed \| .*next/.test(x)), JSON.stringify(c));
 // 2. feeding from the card
 await setup(0.6); await p.evaluate(() => window.__ui.open('tank')); await p.waitForTimeout(300);
 await p.evaluate(() => { window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('x1'))); document.getElementById('fishpill')?.onclick?.(); }); await p.waitForTimeout(900);
@@ -39,7 +39,7 @@ ck('fed, the card says it is not hungry yet and when it will be', !!card && card
 const msg = await p.evaluate(async () => { const said = []; const was = window.__ui.toast; window.__ui.toast = (t, ...a) => { said.push(t); return was(t, ...a); }; await window.__dropFoodForTest?.(0); window.__ui.toast = was; return said.find((t) => /hungry/.test(t)) ?? said.join(' | '); });
 ck('feeding a crab to an octopus that is not hungry says when it will be', /isn't hungry yet\. Ready for a crab/.test(msg ?? ''), msg);
 // 4. a hungry octopus comes to the front and watches you
-await setup(0.95); await p.waitForTimeout(1500);
+await setup(0.78); await p.waitForTimeout(1500);      // hungry: it asks at the glass first (badly starved, past about 0.8, it only lies listless)
 const beg = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); f.profile = F.profileOf(window.__game.state.fish.find((x) => x.id === 'x1'), window.__game.state); f.begCool = 0; f.glassAt = null; f.st = { s: 'rest', t: 0, n: 0, pulse: 0, mode: null }; let got = null;
   for (let i = 0; i < 2400 && !got; i++) { if (f.st?.s === 'rest' && f.st.t > 0.5) f.st.t = 0; F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (f.glassAt && /Watching you for a crab/.test(f.actText ?? '')) got = { i, mood: f.profile.mood }; }
   return got ?? { mood: f.profile?.mood, s: f.st?.s, mode: f.st?.mode, hunt: !!f.hunt, crabs: (F.crabs ?? []).length, inspect: !!f.inspect, task: !!f.task, shy: f.shy, lead: f.lead, glass: f.glassAt, beg: f.begCool, at: [+f.pos.x.toFixed(1), +f.pos.y.toFixed(1), +f.pos.z.toFixed(1)] }; });
@@ -48,8 +48,10 @@ ck('a hungry octopus comes to the glass and watches you for a crab', beg?.i != n
 await setup(0.02);
 await p.evaluate(() => { const g = window.__game, now = Date.now(); g.journal.push({ day: 1, text: 'A plant grew a little.', ts: now - 60e3, userId: 'me' }, { day: 1, text: 'Inky smacked Nori with an arm for coming too close.', ts: now - 50e3, userId: 'me' }, { day: 1, text: 'Inky put its arms out stiff and passed for a lionfish.', ts: now - 40e3, userId: 'me' }); g.save?.(); for (const k of Object.keys(localStorage)) if (/seen/.test(k)) localStorage.setItem(k, String(now - 3 * 3600e3)); });
 await p.addInitScript(() => { try { localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3 * 3600e3)); } catch { /* none */ } }); await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 });
-let rj = null; for (let i = 0; i < 30 && !rj; i++) { await p.waitForTimeout(300); rj = await p.evaluate(() => { const r = document.getElementById('reunion'); return r && r.classList.contains('on') ? r.textContent : null; }); }
+await p.waitForFunction(() => window.__booted, null, { timeout: 120000 }).catch(() => {}); await p.waitForTimeout(3000); const tankFree = await p.evaluate(() => !document.querySelector('#modal.on, #reunion.on')); await p.evaluate(() => window.__ui.open('notices')); await p.waitForTimeout(800);
+const rj = await p.evaluate(() => document.querySelector('#sheet .awayl')?.textContent ?? null);      // (the news is in Today now; nothing replays it over the tank)
+ck('coming back, nothing covers the tank', tankFree);
 await p.screenshot({ path: `${out}/welcome_back.png` });
-ck('the welcome back leads with what the octopus got up to', !!rj && /smacked Nori/.test(rj) && /lionfish/.test(rj) && rj.indexOf('smacked') < (rj.indexOf('plant grew') < 0 ? 1e9 : rj.indexOf('plant grew')), (rj ?? '').slice(0, 220));
+ck('Today\'s While you were away has what the octopus got up to', !!rj && /smacked Nori/.test(rj) && /lionfish/.test(rj), (rj ?? '').slice(0, 220));
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Loop checks passed'); await b.close(); process.exit(fails ? 1 : 0);
