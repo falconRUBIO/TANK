@@ -256,7 +256,7 @@ export function buildEnvironment() {
   const WATER = new THREE.Color(0x8fb4c8), DEEP = new THREE.Color(0x1d7894), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
   const paintBack = () => {
     const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the color of deep water, with only a hint of the chosen backdrop
-    backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.62).lerp(WATER, i < 6 ? 0.18 : 0.42).multiplyScalar(backLight * (i < 6 ? 0.92 : 1)));
+    backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.78).lerp(WATER, i < 6 ? 0.08 : 0.3).multiplyScalar(backLight * (i < 6 ? 0.78 : 0.9)));      // (darker and greener: distant kelp, not pale smears)
     backdrop.userData.rock.forEach((m) => m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9));
   };
   const setStyle = (floor = 'sand', back = 'candy') => {

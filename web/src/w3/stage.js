@@ -30,7 +30,8 @@ scene.fog = new THREE.Fog(0x2a6d99, 22, 62);
 // gradient water backdrop
 const bgMat = new THREE.ShaderMaterial({ fog: false, depthWrite: false, uniforms: { uTop: { value: new THREE.Color() }, uBot: { value: new THREE.Color() } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-  fragmentShader: 'varying vec2 vUv; uniform vec3 uTop,uBot; void main(){ gl_FragColor = vec4(mix(uBot,uTop,smoothstep(0.0,1.0,vUv.y)),1.); }' });
+  // bright near the surface, the water's own color through the middle, and deepening to dark where it meets the sand: depth, not a wall
+  fragmentShader: 'varying vec2 vUv; uniform vec3 uTop,uBot; void main(){ vec3 deep = uBot * 0.42; vec3 c = vUv.y < 0.42 ? mix(deep, uBot, smoothstep(0.0, 0.42, vUv.y)) : mix(uBot, uTop, smoothstep(0.42, 1.0, vUv.y)); gl_FragColor = vec4(c, 1.); }' });
 export const bg = new THREE.Mesh(new THREE.PlaneGeometry(90, 32), bgMat); bg.position.set(0, 8, -22); bg.renderOrder = -10; scene.add(bg);
 
 export const env = buildEnvironment(); scene.add(env.root);
@@ -148,9 +149,9 @@ export function applyTod(dt) {
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGnd); hemi.intensity = cur.hemiI * (target === 'night' ? 1 + 0.4 * stage.moonlit : 1); amb.intensity = cur.ambI;
   const murk = stage.murk; scene.fog.color.copy(cur.fog).lerp(murkCol, murk * 0.55); scene.fog.near = cur.fogNear - murk * 9; scene.fog.far = cur.fogFar - murk * 14;
   bgMat.uniforms.uTop.value.copy(cur.bgTop); bgMat.uniforms.uBot.value.copy(cur.bgBot);
-  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI; grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; grade.uniforms.uSat.value = cur.sat; grade.uniforms.uVib.value = cur.vib; caustic.tex.offset.x += dt * 0.012; caustic.tex.offset.y += dt * 0.006;      /* (the caustics drift slowly, like light through moving water) */ lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
+  rim.color.copy(cur.rimCol); rim.intensity = cur.rimI * 1.35;      // (a brighter edge: every voxel thing stands off the water) grade.uniforms.uPool.value = cur.pool; grade.uniforms.uWarm.value = cur.warm; grade.uniforms.uSat.value = cur.sat; grade.uniforms.uVib.value = cur.vib; caustic.tex.offset.x += dt * 0.012; caustic.tex.offset.y += dt * 0.006;      /* (the caustics drift slowly, like light through moving water) */ lamp.intensity = cur.lampI * stage.lantern; { const lg = Math.min(1, cur.lampI / 70) * stage.lantern; halo.material.opacity = lg * 0.55 + (cur.lampI > 1 ? 0.1 : 0) * stage.lantern; pool.material.opacity = lg * 0.85; } lanternGlow.emissiveIntensity = cur.glow;
   shafts.mat.uniforms.uI.value = cur.shaft; shafts.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0x88c8ff), 0.25);
-  beams.mat.uniforms.uI.value = cur.shaft * 2.2; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
+  beams.mat.uniforms.uI.value = cur.shaft * 3.0; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
   stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); stage.dimK += (stage.dim - stage.dimK) * Math.min(1, dt * 1.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK) * (1 - 0.3 * stage.dimK); bloom.strength = cur.bloom;
   if (stage.dimK > 0.001) { shafts.mat.uniforms.uI.value *= 1 - stage.dimK; beams.mat.uniforms.uI.value *= 1 - stage.dimK; surf.mat.uniforms.uI.value *= 1 - 0.7 * stage.dimK; }      // lights down: the sun's shafts fade, the spot stays bright

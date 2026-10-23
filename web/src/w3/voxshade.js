@@ -16,7 +16,7 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
       attribute vec3 aN; ${sway ? `attribute vec2 aSw; uniform float uTime; uniform vec4 uPush[${PUSH_N}]; uniform vec4 uHold[${HOLD_N}];` : ''}`)
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
-        if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.82));`);
+        if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.72));      // (a little more of the cube in each face: the voxels read)`);
     if (sway) sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `
       float swk = aSw.x * aSw.x; float swp = aSw.y;
         vec4 mv = vec4(transformed, 1.0), cv = vec4(0.0, 0.0, 0.0, 1.0);
