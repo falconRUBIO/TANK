@@ -8,7 +8,7 @@ const _tv = new THREE.Vector3();
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
 import { Crab3D } from './crab3d.js';
-import { isCrab, isShell, shellSz } from '../game/crabs.js';
+import { isCrab, isShell, shellSz, TO_CRABS } from '../game/crabs.js';
 import { gripWork, PLANTS } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
@@ -198,37 +198,50 @@ export class Fishes {
       decorTop: (x, z, id) => { const it = id && M.decor?.items?.get(id), v = it ? M.dvOf(id, it).filter((q) => Math.hypot(q[0] - x, q[2] - z) < 0.45) : M.decorVox(x, z, 0.35); let top = null; for (const q of v) if (top == null || q[1] > top) top = q[1]; return top == null ? null : top + 0.06; },      // (the top of that one decoration, under its feet)
       label: (sp) => (DECOR_DEF[sp.type]?.label ?? 'rock').toLowerCase(),
       flakes: () => M.flakes,
-      avoid: (x, z, c) => M.list.some((o) => !o.dead && ((o.sk === 'seahorse' && o.holdfast?.on && (o.rec?.preg || (o.restK ?? 0) > 0.4)) || o.sk === 'cory') && Math.hypot(o.pos.x - x, o.pos.z - z) < (o.sk === 'cory' ? 0.9 : 1.1)),      // a seahorse resting or carrying young, a goby by its burrow: walked round
+      crabs: () => M.list.filter((q) => q.crab && !q.dead).length,
+      avoid: (x, z, c) => Object.values(c.noGo ?? {}).some((q) => q.until > Date.now() && Math.hypot(q.x - x, q.z - z) < 1.4) || M.list.some((o) => !o.dead && ((o.sk === 'seahorse' && o.holdfast?.on && (o.rec?.preg || (o.restK ?? 0) > 0.4)) || o.sk === 'cory') && Math.hypot(o.pos.x - x, o.pos.z - z) < (o.sk === 'cory' ? 0.9 : 1.1)),      // a seahorse resting or carrying young, a goby by its burrow: walked round
       claim: (dd, c) => { (M.claimed ||= new Set()).add(dd.id); const it = M.decor?.items?.get(dd.id); if (it) it.group.visible = false;      // it is going: the shell stays to be seen until the crab is in it
         const tmp = shellVoxTemp(dd, it); if (tmp) { M.scene.add(tmp); c.temps.push(tmp); c.newTmp = tmp; }
         return Promise.resolve(M.onCrabShell ? M.onCrabShell({ fish: c.fid, decor: dd.id, x: +c.pos.x.toFixed(2), z: +c.pos.z.toFixed(2), ry: +((-c.heading + 0.5) % 6.28).toFixed(2) }) : true).then((ok) => { if (!ok) { M.claimed.delete(dd.id); if (it) it.group.visible = true; if (tmp) tmp.parent?.remove(tmp); } return ok; }).catch(() => false); },
       leaveShell: (c) => { const g = c.shellG.clone(true); g.position.copy(c.group.position); g.quaternion.copy(c.group.quaternion); g.visible = true; M.scene.add(g); c.temps.push(g); setTimeout(() => g.parent?.remove(g), 5000); return g; },      // (until the tank's own copy of the old shell turns up where it was left)
-      tookShell: (c) => { if (c.newTmp) { c.newTmp.parent?.remove(c.newTmp); c.newTmp = null; } },
-      remember: (c, m) => M.onCrabMem?.({ fish: c.fid, ...m }),
+      tookShell: (c) => { if (c.newTmp) { c.newTmp.parent?.remove(c.newTmp); c.newTmp = null; } for (const q of M.list) if (q.crab && q !== c && q.cs?.s === 'queue' && q.pos.distanceTo(c.pos) < 4) q.cs.chk = 1.5; },      // a vacancy chain: those waiting nearby look at the shell it just left
+      remember: (c, m) => { const w = Object.entries(c.fear ?? {}).sort((a, b) => b[1] - a[1])[0]; M.onCrabMem?.({ fish: c.fid, ...m, wary: w && w[1] > 0.2 ? w[0] : null }); },
       note: () => {}, ate: () => {}, puff: (p) => M.burst?.(p.clone().setY(p.y + 0.1)),
     };
     const shellVoxTemp = (dd, it) => { if (!it) return null; const g = it.group.clone(true); g.visible = true; return g; };
     return f;
   }
-  // the rest of the tank notices the crabs: the octopus watches one go by or turns over an empty shell (a collector most of all), a puffer comes to
-  // look, a goby sees one off from its patch, a seahorse eyes one at its plant (and moves off, unless it is carrying young), a turtle stops to look
+  // the rest of the tank notices the crabs, each kind in its own way (TO_CRABS, from what these animals are to hermit crabs on a real reef):
+  // territorial fish see one off their own patch (the crab remembers and keeps clear of it a while), the octopus watches and taps a tucked-in
+  // crab's shell, a puffer or a loggerhead stalks one (a bold crab raises its claws, and a puffer puffs up at that), an angelfish picks at a shell,
+  // a seahorse eyes one at its plant, a turtle stops to look, and fish on the bottom come to pinch a crab's food (it guards it, claws up)
   crabTick(dt) {
     if ((this.ctT = (this.ctT ?? 0) - dt) > 0) return; this.ctT = 0.5; const r = this.rng, crabs = this.list.filter((c) => c.crab && !c.dead && c.group.visible !== false); if (!crabs.length) return;
-    for (const o of this.list) { if (o.dead || o.crab || o.puppet || o.group.visible === false) continue; o.crabCool = (o.crabCool ?? 0) - 0.5; const c = crabs.sort((a, b) => a.pos.distanceTo(o.pos) - b.pos.distanceTo(o.pos))[0], d = Math.hypot(c.pos.x - o.pos.x, c.pos.z - o.pos.z);
-      if (o.species?.move === 'jet') { const S = o.st, free = !o.task && !o.keepCarry && !o.hunt && !o.jarAt && !o.glassAt && !o.inspect && (S?.s === 'crawl' || S?.s === 'rest') && !S?.mode;
-        if (free && o.crabCool <= 0) { const col = o.mind?.type === 'collector', shells = (this.state?.decor ?? []).filter((x) => isShell(x.type) && !this.claimed?.has(x.id));
+    const decor = this.state?.decor ?? [], homeOf = (o, kind) => { const types = { anemone: ['anemone'], cave: ['cave', 'boulder', 'arch', 'pot'], burrow: null, rock: ['rock', 'boulder', 'brain', 'liverock', 'table'] }[kind]; if (!types) return { x: o.home?.x ?? o.pos.x, z: o.pos.z, label: 'burrow', id: 'b:' + o.fid };
+      let best = null, bd = 2.2; for (const d of decor) if (types.includes(d.type)) { const q = Math.hypot(d.x - o.pos.x, d.z - o.pos.z); if (q < bd) { bd = q; best = d; } } return best && { x: best.x, z: best.z, label: kind === 'rock' ? 'patch' : kind, id: best.id }; };
+    for (const o of this.list) { if (o.dead || o.crab || o.puppet || o.group.visible === false) continue; o.crabCool = (o.crabCool ?? 0) - 0.5; const A = TO_CRABS[o.sk]; if (!A || A.how === 'ignores') continue;
+      const c = crabs.slice().sort((a, b) => a.pos.distanceTo(o.pos) - b.pos.distanceTo(o.pos))[0], d = Math.hypot(c.pos.x - o.pos.x, c.pos.z - o.pos.z), low = o.pos.y < sandH(o.pos.x, o.pos.z) + 1.3;
+      if (A.how === 'hunter' && o.species?.move === 'jet') { const S = o.st, free = !o.task && !o.keepCarry && !o.hunt && !o.jarAt && !o.glassAt && !o.inspect && (S?.s === 'crawl' || S?.s === 'rest') && !S?.mode;
+        if (free && o.crabCool <= 0) { const col = o.mind?.type === 'collector', shells = decor.filter((x) => isShell(x.type) && !this.claimed?.has(x.id));
           if (col && shells.length && r() < 0.35) { const sh = shells[Math.floor(r() * shells.length)]; o.inspect = { x: sh.x, z: sh.z, id: sh.id, type: sh.type }; o.thought = 'Turning over an empty shell'; o.crabCool = 50 + r() * 50; }
           else if (d < 3.5 && r() < (col ? 0.3 : 0.18)) { o.inspect = { x: c.pos.x + (o.pos.x - c.pos.x) * 0.3, z: c.pos.z + (o.pos.z - c.pos.z) * 0.3, id: 'crab:' + c.fid, type: 'crab' }; o.gazeT = Math.max(o.gazeT ?? 0, 3); o.thought = `Watching ${c.name}`; o.crabCool = 40 + r() * 40; } else o.crabCool = 8; }
-        if (o.inspect?.type === 'crab' && o.inspect.id === 'crab:' + c.fid) { o.inspect.x += (c.pos.x - o.inspect.x) * 0.2; o.inspect.z += (c.pos.z - o.inspect.z) * 0.2; } continue; }      // (it follows the crab with its eyes and a careful step, never grabbing it)
-      if (o.sk === 'seahorse') { if (o.holdfast?.on && d < 1.3 && o.crabCool <= 0) { o.glance = { x: c.pos.x, y: c.pos.y + 0.2, z: c.pos.z }; o.glanceT = 2; o.crabCool = 12; if (!o.rec?.preg && r() < 0.3) { o.release?.(); o.thought = `Moved off its plant as ${c.name} came by`; } } continue; }
-      if (o.sk === 'cory') { if (d < 0.9 && o.crabCool <= 0 && o.pos.y < sandH(o.pos.x, o.pos.z) + 1) { o.dartT = 0.8; o.target.set(c.pos.x, o.pos.y, c.pos.z); o.retarget = 1; c.backT = 0.8; c.doingFor = 2; o.thought = `Saw ${c.name} off its patch`; o.crabCool = 15; } continue; }
-      if (o.sk === 'puffer') { if (d < 3 && o.crabCool <= 0 && r() < 0.3) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.7, c.pos.z); o.retarget = 4; o.thought = `Watching ${c.name} walk about`; o.crabCool = 30; } continue; }
-      if (['turtle', 'hawksbill', 'loggerhead', 'kemps'].includes(o.sk)) { if (d < 1.8 && o.crabCool <= 0) { o.idle = 2; o.thought = `Stopped to look at ${c.name}`; o.crabCool = 30; } continue; }
-      if (d < 0.8 && o.pos.y < sandH(o.pos.x, o.pos.z) + 0.9 && o.crabCool <= 0) { if (r() < 0.25) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.5, c.pos.z); o.retarget = 1.5; } else o.dartT = 0.5; o.crabCool = 10; }      // other fish: a quick look, or a dart away
+        if (o.inspect?.type === 'crab' && o.inspect.id === 'crab:' + c.fid) { o.inspect.x += (c.pos.x - o.inspect.x) * 0.2; o.inspect.z += (c.pos.z - o.inspect.z) * 0.2;      // (it follows the crab with its eyes and a careful step; it never grabs one)
+          if (d < 0.9 && c.cs?.s === 'retract') { c.tapBy = o; c.cs.t = Math.max(c.cs.t, 2); o.thought = `Tapping ${c.name}'s shell`; o.gazeT = Math.max(o.gazeT ?? 0, 2); if (r() < 0.15) { o.inspect = null; o.thought = `Lost interest in ${c.name}`; } } }
+        continue; }
+      if (o.crabCool > 0) continue;
+      if (A.how === 'territorial' && low) { const H = homeOf(o, A.home); if (H && Math.hypot(c.pos.x - H.x, c.pos.z - H.z) < 1.2 && Math.hypot(o.pos.x - H.x, o.pos.z - H.z) < 2) {      // the crab is on its patch: it charges, the crab backs off and remembers
+          o.dartT = 0.9; o.target.set(c.pos.x, Math.max(o.pos.y - 0.3, sandH(c.pos.x, c.pos.z) + 0.4), c.pos.z); o.retarget = 1.2; o.thought = `Chased ${c.name} away from its ${H.label}`; o.crabCool = 12;
+          (c.noGo ||= {})[H.id] = { x: H.x, z: H.z, until: Date.now() + 8 * 60e3 }; if (!['retract', 'swap', 'molt'].includes(c.cs?.s)) { const a = Math.atan2(c.pos.z - H.z, c.pos.x - H.x); c.cs = { s: 'walk', to: { x: H.x + Math.cos(a) * 1.8, z: H.z + Math.sin(a) * 1.8 }, then: { s: 'idle', t: 1 }, why: 'clear', who: o, home: H.label }; } continue; } }      // (away from its patch it is just a fish on the bottom: it may still come for a crab's food)
+      if (A.how === 'stalker' && d < 3 && r() < 0.3) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.75, c.pos.z); o.retarget = 4; o.thought = `Watching ${c.name}`; o.crabCool = 25;
+        if (o.sk === 'puffer' && d < 1.3 && c.ctype?.bold > 0.7 && c.cs?.s !== 'retract') { c.clawUp = 1.5; o.puffT = 4.5; o.thought = `Puffed up at ${c.name}, who held up its claws`; } continue; }      // a bold crab stands its ground: claws up, and the puffer puffs
+      if (A.how === 'curious' && d < 1.8) { o.idle = 2; o.thought = `Stopped to look at ${c.name}`; o.crabCool = 30; continue; }
+      if (A.how === 'picker' && d < 1.4 && low && r() < 0.4) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.4, c.pos.z); o.retarget = 2; o.thought = `Picked at ${c.name}'s shell`; o.crabCool = 40; continue; }
+      if (A.how === 'wary') { if (o.holdfast?.on && d < 1.3) { o.glance = { x: c.pos.x, y: c.pos.y + 0.2, z: c.pos.z }; o.glanceT = 2; o.crabCool = 12; if (!o.rec?.preg && r() < 0.3) { o.release?.(); o.thought = `Moved off its plant as ${c.name} came by`; } } continue; }
+      if (low && d < 1.4) { const eater = crabs.find((q) => q.cs?.s === 'eat' && Math.hypot(q.pos.x - o.pos.x, q.pos.z - o.pos.z) < 1.4); if (eater && r() < 0.5) { o.target.set(eater.pos.x, sandH(eater.pos.x, eater.pos.z) + 0.35, eater.pos.z); o.retarget = 1.5; o.thought = `Tried to pinch ${eater.name}'s food`; eater.guardFrom = o.name; eater.guardT = 2.5; o.crabCool = 20; } }
     }
     // the tank's own copy of an old shell is in: the stand-in can go
-    for (const c of crabs) if (c.temps.length && (this.state?.decor ?? []).some((x) => x.left === c.fid && Date.now() - (x.at ?? 0) < 60e3)) { for (const m of c.temps) if (m !== c.newTmp) m.parent?.remove(m); c.temps = c.newTmp ? [c.newTmp] : []; }
-    for (const id of [...(this.claimed ?? [])]) if (!(this.state?.decor ?? []).some((x) => x.id === id) && !crabs.some((c) => c.cs?.d?.id === id && c.cs.s === 'swap')) this.claimed.delete(id);
+    for (const c of crabs) if (c.temps.length && decor.some((x) => x.left === c.fid && Date.now() - (x.at ?? 0) < 60e3)) { for (const m of c.temps) if (m !== c.newTmp) m.parent?.remove(m); c.temps = c.newTmp ? [c.newTmp] : []; }
+    for (const id of [...(this.claimed ?? [])]) if (!decor.some((x) => x.id === id) && !crabs.some((c) => c.cs?.d?.id === id && c.cs.s === 'swap')) this.claimed.delete(id);
   }
   // an octopus taking a keepsake home: it goes to it, picks it up (the little thing rides under its arms), carries it to its den and leaves it
   // there. Now and then it drops it on the way (and may fetch it another time). Only the phone running the animals reports where it ended up.

@@ -2042,6 +2042,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.fish && isCrab(x)); if (!f) return fail('NOT_FOUND'); const C = crabInit(f);
       if (a.fav && t.decor.some((d) => d.id === a.fav)) { if (C.fav !== a.fav) { C.fav = a.fav; const dd = t.decor.find((d) => d.id === a.fav); events.push({ journal: `${f.name} has a favorite spot now: by the ${(DECOR_DEF[dd.type]?.label ?? 'rock').toLowerCase()}.`, story: f.id }); } }
       if (['left', 'right', 'front', 'back', 'middle', 'high'].includes(a.area)) C.area = a.area;
+      if (a.wary === null || t.fish.some((o) => o.id === a.wary && !o.dead)) C.wary = a.wary ?? undefined;      // the animal it is most wary of, from what has happened to it
       if (a.met && typeof a.met === 'object') for (const [id, n] of Object.entries(a.met).slice(0, 8)) if (t.fish.some((o) => o.id === id)) C.met[id] = Math.min(9999, (C.met[id] ?? 0) + Math.max(0, Math.min(50, num(n) || 0)));
       return ok({ applied: false });
     }

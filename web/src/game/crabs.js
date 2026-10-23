@@ -47,3 +47,18 @@ export function bestShell(f, empties, now = Date.now()) {
   return empties.filter((d) => shellFit(shellSz(d), need) === 'fits' && shellSz(d) > mine + 0.04).sort((a, b) => shellSz(b) - shellSz(a))[0] ?? null;
 }
 export const crabInit = (f, now = Date.now()) => { f.crab ||= {}; const C = f.crab; C.type ||= crabTypeOf(f); if (!C.shell) { C.shell = { t: 'cshell_worn', sz: +(crabNeed(f, now) * 1.08).toFixed(2) }; C.hist = [{ t: 'cshell_worn', at: now, how: 'arrived' }]; } C.hist ||= []; C.met ||= {}; C.finds ||= []; return C; };
+// ── Who is what to whom ── how wary a hermit crab is of each kind (0 not at all, 1 a real predator of crabs in the wild: octopuses, puffers,
+// loggerhead and ridley turtles eat them), and what each kind does about a crab. Territorial fish see one off their patch; the curious ones look;
+// the predators take an interest (in the tank they never harm one: it pulls into its shell and they lose interest).
+export const CRAB_FEAR = { octopus: 1, puffer: 0.9, loggerhead: 0.9, kemps: 0.8, turtle: 0.55, hawksbill: 0.55, angelfish: 0.45, guppy: 0.35, goldfish: 0.3, blue: 0.3, cory: 0.25, tang: 0.2, betta: 0.05, platy: 0, neon: 0, danio: 0, neongoby: 0, seahorse: 0 };
+export const TO_CRABS = {
+  octopus: { how: 'hunter', line: 'Watches crabs go by and taps a tucked-in one\'s shell; a collector turns over the empty shells' },
+  puffer: { how: 'stalker', line: 'Hovers over a crab to look at it; a crab that raises its claws makes it puff up' },
+  loggerhead: { how: 'stalker', line: 'Follows a crab along the sand, nose down' }, kemps: { how: 'stalker', line: 'Follows a crab along the sand, nose down' },
+  turtle: { how: 'curious', line: 'Stops to look at a crab crossing its path' }, hawksbill: { how: 'curious', line: 'Stops to look at a crab crossing its path' },
+  angelfish: { how: 'picker', line: 'Picks at a crab\'s shell now and then' },
+  goldfish: { how: 'territorial', home: 'anemone', line: 'Chases a crab away from its anemone' }, guppy: { how: 'territorial', home: 'rock', line: 'Charges a crab that walks onto its patch' },
+  blue: { how: 'territorial', home: 'cave', line: 'Sees a crab off from the mouth of its cave' }, cory: { how: 'territorial', home: 'burrow', line: 'Darts at a crab that comes near its burrow' },
+  betta: { how: 'rival', line: 'Grazes the same rock as the crabs and ignores them' }, seahorse: { how: 'wary', line: 'Eyes a crab at its plant, and moves off unless it is carrying young' },
+  tang: { how: 'ignores', line: 'Swims over them' }, platy: { how: 'ignores', line: 'Takes no notice' }, neon: { how: 'ignores', line: 'Takes no notice' }, danio: { how: 'ignores', line: 'Takes no notice' }, neongoby: { how: 'ignores', line: 'Cleans fish, not crabs' },
+};
