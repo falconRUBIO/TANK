@@ -8,7 +8,9 @@ import fs from 'node:fs';
 const base = process.env.BASE || 'http://localhost:8123', out = process.argv[2] || process.env.OUT || '/tmp/attach'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const ctx = await b.newContext({ viewport: { width: 390, height: 760 } });
-await ctx.addInitScript(() => { let a = 20261021; Math.random = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; });      // (every Math.random in the page, seeded)
+const SEED = +(process.env.SEED ?? 0);
+if (process.env.PULL != null) await ctx.addInitScript((v) => { window.__pairPull = v; }, +process.env.PULL);      // (PULL=0 turns off the pair's holdfast pull, to compare)      // SEED=n: the same checks under different random draws
+await ctx.addInitScript((sd) => { let a = 20261021 + sd * 7919; Math.random = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }, SEED);      // (every Math.random in the page, seeded)
 const p = await ctx.newPage(); const errors = []; let fails = 0; p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/favicon|404/.test(m.text())) errors.push(m.text()); });
 const ck = (n, ok, ev, x = '') => { console.log(ok ? '  ✓' : '  ✗', `[${ev}]`, n, x); if (!ok) fails++; };
 const info = (ev, n, x = '') => console.log('  ·', `[${ev}]`, n, x);
@@ -50,7 +52,7 @@ if (on(1)) { const D1 = [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.6 }, { id: '
 if (on(2)) { await stage(202, [{ ...OCT, id: 'oF', name: 'Fond', seed: 5, home: 'c1', bond: { me: 20 } }, { ...OCT, id: 'oS', name: 'Strange', seed: 13, home: 'c2', bond: {} }],
     [{ id: 'c1', type: 'coconut', x: -2.0, z: -0.8 }, { id: 'c2', type: 'coconut', x: 2.0, z: -0.8 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }]);
   await run(400, ['oF', 'oS'], 2);
-  const z0 = await p.evaluate(() => { const F = window.__fishes; F.rng = window.__seed(7); const o = {}; for (const id of ['oF', 'oS']) { const f = F.byId.get(id); f.inspect = null; f.task = null; f.greeted = null; o[id] = +f.group.position.z.toFixed(2); } F.rng = () => 0.3; F.greet(); F.rng = window.__seed(8);
+  const z0 = await p.evaluate(() => { const F = window.__fishes; F.rng = window.__seed(7); const o = {}; for (const id of ['oF', 'oS']) { const f = F.byId.get(id); f.inspect = null; f.task = null; f.greeted = null; o[id] = +f.group.position.z.toFixed(2); } F.rng = () => 0.005; F.greet();      /* (the rare full visit: about one open in a hundred) */ F.rng = window.__seed(8);
     return { z: o, st: Object.fromEntries(['oF', 'oS'].map((id) => { const f = F.byId.get(id); return [id, { trust: f.trust, greeted: f.greeted, glassAt: !!f.glassAt }]; })) }; });
   const { tr } = await run(300, ['oF', 'oS'], 3); await shot('2-familiar-caretaker');
   const mz = (t) => r2(Math.max(...t.map((a) => a[2]))), gf = (t) => r2(mean(t.map((a) => (a[2] > 3.0 ? 1 : 0))));
@@ -104,7 +106,7 @@ if (on(6)) { const HS = { species: 'seahorse', traits: ['Social'] };
   await stage(606, [{ ...HS, id: 'm1', name: 'Mo', seed: 4, sex: 'm', mate: 'm2' }, { ...HS, id: 'm2', name: 'Mia', seed: 11, sex: 'f', mate: 'm1' }, { ...HS, id: 's1', name: 'Sol', seed: 15, sex: 'm' }, { ...HS, id: 's2', name: 'Sue', seed: 19, sex: 'f' }],
     [{ id: 'p1', type: 'grass', x: -2.6, z: 2.2 }, { id: 'p2', type: 'fern', x: 2.6, z: 2.2 }, { id: 'p3', type: 'sword', x: -1.0, z: -0.4 }, { id: 'p4', type: 'grass', x: 1.2, z: -0.4 }, { id: 'p5', type: 'kelp', x: 0, z: 1.6 }]);
   const mates = await p.evaluate(() => ['m1', 'm2', 's1', 's2'].map((id) => window.__fishes.byId.get(id).mateId));
-  const { tr } = await run(4800, ['m1', 'm2', 's1', 's2'], 7, 'if (i % 800 === 400) F.shT = 0; F.isLead = () => true;'); await shot('6-seahorse-pair');
+  const { tr } = await run(4800, ['m1', 'm2', 's1', 's2'], 7 + SEED, 'if (i % 800 === 400) F.shT = 0; F.isLead = () => true;'); await shot('6-seahorse-pair');
   const dd = (u, v) => tr[u].map((a, i) => Math.hypot(a[0] - tr[v][i][0], a[1] - tr[v][i][1], a[2] - tr[v][i][2])), gr = (u) => tr[u].filter((a) => a[4]).length;
   const P = dd('m1', 'm2'), S = dd('s1', 's2'), meet = (a) => a.filter((d) => d < 1.2).length;
   info('state', 'mateId on the 3D seahorses', JSON.stringify(mates));

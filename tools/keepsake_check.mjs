@@ -31,12 +31,13 @@ const xz = (a, x, z) => Math.hypot(a[0] - x, a[2] - z), mean = (a) => a.reduce((
 const pathLen = (t) => t.slice(1).reduce((s, c, i) => s + Math.hypot(c[0] - t[i][0], c[1] - t[i][1], c[2] - t[i][2]), 0);
 const OCT = { species: 'octopus' };
 
-const SPOTS = [[2.6, -1.2], [2.2, 2.0], [0.6, -1.6], [3.2, 0.6], [1.0, 2.6], [-0.4, -1.8]];
+const SPOTS = process.env.KSPOTS ? JSON.parse(process.env.KSPOTS) : [[2.6, -1.2], [2.2, 2.0], [0.6, -1.6], [3.2, 0.6], [1.0, 2.6], [-0.4, -1.8]];      // KSPOTS='[[x,z],…]' KDECOR='[{…}]': harder places (against a rock, at the back bank)
+const KDECOR = process.env.KDECOR ? JSON.parse(process.env.KDECOR) : [];
 let carriedN = 0, loops = 0, homeN = 0; const rows = [];
 for (const [i, [kx, kz]] of SPOTS.entries()) {
   await stage(600 + i, [{ ...OCT, id: 'oK', name: 'Keeper', seed: 3, home: 'c1', bond: {}, advMem: { fav: 'k1', items: [{ k: 'shell', id: 'k1', at: Date.now() - 864e5 }] }, mem: { fav: null, fam: { c1: { k: 0.9, n: 12, x: -2.4, z: 0.4, at: Date.now() - 5 * 864e5 }, g1: { k: 0.9, n: 12, x: 0, z: 2.4, at: Date.now() - 5 * 864e5 } }, likes: [], fish: {}, keeps: { k1: { k: 0.9, n: 4 } } } }],
-    [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.4 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }], [{ id: 'k1', k: 'shell', adv: 'reef', by: 'oK', byName: 'Keeper', at: Date.now() - 864e5, x: kx, z: kz }]);
-  await p.evaluate(() => { const F = window.__fishes; F.keeps0 = [...(window.__decor?.keeps ?? new Map())]; if (!F.keeps0.length) { const it = F.keepSpots()[0]?.it; F.keeps0 = it ? [['k1', it]] : []; } F.attnAt = Date.now() - 3e5; F.keepT = 0.5; const f = F.byId.get('oK'); f.inspect = null; f.task = null; });
+    [{ id: 'c1', type: 'coconut', x: -2.4, z: 0.4 }, { id: 'g1', type: 'grass', x: 0, z: 2.4 }, ...KDECOR], [{ id: 'k1', k: 'shell', adv: 'reef', by: 'oK', byName: 'Keeper', at: Date.now() - 864e5, x: kx, z: kz }]);
+  await p.evaluate(() => { const F = window.__fishes; F.keeps0 = [...(window.__decor?.keeps ?? new Map())]; if (!F.keeps0.length) { const it = F.keepSpots()[0]?.it; F.keeps0 = it ? [['k1', it]] : []; } F.attnAt = Date.now() - 3e5; F.keepT = 0.5; const f = F.byId.get('oK'); f.inspect = null; f.task = null; f.keepNo = null; });      // (a fresh tank each time: nothing remembered from the last run)
   const { tr, kt } = await run(3000, ['oK'], 7 + i, 'F.attnAt = Date.now() - 3e5; const C = F.byId.get("oK").keepCarry; if (C?.phase === "carry") F.__carried = 1; if (i === 0) F.__carried = 0; if (!C && !F.__carried && i % 200 === 0) F.keepT = 0;');
   const K = kt.k1 ?? [], minD = r2(Math.min(...tr.oK.map((a) => xz(a, kx, kz)))), carried = K.filter((k) => k[2]).length, last = K.at(-1);
   const st = await p.evaluate(() => window.__game.state.keeps.find((k) => k.id === 'k1')?.h ?? {}); const home = last && Math.hypot(last[0] + 2.4, last[1] - 0.4) < 1.8;

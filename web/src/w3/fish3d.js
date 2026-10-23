@@ -783,7 +783,8 @@ export class Fish3D {
     }
     if (!roost && pool.filter(([q]) => q.id !== this.lastHold && (pool.length > 2 || Math.hypot(q.x - this.pos.x, q.z - this.pos.z) < 4.2)).length >= 1) { for (let i = pool.length - 1; i >= 0; i--) if (pool[i][0].id === this.lastHold) { tot -= pool[i][1]; pool.splice(i, 1); } }      // not straight back to where it just was, if there is a real choice (two others, or one within a short swim)
     { const dq = ([q]) => Math.hypot(q.x - this.pos.x, q.z - this.pos.z);      // a small home range: with somewhere near to go, nowhere far away
-      const favId = this.favourite(spots); if (pool.some((x) => x[0].id !== this.lastHold && dq(x) < 3.2)) for (let i = pool.length - 1; i >= 0; i--) if (dq(pool[i]) > 4.5 && pool[i][0].id !== favId) { /* its favorite is home, however far */ tot -= pool[i][1]; pool.splice(i, 1); } }
+      const favId = this.favourite(spots), mate = (window.__pairPull ?? 1) && this.mateId && others.find((o) => o.fid === this.mateId), mx = mate ? (mate.holdfast?.on ? mate.holdfast.x : mate.pos.x) : 0, mz = mate ? (mate.holdfast?.on ? mate.holdfast.z : mate.pos.z) : 0, byMate = (q) => mate && Math.hypot(q.x - mx, q.z - mz) < 2.4;
+      if (pool.some((x) => x[0].id !== this.lastHold && dq(x) < 3.2)) for (let i = pool.length - 1; i >= 0; i--) if (dq(pool[i]) > 4.5 && pool[i][0].id !== favId && !byMate(pool[i][0])) {      /* (nor is a stem beside its mate: a pair that drifted apart can find each other again) */ /* its favorite is home, however far */ tot -= pool[i][1]; pool.splice(i, 1); } }
     if (!pool.length) return false;
     const fav = this.favourite(spots), fq = fav && spots.find((q) => q.id === fav), fd = fq ? Math.hypot(fq.x - this.pos.x, fq.z - this.pos.z) : 0;
     let pick = null;

@@ -85,6 +85,14 @@ export class Crab3D extends Fish3D {
     if (d < 3.2 && this.rng() < keen) { const a = Math.atan2(this.pos.z - p.z, this.pos.x - p.x), o = { pos: p, name }; this.cs = { s: 'walk', to: { x: p.x + Math.cos(a) * 0.55, z: p.z + Math.sin(a) * 0.55 }, then: { s: 'watch', t: 3 + this.rng() * 4, o, toy: true }, why: 'toy' }; if (T.bold > 0.7) this.clawUp = 0.8; this.toyCool = now + 15e3; return true; }
     this.toyCool = now + 6e3; return false;      // it looked, and went on with what it was doing
   }
+  // playing: it comes after the spot under your finger, across the sand and round things in the way (a timid one hangs back a little)
+  chase(at) {
+    if (['swap', 'molt', 'climb', 'descend', 'perch', 'eat'].includes(this.cs.s)) return;
+    const back = this.ctype.hide > 0.55 ? 0.6 : 0.25, a = Math.atan2(this.pos.z - at.z, this.pos.x - at.x), x = Math.max(-4, Math.min(4, at.x + Math.cos(a) * back)), z = Math.max(-2.3, Math.min(3.5, at.z + Math.sin(a) * back));
+    if (this.cs.s === 'watch' && this.cs.o?.name === 'your finger') { this.cs.o.pos.copy(at); this.cs.t = Math.max(this.cs.t, 4); if (Math.hypot(at.x - this.pos.x, at.z - this.pos.z) < back + 0.6) return; }      // there, watching the finger: it stays with it while you play, and comes on again when the finger moves off
+    if (this.cs.s === 'walk' && this.cs.why === 'finger') { const T = this.cs.to; if (Math.hypot(T.x - x, T.z - z) > 0.4) this.cs.replan = Math.min(this.cs.replan ?? 0, 0.3); T.x = x; T.z = z; this.cs.t = 3; return; }
+    this.cs = { s: 'walk', to: { x, z }, then: { s: 'watch', t: 4, o: { pos: at.clone(), name: 'your finger' } }, why: 'finger', t: 3 }; this.lookAt = at.clone(); this.lookT = 1;
+  }
   sayDoing() { return this.doing; }
   // ── deciding what to do next, from its temperament and what is really around it ──
   decide(others) {
@@ -140,7 +148,8 @@ export class Crab3D extends Fish3D {
     let move = 0; this.doing = null;
     switch (this.cs.s) {
       case 'idle': if (this.cs.t <= 0) this.decide(others); if (this.atFav()) this.doing = 'back at its favorite spot'; break;
-      case 'walk': { const to = this.cs.to, d = Math.hypot(to.x - this.pos.x, to.z - this.pos.z); move = this.step(to, dt, others); if (this.cs.why === 'shell') this.doing = 'going to look at a shell'; else if (this.cs.why === 'food') this.doing = 'going for a bit of food'; else if (this.cs.why === 'toy') this.doing = `going to look at ${this.cs.then?.o?.name ?? 'the toy'}`; else if (!this.cs.why && d > 1.2) this.doing = this.ctype.roam > 1.3 ? 'exploring the tank' : 'out for a walk'; if (this.cs.why === 'fav') this.doing = 'heading back to its favorite spot'; if (this.cs.why === 'clear') this.doing = `keeping clear of ${this.cs.who?.name ?? 'a bigger animal'}${this.cs.home ? `'s ${this.cs.home}` : ''}`; if (this.cs.why === 'gather') this.doing = `going to join ${this.cs.o?.name ?? 'the other crabs'}`;
+      case 'walk': { const to = this.cs.to, d = Math.hypot(to.x - this.pos.x, to.z - this.pos.z), W8 = this.cs; if (!W8.way || W8.wayTo !== to || (W8.replan ?? 0) <= 0) { W8.way = this.plan(to) ?? [to]; W8.wayTo = to; W8.replan = 6; } W8.replan -= dt;      // (planned round the decorations; planned again now and then, as things move)
+        while (W8.way.length > 1 && Math.hypot(W8.way[0].x - this.pos.x, W8.way[0].z - this.pos.z) < 0.18) W8.way.shift(); move = this.step(W8.way.length > 1 ? W8.way[0] : to, dt, others); if (this.cs.why === 'shell') this.doing = 'going to look at a shell'; else if (this.cs.why === 'food') this.doing = 'going for a bit of food'; else if (this.cs.why === 'finger') this.doing = this.ctype.hide > 0.55 ? 'following your finger, carefully' : 'following your finger'; else if (this.cs.why === 'toy') this.doing = `going to look at ${this.cs.then?.o?.name ?? 'the toy'}`; else if (!this.cs.why && d > 1.2) this.doing = this.ctype.roam > 1.3 ? 'exploring the tank' : 'out for a walk'; if (this.cs.why === 'fav') this.doing = 'heading back to its favorite spot'; if (this.cs.why === 'clear') this.doing = `keeping clear of ${this.cs.who?.name ?? 'a bigger animal'}${this.cs.home ? `'s ${this.cs.home}` : ''}`; if (this.cs.why === 'gather') this.doing = `going to join ${this.cs.o?.name ?? 'the other crabs'}`;
         if (d < (this.cs.then?.s === 'climb' ? 0.5 : 0.12) || (this.cs.walkT = (this.cs.walkT ?? 0) + dt) > 25) {      /* (at the foot of a rock it is close enough: the rock itself stops it) */ const n = this.cs.then ?? { s: 'idle', t: 1 }; this.cs = { ...n, t: n.t ?? 1 }; } break; }
       case 'eat': { this.eatK = 1; if (!this.morsel) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.035), new THREE.MeshStandardMaterial({ color: 0x9c6a34, roughness: 0.8 })); m.position.set(7.2 * U, -0.4 * U, 0); this.claws[0].userData.wrist.add(m); this.morsel = m; } this.doing = this.guardFrom && (this.guardT = (this.guardT ?? 0) - dt) > 0 ? `guarding its food from ${this.guardFrom}` : 'eating'; if (this.guardT > 0) this.clawUp = Math.max(this.clawUp, 0.2); const f = this.cs.food; if (f && !f.eaten && f.pos.distanceTo(this.pos) < 0.5 && this.cs.t < 1) { f.eaten = true; this.W?.ate?.(this); } if (this.cs.t <= 0) { this.eatK = 0; this.morsel?.parent?.remove(this.morsel); this.morsel = null; this.cs = { s: 'idle', t: 1 }; } break; }
       case 'rest': { const pals = others.filter((o) => o.crab && o !== this && !o.dead && o.pos.distanceTo(this.pos) < 0.9).map((o) => o.name); this.doing = pals.length ? `resting with ${pals.slice(0, 2).join(' and ')}` : this.cs.fav ? 'back at its favorite spot' : null; for (const o of others) if (o.crab && o !== this && o.pos.distanceTo(this.pos) < 0.9) this.met[o.fid] = (this.met[o.fid] ?? 0) + dt / 20; } this.dwell[this.cs.fav?.id] = (this.dwell[this.cs.fav?.id] ?? 0) + dt; if (this.cs.t <= 0) this.cs = { s: 'idle', t: 0.5 }; break;
@@ -186,6 +195,25 @@ export class Crab3D extends Fish3D {
   }
   atFav() { const f = this.rec?.crab?.fav, sp = f && (this.W?.spots?.() ?? []).find((s) => s.id === f); return !!sp && Math.hypot(sp.x - this.pos.x, sp.z - this.pos.z) < 1.1; }
   // walking: legs going, a little sideways the way crabs do, round other crabs and big animals and decorations
+  clearAt(x, z) { const Wd = Fish3D.world; if (!Wd?.at) return true; const y = sandH(x, z) + 0.22; return ![[0, 0], [0.13, 0], [-0.13, 0], [0, 0.13], [0, -0.13], [0.26, 0], [-0.26, 0], [0, 0.26], [0, -0.26], [0.18, 0.18], [-0.18, 0.18], [0.18, -0.18], [-0.18, -0.18]].some(([a, b]) => Wd.at(x + a, y, z + b)); }      // (a body's width round it: it may stray a little off its way and still never touch)      // nothing solid round it at body height
+  // a way across the sand that keeps clear of every decoration: A* over a 0.2 grid of clear-sand cells (rocks, the pot, the cave are walls).
+  // From inside something it first leads out to the nearest clear cell; to somewhere blocked it goes to the nearest clear cell beside it.
+  plan(to) {
+    const G = 0.2, X0 = -4.2, Z0 = -2.4, NX = 43, NZ = 31, id = (i, k) => k * NX + i, cx = (x) => Math.max(0, Math.min(NX - 1, Math.round((x - X0) / G))), cz = (z) => Math.max(0, Math.min(NZ - 1, Math.round((z - Z0) / G)));
+    const ok = new Uint8Array(NX * NZ); for (let k = 0; k < NZ; k++) for (let i = 0; i < NX; i++) ok[id(i, k)] = this.clearAt(X0 + i * G, Z0 + k * G) ? 1 : 2;
+    const near = (i0, k0) => { if (ok[id(i0, k0)] === 1) return [i0, k0]; for (let r = 1; r < 14; r++) for (let di = -r; di <= r; di++) for (const dk of [-r, r]) for (const [i, k] of [[i0 + di, k0 + dk], [i0 + dk, k0 + di]]) if (i >= 0 && k >= 0 && i < NX && k < NZ && ok[id(i, k)] === 1) return [i, k]; return null; };
+    const s0 = [cx(this.pos.x), cz(this.pos.z)], S = s0, T = near(cx(to.x), cz(to.z)); if (!S || !T) return null;
+    const g = new Float32Array(NX * NZ).fill(1e9), from = new Int32Array(NX * NZ).fill(-1), open = [[0, id(...S)]], tid = id(...T); g[id(...S)] = 0;
+    while (open.length) { let bi = 0; for (let q = 1; q < open.length; q++) if (open[q][0] < open[bi][0]) bi = q; const [, c] = open.splice(bi, 1)[0]; if (c === tid) break; const ci = c % NX, ck = (c / NX) | 0;
+      for (let di = -1; di <= 1; di++) for (let dk = -1; dk <= 1; dk++) { if (!di && !dk) continue; const i = ci + di, k = ck + dk; if (i < 0 || k < 0 || i >= NX || k >= NZ) continue; const n = id(i, k); if (di && dk && (ok[id(ci + di, ck)] !== 1 || ok[id(ci, ck + dk)] !== 1)) continue;
+        const ng = g[c] + (di && dk ? 1.414 : 1) * (ok[n] === 1 ? 1 : 2000);      /* (solid is not impossible, just very dear: from a pocket inside something, it finds the shortest way out) */ if (ng < g[n]) { g[n] = ng; from[n] = c; open.push([ng + Math.hypot(i - T[0], k - T[1]), n]); } } }
+    if (from[tid] < 0 && tid !== id(...S)) return null;
+    const pts = []; for (let c = tid; c >= 0; c = from[c]) pts.unshift({ x: X0 + (c % NX) * G, z: Z0 + ((c / NX) | 0) * G });
+    const way = pts;      // (every cell kept: a straight line between far-apart points would cut the corners of things)
+    if (way.length > 1 && !this.clearAt(way[0].x, way[0].z) && this.clearAt(this.pos.x, this.pos.z)) way.shift();      // (its own grid cell can sit just inside something it is standing beside: it starts from where it really is)
+    if (way.length && this.clearAt(to.x, to.z)) way[way.length - 1] = { x: to.x, z: to.z };      // (and ends exactly where it was going)
+    return way;
+  }
   step(to, dt, others, mul = 1) {
     const dx = to.x - this.pos.x, dz = to.z - this.pos.z, d = Math.hypot(dx, dz); if (d < 0.02) return 0;
     if ((this.pauseT ?? 0) > 0) { this.pauseT -= dt; return 0; } if ((this.burstT = (this.burstT ?? 1) - dt) <= 0) { this.burstT = 0.8 + this.rng() * 2.2 * this.ctype.roam; this.pauseT = 0.2 + this.rng() * (0.5 + this.ctype.hide); this.flick = 0.3; }      // crabs walk in bursts: a few steps, a stop (antennae busy), a few more
@@ -193,7 +221,7 @@ export class Crab3D extends Fish3D {
     const sp = (this.species?.id === 'blueleg' ? 0.36 : this.sk === 'halloween' ? 0.3 : 0.26) * mul * (this.vigor ?? 1) * (0.7 + 0.3 * this.ctype.roam) * (1 - this.retK);
     let vx = dx / d, vz = dz / d;
     for (const o of others) { if (o === this || o.dead) continue; const ex = this.pos.x - o.pos.x, ez = this.pos.z - o.pos.z, e = Math.hypot(ex, ez), min = o.crab ? 0.42 : big.has(o.sk) && o.pos.y < this.pos.y + 1.2 ? 0.9 : 0; if (e < min && e > 1e-3) { vx += (ex / e) * (min - e) / min * 1.5; vz += (ez / e) * (min - e) / min * 1.5; } }
-    const Wd = Fish3D.world; if (Wd?.push) { const p = new THREE.Vector3(this.pos.x + vx * 0.25, this.pos.y + 0.15, this.pos.z + vz * 0.25), o = new THREE.Vector3(); if (Wd.push(p, 0.18, o) && o.length() > 1e-4) { o.normalize(); const into = vx * o.x + vz * o.z; if (into < 0) { vx -= o.x * into * 1.2; vz -= o.z * into * 1.2; } vx += o.x * 0.4; vz += o.z * 0.4; } }
+    const Wd = Fish3D.world; if (Wd?.push && !(this.cs?.way?.length > 1)) {      /* (on a planned way it is already clear of things: no nudging off it in a narrow gap) */ const p = new THREE.Vector3(this.pos.x + vx * 0.25, this.pos.y + 0.15, this.pos.z + vz * 0.25), o = new THREE.Vector3(); if (Wd.push(p, 0.18, o) && o.length() > 1e-4) { o.normalize(); const into = vx * o.x + vz * o.z; if (into < 0) { vx -= o.x * into * 1.2; vz -= o.z * into * 1.2; } vx += o.x * 0.4; vz += o.z * 0.4; } }
     const m = Math.hypot(vx, vz) || 1; vx /= m; vz /= m; const s = Math.min(sp * heavy, d * 2);
     this.pos.x += vx * s * dt; this.pos.z += vz * s * dt;
     const want = Math.atan2(-vz, vx) + (this.sk === 'blueleg' ? 0.35 : 0.2) * Math.sin(this.ph * 0.4); let dy = want - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 4);

@@ -504,6 +504,7 @@ async function greetVisitor(f) {
 // once a day, when play has given all the level points it can for the day: said once, gently, and play goes on just the same
 const capNote = () => { const P = game.state?.flags?.playXp; if (!P || !(P.n >= GROW.playCap)) return; try { if (localStorage.getItem('ourtank.capSeen') === String(P.day)) return; localStorage.setItem('ourtank.capSeen', String(P.day)); } catch { return; } setTimeout(() => ui?.toast('That is all the level points play gives today. They still love the attention.', 4200), 900); };
 let cardOpen = null;                                                     // which fish's card is expanded; a card opens folded, showing the fish above it
+window.__playWith = (f) => playWith(f); window.__playOn = (ext = 0) => { if (play && ext) play.until = play.max = performance.now() + ext; return play ? { until: Math.round(play.until - performance.now()), fish: play.fish.name } : null; };      // (for the drills: a slow test browser needs longer than a finger does)
 let play = null; const playPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.3), playHit = new THREE.Vector3();
 function playWith(f) {
   if (play) return; play = { fish: f, until: performance.now() + 5500, max: performance.now() + 40000, moved: 0, last: null }; f.mul = 1.3; card.classList.add('peek', 'playing'); $('fishpill').hidden = true;      // the card gets right out of the way while you play: nothing between your finger and the fish
@@ -511,6 +512,7 @@ function playWith(f) {
 }
 function playPoint(ev) {
   if (!play || !rayFrom(ev).ray.intersectPlane(playPlane, playHit)) return; play.until = Math.min(play.max, Math.max(play.until, performance.now() + 2600)); const p = play.fish;       // playing goes on for as long as the finger keeps moving
+  window.__pp = (window.__pp ?? 0) + 1; if (p.crab) { const at = toys.sandHit(rayFrom(ev).ray); window.__ppat = at && at.toArray();      /* (__pp, __ppat: for tools/crab_play.mjs) */ if (at) p.chase?.(at); if (play.last) play.moved += Math.hypot(playHit.x - play.last.x, playHit.y - play.last.y); play.last = { x: playHit.x, y: playHit.y }; return; }      // a hermit crab can't swim up to the glass: it comes along the sand after the spot under your finger
   p.target.set(Math.max(-3.8, Math.min(3.8, playHit.x)), Math.max(1.2, Math.min(12.5, playHit.y)), 2.2); p.retarget = 1; p.dartT = 0.5; if (p.species.move === 'jet') p.glassAt = { x: playHit.x, y: playHit.y, until: performance.now() + 900 };
   if (play.last) play.moved += Math.hypot(playHit.x - play.last.x, playHit.y - play.last.y); play.last = { x: playHit.x, y: playHit.y };
 }

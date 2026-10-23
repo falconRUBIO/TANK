@@ -195,7 +195,7 @@ export class Fishes {
       empties: () => (M.state?.decor ?? []).filter((x) => isShell(x.type) && !M.claimed?.has(x.id)).map((x) => ({ id: x.id, type: x.type, x: x.x, z: x.z, ry: x.ry ?? 0, sz: shellSz(x) })),
       claimedBy: (id, c) => [...M.list].some((o) => o.crab && o !== c && o.cs?.s === 'swap' && o.cs.d?.id === id),
       spots: () => M.spots?.() ?? [],
-      climbable: (sp) => ['ROCKS', 'STRUCTURES', 'WOOD'].includes(DECOR_DEF[sp.type]?.cat) && !isShell(sp.type) && (sp.h ?? 1) >= 0.35 && (sp.h ?? 1) <= 2.4,
+      climbable: (sp) => ['ROCKS', 'WOOD'].includes(DECOR_DEF[sp.type]?.cat) && !['coconut', 'urchin', 'pot'].includes(sp.type) && !isShell(sp.type)      /* (rocks and wood: never a hollow pot, a coconut den or an urchin's spines) */ && (sp.h ?? 1) >= 0.35 && (sp.h ?? 1) <= 2.4,
       decorTop: (x, z, id) => { const it = id && M.decor?.items?.get(id), v = it ? M.dvOf(id, it).filter((q) => Math.hypot(q[0] - x, q[2] - z) < 0.45) : M.decorVox(x, z, 0.35); let top = null; for (const q of v) if (top == null || q[1] > top) top = q[1]; return top == null ? null : top + 0.06; },      // (the top of that one decoration, under its feet)
       label: (sp) => (DECOR_DEF[sp.type]?.label ?? 'rock').toLowerCase(),
       flakes: () => M.flakes,
@@ -253,12 +253,13 @@ export class Fishes {
   carryTick(dt) {
     const ks = this.keepSpots?.() ?? [], lead = this.isLead ? this.isLead() : true;
     for (const f of this.list) { const C = f.keepCarry; if (!C) continue; C.t += dt;
-      const k = ks.find((x) => x.id === C.id) ?? (C.it ? { it: C.it } : null), den = this.denOf(f), put = (how) => { const it = C.it; if (it) { const x = Math.max(-4.2, Math.min(4.2, f.pos.x)), z = Math.max(-3.4, Math.min(3.7, f.pos.z)); it.carried = false; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.group.position.set(it.x, sandH(it.x, it.z) + 0.03, it.z); if (lead) this.onKeep?.({ id: C.id, x: it.x, z: it.z, how, fish: f.fid, idk: `${f.fid}:${C.id}:${Math.round(C.t0 ?? 0)}` }); } f.keepCarry = null; };
+      const k = ks.find((x) => x.id === C.id) ?? (C.it ? { it: C.it } : null), den = this.denOf(f), put = (how) => { const it = C.it; if (it) { const x = Math.max(-4.2, Math.min(4.2, f.pos.x)), z = Math.max(-3.4, Math.min(3.7, f.pos.z)); it.carried = false; it.x = +x.toFixed(2); it.z = +z.toFixed(2); it.group.position.set(it.x, sandH(it.x, it.z) + 0.03, it.z); if (lead) this.onKeep?.({ id: C.id, x: it.x, z: it.z, how, fish: f.fid, idk: `${f.fid}:${C.id}:${Math.round(C.t0 ?? 0)}` }); } f.keepCarry = null; (f.keepNo ||= {})[C.id] = Date.now() + 120e3; };      /* (set down or dropped: it leaves that one alone a couple of minutes) */
       if (!k || f.dead || f.puppet || !den) { if (C.it) put('drop'); else f.keepCarry = null; continue; }
       if (C.phase === 'go') {
         if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
         if (C.t > 45) { f.keepCarry = null; continue; }
-        if (Math.hypot(f.pos.x - k.x, f.pos.z - k.z) < 1.2) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        const kd = Math.hypot(f.pos.x - k.x, f.pos.z - k.z), atIt = f.st?.s === 'work' && f.st?.mode === 'inspect' && f.inspect?.id === k.id;      // arrived and working at it: its walk stops where the sand lets it, which can be a little short of a far shell (as at its den, below)
+        if (kd < 1.2 || (atIt && kd < 1.8)) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
         else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' };
         continue;
       }
@@ -1107,7 +1108,7 @@ export class Fishes {
     if ((this.keepT = (this.keepT ?? 30) - dt) <= 0) { this.keepT = 70 + this.rng() * 90;      // now and then an octopus goes and looks over a keepsake it brought home (its favorite most often)
       const ks = this.keepSpots?.() ?? []; for (const f of this.list) { if (f.species?.move !== 'jet' || f.dead || f.puppet || f.inspect || f.task || f.hunt || f.jarAt || !ks.length) continue;
         const mine = ks.filter((k) => k.by === f.fid), fav = mine.find((k) => k.id === f.rec?.advMem?.fav), pool = mine.length ? mine : ks; if (this.rng() > (mine.length ? 0.5 : 0.15)) continue;
-        const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0], den = this.denOf(f);
+        const q = fav && this.rng() < 0.6 ? fav : pool[(this.rng() * pool.length) | 0], den = this.denOf(f); if ((f.keepNo?.[q.id] ?? 0) > Date.now()) continue;
         // one it is attached to, lying away from its den: it may pick it up and take it home, more readily when nobody has been tapping or looking for a while
         // what it knows (Living History: f.rec.mem.keeps, earned by handling it): a known one it treats as its own, a strange one it only looks over
         const known = (f.rec?.mem?.keeps?.[q.id]?.k ?? 0) >= 0.3, ty = f.mind?.type, watched = Date.now() - (this.attnAt ?? 0) < 60e3, quiet = !watched && Date.now() - (this.attnAt ?? 0) > 90e3;
