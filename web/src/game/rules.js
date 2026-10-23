@@ -7,6 +7,8 @@ const gOf = (p, seed) => ({ ...(p?.genes ?? genesOf(p?.seed ?? seed)), m: allele
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
 import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
 export { keepStory, todOf, TOD, LIFE, decorStory };
+import { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell, crabInit } from './crabs.js';
+export { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell } from './crabs.js';
 import { touchKeep, knowsKeep, historyDay, recordHistory, stayOffer, decideStay, dayOfTank, HIST } from './history.js';
 export { knowsKeep, dayOfTank, HIST };
 export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
@@ -32,6 +34,10 @@ SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 7, wai
 SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 7, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. Raise it from a rescued hatchling and return it to the sea.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05 };
 SPECIES_DEF.leatherback = { label: 'Leatherback', price: 0, level: 99, wait: 0, count: 1, blurb: 'The giant of the turtles, with a leathery shell instead of plates. Far too big to keep: it only ever passes by.', traits: ['Calm'], speed: 0.9, visitor: true, resident: false, minLevel: 8 };
 SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Four real kinds to choose from: the clever common octopus, the bold day octopus, the gentle two-spot and the mimic. Each looks, sizes up and behaves differently.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
+// hermit crabs (crabs.js): they walk the sand and the rocks, live in shells they find, and move to a bigger one as they grow
+SPECIES_DEF.blueleg = { label: 'Blue-leg Hermit Crab', price: 24, level: 3, wait: 60, count: 1, blurb: 'A small, quick hermit crab with blue-banded legs. Curious about everything, and always on the move.', traits: ['Curious', 'Playful', 'Brave'], speed: 0.5, crab: true };
+SPECIES_DEF.scarlet = { label: 'Scarlet Reef Hermit Crab', price: 36, level: 4, wait: 90, count: 1, blurb: 'Bright red with yellow eyestalks. Careful and a little shy: it likes a rock to tuck in beside.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.4, crab: true };
+SPECIES_DEF.halloween = { label: 'Halloween Hermit Crab', price: 52, level: 6, wait: 120, count: 1, blurb: 'A bigger crab banded orange and black. Adventurous, and a climber: expect to find it on top of things.', traits: ['Brave', 'Curious', 'Playful'], speed: 0.45, crab: true };
 // rare visitors are not for sale: they drop by, and saying hello adds them to the collection book
 SPECIES_DEF.moonbetta = { label: 'Ghost Dragonet', price: 0, level: 99, wait: 0, count: 1, blurb: 'A pale visitor from the deep.', traits: ['Shy', 'Calm'], speed: 0.7, visitor: true };
 SPECIES_DEF.sunangel = { label: 'Golden Angelfish', price: 0, level: 99, wait: 0, count: 1, blurb: 'Golden and unhurried.', traits: ['Calm', 'Curious'], speed: 0.75, visitor: true };
@@ -79,6 +85,7 @@ export const DECOR_DEF = {
   cave:     { label: 'Reef Cave',     cat: 'ROCKS',      price: 32, level: 3, blurb: 'A hollow rock with a dark way in. A royal gramma claims it; a tang sleeps in it at night.' },
   mangrove: { label: 'Mangrove Roots', cat: 'PLANTS',    price: 34, level: 4, blurb: 'Arching roots, the nursery of the sea. Seahorses wrap their tails round them and young fish hide among them.' },
   sponge:   { label: 'Sponge Garden', cat: 'ROCKS',      price: 34, level: 7, blurb: 'Barrel and tube sponges in orange and purple. A hawksbill turtle pries them off the reef to eat.' },
+  ...Object.fromEntries(Object.entries(SHELLS).map(([k, S]) => [k, { label: S.label, cat: 'SHELLS', price: S.price, level: 3, blurb: S.blurb, ...(S.hidden ? { hidden: true } : {}) }])),      /* (empty shells for the hermit crabs: crabs.js) */
   rubble:   { label: 'Shell Rubble',  cat: 'ROCKS',      price: 26, level: 7, blurb: 'Broken shell and coral chips. A loggerhead crunches through it for snails and crabs; a puffer forages in it.' },
 };
 // ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
@@ -97,9 +104,9 @@ const SHOP_CURVE = {
 };
 for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level, price });
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
-export const EARNED = { torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
+export const EARNED = { cshell_ancient: { why: 'One of your crabs finds it', line: 'One of the crabs dug up an ancient spiral shell.' }, cshell_plain: { why: 'A crab finds it', line: '' }, cshell_worn: { why: 'A crab arrives in it', line: '' }, torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [5, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
+const SPECIES_CURVE = { blueleg: [3, 24], scarlet: [4, 36], halloween: [6, 52], goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [5, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
 for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
 // ── Levels ── the one place levels are defined: the care points to reach each, how many animals the tank holds there, and what it opens
 // (what opens is listed under LEVEL_PRIZE; species and decorations carry their own level). A new level is a new row here plus its content:
@@ -151,7 +158,7 @@ const DAY = 864e5;
 
 export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
-export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, neongoby: 240, tang: 420, puffer: 300, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300 }, ELDER_AT = 0.75;
+export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, neongoby: 240, tang: 420, puffer: 300, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300, blueleg: 540, scarlet: 540, halloween: 600 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => Math.round((LIFESPAN[f.species] ?? 300) * (kindDef(f)?.dwarf ? 0.6 : 1));      // (a dwarf seahorse lives about a year in the wild, much shorter than the big ones)
 export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
 // a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
@@ -319,7 +326,7 @@ export function traitsFor(species, seed) { const pool = SPECIES_DEF[species].tra
 // ── each fish has its own needs: it gets hungry at its own pace, and its happiness and health are real state ──
 const APPETITE = { Greedy: 0.3, Playful: 0.1, Social: 0.05, Curious: 0.05, Lazy: -0.2, Calm: -0.1, Shy: -0.05, Brave: 0 };
 export const appetiteOf = (traits = [], seed = 0) => Math.max(-0.25, Math.min(0.35, (traits.reduce((a, x) => a + (APPETITE[x] ?? 0), 0)) + ((seed % 7) - 3) * 0.02));
-export function ensureFish(f) { if (f && f.arrived == null && Number.isFinite(f.born)) f.arrived = f.born;      /* when it joined the tank (born moves while it is run down; this never does) */ if (ownHungry(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); return f; }
+export function ensureFish(f) { if (f && f.arrived == null && Number.isFinite(f.born)) f.arrived = f.born;      /* when it joined the tank (born moves while it is run down; this never does) */ if (ownHungry(f) && !Number.isFinite(f.hunger)) f.hunger = 0.3; if (f.happy == null) f.happy = 0.7; if (f.health == null) f.health = 1; if (f.appetite == null) f.appetite = appetiteOf(f.traits, f.seed); if (isCrab(f) && f.crab) crabInit(f); return f; }
 const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).length;
 
 // ── reef themes ──
@@ -548,9 +555,10 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : now - (ADULT_DAYS - 2) * DAY, stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : isCrab(o.species) ? now - (BABY_DAYS + 1) * DAY : now - (ADULT_DAYS - 2) * DAY,      /* (a crab comes young, with growing to do: it outgrows its first shell in a few days) */ stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
   if (KINDS[o.species]) f.kind = KINDS[o.species][o.kind] ? o.kind : (o.pa?.kind && KINDS[o.species][o.pa.kind] ? o.pa.kind : KIND_DEFAULT[o.species]);      // a seahorse or octopus is one real species
   if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
+  if (isCrab(f)) crabInit(f, now);      // a hermit crab arrives in a little worn shell that fits it now
   if (o.carries && MORPHS[o.carries]) f.genes = { ...genesOf(seed), m: [o.carries, 'n'] };      // today's special: it carries a rare color
   if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); return f;
 }
@@ -1288,6 +1296,9 @@ export function trickOptions(t, f, now = Date.now()) {
 // Each species has a real-world nature (reef-keeping guides, Project Seahorse and aquarium notes): who is a bully, who is territorial, who is shy, who needs a shoal or a pair,
 // what it likes to live in, and who it likes. The game turns that into plain comfort tips and a small happiness effect. Nothing here can hurt a fish by itself.
 export const SOCIAL = {
+  blueleg:   { kind: 'Curious', size: 1, crab: true, nature: 'A small, busy scavenger. Walks the sand and the rocks, picks at everything, and trades up to a bigger shell as it grows.', home: { cats: ['ROCKS'], text: 'rocks to climb and hide among' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Gets on with nearly everyone; keeps clear of big animals.' },
+  scarlet:   { kind: 'Cautious', size: 1, crab: true, shy: true, nature: 'Bright and careful. Likes a rock to tuck in beside, and pulls into its shell when something big comes by.', home: { cats: ['ROCKS'], text: 'a rock to tuck in beside' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Peaceful; hides from big animals.' },
+  halloween: { kind: 'Adventurous', size: 2, crab: true, nature: 'A bigger, bolder hermit crab. Climbs anything, roams the whole tank, and is not easily scared.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'rocks and structures to climb' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Peaceful, but it barges past smaller crabs.' },
   goldfish:  { kind: 'Friendly', size: 1, nature: 'Friendly and curious. Nestles in an anemone, swaying with it, and gets on with nearly everyone.', home: { types: ['anemone'], text: 'a sea anemone to nestle in' }, likes: ['cory', 'neon', 'danio', 'blue'], line: 'Gets on with most peaceful fish. Loves an anemone.' },
   blue:      { kind: 'Territorial', size: 1, shy: true, sameFoe: true, nature: 'Claims a cave in the rocks and defends it from other grammas. Rests upside down under ledges.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'a rock cave to claim' }, likes: ['platy', 'goldfish'], line: 'Keep just one. Peaceful with other kinds.' },
   angelfish: { kind: 'Bossy', size: 3, bully: true, nature: 'Large and confident. Grazes on the rocks and pushes smaller fish around.', home: { cats: ['ROCKS'], text: 'rocks to graze on' }, likes: [], line: 'Can bully small, shy fish. Give them places to hide.' },
@@ -1315,6 +1326,9 @@ const hasHome = (t, h) => !h || t.decor.some((d) => h.types?.includes(d.type) ||
 // get before it is uneasy (a share of the tank's room); whether it eats fast or slowly (slow eaters lose meals to fast ones); who it clashes
 // with, and why; and what it is like at its best. Used by socialOf (so it really moves happiness) and shown on the Health screen.
 export const ECO = {
+  blueleg: { zone: 'The sand and the rocks', cover: { cats: ['ROCKS'], need: 2, word: 'rocks to hide among', cat: 'ROCKS' }, tol: 0.85, feed: 'slow', clash: {}, best: 'Rocks to climb, a shell to grow into, and leftovers on the sand.' },
+  scarlet: { zone: 'Beside the rocks', cover: { cats: ['ROCKS'], need: 2, word: 'a rock to tuck in beside', cat: 'ROCKS' }, tol: 0.8, feed: 'slow', clash: {}, best: 'A quiet rock of its own, and a shell a size up waiting nearby.' },
+  halloween: { zone: 'Anywhere it can climb', cover: { cats: ['ROCKS', 'STRUCTURES'], need: 2, word: 'rocks and structures to climb', cat: 'ROCKS' }, tol: 0.8, feed: 'slow', clash: {}, best: 'Things to climb, room to roam, and a big shell for when it outgrows this one.' },
   goldfish: { zone: 'Middle water, around its anemone', cover: { types: ['anemone'], need: 1, word: 'an anemone to nestle in', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
     clash: { guppy: 'Damselfish and clownfish both guard a home patch and spar over it' }, best: 'A sea anemone of its own to sway in, and easygoing neighbours.' },
   neon: { zone: 'Open water near the top', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'ROCKS' }, tol: 0.95, feed: 'fast',
@@ -1353,6 +1367,18 @@ export const ECO = {
 // as it is (c: own-kind count, crowd share, its own shelter, fast eaters present, how well fed it is). Shown on the Health screen.
 const W_ = (k, label, why, how, met) => ({ k, label, why, how, met });
 export const KIND_NEEDS = {
+  blueleg: [W_('shell', 'A shell that fits', 'Hermit crabs trade up to a bigger shell as they grow; with nothing to move into, a growing crab gets cramped.', 'An empty shell its size, from the Shop', (c) => c.crabSpare ?? Object.keys(c.types).some(isShell)),
+    W_('hide', 'Rocks to hide among', 'A hermit crab tucks in beside rock when something big comes by.', 'Two rocks, or a Reef Cave', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
+    W_('clean', 'Clean water', 'Crabs breathe through gills under their shell: dirty water tires them.', 'Change the water when it is due', (c) => c.cleanWater !== false),
+    W_('room', 'Room to roam', 'It covers the whole floor of the tank in a day.', 'Keep the tank from getting crowded', (c) => c.r <= 0.85)],
+  scarlet: [W_('shell', 'A shell that fits', 'Hermit crabs trade up to a bigger shell as they grow; with nothing to move into, a growing crab gets cramped.', 'An empty shell its size, from the Shop', (c) => c.crabSpare ?? Object.keys(c.types).some(isShell)),
+    W_('hide', 'Rocks to hide among', 'A hermit crab tucks in beside rock when something big comes by.', 'Two rocks, or a Reef Cave', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
+    W_('clean', 'Clean water', 'Crabs breathe through gills under their shell: dirty water tires them.', 'Change the water when it is due', (c) => c.cleanWater !== false),
+    W_('room', 'Room to roam', 'It covers the whole floor of the tank in a day.', 'Keep the tank from getting crowded', (c) => c.r <= 0.85)],
+  halloween: [W_('shell', 'A shell that fits', 'Hermit crabs trade up to a bigger shell as they grow; with nothing to move into, a growing crab gets cramped.', 'An empty shell its size, from the Shop', (c) => c.crabSpare ?? Object.keys(c.types).some(isShell)),
+    W_('hide', 'Rocks to hide among', 'A hermit crab tucks in beside rock when something big comes by.', 'Two rocks, or a Reef Cave', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
+    W_('clean', 'Clean water', 'Crabs breathe through gills under their shell: dirty water tires them.', 'Change the water when it is due', (c) => c.cleanWater !== false),
+    W_('room', 'Room to roam', 'It covers the whole floor of the tank in a day.', 'Keep the tank from getting crowded', (c) => c.r <= 0.85)],
   goldfish: [W_('anemone', 'An anemone to host', 'A clownfish lives its whole life in one anemone. The stinging tentacles keep it safe, and it keeps the anemone clean.', 'A sea anemone from the Shop', (c) => c.cover >= 1),
     W_('pair', 'A partner', 'Clownfish live in pairs in their anemone; the larger of the two becomes the female.', 'A second clownfish', (c) => c.own >= 2),
     W_('peace', 'No damselfish next door', 'Damselfish want the same kind of home patch, and the two spar over it.', 'Keep it apart from damselfish', (c) => !c.has('guppy'))],
@@ -1417,7 +1443,7 @@ export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
   return { decorN: t.decor.length, others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
-    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7 };
+    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7, ...(isCrab(f) ? { crabSpare: !outgrown(f, now) || !!bestShell(f, t.decor.filter((d) => isShell(d.type)), now) } : {}) };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)
@@ -1680,10 +1706,25 @@ export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
 const guard = (name, fn) => { try { fn(); } catch (e) { if (!guard.seen.has(name)) { guard.seen.add(name); console.error('time step failed:', name, e); } } };
 guard.seen = new Set();
 export const timeStepErrors = () => [...guard.seen];      // shown on the developer page so a stuck tank is easy to spot
+// a crab's own slow life: it molts as it grows (it buries itself for a while, no chore for anyone), and it is never left without a shell that fits:
+// outgrown for a day with nothing in the tank to move into, it digs one up. Now and then a digger turns up an ancient spiral, once per tank.
+function crabLife(t, now, ev) {
+  for (const f of t.fish) { if (f.dead || !isCrab(f)) continue; const C = crabInit(f), st = stageOf(f, now);
+    if (C.stage && C.stage !== st) { C.moltAt = now; ev.push({ journal: `${f.name} molted: it buried itself in the sand for a while and came out a little bigger.`, story: f.id }); } C.stage = st;
+    const empties = t.decor.filter((d) => isShell(d.type)), out = outgrown(f, now);
+    if (out) { C.tightSince ??= now; if (now - C.tightSince > DAY && !bestShell(f, empties, now) && t.decor.length < MAX_DECOR) { const sz = +(crabNeed(f, now) * 1.15).toFixed(2), x = Math.max(BOUNDS.x[0] + 0.5, Math.min(BOUNDS.x[1] - 0.5, ((f.seed * 37) % 70) / 10 - 3.5)), z = Math.max(-2.5, Math.min(3, ((f.seed * 13) % 50) / 10 - 2));
+        t.decor.push({ id: nextId(t, 'd'), type: 'cshell_plain', x, z, ry: 0, at: now, paid: 0, sz, found: f.id }); C.finds.push({ k: 'cshell_plain', at: now }); C.tightSince = now; ev.push({ journal: `${f.name} dug up an old whelk shell just its size.`, story: f.id }); } }
+    else C.tightSince = null;
+    const T = CRAB_TYPES[C.type] ?? CRAB_TYPES.explorer, day = Math.floor(now / DAY);
+    if (C.digDay !== day) { C.digDay = day; if (!t.flags.ancient && st !== 'baby' && t.decor.length < MAX_DECOR && hash32(day * 31 + (f.seed | 0)) % 1000 < 60 * (0.5 + T.collect + 0.5 * T.roam)) {      /* (a few percent a day; a collector or a roamer finds it soonest) */
+        t.flags.ancient = now; t.decor.push({ id: nextId(t, 'd'), type: 'cshell_ancient', x: +(((f.seed * 53) % 60) / 10 - 3).toFixed(2), z: +(((f.seed * 7) % 40) / 10 - 1.5).toFixed(2), ry: 0, at: now, paid: 0, sz: SHELLS.cshell_ancient.sz, found: f.id }); C.finds.push({ k: 'cshell_ancient', at: now });
+        ev.push({ journal: `${f.name} was digging in the sand and turned up an ancient spiral shell.`, toast: `${f.name} dug up an ancient spiral shell!`, story: f.id }); } }
+  }
+}
 function _advance(t, now = Date.now()) {
   NOW = now; norm(t, now); const ev = [], dt = Math.max(0, (now - t.simTs) / 1000);
   const t0 = t.simTs, pre = new Map(t.fish.filter((f) => isOcto(f) && !f.away).map((f) => [f.id, [f.ail ?? 0, f.health ?? 1]]));      // (an octopus that leaves partway through: only its time in the tank counts against it)
-  guard('seahorses', () => seaFamilies(t, now, ev)); guard('octopals', () => octoPartners(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
+  guard('crabs', () => crabLife(t, now, ev)); guard('seahorses', () => seaFamilies(t, now, ev)); guard('octopals', () => octoPartners(t, now, ev));      // first: a birth that was due while nobody looked happens on its day, before the time away is counted against anyone's health
   if (dt >= 1) {
     const h0 = t.hunger, w0 = t.water, oh0 = new Map();
     t.hunger = Math.min(Math.max(t.hunger, 0.85), t.hunger + dt * HR);
@@ -1977,12 +2018,32 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
+      if (isCrab(a.species) && !t.flags.crabStarter) { t.flags.crabStarter = now; (t.flags.starter ||= {}).cshell_ivory = (t.flags.starter.cshell_ivory ?? 0) + 1; t.flags.ivorySz = +(CRAB_SIZE[a.species][1] * 1.02).toFixed(2); events.push({ toast: 'A free Ivory Spiral shell is waiting in the Shop, under Shells: something for your crab to grow into.' }); }      // the first crab comes with a shell to grow into
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker
       t.orders.push({ id: nextId(t, 'o'), species: a.species, ...(KINDS[a.species]?.[a.kind] ? { kind: a.kind } : {}), ...(special ? { carries: sp.color } : {}), ...(SPECIES_DEF[a.species].count === 1 && (a.sex === 'm' || a.sex === 'f') ? { sex: a.sex } : {}),      /* (any single fish can be chosen male or female: so a pair can be completed) */  name: nm, seed: base, paid: price, by: name, owner: to ? to.id : uid, ownerName: to ? to.name : name, giftFrom: to ? name : null, ...(to ? { giftFromId: uid, giftNote: String(a.note ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 80) || null, surprise: a.surprise !== false } : {}), at: now, arrivesAt: now + (a.rush && dev ? 0 : d.wait * 60e3) });
       events.push({ activity: { type: 'fish', text: to ? (a.surprise !== false ? `${name} sent ${to.name} a surprise gift.` : `${name} ordered a ${d.label.toLowerCase()} as a gift for ${to.name}.`) : `${name} ordered a new fish.` },      /* (a surprise says nothing of what it is, anywhere, until it is opened) */ toast: `On its way! Arrives in about ${d.wait >= 60 ? Math.round(d.wait / 60) + 'h' : d.wait + ' min'}.` });
       deliver(t, now, events); levelCheck(t, now, events);
       return ok({ ordered: true, wait: d.wait });
+    }
+    case 'crabShell': {                                            // a crab moves house: into an empty shell in the tank, leaving its old one where it was
+      const f = t.fish.find((x) => x.id === a.fish && !x.dead && isCrab(x)); if (!f) return fail('NOT_FOUND');
+      const C = crabInit(f), i = t.decor.findIndex((d) => d.id === a.decor && isShell(d.type)); if (i < 0) return fail('TAKEN');      // (two crabs wanting one shell: the first one in has it)
+      const d = t.decor[i], sz = shellSz(d); if (shellFit(sz, crabNeed(f, now)) !== 'fits') return fail('DOES_NOT_FIT');
+      const old = { ...C.shell }; t.decor.splice(i, 1);
+      const x = Number.isFinite(num(a.x)) ? Math.max(BOUNDS.x[0], Math.min(BOUNDS.x[1], num(a.x))) : d.x, z = Number.isFinite(num(a.z)) ? Math.max(BOUNDS.z[0], Math.min(BOUNDS.z[1], num(a.z))) : d.z;
+      t.decor.push({ id: nextId(t, 'd'), type: SHELLS[old.t] ? old.t : 'cshell_worn', x: +x.toFixed(2), z: +z.toFixed(2), ry: +(num(a.ry) || 0).toFixed(2), at: now, paid: 0, sz: old.sz, left: f.id });      // the old shell stays in the tank, free for another crab
+      C.shell = { t: d.type, sz, from: d.id }; C.hist.push({ t: d.type, at: now, how: 'moved' }); if (C.hist.length > 12) C.hist.splice(0, C.hist.length - 12); C.swapAt = now;
+      const lab = shellLabel(d.type), an = /^[aeiou]/i.test(lab) ? 'an' : 'a';
+      events.push({ journal: `${f.name} moved into ${an} ${lab} shell.`, story: f.id, text: `Moved into ${an} ${lab} shell.`, crabSwap: { fish: f.id, decor: d.id } });
+      return ok();
+    }
+    case 'crabMem': {                                              // what the phone running the animals has seen a crab do: its favorite spot, where it roams, who it keeps meeting
+      const f = t.fish.find((x) => x.id === a.fish && isCrab(x)); if (!f) return fail('NOT_FOUND'); const C = crabInit(f);
+      if (a.fav && t.decor.some((d) => d.id === a.fav)) { if (C.fav !== a.fav) { C.fav = a.fav; const dd = t.decor.find((d) => d.id === a.fav); events.push({ journal: `${f.name} has a favorite spot now: by the ${(DECOR_DEF[dd.type]?.label ?? 'rock').toLowerCase()}.`, story: f.id }); } }
+      if (['left', 'right', 'front', 'back', 'middle', 'high'].includes(a.area)) C.area = a.area;
+      if (a.met && typeof a.met === 'object') for (const [id, n] of Object.entries(a.met).slice(0, 8)) if (t.fish.some((o) => o.id === id)) C.met[id] = Math.min(9999, (C.met[id] ?? 0) + Math.max(0, Math.min(50, num(n) || 0)));
+      return ok({ applied: false });
     }
     case 'nameFish': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND');
@@ -1995,10 +2056,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (!(x >= BOUNDS.x[0] && x <= BOUNDS.x[1] && z >= BOUNDS.z[0] && z <= BOUNDS.z[1])) return fail('OUT_OF_BOUNDS');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
       if (t.decor.length >= MAX_DECOR) return fail('TANK_CROWDED');
-      const gift = a.free && (t.flags.starter?.[a.type] ?? 0) > 0, free = gift || (a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS');   // the starter pack, or the tutorial's free plant
+      if (a.type === 'cshell_ivory' && !((t.flags.starter?.cshell_ivory ?? 0) > 0)) return fail('EARNED_ONLY');      // (the ivory spiral comes with the first crab)
+      const gift = (a.free || a.type === 'cshell_ivory') && (t.flags.starter?.[a.type] ?? 0) > 0, free = gift || (a.free && t.flags.freePlant > 0 && d.cat === 'PLANTS');   // the starter pack, or the tutorial's free plant
       if (!free && t.shells < d.price) return fail('NOT_ENOUGH_SHELLS');
       const needs0 = tankNeeds(t, now); if (gift) t.flags.starter[a.type]--; else if (free) t.flags.freePlant = 0; else t.shells -= d.price;
-      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now, paid: free ? 0 : d.price };      /* (what it cost: a free one sells for nothing) */ t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
+      const item = { id: nextId(t, 'd'), type: a.type, x: +x.toFixed(2), z: +z.toFixed(2), ry: +ry.toFixed(2), at: now, paid: free ? 0 : d.price, ...(isShell(a.type) ? { sz: a.type === 'cshell_ivory' ? t.flags.ivorySz ?? 1 : SHELLS[a.type].sz } : {}) };      /* (what it cost: a free one sells for nothing) */ t.decor.push(item); if (!t.seen.decor.includes(a.type)) t.seen.decor.push(a.type);
       if (d.cat === 'PLANTS') progress(t, 'plant', events, name);
       events.push({ activity: { type: 'decor', text: `${name} added ${/^[aeiou]/i.test(d.label) ? 'an' : 'a'} ${d.label.toLowerCase()}.` }, placed: item.id });
       needsMet(t, needs0, a.type, now, events); themeCheck(t, now, events); checkWant(t, now, events); levelCheck(t, now, events);

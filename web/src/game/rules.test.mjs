@@ -1152,9 +1152,34 @@ ok('an animal asking to leave cannot be sold, can be let go, and sends a postcar
 });
 ok('the shop card tells the truth: the Tank Health it promises for a piece is what placing it gives', () => {
   const t0 = R.newWorld(0), now = Date.now(); t0.level = 8; t0.shells = 1e5; for (const [i, sp] of ['goldfish', 'guppy', 'blue', 'platy', 'tang'].entries()) t0.fish.push(R.ensureFish({ id: 'f' + i, name: 'F' + i, species: sp, seed: i, born: now - 20 * 864e5, stage: 'adult', traits: ['Curious'] }));
-  let ups = 0; for (const id of Object.keys(R.DECOR_DEF)) { if (R.DECOR_DEF[id].earned) continue; const t = JSON.parse(JSON.stringify(t0)), r = R.applyAction(t, { t: 'buyDecor', type: id, x: 1.1, z: 0.4 }, { now }); assert.ok(r.ok, id);
+  let ups = 0; for (const id of Object.keys(R.DECOR_DEF)) { if (R.DECOR_DEF[id].earned || id === 'cshell_ivory') continue; const t = JSON.parse(JSON.stringify(t0)), r = R.applyAction(t, { t: 'buyDecor', type: id, x: 1.1, z: 0.4 }, { now }); assert.ok(r.ok, id);
     const w = JSON.parse(JSON.stringify(t)); w.decor = w.decor.slice(0, -1); const e = R.decorEffect(w, id, now); assert.equal(R.tankHealth(t, now).score, e.after, id); if (e.after > e.before) ups++; 
     const e2 = R.decorEffect(t, id, now); R.applyAction(t, { t: 'buyDecor', type: id, x: -1.3, z: 0.9 }, { now }); assert.equal(R.tankHealth(t, now).score, e2.after, id + ' (a second one)'); }
   assert.ok(ups > 0, 'some pieces raise Tank Health');
   assert.ok(R.decorUses('cave').meets.some((m) => m.sp === 'blue') && R.decorUses('seafan').meets.some((m) => m.sp === 'seahorse'), 'who a piece is for comes from the needs');
+});
+ok('hermit crabs: arrive young in a small shell, get a free starter shell, move house only into one that fits, leave the old one behind, and are never stuck', () => {
+  let now = Date.UTC(2026, 9, 1, 12); const t = R.newWorld(now); t.flags.tut = 5; t.level = 6; t.shells = 500;
+  const buy = (sp) => { const r = R.applyAction(t, { t: 'buyFish', species: sp, name: sp }, { now }); assert.ok(r.ok, sp + ' ' + r.reason); for (const o of t.orders) o.arrivesAt = now; R.advance(t, now + 1); return t.fish.find((f) => f.species === sp); };
+  assert.equal(R.SPECIES_DEF.blueleg.price, 24); assert.equal(R.SPECIES_DEF.scarlet.level, 4); assert.equal(R.SPECIES_DEF.halloween.price, 52);
+  const c = buy('blueleg'); assert.ok(c.crab && c.crab.shell.t === 'cshell_worn' && R.shellFit(c.crab.shell.sz, R.crabNeed(c, now)) === 'fits', 'arrives in a worn shell that fits');
+  assert.equal(t.flags.starter.cshell_ivory, 1, 'the first crab brings a free ivory spiral');
+  assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'cshell_ivory', x: 1, z: 1 }, { now }).ok, true); assert.equal(R.applyAction(t, { t: 'buyDecor', type: 'cshell_ivory', x: 1, z: 1 }, { now }).ok, false, 'only one free ivory');
+  const s0 = t.shells; assert.ok(R.applyAction(t, { t: 'buyDecor', type: 'cshell_coral', x: -1, z: 1 }, { now }).ok); assert.equal(t.shells, s0 - 22);
+  const coral = t.decor.find((d) => d.type === 'cshell_coral'), ivory = t.decor.find((d) => d.type === 'cshell_ivory');
+  assert.equal(R.applyAction(t, { t: 'crabShell', fish: c.id, decor: coral.id }, { now }).reason, 'DOES_NOT_FIT', 'a shell far too big is refused');
+  now += 4 * 864e5; R.advance(t, now); assert.ok(R.outgrown(c, now), 'four days on it has outgrown its first shell');
+  assert.equal(R.bestShell(c, t.decor.filter((d) => R.isShell(d.type)), now)?.id, ivory.id, 'the ivory fits it now');
+  const r = R.applyAction(t, { t: 'crabShell', fish: c.id, decor: ivory.id, x: 0.5, z: 0.5 }, { now }); assert.ok(r.ok, r.reason);
+  assert.equal(c.crab.shell.t, 'cshell_ivory'); assert.ok(!t.decor.some((d) => d.id === ivory.id), 'the new shell is on the crab'); const left = t.decor.find((d) => d.type === 'cshell_worn' && d.left === c.id); assert.ok(left, 'the old shell stays in the tank');
+  assert.ok(c.crab.hist.length === 2 && c.crab.hist[1].t === 'cshell_ivory'); assert.ok(r.events.some((e) => /moved into an Ivory Spiral shell/.test(e.journal ?? '')));
+  // two crabs, one shell: the first one in has it
+  const d2 = buy('scarlet'); now += 3 * 864e5; R.advance(t, now); R.applyAction(t, { t: 'buyDecor', type: 'cshell_tiger', x: 2, z: 0 }, { now }); const tiger = t.decor.find((d) => d.type === 'cshell_tiger'); c.born = d2.born;
+  const a1 = R.applyAction(t, { t: 'crabShell', fish: d2.id, decor: tiger.id }, { now }), a2 = R.applyAction(t, { t: 'crabShell', fish: c.id, decor: tiger.id }, { now });
+  assert.ok(a1.ok || a1.reason === 'DOES_NOT_FIT'); if (a1.ok) assert.equal(a2.reason, 'TAKEN', 'a shell another crab just took is gone');
+  // never stuck: outgrown with nothing that fits, after a day it digs one up
+  const h = buy('halloween'); for (const d of [...t.decor]) if (R.isShell(d.type)) t.decor.splice(t.decor.indexOf(d), 1); now += 5 * 864e5; R.advance(t, now); now += 1.2 * 864e5; R.advance(t, now);
+  assert.ok(!R.outgrown(h, now) || t.decor.some((d) => d.type === 'cshell_plain' && d.found === h.id), 'an outgrown crab with no shell to move into digs one up');
+  assert.ok(h.crab.moltAt || c.crab.moltAt, 'growing up, a crab molts');
+  assert.ok(R.KIND_NEEDS.blueleg.some((w) => w.k === 'shell') && R.decorUses('cshell_rose').meets.some((m) => m.sp === 'blueleg'), 'an empty shell is a crab need, shown in the shop');
 });
