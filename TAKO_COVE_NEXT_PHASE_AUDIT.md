@@ -1,4 +1,4 @@
-# TANKLINGS — Next Phase Audit: Making the Existing Game Feel Alive
+# TAKO COVE — Next Phase Audit: Making the Existing Game Feel Alive
 
 **Date:** 2026-10-22 · **Branch:** `claude/our-tank-game-design-xhmavw` · **Starting point:** `a9539be` (Levels 1–8 balanced) · **Covers** every commit after `a9539be` up to the one adding this file · **Service worker:** `ourtank-v272`
 
@@ -192,11 +192,11 @@ No new care requirements were added.
 
 ---
 
-## 13. If someone played Tanklings for 30 days, what would make them genuinely care?
+## 13. If someone played Tako Cove for 30 days, what would make them genuinely care?
 
 Not the level ring. In 30 days a regular player reaches level 8 around day 27, and the ring stops meaning much after that. What actually holds people is **recognition**: opening the tank and seeing *that* octopus, the one that hides at home under its shell. It comes to the glass for you and not for your partner. It sometimes drags a bottle cap home from somewhere. They care when the seahorse pair they bought on day 15 has babies on day 40, and the journal says so the next morning before anything else.
 
-The game now does most of that for real: personalities you can tell apart by watching, recognition you can see, favorite places, friendships that change how fish swim, births and pairings surfaced on return. The three things still standing between Tanklings and real attachment:
+The game now does most of that for real: personalities you can tell apart by watching, recognition you can see, favorite places, friendships that change how fish swim, births and pairings surfaced on return. The three things still standing between Tako Cove and real attachment:
 
 1. **Physical memory.** The keepsake has to be a thing the octopus visibly owns: carried, kept, rearranged. Right now that only works when the keepsake is nearby.
 2. **Pairs that look like pairs.** Seahorse mates should be visibly inseparable all day, not only at their morning meeting.

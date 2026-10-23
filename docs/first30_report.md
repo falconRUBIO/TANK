@@ -1,4 +1,4 @@
-# Tanklings — first 30 days polish: report
+# Tako Cove — first 30 days polish: report
 
 Branch `claude/our-tank-game-design-xhmavw`.
 - Simulation tables: `docs/sim/tables.md`, from `docs/sim/after.json`.

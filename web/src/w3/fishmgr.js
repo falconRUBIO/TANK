@@ -171,7 +171,7 @@ export class Fishes {
       const look = (t, flush = 0) => { f.gazeT = Math.max(f.gazeT ?? 0, t); if (flush) f.flush = Math.max(f.flush ?? 0, flush); };      // its eyes go wide at you (and, glad, a flush of color)
       if (busy || lvl < 1) { f.greeted = 'busy'; continue; }                                                     // a stranger, or busy with something: it carries on
       if (asleep) { if (lvl >= 2) { look(3); f.greeted = 'stirs'; f.thought = 'Opened an eye at you'; } else f.greeted = 'asleep'; continue; }
-      const toGlass = (close) => { f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close }; f.inspect = null; f.greeted = 'glass'; f.thought = 'Came to the glass to see you'; look(4, close ? 0.5 : 0); };
+      const toGlass = (close) => { if (this.rng() > 0.01) { look(3, lvl >= 3 ? 0.3 : 0); f.greeted = 'looked'; f.thought = 'Looked up at you'; return; }      /* (coming all the way to the glass is a rare thing: about one open in a hundred) */ f.glassAt = { x: (r - 0.5) * 3, y: 2.4 + r * 2, until: performance.now() + 10000, close }; f.inspect = null; f.greeted = 'glass'; f.thought = 'Came to the glass to see you'; look(4, close ? 0.5 : 0); };
       const fromDen = () => { look(4, lvl >= 2 ? 0.45 : 0); f.greeted = 'den'; f.thought = 'Watching you from its den'; if (den > 1.6 && f.st) { f.inspect = null; f.goDen?.(f.st, Math.random); } };
       if (lvl === 1) { if (f.den && f.st) fromDen(); else { look(2.5); f.greeted = 'noticed'; f.thought = 'Noticed you'; } continue; }
       if (ty === 'homebody') { fromDen(); continue; }                                                              // a homebody answers from home

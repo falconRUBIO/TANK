@@ -1,4 +1,4 @@
-# Tanklings — core loop refinement report
+# Tako Cove — core loop refinement report
 
 Branch `claude/our-tank-game-design-xhmavw`. Full simulation tables: `docs/sim/tables.md` (after), `docs/sim/baseline.txt` and `docs/sim/after.txt` (raw output). Run it yourself with `node tools/loop_sim.mjs` (about 30 seconds).
 

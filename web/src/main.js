@@ -84,7 +84,7 @@ const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone'
 const social = {
   chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
-  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tanklings', text: `Come help take care of our fish! Join my aquarium in Tanklings. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
+  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tako Cove', text: `Come help take care of our fish! Join my aquarium in Tako Cove. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'Make a new code?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 
@@ -267,10 +267,11 @@ function setRearrange(on, silent = false) {
 }
 
 // ── adopting fish ──
-async function adopt(species) {
+async function adopt(species, pick = null) {
   const d = SPECIES_DEF[species], s = game.state;
   const life = LIFESPAN[species], lifeTxt = life ? ` Lives about ${life >= 365 ? `${Math.round(life / 30.4)} months` : `${Math.round(life / 30.4)} months`} in the tank.` : '', fod = factOfDay(species);
-  let kind = null; if (KINDS[species]) {      // a seahorse or an octopus is one of several real species: the caretaker picks which
+  let kind = KINDS[species]?.[pick] ? pick : null; if (KINDS[species] && !kind) {      // (picked from its own card in the shop: no need to ask)
+      // a seahorse or an octopus is one of several real species: the caretaker picks which
     const same = s.fish.filter((f) => f.species === species && !f.dead), have = (k) => same.filter((f) => kindOf(f) === k).length;
     kind = await ui.choose({ title: `Which ${d.label.toLowerCase()}?`, text: species === 'seahorse' ? 'Each is a real species with its own look and temper. Seahorses only pair with their own kind.' : 'Each is a real species with its own look and temper. Two octopuses of different kinds can keep each other company, but only the same kind lay eggs.',
       options: Object.entries(KINDS[species]).map(([k, K]) => ({ label: `${K.label} · ${K.temper}${have(k) ? ` · ${have(k)} in your tank` : ''}`, value: k })), cancel: 'Not now' });
@@ -583,7 +584,7 @@ async function takePhoto(opts = {}) {      // opts.img: a moment's photo from th
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
   const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      /* (a moment's postcard carries the day it happened) */ g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
-  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TANKLINGS', PW - M - 10, ry + 22); g.textAlign = 'left';
+  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TAKO COVE', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
@@ -1634,7 +1635,7 @@ function netSync(dt, now) {
 }
 
 // ── frame loop ──
-let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = performance.now(), first = true;
+let last = performance.now(), cTick = 0, fpsN = 0, fpsT = 0, lastMeter = performance.now(), first = true, firstN = 0;
 const meter = qs.has('fps') ? Object.assign(document.body.appendChild(document.createElement('div')), { style: 'position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 4px);z-index:60;font:11px ui-monospace,Menlo,monospace;color:#9f9;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:6px;pointer-events:none;white-space:pre' }) : null;
 // One bad frame must never stop the game: the loop is always scheduled again, whatever happened inside it.
 let frameErrors = 0, simErrors = 0, simMs = 0;
@@ -1712,11 +1713,11 @@ function frameBody(now) {
   stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.motes?.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality} · sim ${simMs.toFixed(1)} ms\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
-  if (LITE) { $('loading').classList.add('off'); return true; }
+  if (LITE) { window.__load?.done(); return true; }
   { const air = wc.active && wc.level < 0.97; stg.bubbles.mesh.visible = stg.bubbles2.mesh.visible = !air; for (const b of decor.streams.values()) b.mesh.visible = !air; fishes.bm.visible = !air; }      // no bubbles rise through air: they stop while the water is out and start again when it is back
   if (wc.active) { try { wc.frame(dt * (window.__wcScale ?? 1)); } catch (e) { console.error('water change error', e); wc.finish(); } }
   stg.renderer.info.reset(); composer.render(); blackCheck(now);
-  if (first) { first = false; setTimeout(() => $('loading').classList.add('off'), 250); }
+  if (first && ++firstN >= 3) { first = false; window.__load?.done(); }      // the cove fades into the tank once a few whole frames have drawn (shaders compiled, every animal and decoration in place)
   return false;
 }
 
@@ -1864,13 +1865,15 @@ async function devDemo(after) {
 // ── start ──
 const GFX = ['Low', 'Medium', 'High'];
 async function boot() {
-  if (window.__noGL) { $('ltxt').textContent = 'This browser cannot draw the tank. Try Safari or Chrome on a recent phone.'; return new Promise(() => {}); }
-  const r = await runOnboarding(); if (r.healed) setTimeout(() => ui?.toast('The server had been reset. Your tank is back, with the same code.', 5200), 3000);
+  if (window.__noGL) { window.__load?.fail('This browser cannot draw the tank. Try Safari or Chrome on a recent phone.'); return new Promise(() => {}); }
+  window.__load?.stage('Finding your tank…'); const r = await runOnboarding(); if (r.healed) setTimeout(() => ui?.toast('The server had been reset. Your tank is back, with the same code.', 5200), 3000);
   if (r.mode === 'net') {
     const ready = new Promise((ok) => { const live = new Live((m) => { game.onNet(m); if (m.t === 'snapshot') ok(); }, (up) => { game.connected = up; $('conn').classList.toggle('on', !up); }); net = live; game.attachNet(live, r); game.dev = !!r.dev; });
     game.on('state', () => { $('testb').hidden = !game.test; if (game.state) decor.grow(game.state); });      // (a plant trimmed on another phone shrinks here too)      // a small, constant reminder that this is the test aquarium
-    await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 10000))]);
+    window.__load?.stage('Checking on your friends…');      // the shared tank's own state, from the server, before anything is shown
+    await Promise.race([ready, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 30000))]);
   } else game.startLocal();
+  window.__load?.stage('Bringing the reef to life…');
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
     act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: feedGo, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), hide: () => hideTreat(), crab: () => giveCrab() }[a]?.()),
@@ -1927,7 +1930,7 @@ async function boot() {
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }
 window.__booted = false;
-boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); $('ltxt').textContent = 'Something went wrong starting the tank. Please reload.'; });
+boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); window.__load?.fail(e?.message === 'timeout' ? (navigator.onLine === false ? 'You are offline. Tako Cove needs a connection to reach your shared tank.' : 'Your shared tank did not answer in time. It is safe on the server.') : 'Something went wrong starting the tank.'); });
 window.__fishes = fishes; window.__toys = toys; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || document.hidden || (game.state?.flags?.tut ?? 0) < 5) return;      /* (seen: the tank open in front of someone) */ const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)

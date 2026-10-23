@@ -1,4 +1,4 @@
-# TANKLINGS — Full Game Loop Audit
+# TAKO COVE — Full Game Loop Audit
 
 ## Status header
 
@@ -56,7 +56,7 @@ Classes: 1 implemented and working · 2 implemented, not visually apparent · 3 
 
 ## A. Overview — LIVE
 
-Tanklings is a shared aquarium for up to 4 caretakers (6-character join code). Animals have personalities, friends, needs and life stages. Caring for them earns level points; the tank grows from level 1 (7 animals) to level 8 (28 animals). The server is authoritative: `server/logic.mjs` imports the shared rules `web/src/game/rules.js` as `R`, whitelists `ACTIONS`, uses idempotent `idem` keys, runs every action inside a SQLite `BEGIN IMMEDIATE` transaction, and calls `advance()` before every action.
+Tako Cove is a shared aquarium for up to 4 caretakers (6-character join code). Animals have personalities, friends, needs and life stages. Caring for them earns level points; the tank grows from level 1 (7 animals) to level 8 (28 animals). The server is authoritative: `server/logic.mjs` imports the shared rules `web/src/game/rules.js` as `R`, whitelists `ACTIONS`, uses idempotent `idem` keys, runs every action inside a SQLite `BEGIN IMMEDIATE` transaction, and calls `advance()` before every action.
 
 ## B. First-time experience — LIVE
 

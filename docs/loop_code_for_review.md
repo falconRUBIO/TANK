@@ -1,4 +1,4 @@
-# Tanklings — core loop code for review
+# Tako Cove — core loop code for review
 
 Excerpts of the game's loop: economy, levels, growth, shop pacing, Field Guide, daily mystery, decisions, layout, goals, raising, genetics, the Today sheet, and a 60-day pacing simulation. Shared rules run on both the phone and the Node server. Please review the loop design and the code: balance, pacing, bugs, what to cut or merge.
 

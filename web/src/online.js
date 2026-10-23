@@ -65,7 +65,7 @@ export function runOnboarding() {
     const root = document.getElementById('welcome');
     const done = (r) => { if (r?.mode === 'net' && r.user?.id) rememberId(r.user.id); root.classList.remove('on'); setTimeout(() => (root.innerHTML = ''), 400); resolve(r); };      // who this phone is in its tank is remembered for good, for the day the server forgets
     const link = (code) => `${location.origin}/join/${code}`;
-    const shareText = (code) => `Come help take care of our fish! Join my aquarium in Tanklings. Code: ${code}`;
+    const shareText = (code) => `Come help take care of our fish! Join my aquarium in Tako Cove. Code: ${code}`;
     const screen = (html) => { root.innerHTML = ''; const s = $(`<div class="scr">${html}</div>`); root.append(s); root.classList.add('on'); return s; };
     const avatar = randomAvatar();
 
@@ -83,7 +83,7 @@ export function runOnboarding() {
 
     const ensureUser = async (name) => { if (session?.token) return; const r = await api('/api/users', { name: name || 'Guest', avatar }); session = { token: r.token, userId: r.userId, recoveryKey: r.recoveryKey }; store(session); };
     const welcome = () => {
-      const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>TANKLINGS</h1><p>A little world to share.</p>
+      const s = screen(`<div class="logo">🐠</div><h1>WELCOME TO<br>TAKO COVE</h1><p>A little world to share.</p>
         <button class="big" data-a="create">CREATE A TANK</button><button class="big alt" data-a="join">JOIN A TANK</button><button class="lnk" data-a="solo">Play offline</button><button class="lnk" data-a="recover">I have a recovery key</button><button class="lnk" data-a="restore">Restore a backup file</button><button class="lnk" data-a="paste">Restore from pasted backup text</button>`);
       s.querySelector('[data-a=paste]').onclick = () => pasteScreen();
       s.querySelector('[data-a=restore]').onclick = () => { const f = document.createElement('input'); f.type = 'file'; f.accept = 'application/json,.json'; f.onchange = async () => { try { const data = JSON.parse(await f.files[0].text()); profile('restore', null, data); } catch { welcome(); } }; f.click(); };
@@ -136,7 +136,7 @@ export function runOnboarding() {
         <div class="rkbox" id="rk"><small>YOUR RECOVERY KEY · tap to copy</small><b>${session?.recoveryKey ?? ''}</b><span>Four words that sign you back in on a new phone. Keep them somewhere safe.</span></div><button class="big" id="cp">COPY CODE</button><button class="big alt" id="sh">INVITE FRIENDS</button><button class="lnk" id="en">Enter the tank →</button>`);
       s.querySelector('#rk').onclick = async () => { const k = session?.recoveryKey; if (!k) return; const sm = s.querySelector('#rk small'); try { await navigator.clipboard.writeText(k); sm.textContent = 'KEY COPIED ✓ · keep it somewhere safe'; } catch { sm.textContent = 'SELECT THE KEY AND COPY IT'; } };
       s.querySelector('#cp').onclick = async (e) => { try { await navigator.clipboard.writeText(t.code); e.target.textContent = 'COPIED ✓'; } catch { e.target.textContent = t.code; } };
-      s.querySelector('#sh').onclick = async () => { const data = { title: 'Tanklings', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
+      s.querySelector('#sh').onclick = async () => { const data = { title: 'Tako Cove', text: shareText(t.code), url: link(t.code) }; try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(data.text + ' ' + data.url); s.querySelector('#sh').textContent = 'INVITE COPIED ✓'; } } catch { /* share cancelled */ } };
       s.querySelector('#en').onclick = async () => { const me = await api('/api/me'); done({ mode: 'net', user: me.user, tank: me.tank }); };
     };
     let lastPreview = [];

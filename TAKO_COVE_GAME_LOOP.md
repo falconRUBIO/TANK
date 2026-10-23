@@ -1,6 +1,6 @@
-# TANKLINGS — Full Game Loop (current build, 2026-10-22, updated after the first-60-seconds and shop passes)
+# TAKO COVE — Full Game Loop (current build, 2026-10-22, updated after the first-60-seconds and shop passes)
 
-Tanklings is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
+Tako Cove is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
 
 ---
 
@@ -188,4 +188,4 @@ No second currency, no leaderboards, no streak pressure, no animals dying or lea
 4. Is it clear to a new player what to do in the first 5 minutes?
 5. Do the animals feel like *individuals* to a player who never opens a profile?
 
-**Question for review:** If someone played Tanklings for 30 days, what would make them genuinely care about their aquarium and want to keep playing, and what is the single most important thing to improve before the first real player test?
+**Question for review:** If someone played Tako Cove for 30 days, what would make them genuinely care about their aquarium and want to keep playing, and what is the single most important thing to improve before the first real player test?

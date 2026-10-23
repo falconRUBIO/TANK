@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><script>try{if(navigator.standalone||matchMedia('(display-mode: standalone)').matches){var d=document.documentElement;d.classList.add('pwa');var fit=function(){var p=innerHeight>=innerWidth,h=Math.max(innerHeight,p?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width));d.style.setProperty('--fullH',h+'px')};fit();addEventListener('resize',fit);addEventListener('orientationchange',function(){setTimeout(fit,300)})}}catch(e){}</script>
-<title>Tanklings</title>
+<title>Tako Cove</title>
 <link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#0a1220"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Our Tank">
-<script>addEventListener('error',function(e){var t=document.getElementById('ltxt');if(t&&!window.__booted)t.textContent='Something went wrong loading the tank. Please reload.'});try{var c=document.createElement('canvas');if(!(c.getContext('webgl2')||c.getContext('webgl')))window.__noGL=1}catch(e){window.__noGL=1}</script>
+<script>addEventListener('error',function(e){if(!window.__booted&&window.__load)window.__load.fail('Something went wrong loading the tank.')});try{var c=document.createElement('canvas');if(!(c.getContext('webgl2')||c.getContext('webgl')))window.__noGL=1}catch(e){window.__noGL=1}</script>
 <script>if (location.pathname.startsWith("/join/")) document.write('<base href="/">')</script>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/jsm/"}}</script>
 <style>
@@ -141,10 +141,45 @@
   #placebar{position:absolute;left:12px;right:12px;top:52px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px 9px 14px;background:rgba(10,18,32,.93);border:1px solid #2a4468;border-radius:14px;font-size:12.5px;transform:translateY(-300%);opacity:0;transition:transform .3s,opacity .3s;pointer-events:none;backdrop-filter:blur(10px)}
   #placebar.on ~ #coach{opacity:0!important;pointer-events:none!important}#placebar button[hidden]{display:none}#placehint{min-width:0;flex:1}#placebar.on{transform:none;opacity:1;pointer-events:auto}#placebar .pbtns{display:flex;gap:6px}
   #placebar button{all:unset;cursor:pointer;font-weight:600;font-size:12px;padding:8px 12px;border-radius:9px;background:#17304f;color:#cfe3ff;border:1px solid #244368}#placebar button.go{background:linear-gradient(#e6c36a,#c9a24a);color:#2a2008;border-color:#c9a24a}#placebar button.go:disabled{opacity:.4}
-  #loading{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#07101c;transition:opacity .5s}#loading.off{opacity:0;pointer-events:none}
-  .lc{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink)}.lc b{letter-spacing:.2em}.lc small{color:var(--dim)}.fishy{font-size:42px;animation:sw 1.6s ease-in-out infinite}@keyframes sw{50%{transform:translateX(12px) rotate(4deg)}}
+  /* ── the loading cove: plain HTML, CSS and one small 2D canvas, drawn before any of the 3D tank has loaded ── */
+  #loading{position:fixed;inset:0;z-index:40;overflow:hidden;background:linear-gradient(180deg,#0c3d47 0%,#08303a 34%,#052430 66%,#03141b 100%);transition:opacity .42s ease-out}
+  #loading.off{opacity:0;pointer-events:none}
+  #loading .ray{position:absolute;top:-12%;left:50%;width:46vw;max-width:260px;height:92%;margin-left:-6vw;transform-origin:50% 0;transform:rotate(14deg);background:linear-gradient(180deg,rgba(170,235,230,.30),rgba(150,225,225,.10) 55%,rgba(150,225,225,0));filter:blur(14px);opacity:0;animation:lray 1s .5s ease-out forwards,lsway 9s 1.5s ease-in-out infinite alternate}
+  #loading .ray.r2{width:20vw;max-width:110px;margin-left:-26vw;transform:rotate(9deg);animation-delay:.8s,2s;animation-duration:1.2s,11s}
+  @keyframes lray{to{opacity:1}}@keyframes lsway{from{transform:rotate(14deg)}to{transform:rotate(10deg) translateX(6%)}}
+  #loading .glow{position:absolute;inset:0;background:radial-gradient(70% 38% at 52% 0%,rgba(140,220,215,.18),rgba(140,220,215,0) 70%);opacity:0;animation:lray 1s .5s ease-out forwards}
+  #lfx{position:absolute;inset:0;width:100%;height:100%;opacity:0;animation:lray 1s .6s ease-out forwards}
+  #loading .sandb{position:absolute;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom) + 76px);background:linear-gradient(180deg,#173a3a,#0d2526);opacity:.35;animation:lreef 1s .5s ease-out forwards}
+  #loading .reef{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 75px);width:100%;height:44%;opacity:.35;animation:lreef 1s .5s ease-out forwards}
+  @keyframes lreef{to{opacity:1}}
+  #loading .wd{transform-box:fill-box;transform-origin:50% 100%;animation:lweed 5s ease-in-out infinite alternate}#loading .wd.b{animation-duration:6.5s;animation-delay:-2s}#loading .wd.c{animation-duration:4.2s;animation-delay:-1s}
+  @keyframes lweed{from{transform:skewX(-5deg)}to{transform:skewX(6deg)}}
+  #loading .logo{position:absolute;left:0;right:0;top:calc(36% - 30px);text-align:center;color:#e6f2ee;font:600 clamp(30px,9.4vw,46px)/1 "Avenir Next","Futura","Gill Sans","Trebuchet MS",system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;text-shadow:0 0 28px rgba(150,230,220,.25),0 2px 0 rgba(0,0,0,.25)}
+  #loading .logo i{display:block;width:34px;height:1px;margin:16px auto 0;background:rgba(200,240,232,.45);font-style:normal}
+  #loading .fsh{position:absolute;top:52%;left:0;width:34px;height:12px;opacity:0;fill:#0e3a42;animation:lfish 17s 3.4s linear infinite}#loading .fsh.f2{top:46%;width:22px;height:8px;animation-duration:23s;animation-delay:10s;animation-direction:reverse}
+  @keyframes lfish{0%{transform:translateX(-12vw);opacity:0}6%{opacity:.75}40%{opacity:.75}46%{transform:translateX(112vw);opacity:0}100%{transform:translateX(112vw);opacity:0}}
+  #loading .oc{transform:translateY(54px);animation:lpeek 1.9s 1.5s ease-in-out forwards}
+  #loading.v2 .oc{animation-name:lpeek2;animation-duration:1.5s}
+  @keyframes lpeek{0%{transform:translateY(54px)}22%,72%{transform:translateY(-4px)}100%{transform:translateY(54px)}}
+  @keyframes lpeek2{0%{transform:translateY(54px)}25%,70%{transform:translateY(5px)}100%{transform:translateY(54px)}}
+  #loading .pu{animation:llook 1.9s 1.5s ease-in-out forwards}#loading.v1 .pu{animation-name:llook1}
+  @keyframes llook{0%,28%{transform:none}36%,48%{transform:translateX(-2.2px)}56%,66%{transform:translateX(2.2px)}74%,100%{transform:none}}
+  @keyframes llook1{0%,30%{transform:none}40%,70%{transform:translateX(2.4px) translateY(-.6px)}80%,100%{transform:none}}
+  #loading .lid{transform-box:fill-box;transform-origin:50% 0;transform:scaleY(0);animation:lblink 1.9s 1.5s linear forwards}
+  #loading.v1 .lid{animation-name:lblink2}
+  @keyframes lblink{0%,60%{transform:scaleY(0)}63%{transform:scaleY(1)}67%,100%{transform:scaleY(0)}}
+  @keyframes lblink2{0%,46%{transform:scaleY(0)}49%{transform:scaleY(1)}52%,57%{transform:scaleY(0)}60%{transform:scaleY(1)}63%,100%{transform:scaleY(0)}}
+  #loading .arm{stroke-dasharray:60;stroke-dashoffset:60;opacity:0}#loading.v1 .arm{animation:larm 2.2s 1.9s ease-in-out forwards}
+  @keyframes larm{0%{stroke-dashoffset:60;opacity:1}40%,60%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:60;opacity:1}}
+  #loading.v3 .oc,#loading.v3 .arm{display:none}
+  #loading .lst{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 26px);text-align:center;color:rgba(205,232,228,.72);font:500 13px -apple-system,system-ui,sans-serif;letter-spacing:.02em}
+  #loading .dots{display:inline-flex;gap:5px;margin-left:8px;vertical-align:middle}#loading .dots b{width:4px;height:4px;border-radius:50%;background:rgba(205,232,228,.75);animation:ldot 1.4s ease-in-out infinite}#loading .dots b:nth-child(2){animation-delay:.2s}#loading .dots b:nth-child(3){animation-delay:.4s}
+  @keyframes ldot{0%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:none}}
+  #loading .lerr{display:none;margin:14px auto 0;max-width:300px;line-height:1.45}#loading.err .lerr{display:block}#loading.err .dots{display:none}
+  #loading .lerr button{all:unset;cursor:pointer;display:inline-block;margin-top:12px;padding:10px 22px;border-radius:12px;background:rgba(200,240,232,.14);border:1px solid rgba(200,240,232,.3);color:#e6f2ee;font-weight:600}
+  @media (prefers-reduced-motion:reduce){#loading *,#loading{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}#loading .oc,#loading .arm,#loading .fsh{display:none}#loading .dots b{opacity:.6}}
   .big.gold:disabled{opacity:.45}
-  @media (prefers-reduced-motion:reduce){.fishy,nav div.pulse{animation:none}}
+  @media (prefers-reduced-motion:reduce){nav div.pulse{animation:none}}
   .orders,.wish{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#101f33;font-size:12.5px}
   .orders small,.wish small{display:block;color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-bottom:5px}
   .foodrow{display:flex;align-items:center;gap:6px;margin:0 0 10px}.foodrow small{color:var(--dim);font:600 10px ui-monospace,Menlo,monospace;letter-spacing:.1em;margin-right:2px}.foodrow button{all:unset;cursor:pointer;flex:1;text-align:center;background:#16263d;color:var(--dim);font:600 11px ui-monospace,Menlo,monospace;padding:8px 4px;border-radius:9px;border:1px solid #2a4468}.foodrow button.on{background:#2c6ab0;color:#fff;border-color:#5a96d8}.foodrow button.no{opacity:.4}
@@ -1115,8 +1150,45 @@ body.gifting #toast{top:calc(var(--top) + 46px)}
 </nav></div>
 <div id="welcome"></div>
 <div id="modal"></div>
-<div id="loading"><div class="lc"><div class="fishy">🐠</div><b>TANKLINGS</b><small id="ltxt">Filling the tank…</small></div></div>
-<noscript>Tanklings needs JavaScript.</noscript>
+<div id="loading" aria-live="polite"><div class="glow"></div><div class="ray"></div><div class="ray r2"></div><canvas id="lfx"></canvas>
+<svg class="fsh" viewBox="0 0 34 12" aria-hidden="true"><path d="M0 6 L9 1 L22 0 L30 4 L34 0 L33 6 L34 12 L30 8 L22 12 L9 11 Z"/></svg><svg class="fsh f2" viewBox="0 0 34 12" aria-hidden="true"><path d="M0 6 L9 1 L22 0 L30 4 L34 0 L33 6 L34 12 L30 8 L22 12 L9 11 Z"/></svg>
+<div class="sandb"></div><svg class="reef" viewBox="0 0 400 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+ <defs><linearGradient id="lsand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f6560"/><stop offset="1" stop-color="#173a3a"/></linearGradient></defs>
+ <polygon fill="#0a2d36" points="0,360 0,214 34,196 70,206 104,180 146,192 172,170 214,184 250,166 292,182 330,160 366,178 400,168 400,360"/>
+ <path class="wd" fill="#0b333a" d="M52 300 C46 262 60 238 52 206 C62 236 66 262 60 300 Z"/><path class="wd b" fill="#0b333a" d="M64 304 C66 272 78 252 76 226 C84 254 78 280 72 304 Z"/>
+ <path class="wd c" fill="#0a3037" d="M344 300 C338 270 350 246 344 214 C356 242 358 268 352 300 Z"/><path class="wd" fill="#0a3037" d="M162 296 C158 274 168 258 164 236 C172 258 172 276 168 296 Z"/>
+ <path class="arm" fill="none" stroke="#8c4536" stroke-width="5" stroke-linecap="round" d="M302 272 C306 254 314 248 319 240 C323 233 318 228 313 232"/>
+ <g transform="translate(252 236)"><g class="oc">
+  <polygon fill="#9a4c3d" points="-27,34 -29,8 -21,-13 -7,-23 8,-23 22,-13 30,6 28,34"/><polygon fill="#86402f" points="8,-23 22,-13 30,6 28,34 7,34 4,6"/><polygon fill="#a95a48" points="-21,-13 -7,-23 -2,-8 -16,0"/>
+  <circle cx="-14" cy="14" r="7.5" fill="#a75844"/><circle cx="14" cy="14" r="7.5" fill="#94493a"/>
+  <circle cx="-14" cy="14" r="5" fill="#e3d6b6"/><circle cx="14" cy="14" r="5" fill="#d9cba9"/>
+  <g class="pu"><rect x="-17.4" y="13" width="6.8" height="2.4" rx="1" fill="#1a0f0c"/><rect x="10.6" y="13" width="6.8" height="2.4" rx="1" fill="#1a0f0c"/></g>
+  <rect class="lid" x="-20" y="8" width="12" height="12" rx="5" fill="#9a4c3d"/><rect class="lid" x="8" y="8" width="12" height="12" rx="5" fill="#8c4536"/>
+ </g></g>
+ <polygon fill="#071d23" points="196,360 200,270 222,254 258,246 298,253 318,270 324,360"/><polygon fill="#0a252c" points="222,254 258,246 262,262 230,268"/>
+ <polygon fill="#06181d" points="0,360 0,262 26,246 64,252 92,272 112,300 120,360"/><polygon fill="#06181d" points="330,360 338,284 362,266 400,272 400,360"/>
+ <polygon fill="url(#lsand)" points="0,360 0,326 60,316 130,322 200,314 270,320 340,312 400,318 400,360"/>
+</svg>
+<div class="logo">TAKO COVE<i></i></div>
+<div class="lst"><span id="ltxt">Waking up the cove…</span><span class="dots"><b></b><b></b><b></b></span><div class="lerr"><span id="lerrt"></span><br><button id="lretry">Try again</button></div></div>
+</div>
+<script>(function(){var L=document.getElementById('loading'),T=document.getElementById('ltxt'),n=0,rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+try{n=+localStorage.getItem('ourtank.opens')||0;localStorage.setItem('ourtank.opens',String(n+1))}catch(e){}
+L.classList.add(n<1?'v0':['v0','v1','v2','v3'][(n+Math.floor(Math.random()*4))%4]);      // the octopus does not peek the same way every time (and now and then not at all)
+var c=document.getElementById('lfx'),g=c.getContext('2d'),P=[],on=true,dpr=Math.min(2,devicePixelRatio||1);
+function size(){c.width=innerWidth*dpr;c.height=innerHeight*dpr}size();addEventListener('resize',size);
+for(var i=0;i<30;i++)P.push({x:Math.random(),y:Math.random(),r:.5+Math.random()*1.4,v:.004+Math.random()*.01,ph:Math.random()*6,a:.15+Math.random()*.35});
+var t0=performance.now();function draw(now){if(!on)return;var t=(now-t0)/1000,W=c.width,H=c.height;g.clearRect(0,0,W,H);
+for(var i=0;i<P.length;i++){var p=P[i];if(!rm){p.y-=p.v/60;p.x+=Math.sin(t*.4+p.ph)*.00025;if(p.y<-.02){p.y=1.02;p.x=Math.random()}}
+g.globalAlpha=p.a*(.7+.3*Math.sin(t*1.3+p.ph));g.fillStyle='#cfeee8';g.fillRect(p.x*W,p.y*H,p.r*dpr,p.r*dpr)}
+if(!rm)requestAnimationFrame(draw)}requestAnimationFrame(draw);      // a few dozen motes of drift in the water: square, like the tank's own
+var slow=setTimeout(function(){if(!L.classList.contains('err')&&!L.classList.contains('off'))T.textContent='Still reaching the cove…'},12000);
+var stuck=setTimeout(function(){if(!L.classList.contains('off'))fail(navigator.onLine===false?'You are offline. Tako Cove needs a connection to reach your tank.':'The cove is taking too long to answer. Your tank is safe.')},40000);      // never left waiting for ever
+function fail(msg){L.classList.add('err');T.textContent='Could not open the cove';document.getElementById('lerrt').textContent=msg}
+document.getElementById('lretry').onclick=function(){location.reload()};addEventListener('online',function(){if(L.classList.contains('err'))location.reload()});
+window.__load={stage:function(s){if(!L.classList.contains('err'))T.textContent=s},fail:fail,done:function(){if(L.classList.contains('off'))return;clearTimeout(slow);clearTimeout(stuck);L.classList.add('off');setTimeout(function(){on=false;L.style.display='none'},520)}};
+})();</script>
+<noscript>Tako Cove needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
 <script type="module" src="src/main.js"></script>
 </body></html>

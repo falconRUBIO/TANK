@@ -88,7 +88,7 @@ They go to the caretakers who do not have the tank open at that moment, includin
 
 They work with no setup: the server makes its own key pair the first time it starts and keeps it in the database (set `VAPID_PUBLIC`, `VAPID_PRIVATE` and `VAPID_SUBJECT` yourself only if you want to bring your own). Keep the disk attached, or phones will have to switch notifications back on after a redeploy. Players get a Notifications switch in Settings, plus a "Send a test" button to check that they arrive. At most two a day, never between 22:00 and 08:00 their time, never a "come back" reminder.
 
-On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Our Tank from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later. The phone tells the server its subscription again every time the app opens and whenever the browser renews it, so nudges keep coming after a reinstall, a renewal or a tank put back under new accounts.
+On iPhone they only work from the home-screen icon: in Safari tap Share, then Add to Home Screen, then open Tako Cove from that icon (remove an older icon first) and switch them on in Settings. iOS 16.4 or later. The phone tells the server its subscription again every time the app opens and whenever the browser renews it, so nudges keep coming after a reinstall, a renewal or a tank put back under new accounts.
 
 ## Usage tracking and the developer view
 
