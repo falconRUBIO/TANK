@@ -1,6 +1,7 @@
 // OUR TANK: wires the game state, the 3D stage, the interface and the tutorial together.
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
+import { isCrab, CRAB_TYPES, crabNeed, shellFit, shellLabel } from './game/crabs.js';
 import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 15000); addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
@@ -61,6 +62,8 @@ const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
 fishes.onGoodbye = () => { if (REDUCED) return; const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
 fishes.spots = () => decor.spots(); fishes.keepSpots = () => decor.keepSpots();
+fishes.onCrabShell = (m) => (game.state ? game.dispatch({ t: 'crabShell', ...m }).then((r) => !!r?.ok).catch(() => false) : false);      // a crab moving house: the first crab in has the shell
+fishes.onCrabMem = (m) => { if (game.state) game.dispatch({ t: 'crabMem', ...m }).catch(() => null); };      // what a crab has been up to: its favorite spot, where it roams, who it meets
 fishes.onKeep = (m) => { if (game.state) game.dispatch({ t: 'keepMove', ...m }).catch(() => null); };      // an octopus carried or dropped a keepsake (Emergent Life)
 { const SURF = { ROCKS: { cols: [[96, 104, 74], [66, 78, 52], [122, 124, 106], [82, 90, 64]], scale: 0.5 }, PLANTS: { cols: [[62, 132, 62], [96, 164, 74], [40, 100, 52], [120, 176, 90]], scale: 0.6 }, WOOD: { cols: [[112, 78, 50], [86, 58, 38], [132, 98, 66], [98, 70, 44]], scale: 0.7 }, STRUCTURES: { cols: [[160, 152, 128], [132, 126, 106], [180, 172, 146], [110, 112, 96]], scale: 0.6 } };
   Fish3D.groundAt = (x, z) => { let best = null, bd = 1.15; for (const sp of decor.spots()) { const d = Math.hypot(sp.x - x, sp.z - z); if (d < bd && SURF[DECOR_DEF[sp.type]?.cat]) { bd = d; best = sp; } } if (best) { const c = DECOR_DEF[best.type].cat; return { key: 'd:' + c, ctx: 'd:' + best.id, kind: 'decor', ...SURF[c] }; } const f = stg.env.floorSpec(); return { key: 'f:' + f.key, ctx: 'floor', kind: 'floor', cols: f.cols, scale: f.scale }; }; }
@@ -1115,6 +1118,7 @@ function showCard(f) {
   const over = sec('Right now', `${thought ? `<div class="now">💭 <span>${esc(thought)}</span></div>` : ''}${whyLine && !misses ? `<div class="now why">${msIcon('friend', true, 14)} <span>${esc(whyLine)}</span></div>` : ''}${comfortBlock(rec)}${turtleBlock(rec)}${leaveBlock(rec)}${nextLine}${playBlk()}${playLine}${trustRow}`)
     + path
     + sec(`Looking after ${esc(f.name)}`, `<div class="info">${careRows(rec)}</div>${brainBlock(rec)}<div class="btnrow">${trickBlock(rec)}${fam}</div>`)
+    + sec('Its shell', crabBlock(rec, f))
     + sec('What it likes', `<div class="favs">${favs.map(([ic, k, v]) => `<div class="fv ${v ? '' : 'unk'}"><em>${ic}</em><small>${k}</small><b>${v ?? 'Not yet known'}</b></div>`).join('')}</div>${toysTile}${bondTile}`)
     + sec('Its story', `${geneLine}${famLine}${lifeLine}${orphanBlock(rec, f)}`)
     + sec(`About the ${esc((kindDef(rec)?.label ?? f.species.label).toLowerCase())}`, `<div class="info">${row('Species', info.kindLabel ?? f.species.label)}${row('Temper', info.temper ? esc(info.temper) : null)}${row('Scientific name', info.sci ? `<i>${info.sci}</i>` : null)}${row('Adult size', info.size)}${row('Helps the tank', info.helps ? esc(info.helps) : null)}${row('Lives in', info.from ? esc(info.from) : null)}${row('Eats', info.eats ? esc(info.eats) : null)}${row('In the wild', info.wild ? esc(info.wild) : null)}${row('Care', info.care ? esc(info.care) : null)}${row('Breeding', info.breed ? esc(info.breed) : null)}${row('Life stage', `${stage}${nx ? ` · grows up in ${nx.label}` : ''}`)}${row('In the tank', `${days} day${days === 1 ? '' : 's'}`)}${row('Caretaker', owner)}${row('Closest to', close)}${row('Family', famNames)}${row('Rival', octo && (rec.rival ?? f.rival) ? esc(fishes.byId.get(rec.rival ?? f.rival)?.name ?? '') : null)}${octo && game.shared && rec.owner && rec.owner !== game.you?.userId ? row('Who feeds it', `Only ${esc(rec.ownerName ?? 'its caretaker')}`) : ''}</div>${factLine}`);
@@ -1157,8 +1161,19 @@ function showCard(f) {
 // What an animal is doing right now, in a few words, read from its own state (nothing made up: with no clear activity, just its name)
 const nm3 = (o) => o?.rec?.name ?? o?.name ?? null;
 const decorLabel = (id) => { const d = (fishes.spots?.() ?? []).find((q) => q.id === id); return d ? (DECOR_DEF[d.type]?.label ?? d.type).toLowerCase() : null; };
+// a hermit crab's own part of its card: its temperament, the shell it is in (and whether it is getting snug), every shell it has lived in, where it likes to be, who it keeps meeting, what it has found
+function crabBlock(rec, f) {
+  if (!isCrab(rec)) return ''; const C = rec.crab ?? {}, T = CRAB_TYPES[C.type] ?? null, need = crabNeed(rec), fit = shellFit(C.shell?.sz ?? 1, need), nm = (id) => game.state?.fish.find((x) => x.id === id)?.name, spot = C.fav && game.state?.decor.find((d) => d.id === C.fav);
+  const when = (at) => { const d = Math.floor((Date.now() - at) / 864e5); return d < 1 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
+  const met = Object.entries(C.met ?? {}).sort((a, b) => b[1] - a[1]).map(([id]) => nm(id)).filter(Boolean).slice(0, 2);
+  const area = { left: 'the left side of the tank', right: 'the right side of the tank', front: 'the front, by the glass', back: 'the back of the tank', middle: 'the middle of the tank', high: 'up on the rocks' }[C.area];
+  return `<div class="info">${T ? `<div><span>Temperament</span><b>${esc(T.label)}</b></div>` : ''}<div><span>Lives in</span><b>${esc(shellLabel(C.shell?.t))}${fit === 'small' ? ' · getting snug' : ''}</b></div>${spot ? `<div><span>Favorite spot</span><b>by the ${esc((DECOR_DEF[spot.type]?.label ?? 'rock').toLowerCase())}</b></div>` : ''}${area ? `<div><span>Likes</span><b>${esc(area)}</b></div>` : ''}${met.length ? `<div><span>Often with</span><b>${esc(met.join(' and '))}</b></div>` : ''}</div>`
+    + (T ? `<p class="dim">${esc(T.line)}${fit === 'small' ? ` It has outgrown this shell and is looking for a bigger one.` : ''}</p>` : '')
+    + ((C.hist ?? []).length ? `<p class="dim"><b>Shells so far:</b> ${(C.hist ?? []).map((h) => `${esc(shellLabel(h.t))} (${h.how === 'arrived' ? 'arrived in it' : when(h.at)})`).join(' → ')}</p>` : '')
+    + ((C.finds ?? []).length ? `<p class="dim"><b>Found:</b> ${(C.finds ?? []).map((x) => `${esc(shellLabel(x.k))}, ${when(x.at)}`).join(' · ')}</p>` : '');
+}
 function doingOf(f) {
-  if (!f || f.dead) return null; const S = f.st, octo = f.species?.move === 'jet', rec = f.rec ?? {};
+  if (!f || f.dead) return null; if (f.crab) return f.doing ?? null;      /* (a hermit crab says what it is doing itself: crab3d.js) */ const S = f.st, octo = f.species?.move === 'jet', rec = f.rec ?? {};
   if (octo) {
     const C = f.keepCarry; if (C) return C.phase === 'carry' ? 'carrying its keepsake home' : 'going to fetch its keepsake';
     if (f.hunt) return 'hunting a crab'; if (f.jarAt) return 'working on a puzzle jar'; if (f.glassAt?.trick) return 'doing a trick';
@@ -1184,7 +1199,7 @@ function doingOf(f) {
 }
 // noticed: a tapped animal answers in its own way, without leaving what it is doing (never a teleport, never an interrupted meal, cleaning or trick)
 function tapReact(f) {
-  if (!f || f.dead) return; const front = { x: f.pos.x, y: f.pos.y, z: 20 };
+  if (!f || f.dead) return; if (f.crab) { f.react(); return; }      /* (a crab: into its shell if it is timid, claws up if it is bold, otherwise a look and a step back) */ const front = { x: f.pos.x, y: f.pos.y, z: 20 };
   if (f.species?.move === 'jet') { f.gazeT = Math.max(f.gazeT ?? 0, 2.2); if ((f.trust ?? 0) >= 2) f.flush = Math.max(f.flush ?? 0, 0.3); return; }      // its eyes go wide at you
   if (f.sk === 'seahorse') { f.glance = front; f.glanceT = 1.6; return; }      // one eye swivels round to you; it keeps hold
   if (f.seeking || f.clean || f.script?.length || f.follow) return;

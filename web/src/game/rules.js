@@ -2452,6 +2452,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'dev': {
       if (!dev) return fail('FORBIDDEN');
       if (a.what === 'shells') t.shells += 50;
+      if (a.what === 'level') t.level = Math.max(1, Math.min(TOP_LEVEL, Math.round(num(a.to)) || t.level + 1));      // (drills: straight to a level)
       if (a.what === 'rush') { for (const o of t.orders) o.arrivesAt = now; events.push(...advance(t, now)); }
       if (a.what === 'neglect') { t.createdAt -= 10 * DAY; t.lastDeath = 0; t.hunger = 0.85; t.water = 0.45; t.fish.forEach((f, i) => { f.ail = i === 0 ? AIL_DIE : i === 1 ? AIL_WARN + 100 : f.ail; if (i === 0) f.health = 0.2; }); events.push(...advance(t, now)); }
       if (a.what === 'visitor') { t.visitAt = now; t.visitWait = true; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }

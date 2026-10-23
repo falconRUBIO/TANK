@@ -5,6 +5,10 @@ import { restY } from './terrain.js';
 import * as THREE from 'three';
 import { mulberry32, fbm, mix } from '../color.js';
 import { Vox, plantVox, topLit, hash, PU } from './decor.js';
+import { shellVox } from './shells.js';
+// an empty hermit crab shell lying on the sand, its opening to the front: a crab can walk up and move in (crab3d.js). Small enough that nothing bumps into it
+const SHELL_LOOKS = new Set(['cshell_ivory', 'cshell_rose', 'cshell_moon', 'cshell_pearl', 'cshell_tiger', 'cshell_coral', 'cshell_ancient', 'cshell_plain', 'cshell_worn']);
+function shellItem(g, type, seed, sz) { const m = shellVox(type, sz ?? 1, seed).mesh(); m.rotation.y = 0.5; g.add(m); return []; }
 
 const GLOW = new THREE.MeshStandardMaterial({ color: new THREE.Color().setRGB(1, 0.84, 0.5, THREE.SRGBColorSpace), emissive: new THREE.Color().setRGB(1, 0.6, 0.2, THREE.SRGBColorSpace), emissiveIntensity: 1.2, roughness: 0.6 });
 export const lanternGlow = GLOW;
@@ -303,8 +307,8 @@ export const KEEP_B = {
 export function buildKeep(kind) { const group = new THREE.Group(); (KEEP_B[kind] ?? KEEP_B.pebble)(group); group.scale.setScalar(1.6); return { group, parts: [], lamp: null, type: kind, foot: 0.12 }; }
 
 // build one item: returns { group, parts, lamp }
-export function buildItem(type, seed = 1) {
-  const group = new THREE.Group(), parts = B[type](group, seed);
+export function buildItem(type, seed = 1, sz = null) {
+  const group = new THREE.Group(), parts = SHELL_LOOKS.has(type) ? shellItem(group, type, seed, sz) : B[type](group, seed);
   const box = new THREE.Box3().setFromObject(group), foot = Math.max(0.12, Math.min(0.6, Math.min(box.max.x - box.min.x, box.max.z - box.min.z) * 0.3)) || 0.3;      // how wide it stands on the sand
   return { group, parts, lamp: group.userData.lamp ?? null, type, foot };
 }

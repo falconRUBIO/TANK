@@ -21,7 +21,7 @@ export class DecorMgr {
     for (const d of list) {
       seen.add(d.id); const have = this.items.get(d.id);
       if (this.preview?.id === d.id || have?.haul) continue;        // being moved right now (by a player, or carried by an octopus)
-      if (!have) { const it = buildItem(d.type, seedOf(d.id)); it.id = d.id; it.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(it, d.x, d.z, d.ry); stampItem(it, this.solids, d.x, d.z, d.ry, 1); this.scene.add(it.group); this.items.set(d.id, it); if (d.type === 'bubbler') { const b = new Bubbles(d.x, d.z, 14); b.mesh.position.y = baseY(it, d.x, d.z) + 0.4; b.baseY = b.mesh.position.y; this.scene.add(b.mesh); this.streams.set(d.id, b); } }
+      if (!have) { const it = buildItem(d.type, seedOf(d.id), d.sz); it.id = d.id; it.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(it, d.x, d.z, d.ry); stampItem(it, this.solids, d.x, d.z, d.ry, 1); this.scene.add(it.group); this.items.set(d.id, it); if (d.type === 'bubbler') { const b = new Bubbles(d.x, d.z, 14); b.mesh.position.y = baseY(it, d.x, d.z) + 0.4; b.baseY = b.mesh.position.y; this.scene.add(b.mesh); this.streams.set(d.id, b); } }
       else if (have.at.x !== d.x || have.at.z !== d.z || have.at.ry !== d.ry) { stampItem(have, this.solids, have.at.x, have.at.z, have.at.ry, -1); const from = have.group.position.clone(); have.at = { x: d.x, z: d.z, ry: d.ry }; placeGroup(have, d.x, d.z, d.ry); stampItem(have, this.solids, d.x, d.z, d.ry, 1); if (Math.hypot(from.x - d.x, from.z - d.z) > 0.15) have.slide = { from, t: 0 }; }
     }
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }

@@ -1,0 +1,41 @@
+// Hermit crabs on two phones: both caretakers buy shells at once, two crabs go for one shell at once (only one gets it), and both phones, after a reload too, agree on who lives in which shell and where the old one lies. Starts its own server.
+import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { spawn } from 'node:child_process';
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'), PORT = 20000 + Math.floor(Math.random() * 20000), base = `http://localhost:${PORT}`, tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'shared-'));
+let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
+const srv = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', path.join(root, 'server/server.mjs')], { env: { ...process.env, PORT: String(PORT), DB: path.join(tmp, 't.db'), DEV: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+process.on('exit', () => { try { srv.kill('SIGKILL'); } catch { /* gone */ } });
+await new Promise((ok) => { let o = ''; const on = (d) => { o += d; if (/listening/.test(o)) ok(); }; srv.stdout.on('data', on); srv.stderr.on('data', on); });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const errors = []; const mk = async () => { const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); p.on('pageerror', (e) => errors.push(e.message)); return p; };
+const A = await mk(); await A.goto(base + '/?q=0'); await A.waitForSelector('#welcome.on', { timeout: 120000 });
+await A.click('[data-a=create]'); await A.fill('#nm', 'Ana'); await A.click('#go'); await A.waitForSelector('.codebig', { timeout: 90000 });
+const code = (await A.textContent('.codebig')).replace(/\s/g, ''); await A.click('#en'); await A.waitForSelector('#modal.on #mok', { timeout: 120000 }); await A.evaluate(() => document.querySelector('#modal.on #mok').click()); await A.waitForTimeout(1500);
+const B = await mk(); await B.goto(base + '/join/' + code + '?q=0'); await B.waitForSelector('#welcome.on', { timeout: 120000 });
+await B.waitForSelector('.pvt, #cd, #nm', { timeout: 90000 }); if (!(await B.$('.pvt')) && !(await B.$('#nm'))) { await B.fill('#cd', code); await B.click('#go'); } if (!(await B.$('#nm'))) { await B.waitForSelector('.pvt', { timeout: 90000 }); await B.click('#go'); }
+await B.waitForSelector('#nm', { timeout: 90000 }); await B.fill('#nm', 'Ben'); await B.click('#go');
+for (let i = 0; i < 40; i++) { await B.waitForTimeout(500); const t = await B.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/YOUR OWN OCTOPUS/i.test(t)) { await B.evaluate(() => document.querySelector('#modal.on #mok').click()); break; } else if (t) await B.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }
+await B.waitForTimeout(2500);
+for (const P of [A, B]) await P.evaluate(() => { window.__quietUntil = Date.now() + 1e9; document.querySelectorAll('#modal,#coach,#reunion,#toast').forEach((e) => e.classList.remove('on')); });
+const dev = (P, a) => P.evaluate((a) => window.__game.dispatch(a, { dev: true }), a);
+await dev(A, { t: 'dev', what: 'level', to: 6 }); for (let i = 0; i < 6; i++) await dev(A, { t: 'dev', what: 'shells' });
+const r1 = await A.evaluate(() => window.__game.dispatch({ t: 'buyFish', species: 'blueleg', name: 'Pebble' })), r2 = await B.evaluate(() => window.__game.dispatch({ t: 'buyFish', species: 'blueleg', name: 'Skip' }));
+ck('each caretaker adopts a hermit crab', r1.ok && r2.ok, JSON.stringify([r1.reason, r2.reason]));
+await dev(A, { t: 'dev', what: 'rush' }); await A.waitForTimeout(2500);
+const sh0 = await A.evaluate(() => window.__game.state.shells);
+const [b1, b2] = await Promise.all([A.evaluate(() => window.__game.dispatch({ t: 'buyDecor', type: 'cshell_rose', x: -1, z: 1, ry: 0 })), B.evaluate(() => window.__game.dispatch({ t: 'buyDecor', type: 'cshell_moon', x: 1, z: 1, ry: 0 }))]);
+await A.waitForTimeout(2000); const sh1 = await A.evaluate(() => window.__game.state.shells), shB = await B.evaluate(() => window.__game.state.shells);
+ck('two shells bought at the same moment: both placed, the wallet down by both prices, and both phones agree', sh0 - sh1 === 16 && sh1 === shB, `${sh0} -> ${sh1} (B sees ${shB}) ${JSON.stringify([b1, b2]).slice(0, 160)}`);
+const iv = await A.evaluate(() => window.__game.dispatch({ t: 'buyDecor', type: 'cshell_ivory', x: 0, z: 2, ry: 0, free: true })); await A.waitForTimeout(2000);
+ck('the free ivory spiral came with the first crab', iv.ok, iv.reason);
+const ids = await A.evaluate(() => { const s = window.__game.state; return { a: s.fish.find((f) => f.name === 'Pebble').id, b: s.fish.find((f) => f.name === 'Skip').id, d: s.decor.find((d) => d.type === 'cshell_ivory').id }; });
+const [c1, c2] = await Promise.all([A.evaluate((x) => window.__game.dispatch({ t: 'crabShell', fish: x.a, decor: x.d, x: -0.5, z: 1.5 }), ids), B.evaluate((x) => window.__game.dispatch({ t: 'crabShell', fish: x.b, decor: x.d, x: 0.5, z: 1.5 }), ids)]);
+ck('two crabs go for one shell at the same moment: exactly one moves in', (c1.ok ? 1 : 0) + (c2.ok ? 1 : 0) === 1, JSON.stringify([c1.ok, c1.reason, c2.ok, c2.reason]));
+await A.waitForTimeout(2500);
+const view = (P) => P.evaluate(() => { const s = window.__game.state, F = window.__fishes; for (let i = 0; i < 80; i++) F.list.forEach((x) => x.update(0.05, Math.random, F.list));      /* (the settling-in takes a couple of seconds of the tank's time: headless drawing is too slow to wait on) */ return { shells: s.fish.filter((f) => f.crab).map((f) => [f.name, f.crab.shell.t]).sort().join(), old: s.decor.filter((d) => d.type === 'cshell_worn').map((d) => d.left).sort().join(), ivory: s.decor.some((d) => d.type === 'cshell_ivory'), shown: F.list.filter((f) => f.crab).map((f) => f.name + ':' + (f.shellKey ?? '').split(':')[0]).sort().join(), j: window.__game.journal.some((e) => /moved into an Ivory Spiral shell/.test(e.text)) }; });
+const va = await view(A), vb = await view(B);
+ck('both phones show the same crab in the ivory spiral, the old shell lying where it was left, and the journal line', JSON.stringify(va) === JSON.stringify(vb) && /cshell_ivory/.test(va.shells) && va.old && !va.ivory && va.j, JSON.stringify({ va, vb }));
+await B.reload(); await B.waitForFunction(() => window.__game?.state && window.__booted, null, { timeout: 180000 }); await B.waitForTimeout(3000);
+const vr = await view(B); ck('after a reload the other phone still agrees', vr.shells === va.shells && vr.old === va.old && vr.shown === va.shown, JSON.stringify(vr));
+ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
+await b.close(); fs.rmSync(tmp, { recursive: true, force: true }); console.log(fails ? `${fails} failed` : 'Crab shared checks passed'); process.exit(fails ? 1 : 0);

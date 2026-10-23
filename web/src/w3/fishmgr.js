@@ -7,6 +7,8 @@ import * as THREE from 'three';
 const _tv = new THREE.Vector3();
 import { SPECIES } from '../species.js';
 import { Fish3D } from './fish3d.js';
+import { Crab3D } from './crab3d.js';
+import { isCrab, isShell, shellSz } from '../game/crabs.js';
 import { gripWork, PLANTS } from './grips.js';
 import { buildJar, updateJar, buildCrab } from './jar.js';
 import { buildHoard, shellMesh } from './den.js';
@@ -83,7 +85,7 @@ export class Fishes {
     this.moveOn = !state.flags?.noRearrange;
     this.world = { water: state.water ?? 1, glass: state.glass ?? 0, hunger: state.hunger ?? 0 };
     { const sig = (state.decor?.length ?? 0) + ':' + state.fish.length + ':' + ((state.glass ?? 0) > 0.5 ? 1 : 0); if (sig !== this.sig) { if (this.sig != null) this.changedAt = performance.now(); this.sig = sig; } }
-    const seen = new Set();
+    const seen = new Set(); this.state = state;
     // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
     // they grow through the five days, and the one that is kept carries on as the same seahorse
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
@@ -92,6 +94,7 @@ export class Fishes {
       if (this.adventure(d)) return;
       if ((d.restUntil ?? 0) > Date.now()) { const q = this.byId.get(d.id); if (q) q.fatigue = Math.max(q.fatigue ?? 0, 0.9); }      // a mother worn out from guarding: sleepy, in her den      // out on an adventure (or hiding where nobody can see): not in the water until it is back
       let f = this.byId.get(d.id);
+      if (!f && isCrab(d.species)) { f = this.makeCrab(d); this.relate(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f); f.profile = this.profileOf(d, state); f.persona = personaOf(d); return; }      // a hermit crab: its own body and walk (crab3d.js)
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
@@ -179,6 +182,54 @@ export class Fishes {
     }
   }
   denOf(f) { const sp = (this.spots?.() ?? []).find((x) => x.id === f.homeId); return sp ? { x: sp.x, z: sp.z } : f.fav ? { x: f.fav.x, z: f.fav.z } : null; }
+  // ── hermit crabs (crab3d.js) ── one is made like any animal, set down on the sand, and given its view of the tank: the empty shells, what it can
+  // climb, the food on the sand, where not to walk (a seahorse resting or carrying young, a goby's patch), and how to tell the tank it moved house
+  makeCrab(d) {
+    const f = new Crab3D(d.species, d.seed, { label: SPECIES_DEF[d.species]?.label, name: d.name, speed: 0.5, scale: 1, band: { y: [0, 1], z: [-2, 3] } }), r = this.rng;
+    Object.assign(f, { fid: d.id, rec: d, name: d.name, sk: d.species, getSpots: () => this.spots?.() ?? [] }); f.setGrowth(1);
+    f.pos.set((r() - 0.5) * 6, 0, (r() - 0.3) * 4); f.pos.y = sandH(f.pos.x, f.pos.z); f.heading = r() * 6.28; if (d.crab?.shell) f.wear(d.crab.shell.t, d.crab.shell.sz);
+    const M = this, decorOf = (id) => M.state?.decor?.find((x) => x.id === id);
+    f.W = {
+      isLead: () => (M.isLead ? M.isLead() : true),
+      empties: () => (M.state?.decor ?? []).filter((x) => isShell(x.type) && !M.claimed?.has(x.id)).map((x) => ({ id: x.id, type: x.type, x: x.x, z: x.z, ry: x.ry ?? 0, sz: shellSz(x) })),
+      claimedBy: (id, c) => [...M.list].some((o) => o.crab && o !== c && o.cs?.s === 'swap' && o.cs.d?.id === id),
+      spots: () => M.spots?.() ?? [],
+      climbable: (sp) => ['ROCKS', 'STRUCTURES', 'WOOD'].includes(DECOR_DEF[sp.type]?.cat) && !isShell(sp.type) && (sp.h ?? 1) >= 0.35 && (sp.h ?? 1) <= 2.4,
+      decorTop: (x, z, id) => { const it = id && M.decor?.items?.get(id), v = it ? M.dvOf(id, it).filter((q) => Math.hypot(q[0] - x, q[2] - z) < 0.45) : M.decorVox(x, z, 0.35); let top = null; for (const q of v) if (top == null || q[1] > top) top = q[1]; return top == null ? null : top + 0.06; },      // (the top of that one decoration, under its feet)
+      label: (sp) => (DECOR_DEF[sp.type]?.label ?? 'rock').toLowerCase(),
+      flakes: () => M.flakes,
+      avoid: (x, z, c) => M.list.some((o) => !o.dead && ((o.sk === 'seahorse' && o.holdfast?.on && (o.rec?.preg || (o.restK ?? 0) > 0.4)) || o.sk === 'cory') && Math.hypot(o.pos.x - x, o.pos.z - z) < (o.sk === 'cory' ? 0.9 : 1.1)),      // a seahorse resting or carrying young, a goby by its burrow: walked round
+      claim: (dd, c) => { (M.claimed ||= new Set()).add(dd.id); const it = M.decor?.items?.get(dd.id); if (it) it.group.visible = false;      // it is going: the shell stays to be seen until the crab is in it
+        const tmp = shellVoxTemp(dd, it); if (tmp) { M.scene.add(tmp); c.temps.push(tmp); c.newTmp = tmp; }
+        return Promise.resolve(M.onCrabShell ? M.onCrabShell({ fish: c.fid, decor: dd.id, x: +c.pos.x.toFixed(2), z: +c.pos.z.toFixed(2), ry: +((-c.heading + 0.5) % 6.28).toFixed(2) }) : true).then((ok) => { if (!ok) { M.claimed.delete(dd.id); if (it) it.group.visible = true; if (tmp) tmp.parent?.remove(tmp); } return ok; }).catch(() => false); },
+      leaveShell: (c) => { const g = c.shellG.clone(true); g.position.copy(c.group.position); g.quaternion.copy(c.group.quaternion); g.visible = true; M.scene.add(g); c.temps.push(g); setTimeout(() => g.parent?.remove(g), 5000); return g; },      // (until the tank's own copy of the old shell turns up where it was left)
+      tookShell: (c) => { if (c.newTmp) { c.newTmp.parent?.remove(c.newTmp); c.newTmp = null; } },
+      remember: (c, m) => M.onCrabMem?.({ fish: c.fid, ...m }),
+      note: () => {}, ate: () => {}, puff: (p) => M.burst?.(p.clone().setY(p.y + 0.1)),
+    };
+    const shellVoxTemp = (dd, it) => { if (!it) return null; const g = it.group.clone(true); g.visible = true; return g; };
+    return f;
+  }
+  // the rest of the tank notices the crabs: the octopus watches one go by or turns over an empty shell (a collector most of all), a puffer comes to
+  // look, a goby sees one off from its patch, a seahorse eyes one at its plant (and moves off, unless it is carrying young), a turtle stops to look
+  crabTick(dt) {
+    if ((this.ctT = (this.ctT ?? 0) - dt) > 0) return; this.ctT = 0.5; const r = this.rng, crabs = this.list.filter((c) => c.crab && !c.dead && c.group.visible !== false); if (!crabs.length) return;
+    for (const o of this.list) { if (o.dead || o.crab || o.puppet || o.group.visible === false) continue; o.crabCool = (o.crabCool ?? 0) - 0.5; const c = crabs.sort((a, b) => a.pos.distanceTo(o.pos) - b.pos.distanceTo(o.pos))[0], d = Math.hypot(c.pos.x - o.pos.x, c.pos.z - o.pos.z);
+      if (o.species?.move === 'jet') { const S = o.st, free = !o.task && !o.keepCarry && !o.hunt && !o.jarAt && !o.glassAt && !o.inspect && (S?.s === 'crawl' || S?.s === 'rest') && !S?.mode;
+        if (free && o.crabCool <= 0) { const col = o.mind?.type === 'collector', shells = (this.state?.decor ?? []).filter((x) => isShell(x.type) && !this.claimed?.has(x.id));
+          if (col && shells.length && r() < 0.35) { const sh = shells[Math.floor(r() * shells.length)]; o.inspect = { x: sh.x, z: sh.z, id: sh.id, type: sh.type }; o.thought = 'Turning over an empty shell'; o.crabCool = 50 + r() * 50; }
+          else if (d < 3.5 && r() < (col ? 0.3 : 0.18)) { o.inspect = { x: c.pos.x + (o.pos.x - c.pos.x) * 0.3, z: c.pos.z + (o.pos.z - c.pos.z) * 0.3, id: 'crab:' + c.fid, type: 'crab' }; o.gazeT = Math.max(o.gazeT ?? 0, 3); o.thought = `Watching ${c.name}`; o.crabCool = 40 + r() * 40; } else o.crabCool = 8; }
+        if (o.inspect?.type === 'crab' && o.inspect.id === 'crab:' + c.fid) { o.inspect.x += (c.pos.x - o.inspect.x) * 0.2; o.inspect.z += (c.pos.z - o.inspect.z) * 0.2; } continue; }      // (it follows the crab with its eyes and a careful step, never grabbing it)
+      if (o.sk === 'seahorse') { if (o.holdfast?.on && d < 1.3 && o.crabCool <= 0) { o.glance = { x: c.pos.x, y: c.pos.y + 0.2, z: c.pos.z }; o.glanceT = 2; o.crabCool = 12; if (!o.rec?.preg && r() < 0.3) { o.release?.(); o.thought = `Moved off its plant as ${c.name} came by`; } } continue; }
+      if (o.sk === 'cory') { if (d < 0.9 && o.crabCool <= 0 && o.pos.y < sandH(o.pos.x, o.pos.z) + 1) { o.dartT = 0.8; o.target.set(c.pos.x, o.pos.y, c.pos.z); o.retarget = 1; c.backT = 0.8; c.doingFor = 2; o.thought = `Saw ${c.name} off its patch`; o.crabCool = 15; } continue; }
+      if (o.sk === 'puffer') { if (d < 3 && o.crabCool <= 0 && r() < 0.3) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.7, c.pos.z); o.retarget = 4; o.thought = `Watching ${c.name} walk about`; o.crabCool = 30; } continue; }
+      if (['turtle', 'hawksbill', 'loggerhead', 'kemps'].includes(o.sk)) { if (d < 1.8 && o.crabCool <= 0) { o.idle = 2; o.thought = `Stopped to look at ${c.name}`; o.crabCool = 30; } continue; }
+      if (d < 0.8 && o.pos.y < sandH(o.pos.x, o.pos.z) + 0.9 && o.crabCool <= 0) { if (r() < 0.25) { o.target.set(c.pos.x, sandH(c.pos.x, c.pos.z) + 0.5, c.pos.z); o.retarget = 1.5; } else o.dartT = 0.5; o.crabCool = 10; }      // other fish: a quick look, or a dart away
+    }
+    // the tank's own copy of an old shell is in: the stand-in can go
+    for (const c of crabs) if (c.temps.length && (this.state?.decor ?? []).some((x) => x.left === c.fid && Date.now() - (x.at ?? 0) < 60e3)) { for (const m of c.temps) if (m !== c.newTmp) m.parent?.remove(m); c.temps = c.newTmp ? [c.newTmp] : []; }
+    for (const id of [...(this.claimed ?? [])]) if (!(this.state?.decor ?? []).some((x) => x.id === id) && !crabs.some((c) => c.cs?.d?.id === id && c.cs.s === 'swap')) this.claimed.delete(id);
+  }
   // an octopus taking a keepsake home: it goes to it, picks it up (the little thing rides under its arms), carries it to its den and leaves it
   // there. Now and then it drops it on the way (and may fetch it another time). Only the phone running the animals reports where it ended up.
   carryTick(dt) {
@@ -1012,7 +1063,7 @@ export class Fishes {
         const reach = ty === 'explorer' ? 1.3 + Math.min(1, far / 4) : 1, tidy = ty === 'trickster' && far <= 1.3 && known && this.rng() < 0.3;      // an explorer goes further for things; a trickster rearranges what is already home
         if (den && (far > 1.3 || tidy) && this.rng() < (quiet ? 0.55 : 0.25) * attach * coll * reach) { f.keepCarry = { id: q.id, phase: 'go', t: 0, dest: this.keepDest(f, q, den, watched) }; f.thought = known ? `Going to fetch its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Going to fetch something new'; }
         f.inspect = { x: q.x, z: q.z, id: q.id, type: 'keep' }; if (!f.keepCarry) f.thought = known ? `Checking on its ${KEEPNAME[q.kind] ?? 'keepsake'}` : 'Investigating a strange object'; f.keepWhy = { id: q.id, known, thought: f.thought }; } }
-    this.carryTick(dt); this.tugTick(dt); this.quirkTick(dt);
+    this.carryTick(dt); this.crabTick(dt); this.tugTick(dt); this.quirkTick(dt);
     gripWork(1.5);      // looking for real places to hold on, within a small time budget each frame (see grips.js)
     this.socialTick(dt); this.reefTick(dt, t); this.seahorseTick(dt, t); this.babyTick(dt); this.hatchTick(dt); this.octoAware(dt); this.haulTick(dt, t);
     for (const k of this.inks ?? []) { k.age += dt; if (k.age < 0) continue; if (k.vz) { k.m.position.z += k.vz * dt; const dr = Math.exp(-(k.drag ?? 0) * dt); k.vx *= dr; k.vy *= dr; k.vz *= dr; } const q = k.age / (k.life ?? 4); k.m.scale.setScalar(1 + q * (k.grow ?? 3.2)); k.m.position.x += k.vx * dt; k.m.position.y += k.vy * dt; k.m.material.opacity = (k.op ?? 0.55) * Math.max(0, 1 - q) * Math.min(1, k.age * 6); }
