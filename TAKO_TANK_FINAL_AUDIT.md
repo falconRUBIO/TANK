@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v319** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v320** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -50,6 +50,7 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 ## 3. Also in this build
 - **Name:** Tako Tank everywhere (pages, manifest, push, share text, docs). Save keys unchanged.
 - **Logo and icons:** a voxel octopus perched on chunky cream letters, the O a ring with a wave; `web/logo.svg`, icons at 512/192/180. The loading screen carries the logo.
+- **Animal finish (designs unchanged):** a wet sheen on every animal's material, a slow mottling across each body so no patch of one color sits flat, warm light on backs and cooler bellies, deeper baked shade in the creases between fins and body. Eyes and glowing parts untouched. Sheet: `docs/audit/animals_before.png` / `animals_after.png` (the yellow bar through each fish is a hidden helper part the sheet tool draws; it is not in the game); close-up `docs/audit/fish_closeup.png`.
 - **Graphics, three passes, voxel look kept:** sand ripples and contact shadows under decorations, banks shaded on their faces and lit on top, far sand sinking into the water's color, stronger caustics and sunbeams, distant kelp that reads as kelp, brighter rim light, crisper voxel faces, edge shading on every voxel thing, water that deepens toward the sand, a calmer amber-and-blue dusk, more contrast, less blur in the distance. Before/after: `docs/audit/gfx_before_*.png`, `gfx_after_*.png`. **Frame cost not measured on a phone**; the added shader work is a handful of instructions per sand pixel and one `pow` per voxel pixel.
 
 ---
