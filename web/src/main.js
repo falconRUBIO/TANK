@@ -1763,7 +1763,7 @@ async function afterReplay() {
   const look = kOcto ? [`${kOcto.name} brought back a ${(KEEPSAKES[kp.k]?.label ?? 'keepsake').toLowerCase()}. Go and see it on the sand.`, kOcto.id] : mvOcto ? [`${mvOcto.name} has been rearranging. Go and see what it moved.`, mvOcto.id] : null;
   const lookKey = kOcto ? 'k' + kp.id : mvOcto ? 'm' + mv.ts : ''; let lookSeen = ''; try { lookSeen = localStorage.getItem('ourtank.lookSeen') ?? ''; } catch { /* storage unavailable */ }
   if (look && !egg && !born && lookKey !== lookSeen) { try { localStorage.setItem('ourtank.lookSeen', lookKey); } catch { /* storage unavailable */ } setTimeout(() => { ui.toast(look[0], 4200); const f = fishes.byId.get(look[1]); if (f && !f.dead) setFocus(f); }, 600); return; }
-  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you: tap the Today icon.', null] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
+  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you: tap the bell at the top.', null] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
   if (!say) return; setTimeout(() => { ui.toast(say[0], 4200); if (say[1]) ui.flag(say[1], true); if (egg) { const fx = [...eggSprites.values()].find((x) => x.e?.id === egg.id); if (fx) setFocus(eggFocusOf(fx)); } }, 600);
 }
 async function welcomeBack() {

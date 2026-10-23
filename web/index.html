@@ -284,6 +284,7 @@
   #card{transition:transform .45s cubic-bezier(.3,1.15,.4,1),opacity .35s}#card.on.peek{transform:translateY(calc(100% - 66px));overflow:hidden}
   #card .grab{all:unset;position:absolute;left:0;right:0;top:0;height:30px;cursor:pointer;display:flex;justify-content:center;align-items:flex-start;padding-top:9px}#card .grab::before{content:"";width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.5)}
   #card h2{margin-top:10px}#card.peek .x{top:16px}
+  #card .x::after,#sheet .x::after,#sheet .back::after{content:'';position:absolute;inset:-8px}#sheet .back{position:relative;display:inline-block;padding:6px 0}      /* (tap areas of about 44px, the size a thumb needs, without changing how they look) */
   #toast.gold{box-shadow:var(--lg-rim),0 0 22px rgba(255,214,120,.55),var(--lg-drop);color:#fff7dd}
   ul.story{margin:8px 0 0;padding:0;list-style:none;font-size:12px;border-left:2px solid rgba(255,255,255,.25)}ul.story li{margin:0 0 6px;padding-left:10px;color:#e6f1fb}ul.story li i{display:block;font-style:normal;color:#b9cde0;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
   #reunion,#settle{position:absolute;z-index:6;left:14px;right:14px;top:var(--top,58px);padding:14px 16px;border-radius:26px;background:var(--lg-bg);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);box-shadow:var(--lg-rim),var(--lg-drop);color:#f2f9ff;opacity:0;transform:translateY(-10px);pointer-events:none;transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
