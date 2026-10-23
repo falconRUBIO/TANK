@@ -199,6 +199,10 @@ export class Fishes {
       label: (sp) => (DECOR_DEF[sp.type]?.label ?? 'rock').toLowerCase(),
       flakes: () => M.flakes,
       crabs: () => M.list.filter((q) => q.crab && !q.dead).length,
+      cat: (sp) => DECOR_DEF[sp.type]?.cat,
+      wobble: (id, a) => { const it = M.decor?.items?.get(id); if (it) it.group.rotation.z = a; },      // a shell being looked over rocks under the crab's claws
+      addGhost: (c) => { const g = c.bodyG.clone(true); g.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.55; o.material.color?.setRGB(1.25, 1.2, 1.1); } }); g.visible = true; g.scale.setScalar(c.need * 0.92);      // its shed skin: the same shape, pale and see-through, lying beside it on the sand
+        const a = c.heading + 1.4; g.position.set(c.pos.x + Math.cos(a) * 0.35, sandH(c.pos.x, c.pos.z) + 0.03, c.pos.z - Math.sin(a) * 0.35); g.rotation.set(0.15, c.heading + 0.6, 0.25); M.scene.add(g); return g; },
       avoid: (x, z, c) => Object.values(c.noGo ?? {}).some((q) => q.until > Date.now() && Math.hypot(q.x - x, q.z - z) < 1.4) || M.list.some((o) => !o.dead && ((o.sk === 'seahorse' && o.holdfast?.on && (o.rec?.preg || (o.restK ?? 0) > 0.4)) || o.sk === 'cory') && Math.hypot(o.pos.x - x, o.pos.z - z) < (o.sk === 'cory' ? 0.9 : 1.1)),      // a seahorse resting or carrying young, a goby by its burrow: walked round
       claim: (dd, c) => { (M.claimed ||= new Set()).add(dd.id); const it = M.decor?.items?.get(dd.id); if (it) it.group.visible = false;      // it is going: the shell stays to be seen until the crab is in it
         const tmp = shellVoxTemp(dd, it); if (tmp) { M.scene.add(tmp); c.temps.push(tmp); c.newTmp = tmp; }

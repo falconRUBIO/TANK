@@ -56,7 +56,7 @@ export class Crab3D extends Fish3D {
       { const v = new Vox(U); v.ellipsoid(0, 0, 0, 1.5, 1.5, 1.5, () => C.eye, seed, 0); v.set(1, 1, side, [240, 240, 244]); eye.add(mesh(v)); eye.position.set(0.8 * U, 6.5 * U, side * 0.5 * U); g.add(eye); }
       g.position.set(3.8 * U, 1.8 * U, side * 1.2 * U); g.rotation.x = side * 0.2; g.userData = { side, eye }; this.bodyG.add(g); return g; });
     this.ants = [1, -1].map((side) => { const g = new THREE.Group(), v = new Vox(U); line(v, [0, 0, 0], [7, 6, side * 3], C.stalk); line(v, [7, 6, side * 3], [14, 5, side * 7], [214, 186, 156]); g.add(mesh(v)); g.position.set(4.6 * U, 0.8 * U, side * 0.7 * U); this.bodyG.add(g); return g; });
-    this.blinkT = 2 + r() * 4; this.blink = 0; this.happyT = 0; this.flickT = 3 + r() * 4;
+    this.blinkT = 2 + r() * 4; this.blink = 0; this.happyT = 0; this.grazeK = 0; this.flickT = 3 + r() * 4;
     this.ph = r() * 9; this.cs = { s: 'idle', t: 1 + r() * 2 }; this.retK = 0; this.outK = 0; this.moveK = 0; this.climbY = 0; this.pitchK = 0; this.clawUp = 0; this.tapK = 0; this.eatK = 0; this.digK = 0; this.buriedK = 0; this.wig = 0;
     this.inspected = new Set(); this.dwell = {}; this.met = {}; this.memT = 60 + r() * 60; this.doing = null; this.temps = []; this.radius = 0.3;
   }
@@ -79,6 +79,8 @@ export class Crab3D extends Fish3D {
     const T = this.ctype, r = this.rng, W = this.W, rec = this.rec, C = rec?.crab ?? {};
     if (C.moltAt && Date.now() - C.moltAt < 15 * 60e3) { this.cs = { s: 'molt', t: 60 }; return; }
     const empties = W?.empties?.() ?? [], spots = W?.spots?.() ?? [], flakes = (W?.flakes?.() ?? []).filter((f) => !f.eaten && f.pos.y <= sandH(f.pos.x, f.pos.z) + 0.25);
+    const falling = (W?.flakes?.() ?? []).filter((f) => !f.eaten && f.pos.y > sandH(f.pos.x, f.pos.z) + 0.25 && Math.hypot(f.pos.x - this.pos.x, f.pos.z - this.pos.z) < 3);
+    if (!flakes.length && falling.length && r() < 0.85) { this.cs = { s: 'alert', t: 0.8 + r() * 0.8, food: falling[0] }; return; }      // it smells food coming down: antennae up, a look, then off to where it lands
     const food = flakes.sort((a, b) => a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0];
     if (food && food.pos.distanceTo(this.pos) < 3 && r() < 0.8) { this.cs = { s: 'walk', to: { x: food.pos.x, z: food.pos.z }, then: { s: 'eat', t: 2.5 + r() * 2, food }, why: 'food' }; return; }
     const tight = shellFit(C.shell?.sz ?? 1, this.need) === 'small', recent = Date.now() - (C.swapAt ?? 0) < 3 * 3600e3;
@@ -89,6 +91,7 @@ export class Crab3D extends Fish3D {
     if (rapT && r() < 0.25) { this.rapCool = Date.now() + 10 * 60e3; this.cs = { s: 'rap', t: 12, o: rapT }; return; }
     const W8 = { gather: crabsHere.length && !night ? 0.7 : 0, shell: cand.length ? (tight ? 6 : recent ? 0.15 : 0.5 * (0.5 + T.collect + 0.3 * T.pick)) : 0, wander: 1.2 * T.roam, fav: C.fav && spots.some((s) => s.id === C.fav) ? 1.2 * (0.4 + T.hide) * (T.roam < 0.8 ? 2 : 1) : 0, climb: spots.some((s) => this.W.climbable?.(s)) ? 0.9 * T.climb * (this.sk === 'halloween' ? 2 : 1) : 0,
       follow: others.some((o) => o.crab && o !== this && o.cs?.s === 'walk' && o.pos.distanceTo(this.pos) < 1.8) ? 0.35 : 0, dig: 0.18 * (0.5 + T.collect), visit: 0.35 * T.bold, rest: 0.6 };
+    W8.graze = 1.8 * (night ? 1.2 : 0.7);      // most of a real hermit crab's life: picking over rock and sand for algae and scraps, claw to mouth, again and again
     if (night) { W8.wander *= 1.7; W8.dig *= 1.5; W8.rest *= 0.5; W8.shell *= 1.3; } else { W8.rest *= 2; W8.wander *= 0.55; W8.climb *= 0.6; W8.dig *= 0.6; }      // hermit crabs are about most at night (and dusk and dawn); by day they rest up, often together
     if (this.postMolt()) { W8.visit = 0; W8.climb *= 0.3; W8.fav *= 2; }
     let sum = 0; for (const k in W8) sum += W8[k]; let x = r() * sum, pick = 'rest'; for (const k in W8) { x -= W8[k]; if (x <= 0) { pick = k; break; } }
@@ -97,6 +100,7 @@ export class Crab3D extends Fish3D {
     if (pick === 'climb') { const opts = spots.filter((s) => this.W.climbable(s)), sp = opts[Math.floor(r() * opts.length)], a = Math.atan2(this.pos.z - sp.z, this.pos.x - sp.x), base = { x: sp.x + Math.cos(a) * (0.45 + sp.h * 0.25), z: sp.z + Math.sin(a) * (0.45 + sp.h * 0.25) }; this.cs = { s: 'walk', to: base, then: { s: 'climb', t: 0, sp, base }, why: null }; return; }
     if (pick === 'follow') { const o = others.find((q) => q.crab && q !== this && q.cs?.s === 'walk' && q.pos.distanceTo(this.pos) < 1.8); if (o) { this.cs = { s: 'follow', t: 8 + r() * 8, o }; return; } }
     if (pick === 'gather') { const o = crabsHere.sort((a, b) => ((this.rec?.crab?.met?.[b.fid] ?? 0) - (this.rec?.crab?.met?.[a.fid] ?? 0)) || a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0], a = r() * 6.28; this.cs = { s: 'walk', to: { x: o.pos.x + Math.cos(a) * 0.55, z: o.pos.z + Math.sin(a) * 0.55 }, then: { s: 'rest', t: 40 + r() * 60 }, why: 'gather', o }; return; }      // by day it goes and rests with the crab it knows best
+    if (pick === 'graze') { const rocks = spots.filter((q) => this.W?.cat?.(q) === 'ROCKS' && !this.W?.avoid?.(q.x, q.z, this)), on = rocks.length && r() < 0.6 ? rocks[Math.floor(r() * rocks.length)] : null, a = r() * 6.28; this.cs = on ? { s: 'walk', to: { x: on.x + Math.cos(a) * 0.6, z: on.z + Math.sin(a) * 0.5 }, then: { s: 'graze', t: 15 + r() * 30, on }, why: null } : { s: 'graze', t: 12 + r() * 25, on: null }; return; }
     if (pick === 'dig') { this.cs = { s: 'dig', t: 4 + r() * 4 }; return; }
     if (pick === 'visit') { const o = others.filter((q) => !q.crab && !q.dead && !q.visitor && q.group?.visible !== false && q.pos.y < sandH(q.pos.x, q.pos.z) + 1.4 && q.pos.distanceTo(this.pos) < 4).sort((a, b) => a.pos.distanceTo(this.pos) - b.pos.distanceTo(this.pos))[0]; if (o) { const a = Math.atan2(this.pos.z - o.pos.z, this.pos.x - o.pos.x); this.cs = { s: 'walk', to: { x: o.pos.x + Math.cos(a) * 1.1, z: o.pos.z + Math.sin(a) * 1.1 }, then: { s: 'watch', t: 3 + r() * 3, o }, why: null }; return; } }
     if (pick === 'rest') { this.cs = { s: 'idle', t: (night ? 3 : 8) + r() * (night ? 6 : 14) }; return; }      // (by day it sits a good while between outings)
@@ -120,12 +124,13 @@ export class Crab3D extends Fish3D {
       if (th && tw > 0.45) { this.cs = { s: 'retract', t: 2 + 5 * Math.min(1, tw) * (0.5 + T.hide) + this.rng() * 2, who: th }; this.cool = 6; fear[th.fid] = Math.min(0.8, (fear[th.fid] ?? 0) + 0.25); this.W?.note?.(this, 'startle', th); }      // in it goes
       else if (th && S.s !== 'eat' && S.s !== 'queue') { const a = Math.atan2(this.pos.z - th.pos.z, this.pos.x - th.pos.x); this.cs = { s: 'walk', to: { x: this.pos.x + Math.cos(a) * 1.1, z: this.pos.z + Math.sin(a) * 1.1 }, then: { s: 'idle', t: 1 }, why: 'clear', who: th }; this.cool = 5; } }      // only wary: it steps out of the way
     this.cool = (this.cool ?? 0) - dt;
+    if (this.cs.s !== 'graze') this.grazeK = 0; if (this.cs.s !== 'eat') { this.eatK = 0; if (this.morsel) { this.morsel.parent?.remove(this.morsel); this.morsel = null; } }      // (interrupted: claws and morsel put away)
     let move = 0; this.doing = null;
     switch (this.cs.s) {
       case 'idle': if (this.cs.t <= 0) this.decide(others); if (this.atFav()) this.doing = 'back at its favorite spot'; break;
       case 'walk': { const to = this.cs.to, d = Math.hypot(to.x - this.pos.x, to.z - this.pos.z); move = this.step(to, dt, others); if (this.cs.why === 'shell') this.doing = 'going to look at a shell'; else if (this.cs.why === 'food') this.doing = 'going for a bit of food'; else if (!this.cs.why && d > 1.2) this.doing = this.ctype.roam > 1.3 ? 'exploring the tank' : 'out for a walk'; if (this.cs.why === 'fav') this.doing = 'heading back to its favorite spot'; if (this.cs.why === 'clear') this.doing = `keeping clear of ${this.cs.who?.name ?? 'a bigger animal'}${this.cs.home ? `'s ${this.cs.home}` : ''}`; if (this.cs.why === 'gather') this.doing = `going to join ${this.cs.o?.name ?? 'the other crabs'}`;
         if (d < (this.cs.then?.s === 'climb' ? 0.5 : 0.12) || (this.cs.walkT = (this.cs.walkT ?? 0) + dt) > 25) {      /* (at the foot of a rock it is close enough: the rock itself stops it) */ const n = this.cs.then ?? { s: 'idle', t: 1 }; this.cs = { ...n, t: n.t ?? 1 }; } break; }
-      case 'eat': { this.eatK = 1; this.doing = this.guardFrom && (this.guardT = (this.guardT ?? 0) - dt) > 0 ? `guarding its food from ${this.guardFrom}` : 'eating'; if (this.guardT > 0) this.clawUp = Math.max(this.clawUp, 0.2); const f = this.cs.food; if (f && !f.eaten && f.pos.distanceTo(this.pos) < 0.5 && this.cs.t < 1) { f.eaten = true; this.W?.ate?.(this); } if (this.cs.t <= 0) { this.eatK = 0; this.cs = { s: 'idle', t: 1 }; } break; }
+      case 'eat': { this.eatK = 1; if (!this.morsel) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.035), new THREE.MeshStandardMaterial({ color: 0x9c6a34, roughness: 0.8 })); m.position.set(7.2 * U, -0.4 * U, 0); this.claws[0].userData.wrist.add(m); this.morsel = m; } this.doing = this.guardFrom && (this.guardT = (this.guardT ?? 0) - dt) > 0 ? `guarding its food from ${this.guardFrom}` : 'eating'; if (this.guardT > 0) this.clawUp = Math.max(this.clawUp, 0.2); const f = this.cs.food; if (f && !f.eaten && f.pos.distanceTo(this.pos) < 0.5 && this.cs.t < 1) { f.eaten = true; this.W?.ate?.(this); } if (this.cs.t <= 0) { this.eatK = 0; this.morsel?.parent?.remove(this.morsel); this.morsel = null; this.cs = { s: 'idle', t: 1 }; } break; }
       case 'rest': { const pals = others.filter((o) => o.crab && o !== this && !o.dead && o.pos.distanceTo(this.pos) < 0.9).map((o) => o.name); this.doing = pals.length ? `resting with ${pals.slice(0, 2).join(' and ')}` : this.cs.fav ? 'back at its favorite spot' : null; for (const o of others) if (o.crab && o !== this && o.pos.distanceTo(this.pos) < 0.9) this.met[o.fid] = (this.met[o.fid] ?? 0) + dt / 20; } this.dwell[this.cs.fav?.id] = (this.dwell[this.cs.fav?.id] ?? 0) + dt; if (this.cs.t <= 0) this.cs = { s: 'idle', t: 0.5 }; break;
       case 'retract': { const w = this.cs.who; this.doing = this.tapBy && this.tapBy === w ? `tucked in while ${w.name} taps its shell` : w?.crab ? 'holding on to its shell' : w ? `hiding from ${w.name ?? 'a big fish'}` : 'tucked in its shell'; this.cs.inT = (this.cs.inT ?? 0) + dt; if (w && this.cs.inT < 12 && Math.hypot(w.pos.x - this.pos.x, w.pos.z - this.pos.z) < 0.9 + T.hide) this.cs.t = Math.max(this.cs.t, 1.2); if (this.cs.t <= 0) { if (w) (this.used ??= {})[w.fid] = Date.now() + 25e3; this.cs = { s: 'emerge', t: 1.2 + 2 * T.hide }; } break; }      // (never more than a dozen seconds in: it peeks out, and gets used to that one)
       case 'emerge': this.doing = 'peeking out of its shell'; if (this.cs.t <= 0) this.cs = { s: 'idle', t: 0.5 }; break;
@@ -141,6 +146,10 @@ export class Crab3D extends Fish3D {
       case 'descend': { const k = Math.min(1, (this.cs.k = (this.cs.k ?? 0) + dt / 2.6)); this.doing = 'climbing down'; this.pos.x = this.cs.from.x + (this.cs.base.x - this.cs.from.x) * k; this.pos.z = this.cs.from.z + (this.cs.base.z - this.cs.from.z) * k; this.climbY = this.cs.y0 * (1 - k); this.pitchK = -0.5 * Math.sin(k * Math.PI); move = 1; this.heading += (Math.atan2(-(this.cs.base.z - this.cs.from.z), this.cs.base.x - this.cs.from.x) - this.heading) * Math.min(1, dt * 3); if (k >= 1) { this.climbY = 0; this.cs = { s: 'idle', t: 1 }; } break; }
       case 'inspect': this.inspectTick(dt, others); move = this.cs.move ?? 0; break;
       case 'tryon': this.tryonTick(dt); break;
+      case 'graze': { this.grazeK = 1; const on = this.cs.on; this.doing = on ? `picking over the ${this.W?.label?.(on) ?? 'rock'}` : 'picking through the sand';      // a slow shuffle, claw after claw to the mouth
+        this.cs.dir ??= this.rng() * 6.28; this.cs.dir += (this.rng() - 0.5) * dt * 1.5; const tx = this.pos.x + Math.cos(this.cs.dir) * 0.4, tz = this.pos.z - Math.sin(this.cs.dir) * 0.4; if (Math.sin(this.ph * 0.9) > 0.4) move = this.step({ x: tx, z: tz }, dt, others, 0.18) * 0.5;
+        if (this.cs.t <= 0) { this.grazeK = 0; this.cs = { s: 'idle', t: 1 }; } break; }
+      case 'alert': { this.doing = 'smelled food'; const f = this.cs.food; if (f) { this.lookAt = f.pos; this.lookT = 0.3; this.heading += (Math.atan2(-(f.pos.z - this.pos.z), f.pos.x - this.pos.x) - this.heading) * Math.min(1, dt * 3); } this.flick = 0.3; if (this.cs.t <= 0) { const at = f ? { x: f.pos.x, z: f.pos.z } : { x: this.pos.x, z: this.pos.z }; this.cs = { s: 'walk', to: at, then: { s: 'eat', t: 3 + this.rng() * 3, food: f }, why: 'food' }; } break; }
       case 'queue': { const d = this.cs.d; this.doing = `waiting by the ${shellLabel(d.type)}`; this.lookAt = new THREE.Vector3(d.x, this.pos.y, d.z); this.lookT = 0.3;      // a vacancy chain: crabs wait by a shell that is too big, for whoever it fits to move in and leave theirs
         if ((this.cs.chk = (this.cs.chk ?? 0) - dt) <= 0) { this.cs.chk = 1; const C = this.rec?.crab ?? {}, need = this.need, near = (this.W?.empties?.() ?? []).filter((e) => Math.hypot(e.x - this.pos.x, e.z - this.pos.z) < 3.5 && shellFit(shellSz(e), need) === 'fits' && shellSz(e) > (C.shell?.sz ?? 0) + 0.04 && !this.W.claimedBy?.(e.id, this));
           if (near.length && this.W?.isLead?.()) { const e = near[0]; this.inspected.add('x'); this.cs = { s: 'walk', to: this.frontOf(e, 0.55), then: { s: 'inspect', t: 0, d: e, quick: true }, why: 'shell' }; break; } }
@@ -158,6 +167,7 @@ export class Crab3D extends Fish3D {
     this.pos.x = Math.max(-4.1, Math.min(4.1, this.pos.x)); this.pos.z = Math.max(-3.2, Math.min(3.8, this.pos.z));
     if (!['climb', 'perch', 'descend'].includes(this.cs.s)) this.climbY = Math.max(0, this.climbY - dt * 2);
     this.pos.y = sandH(this.pos.x, this.pos.z) + this.climbY - 0.12 * this.buriedK * (this.dims?.h ?? 0.2) * 3;
+    { const m = this.rec?.crab?.moltAt, fresh = m && Date.now() - m < 2 * 3600e3 && Date.now() - m > 15 * 60e3; if (fresh && !this.ghost && this.W?.addGhost) this.ghost = this.W.addGhost(this); if (!fresh && this.ghost) { this.ghost.parent?.remove(this.ghost); this.ghost = null; } }      // after molting, its old skin lies on the sand a while (keepers often take it for a dead crab)
     if (this.mirrorT) this.doing = 'settling into a new shell';
     this.memTick(dt, others);
     this.pose(dt);
@@ -166,11 +176,13 @@ export class Crab3D extends Fish3D {
   // walking: legs going, a little sideways the way crabs do, round other crabs and big animals and decorations
   step(to, dt, others, mul = 1) {
     const dx = to.x - this.pos.x, dz = to.z - this.pos.z, d = Math.hypot(dx, dz); if (d < 0.02) return 0;
+    if ((this.pauseT ?? 0) > 0) { this.pauseT -= dt; return 0; } if ((this.burstT = (this.burstT ?? 1) - dt) <= 0) { this.burstT = 0.8 + this.rng() * 2.2 * this.ctype.roam; this.pauseT = 0.2 + this.rng() * (0.5 + this.ctype.hide); this.flick = 0.3; }      // crabs walk in bursts: a few steps, a stop (antennae busy), a few more
+    const heavy = Math.max(0.6, Math.min(1, (this.need / Math.max(0.5, this.rec?.crab?.shell?.sz ?? 1)) * 1.12));      // a roomy shell is a heavy one to drag
     const sp = (this.species?.id === 'blueleg' ? 0.36 : this.sk === 'halloween' ? 0.3 : 0.26) * mul * (this.vigor ?? 1) * (0.7 + 0.3 * this.ctype.roam) * (1 - this.retK);
     let vx = dx / d, vz = dz / d;
     for (const o of others) { if (o === this || o.dead) continue; const ex = this.pos.x - o.pos.x, ez = this.pos.z - o.pos.z, e = Math.hypot(ex, ez), min = o.crab ? 0.42 : big.has(o.sk) && o.pos.y < this.pos.y + 1.2 ? 0.9 : 0; if (e < min && e > 1e-3) { vx += (ex / e) * (min - e) / min * 1.5; vz += (ez / e) * (min - e) / min * 1.5; } }
     const Wd = Fish3D.world; if (Wd?.push) { const p = new THREE.Vector3(this.pos.x + vx * 0.25, this.pos.y + 0.15, this.pos.z + vz * 0.25), o = new THREE.Vector3(); if (Wd.push(p, 0.18, o) && o.length() > 1e-4) { o.normalize(); const into = vx * o.x + vz * o.z; if (into < 0) { vx -= o.x * into * 1.2; vz -= o.z * into * 1.2; } vx += o.x * 0.4; vz += o.z * 0.4; } }
-    const m = Math.hypot(vx, vz) || 1; vx /= m; vz /= m; const s = Math.min(sp, d * 2);
+    const m = Math.hypot(vx, vz) || 1; vx /= m; vz /= m; const s = Math.min(sp * heavy, d * 2);
     this.pos.x += vx * s * dt; this.pos.z += vz * s * dt;
     const want = Math.atan2(-vz, vx) + (this.sk === 'blueleg' ? 0.35 : 0.2) * Math.sin(this.ph * 0.4); let dy = want - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * 4);
     return s / sp;
@@ -183,7 +195,7 @@ export class Crab3D extends Fish3D {
     if (rival && (rival.ctype.bold > T.bold || (rival.ctype.bold === T.bold && rival.seed > this.seed))) { const a = Math.atan2(this.pos.z - d.z, this.pos.x - d.x); this.cs = { s: 'backoff', t: 2.5, to: { x: d.x + Math.cos(a) * 1.4, z: d.z + Math.sin(a) * 1.4 } }; this.W?.note?.(this, 'met', rival); return; }      // the curious neighbor: the shyer one backs off
     const circle = S.quick ? 0.4 : 3 + 2 * (T.pick - 1) * 0.5;
     if (S.k < circle) { const a = Math.atan2(this.pos.z - d.z, this.pos.x - d.x) + dt * 1.6, r = 0.55; S.move = this.step({ x: d.x + Math.cos(a) * r, z: d.z + Math.sin(a) * r }, dt, others) || 0.6; return; }
-    S.move = 0; this.tapK = 1; this.heading += (Math.atan2(-(d.z - this.pos.z), d.x - this.pos.x) - this.heading) * Math.min(1, dt * 4);
+    S.move = 0; this.tapK = 1; this.W?.wobble?.(d.id, Math.sin(this.ph * 7) * 0.12); this.heading += (Math.atan2(-(d.z - this.pos.z), d.x - this.pos.x) - this.heading) * Math.min(1, dt * 4);
     if (S.k < circle + 2) return;
     this.tapK = 0; this.inspected.add(d.id); const fit = shellFit(shellSz(d), this.need), C = this.rec?.crab ?? {}, tight = shellFit(C.shell?.sz ?? 1, this.need) === 'small';
     if (fit === 'big' && this.rng() < 0.7) { this.cs = { s: 'tryon', t: 0, d }; return; }
@@ -237,6 +249,7 @@ export class Crab3D extends Fish3D {
       if ((u.twitch -= dt) <= 0) { u.twitch = 3 + this.rng() * 6; u.snap = 0.35; } if (u.snap > 0) { u.snap -= dt; open = Math.sin((u.snap / 0.35) * Math.PI) * 0.5; }      // now and then a little pinch at nothing
       if (eating && s > 0) { const c = (t * 0.7) % 1; az = c < 0.4 ? -0.7 : c < 0.55 ? -0.7 : -0.7 + (c - 0.55) / 0.45 * 1.1; open = c < 0.35 ? 0.7 : 0; wz = c > 0.55 ? 0.6 : 0; }      // reach down, open, pinch a morsel, bring it up to the mouth
       else if (eating) { az = -0.4; open = 0.2 * Math.max(0, Math.sin(t * 5)); }
+      if (this.grazeK && !eating) { const c = ((t * 1.1) + (s > 0 ? 0 : 0.5)) % 1; az = c < 0.45 ? -0.95 : -0.95 + (c - 0.45) / 0.55 * 1.05; open = c < 0.25 ? 0.5 : 0; wz = c > 0.5 ? 0.5 : 0; }      // grazing: each claw in turn down to pick, then up to the mouth
       if (tapping) { az = -0.45 + Math.max(0, Math.sin(t * 9 + s)) * 0.3; ay = s * 0.2; open = 0.3 + 0.3 * Math.sin(t * 9 + s); }      // feeling the shell's opening
       if (digging) { az = -0.9 + Math.sin(t * 7 + (s > 0 ? 0 : Math.PI)) * 0.4; open = 0.5; wz = 0.3; }      // scooping sand, one claw then the other
       if (waving) { az = 0.7 + Math.sin(t * 8 + s) * 0.25; open = 0.55 + 0.25 * Math.sin(t * 8); }      // claws up: a bold one's hello, and a happy one in its new home
@@ -249,6 +262,7 @@ export class Crab3D extends Fish3D {
     if ((this.flickT -= dt) <= 0) { this.flickT = 2 + this.rng() * 4; this.flick = 0.4; } this.flick = Math.max(0, (this.flick ?? 0) - dt);
     for (const g of this.ants) g.rotation.y = Math.sin(t * 2.2 + g.position.z * 50) * 0.3 + (this.flick > 0 ? Math.sin(this.flick * 20) * 0.35 : 0);
     // the whole crab: a wiggle settling into a shell, a little hop of joy just after, a lean as it climbs
+    const sway = mk * Math.sin(t * 8.5) * 0.05 * Math.max(1, (this.rec?.crab?.shell?.sz ?? 1) / this.need); this.shellG.rotation.x = sway; this.shellG.rotation.z = mk * Math.abs(Math.sin(t * 8.5)) * 0.03;      // the shell rocks with each step, more if it is roomy
     this.happyT = Math.max(0, this.happyT - dt); const wig = this.wig ? Math.sin(t * 22) * 0.12 : 0, hop = this.happyT > 0 ? Math.abs(Math.sin(t * 11)) * 0.035 * Math.min(1, this.happyT) : 0, bob = mk * Math.abs(Math.sin(t * 8.5)) * 0.008;
     this.root.rotation.set(wig, 0, this.pitchK); this.root.position.y = 0.01 + hop + bob;
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(0, this.heading, 0, 'YZX'));
