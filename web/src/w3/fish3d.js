@@ -42,7 +42,7 @@ const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const ACT_TEXT = { flat: 'Flat as a sole, sliding over the sand.', bury: 'Dug into the sand, just its eyes showing.', lion: 'Spines out: pretending to be a lionfish.', snake: 'Two arms out, rippling like a sea snake.', jelly: 'Puffed up and drifting like a jellyfish.', kelp: 'Arms up, swaying like the plant beside it.', tour: 'Out for a swim round the tank.' };
 const GAITS = { stroll: { stride: 1, lift: 0, sp: 1, bob: 1 }, creep: { stride: 0.6, lift: 0, sp: 0.7, bob: 0.5 }, stilt: { stride: 1.35, lift: 0.22, sp: 1.15, bob: 1.6 }, bounce: { stride: 1.1, lift: 0.08, sp: 0.95, bob: 2.2 } };
-const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.0 });
+const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.04 });      // a wet sheen: the light rolls off a fish's side in one bright line
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
 import { fishBoost, voxShading, swayTime } from './voxshade.js';
@@ -90,7 +90,9 @@ export class Fish3D {
     const jr = (i) => 0.94 + ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1 * 0.1;
     this.vox.forEach((v, i) => {
       const k = jr(i) * (1 + (species.move === 'jet' && v.arm < 0 ? 0.6 : 0.1) * Math.max(0, -v.ny) - 0.07 * Math.max(0, v.ny)), glow = v.em > 1 ? 1.2 : v.em ? 1.0 : 1;      // counter-shading: backs a touch darker, bellies lighter
-      col.setRGB(Math.min(1, v.c[0] / 255 * k) * glow, Math.min(1, v.c[1] / 255 * k) * glow, Math.min(1, v.c[2] / 255 * k) * glow, THREE.SRGBColorSpace);
+      // the finish: a slow mottling across the body so no patch of one color sits flat, warm light on the back, cooler shade under the belly (eyes and glowing parts left alone)
+      const mot = v.em ? 1 : 0.95 + 0.1 * vnoise(v.x * 0.33 + seed * 0.37, v.y * 0.33, v.z * 0.33), up = v.em ? 0 : Math.max(-1, Math.min(1, v.ny)), wr = 1 + 0.035 * up, wb = 1 - 0.045 * up;
+      col.setRGB(Math.min(1, v.c[0] / 255 * k * mot * wr) * glow, Math.min(1, v.c[1] / 255 * k * mot * (1 + 0.01 * up)) * glow, Math.min(1, v.c[2] / 255 * k * mot * wb) * glow, THREE.SRGBColorSpace);
       this.mesh.setColorAt(i, col);
     });
     // every fish is its own: a small hue, saturation, brightness and size shift from its seed (neutral whites and eyes stay put)
@@ -102,7 +104,7 @@ export class Fish3D {
     this.vox.forEach((v, i) => {
       let c = 0;
       for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy || dz) && occ.has(key(v.x + dx, v.y + dy, v.z + dz))) c++;
-      const ao = Math.max(0, Math.min(0.28, (c / 26 - 0.42) * 1.4));
+      const ao = Math.max(0, Math.min(0.33, (c / 26 - 0.42) * 1.55));      // (a little deeper in the creases: between fins and body, under the arms)
       this.mesh.getColorAt(i, col); col.multiplyScalar(1 - ao); this.mesh.setColorAt(i, col);
       if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; if (v.tag === 'web' || v.tag === 'beak') { nrm[i * 3] = 0; nrm[i * 3 + 1] = 0.45; nrm[i * 3 + 2] = 0.89; }          // the underside of the face is lit from the front, never left in the dark
       else if (species.move === 'jet' && v.arm < 0 && v.ny < 0) { const ny = v.ny * 0.3, m = Math.hypot(v.nx, ny, v.nz) || 1; nrm[i * 3] = v.nx / m; nrm[i * 3 + 1] = ny / m; nrm[i * 3 + 2] = v.nz / m; }   // the underside is not left in the dark when the arms are away
