@@ -39,7 +39,9 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
         vec4 mvPosition = viewMatrix * wp;
         gl_Position = projectionMatrix * mvPosition;`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uBoost; uniform float uBoostK;')
-      .replace('#include <opaque_fragment>', 'outgoingLight += diffuseColor.rgb * uBoost * uBoostK;\n#include <opaque_fragment>');
+      .replace('#include <opaque_fragment>', `outgoingLight += diffuseColor.rgb * uBoost * uBoostK;
+        { float fres = pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0); outgoingLight *= 1.0 - 0.2 * fres; }      // the edges of each thing fall off into shade: round, solid, not a flat cut-out
+        #include <opaque_fragment>`);
   };
   return mat;
 }

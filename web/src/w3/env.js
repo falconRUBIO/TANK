@@ -210,7 +210,11 @@ export function buildEnvironment() {
           outgoingLight *= mix(1.0, 0.93 + 0.1 * rip, flatK * near);
           // contact shadow: the sand darkens under and just round each decoration standing on it
           float ao = 1.0; for (int i = 0; i < 40; i++) { vec4 q = uAO[i]; if (q.w <= 0.0) continue; float dd = length(w - q.xy) / q.w; ao *= 1.0 - 0.42 * (1.0 - smoothstep(0.35, 1.0, dd)) * q.z; }
-          outgoingLight *= ao; }
+          outgoingLight *= ao;
+          // the banks: their faces fall into shade, their tops take the light, so the sand reads as hills and not one flat sheet
+          outgoingLight *= mix(0.84, 1.0, flatK);
+          // depth: the sand further from the glass sinks a little into the water's color (the same thing fog does, started sooner)
+          float farK = smoothstep(1.5, -3.6, vCauW.z); outgoingLight = mix(outgoingLight, outgoingLight * vec3(0.78, 0.9, 1.0), farK * 0.45); }
         #include <opaque_fragment>`); }; bedMat.customProgramCacheKey = () => 'bed-caustics'; }
   const fl = new THREE.Mesh(bedGeo, bedMat);
   // the sun is in front: the banks' own shadows would fall behind them, out of sight, so the sand is left out of the shadow pass
