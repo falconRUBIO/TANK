@@ -964,7 +964,7 @@ export function initUI({ game, social, cb }) {
     tab = t; if (!quiet) sfx('open'); $('goal').style.visibility = t === 'tank' ? '' : 'hidden';        // the hint belongs to the open tank; with a menu up it only covers the list
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('on', n.dataset.tab === t));
     placeLens();
-    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Fish and decorations. Press and hold one for a closer look before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Today: what the animals need, what is happening, your goal and what is coming. The Field Guide holds what you have seen.' }, k = 'ourtank.first.' + t;
+    { const FIRST = { care: 'Everything that needs you, and what is coming.', decorate: 'Animals and decorations. Tap one to see what it is for before you buy.', friends: 'Your crew: postcards, notes on the glass, and what everyone has been doing.', notices: 'Today: what the animals need, what is happening, your goal and what is coming. The Field Guide holds what you have seen.' }, k = 'ourtank.first.' + t;
       let seen = true; try { seen = !!localStorage.getItem(k); } catch { /* ignore */ } if (!seen && FIRST[t] && !quiet) { try { localStorage.setItem(k, '1'); } catch { /* ignore */ } setTimeout(() => toast(FIRST[t], 4200), 450); } }      // the first time you open a tab, one line about what it is for
     cb.onTab(t); if (t === 'friends') flag('friends', false); if (t === 'care') flag('care', false); if (!quiet && t === 'friends' && sub === 'journal') game.track('journal_opened');
     if (t === 'tank') { sheet.classList.remove('on'); feedOpen = null; return; } if (t !== 'care') feedOpen = null;
@@ -1018,7 +1018,7 @@ export function initUI({ game, social, cb }) {
   // pop-up over it; 'Go and see' takes you to the animal, a tap elsewhere puts it away. It waits out the quiet start like every card.
   function newLife({ title, why, img, look = 'Go and see', icon = '🥚' }) {
     return new Promise((res) => { const show = () => { if (quiet()) { setTimeout(show, (window.__quietUntil ?? 0) - Date.now() + 300); return; } let done = false; const fin = (v) => { if (!done) { done = true; res(v); } };
-      shelf('settle', `<p class="chap life">${img ? `<img alt="" src="${img}">` : `<i>${icon}</i>`}<span><small>Just now</small><b>${esc(title.charAt(0) + title.slice(1).toLowerCase())}</b>${why ? `<span>${esc(why)}</span>` : ''}</span></p><p class="nx"><span class="lk">${esc(look)} ›</span></p>`, 12000, () => fin(true), 0, (el) => { const t = setTimeout(() => fin(false), 12500); el.addEventListener('click', () => { clearTimeout(t); setTimeout(() => fin(false), 50); }, { once: true }); });
+      shelf('settle', `<p class="chap life">${img ? `<img alt="" src="${img}">` : `<i>${icon}</i>`}<span><small>New in your tank</small><b>${esc(title.charAt(0) + title.slice(1).toLowerCase())}</b>${why ? `<span>${esc(why)}</span>` : ''}</span></p><p class="nx"><span class="lk">${esc(look)} ›</span></p>`, 12000, () => fin(true), 0, (el) => { const t = setTimeout(() => fin(false), 12500); el.addEventListener('click', () => { clearTimeout(t); setTimeout(() => fin(false), 50); }, { once: true }); });
       sfx('arrive'); haptic(12); }; show(); });
   }
 
