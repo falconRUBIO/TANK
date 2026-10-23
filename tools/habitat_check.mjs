@@ -1,0 +1,39 @@
+// The living habitat, Phase 1: a favorite place grows out of where an animal really spends its time (and changes when that changes, or when
+// the place is taken away), a shy fish takes cover at real shelter when something big comes close (and the big one notices), a curious fish
+// comes to look at a new decoration, and the habitat notes read what is really there. Steps the tank by hand.
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+const base = process.env.BASE || 'http://localhost:8123';
+let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, JSON.stringify(x).slice(0, 320)); if (!ok) fails++; };
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForFunction(() => window.__game?.state && window.__booted, null, { timeout: 120000 });
+await p.evaluate(async () => { const g = window.__game; window.__quietUntil = Date.now() + 1e9; g.state.flags.tut = 5; await g.dispatch({ t: 'dev', what: 'level', to: 8 }, { dev: true }); for (let i = 0; i < 20; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true });
+  for (const [sp, nm] of [['goldfish', 'Nemo'], ['tang', 'Blue'], ['loggerhead', 'Tank']]) await g.dispatch({ t: 'buyFish', species: sp, name: nm }).catch(() => null); await g.dispatch({ t: 'dev', what: 'rush' }, { dev: true });
+  for (const [type, x] of [['cave', -2.5], ['rock', 2.5]]) await g.dispatch({ t: 'buyDecor', type, x, z: 0.5, ry: 0 }); for (const id of ['modal', 'coach', 'settle', 'toast']) document.getElementById(id)?.classList.remove('on'); });
+await p.waitForTimeout(2000);
+// 1. a favorite place from real time spent, then a change of heart, then the place taken away
+const fav = await p.evaluate(async () => { const g = window.__game, s = () => g.state, f = s().fish.find((x) => x.name === 'Nemo'), cave = s().decor.find((d) => d.type === 'cave'), rock = s().decor.find((d) => d.type === 'rock'), j0 = g.journal.length, log = (id, n) => g.dispatch({ t: 'fishLog', logs: [{ fish: f.id, dist: 5, lv: {}, places: [id], secs: { [id]: n } }] });
+  for (let i = 0; i < 4; i++) await log(cave.id, 150); const first = s().fish.find((x) => x.id === f.id).spotId;
+  for (let i = 0; i < 10; i++) await log(rock.id, 170); const second = s().fish.find((x) => x.id === f.id).spotId;
+  const lines = g.journal.slice(0).map((e) => e.text ?? e.journal ?? '').filter((x) => /Nemo/.test(x)).slice(0, 4);
+  return { cave: cave.id, rock: rock.id, first, second, lines, haunt: s().fish.find((x) => x.id === f.id).haunt }; });
+ck('a favorite place grows out of time really spent there (the cave), with a journal line', fav.first === fav.cave && fav.lines.some((l) => /taken to the reef cave/i.test(l)), fav);
+ck('spending its time elsewhere for a while, it moves on to the rock', fav.second === fav.rock, fav);
+const gone = await p.evaluate(async (rock) => { const g = window.__game, f = () => g.state.fish.find((x) => x.name === 'Nemo'); await g.dispatch({ t: 'sellDecor', id: rock }); const missing = !!f().missing, after = f().spotId ?? null;
+  const cave = g.state.decor.find((d) => d.type === 'cave'); g.state.fish.find((x) => x.name === 'Nemo').moments = {}; for (let i = 0; i < 5; i++) await g.dispatch({ t: 'fishLog', logs: [{ fish: f().id, dist: 5, lv: {}, places: [cave.id], secs: { [cave.id]: 170 } }] });
+  return { missing, after, now: f().spotId, stillMissing: !!f().missing, line: g.journal.map((e) => e.text ?? '').find((x) => /new favorite place/.test(x)) ?? null }; }, fav.rock);
+ck('its favorite is taken out: it misses it, then settles on a new one, and the journal says so', gone.missing && gone.after === null && gone.now === fav.cave && !gone.stillMissing && !!gone.line, gone);
+// 2. a shy fish takes cover at real shelter when something much bigger comes close; the big one notices
+const cover = await p.evaluate(() => { const F = window.__fishes, f = F.list.find((x) => x.name === 'Blue') ?? F.list.find((x) => x.name === 'Nemo'), big = F.list.find((x) => x.sk === 'loggerhead') ?? F.list.find((x) => x.sk === 'octopus');
+  f.temper = { keep: 0.5, roam: 0.3, cover: 1 }; big.growth = 1; f.coverT = 0; f.senseT = 0; f.pos.set(-1, 2, 0.5); big.pos.set(-0.2, 2, 0.5); F.gridT = 0; const r0 = Math.random; Math.random = () => 0.01; F.senseTick(0.05); Math.random = r0;
+  return { dbg: [f.dead, f.visitor, f.crab, f.nursery, f.sleepy, f.sk, big.sk, big.growth, f.growth, f.species?.length, big.group?.visible, big.away], grid: F.grid?.size, who: f.name, big: big.name, thought: f.thought, coverAt: F.state.decor.find((d) => d.id === f.coverAt)?.type ?? null, target: f.target.toArray().map((v) => +v.toFixed(1)), bigGaze: big.gazeT ?? big.glanceT ?? null }; });
+ck('a shy fish darts for real cover (the cave) when the turtle comes close', cover.coverAt === 'cave' && /Took cover by the reef cave/.test(cover.thought ?? ''), cover);
+// 3. a curious fish comes to look at a new decoration
+const look = await p.evaluate(async () => { const g = window.__game, F = window.__fishes, f = F.list.find((x) => x.name === 'Nemo'); f.temper = { keep: 0.3, roam: 1, cover: 0 }; f.sawNew = null; f.lookedNew = 0; await g.dispatch({ t: 'buyDecor', type: 'chest', x: 0.5, z: 1, ry: 0 }); await new Promise((r) => setTimeout(r, 300));
+  f.pos.set(0, 2, 0.5); f.senseT = 0; const r0 = Math.random; Math.random = () => 0.01; F.senseTick(0.05); Math.random = r0; return { thought: f.thought, tx: +f.target.x.toFixed(1) }; });
+ck('a curious fish comes to look at the new treasure chest', /new treasure chest|Came to look at the new/i.test(look.thought ?? ''), look);
+// 4. habitat notes come from what is really there
+const notes = await p.evaluate(async () => (await import('/src/game/habitat.js')).habitatNotes(window.__game.state));
+ck('the habitat notes say what the tank really offers (an octopus has the cave to den in)', notes.some((n) => /octopus/i.test(n.text)), notes);
+ck('no page errors', !errors.length, errors);
+await b.close(); console.log(fails ? fails + ' failed' : 'all passed'); process.exit(fails ? 1 : 0);

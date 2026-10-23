@@ -16,6 +16,7 @@ const KEEPNAME = { cap: 'bottle cap', key: 'brass key', pebble: 'pebble', glass:
 const HEAVY = new Set(['boulder', 'pillar', 'torii', 'wood', 'chest', 'arch', 'brain']);      // too big for an octopus to shift (it may try)
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
+import { temperOf, affordOf, habitKind } from '../game/habitat.js';
 import { KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
@@ -423,10 +424,10 @@ export class Fishes {
       // the tally: distance, the part of the tank it was in, holdfasts and snaps, the places it went
       const L = (d.log ||= { dist: 0, lv: {}, places: new Set(), holds: f.holdN ?? 0, snaps: f.snicks ?? 0, meals: f.meals ?? 0, strikes: f.strikesN ?? 0, greets: f.greets ?? 0, links: f.linksN ?? 0, inspects: f.inspects ?? 0 }); if (d.lp) L.dist += Math.min(1, f.pos.distanceTo(d.lp)); (d.lp ||= f.pos.clone()).copy(f.pos);
       const lv = sp === 'octopus' ? levelAt(f.pos.x, f.pos.z) : f.pos.y > 8.5 ? 'top' : f.pos.y > 5 ? 'mid' : 'low'; L.lv[lv] = (L.lv[lv] ?? 0) + dt;
-      for (const q of spots) if (Math.hypot(f.pos.x - q.x, f.pos.z - q.z) < 1.2 && f.pos.y < (q.y ?? 0) + (q.h ?? 1) + 1) L.places.add(q.id);
+      for (const q of spots) if (Math.hypot(f.pos.x - q.x, f.pos.z - q.z) < 1.2 && f.pos.y < (q.y ?? 0) + (q.h ?? 1) + 1) { L.places.add(q.id); (L.secs ||= {})[q.id] = (L.secs[q.id] ?? 0) + dt; }      // (and how long: where it really spends its time)
     }
     if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
-    const logs = live.filter((f) => f.dw?.log && !f.nursery).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
+    const logs = live.filter((f) => f.dw?.log && !f.nursery).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], secs: Object.fromEntries(Object.entries(L.secs ?? {}).filter(([, v]) => v >= 5).slice(0, 12).map(([k, v]) => [k, Math.round(v)])), holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
       if (f.sk === 'seahorse') { Object.assign(e, { meals: (f.meals ?? 0) - L.meals, strikes: (f.strikesN ?? 0) - L.strikes, greets: (f.greets ?? 0) - L.greets, links: (f.linksN ?? 0) - L.links, inspects: (f.inspects ?? 0) - L.inspects });
         const M = f.memDelta; if (M) { e.hitch = {}; for (const id of new Set([...Object.keys(M.secs), ...Object.keys(M.visits)])) e.hitch[id] = [Math.round(M.secs[id] ?? 0), M.visits[id] ?? 0, ...(M.pos[id] ?? [])]; f.memDelta = null; }      // what it has done on each holdfast since the last report, by the decoration's id
         if (f.lastHitch) e.last = f.lastHitch; }
@@ -796,7 +797,7 @@ export class Fishes {
       if (this.night && f.palId && r() < 0.6) { const o = this.byId.get(f.palId); if (o && !o.dead) { f.idle = 3; return T(o.pos.x + (r() - 0.5) * 0.7, o.pos.y + (r() - 0.5) * 0.4, o.pos.z + (r() - 0.5) * 0.4, 8); } }      // best friends settle down near each other for the night
       { const D = f.spotId && (this.state?.decor ?? []).find((x) => x.id === f.spotId), mv = D?.h?.moves?.at(-1); if (mv && f.oldMove !== mv.at) { f.oldMove = mv.at; f.oldTries = 0; }      /* (a new move: a fresh search) */
         if (mv?.from && Date.now() - mv.at < 12 * 3600e3 && (f.oldTries ?? 0) < 2 && r() < 0.5) { f.oldTries = (f.oldTries ?? 0) + 1; f.searchedOld = (f.searchedOld ?? 0) + 1; return T(mv.from.x + (r() - 0.5) * 0.5, 1.2, mv.from.z + 0.8, 5); } }      // its place was moved: it looks where it used to be, twice, then settles for the new spot
-      if (f.spotId && r() < 0.3) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
+      if (f.spotId && r() < 0.12 + 0.4 * temperOf({ species: sk, traits: f.profile?.traits }).keep) { const sp = spots.find((x) => x.id === f.spotId); if (sp) return T(sp.x + (r() - 0.5) * 0.8, 0.9 + sp.h * 0.4, sp.z + 0.9, 5); }
       if (f.palId && r() < 0.45) { const o = this.byId.get(f.palId); if (o && !o.dead) return T(o.pos.x - Math.cos(o.heading) * 1.4 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.5); }
       if (f.home && r() < 0.22) return T(f.home.x + (r() - 0.5) * 1.6, f.home.y + (r() - 0.5) * 2, 0.4 + r() * 1.6, 4);
       if (this.night && !has('Playful')) {
@@ -1058,7 +1059,33 @@ export class Fishes {
     const cx = sp ? sp.x : Math.max(-3, Math.min(3, mid.x)), cz = sp ? sp.z + 0.5 : 1.2, y = Math.max(sandUnder(cx, cz, 0.7) + 2.4, sp ? (sp.y ?? 0) + sp.h + 1.4 : Math.max(2.5, Math.min(8, mid.y)));      // above the plant, so their tails hang clear of it and of the sand
     const T = court ? 22 : 11; a.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: 0, side: 1, t: T, T0: T, court }; b.greet = { cx, cz, y, r: court ? 0.34 : 0.42, ang: Math.PI, side: 1, t: T, T0: T, court }; this.burst(new THREE.Vector3(cx, y, cz)); this.onDance?.();      /* a soft click as they meet */      // courting, they circle closer and longer
   }
+  // ── sensing, shared by every kind: a coarse grid of who is where (rebuilt four times a second, not an all-to-all check every frame), then each
+  // animal takes a look round on its own staggered beat. What it does about what it sees comes from its kind and its temperament: a shy fish
+  // darts for the nearest real cover when something much bigger comes close, and the big one notices it go; a curious one goes to look at
+  // something new in the tank. Familiar faces are counted, for relationships to grow from. ──
+  senseTick(dt) {
+    this.gridT = (this.gridT ?? 0) - dt; const C = 2;
+    if (this.gridT <= 0) { this.gridT = 0.25; const G = (this.grid = new Map()); for (const f of this.list) { if (f.dead || f.visitor || f.away || f.group?.visible === false) continue; const k = Math.floor(f.pos.x / C) + ',' + Math.floor(f.pos.z / C); (G.get(k) ?? G.set(k, []).get(k)).push(f); } }
+    const decor = this.state?.decor ?? [], ids = new Set(decor.map((d) => d.id));
+    if (!this.seenDecor) this.seenDecor = ids; else if (decor.length !== this.seenDecor.size || decor.some((d) => !this.seenDecor.has(d.id))) { const fresh = decor.filter((d) => !this.seenDecor.has(d.id)); this.seenDecor = ids; this.fresh = fresh.map((d) => ({ d, until: performance.now() + 90e3 })); }
+    for (const f of this.list) {
+      if (f.dead || f.visitor || f.crab || f.nursery || f.sleepy) continue; f.senseT = (f.senseT ?? Math.random() * 0.5) - dt; if (f.senseT > 0) continue; f.senseT = 0.5;
+      const k = habitKind(f.sk), T = (f.temper ??= temperOf({ species: f.sk, traits: f.profile?.traits })), cx = Math.floor(f.pos.x / C), cz = Math.floor(f.pos.z / C), near = [];
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const o of this.grid?.get(cx + i + ',' + (cz + j)) ?? []) if (o !== f && Math.abs(o.pos.y - f.pos.y) < 2.5 && o.pos.distanceTo(f.pos) < 2.4) near.push(o);
+      for (const o of near) (f.knowT ||= {})[o.fid] = (f.knowT[o.fid] ?? 0) + 0.5;      // seconds spent near each other (relationships grow from this)
+      if ((k === 'fish' || k === 'bottom') && T.cover >= 0.5 && !(f.coverT > 0)) {
+        const size = (o) => (o.species?.move === 'jet' ? 4 : habitKind(o.sk) === 'turtle' ? 6 : (o.species?.length ?? 40) * (o.species?.vox ?? 0.04)) * (o.growth ?? 1), big = near.find((o) => o.sk !== f.sk && size(o) > size(f) * 1.8 && o.pos.distanceTo(f.pos) < 1.7);      // (body size, from the model)
+        if (big && Math.random() < T.cover) { const hide = decor.filter((d) => affordOf(d.type).shelter >= 0.6).map((d) => ({ d, n: Math.hypot(d.x - f.pos.x, d.z - f.pos.z) })).filter((q) => q.n < 5).sort((a, b) => a.n - b.n)[0];
+          if (hide) { f.target.set(hide.d.x + (Math.random() - 0.5) * 0.5, Math.max(sandH(hide.d.x, hide.d.z) + 0.5, 0.9), hide.d.z + 0.45); f.retarget = 4; f.idle = 3; f.coverT = 10; f.coverAt = hide.d.id; f.thought = `Took cover by the ${(DECOR_DEF[hide.d.type]?.label ?? 'rock').toLowerCase()}`; f.coverFrom = big.fid;
+            if (big.species?.move === 'jet') big.gazeT = Math.max(big.gazeT ?? 0, 1.2); else if (big.sk === 'seahorse') { big.glance = f.pos.clone(); big.glanceT = 1; } } }      // (and the big one turns to watch it go)
+      }
+      f.coverT = Math.max(0, (f.coverT ?? 0) - 0.5);
+      if (this.fresh?.length && (k === 'fish' || k === 'turtle' || k === 'bottom') && !(f.lookedNew > performance.now())) { const q = this.fresh.find((x) => x.until > performance.now() && !(f.sawNew ||= new Set()).has(x.d.id));
+        if (q) { f.sawNew.add(q.d.id); if (Math.random() < 0.15 + 0.6 * T.roam - 0.3 * T.cover) { const d = q.d; f.target.set(d.x + (Math.random() - 0.5) * 0.6, Math.max(sandH(d.x, d.z) + 0.8, 1), d.z + 0.6); f.retarget = 4; f.lookedNew = performance.now() + 20e3; f.thought = `Came to look at the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()}`; } } }      // a curious one comes to look; a shy one hangs back
+    }
+  }
   update(dt, t) {
+    this.senseTick(dt);
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
     if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = Math.max(broodOf(f.rec, now), f.greet && f.rec.sex === 'm' ? 0.3 : 0);      /* a male puffs his pouch a little as he greets */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes

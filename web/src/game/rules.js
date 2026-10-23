@@ -10,6 +10,8 @@ export { keepStory, todOf, TOD, LIFE, decorStory };
 import { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell, crabInit } from './crabs.js';
 export { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell } from './crabs.js';
 import { touchKeep, knowsKeep, historyDay, recordHistory, stayOffer, decideStay, dayOfTank, HIST } from './history.js';
+import { foldHaunt, habitatNotes, affordOf, suits, temperOf, habitKind } from './habitat.js';
+export { habitatNotes, affordOf, suits, temperOf, habitKind } from './habitat.js';
 export { knowsKeep, dayOfTank, HIST };
 export { isAway, awayLine, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong };
 export { genesOf };
@@ -2259,6 +2261,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         const f = t.fish.find((x) => x.id === e?.fish && !x.dead && !x.away); if (!f) continue; const L = (f.log ||= {}); did = true;
         L.dist = +((L.dist ?? 0) + n(e.dist, 120)).toFixed(1); L.snaps = (L.snaps ?? 0) + Math.round(n(e.snaps, 60)); L.holds = (L.holds ?? 0) + Math.round(n(e.holds, 30));
         L.lv ||= {}; for (const k of ['front', 'middle', 'rear', 'top', 'mid', 'low']) if (e.lv?.[k]) L.lv[k] = Math.round((L.lv[k] ?? 0) + n(e.lv[k], 400));
+        if (e.secs && typeof e.secs === 'object' && !['octopus', 'seahorse'].includes(f.species) && !isCrab(f)) {      // ordinary fish and turtles: a favorite place grows out of where it really spends its time (octopuses, seahorses and crabs keep their own)
+          const was = f.spotId && t.decor.some((d) => d.id === f.spotId) ? f.spotId : null, best = foldHaunt(f, e.secs, t.decor);
+          if (best && best !== was) { const dd = t.decor.find((d) => d.id === best), lbl = (DECOR_DEF[dd.type]?.label ?? 'decoration').toLowerCase(), mo = (f.moments ||= {});
+            f.spotId = best; if (!f.found?.includes('spot')) (f.found ||= []).push('spot'); (f.disc ||= {}).spot ??= now;
+            if (now - (mo.haunt ?? 0) > DAY) { mo.haunt = now; const line = f.missing ? `${f.name} has found a new favorite place: the ${lbl}.` : was ? `${f.name} has moved on to the ${lbl}. It spends its time there now.` : `${f.name} has taken to the ${lbl}. It keeps going back there.`; events.push({ journal: line, story: f.id, field: { fish: f.id, kind: 'haunt', decor: best } }); }
+            delete f.missing; } }
         { const seen = new Set([...(Array.isArray(e.places) ? e.places : []), ...(e.hitch && typeof e.hitch === 'object' ? Object.keys(e.hitch) : [])].slice(0, 12)); for (const id of seen) decorVisit(t, t.decor.find((x) => x.id === id), f, now, events, ADVR); }      // the decoration remembers who comes (one count a day each)
         if (Array.isArray(e.places)) { L.places ||= []; for (const id of e.places.slice(0, 10)) if (typeof id === 'string' && t.decor.some((d) => d.id === id) && !L.places.includes(id)) L.places.push(id); L.places = L.places.slice(-40); }
         // a seahorse's holdfasts, by the decoration's id (never by position, so a moved decoration is still the same place to it):
