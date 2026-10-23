@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v320** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v321** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -27,7 +27,7 @@
 
 ## 2. Regression results (all 95 unit tests pass: `npm test`)
 
-**The complete browser suite** (`FULL=1 tools/check_all.sh`, 55 drills) was run once on this branch. It is long (hours) and was still finishing its last drill (`octopus_aware`) at the time of writing; see the tally at the end.
+**The complete browser suite** (`FULL=1 tools/check_all.sh`, 60 drills) was run once on this branch, before the visual pass below, with three browsers sharing one machine. **Result: 47 passed, 13 failed** (`ux_check octopus_den life_check2 living_check care_sync sell_check octopus_acts bonds_check toys_check crab_check cause_effect attach_check dev_lifecycle`). That tally is from one loaded run; the per-drill verdicts below are what matters.
 
 Every failure it reported was re-run alone on this code and on the code from before this work (commit `c9c7815`), to separate what this work broke from what was already failing:
 
@@ -40,7 +40,11 @@ Every failure it reported was re-run alone on this code and on the code from bef
 | `attach_check` pair closer than singles | varies | varies | noisy either way (see section 1) |
 | `living_check` (Ada comes to the glass) | **fails** | fails | expects the old frequent glass visit; the 1-in-100 visit was your request. Test to update. |
 | `care_sync`, `sell_check` ("Care has the tank upkeep row and a Health list") | **fail** | fail | pre-existing wording drift from earlier menu passes |
-| `ux_check` (recap card), `octopus_acts`, `toys_check` | see below | see below | being re-run with their error output |
+| `ux_check` (recap card; "the moment you saw is kept with a photo") | **fails** (same 2) | fails (same 2) | pre-existing |
+| `toys_check` ("Toy box shows the ball… locked ones are not shown as buttons") | **same layout** | fails at its first check | the drill sets level 8, where every toy is open, then expects Bubbles locked and a "next toy" line the Toy box has not had since the Care menu pass. Test drift, not a game bug; the rest of the drill never runs. |
+| `octopus_acts` ("eight minutes alone: four different things, six times or more") | **fails** (3 acts: jelly, grab, follow) | fails (0 acts in the loaded suite run; alone: see wait note) | pre-existing on the old code too; the suite run's empty count was load (the 8-minute sim ran at a fraction of real time). |
+| `crab_check` (whole shell move played) | not re-run | fails in the suite | the swap sequence ran `inspect > backoff > idle > walk > inspect > swap/align > …`: a backoff step first, consistent with the new route planner moving the crab to clear sand before the swap. Needs its own look; the swap itself completes. |
+| `bonds_check`, `dev_lifecycle` | not re-run | failed in the suite with no assertion line (timed out) | load; not re-run alone yet |
 | `cause_effect` seafan *move* | n/a (new drill) | fails sometimes | the "moving a decoration" reaction was already reported as too faint to measure |
 
 Homebody behavior, early trick progression (`twirl_check`), return news (`return_check`), and the turtle economy (`turtle_check`, `fund_check`) all passed in the suite.
@@ -51,6 +55,7 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 - **Name:** Tako Tank everywhere (pages, manifest, push, share text, docs). Save keys unchanged.
 - **Logo and icons:** a voxel octopus perched on chunky cream letters, the O a ring with a wave; `web/logo.svg`, icons at 512/192/180. The loading screen carries the logo.
 - **Animal finish (designs unchanged):** a wet sheen on every animal's material, a slow mottling across each body so no patch of one color sits flat, warm light on backs and cooler bellies, deeper baked shade in the creases between fins and body. Eyes and glowing parts untouched. Sheet: `docs/audit/animals_before.png` / `animals_after.png` (the yellow bar through each fish is a hidden helper part the sheet tool draws; it is not in the game); close-up `docs/audit/fish_closeup.png`.
+- **Visual pass 2–8 (this build):** caustic light now plays over every animal and decoration, not only the sand (same caustic texture, sampled in world space, strongest on upward faces, fading with depth and dimming with the time of day); thin fins are translucent (74%, alpha-hashed so it stays pixel-crisp; eyes and glowing parts never thinned); a soft shadow disc on the sand under each swimming animal that grows and fades with height (gone above 7 units; none under seahorses, visitors, fry, puppets or a hunting octopus; measured: 0.47 opacity at 0.5 up, 0.10 at 4, hidden at 8); two slow haze bands in the midwater; a glint on each bubble; shop and card thumbnails rendered from every species' real 3D model (sheet: all 29 render, no helper-bar artifact, 6.2 s for all of them on first draw in software GL, cached after); a faint glass streak in the top corner. Shader compile check: 0 errors. Screenshots `docs/audit/gfx_after_{afternoon,evening,morning,night}.png`.
 - **Graphics, three passes, voxel look kept:** sand ripples and contact shadows under decorations, banks shaded on their faces and lit on top, far sand sinking into the water's color, stronger caustics and sunbeams, distant kelp that reads as kelp, brighter rim light, crisper voxel faces, edge shading on every voxel thing, water that deepens toward the sand, a calmer amber-and-blue dusk, more contrast, less blur in the distance. Before/after: `docs/audit/gfx_before_*.png`, `gfx_after_*.png`. **Frame cost not measured on a phone**; the added shader work is a handful of instructions per sand pixel and one `pow` per voxel pixel.
 
 ---
@@ -60,7 +65,9 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 2. `cause_effect` "move" cases are too faint to pass reliably; moving a decoration gets little visible reaction.
 3. A crab's body center can be inside a decoration for 1–2 frames in 9,600 when a plant grows over it.
 4. The real octopus in the loading screen is the low-poly peek, not the logo octopus (the voxel copy looked wrong there).
-5. Performance of the graphics passes on a real iPhone.
+5. Performance of the graphics passes on a real iPhone: the voxel shader now also samples one texture per pixel; the first Shop open builds every thumbnail from its 3D model (seconds in software GL here; unmeasured on a phone).
+6. Drill drift to fix in the tests, not the game: `toys_check` Toy box check, `living_check` glass visit, `care_sync`/`sell_check` wording, `ux_check` recap/photo.
+7. `crab_check` and `octopus_acts` need a quiet, unloaded re-run each; `bonds_check` and `dev_lifecycle` timed out under load and have not been re-run.
 
 ## 5. Readiness for the iPhone test
 **Ready to put on a phone.** Use the checklist in `TAKO_TANK_IPHONE_PLAYTEST.md` (frame rate with `?fps`, tapping, loading, octopus recognition, fish resting, placing decorations, feeding, toys, two phones) and the 15-minute first-player script there. Watch the frame rate first: three graphics passes went in without a device measurement.
