@@ -117,10 +117,10 @@ export class Fishes {
       if (!f) { f = new Fish3D(SPECIES[x.species], x.seed, { look: x.pal != null ? { pal: x.pal } : null, name: x.name, speed: 0.5, scale: 1, band: BANDS.goldfish }); f.fid = x.id; f.setGrowth(STAGE_SCALE[x.stage] ?? 1); f.pos.set((this.rng() - 0.5) * 6, 12.7, 1.2); this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }
       if (!f.dead) { f.dead = true; f.floater = true; f.setPale(0.6); f.profile = { traits: [], mood: 'Passed away', needs: [0, 0, 0, 0] }; if (f.emote) { f.emote.visible = false; } this.burst(f.pos); }
     }
-    for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); }      // gone for good while it was away (sold, moved on)
+    for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; }; }      // gone for good while it was away (sold, moved on)
     this.ready = true;
     if (state.visitor) { seen.add(state.visitor.id); if (!this.byId.has(state.visitor.id)) this.addVisitor(state.visitor); }
-    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.letGo(f); if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else if (TURTLE_SK.has(f.sk) && !f.dead) (this.rising ||= []).push({ f, age: 0, b: 0 }); else this.scene.remove(f.group);      /* (a sea turtle let go, or a visiting one going home, swims up and away on every phone) */ if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.hoardGroup) { this.scene.remove(f.hoardGroup); f.hoardGroup = null; } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
+    for (const f of [...this.list]) if (!seen.has(f.fid)) { this.letGo(f); if (f.floater && !f.visitor) { (this.leaving ||= []).push({ f, age: 0, y: f.group.position.y, s: f.group.scale.x }); this.onGoodbye?.(f); } else if (TURTLE_SK.has(f.sk) && !f.dead) (this.rising ||= []).push({ f, age: 0, b: 0 }); else this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; };      /* (a sea turtle let go, or a visiting one going home, swims up and away on every phone) */ if (f.glow) { this.scene.remove(f.glow); this.onSpriteGone?.(f.glow); } if (f.hoardGroup) { this.scene.remove(f.hoardGroup); f.hoardGroup = null; } if (f.emote) { this.scene.remove(f.emote); this.onSpriteGone?.(f.emote); } this.list.splice(this.list.indexOf(f), 1); this.byId.delete(f.fid); }
   }
   // Little Adventures: an octopus that has gone climbs out over the back rim if anyone is watching (otherwise it is simply not there), and
   // climbs back in the same way when it comes home. While it is away it is out of the list, so nothing in the tank looks for it.
@@ -130,7 +130,7 @@ export class Fishes {
     if (d.away) {
       if (!f || this.out.has(d.id)) return true;
       this.list.splice(this.list.indexOf(f), 1); this.out.set(d.id, f); this.letGo(f); if (f.emote) f.emote.visible = false;
-      if (watching && !d.away.inTank && this.ready) this.climb(f, -1); else this.scene.remove(f.group);
+      if (watching && !d.away.inTank && this.ready) this.climb(f, -1); else this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; };
       return true;
     }
     if (f && this.out.has(d.id)) {
@@ -148,7 +148,7 @@ export class Fishes {
       age += dt; const q = Math.min(1, age / T), seg = Math.min(path.length - 2, Math.floor(q * (path.length - 1))), u = q * (path.length - 1) - seg, e = u * u * (3 - 2 * u);
       f.pos.lerpVectors(path[seg], path[seg + 1], e); f.group.position.copy(f.pos); f.group.rotation.x = seg === 1 ? -0.9 * Math.sin(e * Math.PI) : 0;      // flat against the back glass on the way up
       f.group.scale.setScalar(s0 * (dir < 0 ? (seg === path.length - 2 ? 1 - 0.6 * e : 1) : seg === 0 ? 0.4 + 0.6 * e : 1));
-      if (q >= 1) { f.puppet = null; f.group.rotation.x = 0; f.group.scale.setScalar(s0); if (dir < 0) this.scene.remove(f.group); else { f.target.copy(f.pos); this.drips(path[1]); } }
+      if (q >= 1) { f.puppet = null; f.group.rotation.x = 0; f.group.scale.setScalar(s0); if (dir < 0) { this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; } } else { f.target.copy(f.pos); this.drips(path[1]); } }
     };
     if (dir < 0) this.drips(path[2]);
   }
@@ -1093,8 +1093,20 @@ export class Fishes {
           else if (T.cover >= 0.5 && Math.random() < 0.6) { const d = q.d, a = Math.atan2(f.pos.z - d.z, f.pos.x - d.x); f.target.set(d.x + Math.cos(a) * 2.3, Math.max(sandH(d.x, d.z) + 1.4, 1.6), d.z + Math.sin(a) * 2.3); f.retarget = 5; f.idle = 3; f.lookedNew = performance.now() + 20e3; f.thought = `Watching the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()} from a distance`; } } }      // a shy one keeps its distance and watches      // a curious one comes to look; a shy one hangs back
     }
   }
+  // a soft dark disc on the sand under each animal, smaller and fainter the higher it swims: it grounds them in the tank (the real shadow
+  // pass only catches animals near the floor, and the sun is in front so most of it falls behind)
+  shadeTick() {
+    this.shadeTex ||= (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 2, 32, 32, 30); r.addColorStop(0, 'rgba(0,0,0,.55)'); r.addColorStop(0.55, 'rgba(0,0,0,.25)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
+    for (const f of this.list) {
+      const hide = f.dead || f.visitor || f.away || f.group?.visible === false || f.nursery || f.puppet || (f.species?.move === 'jet' && f.hunt) || f.sk === 'seahorse';      /* (a seahorse hangs in the plants: a disc under it reads as a mistake) */
+      if (!f.shade) { if (hide) continue; const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: this.shadeTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); m.rotation.x = -Math.PI / 2; m.renderOrder = 2; this.scene.add(m); f.shade = m; }
+      const m = f.shade; if (hide) { m.visible = false; continue; }
+      const gy = sandH(f.pos.x, f.pos.z), h = Math.max(0, f.pos.y - gy), r = (f.radius ?? 0.5) * (f.crab ? 0.5 : 1.15), k = Math.max(0, 1 - h / 7);
+      m.visible = k > 0.02; if (!m.visible) continue; m.position.set(f.pos.x, gy + 0.04, f.pos.z); const s = r * (1.1 + h * 0.12); m.scale.set(s * 1.3, s, 1); m.material.opacity = 0.55 * k * k;
+    }
+  }
   update(dt, t) {
-    this.senseTick(dt);
+    this.senseTick(dt); this.shadeTick();
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
     if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = Math.max(broodOf(f.rec, now), f.greet && f.rec.sex === 'm' ? 0.3 : 0);      /* a male puffs his pouch a little as he greets */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
@@ -1102,7 +1114,7 @@ export class Fishes {
     // laid to rest: the body sinks slowly and fades away, rather than vanishing
     if (this.rising?.length) this.rising = this.rising.filter((L) => { const f = L.f; L.age += dt; f.strokeK = 1; f.glideK = 0; f.restK = 0; f.headPitch = 0.4; f.neckK = 1; f.flipPh = (f.flipPh ?? 0) + dt * 3.2; f.pitch += (0.5 - f.pitch) * Math.min(1, dt * 2);
       f.group.position.y += dt * (1.2 + L.age * 0.8); f.group.position.z += (-2.5 - f.group.position.z) * Math.min(1, dt * 0.4); f.group.rotation.z = f.pitch; f.setPose(0, false); L.b -= dt; if (L.b <= 0) { L.b = 0.35; this.burst(f.group.position.clone()); }
-      if (L.age < 5 && f.group.position.y < Fish3D.topY + 4) return true; this.scene.remove(f.group); return false; });      // up through the surface on long strokes, trailing bubbles, and gone
+      if (L.age < 5 && f.group.position.y < Fish3D.topY + 4) return true; this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; }; return false; });      // up through the surface on long strokes, trailing bubbles, and gone
     if (this.leaving?.length) this.leaving = this.leaving.filter((L) => { L.age += dt; const q = Math.min(1, L.age / 2.6), e = q * q * (3 - 2 * q); L.f.group.position.y = L.y - e * 2.2; L.f.group.scale.setScalar(L.s * (1 - 0.85 * e)); L.f.group.rotation.z += dt * 0.25; if (q < 1) return true; this.scene.remove(L.f.group); return false; });
     if (this.out) for (const f of this.out.values()) if (f.puppet) f.puppet(dt);      // an octopus on its way out over the rim
     if ((this.keepT = (this.keepT ?? 30) - dt) <= 0) { this.keepT = 70 + this.rng() * 90;      // now and then an octopus goes and looks over a keepsake it brought home (its favorite most often)

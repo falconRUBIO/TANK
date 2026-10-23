@@ -1,6 +1,7 @@
 // The stage: renderer, camera, lights, fx, post-processing and time-of-day lighting. No game logic in here.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { causTex, causT, causK } from './voxshade.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
@@ -9,7 +10,7 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { buildEnvironment } from './env.js';
 import { Fish3D } from './fish3d.js';
 import { lanternGlow } from './items.js';
-import { Shafts, Beams, waterSurface, Snow, Bubbles } from './fx.js';
+import { Shafts, Beams, Haze, waterSurface, Snow, Bubbles } from './fx.js';
 import { CausticMap } from './textures.js';
 
 export const stage = { murk: 0, quality: 2, lantern: 0, moonlit: 0, settle: 0, settleK: 0, dim: 0, dimK: 0 };      // dim: the tank's lights turned down (while the light spot toy is on)
@@ -41,6 +42,7 @@ Fish3D.world = env.colliders;                 // decorations are solid for the f
 export const hemi = new THREE.HemisphereLight(0x6fb4e8, 0x1c4a52, 0.9); scene.add(hemi);
 export const amb = new THREE.AmbientLight(0x4a7090, 0.3); scene.add(amb);
 export const caustic = new CausticMap(96);
+export const causOn = (t) => { causTex.value = caustic.tex; causT.value = t; causK.value = 0.32 * Math.min(1, (cur.sunI ?? 10) / 10) * (cur.shaft > 0.18 ? 1 : 0.5) * (1 - 0.7 * stage.dimK); };      // the light on the animals and decorations: as much as the sand gets, less when the day is dim
 export const sun = new THREE.SpotLight(0xffe0a6, 6, 0, 0.62, 0.7, 0);
 sun.position.set(-6, 24, 12); sun.target.position.set(0.2, 2, -1.2); scene.add(sun, sun.target);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.camera.near = 8; sun.shadow.camera.far = 50;
@@ -55,7 +57,8 @@ const glowMat = () => new THREE.MeshBasicMaterial({ map: glowTex, transparent: t
 export const halo = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), glowMat()); halo.position.set(0, -20, 0); halo.renderOrder = 6; scene.add(halo);
 export const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), glowMat()); pool.rotation.x = -Math.PI / 2; pool.position.set(0, -20, 0); pool.renderOrder = 3; scene.add(pool);
 export const shafts = new Shafts(); shafts.rebuild();   // god-ray streaks removed from the scene (too much); class kept for later
-export const beams = new Beams(6); scene.add(beams.group);      // broad, slow sunbeams from the surface
+export const beams = new Beams(6); scene.add(beams.group);
+export const haze = new Haze(); scene.add(haze.group);      // soft bands of lighter water in the middle distance      // broad, slow sunbeams from the surface
 export const surf = waterSurface(); scene.add(surf.mesh);
 export const snow = new Snow(); scene.add(snow.pts); { const m = snow.pts.material; if (m) { if (m.size) m.size *= 0.7; if (m.opacity != null) m.opacity *= 0.75; } }      // marine snow: small and soft, never a sparkle
 export const motes = new Snow(110); scene.add(motes.pts); { const m = motes.pts.material; m.size = 0.085; m.color.set(0xfff0c8); m.opacity = 0.3; m.blending = THREE.AdditiveBlending; for (let i = 0; i < motes.n; i++) motes.s[i] *= 0.25; }      // light motes: warm specks that catch the light, drifting slowly
@@ -75,7 +78,7 @@ const scrub = () => new ShaderPass({ uniforms: { tDiffuse: { value: null } },
 composer.addPass(scrub());
 // depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
 export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00016, maxblur: 0.0032 })      // (a touch of depth, never mush: the far ruins and plants stay readable);
-export const hideForDepth = [halo, pool, shafts.group, beams.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
+export const hideForDepth = [halo, pool, shafts.group, beams.group, haze.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
 const bokehRender = bokeh.render.bind(bokeh);
 bokeh.render = (...a) => { const was = hideForDepth.map((o) => o.visible); hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o, i) => (o.visible = was[i])); };   // put back what was visible, never force things on
 composer.addPass(bokeh); composer.addPass(scrub());
@@ -109,6 +112,7 @@ export const grade = new ShaderPass({
       float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
       c *= mix(1. - uPool*.5, 1.03, pool);
       c *= mix(.74, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
+      { float st = smoothstep(0.08, 0.0, abs((vUv.x * 0.6 + vUv.y * 0.8) - 1.08)) * smoothstep(0.55, 1.0, vUv.y); c += vec3(.9, .97, 1.) * st * 0.045; }      // the glass: one faint pale streak in the top corner, the room's light on the pane
       c = (c - .5) * 1.07 + .5;                                                         // a little more contrast: the voxels read as solid things, not pastel
       // PS1-style 15-bit color with ordered dither
       float levels = 31.;

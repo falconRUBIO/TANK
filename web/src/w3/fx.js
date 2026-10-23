@@ -77,18 +77,20 @@ export class Snow {
 export class Bubbles {
   constructor(x, z, n = 26) {
     this.x = x; this.z = z; this.n = n;
-    this.mesh = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.75, depthWrite: false }), n);
-    this.mesh.frustumCulled = false;
+    // each bubble a thin ring, with one bright square at its upper right: the window of light every real bubble carries
+    this.ring = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.75, depthWrite: false }), n);
+    this.glint = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false }), n);
+    this.ring.frustumCulled = this.glint.frustumCulled = false; this.mesh = new THREE.Group(); this.mesh.add(this.ring, this.glint); this.gm = new THREE.Matrix4();
     this.b = Array.from({ length: n }, () => ({ y: Math.random() * 15, s: 0.8 + Math.random() * 1.1, r: 0.03 + Math.random() * 0.07, ph: Math.random() * 6 }));
     this.m = new THREE.Matrix4();
   }
   update(dt, t) {
     this.b.forEach((b, i) => {
       b.y += b.s * dt; if (b.y > 15.8) { b.y = 0.2; b.s = 0.8 + Math.random() * 1.1; }
-      this.m.makeScale(b.r, b.r, b.r); this.m.setPosition(this.x + Math.sin(t * 2 + b.ph) * 0.12 * (b.y * 0.15), b.y, this.z + Math.cos(t * 1.7 + b.ph) * 0.06);
-      this.mesh.setMatrixAt(i, this.m);
+      const bx = this.x + Math.sin(t * 2 + b.ph) * 0.12 * (b.y * 0.15), bz = this.z + Math.cos(t * 1.7 + b.ph) * 0.06; this.m.makeScale(b.r, b.r, b.r); this.m.setPosition(bx, b.y, bz);
+      this.ring.setMatrixAt(i, this.m); this.gm.makeScale(b.r, b.r, b.r); this.gm.setPosition(bx + b.r * 0.55, b.y + b.r * 0.6, bz + b.r * 0.2); this.glint.setMatrixAt(i, this.gm);
     });
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.ring.instanceMatrix.needsUpdate = true; this.glint.instanceMatrix.needsUpdate = true;
   }
 }
 
@@ -219,4 +221,25 @@ export class Beams {
   }
   // t in seconds: each beam breathes and drifts very slowly (dim: less light coming through the surface, as on a rainy day)
   update(t, dim = 1) { for (const b of this.items) { const k = b.base * (0.65 + 0.35 * Math.sin(t * b.sp * 6.28 + b.ph)) * dim; b.k.array.fill(k); b.k.needsUpdate = true; b.m.position.x = Math.sin(t * b.sp + b.ph) * 0.25; } }
+}
+
+// Haze: two wide, soft bands of lighter water in the middle distance, drifting very slowly. They sit between the far kelp and the animals and
+// give the water a body (light is scattered in it) without a particle in sight. Additive, so they only ever brighten.
+export class Haze {
+  constructor() {
+    this.group = new THREE.Group(); this.items = [];
+    this.mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+      uniforms: { uI: { value: 0.4 }, uT: { value: 0 }, uCol: { value: new THREE.Color(0.75, 0.92, 1.0) } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+      fragmentShader: `varying vec2 vUv; uniform float uI, uT; uniform vec3 uCol;
+        float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+        void main(){
+          float band = n(vec2(vUv.x * 3.0 + uT * 0.02, vUv.y * 6.0 - uT * 0.008)) * 0.6 + n(vec2(vUv.x * 7.0 - uT * 0.015, vUv.y * 11.0)) * 0.4;
+          float edge = smoothstep(0.0, 0.25, vUv.x) * smoothstep(1.0, 0.75, vUv.x) * smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.6, vUv.y);
+          float a = smoothstep(0.45, 0.8, band) * edge * uI; a = floor(a * 24.0 + 0.5) / 24.0;      // (a few steps, as the pixel look wants)
+          gl_FragColor = vec4(uCol * a, a); }` });
+    for (const [z, w, hgt, y] of [[-7, 26, 9, 7.5], [-11, 34, 11, 9]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, hgt), this.mat); m.position.set(0, y, z); m.frustumCulled = false; m.renderOrder = 3; this.group.add(m); this.items.push(m); }
+  }
+  update(t, k = 1) { this.mat.uniforms.uT.value = t; this.mat.uniforms.uI.value = 0.42 * k; }
 }

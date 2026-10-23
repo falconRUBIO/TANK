@@ -42,7 +42,7 @@ const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const ACT_TEXT = { flat: 'Flat as a sole, sliding over the sand.', bury: 'Dug into the sand, just its eyes showing.', lion: 'Spines out: pretending to be a lionfish.', snake: 'Two arms out, rippling like a sea snake.', jelly: 'Puffed up and drifting like a jellyfish.', kelp: 'Arms up, swaying like the plant beside it.', tour: 'Out for a swim round the tank.' };
 const GAITS = { stroll: { stride: 1, lift: 0, sp: 1, bob: 1 }, creep: { stride: 0.6, lift: 0, sp: 0.7, bob: 0.5 }, stilt: { stride: 1.35, lift: 0.22, sp: 1.15, bob: 1.6 }, bounce: { stride: 1.1, lift: 0.08, sp: 0.95, bob: 2.2 } };
-const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.04 });      // a wet sheen: the light rolls off a fish's side in one bright line
+const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.04, alphaHash: true });      // a wet sheen: the light rolls off a fish's side in one bright line
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
 import { fishBoost, voxShading, swayTime } from './voxshade.js';
@@ -100,17 +100,17 @@ export class Fish3D {
       this.size = gn.size;
       this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { if (M) col.setHSL(M.h ?? hsl.h, M.s, Math.min(0.95, hsl.l * 0.4 + M.l * 0.6)); else col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
-    const nrm = new Float32Array(n * 3);
+    const nrm = new Float32Array(n * 3), thin = new Float32Array(n);
     this.vox.forEach((v, i) => {
       let c = 0;
       for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy || dz) && occ.has(key(v.x + dx, v.y + dy, v.z + dz))) c++;
       const ao = Math.max(0, Math.min(0.33, (c / 26 - 0.42) * 1.55));      // (a little deeper in the creases: between fins and body, under the arms)
       this.mesh.getColorAt(i, col); col.multiplyScalar(1 - ao); this.mesh.setColorAt(i, col);
-      if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; if (v.tag === 'web' || v.tag === 'beak') { nrm[i * 3] = 0; nrm[i * 3 + 1] = 0.45; nrm[i * 3 + 2] = 0.89; }          // the underside of the face is lit from the front, never left in the dark
+      thin[i] = v.thin && v.tag !== 'eye' && (v.flap || v.wave) ? 1 : 0;      /* (the fins and tail that flap or wave: see-through; thin parts of a body that do not move stay solid) */ if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; if (v.tag === 'web' || v.tag === 'beak') { nrm[i * 3] = 0; nrm[i * 3 + 1] = 0.45; nrm[i * 3 + 2] = 0.89; }          // the underside of the face is lit from the front, never left in the dark
       else if (species.move === 'jet' && v.arm < 0 && v.ny < 0) { const ny = v.ny * 0.3, m = Math.hypot(v.nx, ny, v.nz) || 1; nrm[i * 3] = v.nx / m; nrm[i * 3 + 1] = ny / m; nrm[i * 3 + 2] = v.nz / m; }   // the underside is not left in the dark when the arms are away
       if (v.arm >= 0) { const a = 0.5, nx = v.nx * a, ny = v.ny * a + 0.5, nz = v.nz * a, m = Math.hypot(nx, ny, nz) || 1; nrm[i * 3] = nx / m; nrm[i * 3 + 1] = ny / m; nrm[i * 3 + 2] = nz / m; } }   // arms move, so light them from above in every pose
     });
-    this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
+    this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3)); this.mesh.geometry.setAttribute('aThin', new THREE.InstancedBufferAttribute(thin, 1));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
     this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || (v.tag === 'head' && TURTLE_IDS.has(species.id)) || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
