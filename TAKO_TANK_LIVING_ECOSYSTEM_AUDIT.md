@@ -1,4 +1,4 @@
-# Tako Cove: The Living Ecosystem Update
+# Tako Tank: The Living Ecosystem Update
 
 **Status: Phase 1 (Living Habitat Foundation) is built and tested. Phases 2–4 have not started.** You asked for each phase to be completed and tested before the next, so this document will grow phase by phase. The five final questions are answered for where the game stands now.
 

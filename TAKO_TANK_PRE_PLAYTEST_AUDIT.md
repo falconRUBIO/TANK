@@ -1,4 +1,4 @@
-# Tako Cove: Pre-Playtest Audit (Animal Response, Recognition and Readability)
+# Tako Tank: Pre-Playtest Audit (Animal Response, Recognition and Readability)
 
 **Date:** 2026-10-23. **No real-device test and no real-player test has happened yet.** Everything below comes from reading the code and from headless-browser drills. A headless browser draws about 0.3 frames per second, so it can show *that* an animal does something, but not whether a person would notice it at phone size. Every "readable?" verdict is my judgment from the code and the measurements, and is marked as such.
 

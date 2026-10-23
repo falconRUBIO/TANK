@@ -84,7 +84,7 @@ const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone'
 const social = {
   chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
-  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tako Cove', text: `Come help take care of our fish! Join my aquarium in Tako Cove. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
+  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tako Tank', text: `Come help take care of our fish! Join my aquarium in Tako Tank. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'Make a new code?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 
@@ -586,7 +586,7 @@ async function takePhoto(opts = {}) {      // opts.img: a moment's photo from th
   let ax = M + 10; for (const m of (game.shared ? game.members ?? [] : [{ avatar: soloLook() }]).slice(0, 4)) { const c = document.createElement('canvas'); try { drawAvatar(c, m.avatar); g.imageSmoothingEnabled = false; const k = 64 / c.height; g.drawImage(c, ax, ry - 26, c.width * k, 64); } catch { /* no avatar */ } ax += 68; }
   g.imageSmoothingEnabled = true; g.fillStyle = '#7a5f26'; g.font = '600 26px ui-monospace, Menlo, monospace';
   const dateStr = new Date(opts.ts ?? Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });      /* (a moment's postcard carries the day it happened) */ g.fillText(`${game.shared ? String(game.tankName).toUpperCase() + '  ·  ' : ''}DAY ${game.day}`, ax + 10, ry + 8); g.fillStyle = 'rgba(122,95,38,.7)'; g.font = '500 24px ui-monospace, Menlo, monospace'; g.fillText(dateStr, ax + 10, ry + 42);
-  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TAKO COVE', PW - M - 10, ry + 22); g.textAlign = 'left';
+  g.textAlign = 'right'; g.fillStyle = '#b08d3c'; g.font = '700 28px ui-monospace, Menlo, monospace'; g.fillText('🐚 TAKO TANK', PW - M - 10, ry + 22); g.textAlign = 'left';
   const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
   if (!blob) return ui.toast('Could not save the picture');
   const file = new File([blob], `our-tank-day-${game.day}.png`, { type: 'image/png' });
@@ -1936,7 +1936,7 @@ async function boot() {
   if (game.shared) { setTimeout(() => pushRegister().catch(() => {}), 4000); navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.t === 'push-renew') pushRegister().catch(() => {}); }); }
 }
 window.__booted = false;
-boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); window.__load?.fail(e?.message === 'timeout' ? (navigator.onLine === false ? 'You are offline. Tako Cove needs a connection to reach your shared tank.' : 'Your shared tank did not answer in time. It is safe on the server.') : 'Something went wrong starting the tank.'); });
+boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); window.__load?.fail(e?.message === 'timeout' ? (navigator.onLine === false ? 'You are offline. Tako Tank needs a connection to reach your shared tank.' : 'Your shared tank did not answer in time. It is safe on the server.') : 'Something went wrong starting the tank.'); });
 window.__fishes = fishes; window.__toys = toys; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || document.hidden || (game.state?.flags?.tut ?? 0) < 5) return;      /* (seen: the tank open in front of someone) */ const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)

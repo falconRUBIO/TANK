@@ -1,9 +1,9 @@
-# Tako Cove: Loading Screen
+# Tako Tank: Loading Screen
 
 Screenshots: `docs/audit/loading/`. Check: `node tools/loading_check.mjs` (passes).
 
 ## The animation
-- **0–0.5 s:** deep teal water, with the TAKO COVE wordmark already in place (wide-tracked, a thin rule under it, no waves or bubbles). The reef is faint.
+- **0–0.5 s:** deep teal water, with the TAKO TANK wordmark already in place (wide-tracked, a thin rule under it, no waves or bubbles). The reef is faint.
 - **0.5–1.5 s:**
   - Two light shafts fade in and sway slowly.
   - About 30 small square motes drift upward, matching the tank's low-poly look.

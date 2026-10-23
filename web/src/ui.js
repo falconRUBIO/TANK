@@ -806,7 +806,7 @@ export function initUI({ game, social, cb }) {
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
       ${game.dev ? `<h4>Developer</h4><div class="group"><label class="row2"><span>Developer Tools</span><button class="tog" id="devtools">Open ›</button></label></div>` : ''}
       ${game.shared && !game.test ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Player ID<small>${esc(game.you?.userId ?? '')}</small></span><button class="tog" id="myid">Copy</button></label><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
-      <p class="dim foot">Tako Cove · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 13 Oct (seahorse families 2)</p></div>`,
+      <p class="dim foot">Tako Tank · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a> · build 13 Oct (seahorse families 2)</p></div>`,
   };
   // ── Developer Tools (only for the player ids the server lists; every step is checked again there) ──
   views.devtools = () => {

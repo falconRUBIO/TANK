@@ -1,4 +1,4 @@
-# Tako Cove: The First 60 Seconds — Audit, Recommendations, Newcomer Test
+# Tako Tank: The First 60 Seconds — Audit, Recommendations, Newcomer Test
 
 **Date:** 2026-10-22 · **Build:** `ca9195b` · Nothing in this document has been implemented yet.
 

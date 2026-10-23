@@ -11,6 +11,7 @@ export { swayTime };
 const C = (r, g, b) => new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
 const tint = (c, k) => C(c[0] * k, c[1] * k, c[2] * k);
 
+let bedAO = null; export const setBedAO = (list) => bedAO?.(list);
 export function patch(mat, { sway = false } = {}) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = swayTime;
@@ -192,16 +193,24 @@ export function buildEnvironment() {
     for (let j = 0; j < NZV; j++) for (let i = 0; i < NXV; i++) { const k = j * NXV + i; pos[k * 3] = XS[i]; pos[k * 3 + 2] = ZS[j]; }
     for (let j = 0; j < NZV - 1; j++) for (let i = 0; i < NXV - 1; i++) { const a = j * NXV + i, b = a + 1, c = a + NXV, d = c + 1; idx.push(a, c, b, b, c, d); }
     bedGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); bedGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); bedGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(NXV * NZV * 3), 3)); bedGeo.setIndex(idx); }
-  const bedMat = patch(new THREE.MeshStandardMaterial({ map: floorTex('sand'), vertexColors: true, roughness: 1 })), cau = { uCau: { value: null }, uCauT: { value: 0 }, uCauI: { value: 0.6 } };
+  const bedMat = patch(new THREE.MeshStandardMaterial({ map: floorTex('sand'), vertexColors: true, roughness: 1 })), cau = { uCau: { value: null }, uCauT: { value: 0 }, uCauI: { value: 0.75 }, uAO: { value: Array.from({ length: 40 }, () => new THREE.Vector4(0, 0, 0, 0)) } };
+  // the contact shadows under the decorations: x, z, strength, radius for up to 40 of them (decormgr tells us what stands where)
+  bedAO = (list) => { const A = cau.uAO.value; for (let i = 0; i < 40; i++) { const d = list[i]; if (d) A[i].set(d.x, d.z, d.k ?? 1, d.r); else A[i].set(0, 0, 0, 0); } };
   // sunlight through the moving surface, drawn on the sand: two layers of the caustic pattern drifting different ways, warm and pale,
   // strongest on the flat tops of the banks and the open floor, faint down the faces
   { const before = bedMat.onBeforeCompile; bedMat.onBeforeCompile = (sh) => { before(sh); Object.assign(sh.uniforms, cau);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vCauW; varying float vCauUp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvCauW = (modelMatrix * vec4(transformed, 1.0)).xyz; vec3 cn = mat3(modelMatrix) * objectNormal; vCauUp = cn.y / max(length(cn), 1e-4);');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uCau; uniform float uCauT, uCauI; varying vec3 vCauW; varying float vCauUp;')
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uCau; uniform float uCauT, uCauI; uniform vec4 uAO[40]; varying vec3 vCauW; varying float vCauUp;')
       .replace('#include <opaque_fragment>', `{ vec2 w = vCauW.xz;
           float c1 = texture2D(uCau, w * 0.31 + vec2(uCauT * 0.011, uCauT * 0.005)).r, c2 = texture2D(uCau, w * 0.43 + vec2(-uCauT * 0.007, uCauT * 0.009) + 0.37).r;
           float c = smoothstep(0.62, 0.95, c1) + smoothstep(0.66, 0.98, c2) * 0.5, flatK = smoothstep(0.5, 0.92, vCauUp), near = 1.0 - smoothstep(4.0, 9.0, length(w - vec2(0.0, 0.0)));
-          float add = clamp(c * uCauI * (0.25 + 0.75 * flatK) * near, 0.0, 1.0); outgoingLight += vec3(1.0, 0.94, 0.75) * add; }
+          float add = clamp(c * uCauI * (0.25 + 0.75 * flatK) * near, 0.0, 1.0); outgoingLight += vec3(1.0, 0.94, 0.75) * add;
+          // sand ripples: low ridges the water has combed into the open floor, each a shade lighter on its lit side and darker in its trough
+          float rip = sin(w.x * 5.2 + sin(w.y * 1.7 + w.x * 0.6) * 1.4 + w.y * 0.9) * 0.5 + 0.5; rip = floor(rip * 4.0 + 0.5) / 4.0;
+          outgoingLight *= mix(1.0, 0.93 + 0.1 * rip, flatK * near);
+          // contact shadow: the sand darkens under and just round each decoration standing on it
+          float ao = 1.0; for (int i = 0; i < 40; i++) { vec4 q = uAO[i]; if (q.w <= 0.0) continue; float dd = length(w - q.xy) / q.w; ao *= 1.0 - 0.42 * (1.0 - smoothstep(0.35, 1.0, dd)) * q.z; }
+          outgoingLight *= ao; }
         #include <opaque_fragment>`); }; bedMat.customProgramCacheKey = () => 'bed-caustics'; }
   const fl = new THREE.Mesh(bedGeo, bedMat);
   // the sun is in front: the banks' own shadows would fall behind them, out of sight, so the sand is left out of the shadow pass

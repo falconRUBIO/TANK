@@ -1,6 +1,6 @@
-# TAKO COVE — Full Game Loop (current build, 2026-10-23: after the hermit crab, toys, loading screen and Living Ecosystem Phase 1 passes)
+# TAKO TANK — Full Game Loop (current build, 2026-10-23: after the hermit crab, toys, loading screen and Living Ecosystem Phase 1 passes)
 
-Tako Cove is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
+Tako Tank is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
 
 ---
 
@@ -21,7 +21,7 @@ Coming back: the tank opens with nothing over it (see section 1a). One small lin
 
 ## 1a. Opening the app
 
-**Loading screen ("the cove wakes up").** Deep teal water, the TAKO COVE wordmark, light shafts fading in, drifting motes, a dark reef. At about 1.5 s a small octopus peeks over a rock, looks around, blinks and sinks back; it varies between opens, and sometimes doesn't come at all. Status lines follow the real loading steps: *Waking up the cove… → Finding your tank… → Checking on your friends…* (the shared tank's server state) *→ Bringing the reef to life…*. The tank fades in (0.42 s) only once the server state has arrived and full frames have drawn. Nobody is held back to watch the octopus. Slow or offline loading shows a plain reason and **Try again**.
+**Loading screen ("the cove wakes up").** Deep teal water, the TAKO TANK wordmark, light shafts fading in, drifting motes, a dark reef. At about 1.5 s a small octopus peeks over a rock, looks around, blinks and sinks back; it varies between opens, and sometimes doesn't come at all. Status lines follow the real loading steps: *Waking up the cove… → Finding your tank… → Checking on your friends…* (the shared tank's server state) *→ Bringing the reef to life…*. The tank fades in (0.42 s) only once the server state has arrived and full frames have drawn. Nobody is held back to watch the octopus. Slow or offline loading shows a plain reason and **Try again**.
 
 ### The first 60 seconds
 
@@ -223,4 +223,4 @@ No second currency, no leaderboards, no streak pressure, no animals dying or lea
 4. Is it clear to a new player what to do in the first 5 minutes?
 5. Do the animals feel like *individuals* to a player who never opens a profile?
 
-**Question for review:** If someone played Tako Cove for 30 days, what would make them genuinely care about their aquarium and want to keep playing, and what is the single most important thing to improve before the first real player test?
+**Question for review:** If someone played Tako Tank for 30 days, what would make them genuinely care about their aquarium and want to keep playing, and what is the single most important thing to improve before the first real player test?

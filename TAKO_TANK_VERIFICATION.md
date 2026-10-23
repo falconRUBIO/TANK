@@ -1,4 +1,4 @@
-# Tako Cove: Verification Before Outside Testers
+# Tako Tank: Verification Before Outside Testers
 
 **Date:** 2026-10-23 · Screenshots: `docs/audit/verify/`
 
@@ -160,7 +160,7 @@ What a new player sees, in order (screenshots `np_01` to `np_12`):
 
 ## Recommendation
 
-**Yes, Tako Cove is ready for its first 3–4 outside testers, after one check on your own iPhone (section 5).** The core loop works end to end:
+**Yes, Tako Tank is ready for its first 3–4 outside testers, after one check on your own iPhone (section 5).** The core loop works end to end:
 - open the app
 - see a live tank with nothing blocking it
 - feed with one tap

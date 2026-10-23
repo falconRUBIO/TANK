@@ -73,7 +73,7 @@ const scrub = () => new ShaderPass({ uniforms: { tDiffuse: { value: null } },
       gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : clamp(c, vec4(0.0), vec4(64.0)); }` });
 composer.addPass(scrub());
 // depth of field: sharp fish, soft painterly background (and a strong portrait blur when zoomed on a fish)
-export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00022, maxblur: 0.006 });
+export const bokeh = new BokehPass(scene, camera, { focus: 30, aperture: 0.00016, maxblur: 0.0032 })      // (a touch of depth, never mush: the far ruins and plants stay readable);
 export const hideForDepth = [halo, pool, shafts.group, beams.group, surf.mesh, snow.pts, bubbles.mesh, bubbles2.mesh, bg];
 const bokehRender = bokeh.render.bind(bokeh);
 bokeh.render = (...a) => { const was = hideForDepth.map((o) => o.visible); hideForDepth.forEach((o) => (o.visible = false)); bokehRender(...a); hideForDepth.forEach((o, i) => (o.visible = was[i])); };   // put back what was visible, never force things on
@@ -107,7 +107,8 @@ export const grade = new ShaderPass({
       vec2 d = vUv-vec2(.5,.38);
       float pool = smoothstep(.85,.05, length(d*vec2(1.25,.8)));                      // soft pool of light around the action
       c *= mix(1. - uPool*.5, 1.03, pool);
-      c *= mix(.78, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
+      c *= mix(.74, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
+      c = (c - .5) * 1.07 + .5;                                                         // a little more contrast: the voxels read as solid things, not pastel
       // PS1-style 15-bit color with ordered dither
       float levels = 31.;
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
@@ -119,9 +120,9 @@ composer.addPass(grade);
 
 // ── time of day ──
 export const TOD = {
-  morning:   { sat: 1.18, vib: 0.32, sunCol: 0xf2f0d0, sunI: 10.45, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.8, fog: 0x1e7896, fogNear: 28, fogFar: 66, bgTop: 0x62c8c8, bgBot: 0x116a88, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
-  afternoon: { sat: 1.22, vib: 0.35, sunCol: 0xffe8a4, sunI: 11.0, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.85, fog: 0x1a7398, fogNear: 28, fogFar: 66, bgTop: 0x5cc4cc, bgBot: 0x0e6284, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
-  evening:   { sat: 1.2, vib: 0.3, sunCol: 0xff9a78, sunI: 12.1, sunPos: [11, 9, 10], hemiSky: 0xd0a0b0, hemiGnd: 0x58404a, hemiI: 1.0, ambI: 0.32, rimCol: 0xffa0a0, rimI: 0.7, fog: 0x7a5a9c, fogNear: 22, fogFar: 62, bgTop: 0xff9ec0, bgBot: 0x6a52b0, lampI: 50, shaft: 0.2, surf: 0.4, exposure: 1.04, bloom: 0.3, glow: 1.4, tint: 0xfff0f0, pool: 0.2, warm: 1.2 },
+  morning:   { sat: 1.18, vib: 0.32, sunCol: 0xf2f0d0, sunI: 10.45, sunPos: [-9, 24, 10], hemiSky: 0x98b8b0, hemiGnd: 0x5a4c34, hemiI: 1.25, ambI: 0.4, rimCol: 0x8ad8ff, rimI: 0.8, fog: 0x1e7896, fogNear: 28, fogFar: 66, bgTop: 0x60c6c8, bgBot: 0x0d5878, lampI: 0, shaft: 0.24, surf: 0.4, exposure: 1.03, bloom: 0.12, glow: 0.3, tint: 0xf4fbff, pool: 0.2, warm: 0.6 },
+  afternoon: { sat: 1.22, vib: 0.35, sunCol: 0xffe8a4, sunI: 11.0, sunPos: [-6, 24, 12], hemiSky: 0xb0c8a8, hemiGnd: 0x6a5a38, hemiI: 1.5, ambI: 0.46, rimCol: 0x78ceff, rimI: 0.85, fog: 0x1a7398, fogNear: 28, fogFar: 66, bgTop: 0x58c0cc, bgBot: 0x0a4e70, lampI: 0, shaft: 0.26, surf: 0.47, exposure: 1.1, bloom: 0.12, glow: 0.4, tint: 0xfff8ec, pool: 0.2, warm: 1.0 },
+  evening:   { sat: 1.02, vib: 0.28, sunCol: 0xffb07a, sunI: 12.1, sunPos: [11, 9, 10], hemiSky: 0xd0a0b0, hemiGnd: 0x58404a, hemiI: 1.0, ambI: 0.32, rimCol: 0xffa0a0, rimI: 0.7, fog: 0x4c4a7e, fogNear: 22, fogFar: 62, bgTop: 0xe9a66e, bgBot: 0x2c3c78, lampI: 50, shaft: 0.2, surf: 0.4, exposure: 1.04, bloom: 0.3, glow: 1.4, tint: 0xfff2e4, pool: 0.2, warm: 1.2 },
   night:     { sat: 1.12, vib: 0.28, sunCol: 0x8aa4ff, sunI: 4.95, sunPos: [-4, 26, 9], hemiSky: 0x2c4690, hemiGnd: 0x0c1230, hemiI: 0.8, ambI: 0.24, rimCol: 0x4a78ff, rimI: 0.6, fog: 0x1a2868, fogNear: 18, fogFar: 54, bgTop: 0x4a5cc0, bgBot: 0x182060, lampI: 130, shaft: 0.16, surf: 0.15, exposure: 1.12, bloom: 0.39, glow: 3.0, tint: 0xeef2ff, pool: 0.15, warm: 0.2 },
 };
 export const cur = {}, ck = ['sunCol', 'hemiSky', 'hemiGnd', 'fog', 'bgTop', 'bgBot', 'tint', 'rimCol'];

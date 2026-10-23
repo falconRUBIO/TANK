@@ -5,6 +5,7 @@ import { buildItem, buildKeep, stampItem, itemOverlaps, placeGroup, disposeItem,
 import { placeable, levelAt } from './terrain.js';
 import { BOUNDS, growthOf } from '../game/rules.js';
 import { Bubbles } from './fx.js';
+import { setBedAO } from './env.js';
 
 const PICK = { station: [0.8, 1.1], cave: [1.2, 1.0], mangrove: [2.0, 2.4], sponge: [1.2, 1.0], rubble: [1.6, 0.3], clam: [0.8, 0.6], ledge: [2.4, 1.9], seagrass: [2.0, 1.4], grass: [0.8, 1.6], fern: [1.0, 1.8], sword: [0.8, 1.2], red: [0.8, 1.4], rock: [0.7, 0.4], boulder: [1.2, 0.8], starfish: [1.1, 0.3], wood: [1.8, 1.2], pillar: [0.7, 1.6], lantern: [0.7, 1.2], chest: [0.7, 0.5], torii: [1.8, 1.6], bamboo: [1.4, 3.0], anchor: [1.0, 2.4], bridge: [3.2, 1.4], crystal: [1.0, 2.8], moss: [0.5, 0.5], kelp: [0.8, 2.4], bubbler: [0.5, 0.5], shell: [0.7, 0.5], skull: [0.5, 0.7], arch: [1.8, 2.6], lighthouse: [1.0, 4.2], spire: [1.1, 4.8], brain: [0.8, 0.6], table: [1.0, 1.0], anemone: [0.6, 1.1], coconut: [1.36, 1.2], pot: [2.1, 1.7] };
 export const LANES = [-3.0, -0.4, 2.2];      // a likely spot on each level of the sand: the back bank, the terrace, the front floor
@@ -27,6 +28,8 @@ export class DecorMgr {
     for (const [id, b] of [...this.streams]) { const d = list.find((x) => x.id === id); if (!d) { this.scene.remove(b.mesh); this.streams.delete(id); } else { b.x = d.x; b.z = d.z; } }
     if (state) { this.grow(state); this.syncKeeps(state.keeps ?? []); }
     for (const [id, it] of [...this.items]) if (!seen.has(id) && this.preview?.id !== id) { if (!it.haul) stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1);      /* (one being carried is already out of the solids) */ this.scene.remove(it.group); disposeItem(it); this.items.delete(id); }
+    // the sand's contact shadows: one per thing standing on it, from its real footprint
+    { const b = new THREE.Box3(); setBedAO([...this.items.values()].filter((it) => !it.haul && it.group).slice(0, 40).map((it) => { b.setFromObject(it.group); const w = Math.max(b.max.x - b.min.x, b.max.z - b.min.z); return { x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, r: w * 0.55 + 0.15, k: Math.min(1, 0.4 + w * 0.3) }; })); }
   }
   // keepsakes from the octopus's adventures: tiny things on the sand, not solid, never picked up by a player
   syncKeeps(list) {

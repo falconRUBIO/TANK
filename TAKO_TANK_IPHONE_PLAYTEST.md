@@ -1,4 +1,4 @@
-# Tako Cove: iPhone Playtest
+# Tako Tank: iPhone Playtest
 
 **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v315** (Settings shows the build; pull to refresh twice).
 **Status: the physical-device test and the first-player test have NOT been run yet.** Sections 3 and 4 are blank forms to fill in. Nothing in them is a result.

@@ -44,7 +44,7 @@ Shared feeding (octopus and seahorse) is **out of scope by your decision**. Owne
 | P6 | **A week away kills an animal; two weeks kills all but the last.** The warnings only arrive late. | [sim] neglect_sim |
 | P7 | **The daily gift is per caretaker, into one shared wallet.** Four friends get four gifts (+8 a day). Bottles add +8 a day in a busy tank, but they cost what they pay, so the net is zero. | [code] rules.js:1123, `BOTTLE_PAY` |
 | P8 | **Many small rewards and pop-ups.** Each step below has its own toast: gift, checklist item (3/5/8), perfect day (+3), today's request (+4), a fish's wish every 6 hours (+4), visitor (+4), each feed (+1), level-ups, age milestones, the tank's weekly birthday (+8). | [code] 29 places that add shells |
-| P9 | **Naming:** the game calls itself "OUR TANK" in code, shares and notifications. You call it Tako Cove. | [code] main.js:78, push title |
+| P9 | **Naming:** the game calls itself "OUR TANK" in code, shares and notifications. You call it Tako Tank. | [code] main.js:78, push title |
 | P10 | **Quiet hours are fixed at 22:00–08:00** and can't be changed. | [code] push.mjs:41 |
 
 ## 3. Daily activity and reward audit
@@ -278,7 +278,7 @@ Each step can be released, tested and reverted on its own.
 - [ ] Room for eggs and babies in a full tank.
 - [ ] Neglect no longer kills: animals become unwell and recover. Old-age death stays.
 - [ ] The new onboarding order (section 7).
-- [ ] The game's name in invites, postcards and notifications: Tako Cove or Our Tank?
+- [ ] The game's name in invites, postcards and notifications: Tako Tank or Our Tank?
 - [ ] Hide a treat price: leave at 5 for now.
 
 
@@ -302,7 +302,7 @@ Each step can be released, tested and reverted on its own.
 | Hunger notifications | at about 70% hunger | only once an animal has started to suffer for it |
 | Coming up | the last day of a pregnancy | the whole pregnancy, and "___ and ___ are getting close: they may pair up" |
 | First minutes | straight to "Time for a snack" | a quiet moment, "Say hello" (hold the glass, the octopus comes), then the snack |
-| Name | OUR TANK | Tako Cove in invites, postcards, notifications, the home-screen name and the welcome screen |
+| Name | OUR TANK | Tako Tank in invites, postcards, notifications, the home-screen name and the welcome screen |
 
 **Re-simulated** (`tools/econ4.mjs`, `tools/neglect_sim.mjs`):
 

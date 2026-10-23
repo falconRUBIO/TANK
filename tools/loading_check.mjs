@@ -13,7 +13,7 @@ const shot = async (vp, name, opts = {}) => { const ctx = await b.newContext({ v
   return { p, ctx, st, errors }; };
 // 1. the sequence, with the game held back so every second of it can be seen
 { const r = await shot({ width: 390, height: 844 }, 'seq', { block: true, times: [{ at: 200, tag: '0_2s' }, { at: 1200, tag: '1_4s' }, { at: 700, tag: '2_1s' }, { at: 500, tag: '2_6s' }, { at: 2000, tag: '4_6s' }] });
-  ck('the cove alone, before the game code arrives: logo, status, no errors', /Waking up the cove/.test(r.st.txt) && !r.st.off && !r.errors.length, r.st); await r.ctx.close(); }
+  ck('the cove alone, before the game code arrives: logo, status, no errors', /Waking up the tank/.test(r.st.txt) && !r.st.off && !r.errors.length, r.st); await r.ctx.close(); }
 // 2. other phone sizes
 for (const [w, h, n] of [[320, 568, 'se'], [430, 932, 'promax']]) { const r = await shot({ width: w, height: h }, n, { block: true, times: [{ at: 2300, tag: 'peek' }] }); await r.ctx.close(); }
 // 3. reduced motion
@@ -28,6 +28,6 @@ for (const [w, h, n] of [[320, 568, 'se'], [430, 932, 'promax']]) { const r = aw
   await p.waitForTimeout(700); const gone = await p.evaluate(() => getComputedStyle(document.getElementById('loading')).display); ck('then it is gone (not drawing behind the tank)', gone === 'none', gone);
   await p.screenshot({ path: out + 'tank_after.png' }); ck('no page errors', !errors.length, errors); await ctx.close(); }
 // 5. offline: a clear message and a retry, never a spinner for ever
-{ const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(); await p.route('**/src/main.js', (rt) => rt.fulfill({ contentType: 'application/javascript', body: '' })); await p.goto(base + '/?q=0'); await p.evaluate(() => window.__load.fail('You are offline. Tako Cove needs a connection to reach your tank.')); await p.screenshot({ path: out + 'offline.png' });
+{ const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(); await p.route('**/src/main.js', (rt) => rt.fulfill({ contentType: 'application/javascript', body: '' })); await p.goto(base + '/?q=0'); await p.evaluate(() => window.__load.fail('You are offline. Tako Tank needs a connection to reach your tank.')); await p.screenshot({ path: out + 'offline.png' });
   const e = await p.evaluate(() => ({ btn: document.getElementById('lretry').getBoundingClientRect().height > 20, txt: document.getElementById('lerrt').textContent })); ck('a failure shows a plain reason and a Try again button', e.btn && /offline/.test(e.txt), e); await ctx.close(); }
 await b.close(); console.log(fails ? fails + ' failed' : 'all passed'); process.exit(fails ? 1 : 0);

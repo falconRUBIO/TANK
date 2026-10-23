@@ -1,4 +1,4 @@
-# Tako Cove: the full game loop (for review)
+# Tako Tank: the full game loop (for review)
 
 A calm, shared aquarium for phones. One tank, up to four caretakers (friends or family). The animals live on a real clock: they get hungry, grow up, make friends, lay eggs, have babies and die of old age whether or not anyone has the app open. No ads, no streaks, one soft currency (shells).
 
