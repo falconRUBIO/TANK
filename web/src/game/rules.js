@@ -286,10 +286,10 @@ export const dailyFish = (now = Date.now()) => { const ids = Object.keys(SPECIES
 // For a tank it is picked to be useful: a kind already living there (so it can pair), carrying the color of the goal being worked on, or one
 // that a fish there already carries; with nothing to go on, the day's fish and a color of the day.
 export function specialOf(t, now = Date.now()) {
-  const day = Math.floor(now / DAY), cols = Object.keys(MORPHS), h = hash32(day * 41 + ((t?.createdAt ?? 0) % 997)), live = (t?.fish ?? []).filter((f) => !f.dead && !isOcto(f) && SPECIES_DEF[f.species]?.count === 1 && !SPECIES_DEF[f.species]?.visitor && (SPECIES_DEF[f.species]?.level ?? 99) <= (t?.level ?? 1));
+  const day = Math.floor(now / DAY), cols = Object.keys(MORPHS), h = hash32(day * 41 + ((t?.createdAt ?? 0) % 997)), live = (t?.fish ?? []).filter((f) => !f.dead && !isOcto(f) && !isCrab(f) && SPECIES_DEF[f.species]?.count === 1 && !SPECIES_DEF[f.species]?.visitor && (SPECIES_DEF[f.species]?.level ?? 99) <= (t?.level ?? 1));
   const goalCol = t?.goal && MORPHS[t.goal.id] ? t.goal.id : null, carried = live.flatMap((f) => allelesOf(f).filter((x) => MORPHS[x]).map((c) => [f.species, c]));
   const pick = goalCol ? carried.find(([, c]) => c === goalCol) ?? (live.length ? [live[h % live.length].species, goalCol] : null) : carried.length ? carried[h % carried.length] : live.length ? [live[h % live.length].species, cols[h % cols.length]] : null;
-  const open = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !isOcto({ species: k }) && !TURTLES.has(k) && SPECIES_DEF[k].count === 1 && (SPECIES_DEF[k].level ?? 99) <= (t?.level ?? 1));      /* (never a fish the tank's level has not opened yet) */
+  const open = Object.keys(SPECIES_DEF).filter((k) => !SPECIES_DEF[k].visitor && !isOcto({ species: k }) && !isCrab(k) && !TURTLES.has(k) && SPECIES_DEF[k].count === 1 && (SPECIES_DEF[k].level ?? 99) <= (t?.level ?? 1));      /* (never a fish the tank's level has not opened yet) */
   return pick ? { species: pick[0], color: pick[1] } : { species: open.length ? open[h % open.length] : dailyFish(now), color: cols[day % cols.length] };
 }
 export const specialColor = (now = Date.now(), t = null) => specialOf(t, now).color;
