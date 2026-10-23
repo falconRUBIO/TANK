@@ -1,4 +1,4 @@
-# TAKO COVE — Full Game Loop (current build, 2026-10-22, updated after the first-60-seconds and shop passes)
+# TAKO COVE — Full Game Loop (current build, 2026-10-23: after the hermit crab, toys, loading screen and Living Ecosystem Phase 1 passes)
 
 Tako Cove is a shared virtual aquarium for up to **4 caretakers** (friends or family on their own phones, joined with a 6-character code). You raise real sea animals with personalities, keep the tank healthy, and watch relationships, babies and stories happen. The aquarium itself is the main screen; menus slide up over it. The server holds the real tank state; every phone shows the same tank.
 
@@ -19,20 +19,16 @@ Coming back: the tank opens with nothing over it (see section 1a). One small lin
 
 ---
 
-## 1a. The first 60 seconds of opening the app (new this pass)
+## 1a. Opening the app
+
+**Loading screen ("the cove wakes up").** Deep teal water, the TAKO COVE wordmark, light shafts fading in, drifting motes, a dark reef. At about 1.5 s a small octopus peeks over a rock, looks around, blinks and sinks back; it varies between opens, and sometimes doesn't come at all. Status lines follow the real loading steps: *Waking up the cove… → Finding your tank… → Checking on your friends…* (the shared tank's server state) *→ Bringing the reef to life…*. The tank fades in (0.42 s) only once the server state has arrived and full frames have drawn. Nobody is held back to watch the octopus. Slow or offline loading shows a plain reason and **Try again**.
+
+### The first 60 seconds
 
 - **Nothing covers the tank automatically for the first 15 seconds**, or until the player's first touch. Pop-ups, banners, coach tips and toasts wait. Menus the player opens work at once.
 - **No blocking sick warning.** A sick animal shows calmly: the Care tab's dot, Care's to-do list, the Tank chart's "Best next step", and the animal's own pale look. The wording is *"Pip is unwell. Food and clean water will bring it back."* Nothing says an animal could die from neglect (only old age ends a life).
 - **One return-news line, not a replay.** The old on-tank "While you were away" replay is gone. If big things happened, one small line links to Today, which has the full list.
-- **The octopus's own greeting is the only greeting.** The old forced "favorite swims to the glass" is removed. About a second after the tank appears, each octopus answers by trust, personality and what it is doing (measured over 200 tries each, idle and awake):
-
-| Trust | Homebody | Watcher | Show-off | Explorer, collector, trickster |
-|---|---|---|---|---|
-| 0 (stranger) | carries on | carries on | carries on | carries on |
-| 1 | watches you from its den | from its den | from its den | from its den |
-| 2 | from its den | watches you | comes to the glass | glass about 45%, otherwise looks up |
-| 3 | from its den | comes to the glass | comes to the glass | glass about 68%, otherwise looks up |
-
+- **The octopus's own greeting is the only greeting.** About a second after the tank appears, each octopus answers by trust, personality and what it is doing. A stranger carries on. One that knows you watches from its den, or looks up at you. **Coming all the way to the glass is rare: about 1 open in 100.**
   A busy octopus (carrying a keepsake, hunting, at a puzzle, mid-trick) is left alone. A sleeping one that trusts you opens an eye.
 - **Tapping an animal says what it is really doing**, from its live state, e.g. *"Ink · at its den"*, *"guppy4 1 · swimming with guppy4 2, its best friend"*, *"Neo · cleaning Pip"*. If it is doing nothing notable, only the name shows; nothing is invented.
 - **A small reaction to a tap:** an octopus's eyes widen (and it flushes with color if it trusts you), a seahorse swivels an eye toward you, a fish gives a quick flick. Feeding, cleaning and following are never interrupted.
@@ -101,6 +97,22 @@ Every species is a real one, with real needs (shown on the Health screen with wh
 - **Tricks**: twirl at the glass (level 3, no equipment), ride the bubbles, swim through a gate. Taught in sessions, then performed on request if it trusts you and is in the mood.
 - Puzzle jars, a hide-a-treat game, lid-testing, camouflage, dens it moves into.
 
+### Hermit crabs (level 3+)
+- Three real species: blue-leg (level 3), scarlet (level 4) and halloween (level 6). They are the clean-up crew: they graze rocks and the sand, and slightly slow how fast the water ages.
+- **Six temperaments:** explorer, homebody, picky, bold, timid and collector. Each shows in how it moves.
+- **Shells are the heart of it.** A crab arrives in a small worn shell. As it grows, the shell gets tight, and it looks for an empty one that fits: it inspects it, tries it on, and may back off. Then it swaps, which is the fastest moment in the game. The **Shells** shop (Rose, Moon, Pearl, Tiger, Coral) puts empty shells in the tank, but **the crab decides**; the player never assigns one. The first crab comes with a free Ivory shell.
+- **Vacancy chains:** small crabs queue by a shell too big for them. When the big crab moves up, the next one takes the shell it left.
+- Crabs molt, buried for a while; you can see the shed skin. If nothing fits for a day, a crab digs up a plain shell, and once per tank a rare ancient spiral turns up.
+- **Real behavior:** stop-and-go walking, grazing, smelling food before it lands, climbing rocks, resting together by day, more active at night.
+- **Both ways with other animals:**
+  - an octopus watches crabs and taps a tucked-in one's shell;
+  - puffers and turtles come to look;
+  - territorial fish see a crab off their patch;
+  - fish try to pinch its food.
+  
+  The crab pulls into its shell, remembers who frightened it, and gets used to animals over time. Nothing is ever harmed.
+- Its card shows temperament, favorite spot, likes, who it is often with, who it is wary of, and its shell history.
+
 ### Seahorses
 - Four real species (Yellow, Lined, Brazilian/Reidi, Dwarf); pair only with their own kind, **for life**.
 - Hold on to plants with their tails (mangrove roots, sea fans, seagrass…); have favorite holdfasts they return to.
@@ -115,9 +127,32 @@ Clownfish (anemone, pairs), chromis (shoal), gobies (burrow), royal gramma (cave
 
 ---
 
+## 5a. Toys (every animal knows them)
+Ball, bubbles, twist cube, hitching hoop, light spot. Each animal reacts in its own way:
+- **Fish** nose the ball, chase the bubbles and follow the light.
+- **An octopus** bats the ball, works the cube and pounces on the light.
+- **Seahorses** snap at bubbles and hang on the hoop.
+- **Turtles** shove the ball and cruise after the light.
+- **Crabs:** a timid one tucks in when the ball lands close; curious and bold ones walk up and poke it, watch the bubble stone, and reach for the light.
+
+Whoever joins in learns the toy a little more.
+
+## 5b. The living habitat (Living Ecosystem update, Phase 1 of 4)
+- **Every decoration offers something** (hidden from the player): shelter, climbing, holding on, rest, foraging, interest. A cave is a den and cover; a sea fan is a holdfast; live rock and rubble are foraging.
+- **Favorite places are earned.** Where a fish or turtle really spends its time becomes its favorite ("Nemo has taken to the reef cave"). If it spends its time elsewhere, it moves on. Remove the favorite and it misses it, searches, and later "has found a new favorite place." Homebodies stay loyal; curious ones roam. Octopuses, seahorses and crabs already had their own place memory.
+- **Cause and effect from building:**
+  - add a cave and shy fish dart into it when something big comes close (an octopus turns to watch them go);
+  - add anything new and curious fish come to look at it, while shy ones hang back.
+- **Still to build:**
+  - **Phase 2:** relationships from time spent together, routines, both-way reactions for every pair of species.
+  - **Phase 3:** a Field Journal and habitat notes in the app.
+  - **Phase 4:** levels 9–15, growing coral, a 30-day simulation.
+
 ## 6. The Shop (built around what the animals need)
 
 Decorations matter: each animal's needs name what helps.
+
+**Sea life** lists every octopus kind (common, day, two-spot, mimic) and every seahorse kind as its own card. The Field Guide does the same.
 
 **Tapping any item opens its card** (buying is the button on the card). Everything on the card is worked out from the game's own rules, not written by hand:
 - **In your tank now** (decorations): Tank Health before and after placing it (e.g. *32 → 36*), each animal whose wellbeing would rise and by how much, and which of its needs it meets (*"guppy4 1 · Something to explore · wellbeing +11"*), plus theme progress (*"Sunken Ruins theme: this makes it 2 of 3"*) or *"Completes the Coral Garden theme: every fish a little happier, +3 shells"*. If you already own some, it says *"You have 2 · another one would do"*, because a second copy often adds less or nothing.
@@ -180,10 +215,10 @@ No second currency, no leaderboards, no streak pressure, no animals dying or lea
 
 ## 11. Known gaps and open questions (for review)
 
-1. After level 8 nothing new unlocks yet (levels 9–20 are planned, not built). Breeding, turtles, goals and stories carry the late game.
+1. After level 8 nothing new unlocks yet. Levels 9–15 are planned as habitat-focused, in Living Ecosystem Phase 4. Breeding, turtles, goals and stories carry the late game.
 2. The first real-player test on iPhone has not happened yet; all checks so far are simulations and a headless browser (which draws about 0.3 frames per second, so timings and the small tap reactions are not verified on screen).
-6. Known test failures that predate this pass: three in `loop_check` and two in `care_check` (Care screen wording, the hungry-octopus glass visit), and three in `playthrough` (feeding pays a shell, shells fly to the counter, one plant shows as free). They fail the same way on the code from before these changes.
-7. Not done yet: a clean re-recording of the opening after the last quiet-window fix.
+6. All 95 unit tests pass. The browser drills that were failing were updated: they expected old wording or rules. One real bug was fixed (the hungry octopus never came to ask for food). `glass_check` still expects frequent glass visits and needs updating to the new 1-in-100 rate.
+7. Living Ecosystem Phases 2–4 are not built yet (see 5b).
 3. Are care requirements rewarding or repetitive after week 3?
 4. Is it clear to a new player what to do in the first 5 minutes?
 5. Do the animals feel like *individuals* to a player who never opens a profile?
