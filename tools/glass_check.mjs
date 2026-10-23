@@ -13,7 +13,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now();
 await p.waitForTimeout(2500);
 const res = [];
 for (let run = 0; run < 3; run++) {
-  const r = await p.evaluate(() => { window.__simClock(true); const F = window.__fishes, f = F.byId.get('o1'); F.rng = () => 0.3; f.greeted = null; f.inspect = null; f.task = null; F.greet();
+  const r = await p.evaluate(() => { window.__simClock(true); const F = window.__fishes, f = F.byId.get('o1'); F.rng = () => 0.005;      /* (the rare full visit: about one open in a hundred) */ f.greeted = null; f.inspect = null; f.task = null; F.greet();
     let maxJ = 0, maxZ = 0, at = null; const step = () => { const was = f.pos.clone(); F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); return f.pos.distanceTo(was); };
     for (let i = 0; i < 1400; i++) { const d = step(); maxZ = Math.max(maxZ, f.pos.z); if (i > 2 && d > maxJ) { maxJ = d; at = [i, f.st?.s, !!f.glassAt, +f.pos.z.toFixed(2)]; } }
     return { maxJ: +maxJ.toFixed(3), maxZ: +maxZ.toFixed(2), at, greeted: f.greeted }; });

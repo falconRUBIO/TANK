@@ -1081,7 +1081,8 @@ export class Fishes {
       }
       f.coverT = Math.max(0, (f.coverT ?? 0) - 0.5);
       if (this.fresh?.length && (k === 'fish' || k === 'turtle' || k === 'bottom') && !(f.lookedNew > performance.now())) { const q = this.fresh.find((x) => x.until > performance.now() && !(f.sawNew ||= new Set()).has(x.d.id));
-        if (q) { f.sawNew.add(q.d.id); if (Math.random() < 0.15 + 0.6 * T.roam - 0.3 * T.cover) { const d = q.d; f.target.set(d.x + (Math.random() - 0.5) * 0.6, Math.max(sandH(d.x, d.z) + 0.8, 1), d.z + 0.6); f.retarget = 4; f.lookedNew = performance.now() + 20e3; f.thought = `Came to look at the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()}`; } } }      // a curious one comes to look; a shy one hangs back
+        if (q) { f.sawNew.add(q.d.id); if (Math.random() < 0.15 + 0.6 * T.roam - 0.3 * T.cover) { const d = q.d; f.target.set(d.x + (Math.random() - 0.5) * 0.6, Math.max(sandH(d.x, d.z) + 0.8, 1), d.z + 0.6); f.retarget = 4; f.lookedNew = performance.now() + 20e3; f.thought = `Came to look at the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()}`; }
+          else if (T.cover >= 0.5 && Math.random() < 0.6) { const d = q.d, a = Math.atan2(f.pos.z - d.z, f.pos.x - d.x); f.target.set(d.x + Math.cos(a) * 2.3, Math.max(sandH(d.x, d.z) + 1.4, 1.6), d.z + Math.sin(a) * 2.3); f.retarget = 5; f.idle = 3; f.lookedNew = performance.now() + 20e3; f.thought = `Watching the new ${(DECOR_DEF[d.type]?.label ?? 'thing').toLowerCase()} from a distance`; } } }      // a shy one keeps its distance and watches      // a curious one comes to look; a shy one hangs back
     }
   }
   update(dt, t) {

@@ -1182,6 +1182,7 @@ function doingOf(f) {
     if ((f.sleepK ?? 0) > 0.5) return 'asleep';
     if (f.den && Math.hypot(f.pos.x - f.den.x, f.pos.z - f.den.z) < 1.4) return f.greeted === 'den' && (f.gazeT ?? 0) > 0 ? 'watching you from its den' : S?.s === 'rest' ? 'resting in its den' : 'at its den';
     if ((f.costumeK ?? 0) > 0.5 && f.costume) return { lion: 'pretending to be a lionfish', jelly: 'pretending to be a jellyfish', snake: 'pretending to be a sea snake', flat: 'lying flat as a sole', kelp: 'pretending to be seaweed', fish: 'copying a fish' }[f.costume] ?? null;
+    if (f.gazeTurn) return 'looking at you';
     if (S?.s === 'crawl' && S?.mode === 'inspect') return 'investigating something'; return S?.s === 'rest' ? 'resting' : null;
   }
   if (f.sk === 'seahorse') {
@@ -1190,6 +1191,8 @@ function doingOf(f) {
       return near ? `resting beside ${f.rec?.sex === 'm' ? 'his' : f.rec?.sex === 'f' ? 'her' : 'its'} mate` : `holding on to the ${decorLabel(f.holdfast.id) ?? 'plant'}`; }
     if (f.seeking) return 'going after food'; return f.sleepy ? 'asleep' : null;
   }
+  if ((f.coverT ?? 0) > 0 && f.thought?.startsWith('Took cover')) return f.thought.replace('Took cover', 'taking cover');      // (the sensing layer, fishmgr.senseTick)
+  if ((f.lookedNew ?? 0) > performance.now() && /^(Came to look|Watching the new)/.test(f.thought ?? '')) return f.thought.replace(/^Came to look/, 'looking').replace(/^Watching/, 'watching');
   if (f.clean?.o) return `cleaning ${nm3(f.clean.o) ?? 'a fish'}`;
   if (f.sk === 'neongoby' && f.perch && (f.mul ?? 1) < 0.3) return `waiting at its ${decorLabel(f.perch) ?? 'station'}`;
   if (f.graze) return 'grazing algae'; if (f.seeking) return 'eating';

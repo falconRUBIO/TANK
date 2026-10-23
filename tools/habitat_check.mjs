@@ -35,5 +35,12 @@ ck('a curious fish comes to look at the new treasure chest', /new treasure chest
 // 4. habitat notes come from what is really there
 const notes = await p.evaluate(async () => (await import('/src/game/habitat.js')).habitatNotes(window.__game.state));
 ck('the habitat notes say what the tank really offers (an octopus has the cave to den in)', notes.some((n) => /octopus/i.test(n.text)), notes);
+// 5. readability: an octopus that looks at you turns its whole body to the glass; a shy fish watches a new thing from a distance
+const turn = await p.evaluate(() => { const F = window.__fishes, o = F.list.find((x) => x.sk === 'octopus'); o.heading = 1.2; o.st = { ...(o.st ?? {}), s: 'rest', mode: null, t: 20 }; o.hunt = null; o.task = null; o.jarAt = null; o.inspect = null;
+  let n = 0; for (let i = 0; i < 80; i++) { o.gazeT = 3; F.update(0.05, i * 0.05); o.update(0.05, Math.random, F.list); if (o.gazeTurn) n++; } const d = Math.atan2(Math.sin(-Math.PI / 2 - o.heading), Math.cos(-Math.PI / 2 - o.heading)); return { off: +Math.abs(d).toFixed(2), turning: n, s: o.st?.s }; });
+ck('an octopus looking at you turns its body to face the glass (not just its pupils)', turn.turning > 20 && turn.off < 0.5, turn);
+const shy = await p.evaluate(async () => { const g = window.__game, F = window.__fishes, f = F.list.find((x) => x.name === 'Blue') ?? F.list.find((x) => x.name === 'Nemo'); f.temper = { keep: 0.5, roam: 0.05, cover: 1 }; f.sawNew = null; f.lookedNew = 0; await g.dispatch({ t: 'buyDecor', type: 'anchor', x: -0.5, z: 0.4, ry: 0 }); await new Promise((r) => setTimeout(r, 300));
+  f.pos.set(1.5, 2, 0.5); f.senseT = 0; const r0 = Math.random; Math.random = () => 0.3; F.senseTick(0.05); Math.random = r0; const a = g.state.decor.find((d) => d.type === 'anchor'); return { thought: f.thought, dist: +Math.hypot(f.target.x - a.x, f.target.z - a.z).toFixed(1) }; });
+ck('a shy fish watches the new anchor from a distance instead of swimming up to it', /from a distance/.test(shy.thought ?? '') && shy.dist > 1.8, shy);
 ck('no page errors', !errors.length, errors);
 await b.close(); console.log(fails ? fails + ' failed' : 'all passed'); process.exit(fails ? 1 : 0);
