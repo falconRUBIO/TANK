@@ -23,7 +23,7 @@ const HOUSE = { casual: ['casual'], regular: ['regular'], engaged: ['engaged'], 
 // Field Guide pages, by how often a watcher catches them (per minute watched, when the animal for it lives in the tank); an assumption
 const FIELD_RATE = { glass: 0.02, camo: 0.012, ink: 0.006, squirt: 0.004, bury: 0.006, flat: 0.003, kelp: 0.003, lion: 0.002, jelly: 0.002, snake: 0.0015, fish: 0.002, smack: 0.004, arms: 0.003, ball: 0.004, eggchase: 0.01, chased: 0.004 };
 
-const M_KEYS = ['spire open', 'spire affordable', 'bought spire', 'first fish bought', 'first Field Guide page', 'first mystery', 'first decision', 'first pairing', 'first eggs', 'first hatching', 'first adult raised', 'first raised temperament', 'first octopus adventure', 'first rare color', 'first goal done', 'second generation adult', 'level 2', 'level 3', 'level 4', 'level 5', 'level 6', 'level 7', 'level 8'];
+const M_KEYS = ['spire open', 'spire affordable', 'bought spire', 'first fish bought', 'first Field Guide page', 'first mystery', 'first decision', 'first pairing', 'first eggs', 'first hatching', 'first adult raised', 'first raised temperament', 'first octopus adventure', 'first rare color', 'first goal done', 'second generation adult', 'level 2', 'level 3', 'level 4', 'level 5', 'level 6', 'level 7', 'level 8', 'first hermit crab', 'first seahorse pair', 'first seahorse birth', 'second octopus', 'sanctuary done', 'first turtle bought', 'first turtle released', 'second turtle released', 'theme kelp', 'theme coral', 'theme ruins', 'theme lanterns'];
 function rng(seed) { let x = seed * 2654435761 >>> 0 || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
 
 function run({ crew, profile, days, seed }) {
@@ -118,6 +118,10 @@ function run({ crew, profile, days, seed }) {
     const S = t.stats ?? {}, live = t.fish.filter((f) => !f.dead);
     if ((t.eggs ?? []).length || S.octoEggs) mark('first eggs'); if (S.hatched) mark('first hatching'); if (S.grewHere) mark('first adult raised');
     if (t.fish.some((f) => f.raisedAs)) mark('first raised temperament'); if ((t.adv?.hist ?? []).some((h) => h.fish)) mark('first octopus adventure');
+    // the progression audit's milestones: crabs, seahorse pairs and births, a second octopus, the sanctuary goal, turtles and their releases, each reef theme
+    if (live.some((f) => ['blueleg', 'scarlet', 'halloween'].includes(f.species))) mark('first hermit crab'); if (live.some((f) => f.species === 'seahorse' && f.mate)) mark('first seahorse pair'); if (t.nursery || live.some((f) => f.species === 'seahorse' && (f.parents?.length || f.bornHere))) mark('first seahorse birth');
+    if (live.filter((f) => R.isOcto(f)).length >= 2) mark('second octopus'); if ((t.goalsDone ?? []).some((g) => g.id === 'sanctuary')) mark('sanctuary done'); if (live.some((f) => R.TURTLES.has(f.species)) || (t.orders ?? []).some((o) => R.TURTLES.has(o.species))) mark('first turtle bought'); if (R.releasedCount(t) >= 1) mark('first turtle released'); if (R.releasedCount(t) >= 2) mark('second turtle released');
+    for (const k of Object.keys(t.flags?.themes ?? {})) mark('theme ' + k);
     if (S.morphs) mark('first rare color'); if ((t.goalsDone ?? []).length) mark('first goal done'); if (live.some((f) => (f.gen ?? 0) >= 2 && R.stageOf(f, now) === 'adult')) mark('second generation adult');
     for (let lv = 2; lv <= 8; lv++) if (t.level >= lv) mark('level ' + lv);
   }
