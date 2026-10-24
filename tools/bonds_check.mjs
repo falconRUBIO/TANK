@@ -36,7 +36,7 @@ for (const id of ['o1', 'h1', 'h3']) {
   await p.evaluate((id) => { window.__game.profTab = 'over'; window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(id))); }, id); await p.waitForTimeout(500);
   await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
   const c = await p.evaluate(() => { const el = document.getElementById('card'); return { text: el?.innerText ?? '', wide: el ? el.scrollWidth > el.clientWidth + 1 : true }; });
-  await p.screenshot({ path: `${out}/card_${id}.png` });
+  await p.screenshot({ path: `${out}/card_${id}.png`, timeout: 90000 }).catch((e) => console.log('  (screenshot skipped: ' + String(e.message).split('\n')[0] + ')'));      // (a picture for the eye, not a check: a slow headless frame must not fail the drill)
   const want = { o1: /Partner.*Miso/, h1: /Companion.*Pip.*7 morning dances/, h3: /Getting to know.*Reef/ }[id];
   ck(`${id} card shows the bond`, want.test(c.text.replace(/\n/g, ' ')), c.text.match(/(Partner|Companion|Getting)[^\n]*/)?.[0] ?? c.text.slice(0, 120));
   ck(`${id} card fits the screen`, !c.wide);
