@@ -1,4 +1,4 @@
-// The Collection tab's fish list and selling a fish, plus what the Care meters say about when things are due. Needs the solo game on 8123.
+// Crew's Your animals list and selling a fish, plus what the Care meters say about when things are due. Needs the solo game on 8123.
 // node tools/sell_check.mjs OUTDIR
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 import fs from 'node:fs';
@@ -21,10 +21,10 @@ console.log('  care says', JSON.stringify(meters)); await p.screenshot({ path: `
 // (the Care meters gave way to the Health list: when the next meal is due is on the Feed row and on each animal's card)
 const careTxt = await p.evaluate(() => document.querySelector('#sheet').textContent);
 ck('Care has the tank upkeep row and an Animal health row', /Tank upkeep/.test(careTxt) && /Animal health/i.test(careTxt) && !!(await p.evaluate(() => document.querySelector('#sheet [data-act="healthopen"]'))));
-// 2. Collection lists the fish in the tank, the octopus first
+// 2. Your animals lists the fish in the tank, the octopus first
 await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });
-ck('Collection lists every fish in the tank, the octopus first, each with Sell', list.length === 2 && /^Inky/.test(list[0]) && list.every((t) => /Sell$/.test(t)));
+ck('Your animals lists every fish in the tank, the octopus first, each with Sell', list.length === 2 && /^Inky/.test(list[0]) && list.every((t) => /Sell$/.test(t)));
 // 3. selling Nori: a clear question with the price, then gone, and the shells added
 await p.click('#sheet [data-sellfish=g1]'); await p.waitForTimeout(400); const q = await p.evaluate(() => document.getElementById('modal')?.textContent ?? ''); await p.screenshot({ path: `${out}/sell_ask.png` });
 ck('it asks first and says what it pays', /SELL NORI\?/i.test(q) && /You get 6 shells/.test(q) && /Sell for 6/.test(q), q.slice(0, 160));

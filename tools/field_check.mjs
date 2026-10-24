@@ -1,5 +1,5 @@
 // The Field Guide is retired: a remarkable moment still writes its own journal line, but no page fills, nothing says "Field Guide",
-// and the bell's second tab is the Collection (goals, colors, families). Needs the solo game on 8123.   node tools/field_check.mjs
+// and Our Tank's third tab is the Guide (goals, colors, what the animals have shown you, every kind met). Needs the solo game on 8123.   node tools/field_check.mjs
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 import fs from 'node:fs';
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/field'; fs.mkdirSync(out, { recursive: true });
@@ -19,6 +19,6 @@ await p.waitForTimeout(1500);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(1200);
 const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', fg: document.querySelectorAll('#sheet .fg').length }));
 await p.screenshot({ path: `${out}/collection.png`, timeout: 120000 }).catch(() => {});
-ck('the second tab is the Collection, with no Field Guide pages or hints', /Collection/.test(page.text) && !/Field Guide/.test(page.text) && page.fg === 0, page.text.slice(0, 200));
+ck('the Guide tab holds goals, colors and the kinds met, with no Field Guide pages or hints', /Guide/.test(page.text) && /Species and decorations/.test(page.text) && !/Field Guide/.test(page.text) && page.fg === 0, page.text.slice(0, 200));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
