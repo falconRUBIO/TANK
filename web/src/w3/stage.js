@@ -84,7 +84,7 @@ composer.addPass(bokeh); composer.addPass(scrub());
 export const bloom = new UnrealBloomPass(new THREE.Vector2(IW, IH), 0.3, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 export const grade = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 1 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 }, uWarm: { value: 1 }, uT: { value: 0 }, uSat: { value: 1.2 }, uVib: { value: 0.3 } },
+  uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(IW, IH) }, uDither: { value: 0.55 }, uTint: { value: new THREE.Color(1, 1, 1) }, uPool: { value: 0.5 }, uWarm: { value: 1 }, uT: { value: 0 }, uSat: { value: 1.2 }, uVib: { value: 0.3 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
   fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uDither; uniform vec3 uTint; uniform float uPool, uWarm, uT, uSat, uVib;
     const mat4 B = mat4(0.,8.,2.,10., 12.,4.,14.,6., 3.,11.,1.,9., 15.,7.,13.,5.);
@@ -113,7 +113,7 @@ export const grade = new ShaderPass({
       c *= mix(.74, 1., smoothstep(1.1,.3, length((vUv-.5)*vec2(1.0,.9))));          // vignette
       c = (c - .5) * 1.07 + .5;                                                         // a little more contrast: the voxels read as solid things, not pastel
       // PS1-style 15-bit color with ordered dither
-      float levels = 31.;
+      float levels = 44.;      // (finer steps than 31 and a quieter dither: it still breaks banding, it no longer reads as a dotted texture on a phone)
       vec3 q = c*levels + (bayer(floor(vUv*uRes)) - .5)*uDither;
       c = floor(q+.5)/levels;
       gl_FragColor = vec4(c,1.);

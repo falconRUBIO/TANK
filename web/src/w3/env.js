@@ -95,24 +95,33 @@ function buildBackdrop() {
     sh.moveTo(-60, -6); for (let x = -60; x <= 60; x += 2) sh.lineTo(x, top(x)); sh.lineTo(60, -6); sh.closePath();
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: col })); g.userData.mats.push(m.material); m.position.z = z; g.add(m);
   });
-  // far kelp and rock outcrops: hazy, low-contrast shapes that give the empty water depth without busying it
+  // far kelp and rock outcrops: hazy, low-contrast shapes that give the empty water depth without busying it.
+  // Three layers, each a step further into the haze (and a step bluer and dimmer: depth fog), every blade its own width, lean and tone,
+  // a few of them broken short, each swaying to its own beat, so the back wall reads as a kelp bed with distance in it, not a row of paper strips
   const lens = (yn) => 0.22 + 0.9 * Math.sin(Math.PI * Math.min(1, yn * 0.92 + 0.06)) ** 0.8;       // a blade: slim at the root, full in the middle, pointed at the tip
-  const kelp = [], seg = 12, rr = mulberry32(31);
-  const stalk = (x, z, h, w, layer) => {
+  const kelp = [], seg = 14, rr = mulberry32(31);
+  const stalk = (x, z, h, w, layer, lean = 0, broken = false) => {
     const geo = new THREE.PlaneGeometry(w, h, 1, seg), pos = geo.attributes.position, base = Float32Array.from(pos.array);
-    for (let i = 0; i < pos.count; i++) { const yn = (base[i * 3 + 1] + h / 2) / h; pos.setX(i, base[i * 3] * lens(yn)); pos.setY(i, base[i * 3 + 1] + h / 2); }
-    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x2a8a8a, transparent: true, opacity: layer ? 0.42 : 0.55, depthWrite: false, side: THREE.DoubleSide })); m.position.set(x, -1.2, z); m.renderOrder = -5 + layer; g.add(m);
-    kelp.push({ geo, base, h, ph: rr() * 6, amp: 0.8 + rr() * 0.7, m, layer }); g.userData.kelp.push(m.material);
+    for (let i = 0; i < pos.count; i++) { const yn = (base[i * 3 + 1] + h / 2) / h; pos.setX(i, base[i * 3] * lens(yn) * (broken ? 1 + 0.25 * yn : 1)); pos.setY(i, base[i * 3 + 1] + h / 2); }
+    const depth = [0.08, 0.3, 0.52][layer], m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x2a8a8a, transparent: true, opacity: [0.6, 0.5, 0.42][layer], depthWrite: false, side: THREE.DoubleSide })); m.position.set(x, -1.2, z); m.renderOrder = -6 + layer; g.add(m);
+    m.material.userData.depth = depth; m.material.userData.tone = 0.86 + rr() * 0.28;      // (how far into the haze it stands, and its own light or dark cast: no two blades the same)
+    kelp.push({ geo, base, h, ph: rr() * 6, amp: (0.55 + rr() * 0.8) * (1 - 0.35 * layer), rate: 0.38 + rr() * 0.3, lean: lean + (rr() - 0.5) * 0.5, m, layer }); g.userData.kelp.push(m.material);
   };
   g.userData.kelp = []; g.userData.rock = [];
-  for (const x of [-6.4, -4.8, -3.6, 3.7, 5.1, 6.6]) stalk(x + (rr() - 0.5) * 0.6, -11.5, 6 + rr() * 6, 0.42 + rr() * 0.18, 0);
-  for (const x of [-8.4, -6.6, -4.2, -1.4, 1.8, 4.4, 6.4, 8.6]) stalk(x + (rr() - 0.5) * 0.8, -17.5, 8 + rr() * 6, 0.62 + rr() * 0.22, 1);
+  for (const x of [-7.2, -5.6, -4.1, -2.4, 2.6, 4.0, 5.4, 7.0]) stalk(x + (rr() - 0.5) * 0.6, -9.5 + rr() * 1.2, 5 + rr() * 5.5, 0.4 + rr() * 0.2, 0, (rr() - 0.5) * 1.2, rr() < 0.2);
+  for (const x of [-8.6, -6.9, -5.0, -3.0, -0.8, 1.3, 3.4, 5.6, 7.4, 9.0]) stalk(x + (rr() - 0.5) * 0.8, -14 + rr() * 1.6, 7 + rr() * 6, 0.55 + rr() * 0.25, 1, (rr() - 0.5) * 1.4, rr() < 0.2);
+  for (const x of [-10, -7.6, -5.2, -2.6, 0.2, 2.8, 5.4, 7.8, 10.2]) stalk(x + (rr() - 0.5) * 1.0, -19.5 + rr() * 2, 9 + rr() * 7, 0.75 + rr() * 0.35, 2, (rr() - 0.5) * 1.6, rr() < 0.15);
+  // a low reef wall behind the sand, where the kelp is rooted: rockwork with a few fans standing up from it, so the floor does not just end in a line of water
+  { const sh = new THREE.Shape(); sh.moveTo(-30, -6); let x = -30; const rw = mulberry32(53); while (x < 30) { const w = 1.2 + rw() * 2.2, hgt = 3.2 + rw() * 2.4 + (Math.abs(x) > 6 ? 1.6 : 0);      /* (tall enough to show above the back bank: the sand ends against rock, not against open water) */ sh.lineTo(x + w * 0.3, hgt * 0.7 + rw() * 0.3); sh.lineTo(x + w * 0.55, hgt); sh.lineTo(x + w * 0.8, hgt * 0.6); x += w; sh.lineTo(x, 0.25 + rw() * 0.3); } sh.lineTo(30, -6); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0x3a5a78, transparent: true, opacity: 0.78, depthWrite: false })); m.position.set(0, -0.6, -8.6); m.renderOrder = -7; g.add(m); g.userData.rock.push(m.material); m.material.userData.wall = true;
+    for (const [fx, fs] of [[-6.8, 0.8], [-2.2, 0.55], [3.6, 0.7], [8.2, 0.9]]) { const f = new THREE.Shape(); f.moveTo(-0.15 * fs, 0); for (const [px, py] of [[-0.9, 1.1], [-1.2, 2.2], [-0.5, 2.0], [-0.3, 3.1], [0.3, 2.3], [0.9, 2.9], [1.1, 1.7], [0.5, 1.2], [0.15, 0]]) f.lineTo(px * fs, py * fs); f.closePath();
+      const fm = new THREE.Mesh(new THREE.ShapeGeometry(f), new THREE.MeshBasicMaterial({ color: 0x4a5a98, transparent: true, opacity: 0.6, depthWrite: false })); fm.position.set(fx, 3.0, -8.4); fm.renderOrder = -6; g.add(fm); g.userData.rock.push(fm.material); fm.material.userData.fan = true; } }
   for (const [cx, s2] of [[-8.5, 1], [9.2, -1]]) {
     const sh = new THREE.Shape(); sh.moveTo(cx - 3.5, -4); const pts = [[-2.4, 3.2], [-1.6, 6.5], [-0.8, 5], [0, 9.5], [0.9, 6.2], [1.7, 7.4], [2.6, 3.4], [3.4, 1.4]]; for (const [px, py] of pts) sh.lineTo(cx + px * s2, py); sh.lineTo(cx + 3.6, -4); sh.closePath();
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0x6a7ec8, transparent: true, opacity: 0.6, depthWrite: false })); m.position.z = -21; m.renderOrder = -6; g.add(m); g.userData.rock.push(m.material);
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0x6a7ec8, transparent: true, opacity: 0.6, depthWrite: false })); m.position.z = -21; m.renderOrder = -8; g.add(m); g.userData.rock.push(m.material);
   }
   g.userData.tick = (t) => {
-    for (const k of kelp) { const pos = k.geo.attributes.position; for (let i = 0; i < pos.count; i++) { const yn = k.base[i * 3 + 1] / k.h + 0.5, sw = Math.sin(t * 0.55 + k.ph + yn * 2.4) * k.amp * yn * yn * 1.1 + Math.sin(t * 0.3 + k.ph * 2) * 0.25 * yn; const wx = k.base[i * 3] * lens(yn); pos.setX(i, wx + sw); } pos.needsUpdate = true; }
+    for (const k of kelp) { const pos = k.geo.attributes.position; for (let i = 0; i < pos.count; i++) { const yn = k.base[i * 3 + 1] / k.h + 0.5, sw = Math.sin(t * k.rate + k.ph + yn * 2.4) * k.amp * yn * yn * 1.1 + Math.sin(t * 0.21 + k.ph * 2) * 0.22 * yn + k.lean * yn * yn; const wx = k.base[i * 3] * lens(yn); pos.setX(i, wx + sw); } pos.needsUpdate = true; }      // (each to its own beat, and leaning the way it grew)
   };
   return g;
 }
@@ -260,8 +269,8 @@ export function buildEnvironment() {
   const WATER = new THREE.Color(0x8fb4c8), DEEP = new THREE.Color(0x1d7894), KELP = new THREE.Color(0x2f9a8c); let backKey = 'candy', backLight = 1;
   const paintBack = () => {
     const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the color of deep water, with only a hint of the chosen backdrop
-    backdrop.userData.kelp.forEach((m, i) => m.color.setHex(pal[1]).lerp(KELP, 0.78).lerp(WATER, i < 6 ? 0.08 : 0.3).multiplyScalar(backLight * (i < 6 ? 0.78 : 0.9)));      // (darker and greener: distant kelp, not pale smears)
-    backdrop.userData.rock.forEach((m) => m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9));
+    backdrop.userData.kelp.forEach((m) => { const d = m.userData.depth ?? 0.3, tone = m.userData.tone ?? 1; m.color.setHex(pal[1]).lerp(KELP, 0.8).multiplyScalar(0.72 * tone).lerp(WATER, d * 0.85).multiplyScalar(backLight * (0.82 + 0.18 * d)); });      // (darker and greener near, sinking into the water's color with distance: depth fog)
+    backdrop.userData.rock.forEach((m) => { if (m.userData.wall) m.color.setHex(pal[2]).lerp(DEEP, 0.8).multiplyScalar(backLight * 0.42); else if (m.userData.fan) m.color.setHex(pal[0]).lerp(DEEP, 0.85).multiplyScalar(backLight * 0.5);      /* (rock and fans: dark shapes against the water, not pale ones) */ else m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9); });
   };
   const setStyle = (floor = 'sand', back = 'candy') => {
     buildBottom(BOTTOM[floor] ? floor : 'sand');

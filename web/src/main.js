@@ -1671,14 +1671,14 @@ function frameBody(now) {
   if (focus) {
     // frame the fish in the open water between the top bar and the profile card
     const H = window.innerHeight, cardTop = card.classList.contains('on') ? card.getBoundingClientRect().top : H - 150, topPx = 64, cy = topPx + Math.max(150, cardTop - topPx - 8) / 2;
-    const d = Math.max(6, focus.radius * 8.6), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const d = Math.max(9.5, focus.radius * 11.5), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     camGoal.set(focus.pos.x + 0.3, focus.pos.y - shift + 0.12, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - shift, focus.pos.z);
   }
   else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, stg.CAM_Y + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), stg.CAM_Z); lookGoal.set(0, stg.LOOK_Y, 0); }
   const close = !focus && fishes.list.find((f) => f.st?.s === 'glass' && f.glassAt?.close && f.pos.z > 8), fd = focus ? camera.position.distanceTo(focus.pos) : close ? camera.position.distanceTo(close.pos) : stg.CAM_Z;      // (an octopus up at your screen is the one in focus)
   bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * Math.min(1, dt * 4);
-  bokeh.uniforms.aperture.value += ((focus ? 0.0007 : 0.00022) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);
-  bokeh.uniforms.maxblur.value += ((focus ? 0.016 : 0.006) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
+  bokeh.uniforms.aperture.value += ((focus ? 0.00038 : 0.00018) - bokeh.uniforms.aperture.value) * Math.min(1, dt * 3);      // (a close-up keeps a little depth; it no longer turns the fish and everything round it to mush)
+  bokeh.uniforms.maxblur.value += ((focus ? 0.009 : 0.005) - bokeh.uniforms.maxblur.value) * Math.min(1, dt * 3);
   { const P = plantPush.value; let k = 0;      // the plants bend away from whoever is among them (not a seahorse holding on to one)
     { const Q = plantHold.value; let j = 0; for (const f of fishes.list) { const G = j < HOLD_N ? f.gripPoint?.() : null; if (G) Q[j++].set(G[0], G[1], G[2], SEAHORSE_GRIP_R * f.scale + 0.09); } for (; j < HOLD_N; j++) Q[j].set(0, -99, 0, 0); }      // where a seahorse holds on, the plant is still and the leaves make room for its tail
     for (const pass of [0, 1]) for (const f of fishes.list) { if (k >= PUSH_N) break; if (f.dead || (f.gripK ?? 0) >= 0.5 || (pass === 0) !== (f.species.move === 'jet') || (pass === 1 && f.pos.y > 8)) continue; P[k++].set(f.pos.x, f.pos.y, f.pos.z, f.radius * (f.species.move === 'jet' ? 0.75 : 0.55) * (f.group.scale.x || 1)); }
