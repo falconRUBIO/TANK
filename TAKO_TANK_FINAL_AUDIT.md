@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v325** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v326** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -71,6 +71,10 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 - **The tapped-fish close-up:** the camera used to move to about 6 units from the fish with a wide aperture, which is the smeared, ballooned clownfish in the phone screenshot. It now stops at 9.5 units (11.5 × the fish's radius for big ones) with a gentler depth of field (aperture 0.00038, max blur 0.009; the tank view's own blur eased from 0.00022/0.006 to 0.00018/0.005). Not verified visually: the headless capture cannot hold the close-up long enough.
 - **Grain:** the grade pass quantizes to 44 color steps instead of 31, with the dither at 0.55 instead of 1.0: it still breaks banding, it should no longer read as a dotted texture on a real screen (unverified on a phone).
 - **Fish depth:** the open-water floor dropped from y 6.3 to 4.8 and the bands for tang, goldfish, neon, angelfish, guppy, danio and betta came down. Measured, eight fish, three simulated minutes: time above y 9 (the top third under the HUD) **47 % → 20 %**, in the midwater (4–9) **51 % → 76 %**; neon and danio still keep high (60 %, 57 % above 9), the rest live mid.
+
+## 3d. HUD and night (this build)
+- **HUD:** the level/health rings and the gift bar sit on the same glass as the shell pill and the sheets (they were a separate flat dark pill); the fish pill's "doing" line trims with an ellipsis instead of pushing the button; no layout change.
+- **Night:** a real night rather than a brighter blue day: deeper water (background 0x2c3c8e → 0x0b1240), darker fog, a cool moon shaft (shaft 0.16 → 0.3, exposure 1.12 → 0.98), the sand gone blue-grey, warmth down. `docs/audit/gfx_after_night.png`. The lamp, plankton glow and bioluminescence settings are untouched.
 
 ## 3b. Movement pass (how everything moves)
 Measured with the new `tools/motion_check.mjs` (the same scenario on the old code and this one, 20 simulation steps a second):
