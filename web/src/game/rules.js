@@ -77,7 +77,7 @@ export const DECOR_DEF = {
   pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 26,  level: 3, blurb: 'A little den on its side, just the right size to curl up in.' },
   urchin:   { label: 'Sea Urchin',    cat: 'ROCKS',      price: 24, level: 3, blurb: 'A long-spined urchin. Cardinalfish hover safely among its spines.' },
   seafan:   { label: 'Sea Fan',       cat: 'PLANTS',     price: 36, level: 4, blurb: 'A branching gorgonian. A seahorse\'s favorite thing to wrap its tail around.' },
-  clam:     { label: 'Maxima Clam',   cat: 'SPECIAL',    price: 150, level: 5, blurb: 'A living giant clam that filters the water all day. Water stays fresh about 50% longer.' },
+  clam:     { label: 'Maxima Clam',   cat: 'SPECIAL',    price: 110, level: 5, blurb: 'A living giant clam that filters the water all day. Water stays fresh about 50% longer.' },
   liverock: { label: 'Live Rock',     cat: 'ROCKS',      price: 50, level: 5, blurb: 'Reef rock alive with tiny copepods: a mandarin grazes it all day.' },
   ledge:    { label: 'Turtle Ledge',  cat: 'ROCKS',      price: 40, level: 7, blurb: 'A flat shelf of rock with a gap beneath: a sea turtle wedges itself under it to sleep.' },
   seagrass: { label: 'Sea Grass Bed', cat: 'PLANTS',     price: 30, level: 7, blurb: 'A meadow of long, ribbon-like sea grass. Green turtles graze it like a lawn.' },
