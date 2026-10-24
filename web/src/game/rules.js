@@ -1305,15 +1305,36 @@ export const TOY_LEARN = 5;
 export const toyKind = (f) => (isCrab(f) ? 'crab' : f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : ['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback'].includes(f.species) ? 'turtle' : 'fish');
 export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >= TOYS[k].unlock);
 // What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
-export const LEVEL_PRIZE = {
-  2: { kind: 'animal', title: 'New sea life', text: 'Yellow gobies, damselfish, royal grammas, cardinalfish and the neon goby cleaner can move in' },
-  3: { kind: 'play', title: 'Tricks and bubbles', text: 'Teach your octopus tricks, and a bubble stone for the Toy box' },
-  4: { kind: 'animal', title: 'Seahorses and the blue tang', text: 'Seahorses (they pair for life, and the father carries the young), the emperor angelfish and the blue tang' },
-  5: { kind: 'play', title: 'New habitats and toys', text: 'Live rock and the mandarin dragonet that grazes it, the giant clam that filters the water, a twist cube for the octopus and a hitching hoop for seahorses' },
-  6: { kind: 'animal', title: 'Puffer, anthias and a second octopus', text: 'The valentini puffer, pink anthias, and a second octopus of any of four kinds' },
-  7: { kind: 'play', title: 'A turtle sanctuary corner', text: 'Get ready for turtles: a sanctuary goal to prepare the tank, the Turtle Ledge and Sea Grass Bed, and a light spot to play with' },
-  8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and release back to the ocean' },
+// ── what each level opens ── read from the tables themselves (species and decorations carry their own level, toys their unlock), plus the
+// ways to play that have no shop entry. The road on the Tank chart and the level-up dialog are built from this, so they cannot drift from the shop.
+export const LEVEL_FEATURES = {
+  1: ['Your own octopus', 'The daily mystery in the sand', 'Requests and rare visitors', 'Fish pair up and breed', 'Reef themes, floors and backdrops'],
+  2: ['The Crew tab: friends, your animals, the journal', 'The Shop\'s NEW tab'],
+  3: ['Teach your octopus tricks', 'Empty shells for hermit crabs to grow into', 'Octopus adventures, once the tank is a week old'],
+  4: ['Seahorses pair for life; the father carries the young'],
+  5: ['The Maxima Clam keeps the water clean for longer'],
+  6: ['A second octopus of any of four kinds'],
+  7: ['The turtle sanctuary goal: prepare the tank for its first turtle', 'A wild turtle may pass far behind the kelp'],
+  8: ['Raise a rescued hatchling and release it to the ocean; it comes back to visit', 'The tank\'s first turtle is 120 shells after the sanctuary goal', 'The hawksbill opens after a release'],
 };
+export function levelOpens(l) {
+  const species = Object.entries(SPECIES_DEF).filter(([, d]) => d.level === l && !d.visitor).map(([id, d]) => ({ id, label: d.label, price: d.price, count: d.count ?? 1, needRel: d.needRel ?? 0 }));
+  const decor = Object.entries(DECOR_DEF).filter(([, d]) => d.level === l && !d.earned && d.price > 0).map(([id, d]) => ({ id, label: d.label, price: d.price, cat: d.cat }));
+  const toys = Object.entries(TOYS).filter(([, T]) => T.unlock === l).map(([id, T]) => ({ id, label: T.label, icon: T.icon }));
+  return { species, decor, toys, features: LEVEL_FEATURES[l] ?? [], room: LEVELS[l - 1]?.room ?? null };
+}
+const listOf = (a) => (a.length <= 1 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+export const prizeText = (l) => { const O = levelOpens(l), parts = [], dec = O.decor.filter((x) => x.cat !== 'SHELLS'), shells = O.decor.length - dec.length; if (O.species.length) parts.push(`${listOf(O.species.map((x) => x.label.toLowerCase()))} can move in`); if (O.toys.length) parts.push(`${listOf(O.toys.map((x) => x.label.toLowerCase()))} for the Toy box`); if (dec.length) parts.push(`${dec.length} new decoration${dec.length === 1 ? '' : 's'} (${dec.length > 3 ? dec.slice(0, 3).map((x) => x.label.toLowerCase()).join(', ') + ' and more' : listOf(dec.map((x) => x.label.toLowerCase()))})`); if (shells) parts.push('empty shells for hermit crabs'); const s = parts.join('; '); return s ? s[0].toUpperCase() + s.slice(1) : ''; };
+export const LEVEL_PRIZE = {
+  2: { kind: 'animal', title: 'New sea life' },
+  3: { kind: 'play', title: 'Tricks and bubbles' },
+  4: { kind: 'animal', title: 'Seahorses and the blue tang' },
+  5: { kind: 'play', title: 'New habitats and toys' },
+  6: { kind: 'animal', title: 'A bigger community' },
+  7: { kind: 'play', title: 'A turtle sanctuary corner' },
+  8: { kind: 'animal', title: 'Sea turtles' },
+};
+for (const [l, P] of Object.entries(LEVEL_PRIZE)) Object.defineProperty(P, 'text', { get: () => prizeText(+l), enumerable: true });      // (the text is always what the tables say today)
 export const favToy = (f) => { const e = Object.entries(f?.toys ?? {}).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 ? e[0] : null; };
 export const PUZZLE_COST = 3, PUZZLE_GAP = 3 * 3600e3, PUZZLE_SECS = [150, 75, 35, 15], PUZZLE_FIRST_REWARD = 3;
 export const puzzleSecs = (f) => PUZZLE_SECS[Math.min(PUZZLE_SECS.length - 1, f?.solved ?? 0)];
@@ -1839,7 +1860,7 @@ function leaveRequests(t, now, ev) {
 function levelCheck(t, now, ev) {
   milestones(t, now, ev);
   const lv = levelFor(scoreOf(t, now));
-  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; ev.push({ journal: `Our tank reached level ${lv}.${LEVEL_PRIZE[lv] ? ` New: ${LEVEL_PRIZE[lv].title.toLowerCase()}.` : ''}`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
+  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; (t.lvAt ||= {})[lv] = now; ev.push({ journal: `Our tank reached level ${lv}.${LEVEL_PRIZE[lv] ? ` New: ${LEVEL_PRIZE[lv].title.toLowerCase()}.` : ''}`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
 }
 const nextId = (t, p) => p + (t.seq = (t.seq ?? 10) + 1);
 const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);

@@ -1258,3 +1258,9 @@ ok('living aquarium: trust is per caretaker; fish spawners and seahorse parents 
   const f = t.fish[0]; for (let i = 0; i < 3; i++) R.applyAction(t, { t: 'pet', id: f.id }, { now: 2 * D + i * 5 * 60e3, name: 'Ana', uid: 'ana' });
   assert.ok(R.milestonesOf(f, 'ana').find((m) => m.key === 'trust').done, 'Ana, who petted it three times'); assert.ok(!R.milestonesOf(f, 'ben').find((m) => m.key === 'trust').done, 'not Ben, who never has');
 });
+ok('the road ahead reads the tables: every level opens what the shop says, the prize text follows, and the day a level is reached is kept', () => {
+  for (let l = 2; l <= R.LEVELS.length; l++) { const O = R.levelOpens(l); assert.ok(O.species.length + O.decor.length + O.toys.length + O.features.length > 0, 'level ' + l + ' opens something'); assert.equal(O.room, R.LEVELS[l - 1].room); for (const x of O.species) assert.equal(R.SPECIES_DEF[x.id].level, l); for (const x of O.decor) assert.equal(R.DECOR_DEF[x.id].level, l); }
+  assert.ok(/mandarin dragonet/i.test(R.LEVEL_PRIZE[5].text) && /twist cube/i.test(R.LEVEL_PRIZE[5].text) && !/giant clam/i.test(R.LEVEL_PRIZE[5].text), R.LEVEL_PRIZE[5].text); assert.ok(R.levelOpens(5).decor.some((x) => x.id === 'clam'), 'the Maxima Clam is a level 5 decoration');
+  assert.ok(/sea turtle/i.test(R.LEVEL_PRIZE[8].text) && /hawksbill/i.test(R.LEVEL_PRIZE[8].text)); assert.ok(/hermit crab/i.test(R.LEVEL_PRIZE[3].text) && /empty shells/i.test(R.LEVEL_PRIZE[3].text));
+  const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.xp = 60; R.advance(t, 3600e3); assert.ok(t.level >= 3, 'leveled'); assert.equal(t.lvAt[t.level], 3600e3, 'the moment it was reached is kept');
+});

@@ -1,0 +1,30 @@
+// The road ahead on the Tank chart: every level is tappable and its card says what that level really opens (from the shop tables),
+// where this tank stands with it, and shows thumbnails. Headless, against the solo static server on :8123.
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage(); let fails = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fails++; };
+const errs = []; p.on('pageerror', (e) => errs.push(String(e))); p.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errs.push(m.text()); });      // (the static solo server has no /api: that 404 is expected) p.on('response', (r) => { if (r.status() >= 400 && !/\/api\//.test(r.url())) errs.push(r.status() + ' ' + r.url()); });
+await p.goto('http://localhost:8123/?lite=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 60000 }); await p.click('#mok'); await p.waitForTimeout(600);
+await p.evaluate(async () => { const g = window.__game; g.state.level = 4; g.state.xp = 131; g.state.flags.tut = 5; g.state.lvAt = { 2: g.state.createdAt + 864e5, 3: g.state.createdAt + 3 * 864e5, 4: g.state.createdAt + 7 * 864e5 }; for (let i = 0; i < 3; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); await g.dispatch({ t: 'buyFish', species: 'cory', name: 'Gob', seed: 3, rush: true }, { dev: true }); await g.dispatch({ t: 'buyDecor', type: 'shell', x: 0, z: 1, ry: 0 }, { dev: true }); window.__ui.open('notices'); });
+await p.waitForTimeout(900); try { localStorage; } catch {} await p.evaluate(() => { try { localStorage.setItem('ourtank.chartSeen', '1'); } catch {} window.__ui.open('notices', true); }); await p.waitForTimeout(700);
+const road = await p.evaluate(() => [...document.querySelectorAll('#sheet .tc-road li')].map((li) => ({ l: li.querySelector('b')?.textContent, cls: li.className.trim(), btn: !!li.querySelector('button[data-lvl]') })));
+console.log(JSON.stringify(road)); ok(road.length === 8 && road.every((x) => x.btn), 'eight tappable level nodes');
+ok(road.find((x) => x.l === '4')?.cls.includes('now') && road.find((x) => x.l === '5')?.cls.includes('pick'), 'level 4 is "now", the next level\'s card is open by default');
+const card = async () => p.evaluate(() => { const c = document.querySelector('#sheet .tc-next'); return { small: c?.querySelector('small')?.textContent, title: c?.querySelector('.tc-nh b')?.textContent, status: c?.querySelector('.tc-nh p')?.textContent, chips: [...c?.querySelectorAll('.tc-chip b') ?? []].map((x) => x.textContent), subs: [...c?.querySelectorAll('.tc-chip small') ?? []].map((x) => x.textContent), feats: [...c?.querySelectorAll('.tc-feat') ?? []].map((x) => x.textContent), imgs: [...c?.querySelectorAll('img') ?? []].filter((i) => i.src.startsWith('data:') || i.src.startsWith('blob:')).length, got: c?.querySelectorAll('.tc-chip.got').length }; });
+let c = await card(); console.log(JSON.stringify(c).slice(0, 600));
+ok(c.small === 'LEVEL 5 · NEW WAY TO PLAY' && /New habitats/.test(c.title), 'level 5 card: ' + c.small + ' / ' + c.title);
+ok(/points away/.test(c.status) && /holds 19 animals/.test(c.status), 'status says how far and how much room: ' + c.status);
+ok(c.chips.includes('Mandarin Dragonet') && c.chips.includes('Twist cube') && c.chips.includes('Maxima Clam') && c.chips.includes('Live Rock') && !c.chips.some((x) => /Giant Clam/.test(x)), 'what level 5 really opens, from the tables');
+ok(c.imgs >= 5, `thumbnails rendered (${c.imgs})`);
+const sel = async (l) => { await p.evaluate((l) => document.querySelector(`#sheet [data-lvl="${l}"]`).click(), l); await p.waitForTimeout(600); return card(); };
+c = await sel(2); console.log(JSON.stringify(c).slice(0, 400));
+ok(/LEVEL 2/.test(c.small) && /Reached on day 2/.test(c.status), 'level 2: reached on day 2 (' + c.status + ')');
+ok(c.chips.includes('Yellow Goby') && c.subs.includes('in your tank') && c.chips.includes('Giant Clam') && c.subs.includes('placed') && c.got >= 2, 'the goby in the tank and the clam placed are marked');
+ok(c.feats.some((x) => /Crew tab/.test(x)), 'features listed');
+c = await sel(8); ok(/LEVEL 8 · NEW ANIMALS/.test(c.small) && c.chips.some((x) => /Hawksbill/.test(x)) && c.subs.includes('after a release') && /holds 28 animals/.test(c.status), 'level 8: turtles, the hawksbill after a release, 28 places');
+c = await sel(1); ok(/WHERE IT ALL STARTED/.test(c.small) && /Reached on day 1/.test(c.status) && c.chips.includes('Clownfish'), 'level 1: where it started');
+c = await sel(4); ok(/You are here/.test(c.status) && /to level 5/.test(c.status), 'level 4: you are here (' + c.status + ')');
+await p.evaluate(() => { const el = document.querySelector('#sheet .tc-level'); el.scrollIntoView({ block: 'start' }); }); await p.waitForTimeout(300);
+await sel(5); await p.screenshot({ path: (process.env.OUT ?? '/tmp') + '/road5.png' }); await sel(7); await p.screenshot({ path: (process.env.OUT ?? '/tmp') + '/road7.png' }); await sel(3); await p.screenshot({ path: (process.env.OUT ?? '/tmp') + '/road3.png' });
+ok(!errs.length, 'no console errors' + (errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''));
+await b.close(); console.log(fails ? `${fails} failed` : 'road_check passed');
