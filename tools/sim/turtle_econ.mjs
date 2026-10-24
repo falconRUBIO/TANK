@@ -5,6 +5,7 @@
 // affordable), spender (the list with nothing kept back, then any decoration it can afford, half of its visits).
 //   node tools/sim/turtle_econ.mjs [seeds=20] [days=120]
 import * as R from '../../web/src/game/rules.js';
+if (process.env.CLAM) R.DECOR_DEF.clam.price = +process.env.CLAM;      // (the Maxima Clam price experiment: CLAM=110)
 const H = 3600e3, D = 24 * H, SEEDS = +(process.argv[2] ?? 20), DAYS = +(process.argv[3] ?? 120), TURTLE = 'turtle';
 const START = ['grass', 'rock', 'coconut', 'cory', 'guppy', 'anemone'];
 const LIST = [...START, 'bubbler', 'neongoby', 'grass', 'seafan', 'seahorse', 'seahorse', 'tang', 'boulder', 'liverock', 'betta', 'clam', 'puffer', 'ledge', 'seagrass'];
@@ -19,12 +20,13 @@ const STRAT = {
   spender: { list: LIST, keep: 0, extra: 0.5 },
   'save+1crab': { list: CRAB1, keep: 15, turtleFirst: true, saveFrom: 7 },
   'save+2crabs': { list: CRAB2, keep: 15, turtleFirst: true, saveFrom: 7 },
+  turtles: { list: LIST, keep: 15, turtleFirst: true, saveFrom: 7, again: true },      // after the first release it saves for and raises the next turtle it can, and the next: when the other species would open
 };
 export function run(strat, seed0) {
   let seed = seed0; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   const S = STRAT[strat], t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.createdAt = seed0 * 7919;
   t.fish.push(R.ensureFish({ id: 'oc', name: 'Ink', species: 'octopus', seed: 5, born: -20 * D, stage: 'adult', traits: [], owner: 'a' }));
-  const o = { l8: null, afford: null, bought: null, released: null, earned: 0, spent: 0, src: {}, seahorse: null };
+  const o = { l8: null, afford: null, bought: null, released: null, earned: 0, spent: 0, src: {}, seahorse: null, releases: [], buys: [], open: {} };
   let wi = 0; const price = R.SPECIES_DEF[TURTLE].price;
   for (let h = 1; h <= DAYS * 24; h++) { const now = h * H, day = h / 24;
     R.advance(t, now);
@@ -43,9 +45,13 @@ export function run(strat, seed0) {
     if (t.level >= 8 && t.shells >= price) o.afford ??= +day.toFixed(1);
     const buy = (id) => { const isF = !!R.SPECIES_DEF[id], s0 = t.shells; const r = isF ? R.applyAction(t, { t: 'buyFish', species: id, name: id + wi, rush: true, ...(id === 'seahorse' ? { sex: wi % 2 ? 'm' : 'f', kind: 'erectus' } : {}) }, u) : R.applyAction(t, { t: 'buyDecor', type: id, x: ((wi % 7) - 3) * 0.8, z: 0, free: id === 'cshell_ivory' }, u); if (r.ok) o.spent += s0 - t.shells; if (r.ok && id === 'seahorse') o.seahorse ??= +(now / D).toFixed(1); return r; };
     if (!o.bought && t.level >= 8 && t.shells >= price && (S.turtleFirst || wi >= S.list.length || S.keep === 0)) { const r = buy(TURTLE); if (r.ok) o.bought = +day.toFixed(1); }
+    if (S.again && o.released && t.level >= 8 && !t.fish.some((f) => R.isTurtle?.(f) && !f.dead) && !t.orders?.some((q) => R.TURTLES.has(q.species))) {      // the next turtle: whichever kind is open and affordable (the cheapest first)
+      const open = ['turtle', 'hawksbill', 'loggerhead', 'kemps'].filter((k) => R.releasedCount(t) >= (R.SPECIES_DEF[k].needRel ?? 0)).sort((a, b2) => R.SPECIES_DEF[a].price - R.SPECIES_DEF[b2].price);
+      for (const k of open) if (t.shells >= R.SPECIES_DEF[k].price) { const r = buy(k); if (r.ok) { o.buys.push([k, +day.toFixed(1)]); break; } } }
+    for (const k of ['hawksbill', 'loggerhead', 'kemps']) if (!o.open[k] && t.level >= 8 && R.releasedCount(t) >= (R.SPECIES_DEF[k].needRel ?? 0)) o.open[k] = +day.toFixed(1);
     const want = S.saveFrom && t.level >= S.saveFrom && !o.bought ? null : S.list[wi]; if (want) { const d = R.SPECIES_DEF[want] ?? R.DECOR_DEF[want]; if (t.level >= d.level && t.shells >= d.price + S.keep) { const r = buy(want); if (r.ok || !['NOT_ENOUGH_SHELLS', 'LEVEL_TOO_LOW'].includes(r.reason)) wi++; } }
     else if (!S.saveFrom && S.extra && rnd() < S.extra) { const id = EXTRA[Math.floor(rnd() * EXTRA.length)], d = R.DECOR_DEF[id]; if (d && t.level >= d.level && t.shells >= d.price) buy(id); }
-    const tu = t.fish.find((f) => R.isTurtle?.(f) && !f.dead); if (tu && !o.released) { const r = act({ t: 'releaseTurtle', id: tu.id }); if (r.ok) o.released = +day.toFixed(1); }
+    const tu = t.fish.find((f) => R.isTurtle?.(f) && !f.dead); if (tu && (!o.released || S.again)) { const r = act({ t: 'releaseTurtle', id: tu.id }); if (r.ok) { o.released ??= +day.toFixed(1); o.releases.push(+day.toFixed(1)); } }
   }
   return o;
 }
@@ -58,5 +64,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const r of rs) for (const [k, v] of Object.entries(r.src)) srcAll[k] = (srcAll[k] ?? 0) + v / (rs.length * 3);
     const gap = rs.map((r) => r.afford != null && r.l8 != null ? +(r.afford - r.l8).toFixed(1) : null);
     console.log(`| ${s} | ${med(rs.map((r) => r.seahorse)) ?? 'never'} | ${med(rs.map((r) => r.l8))} (${rng(rs.map((r) => r.l8))}) | ${med(rs.map((r) => r.afford)) ?? 'never'} (${rng(rs.map((r) => r.afford))}) | ${med(rs.map((r) => r.bought)) ?? 'never'} (${rng(rs.map((r) => r.bought))}) | ${med(gap) ?? '—'} (${rng(gap)}) | ${rs.filter((r) => r.bought).length}/${rs.length} | ${med(rs.map((r) => r.earned))} |`); }
+  if (process.env.GATES) { const rs = []; for (let k = 0; k < SEEDS; k++) rs.push(run('turtles', 1000 + k * 37));
+    console.log(`\nTurtle progression (turtles strategy, ${DAYS} days, ${SEEDS} seeds): median day (range)`); const col = (f) => `${med(rs.map(f)) ?? 'never'} (${rng(rs.map(f))})`;
+    console.log(`first turtle bought ${col((r) => r.bought)} · first release ${col((r) => r.releases[0] ?? null)} · second turtle bought ${col((r) => r.buys[0]?.[1] ?? null)} · second release ${col((r) => r.releases[1] ?? null)} · third release ${col((r) => r.releases[2] ?? null)}`);
+    console.log(`hawksbill opens ${col((r) => r.open.hawksbill)} · gap L8→hawksbill ${col((r) => (r.open.hawksbill != null && r.l8 != null ? +(r.open.hawksbill - r.l8).toFixed(1) : null))} · releases within ${DAYS}d: ${rs.map((r) => r.releases.length).join(',')}`); }
   console.log('\nShells by action, average per run over all strategies:', JSON.stringify(Object.fromEntries(Object.entries(srcAll).map(([k, v]) => [k, Math.round(v)]))));
 }

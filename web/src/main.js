@@ -52,7 +52,7 @@ const moonTexture = (ph) => { const c = document.createElement('canvas'); c.widt
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
 const moon = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, opacity: 0 })); moon.scale.set(1.5, 1.5, 1); moon.position.set(2.9, 12.4, -4); moon.renderOrder = 4; scene.add(moon); stg.hideForDepth.push(moon);
 const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(220,232,255,.55)'); gr.addColorStop(1, 'rgba(220,232,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); moonHalo.scale.set(5, 5, 1); moonHalo.position.copy(moon.position); moonHalo.renderOrder = 3; scene.add(moonHalo); stg.hideForDepth.push(moonHalo);
-let skyNow = null, moonK = 0, moonWant = 0;
+let skyNow = null, moonK = 0, moonWant = 0, wildT = 0;
 function applySky(phaseName) {
   const sk = skyOf(Date.now()), ev = qs.get('sky') || (sk.event?.key ?? null); const dark = phaseName === 'night' || phaseName === 'evening';
   moon.material.map = moonTexture(sk.phase); moon.material.needsUpdate = true; moonWant = phaseName === 'night' ? 1 : phaseName === 'evening' ? 0.55 : 0; skyNow = sk;
@@ -1409,7 +1409,8 @@ game.on('levelup', (lv) => {
   document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label), ...Object.values(TOYS).filter((T) => T.unlock === lv).map((T) => T.label + ' (Toy box)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
-  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: `Level ${lv}`, text: LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].text}. New for you:` : `New for you:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 5200);
+  const prepared = lv === 8 && (game.state?.goalsDone ?? []).some((g) => g.id === 'sanctuary');      /* (the sanctuary goal finished at level 7: the tank is ready for its first turtle) */
+  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: prepared ? 'Level 8: the sanctuary is ready' : `Level ${lv}`, text: prepared ? `Your tank is prepared: a ledge to sleep under, sea grass to graze. ${LEVEL_PRIZE[lv].text}. New for you:` : LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].text}. New for you:` : `New for you:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 5200);
 });
 game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arrival gets the screen to itself for a moment: tips and toasts wait
   for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
@@ -1716,6 +1717,8 @@ function frameBody(now) {
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
   simMs += (performance.now() - simT0 - simMs) * 0.05;
+  // a wild sea turtle passing far behind the tank, now and then from level 7 (a preview of level 8 and nothing more: no capacity, no care, no tap, no notice). About once in a long sitting
+  if ((game.state?.level ?? 1) >= 7 && !REDUCED && !stg.env.wildOn?.() && (wildT += dt) > 60) { wildT = 0; if (Math.random() < 1 / 22) stg.env.wildPass?.(t); }
   stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.motes?.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality} · sim ${simMs.toFixed(1)} ms\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }

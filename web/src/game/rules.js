@@ -18,24 +18,24 @@ export { genesOf };
 export const SPECIES_DEF = {
   goldfish:  { label: 'Clownfish',  price: 10,  level: 1, wait: 10, count: 1, blurb: 'Bold and curious. Loves a hiding place.', traits: ['Curious', 'Social', 'Brave', 'Playful', 'Greedy'], speed: 1.0 },
   neon:      { label: 'Blue Chromis', price: 20, level: 1, wait: 20, count: 4, blurb: 'A shimmering school of four.',        traits: ['Social', 'Playful'], speed: 1.3, school: true },
-  cory:      { label: 'Yellow Goby', price: 18, level: 2, wait: 60, count: 1, blurb: 'A tidy little reef sitter.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
-  blue:      { label: 'Royal Gramma', price: 28, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the reef.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
-  guppy:     { label: 'Damselfish', price: 18, level: 2, wait: 25, count: 2, blurb: 'A feisty, colorful pair.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
-  angelfish: { label: 'Emperor Angelfish', price: 40, level: 3, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
-  platy:     { label: 'Cardinalfish', price: 24, level: 3, wait: 40, count: 2, blurb: 'A gentle, glowing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
-  danio:     { label: 'Pink Anthias', price: 32, level: 4, wait: 60, count: 4, blurb: 'A pink school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
-  betta:     { label: 'Mandarin Dragonet', price: 52, level: 4, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
+  cory:      { label: 'Yellow Goby', price: 22, level: 2, wait: 60, count: 1, blurb: 'A tidy little reef sitter.',             traits: ['Shy', 'Lazy', 'Calm'], speed: 0.55 },
+  blue:      { label: 'Royal Gramma', price: 42, level: 2, wait: 90, count: 1, blurb: 'A shy jewel of the reef.',         traits: ['Shy', 'Lazy', 'Brave', 'Curious'], speed: 0.9 },
+  guppy:     { label: 'Damselfish', price: 26, level: 2, wait: 25, count: 2, blurb: 'A feisty, colorful pair.',   traits: ['Playful', 'Social', 'Curious'], speed: 1.1 },
+  angelfish: { label: 'Emperor Angelfish', price: 60, level: 4, wait: 180, count: 1, blurb: 'Elegant and calm.',                traits: ['Calm', 'Curious'], speed: 0.7 },
+  platy:     { label: 'Cardinalfish', price: 36, level: 2, wait: 40, count: 2, blurb: 'A gentle, glowing pair.',        traits: ['Social', 'Playful', 'Calm'], speed: 1.0 },
+  danio:     { label: 'Pink Anthias', price: 50, level: 6, wait: 60, count: 4, blurb: 'A pink school that never stops.', traits: ['Playful', 'Social', 'Brave'], speed: 1.35, school: true },
+  betta:     { label: 'Mandarin Dragonet', price: 80, level: 5, wait: 240, count: 1, blurb: 'Swirled in blue and orange. Quiet pride.',        traits: ['Brave', 'Calm', 'Shy'], speed: 0.65 },
 };
 SPECIES_DEF.neongoby = { label: 'Neon Goby', price: 30, level: 2, wait: 60, count: 1, blurb: 'A tiny cleaner fish. It runs a cleaning station on a rock, and every fish it cleans counts it as a friend.', traits: ['Brave', 'Curious', 'Social'], speed: 0.9 };
 SPECIES_DEF.tang = { label: 'Blue Tang', price: 64, level: 4, wait: 120, count: 1, blurb: 'Grazes algae off the glass and rocks, so the glass needs wiping about 40% less often. Needs plenty of room.', traits: ['Playful', 'Brave', 'Curious'], speed: 1.25 };
 SPECIES_DEF.puffer = { label: 'Valentini Puffer', price: 58, level: 6, wait: 120, count: 1, blurb: 'Puffs up into a ball when startled and comes to the glass to watch you. Nips seahorses: keep them apart.', traits: ['Curious', 'Brave', 'Greedy'], speed: 0.75 };
-SPECIES_DEF.seahorse = { label: 'Seahorse', price: 36, level: 3, wait: 120, count: 1, blurb: 'Four real kinds to choose from: yellow, lined, slender and dwarf. Each pairs only with its own kind.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
-SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 7, wait: 360, count: 1, blurb: 'A rescued green sea turtle hatchling. Raise it until it is strong, then return it to the sea.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
-SPECIES_DEF.hawksbill = { label: 'Hawksbill Turtle', price: 220, level: 7, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. Raise it from a rescued hatchling and return it to the sea.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9 };
-SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 7, wait: 360, count: 1, blurb: 'A big-headed loggerhead hatchling with jaws that crack crabs and snails. Raise it from a rescued hatchling and return it to the sea.', traits: ['Brave', 'Greedy', 'Curious', 'Lazy'], speed: 0.8 };
-SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 7, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. Raise it from a rescued hatchling and return it to the sea.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05 };
+SPECIES_DEF.seahorse = { label: 'Seahorse', price: 70, level: 4, wait: 120, count: 1, blurb: 'Four real kinds to choose from: yellow, lined, slender and dwarf. Each pairs only with its own kind.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.45 };
+SPECIES_DEF.turtle = { label: 'Sea Turtle', price: 180, level: 8, wait: 360, count: 1, blurb: 'A rescued green sea turtle hatchling. Raise it until it is strong, then return it to the sea.', traits: ['Calm', 'Curious', 'Brave', 'Lazy'], speed: 0.85 };
+SPECIES_DEF.hawksbill = { needRel: 1, label: 'Hawksbill Turtle', price: 220, level: 8, wait: 360, count: 1, blurb: 'A hawksbill hatchling in amber tortoiseshell. Raise it from a rescued hatchling and return it to the sea.', traits: ['Curious', 'Brave', 'Calm', 'Shy'], speed: 0.9 };
+SPECIES_DEF.loggerhead = { label: 'Loggerhead Turtle', price: 260, level: 8, wait: 360, count: 1, blurb: 'A big-headed loggerhead hatchling with jaws that crack crabs and snails. Raise it from a rescued hatchling and return it to the sea.', traits: ['Brave', 'Greedy', 'Curious', 'Lazy'], speed: 0.8 };
+SPECIES_DEF.kemps = { label: "Kemp's Ridley", price: 240, level: 8, wait: 360, count: 1, blurb: "The smallest and rarest sea turtle: quick, feisty and always digging. Raise it from a rescued hatchling and return it to the sea.", traits: ['Playful', 'Brave', 'Curious'], speed: 1.05 };
 SPECIES_DEF.leatherback = { label: 'Leatherback', price: 0, level: 99, wait: 0, count: 1, blurb: 'The giant of the turtles, with a leathery shell instead of plates. Far too big to keep: it only ever passes by.', traits: ['Calm'], speed: 0.9, visitor: true, resident: false, minLevel: 8 };
-SPECIES_DEF.octopus = { label: 'Octopus', price: 52, level: 4, wait: 240, count: 1, blurb: 'Four real kinds to choose from: the clever common octopus, the bold day octopus, the gentle two-spot and the mimic. Each looks, sizes up and behaves differently.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
+SPECIES_DEF.octopus = { label: 'Octopus', price: 120, level: 6, wait: 240, count: 1, blurb: 'Four real kinds to choose from: the clever common octopus, the bold day octopus, the gentle two-spot and the mimic. Each looks, sizes up and behaves differently.', traits: ['Curious', 'Brave', 'Playful', 'Shy'], speed: 0.7 };
 // hermit crabs (crabs.js): they walk the sand and the rocks, live in shells they find, and move to a bigger one as they grow
 SPECIES_DEF.blueleg = { label: 'Blue-leg Hermit Crab', price: 24, level: 3, wait: 60, count: 1, blurb: 'A small, quick hermit crab with blue-banded legs. A clean-up crab: it picks over the sand and rock for leftovers and algae, so the water stays fresh a little longer.', traits: ['Curious', 'Playful', 'Brave'], speed: 0.5, crab: true };
 SPECIES_DEF.scarlet = { label: 'Scarlet Reef Hermit Crab', price: 36, level: 4, wait: 90, count: 1, blurb: 'Bright red with yellow eyestalks. Careful and a little shy, and a tireless grazer of algae on the rocks: the water stays fresh a little longer.', traits: ['Shy', 'Calm', 'Curious'], speed: 0.4, crab: true };
@@ -47,41 +47,41 @@ SPECIES_DEF.rosecory = { label: 'Rose Goby', price: 0, level: 99, wait: 0, count
 // A giant clam is a filter feeder: it draws water through its body all day and takes up the waste that clouds it, so a tank with one needs its water changed less often
 export const waterSlow = (t) => ((t?.decor ?? []).some((d) => d.type === 'clam') ? 0.65 : 1) * (1 - 0.06 * Math.min(3, (t?.fish ?? []).filter((f) => !f.dead && !f.away && CRAB_IDS.includes(f.species)).length));      // hermit crabs are a clean-up crew: they pick up leftovers and detritus, so each slows the water's clouding a little (three at most count)
 export const DECOR_DEF = {
-  grass:    { label: 'Sea Grass',    cat: 'PLANTS',     price: 6,  level: 1, blurb: 'Soft blades that sway.' },
-  fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 7,  level: 1, blurb: 'A purple fan of fine, lacy branches that sways in the current.' },
-  sword:    { label: 'Broadleaf Seaweed',   cat: 'PLANTS',     price: 7,  level: 1, blurb: 'Broad golden-brown leaves of seaweed.' },
-  red:      { label: 'Red Gorgonian',     cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A bright pop of color.' },
-  rock:     { label: 'Reef Rock',   cat: 'ROCKS',      price: 6,  level: 1, blurb: 'Small and mossy.' },
-  boulder:  { label: 'Reef Boulder',       cat: 'ROCKS',      price: 12,  level: 1, blurb: 'A big rock to hide behind.' },
-  starfish: { label: 'Starfish',      cat: 'SPECIAL',    price: 4,  level: 1, blurb: 'A real little sea star. It creeps slowly about the sand.' },
-  wood:     { label: 'Driftwood',     cat: 'WOOD',       price: 18, level: 2, blurb: 'An arch to swim around.' },
-  pillar:   { label: 'Old Pillar',    cat: 'STRUCTURES', price: 15, level: 2, blurb: 'A broken column.' },
-  lantern:  { label: 'Stone Lantern', cat: 'STRUCTURES', price: 20, level: 2, blurb: 'Glows warm at dusk.' },
-  chest:    { label: 'Treasure Chest',cat: 'SPECIAL',    price: 24, level: 2, blurb: 'Lid open, gold inside.' },
+  grass:    { label: 'Sea Grass',    cat: 'PLANTS',     price: 8,  level: 1, blurb: 'Soft blades that sway.' },
+  fern:     { label: 'Purple Sea Fan',          cat: 'PLANTS',     price: 10,  level: 1, blurb: 'A purple fan of fine, lacy branches that sways in the current.' },
+  sword:    { label: 'Broadleaf Seaweed',   cat: 'PLANTS',     price: 14,  level: 2, blurb: 'Broad golden-brown leaves of seaweed.' },
+  red:      { label: 'Red Gorgonian',     cat: 'PLANTS',     price: 16,  level: 2, blurb: 'A bright pop of color.' },
+  rock:     { label: 'Reef Rock',   cat: 'ROCKS',      price: 8,  level: 1, blurb: 'Small and mossy.' },
+  boulder:  { label: 'Reef Boulder',       cat: 'ROCKS',      price: 20,  level: 2, blurb: 'A big rock to hide behind.' },
+  starfish: { label: 'Starfish',      cat: 'SPECIAL',    price: 10,  level: 1, blurb: 'A real little sea star. It creeps slowly about the sand.' },
+  wood:     { label: 'Driftwood',     cat: 'WOOD',       price: 38, level: 4, blurb: 'An arch to swim around.' },
+  pillar:   { label: 'Old Pillar',    cat: 'STRUCTURES', price: 42, level: 4, blurb: 'A broken column.' },
+  lantern:  { label: 'Stone Lantern', cat: 'STRUCTURES', price: 60, level: 5, blurb: 'Glows warm at dusk.' },
+  chest:    { label: 'Treasure Chest',cat: 'SPECIAL',    price: 85, level: 6, blurb: 'Lid open, gold inside.' },
   torii:    { label: 'Torii Gate',    cat: 'STRUCTURES', price: 34, level: 3, blurb: 'A red gate to swim through.' },
-  moss:     { label: 'Coralline Ball',     cat: 'PLANTS',     price: 6,  level: 1, blurb: 'A round cushion of pink coralline algae.' },
-  kelp:     { label: 'Giant Kelp',    cat: 'PLANTS',     price: 14,  level: 3, blurb: 'Tall ribbons in the current.' },
-  bubbler:  { label: 'Bubbler',       cat: 'SPECIAL',    price: 16, level: 2, blurb: 'A stream of bubbles. Playful fish love it.' },
-  shell:    { label: 'Giant Clam',    cat: 'SPECIAL',    price: 14,  level: 2, blurb: 'A clam with a tiny pearl.' },
-  skull:    { label: 'Mossy Skull',   cat: 'SPECIAL',    price: 10,  level: 2, blurb: 'Spooky, but very cute.' },
-  anchor:   { label: 'Old Anchor',    cat: 'SPECIAL',    price: 24, level: 5, blurb: 'Rusty, mossy, and full of stories.' },
-  bamboo:   { label: 'Orange Sea Whip',        cat: 'PLANTS',     price: 18, level: 5, blurb: 'Tall orange whips of soft coral that bend with the current.' },
-  bridge:   { label: 'Little Bridge', cat: 'STRUCTURES', price: 44, level: 6, blurb: 'A wooden arch to swim under.' },
-  crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 56, level: 7, blurb: 'A cluster that glows blue in the dark.' },
+  moss:     { label: 'Coralline Ball',     cat: 'PLANTS',     price: 8,  level: 1, blurb: 'A round cushion of pink coralline algae.' },
+  kelp:     { label: 'Giant Kelp',    cat: 'PLANTS',     price: 30,  level: 3, blurb: 'Tall ribbons in the current.' },
+  bubbler:  { label: 'Bubbler',       cat: 'SPECIAL',    price: 48, level: 3, blurb: 'A stream of bubbles. Playful fish love it.' },
+  shell:    { label: 'Giant Clam',    cat: 'SPECIAL',    price: 22,  level: 2, blurb: 'A clam with a tiny pearl.' },
+  skull:    { label: 'Mossy Skull',   cat: 'SPECIAL',    price: 40,  level: 4, blurb: 'Spooky, but very cute.' },
+  anchor:   { label: 'Old Anchor',    cat: 'SPECIAL',    price: 95, level: 6, blurb: 'Rusty, mossy, and full of stories.' },
+  bamboo:   { label: 'Orange Sea Whip',        cat: 'PLANTS',     price: 55, level: 5, blurb: 'Tall orange whips of soft coral that bend with the current.' },
+  bridge:   { label: 'Little Bridge', cat: 'STRUCTURES', price: 150, level: 7, blurb: 'A wooden arch to swim under.' },
+  crystal:  { label: 'Glow Crystal',  cat: 'SPECIAL',    price: 190, level: 7, blurb: 'A cluster that glows blue in the dark.' },
   lighthouse: { label: 'Little Lighthouse', cat: 'STRUCTURES', price: 150, level: 7, blurb: 'A landmark the whole tank saves for. Its lamp glows at night.' },
-  spire:    { label: 'Coral Spire',   cat: 'SPECIAL',    price: 250, level: 8, blurb: 'The biggest piece in the tank. A towering reef of pink coral.' },
-  anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 16, level: 2, blurb: 'Soft tentacles that sway. A clownfish favorite.' },
-  brain:    { label: 'Brain Coral',   cat: 'ROCKS',      price: 14, level: 2, blurb: 'A ridged dome of coral.' },
-  table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 20, level: 3, blurb: 'A wide shelf to hover under.' },
-  coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 8,   level: 2, blurb: 'A big hollow half-shell. An octopus may carry it off and move in.' },
-  pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 14,  level: 2, blurb: 'A little den on its side, just the right size to curl up in.' },
+  spire:    { label: 'Coral Spire',   cat: 'SPECIAL',    price: 300, level: 8, blurb: 'The biggest piece in the tank. A towering reef of pink coral.' },
+  anemone:  { label: 'Sea Anemone',  cat: 'PLANTS',     price: 14, level: 1, blurb: 'Soft tentacles that sway. A clownfish favorite.' },
+  brain:    { label: 'Brain Coral',   cat: 'ROCKS',      price: 28, level: 3, blurb: 'A ridged dome of coral.' },
+  table:    { label: 'Table Coral',   cat: 'ROCKS',      price: 64, level: 5, blurb: 'A wide shelf to hover under.' },
+  coconut:  { label: 'Coconut Shell', cat: 'ROCKS',      price: 12,   level: 1, blurb: 'A big hollow half-shell. An octopus may carry it off and move in.' },
+  pot:      { label: 'Clay Pot',      cat: 'STRUCTURES', price: 26,  level: 3, blurb: 'A little den on its side, just the right size to curl up in.' },
   urchin:   { label: 'Sea Urchin',    cat: 'ROCKS',      price: 24, level: 3, blurb: 'A long-spined urchin. Cardinalfish hover safely among its spines.' },
   seafan:   { label: 'Sea Fan',       cat: 'PLANTS',     price: 36, level: 4, blurb: 'A branching gorgonian. A seahorse\'s favorite thing to wrap its tail around.' },
   clam:     { label: 'Maxima Clam',   cat: 'SPECIAL',    price: 150, level: 5, blurb: 'A living giant clam that filters the water all day. Water stays fresh about 50% longer.' },
   liverock: { label: 'Live Rock',     cat: 'ROCKS',      price: 50, level: 5, blurb: 'Reef rock alive with tiny copepods: a mandarin grazes it all day.' },
   ledge:    { label: 'Turtle Ledge',  cat: 'ROCKS',      price: 40, level: 7, blurb: 'A flat shelf of rock with a gap beneath: a sea turtle wedges itself under it to sleep.' },
   seagrass: { label: 'Sea Grass Bed', cat: 'PLANTS',     price: 30, level: 7, blurb: 'A meadow of long, ribbon-like sea grass. Green turtles graze it like a lawn.' },
-  arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 30, level: 4, blurb: 'A little arch to swim through.' },
+  arch:     { label: 'Stone Arch',    cat: 'STRUCTURES', price: 120, level: 6, blurb: 'A little arch to swim through.' },
   // what the newer animals really look for (each meets a need on the Health screen, and the animals use it)
   station:  { label: 'Cleaning Station', cat: 'ROCKS',   price: 22, level: 2, blurb: 'A coral head where a neon goby sets up shop. Other fish come and wait their turn to be cleaned.' },
   cave:     { label: 'Reef Cave',     cat: 'ROCKS',      price: 32, level: 3, blurb: 'A hollow rock with a dark way in. A royal gramma claims it; a tang sleeps in it at night.' },
@@ -90,26 +90,12 @@ export const DECOR_DEF = {
   ...Object.fromEntries(Object.entries(SHELLS).map(([k, S]) => [k, { label: S.label, cat: 'SHELLS', price: S.price, level: 3, blurb: S.blurb, ...(S.hidden ? { hidden: true } : {}) }])),      /* (empty shells for the hermit crabs: crabs.js) */
   rubble:   { label: 'Shell Rubble',  cat: 'ROCKS',      price: 26, level: 7, blurb: 'Broken shell and coral chips. A loggerhead crunches through it for snails and crabs; a puffer forages in it.' },
 };
-// ── The shop's curve ── a few basics to start, three or four new things with each level, and the price climbing with them: basics are a day or
-// two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
-const SHOP_CURVE = {
-  grass: [1, 8], rock: [1, 8], moss: [1, 8], fern: [1, 10], starfish: [1, 10], coconut: [1, 12], anemone: [1, 14],      /* (a clownfish's home, from the start: the clownfish is a first fish) */
-  sword: [2, 14], red: [2, 16], boulder: [2, 20], shell: [2, 22],
-  pot: [3, 26], brain: [3, 28], kelp: [3, 30], urchin: [3, 24],
-  seafan: [4, 36], liverock: [5, 50], ledge: [7, 40], seagrass: [7, 30],
-  wood: [4, 38], pillar: [4, 42], skull: [4, 40], bubbler: [3, 48],      /* (level 3 opens tricks and bubbles: the bubbler is the first trick spot) */
-  lantern: [5, 60], table: [5, 64], bamboo: [5, 55],
-  chest: [6, 85], anchor: [6, 95], arch: [6, 120],
-  bridge: [7, 150], crystal: [7, 190],
-  station: [2, 22], cave: [3, 32], mangrove: [4, 34], sponge: [7, 34], rubble: [7, 26],
-  spire: [8, 300],      /* (measured: about three weeks of a regular household's shells once level 8 opens) */
-};
-for (const [k, [level, price]] of Object.entries(SHOP_CURVE)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level, price });
+// ── The shop's curve is in DECOR_DEF itself (one table): a few basics to start, three or four new things with each level, and the price climbing
+// with them: basics are a day or two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
 // earned, never bought: the torii gate for the first rare color bred here, the lighthouse for the third goal finished
 export const EARNED = { cshell_ancient: { why: 'One of your crabs finds it', line: 'One of the crabs dug up an ancient spiral shell.' }, cshell_plain: { why: 'A crab finds it', line: '' }, cshell_worn: { why: 'A crab arrives in it', line: '' }, torii: { why: 'Breed your first rare color', line: 'A torii gate for the tank: you bred your first rare color.' }, lighthouse: { why: 'Finish three goals', line: 'A lighthouse for the tank: three goals finished.' } };
 for (const k of Object.keys(EARNED)) if (DECOR_DEF[k]) Object.assign(DECOR_DEF[k], { level: 1, price: 0, earned: true });
-const SPECIES_CURVE = { blueleg: [3, 24], scarlet: [4, 36], halloween: [6, 52], goldfish: [1, 10], neon: [1, 20], cory: [2, 22], guppy: [2, 26], platy: [2, 36], blue: [2, 42], angelfish: [4, 60], seahorse: [4, 70], danio: [6, 50], betta: [5, 80], octopus: [6, 120], neongoby: [2, 30], tang: [4, 64], puffer: [6, 58], turtle: [8, 180], hawksbill: [8, 220], loggerhead: [8, 260], kemps: [8, 240] };
-for (const [k, [level, price]] of Object.entries(SPECIES_CURVE)) if (SPECIES_DEF[k]) Object.assign(SPECIES_DEF[k], { level, price });
+// (the species' levels and prices are in SPECIES_DEF itself, one table; rules.test.mjs holds a snapshot of every unlock so a stray edit shows up)
 // ── Levels ── the one place levels are defined: the care points to reach each, how many animals the tank holds there, and what it opens
 // (what opens is listed under LEVEL_PRIZE; species and decorations carry their own level). A new level is a new row here plus its content:
 // nothing else assumes a top level. Players never go past the last row; at the top, care points keep banking for when the next level arrives.
@@ -167,6 +153,7 @@ export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a ju
 // keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
 export const TURTLE_DAYS = 14, TURTLE_PAY = 100, TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 export const isTurtle = (x) => TURTLES.has(typeof x === 'string' ? x : x?.species);
+export const releasedCount = (t) => Math.max(t?.released?.length ?? 0, t?.stats?.released ?? 0);      // sea turtles raised here and let go (shared tank state, saved with everything else)
 export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
@@ -335,13 +322,15 @@ const count = (t, cat) => t.decor.filter((d) => DECOR_DEF[d.type]?.cat === cat).
 // Pieces that belong together make a place the fish love. A theme is active once the tank holds enough of its pieces; it lifts every fish a little, draws its own kind of
 // rare visitor, and pays a few shells the first time it is completed. Duplicates count, so a themed corner can be built from cheap pieces or grand ones.
 export const THEMES = {
-  kelp:    { label: 'Kelp Forest',   types: ['kelp', 'grass', 'sword', 'bamboo'],                         need: 4, visitor: 'rosecory', blurb: 'Sea grass, kelp and tall weeds sway together.' },
-  coral:   { label: 'Coral Garden',  types: ['anemone', 'red', 'fern', 'moss', 'brain', 'table', 'spire'], need: 4, visitor: 'moonbetta', blurb: 'Anemones, sea fans and coral heads make a garden.' },
-  ruins:   { label: 'Sunken Ruins',  types: ['pot', 'coconut', 'pillar', 'arch', 'torii', 'bridge', 'skull', 'anchor', 'chest'], need: 3, visitor: 'sunangel', blurb: 'Old stone and lost things make a place to explore.' },
-  lanterns:{ label: 'Lantern Cove',  types: ['lantern', 'crystal', 'lighthouse', 'bubbler'],               need: 2, visitor: null,      blurb: 'Glowing things turn the night into a cove.' },
+  // each theme has one piece that makes it (anchor): the Kelp Forest wants real kelp (level 3), the Coral Garden a sea fan or table coral (level 4 or 5), the Ruins something
+  // big and lost (chest, anchor or arch: level 6, or a bridge), the Lantern Cove a glow crystal or the lighthouse (level 7). So they come one by one as the tank grows
+  kelp:    { label: 'Kelp Forest',   types: ['kelp', 'grass', 'sword', 'bamboo'],                         need: 4, anchor: ['kelp'], visitor: 'rosecory', blurb: 'Sea grass, kelp and tall weeds sway together. Giant kelp makes it a forest.' },
+  coral:   { label: 'Coral Garden',  types: ['anemone', 'red', 'fern', 'moss', 'brain', 'table', 'seafan', 'spire'], need: 4, anchor: ['seafan', 'table', 'spire'], visitor: 'moonbetta', blurb: 'Anemones, sea fans and coral heads make a garden. A sea fan or a table coral makes it a reef.' },
+  ruins:   { label: 'Sunken Ruins',  types: ['pot', 'coconut', 'pillar', 'arch', 'torii', 'bridge', 'skull', 'anchor', 'chest'], need: 3, anchor: ['chest', 'anchor', 'arch', 'bridge', 'torii'], visitor: 'sunangel', blurb: 'Old stone and lost things make a place to explore. Something big and lost (a chest, an anchor, an arch) makes it a wreck.' },
+  lanterns:{ label: 'Lantern Cove',  types: ['lantern', 'crystal', 'lighthouse', 'bubbler'],               need: 2, anchor: ['crystal', 'lighthouse'], visitor: null,      blurb: 'Glowing things turn the night into a cove. A glow crystal or the lighthouse lights it.' },
 };
 export const THEME_REWARD = 3;
-export function themesOf(t) { return Object.entries(THEMES).map(([key, th]) => { const have = t.decor.filter((d) => th.types.includes(d.type)).length; return { key, label: th.label, blurb: th.blurb, have: Math.min(have, th.need), need: th.need, active: have >= th.need, visitor: th.visitor }; }); }
+export function themesOf(t) { return Object.entries(THEMES).map(([key, th]) => { const have = t.decor.filter((d) => th.types.includes(d.type)).length, anchored = !th.anchor || t.decor.some((d) => th.anchor.includes(d.type)), was = !!t.flags?.themes?.[key];      /* (a theme finished under an earlier rule stays finished) */ return { key, label: th.label, blurb: th.blurb, have: Math.min(have, th.need), need: th.need, anchored, anchor: th.anchor ?? null, active: was || (have >= th.need && anchored), visitor: th.visitor }; }); }
 function themeCheck(t, now, ev) {
   if ((t.flags.tut ?? 0) < 5) return; t.flags.themes ||= {};
   for (const th of themesOf(t)) if (th.active && !t.flags.themes[th.key]) { t.flags.themes[th.key] = now; t.shells += THEME_REWARD; ev.push({ journal: `${th.label}: the fish have found their place.`, toast: `${th.label}! The fish love it. +${THEME_REWARD} shells`, theme: th.key }); }
@@ -1176,6 +1165,13 @@ export const GOALS = {
       { text: 'Pair a fish you raised', hint: 'A grown baby from your tank: open its card and tap "Pair with…".', n: (t) => (t.match && [t.match.a, t.match.b].some((id) => t.fish.some((f) => f.id === id && (f.parents?.length || f.bornHere))) ? 1 : 0), need: 1 },
       { text: 'A second generation hatches', hint: roomy('Its babies, born in your tank: keep the water clean and be there to watch.'), n: since('gen2'), need: 1 },
     ] },
+  sanctuary: { title: 'A turtle sanctuary', blurb: 'Get the tank ready for a rescued sea turtle: somewhere to sleep, something to graze, clean water.', icon: 'turtle', ok: (t) => (t.level ?? 1) >= 7 && !t.fish.some((f) => TURTLES.has(f.species) && !f.dead && !f.visitor) && releasedCount(t) === 0,      /* (the one goal for level 7: never offered once a turtle has lived here) */
+    steps: [
+      { text: 'Reach tank level 7', hint: 'Care points open the sanctuary corner: the Turtle Ledge and the Sea Grass Bed arrive with level 7.', n: (t) => ((t.level ?? 1) >= 7 ? 1 : 0), need: 1 },
+      { text: 'A ledge to sleep under', hint: 'A Turtle Ledge, or two rocks: wild turtles sleep wedged under a ledge, coming up to breathe.', n: (t) => (turtleHabitat(t).ledge ? 1 : 0), need: 1 },
+      { text: 'Sea grass to graze', hint: 'A Sea Grass Bed, or two plants: a young green turtle moves on to sea grass and algae as it grows.', n: (t) => (turtleHabitat(t).graze ? 1 : 0), need: 1 },
+      { text: 'Three days of clean water', hint: 'Turtles are messy eaters. Keep the water changed and the glass clear: each day the tank is looked after counts.', n: since('careDays'), need: 3 },
+    ] },
   sleuth: { title: 'Tank detective', blurb: 'Look into the daily mysteries and follow one to the end.', icon: 'bubbles', ok: () => true,
     steps: [
       { text: 'Solve 3 daily mysteries', hint: 'Each day something glows on the sand: tap it.', n: since('myst'), need: 3 },
@@ -1185,7 +1181,7 @@ export const GOALS = {
 };
 export const GOAL_SHELLS = 20;
 // how long each goal usually takes, measured in the simulation (tools/loop_sim.mjs, median days from choosing to finishing), and what it needs first
-export const GOAL_PACE = { family: ['A few days', 'two grown fish of a kind'], sleuth: ['About a week', ''], dynasty: ['About a week', 'a grown fish bred here'], ember: ['One to two weeks', 'a carrier in the tank'], ghost: ['Two to three weeks', 'a carrier in the tank'], peace: ['Two to three weeks', 'an octopus and room for plants'], guide: ['Two to three weeks', 'time spent watching'], blue: ['About three weeks', 'a carrier in the tank'], gold: ['About three weeks', 'a carrier in the tank'], rare: ['About four weeks', ''], octo: ['About four weeks', 'a female and a male octopus'], raise: ['Several weeks', 'young ones to raise, one at a time'] };
+export const GOAL_PACE = { sanctuary: ['A few days', 'tank level 7'], family: ['A few days', 'two grown fish of a kind'], sleuth: ['About a week', ''], dynasty: ['About a week', 'a grown fish bred here'], ember: ['One to two weeks', 'a carrier in the tank'], ghost: ['Two to three weeks', 'a carrier in the tank'], peace: ['Two to three weeks', 'an octopus and room for plants'], guide: ['Two to three weeks', 'time spent watching'], blue: ['About three weeks', 'a carrier in the tank'], gold: ['About three weeks', 'a carrier in the tank'], rare: ['About four weeks', ''], octo: ['About four weeks', 'a female and a male octopus'], raise: ['Several weeks', 'young ones to raise, one at a time'] };
 // what finishing the current goal will unlock: the next floor or backdrop the tank does not have yet (alternating, so both kinds come)
 export function nextPrize(t) { const fl = Object.keys(FLOORS).filter((k) => !styleOwned(t, 'floor', k)).map((k) => ['floor', k]), bd = Object.keys(BACKDROPS).filter((k) => !styleOwned(t, 'backdrop', k)).map((k) => ['backdrop', k]); const n = (t.goalsDone ?? []).length; return (n % 2 ? bd[0] ?? fl[0] : fl[0] ?? bd[0]) ?? null; }
 export const prizeLabel = (p) => (p ? `${p[0] === 'floor' ? FLOORS[p[1]] : BACKDROPS[p[1]]} ${p[0]}` : null);
@@ -1196,6 +1192,7 @@ function goalOffer(t, now) { const h = hash32(Math.floor(now / DAY) * 13 + ((t.c
   const colors = ok.filter((k) => MORPHS[k]), rest = ok.filter((k) => !MORPHS[k] && k !== 'rare'), pick = [];
   pick.push(colors.length ? colors[h % colors.length] : ok.includes('rare') ? 'rare' : null);      // (one breeding goal is always among them when it can be)
   const off = (h >>> 5) % (rest.length || 1); for (let i = 0; i < rest.length && pick.filter(Boolean).length < 3; i++) { const k = rest[(off + i) % rest.length]; if (!pick.includes(k)) pick.push(k); }
+  if (ok.includes('sanctuary') && !pick.includes('sanctuary')) pick[pick.length ? pick.length - 1 : 0] = 'sanctuary';      /* (level 7's own goal is always on offer until a turtle has lived here) */
   if (!(t.goalsDone ?? []).length && !pick.some((k) => k === 'family' || k === 'sleuth')) { const quick = ['family', 'sleuth'].find((k) => ok.includes(k)); if (quick) pick[Math.min(2, pick.filter(Boolean).length)] = quick; }      /* (a first goal on offer that takes days, not weeks) */
   return pick.filter(Boolean).slice(0, 3); }
 const baseOf = (t) => ({ ...(t.stats ?? {}), field: Object.keys(t.field ?? {}).length });
@@ -1212,6 +1209,8 @@ function goals(t, now, ev) {
     ev.push({ activity: { type: 'goal', text: `The tank finished a goal: ${GOALS[g.id].title}.` } }); ev.push({ journal: `Goal complete: ${GOALS[g.id].title}.${prize ? ` The ${prize} is yours.` : ''}`, toast: `Goal complete! +${GOAL_SHELLS} shells${prize ? ` and the ${prize}` : ''}`, goalDone: g.id, milestone: true });
   }
 }
+// what a sea turtle would find here: a ledge to sleep under (a Turtle Ledge, or two rocks) and sea grass to graze (a Sea Grass Bed, or two plants), the way its wellbeing counts them
+export function turtleHabitat(t) { const D = t?.decor ?? [], n = (ty) => D.filter((d) => d.type === ty).length, cat = (c) => D.filter((d) => DECOR_DEF[d.type]?.cat === c).length; return { ledge: n('ledge') >= 1 || cat('ROCKS') >= 2, graze: n('seagrass') >= 1 || cat('PLANTS') >= 2 }; }
 export const homeOf = (t, f) => (f.home && t.decor.find((d) => d.id === f.home && ['coconut', 'pot'].includes(d.type))) || null;
 // Every octopus has a temperament of its own, fixed by its seed: how curious, bold, sociable and tidy it is. Real octopuses differ like this from one individual to the next.
 // The mix lands in one of six types, each with a line for the fish card. Nothing is stored: the same octopus always works out the same.
@@ -1275,7 +1274,7 @@ export const LEVEL_PRIZE = {
   4: { kind: 'animal', title: 'Seahorses and the blue tang', text: 'Seahorses (they pair for life, and the father carries the young), the emperor angelfish and the blue tang' },
   5: { kind: 'play', title: 'New habitats and toys', text: 'Live rock and the mandarin dragonet that grazes it, the giant clam that filters the water, a twist cube for the octopus and a hitching hoop for seahorses' },
   6: { kind: 'animal', title: 'Puffer, anthias and a second octopus', text: 'The valentini puffer, pink anthias, and a second octopus of any of four kinds' },
-  7: { kind: 'play', title: 'A turtle sanctuary corner', text: 'Get ready for turtles: the Turtle Ledge and Sea Grass Bed, and a light spot to play with' },
+  7: { kind: 'play', title: 'A turtle sanctuary corner', text: 'Get ready for turtles: a sanctuary goal to prepare the tank, the Turtle Ledge and Sea Grass Bed, and a light spot to play with' },
   8: { kind: 'animal', title: 'Sea turtles', text: 'Rescued sea turtle hatchlings to raise and release back to the ocean' },
 };
 export const favToy = (f) => { const e = Object.entries(f?.toys ?? {}).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 2 ? e[0] : null; };
@@ -2015,7 +2014,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'buyFish': {
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
-      if ((t.released?.length ?? 0) < (d.needRel ?? 0)) return fail('LOCKED');      // the hawksbill opens once the tank has raised a turtle and let it go
+      if (releasedCount(t) < (d.needRel ?? 0)) return fail('LOCKED');      // the hawksbill opens once the tank has raised a turtle and let it go (counted in stats: the list of releases is capped)
       if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
       const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
@@ -2329,7 +2328,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.fish.filter((x) => !x.dead).length <= 1) return fail('LAST_FISH');
       let well = 70; try { well = wellOf(t, f, now).score; } catch { /* (a score is a bonus, not a gate) */ }
       const pay = TURTLE_PAY + Math.max(0, Math.round((well - 60) * 1.25)); t.shells += pay; sendPostcard(t, f, 'turtle', now); t.fish.splice(t.fish.indexOf(f), 1); if (t.want?.fish === f.id) t.want = null; for (const o of t.fish) unlink(o, f.id);
-      (t.released ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift();
+      (t.released ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, at: now, by: uid, well }); if (t.released.length > 12) t.released.shift(); bump(t, 'released');
       (t.keeps ||= []).push({ id: nextId(t, 'k'), k: 'scute', by: f.id, byName: f.name, at: now, x: (hash32(now / 6e4) % 500) / 100 - 2.5, z: 1.6 });
       events.push({ journal: `${name} let ${f.name} go to the ocean. It swam up and out into open water, and left a little shell scute behind.`, toast: `${f.name} swam off to the ocean. +${pay} shells`, activity: { type: 'fish', text: `${name} released ${f.name} to the ocean.` }, released: f.id, hist: 'released' });
       return ok({ id: f.id, delta: pay });

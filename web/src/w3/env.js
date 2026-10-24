@@ -120,7 +120,16 @@ function buildBackdrop() {
     const sh = new THREE.Shape(); sh.moveTo(cx - 3.5, -4); const pts = [[-2.4, 3.2], [-1.6, 6.5], [-0.8, 5], [0, 9.5], [0.9, 6.2], [1.7, 7.4], [2.6, 3.4], [3.4, 1.4]]; for (const [px, py] of pts) sh.lineTo(cx + px * s2, py); sh.lineTo(cx + 3.6, -4); sh.closePath();
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0x6a7ec8, transparent: true, opacity: 0.6, depthWrite: false })); m.position.z = -21; m.renderOrder = -8; g.add(m); g.userData.rock.push(m.material);
   }
+  // a wild sea turtle, far off: a flat dark shape with two flippers that cross behind the kelp bed in forty seconds or so, rarely (the stage arms it). Depth-fogged like the far kelp
+  { const W = new THREE.Group(); const body = new THREE.Shape(); for (const [px, py] of [[-1.4, 0], [-1.0, 0.45], [-0.2, 0.62], [0.7, 0.5], [1.3, 0.2], [1.75, 0.22], [1.95, 0.05], [1.7, -0.14], [1.25, -0.2], [0.5, -0.45], [-0.4, -0.5], [-1.1, -0.3]]) body.lineTo(px, py); body.closePath();
+    const mat = new THREE.MeshBasicMaterial({ color: 0x1e3350, transparent: true, opacity: 0.55, depthWrite: false }); const bm = new THREE.Mesh(new THREE.ShapeGeometry(body), mat); W.add(bm);
+    const flip = (sx, sy) => { const f = new THREE.Shape(); f.moveTo(0, 0); f.lineTo(0.9 * sx, 0.55 * sy); f.lineTo(1.9 * sx, 0.9 * sy); f.lineTo(1.5 * sx, 0.2 * sy); f.lineTo(0.5 * sx, -0.1 * sy); f.closePath(); const m = new THREE.Mesh(new THREE.ShapeGeometry(f), mat); m.position.set(0.5, sy > 0 ? 0.35 : -0.35, 0.01); W.add(m); return m; };
+    const fA = flip(1, 1), fB = flip(1, -1), rear = flip(-0.45, 1); rear.position.set(-1.2, 0.2, 0.01);
+    W.position.set(-30, 7, -13); W.renderOrder = -5; W.visible = false; W.scale.setScalar(1.6); g.add(W); g.userData.wildMat = mat;
+    g.userData.wild = { group: W, fA, fB, rear, on: false, t0: 0, dir: 1, y: 7 };
+    g.userData.wildPass = (t) => { const w = g.userData.wild; if (w.on) return false; w.on = true; w.t0 = t; w.dir = Math.random() < 0.5 ? 1 : -1; w.y = 5.5 + Math.random() * 4; W.scale.set(1.6 * w.dir, 1.6, 1); W.visible = true; return true; }; }
   g.userData.tick = (t) => {
+    { const w = g.userData.wild; if (w?.on) { const u = (t - w.t0) / 44; if (u >= 1) { w.on = false; w.group.visible = false; } else { const x = -30 + 60 * u, swim = Math.sin(t * 1.3); w.group.position.set(x * w.dir, w.y + Math.sin(t * 0.35) * 0.4 + swim * 0.06, -13 - 3 * Math.sin(u * Math.PI)); w.group.rotation.z = Math.sin(t * 0.35) * 0.05 * w.dir; w.fA.rotation.z = 0.35 * swim; w.fB.rotation.z = -0.35 * swim; w.rear.rotation.z = -0.15 * swim; w.group.material; } } }
     for (const k of kelp) { const pos = k.geo.attributes.position; for (let i = 0; i < pos.count; i++) { const yn = k.base[i * 3 + 1] / k.h + 0.5, sw = Math.sin(t * k.rate + k.ph + yn * 2.4) * k.amp * yn * yn * 1.1 + Math.sin(t * 0.21 + k.ph * 2) * 0.22 * yn + k.lean * yn * yn; const wx = k.base[i * 3] * lens(yn); pos.setX(i, wx + sw); } pos.needsUpdate = true; }      // (each to its own beat, and leaning the way it grew)
   };
   return g;
@@ -270,6 +279,7 @@ export function buildEnvironment() {
   const paintBack = () => {
     const pal = BACK[backKey] ?? BACK.candy; pal.forEach((c, i) => { const m = backdrop.userData.mats[i]; if (m) m.color.setHex(c).lerp(DEEP, 0.72 + i * 0.06).multiplyScalar(backLight); });      // the far dunes are mostly the color of deep water, with only a hint of the chosen backdrop
     backdrop.userData.kelp.forEach((m) => { const d = m.userData.depth ?? 0.3, tone = m.userData.tone ?? 1; m.color.setHex(pal[1]).lerp(KELP, 0.8).multiplyScalar(0.72 * tone).lerp(WATER, d * 0.85).multiplyScalar(backLight * (0.82 + 0.18 * d)); });      // (darker and greener near, sinking into the water's color with distance: depth fog)
+    if (backdrop.userData.wildMat) backdrop.userData.wildMat.color.setHex(pal[2]).lerp(DEEP, 0.85).multiplyScalar(backLight * 0.4);
     backdrop.userData.rock.forEach((m) => { if (m.userData.wall) m.color.setHex(pal[2]).lerp(DEEP, 0.8).multiplyScalar(backLight * 0.42); else if (m.userData.fan) m.color.setHex(pal[0]).lerp(DEEP, 0.85).multiplyScalar(backLight * 0.5);      /* (rock and fans: dark shapes against the water, not pale ones) */ else m.color.setHex(pal[2]).lerp(WATER, 0.5).multiplyScalar(backLight * 0.9); });
   };
   const setStyle = (floor = 'sand', back = 'candy') => {
@@ -278,5 +288,5 @@ export function buildEnvironment() {
   };
   const setLight = (k) => { if (Math.abs(k - backLight) > 0.004) { backLight = k; paintBack(); } };
   const SCALE = { sand: 0.9, pearl: 0.7, gravel: 0.5, black: 0.8, coral: 0.45 };
-  return { root, setCaustic: (tex, t, k = 0.6) => { cau.uCau.value = tex; cau.uCauT.value = t; cau.uCauI.value = k; }, archX: 0, colliders: Object.assign(new Solids(), { soft: new Solids() }), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
+  return { root, setCaustic: (tex, t, k = 0.6) => { cau.uCau.value = tex; cau.uCauT.value = t; cau.uCauI.value = k; }, archX: 0, colliders: Object.assign(new Solids(), { soft: new Solids() }), setStyle, setLight, tick: (t) => backdrop.userData.tick(t), wildPass: (t) => backdrop.userData.wildPass(t), wildOn: () => !!backdrop.userData.wild?.on, floorSpec: () => ({ key: bottomKey, cols: (BOTTOM[bottomKey] ?? BOTTOM.sand).cols, scale: SCALE[bottomKey] ?? 0.8 }) };
 }
