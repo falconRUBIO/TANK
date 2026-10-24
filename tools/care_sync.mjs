@@ -9,12 +9,12 @@ const a = await mk('Alex'), b = await mk('Blair'), home = await call('/api/tanks
   w.fish = [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, born: now - 30 * D, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, hunger: 0.7, owner: b.userId, ownerName: 'Blair' },
     { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, hunger: 0.6, sex: 'm', owner: a.userId, ownerName: 'Alex' },
     { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born: now - 9 * D, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: a.userId }];
-  S.db.prepare('UPDATE tanks SET world=?, sim_ts=? WHERE id=?').run(JSON.stringify(w), now, home.id); }
+  S.db.prepare('UPDATE tanks SET world=?, sim_ts=?, water=?, glass=?, hunger=?, level=?, shells=? WHERE id=?').run(JSON.stringify(w), now, w.water, w.glass, w.hunger, w.level, w.shells, home.id); }      // (the row mirrors the world's meters: the snapshot reads them from the row, so a seed must set both)
 const br = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] }); const errs = []; let fails = 0;
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const phone = async (u) => { const ctx = await br.newContext({ viewport: { width: 390, height: 844 } }); await ctx.addInitScript((s) => { localStorage.setItem('ourtank.session', JSON.stringify(s)); }, { token: u.token, userId: u.userId, named: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(e.message)); await p.goto(base + '/?tod=noon'); await p.waitForFunction(() => window.__game?.state && window.__game.mode === 'net', null, { timeout: 120000 }); await p.waitForTimeout(1500); return p; };
 const A = await phone(a), B = await phone(b);
-const clear = (p) => p.evaluate(() => { for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); });
+const clear = (p) => p.evaluate(() => { document.getElementById('modal')?.classList.remove('on'); document.getElementById('coach')?.classList.remove('on'); });      // (dismiss, never confirm: a request's OK button does the care itself, which would clean the seeded tank before the check)
 const care = async (p) => { await clear(p); await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(400); };
 const read = (p) => p.evaluate(() => { const rows = (due) => [...document.querySelectorAll('#sheet .cgroup .crow')].filter((r) => r.classList.contains('due') === due).map((r) => r.querySelector('b')?.textContent ?? ''), up = [...document.querySelectorAll('#sheet .cgroup .crow')].find((r) => /Tank upkeep/.test(r.querySelector('b')?.textContent ?? ''));      // (Care since the UI audit: one group of rows, each .due or not; one Tank upkeep row that says what is due or "All clean")
   return { open: document.getElementById('sheet').classList.contains('on'), hero: document.querySelector('#sheet [data-csub="care"] .nc')?.textContent ?? '', due: rows(true), later: rows(false), upkeep: up?.querySelector('small')?.textContent ?? '', groups: [...document.querySelectorAll('#sheet .fcards .fcard b')].map((x) => x.textContent), notes: [...document.querySelectorAll('#sheet .fcards .fnote, #sheet .fnote')].map((x) => x.textContent).join(' | ') }; });
@@ -27,8 +27,8 @@ ck('each phone shows only the animals that phone feeds (Alex: Pip and the fish; 
 ck('and says who feeds the others', /Inky is fed by Blair/.test(ra.notes) && /Pip is fed by Alex/.test(rb.notes), { a: ra.notes, b: rb.notes });
 await back(A); await back(B);
 // Blair wipes the glass and changes the water while Alex has Care open
+ra = await read(A); ck("before Blair acts, Alex's Care shows the upkeep as due", ra.due.includes("Tank upkeep") && /glass|water/i.test(ra.upkeep), { due: ra.due, upkeep: ra.upkeep });      // (read back on the Care list itself, not on the Feed screen)
 await B.evaluate(() => window.__game.dispatch({ t: 'glass' })); await B.evaluate(() => window.__game.dispatch({ t: 'water' }));
-ck("before Blair acts, Alex's Care shows the upkeep as due", ra.due.includes('Tank upkeep') && /glass|water/i.test(ra.upkeep), { due: ra.due, upkeep: ra.upkeep });
 ra = await until(A, (v) => !v.due.includes('Tank upkeep') && /All clean/.test(v.upkeep));
 ck("Blair cleans the glass and changes the water: Alex's open Care updates by itself", ra.open && !ra.due.includes('Tank upkeep') && ra.later.includes('Tank upkeep') && /All clean/.test(ra.upkeep), ra);
 // Blair feeds the fish (shared): Alex's Feed row updates
