@@ -369,7 +369,10 @@ export class Fish3D {
     }
     G.t += dt; G.w = Math.min(1, G.t / 0.5); let T;
     if (kind === 'carry') T = [9, -7.3, 0.4 + Math.sin(G.t * 2) * 0.3];
-    else if (kind === 'cube') T = [12.5 + Math.sin(G.t * 1.3) * 0.6, -4.5 + Math.sin(G.t * 1.1) * 0.5, 1.5 + Math.sin(G.t * 0.9) * 0.8];      // the twist cube out in front: the arm tips work round it as it turns
+    else if (kind === 'cube') {      // the twist cube where it really is (under the chin, in rig units): the main arm works over its top, the two beside it hold its sides
+      const C = this.toyCube, v = _tw.copy(C?.g?.position ?? this.pos); this.group.worldToLocal(v); v.multiplyScalar(1 / sc); const half = 0.36 / sc;
+      T = [v.x - half * 0.7 + Math.sin(G.t * 1.3) * half * 0.4, v.y + half * 0.9 + Math.sin(G.t * 1.1) * half * 0.3, v.z + Math.cos(G.t * 0.9) * half * 0.6];
+      G.side = [v.x - half * 0.4, v.y - half * 0.1, half + 1.5]; G.nw = 0.8; }
     else if (kind === 'twine') {      // its partner close by: one arm reaches out to meet one of theirs, the tip curling slowly round and round where they touch
       const o = this.twineWith, v = _tw.copy(o.pos).add(this.pos).multiplyScalar(0.5); this.group.worldToLocal(v); v.multiplyScalar(1 / sc); const L = v.length(), m = Math.min(1, 15 / Math.max(1, L)); v.multiplyScalar(m);
       const c = G.t * 1.6 + (this.fid < o.fid ? 0 : Math.PI); T = [v.x + Math.cos(c) * 1.6, Math.max(-7.5, v.y) + Math.sin(c * 0.7) * 1.2, v.z + Math.sin(c) * 1.6]; G.w = Math.min(1, G.t / 0.9); }

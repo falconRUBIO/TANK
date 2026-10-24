@@ -11,7 +11,13 @@ const ez = (q) => (q <= 0 ? 0 : q >= 1 ? 1 : q * q * (3 - 2 * q));
 // where an octopus holds a toy in its arms: a point in its own frame (rig units, like the carry pose), out in front of the beak where the
 // front arms wrap it, so the thing never sits inside the body whatever way it turns
 const holdPoint = (o, m, out) => { const sc = o.scale || 0.06, ch = Math.cos(o.heading), sh = Math.sin(o.heading), x = m[0] * sc, z = m[2] * sc; return out.set(o.pos.x + x * ch + z * sh, o.pos.y + (o.lift ?? 0) + m[1] * sc, o.pos.z - x * sh + z * ch); };
-const CUBE_HOLD = [13.5, -4.2, 1.5], CUBE_DOWN = [17, -9, 0];
+// where the cube sits while it is held, in the octopus's rig units: clear of the head, whatever size the octopus is. The head reaches to about
+// x = 12 in rig units and the cube is 0.72 wide in the world, so the cube's center stands at the head's front plus the cube's half plus a gap,
+// converted back into rig units through the animal's scale (a baby holds it far out on stretched arms; an adult just past its eyes)
+const CUBE_HALF = 0.36, cubeHalfRig = (o) => CUBE_HALF / (o.scale || 0.06);
+const cubeHold = (o) => { const h = cubeHalfRig(o); return [13.5 + h, -5.5 - h * 0.9, 0]; };      /* (its back face just clear of the chin, its top below the eyes: it sits in the arms, not on the face) */
+const cubeDown = (o) => { const h = cubeHalfRig(o); return [11.5 + h + 1.5 / (o.scale || 0.06) * 0.9, -9, 0]; };
+const cubeHoldAt = (o, out) => { holdPoint(o, cubeHold(o), out); out.y = Math.max(out.y, sandH(out.x, out.z) + CUBE_HALF + 0.03); return out; };      /* (and never through the sand when it sits low) */
 
 const p0x = (L) => L.at.x;
 const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
@@ -157,14 +163,14 @@ export class Toys {
   // face now and then (hold), sets it down on the sand in front of it (put), looks at it a while (rest), and picks it up again, two or three times
   stepCube(dt) {
     const C = this.cube, p = C.g.position; C.life -= dt; C.t = (C.t ?? 0) + dt; C.phase ??= 'free';
-    if (C.life <= 0) { if (C.held && C.phase !== 'put') { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(C.held, CUBE_DOWN, new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; C.life = 1.2; } else if (!C.held) return this.cubeEnd(); }
+    if (C.life <= 0) { if (C.held && C.phase !== 'put') { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(C.held, cubeDown(C.held), new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; C.life = 1.2; } else if (!C.held) return this.cubeEnd(); }
     if (C.held && (C.held.dead || !free(C.held))) { this.cubeLetGo(C); C.phase = 'free'; }
     const o = C.held;
-    if (C.phase === 'grab') { const to = holdPoint(o, CUBE_HOLD, _v1), q = ez(C.t / 0.7); p.lerpVectors(C.from, to, q); C.g.rotation.x += dt * 0.4; if (C.t >= 0.7) { C.phase = 'hold'; C.t = 0; C.holdFor = 6 + Math.random() * 7; C.tw = 1.2; } o.flush = Math.max(o.flush ?? 0, 0.3); return; }
-    if (C.phase === 'hold') { holdPoint(o, CUBE_HOLD, p); C.g.rotation.x += dt * 0.7; C.g.rotation.y += dt * 1.1;      // held in the arms, turned over and over
+    if (C.phase === 'grab') { const to = cubeHoldAt(o, _v1), q = ez(C.t / 0.7); p.lerpVectors(C.from, to, q); C.g.rotation.x += dt * 0.4; if (C.t >= 0.7) { C.phase = 'hold'; C.t = 0; C.holdFor = 6 + Math.random() * 7; C.tw = 1.2; } o.flush = Math.max(o.flush ?? 0, 0.3); return; }
+    if (C.phase === 'hold') { cubeHoldAt(o, p); C.g.rotation.x += dt * 0.7; C.g.rotation.y += dt * 1.1;      // held in the arms, turned over and over
       C.tw -= dt; if (!C.twist && C.tw <= 0) { C.twist = { sl: C.slices[Math.floor(Math.random() * 3)], a: 0 }; this.onSound?.('bonk'); }      // now and then a face is twisted round a quarter turn
       if (C.twist) { const d = Math.min(Math.PI / 2 - C.twist.a, dt * 5); C.twist.a += d; C.twist.sl.rotation.y += d; if (C.twist.a >= Math.PI / 2 - 1e-3) { C.twist = null; C.tw = 0.9 + Math.random() * 1.6; } }
-      o.flush = Math.max(o.flush ?? 0, 0.25); if (C.t >= C.holdFor) { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(o, CUBE_DOWN, new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; } return; }
+      o.flush = Math.max(o.flush ?? 0, 0.25); if (C.t >= C.holdFor) { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(o, cubeDown(o), new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; } return; }
     if (C.phase === 'put') { const q = ez(C.t / 0.9); p.lerpVectors(C.from, C.to, q); C.g.rotation.x += (Math.round(C.g.rotation.x / (Math.PI / 2)) * (Math.PI / 2) - C.g.rotation.x) * Math.min(1, dt * 4);      // set down square on the sand
       if (C.t >= 0.9) { const who = o; this.cubeLetGo(C); C.phase = 'rest'; C.t = 0; C.restFor = 2.5 + Math.random() * 3; C.last = who; if (who?.st) { who.inspect = null; who.st.s = 'rest'; who.st.mode = null; who.st.t = C.restFor + 1; } } return; }
     if (C.phase === 'rest') { if (C.t >= C.restFor) { const who = C.last, d = who && !who.dead ? who.pos.distanceTo(p) : 9; C.phase = 'free'; if (who && d < 4 && (C.cycles ?? 1) < 3 && C.life > 10 && free(who)) { C.doneWith = null; who.inspect = { x: p.x, z: p.z, toy: true }; } else C.doneWith = who?.fid ?? null; } return; }      /* (back for it: it goes over again and gathers it up, two or three times, then loses interest) */
