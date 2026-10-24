@@ -42,7 +42,7 @@ const COSTUME_BUMP = { sole: 0.35, lion: 0.95, snake: 0, jelly: 0, kelp: 1, fish
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const ACT_TEXT = { flat: 'Flat as a sole, sliding over the sand.', bury: 'Dug into the sand, just its eyes showing.', lion: 'Spines out: pretending to be a lionfish.', snake: 'Two arms out, rippling like a sea snake.', jelly: 'Puffed up and drifting like a jellyfish.', kelp: 'Arms up, swaying like the plant beside it.', tour: 'Out for a swim round the tank.' };
 const GAITS = { stroll: { stride: 1, lift: 0, sp: 1, bob: 1 }, creep: { stride: 0.6, lift: 0, sp: 0.7, bob: 0.5 }, stilt: { stride: 1.35, lift: 0.22, sp: 1.15, bob: 1.6 }, bounce: { stride: 1.1, lift: 0.08, sp: 0.95, bob: 2.2 } };
-const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.04, alphaHash: true });      // a wet sheen: the light rolls off a fish's side in one bright line
+const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.04 });      // a wet sheen: the light rolls off a fish's side in one bright line
 // Soft lighting on hard voxels: blend each cube's face normal with the smoothed body normal,
 // so light rolls across the form like a rounded 3D shape while the silhouette stays blocky.
 import { fishBoost, voxShading, swayTime } from './voxshade.js';
@@ -100,17 +100,17 @@ export class Fish3D {
       this.size = gn.size;
       this.vox.forEach((v, i) => { this.mesh.getColorAt(i, col); col.getHSL(hsl); if (hsl.s > 0.2) { if (M) col.setHSL(M.h ?? hsl.h, M.s, Math.min(0.95, hsl.l * 0.4 + M.l * 0.6)); else col.setHSL((hsl.h + dh + 1) % 1, Math.min(1, hsl.s * ds), Math.min(0.95, hsl.l * dl)); this.mesh.setColorAt(i, col); } }); }
     // baked ambient occlusion from neighbour density + smooth normals for the shader
-    const nrm = new Float32Array(n * 3), thin = new Float32Array(n);
+    const nrm = new Float32Array(n * 3);
     this.vox.forEach((v, i) => {
       let c = 0;
       for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy || dz) && occ.has(key(v.x + dx, v.y + dy, v.z + dz))) c++;
       const ao = Math.max(0, Math.min(0.33, (c / 26 - 0.42) * 1.55));      // (a little deeper in the creases: between fins and body, under the arms)
       this.mesh.getColorAt(i, col); col.multiplyScalar(1 - ao); this.mesh.setColorAt(i, col);
-      thin[i] = v.thin && v.tag !== 'eye' && (v.flap || v.wave) ? 1 : 0;      /* (the fins and tail that flap or wave: see-through; thin parts of a body that do not move stay solid) */ if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; if (v.tag === 'web' || v.tag === 'beak') { nrm[i * 3] = 0; nrm[i * 3 + 1] = 0.45; nrm[i * 3 + 2] = 0.89; }          // the underside of the face is lit from the front, never left in the dark
+      if (!v.thin) { nrm[i * 3] = v.nx; nrm[i * 3 + 1] = v.ny; nrm[i * 3 + 2] = v.nz; if (v.tag === 'web' || v.tag === 'beak') { nrm[i * 3] = 0; nrm[i * 3 + 1] = 0.45; nrm[i * 3 + 2] = 0.89; }          // the underside of the face is lit from the front, never left in the dark
       else if (species.move === 'jet' && v.arm < 0 && v.ny < 0) { const ny = v.ny * 0.3, m = Math.hypot(v.nx, ny, v.nz) || 1; nrm[i * 3] = v.nx / m; nrm[i * 3 + 1] = ny / m; nrm[i * 3 + 2] = v.nz / m; }   // the underside is not left in the dark when the arms are away
       if (v.arm >= 0) { const a = 0.5, nx = v.nx * a, ny = v.ny * a + 0.5, nz = v.nz * a, m = Math.hypot(nx, ny, nz) || 1; nrm[i * 3] = nx / m; nrm[i * 3 + 1] = ny / m; nrm[i * 3 + 2] = nz / m; } }   // arms move, so light them from above in every pose
     });
-    this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3)); this.mesh.geometry.setAttribute('aThin', new THREE.InstancedBufferAttribute(thin, 1));
+    this.mesh.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     this.baseCol = Float32Array.from(this.mesh.instanceColor.array);
     this.mobile = [];
     this.vox.forEach((v, i) => { if (species.move === 'jet' || (this.sp.bend && v.x + this.cx < this.sp.bend.pivot) || v.flap || v.wave || v.flip || (v.tag === 'head' && TURTLE_IDS.has(species.id)) || v.tag === 'tail' || v.tag === 'glint' || v.tag === 'pouch') this.mobile.push(i); });
@@ -390,7 +390,7 @@ export class Fish3D {
   // somewhere to wander to on the sand, on any of the three levels: a few places are weighed, and one on a level, or near a spot, that other octopuses already have is less likely
   roamSpot(rng, others = []) {
     const b = this.band, octs = others.filter((o) => o !== this && !o.dead && o.species.move === 'jet'), here = levelAt(this.pos.x, this.pos.z); let best = null, bv = -1e9;
-    const LV = ['front', 'middle', 'rear'], count = (lv) => octs.filter((o) => levelAt(o.pos.x, o.pos.z) === lv).length, w = LV.map((lv) => (1 / (1 + count(lv)) + (lv === here ? 0.25 : 0)) * (lv === 'rear' ? 3.2 : lv === 'front' ? 0.7 : 1)),      // the high bank is worth the trip: a little more likely, so it is not left empty
+    const LV = ['front', 'middle', 'rear'], count = (lv) => octs.filter((o) => levelAt(o.pos.x, o.pos.z) === lv).length, T = this.lvT ?? { front: 1, middle: 1, rear: 1 }, tot = T.front + T.middle + T.rear || 1, fresh = (lv) => 1.25 / (0.25 + 3 * T[lv] / tot), w = LV.map((lv) => (1 / (1 + count(lv)) + (lv === here ? 0.15 : 0)) * (lv === 'rear' ? 2.2 : lv === 'front' ? 1.1 : 1) * fresh(lv)),      // the high bank is worth the trip, the open sand by the glass too; and a level it has been on a lot lately gives way to the ones it has not (fresh: 1 at an even third, about 2.3 at a tenth, 0.7 at half)
       wsum = w.reduce((a2, c) => a2 + c, 0);
     for (let k = 0; k < 8; k++) {
       let r0 = rng() * wsum, want = LV[0]; for (let q = 0; q < 3; q++) { if (r0 < w[q]) { want = LV[q]; break; } r0 -= w[q]; }      // first which level, the emptier ones more likely, then a place on it
@@ -1007,7 +1007,8 @@ export class Fish3D {
   // Octopus: rests on the bottom with its arms spread flat, crawls along it, and now and then jets through the water in pulses (mantle squeezes, arms stream back) before drifting down again.
   jetUpdate(dt, rng, others) {
     this.tt = (this.tt ?? 0) + dt; const mul = (this.mul ?? 1) * (this.vigor ?? 1) * (this.tmul ?? 1); const S = (this.st ||= { s: 'rest', t: 1 + rng() * 3, n: 0, pulse: 0 }); S.t -= dt * (S.s === 'rest' ? (this.temper()?.tempo ?? 1) : 1);
-    const h0 = this.heading; if (S.s !== 'jet') S.thr = null;      // (where it faced at the start of the frame: its turning is given weight at the end; a push that was under way ends with the jet)
+    const h0 = this.heading; if (S.s !== 'jet') S.thr = null;
+    { const L = (this.lvT ||= { front: 1, middle: 1, rear: 1 }), k = Math.exp(-dt / 240); for (const q in L) L[q] *= k; L[levelAt(this.pos.x, this.pos.z)] += dt; }      // how long it has spent on each level lately (the last few minutes count): it spreads its time over all three, not just the terrace it happens to be on      // (where it faced at the start of the frame: its turning is given weight at the end; a push that was under way ends with the jet)
     const floor = 0.55 + this.sandBelow(), onFloor = this.pos.y < floor + 0.5;      // the sand under it, on whichever level it is
     if (this.task && (S.s === 'jet' || S.s === 'dash' || S.s === 'glass' || this.seeking || this.hunt || this.jarAt || this.scareT > 0 || (performance.now() - this.task.t0 > 240000))) { this.onTask?.(this, 'abort'); this.task = null; if (S.mode === 'tgo' || S.mode === 'thaul' || S.mode === 'tsettle') S.mode = null; }
     if (this.seeking && S.s !== 'jet') { S.s = 'jet'; S.n = 2; S.t = 6; S.pulse = 0; }
@@ -1101,7 +1102,7 @@ export class Fish3D {
       else if (S.t <= 0 && this.shy && rng() < 0.6) { S.s = 'crawl'; S.t = 6; const spots = this.getSpots?.() ?? [], s2 = spots.length ? spots[(rng() * spots.length) | 0] : null; const [gx, gz] = this.crawlGoal(s2 ? s2.x : -3 + rng() * 6, s2 ? s2.z - 0.6 : 0.3, rng); this.target.set(gx, floor, gz); S.t = 5; }
       else if (S.t <= 0 && !this.shy && rng() < (0.07 + 0.1 * this.bold + 0.12 * bo) * (1 - 0.8 * sk) * St.dash * this.youngK()) { S.s = 'dash'; S.t = 4; const b = this.band, [gx, gz] = this.crawlGoal(this.pos.x + (rng() < 0.5 ? -1 : 1) * (2 + rng() * 2), b.z[0] + rng() * (b.z[1] - b.z[0]), rng); this.target.set(gx, floor, gz); }
       else if (S.t <= 0 && !this.shy && !this.glassAt && (this.glassCool ?? 0) <= 0 && rng() < (0.005 + 0.012 * this.bold + 0.012 * bo) * St.glass) { this.glassAt = { x: (rng() - 0.5) * 5, y: 2.2 + rng() * 5, until: performance.now() + 8000 + rng() * 5000, close: true };      /* rare: it swims all the way up to your screen and looks in */ this.glassCool = 60 + rng() * 90; }      // the bold ones jet up to the glass on their own and hang there, arms pressed to it
-      else if (S.t <= 0) { if (rng() < 0.42) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, s = spots.length && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; const roam = s ? null : this.roamSpot(rng, others), [gx, gz] = this.crawlGoal(s ? s.x + (rng() - 0.5) * 1.2 : roam[0], s ? s.z + 0.8 : roam[1], rng); this.target.set(gx, floor, gz); if (levelAt(gx, gz) !== levelAt(this.pos.x, this.pos.z) && rng() < (levelAt(gx, gz) === 'rear' || levelAt(this.pos.x, this.pos.z) === 'rear' ? 0.65 : 0.45)) { S.s = 'jet'; S.n = 2; S.t = 9; S.pulse = 0; S.mode = null; this.target.y = Math.max(sandH(gx, gz), floor - 0.55) + 1.6; } } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const [jx, jz] = this.roamSpot(rng, others); this.target.set(jx, sandH(jx, jz) + 2.4 + rng() * 5, jz); } }
+      else if (S.t <= 0) { if (rng() < 0.42) { S.s = 'crawl'; S.t = 3 + rng() * 4; const spots = this.getSpots?.() ?? [], b = this.band, Tl = this.lvT, here2 = levelAt(this.pos.x, this.pos.z), stale = Tl && Tl[here2] / (Tl.front + Tl.middle + Tl.rear || 1) > 0.45, s = spots.length && !stale && rng() < 0.6 ? spots[(rng() * spots.length) | 0] : null; const roam = s ? null : this.roamSpot(rng, others), [gx, gz] = this.crawlGoal(s ? s.x + (rng() - 0.5) * 1.2 : roam[0], s ? s.z + 0.8 : roam[1], rng); this.target.set(gx, floor, gz); if (levelAt(gx, gz) !== levelAt(this.pos.x, this.pos.z) && rng() < (levelAt(gx, gz) === 'rear' || levelAt(this.pos.x, this.pos.z) === 'rear' ? 0.65 : 0.45)) { S.s = 'jet'; S.n = 2; S.t = 9; S.pulse = 0; S.mode = null; this.target.y = Math.max(sandH(gx, gz), floor - 0.55) + 1.6; } } else { S.s = 'jet'; S.n = 2 + ((rng() * 2) | 0); S.t = 9; S.pulse = 0; const [jx, jz] = this.roamSpot(rng, others); this.target.set(jx, sandH(jx, jz) + 2.4 + rng() * 5, jz); } }
     } else if (S.s === 'crawl') {
       if (this.fears?.length && !S.fearChecked) { S.fearChecked = true; const nowt = performance.now(); this.fears = this.fears.filter((q) => nowt - q.t < 3e5); this.fearNear = false; for (const q of this.fears) if (Math.hypot(this.target.x - q.x, this.target.z - q.z) < (q.r ?? 1.8) && S.mode !== 'den' && !(S.mode ?? '').startsWith('t')) { this.fearNear = true; const ax = this.target.x - q.x || 1, b = this.band; this.target.x = Math.max(b.x[0], Math.min(b.x[1], q.x + Math.sign(ax) * ((q.r ?? 1.8) + 0.6))); }      /* (a place it was driven from, a guarded nest, keeps it further off) */ }
       this.restK += (0.25 - this.restK) * Math.min(1, dt * 2); this.crawlK += (1 - this.crawlK) * Math.min(1, dt * 2);

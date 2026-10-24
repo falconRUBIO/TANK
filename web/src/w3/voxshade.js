@@ -16,10 +16,7 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uBoost = fishBoost; sh.uniforms.uTime = swayTime; sh.uniforms.uBoostK = { value: boost }; sh.uniforms.uCaus = causTex; sh.uniforms.uCausT = causT; sh.uniforms.uCausK = causK; if (sway) { sh.uniforms.uPush = plantPush; sh.uniforms.uHold = plantHold; }
     sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
-      attribute vec3 aN; varying vec3 vWp; varying float vThin;
-      #ifdef USE_INSTANCING
-        attribute float aThin;
-      #endif
+      attribute vec3 aN; varying vec3 vWp;
       ${sway ? `attribute vec2 aSw; uniform float uTime; uniform vec4 uPush[${PUSH_N}]; uniform vec4 uHold[${HOLD_N}];` : ''}`)
       .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
         { vec4 wq = vec4(transformed, 1.0);
@@ -28,9 +25,7 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
           #endif
           vWp = (modelMatrix * wq).xyz; }
         #ifdef USE_INSTANCING
-          vThin = aThin;
         #else
-          vThin = 0.0;
         #endif`)
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
         if (dot(aN, aN) > 0.01) objectNormal = normalize(mix(objectNormal, aN, 0.72));      // (a little more of the cube in each face: the voxels read)`);
@@ -56,8 +51,7 @@ export function voxShading(mat, { sway = false, boost = 1 } = {}) {
         vec4 mvPosition = viewMatrix * wp;
         gl_Position = projectionMatrix * mvPosition;`);      // (vWp for a swaying plant is set by worldpos_vertex above, from the unswayed voxel: near enough for light that drifts anyway)
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uBoost; uniform float uBoostK; uniform sampler2D uCaus; uniform float uCausT, uCausK; varying vec3 vWp; varying float vThin;')
-      .replace('#include <alphahash_fragment>', `if (vThin > 0.5) diffuseColor.a *= 0.74;      // fins and tails: a little see-through (the dithered kind: no sorting, fits the pixel look)
-        #include <alphahash_fragment>`)
+      
       .replace('#include <opaque_fragment>', `outgoingLight += diffuseColor.rgb * uBoost * uBoostK;
         { float fres = pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0); outgoingLight *= 1.0 - 0.2 * fres; }      // the edges of each thing fall off into shade: round, solid, not a flat cut-out
         { vec2 cw = vWp.xz; float c1 = texture2D(uCaus, cw * 0.27 + vec2(uCausT * 0.012, uCausT * 0.006)).r, c2 = texture2D(uCaus, cw * 0.39 + vec2(-uCausT * 0.008, uCausT * 0.01) + 0.41).r;

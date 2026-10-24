@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v322** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v323** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -59,6 +59,12 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 - **Graphics, three passes, voxel look kept:** sand ripples and contact shadows under decorations, banks shaded on their faces and lit on top, far sand sinking into the water's color, stronger caustics and sunbeams, distant kelp that reads as kelp, brighter rim light, crisper voxel faces, edge shading on every voxel thing, water that deepens toward the sand, a calmer amber-and-blue dusk, more contrast, less blur in the distance. Before/after: `docs/audit/gfx_before_*.png`, `gfx_after_*.png`. **Frame cost not measured on a phone**; the added shader work is a handful of instructions per sand pixel and one `pow` per voxel pixel.
 
 ---
+
+## 3a. Taken back out, and what moved where (this build)
+- **Translucent fins: removed.** The dithered see-through read as film grain; fins are solid again (the per-voxel flag and the shader branch are gone, nothing else changed).
+- **Haze bands and the glass streak: removed.** No more streaks in the midwater or the corner.
+- **The octopus's time on each level:** it now keeps a fading tally of how long it has spent on each of the three sand levels and favors the ones it has been on least when it picks where to roam (and roams instead of visiting a decoration when it has been on the same level for most of the last few minutes). Ten simulated minutes, the lived-in tank: **front 31 → 24 %, middle 45 → 36 %, rear 24 → 40 %** (one run each; the octopus's type is random per run, so the exact split varies). The middle terrace is no longer where it spends most of its time.
+- **Menus and cards, one polish pass** (`docs/audit/menus_*`): every sheet, card and preview shares one glass material, cooler and more opaque, so the sand behind never turns it olive; the coach tip steps aside while a sheet or card is up (it used to sit over the Feed title); a shop preview fades the shop behind it instead of the two reading through each other; the toy box is a row per toy with two lines of text at most (the three narrow columns overflowed); a shop tag such as "carries sapphire" sits on its own line inside its card; milestones are a scrollable row of readable tiles instead of seven cramped columns; section labels share one size, weight and letter-spacing; the Feed screen is only as tall as what it shows; the strip behind the grab handle is the same glass, not a darker band.
 
 ## 3b. Movement pass (how everything moves)
 Measured with the new `tools/motion_check.mjs` (the same scenario on the old code and this one, 20 simulation steps a second):
