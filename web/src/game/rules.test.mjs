@@ -1264,3 +1264,14 @@ ok('the road ahead reads the tables: every level opens what the shop says, the p
   assert.ok(/sea turtle/i.test(R.LEVEL_PRIZE[8].text) && /hawksbill/i.test(R.LEVEL_PRIZE[8].text)); assert.ok(/hermit crab/i.test(R.LEVEL_PRIZE[3].text) && /empty shells/i.test(R.LEVEL_PRIZE[3].text));
   const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.xp = 60; R.advance(t, 3600e3); assert.ok(t.level >= 3, 'leveled'); assert.equal(t.lvAt[t.level], 3600e3, 'the moment it was reached is kept');
 });
+ok('play: a second go with a toy inside 20 s says so and when it counts again; who joined is reported with how far along; crabs are never offered tricks; the hide and puzzle picks are shared', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.level = 3; t.flags.tut = 5;
+  t.fish = [R.ensureFish({ id: 'a', name: 'Ann', species: 'goldfish', seed: 7, born: -12 * D, stage: 'adult', traits: [] }), R.ensureFish({ id: 'c', name: 'Cal', species: 'blueleg', seed: 8, born: -12 * D, stage: 'adult', traits: [] }), R.ensureFish({ id: 'o', name: 'Ink', species: 'octopus', seed: 9, born: -20 * D, stage: 'adult', traits: [], bond: { u: 9 } })];
+  const go = (now) => R.applyAction(t, { t: 'play', toy: 'ball', fish: ['a', 'c', 'o'] }, { now, name: 'Sam', uid: 'u' });
+  const r1 = go(1e6); assert.equal(r1.applied, true); assert.deepEqual(r1.learn.map((x) => [x.name, x.n]), [['Ann', 1], ['Cal', 1], ['Ink', 1]]);
+  const r2 = go(1e6 + 5e3); assert.equal(r2.applied, false); assert.ok(r2.wait > 0 && r2.wait <= R.TOY_GAP, 'says when it counts again'); assert.equal(t.fish[0].toys.ball, 1, 'the same go is not counted twice');
+  const r3 = go(1e6 + 25e3); assert.equal(r3.applied, true); assert.equal(t.fish[0].toys.ball, 2);
+  assert.deepEqual(R.trickOptions(t, t.fish[1], 1e6), [], 'a hermit crab is not offered tricks'); assert.ok(R.trickOptions(t, t.fish[2], 1e6).length >= 1, 'the octopus is');
+  assert.equal(R.hideOcto(t).id, 'o'); t.fish[2].seek = { at: 1, path: [], until: 2 }; assert.equal(R.hideOcto(t).id, 'o', 'the only octopus even while it searches'); delete t.fish[2].seek;
+  assert.equal(R.puzzleOcto(t, 'u', false, 1e6)?.id, 'o');
+});

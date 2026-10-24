@@ -159,8 +159,8 @@ export const TURTLE_ADOPT = 120, DEAL = { on: true };      /* (DEAL.on: the simu
 export const turtleEver = (t) => !!t?.flags?.turtleAdopted || releasedCount(t) > 0 || (t?.fish ?? []).some((f) => f && TURTLES.has(f.species) && !f.visitor) || (t?.orders ?? []).some((o) => o && TURTLES.has(o.species));
 export const turtleDeal = (t) => { const regular = SPECIES_DEF.turtle.price, eligible = DEAL.on && !!t && (t.goalsDone ?? []).some((g) => g.id === 'sanctuary') && !turtleEver(t); return { eligible, price: eligible ? TURTLE_ADOPT : regular, regular }; };
 // what room a turtle would have here: it counts as four small fish for crowding (roomOf), and its wellbeing wants the tank no more than 60% full; the purchase itself takes one place
-export const turtleRoom = (t, species = 'turtle') => { const cr = crowdOf(t), need = roomOf({ species }), after = cr.load + need, limit = 0.6 * cr.cap, places = Math.max(0, t.fish.length + pending(t) + 1 - capacity(t.level ?? 1));
-  return { load: cr.load, cap: cr.cap, need, after, pct: Math.round((after / cr.cap) * 100), limit: 60, ok: after <= limit && places === 0, places, fewer: after > limit ? Math.ceil((after - limit) / 0.85) : 0 }; };      /* (fewer: about how many small fish fewer for it to be comfortable) */
+export const turtleRoom = (t, species = 'turtle') => { const cr = crowdOf(t), need = roomOf({ species }), cap = cr.cap + (sanctuaryPlaces(t) && turtlesHere(t) === 0 ? 4 : 0), after = cr.load + need, tol = sanctCalm(t) ? 0.85 : 0.6, limit = tol * cap, places = Math.max(0, t.fish.length + pending(t) + 1 - capacityOf(t, true));
+  return { load: cr.load, cap, need, after, pct: Math.round((after / cap) * 100), limit: Math.round(tol * 100), ok: after <= limit && places === 0, places, fewer: after > limit ? Math.ceil((after - limit) / 0.85) : 0 }; };      /* (fewer: about how many small fish fewer for it to be comfortable) */
 export const releasedCount = (t) => Math.max(t?.released?.length ?? 0, t?.stats?.released ?? 0);      // sea turtles raised here and let go (shared tank state, saved with everything else)
 export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
@@ -306,7 +306,21 @@ export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', m
 export const STYLE_PRICE = { floor: { sand: 0, pearl: 20, gravel: 20, black: 30, coral: 40 }, backdrop: { candy: 0, lagoon: 25, sunset: 25, mint: 25 } };
 export const styleOwned = (t, kind, key) => !(STYLE_PRICE[kind]?.[key] > 0) || !!t.flags.styles?.[kind]?.[key];
 export const pending = (t) => (t.orders ?? []).reduce((n, o) => n + SPECIES_DEF[o.species].count, 0);
-export const capacity = (level) => LEVELS[Math.max(1, Math.min(TOP_LEVEL, level | 0)) - 1].room;      // set per level in LEVELS, so a new level never overcrowds a tank by formula
+export const capacity = (level) => LEVELS[Math.max(1, Math.min(TOP_LEVEL, level | 0)) - 1].room;
+// ── capacity model (the v330 audit decisions) ── one switch the simulation flips to compare models; production is the v330 model until a
+// model is approved. sanct: 'off' | 'turtle' (a four-place sanctuary allowance only a turtle may use, and the sanctuary's turtle is content in a
+// tank as full as the fish are) | 'general' (four more places for anything once the sanctuary goal is done). release: places earned for each of
+// the first two turtles released. breed: 'v330' (eggs laid while the tank is under 80 % full) | 'room' (under 70 %, and a fry offer only when the
+// tank would stay under 85 %). stats: what the model held back, for the report.
+export const CAP = { sanct: 'off', release: 0, breed: 'v330', stats: { birthsHeld: 0, fryHeld: 0 } };
+export const sanctuaryDone = (t) => (t?.goalsDone ?? []).some((g) => g.id === 'sanctuary');
+const turtlesHere = (t) => t.fish.filter((f) => !f.dead && TURTLES.has(f.species)).length + (t.orders ?? []).filter((o) => TURTLES.has(o.species)).length;
+export const capExtra = (t) => (CAP.release ? Math.min(2, releasedCount(t)) * CAP.release : 0) + (CAP.sanct === 'general' && sanctuaryDone(t) ? 4 : 0);
+export const sanctuaryPlaces = (t) => (CAP.sanct === 'turtle' && sanctuaryDone(t) ? 4 : 0);      // places only the sanctuary's turtle may take (one turtle)
+export const capacityOf = (t, forTurtle = false) => capacity(t.level ?? 1) + capExtra(t) + (forTurtle && turtlesHere(t) === 0 ? sanctuaryPlaces(t) : 0);
+export const sanctCalm = (t) => CAP.sanct === 'turtle' && sanctuaryDone(t);      // the sanctuary's turtle is content in a tank as full as the fish are (0.85), not only under 60 %
+const spawnLimit = () => (CAP.breed === 'room' ? 0.7 : 0.8);
+export const fryRoom = (t) => CAP.breed !== 'room' || (crowdOf(t).load + 0.85) / crowdOf(t).cap <= 0.85;      // one more small fish keeps the tank under 85 % full      // set per level in LEVELS, so a new level never overcrowds a tank by formula
 // life goes on in a full tank: eggs, hatchlings and a kept seahorse baby may go a little over what the shop allows (bought fish never do),
 // so a finished tank still has births, and old age makes room again in time
 export const BIRTH_ROOM = 4;
@@ -727,7 +741,7 @@ function eggs(t, now, ev) {
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
     for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) { o.restUntil = now + 2 * DAY; ev.push({ journal: `${o.name} is worn out after guarding her eggs for days. She is resting in her den.`, story: o.id, text: 'Worn out after guarding her eggs; resting in her den.', jat: now + 60e3 }); } }      // (her watch is over; an octopus mother rests a while)
     const how = md === 'den' ? `${G?.name ?? 'The mother'}'s eggs hatched. Tiny octopuses jetted out of the den in a little cloud, and most drifted up and away on the current; one stayed close to ${G?.name ?? 'the den'}: meet ${f.name}` : md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most drifted off on the current, as larvae do; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched. A little cloud of larvae rose from them and most drifted off on the current; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. Most of the tiny larvae floated away; one little one stayed: meet ${f.name}`;
-    const fry = 5 + (h % 4), room = t.fish.length + pending(t) < capacity(t.level) + BIRTH_ROOM, watched = !!e.watch;
+    const fry = 5 + (h % 4), room = t.fish.length + pending(t) < capacityOf(t) + BIRTH_ROOM && fryRoom(t), watched = !!e.watch;
     ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id], hatch: { egg: e.id, fish: f.id, fry, mode: md, watched } });
     if (watched) witness(t, md === 'den' ? 'octohatch' : 'hatch', f, now, ev, e.watchBy ?? null, A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`);
     if (watched && room) { t.fryOffer = { id: 'fo' + e.id, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: f.id }; ev.push({ fryOffer: t.fryOffer.id }); }      // you were there: one more is still by the eggs, for a little while
@@ -737,7 +751,7 @@ function eggs(t, now, ev) {
   }
   if (now < t.eggAt) return; t.eggAt = now + (16 + (hash32(now / 6e4) % 12)) * HOUR;
   const busy = t.eggs.length > 0;      // one clutch of fish eggs at a time, so each one is an event (an octopus's eggs hang in her own den, so they are not kept waiting by the fish)
-  if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return;
+  if (t.fish.length + pending(t) + t.eggs.length >= capacityOf(t) + BIRTH_ROOM) return;
   // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
   { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm' && kindOf(f) === kindOf(Mo));      /* (partners of two different kinds keep each other company, but lay no eggs) */
     const fed = (f) => ownHunger(f) < 0.5 || now - (f.fedAt ?? 0) < DAY;      /* (well fed: fed today, not full at this very minute) */
@@ -747,7 +761,7 @@ function eggs(t, now, ev) {
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
       ev.push({ journal: `${Mo.name} has hung strings of tiny eggs from the roof of her den. She will guard them and hardly leave until they hatch.`, egg: true, story: Mo.id, text: 'Laid her eggs in her den, and guards them.' }); return; } }
   if (busy) return;
-  if (crowdOf(t).r > 0.8) return;      // fish do not spawn in a crowded tank (and a tank kept full does not fill itself past bursting)
+  if (crowdOf(t).r > spawnLimit()) { CAP.stats.birthsHeld++; return; }      // fish do not spawn in a crowded tank (and a tank kept full does not fill itself past bursting)
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'tang' && f.species !== 'cory' && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      /* (a fish that needs to be the only one of its kind, a tang or a goby, does not raise a family of rivals) */      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
@@ -800,7 +814,7 @@ function devSea(t, op, now, ev) {
     const free = (sx) => hs().find((f) => sexOf(f) === sx && !f.mate && stageOf(f, now) === 'adult');
     let m = free('m'), w = free('f');
     if (w && m && relatedFish(m, w)) w = null;
-    if (t.fish.length + (m ? 0 : 1) + (w ? 0 : 1) > capacity(t.level)) return 'TANK_FULL';
+    if (t.fish.length + (m ? 0 : 1) + (w ? 0 : 1) > capacityOf(t)) return 'TANK_FULL';
     const add = (sx, name, seed) => { const f = ensureFish({ id: nextId(t, 'f'), name, species: 'seahorse', seed, born: now - 40 * DAY, stage: 'adult', traits: traitsFor('seahorse', seed), sex: sx, happy: 0.85, paid: 0, owner: null }); t.fish.push(f); return f; };
     m ||= add('m', NAMES.find((n) => n === 'Sunny' && !t.fish.some((f) => f.name === n)) ?? 'Coral', 104); w ||= add('f', NAMES.find((n) => n === 'Pearl' && !t.fish.some((f) => f.name === n)) ?? 'Shell', 211);
     m.sex = 'm'; w.sex = 'f'; t.bonds ||= {}; t.bonds[m.id + '|' + w.id] = SEA.PAIR_DAYS * DAY; t.pairAt = 0; t.pairLast = now;      // they have shared the tank long enough: the pairing itself is the game's
@@ -1159,7 +1173,7 @@ const since = (k) => (t, g) => statOf(t, k) - (g.base?.[k] ?? 0);
 const liveOf = (t) => t.fish.filter((f) => !f.dead && !f.away);
 const carrierOf = (t, m) => liveOf(t).some((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x])));
 // a full tank lays no eggs: every breeding step says so plainly, and what to do, rather than waiting in silence
-const fullTank = (t) => t.fish.length + pending(t) + (t.eggs ?? []).length >= capacity(t.level) + BIRTH_ROOM;
+const fullTank = (t) => t.fish.length + pending(t) + (t.eggs ?? []).length >= capacityOf(t) + BIRTH_ROOM;
 const FULL_HINT = 'Your tank is full, so no eggs can be laid: find one of your shop fish a new home, or send a baby to a friend.';
 const roomy = (h) => (t) => (fullTank(t) ? FULL_HINT : typeof h === 'function' ? h(t) : h);
 const colorGoal = (m) => ({
@@ -1304,6 +1318,10 @@ export const TOYS = {
 export const TOY_LEARN = 5;
 export const toyKind = (f) => (isCrab(f) ? 'crab' : f.species === 'octopus' ? 'octopus' : f.species === 'seahorse' ? 'seahorse' : ['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback'].includes(f.species) ? 'turtle' : 'fish');
 export const toysOpen = (t) => Object.keys(TOYS).filter((k) => (t.level ?? 1) >= TOYS[k].unlock);
+export const TOY_GAP = 20e3;      // one go with a toy counts once every 20 s per person (bubbles last about 12 s; a second stream straight after is the same go)
+// the octopus a hide-and-seek is for: the first one here that is not already searching (the Play tile and the game itself use the same pick)
+export const hideOcto = (t) => t.fish.find((f) => f.species === 'octopus' && !f.dead && !f.away && !f.seek) ?? t.fish.find((f) => f.species === 'octopus' && !f.dead && !f.away) ?? null;
+export const puzzleOcto = (t, uid, shared, now = Date.now()) => t.fish.find((f) => canPuzzle(f, now) && !f.puzzle && canFeedOcto(f, uid, shared)) ?? t.fish.find((f) => canPuzzle(f, now) && canFeedOcto(f, uid, shared)) ?? t.fish.find((f) => canPuzzle(f, now) && !f.puzzle) ?? t.fish.find((f) => canPuzzle(f, now)) ?? null;
 // What each level opens. Levels take turns: a new animal, then a new way to play, so every level-up brings something to do
 // ── what each level opens ── read from the tables themselves (species and decorations carry their own level, toys their unlock), plus the
 // ways to play that have no shop entry. The road on the Tank chart and the level-up dialog are built from this, so they cannot drift from the shop.
@@ -1346,7 +1364,7 @@ export const bondOf = (f) => Object.values(f.bond ?? {}).reduce((n, x) => n + x,
 // what this fish can be taught right now: it has to be past the baby stage, trust someone, and the tank needs the decoration
 export const TRICK_LEVEL = 3;
 export function trickOptions(t, f, now = Date.now()) {
-  if (!f || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND || (t.level ?? 1) < TRICK_LEVEL) return [];      // (tricks open at level 3: tricks already learned are kept whatever the level)
+  if (!f || isCrab(f) || stageOf(f, now) === 'baby' || bondOf(f) < TRICK_BOND || (t.level ?? 1) < TRICK_LEVEL) return [];      // (tricks open at level 3: tricks already learned are kept whatever the level; hermit crabs do not do tricks)
   return Object.entries(TRICKS).filter(([k]) => !(f.tricks ?? []).includes(k)).map(([k, d]) => ({ key: k, label: d.label, spot: d.types.length ? t.decor.find((x) => d.types.includes(x.type))?.id ?? null : 'glass', have: f.skill?.[k] ?? 0, need: trainNeed(f) })).filter((o) => o.spot);
 }
 
@@ -1478,15 +1496,15 @@ export const KIND_NEEDS = {
     W_('pair', 'A partner for life', 'Seahorses pair for life and greet each other every morning with a little dance.', 'Another seahorse', (c) => c.own >= 2),
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
     W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Fewer animals, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
-  turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
+  turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('graze', 'Sea grass to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'A Sea Grass Bed, or two plants', (c) => (c.types.seagrass ?? 0) >= 1 || (c.cats.PLANTS ?? 0) >= 2),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
-  hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
+  hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Hawksbills sleep wedged under reef ledges and in caves.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('reef', 'Reef rock to forage', 'Hawksbills eat sponges, prying them out of the reef with their narrow, hooked beaks.', 'A Sponge Garden, live rock or brain coral', (c) => (c.types.liverock ?? 0) + (c.types.brain ?? 0) + (c.types.sponge ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
-  loggerhead: [W_('room', 'Room to roam', 'Loggerheads travel widely along the sea floor; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= 0.6),
+  loggerhead: [W_('room', 'Room to roam', 'Loggerheads travel widely along the sea floor; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Loggerheads sleep wedged under ledges and in reef holes.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('crunch', 'Things to crunch', 'Loggerheads crack crabs, snails and clams with their huge jaws, foraging among shells and rubble.', 'Shell Rubble, shells or live rock', (c) => (c.types.rubble ?? 0) + (c.types.shell ?? 0) + (c.types.liverock ?? 0) + (c.types.chest ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
@@ -1501,13 +1519,13 @@ export const KIND_NEEDS = {
 export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
-  return { decorN: t.decor.length, others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
+  return { decorN: t.decor.length, others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, roomTol: sanctCalm(t) ? 0.85 : 0.6, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
     ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7, ...(isCrab(f) ? { crabSpare: !outgrown(f, now) || !!bestShell(f, t.decor.filter((d) => isShell(d.type)), now) } : {}) };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)
 export const roomOf = (f) => { const S = SOCIAL[f.species] ?? {}; return f.species === 'kemps' ? 3 : isTurtle(f) ? 4 :      /* (a sea turtle needs a great deal of room: one is plenty for most tanks) */ S.shoal ? 0.5 : (S.size ?? 1) >= 3 ? 1.5 : 0.85; };
-export const crowdOf = (t) => { const L = t.fish.filter((x) => !x.dead && !x.away), n = L.length, cap = capacity(t.level ?? 1), load = L.reduce((a, f) => a + roomOf(f), 0); return { n, cap, load, r: load / cap }; };
+export const crowdOf = (t) => { const L = t.fish.filter((x) => !x.dead && !x.away), n = L.length, cap = capacity(t.level ?? 1) + capExtra(t) + (sanctuaryPlaces(t) && L.some((f) => TURTLES.has(f.species)) ? 4 : 0), load = L.reduce((a, f) => a + roomOf(f), 0); return { n, cap, load, r: load / cap }; };
 export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;
   const E = ECO[f.species] ?? {}, cv = coverOf(t, f), cover = Math.min(1, cv.have / Math.max(1, cv.need)), timid = S.size <= 1 && !S.bully, seen = new Set(), cr = crowdOf(t), meanK = 1 + Math.max(0, cr.r - 0.6);      /* (a crowded tank makes its bullies meaner) */
@@ -2016,7 +2034,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'keepFry': {      // one more little one was still by the eggs: keep it too (or let it go with the others); the first answer decides
       const O = t.fryOffer; if (!O || O.id !== a.id) return fail('NOT_FOUND'); t.fryOffer = null; if (now > O.until) return ok({ applied: false, gone: true });
       if (!a.keep) { events.push({ journal: 'The last little larva drifted off after the others.' }); return ok({ keep: false }); }
-      if (t.fish.length + pending(t) >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');
+      if (t.fish.length + pending(t) >= capacityOf(t) + BIRTH_ROOM || !fryRoom(t)) { CAP.stats.fryHeld++; return fail('TANK_FULL'); }
       const { f } = makeChild(t, O.egg, now); morphBorn(t, f, now, events); bump(t, 'hatched'); f.hatched = O.at ?? now; const sib = t.fish.find((x) => x.id === O.first);
       events.push({ journal: `${name} kept one more: ${f.name}${sib ? `, ${sib.name}'s twin` : ''}, stays too.`, toast: `${f.name} stays too!`, arrival: [f.id], hatch: { egg: O.egg.id, fish: f.id, fry: 0, twin: true } });
       return ok({ keep: true, fish: f.id });
@@ -2075,7 +2093,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const d = SPECIES_DEF[a.species]; if (!d) return fail('UNKNOWN_SPECIES');
       if (t.level < d.level) return fail('LEVEL_TOO_LOW');
       if (releasedCount(t) < (d.needRel ?? 0)) return fail('LOCKED');      // the hawksbill opens once the tank has raised a turtle and let it go (counted in stats: the list of releases is capped)
-      if (t.fish.length + pending(t) + d.count > capacity(t.level)) return fail('TANK_FULL');
+      if (t.fish.length + pending(t) + d.count > capacityOf(t, TURTLES.has(a.species))) return fail('TANK_FULL');
       const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
@@ -2231,14 +2249,14 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       else events.push({ toast: `${driftBlame(g)} +${g.amount} shells` });
       levelCheck(t, now, events); return ok({ applied: true, delta: g.amount, kind: g.kind });
     }
-    case 'play': {                                                  // a toy played with: who joined in learns it a little more; the tank's plays open the next toy
+    case 'play': {                                                  // a toy played with: who joined in learns it a little more (toys open by level; see TOYS.unlock)
       const toy = TOYS[a.toy] ? a.toy : null; if (!toy || !toysOpen(t).includes(toy)) return fail('NOT_FOUND');
-      const at = (t.flags.toyAt ||= {}), k = uid + ':' + toy; if (now - (at[k] ?? 0) < 45e3) return ok({ applied: false });      // (a play is one go with a toy, not every bounce)
-      at[k] = now; const before = toysOpen(t); t.toyPlays = (t.toyPlays ?? 0) + 1;
+      const at = (t.flags.toyAt ||= {}), k = uid + ':' + toy; if (now - (at[k] ?? 0) < TOY_GAP) return ok({ applied: false, wait: TOY_GAP - (now - (at[k] ?? 0)) });      // (a play is one go with a toy, not every bounce: the phone says so, and when it counts again)
+      at[k] = now; t.toyPlays = (t.toyPlays ?? 0) + 1;
       const ids = [...new Set((Array.isArray(a.fish) ? a.fish : []).map(String))].slice(0, 10), who = ids.map((id) => t.fish.find((f) => f.id === id && !f.dead)).filter((f) => f && TOYS[toy].fits.includes(toyKind(f)));
-      for (const f of who) { f.toys ||= {}; f.toys[toy] = (f.toys[toy] ?? 0) + 1; if (f.toys[toy] === TOY_LEARN) { const line = `${f.name} has learned to play with the ${TOYS[toy].label.toLowerCase()}.`; events.push({ journal: line, story: f.id, text: line, toast: line }); } }
-      for (const n of toysOpen(t).filter((x) => !before.includes(x))) events.push({ journal: `A new toy in the Toy box: ${TOYS[n].label.toLowerCase()}.`, toast: `New toy: ${TOYS[n].label}` });
-      return ok({ n: who.length });
+      const learn = [];
+      for (const f of who) { f.toys ||= {}; f.toys[toy] = (f.toys[toy] ?? 0) + 1; learn.push({ id: f.id, name: f.name, n: f.toys[toy] }); if (f.toys[toy] === TOY_LEARN) { const line = `${f.name} has learned to play with the ${TOYS[toy].label.toLowerCase()}.`; events.push({ journal: line, story: f.id, text: line, toast: line }); } }
+      return ok({ applied: true, n: who.length, learn });
     }
     case 'pet': {
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
@@ -2310,7 +2328,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     }
     case 'firstFish': {                                            // every caretaker gets a free first fish of their own
       if (members && !members.some((m) => m.id === uid)) return fail('FORBIDDEN');
-      t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level)) return fail('TANK_FULL');
+      t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacityOf(t)) return fail('TANK_FULL');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their own octopus.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} brought in their octopus.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
@@ -2356,7 +2374,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const N = t.nursery; if (!N || N.id !== a.nursery) return fail('NOT_FOUND');      // (already chosen, perhaps by someone else a moment ago)
       if (now < N.readyAt) return fail('NOT_READY');
       const c = N.cands.find((x) => x.id === a.baby); if (!c) return fail('NOT_FOUND');
-      if (t.fish.length + pending(t) + t.eggs.length >= capacity(t.level) + BIRTH_ROOM) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
+      if (t.fish.length + pending(t) + t.eggs.length >= capacityOf(t) + BIRTH_ROOM || !fryRoom(t)) return fail('TANK_FULL');      // nothing is ever moved out to make room: the choice waits
       if (t.fish.some((x) => x.id === c.id)) return fail('NOT_FOUND');
       const f = ensureFish({ id: c.id, name: c.name, species: 'seahorse', kind: N.pa?.kind ?? N.ma?.kind ?? t.fish.find((x) => x.id === N.father)?.kind ?? 'kuda', seed: c.seed, born: now, lean: leanOf([N.pa, N.ma], hash32(c.seed + 11)), birthDate: N.born, bornHere: true, stage: 'baby', traits: c.traits, sex: c.sex, genes: c.genes, gen: N.gen ?? 1, happy: 0.8, paid: 0, parents: [N.pa, N.ma].filter(Boolean).map(lineOf), owner: null, ownerName: null });
       const left = N.cands.filter((x) => x.id !== c.id).map((x) => x.id); t.fish.push(f); morphBorn(t, f, now, events); t.nursery = null; t.lastDepart = { nursery: N.id, left, kept: f.id, at: now, n: N.n };      /* every phone watching sees the others swim off, once */ (t.families ||= []).push({ id: N.id, born: N.born, father: N.pa?.name ?? null, mother: N.ma?.name ?? null, kept: f.id, n: N.n }); t.families = t.families.slice(-20);

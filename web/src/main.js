@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
 import { isCrab, CRAB_TYPES, crabNeed, shellFit, shellLabel } from './game/crabs.js';
-import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, HIDE_GAP, TRAIN_GAP, TOY_LEARN as TOY_LEARN_N, hideOcto, puzzleOcto, toysOpen as toysOpenR, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 15000); addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
 import { makeStudio, planShot } from './w3/photo.js';
@@ -338,11 +338,13 @@ async function giveCrab() {
 }
 // Hide a treat: choose where, and the octopus hunts for it, spot by spot, in the order it has learnt (the order comes from the rules, the same on every phone)
 async function hideTreat() {
-  const s = game.state, o = s.fish.find((f) => f.species === 'octopus' && !f.dead && !f.seek) ?? s.fish.find((f) => f.species === 'octopus' && !f.dead);
+  const s = game.state, o = hideOcto(s);
   if (!o) { ui.toast('An octopus loves this game. Get one first.'); return; }
-  if (s.decor.length < 2) { ui.toast('Put at least two decorations in the tank to hide things in.'); return; }
+  const places = decor.spots().map((q) => q.id), opts = s.decor.filter((d) => places.includes(d.id));      // (only places the octopus can really go and look: flat things like a starfish or moss hide nothing)
+  if (opts.length < 2) { ui.toast('Put at least two decorations with somewhere to hide in the tank: rocks, plants, a pot.'); return; }
   if (o.seek) { ui.toast(`${o.name} is still searching`); return; }
-  const where = await ui.choose({ title: 'Hide a treat', text: `Pick a place. ${o.name} remembers where you hide things, so a new place fools it. ${HIDE_COST} 🐚`, options: s.decor.map((d) => ({ label: hideLabel(s, d.id).replace(/^\w/, (c) => c.toUpperCase()), value: d.id })) });
+  if (o.seekAt != null && game.now() - o.seekAt < HIDE_GAP) { const m = Math.max(1, Math.ceil((HIDE_GAP - (game.now() - o.seekAt)) / 60e3)); ui.toast(`${o.name} is resting after the last hunt. Back in about ${m} minute${m > 1 ? 's' : ''}.`); return; }
+  const where = await ui.choose({ title: 'Hide a treat', text: `Pick a place. ${o.name} remembers where you hide things, so a new place fools it. ${HIDE_COST} 🐚, and it pays 10 back if the hunt takes three tries or more.`, options: opts.map((d) => ({ label: hideLabel(s, d.id).replace(/^\w/, (c) => c.toUpperCase()), value: d.id })) });
   if (!where) return;
   const r = await game.dispatch({ t: 'hide', id: o.id, spot: where }); if (!r.ok) return fail(r);
   if (r.busy) { ui.toast(`${o.name} is still searching`); return; }
@@ -374,7 +376,7 @@ async function releaseTurtle(rec) {
   const r = await game.dispatch({ t: 'releaseTurtle', id: rec.id }); if (!r.ok) return fail(r); if (r.delta > 0) flyShells(r.delta, [window.innerWidth / 2, window.innerHeight * 0.3]);
 }
 async function givePuzzle(id) {
-  const o = id ? game.state.fish.find((f) => f.id === id) : game.state.fish.find((f) => canPuzzle(f) && !f.puzzle) ?? game.state.fish.find((f) => canPuzzle(f)); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
+  const o = id ? game.state.fish.find((f) => f.id === id) : puzzleOcto(game.state, game.you?.userId, game.shared); if (!o) { const b = game.state.fish.find((f) => f.species === 'octopus' && !f.dead), nx = b && nextStage(b); ui.toast(b ? `Puzzle jars are for grown octopuses. ${b.name} grows up in ${nx?.label ?? 'a little while'}.` : 'Puzzle jars are for octopuses.', 3200); return; }
   const r = await game.dispatch({ t: 'puzzle', id: o.id }); if (!r.ok) return fail(r); capNote();
   if (r.busy) { ui.toast(`${o.name} is still working on the jar`); return; }
   if (!r.applied) { const h = Math.max(1, Math.ceil((r.wait ?? 0) / 3600e3)); ui.toast(`${o.name} needs a rest. Try again in about ${h} hour${h > 1 ? 's' : ''}.`); return; }
@@ -402,7 +404,8 @@ async function showTrick(f, key) {      // ask for it: it does it if it trusts y
 }
 function trickBlock(rec) {
   const learned = (rec.tricks ?? []), opts = trickOptions(game.state, rec), done = learned.length ? `<div class="notes">Tricks: ${learned.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}</div>` : '';
-  return learned.map((k) => `<button class="lnk" data-show="${k}">Show trick</button>`).join('') + opts.map((o) => `<button class="lnk" data-train="${o.key}" data-spot="${o.spot}">Teach a trick (${o.have}/${o.need})</button>`).join('');
+  const rest = rec.trainAt != null && game.now() - rec.trainAt < TRAIN_GAP ? Math.max(1, Math.ceil((TRAIN_GAP - (game.now() - rec.trainAt)) / 60e3)) : 0;      // (a lesson every twenty minutes: the button says so before you tap)
+  return learned.map((k) => `<button class="lnk" data-show="${k}">Show: ${esc(TRICKS[k]?.label ?? k)}</button>`).join('') + opts.map((o) => `<button class="lnk ${rest ? 'dim' : ''}" data-train="${o.key}" data-spot="${o.spot}">Teach: ${esc(o.label)} (${o.have}/${o.need})${rest ? ` · rest ${rest} min` : ''}</button>`).join('');
 }
 // how well the tank suits this fish, a wish it has, and notes people left it
 // its wellbeing, the same as Health gives: the ring, the word, what is missing or wrong, and a way to the full picture
@@ -459,7 +462,10 @@ const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + c
 let bottleId = null; const sentBottles = new Map();
 const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
 toys.onSound = (k) => sfx({ splash: 'bubble', bubble: 'bubble', bonk: 'tap', pop: 'click', pounce: 'tap' }[k] ?? 'tap');
-toys.onDone = (toy, ids) => { if (game.state) game.dispatch({ t: 'play', toy, fish: ids }).then(capNote).catch(() => null); };      // who joined in learns the toy a little more
+toys.onDone = (toy, ids) => { if (!game.state) return; game.dispatch({ t: 'play', toy, fish: ids }).then((r) => { capNote(); if (!r?.ok) return;      // who joined in learns the toy a little more, and the phone says who, and how far along they are
+  const T = TOYS[toy]; if (r.applied === false) { ui?.toast(`Same go with the ${T.label.toLowerCase()}: it counts again in ${Math.max(1, Math.ceil((r.wait ?? 0) / 1000))} s.`, 2200); return; }
+  const L = (r.learn ?? []).filter((x) => x.n < TOY_LEARN_N); if (!L.length) { if (!(r.learn ?? []).length) ui?.toast(`Nobody joined in with the ${T.label.toLowerCase()} this time.`, 2200); return; }
+  const names = L.length > 2 ? `${L.slice(0, 2).map((x) => x.name).join(', ')} and ${L.length - 2} more` : L.map((x) => x.name).join(' and '), top = L[0]; ui?.toast(`${names} joined in · ${T.label.toLowerCase()} ${top.n} of ${TOY_LEARN_N}`, 2600); }).catch((e) => console.warn('play', e)); };
 // while the light spot is on, the tank goes dark around it: a dark veil over the tank with a soft hole where the light falls, following your finger
 const dimmer = document.createElement('div'); dimmer.id = 'dimmer'; canvas.after(dimmer);      // (right over the tank, under the header, the menus and the bar)
 function toScreen(p) { const r = canvas.getBoundingClientRect(), sc = Math.max(r.width / IW, r.height / IH), dw = IW * sc, dh = IH * sc, q = p.clone().project(camera); return [r.left + (r.width - dw) * 0.5 + (q.x + 1) / 2 * dw, r.top + (r.height - dh) + (1 - q.y) / 2 * dh]; }
@@ -528,7 +534,7 @@ function reopenWhenIdle(f, tries = 0, now = false) {
 }
 async function finishPlay(lifted = false) {
   const { fish: f, moved } = play; play = null; f.mul = 0.35; f.glassAt = null; if ($('pet')) { $('pet').disabled = false; $('pet').textContent = f.species.id === 'octopus' ? `Let ${f.name} follow your finger` : `Play with ${f.name}`; }
-  if (moved < 2) { ui.toast(`Drag along the glass and ${f.name} will follow`); reopenWhenIdle(f, 0, lifted); return; }
+  if (moved < 1) { ui.toast(`Drag along the ${f.crab ? 'sand' : 'glass'} and ${f.name} will follow`); reopenWhenIdle(f, 0, lifted); return; }      // (a short drag still counts: a finger that moved a little is a game)
   const r = await game.dispatch({ t: 'pet', id: f.fid }); if (!r.ok) { reopenWhenIdle(f, 0, lifted); return fail(r); } capNote();
   if (!r.applied) { ui.toast(`${f.name} is tired of playing for now`); reopenWhenIdle(f, 0, lifted); return; }
   fishes.burst(f.pos); sfx('arrive'); haptic(10); f.vigor = Math.max(f.vigor, 1.1);
@@ -888,7 +894,7 @@ const TIPS = [
   ['eggs', (s) => (s.eggs ?? []).length, 'EGGS IN THE TANK', 'Tap the eggs to see who is guarding them. Feeding the fish or changing the water on two days helps them hatch strong.'],
   ['away', (s) => game.shared && s.fish.some((f) => awayOwner(f, game.members) && f.owner !== game.you?.userId), 'A FRIEND IS AWAY', 'One of the animals has not had its caretaker in for a while. Tap it to look after it until they are back.'],
   ['octo', (s) => s.fish.some((f) => f.species === 'octopus' && !f.dead && f.owner === game.you?.userId) && (s.flags?.tut ?? 0) >= 5, 'GETTING TO KNOW IT', 'Tap your octopus: its card says what it is thinking and how much it trusts you. Trust grows each time you feed it and come to visit.'],
-  ['toys', (s) => (s.toyPlays ?? 0) === 0 && Date.now() - (s.createdAt ?? Date.now()) > 864e5, 'PLAYTIME', 'Open Care, then Play: toss in a ball, start some bubbles, or shine a light spot. They learn which toys they like.'],
+  ['toys', (s) => (s.toyPlays ?? 0) === 0 && Date.now() - (s.createdAt ?? Date.now()) > 864e5, 'PLAYTIME', (s) => `Open Care, then Play: ${toysOpenR(s).map((k) => TOYS[k].label.toLowerCase()).join(', ')}. They learn which toys they like.`],
   ['crew', () => game.shared && (game.members?.length ?? 0) > 1, 'YOUR CREW', 'In Crew you can message your friends, stick a note on the glass, or send a message in a bottle.'],
   ['journal', () => (game.journal?.length ?? 0) > 25, 'THE JOURNAL', 'Everything that happens is kept in Crew, Journal, with photos of the moments you were there to see.'],
 ];
@@ -900,7 +906,7 @@ function tipsTick() {
   if (Date.now() - (seen._last ?? 0) < 5 * 60e3) return;      // one tip at a time, a few minutes apart
   const tip = TIPS.find(([k, when]) => !seen[k] && when(s)); if (!tip) return;
   seen[tip[0]] = Date.now(); seen._last = Date.now(); try { localStorage.setItem('ourtank.tips', JSON.stringify(seen)); } catch { return; }
-  ui.showCoach({ title: tip[2], text: tip[3], button: 'Got it', onButton: () => $('coach').classList.remove('on') });
+  ui.showCoach({ title: tip[2], text: typeof tip[3] === 'function' ? tip[3](s) : tip[3], button: 'Got it', onButton: () => $('coach').classList.remove('on') });
 }
 // ── a photo for each real moment: a little camera of its own is pointed at whoever it is about (or the eggs) and takes the picture, wherever
 // the screen happens to be looking. The phone running the animals sends it to the tank, so everyone's journal has it; alone, it is kept here ──
@@ -1067,7 +1073,7 @@ function showCard(f) {
   const toysTile = (() => { const T = rec.toys ?? {}, ks = Object.keys(TOYS).filter((k) => T[k]); if (!ks.length) return ''; const fav = favToy(rec);      // which toys it plays with, and how far it has got with each
     return `<div class="trust toyt"><span>${msIcon(TOYS[fav ?? ks[0]].icon, true, 14)} Toys</span><b>${fav ? `Loves the ${TOYS[fav].label.toLowerCase()}` : 'Just starting'}</b><small>${ks.map((k) => `${TOYS[k].label} ${T[k] >= TOY_LEARN ? '✓ learned' : `${T[k]} of ${TOY_LEARN}`}`).join(' · ')}</small></div>`; })();
   const bondTile = rec.species === 'octopus' || rec.species === 'seahorse' ? bondLines(rec, game.now(), LOG) : '';
-  const playBlk = () => rec.away || f.visitor ? '' : `<div class="acts2 playrow"><button class="act2 ${(game.state?.want?.fish === rec.id && game.state?.want?.kind === 'play') ? 'due' : ''}" id="pet">✋ ${f.species.id === 'octopus' ? `Let ${esc(rec.name)} follow your finger` : `Play with ${esc(rec.name)}`}<small>drag your finger along the glass</small></button></div>`;
+  const playBlk = () => rec.away || f.visitor ? '' : `<div class="acts2 playrow"><button class="act2 ${(game.state?.want?.fish === rec.id && game.state?.want?.kind === 'play') ? 'due' : ''}" id="pet">✋ ${f.species.id === 'octopus' ? `Let ${esc(rec.name)} follow your finger` : `Play with ${esc(rec.name)}`}<small>drag your finger along the ${f.crab ? 'sand' : 'glass'}</small></button></div>`;
   const nextLine = (() => { const n = storyNext(game.state, game.state.fish.find((x) => x.id === rec.id) ?? rec); return n ? `<p class="mind next"><b>Next</b> ${esc(n)}</p>` : ''; })();      // the next chapter of its life, first
   const lifeLine = (() => { const out = [], nm = (id) => DECOR_DEF[game.state.decor.find((d) => d.id === id)?.type]?.label?.toLowerCase();      // Emergent Life: its habits, and a companion it misses (from the tank's records only)
     if (rec.grudge) out.push(`Has it in for ${esc(rec.grudge.name)}${rec.grudge.why === 'den' ? ', who keeps poking round its den' : ''}.`);
