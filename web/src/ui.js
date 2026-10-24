@@ -1106,7 +1106,7 @@ export function initUI({ game, social, cb }) {
   // pop-up over it; 'Go and see' takes you to the animal, a tap elsewhere puts it away. It waits out the quiet start like every card.
   function newLife({ title, why, img, look = 'Go and see', icon = '🥚' }) {
     return new Promise((res) => { const show = () => { if (quiet()) { setTimeout(show, (window.__quietUntil ?? 0) - Date.now() + 300); return; } let done = false; const fin = (v) => { if (!done) { done = true; res(v); } };
-      shelf('settle', `<p class="chap life">${img ? `<img alt="" src="${img}">` : `<i>${icon}</i>`}<span><small>New in your tank</small><b>${esc(title.charAt(0) + title.slice(1).toLowerCase())}</b>${why ? `<span>${esc(why)}</span>` : ''}</span></p><p class="nx"><span class="lk">${esc(look)} ›</span></p>`, 12000, () => fin(true), 0, (el) => { const t = setTimeout(() => fin(false), 12500); el.addEventListener('click', () => { clearTimeout(t); setTimeout(() => fin(false), 50); }, { once: true }); });
+      shelf('settle', `<p class="chap life">${img ? `<img alt="" src="${img}">` : `<i>${icon}</i>`}<span><small>New in your tank</small><b>${esc(title === title.toUpperCase() ? title.charAt(0) + title.slice(1).toLowerCase() : title)}</b>${why ? `<span>${esc(why)}</span>` : ''}</span></p><p class="nx"><span class="lk">${esc(look)} ›</span></p>`, 12000, () => fin(true), 0, (el) => { const t = setTimeout(() => fin(false), 12500); el.addEventListener('click', () => { clearTimeout(t); setTimeout(() => fin(false), 50); }, { once: true }); });
       sfx('arrive'); haptic(12); }; show(); });
   }
 
