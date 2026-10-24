@@ -1230,3 +1230,31 @@ ok('hermit crabs: arrive young in a small shell, get a free starter shell, move 
   assert.ok(h.crab.moltAt || c.crab.moltAt, 'growing up, a crab molts');
   assert.ok(R.KIND_NEEDS.blueleg.some((w) => w.k === 'shell') && R.decorUses('cshell_rose').meets.some((m) => m.sp === 'blueleg'), 'an empty shell is a crab need, shown in the shop');
 });
+ok('living aquarium: best friends grow from time really spent together, both sides, once per pair; schools, bullies and their prey never', () => {
+  const D = 864e5, mk = (id, species, traits = []) => R.ensureFish({ id, name: id.toUpperCase(), species, seed: 7, born: -12 * D, stage: 'adult', traits, arrived: 0 });
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5; t.fish = [mk('a', 'goldfish'), mk('b', 'platy'), mk('g', 'guppy'), mk('n1', 'neon'), mk('n2', 'neon')]; t.decor.push({ id: 'r1', type: 'rock', x: 0, z: 0 });
+  assert.ok(R.canBefriend(t.fish[0], t.fish[1]), 'a clownfish and a platy can be friends'); assert.ok(!R.canBefriend(t.fish[1], t.fish[2]), 'a damselfish bullies a platy'); assert.ok(!R.canBefriend(t.fish[3], t.fish[4]), 'a school is already together');
+  const log = (near, now) => R.applyAction(t, { t: 'fishLog', logs: [{ fish: 'a', dist: 1, lv: {}, places: [], near }] }, { now, name: 'Sam', uid: 'u' });
+  const s0 = t.shells; log({ b: 180, g: 180, n1: 180 }, 1e6); log({ b: 180, g: 180 }, 2e6); assert.ok(!t.fish[0].pal, 'not yet: eight minutes over three reports');
+  assert.ok(!t.fish[0].know.g, 'time near a bully is not counted toward a friendship'); R.advance(t, 3e6); const s0b = t.shells, r = log({ b: 180 }, 3e6);
+  assert.equal(t.fish[0].pal, 'b'); assert.equal(t.fish[1].pal, 'a', 'both sides'); assert.equal(t.shells - s0b, R.FRIEND_REWARD); assert.ok(s0 <= s0b); assert.ok(r.events.some((e) => /A and B are best friends now/.test(e.journal ?? '')));
+  assert.ok(t.fish[0].story.some((x) => /best friends/.test(x.text)) && t.fish[1].story.some((x) => /best friends/.test(x.text)), 'in both their own stories');
+  assert.ok(R.milestonesOf(t.fish[1]).find((m) => m.key === 'friend').done); assert.ok(R.wellOf(t, t.fish[0], 3e6).parts.some((p) => p.k === 'company' && p.got === 4), 'a friend who is here counts a little');
+  delete t.fish[0].pal; delete t.fish[1].pal; t.fish[0].know = {}; log({ b: 200 }, 4e6); log({ b: 200 }, 5e6); R.advance(t, 6e6); const s1 = t.shells; log({ b: 200 }, 6e6); assert.equal(t.fish[0].pal, 'b'); assert.equal(t.shells, s1, 'the same pair pays once');
+});
+ok('living aquarium: a favorite spot comes from where the fish has really been, its trait category only as the fallback; a death frees the survivor', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.level = 4; t.flags.tut = 5; t.flags.mortality = true;
+  t.fish = [R.ensureFish({ id: 'a', name: 'Ann', species: 'goldfish', seed: 7, born: -12 * D, stage: 'adult', traits: ['Brave'], arrived: 0, happy: 1 }), R.ensureFish({ id: 'b', name: 'Bo', species: 'platy', seed: 8, born: -12 * D, stage: 'adult', traits: ['Calm'], arrived: 0, happy: 1 })];
+  t.decor.push({ id: 'r1', type: 'rock', x: -2, z: 0 }, { id: 'r2', type: 'rock', x: 2, z: 0 }, { id: 'w1', type: 'wood', x: 0, z: 1 });
+  t.fish[0].haunt = { r2: 3 }; R.advance(t, 3 * 3600e3); assert.equal(t.fish[0].spotId, 'r2', 'the rock it actually sits by, not the first rock');
+  const u = R.newWorld(0); R.norm(u, 0); u.level = 4; u.flags.tut = 5; u.fish = [R.ensureFish({ id: 'a', name: 'Ann', species: 'goldfish', seed: 7, born: -12 * D, stage: 'adult', traits: ['Brave'], arrived: 0, happy: 1 })]; u.decor.push({ id: 'r1', type: 'rock', x: -2, z: 0 }, { id: 'r2', type: 'rock', x: 2, z: 0 });
+  R.advance(u, 3 * 3600e3); assert.equal(u.fish[0].spotId, 'r1', 'nothing seen yet: the trait category, first rock');
+  t.fish[0].pal = 'b'; t.fish[1].pal = 'a'; t.fish[1].born = -(R.lifeOf(t.fish[1]) + 400) * D; let died = false; for (let d = 1; d <= 120 && !died; d++) { R.advance(t, 3 * 3600e3 + d * D); died = !t.fish.some((f) => f.id === 'b'); }
+  assert.ok(died, 'the old platy passed away'); assert.ok(!t.fish[0].pal, 'the survivor is free to make a new friend');
+});
+ok('living aquarium: trust is per caretaker; fish spawners and seahorse parents light "became a parent"', () => {
+  const D = 864e5, t = quiet(2); t.fish.forEach((f, i) => { f.born = -12 * D; f.stage = 'adult'; f.seed = 3; f.sex = i % 2 ? 'm' : 'f'; }); t.simTs = 0; t.eggAt = 1 * D; t.createdAt = -9 * D;
+  R.advance(t, 1.01 * D); watchHatch(t, 1.01 * D); for (const id of ['f0', 'f1']) assert.ok(R.milestonesOf(t.fish.find((f) => f.id === id)).find((m) => m.key === 'parent').done, id + ' is a parent');
+  const f = t.fish[0]; for (let i = 0; i < 3; i++) R.applyAction(t, { t: 'pet', id: f.id }, { now: 2 * D + i * 5 * 60e3, name: 'Ana', uid: 'ana' });
+  assert.ok(R.milestonesOf(f, 'ana').find((m) => m.key === 'trust').done, 'Ana, who petted it three times'); assert.ok(!R.milestonesOf(f, 'ben').find((m) => m.key === 'trust').done, 'not Ben, who never has');
+});

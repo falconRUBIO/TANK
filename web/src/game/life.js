@@ -55,7 +55,8 @@ export function lifeDay(t, now, ev, R) {
   for (const m of (t.memorial ?? []).filter((x) => !known.has(x.id))) {
     known.add(m.id); const close = t.fish.filter((f) => !f.dead && !f.away && (f.pal === m.id || f.mate === m.id || f.partner === m.id || f.buddy === m.id));
     for (const f of close) { const place = (m.place?.id && label(m.place.id)) ? m.place.id : f.spotId && label(f.spotId) ? f.spotId : null; f.loss = { id: m.id, name: m.name, at: now, until: now + LIFE.LOSS_DAYS * DAY, place };
-      if (place) ev.push({ story: f.id, text: `Keeps going back to the ${label(place).toLowerCase()}, where it used to be with ${m.name}.` }); }
+      if (place) ev.push({ story: f.id, text: `Keeps going back to the ${label(place).toLowerCase()}, where it used to be with ${m.name}.` });
+      if (f.pal === m.id) delete f.pal; if (f.buddy === m.id) delete f.buddy; }      // (the loss is remembered for a few days; the friendship itself is over, so a new one can grow)
   }
   t.life.dead = [...known].slice(-30);
   for (const f of t.fish) if (f.loss && now > f.loss.until) delete f.loss;

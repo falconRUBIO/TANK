@@ -246,9 +246,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
     ws.on('message', (raw) => {
-      if (raw.length > 4096 && !raw.subarray(0, 16).toString().startsWith('{"t":"photo"')) return;      // only a photo may be big; anything else that size is dropped, as before
+      const head = raw.length > 4096 ? raw.subarray(0, 16).toString() : '', big = head.startsWith('{"t":"photo"') ? Infinity : head.startsWith('{"t":"snap"') ? 12288 : 4096;      // only a photo may be big; the lead phone's animal snapshot of a full tank may be up to 12 KB (about 100 bytes an animal); anything else that size is dropped
+      if (raw.length > big) return;
       let m; try { m = JSON.parse(raw.toString()); } catch { return; }
-      if (raw.length > 4096 && m?.t !== 'photo') return;      // (and checked again once read: a message that only started like a photo is still too big)
+      if (raw.length > 4096 && m?.t !== 'photo' && m?.t !== 'snap') return;      // (and checked again once read: a message that only started like a photo or a snapshot is still too big)
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
         if (m.t === 'photo') {      // a picture of a moment, taken by the phone running the animals, for everyone's journal
@@ -276,7 +277,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (m.t === 'vis') { const h = !!m.hidden; if (!h) ws.beat = Date.now(); if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }
         if (m.t === 'snap') {
           if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
-          const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 16).map((v) => n(v, 4)) } : {}), ...(f.c != null ? { c: n(f.c, 2) } : {}), ...(f.g != null ? { g: n(f.g, 1) } : {}), ...(f.sh != null ? { sh: String(f.sh).slice(0, 48) } : {}) }));      // sh: a seahorse's compact state (see main.js seaPack)
+          const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 32).map((v) => n(v, 4)) } : {}), ...(f.c != null ? { c: n(f.c, 2) } : {}), ...(f.g != null ? { g: n(f.g, 1) } : {}), ...(f.sh != null ? { sh: String(f.sh).slice(0, 48) } : {}) }));      // sh: a seahorse's compact state (see main.js seaPack)
           const crabs = Array.isArray(m.crabs) ? m.crabs.slice(0, 8).filter(Array.isArray).map((c) => c.slice(0, 5).map((v) => n(v, 60))) : [];
           const ts = Number.isFinite(+m.ts) ? Math.max(0, Math.min(1e7, +m.ts)) : null;
           for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, { t: 'snap', fish, crabs, ts });

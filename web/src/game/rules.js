@@ -426,13 +426,42 @@ function unlock(t, f, key, now, ev, x = {}) {
   if (d.quiet) { ev.push({ story: f.id, text: d.line(f, x) }); return true; }
   ev.push({ journal: d.line(f, x), noticed: f.id, toast: d.line(f, x) }); return true;
 }
+// ── friendships from time really spent together ── the lead phone reports, every few minutes, how long each fish was within arm's reach of
+// which others (fishmgr knowT → fishLog near). It is folded into f.know = { id: [seconds, reports] }, fading so it has to be kept up; once two
+// compatible fish have kept company for eight minutes over three or more reports and neither has a best friend, they are best friends.
+export const KNOW = { FRIEND: 480, REPORTS: 3, FADE: 0.97, KEEP: 4 };
+export function canBefriend(f, o) {
+  if (!f || !o || f === o || f.dead || o.dead || f.away || o.away || f.gift?.wrapped || o.gift?.wrapped) return false;
+  if (isOcto(f) || isOcto(o) || isCrab(f) || isCrab(o) || f.species === 'neongoby' || o.species === 'neongoby' || f.species === 'neon' || o.species === 'neon') return false;
+  const A = SOCIAL[f.species] ?? {}, B = SOCIAL[o.species] ?? {}, timid = (x) => (x.size ?? 1) <= 1 && !x.bully;
+  if (f.species === o.species) return !(A.shoal || A.sameFoe || A.pair);      /* (a school is always together; rivals of their own kind, and seahorse pairs, are a different bond) */
+  if ((A.bully && timid(B)) || (B.bully && timid(A)) || A.predator || B.predator) return false;
+  return !(ECO[f.species]?.clash?.[o.species] || ECO[o.species]?.clash?.[f.species]);
+}
+function befriend(t, f, o, now, ev, where) {
+  const key = [f.id, o.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = o.id; o.pal = f.id;
+  for (const x of [f, o]) { (x.disc ||= {}).friend ??= now; x.found ||= []; if (!x.found.includes('friend')) x.found.push('friend'); }
+  if (first) t.shells += FRIEND_REWARD;
+  const line = `${f.name} and ${o.name} are best friends now.${where ? ` They keep each other company by the ${where}.` : ' They have been keeping each other company.'}`;
+  ev.push({ journal: line, story: f.id, text: line, discovery: f.id, ...(first ? { toast: `${f.name} and ${o.name} are best friends. +${FRIEND_REWARD} shells` } : {}) }, { story: o.id, text: line });
+}
+function knowFold(t, f, near, now, ev) {
+  const K = (f.know ||= {}), live = (id) => t.fish.find((x) => x.id === id && !x.dead);
+  for (const id of Object.keys(K)) { if (!Array.isArray(K[id])) { delete K[id]; continue; } K[id][0] = Math.round(K[id][0] * KNOW.FADE); if (!live(id) || K[id][0] < 10) delete K[id]; }
+  for (const [id, sec] of Object.entries(near).slice(0, 4)) { const o = live(id); if (!o || o === f || !canBefriend(f, o)) continue; const k = (K[id] ||= [0, 0]); k[0] = Math.min(36e3, k[0] + Math.max(0, Math.min(200, Math.round(+sec) || 0))); k[1] = Math.min(999, k[1] + 1); }
+  for (const id of Object.keys(K).sort((a, b) => K[b][0] - K[a][0]).slice(KNOW.KEEP)) delete K[id];
+  if (f.pal && live(f.pal)) return;
+  const top = Object.entries(K).sort((a, b) => b[1][0] - a[1][0])[0]; if (!top || top[1][0] < KNOW.FRIEND || top[1][1] < KNOW.REPORTS) return;
+  const o = live(top[0]); if (!o || (o.pal && live(o.pal)) || !canBefriend(f, o)) return;
+  const spot = f.spotId && o.spotId === f.spotId ? t.decor.find((d) => d.id === f.spotId) : null; befriend(t, f, o, now, ev, spot ? DECOR_DEF[spot.type]?.label?.toLowerCase() : null);
+}
 function discover(t, now, ev) {
   const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon' && !f.gift?.wrapped);
   for (const f of t.fish) {
     ensureFish(f); f.found ||= []; if (now - Math.max(f.born, f.arrived ?? -Infinity) < 2 * 3600e3 || f.happy < 0.7 || f.gift?.wrapped) continue;      /* (settled in for a couple of hours first; a wrapped gift says nothing until it is opened) */
     const fav = favouriteOf(f, t);
-    if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const dd = t.decor.find((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]); if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favorite spot near the ${fav.label}.`, toast: `${f.name} found a favorite spot! +2 shells`, discovery: f.id }); }
-    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f && !(o.found ?? []).includes('friend')) ?? social.find((o) => o !== f), key = [f.id, pal.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = pal.id; pal.pal ??= f.id; (f.disc ||= {}).friend ??= now; (pal.disc ||= {}).friend ??= now; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); if (first) t.shells += FRIEND_REWARD; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: first ? `${f.name} made a friend. +${FRIEND_REWARD} shells` : `${f.name} and ${pal.name} are friends now!`, discovery: f.id }); }
+    if (fav && !f.found.includes('spot')) { f.found.push('spot'); (f.disc ||= {}).spot ??= now; const H = f.haunt ?? {}, used = Object.entries(H).sort((a, b) => b[1] - a[1])[0], dd = (used && used[1] >= 2 && t.decor.find((d) => d.id === used[0])) || t.decor.filter((d) => DECOR_DEF[d.type]?.cat === SPOT[fav.key]?.[0]).sort((a, b) => (H[b.id] ?? 0) - (H[a.id] ?? 0))[0]; if (dd) f.spotId = dd.id; t.shells += 2; ev.push({ journal: `${f.name} found a favorite spot near the ${dd ? DECOR_DEF[dd.type].label.toLowerCase() : fav.label}.`, toast: `${f.name} found a favorite spot! +2 shells`, discovery: f.id }); }
+    else if (social.length >= 2 && social.includes(f) && !f.found.includes('friend')) { const pal = social.find((o) => o !== f && !(o.found ?? []).includes('friend')) ?? social.find((o) => o !== f), key = [f.id, pal.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = pal.id; if (!pal.pal || !t.fish.some((x) => x.id === pal.pal && !x.dead)) pal.pal = f.id; (f.disc ||= {}).friend ??= now; (pal.disc ||= {}).friend ??= now; f.found.push('friend'); pal.found ||= []; if (!pal.found.includes('friend')) pal.found.push('friend'); if (first) t.shells += FRIEND_REWARD; ev.push({ journal: `${f.name} and ${pal.name} have been spending more time together.`, toast: first ? `${f.name} made a friend. +${FRIEND_REWARD} shells` : `${f.name} and ${pal.name} are friends now!`, discovery: f.id }); }
   }
 }
 // Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
@@ -693,7 +722,7 @@ function eggs(t, now, ev) {
       ev.push({ journal: eggCareOf(e).mode === 'den' ? `${nmA ?? 'The mother'} is blowing water over her eggs, and tiny shapes are moving inside them. They are ready to hatch.` : `${nmA && nmB ? `${nmA} and ${nmB}'s eggs` : 'The eggs'} are wriggling. They are ready to hatch.`, toast: 'The eggs are ready to hatch! Stay and watch.', eggReady: e.id, jat: e.ready }); }
     if (!e.watch && now < e.by) continue;      // ready: they hatch while someone is watching (or, failing that, by the next morning)
     t.eggs.splice(t.eggs.indexOf(e), 1);
-    const { f, A, B, h, gen } = makeChild(t, e, now); morphBorn(t, f, now, ev); bump(t, 'hatched'); if (e.watch) bump(t, 'watchedHatch'); if (gen >= 2) bump(t, 'gen2'); if (e.species === 'octopus') bump(t, 'octoHatch');
+    const { f, A, B, h, gen } = makeChild(t, e, now); morphBorn(t, f, now, ev); for (const P of [A, B]) if (P) (P.disc ||= {}).parent ??= now; bump(t, 'hatched'); if (e.watch) bump(t, 'watchedHatch'); if (gen >= 2) bump(t, 'gen2'); if (e.species === 'octopus') bump(t, 'octoHatch');
     f.hatched = now; const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
     for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) { o.restUntil = now + 2 * DAY; ev.push({ journal: `${o.name} is worn out after guarding her eggs for days. She is resting in her den.`, story: o.id, text: 'Worn out after guarding her eggs; resting in her den.', jat: now + 60e3 }); } }      // (her watch is over; an octopus mother rests a while)
@@ -825,8 +854,8 @@ function seaFamilies(t, now, ev) {
     for (const [k, ms] of Object.entries(t.bonds).sort((x, y) => y[1] - x[1])) {
       if (ms < SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|'), m = byId.get(a), w = byId.get(b); if (!m || !w || m.mate || w.mate) continue;
       m.mate = w.id; w.mate = m.id; m.pairedAt = w.pairedAt = now; delete t.bonds[k]; unlock(t, m, 'pair', now, ev); unlock(t, w, 'pair', now, ev);
-      if (m.sex === w.sex) ev.push({ journal: `${m.name} and ${w.name} have bonded as companions. They greet each other every morning, though they will not have babies.`, toast: `${m.name} and ${w.name} are companions now.` });
-      else ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.`, pair: m.id });
+      if (m.sex === w.sex) ev.push({ journal: `${m.name} and ${w.name} have bonded as companions. They greet each other every morning, though they will not have babies.`, toast: `${m.name} and ${w.name} are companions now.` }, { story: m.id, text: `Bonded as companions with ${w.name}.` }, { story: w.id, text: `Bonded as companions with ${m.name}.` });
+      else ev.push({ journal: `${m.name} and ${w.name} have paired up. Seahorses pair for life.`, toast: `${m.name} and ${w.name} are a pair now.`, pair: m.id }, { story: m.id, text: `Paired for life with ${w.name}.` }, { story: w.id, text: `Paired for life with ${m.name}.` });
     }
   }
   // the morning dance: once a day, in the journal and in both their stories (a pair, or two companions)
@@ -847,7 +876,7 @@ function seaFamilies(t, now, ev) {
     if (!m.preg.ready) { m.preg.ready = m.preg.due; m.preg.by = wakeAt(t, m.preg.due + EGG_WAIT); ev.push({ journal: `${m.name}'s pouch is twitching. The babies are coming.`, toast: `${m.name} is about to give birth! Stay and watch.`, birthReady: m.id, jat: m.preg.due }); }
     if (!m.preg.watch && now < m.preg.by) continue;      // like eggs: born while someone is watching (or by the next morning)
     const P = m.preg, born = Math.min(now, P.watch ?? P.by), w = byId.get(P.mother), ma = w ? snap(w) : P.ma, pa = snap(m), fam = nextId(t, 'n');
-    m.preg = null; m.lastBirth = born; m.breedAt = born + SEA.COOLDOWN * DAY; m.births = (m.births ?? 0) + 1; if (w) w.births = (w.births ?? 0) + 1;
+    m.preg = null; m.lastBirth = born; m.breedAt = born + SEA.COOLDOWN * DAY; m.births = (m.births ?? 0) + 1; if (w) w.births = (w.births ?? 0) + 1; (m.disc ||= {}).parent ??= born; if (w) (w.disc ||= {}).parent ??= born;
     const taken = new Set(t.fish.map((f) => f.name)), names = NAMES.filter((n) => !taken.has(n)), cands = [];
     for (let i = 0; i < 3; i++) { const h = hash32(P.seed + i * 7919), pick = (p, k) => (p?.traits?.length ? p.traits[(h >> k) % p.traits.length] : null), traits = [...new Set([pick(ma, 1), pick(pa, 3)].filter(Boolean))];
       const role = BABY_ROLES[i], tr = [ROLE_TRAIT[role], ...(traits.length ? traits : traitsFor('seahorse', h % 90000)).filter((x) => x !== ROLE_TRAIT[role])].slice(0, 2);      // each of the three is its own little character, and its first trait is the one it shows
@@ -1520,6 +1549,7 @@ export function wellOf(t, f, now = Date.now()) {
   if (E.feed === 'slow' && !(f.species === 'seahorse' && ownHunger(f) < 0.35) && !(f.species === 'betta' && t.decor.some((d) => d.type === 'liverock'))) { const fast = live.filter((o) => o !== f && ECO[o.species]?.feed === 'fast'); if (fast.length) trouble.push({ name: fast[0].name, kind: 'food', text: `${[...new Set(fast.map((o) => o.name))].slice(0, 2).join(' and ')} eat quickly and beat it to the food` }); }
   const cv = coverOf(t, f), threatened = trouble.some((x) => ['bully', 'wary', 'clash'].includes(x.kind)), cover = { ...cv, wants: !!S.shy || threatened || f.species === 'seahorse' || f.species === 'octopus', helps: threatened && cv.have < cv.need };
   const KD = kindDef(f), tol = (E.tol ?? 0.85) * (KD?.shy ? 0.8 : KD?.dayActive ? 0.85 : 1), crowd = { n: cr.n, cap: cr.cap, pct: Math.round(cr.r * 100), limit: Math.round(tol * 100), word: cr.r >= 0.9 ? 'Crowded' : cr.r >= 0.65 ? 'Busy' : 'Roomy', over: cr.r > tol, room: Math.max(0, Math.floor(tol * cr.cap) - cr.n), minds: S.shy || S.pair ? 'likes calm, uncrowded water' : S.shoal ? 'feels safe in a group' : S.bully ? 'gets meaner when the tank is packed' : null };
+  const withFriend = [f.pal, f.mate, f.partner].some((id) => id && live.some((o) => o.id === id));      /* (a best friend, mate or partner who is here: a little company credit) */
   const ns = needsOf(f, t, now), bad = (f.ail ?? 0) >= AIL_TIRED, stressed = trouble.some((x) => x.kind === 'bully' || x.kind === 'clash') && cv.have < cv.need, uneasy = crowd.over, lonely = (S.shoal && live.filter((o) => o.species === f.species).length < S.shoal) || (S.pair && live.filter((o) => o.species === f.species).length < 2);
   const mood = bad ? ['Unwell', 'bad', 'Run down. Food and clean water, then time to recover.'] : stressed ? ['Stressed', 'warn', (() => { const x = trouble.find((y) => y.kind === 'bully') ?? trouble.find((y) => y.kind === 'clash'); return x.kind === 'bully' ? `${x.name} chases it, and it has too few places to get away.` : `It keeps clashing with ${x.name}, and has nowhere to retreat.`; })()] : ns.mood === 'Hungry' ? ['Hungry', 'warn', 'Ready for a meal.'] : uneasy ? ['Uneasy', 'warn', `The tank is too full for ${/^[aeiou]/.test(me) ? 'an' : 'a'} ${me}.`] : lonely ? ['Lonely', 'warn', S.pair ? 'Seahorses pair for life. It is waiting for a partner.' : `It feels safe only in a group of ${S.shoal}.`] : (f.happy ?? 0.6) >= 0.75 ? ['Happy', 'good', friends.length ? `Settled, and close to ${friends[0].name}.` : 'Settled and content.'] : (f.happy ?? 0.6) < 0.4 ? ['Gloomy', 'warn', 'Something is missing. See below.'] : ['Content', 'ok', 'Doing well.'];
   const wants = needsChecklist(t, f, now).filter((x) => x.k !== 'food');
@@ -1527,10 +1557,10 @@ export function wellOf(t, f, now = Date.now()) {
   // fed (15) and in good health (10). The mood word follows the number, so an animal missing something never reads the same as one that has it all
   const scored = wants.filter((x) => !(x.k === 'slow' && ownHungry(f))), met0 = scored.filter((x) => x.met).length, needP = scored.length ? (32 * met0) / scored.length : 32, met = wants.filter((x) => x.met).length,      /* (its own food is scored once, under Fed, not again as a need) */
   hurt = trouble.reduce((a, x) => a + ({ bully: 12, clash: 10, squabble: 10, rival: 6, food: 6, wary: 3 }[x.kind] ?? 4), 0) * (cv.have >= cv.need ? 0.5 : 1);
-  const score = Math.max(0, Math.min(100, Math.round(needP + Math.max(0, 20 - hurt) + (crowd.over ? 0 : 10) + 28 * Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35)) +      /* (a hungry animal is not a happy one: fed counts for more, and it falls away as the meal goes overdue) */ (bad ? 0 : 10) - (lonely ? 12 : 0))));
+  const score = Math.max(0, Math.min(100, Math.round(needP + Math.max(0, 20 - hurt) + (crowd.over ? 0 : 10) + 28 * Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35)) +      /* (a hungry animal is not a happy one: fed counts for more, and it falls away as the meal goes overdue) */ (bad ? 0 : 10) - (lonely ? 12 : 0) + (withFriend ? 4 : 0))));
   const fedK = Math.max(0, Math.min(1, ns.fed, ownHungry(f) ? 1 - Math.max(0, ownHunger(f) - 0.3) / 0.35 : 1 - Math.max(0, (t.hunger ?? 0) - 0.3) / 0.35));
   // where each point goes, so the card can say exactly what is holding it back (largest loss first)
-  const parts = [{ k: 'fed', label: ownHungry(f) ? `Fed (${f.species === 'seahorse' ? 'its own mysis' : f.species === 'octopus' ? 'its crab' : 'its own food'})` : 'Fed', got: Math.round(28 * fedK), max: 28 }, { k: 'needs', label: 'Its needs', got: Math.round(needP), max: 32 }, { k: 'along', label: 'Getting along', got: Math.round(Math.max(0, 20 - hurt)), max: 20 }, { k: 'space', label: 'Space', got: crowd.over ? 0 : 10, max: 10 }, { k: 'health', label: 'Health', got: bad ? 0 : 10, max: 10 }, ...(lonely ? [{ k: 'lonely', label: 'Company', got: -12, max: 0 }] : [])];
+  const parts = [{ k: 'fed', label: ownHungry(f) ? `Fed (${f.species === 'seahorse' ? 'its own mysis' : f.species === 'octopus' ? 'its crab' : 'its own food'})` : 'Fed', got: Math.round(28 * fedK), max: 28 }, { k: 'needs', label: 'Its needs', got: Math.round(needP), max: 32 }, { k: 'along', label: 'Getting along', got: Math.round(Math.max(0, 20 - hurt)), max: 20 }, { k: 'space', label: 'Space', got: crowd.over ? 0 : 10, max: 10 }, { k: 'health', label: 'Health', got: bad ? 0 : 10, max: 10 }, ...(lonely ? [{ k: 'lonely', label: 'Company', got: -12, max: 0 }] : withFriend ? [{ k: 'company', label: 'Company', got: 4, max: 4 }] : [])];
   const missing = wants.filter((x) => !x.met), top = trouble.find((x) => x.kind === 'bully' || x.kind === 'clash') ?? trouble.find((x) => x.kind !== 'wary') ?? null;
   const why = bad ? mood[2] : stressed || uneasy || lonely || ns.mood === 'Hungry' ? mood[2] : top ? `${top.text}.` : missing.length ? `Missing ${missing.length > 2 ? `${missing.length} things, such as ` : ''}${missing.slice(0, 2).map((x) => x.label.toLowerCase()).join(' and ')}.` : friends.length ? `Everything it needs, and close to ${friends[0].name}.` : 'Everything it needs.';
   const word = bad ? ['Unwell', 'bad'] : score >= 90 && !missing.length && !top ? ['Thriving', 'good'] : score >= 75 ? ['Happy', 'good'] : (stressed || lonely || uneasy) ? [stressed ? 'Stressed' : lonely ? 'Lonely' : 'Uneasy', score >= 45 ? 'warn' : 'bad'] : score >= 60 ? ['Content', 'ok'] : score >= 45 ? [stressed ? 'Stressed' : lonely ? 'Lonely' : uneasy ? 'Uneasy' : 'Unsettled', 'warn'] : [stressed ? 'Stressed' : lonely ? 'Lonely' : 'Unhappy', 'bad'];
@@ -1837,7 +1867,8 @@ function dailySurprise(t, now, ev) {
   const live = t.fish.filter((f) => !f.dead && !f.nursery), fish = live.filter((f) => f.species !== 'octopus'), r = (k) => hash32(d * 31 + k + (t.seq ?? 0)), pick = (a, k) => a[r(k) % a.length], opts = [];
   const young = fish.filter((f) => stageOf(f, now) !== 'adult'), lonely = fish.filter((f) => !f.pal), octo = live.find((f) => f.species === 'octopus' && stageOf(f, now) !== 'baby'), seas = fish.filter((f) => f.species === 'seahorse');
   if (young.length) opts.push(() => { const f = pick(young, 1); (f.raise ||= {}).meals = (f.raise.meals ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); return { f, text: `${f.name} ate its biggest meal yet and did a happy little wiggle.` }; });
-  if (lonely.length >= 2) opts.push(() => { const a = pick(lonely, 2), b = lonely.filter((x) => x !== a && x.species === a.species)[0] ?? lonely.find((x) => x !== a); a.pal ??= b.id; b.pal ??= a.id; (a.disc ||= {}).friend ??= now; (b.disc ||= {}).friend ??= now; return { f: a, text: `${a.name} and ${b.name} shared the first flakes, and now they swim side by side. Friends!` }; });
+  if (lonely.length >= 2) { const pairs = []; for (const a of lonely) for (const b of lonely) if (a.id < b.id && canBefriend(a, b) && ((a.know?.[b.id]?.[0] ?? 0) + (b.know?.[a.id]?.[0] ?? 0) >= 120 || (a.spotId && a.spotId === b.spotId))) pairs.push([a, b]);      /* (only two who really keep company: time seen together, or the same favorite place; never two strangers) */
+    if (pairs.length) opts.push(() => { const [a, b] = pick(pairs, 2); a.pal = b.id; b.pal = a.id; (a.disc ||= {}).friend ??= now; (b.disc ||= {}).friend ??= now; const line = `${a.name} and ${b.name} shared the first flakes, and now they swim side by side. Friends!`; ev.push({ story: a.id, text: line }, { story: b.id, text: line }); return { f: a, text: line }; }); }
   if (octo) opts.push(() => { octo.happy = Math.min(1, (octo.happy ?? 0.7) + 0.05); return { f: octo, text: `${octo.name} shot up and snatched the first pinch of food before anyone else could.` }; });
   if (seas.length) opts.push(() => { const f = pick(seas, 3); return { f, text: `${f.name} snicked a flake right out of the water with a flick of its snout.` }; });
   if (fish.length) opts.push(() => { const f = pick(fish, 4); (f.disc ||= {}).glass ??= now; return { f, text: `${f.name} came right up to the glass to watch you feed.` }; });
@@ -1887,13 +1918,13 @@ export function tankNeeds(t, now = Date.now()) {
   return out.slice(0, 2);
 }
 function needsMet(t, before, type, now, ev) { const after = new Set(tankNeeds(t, now).map((n) => n.key)); for (const n of before) { if (after.has(n.key)) continue; const N = NEEDS.find((x) => x.key === n.key), f = t.fish.find((x) => x.id === n.fish); if (f) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); const line = N.done(n.name, (DECOR_DEF[type]?.label ?? type).toLowerCase()); ev.push({ journal: line, toast: line }); } }
-export function milestonesOf(f) {
+export function milestonesOf(f, uid = null) {
   const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, grown = stageOf(f) === 'adult';
   return [
     { key: 'home', icon: hatched ? '🥚' : '🏠', label: hatched ? 'Hatched' : 'Came home', done: true },
     { key: 'friend', icon: '💞', label: 'Made a friend', done: !!(f.pal || f.mate || f.partner || D.friend || D.together || Object.keys(D).some((k) => k.startsWith('together'))) },
     { key: 'spot', icon: '📍', label: 'Found a favorite spot', done: !!(D.spot || D.regular || D.hideaway || D.favhitch || D.den || (f.found ?? []).includes('spot')) },
-    { key: 'trust', icon: '🤝', label: 'Trusts you', done: !!(D.bond || D.trust) },
+    { key: 'trust', icon: '🤝', label: 'Trusts you', done: uid ? (f.bond?.[uid] ?? 0) >= 3 : !!(D.bond || D.trust) },      /* (yours, not anyone's: three pets or games from you) */
     { key: 'trick', icon: '✨', label: 'Learned a trick', done: (f.tricks ?? []).length > 0 || !!(f.solved) },
     { key: 'grown', icon: '🌟', label: 'All grown up', done: grown },
     isTurtle(f) ? { key: 'ocean', icon: '🌊', label: 'Ready for the ocean', done: turtleReady(f) } : { key: 'parent', icon: '👪', label: 'Became a parent', done: !!D.parent },      // a sea turtle is raised to be let go, not to breed: its last milestone is the open ocean
@@ -2124,7 +2155,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const buddy = a.buddy ?? null, rival = a.rival ?? null; if ((f.buddy ?? null) === buddy && (f.rival ?? null) === rival) return ok({ applied: false });
       const nameOf = (id) => t.fish.find((x) => x.id === id)?.name;
       const say = (k, text) => { const m = (f.moments ||= {}); if (now - (m[k] ?? 0) >= DAY) { m[k] = now; events.push({ journal: text }); } };      // a change of heart is kept at once, but written in the journal at most once a day
-      if (buddy && buddy !== f.buddy) say('friend', `${f.name} and ${nameOf(buddy)} are friends now. It follows ${nameOf(buddy)} about.`);
+      if (buddy && buddy !== f.buddy) { say('friend', `${f.name} and ${nameOf(buddy)} are friends now. It follows ${nameOf(buddy)} about.`); events.push({ story: f.id, text: `Made friends with ${nameOf(buddy)}; follows it about.` }); }
       if (!rival && f.rival && f.grudge?.id === f.rival && now - f.grudge.since <= 2 * DAY) return ok({ applied: false });      // a grudge is not let go of the same day: it holds at least two days (the phone may try sooner)
       if (rival && rival !== f.rival && f.grudge) { (f.grudges ||= []).push({ id: f.grudge.id, name: f.grudge.name, since: f.grudge.since, until: now }); if (f.grudges.length > 4) f.grudges.shift(); }      // a new one replaces the old: the old is remembered
       if (rival && rival !== f.rival) { f.grudge = { id: rival, name: nameOf(rival), since: now, why: a.why === 'den' ? 'den' : null }; say('rival', a.why === 'den' ? `${f.name} has decided ${nameOf(rival)} is a nuisance. It keeps poking about round its den.` : `${f.name} has it in for ${nameOf(rival)}.`); }      // a grudge is kept, with the reason (an octopus remembers who keeps bothering its den)
@@ -2216,7 +2247,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); const opt = trickOptions(t, f, now).find((o) => o.key === a.trick); if (!opt) return fail('CANT_TRAIN');
       if (now - (f.trainAt ?? 0) < TRAIN_GAP) return ok({ applied: false, delta: 0, wait: TRAIN_GAP - (now - f.trainAt) });
       f.trainAt = now; f.skill = { ...(f.skill ?? {}), [a.trick]: (f.skill?.[a.trick] ?? 0) + 1 }; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.02); progress(t, 'play', events, name); dayCheck(t, now, events, 'bond');
-      if (f.skill[a.trick] >= trainNeed(f)) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: trainNeed(f) }); }
+      if (f.skill[a.trick] >= trainNeed(f)) { f.tricks = [...(f.tricks ?? []), a.trick]; t.shells += TRICK_REWARD; events.push({ journal: `${f.name} learned to ${TRICKS[a.trick].label}.`, toast: `${f.name} learned a trick! +${TRICK_REWARD} shells`, milestone: f.id, story: f.id, text: `Learned to ${TRICKS[a.trick].label}, taught by ${name}.` }); return ok({ applied: true, delta: TRICK_REWARD, learned: a.trick, n: trainNeed(f) }); }
       return ok({ applied: true, delta: 0, n: f.skill[a.trick], need: trainNeed(f) });
     }
     case 'puzzle': {                                                // a puzzle jar for the octopus; it works on it for a while and the game finishes it on its own
@@ -2275,6 +2306,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
             f.spotId = best; if (!f.found?.includes('spot')) (f.found ||= []).push('spot'); (f.disc ||= {}).spot ??= now;
             if (now - (mo.haunt ?? 0) > DAY) { mo.haunt = now; const line = f.missing ? `${f.name} has found a new favorite place: the ${lbl}.` : was ? `${f.name} has moved on to the ${lbl}. It spends its time there now.` : `${f.name} has taken to the ${lbl}. It keeps going back there.`; events.push({ journal: line, story: f.id, field: { fish: f.id, kind: 'haunt', decor: best } }); }
             delete f.missing; } }
+        if (e.near && typeof e.near === 'object' && !isOcto(f) && !isCrab(f)) knowFold(t, f, e.near, now, events);      // who it kept company with: friendships grow from this
         { const seen = new Set([...(Array.isArray(e.places) ? e.places : []), ...(e.hitch && typeof e.hitch === 'object' ? Object.keys(e.hitch) : [])].slice(0, 12)); for (const id of seen) decorVisit(t, t.decor.find((x) => x.id === id), f, now, events, ADVR); }      // the decoration remembers who comes (one count a day each)
         if (Array.isArray(e.places)) { L.places ||= []; for (const id of e.places.slice(0, 10)) if (typeof id === 'string' && t.decor.some((d) => d.id === id) && !L.places.includes(id)) L.places.push(id); L.places = L.places.slice(-40); }
         // a seahorse's holdfasts, by the decoration's id (never by position, so a moved decoration is still the same place to it):

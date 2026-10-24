@@ -429,6 +429,7 @@ export class Fishes {
     }
     if (!lead || !this.onLog || t - (this.logAt ??= t) < 180) return; this.logAt = t;
     const logs = live.filter((f) => f.dw?.log && !f.nursery).map((f) => { const L = f.dw.log, e = { fish: f.fid, dist: +L.dist.toFixed(1), lv: Object.fromEntries(Object.entries(L.lv).map(([k, v]) => [k, Math.round(v)])), places: [...L.places], secs: Object.fromEntries(Object.entries(L.secs ?? {}).filter(([, v]) => v >= 5).slice(0, 12).map(([k, v]) => [k, Math.round(v)])), holds: (f.holdN ?? 0) - L.holds, snaps: (f.snicks ?? 0) - L.snaps };
+      if (f.knowT && f.sk !== 'octopus' && !f.crab) { const near = Object.entries(f.knowT).filter(([, v]) => v >= 20).sort((a, b) => b[1] - a[1]).slice(0, 3); if (near.length) e.near = Object.fromEntries(near.map(([k, v]) => [k, Math.round(v)])); f.knowT = {}; }      // who it kept company with since the last report (seconds within arm's reach): friendships grow from this on the server
       if (f.sk === 'seahorse') { Object.assign(e, { meals: (f.meals ?? 0) - L.meals, strikes: (f.strikesN ?? 0) - L.strikes, greets: (f.greets ?? 0) - L.greets, links: (f.linksN ?? 0) - L.links, inspects: (f.inspects ?? 0) - L.inspects });
         const M = f.memDelta; if (M) { e.hitch = {}; for (const id of new Set([...Object.keys(M.secs), ...Object.keys(M.visits)])) e.hitch[id] = [Math.round(M.secs[id] ?? 0), M.visits[id] ?? 0, ...(M.pos[id] ?? [])]; f.memDelta = null; }      // what it has done on each holdfast since the last report, by the decoration's id
         if (f.lastHitch) e.last = f.lastHitch; }
@@ -820,7 +821,7 @@ export class Fishes {
         const o = others[(r() * others.length) | 0]; if (o) return T(o.pos.x + (r() - 0.5) * 1.6, o.pos.y + (r() - 0.5), o.pos.z + 0.6, 3);
       }
       if (has('Social') && !school && r() < 0.7 && others.length) {                // sticks close to a buddy
-        const mates = others.filter((o) => o.id === f.id), pool = mates.length ? mates : others, o = pool.reduce((a, c) => (c.pos.distanceTo(f.pos) < a.pos.distanceTo(f.pos) ? c : a), pool[0]);
+        const palO = f.palId && others.find((o) => o.fid === f.palId && !o.dead), mates = palO ? [palO] : others.filter((o) => o.id === f.id), pool = mates.length ? mates : others, o = pool.reduce((a, c) => (c.pos.distanceTo(f.pos) < a.pos.distanceTo(f.pos) ? c : a), pool[0]);      /* (a social fish with a best friend keeps to it first, then to its own kind) */
         return T(o.pos.x - Math.cos(o.heading) * 1.6 + (r() - 0.5), o.pos.y + (r() - 0.5) * 0.8, o.pos.z + (r() - 0.5) * 0.5, 2.2);
       }
       if (has('Playful')) { f.retarget = 1.4 + r() * 1.4; if (r() < 0.4) T(this.bubbleAt.x + (r() - 0.5) * 0.8, 2 + r() * 8, 0.2 + r(), 2 + r()); return; }
