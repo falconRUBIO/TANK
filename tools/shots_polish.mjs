@@ -1,0 +1,29 @@
+// Every menu and popup, one screenshot each, for the visual pass. Opens each surface, shoots, and closes it cleanly. OUT=dir node tools/shots_polish.mjs
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+import fs from 'node:fs'; const out = process.env.OUT || '/tmp/polish'; fs.mkdirSync(out, { recursive: true });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage();
+await p.goto('http://localhost:8123/?lite=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 60000 }); await p.screenshot({ path: `${out}/00_welcome.png` }); await p.click('#mok'); await p.waitForTimeout(800);
+await p.evaluate(async () => { const g = window.__game; g.state.level = 5; g.state.xp = 230; g.state.flags.tut = 5; for (let i = 0; i < 8; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true }); try { localStorage.setItem('ourtank.chartSeen', '1'); } catch {}
+  for (const [sp, nm] of [['goldfish', 'Pip'], ['platy', 'Quill'], ['seahorse', 'Sol'], ['blueleg', 'Cal']]) await g.dispatch({ t: 'buyFish', species: sp, name: nm, seed: 3 + nm.length, rush: true, ...(sp === 'seahorse' ? { sex: 'm', kind: 'erectus' } : {}) }, { dev: true });
+  for (const [type, x] of [['cave', 0], ['grass', -2], ['rock', 2], ['pot', 3], ['seafan', -3]]) await g.dispatch({ t: 'buyDecor', type, x, z: 1, ry: 0 }, { dev: true }); document.getElementById('coach')?.classList.remove('on'); });
+await p.waitForTimeout(1500);
+const shot = async (n) => { await p.waitForTimeout(500); await p.screenshot({ path: `${out}/${n}.png`, timeout: 60000 }).catch(() => {}); };
+const ui = (code) => p.evaluate(code);
+await ui(() => window.__ui.open('care')); await shot('01_care'); await ui(() => document.querySelector('[data-csub="play"]')?.click()); await shot('02_play');
+await ui(() => document.querySelector('[data-csub="care"]')?.click()); await ui(() => document.querySelector('#sheet [data-act="feeddrawer"]')?.click()); await shot('03_feed'); await ui(() => document.querySelector('#sheet [data-act="feedclose"]')?.click());
+await ui(() => document.querySelector('#sheet [data-act="healthopen"]')?.click()); await shot('04_health'); await ui(() => document.querySelector('#sheet [data-act="healthclose"]')?.click());
+await ui(() => window.__ui.open('decorate')); await shot('05_shop'); await ui(() => { const c = [...document.querySelectorAll('#sheet [data-cat]')].find((x) => /Sea life|FISH/i.test(x.textContent + x.dataset.cat)); c?.click(); }); await shot('06_shop_sealife');
+await ui(() => document.querySelector('#sheet .card:not(.lock)')?.click()); await shot('07_preview'); await ui(() => { document.querySelector('.notesheet .pvclose, .notesheet [data-close], .notesheet button.cancel')?.click(); document.querySelectorAll('.notesheet.on').forEach((n) => n.classList.remove('on')); });
+await ui(() => { const c = [...document.querySelectorAll('#sheet [data-cat]')].find((x) => /Themes/i.test(x.textContent)); c?.click(); }); await shot('08_themes');
+await ui(() => window.__ui.open('friends')); await shot('09_crew'); await ui(() => document.querySelector('[data-sub="animals"]')?.click()); await shot('10_animals'); await ui(() => document.querySelector('[data-sub="journal"]')?.click()); await shot('11_journal');
+await ui(() => window.__ui.open('notices')); await shot('12_ourtank'); await ui(() => { const el = document.querySelector('#sheet .tc-level'); el?.scrollIntoView(); }); await shot('13_road');
+await ui(() => window.__ui.open('tank')); await ui(() => { const F = window.__fishes, g = window.__game, pip = g.state.fish.find((f) => f.name === 'Pip'); window.__focus(F.list.indexOf(F.byId.get(pip.id))); }); await p.waitForTimeout(900); await ui(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900); await shot('14_card'); for (const t of ['pers', 'stats', 'jour']) { await ui((t) => document.querySelector(`#card .tb[data-tab="${t}"]`)?.click(), t); await shot('15_card_' + t); }
+await ui(() => window.__focus(-1));
+await ui(() => { window.__ui.dialog({ title: 'Level 5', text: 'New habitats and toys. New for you:', lines: ['Mandarin Dragonet', 'Twist cube', 'Hitching hoop', 'Maxima Clam', 'and 3 more'], ok: 'Nice' }); }); await shot('16_dialog'); await ui(() => document.querySelector('#modal.on #mok')?.click());
+await ui(() => { window.__ui.choose({ title: 'Hide a treat', text: 'Pick a place. Pip remembers where you hide things, so a new place fools it. 5 🐚, and it pays 10 back if the hunt takes three tries or more.', options: [{ label: 'Reef cave', value: 'a' }, { label: 'Clay pot', value: 'b' }, { label: 'Sea grass', value: 'c' }] }); }); await shot('17_choose'); await ui(() => { document.querySelector('#modal.on .x, #modal.on #mcancel, #modal.on [data-cancel]')?.click(); document.getElementById('modal')?.classList.remove('on'); });
+await ui(() => window.__ui.toast('Pip and Quill joined in · ball 1 of 5', 4000)); await shot('18_toast');
+await ui(() => window.__ui.showCoach({ title: 'PLAYTIME', text: 'Open Care, then Play: ball, bubbles. They learn which toys they like.', button: 'Got it', onButton: () => document.getElementById('coach').classList.remove('on') })); await shot('19_coach'); await ui(() => document.getElementById('coach')?.classList.remove('on'));
+await ui(() => document.getElementById('bell')?.click()); await shot('20_bell'); await ui(() => window.__ui.open('tank'));
+await ui(() => window.__ui.open('friends')); await ui(() => document.querySelector('#sheet [data-act="settings"], #sheet .gear, #sheet [aria-label="Settings"]')?.click()); await shot('21_settings');
+await b.close(); console.log('shots in', out);
