@@ -4,6 +4,133 @@
 
 The design principle under test: *what a player changes today should create something to discover tomorrow.* The audit's short answer: the state for that already exists (favorites from real time spent, holdfast memory, octopus familiarity, keepsakes, journals, bonds), but three links were missing or random: friendships did not come from time together, a fish's first favorite came from a trait table rather than from where it went, and the most personal events (friends, pairs, tricks, parenthood) never reached the animal's own journal or were credited to the wrong person. Those links are now in (§4). Capacity is the one system that works against the principle (§5.1): every simulated household fills the tank to the hard count by day 60 and never again has room for a turtle.
 
+
+---
+# V333 update: the audit decisions, measured
+
+What was asked (the V330 decisions): solve capacity before anything else, with a simulated comparison and no production change until a model is approved; protect attachment (a rehoming proposal); keep life stories; make habitat consequences visible; fix the octopus palette collision; verify synchronization; triage the failing drills; no new scope. Builds v331–v333 on the same branch. The economy is untouched. Everything below is from code, unit tests, headless drills and the household simulation; nothing was run on a physical iPhone.
+
+## A. Capacity: the models, the comparison, the recommendation
+
+**How the models were tested.** The rules carry one switch, `CAP` (`rules.js`, next to `capacity`), with production defaults equal to v330. Every gate goes through it (`capacityOf`, `fryRoom`, `sanctCalm`, `crowdOf`), so the simulation flips the switch and plays the real rules. The household simulation gained the turtle route a prepared player takes (the sanctuary's ledge and grass at level 7, saving from level 7, the first turtle as soon as the shop allows, release when grown), a `LATE` route (a player who fills the tank first and only then wants a turtle), and the report's measures (wellbeing every evening, days over 85 % load, most animals at once, births the rules held back, refusals, sales). Four households × 6 seeds × 120 days per model; medians.
+
+| Model | What it is |
+|---|---|
+| **v330** | today: count gate (28 places, +4 for births), spawning stops above 80 % load, a turtle wants the tank ≤ 60 % full |
+| **room** | v330 plus room-first breeding: spawning stops above 70 %, a fry offer only if the tank stays under 85 % |
+| **sanctuary** | room plus a **four-place sanctuary allowance only a turtle may use** once the sanctuary goal is done (one turtle), the allowance counted in the load too while the turtle is here, and the sanctuary's turtle content in a tank up to 85 % full like the fish (not only 60 %) |
+| **general** | room plus **four more places for anything** once the sanctuary goal is done |
+| **+2 per release** | each of the first two releases adds two places, tested on top of sanctuary and general |
+
+**A.1 A player who prepares (saves from level 7)**
+
+| Household | Model | First turtle (tanks) | Days after level 8 | Turtle comfortable at adoption | Released by day 120 |
+|---|---|---|---|---|---|
+| 1 casual | v330 | 6/6 | 0 | 0/6 | 6/6 |
+| 1 casual | sanctuary | 6/6 | 0.6 | **5/6** | 6/6 |
+| 1 regular | v330 | 6/6 | 3.5 | 0/6 | 6/6 |
+| 1 regular | sanctuary | 6/6 | 2.5 | 2/6 (the goal was done in 2 tanks) | 6/6 |
+| 1 engaged | v330 | 6/6 | 4.0 | 0/6 | 6/6 |
+| 1 engaged | sanctuary | 6/6 | 3.8 | **6/6** | 6/6 |
+| 4 mixed | v330 | 6/6 | 5.7 | 0/6 | 6/6 |
+| 4 mixed | sanctuary | 6/6 | 5.7 | 3/6 | 6/6 |
+
+A saver adopts in every model, within a week of level 8: the count gate is not what stops a prepared player. What v330 cannot give is a **comfortable** turtle: its "room to swim" want (≤ 60 %) is never met in a played tank (87 % load is where every tank settles). Under the sanctuary model the turtle is content wherever the sanctuary goal was done (turtle wellbeing 93 engaged vs 79; 53 casual vs 49).
+
+**A.2 A player who fills the tank first (LATE route)**
+
+| Household | v330: adopted | sanctuary: adopted (day, days after level 8) | Refusals ("no room") in v330 |
+|---|---|---|---|
+| 1 casual | **0/6** | 3/6 (day 93, +33) | 32 |
+| 1 regular | **0/6** | 2/6 (day 116, +69) | 106 |
+| 1 engaged | **0/6** | 3/6 (day 41, +16) | 227 |
+| 4 mixed | **0/6** | **6/6** (day 64, +42) | 424 |
+
+This is the progression audit's finding again: a normally played tank is count-full by day 60 and v330 refuses the turtle every time. The sanctuary allowance opens the door, **but only where the sanctuary goal was finished** (2–3 of 6 solo tanks, 6 of 6 shared). The goal, not the places, is now the limiter: it is only offered while no other goal is active, so a tank that is on "Three generations" at level 7 never sees it. **The allowance must ship with the goal made reachable** (a fourth card at level 7, or a nudge), otherwise it helps only tanks that happen to be between goals.
+
+**A.3 Load, wellbeing, overcrowding, births (day 120, the saver route, honest shop that fills every place the model gives)**
+
+| Household | Model | Animals d60/90/120 | Load d120 | Mean wellbeing | Animals under 60 | Days over 85 % | Most at once | Born here | Births held back |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 casual | v330 | 26/28/28 | 87 % | 58.7 | 47 % | 67 | 28 | 11 | 75 |
+| 1 casual | sanctuary | 22/28/28 | 87 % | 60.2 | 53 % | 47 | 29 | 9 | 81 |
+| 1 casual | sanctuary +2/release | 22/30/30 | 87 % | 61.6 | 48 % | 36 | 32 | 10 | 79 |
+| 1 casual | general +2/release | 28/31/31 | 83 % | 59.5 | 47 % | 11 | 36 | 11 | 73 |
+| 1 engaged | v330 | 28/28/28 | 87 % | 77.7 | 3 % | 91 | 28 | 8 | 96 |
+| 1 engaged | sanctuary | 28/28/28 | 87 % | 80.3 | 4 % | 82 | 29 | 8 | 99 |
+| 1 engaged | sanctuary +2/release | 30/30/30 | 87 % | 80.6 | 4 % | 80 | 31 | 8 | 100 |
+| 1 engaged | general +2/release | 34/34/34 | 87 % | 77.4 | 3 % | 85 | 34 | 8 | 97 |
+| 4 mixed | v330 | 28/29/32 | 125 % | 68.8 | 29 % | 93 | 32 | 12 | 86 |
+| 4 mixed | sanctuary | 28/31/30 | 115 % | 67.3 | 26 % | 89 | 32 | 10 | 80 |
+| 4 mixed | sanctuary +2/release | 30/30/34 | 118 % | 67.7 | 24 % | 89 | 34 | 10 | 84 |
+| 4 mixed | general +2/release | 32/35/35 | 116 % | 67.5 | 22 % | 89 | 38 | 12 | 85 |
+
+What the numbers say:
+- **Every place a model adds gets filled**, and the tank goes back to 87 % load. "+2 per release" and "general +4" are not comfort, they are two to four more animals (most at once 32–38). They do not recreate crowding beyond today's 87 %, but they do not relieve it either, and "general" is the loophole the decisions feared (34 fish, no turtle needed). **Not recommended.**
+- **The sanctuary allowance adds at most one animal** (28 → 29), and that one is the turtle: no loophole. Its effect is the turtle's own comfort and an open door for the late adopter.
+- **Room-first breeding changes little**: tanks sit above 80 % most of the time in every model, so births are held back 75–100 times per 120 days either way; born-here counts stay 8–12. Its one visible effect is a lower load on the way up (76–81 % at day 60 instead of 93–99 %). Low risk; it does not prevent crowding by itself.
+- **Wellbeing is not a capacity story.** The share of animals under 60 is 3–4 % in an engaged tank and 47–53 % in a casual one *in every model*: it comes from hunger and unmet needs, not from the count.
+- **Shared tanks are overloaded in every model** (115–125 % at day 120, 30–35 animals): four caretakers' octopuses (1.5 load each), births taking the four extra birth places, and purchases filling the count on top. No tested model touches this. It needs its own rule (below).
+- The 102 tanks' first-turtle adoption rate across all households, saver route: v330 100 %, sanctuary 100 %; late route: v330 0 %, sanctuary 58 % (14 of 24), 100 % where the sanctuary goal was done.
+- Performance: the most animals at once rose from 28 to 29 under the recommended model (34–38 under the rejected ones); the full-tank measurement in §6 of the main audit (28 animals, under 1 ms per frame of simulation headless) covers it.
+
+**A.4 Recommendation (not implemented; the switch stays at v330 until approved)**
+1. **Ship the sanctuary allowance** (`CAP.sanct = 'turtle'`): four places only a turtle may take once the sanctuary goal is done, one turtle, counted in the load while it is here, and the sanctuary's turtle content up to 85 % like the fish. Measured: adoption possible in a count-full tank, a content turtle in prepared tanks, one extra animal at most.
+2. **Make the sanctuary goal reachable at level 7**: offer it as a fourth card while it is available, or let the level-7 dialog take it directly. Measured limiter of 1.
+3. **Room-first breeding** (`CAP.breed = 'room'`): low risk, slightly gentler climb, keep it.
+4. **Do not add general places or +2 per release**: they fill with fish and buy nothing for wellbeing (A.3).
+5. **For shared tanks, a separate rule to design and measure next**: births use the four birth places only while the load is under 85 %, and a visitor that stays needs a free place; and consider counting each caretaker's own octopus against the tank's places only above two octopuses. These are proposals; not simulated yet.
+6. The 120-shell sanctuary adoption is untouched and still applies.
+
+## B. Animal attachment and rehoming (proposal, not implemented)
+The baby-gift path (`send`) already moves a bred animal to a friend's tank with its name, seed, genes, traits, parents and generation (`lineOf`), as a wrapped gift that arrives within the hour. Extending it to adults is mostly a matter of what travels and who may do it:
+- **What travels**: the whole fish record minus tank-bound links: keep `name, species, kind, seed, palette, sex, born, stage, traits, raisedAs, genes, gen, parents, bornHere, story, disc, found, tricks, skill, toys, bond` (trust is per person, so the sender's bond travels only if the sender is also in the other tank); drop `spotId, haunt, know, pal, mate, partner, home, mem.fam` (places and friends belong to the old tank) but write one story line each way ("Moved to X's tank; left Pip behind" / "Came from Y's tank, where it was best friends with Pip"). The old tank keeps a memorial-like record ("rehomed to …") and the journal line.
+- **Who**: the animal's caretaker (`owner`, or anyone for an unowned animal) proposes; the receiving tank's caretaker accepts (the gift already needs opening); either side can decline; nothing is sold.
+- **One tank per group**: a move is only to a tank the sender is *not* in (the gift path's rule). A caretaker in exactly one tank cannot "move" anything; the feature only exists between friends' tanks, which is the social design, not a second aquarium.
+- **Room**: the receiving tank's count and load gates apply as for a purchase; a turtle moves only into a prepared sanctuary.
+- **Why it matters for capacity**: it is the one way to make room that does not feel like selling an animal you know. The simulation sells 0–10 animals per 120 days only under goal pressure; a real player's reluctance to sell is the attachment the brief protects.
+- **Risks**: duplicates on a retried send (the gift path's idempotency covers it), an animal mid-pregnancy or guarding eggs (refuse), a rival or best friend left behind (the loss memory handles it as a departure).
+
+## C. Life stories: implemented (v333)
+- Every journal line carries the animals it is about: `aboutOf(event)` reads the ids the event already has (story, arrival, hatch, birth, pair, died, discovery, milestone, puzzle, crab…). On the solo phone it is a field on the entry; on the server it is a new `journal.about` column (migrated with `ALTER TABLE … ADD COLUMN`, old rows null), sent in the snapshot and in live lines.
+- The card's Journal tab shows **Its life**, a compact permanent summary from timestamps that are never trimmed (came home or hatched, favorite spot, best friend, pair, partner, parent, trust, tricks; by tank day), then **Its story**: its own lines from the tank journal merged with the kept 14-line story, newest first, duplicates folded, up to 30, with a count of older lines.
+- Growth is bounded: the solo journal keeps 300 lines (was 80); the server keeps its 3,000 per tank; `story` stays at 14; the summary reads existing fields. Old journals have no `about` and show the summary plus the story, as before.
+
+## D. Habitat consequences on the Health screen: implemented (v333)
+`habitatNotes()` now leads with what the animals actually did, from state the simulation wrote: "Pip has started resting by the reef cave." (a favorite from time spent, in the last 7 days), "Pip and Quill regularly share the reef cave.", "Sol holds on to the sea fan most of all." (the holdfast held longest), "Ink spends most evenings near the sea grass." (an octopus habit from its visits), "Mo is still looking for its old clay pot." (a removed favorite, two days). Then the offers (dens, holdfasts, climbing). Up to six lines, in a small panel under the wellbeing average on the Health screen; no new tab. Nothing is invented: every line has a rule test behind it.
+
+## E. Bug fixes (v331–v333)
+- **Octopus palette collision**: `f.palette` holds the color; `norm()` moves old integers from `pal` and leaves a fish id (a friendship) alone; every reader switched (rules, species, thumbnails, cards, the 3D manager, memorials); a test covers migration, the den decision and the first-fish picks.
+- **Play works as it says** (v332): a toy go reports who joined and how far along they are ("Misty and Ann joined in · ball 1 of 5"), a repeat inside 20 s says when it counts again (it was a silent 45 s drop), the Toy box shows who is learning, hide-and-seek lists only places the octopus can search (a starfish hides nothing) and shows its rest and payout before you tap, trick buttons name the trick and their rest, hermit crabs are no longer offered tricks they cannot perform, the hide and puzzle tiles and games pick the same octopus, failure reasons are plain, the day-2 tip names only open toys, a short finger drag counts and a crab is "along the sand".
+- **The road ahead** (v331): every level tappable, cards from the shop tables (level 5 had promised the giant clam).
+- **Octopus partners**: the seek lasts long enough to arrive, the pair settles side by side for half a minute now and then, the pair is exempt from the level rest cap, and a partner's level does not count as crowded. Measured in `bonds_check`: partners within reach 13 % of a six-minute visit (was 2–3 %), two arm-touches, 288 twined frames.
+
+## F. Multiplayer: verified headless, not on phones
+`tools/sync_check.mjs` runs the real server in memory with a full level-8 tank (28 animals: two octopuses, four seahorses, three crabs, a turtle, eighteen fish) on two, then three, headless phones:
+- exactly one phone leads; the follower receives the full tank (28 entries) in every snapshot, with **both octopus poses whole (29 values; the server used to cut them at 16)**;
+- the snapshot of a full tank is **2,475 bytes on the wire** (rounded numbers): under the old 4 KB cap after all. The earlier 4,230-byte figure was an unrounded estimate; the 12 KB cap stays as margin (a 40-animal tank is about 3.6 KB);
+- positions agree (median 0.02 units, 90th percentile 0.04); a purchase on one phone is in the other's tank within 5 s; an animal event on one is in the other's journal within 5 s;
+- four seconds without snapshots: the follower's animals keep moving on their own (24 of 28 moved) and fall back in step within 3 s of snapshots resuming (median 0.09);
+- a phone joining late follows and gets full snapshots within 5 s; when the leader leaves, another phone takes over within 10 s and the rest receive its snapshots.
+- Finding: the lead hands over by the fps rule (a leader under 18 fps yields to a phone reporting over 30); a phone that has not reported yet counts as 60, so a fresh phone can take the lead from a slow one. Harmless, but on real phones it means the newest phone often leads. Not changed.
+- Shared purchases and animal events are server-applied actions with idempotency keys, unchanged.
+- **Still to do on real iPhones** (not claimed): two phones side by side for 3 minutes, a full tank on both, screen lock on the leader, airplane-mode reconnection, the frame-rate fields in `TAKO_TANK_IPHONE_PLAYTEST.md`.
+
+## G. The failing drills, triaged
+| Drill | Cause | Verdict | What changed |
+|---|---|---|---|
+| `sell_check` | "Health" row was renamed "Animal health" in the UI audit (commit 4bfe108); the test's regex was case-sensitive | outdated test | checks the Animal health row and its Health button; **passes** |
+| `care_sync` | Care's "Needs you / Later" headings and "Clean the glass" rows gave way to one Tank upkeep row (commit 209847a); the drill read the old layout, so its "updates by itself" check could never pass. The live path itself (server broadcast to all, `state` → `syncWorld` → `ui.refresh`) was intact | outdated test | reads the current layout; now also checks the dirty state **before** the other phone acts, and seeds the row's mirrored meters; **passes**: the watching phone's Care updates by itself when another caretaker wipes, changes water and feeds |
+| `bonds_check` | real behavior: the partner seek gave up after 6 s, nothing held the pair together, and two octopus changes of Oct 24 (level spreading, rest cap) pushed partners apart | product bug | fixed (E); 13 % together, **passes** (a final headless screenshot timeout is no longer fatal) |
+
+Does the Care sheet genuinely update on a second phone? Yes: measured in `care_sync` from a dirty state to "All clean · next: wipe the glass in about 3 days" on the watching phone with no tap, and the fish's hunger and an owned seahorse's meal likewise.
+
+## H. Tests and remaining checks
+- `npm test`: **95 of 95** suites (rule tests now include the capacity switch's gates, play feedback, trick eligibility, the shared picks, the palette migration, journal references, habitat usage notes, the road tables, friendships, favorites, milestones).
+- Headless drills passing: `road_check`, `play_check`, `story_check`, `friends_check`, `sync_check`, `sell_check`, `care_sync`, `bonds_check`, `profile_check`, `journal_check`, `adopt_check`, `fund_check`, `turtle_check`, `motion_check`.
+- Simulations: 4 models × 4 households × 6 seeds × 120 days, three runs (saver, late, honest shop with releases).
+- Not done: anything on a physical iPhone (§8 of the main audit and F above).
+
 ---
 ## 1. Current implementation, verified from code
 
