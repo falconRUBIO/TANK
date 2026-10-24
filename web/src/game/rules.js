@@ -153,6 +153,14 @@ export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a ju
 // keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
 export const TURTLE_DAYS = 14, TURTLE_PAY = 100, TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 export const isTurtle = (x) => TURTLES.has(typeof x === 'string' ? x : x?.species);
+// The tank's first sea turtle: once the sanctuary goal is done and no turtle has ever lived here, the green turtle is adopted at TURTLE_ADOPT instead of its price.
+// One adoption per shared tank: the first turtle bought, discounted or not, uses it up (flags.turtleAdopted), and selling, releasing or losing that turtle does not bring it back.
+export const TURTLE_ADOPT = 120, DEAL = { on: true };      /* (DEAL.on: the simulations switch the adoption off to measure without it) */
+export const turtleEver = (t) => !!t?.flags?.turtleAdopted || releasedCount(t) > 0 || (t?.fish ?? []).some((f) => f && TURTLES.has(f.species) && !f.visitor) || (t?.orders ?? []).some((o) => o && TURTLES.has(o.species));
+export const turtleDeal = (t) => { const regular = SPECIES_DEF.turtle.price, eligible = DEAL.on && !!t && (t.goalsDone ?? []).some((g) => g.id === 'sanctuary') && !turtleEver(t); return { eligible, price: eligible ? TURTLE_ADOPT : regular, regular }; };
+// what room a turtle would have here: it counts as four small fish for crowding (roomOf), and its wellbeing wants the tank no more than 60% full; the purchase itself takes one place
+export const turtleRoom = (t, species = 'turtle') => { const cr = crowdOf(t), need = roomOf({ species }), after = cr.load + need, limit = 0.6 * cr.cap, places = Math.max(0, t.fish.length + pending(t) + 1 - capacity(t.level ?? 1));
+  return { load: cr.load, cap: cr.cap, need, after, pct: Math.round((after / cr.cap) * 100), limit: 60, ok: after <= limit && places === 0, places, fewer: after > limit ? Math.ceil((after - limit) / 0.85) : 0 }; };      /* (fewer: about how many small fish fewer for it to be comfortable) */
 export const releasedCount = (t) => Math.max(t?.released?.length ?? 0, t?.stats?.released ?? 0);      // sea turtles raised here and let go (shared tank state, saved with everything else)
 export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
@@ -282,7 +290,7 @@ export function specialOf(t, now = Date.now()) {
   return pick ? { species: pick[0], color: pick[1] } : { species: open.length ? open[h % open.length] : dailyFish(now), color: cols[day % cols.length] };
 }
 export const specialColor = (now = Date.now(), t = null) => specialOf(t, now).color;
-export const fishPrice = (id, now = Date.now(), t = null, special = false) => { const p = SPECIES_DEF[id].price; return special && id === specialOf(t, now).species && !isOcto({ species: id }) ? specialPrice(id, t, now) : p; };
+export const fishPrice = (id, now = Date.now(), t = null, special = false) => { const p = id === 'turtle' && t ? turtleDeal(t).price : SPECIES_DEF[id].price; return special && id === specialOf(t, now).species && !isOcto({ species: id }) ? specialPrice(id, t, now) : p; };
 export const specialPrice = (id, t = null, now = Date.now()) => (stuckOnColor(t, now) && specialOf(t, now).species === id ? SPECIES_DEF[id].price : Math.ceil(SPECIES_DEF[id].price * 1.4) + 8);      // (the carrier is a choice, beside the plain one at the usual price)
 // a color goal that has not moved for a week: the carrier it needs is sold at the usual price (still bought, still paired, still bred: nothing is given)
 export const STUCK_DAYS = 7;
@@ -479,7 +487,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
   if ((t.flags?.growV ?? 1) < 2 && Array.isArray(t.fish)) { const R0 = { baby: 0, juvenile: 1, adult: 2 }, min = { juvenile: BABY_DAYS, adult: ADULT_DAYS }; for (const f of t.fish) { if (!f || !min[f.stage] || R0[stageOf(f, now)] >= R0[f.stage]) continue; f.born = Math.min(f.born, now - min[f.stage] * DAY); } (t.flags ||= {}).growV = 2; }      // (growing up now takes ten days, not three: an animal that had already grown keeps the stage it reached)
-  t.flags ||= { tut: 0 }; t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; if (t.memorial.length > 150) t.memorial.splice(0, t.memorial.length - 150);      /* (the oldest go first: a tank of many years stays small) */ t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
+  t.flags ||= { tut: 0 }; if (!t.flags.turtleAdopted && ((t.fish ?? []).some((f) => f && TURTLES.has(f.species) && !f.visitor) || (t.orders ?? []).some((o) => o && TURTLES.has(o.species)) || (t.released?.length ?? 0) > 0 || (t.stats?.released ?? 0) > 0)) t.flags.turtleAdopted = now;      /* (a tank from before the adoption price that has or had a turtle has used it) */ t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; if (t.memorial.length > 150) t.memorial.splice(0, t.memorial.length - 150);      /* (the oldest go first: a tank of many years stays small) */ t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
   // Repair: whatever an older version or a damaged save left behind must not stop a tank from running (one broken fish once kept an order from ever arriving).
   if (!Array.isArray(t.fish)) t.fish = []; if (!Array.isArray(t.decor)) t.decor = [];
   if (t.nursery && (typeof t.nursery !== 'object' || !Array.isArray(t.nursery.cands) || !Number.isFinite(t.nursery.readyAt))) t.nursery = null; t.nursery ??= null; if (t.lastDepart && (typeof t.lastDepart !== 'object' || !Array.isArray(t.lastDepart.left))) t.lastDepart = null;
@@ -2019,6 +2027,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const sp = specialOf(t, now), special = !!a.special && a.species === sp.species && a.species !== 'octopus', price = fishPrice(a.species, now, t, special);
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       t.shells -= price;
+      if (TURTLES.has(a.species) && !t.flags.turtleAdopted) { t.flags.turtleAdopted = now; if (price < d.price) { t.flags.turtleDeal = { at: now, by: uid ?? null, price }; events.push({ journal: `${name} adopted the sanctuary's first sea turtle for ${price} shells.` }); } }      /* (the one adoption, used by the first turtle whatever it cost) */
       if (isCrab(a.species) && !t.flags.crabStarter) { t.flags.crabStarter = now; (t.flags.starter ||= {}).cshell_ivory = (t.flags.starter.cshell_ivory ?? 0) + 1; t.flags.ivorySz = +(CRAB_SIZE[a.species][1] * 1.02).toFixed(2); events.push({ toast: 'A free Ivory Spiral shell is waiting in the Shop, under Shells: something for your crab to grow into.' }); }      // the first crab comes with a shell to grow into
       const base = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name);
       const to = a.to && a.to !== uid ? (members ?? []).find((m) => m.id === a.to) : null;                      // a gift: the fish is for a friend in the tank, who becomes its first caretaker

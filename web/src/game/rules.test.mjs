@@ -1112,6 +1112,25 @@ ok('the sanctuary goal: on offer from level 7 until a turtle has lived here, its
   t.goalOffer = null; R.advance(t, 2 * DAY); assert.ok(!(t.goalOffer ?? []).includes('sanctuary'), 'never offered again (finished goals are never re-offered)');
   const v = quiet(2); v.level = 7; v.fish.push(R.ensureFish({ id: 'tu', name: 'T', species: 'turtle', seed: 1, born: 0, stage: 'baby', traits: [] })); assert.ok(!R.GOALS.sanctuary.ok(v), 'not with a turtle already here');
 });
+ok('the sanctuary adoption: the first green turtle costs 120 once the sanctuary goal is done, once per tank; releasing, selling or a second turtle never brings it back; other turtles keep their prices; an old tank with a turtle has used it', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.level = 8; t.shells = 1000; t.flags.tut = 5;
+  assert.equal(R.fishPrice('turtle', 1000, t), 180, 'no goal, no adoption'); assert.equal(R.turtleDeal(t).eligible, false);
+  t.goalsDone = [{ id: 'sanctuary', at: 500 }]; assert.equal(R.fishPrice('turtle', 1000, t), 120); assert.equal(R.fishPrice('loggerhead', 1000, t), 260, 'the others keep their price'); assert.equal(R.fishPrice('kemps', 1000, t), 240);
+  const M = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }]; const r1 = R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Shelly' }, { now: 1000, uid: 'a', name: 'A', members: M }); assert.ok(r1.ok); assert.equal(t.shells, 1000 - 120, 'paid 120'); assert.ok(t.flags.turtleAdopted && t.flags.turtleDeal?.price === 120);
+  assert.equal(R.fishPrice('turtle', 2000, t), 180, 'the second caretaker sees the regular price'); assert.equal(R.turtleDeal(t).eligible, false);
+  R.advance(t, 2000 + 7 * 3600e3); const f = t.fish.find((x) => x.species === 'turtle'); assert.ok(f, 'it arrives'); const at = f.arrived + 15 * D; for (let d = 1; d <= 15; d++) { R.advance(t, f.arrived + d * D); t.hunger = 0; t.water = 1; t.glass = 0; for (const x of t.fish) { x.ail = 0; x.hunger = 0; } }
+  assert.ok(R.applyAction(t, { t: 'releaseTurtle', id: f.id }, { now: at, uid: 'a', name: 'A', members: M }).ok); assert.equal(R.fishPrice('turtle', at + 1, t), 180, 'released: still no second adoption'); assert.equal(R.turtleDeal(t).eligible, false);
+  const s2 = t.shells; assert.ok(R.applyAction(t, { t: 'buyFish', species: 'turtle', name: 'Two' }, { now: at + 2, uid: 'b', name: 'B', members: M }).ok); assert.equal(t.shells, s2 - 180, 'the second turtle costs 180');
+  const u = R.newWorld(0); u.level = 8; u.goalsDone = [{ id: 'sanctuary', at: 1 }]; u.fish.push(R.ensureFish({ id: 'tu', name: 'T', species: 'turtle', seed: 1, born: 0, stage: 'adult', traits: [] })); R.norm(u, 5); assert.ok(u.flags.turtleAdopted, 'a tank from before this build that has a turtle has used its adoption'); assert.equal(R.fishPrice('turtle', 10, u), 180);
+  const v = R.newWorld(0); v.level = 8; v.goalsDone = [{ id: 'sanctuary', at: 1 }]; v.released = [{ id: 'x', species: 'turtle', at: 1 }]; R.norm(v, 5); assert.equal(R.turtleDeal(v).eligible, false, 'nor one that released a turtle before');
+  const w = R.newWorld(0); R.norm(w, 0); w.level = 8; w.goalsDone = [{ id: 'sanctuary', at: 1 }]; assert.equal(R.turtleDeal(w).eligible, true, 'a prepared tank that never had one is eligible');
+});
+ok('turtle room is spelled out: a turtle counts as four small fish for space; a full tank is told it has no place, a busy one how many fewer', () => {
+  const t = R.newWorld(0); R.norm(t, 0); t.level = 8; const r0 = R.turtleRoom(t); assert.ok(r0.ok && r0.need === 4 && r0.places === 0);
+  for (let i = 0; i < 27; i++) t.fish.push(R.ensureFish({ id: 'g' + i, name: 'G' + i, species: 'goldfish', seed: i, born: 0, stage: 'adult', traits: [] }));
+  const r1 = R.turtleRoom(t); assert.equal(r1.places, 1, 'twenty-eight animals in a tank of twenty-eight: one place short'); assert.ok(!r1.ok);
+  t.fish.length = 16; const r2 = R.turtleRoom(t); assert.equal(r2.places, 0); assert.ok(!r2.ok && r2.fewer >= 1, `sixteen small fish and a turtle: ${r2.pct}% full, ${r2.fewer} fewer wanted`); assert.ok(R.turtleRoom(t, 'kemps').need === 3);
+});
 ok('reef themes come one by one: each needs its key piece, and a theme finished under the old rule stays finished', () => {
   const t = quiet(2); t.level = 8; t.decor = ['grass', 'grass', 'sword', 'grass'].map((ty, i) => ({ id: 'd' + i, type: ty, x: i, z: 0, ry: 0 }));
   let th = R.themesOf(t).find((x) => x.key === 'kelp'); assert.equal(th.have, 4); assert.ok(!th.anchored && !th.active, 'four grasses are not a kelp forest');
