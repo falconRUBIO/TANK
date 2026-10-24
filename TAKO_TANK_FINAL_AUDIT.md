@@ -1,6 +1,6 @@
 # Tako Tank: Final Pre-iPhone Audit
 
-**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v326** (Settings shows the build; pull to refresh twice).
+**Date:** 2026-10-23 · **Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v327** (Settings shows the build; pull to refresh twice).
 **No physical iPhone and no real player have been tested yet.** Everything below is from the code, unit tests and headless-browser drills (about 0.3 frames per second, so timings and smoothness on screen are unknown).
 
 ---
@@ -75,6 +75,11 @@ Homebody behavior, early trick progression (`twirl_check`), return news (`return
 ## 3d. HUD and night (this build)
 - **HUD:** the level/health rings and the gift bar sit on the same glass as the shell pill and the sheets (they were a separate flat dark pill); the fish pill's "doing" line trims with an ellipsis instead of pushing the button; no layout change.
 - **Night:** a real night rather than a brighter blue day: deeper water (background 0x2c3c8e → 0x0b1240), darker fog, a cool moon shaft (shaft 0.16 → 0.3, exposure 1.12 → 0.98), the sand gone blue-grey, warmth down. `docs/audit/gfx_after_night.png`. The lamp, plankton glow and bioluminescence settings are untouched.
+
+## 3e. The flashing octopus arms (this build)
+- **Cause, found and measured:** the fish-resting code added in the readability pass ran its "not idle any more: stop resting" rule for every animal, every half second. For a fish `restK` is "resting"; for the octopus it is the blend between its resting arm pose and its streaming one. Zeroing it twice a second and letting it ease back made the arms flash between spread-out and swept-back. Per-pose arm-tip jump at rest in the lived-in tank: **95th percentile 14.9 voxels, max 19** (old code 2.8 / 7.2). With the rule limited to fish: **2.8 / 7.4**. Turtles' folded flippers were hit by the same rule.
+- Also: an arm that touched a leaf or rock used to draw in 60 % of the way in one pose and spring back, so an arm swinging through the edge of a leaf snapped in and out; the touch now has to hold for a few poses before the arm draws in, it comes back out only after being clear a while, and it moves a little each pose. A quick reach toward a fish eases at 7/s instead of 14/s.
+- `motion_check` now has an arm-smoothness check (resting arm tips under 4 voxels between poses at the 95th percentile). It passes before and after in its own clean tank, so it guards the retraction, not the half-second reset; the lived-in-tank probe above is what showed the reset.
 
 ## 3b. Movement pass (how everything moves)
 Measured with the new `tools/motion_check.mjs` (the same scenario on the old code and this one, 20 simulation steps a second):

@@ -31,6 +31,15 @@ console.log('  octopus', JSON.stringify(oct));
 ck('the octopus never turns faster than 3 rad/s (a half turn takes over a second)', oct && oct.angMax < 3.0, `max ${oct?.angMax}`);
 ck('fewer than 1 in 200 frames turn faster than 2.5 rad/s', oct && oct.angSpikes / 4800 < 0.005, `${oct?.angSpikes} spikes`);
 ck('a jet pulse builds up, not a kick: peak acceleration under 15 units/s² (at 20 steps a second)', oct && oct.pulses > 0 && oct.pulsePeak < 15, `${oct?.pulses} pulses, median peak ${oct?.pulsePeak}`);
+// ── the octopus's arms: how far an arm's tip moves between one pose and the next (model voxels) while it rests. Smooth is a fraction of a voxel; a snap is many ──
+const arms = await p.evaluate(`(() => { ${wrap}
+  const F = window.__fishes, o = F.list.find((f) => f.species.id === 'octopus'); if (!o) return null; const tips = []; for (let a = 0; a < 8; a++) { let tip = -1, at = -1; o.vox.forEach((v, i) => { if (v.arm === a && v.at > at && Math.hypot(...v.off) < 1.2) { at = v.at; tip = i; } }); tips.push(tip); }
+  const arr = o.mesh.instanceMatrix.array, s = o.scale || 0.06, last = tips.map((i) => [arr[i * 16 + 12] / s, arr[i * 16 + 13] / s, arr[i * 16 + 14] / s]), rest = [], all = []; let n = 0;
+  const sp0 = o.setPose.bind(o); o.setPose = (ph, a2) => { sp0(ph, a2); n++; tips.forEach((i, k) => { const x = arr[i * 16 + 12] / s, y = arr[i * 16 + 13] / s, z = arr[i * 16 + 14] / s, d = Math.hypot(x - last[k][0], y - last[k][1], z - last[k][2]); last[k] = [x, y, z]; if (n > 5) { all.push(d); if (o.st?.s === 'rest') rest.push(d); } }); };
+  o.st = { s: 'rest', t: 60, n: 0, pulse: 0 }; o.inspect = null; o.glassAt = null; o.lead = true; const dt = 0.05; for (let i = 0; i < 1200; i++) { const t = (window.__t = (window.__t ?? 0) + dt); F.update(dt, t); for (const x of F.list) x.update(dt, Math.random, F.list); if (o.st.s === 'rest' && o.st.t < 20) o.st.t = 60; }
+  return { poses: n, restP95: pct(rest, 0.95), restMax: pct(rest, 1), restN: rest.length, allP95: pct(all, 0.95) }; })()`);
+console.log('  octopus arms', JSON.stringify(arms));
+ck('a resting octopus\'s arm tips move under 4 voxels between poses (95th percentile): no flashing between poses', arms && arms.restN > 200 && arms.restP95 < 4, JSON.stringify(arms));
 // ── the seahorses: put far apart, hitched, then asked to greet. How long till both are in place, how far each swam for the distance it had to cover, and did it face the way it swam ──
 const sea = await p.evaluate(`(() => { ${wrap}
   const F = window.__fishes, hs = F.list.filter((f) => f.sk === 'seahorse'); if (hs.length < 2) return null; const [a, b2] = hs; F.night = false; F.isLead = () => true;

@@ -176,7 +176,10 @@ export class Fish3D {
       if (ready && Wd?.at && rig.arms.length <= 8) for (let a = 0; a < rig.arms.length; a++) {
         let free = 1; if (!(this.rs.jr > 0)) for (let k = 2; k <= 12; k++) { rig.pose(rig.arms[a], k / 12, S, _rq); const p = _rq, wx = ox + (e[0] * p[0] + e[4] * p[1] + e[8] * p[2]) * W, wy = oy + (e[1] * p[0] + e[5] * p[1] + e[9] * p[2]) * W, wz = oz + (e[2] * p[0] + e[6] * p[1] + e[10] * p[2]) * W;
           if (solidAt(wx, Math.max(wy, sandH(wx, wz) + 0.1), wz)) { free = Math.max(0.22, (k - 1.6) / 12); break; } }
-        reach[a] += (free - reach[a]) * (free < reach[a] ? 0.6 : 0.12);
+        // with hysteresis and a speed limit: a touch has to hold for a few poses before the arm draws in, the arm comes back out only once it has been clear a while,
+        // and either way it moves a little each pose (an arm swinging through the edge of a leaf used to snap in and out every pose)
+        const hs = (this.reachHold ||= new Float32Array(8)); hs[a] = free < 0.999 ? Math.min(1, hs[a] + 0.34) : Math.max(0, hs[a] - 0.12);
+        const want = hs[a] >= 0.99 ? free : hs[a] <= 0.01 ? 1 : reach[a]; reach[a] += Math.max(-0.08, Math.min(0.05, want - reach[a]));
       }
       layAt = onSand ? lay : null;
       poseAt = (arm, at) => { const key = arm * 1024 + Math.round(at * 990), k3 = key * 3; if (pcs[key] !== stamp) { rig.pose(rig.arms[arm], at * (reach[arm] ?? 1), S, rp); if (onSand) lay(rp); pc[k3] = rp[0]; pc[k3 + 1] = rp[1]; pc[k3 + 2] = rp[2]; pcs[key] = stamp; } else { rp[0] = pc[k3]; rp[1] = pc[k3 + 1]; rp[2] = pc[k3 + 2]; } };
@@ -1280,7 +1283,7 @@ export class Fish3D {
     // each arm has a mind of its own: now and then one probes the floor beside it, or reaches out toward a fish swimming past, while the rest of him sits still
     { const calm = (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect')) && this.restK > 0.5 && !this.pale && !this.stillLie, sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading);
       this.minds.forEach((m, i) => {
-        m.next -= dt; if (m.until > 0 && (calm || m.fast)) { m.until -= dt; m.k += (1 - m.k) * Math.min(1, dt * (m.fast ? 14 : 3)); } else { m.until = 0; m.fast = false; m.k += (0 - m.k) * Math.min(1, dt * 2.2); } if (!calm || m.until > 0 || m.next > 0) return;
+        m.next -= dt; if (m.until > 0 && (calm || m.fast)) { m.until -= dt; m.k += (1 - m.k) * Math.min(1, dt * (m.fast ? 7 : 3));      /* (a quick reach is quick, not a snap) */ } else { m.until = 0; m.fast = false; m.k += (0 - m.k) * Math.min(1, dt * 2.2); } if (!calm || m.until > 0 || m.next > 0) return;
         const a = this.rig.arms[i], r = rng(); let tgt = null;
         if (r > 0.72) for (const o of others) { if (o === this || o.dead) continue; const dx = o.pos.x - this.pos.x, dz = o.pos.z - this.pos.z, dy = o.pos.y - this.pos.y; if (Math.hypot(dx, dz) < 2.4 && Math.abs(dy) < 2.6) { tgt = [(dx * ch - dz * sh) / sc, dy / sc, (dx * sh + dz * ch) / sc]; break; } }
         if (!tgt && r > 0.18) { const ang = a.th + (rng() - 0.5) * 0.7, dd = 11 + rng() * 14; tgt = [3 + Math.cos(ang) * dd, -8.4, Math.sin(ang) * dd]; }
