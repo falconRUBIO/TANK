@@ -622,7 +622,7 @@ const seahorse = {
           // the brood pouch: a male carries the young in a pouch on his lower belly, just above the tail. It is drawn here at its fullest, and each of its
           // voxels is marked with how full the pouch must be before it shows (pk), so it swells outward a layer at a time (see Fish3D.setPose)
           if (y > -12 && y < 5) { const P = 7.5 * Math.sin(Math.PI * (y + 12) / 17), d = x - FRONT(y), W = 4.4;      // (full, it is a round belly you notice: a pregnant male swells visibly day by day)
-            if (P > 0.6 && d > 0 && d <= P && Math.abs(z) < W) { const e = Math.sqrt(Math.max(0, 1 - (z / W) ** 2)); if (d <= P * e) return { c: speck(x, y, z, mix(pal.belly, [255, 236, 218], 0.5 + 0.3 * (d / P))), tag: 'pouch', pk: Math.max(0.05, d / (P * e)) }; } }
+            if (P > 0.6 && d > 0 && d <= P && Math.abs(z) < W) { const e = Math.sqrt(Math.max(0, 1 - (z / W) ** 2)); if (d <= P * e) return { c: speck(x, y, z, mix(pal.belly, [255, 236, 218], 0.12 + 0.14 * (d / P))), tag: 'pouch', pk: Math.max(0.05, d / (P * e)) };      /* (the pouch is the belly's own color, a shade lighter: a swelling, never a white patch) */ } }
           // the knobs: at the back ridge, the two sides and the keel of the belly, on each ring's rim
           if (T.rim && T.d <= 1.7 && Math.abs(T.u) <= 1.15) { const back = T.u < -0.8 && Math.abs(z) <= 1.2, side = Math.abs(T.u) < 0.35 && Math.abs(Math.abs(z) - T.zw) <= 1.1, keel = T.u > 0.85 && Math.abs(z) <= 1; if (back || side || keel) return { c: mix(pal.ring, pal.dark, 0.3) }; }
           // fleshy filaments (cirri) on a spiny seahorse's back

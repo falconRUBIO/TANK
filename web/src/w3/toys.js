@@ -5,6 +5,13 @@
 import * as THREE from 'three';
 import { sandH } from './terrain.js';
 import { Fish3D } from './fish3d.js';
+import { SEAHORSE_STEM, SEAHORSE_LEAN } from '../species.js';
+const _v1 = new THREE.Vector3();
+const ez = (q) => (q <= 0 ? 0 : q >= 1 ? 1 : q * q * (3 - 2 * q));
+// where an octopus holds a toy in its arms: a point in its own frame (rig units, like the carry pose), out in front of the beak where the
+// front arms wrap it, so the thing never sits inside the body whatever way it turns
+const holdPoint = (o, m, out) => { const sc = o.scale || 0.06, ch = Math.cos(o.heading), sh = Math.sin(o.heading), x = m[0] * sc, z = m[2] * sc; return out.set(o.pos.x + x * ch + z * sh, o.pos.y + (o.lift ?? 0) + m[1] * sc, o.pos.z - x * sh + z * ch); };
+const CUBE_HOLD = [13.5, -4.2, 1.5], CUBE_DOWN = [17, -9, 0];
 
 const p0x = (L) => L.at.x;
 const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
@@ -144,42 +151,58 @@ export class Toys {
     g.position.set(Math.max(-X, Math.min(X, x)), Fish3D.topY + 0.4, 0.8); this.scene.add(g); this.fishes.burst?.(g.position.clone());
     this.cube = { g, slices, vy: -1.4, life: 40, who: new Set(), held: null, twist: null, tw: 1.5 }; this.onSound?.('splash');
   }
-  cubeEnd() { const C = this.cube; if (!C) return; this.scene.remove(C.g); C.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.forEach((m) => m.dispose()); } }); if (C.held) C.held.inspect = null; this.done('cube', C.who); this.cube = null; }
+  cubeEnd() { const C = this.cube; if (!C) return; this.scene.remove(C.g); C.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.forEach((m) => m.dispose()); } }); if (C.held) this.cubeLetGo(C); this.done('cube', C.who); this.cube = null; }
+  cubeLetGo(C) { const o = C.held; if (!o) return; C.held = null; o.toyCube = null; if (o.st && o.st.mode === 'cube') { o.st.mode = null; o.st.s = 'rest'; o.st.t = 3 + Math.random() * 3; } }
+  // the cube's life with an octopus: it comes straight over (free), gathers it up (grab), holds it in its front arms turning it over and twisting a
+  // face now and then (hold), sets it down on the sand in front of it (put), looks at it a while (rest), and picks it up again, two or three times
   stepCube(dt) {
-    const C = this.cube, p = C.g.position; C.life -= dt; if (C.life <= 0) return this.cubeEnd();
-    if (C.held && (C.held.dead || !free(C.held))) C.held = null;
-    if (C.held) { const o = C.held; p.lerp(new THREE.Vector3(o.pos.x + Math.sin(C.life) * 0.2, o.pos.y + 0.55, o.pos.z + 0.35), Math.min(1, dt * 5)); C.g.rotation.x += dt * 0.9; C.g.rotation.y += dt * 1.3;      // held in the arms, turned over and over
+    const C = this.cube, p = C.g.position; C.life -= dt; C.t = (C.t ?? 0) + dt; C.phase ??= 'free';
+    if (C.life <= 0) { if (C.held && C.phase !== 'put') { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(C.held, CUBE_DOWN, new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; C.life = 1.2; } else if (!C.held) return this.cubeEnd(); }
+    if (C.held && (C.held.dead || !free(C.held))) { this.cubeLetGo(C); C.phase = 'free'; }
+    const o = C.held;
+    if (C.phase === 'grab') { const to = holdPoint(o, CUBE_HOLD, _v1), q = ez(C.t / 0.7); p.lerpVectors(C.from, to, q); C.g.rotation.x += dt * 0.4; if (C.t >= 0.7) { C.phase = 'hold'; C.t = 0; C.holdFor = 6 + Math.random() * 7; C.tw = 1.2; } o.flush = Math.max(o.flush ?? 0, 0.3); return; }
+    if (C.phase === 'hold') { holdPoint(o, CUBE_HOLD, p); C.g.rotation.x += dt * 0.7; C.g.rotation.y += dt * 1.1;      // held in the arms, turned over and over
       C.tw -= dt; if (!C.twist && C.tw <= 0) { C.twist = { sl: C.slices[Math.floor(Math.random() * 3)], a: 0 }; this.onSound?.('bonk'); }      // now and then a face is twisted round a quarter turn
       if (C.twist) { const d = Math.min(Math.PI / 2 - C.twist.a, dt * 5); C.twist.a += d; C.twist.sl.rotation.y += d; if (C.twist.a >= Math.PI / 2 - 1e-3) { C.twist = null; C.tw = 0.9 + Math.random() * 1.6; } }
-      o.flush = Math.max(o.flush ?? 0, 0.25); return; }
+      o.flush = Math.max(o.flush ?? 0, 0.25); if (C.t >= C.holdFor) { C.phase = 'put'; C.t = 0; C.from = p.clone(); C.to = holdPoint(o, CUBE_DOWN, new THREE.Vector3()); C.to.y = sandH(C.to.x, C.to.z) + 0.3; } return; }
+    if (C.phase === 'put') { const q = ez(C.t / 0.9); p.lerpVectors(C.from, C.to, q); C.g.rotation.x += (Math.round(C.g.rotation.x / (Math.PI / 2)) * (Math.PI / 2) - C.g.rotation.x) * Math.min(1, dt * 4);      // set down square on the sand
+      if (C.t >= 0.9) { const who = o; this.cubeLetGo(C); C.phase = 'rest'; C.t = 0; C.restFor = 2.5 + Math.random() * 3; C.last = who; if (who?.st) { who.inspect = null; who.st.s = 'rest'; who.st.mode = null; who.st.t = C.restFor + 1; } } return; }
+    if (C.phase === 'rest') { if (C.t >= C.restFor) { const who = C.last, d = who && !who.dead ? who.pos.distanceTo(p) : 9; C.phase = 'free'; if (who && d < 4 && (C.cycles ?? 1) < 3 && C.life > 10 && free(who)) { C.doneWith = null; who.inspect = { x: p.x, z: p.z, toy: true }; } else C.doneWith = who?.fid ?? null; } return; }      /* (back for it: it goes over again and gathers it up, two or three times, then loses interest) */
     const floor = sandH(p.x, p.z) + 0.3; if (p.y > floor) { C.vy = Math.max(-1.6, C.vy - dt * 0.6); p.y = Math.max(floor, p.y + C.vy * dt); C.g.rotation.z += dt * 0.6; }
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p);
-      if (k === 'octopus' && d < 8) { if (!f.inspect || f.inspect.toy) f.inspect = { x: p.x, z: p.z, toy: true }; if (d < 1.3) { C.held = f; C.who.add(f.fid); f.inspect = null; this.onSound?.('pounce'); return; } }      // it goes over and gathers it up
+      if (k === 'octopus' && d < 8 && f.fid !== C.doneWith && f.st && !f.hunt && !f.task) { if (!f.inspect || f.inspect.toy || C.last === f || d < 3) f.inspect = { x: p.x, z: p.z, toy: true }; if (d < 1.25) this.cubeGrab(C, f); }      // it comes straight over and gathers it up (a toy it has played with beats a new plant)
       else if ((k === 'fish' || k === 'turtle') && d < 3) { f.target.set(p.x, p.y + 0.4, p.z + 0.3); f.retarget = Math.max(f.retarget ?? 0, 0.6); if (d < 1) C.who.add(f.fid); }
       else if (k === 'crab' && d < 4 && p.y < sandH(p.x, p.z) + 0.6) { if (f.toy?.(p, 'the cube', C.vy < -0.5) || (f.cs?.toy && d < 1)) C.who.add(f.fid); } }      // a crab climbs up to it and feels it over
   }
-
-  // ── the hitching hoop: a ring that hangs on a line from the top and sways. Seahorses swim over, curl their tails round it and sway with it ──
+  cubeGrab(C, f) { C.held = f; C.who.add(f.fid); C.phase = 'grab'; C.t = 0; C.life = Math.max(C.life, 26); C.from = C.g.position.clone(); C.cycles = (C.cycles ?? 0) + 1; f.inspect = null; f.toyCube = C; f.st.s = 'work'; f.st.mode = 'cube'; f.st.t = 1e9; f.target.set(f.pos.x, f.pos.y, f.pos.z); this.onSound?.('pounce'); }
+  // ── the hitching hoop: a ring that hangs on a line from the top and sways. It is a real holdfast: a seahorse swims over, curls its tail round the
+  // bottom of the ring and sways with it, the way it holds a stem. Hold and drag the hoop and the seahorses on it ride along ──
   hangHoop(x) {
     if (this.hoop) this.hoopEnd();
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 10, 28), new THREE.MeshLambertMaterial({ color: 0xff8fb1, emissive: 0x2a0a14 }));
     const line = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 5), new THREE.MeshBasicMaterial({ color: 0xdfeff5, transparent: true, opacity: 0.6 }));
-    const g = new THREE.Group(); g.add(ring); g.add(line); const top = Fish3D.topY + 0.3, y = 5.2, len = top - y - 0.42; line.scale.y = len; line.position.y = 0.42 + len / 2;
-    g.position.set(Math.max(-X + 0.5, Math.min(X - 0.5, x)), y, 0.5); this.scene.add(g); this.hoop = { g, ring, life: 45, who: new Set(), ph: 0 }; this.onSound?.('splash');
+    const g = new THREE.Group(); g.add(ring); g.add(line); const top = Fish3D.topY + 0.3, y = 5.2; g.position.set(Math.max(-X + 0.5, Math.min(X - 0.5, x)), y, 0.5); this.scene.add(g);
+    this.hoop = { g, ring, line, life: 60, who: new Set(), ph: 0, goal: null, at: new THREE.Vector3(), prev: null }; this.hoopLine(); this.onSound?.('splash');
   }
-  hoopEnd() { const H = this.hoop; if (!H) return; this.scene.remove(H.g); H.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } }); this.done('hoop', H.who); this.hoop = null; }
+  hoopLine() { const H = this.hoop, len = Math.max(0.1, Fish3D.topY + 0.3 - H.g.position.y - 0.42); H.line.scale.y = len; H.line.position.y = 0.42 + len / 2; }
+  moveHoop(x, y) { const H = this.hoop; if (!H) return; H.goal = { x: Math.max(-X + 0.5, Math.min(X - 0.5, x)), y: Math.max(1.6, Math.min(Fish3D.topY - 0.8, y)) }; H.life = Math.max(H.life, 25); }      // dragged: it follows the finger at a gentle pace, and stays where it is left
+  hoopEnd() { const H = this.hoop; if (!H) return; for (const f of this.fishes.list) { f.hoopWant = false; if (f.holdfast?.id === 'hoop') f.release?.(0.4); } this.scene.remove(H.g); H.g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } }); this.done('hoop', H.who); this.hoop = null; }
   stepHoop(dt) {
     const H = this.hoop; H.life -= dt; H.ph += dt; if (H.life <= 0) return this.hoopEnd();
+    if (H.goal) { const g = H.g.position, k = Math.min(1, dt * 2.5); g.x += (H.goal.x - g.x) * k; g.y += (H.goal.y - g.y) * k; this.hoopLine(); if (Math.hypot(H.goal.x - g.x, H.goal.y - g.y) < 0.01) H.goal = null; }
     H.g.rotation.z = Math.sin(H.ph * 0.9) * 0.18 + Math.sin(H.ph * 2.1) * 0.04;      // it sways in the current
-    const at = new THREE.Vector3(0, -0.42, 0).applyEuler(H.g.rotation).add(H.g.position);      // the bottom of the ring, where a tail curls on
+    const at = H.at.set(0, -0.42, 0).applyEuler(H.g.rotation).add(H.g.position), prev = H.prev; H.prev = at.clone();      // the bottom of the ring, where a tail curls on
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(at);
-      if (k === 'seahorse' && d < 7) { f.target.set(at.x, at.y + 0.5, at.z); f.retarget = Math.max(f.retarget ?? 0, 0.8); f.glance = H.g.position.clone(); f.glanceT = 0.5; if (d >= 1.3) { const want = new THREE.Vector3(at.x, at.y + 0.45, at.z), step = want.sub(f.pos); const k = Math.min(1, (dt * 0.7) / step.length()); f.pos.addScaledVector(step, k); f.vel.multiplyScalar(Math.exp(-dt * 2)); }      /* (a seahorse's own swimming keeps to its perches, so the hoop draws it over itself, at a seahorse's slow pace) */
-        if (d < 1.3) { f.vel.multiplyScalar(Math.exp(-dt * 4)); f.pos.lerp(new THREE.Vector3(at.x, at.y + 0.45, at.z), Math.min(1, dt * 2)); if (!H.who.has(f.fid)) this.onSound?.('pop'); H.who.add(f.fid); } }      // swims over and hangs on
+      if (k === 'seahorse') { const Hf = f.holdfast;
+        if (Hf?.id === 'hoop') { if (prev && Hf.on) f.pos.add(_v1.copy(at).sub(prev)); Hf.x = at.x; Hf.y = at.y; Hf.z = at.z; Hf.qx = at.x; Hf.qz = at.z; if (Hf.on && !H.who.has(f.fid)) { H.who.add(f.fid); this.onSound?.('pop'); } if (!Hf.on) f.target.set(at.x, at.y, at.z); continue; }      // on the hoop: it rides the sway (and the drag)
+        if (d < 7 && f.sp?.tail && !f.nursery && !f.seeking && !f.greet && (f.hoopWant || Math.random() < dt * 0.6)) {      // a seahorse near by comes to hold on, as it would to a new stem
+          f.hoopWant = true; if (Hf?.on) { f.release(0.3); continue; } if (Hf || f.releaseT > 0) continue;      /* (it lets go of its stem first, then, free, takes the hoop) */ f.hoopWant = false;
+          f.gripStem = SEAHORSE_STEM; f.gripLean = SEAHORSE_LEAN; f.holdfast = { id: 'hoop', type: 'hoop', qx: at.x, qz: at.z, x: at.x, y: at.y, z: at.z, face: 0, hf: 0.5, stem: SEAHORSE_STEM, lim: 20 + 7 * d, on: false, until: 25 + Math.random() * 25, snick: 3 + Math.random() * 4, held: 0, roost: false };
+          f.idle = 0; f.retarget = 40; f.target.set(at.x, at.y, at.z); f.thought = 'Swimming over to the hoop.'; } }
       else if (k === 'fish' && d < 2.5 && Math.random() < dt) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.5); }      // fish swim through it now and then
       else if (k === 'octopus' && d < 4 && !f.inspect) f.inspect = { x: at.x, z: at.z, toy: true };
       else if (k === 'turtle' && d < 3 && Math.random() < dt * 0.4) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.6); }
       else if (k === 'crab' && Math.random() < dt * 0.3) { f.lookAt = H.g.position.clone(); f.lookT = 1; } }      // (it hangs out of a crab's reach: it only looks up at it)
   }
-
   update(dt, t) { if (this.ball) this.stepBall(dt); if (this.cube) this.stepCube(dt); if (this.hoop) this.stepHoop(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
 }

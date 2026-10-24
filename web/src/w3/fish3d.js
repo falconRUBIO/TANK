@@ -187,7 +187,7 @@ export class Fish3D {
     for (let j = 0; j < n; j++) {
       const i = all ? j : list[j], v = this.vox[i];
       let x = v.x, y = v.y, z = v.z, grow = 1;
-      if (v.tag === 'pouch') { grow = (this.brood ?? 0) >= v.pk ? 1 : 0; if (this.contractK) x -= 1.2 * this.contractK * v.pk; }      // a male's brood pouch, only as full as it is (squeezed as he gives birth)
+      if (v.tag === 'pouch') { grow = Math.max(0, Math.min(1, ((this.brood ?? 0) - v.pk) / 0.08 + 1)); if (this.contractK) x -= 1.2 * this.contractK * v.pk; }      /* (each layer eases in as the pouch fills, so it swells instead of popping on) */      // a male's brood pouch, only as full as it is (squeezed as he gives birth)
       if (b) {
         const piv = b.pivot - this.cx;
         if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
@@ -369,6 +369,7 @@ export class Fish3D {
     }
     G.t += dt; G.w = Math.min(1, G.t / 0.5); let T;
     if (kind === 'carry') T = [9, -7.3, 0.4 + Math.sin(G.t * 2) * 0.3];
+    else if (kind === 'cube') T = [12.5 + Math.sin(G.t * 1.3) * 0.6, -4.5 + Math.sin(G.t * 1.1) * 0.5, 1.5 + Math.sin(G.t * 0.9) * 0.8];      // the twist cube out in front: the arm tips work round it as it turns
     else if (kind === 'twine') {      // its partner close by: one arm reaches out to meet one of theirs, the tip curling slowly round and round where they touch
       const o = this.twineWith, v = _tw.copy(o.pos).add(this.pos).multiplyScalar(0.5); this.group.worldToLocal(v); v.multiplyScalar(1 / sc); const L = v.length(), m = Math.min(1, 15 / Math.max(1, L)); v.multiplyScalar(m);
       const c = G.t * 1.6 + (this.fid < o.fid ? 0 : Math.PI); T = [v.x + Math.cos(c) * 1.6, Math.max(-7.5, v.y) + Math.sin(c * 0.7) * 1.2, v.z + Math.sin(c) * 1.6]; G.w = Math.min(1, G.t / 0.9); }
@@ -616,10 +617,10 @@ export class Fish3D {
     this.mesh.instanceColor.needsUpdate = true;
   }
   // a warm, bright flush (a greeting seahorse changes color when it meets its partner)
-  applyGlow() { if (this.pale) return; const a = this.mesh.instanceColor.array, b = this.baseCol, k = this.glowK; for (let i = 0; i < a.length; i += 3) { a[i] = Math.min(1, b[i] * (1 + 0.5 * k) + 0.1 * k); a[i + 1] = Math.min(1, b[i + 1] * (1 + 0.35 * k) + 0.05 * k); a[i + 2] = Math.min(1, b[i + 2] * (1 + 0.1 * k)); } this.mesh.instanceColor.needsUpdate = true; }
+  applyGlow() { if (this.pale) return; const a = this.mesh.instanceColor.array, b = this.baseCol, k = this.glowK, V = this.vox; for (let i = 0; i < a.length; i += 3) { const kk = V?.[i / 3]?.tag === 'pouch' ? k * 0.25 : k; a[i] = Math.min(1, b[i] * (1 + 0.5 * kk) + 0.1 * kk); a[i + 1] = Math.min(1, b[i + 1] * (1 + 0.35 * kk) + 0.05 * kk); a[i + 2] = Math.min(1, b[i + 2] * (1 + 0.1 * kk)); } this.tintApplied = -1; this.mesh.instanceColor.needsUpdate = true; }      /* (the belly pouch hardly glows; the holdfast tint is laid back on afterwards) */
   // sickness and death drain the color
   setPale(k) {
-    if (k === this.pale) return; this.pale = k; const a = this.mesh.instanceColor.array, b = this.baseCol;
+    if (k === this.pale) return; this.pale = k; this.tintApplied = -1; const a = this.mesh.instanceColor.array, b = this.baseCol;
     for (let i = 0; i < a.length; i += 3) { const g = (b[i] * 0.3 + b[i + 1] * 0.59 + b[i + 2] * 0.11) * 0.85 + 0.08; a[i] = b[i] + (g - b[i]) * k; a[i + 1] = b[i + 1] + (g * 1.03 - b[i + 1]) * k; a[i + 2] = b[i + 2] + (g * 1.1 - b[i + 2]) * k; }
     this.mesh.instanceColor.needsUpdate = true;
   }
@@ -919,9 +920,9 @@ export class Fish3D {
     // leaning back from its stem; the head tips to follow its prey; a flick of the head for plankton, a much faster, deeper one to strike
     this.pitch += (((this.gripLean ?? SEAHORSE_LEAN) * (this.gripK ?? 0) + (this.prey ? aimP : 0) - 0.1 * flick - 0.2 * strike + Math.sin(t * 0.7 + this.phase) * 0.02) - this.pitch) * Math.min(1, dt * (strike ? 45 : flick ? 30 : this.prey ? 6 : 3));
     // its color: a little of its holdfast's, and darker through the night
-    if (H.held > 6 || this.sleepy) { const base = PLANT_COLS[H.type]?.[1] ?? HOLD_COLS[H.type] ?? [150, 140, 120], col = this.sleepy ? [Math.round(base[0] * 0.35 + 30), Math.round(base[1] * 0.35 + 28), Math.round(base[2] * 0.35 + 40)] : base;
+    if (H.held > 6 || this.sleepy) { const base = PLANT_COLS[H.type]?.[0] ?? HOLD_COLS[H.type] ?? [150, 140, 120], col = this.sleepy ? [Math.round(base[0] * 0.35 + 30), Math.round(base[1] * 0.35 + 28), Math.round(base[2] * 0.35 + 40)] : base;      /* (toward the plant's body color, not its pale tips) */
       if (!this.tintCol || this.tintCol[0] !== col[0] || this.tintCol[1] !== col[1] || this.tintCol[2] !== col[2]) { this.tintCol = col; this.tintApplied = -1; }
-      const want = this.sleepy ? 0.4 : 0.3; this.setTint(Math.min(want, (this.tintK ?? 0) + dt * (this.sleepy ? 0.03 : 0.012))); }
+      const want = this.sleepy ? 0.35 : 0.22; this.setTint(Math.min(want, (this.tintK ?? 0) + dt * (this.sleepy ? 0.03 : 0.012))); }
     this.snickSaid = Math.max(0, (this.snickSaid ?? 0) - dt);
     this.thought = this.snickSaid > 0 ? (this.thought?.startsWith('Struck') ? this.thought : 'Snapped up a speck of plankton.') : this.prey ? 'Watching a shrimp drift closer.' : this.sleepy ? `Resting on the ${(LABEL[H.type] ?? H.type)} for the night.` : this.glanceT > 0 ? 'One eye on the new thing in the tank.' : this.aimT > 0 ? 'Both eyes on something drifting past.' : H.held < 8 ? `Holding on to the ${(LABEL[H.type] ?? H.type)} with its tail.` : (this.tintK ?? 0) > 0.15 ? `Blending in with the ${(LABEL[H.type] ?? H.type)}.` : 'Watching the water, one eye each way.';
     // at night it stays, shifting to another familiar stem only now and then; by day it moves on when its time is up
@@ -972,7 +973,7 @@ export class Fish3D {
   letGo() { if (this.holdfast) this.lastHold = this.holdfast.id; this.holdfast = null; this.idle = 0; this.retarget = 0; this.thought = null; }
   setTint(k) {
     this.tintK = k; if (this.pale || (this.glowK ?? 0) > 0.03 || Math.abs(k - (this.tintApplied ?? 0)) < 0.02) return; this.tintApplied = k;
-    const a = this.mesh.instanceColor.array, b = this.baseCol, c = this.tintCol ?? [200, 200, 200], cr = c[0] / 255, cg = c[1] / 255, cb = c[2] / 255;
+    const a = this.mesh.instanceColor.array, b = this.baseCol, c = this.tintCol ?? [200, 200, 200], lin = (v) => { const s = v / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }, cr = lin(c[0]), cg = lin(c[1]), cb = lin(c[2]);      /* (instance colors are linear; the tint was being mixed in as sRGB and came out pale) */
     for (let i = 0; i < a.length; i += 3) { const l = b[i] * 0.3 + b[i + 1] * 0.59 + b[i + 2] * 0.11; a[i] = b[i] + (cr * (0.4 + l) - b[i]) * k; a[i + 1] = b[i + 1] + (cg * (0.4 + l) - b[i + 1]) * k; a[i + 2] = b[i + 2] + (cb * (0.4 + l) - b[i + 2]) * k; }
     this.mesh.instanceColor.needsUpdate = true;
   }
@@ -1039,7 +1040,7 @@ export class Fish3D {
       this.glassNear += ((1 - Math.max(0, Math.min(1, (d - 0.15) / 2.2))) - this.glassNear) * Math.min(1, dt * 3); if (d < 0.35 && !gl.trick) this.vel.multiplyScalar(Math.exp(-6 * dt));
       if (gl.trick && d < 0.5) { const n = this.trickPts?.shift(); this.glassAt = n ? { ...n, until: performance.now() + 6000, trick: true } : null; if (!n) this.trickPts = null; }      // a trick: on to the next point of its route
     } else this.glassNear *= Math.exp(-dt * 2.5);
-    if (S.s === 'work' && S.mode === 'hunt' && this.hunt) this.updateGrab(dt, S); else if (S.mode === 'carry2' || (S.s === 'work' && S.mode === 'jar' && this.jarAt)) this.updateHold(dt, S, S.mode === 'jar' ? 'jar' : 'carry'); else if (this.twineWith && !this.twineWith.dead && (this.twineT = Math.max(0, (this.twineT ?? 0) - dt)) > 0 && Math.hypot(this.twineWith.pos.x - this.pos.x, this.twineWith.pos.z - this.pos.z) < 2.6 && Math.abs(this.twineWith.pos.y - this.pos.y) < 3 && (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect'))) this.updateHold(dt, S, 'twine'); else if (this.rs.grab) { this.rs.grab = null; this.gr = null; }
+    if (S.s === 'work' && S.mode === 'hunt' && this.hunt) this.updateGrab(dt, S); else if (S.mode === 'carry2' || (S.s === 'work' && S.mode === 'jar' && this.jarAt)) this.updateHold(dt, S, S.mode === 'jar' ? 'jar' : 'carry'); else if (S.mode === 'cube' && this.toyCube) this.updateHold(dt, S, 'cube'); else if (this.twineWith && !this.twineWith.dead && (this.twineT = Math.max(0, (this.twineT ?? 0) - dt)) > 0 && Math.hypot(this.twineWith.pos.x - this.pos.x, this.twineWith.pos.z - this.pos.z) < 2.6 && Math.abs(this.twineWith.pos.y - this.pos.y) < 3 && (S.s === 'rest' || (S.s === 'work' && S.mode === 'inspect'))) this.updateHold(dt, S, 'twine'); else if (this.rs.grab) { this.rs.grab = null; this.gr = null; }
     if (S.s === 'work') {
       const jar = S.mode === 'jar' ? this.jarAt : S.mode === 'hunt' ? this.hunt : S.mode === 'inspect' ? this.inspect : null;
       this.vel.multiplyScalar(Math.exp(-4 * dt)); this.restK += (0.7 - this.restK) * Math.min(1, dt * 2); this.crawlK += (0 - this.crawlK) * Math.min(1, dt * 2);

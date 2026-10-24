@@ -1315,8 +1315,8 @@ export const trainNeed = (f) => (isSmart(f) ? 2 : TRAIN_NEED);
 export const TOYS = {
   ball: { label: 'Ball', unlock: 1, icon: 'ball', how: 'Tap the water to toss it in.', who: 'Fish nose it along, an octopus bats it about, a turtle shoves it with its nose; crabs walk up and poke it (a timid one tucks in when it lands close).', fits: ['fish', 'octopus', 'turtle', 'crab'] },
   bubbles: { label: 'Bubbles', unlock: 3, icon: 'bubbles', how: 'Tap the sand: a stream of bubbles rises from it.', who: 'Fish chase and pop them; seahorses snap at them; a turtle drifts up through them; a crab comes to watch the stone puff.', fits: ['fish', 'seahorse', 'octopus', 'turtle', 'crab'] },
-  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus grabs it, turns it over and twists the faces. Fish and turtles nose it; a crab feels it over on the sand.', fits: ['octopus', 'crab'] },
-  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it.', who: 'A seahorse curls its tail round it and sways. Fish swim through it; crabs only look up at it.', fits: ['seahorse'] },
+  cube: { label: 'Twist cube', unlock: 5, icon: 'cube', how: 'Tap the water to drop it in.', who: 'An octopus comes straight over, gathers it up in its arms, turns it over and twists the faces, sets it down and picks it up again. Fish and turtles nose it; a crab feels it over on the sand.', fits: ['octopus', 'crab'] },
+  hoop: { label: 'Hitching hoop', unlock: 5, icon: 'hoop', how: 'Tap the water to hang it, then hold and drag it to move it about.', who: 'Seahorses swim over, curl their tails round it and sway with it; drag the hoop and they ride along. Fish swim through it; crabs only look up at it.', fits: ['seahorse'] },
   light: { label: 'Light spot', unlock: 7, icon: 'light', how: 'Hold and drag on the sand.', who: 'Fish follow it, an octopus stalks and pounces, seahorses watch it, a turtle cruises after it, and a crab walks into it and reaches for it.', fits: ['fish', 'octopus', 'seahorse', 'turtle', 'crab'] },
 };
 export const TOY_LEARN = 5;

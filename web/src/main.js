@@ -460,7 +460,7 @@ stg.hideForDepth.push(bottleSp, bottleGlow); bottleSp.material.opacity = 0;     
 const bottleM = makeBottle(); bottleM.group.visible = false; scene.add(bottleM.group);
 const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
 let bottleId = null; const sentBottles = new Map();
-const toys = new Toys(scene, fishes); let lightHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
+const toys = new Toys(scene, fishes); let lightHeld = false, hoopHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
 toys.onSound = (k) => sfx({ splash: 'bubble', bubble: 'bubble', bonk: 'tap', pop: 'click', pounce: 'tap' }[k] ?? 'tap');
 toys.onDone = (toy, ids) => { if (!game.state) return; game.dispatch({ t: 'play', toy, fish: ids }).then((r) => { capNote(); if (!r?.ok) return;      // who joined in learns the toy a little more, and the phone says who, and how far along they are
   const T = TOYS[toy]; if (r.applied === false) { ui?.toast(`Same go with the ${T.label.toLowerCase()}: it counts again in ${Math.max(1, Math.ceil((r.wait ?? 0) / 1000))} s.`, 2200); return; }
@@ -1244,6 +1244,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     if (k === 'ball') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { toys.toss(hit.x, 0.3 + Math.random() * 0.8); toys.armed = null; } return; }
     if (k === 'cube' || k === 'hoop') { if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit)) { if (k === 'cube') toys.dropCube(hit.x); else toys.hangHoop(hit.x); toys.armed = null; } return; }
     const at = toys.sandHit(ray); if (!at) return; if (k === 'bubbles') { toys.blow(at); toys.armed = null; } else if (k === 'light') { toys.lightOn(at); lightHeld = true; canvas.setPointerCapture?.(ev.pointerId); } return; }
+  if (toys.hoop && !placing && !rearrange && !feedMode && !cleanMode && !toys.armed) { const ray = rayFrom(ev).ray, hp = new THREE.Vector3(); if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.5), hp) && Math.hypot(hp.x - toys.hoop.g.position.x, hp.y - toys.hoop.g.position.y) < 0.75) { hoopHeld = true; canvas.setPointerCapture?.(ev.pointerId); return; } }      // a finger on the hoop: drag it, and the seahorses on it ride along
   if (!placing && !rearrange && !feedMode && !cleanMode && driftHit(ev)) { pickDrift(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && bottleHit(ev)) { openBottle(); return; }
   if (!placing && !rearrange && !feedMode && !cleanMode && mystHit(ev)) { openMystery(); return; }
@@ -1301,9 +1302,10 @@ function lureRelease() { for (const f of fishes.list) { octoPlayed.delete(f); co
 let dragging = false;
 // the finger picks a spot on the sand itself, on whichever level it touches (front floor, terrace or the back bank)
 function movePlace(ev) { const r = rayFrom(ev).ray, h = raySand(r.origin, r.direction); if (h) { decor.move(h.x, h.z); updatePlaceOk(); } else if (r.intersectPlane(floor, hit)) { decor.move(hit.x, hit.z); updatePlaceOk(); } }
-canvas.addEventListener('pointermove', (ev) => { if (lightHeld) { const at = toys.sandHit(rayFrom(ev).ray); if (at) toys.moveLight(at); return; } if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
+canvas.addEventListener('pointermove', (ev) => { if (hoopHeld) { const ray = rayFrom(ev).ray, hit = new THREE.Vector3(); if (ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.5), hit)) toys.moveHoop(hit.x, hit.y); return; } if (lightHeld) { const at = toys.sandHit(rayFrom(ev).ray); if (at) toys.moveLight(at); return; } if (lure) { lure.x = ev.clientX; lure.y = ev.clientY; } if (play) playPoint(ev); else if (placing && dragging) movePlace(ev); });
 addEventListener('pointerup', (ev) => {
   if (lightHeld) { lightHeld = false; toys.lightOff(); toys.armed = null; }
+  if (hoopHeld) { hoopHeld = false; return; }
   dragging = false; const c = tapCand; tapCand = null;
   if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) { if (c.decor) decorMenu(c.decor); else setFocus(c.f === focus ? null : c.f); }
   if (lure?.on) { lureEnd = performance.now(); lureRelease(); } lure = null;
@@ -1320,7 +1322,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Raise a happy tank: care for each animal, discover what they do, and grow your aquarium together. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Feed, clean and play: a happy tank levels up, and every level opens new animals, toys and habitats. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {

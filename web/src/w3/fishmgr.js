@@ -1111,7 +1111,7 @@ export class Fishes {
   update(dt, t) {
     this.senseTick(dt); this.shadeTick();
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
-    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = Math.max(broodOf(f.rec, now), f.greet && f.rec.sex === 'm' ? 0.3 : 0);      /* a male puffs his pouch a little as he greets */
+    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);      /* (the pouch shows only what the rules say it holds; the old greeting puff read as a white patch) */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
       for (const f of this.list) if ((f.species?.move === 'jet' || (f.sk === 'seahorse' && !f.nursery)) && f.rec && !f.dead && !f.visitor) {      /* (a seahorse has its own hunger too) */ const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
     // laid to rest: the body sinks slowly and fades away, rather than vanishing
@@ -1178,7 +1178,7 @@ export class Fishes {
     for (const f of this.list) { if (f.flake && !f.flake.eaten && !f.flake.sucked && this.flakes.includes(f.flake)) claims.set(f.flake, (claims.get(f.flake) || 0) + 1); else f.flake = null; }
     for (const f of this.list) {
       if (f.visitor || f.dead || f.species.move === 'jet') { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // an octopus does not eat flakes
-      if (f.brood) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // a cardinalfish father with eggs in his mouth eats nothing until they hatch
+      if (f.brood && f.sk !== 'seahorse') { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // a cardinalfish father with eggs in his mouth eats nothing until they hatch (a seahorse father with a full pouch still eats)
       if (f.sk === 'seahorse' && f.leadOf?.() !== false && !f.chase && (f.holdfast?.on || f.releaseT > 0)) { f.flake = null; f.seeking = false; f.foodMul = 1; continue; }      // holding on, a seahorse hunts from its stem (see Fish3D.seahorse)
       const tr = f.profile?.traits ?? [], shy = tr.includes('Shy'), greedy = tr.includes('Greedy'), curious = tr.includes('Curious');
       f.hold = (f.hold ?? 0) - dt; f.think = (f.think ?? 0) - dt;
