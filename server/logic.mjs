@@ -289,11 +289,11 @@ export function saveWorld(db, tankId, w) {
   db.prepare('UPDATE tanks SET world=?, shells=?, hunger=?, water=?, glass=?, level=?, sim_ts=? WHERE id=?').run(JSON.stringify(w), w.shells, w.hunger, w.water, w.glass, w.level, w.simTs, tankId);
 }
 export const dayOf = (w, now = Date.now()) => Math.floor((now - w.createdAt) / 864e5) + 1;
-export function addJournal(db, tankId, text, userId = null, now = Date.now()) {
+export function addJournal(db, tankId, text, userId = null, now = Date.now(), about = null) {
   const t = db.prepare('SELECT created_at FROM tanks WHERE id=?').get(tankId);
   const day = Math.floor((now - (t?.created_at ?? now)) / 864e5) + 1;
-  const r = db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tankId, day, text, userId, now);
-  return { id: Number(r.lastInsertRowid), day, text, userId, ts: now };
+  const r = db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts,about) VALUES (?,?,?,?,?,?)').run(tankId, day, text, userId, now, about && about.length ? JSON.stringify(about) : null);
+  return { ...(about && about.length ? { about } : {}), id: Number(r.lastInsertRowid), day, text, userId, ts: now };
 }
 export function addActivity(db, tankId, userId, type, text, now = Date.now()) {
   const r = db.prepare('INSERT INTO activity (tank_id,user_id,type,text,ts) VALUES (?,?,?,?,?)').run(tankId, userId, type, text, now);
@@ -307,7 +307,7 @@ const pick = (e) => { const o = {}; for (const k of EVENT_FIELDS) if (e[k] !== u
 function writeEvents(db, tankId, events, now, userId = null) {
   const out = [];
   for (const e of events) {
-    if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, e.adventure || !userId ? null : userId, Math.min(now, e.jat ?? now)), ...pick(e) });
+    if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, e.adventure || !userId ? null : userId, Math.min(now, e.jat ?? now), R.aboutOf(e)), ...pick(e) });
     else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, wish: e.wish, dailyDone: e.dailyDone, want: e.want });
     if (e.activity) out.push({ activity: addActivity(db, tankId, e.activity.noUser || !userId ? null : userId, e.activity.type, e.activity.text, now) });
   }
@@ -395,7 +395,7 @@ export function snapshot(db, user, online = [], tank = null) {
     you: { userId: user.id, slot: t0.slot ?? members(db, t0.id).find((m) => m.id === user.id)?.slot ?? 1 }, ...(t0.test ? { test: true } : {}),
     tank: { id: row.id, name: row.name, code: row.code, ...w, day: dayOf(w) },
     members: members(db, t0.id), online,
-    journal: db.prepare('SELECT j.id,j.day,j.text,j.user_id AS userId,j.ts,(p.journal_id IS NOT NULL) AS photo,(SELECT group_concat(h.user_id) FROM hearts h WHERE h.journal_id=j.id) AS hearts FROM journal j LEFT JOIN photos p ON p.journal_id=j.id WHERE j.tank_id=? ORDER BY j.id DESC LIMIT 120').all(t0.id).reverse().map((e) => ({ ...e, hearts: e.hearts ? String(e.hearts).split(',') : [] })),
+    journal: db.prepare('SELECT j.id,j.day,j.text,j.user_id AS userId,j.ts,j.about,(p.journal_id IS NOT NULL) AS photo,(SELECT group_concat(h.user_id) FROM hearts h WHERE h.journal_id=j.id) AS hearts FROM journal j LEFT JOIN photos p ON p.journal_id=j.id WHERE j.tank_id=? ORDER BY j.id DESC LIMIT 120').all(t0.id).reverse().map((e) => ({ ...e, about: e.about ? JSON.parse(e.about) : undefined, hearts: e.hearts ? String(e.hearts).split(',') : [] })),
     activity: db.prepare('SELECT id,user_id AS userId,type,text,ts FROM activity WHERE tank_id=? ORDER BY id DESC LIMIT 30').all(t0.id).reverse(),
     thanked: db.prepare('SELECT activity_id AS id FROM thanks WHERE from_user=?').all(user.id).map((r) => r.id),
     messages: db.prepare('SELECT id,user_id AS userId,text,ts FROM messages WHERE tank_id=? ORDER BY id DESC LIMIT 40').all(t0.id).reverse().map((m) => ({ ...m, name: names[m.userId] ?? '?' })),

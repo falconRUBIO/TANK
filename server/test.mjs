@@ -188,7 +188,7 @@ await t('a brand new tank is empty; its creator chooses and names the first fish
   let w = getW(tank.id); assert.equal(w.fish.length, 0, 'no fish in a new tank'); assert.deepEqual(w.seen.fish, []);
   const wa = await open(a.token), send = async (m) => { wa.send(JSON.stringify(m)); return waitFor(wa, (x) => x.t === 'ack' && x.idem === m.idem); };
   const r = await send({ t: 'chooseFirst', species: 'octopus', name: 'Pip', seed: 3, pal: 2, idem: 'cf1' }); assert.equal(r.ok, true);
-  w = getW(tank.id); assert.equal(w.fish.length, 1); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.fish[0].pal, 2); assert.equal(w.fish[0].owner, a.userId); assert.equal(w.fish[0].ownerName, 'Alex'); assert.ok(w.flags.firsts[a.userId]);
+  w = getW(tank.id); assert.equal(w.fish.length, 1); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.fish[0].palette, 2); assert.equal(w.fish[0].owner, a.userId); assert.equal(w.fish[0].ownerName, 'Alex'); assert.ok(w.flags.firsts[a.userId]);
   assert.equal((await send({ t: 'chooseFirst', species: 'octopus', name: 'Two', idem: 'cf2' })).reason, 'ALREADY_HAVE', 'once'); wa.close();
 });
 await t('while players are connected the tank grows up and everyone is told', async () => {

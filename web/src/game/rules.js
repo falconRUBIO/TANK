@@ -298,7 +298,10 @@ export function stuckOnColor(t, now = Date.now()) { const g = t?.goal; if (!g ||
 // The first fish is free and chosen: one of these, named by the player who brings it in.
 export const FIRST_FISH = ['octopus'];                       // everyone starts with an octopus of their own, in a color they choose; fish come from the shop
 export const OCTO_PALS = 6;
-const palOf = (a, seed) => (Number.isInteger(a.pal) && a.pal >= 0 && a.pal < OCTO_PALS ? a.pal : seed % OCTO_PALS);
+// an octopus's palette (its chosen color) lives in f.palette. Before v333 it was kept in f.pal, the same field a fish uses for its best friend's
+// id, so a den decision that made an octopus someone's friend could change its color; norm() moves old integers over and nothing reads f.pal for color.
+export const paletteOf = (a) => (Number.isInteger(a?.palette) && a.palette >= 0 && a.palette < OCTO_PALS ? a.palette : Number.isInteger(a?.pal) && a.pal >= 0 && a.pal < OCTO_PALS ? a.pal : null);
+const palOf = (a, seed) => paletteOf({ palette: a.palette ?? a.pal }) ?? seed % OCTO_PALS;
 export const isFree = (t, type) => (t.flags.starter?.[type] ?? 0) > 0 || (t.flags.freePlant > 0 && DECOR_DEF[type].cat === 'PLANTS');
 export const FLOORS = { sand: 'Sand', pearl: 'Pearl', gravel: 'Gravel', black: 'Black sand', coral: 'Pink coral' };
 export const BACKDROPS = { candy: 'Candy', lagoon: 'Lagoon', sunset: 'Sunset', mint: 'Mint' };
@@ -529,6 +532,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
+  for (const f of t.fish ?? []) if (f && isOcto(f) && Number.isInteger(f.pal)) { f.palette ??= f.pal; delete f.pal; }      // (v333: an octopus's color moved from pal to palette; a fish id left in pal is a friendship and stays)
   if ((t.flags?.growV ?? 1) < 2 && Array.isArray(t.fish)) { const R0 = { baby: 0, juvenile: 1, adult: 2 }, min = { juvenile: BABY_DAYS, adult: ADULT_DAYS }; for (const f of t.fish) { if (!f || !min[f.stage] || R0[stageOf(f, now)] >= R0[f.stage]) continue; f.born = Math.min(f.born, now - min[f.stage] * DAY); } (t.flags ||= {}).growV = 2; }      // (growing up now takes ten days, not three: an animal that had already grown keeps the stage it reached)
   t.flags ||= { tut: 0 }; if (!t.flags.turtleAdopted && ((t.fish ?? []).some((f) => f && TURTLES.has(f.species) && !f.visitor) || (t.orders ?? []).some((o) => o && TURTLES.has(o.species)) || (t.released?.length ?? 0) > 0 || (t.stats?.released ?? 0) > 0)) t.flags.turtleAdopted = now;      /* (a tank from before the adoption price that has or had a turtle has used it) */ t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; if (t.memorial.length > 150) t.memorial.splice(0, t.memorial.length - 150);      /* (the oldest go first: a tank of many years stays small) */ t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
   // Repair: whatever an older version or a damaged save left behind must not stop a tank from running (one broken fish once kept an order from ever arriving).
@@ -597,7 +601,7 @@ function makeDrift(t, now) {
 }
 function makeFish(t, o, now, idx) {
   const d = SPECIES_DEF[o.species], seed = o.seed + idx * 3, fname = d.count === 1 ? (o.name || NAMES[(t.seq + idx) % NAMES.length]) : `${o.name || d.label.split(' ')[0]} ${idx + 1}`;
-  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : isCrab(o.species) ? now - (BABY_DAYS + 1) * DAY : now - (ADULT_DAYS - 2) * DAY,      /* (a crab comes young, with growing to do: it outgrows its first shell in a few days) */ stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.pal != null) f.pal = o.pal; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
+  const f = ensureFish({ id: nextId(t, 'f'), name: fname, species: o.species, seed, born: o.carry || o.fromEgg || isTurtle(o.species) ? now : isCrab(o.species) ? now - (BABY_DAYS + 1) * DAY : now - (ADULT_DAYS - 2) * DAY,      /* (a crab comes young, with growing to do: it outgrows its first shell in a few days) */ stage: o.carry || o.fromEgg || isTurtle(o.species) ? 'baby' : 'juvenile',      /* (a sea turtle always comes as a hatchling, to be raised) */      /* (from the shop it comes young but nearly grown: ready to pair in a couple of days; only babies bred here start from the egg) */ traits: traitsFor(o.species, seed), happy: 0.75, owner: o.owner ?? null, ownerName: o.ownerName ?? null, paid: Math.floor((o.paid ?? 0) / d.count) }); if (o.palette != null) f.palette = o.palette; if (o.sex) f.sex = o.sex; t.fish.push(f);      /* (a seahorse's sex, if its caretaker chose one) */
   if (KINDS[o.species]) f.kind = KINDS[o.species][o.kind] ? o.kind : (o.pa?.kind && KINDS[o.species][o.pa.kind] ? o.pa.kind : KIND_DEFAULT[o.species]);      // a seahorse or octopus is one real species
   if (!o.carry && !o.fromEgg) f.arrived = now;      // (its days here start now, whatever its age)
   if (isCrab(f)) crabInit(f, now);      // a hermit crab arrives in a little worn shell that fits it now
@@ -1887,6 +1891,8 @@ const num = (v) => (Number.isFinite(+v) ? +v : NaN);
 // Apply one player action. Mutates `t`; returns { ok, reason?, events[], delta? }.
 // ── each fish's own story: the moments that happened to it, in order, kept on its card and in its memorial ──
 const STORY_KEYS = ['grew', 'noticed', 'discovery', 'milestone', 'wishDone', 'puzzle', 'crab'];
+// the animals a journal line is about, from the ids the event already carries: the card shows an animal the lines that concern it (v333)
+export function aboutOf(e) { const ids = new Set(); const add = (v) => { if (typeof v === 'string' && v && !v.startsWith('egg:')) ids.add(v); }; add(e.story); for (const k of STORY_KEYS) add(e[k]); for (const id of Array.isArray(e.arrival) ? e.arrival : []) add(id); add(e.birth); add(e.birthReady); add(e.pair); add(e.died); add(e.hatch?.fish); add(e.field?.fish); add(e.surprise?.fish); return ids.size ? [...ids].slice(0, 6) : undefined; }
 function recordStory(t, ev, now) {
   for (const e of ev) {
     if (e.story && e.text) { const f = t.fish.find((x) => x.id === e.story); if (f) { f.story ||= []; if (!f.story.some((x) => x.text === e.text)) { f.story.push({ at: now, text: e.text }); if (f.story.length > 14) f.story.splice(1, f.story.length - 14); } } continue; }
@@ -1986,7 +1992,7 @@ export function forecast(t, now = Date.now(), n = 3) {
   const away = advForecast(t).map((x) => ({ ms: 0, text: x.text, icon: x.icon, when: '' }));
   for (const f of t.fish) if (f.preg?.ready && !f.dead) away.unshift({ ms: 0, text: `${f.name} is about to give birth: stay and watch`, icon: '🌿', when: 'now' });
   for (const e of t.eggs ?? []) if (e.ready) away.unshift({ ms: 0, text: `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s eggs are` : 'The eggs are'} ready to hatch: stay and watch`, icon: '🥚', when: 'now' });      // (ready: no clock, it waits for you)      /* (an octopus out exploring: no time, nobody should be waiting on a clock) */
-  return [...away, ...c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🌕' ? 96 : x[2] === '🥚' && /ready to hatch/.test(x[1]) ? 72 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: f.pal } : {}) }))].slice(0, n);      // (about an animal: the card shows that animal itself)
+  return [...away, ...c.filter((x) => x[0] > 0 && x[0] <= (x[2] === '🌿' ? 10 * 24 : x[2] === '💞' ? 48 : x[2] === '🌕' ? 96 : x[2] === '🥚' && /ready to hatch/.test(x[1]) ? 72 : 8) * 3600e3).slice(0, n)      /* (what is coming soon: the next eight hours; a day ahead for an egg; a whole pregnancy; a pair forming) */.map(([ms, text, icon, f]) => ({ ms, text, icon, when: when(ms), ...(f ? { fish: f.id, species: f.species, pal: paletteOf(f) } : {}) }))].slice(0, n);      // (about an animal: the card shows that animal itself)
 }
 export function nextUp(t, now = Date.now()) {
   const c = [];
@@ -2329,7 +2335,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'firstFish': {                                            // every caretaker gets a free first fish of their own
       if (members && !members.some((m) => m.id === uid)) return fail('FORBIDDEN');
       t.flags.firsts ||= {}; if (t.flags.firsts[uid]) return fail('ALREADY_HAVE'); if (t.fish.length + pending(t) + t.eggs.length >= capacityOf(t)) return fail('TANK_FULL');
-      const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.firsts[uid] = true;
+      const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, f = makeFish(t, { species: 'octopus', name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.firsts[uid] = true;
       events.push({ journal: `${name} brought in ${f.name}, their own octopus.`, toast: `${f.name} joined the tank!`, arrival: [f.id], activity: { type: 'fish', text: `${name} brought in their octopus.` } }); levelCheck(t, now, events); return ok({ id: f.id });
     }
     // an octopus nobody in the crew looks after (its caretaker is gone, or the server once lost the tank and gave them a new identity)
@@ -2423,12 +2429,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
     case 'chooseFirst': {                                           // the opening of a new tank: pick the free first fish and name it (once)
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
-        const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, pal: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
+        const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
         events.push({ journal: `${name} brought in ${made.name}, the first fish.`, toast: `${made.name} has arrived!`, arrival: [made.id] }); return ok({ id: made.id });
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
-      Object.assign(f, { species: a.species, seed, pal: palOf(a, seed), name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);
+      Object.assign(f, { species: a.species, seed, palette: palOf(a, seed), name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);
       t.seen.fish = [a.species]; t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
       events.push({ journal: `${name} brought in ${f.name}, the first fish.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
     }

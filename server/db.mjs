@@ -62,6 +62,7 @@ export function openDb(path = 'ourtank.db') {
   // a developer's test aquarium: a tank marked test, whose people are kept apart from the real caretakers (test_members), so being in one
   // never takes anyone out of their own tank, and no one can join a test tank the ordinary way
   try { db.exec('ALTER TABLE tanks ADD COLUMN test INTEGER NOT NULL DEFAULT 0'); } catch { /* column already there */ }
+  try { db.exec('ALTER TABLE journal ADD COLUMN about TEXT'); } catch { /* column already there */ }      // the animals a line is about (JSON ids), so a card can show its own history
   db.exec(`CREATE TABLE IF NOT EXISTS test_members (
     tank_id TEXT NOT NULL REFERENCES tanks(id), user_id TEXT NOT NULL REFERENCES users(id), joined_at INTEGER NOT NULL,
     PRIMARY KEY (tank_id, user_id), UNIQUE (user_id)

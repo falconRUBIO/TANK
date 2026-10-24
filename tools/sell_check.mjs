@@ -20,7 +20,7 @@ console.log('  care says', JSON.stringify(meters)); await p.screenshot({ path: `
 // (the Care meters gave way to the Health list: when the next meal is due is on the Feed row and on each animal's card)
 // (the Care meters gave way to the Health list: when the next meal is due is on the Feed row and on each animal's card)
 const careTxt = await p.evaluate(() => document.querySelector('#sheet').textContent);
-ck('Care has the tank upkeep row and a Health list', /Tank upkeep/.test(careTxt) && /Health/.test(careTxt));
+ck('Care has the tank upkeep row and an Animal health row', /Tank upkeep/.test(careTxt) && /Animal health/i.test(careTxt) && !!(await p.evaluate(() => document.querySelector('#sheet [data-act="healthopen"]'))));
 // 2. Collection lists the fish in the tank, the octopus first
 await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });

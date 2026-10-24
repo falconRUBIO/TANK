@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { Game, REASONS } from './game/game.js';
 import { isCrab, CRAB_TYPES, crabNeed, shellFit, shellLabel } from './game/crabs.js';
-import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, TOD as DAYPART, HIDE_COST, HIDE_STEP, HIDE_GAP, TRAIN_GAP, TOY_LEARN as TOY_LEARN_N, hideOcto, puzzleOcto, toysOpen as toysOpenR, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
+import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, paletteOf, TOD as DAYPART, HIDE_COST, HIDE_STEP, HIDE_GAP, TRAIN_GAP, TOY_LEARN as TOY_LEARN_N, hideOcto, puzzleOcto, toysOpen as toysOpenR, hideLabel, awayOwner, eggCareOf, dueIn, TOYS, TOY_LEARN, favToy, LIFESPAN, SEA, OCTO_PAIR_DAYS, forecast, octoTrust, milestonesOf, readyToTrim, babyRole, sexOf, canFeedOwn, ownHunger, ownFood, capacity, driftBlame, dayTicks, nextUp, firstPromises, SOCIAL, socialOf, adoptAdvice, canPuzzle, CRAB_PRICE, isSmart, octoMind, trainNeed, puzzleSecs, PUZZLE_COST, DECOR_DEF, SPECIES_DEF, DISCOVERIES, comfortOf, FOODS, giftReady, DAILY_GIFT, hasOcto, hasFishOnly, hasSeahorse, canFeedOcto, octoHunger, HR, OHR, OCTO_DUE, FIRST_FISH, TRICKS, trickOptions, childrenOf, AIL_TIRED, AIL_WARN, fishPrice, isFree, STAGE_SCALE, stageOf, nextStage, setClockHour } from './game/rules.js';
 import * as stg from './w3/stage.js';
 window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 15000); addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
 import { makeStudio, planShot } from './w3/photo.js';
@@ -730,6 +730,21 @@ function socialLines(rec) {
   const so = socialOf(game.state, rec), rows = [...so.notes.map((x) => `<li class="bad">${esc(x)}</li>`), ...so.needs.map((x) => `<li>${esc(x)}</li>`), ...so.good.slice(0, 2).map((x) => `<li class="good">${esc(x.text)}</li>`)];
   return rows.length ? `<ul class="soc">${rows.join('')}</ul>` : '';
 }
+// the milestones of its life that are never trimmed (disc and found keep their timestamps for good): a compact line each, by tank day
+function lifeBlock(rec) {
+  const D = rec.disc ?? {}, s = game.state, t0 = s?.createdAt ?? rec.born, day = (ts) => Math.max(1, Math.floor((ts - t0) / 864e5) + 1), nm = (id) => s?.fish.find((x) => x.id === id)?.name ?? (s?.memorial ?? []).find((x) => x.id === id)?.name;
+  const rows = [[rec.parents?.length ? rec.hatched ?? rec.born : rec.arrived ?? rec.born, rec.parents?.length ? 'Hatched here' : 'Came home'], [D.spot, 'Found a favorite spot'], [D.friend, rec.pal && nm(rec.pal) ? `Best friends with ${nm(rec.pal)}` : 'Made a best friend'], [rec.pairedAt, rec.mate && nm(rec.mate) ? `Paired for life with ${nm(rec.mate)}` : 'Paired for life'], [rec.partneredAt, rec.partner && nm(rec.partner) ? `Partners with ${nm(rec.partner)}` : 'Found a partner'], [D.parent, 'Became a parent'], [D.bond, 'Learned to trust a caretaker'], [D.trust, null], ...(rec.tricks ?? []).map((k) => [rec.trainAt, `Learned to ${TRICKS[k]?.label ?? k}`])].filter(([ts, label]) => Number.isFinite(ts) && label);
+  if (!rows.length) return ''; return `<h4 class="csec">Its life</h4><ul class="life">${rows.sort((a, b) => a[0] - b[0]).map(([ts, label]) => `<li><i>day ${day(ts)}</i>${esc(label)}</li>`).join('')}</ul>`;
+}
+// its own lines from the tank journal (the ones about it, v333) merged with its kept story, newest first; the story's first line is its arrival and is always kept
+function journalBlock(rec, n = 30) {
+  const when = (ts) => { const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
+  const mine = (game.journal ?? []).filter((j) => Array.isArray(j.about) && j.about.includes(rec.id)).map((j) => ({ at: j.ts, text: j.text })), story = (rec.story ?? []).map((x) => ({ at: x.at, text: x.text })), seen = new Set(), all = [];
+  for (const x of [...mine, ...story.filter((x) => !(/^Arrived in the tank/.test(x.text) && mine.some((m) => /arrived|hatched|brought in/i.test(m.text))))].sort((a, b) => b.at - a.at)) { const k = x.text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 60); if (seen.has(k)) continue; seen.add(k); all.push(x); }
+  const first = story[0] && !all.slice(0, n).some((x) => x.text === story[0].text || (/^Arrived in the tank/.test(story[0].text) && /arrived|hatched|brought in/i.test(x.text))) ? [story[0]] : [];      /* (its arrival is kept for good, unless a fuller arrival line is already there) */
+  const rows = [...all.slice(0, n), ...first]; if (!rows.length) return '';
+  return `<ul class="story">${rows.map((x) => `<li><i>${when(x.at)}</i>${esc(x.text)}</li>`).join('')}</ul>${all.length > n ? `<p class="dim">${all.length - n} older lines are in the tank journal.</p>` : ''}`;
+}
 function storyBlock(rec, n = 6) {
   const st = (rec.story ?? []).slice(-n).reverse(); if (!st.length) return '';
   const when = (ts) => { const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
@@ -1150,7 +1165,7 @@ function showCard(f) {
   const wellH = (() => { const L = (rec.well ?? []).slice(-8).reverse(); if (!L.length) return ''; const W = { thriving: ['Thriving', 'good'], fine: ['Doing fine', 'ok'], off: ['A bit off', 'warn'], unwell: ['Unwell', 'bad'] };
     const day = (ts) => { const d = Math.floor((Date.now() - ts) / 864e5); return d === 0 ? 'Today' : d === 1 ? 'Yesterday' : new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
     return `<h4 class="csec">Wellbeing</h4><div class="wlog">${L.map((e) => `<div class="wl"><em class="hw ${W[e.w]?.[1] ?? 'ok'}">${W[e.w]?.[0] ?? e.w}</em><span>${e.got.map((m) => `<small class="got">✓ Got: ${esc(m.toLowerCase())}</small>`).join('')}${e.lost.map((m) => `<small class="lost">○ Started missing: ${esc(m.toLowerCase())}</small>`).join('')}${!e.got.length && !e.lost.length ? `<small>${e.w === 'unwell' ? 'Fell unwell' : 'Feeling better'}</small>` : ''}</span><b>${day(e.at)}</b></div>`).join('')}</div>`; })();      // what changed in how it feels, newest first
-  const jour = `${wellH}${wellH ? '<h4 class="csec">Its story</h4>' : ''}${storyBlock(rec, 14) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
+  const jour = `${lifeBlock(rec)}${wellH}<h4 class="csec">Its story</h4>${journalBlock(rec) || '<p class="dim">Its story starts here. Moments in its life will be kept in this space.</p>'}${(rec.parents?.length || kids) ? `<dl>${familyRows(rec)}</dl>` : ''}`;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away or open it"></button><button class="x" aria-label="Close">×</button>
     <div class="chd"><h2>${esc(f.name)} <button class="ren" id="ren" aria-label="Rename">✎</button></h2><div class="sp">${kindDef(rec)?.label ?? f.species.label}${kindDef(rec) ? ` · ${esc(kindDef(rec).temper)}` : ''}${sexOf(rec) === 'm' ? ' · ♂ Male' : ' · ♀ Female'} · ${stage} · ${days} day${days === 1 ? '' : 's'} here · <b class="mood">${(() => { try { const W = wellOf(game.state, rec); return `${W.mood[0]} · ${W.score}%`; } catch { return p.mood; } })()}</b>${(rec.parents ?? []).length && Date.now() - rec.born < 864e5 ? ' <em class="newb">New</em>' : ''}</div></div>
     <div class="tabs">${T('over', 'Overview')}${T('pers', 'Personality')}${T('stats', 'Stats')}${T('jour', 'Journal')}</div>
@@ -1518,7 +1533,7 @@ async function mournCheck() {
     for (const x of fresh) {
       seen.push(tag(x)); try { localStorage.setItem(key, JSON.stringify(seen.slice(-60))); } catch { /* ignore */ }
       const fl = (game.state.floaters ?? []).find((z) => z.id === x.id), who = x.ownerName ?? game.members?.find((m) => m.id === x.owner)?.name ?? null;
-      const r = await ui.mourn({ name: x.name, species: x.species, pal: x.pal ?? null, days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl, oldAge: !!(x.oldAge || fl?.oldAge), life: lifeSummary(x) });
+      const r = await ui.mourn({ name: x.name, species: x.species, pal: paletteOf(x), days: Math.max(1, Math.round((x.died - x.born) / 864e5)), who: game.shared ? who : null, canRest: !!fl, oldAge: !!(x.oldAge || fl?.oldAge), life: lifeSummary(x) });
       if (r === 'rest' && (game.state.floaters ?? []).some((z) => z.id === x.id)) { const d = await game.dispatch({ t: 'scoop', id: x.id }); if (d.ok && d.applied) { sfx('tap'); haptic(10); } }
     }
   } finally { mourning = false; }
@@ -1538,7 +1553,7 @@ async function sickCheck() {
   const who = hungry && !mine ? ` Only ${f.ownerName ?? 'its caretaker'} can feed it: give them a nudge.` : '';
   warning = true;
   try {
-    const r = await ui.sick({ name: f.name, species: f.species, pal: f.pal ?? null, why: why + who, acts: acts.length ? acts : [{ label: 'Look after the tank', value: 'care' }] });
+    const r = await ui.sick({ name: f.name, species: f.species, pal: paletteOf(f), why: why + who, acts: acts.length ? acts : [{ label: 'Look after the tank', value: 'care' }] });
     if (r === 'feed') { game.feedFood = own ?? 'flakes'; game.feedFor = own ? f.id : null; ui.open('tank'); feedGo(); }
     else if (r === 'water') { ui.open('tank'); changeWater(); } else if (r === 'care') ui.open('care');
   } finally { warning = false; }

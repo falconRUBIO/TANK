@@ -57,16 +57,24 @@ export function foldHaunt(f, secs, decor) {
 }
 
 // ── what the habitat offers, read for the player from what is in the tank and what the animals have actually done with it ──
-export function habitatNotes(t) {
-  const live = t.fish.filter((f) => !f.dead && !f.away), decor = t.decor ?? [], out = [], kinds = new Set(live.map((f) => habitKind(f.species))), label = (id) => (DECOR_DEF[decor.find((d) => d.id === id)?.type]?.label ?? 'decoration').toLowerCase();
+export function habitatNotes(t, now = Date.now()) {
+  const live = t.fish.filter((f) => !f.dead && !f.away), decor = t.decor ?? [], out = [], kinds = new Set(live.map((f) => habitKind(f.species))), label = (id) => (DECOR_DEF[decor.find((d) => d.id === id)?.type]?.label ?? 'decoration').toLowerCase(), has = (id) => decor.some((d) => d.id === id);
+  // what the animals have actually done with the habitat (all from state the simulation really wrote: favorites from time spent, holdfasts held, an octopus's habits, a crab's patch, a lost place)
+  const DAY = 864e5, TOD = ['morning', 'afternoon', 'evening', 'night'], used = [];
+  for (const f of live) {
+    if (f.spotId && has(f.spotId) && (f.moments?.haunt ?? f.disc?.spot ?? 0) > now - 7 * DAY) used.push({ ok: true, text: `${f.name} has started resting by the ${label(f.spotId)}.`, use: true });
+    if (f.species === 'octopus' && f.habits?.[0] && has(f.habits[0].id)) used.push({ ok: true, text: `${f.name} spends most ${TOD[f.habits[0].tod] ?? 'day'}s near the ${label(f.habits[0].id)}.`, use: true });
+    if (f.species === 'seahorse' && f.log?.fav && has(f.log.fav)) used.push({ ok: true, text: `${f.name} holds on to the ${label(f.log.fav)} most of all.`, use: true });
+    if (f.crab?.fav && has(f.crab.fav)) used.push({ ok: true, text: `${f.name} keeps to the ${label(f.crab.fav)}.`, use: true });
+    if (f.missing && now - (f.missing.at ?? 0) < 2 * DAY && f.missing.what) used.push({ ok: false, text: `${f.name} is still looking for its old ${String(f.missing.what).toLowerCase()}.`, use: true });
+  }
+  { const fans = {}; for (const f of live) if (f.spotId && has(f.spotId)) (fans[f.spotId] ||= []).push(f.name); for (const [id, who] of Object.entries(fans)) if (who.length >= 2) used.push({ ok: true, text: `${who.slice(0, 2).join(' and ')}${who.length > 2 ? ` and ${who.length - 2} more` : ''} regularly share the ${label(id)}.`, use: true }); }
+  out.push(...used.slice(0, 5));
   const sum = (k) => decor.reduce((s, d) => s + (affordOf(d.type)[k] >= 0.7 ? 1 : 0), 0);
   if (kinds.has('octopus')) { const n = sum('shelter'); out.push(n >= 2 ? { ok: true, text: `Good shelter for an octopus: ${n} places to den.` } : { ok: false, text: n ? 'Only one good den spot. An octopus likes a choice.' : 'No real den for an octopus yet: a cave, a pot or a coconut.' }); }
   if (kinds.has('seahorse')) { const n = sum('hold'); out.push(n >= 3 ? { ok: true, text: `Seahorses have ${n} places to hold on.` } : { ok: false, text: 'Seahorses could use more to hold on to: sea fans, sea grass, kelp.' }); }
   if (kinds.has('crab')) { const n = sum('forage') + sum('climb'); out.push(n >= 3 ? { ok: true, text: 'Your hermit crabs have room to climb and pick about.' } : { ok: false, text: 'Hermit crabs would like rocks to climb and rubble to pick over.' }); }
   if (live.some((f) => temperOf(f).cover >= 0.6) && sum('shelter') < 2) out.push({ ok: false, text: 'A shy fish has little cover to dart into.' });
-  const fans = {}; for (const f of live) if (f.spotId && decor.some((d) => d.id === f.spotId)) (fans[f.spotId] ||= []).push(f.name);
-  const [hot, who] = Object.entries(fans).sort((a, b) => b[1].length - a[1].length)[0] ?? [];
-  if (hot && who.length >= 2) out.push({ ok: true, text: `The ${label(hot)} is becoming a favorite: ${who.slice(0, 3).join(', ')}.` });
-  const lost = live.filter((f) => f.missing && Date.now() - f.missing.at < 2 * 864e5); if (lost.length) out.push({ ok: false, text: `${lost.map((f) => f.name).slice(0, 2).join(' and ')} ${lost.length > 1 ? 'are' : 'is'} looking for a new favorite place.` });
+  const lost = live.filter((f) => f.missing && now - (f.missing.at ?? 0) < 2 * DAY && !f.missing.what); if (lost.length) out.push({ ok: false, text: `${lost.map((f) => f.name).slice(0, 2).join(' and ')} ${lost.length > 1 ? 'are' : 'is'} looking for a new favorite place.` });
   return out;
 }

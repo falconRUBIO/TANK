@@ -28,12 +28,12 @@ export class Game {
     addEventListener('pagehide', () => this.save()); setInterval(() => this.save(), 5000);
     this.emit('state');
   }
-  save() { if (this.mode !== 'local') return; try { localStorage.setItem(KEY, JSON.stringify({ state: this.state, journal: this.journal.slice(-80), activity: this.activity.slice(-20) })); } catch { /* storage unavailable */ } }
+  save() { if (this.mode !== 'local') return; try { localStorage.setItem(KEY, JSON.stringify({ state: this.state, journal: this.journal.slice(-300), activity: this.activity.slice(-20) })); } catch { /* storage unavailable */ } }
   reset() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } location.reload(); }
-  addJournal(text, ts = Date.now()) { const e = { day: this.day, text, ts }; this.journal.push(e); this.emit('journal', e); return e; }
+  addJournal(text, ts = Date.now(), about = undefined) { const e = { day: this.day, text, ts, ...(about ? { about } : {}) }; this.journal.push(e); this.emit('journal', e); return e; }
   consume(events, name) {
     for (const e of events) {
-      if (e.journal) this.addJournal(e.journal, Math.min(Date.now(), e.jat ?? Date.now()));      // (an adventure that ended while the app was closed keeps the time it really happened)
+      if (e.journal) this.addJournal(e.journal, Math.min(Date.now(), e.jat ?? Date.now()), R.aboutOf(e));      // (an adventure that ended while the app was closed keeps the time it really happened)
       if (e.adventure) this.emit('adventure', e.adventure);
       if (e.activity) { this.activity.push({ ...e.activity, text: e.activity.text, ts: Date.now(), userId: 'me' }); }
       if (e.toast) this.emit('toast', e.toast);
@@ -74,12 +74,12 @@ export class Game {
     if (m.now) { (this._skews ||= []).push(m.now - Date.now()); if (this._skews.length > 8) this._skews.shift(); this.skew = Math.max(...this._skews); }       // the sample with the least delay is the truest
     if (m.t === 'snapshot') {
       this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.away = m.away ?? null; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
-      this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo, hearts: e.hearts ?? [] })); this.emit('state'); this.emit('members'); this.keepCopy();
+      this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo, hearts: e.hearts ?? [], ...(e.about ? { about: e.about } : {}) })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
     else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food, m.fish); }
     else if (m.t === 'event') {
-      if (m.journal) { this.journal.push({ id: m.journal.id, day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId }); this.emit('journal', this.journal.at(-1)); }
+      if (m.journal) { this.journal.push({ id: m.journal.id, day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId, ...(m.journal.about ? { about: m.journal.about } : {}) }); this.emit('journal', this.journal.at(-1)); }
       if (m.activity) { this.activity.push(m.activity); this.emit('remoteActivity', m.activity); }
       const mine = (m.journal?.userId ?? m.activity?.userId) === this.you.userId;
       if (m.toast && (mine || m.grew || m.discovery || m.surprise || m.teamGlow || m.major || m.goalStep || m.goalDone || m.dilemma)) this.emit('toast', m.toast); if (m.goalDone) this.emit('goalDone', m.goalDone); if (m.dilemmaDone) this.emit('dilemmaDone', m.dilemmaDone); if (m.goalStep) this.emit('goalStep', m.goalStep); if (m.morph) this.emit('morph', m.story ?? null, m.morph); if (m.levelUp) this.emit('levelup', m.levelUp); if (m.puzzle) this.emit('puzzle', m.puzzle); if (m.crab) this.emit('crab', m.crab); if (m.together) this.emit('together'); if (m.theme) this.emit('theme', m.theme); if (m.grew) this.emit('grew', m.grew); if (m.discovery) this.emit('discovery', m.discovery); if (m.surprise) this.emit('surprise', m.surprise); if (m.teamGlow) this.emit('teamGlow', m.toast);

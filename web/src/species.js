@@ -776,7 +776,7 @@ const octopus = {
       const n = fbm(x * 0.33 + 11, y * 0.33, Math.abs(z) * 0.33 + 5); return n < 0.5 ? { ...r, c: mix(r.c, [56, 30, 26], 0.75) } : n > 0.7 ? { ...r, c: mix(r.c, [250, 236, 210], 0.35) } : r; };
     return m; },
   make0(seed = 1, look = null) {
-    const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
+    const rng = mulberry32(seed * 7907 + 3), dealt = Math.floor(rng() * 4), pal = OCTO_COLORS[Number.isInteger(look?.palette) && OCTO_COLORS[look.palette] ? look.palette : Number.isInteger(look?.pal) && OCTO_COLORS[look.pal] ? look.pal : dealt];
     const KPAL = { cyanea: { skin: [126, 58, 52], pale: [236, 206, 186] }, bimac: { skin: [112, 112, 92], pale: [214, 212, 190] }, mimic: { skin: [176, 132, 96], pale: [250, 240, 224] } }[look?.kind];      // each kind's own natural colors: the day octopus maroon-brown, the two-spot olive-grey, the mimic sandy
     const skinC = (KPAL ?? pal).skin, pale = (KPAL ?? pal).pale, off = [rng() * 90, rng() * 90, rng() * 90], arms = octoArms(seed); const KND = look?.kind ?? null, ARM = { mimic: [1.45, 0.62], bimac: [0.85, 1.05], cyanea: [1.12, 1.12] }[KND] ?? [1, 1]; for (const a of arms) a.L *= ARM[0];      // the mimic is all long slender arms on a small body; the two-spot is compact; the day octopus heavy-armed
     // stamp every arm into a lookup of voxels: which arm, how far along it, and the offset from its center line (so it can be re-posed)

@@ -29,7 +29,7 @@ ok(r.toyProg.some((x) => /learning/.test(x)), 'the Toy box shows who is learning
 ok(r.tiles.some((x) => new RegExp(r.octo + ' hunts · wins 10').test(x)), 'the hide tile names the payout and the octopus: ' + r.tiles.join(' | '));
 ok(r.opts.length >= 2 && !r.opts.some((x) => /starfish|moss/i.test(x)) && r.opts.some((x) => /rock|pot|grass/i.test(x)), 'the hide list offers only places with somewhere to hide: ' + r.opts.join(' | '));
 // trick buttons on the octopus card
-const trick = await p.evaluate(async () => { const g = window.__game, o = g.state.fish.find((f) => f.species === 'octopus'); window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus?.(window.__fishes.byId.get(o.id)); await new Promise((r) => setTimeout(r, 900)); return [...document.querySelectorAll('#card button.lnk')].map((b) => b.textContent); });
+const trick = await p.evaluate(async () => { const g = window.__game, o = g.state.fish.find((f) => f.species === 'octopus'); window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(o.id))); await new Promise((r) => setTimeout(r, 900)); return [...document.querySelectorAll('#card button.lnk')].map((b) => b.textContent); });
 console.log(JSON.stringify(trick));
 ok(trick.some((x) => /^Teach: \w/.test(x)) && !trick.some((x) => /^Teach a trick/.test(x)), 'trick buttons name the trick');
 await b.close(); console.log(fails ? `${fails} failed` : 'play_check passed');
