@@ -42,6 +42,8 @@ export function run(strat, seed0) {
     if (rnd() < 0.6) { for (const f of t.fish.slice(0, 3)) act({ t: 'pet', id: f.id }); act({ t: 'play', toy: 'ball', fish: t.fish.map((f) => f.id) }); }
     if (t.visitor) act({ t: 'greet', id: t.visitor.id });
     act({ t: 'trim' });
+    // a caretaker saving for a turtle sets a stuck goal aside at level 7 so the sanctuary goal can be taken (the offer is only made while no goal is active)
+    if (t.level >= 7 && t.goal && t.goal.id !== 'sanctuary' && !(t.goalsDone ?? []).some((g) => g.id === 'sanctuary') && R.GOALS.sanctuary.ok(t) && !o.dropped) { act({ t: 'pickGoal', drop: true }); o.dropped = true; }
     if (!t.goal && t.goalOffer?.length) act({ t: 'pickGoal', id: t.goalOffer.includes('sanctuary') ? 'sanctuary' : t.goalOffer[0] });
     if (t.level >= 8) o.l8 ??= +day.toFixed(1);
     if (t.level >= 8 && t.shells >= R.fishPrice(TURTLE, now, t)) o.afford ??= +day.toFixed(1); if ((t.goalsDone ?? []).some((g) => g.id === 'sanctuary')) o.sanct ??= +day.toFixed(1);
