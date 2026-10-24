@@ -19,14 +19,14 @@ const r = await p.evaluate(async () => {
   const toyProg = [...document.querySelectorAll('#sheet .toy em')].map((e) => e.textContent);
   // the hide list: open it and read the options, then cancel
   const hideBtn = document.querySelector('#sheet [data-act="hide"]'); hideBtn?.click(); await new Promise((r) => setTimeout(r, 600));
-  const opts = [...document.querySelectorAll('#modal .opt, #modal button, #modal li')].map((e) => e.textContent.trim()).filter(Boolean); document.querySelector('#modal .x, #modal #mcancel, #modal [data-cancel]')?.click(); document.getElementById('mok')?.click();
-  return { toasts, play: play.slice(0, 400), toyProg, opts, octo: o.name, tiles: [...document.querySelectorAll('#sheet .tile small')].map((e) => e.textContent) };
+  const opts = [...document.querySelectorAll('#modal .opt, #modal button, #modal li')].map((e) => e.textContent.trim()).filter(Boolean), modalText = document.querySelector('#modal')?.innerText ?? ''; document.querySelector('#modal .x, #modal #mcancel, #modal [data-cancel]')?.click(); document.getElementById('mok')?.click();
+  return { toasts, play: play.slice(0, 400), toyProg, opts, modalText, octo: o.name, tiles: [...document.querySelectorAll('#sheet .tile small')].map((e) => e.textContent) };
 });
 console.log(JSON.stringify(r).slice(0, 1200));
 ok(r.toasts.some((x) => /joined in · ball 1 of 5/.test(x)), 'the first go says who joined and how far along: ' + r.toasts[0]);
 ok(r.toasts.some((x) => /Same go with the ball: it counts again in \d+ s/.test(x)), 'the second go inside 20 s says so');
 ok(r.toyProg.some((x) => /learning/.test(x)), 'the Toy box shows who is learning: ' + r.toyProg.join(' | '));
-ok(r.tiles.some((x) => new RegExp(r.octo + ' hunts · wins 10').test(x)), 'the hide tile names the payout and the octopus: ' + r.tiles.join(' | '));
+ok(r.tiles.some((x) => new RegExp('5 🐚 · ' + r.octo + ' hunts').test(x)), 'the hide tile names the cost and the octopus: ' + r.tiles.join(' | ')); ok(/pays 10 back/.test(r.modalText), 'the chooser names the payout: ' + r.modalText.replace(/\s+/g, ' ').slice(0, 120));
 ok(r.opts.length >= 2 && !r.opts.some((x) => /starfish|moss/i.test(x)) && r.opts.some((x) => /rock|pot|grass/i.test(x)), 'the hide list offers only places with somewhere to hide: ' + r.opts.join(' | '));
 // trick buttons on the octopus card
 const trick = await p.evaluate(async () => { const g = window.__game, o = g.state.fish.find((f) => f.species === 'octopus'); window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(o.id))); await new Promise((r) => setTimeout(r, 900)); return [...document.querySelectorAll('#card button.lnk')].map((b) => b.textContent); });
