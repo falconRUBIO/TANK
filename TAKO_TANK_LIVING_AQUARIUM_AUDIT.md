@@ -148,7 +148,7 @@ The new work adds no per-frame cost: `knowT` was already accumulated in the 0.5 
 4. `f.pal` is overloaded on octopuses (palette integer); a den dilemma can put a fish id there and change the octopus's color. Needs a rename (`palette`) with a migration.
 5. The Field Guide tables and readers are dead code; the "guide" goal is switched off.
 6. The `habitatNotes()` text (what the animals really did with the habitat) is never shown; it is the natural "habitat report" for the Health screen.
-7. Pre-existing drill failures carried from v329: `sell_check` ("Care has the tank upkeep row and a Health list"), `care_sync` (the other phone's open Care updating by itself); `journal_check` two Bell/postcard checks (see the test note at the end).
+7. Pre-existing drill failures carried from v329: `sell_check` ("Care has the tank upkeep row and a Health list"), `care_sync` (the other phone's open Care updating by itself), and one `bonds_check` check (octopus partners spend only 2–3 % of a visit within 1.5 of each other; the touching-arms and card checks pass).
 
 **Phase D: the iPhone test (to be performed by a person; nothing here is claimed to pass)**
 1. Normal tank: a level-4 tank with 12 animals and 15 decorations; 5 minutes watching; note the frame rate (`?fps=1`), heat, and whether animals jitter.
@@ -181,4 +181,4 @@ The new work adds no per-frame cost: `knowT` was already accumulated in the 0.5 
 - `tools/friends_check.mjs`: passes end to end in the 3D tank (the `near` report, three reports, both links, both stories, the journal, the name pill).
 - `tools/perf.mjs`, `tools/perf_full.mjs`: the numbers in §6.
 - `tools/loop_sim.mjs`: 20 rows × 6 seeds × 120 days; three 30-day traces.
-- Other drills this run: see the line below, filled in when they finished.
+- Other drills this run (headless, one at a time): `profile_check` passes (seahorse and octopus cards, tallies, the four tabs); `bonds_check` fails one check, "the partners find each other N % close" (2 % on this build, 3 % on the previous commit's code served from its own worktree: **pre-existing**, the other three octopus-partner checks pass); `journal_check` **passes** when run on its own (twice; two of its checks failed once while four drills shared the machine, so that was load, not the code). Pre-existing and unchanged: `sell_check` and `care_sync` (one failure each, in the final audit since v328).
