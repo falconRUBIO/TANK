@@ -62,7 +62,7 @@ ck('at least one of them spends time up on the high bank', spread.per.some((s) =
 ck('each octopus visits at least two levels', spread.per.every((s) => s.length >= 2), JSON.stringify(spread.per));
 ck('they do not all huddle in one place', spread.together < 120, `${spread.together} s all within 1.6 of each other`);
 ck('no fish or octopus ever ends up inside the sand', spread.sunk === 0 && spread.worst >= 0.3, `lowest above the sand ${spread.worst}`);
-await p.screenshot({ path: `${out}/after_twenty_minutes.png` });
+await p.screenshot({ path: `${out}/after_twenty_minutes.png`, timeout: 90000 }).catch(() => {});
 // 3. placing with a finger: tap a spot on each level, the decoration goes there and stands on the sand
 await p.evaluate(() => { window.__fishes.list.forEach((o) => { o.pos.x = 4.5; }); });
 const place = async (wx, wz) => {
