@@ -179,14 +179,61 @@ function startClean() { cancelModes(); if (game.state.glass <= 0.12) { ui.toast(
 let wiping = false;
 let wipeLast = null;
 const wipeDot = (x, y) => { const c = gg.createRadialGradient(x, y, 0, x, y, 19); c.addColorStop(0, 'rgba(0,0,0,1)'); c.addColorStop(0.62, 'rgba(0,0,0,0.95)'); c.addColorStop(1, 'rgba(0,0,0,0)'); gg.fillStyle = c; gg.fillRect(x - 19, y - 19, 38, 38); };
-const wipe = (e) => { const r = gcv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 195, y = (e.clientY - r.top) / r.height * 346; gg.globalCompositeOperation = 'destination-out';
-  const p = wipeLast ?? { x, y }, n = Math.max(1, Math.ceil(Math.hypot(x - p.x, y - p.y) / 5)); for (let i = 1; i <= n; i++) wipeDot(p.x + (x - p.x) * i / n, p.y + (y - p.y) * i / n);      // a continuous clean streak, however fast the finger goes
-  gg.globalCompositeOperation = 'source-over'; wipeLast = { x, y }; sfx('wipe'); };
-gcv.addEventListener('pointerdown', (e) => { wiping = true; wipeLast = null; wipe(e); }); gcv.addEventListener('pointermove', (e) => { if (wiping) wipe(e); });
+// what comes off as you wipe, drawn over the film on a finer layer: the scrubber pad under your finger, a roll of green gunk building along
+// its leading edge as it lifts the film (the more it has picked up, the thicker and darker), flakes shedding off the pad and sinking away
+// through the water, a wet glint along each fresh streak, and where you lift off, a little ridge of gunk left on the glass (wipe it again)
+const gfx = document.createElement('canvas'); gfx.id = 'glassfx'; gfx.width = 195 * 3; gfx.height = 346 * 3; gcv.after(gfx); const fxg = gfx.getContext('2d'); fxg.scale(3, 3);
+const WF = { pad: null, load: 0, flakes: [], glints: [], shine: -1, raf: 0, dx: 1, dy: 0, t: 0, lifted: 0 };
+const alphaSum = (x, y, w, h) => { x = Math.max(0, Math.floor(x)); y = Math.max(0, Math.floor(y)); w = Math.min(195 - x, Math.ceil(w)); h = Math.min(346 - y, Math.ceil(h)); if (w <= 0 || h <= 0) return 0; const d = gg.getImageData(x, y, w, h).data; let a = 0; for (let i = 3; i < d.length; i += 8) a += d[i]; return a / 255; };
+const GUNK = [[74, 104, 46], [96, 122, 58], [62, 82, 40], [118, 128, 70]];
+function wipeFx() {
+  WF.raf = 0; const now = performance.now(), dt = Math.min(0.05, (now - (WF.t || now)) / 1000); WF.t = now; fxg.clearRect(0, 0, 195, 346);
+  for (let i = WF.glints.length - 1; i >= 0; i--) { const G = WF.glints[i]; G.l -= dt / 0.9; if (G.l <= 0) { WF.glints.splice(i, 1); continue; }      // the wet sheen on a fresh streak, fading as it dries
+    fxg.strokeStyle = `rgba(236,248,255,${0.32 * G.l * G.l})`; fxg.lineWidth = 9 * (0.6 + 0.4 * G.l); fxg.lineCap = 'round'; fxg.beginPath(); fxg.moveTo(G.x0, G.y0); fxg.lineTo(G.x1, G.y1); fxg.stroke();
+    if (G.spark && G.l > 0.35) { const k = (G.l - 0.35) / 0.65, sx = G.x0 + (G.x1 - G.x0) * G.spark, sy = G.y0 + (G.y1 - G.y0) * G.spark; fxg.strokeStyle = `rgba(255,255,255,${0.85 * k})`; fxg.lineWidth = 0.8; fxg.beginPath(); fxg.moveTo(sx - 4 * k, sy); fxg.lineTo(sx + 4 * k, sy); fxg.moveTo(sx, sy - 4 * k); fxg.lineTo(sx, sy + 4 * k); fxg.stroke(); } }
+  for (let i = WF.flakes.length - 1; i >= 0; i--) { const F = WF.flakes[i]; F.l -= dt / F.life; if (F.l <= 0 || F.y > 352) { WF.flakes.splice(i, 1); continue; }      // flakes of algae sinking away, rocking as they go
+    F.vy += 9 * dt; F.vy *= Math.exp(-1.8 * dt); F.vx *= Math.exp(-2.2 * dt); F.x += (F.vx + Math.sin(now / 260 + F.ph) * 3) * dt; F.y += F.vy * dt; F.a += F.spin * dt;
+    fxg.save(); fxg.translate(F.x, F.y); fxg.rotate(F.a); fxg.fillStyle = `rgba(${F.c[0]},${F.c[1]},${F.c[2]},${Math.min(1, F.l * 1.6) * 0.9})`; fxg.beginPath(); fxg.ellipse(0, 0, F.r, F.r * 0.55, 0, 0, 6.3); fxg.fill(); fxg.restore(); }
+  const P = WF.pad; if (P) { P.on = Math.max(0, Math.min(1, P.on + (wiping ? 6 : -4) * dt)); if (!wiping && P.on <= 0) WF.pad = null; }
+  if (P) {      // the pad, pressed to the glass and turned the way it is going, with the gunk it is pushing piled along its front edge
+    const ang = Math.atan2(WF.dy, WF.dx), L = Math.min(1, WF.load / 14), al = P.on;
+    fxg.save(); fxg.translate(P.x, P.y); fxg.rotate(ang);
+    fxg.fillStyle = `rgba(250,250,244,${0.22 * al})`; fxg.beginPath(); fxg.roundRect(-11, -17, 22, 34, 7); fxg.fill();      // the felt face, a little see-through against the glass
+    fxg.fillStyle = `rgba(${96 - 30 * L},${120 - 26 * L},${70 - 30 * L},${(0.08 + 0.42 * L) * al})`; fxg.beginPath(); fxg.roundRect(-9, -15, 18, 30, 6); fxg.fill();      // greening as it fills with what it has taken off
+    fxg.strokeStyle = `rgba(255,255,255,${0.45 * al})`; fxg.lineWidth = 1; fxg.beginPath(); fxg.roundRect(-11, -17, 22, 34, 7); fxg.stroke();
+    if (L > 0.02) { const th = 1.5 + 5.5 * L, wob = (k) => Math.sin(now / 90 + k * 1.7) * 0.6 * L;      // the roll of gunk in front: lumpy, darker in its folds, with a wet highlight
+      fxg.fillStyle = `rgba(62,86,38,${0.85 * al})`; fxg.beginPath(); fxg.moveTo(11, -16); for (let k = 0; k <= 8; k++) { const yy = -16 + k * 4; fxg.lineTo(11 + th * (0.7 + 0.3 * Math.sin(k * 1.3 + 0.7)) + wob(k), yy); } fxg.lineTo(11, 16); fxg.closePath(); fxg.fill();
+      fxg.fillStyle = `rgba(128,150,84,${0.7 * al})`; for (let k = 0; k < 5; k++) { fxg.beginPath(); fxg.arc(11 + th * 0.55, -12 + k * 6 + wob(k) * 2, 0.8 + th * 0.18, 0, 6.3); fxg.fill(); }
+      fxg.strokeStyle = `rgba(220,240,200,${0.4 * al})`; fxg.lineWidth = 0.7; fxg.beginPath(); fxg.moveTo(11 + th * 0.8, -13); fxg.quadraticCurveTo(11 + th * 1.05, 0, 11 + th * 0.8, 13); fxg.stroke(); }
+    fxg.restore();
+    if (wiping && WF.load > 1.5 && Math.random() < dt * (2 + WF.load * 0.6)) shed(1 + (Math.random() * 2 | 0));      // a heavy pad sheds as it goes
+  }
+  if (WF.shine >= 0) { WF.shine += dt / 0.9; const k = WF.shine, x = -60 + k * 320; if (k >= 1) WF.shine = -1; else { const G = fxg.createLinearGradient(x - 40, 0, x + 40, 60); G.addColorStop(0, 'rgba(255,255,255,0)'); G.addColorStop(0.5, `rgba(255,255,255,${0.35 * Math.sin(Math.PI * k)})`); G.addColorStop(1, 'rgba(255,255,255,0)'); fxg.fillStyle = G; fxg.fillRect(0, 0, 195, 346); } }      // spotless: a glint sweeps across the clean pane
+  if (WF.pad || WF.flakes.length || WF.glints.length || WF.shine >= 0) WF.raf = requestAnimationFrame(wipeFx);
+}
+const wipeFxGo = () => { if (!WF.raf) { WF.t = performance.now(); WF.raf = requestAnimationFrame(wipeFx); } };
+function shed(n) { const P = WF.pad; if (!P) return; const c = Math.cos(Math.atan2(WF.dy, WF.dx)), s2 = Math.sin(Math.atan2(WF.dy, WF.dx));
+  for (let i = 0; i < n && WF.load > 0.2; i++) { const side = (Math.random() - 0.5) * 30, ex = P.x + c * 13 - s2 * side, ey = P.y + s2 * 13 + c * side; WF.flakes.push({ x: ex, y: ey, vx: (Math.random() - 0.5) * 18 + WF.dx * 10, vy: -4 + Math.random() * 8, r: 0.8 + Math.random() * 1.8, a: Math.random() * 6, spin: (Math.random() - 0.5) * 6, ph: Math.random() * 6, l: 1, life: 1.4 + Math.random() * 1.6, c: GUNK[(Math.random() * GUNK.length) | 0] }); WF.load -= 0.25; } }
+// where the finger lifts, some of what the pad was pushing is left behind on the glass: a soft ridge of gunk in a little arc
+function ridge() { const P = WF.pad; if (!P || WF.load < 2) return; const ang = Math.atan2(WF.dy, WF.dx), c = Math.cos(ang), s2 = Math.sin(ang), dep = Math.min(WF.load * 0.3, 6);
+  for (let k = -6; k <= 6; k++) { const side = k * 2.4, bow = (1 - (k / 6) ** 2) * 3, x = P.x + c * (13 + bow) - s2 * side, y = P.y + s2 * (13 + bow) + c * side, rr = 1.6 + dep * 0.35 * (1 - Math.abs(k) / 7);
+    const G = gg.createRadialGradient(x, y, 0, x, y, rr * 2); G.addColorStop(0, `rgba(70,96,44,${0.55 + 0.05 * dep})`); G.addColorStop(1, 'rgba(70,96,44,0)'); gg.fillStyle = G; gg.fillRect(x - rr * 2, y - rr * 2, rr * 4, rr * 4); }
+  WF.load -= dep; }
+const wipe = (e) => { const r = gcv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 195, y = (e.clientY - r.top) / r.height * 346;
+  const p = wipeLast ?? { x, y }, n = Math.max(1, Math.ceil(Math.hypot(x - p.x, y - p.y) / 5)), bx = Math.min(x, p.x) - 20, by = Math.min(y, p.y) - 20, bw = Math.abs(x - p.x) + 40, bh = Math.abs(y - p.y) + 40, before = alphaSum(bx, by, bw, bh);
+  gg.globalCompositeOperation = 'destination-out'; for (let i = 1; i <= n; i++) wipeDot(p.x + (x - p.x) * i / n, p.y + (y - p.y) * i / n);      // a continuous clean streak, however fast the finger goes
+  gg.globalCompositeOperation = 'source-over'; const took = Math.max(0, before - alphaSum(bx, by, bw, bh));      // how much film that stroke lifted
+  const mx = x - p.x, my = y - p.y, ml = Math.hypot(mx, my); if (ml > 0.8) { const k = Math.min(1, ml / 12); WF.dx += (mx / ml - WF.dx) * k; WF.dy += (my / ml - WF.dy) * k; const dl = Math.hypot(WF.dx, WF.dy) || 1; WF.dx /= dl; WF.dy /= dl; }
+  WF.pad ||= { x, y, on: 0 }; WF.pad.x = x; WF.pad.y = y; WF.load += took * 0.06; WF.lifted += took;
+  if (took > 4 && ml > 1) WF.glints.push({ x0: p.x, y0: p.y, x1: x, y1: y, l: 1, spark: Math.random() < 0.18 ? Math.random() : 0 });      // a fresh, wet streak
+  if (took > 30 && Math.random() < 0.5) shed(1);
+  wipeLast = { x, y }; sfx('wipe'); wipeFxGo(); };
+window.__wipeFx = WF; window.__startClean = () => startClean();
+gcv.addEventListener('pointerdown', (e) => { wiping = true; wipeLast = null; WF.load *= 0.5; wipe(e); }); gcv.addEventListener('pointermove', (e) => { if (wiping) wipe(e); });
 addEventListener('pointerup', async () => {
-  if (!wiping) return; wiping = false; wipeLast = null;
+  if (!wiping) return; ridge(); shed(Math.min(6, Math.round(WF.load))); wiping = false; wipeLast = null; wipeFxGo();
   const d = gg.getImageData(0, 0, 195, 346).data; let left = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 40) left++;
-  if (left / (d.length / 16) < 0.12) {      /* (most of the pane done: the last wisps go with it) */ cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
+  if (left / (d.length / 16) < 0.12) {      /* (most of the pane done: the last wisps go with it) */ cleanMode = false; gcv.style.pointerEvents = 'none'; gg.clearRect(0, 0, 195, 346); WF.shine = 0; WF.load = 0; wipeFxGo(); const r = await game.dispatch({ t: 'glass' }); if (r.ok) { shellToast(r); if (!r.delta) ui.toast('Spotless'); shownGlass = 0; } else fail(r); }
 });
 // water
 const wc = makeWaterChange({ canvas: $('wc'), camera, fishes, surfY: () => stg.surf.mesh.position.y, sfx, haptic });
@@ -1976,7 +2023,7 @@ async function boot() {
 }
 window.__booted = false;
 boot().then(() => { window.__booted = true; }).catch((e) => { console.error(e); window.__load?.fail(e?.message === 'timeout' ? (navigator.onLine === false ? 'You are offline. Tako Tank needs a connection to reach your shared tank.' : 'Your shared tank did not answer in time. It is safe on the server.') : 'Something went wrong starting the tank.'); });
-window.__fishes = fishes; window.__doing = doingOf; window.__toys = toys; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
+window.__fishes = fishes; Object.defineProperty(window, '__enc', { get: () => fishes.enc, configurable: true }); window.__doing = doingOf; window.__toys = toys; window.__decor = decor; window.__sea = { pack: seaPack, unpack: seaUnpack };      // for the drills: a seahorse's compact state as the other phones receive it
 Fish3D.onLost = (f) => { console.error('animal had a broken position and was put back', f.fid, f.sk); window.__lost = (window.__lost ?? 0) + 1; game.track('animal_lost'); };      // seen, never silently invisible
 const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fid || !isDirector() || document.hidden || (game.state?.flags?.tut ?? 0) < 5) return;      /* (seen: the tank open in front of someone) */ const k = kind + ':' + f.fid, now = performance.now(); if (now - (momentAt.get(k) ?? -1e9) < 60e3) return; momentAt.set(k, now); game.dispatch({ t: 'moment', kind, fish: f.fid, ...(o?.fid ? { other: o.fid } : {}) }).catch?.(() => {}); };      // (the rules decide how often each is worth a line)
 fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);

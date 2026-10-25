@@ -17,6 +17,7 @@ const HEAVY = new Set(['boulder', 'pillar', 'torii', 'wood', 'chest', 'arch', 'b
 import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
 import { temperOf, affordOf, habitKind } from '../game/habitat.js';
+import { Encounters } from './encounters.js';
 import { KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
@@ -1111,7 +1112,7 @@ export class Fishes {
     }
   }
   update(dt, t) {
-    this.senseTick(dt); this.shadeTick();
+    this.senseTick(dt); this.shadeTick(); (this.enc ||= new Encounters(this)).tick(dt);      // now and then a moment between them: a chase, a nip, a fright (encounters.js)
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
     if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);      /* (the pouch shows only what the rules say it holds; the old greeting puff read as a white patch) */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes

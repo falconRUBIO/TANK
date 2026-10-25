@@ -691,9 +691,9 @@ export class Fish3D {
     if (this.perch?.on && (this.seeking || this.idle <= 0)) this.perch = null;
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
-    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 1.35 : 0.5) * (holding ? 0.06 : 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1);      // (an exploring baby is a little brisker) (a seahorse on its way to a holdfast swims steadily, still slowly)
+    const base = this.speed * (this.tmul ?? 1) * (this.mul ?? 1) * (this.encMul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? 1.15 : this.holdfast && !this.holdfast.on ? 1.35 : 0.5) * (holding ? 0.06 : 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1);      // (an exploring baby is a little brisker) (a seahorse on its way to a holdfast swims steadily, still slowly)
     to.multiplyScalar((base / d) * Math.min(1, this.holdfast && !this.holdfast.on ? d / 0.6 : d)); to.y += Math.sin(t * 1.3 + this.phase) * (holding ? 0.03 : 0.1);      // (a seahorse on its way to a holdfast keeps its pace until it settles onto it)
-    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1) * (this.holdfast && !this.holdfast.on ? 1.6 : 1);      /* (on its way to a stem it goes there, it does not dawdle in the open) */ if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    this.vel.lerp(to, Math.min(1, dt * 0.9)); this.separate(others); const vmax = this.speed * 0.75 * (this.mul ?? 1) * (this.encMul ?? 1) * (this.nursery && this.role === 'explore' ? 1.25 : 1) * (this.holdfast && !this.holdfast.on ? 1.6 : 1);      /* (on its way to a stem it goes there, it does not dawdle in the open) */ if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
     const sp = this.face(dt, this.sp.tail ? 1.8 : 0.9);      // (a seahorse pivots easily: it faces the way it swims within half a second, instead of sliding along side-on)
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
@@ -1034,7 +1034,7 @@ export class Fish3D {
   }
   // Octopus: rests on the bottom with its arms spread flat, crawls along it, and now and then jets through the water in pulses (mantle squeezes, arms stream back) before drifting down again.
   jetUpdate(dt, rng, others) {
-    this.tt = (this.tt ?? 0) + dt; const mul = (this.mul ?? 1) * (this.vigor ?? 1) * (this.tmul ?? 1); const S = (this.st ||= { s: 'rest', t: 1 + rng() * 3, n: 0, pulse: 0 }); S.t -= dt * (S.s === 'rest' ? (this.temper()?.tempo ?? 1) : 1);
+    this.tt = (this.tt ?? 0) + dt; const mul = (this.mul ?? 1) * (this.encMul ?? 1) * (this.vigor ?? 1) * (this.tmul ?? 1); const S = (this.st ||= { s: 'rest', t: 1 + rng() * 3, n: 0, pulse: 0 }); S.t -= dt * (S.s === 'rest' ? (this.temper()?.tempo ?? 1) : 1);
     const h0 = this.heading; if (S.s !== 'jet') S.thr = null;
     { const L = (this.lvT ||= { front: 1, middle: 1, rear: 1 }), k = Math.exp(-dt / 240); for (const q in L) L[q] *= k; L[levelAt(this.pos.x, this.pos.z)] += dt; }      // how long it has spent on each level lately (the last few minutes count): it spreads its time over all three, not just the terrace it happens to be on      // (where it faced at the start of the frame: its turning is given weight at the end; a push that was under way ends with the jet)
     const floor = 0.55 + this.sandBelow(), onFloor = this.pos.y < floor + 0.5;      // the sand under it, on whichever level it is
@@ -1362,7 +1362,7 @@ export class Fish3D {
     if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm && !(this.restK && this.idle > 0)))) this.pick(rng);      // (a fish resting at its place or by its friend stays until its rest is over)
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
     this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt; this.dartT = (this.dartT ?? 0) - dt;
-    desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.55 : this.lureCalm ? 0.45 : 1) * (this.mul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
+    desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.55 : this.lureCalm ? 0.45 : 1) * (this.mul ?? 1) * (this.encMul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
       const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
@@ -1393,8 +1393,8 @@ export class Fish3D {
       } else this.blocked = Math.max(0, (this.blocked ?? 0) - dt);
       this.cool -= dt;
     }
-    this.vel.lerp(desired, Math.min(1, dt * 1.5)); this.rdt = dt;
-    const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.5 : 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
+    this.vel.lerp(desired, Math.min(1, dt * (this.encSnap ?? 1.5))); this.rdt = dt;      // (in a chase or a fright it turns on the spot: see encounters.js)
+    const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.5 : 1) * (this.encMul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length(), h0 = this.heading;
