@@ -870,7 +870,7 @@ function octoNest(egg, G, P, C, t) {
     const m = (O[o.fid] ||= { strikes: 0, probeAt: now + (60 + Math.random() * 120) * 1e3, keepAt: 0, push: false }), d = Math.hypot(o.pos.x - P.x, o.pos.z - P.z), gd = G.pos.distanceTo(P);
     const away = () => { const sx = o.pos.x >= P.x ? 1 : -1; return { x: Math.max(-3.6, Math.min(3.6, P.x + sx * 4.2)), z: Math.max(-1.5, Math.min(2.2, o.pos.z)) }; };
     if (now < (m.fleeing ?? 0)) { if (d < 2.0 && C.s !== 'chase' && gd < 3.5) { C.s = 'chase'; C.t = 0; C.o = o; C.cool = 2; G.dartT = 0.9; } continue; }      // already on its way off: he sees it out, one fight, not several
-    if (now < m.probeAt && d < 3.0 && now > (m.steerAt ?? 0)) { m.steerAt = now + 6e3; const q = o.inspect; if (!q || Math.hypot(q.x - P.x, q.z - P.z) < 2.8) { o.inspect = away(); if (o.st?.s === 'bury' || o.st?.s === 'rest') o.st.t = 0; } }      // it remembers: nothing near the eggs is worth it now, and it moves off on its own
+    if (now < m.probeAt && d < 3.4 && now > (m.steerAt ?? 0)) { m.steerAt = now + 4e3; const q = o.inspect; if (!q || Math.hypot(q.x - P.x, q.z - P.z) < 3.2) { o.inspect = away(); if (o.st && (o.st.s === 'bury' || o.st.s === 'rest' || (o.st.s === 'crawl' && d < 2.6))) o.st.t = 0; } }      // it remembers: nothing near the eggs is worth it now, and it moves off on its own (a crawl already heading past them is cut short)
     if (d < 2.0 && C.s !== 'chase' && gd < 3.5) {      // too close: he goes for it
       C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.seeking = false; G.dartT = 1.1; G.fanK = 0; G.lureCalm = 0; G.thought = `Charging at ${o.name} to drive it off the eggs.`;
       o.startle?.(G.pos, G); m.strikes++; m.push = false; m.keepAt = 0; m.fleeing = now + 15e3; o.inspect = null;
