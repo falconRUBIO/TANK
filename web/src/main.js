@@ -7,7 +7,7 @@ import * as stg from './w3/stage.js';
 window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 15000); addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
 import { makeStudio, planShot } from './w3/photo.js';
 import { GROW, specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
-import { raySand, sandH } from './w3/terrain.js';
+import { raySand, sandH, GLASS_Z } from './w3/terrain.js';
 import { algaeTint } from './w3/decor.js';
 import { swayTime, fishBoost, plantPush, PUSH_N, plantHold, HOLD_N } from './w3/voxshade.js';
 import { Fish3D } from './w3/fish3d.js';
@@ -1699,7 +1699,9 @@ function frameBody(now) {
   if (focus) {
     // frame the fish in the open water between the top bar and the profile card
     const H = window.innerHeight, cardTop = card.classList.contains('on') ? card.getBoundingClientRect().top : H - 150, topPx = 64, cy = topPx + Math.max(150, cardTop - topPx - 8) / 2;
-    const d = Math.max(9.5, focus.radius * 11.5), shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const d = Math.max(9.5, focus.radius * 11.5); let shift = ((H / 2 - cy) / (H / 2)) * d * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const floorY = Math.max(sandH(focus.pos.x, GLASS_Z - 0.3), sandH(focus.pos.x, Math.min(focus.pos.z + 1.5, GLASS_Z - 0.3))) + 1.1;      // the camera never dips below the sand in front of the animal: from under its edge the tank's underside shows, which reads as a glitch
+    shift = Math.min(shift, focus.pos.y + 0.12 - floorY);
     camGoal.set(focus.pos.x + 0.3, focus.pos.y - shift + 0.12, focus.pos.z + d); lookGoal.set(focus.pos.x, focus.pos.y - shift, focus.pos.z);
   }
   else { camGoal.set(REDUCED ? 0 : Math.sin(t * 0.13) * 0.35, stg.CAM_Y + (REDUCED ? 0 : Math.sin(t * 0.09) * 0.12), stg.CAM_Z); lookGoal.set(0, stg.LOOK_Y, 0); }
@@ -1979,7 +1981,7 @@ const momentAt = new Map(); const momentOf = (kind, f, o = null) => { if (!f?.fi
 fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector() && !document.hidden) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      /* what an octopus learns, kept with the tank */ fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
-window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]);
+window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]); window.__camPos = () => [...camera.position.toArray(), ...camGoal.toArray()].map((v) => +v.toFixed(2));
 window.__eggs = eggSprites; window.__eggCare = eggCare; window.__showCard = (f) => { cardOpen = f.fid; showCard(f); }; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills
 window.__dropFoodForTest = (x, food = 'crab') => { game.feedFood = food; return dropFood(x); };
 window.__tank = { fishes: fishes.list, decor, game, setQuality: stg.setQuality, TOD, bokeh, scene, camera, renderer: stg.renderer };
