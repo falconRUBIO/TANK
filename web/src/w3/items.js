@@ -106,15 +106,22 @@ const B = {
     const m = v.mesh(); m.position.y = 0.3; g.add(m); return [{ v, x: 0, y: 0.3, z: 0, ry: 0 }];
   },
   // mangrove roots: arching prop roots rising from the sand and meeting in a knot, thin enough for a seahorse to wrap its tail round
-  mangrove: (g, seed) => {
-    const v = new Vox(0.07), r = mulberry32(seed), bark = (t) => mix([92, 66, 44], [150, 116, 80], t);
-    const H = 58, top = [0, H, 0];
-    for (let n = 0; n < 7; n++) { const a = (n / 7) * Math.PI * 2 + r() * 0.5, R0 = 22 + r() * 10, foot = [Math.cos(a) * R0, 0, Math.sin(a) * R0 * 0.7];
-      for (let t = 0; t <= 1.0001; t += 0.012) { const arc = Math.sin(t * Math.PI) * 14, x = foot[0] + (top[0] - foot[0]) * t, z = foot[2] + (top[2] - foot[2]) * t, y = foot[1] + (top[1] - foot[1]) * Math.pow(t, 0.8) + arc * 0.4;
-        const I = Math.round(x * (1 - 0.15 * Math.sin(t * Math.PI))), J = Math.round(y), K = Math.round(z), c = bark(hash(I, J, K, 3));
-        v.set(I, J, K, c); if (t < 0.4 || t > 0.85) { v.set(I + 1, J, K, mix(c, [60, 44, 30], 0.3)); v.set(I, J, K + 1, mix(c, [70, 52, 36], 0.2)); } if (t < 0.15) v.set(I + 1, J, K + 1, mix(c, [60, 44, 30], 0.35)); } }      // thick where they enter the sand, thin enough higher up for a seahorse's tail
-    for (let j = H - 4; j <= H + 10; j++) for (let i = -2; i <= 2; i++) for (let k = -2; k <= 2; k++) if (i * i + k * k <= 4) v.set(i, j, k, bark(0.4 + hash(i, j, k, 5) * 0.3));      // the knot where the roots meet
-    for (let n = 0; n < 160; n++) { const a = r() * 6.28, d = 2 + r() * 13, I = Math.round(Math.cos(a) * d), K = Math.round(Math.sin(a) * d * 0.7), J = H + 6 + ((r() * 10) | 0) - Math.round(d * 0.35); v.set(I, J, K, mix([70, 140, 60], [130, 190, 90], r())); v.set(I + 1, J, K, mix([60, 120, 50], [110, 170, 80], r())); }      // a crown of leaves
+  mangrove: (g, seed) => {                  // a red mangrove standing on its prop roots: thick arching roots that fork as they reach the sand, a short trunk, three branches, and a canopy of glossy oval leaf clusters
+    const v = new Vox(0.07), r = mulberry32(seed), H = 58;
+    const bark = (I, J, K, t = 0.5) => { let c = mix([96, 68, 44], [156, 120, 82], t); const ring = hash(0, J >> 2, 0, 6); c = mix(c, [64, 44, 28], ring * 0.35); if (fbm(I * 0.3, J * 0.3, K * 0.3) > 0.68) c = mix(c, [84, 128, 56], 0.5); return c; };      /* (rings of darker bark every few courses; a little green moss) */
+    const tube = (P, Q, r0, r1, fn) => { const L = Math.hypot(Q[0] - P[0], Q[1] - P[1], Q[2] - P[2]), n = Math.ceil(L * 1.3); for (let s2 = 0; s2 <= n; s2++) { const t = s2 / n, x = P[0] + (Q[0] - P[0]) * t, y = P[1] + (Q[1] - P[1]) * t, z = P[2] + (Q[2] - P[2]) * t, rad = r0 + (r1 - r0) * t; for (let i = Math.floor(x - rad); i <= x + rad; i++) for (let j = Math.floor(y - rad); j <= y + rad; j++) for (let k = Math.floor(z - rad); k <= z + rad; k++) if (Math.hypot(i - x, j - y, k - z) <= rad + 0.01) v.set(i, j, k, fn(i, j, k, hash(i, j, k, 3))); } };
+    const bez = (A, B, C, t) => [0, 1, 2].map((q) => (1 - t) * (1 - t) * A[q] + 2 * (1 - t) * t * B[q] + t * t * C[q]);
+    const root = (foot, top, r0, r1, bulge) => { const mid = [(foot[0] + top[0]) / 2 + foot[0] * bulge, foot[1] + (top[1] - foot[1]) * 0.42, (foot[2] + top[2]) / 2 + foot[2] * bulge]; let prev = null; for (let t = 0; t <= 1.0001; t += 0.05) { const P = bez(foot, mid, top, t); if (prev) tube(prev, P, r0 + (r1 - r0) * (t - 0.05), r0 + (r1 - r0) * t, (i, j, k, h) => bark(i, j, k, h)); prev = P; } };
+    for (let n = 0; n < 7; n++) { const a = (n / 7) * Math.PI * 2 + r() * 0.5, R0 = 24 + r() * 9, foot = [Math.cos(a) * R0, -2, Math.sin(a) * R0 * 0.72], top = [Math.cos(a) * 2, H, Math.sin(a) * 1.5];
+      root(foot, top, 2.3, 1.0, 0.35);                                                                                         // thick where it enters the sand, thin enough higher up for a seahorse's tail
+      const fa = a + (r() < 0.5 ? -1 : 1) * (0.3 + r() * 0.3), fR = R0 * (0.55 + r() * 0.35), knee = bez(foot, [(foot[0] + top[0]) / 2 + foot[0] * 0.35, foot[1] + (H + 2) * 0.42, (foot[2] + top[2]) / 2 + foot[2] * 0.35], top, 0.32);
+      root([Math.cos(fa) * fR, -2, Math.sin(fa) * fR * 0.72], knee, 1.6, 1.1, 0.15);                                           // each root forks once on its way down, a second leg to the sand
+      for (let m = 0; m < 3; m++) { const I = Math.round(foot[0] + (r() - 0.5) * 5), K = Math.round(foot[2] + (r() - 0.5) * 4); if (r() < 0.6) v.set(I, 0, K, [206, 196, 176]); else v.set(I, 0, K, mix([84, 128, 56], [120, 160, 70], r())); } }      // barnacle flecks and weed at the waterline of each foot
+    tube([0, H - 3, 0], [0, H + 14, 0], 3.2, 2.2, (i, j, k, h) => bark(i, j, k, 0.35 + h * 0.3));                         // the trunk
+    const ends = []; for (let n = 0; n < 4; n++) { const a = (n / 4) * Math.PI * 2 + 0.6 + r() * 0.4, len = 17 + r() * 6, E = [Math.cos(a) * len, H + 14 + 3 + r() * 3, Math.sin(a) * len * 0.75]; tube([0, H + 12, 0], E, 2.0, 1.1, (i, j, k, h) => bark(i, j, k, 0.3 + h * 0.3)); ends.push(E, [E[0] * 0.55, H + 14 + 1, E[2] * 0.55]); }      // three branches, and a leaf cluster at the middle and the end of each
+    ends.push([0, H + 19, 0]);
+    const leaf = (i, j, k, under) => { const t = hash(i, j, k, 9); return under ? mix([44, 92, 42], [70, 118, 56], t) : t > 0.86 ? [182, 212, 96] : mix([74, 142, 62], [128, 186, 84], t); };      // glossy green with a few sunlit tips; the undersides darker
+    for (const E of ends) { const rx = 9 + r() * 3, ry = 4 + r() * 1.4, rz = 7 + r() * 2; for (let i = Math.floor(E[0] - rx); i <= E[0] + rx; i++) for (let j = Math.floor(E[1] - ry); j <= E[1] + ry; j++) for (let k = Math.floor(E[2] - rz); k <= E[2] + rz; k++) { const d = ((i - E[0]) / rx) ** 2 + ((j - E[1]) / ry) ** 2 + ((k - E[2]) / rz) ** 2; if (d > 1 + (fbm(i * 0.5, j * 0.5, k * 0.5) - 0.5) * 0.5) continue; if (d < 0.55 && hash(i, j, k, 8) < 0.55) continue; v.set(i, j, k, leaf(i, j, k, j < E[1] - ry * 0.3), j > E[1] + ry * 0.2 ? 1.08 : 0.92); } }      /* (oval clusters, hollow-ish inside so light comes through, ragged at the edge) */
     topLit(v); const m = v.mesh(); g.add(m); return [stem(0, 0, 2, 30)];
   },
   // a sponge garden: barrel and tube sponges, open at the top, in orange, purple and yellow
