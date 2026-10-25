@@ -495,7 +495,7 @@ export class Fish3D {
   ponder(S, rng, at) { S.pend = { s: S.s, t: S.t, n: S.n }; S.s = 'ponder'; S.t = 0.5 + rng() * 0.8 * (1.3 - 0.3 * (this.temper()?.tempo ?? 1)); this.intent = at ? { x: at.x, y: at.y ?? 0.6, z: at.z } : null; return true; }
   endAct(S, rng, next = 'rest') { this.act = null; this.actText = null; this.watchFish = null; this.follow = null; S.tour = null; S.popped = false; S.digs = 0; if (next === 'drift') { S.s = 'drift'; S.t = 6; } else { S.s = 'rest'; S.t = 4 + rng() * 6; } }
   // one arm whipped out to a point in the water and back (the arm nearest that way): batting a ball, slapping at something
-  armAt(p, dur = 0.45) {
+  whipArm(p, dur = 0.45) {
     if (!this.minds?.length) return false; const sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), dx = p.x - this.pos.x, dz = p.z - this.pos.z, dy = p.y - this.pos.y, lx = (dx * ch - dz * sh) / sc, lz = (dx * sh + dz * ch) / sc, ang = Math.atan2(lz, lx - 3);
     let best = null, bd = 9; this.minds.forEach((m, i) => { const df = Math.abs(Math.atan2(Math.sin((this.rig?.arms[i]?.th ?? 0) - ang), Math.cos((this.rig?.arms[i]?.th ?? 0) - ang))); if (df < bd) { bd = df; best = m; } });
     if (!best) return false; best.x = lx; best.y = dy / sc; best.z = lz; best.until = dur; best.fast = true; best.next = 3; this.flush = Math.max(this.flush ?? 0, 0.35); return true;

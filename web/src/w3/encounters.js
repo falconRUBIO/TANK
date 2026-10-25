@@ -105,7 +105,7 @@ export class Encounters {
   }
   // ── the octopus lashes an arm at a fish that came close; the fish bolts ──
   swat(o, f) {
-    if (!o.armAt?.(f.pos, 0.42)) return null; const e = this.begin('swat', [o, f], { max: 3 }); o.flush = Math.max(o.flush ?? 0, 0.5); o.thought = `Swiped an arm at ${f.name}.`; o.swats = (o.swats ?? 0) + 1;
+    if (!o.whipArm?.(f.pos, 0.42)) return null; const e = this.begin('swat', [o, f], { max: 3 }); o.flush = Math.max(o.flush ?? 0, 0.5); o.thought = `Swiped an arm at ${f.name}.`; o.swats = (o.swats ?? 0) + 1;
     e.step = (dt) => { if (e.t > 0.2 && !e.went) { e.went = true; f.encMul = 2.7; f.encSnap = 8; f.idle = 0; f.flickT = 0.35; f.thought = `Swiped at by ${o.name}.`; this.F.burst?.(f.pos.clone()); }
       if (e.went) { this.flee(f, o.pos, e, dt, 0.8, 2.8); f.retarget = 0.4; f.fleeT = 0.5; } return e.t > 1.6; };
     return e;
