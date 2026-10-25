@@ -5,7 +5,7 @@ const { chromium } = await import('/opt/node-tools/node_modules/playwright/index
 import fs from 'node:fs';
 const MIN = +(process.argv[2] || 6), base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/personality'; fs.mkdirSync(out, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message)); p.on('crash', () => { console.log('  (the page crashed)'); process.exit(2); }); p.on('console', (m) => { if (m.type() === 'error' && !/favicon|404/.test(m.text())) console.log('  console:', m.text().slice(0, 200)); }); b.on('disconnected', () => { console.log('  (the browser went away)'); process.exit(2); });
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForTimeout(2500);
 const SEEDS = { explorer: 1, showoff: 2, collector: 3, watcher: 4, homebody: 6, trickster: 8 };
 await p.evaluate((SEEDS) => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 6; window.__quietUntil = Date.now() + 9e9;
