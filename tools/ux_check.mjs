@@ -16,7 +16,7 @@ await p.waitForSelector('#coach.on #cbtn', { timeout: 60000 }).catch(() => {}); 
 const still = await p.evaluate(() => document.querySelector('#coach.on')?.innerText ?? '');
 ck('"Got it" puts it away', !still, still.replace(/\s+/g, ' ').slice(0, 80));
 await clear(); await p.evaluate(() => window.__game.addJournal('Marlin charged at Inky and drove it away from the eggs.')); await p.waitForTimeout(1500);
-const shot = await p.evaluate(() => { try { return (JSON.parse(localStorage.getItem('ourtank.moments') || '[]')[0] ?? {}); } catch { return {}; } });
+let shot = {}; for (let i = 0; i < 20 && !/drove it away/.test(shot.text ?? ''); i++) { await p.waitForTimeout(1000); shot = await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /drove it away/.test(m.text)) ?? {}; } catch { return {}; } }); }      // (photos are taken one at a time, spaced out: an earlier line's photo can come first)
 ck('the moment you saw is kept with a photo', /^data:image\/jpeg/.test(shot.img ?? '') && /drove it away/.test(shot.text ?? ''), `${Math.round((shot.img?.length ?? 0) / 1024)} KB`);
 await p.evaluate(() => window.__ui.open('friends')); await p.waitForTimeout(600); await p.click('[data-sub="journal"]').catch(() => {}); await p.waitForTimeout(800);
 ck('the journal shows that photo with its line', await p.evaluate(() => !!document.querySelector('#sheet .jpost .jimg img')));
@@ -29,7 +29,8 @@ await clear(); const order = await p.evaluate(async () => { const f = window.__f
 ck('the fish card leads with what it is doing now', /now|csec/.test(order), order);
 await p.evaluate(() => window.__game.save?.()); await p.context().addInitScript(() => localStorage.setItem('ourtank.seen.solo', String(Date.now() - 3600e3)));      // (leaving marks the visit; the page coming back finds it an hour old)
 await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 });
-const recap = await p.waitForFunction(() => document.querySelector('#reunion.on')?.innerText ?? '', null, { timeout: 40000 }).then((h) => h.jsonValue()).catch(() => '');
-ck('back after an hour, the recap card says what happened', /drove it away|Nemo|eggs/i.test(recap), recap.replace(/\s+/g, ' ').slice(0, 160));
+await p.waitForTimeout(4000); await p.evaluate(() => window.__ui.open('notices')); await p.waitForTimeout(1200);      // (coming back is quiet now: no card over the tank; what happened waits in Today, under "While you were away")
+const recap = await p.evaluate(() => document.querySelector('#sheet .awayl')?.innerText ?? '');
+ck('back after an hour, Today says what happened while you were away', /drove it away|Nemo|eggs/i.test(recap), recap.replace(/\s+/g, ' ').slice(0, 160));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'UX checks passed'); process.exit(fails ? 1 : 0);
