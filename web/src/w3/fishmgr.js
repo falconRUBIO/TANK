@@ -741,7 +741,7 @@ export class Fishes {
       const T = (x, y, z, rt) => { const rv = f.rivalId && this.byId.get(f.rivalId); if (rv && !rv.dead && Math.hypot(rv.pos.x - x, rv.pos.y - y) < 1.6) x += (x >= rv.pos.x ? 1 : -1) * 1.8;      /* a rival: it picks somewhere else rather than swim into it */
         const taken = others.find((o) => !o.dead && o.fid !== f.palId && o.species?.move !== 'jet' && !(f.settle && f.settle.o === o) && Math.hypot(o.pos.x - x, o.pos.y - y, (o.pos.z - z) * 1.6) < (f.radius + o.radius) * 1.3); if (taken) { x += (x >= taken.pos.x ? 1 : -1) * Math.max(0.9, f.radius + taken.radius); y += 0.3; }      /* someone is already there (two rock-lovers and one rock): it takes the other side of it, a little higher, rather than settle on top of them */
         f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
-      f.idle = 0; const y0 = f.band?.y?.[0] ?? 3, high = y0 >= 6.5, lowK = high ? 0.4 : y0 >= 4 ? 0.6 : 1;      // a surface swimmer is drawn down to the sand far less often, a midwater one less often: the sand is left to the kinds that live there
+      f.idle = 0; const y0 = f.band?.y?.[0] ?? 3, high = y0 >= 6.5, lowK = high ? 0.4 : y0 >= 4 ? 0.5 : 1;      // a surface swimmer is drawn down to the sand far less often, a midwater one less often: the sand is left to the kinds that live there
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
@@ -816,7 +816,8 @@ export class Fishes {
       if (mood === 'Sleepy') return T(-3 + r() * 6, high ? 4 + r() * 2.5 : 1 + r() * 2.2, f.target.z, 8);
       if (has('Shy') && r() < 0.75 * lowK) {                                              // tucks in behind plants and decorations, or hugs the back wall
         const s = spots.length ? spots[(r() * spots.length) | 0] : null;
-        return s ? T(s.x + (r() - 0.5) * 0.8, 0.9 + r() * Math.max(0.6, s.h * 0.5), s.z - 0.9 - r() * 0.4, 6 + r() * 4) : T(-3.4 + r() * 7, 1 + r() * 2.5, -1.6 - r() * 1.2, 6 + r() * 4);
+        const hy = 0.9 + r() * Math.max(0.6, s ? s.h * 0.5 : 0.6), hy2 = s && y0 >= 4 ? Math.max(hy, (s.y ?? 0) + s.h * 0.6 + 0.5) : hy;      /* (a midwater kind hides up among the leaves, not at the foot of the stem) */
+        return s ? T(s.x + (r() - 0.5) * 0.8, hy2, s.z - 0.9 - r() * 0.4, 6 + r() * 4) : T(-3.4 + r() * 7, y0 >= 4 ? 3 + r() * 2.5 : 1 + r() * 2.5, -1.6 - r() * 1.2, 6 + r() * 4);
       }
       if (has('Brave') && r() < 0.6) return T(-2 + r() * 4, 3 + r() * 7, 2.2 + r() * 0.6, 3 + r() * 3);   // swims out front, close to the glass
       if (has('Curious') && r() < 0.65) {                                          // goes to inspect decorations and other fish
