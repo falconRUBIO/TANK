@@ -1622,7 +1622,7 @@ export function needsChecklist(t, f, now = Date.now(), uid = null) {
   else if (S.home) add('home', S.home.text.replace(/^./, (c) => c.toUpperCase()), hasHome(t, S.home), 'From the Shop');
   if (S.shoal) add('shoal', `A shoal: ${S.shoal} of its own kind`, own >= S.shoal, `${own} now · ${S.shoal - own > 0 ? `${S.shoal - own} more ${label.toLowerCase()}${S.shoal - own > 1 ? 's' : ''}` : ''}`);
   if (S.pair) add('pair', 'A partner', own >= 2, `Another ${label.toLowerCase()}`);
-  if (S.sameFoe) add('alone', `No other ${label.toLowerCase()}s`, own <= 1, 'They squabble with their own kind');
+  if (S.sameFoe) add('alone', `No other ${plural(f.species)}`, own <= 1, 'They squabble with their own kind');
   { const so = socialOf(t, f), threat = so.notes.find((x) => /bullies|wary/.test(x)); if (S.shy || (S.size <= 1 && !S.bully && threat)) add('cover', 'Places to hide', hides(t) >= 4, `${Math.min(hides(t), 4)} of 4 plants, rocks or structures`); if (threat && /bullies/.test(threat)) add('peace', 'Left in peace', false, threat.replace(/ More hiding.*$/, '')); }
   for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && !(S.home?.cats?.includes(sp[0]))) add('spot', `${tr === 'Shy' ? 'Plants to hide among' : tr === 'Curious' ? 'Something to explore' : tr === 'Lazy' ? 'Driftwood to rest by' : tr === 'Playful' ? 'Something fun' : 'Rocks to perch on'}`, count(t, sp[0]) >= sp[1], `${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]} · ${sp[2]}`); }
   if ((f.traits ?? []).includes('Social') && f.species !== 'octopus') add('company', 'Company', t.fish.filter((o) => !o.dead).length >= 4, '4 animals in the tank');
@@ -1730,7 +1730,7 @@ function deliver(t, now, ev) {
       const mo = morphOf(f); ev.push({ journal: `${f.name} has arrived from ${C.fromTank}, sent by ${C.by}: ${mo ? `a ${MORPHS[mo].label.toLowerCase()} ` : 'a '}${d.label.toLowerCase()} bred there.`, toast: `${f.name} arrived from ${C.fromTank}!`, arrival: [f.id], story: f.id, text: `Came from ${C.fromTank}, sent by ${C.by}.` }); if (!t.seen.fish.includes(o.species)) t.seen.fish.push(o.species); continue; }      // an animal sent from a friend's tank: the same animal, with its genes, its parents and how it was raised
     if (o.giftFrom) for (const f of made) f.gift = { id: o.id, from: o.giftFrom, fromId: o.giftFromId ?? null, note: o.giftNote ?? null, at: now, ...(o.surprise ? { wrapped: true } : {}) };
     if (o.giftFrom && o.surprise) { ev.push({ journal: `A gift from ${o.giftFrom} arrived for ${o.ownerName}. It is still wrapped.`, toast: `A gift from ${o.giftFrom} has arrived for ${o.ownerName}!`, giftArrived: { for: o.owner } }); continue; }      // wrapped: nothing says what is inside
-    ev.push({ journal: o.giftFrom ? `${made[0].name} the ${d.label.toLowerCase()} has arrived, a gift from ${o.giftFrom} to ${o.ownerName}.` : d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${d.label.toLowerCase()}s have arrived!`, arrival: made.map((f) => f.id) });
+    ev.push({ journal: o.giftFrom ? `${made[0].name} the ${d.label.toLowerCase()} has arrived, a gift from ${o.giftFrom} to ${o.ownerName}.` : d.count === 1 ? `${made[0].name} the ${d.label.toLowerCase()} has arrived.` : `The ${d.label.toLowerCase()} school has arrived.`, toast: d.count === 1 ? `${made[0].name} has arrived!` : `Your ${plural(o.species)} have arrived!`, arrival: made.map((f) => f.id) });
   }
 }
 // An animal bred here can be sent to a friend's tank (by its code): one a day per caretaker, never an octopus or a school, never one that is
@@ -2496,7 +2496,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.id && x.gift?.wrapped); if (!f) return fail('NOT_FOUND'); if (f.owner !== uid) return fail('NOT_YOURS');
       const all = t.fish.filter((x) => x.gift?.id === f.gift.id && x.gift.wrapped), d = SPECIES_DEF[f.species];
       for (const x of all) { delete x.gift.wrapped; x.gift.opened = now; }
-      const what = all.length > 1 ? `${all.length} ${d.label.toLowerCase()}s` : `${f.name} the ${d.label.toLowerCase()}`;
+      const what = all.length > 1 ? `${all.length} ${plural(f.species)}` : `${f.name} the ${d.label.toLowerCase()}`;
       events.push({ journal: `${name} opened ${f.gift.from}'s gift: ${what}!`, giftOpened: { to: f.gift.fromId, text: `${name} opened your gift and met ${all.length > 1 ? `the ${d.label.toLowerCase()}s` : f.name}.` } });
       return ok({ ids: all.map((x) => x.id) });
     }
