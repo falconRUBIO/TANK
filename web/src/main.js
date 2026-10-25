@@ -1398,8 +1398,8 @@ const tut = (() => {
           lit(now === 1 ? sh.querySelector('[data-act="feeddrawer"]') : now === 2 ? sh.querySelector('.fcard[data-feed]') : null);
           if (now === at) return; at = now;
           if (now === 0) { ui.showCoach({ title: 'Time for a snack', text: `${nm} is hungry. Open Care to feed ${octo ? 'it' : 'them'}.`, skip }); ui.pulse('care'); }
-          else if (now === 1) { ui.showCoach({ title: 'Time for a snack', text: 'Tap Feed.', skip }); ui.pulse(null); }
-          else ui.showCoach({ title: 'Time for a snack', text: `Tap Feed on ${nm}'s card: ${octo ? 'a crab drops in for it' : 'the food drops in'}.`, skip });
+          else if (now === 1) { ui.showCoach({ title: 'Time for a snack', text: 'Tap Feed.', skip, over: true }); ui.pulse(null); }
+          else ui.showCoach({ title: 'Time for a snack', text: `Tap Feed on ${nm}'s card: ${octo ? 'a crab drops in for it' : 'the food drops in'}.`, skip, over: true });
         };
         const followT = setInterval(follow, 250), redraw = new MutationObserver(follow); redraw.observe($('sheet'), { childList: true }); follow();      // (a redrawn sheet gets its glow back at once)
       } else if (step === 2) {
@@ -1491,14 +1491,14 @@ game.on('levelup', (lv) => {
   /* the level-up is a moment in the tank itself: everyone swims up to the glass, bubbles rise, and a banner names what opened */
   let i = 0; for (const f of fishes.byId.values()) { if (!f.pos || !f.target) continue; const x = ((i++ % 7) - 3) * 1.4; f.target.set(x, 6 + (i % 3), 2.2); f.retarget = 4; }
   for (let k = 0; k < 6; k++) setTimeout(() => fishes.burst(new THREE.Vector3((k - 2.5) * 2, 1, 1.2)), k * 180);
+  const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label), ...Object.values(TOYS).filter((T) => T.unlock === lv).map((T) => T.label + ' (Toy box)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   const ban = document.createElement('div'); ban.className = 'lvban';
   const P = LEVEL_PRIZE[lv];
-  ban.innerHTML = `<small>THE TANK GREW</small><b>Level ${lv}</b><span>${P ? (P.kind === 'play' ? 'New way to play: ' : 'New animals: ') + P.title : 'Your care made the tank grow'}</span>`;
+  ban.innerHTML = `<small>THE TANK GREW</small><b>Level ${lv}</b><span>${P ? (P.kind === 'play' ? 'New way to play: ' : 'New animals: ') + P.title : 'Your care made the tank grow'}</span>${fresh.length ? `<em>${esc(fresh.slice(0, 3).join(' · ').replace(/ \(Toy box\)/g, ''))}${fresh.length > 3 ? ` and ${fresh.length - 3} more` : ''}</em>` : ''}`;      // (named, not just titled)
   document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
-  const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label), ...Object.values(TOYS).filter((T) => T.unlock === lv).map((T) => T.label + ' (Toy box)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   ui?.toast(`Tank level ${lv}!`, 3000);
   const prepared = lv === 8 && (game.state?.goalsDone ?? []).some((g) => g.id === 'sanctuary');      /* (the sanctuary goal finished at level 7: the tank is ready for its first turtle) */
-  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: prepared ? 'Level 8: the sanctuary is ready' : `Level ${lv}`, text: prepared ? `Your tank is prepared: a ledge to sleep under, sea grass to graze. ${LEVEL_PRIZE[lv].text}. New for you:` : LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].text}. New for you:` : `New for you:`, lines: fresh.length > 5 ? [...fresh.slice(0, 5), `and ${fresh.length - 5} more`] : fresh, ok: 'Nice' }), 5200);
+  if (fresh.length && !$('modal').classList.contains('on')) setTimeout(() => ui?.dialog({ title: prepared ? 'Level 8: the sanctuary is ready' : `Level ${lv}`, text: prepared ? `Your tank is prepared: a ledge to sleep under, sea grass to graze. ${LEVEL_PRIZE[lv].text}. New for you:` : LEVEL_PRIZE[lv] ? `${LEVEL_PRIZE[lv].title}. New for you:` : `New for you:`, lines: fresh.length > 7 ? [...fresh.slice(0, 6), `and ${fresh.length - 6} more`] : fresh, ok: 'Nice' }), 5200);      // (the title, then the list: each new thing said once)
 });
 game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arrival gets the screen to itself for a moment: tips and toasts wait
   for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
