@@ -16,7 +16,9 @@ await p.evaluate(() => { window.__ui.open('care'); }); await p.waitForTimeout(80
 const c = await p.evaluate(() => ({ text: document.querySelector('#sheet .dcard .dq')?.textContent, opts: [...document.querySelectorAll('#sheet [data-dpick]')].map((b) => b.textContent) }));
 ck('a decision waits in Care with three choices', !!c.text && c.opts.length === 3, c);
 await p.screenshot({ path: `${out}/care.png`, timeout: 120000 }).catch(() => {});
-await p.evaluate(() => document.querySelector('#sheet [data-dpick]')?.click()); await p.waitForTimeout(300); await p.evaluate(() => document.querySelector('#sheet .dconfirm')?.click()); await p.waitForFunction(() => window.__game.state.dilemma?.done, null, { timeout: 60000 }).catch(() => {});
+await p.evaluate(() => { const g = window.__game, o = g.dispatch.bind(g); window.__decided = []; g.dispatch = async (a) => { const r = await o(a); if (a.t === 'decide') window.__decided.push({ a, r }); return r; }; document.querySelector('#sheet [data-dpick]')?.click(); }); await p.waitForTimeout(300);
+const conf = await p.evaluate(() => { const c = document.querySelector('#sheet .dconfirm'); const st = c ? { decide: c.dataset.decide, disabled: c.disabled, text: c.textContent } : 'no confirm button'; c?.click(); return st; }); await p.waitForFunction(() => window.__game.state.dilemma?.done, null, { timeout: 60000 }).catch(() => {});
+console.log('  confirm:', JSON.stringify(conf), 'decided:', JSON.stringify(await p.evaluate(() => window.__decided)));
 const r = await p.evaluate(() => ({ d: window.__game.state.dilemma, j: window.__game.journal.slice(-2).map((e) => e.text), card: !!document.querySelector('#sheet .dilemma') }));
 ck('choosing plays it out in the journal, and the card goes', r.d?.done && r.j.some((x) => /You chose|chose/.test(x)) && !r.card, r);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));

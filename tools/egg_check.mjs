@@ -2,7 +2,7 @@
 // again when he has left; a cardinalfish father carries his eggs in his mouth and eats nothing. Needs the solo game on 8123. node tools/egg_check.mjs
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-const pg = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
+const pg = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errs = []; pg.on('pageerror', (e) => errs.push(e.message)); pg.on('crash', () => console.log('  (the page crashed)')); pg.on('console', (m) => { if (m.type() === 'error' && !/favicon|404/.test(m.text())) console.log('  console:', m.text().slice(0, 200)); }); b.on('disconnected', () => console.log('  (the browser went away)'));
 await pg.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await pg.waitForSelector('#modal.on #mok', { timeout: 120000 }); await pg.click('#mok'); await pg.waitForFunction(() => window.__game?.state); await pg.waitForTimeout(1500);
 await pg.evaluate(() => { const g = window.__game, s = g.state, D = 864e5, now = Date.now(); s.flags.tut = 5; s.level = 9;
   s.fish = [['p0', 'Marlin', 'm', 'goldfish'], ['p1', 'Coral', 'f', 'goldfish'], ['o1', 'Inky', null, 'octopus']].map(([id, name, sex, species], i) => ({ id, name, species, seed: 5 + i, ...(sex ? { sex } : {}), born: now - 20 * D, stage: 'adult', traits: ['Brave'], happy: 1, health: 1, fedAt: now }));
