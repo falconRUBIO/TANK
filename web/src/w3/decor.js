@@ -39,8 +39,8 @@ export class Vox {
       const m = Math.hypot(gx, gy, gz); if (m > 0.08) { nrm[id * 3] = gx / m; nrm[id * 3 + 1] = gy / m; nrm[id * 3 + 2] = gz / m; }
       const ao = Math.max(0, Math.min(0.3, (cnt / 24 - 0.42) * 1.5)), jit = 0.95 + hash(c.i, c.j, c.k, 11) * 0.09;
       mt.makeTranslation(c.i * this.u, c.j * this.u, c.k * this.u); im.setMatrixAt(id, mt);
-      const k = c.k2 * (1 - ao) * jit; col.setRGB(Math.min(1.6, c.c[0] / 255 * k), Math.min(1.6, c.c[1] / 255 * k), Math.min(1.6, c.c[2] / 255 * k), THREE.SRGBColorSpace); im.setColorAt(id, col);
-      if (sway) { swa[id * 2] = c.sw ?? 0; swa[id * 2 + 1] = c.ph ?? 0; }
+      const tip = sway && c.sw != null ? (c.sw > 0.82 ? 1 + (c.sw - 0.82) * 1.1 : c.sw < 0.12 ? 0.86 + c.sw : 1) : 1, k = c.k2 * (1 - ao) * jit * tip; col.setRGB(Math.min(1.6, c.c[0] / 255 * k), Math.min(1.6, c.c[1] / 255 * k), Math.min(1.6, c.c[2] / 255 * k), THREE.SRGBColorSpace); im.setColorAt(id, col);
+      if (sway) { swa[id * 2] = c.sw ?? 0; swa[id * 2 + 1] = c.ph ?? 0; }      /* (sw is how far up its blade a voxel sits: the tips brighten and the bases shade, below) */
     });
     im.geometry.setAttribute('aN', new THREE.InstancedBufferAttribute(nrm, 3));
     if (sway) im.geometry.setAttribute('aSw', new THREE.InstancedBufferAttribute(swa, 2));
@@ -88,7 +88,7 @@ export function plantVox(v, rng, base, kind, o = {}) {
       const ang = (l - 2.5) * 0.42, H = Math.round(26 + rng() * 14 - Math.abs(l - 2.5) * 3);
       for (let j = 0; j <= H; j++) {
         const t = j / H, cx = I + Math.round(Math.sin(ang) * j * 0.9 + Math.pow(t, 2) * (l - 2.5) * 5), w = Math.max(1, Math.round(Math.sin(Math.PI * Math.min(1, t * 1.1 + 0.05)) * 3.2));
-        for (let q = -w + 1; q <= w - 1; q++) put(cx + q, j, K + (l & 1), lerpc([44, 108, 48], [140, 192, 66], t * 0.7 + (q < 0 ? 0.2 : 0)), H, q < 0 ? 1.1 : 0.94);
+        for (let q = -w + 1; q <= w - 1; q++) put(cx + q, j, K + (l & 1), q === 0 && w > 1 ? mix(lerpc([44, 108, 48], [140, 192, 66], t * 0.7), [28, 70, 36], 0.45) : lerpc([44, 108, 48], [140, 192, 66], t * 0.7 + (q < 0 ? 0.2 : 0)), H, q === 0 && w > 1 ? 0.9 : q < 0 ? 1.12 : 0.96);      // a dark vein down the middle of each leaf, the edges lighter
       }
     }
   } else if (kind === 'kelp') {

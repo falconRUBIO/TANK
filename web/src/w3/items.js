@@ -15,16 +15,20 @@ export const lanternGlow = GLOW;
 
 function rock(rx, ry, rz, sd) {
   const u = 0.1, v = new Vox(u), R = [rx / u, ry / u, rz / u];
-  v.ellipsoid(0, 0, 0, R[0], R[1], R[2], (i, j) => {
-    const n = fbm(i * 0.2 + sd, j * 0.2, sd), top = j > R[1] * 0.2;
-    if (top && fbm(i * 0.3 + sd * 3, j * 0.3, 5) > 0.42) return mix([96, 134, 54], [150, 170, 70], fbm(i * 0.5, j * 0.5, sd));
-    return mix([112, 112, 100], [168, 160, 138], n);
+  v.ellipsoid(0, 0, 0, R[0], R[1], R[2], (i, j, k) => {
+    const n = fbm(i * 0.2 + sd, j * 0.2, k * 0.2 + sd), top = j > R[1] * 0.2, warm = fbm(i * 0.09 + sd * 7, j * 0.09, k * 0.09) > 0.5;
+    if (top && fbm(i * 0.3 + sd * 3, j * 0.3, k * 0.3 + 5) > 0.44) return mix([96, 134, 54], [150, 170, 70], fbm(i * 0.5, j * 0.5, sd));            // algae where the light falls
+    if (!top && fbm(i * 0.42 + sd * 5, j * 0.42, k * 0.42 + 2) > 0.66) return mix([150, 86, 120], [206, 128, 160], hash(i, j, k, sd));              // coralline pink on the flanks
+    return mix(warm ? [122, 112, 96] : [104, 110, 108], warm ? [176, 162, 134] : [160, 164, 156], n);
   }, sd, 0.2);
+  for (const q of [...v.m.values()]) if (fbm(q.i * 0.33 + sd * 11, q.j * 0.33, q.k * 0.33 + 3) > 0.74 && v.has(q.i, q.j - 1, q.k) && v.has(q.i, q.j + 1, q.k)) v.m.delete(q.i + ',' + q.j + ',' + q.k);      // crevices and pockmarks
+  for (const q of v.m.values()) { if (q.j < -R[1] * 0.55) q.c = mix(q.c, [60, 54, 46], 0.35); else if (!v.has(q.i, q.j, q.k + 1) && q.k > 0) q.c = mix(q.c, [255, 240, 210], 0.06); }      // a shadowed foot in the sand; the lit front face
   topLit(v); return v;
 }
 
 function blob(rx, ry, rz, sd, colors) {
-  const u = 0.07, v = new Vox(u); v.ellipsoid(0, 0, 0, rx / u, ry / u, rz / u, (i, j, k) => mix(colors[0], colors[1], fbm(i * 0.35 + sd, j * 0.35, k * 0.35)), sd, 0.18); topLit(v); return v;
+  const u = 0.07, v = new Vox(u); v.ellipsoid(0, 0, 0, rx / u, ry / u, rz / u, (i, j, k) => { const n = fbm(i * 0.35 + sd, j * 0.35, k * 0.35), nod = fbm(i * 0.9 + sd * 3, j * 0.9, k * 0.9); return nod > 0.68 ? mix(colors[1], [255, 240, 246], 0.3) : nod < 0.3 ? mix(colors[0], [60, 24, 50], 0.4) : mix(colors[0], colors[1], n); }, sd, 0.18);      // nodules catch the light, the crevices between them are dark
+  topLit(v); return v;
 }
 const tint = (v, fn) => { for (const q of v.m.values()) q.c = fn(q.c); };
 // a plant's stem: a thin soft column up through its middle. A crawling or landing octopus goes round it (its body never passes through a plant), while the fish swim through the leaves as before
@@ -199,12 +203,13 @@ const B = {
   },
   coconut: (g, seed = 1) => {           // half a coconut lying on its side, the cut face (and its hollow) turned towards you: a dark fibrous husk with the three eyes at its far end, a ragged rim of white flesh, a deep hollow
     const u = 0.068, v = new Vox(u), R = 13, r = mulberry32(seed * 23 + 5), hole = R - 3.2, sink = 3;      // a shell an octopus can lift and tuck into, not a boulder
-    const fibre = (i, j, k) => { const a = Math.atan2(j, i), band = Math.round(a * 10 + k * 0.06), h = hash(band, Math.round(k * 0.35), 0, 3), n = hash(i, j, k, 4); return h > 0.74 ? [112, 74, 40] : h > 0.36 ? (n > 0.5 ? [80, 50, 27] : [70, 43, 23]) : [50, 30, 16]; };
+    const fibre = (i, j, k) => { const a = Math.atan2(j, i), band = Math.round(a * 10 + k * 0.06), h = hash(band, Math.round(k * 0.35), 0, 3), n = hash(i, j, k, 4); return h > 0.8 ? [134, 92, 50] : h > 0.62 ? [104, 68, 36] : h > 0.36 ? (n > 0.5 ? [80, 50, 27] : [66, 40, 21]) : n > 0.7 ? [56, 34, 18] : [42, 24, 12]; };      // fibres in bands round the husk, lit ones standing out from dark ones
     for (let i = -R - 1; i <= R + 1; i++) for (let j = -R + sink; j <= R + 1; j++) for (let k = -R - 1; k <= 1; k++) {
       const d = Math.hypot(i, j, k); if (d > R + 0.5 + (k < -2 && hash(i, j, k, 8) > 0.92 ? 1 : 0)) continue;     // a few stray fibres stand out from the husk
       if (d < hole) continue;                                                                                       // the hollow
-      if (k >= 0) { if (k === 1 && hash(i, j, 0, 11) > 0.55) continue; v.set(i, j, k, d < hole + 1.6 ? (hash(i, j, 1, 12) > 0.8 ? [255, 250, 238] : [240, 232, 210]) : hash(i, j, k, 12) > 0.5 ? [150, 112, 72] : [126, 90, 56]); continue; }   // the cut rim: white flesh, then the husk in section, broken in places
-      if (d < hole + 1.6) { v.set(i, j, k, hash(i, j, k, 13) > 0.85 ? [250, 244, 228] : [228, 218, 192]); continue; }   // the flesh lining the hollow
+      if (k >= 0) { if (k === 1 && hash(i, j, 0, 11) > 0.55) continue; v.set(i, j, k, d < hole + 1.6 ? (hash(i, j, 1, 12) > 0.8 ? [255, 250, 238] : [240, 232, 210]) : d < hole + 2.7 ? [66, 38, 20] : hash(i, j, k, 12) > 0.5 ? [150, 112, 72] : [126, 90, 56], d < hole + 1.6 ? 1.08 : 1); continue; }   // the cut rim: white flesh, the dark shell, then the husk in section, broken in places
+      if (d < hole + 1.6) { const deep = Math.max(0, Math.min(1, (-k - 2) / (R - 4))), base = hash(i, j, k, 13) > 0.85 ? [250, 244, 228] : [230, 220, 196]; v.set(i, j, k, mix(base, [96, 80, 58], deep * 0.72), 1 - deep * 0.25); continue; }   // the flesh lining the hollow, falling into shadow toward the back
+      if (d < hole + 2.7) { v.set(i, j, k, hash(i, j, k, 14) > 0.5 ? [74, 44, 24] : [58, 34, 18]); continue; }      // the hard brown shell between flesh and husk
       v.set(i, j, k, d > R - 1.5 ? fibre(i, j, k) : [44, 28, 16]);
     }
     for (const [ei, ej] of [[-2.6, 2.2], [2.6, 2.2], [0, 5.4]]) for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const q = Math.hypot(i, j); if (q > 1.8) continue; const x = Math.round(ei) + i, y = Math.round(ej) + j, z = -Math.round(Math.sqrt(Math.max(0, R * R - x * x - y * y))); v.set(x, y, z, q < 0.9 ? [14, 9, 5] : [30, 20, 11]); }     // the three eyes, on the far end
@@ -214,10 +219,13 @@ const B = {
   pot: (g) => {                         // a clay octopus pot lying on its side (the kind fishermen lower on a line: an octopus finds an empty one irresistible): round belly, narrow neck, a flared lip; the mouth faces the front
     const u = 0.125, v = new Vox(u), C = 8;
     const rad = (i) => i <= -9 ? 4.2 + (i + 10) * 1.6 : i <= 3 ? 8 - Math.pow(Math.abs(i + 2) / 7.5, 2) * 1.6 : i <= 7 ? 7.3 - (i - 3) * 0.6 : i <= 8 ? 5.6 : 6.6;      // base, belly, shoulder, neck, lip
-    const clay = (i, j, k) => { const h = hash(i, j, k, 3), band = i > -6 && i < 2 && (i + 9) % 5 === 0; return band ? [118, 54, 34] : mix([158, 78, 46], [194, 108, 64], h * 0.7 + (j / 16) * 0.3); };
-    for (let i = -10; i <= 10; i++) { const r = rad(i); for (let j = 0; j <= 16; j++) for (let k = -C; k <= C; k++) { const d = Math.hypot(j - C, k); if (d > r) continue;
-      const hollow = i > -9 && d < (i >= 9 ? 5.3 : i >= 7 ? 4.4 : r - 1.4); if (hollow) continue;
-      const inside = i > -9 && d < r - 0.9 && i < 9; v.set(i, j, k, inside ? mix([128, 66, 42], [150, 80, 50], hash(i, j, k, 5)) : i >= 9 ? mix([184, 100, 62], [214, 128, 80], hash(i, j, k, 7)) : clay(i, j, k)); } }
+    const ridge = (i) => i > -8 && i < 7 && ((i + 8) % 3 === 0);      // the potter's throwing ridges, a voxel proud, every third course
+    const clay = (i, j, k) => { const h = hash(i, j, k, 3), fire = fbm(i * 0.25, j * 0.25, k * 0.25) > 0.6; let c = mix([158, 78, 46], [196, 110, 64], h * 0.5 + (j / 16) * 0.5); if (fire) c = mix(c, [104, 48, 32], 0.45); if (ridge(i)) c = mix(c, [120, 56, 34], 0.35); return c; };      /* (the darker patches are where the kiln's flame touched it) */
+    for (let i = -10; i <= 10; i++) { const r = rad(i) + (ridge(i) ? 0.7 : 0); for (let j = 0; j <= 16; j++) for (let k = -C; k <= C; k++) { const d = Math.hypot(j - C, k); if (d > r) continue;
+      const hollow = i > -9 && d < (i >= 9 ? 5.3 : i >= 7 ? 4.4 : rad(i) - 1.4); if (hollow) continue;
+      if (i >= 9 && hash(i, j, k, 21) > 0.9 && d > r - 1.2) continue;      // a chipped lip
+      const inside = i > -9 && d < rad(i) - 0.9 && i < 9, deep = Math.max(0, Math.min(1, (6 - i) / 12)); v.set(i, j, k, inside ? mix(mix([128, 66, 42], [150, 80, 50], hash(i, j, k, 5)), [40, 22, 16], deep * 0.7) : i >= 9 ? mix([184, 100, 62], [214, 128, 80], hash(i, j, k, 7)) : clay(i, j, k), inside ? 1 - deep * 0.3 : 1); } }
+    for (const q of v.m.values()) if (q.j < 4 && q.i > -9 && q.i < 8 && hash(q.i, q.j, q.k, 23) > 0.93) q.c = [226, 220, 204];      // barnacles along the side that lay on the sea floor
     for (const q of v.m.values()) if (q.j >= 13 && q.i < 6 && hash(q.i, q.j, q.k, 9) > 0.86) q.c = mix([96, 120, 60], [140, 160, 80], hash(q.k, q.i, 2));      // a little weed on its back from years on the sea floor
     topLit(v); const m = v.mesh(); m.position.y = 0.02; m.rotation.y = -Math.PI / 2; g.add(m); return [{ v, x: 0, y: 0.02, z: 0, ry: -Math.PI / 2 }];
   },
