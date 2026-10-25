@@ -1535,7 +1535,7 @@ export function socialOf(t, f) {
   const E = ECO[f.species] ?? {}, cv = coverOf(t, f), cover = Math.min(1, cv.have / Math.max(1, cv.need)), timid = S.size <= 1 && !S.bully, seen = new Set(), cr = crowdOf(t), meanK = 1 + Math.max(0, cr.r - 0.6);      /* (a crowded tank makes its bullies meaner) */
   for (const o of t.fish) {
     if (o === f) continue; const O = SOCIAL[o.species]; if (!O) continue;
-    if (o.species === f.species && S.sameFoe) { out.penalty += 0.35; out.notes.push(`${o.name} and ${f.name} squabble: ${SPECIES_DEF[f.species].label}s prefer to be the only one of their kind.`); }
+    if (o.species === f.species && S.sameFoe) { out.penalty += 0.35; out.notes.push(`${o.name} and ${f.name} squabble: ${plural(f.species)} prefer to be the only one of their kind.`); }
     else if (E.clash?.[o.species] && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.2 * (1 - 0.5 * cover); out.notes.push(`${E.clash[o.species]}: ${f.name} and ${o.name} clash.`); }
     else if (O.bully && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.3 * (1 - 0.6 * cover) * (ECO[o.species]?.crowdMean ? meanK : 1); out.notes.push(`${o.name} bullies ${f.name}.${cover < 1 ? ' More hiding places (plants, rocks) would help.' : ''}`); }
     else if (O.predator && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.12; out.notes.push(`${f.name} keeps a wary eye on ${o.name}.`); }
@@ -1559,7 +1559,7 @@ export function harmonyOf(t) {
 export function adoptAdvice(t, species) {
   const S = SOCIAL[species], d = SPECIES_DEF[species]; if (!S || !d) return null; const msgs = [];
   const mine = t.fish.filter((o) => o.species === species);
-  if (S.sameFoe && mine.length) msgs.push(`${d.label}s prefer to be the only one of their kind, and you already have ${mine[0].name}.`);
+  if (S.sameFoe && mine.length) msgs.push(`${plural(species).replace(/^./, (c) => c.toUpperCase())} prefer to be the only one of their kind, and you already have ${mine[0].name}.`);
   const timidNames = [...new Set(t.fish.filter((o) => SOCIAL[o.species] && SOCIAL[o.species].size <= 1 && !SOCIAL[o.species].bully && o.species !== species).map((o) => SPECIES_DEF[o.species].label))];
   if (S.bully && timidNames.length) msgs.push(`${d.label} can bully smaller, shy fish like ${timidNames.slice(0, 2).join(' and ')}.${hides(t) < 4 ? ' More plants and rocks would help them hide.' : ''}`);
   if (S.predator && timidNames.length) msgs.push(`Small fish will be wary of an octopus.`);
