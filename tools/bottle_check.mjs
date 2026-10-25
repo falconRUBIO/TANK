@@ -20,8 +20,8 @@ const clear = (p) => p.evaluate(() => document.querySelectorAll('#coach,#toast,#
 await A.evaluate(() => { window.__toasts = []; const o = window.__ui.toast; window.__ui.toast = (t, ...r) => { window.__toasts.push(t); return o(t, ...r); }; });
 await clear(A); await A.evaluate(() => window.__ui.open('friends')); await A.waitForTimeout(800);
 await A.evaluate(() => document.querySelector('.cmode [data-mode="bottle"]').click()); await A.waitForTimeout(600);
-await A.fill('.compose form.send input', 'You are the best tank buddy'); await A.waitForTimeout(800); await A.screenshot({ path: `${out}/compose.png` });
-await A.evaluate(() => document.querySelector('.compose form.send').requestSubmit()); await A.waitForSelector('#modal.on .bletter.write', { timeout: 30000 }); await A.waitForTimeout(900); await A.screenshot({ path: `${out}/write.png` });
+await A.fill('.compose2 form.send input', 'You are the best tank buddy'); await A.waitForTimeout(800); await A.screenshot({ path: `${out}/compose.png` });
+await A.evaluate(() => document.querySelector('.compose2 form.send').requestSubmit()); await A.waitForSelector('#modal.on .bletter.write', { timeout: 30000 }); await A.waitForTimeout(900); await A.screenshot({ path: `${out}/write.png` });
 ck('the bottle letter opens with the words on it', (await A.inputValue('#bt')) === 'You are the best tank buddy');
 await B.evaluate(() => { window.__ys = []; setInterval(() => { const q = window.__bottleSeen(); if (q.v) window.__ys.push(q.y); }, 150); }); await B.evaluate(() => { window.__ys = []; setInterval(() => { const q = window.__bottleSeen(); if (q.v) window.__ys.push(q.y); }, 150); }); await A.evaluate(() => document.querySelector('#modal.on #mok').click()); await A.waitForTimeout(700); await A.screenshot({ path: `${out}/toss.png` });
 await clear(B); await B.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click());

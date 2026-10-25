@@ -19,8 +19,8 @@ const clear = (p) => p.evaluate(() => document.querySelectorAll('#coach,#toast,#
 await B.evaluate(() => { window.__noteIdle = true; });      // Ben is signed in, but not looking at his phone
 await A.evaluate(() => new MutationObserver(() => { if (document.querySelector('#glassnotes .seenst')) window.__sawSeen = document.querySelector('#glassnotes .seenst').textContent; }).observe(document.body, { subtree: true, childList: true })); await clear(A); await A.evaluate(() => window.__ui.open('friends')); await A.waitForTimeout(800);
 await A.evaluate(() => document.querySelector('.cmode [data-mode="note"]').click()); await A.waitForTimeout(500);
-await A.fill('.compose form.send input', 'Feed Inky tonight please'); await A.screenshot({ path: `${out}/compose_note.png` });
-await A.evaluate(() => document.querySelector('.compose form.send').requestSubmit()); await A.waitForTimeout(1500); await A.waitForSelector('.notecomp.on textarea', { timeout: 20000 });
+await A.fill('.compose2 form.send input', 'Feed Inky tonight please'); await A.screenshot({ path: `${out}/compose_note.png` });
+await A.evaluate(() => document.querySelector('.compose2 form.send').requestSubmit()); await A.waitForTimeout(1500); await A.waitForSelector('.notecomp.on textarea', { timeout: 20000 });
 ck('the post-it opens with the words already on it', (await A.inputValue('.notecomp textarea')) === 'Feed Inky tonight please');
 await A.click('.notecomp .stick'); await A.waitForTimeout(1500); await A.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click());
 await clear(B); await B.evaluate(() => document.querySelector('nav [data-tab="tank"]')?.click()); await B.waitForSelector('#glassnotes .postit', { timeout: 15000 });
