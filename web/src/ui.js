@@ -1288,7 +1288,7 @@ export function initUI({ game, social, cb }) {
       const done = (x) => { modal.classList.remove('on'); modalShut = performance.now(); res(x); }; ok.onclick = () => done(ta.value.trim()); $('mno').onclick = () => done(null);
     }));
     if (!v) return false; const r = await game.dispatch({ t: 'bottle', to, note: v }); if (!r.ok) { toast(REASONS[r.reason] ?? 'Could not send that.'); return false; }
-    sfx('bubble'); haptic(12); const fly = document.createElement('div'); fly.className = 'btoss'; fly.innerHTML = msIcon('bottle', true, 44); document.body.appendChild(fly); setTimeout(() => fly.remove(), 2400);      // tossed in: it plops into the water and bobs off
+    sfx('bubble'); haptic(12); open('tank'); cb.bottleTossed?.(m.name);      // tossed in: the bottle itself drops into your tank, rides the surface, and drifts off
     toast(`Your bottle is drifting to ${m.name}.`, 2800); refresh(); return true;
   }
   // the finished postcard, big, with Share (and press-and-hold on the picture saves it on an iPhone too)

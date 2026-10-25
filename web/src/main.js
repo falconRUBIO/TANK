@@ -458,6 +458,10 @@ const bottleSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bottleTex, tra
 const bottleGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, color: 0xa8f0ff })); bottleGlow.renderOrder = 5; bottleGlow.visible = false; scene.add(bottleGlow);
 stg.hideForDepth.push(bottleSp, bottleGlow); bottleSp.material.opacity = 0;      // (the sprite is only what you tap: the bottle itself is a little voxel model)
 const bottleM = makeBottle(); bottleM.group.visible = false; scene.add(bottleM.group);
+// the bottle you toss in yourself: it drops into your own tank with a splash, rides the surface a while, then drifts off toward its friend's tank
+const sentM = makeBottle(); sentM.group.visible = false; scene.add(sentM.group); let sentB = null;
+function tossBottle(toName) { const h = hashId(String(Date.now())), x = -1.6 + (h % 32) / 10, z = 0.4 + ((h >> 8) % 10) / 10; sentB = { t0: performance.now(), x, z, dir: x < 0 ? -1 : 1, to: toName, splashed: false }; sentM.cork.visible = true; sentM.glass.material.opacity = 0.5; sentM.group.scale.setScalar(1); sentM.group.position.set(x, Fish3D.topY + 1.6, z); sentM.group.visible = true; }
+window.__tossBottle = tossBottle; window.__sentAt = (e) => { if (sentB) sentB.t0 = performance.now() - e * 1000; }; window.__sentState = () => (sentB ? { e: +((performance.now() - sentB.t0) / 1000).toFixed(1), pos: sentM.group.position.toArray().map((v) => +v.toFixed(2)), vis: sentM.group.visible, sc: +sentM.group.scale.x.toFixed(2), op: sentM.glass.material.opacity, top: Fish3D.topY, rot: sentM.group.rotation.toArray().slice(0, 3).map((v) => +(+v).toFixed(2)), nan: sentM.group.matrixWorld.elements.some(Number.isNaN), cam: window.__cam ?? null } : null);
 const hashId = (id) => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
 let bottleId = null; const sentBottles = new Map();
 const toys = new Toys(scene, fishes); let lightHeld = false, hoopHeld = false; window.__toys = toys; toys.onDim = (v) => { stg.stage.dim = v; };      // the tank's lights go down while the light spot is on
@@ -1724,6 +1728,11 @@ function frameBody(now) {
     B.visible = true; B.position.copy(P); B.rotation.set(0.25, 0, M.rotation);
     bottleGlow.position.copy(P); const gl = U.leave ? 0 : (Math.sin(t * 0.8) > 0.85 ? 1 : 0.3); const bs = 2 + gl * 1.2; bottleGlow.scale.set(bs, bs, 1); bottleGlow.material.opacity = U.leave ? 0 : 0.25 + gl * 0.45; }
   else bottleM.group.visible = false;
+  if (sentB) { const S = sentB, e = (performance.now() - S.t0) / 1000, top = Fish3D.topY + 1.6, fl = Fish3D.topY - 2.4, B = sentM.group; let y, rot = -1.35;      // the same drop and bob as a bottle that arrives, then it leaves: out past the glass, as if carried off by the tide
+    if (e < 2.6) { const k = e / 2.6; y = k < 0.35 ? top + (fl - 0.9 - top) * (k / 0.35) : fl - 0.9 * Math.exp(-(k - 0.35) * 5) * Math.cos((k - 0.35) * 12); rot = -1.35 * Math.min(1, k * 1.6) + Math.sin(t * 5) * 0.2 * (1 - k); if (!S.splashed && y < Fish3D.topY) { S.splashed = true; fishes.burst(B.position.clone()); sfx('splash'); } }
+    else if (e < 15) { y = fl + Math.sin(t * 1.3 + 1) * 0.07; rot = -1.35 + Math.sin(t * 0.9) * 0.08; S.x += S.dir * 0.0012; }
+    else { const q = Math.min(1, (e - 15) / 6); y = fl + Math.sin(t * 1.3 + 1) * 0.07 * (1 - q); rot = -1.35 + Math.sin(t * 0.9) * 0.08; S.x += S.dir * (0.004 + q * 0.03); sentM.glass.material.opacity = 0.5 * (1 - Math.max(0, q - 0.6) / 0.4); B.scale.setScalar(1 - Math.max(0, q - 0.7) / 0.3 * 0.5); if (Math.random() < 0.03) fishes.burst(B.position.clone()); if (q >= 1 || Math.abs(S.x) > 5) { sentB = null; B.visible = false; } }
+    if (sentB) { B.position.set(S.x, y, S.z); B.rotation.set(0.25, 0, rot); } }
   shardTick(Math.min(0.05, dt));
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
   fryTick(Math.min(0.05, dt)); birthWatchTick(); giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick(); noteSeenTick();
@@ -1915,6 +1924,7 @@ async function boot() {
     storage: () => api('/api/storage'),
     board: () => api('/api/board'),
     giftCode: () => api('/api/giftcode'),
+    bottleTossed: (name) => { tossBottle(name); },      // the sender sees it go in and drift off
     showAnimal: (id) => { const f = fishes.byId.get(id); if (!f || f.dead) return false; ui.open('tank'); setFocus(f); showCard(f); haptic(8); return true; },      // from Crew: the animal, up close, with its card
     lookMystery: () => { if (!mystGlow.visible) return; mystGlow.userData.ping = 3; fishes.burst(mystGlow.position.clone()); haptic(10); },      // from the bell: the glow on the sand swells for a moment, so it is easy to find
     // Developer Tools: the seahorse lifecycle test runs on the server, on the developer's own test aquarium only
