@@ -18,7 +18,7 @@ const read = () => p.evaluate(() => ({ hero: document.querySelector('#sheet [dat
 // 1. a busy tank: octopus, seahorse and fish hungry, dirty water and glass
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.7 }, { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, hunger: 0.6, sex: 'm' }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.6, g: 0.5 });
 await open(); let r = await read(); console.log('busy', JSON.stringify(r));
-ck('busy: the Care tab says how many jobs need you (feeding, and the tank upkeep)', r.hero === '2', r.hero);
+ck('busy: the Care tab says how many things need you (feeding, the animals that need you, and the tank upkeep: one each, as the rows marked due)', r.hero === String(r.due.length), `${r.hero} for ${r.due.length} rows marked due`);
 ck('busy: Feed and Tank upkeep need you (Health too, when an animal is struggling); upkeep names both jobs and its button says 2 jobs', (() => { const d = r.due.filter((x) => !/^(Animal h|H)ealth/.test(x)); return d.length === 2 && /^Feed/.test(d[0]) && /^Tank upkeep \| The glass needs a wipe · the water is cloudy \| 2 jobs$/.test(d[1]); })(), r.due);
 ck('busy: no repeated messages (old headline, "worth doing now", "could use a hand")', !r.carehead && r.dupes === 0, r);
 await p.screenshot({ path: `${OUT}/v_busy_top.png` });
