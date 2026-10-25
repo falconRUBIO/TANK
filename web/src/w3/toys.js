@@ -244,6 +244,6 @@ export class Toys {
       else if (k === 'crab' && Math.random() < dt * 0.3) { f.lookAt = H.g.position.clone(); f.lookT = 1; } }      // (it hangs out of a crab's reach: it only looks up at it)
   }
   // after the animals have moved this frame: the ball is pushed clear of any body one swam into, so the picture never shows it inside one
-  settle() { const B = this.ball; if (!B || B.leaving != null) return; const p = B.m.position, r = 0.38; for (const f of this.fishes.list) { if (f.dead || f.puppet || f.away) continue; bump(f, p, B.v, r); } const fl = sandH(p.x, p.z) + r; if (p.y < fl) p.y = fl; }
+  settle() { const B = this.ball; if (!B || B.leaving != null) return; const p = B.m.position, r = 0.38; for (let pass = 0; pass < 2; pass++) for (const f of this.fishes.list) { if (f.dead || f.puppet || f.away) continue; bump(f, p, B.v, r); }      /* (twice: out of one body may be into another, between two fish) */ const fl = sandH(p.x, p.z) + r; if (p.y < fl) p.y = fl; }
   update(dt, t) { if (this.ball) this.stepBall(dt); if (this.cube) this.stepCube(dt); if (this.hoop) this.stepHoop(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
 }

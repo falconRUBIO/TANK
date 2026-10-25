@@ -26,7 +26,7 @@ export class Encounters {
   pick(arr) { return arr.length ? arr[(Math.random() * arr.length) | 0] : null; }
   tick(dt) {
     for (let i = this.active.length - 1; i >= 0; i--) { const e = this.active[i]; e.t += dt; let done = false; try { done = e.step(dt) === true; } catch (er) { done = true; console.warn('encounter', er); } if (done || e.t > (e.max ?? 8)) { this.finish(e); this.active.splice(i, 1); } }
-    if (window.__encOff || (window.__quietUntil && Date.now() < window.__quietUntil)) return;
+    if (window.__encOff || (window.__quietUntil && Date.now() < window.__quietUntil) || window.__toys?.active) return;      // (not while you have a toy in the tank: they are playing with it)
     if ((this.wait -= dt) > 0 || this.active.length) return;
     const night = !!this.F.night; this.wait = (12 + Math.random() * 24) * (night ? 2.2 : 1) * (window.__encRate ?? 1);
     this.start(null, night);
