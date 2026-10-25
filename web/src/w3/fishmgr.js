@@ -20,13 +20,13 @@ import { temperOf, affordOf, habitKind } from '../game/habitat.js';
 import { KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
-const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish']);
+const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish', 'tang']);      // the kinds that live in open water: they keep to the upper part of the tank (fish3d's floor), so the sand is left to the ones that belong there
 const TURTLE_SK = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 const BANDS = {
   turtle: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, hawksbill: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, loggerhead: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, kemps: { x: [-3.4, 3.4], y: [0.7, 13.6], z: [-0.6, 2.0] }, leatherback: { x: [-3.2, 3.2], y: [3, 13.6], z: [-1.4, 1.6] },      // a sea turtle uses the whole tank: down on the sand under a rock, and right up to the surface to breathe
-  neongoby: { x: [-3.2, 3.4], y: [1.6, 6], z: [0.6, 1.9] }, tang: { x: [-3.4, 3.6], y: [3.6, 11], z: [0.4, 2.0] }, puffer: { x: [-3.2, 3.4], y: [3, 9.5], z: [0.8, 2.0] },
-  goldfish: { x: [-3.4, 3.6], y: [3, 10.5], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [6.5, 12.2], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [2.5, 8], z: [0.5, 1.9] },
-  angelfish: { x: [-3.0, 3.6], y: [4.5, 11], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [6, 12], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [3.5, 9.8], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [6.5, 12.4], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [3.8, 10], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
+  neongoby: { x: [-3.2, 3.4], y: [1.6, 6], z: [0.6, 1.9] }, tang: { x: [-3.4, 3.6], y: [6, 11.5], z: [0.4, 2.0] }, puffer: { x: [-3.2, 3.4], y: [5.2, 10], z: [0.8, 2.0] },
+  goldfish: { x: [-3.4, 3.6], y: [5, 10.8], z: [0.6, 2.0] }, neon: { x: [-3.2, 3.4], y: [7, 12.4], z: [0.6, 1.9] }, blue: { x: [-3.2, 3.4], y: [4, 8.5], z: [0.5, 1.9] },
+  angelfish: { x: [-3.0, 3.6], y: [6, 11.5], z: [-3.0, -1.8] }, guppy: { x: [-3.2, 3.4], y: [6.5, 12.2], z: [0.6, 1.9] }, platy: { x: [-3.2, 3.4], y: [4.5, 10], z: [0.6, 1.9] }, danio: { x: [-3.2, 3.4], y: [7.5, 12.6], z: [0.6, 1.9] }, betta: { x: [-3.2, 3.4], y: [1.5, 5], z: [0.6, 1.9] }, cory: { x: [-3.4, 3.6], y: [0.35, 0.45], z: [0.6, 2.0] }, seahorse: { x: [-3.0, 3.2], y: [3, 9.5], z: [0.4, 1.8] }, octopus: { x: [-3.4, 3.6], y: [0.6, 6.5], z: [-3.4, 2.9] },
 };
 export const TRAIT_TXT = { Shy: 'Hides behind plants and darts away from other fish.', Brave: 'Swims out front, close to the glass.', Curious: 'Goes to inspect decorations and other fish.', Social: 'Stays close to a buddy.', Playful: 'Restless and quick. Loves the bubbles.', Lazy: 'Drifts low and rests a lot.', Calm: 'Slow, smooth and unbothered.', Greedy: 'Waits near the surface for food.' };
 const SPOTS = { Shy: 'Sea Grass', Curious: 'Stone Arch', Playful: 'Bubbles', Lazy: 'Driftwood', Calm: 'Open water', Brave: 'The glass', Social: 'Near friends', Greedy: 'The surface' };
@@ -739,8 +739,9 @@ export class Fishes {
       if (f.restK && f.idle > 0 && !f.seeking && !((f.fleeT ?? 0) > 0)) { f.retarget = Math.min(f.idle, 2); return; }      // resting at its place or by its friend: it stays (a 'stuck' check or a timer doesn't move it on)
       base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
       const T = (x, y, z, rt) => { const rv = f.rivalId && this.byId.get(f.rivalId); if (rv && !rv.dead && Math.hypot(rv.pos.x - x, rv.pos.y - y) < 1.6) x += (x >= rv.pos.x ? 1 : -1) * 1.8;      /* a rival: it picks somewhere else rather than swim into it */
+        const taken = others.find((o) => !o.dead && o.fid !== f.palId && o.species?.move !== 'jet' && !(f.settle && f.settle.o === o) && Math.hypot(o.pos.x - x, o.pos.y - y, (o.pos.z - z) * 1.6) < (f.radius + o.radius) * 1.3); if (taken) { x += (x >= taken.pos.x ? 1 : -1) * Math.max(0.9, f.radius + taken.radius); y += 0.3; }      /* someone is already there (two rock-lovers and one rock): it takes the other side of it, a little higher, rather than settle on top of them */
         f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
-      f.idle = 0; const high = (f.band?.y?.[0] ?? 3) >= 6.5, lowK = high ? 0.4 : 1;      // a surface swimmer is drawn down to the sand far less often
+      f.idle = 0; const y0 = f.band?.y?.[0] ?? 3, high = y0 >= 6.5, lowK = high ? 0.4 : y0 >= 4 ? 0.6 : 1;      // a surface swimmer is drawn down to the sand far less often, a midwater one less often: the sand is left to the kinds that live there
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
@@ -787,11 +788,11 @@ export class Fishes {
           const away = Math.sign(o.pos.x - f.pos.x) || 1, hs = safe ? spots.find((x) => (ECO[o.sk]?.cover?.cats ?? []).includes(DECOR_DEF[x.type]?.cat) || (ECO[o.sk]?.cover?.types ?? []).includes(x.type)) : null;
           if (hs) { o.target.set(hs.x, 0.9 + hs.h * 0.45, hs.z + 0.45); o.idle = 2; } else o.target.set(Math.max(-4, Math.min(4, o.pos.x + away * 2.6)), Math.min(12, o.pos.y + 1.2), o.pos.z);      /* with shelter of its own kind it ducks into it; without, it just flees */
           o.retarget = 2.5; f.thought = sk === 'goldfish' ? `Sparring with ${o.name ?? 'the damselfish'} over the anemone.` : `Chasing ${o.name ?? 'a fish'} off its patch.`; return T(o.pos.x, o.pos.y, o.pos.z, 1.4); } }
-      if (sk === 'guppy' && r() < 0.5) { const c = spot(['ROCKS']); if (c) return T(c.x + (r() - 0.5) * 1.6, 1.0 + c.h * 0.5 + r() * 1.2, c.z + 0.5 + r() * 0.4, 3 + r() * 3); }      // the rest of the time it patrols its patch
-      if (sk === 'angelfish' && r() < 0.35) { const c = spot(['ROCKS']); if (c) { f.idle = 2 + r() * 2; return T(c.x + (r() - 0.5) * 1.0, 1.0 + c.h * 0.6, c.z + 0.6, 5 + r() * 3); } }      // it browses on the rock
-      if (sk === 'goldfish') { const a = spot(null, ['anemone']); if (a && r() < 0.7) return T(a.x + (r() - 0.5) * 1.1, 1.0 + a.h * 0.5 + r() * 0.7, a.z + 0.5 + r() * 0.3, 3 + r() * 3); }
-      if (sk === 'blue') { const c = spot(['ROCKS', 'STRUCTURES']); if (c && r() < 0.65) { f.invert = r() < 0.7; return T(c.x + (r() - 0.5) * 0.8, f.invert ? 0.9 + c.h * 0.75 : 1.0 + c.h * 0.4, c.z + 0.6, 5 + r() * 5); } }
-      if (sk === 'platy' && !this.night) { const c = spot(['STRUCTURES', 'ROCKS']); if (c && r() < 0.6) return T(c.x + (r() - 0.5) * 0.9, 1.0 + c.h * 0.45, c.z + 0.5, 6 + r() * 5); }
+      if (sk === 'guppy' && r() < 0.35) { const c = spot(['ROCKS']); if (c) return T(c.x + (r() - 0.5) * 1.6, 1.4 + c.h * 0.5 + r() * 1.6, c.z + 0.5 + r() * 0.4, 3 + r() * 3); }      // the rest of the time it patrols its patch
+      if (sk === 'angelfish' && r() < 0.22) { const c = spot(['ROCKS']); if (c) { f.idle = 2 + r() * 2; return T(c.x + (r() - 0.5) * 1.0, 1.3 + c.h * 0.6, c.z + 0.6, 5 + r() * 3); } }      // it browses on the rock
+      if (sk === 'goldfish') { const a = spot(null, ['anemone']); if (a && r() < 0.42) return T(a.x + (r() - 0.5) * 1.1, 1.0 + a.h * 0.5 + r() * 0.9, a.z + 0.5 + r() * 0.3, 3 + r() * 3); }      // (its anemone is still home; between visits it is out in the water above)
+      if (sk === 'blue') { const c = spot(['ROCKS', 'STRUCTURES']); if (c && r() < 0.4) { f.invert = r() < 0.7; return T(c.x + (r() - 0.5) * 0.8, f.invert ? 0.9 + c.h * 0.75 : 1.2 + c.h * 0.5, c.z + 0.6, 5 + r() * 5); } }
+      if (sk === 'platy' && !this.night) { const c = spot(['STRUCTURES', 'ROCKS']); if (c && r() < 0.35) return T(c.x + (r() - 0.5) * 0.9, 1.2 + c.h * 0.6, c.z + 0.5, 6 + r() * 5); }
       if (sk === 'cory') { const c = spot(['ROCKS']); if (r() < 0.6) { f.idle = 2 + r() * 3; return T(c ? c.x + (r() - 0.5) * 1.4 : -3 + r() * 6, 0.9 + r() * 0.5, c ? c.z + 0.7 : 0.8 + r(), 5 + r() * 4); } }
       if (sk === 'betta') { const c = spot(['ROCKS']); if (c && r() < 0.65) { f.idle = 3 + r() * 3; return T(c.x + (r() - 0.5) * 1.2, 1.0 + c.h * 0.35 + r() * 0.5, c.z + 0.6, 6 + r() * 4); } }
       // identity: a fish swims out to the glass for its own caretaker, goes back to its favorite spot, stays near its best friend, and has a corner of the tank it prefers
@@ -819,7 +820,7 @@ export class Fishes {
       }
       if (has('Brave') && r() < 0.6) return T(-2 + r() * 4, 3 + r() * 7, 2.2 + r() * 0.6, 3 + r() * 3);   // swims out front, close to the glass
       if (has('Curious') && r() < 0.65) {                                          // goes to inspect decorations and other fish
-        if (spots.length && r() < 0.7 * lowK) { const s = spots[(r() * spots.length) | 0]; return T(s.x + (r() - 0.5) * 0.8, (s.y ?? 0) + 1 + s.h * 0.55, s.z + 1.2, 3.5); }
+        if (spots.length && r() < 0.7 * lowK) { const s = spots[(r() * spots.length) | 0]; return T(s.x + (r() - 0.5) * 0.8, Math.max((s.y ?? 0) + 1 + s.h * 0.55, high ? 4.5 : y0 >= 4 ? 3 : 0), s.z + 1.2, 3.5); }      /* (a low thing is looked at from a little above it, not from the sand) */
         const o = others[(r() * others.length) | 0]; if (o) return T(o.pos.x + (r() - 0.5) * 1.6, o.pos.y + (r() - 0.5), o.pos.z + 0.6, 3);
       }
       if (has('Social') && !school && r() < 0.7 && others.length) {                // sticks close to a buddy

@@ -281,9 +281,11 @@ export class Fish3D {
   }
   mouth() { if (this.sp.tail) return this.snout(new THREE.Vector3()); return new THREE.Vector3(Math.cos(this.heading), 0, -Math.sin(this.heading)).multiplyScalar(this.radius * 0.62).add(this.pos); }      // a seahorse eats at the tip of its snout
   pick(rng) {
-    const b = this.band;
-    this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0]));
-    for (let tries = 0; tries < 10 && Fish3D.world.push; tries++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
+    const b = this.band, young = (this.growth ?? 1) < 0.92 && !this.nursery, y0 = young ? Math.min(b.y[0], 2.2) : b.y[0];      // (a small one may keep low, near cover; a nursery baby has its own ways)
+    // each fish has a height of its own it favors (home.y): most picks fall around it, so a shoal spreads out in layers instead of stacking up
+    const pickY = () => { const h = this.home?.y; if (h == null || young || rng() < 0.3) return y0 + rng() * (b.y[1] - y0); return Math.max(y0, Math.min(b.y[1], h + (rng() - 0.5) * 0.5 * (b.y[1] - y0))); };
+    this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), pickY(), b.z[0] + rng() * (b.z[1] - b.z[0]));
+    for (let tries = 0; tries < 10 && Fish3D.world.push; tries++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), pickY(), b.z[0] + rng() * (b.z[1] - b.z[0])); }
     this.retarget = 3 + rng() * 5;
   }
   // catching a crab, and eating it the way an octopus does. The nearest arm reaches out, pins it, and lifts it up in front of the face, clear of the body and the sand.
@@ -636,10 +638,10 @@ export class Fish3D {
   // ── shared helpers for the two non-fish gaits ──
   face(dt, turn) { const sp = Math.hypot(this.vel.x, this.vel.z); if (sp > 0.06) { let dy = Math.atan2(-this.vel.z, this.vel.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * turn); } return sp; }
   settle() { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX')); this.accum += 1 / 60; }
-  separate(others, gain = 2.4) {
+  separate(others, gain = 2.8) {
     for (const o of others) {
-      if (o === this) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 0.9;
-      if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.05; this.vel.z += (dz / dd) * k * 0.035; }
+      if (o === this) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 1.0;
+      if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.065; this.vel.z += (dz / dd) * k * 0.035; }      /* (a little more give up and down: two fish on a line part in height first, so they do not sit on top of each other) */
     }
   }
   // Seahorse: an upright, weak swimmer. It hovers with its dorsal fin blurring, drifts in short steps, bobs gently, never pitches, and likes to hold on to a plant or decoration for a long while.
@@ -1336,7 +1338,7 @@ export class Fish3D {
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading
     if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
-    if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding) { const fl = Math.min(Fish3D.topY - 1, 4.8 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl;      /* (the open-water floor sits in the midwater now, not the top third) */ }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
+    if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding && !this.brood && !this.hiding && !this.nursery && !((this.fleeT ?? 0) > 0) && !((this.coverT ?? 0) > 0) && (this.growth ?? 1) >= 0.92) { const fl = Math.min(Fish3D.topY - 1, 5.6 + 0.55 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl;      /* (the open-water floor sits in the upper half; a frightened, hiding, brooding or small one is let down to cover) */ }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm && !(this.restK && this.idle > 0)))) this.pick(rng);      // (a fish resting at its place or by its friend stays until its rest is over)
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
