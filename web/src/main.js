@@ -1366,7 +1366,7 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); c
 
 // ── tutorial: name the fish, feed it, meet friends, place a free plant ──
 const tut = (() => {
-  let busy = false, last = -1;
+  let busy = false, last = -1, fed = false;
   const set = (n) => game.dispatch({ t: 'tut', step: n });
   async function run() {
     const s = game.state; if (!s || !ui || busy || !game.isTutOwner) return; const step = s.flags.tut ?? 0; if (step >= 5) { ui.hideCoach(); ui.pulse(null); return; } if (step === last) return;
@@ -1388,7 +1388,20 @@ const tut = (() => {
           if (held >= 1.5) { ui.hideCoach(); ui.toast(`${nm} came to see you.`, 2600); await new Promise((r) => setTimeout(r, 3200)); }
           try { localStorage.setItem('ourtank.met', '1'); } catch { /* none */ }
           if ((game.state?.flags.tut ?? 0) !== 1) return; }
-        ui.showCoach({ title: 'Time for a snack', text: `${s.fish[0]?.name ?? 'Your octopus'} is hungry. Open Care, tap Feed, then Feed on ${s.fish[0]?.species === 'octopus' ? 'its card: a crab drops in for it' : 'their card: the food drops in'}.`, skip: skip }); ui.pulse('care');
+        // the tip follows along: one step at a time (Care, then Feed, then the card), with the thing to tap glowing
+        const nm = s.fish[0]?.name ?? 'Your octopus', octo = s.fish[0]?.species === 'octopus'; let at = -1;
+        const lit = (el) => { document.querySelectorAll('.tutpulse').forEach((e) => { if (e !== el) e.classList.remove('tutpulse'); }); el?.classList.add('tutpulse'); };
+        const follow = () => {
+          if ((game.state?.flags.tut ?? 0) !== 1 || fed) { clearInterval(followT); redraw.disconnect(); lit(null); return; }
+          const sh = $('sheet'), open = sh.classList.contains('on') && ui.tab === 'care', feeding = open && sh.classList.contains('feedv');
+          const now = feeding ? 2 : open ? 1 : 0;
+          lit(now === 1 ? sh.querySelector('[data-act="feeddrawer"]') : now === 2 ? sh.querySelector('.fcard[data-feed]') : null);
+          if (now === at) return; at = now;
+          if (now === 0) { ui.showCoach({ title: 'Time for a snack', text: `${nm} is hungry. Open Care to feed ${octo ? 'it' : 'them'}.`, skip }); ui.pulse('care'); }
+          else if (now === 1) { ui.showCoach({ title: 'Time for a snack', text: 'Tap Feed.', skip }); ui.pulse(null); }
+          else ui.showCoach({ title: 'Time for a snack', text: `Tap Feed on ${nm}'s card: ${octo ? 'a crab drops in for it' : 'the food drops in'}.`, skip });
+        };
+        const followT = setInterval(follow, 250), redraw = new MutationObserver(follow); redraw.observe($('sheet'), { childList: true }); follow();      // (a redrawn sheet gets its glow back at once)
       } else if (step === 2) {
         ui.pulse(null);
         const share = game.shared ? `Your tank code is ${game.code}. Share it from the Crew tab so three friends can join.` : 'Up to four friends can care for one tank. Tap Invite in the Crew tab and they join with a six-character code.';
@@ -1403,9 +1416,9 @@ const tut = (() => {
   const skip = () => { set(5); ui.hideCoach(); ui.pulse(null); };
   return {
     run,
-    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { endFeed(); ui.toast(`${game.state.fish[0]?.name ?? 'Your fish'} loved it!`); setTimeout(() => set(4), 1400); } },      // the first feed is one crab; the strip steps aside for what comes next      // the first session is short: choose, feed, then what is coming. Friends and the free plant wait in the goal line until later
+    onFeed: () => { if ((game.state.flags.tut ?? 0) === 1) { fed = true; ui.hideCoach(); endFeed(); ui.toast(`${game.state.fish[0]?.name ?? 'Your fish'} loved it!`); setTimeout(() => set(4), 1400); } },      // the first feed is one crab; the strip steps aside for what comes next      // the first session is short: choose, feed, then what is coming. Friends and the free plant wait in the goal line until later
     onPlaced: () => { if ((game.state.flags.tut ?? 0) === 3) setTimeout(() => set(4), 900); },
-    replay: async () => { await game.dispatch({ t: 'tut', reset: true, step: 0 }); last = -1; run(); },
+    replay: async () => { await game.dispatch({ t: 'tut', reset: true, step: 0 }); last = -1; fed = false; run(); },
   };
 })();
 

@@ -2430,7 +2430,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
         const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-        events.push({ journal: `${name} brought in ${made.name}, the first fish.`, toast: `${made.name} has arrived!`, arrival: [made.id] }); return ok({ id: made.id });
+        events.push({ journal: `${name} brought in ${made.name}, the first fish.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
