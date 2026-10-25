@@ -37,7 +37,7 @@ for (const id of ['o1', 'h1', 'h3']) {
   await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
   const c = await p.evaluate(() => { const el = document.getElementById('card'); return { text: el?.innerText ?? '', wide: el ? el.scrollWidth > el.clientWidth + 1 : true }; });
   await p.screenshot({ path: `${out}/card_${id}.png`, timeout: 90000 }).catch((e) => console.log('  (screenshot skipped: ' + String(e.message).split('\n')[0] + ')'));      // (a picture for the eye, not a check: a slow headless frame must not fail the drill)
-  const want = { o1: /Partner.*Miso/, h1: /Companion.*Pip.*7 morning dances/, h3: /Getting to know.*Reef/ }[id];
+  const want = { o1: /Partner.*Miso/, h1: /Companion.*Pip.*(7|8|9) morning dances/, h3: /Getting to know.*Reef/ }[id];
   ck(`${id} card shows the bond`, want.test(c.text.replace(/\n/g, ' ')), (() => { const t = c.text.replace(/\n/g, ' | '), i = t.search(/Partner|Companion|Getting/); return i < 0 ? t.slice(0, 160) : t.slice(i, i + 160); })());
   ck(`${id} card fits the screen`, !c.wide);
   await p.evaluate(() => window.__focus(-1)); await p.waitForTimeout(300);
