@@ -309,7 +309,24 @@ const B = {
     v.fill(-9, 0, -2, -6, 0, 1, [120, 120, 108]); v.fill(6, 0, -2, 9, 0, 1, [120, 120, 108]); v.fill(-8, 1, -1, -7, 15, 0, red); v.fill(7, 1, -1, 8, 15, 0, red);
     v.fill(-7, 12, -1, 7, 13, 0, red); v.fill(-10, 16, -1, 10, 16, 0, red); v.fill(-11, 17, -1, 11, 18, 1, red); v.fill(-12, 19, -1, -11, 19, 1, red); v.fill(11, 19, -1, 12, 19, 1, red); v.fill(-11, 19, -1, 11, 19, 1, [44, 40, 44]);
     for (const q of v.m.values()) if (q.j <= 3 && hash(q.i, q.j, q.k, 7) > 0.5) q.c = mix(q.c, [96, 134, 54], 0.55);
-    topLit(v); const m = v.mesh(); m.position.y = 0.05; g.add(m); return [{ v, x: 0, y: 0.05, z: 0, ry: 0 }];
+    topLit(v); const m = v.mesh(); m.position.y = 0.05; g.add(m);
+    // the shimenawa: a twisted straw rope across the opening under the tie beam, thicker in the middle where it sags, with straw tassels hanging
+    // from it and white paper zigzags (shide) between them. Built at a seahorse's own scale: a tassel is thin enough for a tail to wrap, so a
+    // seahorse can hitch on the gate the way wild ones hold on to a hanging line (grips.js finds the places; the gate's posts are too thick)
+    const f = 0.035, w = new Vox(f), straw = (i, j, k) => mix([206, 178, 104], [232, 206, 136], hash(i, j, k, 5)), band = [150, 118, 62];
+    const ropeY = (x) => 1.52 - 0.07 * (1 - (x / 0.91) ** 2), ropeR = (x) => 0.05 + 0.035 * (1 - (x / 0.91) ** 2);
+    for (let i = -26; i <= 26; i++) { const x = i * f, yc = ropeY(x) / f, rr = ropeR(x) / f;
+      for (let j = Math.floor(yc - rr - 1); j <= Math.ceil(yc + rr + 1); j++) for (let k = -6; k <= 2; k++) { const dy = j - yc, dz = k + 2, d = Math.hypot(dy, dz); if (d > rr + 0.3) continue;
+        const twist = Math.sin(Math.atan2(dy, dz) * 2 + i * 0.75) > 0;      /* two strands wound round each other */ w.set(i, j, k, twist ? straw(i, j, k) : mix(straw(i, j, k), band, 0.45)); } }
+    const tassels = [-13, 0, 13], bottom = Math.round(0.72 / f);
+    for (const ti of tassels) { const top = Math.floor((ropeY(ti * f) - ropeR(ti * f)) / f);
+      for (let j = top; j >= bottom; j--) for (let di = 0; di <= 1; di++) for (let k = -2; k <= -1; k++) w.set(ti + di, j, k, j > top - 4 && j < top - 1 ? band : straw(ti + di, j, k));      // a tie two strands below the rope
+      for (const [di, dk, dn] of [[-1, -2, 2], [2, -1, 3], [0, -3, 2], [1, 0, 3], [-1, -1, 1], [2, -2, 1]]) for (let n = 1; n <= dn; n++) w.set(ti + di + (di < 0 ? -(n > 1) : di > 1 ? +(n > 1) : 0), bottom - n, dk, straw(ti, bottom - n, dk));      // the frayed end
+    }
+    for (const si of [-22, 22]) { const top = Math.floor((ropeY(si * f) - ropeR(si * f)) / f);      // (out by the posts, clear of the tassels: a seahorse on a tassel has room for its body)
+      for (let s2 = 0; s2 < 4; s2++) { const off = s2 % 2 ? 1 : -1; for (let j = 0; j < 3; j++) for (let di = -1; di <= 1; di++) w.set(si + di + off, top - s2 * 3 - j, -2, [246, 244, 236]); } }      // a paper zigzag: four steps, each shifted the other way
+    topLit(w); const wm = w.mesh(); wm.position.y = 0.05; g.add(wm);
+    return [{ v, x: 0, y: 0.05, z: 0, ry: 0 }, ...tassels.map((ti) => stem(ti * f + f / 2, -0.05, 1, Math.round(0.35 / PU)))];      // (soft, low columns under the tassels, like a plant's stem: a crawling octopus goes round rather than under them; they stop below the tassels, so a seahorse coming to hold on is not pushed off its own grip)
   },
 };
 

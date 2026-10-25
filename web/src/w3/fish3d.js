@@ -261,7 +261,8 @@ export class Fish3D {
           else this.pos.y += 0.45 * (this.rdt ?? 1 / 60); } } }      // no way round: over the top
     const intoPot = this.den?.kind === 'pot' && this.potIn() && (this.st?.mode === 'den' || this.st?.mode === 'denfront') && Math.hypot(this.pos.x - this.den.x, this.pos.z - this.den.z) < 2.2;      // squeezing in through the mouth: the pot's walls do not push it back out
     const ledgeIn = this.toLedge && Math.hypot(this.pos.x - this.target.x, this.pos.z - this.target.z) < 2.6;      // a turtle sliding in under its ledge: the slab and its supports do not push it back out
-    if (W.push && !this.homing && !intoPot && !ledgeIn) for (let pass = 0; pass < 4; pass++) {
+    const onGrip = sea && Hf && (Hf.on || Hf.settle || (Hf.via?.done && this.pos.distanceTo(this.target) < 1.0));      // a seahorse gliding the last stretch onto its grip, or holding: that pose was tested clear of the decoration's real voxels (grips.js), finer than these cells and this margin, so a beam just over its head does not hold it off
+    if (W.push && !this.homing && !intoPot && !ledgeIn && !onGrip) for (let pass = 0; pass < 4; pass++) {
       let moved = false;
       for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
         if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (off === 'snout') this.snout(_p1); else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
@@ -791,7 +792,7 @@ export class Fish3D {
       if (taken.has(q.id)) continue;
       const e = gripsFor(q, this); if (e.status !== 'ready' || !e.grips.length) continue;
       const m = this.memOf(q.id), fam = Math.min(1, m.secs / 300), moved = m.pos && Math.hypot(m.pos[0] - q.x, m.pos[1] - q.z) > 0.3;
-      let w = (PLANTS.has(q.type) ? 3 : 1.6) / (1 + (1.1 - 0.6 * bold) * Math.hypot(q.x - this.pos.x, q.z - this.pos.z) ** 2);      // a small home range: near is far more likely than across the tank (a bold one roams a little further)
+      let w = (PLANTS.has(q.type) || q.type === 'torii' ? 3 : 1.6) / (1 + (1.1 - 0.6 * bold) * Math.hypot(q.x - this.pos.x, q.z - this.pos.z) ** 2);      /* (a gate's hanging tassels are as good as a stem: wild seahorses take to ropes and lines) */      // a small home range: near is far more likely than across the tank (a bold one roams a little further)
       w *= 1 + fam * (0.5 + 2.5 * cautious) * (roost ? 3 : 1);                                // a cautious seahorse goes back to places it knows (and every seahorse does, for the night)
       if (!m.visits) w *= roost ? 0.3 : 0.55 + 0.9 * cur;                                      // somewhere it has never held: a curious one is drawn to it
       w *= 1 + (bold - 0.5) * 0.9 * Math.max(0, Math.min(1, (q.z + 0.5) / 2.5));               // out in front near the glass: a bold one likes it, a cautious one hangs back
@@ -863,7 +864,15 @@ export class Fish3D {
       // it comes in from open water on the side its body will be, a little above, then glides in: not straight through the leaves
       if (!H.via) { let ox = wx - H.x, oz = wz - H.z, ol = Math.hypot(ox, oz); if (ol < 0.05) { ox = Math.cos(H.face); oz = -Math.sin(H.face); ol = 1; } H.via = { x: wx + (ox / ol) * 0.8, y: wy + 0.3, z: Math.min(GLASS_Z - 0.4, wz + (oz / ol) * 0.8), done: Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z) < 1.0 }; }
       if (!H.via.done && Math.hypot(H.via.x - this.pos.x, H.via.y - this.pos.y, H.via.z - this.pos.z) < 0.35) H.via.done = true;
-      if (H.via.done) this.target.set(wx, wy, wz); else this.target.set(H.via.x, H.via.y, H.via.z); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
+      // something solid between it and its way in (it comes from behind a gate, say): it goes round, to one side or underneath, rather than
+      // pressing against it. Looked for once, and again if it has made no headway for a while
+      if (!H.via.done) { const Wd = Fish3D.world; H.wayT = (H.wayT ?? 0) + dt;
+        if (Wd?.at && (H.way === undefined || H.wayT > 8)) { H.wayT = 0; const V = H.via, clear = (ax, ay, az, bx, by, bz) => { const L = Math.hypot(bx - ax, by - ay, bz - az), n = Math.max(2, Math.ceil(L / 0.15)); for (let i = 1; i < n; i++) { const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t, z = az + (bz - az) * t; if (y < sandH(x, z) + 0.15 || Wd.at(x, y, z) || Wd.at(x, y + 0.2, z) || Wd.at(x, y - 0.2, z)) return false; } return true; };
+          H.way = null; if (!clear(this.pos.x, this.pos.y, this.pos.z, V.x, V.y, V.z)) { const dx = V.x - this.pos.x, dz = V.z - this.pos.z, dl = Math.hypot(dx, dz) || 1, px = -dz / dl, pz = dx / dl, mx = (this.pos.x + V.x) / 2, mz = (this.pos.z + V.z) / 2;
+            for (const [side, dy] of [[1.3, 0], [-1.3, 0], [0, -0.7], [1.9, 0], [-1.9, 0], [1.3, -0.6], [-1.3, -0.6], [2.6, 0], [-2.6, 0]]) { const x = Math.max(-4.4, Math.min(4.4, mx + px * side)), z = Math.max(-2.6, Math.min(GLASS_Z - 0.4, mz + pz * side)), y = Math.max(sandH(x, z) + 0.5, Math.min(Fish3D.topY - 0.6, (this.pos.y + V.y) / 2 + dy));
+              if (clear(this.pos.x, this.pos.y, this.pos.z, x, y, z) && clear(x, y, z, V.x, V.y, V.z)) { H.way = { x, y, z }; break; } } } }
+        if (H.way && Math.hypot(H.way.x - this.pos.x, H.way.y - this.pos.y, H.way.z - this.pos.z) < 0.4) { H.way = null; H.wayT = 0; } }
+      if (H.via.done) this.target.set(wx, wy, wz); else if (H.way) this.target.set(H.way.x, H.way.y, H.way.z); else this.target.set(H.via.x, H.via.y, H.via.z); this.idle = 0; this.retarget = 40; const d = Math.hypot(wx - this.pos.x, wy - this.pos.y, wz - this.pos.z);
       if (d < 0.55) { let dh = H.face - this.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.heading += dh * Math.min(1, dt * 2); }      // (only in the last little glide does it turn side-on to its stem; before that it faces the way it swims)
       if (d < 0.6 && H.via.done) H.settle = true;
       if (H.settle) {                                                               // close enough to reach: it glides the last little way onto its spot, leans back and wraps its tail round the stem

@@ -11,6 +11,7 @@ const POST_LEANS = [SEAHORSE_LEAN, 0.55, 0.75], PLANT_LEANS = [SEAHORSE_LEAN];  
 
 export const PLANTS = new Set(['grass', 'fern', 'sword', 'red', 'kelp', 'bamboo', 'anemone', 'seafan', 'seagrass', 'mangrove']);
 export const FACES = [0, Math.PI, 0.5, Math.PI - 0.5, -0.5, Math.PI + 0.5, 1, Math.PI - 1, -1, Math.PI + 1, 1.5, -1.5, 0.25, -0.25, Math.PI + 0.25, Math.PI - 0.25];      // the ways it may face on its stem, side-on to the glass first
+const FRONT = [1.5, 1.25, 1.75, 1.0, 2.0], FRONT_ONLY = new Set(['torii']);      // a gate's tassels hang under its beams: leaning back behind it, a seahorse would be hidden by the beams with only its head showing over the top, so there it leans out toward the glass, in open water, or does not hold on there at all
 const MAX_GRIPS = 6, MAX_CANDS = 40, C = 0.1;
 const cellKey = (a, b, c) => ((a + 512) * 1024 + (b + 512)) * 1024 + (c + 512);
 const CACHE = new Map(), QUEUE = [], FRAME = { t0: 0, defer: false, all: false };
@@ -40,6 +41,16 @@ export function gripWork(budgetMs = 1.5) {
 }
 // for tests and tools: the whole search at once
 export function gripsNow(q, sh) { const e = gripsFor(q, sh); FRAME.all = true; while (e.status === 'pending') advance(e); FRAME.all = false; return e; }
+// for tools: which voxels a seahorse posed on (x, y, z) facing `face` would be inside, grouped by voxel size and height (dev diagnostics)
+export function clashReport(q, sh, x, y, z, face, stem = SEAHORSE_STEM, lean = SEAHORSE_LEAN) {
+  const e = { q, sh, grips: [], status: 'pending', ctx: null }; FRAME.all = true; while (!e.ctx) { if (begin(e) === false) { FRAME.all = false; return null; } } while (e.ctx.phase === 'file') { fileSome(e.ctx, 5000); if (e.ctx.i >= e.ctx.vox.length) e.ctx.phase = 'look'; }
+  const P = e.sh.heldPoseData?.(stem, lean); FRAME.all = false; if (!P) return null; const { H, hv } = e.ctx, sc = P.sc, gl = P.gripLocal, hits = {}; let sand = 0;
+  for (const [dh, p, pts] of P.poses) { const gx = gl[0] * Math.cos(p) - gl[1] * Math.sin(p), gy = gl[0] * Math.sin(p) + gl[1] * Math.cos(p), ch = Math.cos(face + dh), shn = Math.sin(face + dh), px = x - ch * gx * sc, py = y - gy * sc, pz = z + shn * gx * sc;
+    for (let i = 0; i < pts.length; i += 3) { const wx = px + pts[i] * ch + pts[i + 2] * shn, wy = py + pts[i + 1], wz = pz - pts[i] * shn + pts[i + 2] * ch; if (wy < sandH(wx, wz) + 0.02) { sand++; continue; }
+      const L = H.get(cellKey(Math.floor(wx / C), Math.floor(wy / C), Math.floor(wz / C))); if (!L) continue;
+      for (const v of L) { const m = v[3] + hv; if (Math.abs(v[0] - wx) < m && Math.abs(v[1] - wy) < m && Math.abs(v[2] - wz) < m) { const k = (v[3] > 0.05 ? 'gate' : 'rope') + '@' + (v[1] - q.y).toFixed(1) + ',z' + (v[2] - q.z).toFixed(2); hits[k] = (hits[k] ?? 0) + 1; break; } } } }
+  return { sand, hits, bodyAt: [x - Math.cos(face) * gl[0] * sc, z + Math.sin(face) * gl[0] * sc].map((v) => +v.toFixed(2)) };
+}
 export function clearGrips() { CACHE.clear(); QUEUE.length = 0; }
 export const gripQueue = () => QUEUE.length;
 
@@ -128,7 +139,7 @@ function step(e) {
   const fresh = !(v[4] === SEAHORSE_STEM && lean === SEAHORSE_LEAN) && !e.sh.hasHeldPose?.(v[4], lean);
   if (fresh && !FRAME.all && performance.now() - FRAME.t0 > 0.3) { FRAME.defer = true; return; }      // posing it for a new stem takes a few ms: that waits for the start of a frame, on its own
   const P = v[4] === SEAHORSE_STEM && lean === SEAHORSE_LEAN ? ctx.P : e.sh.heldPoseData?.(v[4], lean); if (!P) return next(); if (fresh) return;      // the seahorse as it would hold a stem this thick, leaning this far back
-  const face = FACES[ctx.fi];
+  const faces = FRONT_ONLY.has(ctx.q.type) ? FRONT : FACES, face = faces[ctx.fi];
   if (clashes(ctx, P, v[0], v[1], v[2], face, 0) === 0) { e.grips.push({ x: v[0], y: v[1], z: v[2], face, stem: v[4], lean, hf: Math.min(1, Math.max(0, (v[1] - ctx.base) / ctx.ht)) }); return next(); }
-  if (++ctx.fi >= FACES.length) { ctx.fi = 0; if (++ctx.li >= leans.length) next(); }
+  if (++ctx.fi >= faces.length) { ctx.fi = 0; if (++ctx.li >= leans.length) next(); }
 }
