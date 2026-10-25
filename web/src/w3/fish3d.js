@@ -639,8 +639,9 @@ export class Fish3D {
   face(dt, turn) { const sp = Math.hypot(this.vel.x, this.vel.z); if (sp > 0.06) { let dy = Math.atan2(-this.vel.z, this.vel.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * turn); } return sp; }
   settle() { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX')); this.accum += 1 / 60; }
   separate(others, gain = 2.8) {
+    const jet = this.species.move === 'jet';
     for (const o of others) {
-      if (o === this) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * 1.0;
+      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : 1.0);      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
       if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.065; this.vel.z += (dz / dd) * k * 0.035; }      /* (a little more give up and down: two fish on a line part in height first, so they do not sit on top of each other) */
     }
   }
