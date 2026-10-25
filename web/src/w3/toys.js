@@ -24,6 +24,27 @@ const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherb
 const kindOf = (f) => (f.crab ? 'crab' : f.sk === 'octopus' ? 'octopus' : f.sk === 'seahorse' ? 'seahorse' : TURTLES.has(f.sk) ? 'turtle' : 'fish');      // every kind knows a toy is there, and each takes to it its own way
 const free = (f) => !f.dead && !f.visitor && !f.nursery && !f.sleepy && !f.weak;
 const X = 4.4, ZB = -1.8, ZF = 2.5;
+// every animal's body is solid to the ball: it bumps off a fish's flank, a seahorse's trunk, an octopus's mantle, a turtle's shell or a crab,
+// and never passes through. Each body is a rounded stick (a segment and a radius) laid along the animal as it is posed now
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _n = new THREE.Vector3();
+function bodyOf(f) {
+  const R = f.radius ?? 0.5, P = f.pos, h = f.heading ?? 0, pt = f.pitch ?? 0;
+  if (f.crab) { _a.set(P.x, P.y + 0.14, P.z); _b.copy(_a); return 0.24; }
+  if (f.sk === 'octopus') { _a.set(P.x, P.y + (f.lift ?? 0) + 0.25, P.z); _b.copy(_a); return Math.max(0.3, (f.cr ?? 0.35) * 1.1); }
+  if (f.sp?.tail) { const ax = -Math.sin(pt) * Math.cos(h), ay = Math.cos(pt), az = Math.sin(pt) * Math.sin(h); _a.set(P.x + ax * -0.55 * R, P.y + ay * -0.55 * R, P.z + az * -0.55 * R); _b.set(P.x + ax * 0.32 * R, P.y + ay * 0.32 * R, P.z + az * 0.32 * R); return R * 0.13; }      // upright: tail to crown
+  const cp = Math.cos(pt), fx = cp * Math.cos(h), fy = Math.sin(pt), fz = -cp * Math.sin(h), back = TURTLES.has(f.sk) ? 0.45 : 0.72, fore = TURTLES.has(f.sk) ? 0.45 : 0.6;
+  _a.set(P.x - fx * back * R, P.y - fy * back * R, P.z - fz * back * R); _b.set(P.x + fx * fore * R, P.y + fy * fore * R, P.z + fz * fore * R); return R * (TURTLES.has(f.sk) ? 0.34 : 0.27);
+}
+// for tools: how far the ball's surface is from an animal's body (negative: inside it)
+export function ballGap(f, p, r = 0.38) { const rb = bodyOf(f); _c.subVectors(_b, _a); const L2 = _c.lengthSq(), t = L2 > 1e-6 ? Math.max(0, Math.min(1, _n.subVectors(p, _a).dot(_c) / L2)) : 0; _c.multiplyScalar(t).add(_a); return p.distanceTo(_c) - r - rb; }
+// the ball against one body: pushed out of it, and bounced off it (with some of the animal's own way on it). Returns how hard it hit
+function bump(f, p, v, r) {
+  const rb = bodyOf(f); _c.subVectors(_b, _a); const L2 = _c.lengthSq(), t = L2 > 1e-6 ? Math.max(0, Math.min(1, _n.subVectors(p, _a).dot(_c) / L2)) : 0; _c.multiplyScalar(t).add(_a);      // the nearest point of the body
+  _n.subVectors(p, _c); const d = _n.length(), min = r + rb; if (d >= min) return 0;
+  if (d < 1e-4) _n.set(0, 1, 0); else _n.multiplyScalar(1 / d); const give = f.holdfast?.on || f.holdfast?.settle || f.sk === 'octopus' || f.crab || TURTLES.has(f.sk) ? 0 : 0.35; p.addScaledVector(_n, (min - d) * (1 - give)); if (give) f.pos.addScaledVector(_n, -(min - d) * give);      // (a light fish gives a little too: both are pushed apart)
+  const fv = f.vel ?? _c.set(0, 0, 0), rel = (v.x - fv.x) * _n.x + (v.y - fv.y) * _n.y + (v.z - fv.z) * _n.z; if (rel < 0) v.addScaledVector(_n, -1.35 * rel);
+  return Math.max(0, -rel);
+}
 
 function ballMesh() {      // a faceted beach ball: six colored panels round it, white caps
   const g = new THREE.IcosahedronGeometry(0.38, 2).toNonIndexed(), pos = g.attributes.position, col = [], C = [0xff5a5a, 0xffd23f, 0x3fb6ff, 0xffffff, 0x5fd38a, 0xff8fd0].map((c) => new THREE.Color(c)), cap = new THREE.Color(0xfff8ea);
@@ -80,15 +101,27 @@ export class Toys {
     { const gy = sandH(p.x, p.z), hgt = p.y - r - gy, k = Math.max(0, 1 - hgt / 4); B.sh.position.set(p.x, gy + 0.05, p.z); B.sh.scale.setScalar(0.6 + 0.5 * k); B.sh.material.opacity = 0.32 * k * k * (B.m.material.opacity ?? 1); }      // closer to the sand, the shadow sharpens and darkens
     if (B.leaving != null) return;
     const now = performance.now();
+    // an octopus's arm reaches the ball a moment after it whips out: only then does the ball fly
+    if (B.slaps?.length) for (let i = B.slaps.length - 1; i >= 0; i--) { const S = B.slaps[i]; if (now < S.at) continue; B.slaps.splice(i, 1); if (S.f.dead || S.f.pos.distanceTo(p) > 2.2) continue;
+      const away = p.clone().sub(S.f.pos).setY(0); if (away.lengthSq() < 1e-4) away.set(1, 0, 0); away.normalize(); v.addScaledVector(away, 2.0 + Math.random() * 0.8); v.y += 2.4 + Math.random(); this.fishes.burst?.(p.clone()); this.onSound?.('bonk'); }
+    for (const f of this.fishes.list) { if (f.dead || f.puppet || f.away) continue; const hit = bump(f, p, v, r); if (hit > 0.25) { this.onSound?.('bonk'); if (!free(f)) continue; if (f.sp?.tail) { f.glance = p.clone(); f.glanceT = 1.4; } else if (kindOf(f) === 'fish' && hit > 0.6) f.flickT = 0.25; } }      // bodies are solid to it
     for (const f of this.fishes.list) { if (!free(f)) continue; const k = kindOf(f), d = f.pos.distanceTo(p), cd = (B.cool.get(f) ?? 0) > now;
-      if (k === 'fish' && d < 5) {      // fish come over and nose it along
-        f.target.set(p.x - Math.sign(v.x || 1) * 0.3, Math.max(p.y, sandH(p.x, p.z) + 0.5), p.z); f.retarget = Math.max(f.retarget ?? 0, 0.7);
-        if (d < r + (f.radius ?? 0.5) * 0.45 && !cd) { const push = p.clone().sub(f.pos).setY(0.15).normalize(); v.addScaledVector(push, 1.4 + f.vel.length() * 0.6); v.y += 0.6; this.onBall?.(f); B.cool.set(f, now + 600); B.who.add(f.fid); this.onSound?.('bonk'); }
+      if (k === 'fish' && d < 5) {      // fish come over and nose it along; one swimming past may flick it away with its tail
+        const R = f.radius ?? 0.5, cp = Math.cos(f.pitch ?? 0), fx = cp * Math.cos(f.heading), fy = Math.sin(f.pitch ?? 0), fz = -cp * Math.sin(f.heading), rb = bodyOf(f), nose = _v1.copy(_b), tailP = _c.copy(_a);
+        { const ax = p.x - f.pos.x, az = p.z - f.pos.z, al = Math.hypot(ax, az) || 1, back = r + 0.6 * R + rb * 0.6; f.target.set(p.x - (ax / al) * back, Math.max(p.y, sandH(p.x, p.z) + 0.5), p.z - (az / al) * back); f.retarget = Math.max(f.retarget ?? 0, 0.7); }      // it comes nose-first to the ball, not into it
+        if (!cd && nose.distanceTo(p) < r + rb + 0.12) { const push = p.clone().sub(nose).setY(0.2).normalize(); v.addScaledVector(push, 1.2 + f.vel.length() * 0.6); v.y += 0.5; this.onBall?.(f); B.cool.set(f, now + 650); B.who.add(f.fid); this.onSound?.('bonk'); f.nosed = (f.nosed ?? 0) + 1; continue; }      // a push with its nose
+        if (!cd && f.vel.length() > 0.2 && tailP.distanceTo(p) < r + rb + 0.18) { const side = p.clone().sub(tailP).setY(0.15).normalize(); v.addScaledVector(side, 1.6); v.x -= fx * 0.8; v.z -= fz * 0.8; f.flickT = 0.3; B.cool.set(f, now + 900); B.who.add(f.fid); this.onSound?.('bonk'); f.tailed = (f.tailed ?? 0) + 1; }      // a flick of the tail as it turns away
       } else if (k === 'octopus' && d < 6) {      // an octopus goes over and bats it with an arm
         if ((!f.inspect || f.inspect.toy) && !cd && d > 1.0) f.inspect = { x: p.x, z: p.z, toy: true };      // (it keeps after the ball as it rolls)
-        if (d < 1.5 && !cd && p.y < sandH(p.x, p.z) + 1.3) { const away = p.clone().sub(f.pos).setY(0).normalize(); v.addScaledVector(away, 1.8); v.y += 2.6 + Math.random(); B.cool.set(f, now + 2600); B.who.add(f.fid); if (f.inspect?.toy) f.inspect = null; f.flush = Math.max(f.flush ?? 0, 0.4); this.fishes.burst?.(p.clone()); this.onSound?.('bonk'); }
-      } else if (k === 'seahorse' && d < 4) { f.glance = p.clone(); f.glanceT = 1.5; if (d < 2.5) B.who.add(f.fid); }      // a seahorse just watches it go by
-      else if (k === 'turtle' && d < 5) {      // a turtle swims over slowly and gives it a shove with its nose, or a bite to see what it is
+        if (d < 1.7 && !cd && p.y < sandH(p.x, p.z) + 1.4 && f.armAt?.(p, 0.4)) { (B.slaps ||= []).push({ f, at: now + 200 }); B.cool.set(f, now + 2600); B.who.add(f.fid); if (f.inspect?.toy) f.inspect = null; f.slaps = (f.slaps ?? 0) + 1; }      // the arm whips out; the ball goes when it lands (above)
+      } else if (k === 'seahorse' && d < 4) {      // a seahorse plays with it in its own way: a nudge with its snout, a flick of its tail
+        f.glance = p.clone(); f.glanceT = 1.5; const held = f.holdfast?.on || f.holdfast?.settle;
+        if (held && !B.called?.has(f) && d < 2.6 && (B.downT ?? 0) > 0.5) { (B.called ||= new Set()).add(f); if (Math.random() < 0.35 + 0.5 * (f.persona?.cur ?? 0.5)) { f.release?.(0.4); f.toyAt = { p: p.clone(), r, until: now + 1500 }; } }      // the ball comes to rest near it: a curious one lets go and comes over (once a ball)
+        if (!f.holdfast && !cd && d < 3.5 && (f.persona?.cur ?? 0.5) > 0.3 && v.length() < 1.6) f.toyAt = { p: p.clone(), r, until: now + 1500 };      // it swims up to it (fish3d: lines its snout up with the ball)
+        const sn = f.snout?.(_v1); if (sn && !cd && sn.distanceTo(p) < r + 0.14) { const push = p.clone().sub(sn).setY(0.25).normalize(); v.addScaledVector(push, 0.9); f.snickT = 0.32; B.cool.set(f, now + 1200); B.who.add(f.fid); this.onSound?.('bonk'); f.snouted = (f.snouted ?? 0) + 1; continue; }      // a flick of the head: the snout taps it away
+        if (!held && !cd) { const R = f.radius ?? 1, tip = _v1.set(f.pos.x, f.pos.y - 0.62 * R, f.pos.z); if (tip.distanceTo(p) < r + 0.2) { const side = p.clone().sub(tip).setY(0.1).normalize(); v.addScaledVector(side, 1.1); f.curlK = -0.3; B.cool.set(f, now + 1400); B.who.add(f.fid); this.onSound?.('bonk'); f.tailFlicks = (f.tailFlicks ?? 0) + 1; } }      // the tail uncurls in a flick and knocks it on
+        if (d < 2.5) B.who.add(f.fid);
+      } else if (k === 'turtle' && d < 5) {      // a turtle swims over slowly and gives it a shove with its nose, or a bite to see what it is
         f.target.set(p.x - Math.sign(v.x || 1) * 0.4, Math.max(p.y, sandH(p.x, p.z) + 0.6), p.z); f.retarget = Math.max(f.retarget ?? 0, 0.8);
         if (d < r + (f.radius ?? 0.8) * 0.5 && !cd) { const push = p.clone().sub(f.pos).setY(0.1).normalize(); v.addScaledVector(push, 2.2); v.y += 0.4; B.cool.set(f, now + 1800); B.who.add(f.fid); this.onSound?.('bonk'); }
       } else if (k === 'crab' && d < 5 && p.y < sandH(p.x, p.z) + 1) {      // a crab on the sand: a timid one tucks in when it lands close, a curious one walks up and pokes it (it rocks a little)
@@ -210,5 +243,7 @@ export class Toys {
       else if (k === 'turtle' && d < 3 && Math.random() < dt * 0.4) { f.target.copy(H.g.position); f.retarget = Math.max(f.retarget ?? 0, 0.6); }
       else if (k === 'crab' && Math.random() < dt * 0.3) { f.lookAt = H.g.position.clone(); f.lookT = 1; } }      // (it hangs out of a crab's reach: it only looks up at it)
   }
+  // after the animals have moved this frame: the ball is pushed clear of any body one swam into, so the picture never shows it inside one
+  settle() { const B = this.ball; if (!B || B.leaving != null) return; const p = B.m.position, r = 0.38; for (const f of this.fishes.list) { if (f.dead || f.puppet || f.away) continue; bump(f, p, B.v, r); } const fl = sandH(p.x, p.z) + r; if (p.y < fl) p.y = fl; }
   update(dt, t) { if (this.ball) this.stepBall(dt); if (this.cube) this.stepCube(dt); if (this.hoop) this.stepHoop(dt); if (this.fount || this.bubbles.length || this.rings?.length) this.stepBubbles(dt, t); if (this.light) this.stepLight(dt, t); }
 }

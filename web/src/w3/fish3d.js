@@ -494,6 +494,12 @@ export class Fish3D {
   // The plan is kept and taken up when the beat is over.
   ponder(S, rng, at) { S.pend = { s: S.s, t: S.t, n: S.n }; S.s = 'ponder'; S.t = 0.5 + rng() * 0.8 * (1.3 - 0.3 * (this.temper()?.tempo ?? 1)); this.intent = at ? { x: at.x, y: at.y ?? 0.6, z: at.z } : null; return true; }
   endAct(S, rng, next = 'rest') { this.act = null; this.actText = null; this.watchFish = null; this.follow = null; S.tour = null; S.popped = false; S.digs = 0; if (next === 'drift') { S.s = 'drift'; S.t = 6; } else { S.s = 'rest'; S.t = 4 + rng() * 6; } }
+  // one arm whipped out to a point in the water and back (the arm nearest that way): batting a ball, slapping at something
+  armAt(p, dur = 0.45) {
+    if (!this.minds?.length) return false; const sc = this.scale || 0.06, ch = Math.cos(this.heading), sh = Math.sin(this.heading), dx = p.x - this.pos.x, dz = p.z - this.pos.z, dy = p.y - this.pos.y, lx = (dx * ch - dz * sh) / sc, lz = (dx * sh + dz * ch) / sc, ang = Math.atan2(lz, lx - 3);
+    let best = null, bd = 9; this.minds.forEach((m, i) => { const df = Math.abs(Math.atan2(Math.sin((this.rig?.arms[i]?.th ?? 0) - ang), Math.cos((this.rig?.arms[i]?.th ?? 0) - ang))); if (df < bd) { bd = df; best = m; } });
+    if (!best) return false; best.x = lx; best.y = dy / sc; best.z = lz; best.until = dur; best.fast = true; best.next = 3; this.flush = Math.max(this.flush ?? 0, 0.35); return true;
+  }
   // a fish has hung about too close for too long: it flings a puff of silt at it with the arms on that side, and the fish clears off
   throwAt(o, rng) {
     this.memo(o, 'a'); this.sq = Math.max(this.sq, 0.7); this.flush = Math.max(this.flush, 0.4); this.annoyT = 2; const d = _p2.copy(o.pos).sub(this.pos); d.y = Math.max(0, d.y); d.normalize();
@@ -856,6 +862,9 @@ export class Fish3D {
     // letting go: the coils unwind and it drifts up off the stem
     if (this.releaseT > 0) { this.releaseT -= dt; this.gripK = (this.gripK ?? 0) * Math.exp(-dt * 6); this.curlK += (0.2 - this.curlK) * Math.min(1, dt * 3); this.pos.y += 0.12 * dt; this.pitch += (0 - this.pitch) * Math.min(1, dt * 3); this.phase += dt * 12; this.place(dt); return true; }
     if (H && !H.on && this.seeking) { this.release(0.3); return true; }                         // food on its way and no hold yet: it goes for the food
+    if (!H && this.toyAt && performance.now() < this.toyAt.until && !this.seeking) {      // a ball rolling by: it swims up and lines its snout up with it (toys.js does the nudge and the tail flick)
+      const T = this.toyAt.p, sn = this.snout(_p2), ox = sn.x - this.pos.x, oy = sn.y - this.pos.y, oz = sn.z - this.pos.z, hx = T.x - this.pos.x, hz = T.z - this.pos.z, hl = Math.hypot(hx, hz) || 1, rr = this.toyAt.r + 0.04;
+      this.target.set(T.x - (hx / hl) * rr - ox, Math.max(T.y - oy, sandH(this.pos.x, this.pos.z) + 0.9), T.z - (hz / hl) * rr - oz); this.idle = 0; this.retarget = 1.5; this.glance = T.clone(); this.glanceT = 1.2; return false; }
     if (!H) { if (!this.seeking && (this.tintK ?? 0) > 0.01) this.setTint(Math.max(0, this.tintK - dt * 0.02)); return this.explore(dt, rng); }
     // where its tail grips: the stem passes through the coils of its tail
     const gl = this.gripLocalFor(this.gripStem ?? SEAHORSE_STEM, this.gripLean ?? SEAHORSE_LEAN), sc = this.scale, cp = Math.cos(this.pitch), spn = Math.sin(this.pitch), gx = gl[0] * cp - gl[1] * spn, gy = gl[0] * spn + gl[1] * cp;      // the grip point as the body is leaning now
@@ -1400,7 +1409,7 @@ export class Fish3D {
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }
     if (this.invert || Math.abs(this.roll) > 1.2) this.roll += ((this.invert ? Math.PI : 0) - this.roll) * Math.min(1, dt * 2.5);
-    this.phase += dt * (3.0 + sp * 5.5 + 9 * (this.fanK ?? 0));      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
+    this.flickT = Math.max(0, (this.flickT ?? 0) - dt); this.phase += dt * (3.0 + sp * 5.5 + 9 * (this.fanK ?? 0) + (this.flickT > 0 ? 16 : 0));      // (and a flick of the tail: a quick burst of beats)      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
     this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));

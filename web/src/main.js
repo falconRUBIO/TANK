@@ -1748,7 +1748,7 @@ function frameBody(now) {
   const simT0 = performance.now();
   if (!window.__simHold) {      /* (a check that runs the tank's clock itself holds this one, so a slow machine cannot move the animals in between) */
   try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); grazeGlass(dt); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
-  for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } } }
+  for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } } try { toys.settle(); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   simAt = now; try { netSync(dt, now); } catch (e) { if (simErrors++ < 5) console.error('sync error', e); }
   simMs += (performance.now() - simT0 - simMs) * 0.05;
