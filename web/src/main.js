@@ -1055,7 +1055,7 @@ function showEggCard(fx) {
   const cared = e.cared?.length ?? 0, p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5, stage = p > 0.85 ? 'Silvery and trembling: nearly ready' : p > 0.6 ? 'Little eyes showing' : p > 0.35 ? 'Dark specks: the eyes are forming' : 'Just laid';
   const C = eggCareOf(e), G = s.fish.find((x) => x.id === e.guard && !x.dead), who = C.mode === 'drift' ? `Nobody: ${SPECIES_DEF[e.species]?.label ?? 'this kind'} parents leave their eggs to drift. It is up to you.` : G ? (C.mode === 'mouth' ? `${G.name}, carrying them in his mouth` : `${G.name}, on guard`) : 'No parent is left to watch them. It is up to you.';
   const pill = $('fishpill'); fx.name = `${A} & ${B}'s eggs`;
-  if (cardOpen !== fx.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = 'Egg'; pill.hidden = false; pill.onclick = () => { cardOpen = fx.fid; sfx('tap'); showEggCard(fx); }; return; }
+  if (cardOpen !== fx.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = 'Egg'; { const sm = pill.querySelector('small'); sm.hidden = true; sm.classList.remove('tick'); sm.querySelector('i').dataset.t = ''; } pill.hidden = false; pill.onclick = () => { cardOpen = fx.fid; sfx('tap'); showEggCard(fx); }; return; }
   pill.hidden = true;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
     <div class="chd"><h2>${esc(fx.name)}</h2><div class="sp">${SPECIES_DEF[e.species]?.label ?? e.species} eggs · <b class="mood">${stage}</b></div></div>
@@ -1238,7 +1238,8 @@ function tapReact(f) {
   f.vigor = Math.max(f.vigor ?? 1, 1.25); setTimeout(() => { if ((f.vigor ?? 1) > 1) f.vigor = 1; }, 700);      // a flick of the tail
   if (f.target && !f.holdfast?.on) { f.target.z = Math.min(f.target.z + 0.8, 2.2); f.retarget = Math.max(f.retarget ?? 0, 1.5); }      // and it drifts a little toward the glass
 }
-function pillDoing(f) { const pill = $('fishpill'); let sm = pill.querySelector('small'); if (!sm) { sm = document.createElement('small'); pill.querySelector('b').after(sm); } const d = doingOf(f); sm.textContent = d ? `· ${d}` : ''; sm.hidden = !d; }
+function pillDoing(f) { const pill = $('fishpill'), sm = pill.querySelector('small'), i = sm.querySelector('i'), d = (window.__doingOverride ?? doingOf(f)) || '';      // the name on its own line, what it is doing beneath; a line too long for the pill rolls past like a ticker instead of being crammed
+  if (i.dataset.t !== d) { i.dataset.t = d; i.textContent = d; sm.hidden = !d; sm.classList.remove('tick'); i.style.animation = ''; if (d) requestAnimationFrame(() => { const over = i.scrollWidth - sm.clientWidth; if (over > 4) { sm.style.setProperty('--dur', `${Math.max(6, (i.scrollWidth + 40) / 28)}s`); sm.classList.add('tick'); } }); } }
 setInterval(() => { const p = $('fishpill'); if (p && !p.hidden && focus) pillDoing(focus); }, 1000);      // (it keeps up: a seahorse that lets go, a goby that starts cleaning)
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) { f.poseHz = 60; tapReact(f); }      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
