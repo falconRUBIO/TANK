@@ -199,6 +199,13 @@ Every species and decoration tile in the Guide now opens a sheet. A kind of anim
 
 **Drills.** Unit tests 332/332. ux, care, loop, journal, notes_seen, road, chart, living, bonds, octopus_den, octopus_rest and playthrough pass when run alone. octopus_den and playthrough both failed once while five browsers ran together and passed alone (the previous commit passes them too). Three server tests and two playthrough checks encoded the bare opening and were updated to the new one (the starter pack in the tank; a further plant costs shells).
 
+## G11. Sheet edges and a sense pass (v372–v375)
+**Sheet tops, one treatment everywhere.** The menus, an animal's card and the item and note sheets all keep the grabber pinned at the top; once content scrolls under it a frosted band (blur plus the sheet's tint, fading out downward) appears behind it, so content dims into the glass instead of being cut by the edge. At rest nothing changes. One set of CSS tokens (`--edge-tint`, `--edge-blur`, `--edge-mask`) drives all three; a capture-phase scroll listener sets `.scrolled`. The card's stuck tab bar sits just under the pinned grabber with the same frosted backing.
+
+**Text scan.** Every tab, every shop item and every tab of every animal card in a busy test tank, checked for `undefined`, `NaN`, doubled punctuation, a space before punctuation and empty brackets: none found.
+
+**Early game, read for sense (one octopus, a few hours in).** Fixed: octopus and seahorse kinds all drew the same picture; "Time with you" linked to the Shop; "the special things"; the full moon under Needs you with nothing able to lay; "Play with them" / "feed the fish" for a single octopus; "Watch a fish visit"; "Follow the tips" lingering in the news; a day-1 time capsule of an empty tank; "Clear" floating into the away list; flat items under an empty band on their own sheet; "the first fish" for an octopus.
+
 ## H. Tests and remaining checks
 - `npm test`: **95 of 95** suites (rule tests now include the capacity switch's gates, play feedback, trick eligibility, the shared picks, the palette migration, journal references, habitat usage notes, the road tables, friendships, favorites, milestones).
 - Headless drills passing: `toys_check2` (cube cycle, hoop hitching and riding), `seahorse_check`, `road_check`, `play_check`, `story_check`, `friends_check`, `sync_check`, `sell_check`, `care_sync`, `bonds_check`, `profile_check`, `journal_check`, `adopt_check`, `fund_check`, `turtle_check`, `motion_check`.
