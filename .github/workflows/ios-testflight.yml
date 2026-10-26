@@ -1,0 +1,73 @@
+# The iPhone app: builds ios-app/ (the game from web/ inside a thin iPhone app) on a Mac and uploads it to TestFlight.
+# Run it from the Actions tab: "iPhone app to TestFlight" → Run workflow. Each run is a new build number (the run number).
+# Needs, in the repository's Settings → Secrets and variables → Actions:
+#   variable TANK_SERVER_URL       the game server's https address (the one the website is on, e.g. https://our-tank.onrender.com)
+#   variable IOS_BUNDLE_ID         optional; the app's bundle ID as registered with Apple (default com.falconrubio.takotank)
+#   secret   APPLE_TEAM_ID         your 10-character Apple Developer Team ID
+#   secret   ASC_KEY_ID            an App Store Connect API key (Users and Access → Integrations → App Store Connect API, role Admin)
+#   secret   ASC_ISSUER_ID         that page's Issuer ID
+#   secret   ASC_KEY_P8            the key file's whole text (-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----)
+# See ios-app/README.md for the step-by-step.
+name: iPhone app to TestFlight
+on:
+  workflow_dispatch:
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: maxim-lobanov/setup-xcode@v1
+        with: { xcode-version: latest-stable }
+      - name: Check the settings are there
+        env:
+          TANK_SERVER_URL: ${{ vars.TANK_SERVER_URL }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          miss=""; for v in TANK_SERVER_URL TEAM KEY_ID ISSUER P8; do [ -n "${!v}" ] || miss="$miss $v"; done
+          if [ -n "$miss" ]; then echo "::error::Missing settings:$miss (see ios-app/README.md)"; exit 1; fi
+      - name: Put the game inside the app
+        working-directory: ios-app
+        env: { TANK_SERVER_URL: '${{ vars.TANK_SERVER_URL }}' }
+        run: |
+          npm ci || npm install
+          node prepare.mjs
+          npx cap sync ios
+      - name: Set the bundle ID and build number
+        working-directory: ios-app/ios/App
+        env: { BUNDLE: "${{ vars.IOS_BUNDLE_ID || 'com.falconrubio.takotank' }}" }
+        run: |
+          sed -i '' -e "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE;/" -e "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = ${{ github.run_number }};/" App.xcodeproj/project.pbxproj
+          grep -m2 -E "PRODUCT_BUNDLE_IDENTIFIER|CURRENT_PROJECT_VERSION" App.xcodeproj/project.pbxproj
+      - name: Build, sign and upload to TestFlight
+        working-directory: ios-app/ios/App
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          KEY="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"; printf '%s\n' "$P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER")
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic "${AUTH[@]}" archive | tail -40
+          test -d "$RUNNER_TEMP/App.xcarchive" || { echo "::error::The build did not produce an archive (see the log above)"; exit 1; }
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}"
+          rm -f "$KEY"
+          echo "Uploaded build ${{ github.run_number }}. It shows in App Store Connect → TestFlight after Apple finishes processing (usually 5 to 30 minutes)."

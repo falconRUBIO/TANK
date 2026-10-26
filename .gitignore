@@ -7,3 +7,12 @@ node_modules/
 
 # screenshots written by tools/e2e.mjs
 /e[0-9]_*.png
+
+# the iPhone app: built from web/ by ios-app/prepare.mjs and npx cap sync
+ios-app/node_modules/
+ios-app/www/
+ios-app/ios/App/App/public/
+ios-app/ios/App/App/capacitor.config.json
+ios-app/ios/App/App/config.xml
+ios-app/ios/build/
+ios-app/ios/App/build/

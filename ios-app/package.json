@@ -1,0 +1,16 @@
+{
+  "name": "tako-tank-ios",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare-web": "node prepare.mjs",
+    "sync": "node prepare.mjs && npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}

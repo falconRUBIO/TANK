@@ -6,7 +6,10 @@ import { idbPut, idbGet, backupFromText } from './keep.js';
 
 const KEY = 'ourtank.session';
 const qs = new URLSearchParams(location.search);
-export const base = qs.get('api') || (location.protocol.startsWith('http') ? location.origin : '');
+// the iPhone app (ios-app/) carries the game inside it and names its server in a meta tag; on the web the server is wherever the page came from
+const appServer = document.querySelector('meta[name="tank-server"]')?.content?.replace(/\/+$/, '') || '';
+export const base = qs.get('api') || appServer || (location.protocol.startsWith('http') ? location.origin : '');
+export const webOrigin = appServer || location.origin;      // (invitation links always open the web address, which works for anyone)
 // The sign-in is kept in two places (storage and a long-lived cookie) so losing one does not lose the tank.
 const ck = () => { try { const m = document.cookie.match(/(?:^|; )ourtank_s=([^;]+)/); return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch { return null; } };
 const load = () => { let a = null; try { a = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { /* none */ } return a?.token ? a : ck(); };
@@ -64,7 +67,7 @@ export function runOnboarding() {
   return new Promise(async (resolve) => {
     const root = document.getElementById('welcome');
     const done = (r) => { if (r?.mode === 'net' && r.user?.id) rememberId(r.user.id); root.classList.remove('on'); setTimeout(() => (root.innerHTML = ''), 400); resolve(r); };      // who this phone is in its tank is remembered for good, for the day the server forgets
-    const link = (code) => `${location.origin}/join/${code}`;
+    const link = (code) => `${webOrigin}/join/${code}`;
     const shareText = (code) => `Come help take care of our fish! Join my aquarium in Tako Tank. Code: ${code}`;
     const screen = (html) => { root.innerHTML = ''; const s = $(`<div class="scr">${html}</div>`); root.append(s); root.classList.add('on'); return s; };
     const avatar = randomAvatar();

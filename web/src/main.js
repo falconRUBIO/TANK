@@ -30,7 +30,7 @@ import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
-import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister } from './online.js';
+import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister, webOrigin } from './online.js';
 import { makeWaterChange } from './waterchange.js';
 import { backupToText } from './keep.js';
 import { sfx, haptic, setMusicPhase } from './audio.js';
@@ -86,7 +86,7 @@ const nameOf = (id) => game.members?.find((m) => m.id === id)?.name ?? 'Someone'
 const social = {
   chat: (t) => net?.chat(t), invite: () => social.share(),
   copy: () => { game.track('friend_invited'); copyText(game.code, 'Code copied'); },
-  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tako Tank', text: `Come help take care of our fish! Join my aquarium in Tako Tank. Code: ${c}`, url: `${location.origin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
+  share: async () => { game.track('friend_invited'); const c = game.code, d = { title: 'Tako Tank', text: `Come help take care of our fish! Join my aquarium in Tako Tank. Code: ${c}`, url: `${webOrigin}/join/${c}` }; try { if (navigator.share) await navigator.share(d); else copyText(`${d.text} ${d.url}`, 'Invite copied'); } catch { /* cancelled */ } },
   regen: async () => { const yes = await ui.dialog({ title: 'Make a new code?', text: 'The old code will stop working. Friends already in the tank stay.', ok: 'New code', cancel: 'Keep it' }); if (!yes) return; try { game.code = (await api('/api/tanks/code', {})).code; ui.refresh(); ui.toast('New code ready'); } catch (e) { ui.toast(e.message); } },
 };
 

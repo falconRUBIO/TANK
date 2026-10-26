@@ -1,0 +1,11 @@
+{
+  "appId": "com.falconrubio.takotank",
+  "appName": "Tako Tank",
+  "webDir": "www",
+  "backgroundColor": "#050a12",
+  "ios": {
+    "contentInset": "never",
+    "scheme": "TakoTank",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

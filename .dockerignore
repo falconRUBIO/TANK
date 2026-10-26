@@ -2,3 +2,4 @@ node_modules
 .git
 *.db*
 tools
+ios-app
