@@ -677,6 +677,37 @@ await t('a server never overwrites a newer copy sent by another server (the rede
   S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('h', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
   assert.equal(await up.run(), true, 'its own copy is what it expects, so it keeps sending'); assert.equal(sent, 2);
 });
+await t('backups send only what changed since the last whole copy, and a restore puts back exactly the same database', async () => {
+  const { makeOffsite, makeUploader, restoreIfEmpty, readDb, hashDb, stampAll } = await import('./offsite.mjs'); const fs = await import('node:fs'), os = await import('node:os'), pth = await import('node:path'), zlib = (await import('node:zlib')).default;
+  let etag = 0; const store = new Map(), fake = async (url, o) => { const k = new URL(url).pathname; if (o.method === 'PUT') { store.set(k, { b: Buffer.from(o.body), e: 'e' + ++etag }); return { ok: true, status: 200, headers: { get: () => store.get(k).e } }; } const f = store.get(k); if (!f) return { ok: false, status: 404 }; return { ok: true, status: 200, headers: { get: () => f.e }, arrayBuffer: async () => f.b }; };
+  const off = makeOffsite({ endpoint: 'https://s3.example.test', bucket: 'inc', accessKey: 'K', secret: 'S' }, fake), dir = fs.mkdtempSync(pth.join(os.tmpdir(), 'inc-')), live = pth.join(dir, 'live.db'), base = pth.join(dir, 'live.db.base');
+  const snap = () => { fs.rmSync(live, { force: true }); S.db.exec(`VACUUM INTO '${live}'`); return live; };
+  const o = await mkUser('Inc'), tk = (await call('/api/tanks', { name: 'Inc' }, o.token)).body; for (let i = 0; i < 30; i++) S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tk.id, 1, 'An ordinary line ' + i + ' '.repeat(200), null, Date.now());
+  const up = makeUploader(off, snap, () => {}, { baseFile: base, expect: await stampAll(off) });
+  assert.equal(await up.run(true), true); assert.equal(up.status.sent.full, 1, 'the first copy is whole'); assert.ok(store.get('/inc/ourtank.db').b[0] === 0x1f, 'and compressed');
+  const whole = store.get('/inc/ourtank.db').b.length;
+  setW(tk.id, { shells: 4321 }); S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tk.id, 2, 'Something new happened.', null, Date.now());
+  const gone = S.db.prepare('SELECT id FROM journal WHERE tank_id=? ORDER BY id LIMIT 1').get(tk.id).id; S.db.prepare('DELETE FROM journal WHERE id=?').run(gone); S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('inc', 'x');
+  assert.equal(await up.run(true), true); assert.equal(up.status.sent.delta, 1, 'then only the changes'); const changes = store.get('/inc/ourtank.db.delta').b.length;
+  assert.ok(changes * 10 < whole, `the changes are a small part of the whole copy (${changes} of ${whole} bytes)`); assert.equal(await up.run(true), false, 'nothing changed, nothing sent');
+  const want = hashDb(readDb(snap())), f2 = pth.join(dir, 'restored.db'), b2 = pth.join(dir, 'restored.db.base'); assert.equal(await restoreIfEmpty(off, f2, () => {}, { baseFile: b2 }), true);
+  assert.equal(hashDb(readDb(f2)), want, 'restored: the very same rows'); const { DatabaseSync } = await import('node:sqlite'); { const d = new DatabaseSync(f2, { readOnly: true }); assert.equal(JSON.parse(d.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world).shells, 4321); assert.equal(d.prepare('SELECT 1 FROM journal WHERE id=?').get(gone), undefined, 'a deleted row stays deleted'); d.close(); }
+  // the restored server carries on from the same base, sending only changes
+  const up2 = makeUploader(off, snap, () => {}, { baseFile: b2, expect: await stampAll(off) }); S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('inc', 'y'); assert.equal(await up2.run(true), true); assert.equal(up2.status.sent.delta, 1);
+  // changes measured against another base copy are never applied: the base alone is restored (and a log line says so)
+  const raw = JSON.parse(zlib.gunzipSync(store.get('/inc/ourtank.db.delta').b)); store.set('/inc/ourtank.db.delta', { b: zlib.gzipSync(JSON.stringify({ ...raw, base: 'other' })), e: 'x' });
+  const logs = [], f3 = pth.join(dir, 'r3.db'); assert.equal(await restoreIfEmpty(off, f3, (m) => logs.push(m)), true); assert.ok(logs.some((m) => /another base/.test(m))); assert.equal(isEmpty3(), false); function isEmpty3() { const d = new DatabaseSync(f3, { readOnly: true }); try { return d.prepare('SELECT COUNT(*) n FROM users').get().n === 0; } finally { d.close(); } }
+  // a fingerprint that does not match: the changes are not trusted
+  store.set('/inc/ourtank.db.delta', { b: zlib.gzipSync(JSON.stringify({ ...raw, hash: 'nope' })), e: 'y' }); const l4 = [], f4 = pth.join(dir, 'r4.db'); await restoreIfEmpty(off, f4, (m) => l4.push(m)); assert.ok(l4.some((m) => /fingerprint/.test(m)));
+  // someone else sent a new whole copy: this server's base is no longer the one out there, so its next copy is whole again
+  store.set('/inc/ourtank.db.delta', { b: zlib.gzipSync(JSON.stringify(raw)), e: 'z' }); const up3 = makeUploader(off, snap, () => {}, { baseFile: b2 }); store.set('/inc/ourtank.db', { ...store.get('/inc/ourtank.db'), e: 'changed' });
+  S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('inc', 'z'); assert.equal(await up3.run(true), true); assert.equal(up3.status.sent.full, 1, 'a whole copy, not changes against a base that is gone');
+  // a new column: a whole copy too
+  const up4 = makeUploader(off, snap, () => {}, { baseFile: b2 }); S.db.exec('CREATE TABLE IF NOT EXISTS inc_extra (k TEXT PRIMARY KEY)'); assert.equal(await up4.run(true), true); assert.equal(up4.status.sent.full, 1); S.db.exec('DROP TABLE inc_extra');
+  // a second server sending changes is noticed by the one watching (the redeploy handover)
+  let seen = null; const watcher = makeUploader(off, snap, () => {}, { baseFile: b2, expect: await stampAll(off), holdUntil: Date.now() + 60e3, onStale: (c) => (seen = c) });
+  S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('inc', 'w'); await makeUploader(off, snap, () => {}, { baseFile: b2 }).run(true); assert.equal(await watcher.check(), true, 'a newer copy of the changes is noticed'); assert.ok(seen);
+});
 await t('a backup can be copied as text and pasted back, and the phone-side helpers fail quietly where there is no browser storage', async () => {
   const k = await import('../web/src/keep.js'); const sample = { app: 'our-tank', tank: { name: 'Text' }, world: { fish: Array.from({ length: 40 }, (_, i) => ({ id: 'f' + i, name: 'Fish ' + i, species: 'neon' })), decor: [] } };
   const text = await k.backupToText(sample); assert.match(text, /^OURTANK1:/); assert.ok(text.length < JSON.stringify(sample).length, 'compressed');

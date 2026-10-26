@@ -10,7 +10,7 @@ import { openDb } from './db.mjs';
 import * as L from './logic.mjs';
 import * as R from '../web/src/game/rules.js';
 import { makePush, vapidFor } from './push.mjs';
-import { offsiteFromEnv, restoreIfEmpty, makeUploader } from './offsite.mjs';
+import { offsiteFromEnv, restoreIfEmpty, makeUploader, stampAll } from './offsite.mjs';
 import { makeAnalytics, CLIENT_EVENTS } from './analytics.mjs';
 import { createDiscovery } from './discovery.mjs';
 import { diffTank } from '../web/src/game/patch.js';
@@ -477,20 +477,21 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  // If a bucket or a GitHub repository is set, the whole database is copied there every few minutes and just before the server stops, and put back when the server starts with nothing.
+  // If a bucket or a GitHub repository is set, the database is copied there every hour and just before the server stops, and put back when the server starts with nothing.
+  // A whole copy goes every few days; in between, only what changed since it (offsite.mjs, "Only what changed").
   // A redeploy starts the new server before the old one stops, and the old one sends its last copy after that. So a new server waits a few minutes
   // before sending anything, and if a newer copy turns up meanwhile (or ever), it loads that copy instead of overwriting it.
-  const off = offsiteFromEnv(), dbFile = path.resolve(process.env.DB || 'ourtank.db'), port = +process.env.PORT || 8080, HANDOVER = +(process.env.HANDOVER_MS || 180e3);
+  const off = offsiteFromEnv(), dbFile = path.resolve(process.env.DB || 'ourtank.db'), baseFile = dbFile + '.base', port = +process.env.PORT || 8080, HANDOVER = +(process.env.HANDOVER_MS || 180e3);
   let s = null, uploader = null, timers = [], reloading = false, stopping = false;
   if (process.env.RENDER && dbFile.startsWith('/data/')) { const f = '/data/.persist-check'; diskKept = fs.existsSync(f); try { if (!diskKept) fs.writeFileSync(f, String(Date.now())); } catch { console.warn('WARNING: /data is not writable; is the disk attached?'); } }
   let bootAt = Date.now();
   const boot = async () => {
     bootAt = Date.now(); let restoreFailed = false, stamp;
-    if (off) { for (let i = 0; i < 6; i++) { try { stamp = await off.stamp(); await restoreIfEmpty(off, dbFile); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
+    if (off) { for (let i = 0; i < 6; i++) { try { stamp = await stampAll(off); await restoreIfEmpty(off, dbFile, console.log, { baseFile }); restoreFailed = false; break; } catch (e) { restoreFailed = true; console.error(`offsite restore failed (try ${i + 1} of 6):`, e.message); await new Promise((r) => setTimeout(r, 8000)); } } }
     s = await start({ port, dbPath: process.env.DB || 'ourtank.db' });
     setTimeout(() => s.pushSweep().catch(() => {}), 20e3).unref();      // a server woken by a request catches up on what happened while it slept
     if (off) {
-      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
+      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { baseFile, expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
       if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }
       const watch = setInterval(() => { if (!uploader.status.holding) clearInterval(watch); else uploader.check(); }, 15e3); watch.unref();
       let soonT = null; offsiteSoon = () => { clearTimeout(soonT); soonT = setTimeout(() => uploader?.run(false, true).catch(() => {}), 8000); soonT.unref(); };
