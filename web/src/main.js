@@ -1884,7 +1884,7 @@ async function afterReplay() {
   const look = kOcto ? [`${kOcto.name} brought back a ${(KEEPSAKES[kp.k]?.label ?? 'keepsake').toLowerCase()}. Go and see it on the sand.`, kOcto.id] : mvOcto ? [`${mvOcto.name} has been rearranging. Go and see what it moved.`, mvOcto.id] : null;
   const lookKey = kOcto ? 'k' + kp.id : mvOcto ? 'm' + mv.ts : ''; let lookSeen = ''; try { lookSeen = localStorage.getItem('ourtank.lookSeen') ?? ''; } catch { /* storage unavailable */ }
   if (look && !egg && !born && lookKey !== lookSeen) { try { localStorage.setItem('ourtank.lookSeen', lookKey); } catch { /* storage unavailable */ } setTimeout(() => { ui.toast(look[0], 4200); const f = fishes.byId.get(look[1]); if (f && !f.dead) setFocus(f); }, 600); return; }
-  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you: tap the bell at the top.', null] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
+  const say = egg ? ['The eggs are ready to hatch. Stay and watch.', null] : born ? [`${born.name} is about to give birth. Stay and watch.`, null] : mine ? ['A decision is waiting for you in Care.', 'care'] : m && !m.done ? [`${MYSTERY[m.kind]?.text ?? 'Something in the tank.'} Tap the glow.`, null] : G?.next ? [`Goal: ${G.next.text}.`, null] : null;
   if (!say) return; setTimeout(() => { ui.toast(say[0], 4200); if (say[1]) ui.flag(say[1], true); if (egg) { const fx = [...eggSprites.values()].find((x) => x.e?.id === egg.id); if (fx) setFocus(eggFocusOf(fx)); } }, 600);
 }
 async function welcomeBack() {
@@ -1905,7 +1905,7 @@ async function welcomeBack() {
     lines.unshift(...said);
   }
   { const g = s.fish.find((f) => f.gift?.wrapped && f.owner === mine); if (g) lines.unshift(`A gift from ${g.gift.from} is waiting for you on the sand.`); }
-  if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`${driftBlame(s.drift)} Tap it in the tank.`);
+  if ((s.bottles ?? []).some((b) => b.to === mine)) lines.push('A bottle turned up for you.'); else if (s.drift) lines.push(`Something turned up: ${driftBlame(s.drift).replace(/^(The|It|A) /, (m) => m.toLowerCase())} Tap it in the tank.`);
   if ((s.orders ?? []).length) lines.push(`${s.orders.length} delivery on the way.`);
   const next = [], my = mysteryOf(s), req = s.want ? s.want.text : s.daily && !s.daily.done ? s.daily.text : null;      // it ends on what is still to come: today's mystery, the request, and what the tank expects next
   { const G = goalOf(s); if (G?.next) next.push(`Goal: ${G.next.text}.`); }
