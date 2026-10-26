@@ -19,15 +19,16 @@ await p.waitForTimeout(1500);      // (feeding is care, not a job: it pays no sh
 const s1 = await S(); ck('choosing the food feeds straight away (no tap on the water): the octopus is less hungry, and no shells change hands', s1.shells === s0.shells && s1.fish[0].hunger < s0.fish[0].hunger, `${s0.shells}→${s1.shells}, hunger ${s0.fish[0].hunger}→${s1.fish[0].hunger}`);
 ck('the first session ends right after the first feed, with a start button', await waitCoach('YOU ARE ALL SET')); await p.click('#cbtn'); await p.waitForSelector('#modal.on #mok', { timeout: 20000 }); ck('and says what is coming next', /COMING UP/i.test(await p.textContent('#modal h2')) && (await p.$$eval('#modal li', (n) => n.length)) >= 2, (await p.$$eval('#modal li', (n) => n.map((x) => x.textContent))).join(' | ')); await p.click('#mok'); await p.waitForTimeout(300);
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('[data-cat=PLANTS]'); await p.click('[data-cat=PLANTS]'); await p.waitForSelector('.card[data-k="decor:fern"]'); await p.click('.card[data-k="decor:fern"]'); await p.waitForTimeout(650); await p.click('.notesheet.deco.on .buy');
-ck('the plant is free', (await p.textContent('#pok')).includes('Free'), await p.textContent('#pok'));
+ck('the starter pack is already laid out in the tank (a den among it), so another plant costs shells', (await S()).decor.length === 5 && (await S()).decor.some((d) => d.type === 'coconut') && (await p.textContent('#pok')).includes('10'), await p.textContent('#pok'));
 ck('placement bar opens', await p.evaluate(() => document.getElementById('placebar').classList.contains('on')));
 await p.waitForTimeout(700); await p.mouse.click(120, 600); await p.waitForTimeout(150);
 const valid = await p.evaluate(() => !document.getElementById('pok').disabled); ck('a clear spot is valid', valid);
 const before = (await S()); await p.click('#pok'); await p.waitForTimeout(300); const after = await S();
-ck('placing adds the plant for free', after.decor.length === before.decor.length + 1 && after.shells >= before.shells, `${before.decor.length}→${after.decor.length} shells ${before.shells}→${after.shells}`);
+ck('placing adds the plant and spends its shells (the plant wish may refund part)', after.decor.length === before.decor.length + 1 && after.shells < before.shells && after.shells >= before.shells - 10, `${before.decor.length}→${after.decor.length} shells ${before.shells}→${after.shells}`);
 ck('tutorial saved as finished', (await S()).flags.tut === 5);
 
 console.log('Shopping');
+await p.evaluate(() => { window.__game.state.shells = Math.max(window.__game.state.shells, 30); window.__game.emit('state'); });      /* (the opening's fern above was bought, not free: enough for the anemone) */
 await p.click('nav [data-tab=decorate]', { force: true }); await p.waitForSelector('[data-cat=PLANTS]'); await p.click('[data-cat=PLANTS]'); await p.waitForSelector('.card[data-k="decor:anemone"]'); await p.click('.card[data-k="decor:anemone"]');      /* (a level-1 plant that is not in the starter pack) */ await p.waitForTimeout(650); await p.click('.notesheet.deco.on .buy');
 const sh = (await S()).shells; ck('a plant costs shells', (await p.textContent('#pok')).includes('14'), await p.textContent('#pok'));
 await p.evaluate(() => { const d = window.__tank.decor; for (const [x, z] of [[2.2, 2.8], [-2.6, 2.9], [0.4, 3.0], [3.4, 2.6]]) { d.move(x, z); if (d.preview.valid) break; } document.getElementById('pok').disabled = !window.__tank.decor.preview.valid; }); await p.click('#pok'); await p.waitForTimeout(300);

@@ -1375,7 +1375,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Feed, clean and play: a happy tank levels up, and every level opens new animals, toys and habitats. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Feed, clean and play: a happy tank levels up, and every level opens new animals, toys and habitats. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Pip', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
@@ -1948,7 +1948,7 @@ async function firstFishPrompt() {
   if ($('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('settle')?.classList.contains('on') || focus || play || placing || (ui?.tab && ui.tab !== 'tank')) return;
   firstAsking = true;
   try {
-    const pk = await ui.pickFish({ title: 'Your own octopus', text: 'Every caretaker brings in an octopus of their own. Choose its color, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Coral', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+    const pk = await ui.pickFish({ title: 'Your own octopus', text: 'Every caretaker brings in an octopus of their own. Choose its color, then name it. Everyone can care for it, but it will know you.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Pip', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
     const r = await game.dispatch({ t: 'firstFish', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') { fail(r); firstAskAfter = performance.now() + 10 * 60e3; } else if (r.ok) sfx('arrive');      // something went wrong: not again for a good while
   } catch { firstAskAfter = performance.now() + 60e3; } finally { firstAsking = false; }
 }
@@ -2058,15 +2058,15 @@ window.__simClock = (on) => { const P = performance; if (on && !P.__real) { cons
 window.__lureStep = (n, dt = 0.1) => { for (let i = 0; i < n; i++) { lureTick(dt); fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list)); } };
 window.__sim = (n, dt = 1 / 30, drops = []) => {
   window.__eaten = 0; const oe = fishes.onEat; fishes.onEat = (f) => { window.__eaten++; oe?.(f); };
-  let inside = 0, samples = 0, worstFish = 0; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();
+  let inside = 0, samples = 0, worstFish = 0, worstPair = null; const W = Fish3D.world, o = new THREE.Vector3(), p = new THREE.Vector3();
   for (let i = 0; i < n; i++) {
     for (const [at, x] of drops) if (i === at) fishes.drop(x);
     fishes.update(dt, i * dt); fishes.list.forEach((f) => f.update(dt, rng, fishes.list));
     for (const f of fishes.list) {
       const cp = Math.cos(f.pitch), R = f.radius, offs = f.species.move === 'jet' ? [-0.3, 0, 0.3] : [-0.8, -0.4, 0, 0.4, 0.8];      // an octopus is solid only in its mantle and head: its arms drape over things
       for (const off of offs) { p.set(f.pos.x + cp * Math.cos(f.heading) * R * off, f.pos.y + Math.sin(f.pitch) * R * off, f.pos.z - cp * Math.sin(f.heading) * R * off); samples++; o.set(0, 0, 0); if (W.push(p, f.cr * 0.7, o)) inside++; }
-      for (const q of fishes.list) if (q !== f) { const d = Math.hypot(f.pos.x - q.pos.x, f.pos.y - q.pos.y, (f.pos.z - q.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + q.radius)); worstFish = Math.max(worstFish, 1 - d / mn); }
+      for (const q of fishes.list) if (q !== f) { const d = Math.hypot(f.pos.x - q.pos.x, f.pos.y - q.pos.y, (f.pos.z - q.pos.z) * 1.5), mn = Math.max(0.5, 0.42 * (f.radius + q.radius)); if (1 - d / mn > worstFish) { worstFish = 1 - d / mn; worstPair = [f.sk ?? f.species.id, q.sk ?? q.species.id, i, [f.pos.x, f.pos.y, f.pos.z].map((v) => +v.toFixed(1)).join(',')]; } }
     }
   }
-  return { eaten: window.__eaten, flakesLeft: fishes.flakes.length, bodySamplesTouchingDecor: inside, ofSamples: samples, pct: +(100 * inside / samples).toFixed(2), worstFishOverlap: +worstFish.toFixed(3), chasing: fishes.list.filter((f) => f.flake).length };
+  return { eaten: window.__eaten, flakesLeft: fishes.flakes.length, bodySamplesTouchingDecor: inside, ofSamples: samples, pct: +(100 * inside / samples).toFixed(2), worstFishOverlap: +worstFish.toFixed(3), worstPair, chasing: fishes.list.filter((f) => f.flake).length };
 };

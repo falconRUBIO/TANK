@@ -172,7 +172,7 @@ export function nextStage(fish, now = Date.now()) {
   const age = now - fish.born, s = stageOf(fish, now);
   if (s === 'adult') return null;
   const ms = (s === 'baby' ? BABY_DAYS : ADULT_DAYS) * DAY - age, h = Math.ceil(ms / 36e5);
-  return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h <= 1 ? 'under an hour' : `${h}h` };
+  return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 48 ? `about ${Math.round(h / 24)} days` : h >= 24 ? 'about a day' : h <= 1 ? 'under an hour' : `${h} hours` };      // (said the way a person would: not 3d 0h)
 }
 // The next chapter of one animal's life, in a line, for the top of its card: what it is on its way to, and roughly when (from the rules, so it is true).
 export function storyNext(t, f, now = Date.now()) {
@@ -215,7 +215,9 @@ export function bestStep(t, now = Date.now()) {
   const ask = live.find((f) => f.leaveAsk); if (ask) return { act: 'wellopen', fid: ask.id, title: `Help ${ask.name}`, why: ask.leaveAsk.why ? `It is missing ${ask.leaveAsk.why} and wants to leave.` : 'It is unhappy and wants to leave.', gain: null, urgent: true };
   const tryFix = (fn) => { try { const c = structuredClone(t); fn(c); return tankHealth(c, now).score - H.score; } catch { return 0; } };
   const n = needs(t);
-  if (n.includes('feed')) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry animals pull the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
+  if (n.includes('feed') && mealHungry(t)) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry animals pull the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
+  { const o = live.filter((f) => ownHungry(f) && ownHunger(f) > OCTO_DUE).sort((a, b) => ownHunger(b) - ownHunger(a))[0];      // an octopus or a seahorse is fed by hand, from its own card: the step says which one and with what
+    if (o) { const food = ownFood(o); out.push({ act: 'feeddrawer', title: `Feed ${o.name} ${food === 'crab' ? 'a crab' : 'its mysis'}`, why: `${o.name} is hungry, and a hungry animal pulls the health down most.`, gain: tryFix((c) => applyAction(c, { t: 'feed', food, fish: o.id }, { now, uid: o.owner, solo: true })) }); } }
   if (n.includes('water')) out.push({ act: 'water', title: 'Change the water', why: 'Old water makes up a big part of the tank score.', gain: tryFix((c) => applyAction(c, { t: 'water' }, { now })) });
   if (n.includes('glass')) out.push({ act: 'clean', title: 'Wipe the glass', why: 'A clear view keeps the tank score up.', gain: tryFix((c) => applyAction(c, { t: 'glass' }, { now })) });
   let cared = t; try { cared = structuredClone(t); for (const k of ['feed', 'water', 'glass']) applyAction(cared, { t: k }, { now }); } catch { cared = t; }      /* (judge each animal as it would be once fed and cleaned, so hunger is not counted twice) */
@@ -1660,7 +1662,8 @@ export const growthOf = (t, d, now) => (DECOR_DEF[d.type]?.cat === 'PLANTS' ? 1 
 // Optional, replaced (never carried over) the next day, never penalised, paid once to the shared wallet. Three tiers: easy 3, normal 5, special 8.
 // A wish is only chosen if the tank can do it right now, so a lone fish is never asked for a friendship and a spotless tank is never asked for care.
 const minorDecor = ['starfish', 'moss', 'shell'], seenDecor = (t) => t.decor.some((d) => !minorDecor.includes(d.type));
-export const needs = (t) => [(t.hunger > 0.3 || t.fish.some((f) => ownHungry(f) && !f.dead && ownHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
+const mealHungry = (t) => t.hunger > 0.3 && t.fish.some((f) => !f.dead && !f.away && !ownFood(f));      // (the tank's flakes matter only if something here eats them: an octopus alone eats its crabs)
+export const needs = (t) => [(mealHungry(t) || t.fish.some((f) => ownHungry(f) && !f.dead && ownHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
 const withSpot = (t) => t.fish.some((f) => f.found?.includes('spot') && t.decor.some((d) => d.id === f.spotId));
 export const DAILY = {
   watch: { tier: 'easy', text: 'Watch your fish swim for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
