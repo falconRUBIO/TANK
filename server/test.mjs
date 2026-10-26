@@ -639,7 +639,7 @@ await t('the storage check says whether the tank is safe from the server losing 
   const u = await mkUser('Stor'); const r = await call('/api/storage', null, u.token); assert.equal(r.status, 200); assert.ok(['safe', 'waiting', 'risk'].includes(r.body.level));
   assert.equal((await call('/api/storage')).status, 401);
 });
-await t('the GitHub copy: compressed, updated in place with the right sha, restored, and sent at most every 25 minutes (but always when stopping)', async () => {
+await t('the GitHub copy: compressed, updated in place with the right sha, restored, and sent at most every 3 hours (but always when stopping)', async () => {
   const { makeGithubOffsite, makeUploader, restoreIfEmpty, offsiteFromEnv } = await import('./offsite.mjs'); const zlib = (await import('node:zlib')).default, fs = await import('node:fs'), os = await import('node:os'), pth = await import('node:path');
   const files = new Map(), calls = []; let n = 0;
   const fake = async (url, o = {}) => { const u = new URL(url), key = decodeURIComponent(u.pathname.replace('/repos/me/data/contents/', '')); calls.push((o.method ?? 'GET') + ' ' + key);
@@ -649,7 +649,7 @@ await t('the GitHub copy: compressed, updated in place with the right sha, resto
   const up = makeUploader(off, () => live, () => {}); assert.equal(await up.run(), true); assert.ok(files.get('ourtank.db.gz').bytes.length < fs.readFileSync(live).length, 'stored compressed');
   assert.equal(zlib.gunzipSync(files.get('ourtank.db.gz').bytes).length, fs.readFileSync(live).length);
   S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('t', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
-  assert.equal(await up.run(), false, 'not again within 25 minutes'); assert.equal(await up.run(false, true), false, 'nor straight away even for something important (once a minute at most)');
+  assert.equal(await up.run(), false, 'not again within 3 hours'); assert.equal(await up.run(false, true), false, 'nor straight away even for something important (every 30 minutes at most)');
   S.db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('t2', String(Date.now())); fs.rmSync(live); S.db.exec(`VACUUM INTO '${live}'`);
   { const held = makeUploader(off, () => live, () => {}, { holdUntil: Date.now() + 60e3 }); assert.equal(await held.run(false, true), false, 'and never during the handover'); }
   assert.equal(await up.run(true), true, 'but always when the server is stopping'); assert.ok(calls.some((c) => c.startsWith('PUT ourtank-')), 'a dated copy too');

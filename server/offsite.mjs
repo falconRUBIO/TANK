@@ -5,6 +5,10 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { DatabaseSync } from 'node:sqlite';
 
+// How often a changed database is sent out. Every copy is the whole database going out over the host's metered bandwidth (a free Render plan
+// has 5 GB a month), and a tank changes every few minutes even with nobody playing, so the copy goes at most every 3 hours, plus at once when
+// the server stops or redeploys (nothing is lost then), and soon after something big (a tank made or joined, an octopus chosen), at most every 30 minutes.
+export const BACKUP_GAP = 3 * 3600e3, URGENT_GAP = 30 * 60e3, DATED_GAP = 20 * 3600e3;
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex'), hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();
 const enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
 
@@ -25,7 +29,7 @@ export function makeOffsite({ endpoint, bucket, accessKey, secret, region = 'aut
     return fetchImpl(url.origin + path.split('/').map(enc).join('/'), { method, headers: { ...headers, authorization }, body, signal: AbortSignal.timeout(20000) });
   };
   return {
-    describe: `${url.host}/${bucket}/${object}`,
+    describe: `${url.host}/${bucket}/${object}`, minGapMs: BACKUP_GAP,
     object,
     async put(buf, name) { const r = await call('PUT', buf, name); if (!r.ok) throw new Error('offsite upload failed: HTTP ' + r.status); return r.headers?.get?.('etag') ?? null; },
     // what is there now (its ETag), or null when nothing is: lets a server notice that someone else sent a newer copy
@@ -39,7 +43,7 @@ export function makeGithubOffsite({ token, repo, branch = 'main', object = 'ourt
   const api = (name) => `${apiBase}/repos/${repo}/contents/${name.split('/').map(enc).join('/')}`, file = (name) => name + '.gz';
   const hdr = (accept) => ({ authorization: `Bearer ${token}`, accept, 'user-agent': 'our-tank-backup', 'x-github-api-version': '2022-11-28' });
   return {
-    object, describe: `github.com/${repo}`, minGapMs: 25 * 60e3,
+    object, describe: `github.com/${repo}`, minGapMs: BACKUP_GAP,
     async put(buf, name = object) {
       let sha; const cur = await fetchImpl(`${api(file(name))}?ref=${branch}`, { headers: hdr('application/vnd.github+json'), signal: AbortSignal.timeout(20000) });
       if (cur.ok) sha = (await cur.json()).sha; else if (cur.status !== 404) throw new Error('offsite lookup failed: HTTP ' + cur.status);
@@ -108,7 +112,7 @@ export function makeUploader(off, snapshot, log = console.log, { expect, holdUnt
       if (blocked || stale) return false;
       if (!force && Date.now() < holdUntil) return false;
       if (!force && !urgent && off.minGapMs && Date.now() - at < off.minGapMs) return false;
-      if (urgent && !force && Date.now() - at < 60e3) return false;      // but never more than once a minute
+      if (urgent && !force && Date.now() - at < URGENT_GAP) return false;      // but not more than once every 30 minutes
       try {
         const file = snapshot(); if (!file) return false;
         if (isEmptyDb(file)) { log('offsite backup: the database has no players, not sending it over a good copy'); return false; }      // an empty server must never replace a real tank
@@ -116,7 +120,7 @@ export function makeUploader(off, snapshot, log = console.log, { expect, holdUnt
         if (!(await fresh())) return false;
         const got = await off.put(buf); last = h; at = Date.now(); err = '';
         if (checks) expect = got ?? await off.stamp();
-        if (at - lastDated > 3600e3) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; }                                  // one dated copy a day is always there too, overwritten hourly
+        if (at - lastDated > DATED_GAP) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; }                                  // one dated copy a day is always there too
         log(`offsite backup: uploaded ${buf.length} bytes`); return true;
       } catch (e) { err = String(e.message); log('offsite backup failed: ' + err); return false; }
     },

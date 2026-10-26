@@ -230,7 +230,10 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     return sendStatic(req, res, file);
   });
 
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 96 * 1024,      // (a journal photo is the biggest message: about 25 KB)
+  // messages are compressed (permessage-deflate, which every browser speaks): the whole tank goes to every phone after most actions, about
+  // 90 to 115 KB of JSON in a tank a few weeks old, and squeezes to about a seventh; the animals' positions (7 a second to each watching phone)
+  // squeeze too. The host meters every byte that goes out, so this is most of the game's bandwidth. Small messages are sent as they are.
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 96 * 1024, perMessageDeflate: { threshold: 512, zlibDeflateOptions: { level: 6, memLevel: 7 }, concurrencyLimit: 4 },      // (a journal photo is the biggest message: about 25 KB)
     handleProtocols: (protocols) => [...protocols].find((x) => x.startsWith('ourtank.')) ?? false });
   server.on('upgrade', (req, socket, head) => {
     const url = new URL(req.url, 'http://x');
