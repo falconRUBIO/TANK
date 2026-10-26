@@ -1,6 +1,7 @@
 // Daily Discovery: the only way a question becomes verified. It fetches each question's source page and checks, word for word, that the quoted
-// evidence is really on it. A question is verified only when (1) its evidence quote is found on its source page today, and (2) a reviewer has
-// recorded that the quote settles the answer and rules out the other two choices (review.ok). Nothing here trusts a model's say-so: the page
+// evidence is really on it. A question is verified only when (1) its evidence quote is found on its source page today, (2) the first review
+// (answer and explanation against the source) and the second, separate review (the quote settles it, no ambiguity) have passed, and (3) for a
+// flagged question (disputed, surprising, a precise number, conflicting sources) a person has approved it (see validate.mjs reviewProblems). Nothing here trusts a model's say-so: the page
 // is fetched, and the words are either there or they are not.
 //
 //   node tools/discovery_verify.mjs --candidates [id|category ...]   fetch the pages of questions with no evidence yet and write, for each, the
@@ -13,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { normText, words } from '../server/discovery/validate.mjs';
+import { normText, words, reviewProblems } from '../server/discovery/validate.mjs';
 
 const BANK = 'server/discovery/bank.json', SHEET = 'server/discovery/worksheet.json', CACHE = path.join(os.tmpdir(), 'tako-discovery-pages');
 fs.mkdirSync(CACHE, { recursive: true });
@@ -54,7 +55,7 @@ if (mode === 'check') {
     if (P.error) { q.verification = { url: q.source.url, quoteFound: false, checkedAt: today, error: P.error }; if (q.status === 'verified') q.status = 'unverified'; e++; continue; }      // (a page that cannot be read today does not stay verified on old evidence)
     const hit = found(q.evidence, P.text) || (q.source2?.url && q.evidence2 && found(q.evidence2, page(q.source2.url).text ?? ''));
     q.verification = { url: q.source.url, quoteFound: !!found(q.evidence, P.text), checkedAt: today, sha: crypto.createHash('sha256').update(P.text).digest('hex').slice(0, 16) };
-    if (q.verification.quoteFound && q.review?.ok === true) { q.status = 'verified'; q.verifiedAt = today; v++; } else { if (q.status === 'verified') q.status = 'unverified'; u++; if (!hit) q.verification.note = 'the quoted words are not on the page'; }
+    if (q.verification.quoteFound && !reviewProblems(q).length) { q.status = 'verified'; q.verifiedAt = today; v++; } else { if (q.status === 'verified') q.status = 'unverified'; u++; if (!hit) q.verification.note = 'the quoted words are not on the page'; }
   }
   fs.writeFileSync(BANK, JSON.stringify(bank, null, 1) + '\n'); console.log(`verified: ${v}; not verified: ${u}; page could not be read: ${e}`);
 }

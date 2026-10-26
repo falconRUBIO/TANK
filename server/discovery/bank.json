@@ -1148,6 +1148,9 @@
     "why": "The vulnerability cost is the researchers' interpretation, not a measured result. Hedge the question.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0028"
   ]
  },
  {
@@ -1811,7 +1814,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0045"
+  ]
  },
  {
   "id": "dd-0047",
@@ -1849,7 +1855,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0045"
+  ]
  },
  {
   "id": "dd-0048",
@@ -1887,7 +1896,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0045"
+  ]
  },
  {
   "id": "dd-0049",
@@ -1952,6 +1964,9 @@
     "why": "'Over the following weeks' is too specific; dark mutants are lost from the light organ over days. Make the timescale vague.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0045"
   ]
  },
  {
@@ -2240,7 +2255,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0085"
+  ]
  },
  {
   "id": "dd-0057",
@@ -2905,7 +2923,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0072"
+  ]
  },
  {
   "id": "dd-0074",
@@ -2943,7 +2964,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0072"
+  ]
  },
  {
   "id": "dd-0075",
@@ -4636,7 +4660,7 @@
    "publisher": "arXiv (Lohse group, physics)",
    "title": "On the sound of snapping shrimp"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -4644,10 +4668,11 @@
   "risk": "surprising",
   "searchNote": "Search results said the snapping shrimp closes its claw so quickly that a fast water jet develops; high-speed imaging showed the sound comes from a cavitation bubble formed in that jet and its collapse.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0113: Both test that collapsing cavitation (vapor) bubbles make the shrimp's strike or snap; the answers are near-identical.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0113"
   }
  },
  {
@@ -4928,7 +4953,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0125"
+  ]
  },
  {
   "id": "dd-0127",
@@ -5127,6 +5155,9 @@
     "why": "'As well as or better' overstates; reviews generally conclude rFC is comparable/equivalent.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0129"
   ]
  },
  {
@@ -6647,7 +6678,7 @@
    "publisher": "NCBI PMC (peer-reviewed)",
    "title": "Tetrodotoxin Poisoning Due to Pufferfish and Gastropods, and Their Intoxication Mechanism"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -6655,10 +6686,11 @@
   "risk": "surprising",
   "searchNote": "TTX review: TTX is originally produced by marine bacteria, and pufferfish are intoxicated through the food chain that starts with the bacteria.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0031: Both test that tetrodotoxin is made by bacteria, not by the animal (blue-ringed octopus vs pufferfish).",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0031"
   }
  },
  {
@@ -6681,7 +6713,7 @@
    "title": "Tetrodotoxin Poisoning Due to Pufferfish and Gastropods, and Their Intoxication Mechanism"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -6689,10 +6721,11 @@
   "risk": "none",
   "searchNote": "TTX poisoning paper: TTX inhibits nerve and muscle conduction by selectively blocking sodium channels, resulting in respiratory paralysis that causes death.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0032: Both test how tetrodotoxin harms people: it blocks nerve signals and can stop breathing (near-identical answers).",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0032"
   }
  },
  {
@@ -7509,6 +7542,9 @@
     "why": "The backward-pointing papillae line the mouth and especially the throat (esophagus); also the explanation's 'tooth-like cusps' makes the 'sharp, curved teeth' distractor arguable. Replace that distractor.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0191"
   ]
  },
  {
@@ -7624,7 +7660,10 @@
    "why": "Unsure of the exact comparison: confirm the source says the salt glands are 'more than twice the size of the brain' (and whether that is one gland or the pair). Distractor 'About the size of its brain' is close enough that any imprecision makes it wrong. The question stem also gives away why the glands are big.",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0191"
+  ]
  },
  {
   "id": "dd-0196",
@@ -7898,6 +7937,9 @@
     "why": "'Lets rarer species become established' is unclear (rarer species of what?), and 'eat only certain sponge types' conflicts with dd-0199, which says hawksbills also eat algae, corals and other invertebrates.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0199"
   ]
  },
  {
@@ -8883,7 +8925,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0228"
+  ]
  },
  {
   "id": "dd-0230",
@@ -9687,7 +9732,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0249"
+  ]
  },
  {
   "id": "dd-0251",
@@ -9745,6 +9793,9 @@
     "why": "'More ampullae than other sharks' is shaky: studies (Kajiura) found the hammerhead's advantage is a wider spread of pores and search swath, not better sensitivity; pore count comparison is species-dependent.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0249"
   ]
  },
  {
@@ -9991,6 +10042,9 @@
     "why": "'As they age' is misleading: shark cartilage is reinforced with mineralized tesserae from early life. Also most shark fossils are teeth.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0255"
   ]
  },
  {
@@ -10679,7 +10733,10 @@
    "why": "Tusk identity is listed as disputed-check: many references (older and current) still call it an incisor, so the 'incisor' distractor may be defensible. Confirm the canine identification is the current consensus before using it.",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0275"
+  ]
  },
  {
   "id": "dd-0275",
@@ -11411,7 +11468,10 @@
    "why": "Many sources say whale lice (cyamids) feed mainly on the whale's sloughing skin, not algae; confirm the source supports 'algae' as their main food. If skin is right, the answer must change.",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0291"
+  ]
  },
  {
   "id": "dd-0294",
@@ -13590,7 +13650,7 @@
    "title": "Giant green anemone"
   },
   "source2": null,
-  "status": "review",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -13598,10 +13658,11 @@
   "risk": "species-specific",
   "searchNote": "Monterey Bay Aquarium says the giant green anemone's color comes partly from its own pigment but mostly from symbiotic zoochlorellae and zooxanthellae in its tissues.",
   "prereview": {
-   "verdict": "review",
-   "why": "Disputed source of colour: some references say the giant green anemone's green comes mainly from its own epidermal pigment, with symbiotic zoochlorellae/zooxanthellae only adding to it. Monterey Bay Aquarium says 'mostly algae'. Check that the cited page says 'mostly' from algae and whether other authoritative sources agree; if they conflict, reject or reword to 'partly'.",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0312: Both test that the animal's color comes from algae living in its tissue (reef coral vs giant green anemone); the answers are word-for-word the same.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0312"
   }
  },
  {
@@ -13925,7 +13986,7 @@
    "publisher": "Smithsonian Ocean",
    "title": "Tough Teeth and Parrotfish Poop"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -13933,10 +13994,11 @@
   "risk": "surprising",
   "searchNote": "NOAA 'How does sand form?' says Hawaii's famous white-sand beaches come largely from parrotfish poop; Smithsonian describes parrotfish excreting ground coral as sand.",
   "prereview": {
-   "verdict": "fix",
-   "why": "Distractor 'Crushed seashells' is partly true: shell fragments are a real component of Hawaiian white sand. Replace with a clearly wrong option.",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0142: Both test that parrotfish make tropical beach sand by grinding reef rock and excreting it.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0142"
   },
   "corrections": [
    {
@@ -13980,7 +14042,7 @@
    "publisher": "Australian Institute of Marine Science",
    "title": "Crown-of-thorns starfish"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -13988,10 +14050,11 @@
   "risk": "species-specific",
   "searchNote": "NOAA PIFSC says when consuming coral it extrudes its stomach and releases digestive enzymes; AIMS notes it retracts its stomach when done.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0467: Both test that sea stars feed by pushing their stomach out onto the prey; the crown-of-thorns is a sea star.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0467"
   }
  },
  {
@@ -14014,7 +14077,7 @@
    "title": "That sinking feeling: Suspended sediments can prevent the ascent of coral egg bundles"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -14022,10 +14085,11 @@
   "risk": "none",
   "searchNote": "PMC study: suspended sediments can prevent the ascent of coral egg bundles, reducing fertilization chances.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0316: dd-0361's answer ('makes egg bundles sink') reveals dd-0316's answer that corals release egg-sperm bundles that float upward.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0316"
   }
  },
  {
@@ -14612,7 +14676,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0376"
+  ]
  },
  {
   "id": "dd-0378",
@@ -14646,7 +14713,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0376"
+  ]
  },
  {
   "id": "dd-0379",
@@ -15092,7 +15162,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0389"
+  ]
  },
  {
   "id": "dd-0391",
@@ -15419,7 +15492,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0398"
+  ]
  },
  {
   "id": "dd-0400",
@@ -15825,7 +15901,7 @@
    "publisher": "PubMed Central (NCBI)",
    "title": "Amoebocytes facilitate efficient carbon and nitrogen assimilation in the Cassiopea-Symbiodiniaceae symbiosis"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -15833,10 +15909,11 @@
   "risk": "species-specific",
   "searchNote": "Cassiopea photosymbiosis papers: symbiotic algae (Symbiodiniaceae) photosynthesis supplies the host with a significant portion of its organic carbon.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0427: Both test that the host animal gets most of its food from algae living in its tissues (giant clam vs upside-down jellyfish), with near-identical answers.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0427"
   }
  },
  {
@@ -16236,7 +16313,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0420"
+  ]
  },
  {
   "id": "dd-0422",
@@ -16550,7 +16630,7 @@
    "publisher": "NOAA Fisheries (hosted petition)",
    "title": "Giant Clam Petition 1"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -16558,10 +16638,11 @@
   "risk": "none",
   "searchNote": "Search summary: mantle algae density dropped sharply under prolonged high light, and the 1998 bleaching event cut algae in T. gigas about 30-fold (petition). Status review expected to discuss clam bleaching; verifier check.",
   "prereview": {
-   "verdict": "fix",
-   "why": "Explanation adds a weakly sourced specific claim (1998 event hit T. gigas hard; searchNote cites a petition). Trim.",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0312: Both rest on reef animals getting their color from algae in their tissue and turning white when they lose them; dd-0430's answer gives away dd-0312.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0312"
   },
   "corrections": [
    {
@@ -16757,7 +16838,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0434"
+  ]
  },
  {
   "id": "dd-0436",
@@ -16981,7 +17065,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0440"
+  ]
  },
  {
   "id": "dd-0442",
@@ -17057,7 +17144,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0442"
+  ]
  },
  {
   "id": "dd-0444",
@@ -17129,7 +17219,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0444"
+  ]
  },
  {
   "id": "dd-0446",
@@ -17379,7 +17472,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0447"
+  ]
  },
  {
   "id": "dd-0453",
@@ -18577,7 +18673,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0482"
+  ]
  },
  {
   "id": "dd-0484",
@@ -19762,7 +19861,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0461"
+  ]
  },
  {
   "id": "dd-0515",
@@ -19906,7 +20008,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0516"
+  ]
  },
  {
   "id": "dd-0519",
@@ -19944,7 +20049,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0516"
+  ]
  },
  {
   "id": "dd-0520",
@@ -19998,6 +20106,9 @@
     "why": "Mate-finding by smell is inferred from the males' large nostrils/olfactory organs. It has not been directly observed, and males of some species may also use their eyes. Hedge it.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0521"
   ]
  },
  {
@@ -20488,7 +20599,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0532"
+  ]
  },
  {
   "id": "dd-0534",
@@ -20539,6 +20653,9 @@
     "why": "The 'rising to the surface' distractor is partly true: oxygen minimum zones are shoaling (their upper boundary is rising) as they expand. Replace it.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0532"
   ]
  },
  {
@@ -20573,7 +20690,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0526"
+  ]
  },
  {
   "id": "dd-0536",
@@ -20663,7 +20783,7 @@
    "title": "Dumbo octopus: The murky world of the deepest octopus species"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -20671,10 +20791,11 @@
   "risk": "none",
   "searchNote": "NHM: they navigate the water by slowly flapping their ear-like fins, using their eight limbs to steer.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0537: dd-0538's answer ('flapping its ear-like fins') gives away dd-0537's answer that the dumbo octopus's fins look like ears.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0537"
   }
  },
  {
@@ -20875,7 +20996,7 @@
    "title": "Giant Squid Sucker Marks"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -20883,10 +21004,11 @@
   "risk": "none",
   "searchNote": "Smithsonian: stranded sperm whales carry large circular scars from giant squid suckers, often on the face and back.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0286: Both rest on sperm whales preying on giant squid; dd-0544's stem ('battles with giant squid') gives away dd-0286's answer.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0286"
   }
  },
  {
@@ -21001,7 +21123,7 @@
    "title": "The arms and tentacles of the colossal squid"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -21009,10 +21131,11 @@
   "risk": "species-specific",
   "searchNote": "Te Papa: arm hooks do not rotate; there are two rows of rotating hooks on the tentacle club, 22 to 25 tentacle hooks in total.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0050: dd-0547's answer ('the hooks on its two tentacle clubs') reveals dd-0050's answer that squid have two long feeding tentacles besides eight arms.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0050"
   }
  },
  {
@@ -21255,7 +21378,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0552"
+  ]
  },
  {
   "id": "dd-0554",
@@ -21803,7 +21929,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0565"
+  ]
  },
  {
   "id": "dd-0569",
@@ -21956,6 +22085,9 @@
     "why": "'Often lose as much as half' overstates: typical figures are about 40 to 45 percent. The answer 'up to about half' is fine.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0571"
   ]
  },
  {
@@ -22037,6 +22169,9 @@
     "why": "The explanation overclaims: huddles constantly form, shuffle and break up, and are tightest in the coldest, windiest weather. They don't stay put 'all winter, through every temperature'.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0571"
   ]
  },
  {
@@ -22329,7 +22464,10 @@
    "why": "",
    "by": "independent knowledge review (no source pages; not verification)",
    "at": "2026-10-26"
-  }
+  },
+  "givesAway": [
+   "dd-0581"
+  ]
  },
  {
   "id": "dd-0583",
@@ -22839,6 +22977,9 @@
     "why": "The explanation adds a time-sensitive population claim (a '2025 drone survey... stabilising') that will date and adds risk. Remove it.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0595"
   ]
  },
  {
@@ -23101,6 +23242,9 @@
     "why": "'Up to 10 percent' is a precise single-source number (literature figures vary, some higher) and 'byproduct' is unverified. Remove the number from the stem and the mechanism claim from the explanation.",
     "at": "2026-10-26"
    }
+  ],
+  "givesAway": [
+   "dd-0602"
   ]
  },
  {
@@ -23203,7 +23347,7 @@
    "publisher": "NOAA Office of National Marine Sanctuaries",
    "title": "Wildlife Health at Monterey Bay National Marine Sanctuary"
   },
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -23211,10 +23355,11 @@
   "risk": "none",
   "searchNote": "Smithsonian Ocean: otters keep Alaskan kelp forests balanced; without them urchins would mow down the kelp and an 'urchin barren' would emerge. NOAA Monterey Bay: when sea otters decline, urchin numbers explode and impact kelp. A 2024 PNAS study notes the effect is weaker in some places (San Nicolas Island), so the question is limited to Alaska and says 'tends to'.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Duplicate of dd-0487: Both test that sea otters keep sea urchin numbers in check; dd-0606's answer (otters gone, urchins multiply) gives it away.",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0487"
   }
  },
  {
@@ -23237,7 +23382,7 @@
    "title": "Restoring Balance: What Sea Urchins Reveal About Ecosystem Health"
   },
   "source2": null,
-  "status": "unverified",
+  "status": "rejected",
   "verifiedAt": null,
   "evidence": null,
   "verification": null,
@@ -23245,10 +23390,11 @@
   "risk": "species-specific",
   "searchNote": "NOAA page says sunflower sea stars are considered a keystone predator essential for the survival of kelp forests along the West Coast because they can consume several urchins per day. Distractors are tropical Indo-Pacific species that do not live in West Coast kelp forests.",
   "prereview": {
-   "verdict": "ok",
-   "why": "",
-   "by": "independent knowledge review (no source pages; not verification)",
-   "at": "2026-10-26"
+   "verdict": "reject",
+   "why": "Gives away dd-0473: Both rest on sunflower sea stars eating sea urchins; dd-0473's stem gives away dd-0607's answer (sunflower sea star).",
+   "by": "bank-wide duplicate check (no source pages; not verification)",
+   "at": "2026-10-26",
+   "dupOf": "dd-0473"
   }
  },
  {

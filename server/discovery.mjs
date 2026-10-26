@@ -10,7 +10,7 @@ import { tx } from './db.mjs';
 import { checkBank } from './discovery/validate.mjs';
 import { GUIDE, guideOfPage } from '../web/src/game/rules.js';
 
-export const DD_REWARD = 2;            // shells for taking part, right or wrong, once per caretaker per question
+export const DD_REWARD = 2;            // shells for the tank's shared wallet, once a day per TANK: the first caretaker to answer (right or wrong) earns it for everyone
 export const LIVE_MS = 120e3;          // a behavior counts as seen by whoever had the tank open within this long of it happening
 const DAY = 864e5;
 
@@ -41,13 +41,14 @@ export function createDiscovery(db, { bankPath = null, bank = null, reviewedPath
   // choosing a question: never one this tank has had; a different category from the last few days and a change of difficulty, and not the
   // same animal as recently; among the equally good, an order of its own for each tank (so tanks are not all on the same question)
   const choose = (tankId, day) => {
-    const P = load().published; if (!P.length) return null;
+    const B = load(), P = B.published; if (!P.length) return null;
     const used = new Set(db.prepare('SELECT qid FROM dd_day WHERE tank_id=? AND qid IS NOT NULL').all(tankId).map((r) => r.qid));
     const recent = db.prepare('SELECT q FROM dd_day WHERE tank_id=? AND qid IS NOT NULL ORDER BY day DESC LIMIT 10').all(tankId).map((r) => JSON.parse(r.q));
     const subj = (q) => String(q.fact).split('.').slice(0, 2).join('.'), h = (s) => { let x = 2166136261; for (const c of s) x = Math.imul(x ^ c.charCodeAt(0), 16777619) >>> 0; return x; };
     let best = null, bestScore = Infinity;
     for (const q of P) { if (used.has(q.id)) continue;
-      let sc = 0; recent.forEach((r, i) => { if (i < 3 && r.category === q.category) sc += 10 - i * 3; if (i < 2 && r.difficulty === q.difficulty) sc += 2; if (subj(r) === subj(q)) sc += 6; if (i < 4 && q.behavior && r.behavior === q.behavior) sc += 4; });
+      let sc = 0; for (const g of q.givesAway ?? []) if (!used.has(g) && B.byId.has(g)) sc += 8;      // (its wording tells another question's answer: ask that one first)
+      recent.forEach((r, i) => { if (i < 3 && r.category === q.category) sc += 10 - i * 3; if (i < 2 && r.difficulty === q.difficulty) sc += 2; if (subj(r) === subj(q)) sc += 6; if (i < 4 && q.behavior && r.behavior === q.behavior) sc += 4; });
       sc += (h(`${tankId}:${day}:${q.id}`) % 1000) / 1000;
       if (sc < bestScore) { best = q; bestScore = sc; } }
     return best;
@@ -76,12 +77,13 @@ export function createDiscovery(db, { bankPath = null, bank = null, reviewedPath
     const mine = db.prepare('SELECT choice,correct,ts FROM dd_answer WHERE tank_id=? AND day=? AND user_id=?').get(tankId, day, userId);
     const base = { t: 'dd', day, id: q.id, q: q.q, choices: q.choices, category: q.category, difficulty: q.difficulty, learned, seen };
     if (!mine) return { ...base, state: 'open' };
-    const A = new Map(db.prepare('SELECT user_id,choice,correct FROM dd_answer WHERE tank_id=? AND day=?').all(tankId, day).map((r) => [r.user_id, r]));
-    return { ...base, state: 'answered', choice: mine.choice, correct: !!mine.correct, answer: q.answer, explain: q.explain, source: q.source, behavior: q.behavior,
+    const A = new Map(db.prepare('SELECT user_id,choice,correct FROM dd_answer WHERE tank_id=? AND day=?').all(tankId, day).map((r) => [r.user_id, r])), paidBy = db.prepare('SELECT paid_by FROM dd_day WHERE tank_id=? AND day=?').get(tankId, day)?.paid_by ?? null;
+    return { ...base, state: 'answered', reward: paidBy ? { by: paidBy, name: names(tankId).find((m) => m.id === paidBy)?.name ?? null, shells: DD_REWARD } : null, choice: mine.choice, correct: !!mine.correct, answer: q.answer, explain: q.explain, source: q.source, behavior: q.behavior,
       results: names(tankId).map((m) => ({ id: m.id, name: m.name, ...(A.has(m.id) ? { choice: A.get(m.id).choice, correct: !!A.get(m.id).correct } : { waiting: true }) })) };
   };
 
-  // an answer: final, once. The reward goes into the shared wallet in the same transaction, keyed so it can only ever be paid once.
+  // an answer: final, once. The day's one reward goes into the shared wallet in the same transaction as the first answer: dd_day.paid_by is set
+  // only while it is empty, so however many caretakers, phones or retries, the tank is paid 2 shells for the day and no more.
   const answer = (tankId, userId, { id, choice } = {}, { pay } = {}) => tx(db, () => {
     const t = clock(), day = tankDay(tankId, 0, t), row = db.prepare('SELECT qid,q FROM dd_day WHERE tank_id=? AND day=?').get(tankId, day);
     if (!row?.qid) return { ok: false, reason: 'NO_QUESTION' };
@@ -90,7 +92,8 @@ export function createDiscovery(db, { bankPath = null, bank = null, reviewedPath
     const q = JSON.parse(row.q), right = c === q.answer;
     const ins = db.prepare('INSERT OR IGNORE INTO dd_answer (tank_id,day,user_id,qid,choice,correct,ts) VALUES (?,?,?,?,?,?,?)').run(tankId, day, userId, row.qid, c, right ? 1 : 0, t);
     if (!ins.changes) return { ok: true, dup: true, paid: 0 };      // answered already (another phone, a reconnect): the first answer stands
-    const paid = db.prepare("INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,'discovery',?,?,?)").run(tankId, userId, DD_REWARD, t, `dd:${day}`).changes ? DD_REWARD : 0;
+    const paid = db.prepare('UPDATE dd_day SET paid_by=?, paid_at=? WHERE tank_id=? AND day=? AND paid_by IS NULL').run(userId, t, tankId, day).changes ? DD_REWARD : 0;
+    if (paid) db.prepare("INSERT OR IGNORE INTO transactions (tank_id,user_id,type,amount,ts,idem) VALUES (?,?,'discovery',?,?,?)").run(tankId, userId, DD_REWARD, t, `dd:${day}`);      // (the ledger line, as for every other shell)
     if (paid && pay) pay(paid);
     return { ok: true, dup: false, paid, correct: right };
   });

@@ -1,0 +1,19 @@
+[
+  {"keep": "dd-0142", "drop": "dd-0359", "why": "Both test that parrotfish make tropical beach sand by grinding reef rock and excreting it.", "kind": "duplicate"},
+  {"keep": "dd-0031", "drop": "dd-0170", "why": "Both test that tetrodotoxin is made by bacteria, not by the animal (blue-ringed octopus vs pufferfish).", "kind": "duplicate"},
+  {"keep": "dd-0032", "drop": "dd-0171", "why": "Both test how tetrodotoxin harms people: it blocks nerve signals and can stop breathing (near-identical answers).", "kind": "duplicate"},
+  {"keep": "dd-0467", "drop": "dd-0360", "why": "Both test that sea stars feed by pushing their stomach out onto the prey; the crown-of-thorns is a sea star.", "kind": "duplicate"},
+  {"keep": "dd-0479", "drop": "dd-0360", "why": "dd-0360's stem ('How does the crown-of-thorns starfish eat coral?') states dd-0479's answer that it feeds on coral.", "kind": "gives-away"},
+  {"keep": "dd-0286", "drop": "dd-0544", "why": "Both rest on sperm whales preying on giant squid; dd-0544's stem ('battles with giant squid') gives away dd-0286's answer.", "kind": "gives-away"},
+  {"keep": "dd-0487", "drop": "dd-0606", "why": "Both test that sea otters keep sea urchin numbers in check; dd-0606's answer (otters gone, urchins multiply) gives it away.", "kind": "duplicate"},
+  {"keep": "dd-0488", "drop": "dd-0606", "why": "Both test that unchecked sea urchins graze a kelp forest bare.", "kind": "duplicate"},
+  {"keep": "dd-0473", "drop": "dd-0607", "why": "Both rest on sunflower sea stars eating sea urchins; dd-0473's stem gives away dd-0607's answer (sunflower sea star).", "kind": "gives-away"},
+  {"keep": "dd-0478", "drop": "dd-0607", "why": "dd-0478's stem says sunflower sea stars are keystone species, giving away dd-0607's answer to 'which sea star is a keystone predator'.", "kind": "gives-away"},
+  {"keep": "dd-0050", "drop": "dd-0547", "why": "dd-0547's answer ('the hooks on its two tentacle clubs') reveals dd-0050's answer that squid have two long feeding tentacles besides eight arms.", "kind": "gives-away"},
+  {"keep": "dd-0312", "drop": "dd-0430", "why": "Both rest on reef animals getting their color from algae in their tissue and turning white when they lose them; dd-0430's answer gives away dd-0312.", "kind": "gives-away"},
+  {"keep": "dd-0427", "drop": "dd-0410", "why": "Both test that the host animal gets most of its food from algae living in its tissues (giant clam vs upside-down jellyfish), with near-identical answers.", "kind": "duplicate"},
+  {"keep": "dd-0312", "drop": "dd-0351", "why": "Both test that the animal's color comes from algae living in its tissue (reef coral vs giant green anemone); the answers are word-for-word the same.", "kind": "duplicate"},
+  {"keep": "dd-0113", "drop": "dd-0118", "why": "Both test that collapsing cavitation (vapor) bubbles make the shrimp's strike or snap; the answers are near-identical.", "kind": "gives-away"},
+  {"keep": "dd-0537", "drop": "dd-0538", "why": "dd-0538's answer ('flapping its ear-like fins') gives away dd-0537's answer that the dumbo octopus's fins look like ears.", "kind": "gives-away"},
+  {"keep": "dd-0316", "drop": "dd-0361", "why": "dd-0361's answer ('makes egg bundles sink') reveals dd-0316's answer that corals release egg-sperm bundles that float upward.", "kind": "gives-away"}
+]

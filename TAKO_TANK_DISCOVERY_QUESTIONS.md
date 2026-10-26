@@ -1,6 +1,6 @@
 # Tako Tank Daily Discovery: question bank export
 
-608 questions. Status counts: 569 unverified, 28 review, 11 rejected. Only **verified** questions can be shown to players.
+608 questions. Status counts: 556 unverified, 27 review, 25 rejected. Only **verified** questions can be shown to players.
 
 Each entry: the question, the three choices (the correct one in bold), the explanation, the source, and its checking status. `risk` is what the researcher flagged for the checker; the research note says what the search showed (it is not a quote).
 
@@ -1368,7 +1368,7 @@ Fact id: `fish.northern-puffer.inflation-sac` · risk: species-specific
 
 <sub>Research note: NOAA northern puffer report: muscles of the first branchiostegal ray enlarge the mouth cavity and draw in water or air, which is forced into a sac that is a ventral diverticulum of the stomach.</sub>
 
-### dd-0170 · medium · unverified
+### dd-0170 · medium · rejected
 
 **Where does the tetrodotoxin in marine pufferfish originally come from?**
 
@@ -1384,7 +1384,7 @@ Fact id: `fish.pufferfish.ttx-bacterial-origin` · risk: surprising
 
 <sub>Research note: TTX review: TTX is originally produced by marine bacteria, and pufferfish are intoxicated through the food chain that starts with the bacteria.</sub>
 
-### dd-0171 · medium · unverified
+### dd-0171 · medium · rejected
 
 **How does tetrodotoxin, the pufferfish poison, harm the body?**
 
@@ -3760,7 +3760,7 @@ Fact id: `crustaceans.mantis-shrimp.uv-sunscreen-filters` · risk: species-speci
 
 <sub>Research note: The 2014 study found that the UV receptor set in Neogonodactylus oerstedii rests on only two visual pigments, with five of six UV receptor types sharing one pigment, and that biological sunscreens tune the UV vision.</sub>
 
-### dd-0118 · medium · unverified
+### dd-0118 · medium · rejected
 
 **Where does the loud snap of a snapping (pistol) shrimp actually come from?**
 
@@ -5620,7 +5620,7 @@ Fact id: `corals-reefs.aggregating.cloning` · risk: species-specific
 
 <sub>Research note: Monterey Bay Aquarium describes aggregating anemones forming clones by dividing (splitting). Verify wording on the page.</sub>
 
-### dd-0351 · medium · review
+### dd-0351 · medium · rejected
 
 **What gives the giant green anemone most of its green color?**
 
@@ -5748,7 +5748,7 @@ Fact id: `corals-reefs.giant-barrel.nickname` · risk: none
 
 <sub>Research note: NOAA NCCOS calls Xestospongia muta the long-lived 'redwood' of the coral reef; a UNC Wilmington paper is titled 'Redwood of the reef'.</sub>
 
-### dd-0359 · medium · unverified
+### dd-0359 · medium · rejected
 
 **Much of the white sand on Hawaii's famous beaches comes from what?**
 
@@ -5764,7 +5764,7 @@ Fact id: `corals-reefs.parrotfish.sand` · risk: surprising
 
 <sub>Research note: NOAA 'How does sand form?' says Hawaii's famous white-sand beaches come largely from parrotfish poop; Smithsonian describes parrotfish excreting ground coral as sand.</sub>
 
-### dd-0360 · medium · unverified
+### dd-0360 · medium · rejected
 
 **How does the crown-of-thorns starfish eat coral?**
 
@@ -5780,7 +5780,7 @@ Fact id: `corals-reefs.crown-of-thorns.feeding` · risk: species-specific
 
 <sub>Research note: NOAA PIFSC says when consuming coral it extrudes its stomach and releases digestive enzymes; AIMS notes it retracts its stomach when done.</sub>
 
-### dd-0361 · hard · unverified
+### dd-0361 · hard · rejected
 
 **How can muddy, sediment-filled water harm coral spawning?**
 
@@ -6566,7 +6566,7 @@ Fact id: `jellies.cassiopea.sleep` · risk: surprising
 
 <sub>Research note: Caltech record 'The Jellyfish Cassiopea Exhibits a Sleep-like State'; Smithsonian notes slower pulsing the day after being kept awake; first animal without a brain observed sleeping (2017).</sub>
 
-### dd-0410 · medium · unverified
+### dd-0410 · medium · rejected
 
 **Where does the upside-down jellyfish Cassiopea get much of its food?**
 
@@ -6888,7 +6888,7 @@ Fact id: `mollusks.giant-clam.algae-acquired-from-water` · risk: surprising
 
 <sub>Research note: Lizard Island guide: algae sit in tubules branching from the gut through the mantle, and the clam takes the algae in from the water when it settles as a juvenile.</sub>
 
-### dd-0430 · medium · unverified
+### dd-0430 · medium · rejected
 
 **Like corals, giant clams can 'bleach'. What happens when they do?**
 
@@ -8620,7 +8620,7 @@ Fact id: `deep-sea.dumbo-octopus.name-origin` · risk: none
 
 <sub>Research note: NHM: dumbo octopuses are named for their large ear-like fins, which resemble those of the Disney elephant.</sub>
 
-### dd-0538 · medium · unverified
+### dd-0538 · medium · rejected
 
 **How does a dumbo octopus mainly move through the water?**
 
@@ -8716,7 +8716,7 @@ Fact id: `deep-sea.giant-squid.gulf-of-mexico-2019` · risk: none
 
 <sub>Research note: NOAA Research: expedition captured rare footage of a giant squid in the Gulf of Mexico in 2019, off Louisiana; second in-habitat video. (US federal naming is now Gulf of America; source uses Gulf of Mexico.)</sub>
 
-### dd-0544 · easy · unverified
+### dd-0544 · easy · rejected
 
 **What marks on sperm whales point to their battles with giant squid?**
 
@@ -8764,7 +8764,7 @@ Fact id: `deep-sea.colossal-squid.hooks` · risk: none
 
 <sub>Research note: Te Papa: hooks in a double row in the middle of each arm between suckers, plus two rows of hooks on the tentacle clubs; they probably help hold prey.</sub>
 
-### dd-0547 · hard · unverified
+### dd-0547 · hard · rejected
 
 **Which of the colossal squid's hooks can swivel?**
 
@@ -9712,7 +9712,7 @@ Fact id: `kelp-plankton.giant-kelp.max-growth-rate` · risk: numeric
 
 <sub>Research note: NOAA Channel Islands page gives 50-60 cm (20-25 inches) per day for giant kelp. Monterey Bay Aquarium says giant kelp can grow up to two feet a day under ideal conditions, typically 10-12 inches daily in Monterey Bay (the summary did not say which of the aquarium's two kelp-forest URLs had this).</sub>
 
-### dd-0606 · easy · unverified
+### dd-0606 · easy · rejected
 
 **In Alaska's kelp forests, what tends to happen when sea otters disappear?**
 
@@ -9728,7 +9728,7 @@ Fact id: `kelp-plankton.kelp-forest.urchin-barren` · risk: none
 
 <sub>Research note: Smithsonian Ocean: otters keep Alaskan kelp forests balanced; without them urchins would mow down the kelp and an 'urchin barren' would emerge. NOAA Monterey Bay: when sea otters decline, urchin numbers explode and impact kelp. A 2024 PNAS study notes the effect is weaker in some places (San Nicolas Island), so the question is limited to Alaska and says 'tends to'.</sub>
 
-### dd-0607 · medium · unverified
+### dd-0607 · medium · rejected
 
 **Which sea star is considered a keystone predator of West Coast kelp forests because it eats several sea urchins a day?**
 

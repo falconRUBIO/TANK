@@ -6,7 +6,7 @@ import { start } from '../server/server.mjs';
 const today = new Date().toISOString().slice(0, 10), U = 'https://example.org/fixture/escape';
 const BANK = [{ id: 'dd-9001', fact: 'cephalopods.fixture-octopus.squeeze', q: 'TEST FIXTURE: what limits the smallest gap an octopus can squeeze through?', choices: ['Its beak', 'Its eyes', 'Its suckers'], answer: 0,
   explain: 'TEST FIXTURE explanation: the hard beak is the one part that cannot squeeze.', category: 'cephalopods', difficulty: 'medium', behavior: 'escape', source: { url: U, publisher: 'Fixture Aquarium' }, status: 'verified', verifiedAt: today,
-  evidence: 'Fixture evidence sentence for the browser drill.', verification: { url: U, quoteFound: true, checkedAt: today }, review: { ok: true } }];
+  evidence: 'Fixture evidence sentence for the browser drill.', verification: { url: U, quoteFound: true, checkedAt: today }, review1: { by: 'ai:first', at: today, ok: true, answerMatchesSource: true, explanationMatchesSource: true }, review2: { by: 'ai:second', at: today, ok: true, quoteSupportsAnswer: true, distractorsWrong: true, unambiguous: true } }];
 const S = await start({ port: 0, dbPath: ':memory:', limits: { userPerHour: 500, tankPerHour: 500, joinPerMin: 500, actionsPer10s: 500 }, discovery: { bank: BANK } }), base = `http://localhost:${S.port}`;
 const call = async (p, body, tok) => (await fetch(base + p, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: body ? JSON.stringify(body) : undefined })).json();
 const mk = async (name) => (await (await fetch(base + '/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, avatar: { skin: '#e8b890', hair: '#5a3ad0', hat: null } }) })).json());
@@ -45,7 +45,7 @@ cb = await until(B, (v) => v?.right); await B.waitForTimeout(600);
 ck('Ben answers (wrongly): the reveal marks the right answer and his guess, and explains', cb?.right && /Not quite/.test(cb.text) && /TEST FIXTURE explanation/.test(cb.text) && /Source: Fixture Aquarium/.test(cb.text), cb?.text);
 ck('it lists who has answered and who has not', cb?.who.some((w) => /^You C ✗/.test(w)) && cb.who.some((w) => /Ana Hasn.t answered/.test(w)), cb?.who);
 ck('the tank box says what the game does and that it already happened here, while Ben was not watching', /In your tank/i.test(cb?.text ?? '') && /Inky climbed out of the tank/.test(cb?.text ?? '') && /weren.t watching at the time/.test(cb?.text ?? ''), cb?.text);
-ck('2 shells went into the shared wallet', (await B.evaluate(() => window.__game.state.shells)) === shells0 + 2, await B.evaluate(() => window.__game.state.shells) - shells0);
+ck('Ben answered first: 2 shells went into the shared wallet', (await B.evaluate(() => window.__game.state.shells)) === shells0 + 2, await B.evaluate(() => window.__game.state.shells) - shells0);
 await B.screenshot({ path: `${OUT}/dd_answered.png` });
 const aBefore = await A.evaluate(() => window.__game.dd);
 ck("Ana's phone still holds no answer and no guess after Ben answered", aBefore.state === 'open' && !('answer' in aBefore) && !('results' in aBefore), aBefore.state);
@@ -54,6 +54,7 @@ await A.evaluate(() => window.__ui.discovery()); await A.waitForTimeout(300);
 await A.evaluate(() => document.querySelector('#modal .ddc [data-dd="0"]').click());
 ca = await until(A, (v) => v?.right); await A.waitForTimeout(500);
 ck("Ana answers right: she sees she got it, and Ben's guess", /You got it/.test(ca?.text ?? '') && ca.who.some((w) => /Ben C ✗/.test(w)), ca?.who);
+ck("Ana's answer earns nothing more: the tank's 2 shells for the day were already paid, and her card says Ben earned them", (await B.evaluate(() => window.__game.state.shells)) === shells0 + 2 && /Ben earned today.s 2 shells/.test(ca?.text ?? ''), { shells: (await B.evaluate(() => window.__game.state.shells)) - shells0 });
 cb = await until(B, (v) => v?.who.some((w) => /Ana A ✓/.test(w)));
 ck("Ben's open card shows Ana's answer by itself", cb?.who.some((w) => /Ana A ✓/.test(w)), cb?.who);
 await A.evaluate(() => document.getElementById('ddok').click());

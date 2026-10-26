@@ -12,7 +12,7 @@ const today = new Date().toISOString().slice(0, 10), CAT = ['cephalopods', 'fish
 const W = 'amber basalt cobalt dune ember fjord garnet harbor indigo jasper kelp lagoon meadow nectar opal pebble quartz reef saffron tundra umber violet willow xenon yarrow zephyr'.split(' '), w3 = (i, k) => [0, 1, 2].map((j) => W[(i * 3 + j + k) % W.length]).join(' ');      // (words no two fixtures share, so none look alike)
 const fx = (i, extra = {}) => ({ id: `dd-${String(i).padStart(4, '0')}`, fact: `${CAT[i % CAT.length]}.fixture-${i}.claim-${i}`, q: `Fixture ${w3(i, 0)}?`, choices: [`Alpha ${i}`, `Bravo ${i}`, `Charlie ${i}`], answer: i % 3,
   explain: `Fixture explanation, ${w3(i, 9)} ${w3(i, 18)}.`, category: CAT[i % CAT.length], difficulty: ['easy', 'medium', 'hard'][i % 3], source: { url: `https://example.org/fixture/${i}`, publisher: 'Fixture' }, status: 'verified', verifiedAt: today,
-  evidence: `Fixture evidence sentence number ${i} for the test.`, verification: { url: `https://example.org/fixture/${i}`, quoteFound: true, checkedAt: today }, review: { ok: true }, ...extra });
+  evidence: `Fixture evidence sentence number ${i} for the test.`, verification: { url: `https://example.org/fixture/${i}`, quoteFound: true, checkedAt: today }, review1: { by: 'ai:first', at: today, ok: true, answerMatchesSource: true, explanationMatchesSource: true }, review2: { by: 'ai:second', at: today, ok: true, quoteSupportsAnswer: true, distractorsWrong: true, unambiguous: true }, ...extra });
 const BANK = [fx(1, { behavior: 'escape' }), fx(2), fx(3), fx(4, { behavior: 'mimic' }), fx(5), fx(6), fx(7, { status: 'unverified' })];      // six published, one not
 
 let clock = Date.parse('2026-11-02T15:00:00Z');
@@ -54,11 +54,12 @@ await t('a friend\'s guess stays hidden until you answer; on answering you see r
 });
 await t('answering reveals at once, and a friend who answered earlier sees the new guess without reopening', async () => {
   const q = BANK.find((y) => y.id === va.id); A.send(JSON.stringify({ t: 'ddAnswer', id: va.id, choice: q.answer }));
-  const ra = await waitFor(A, (m) => m.t === 'dd' && m.state === 'answered'); assert.equal(ra.correct, true); assert.equal(ra.answer, q.answer);
+  const ka = await waitFor(A, (m) => m.t === 'ddAck'); assert.equal(ka.paid, 0, 'Ben already earned the day\'s shells for the tank');
+  const ra = await waitFor(A, (m) => m.t === 'dd' && m.state === 'answered'); assert.equal(ra.correct, true); assert.equal(ra.answer, q.answer); assert.equal(ra.reward?.name, 'Ben');
   assert.deepEqual(ra.results.map((r) => [r.name, r.correct]), [['Ana', true], ['Ben', false]]);
   const rb = await waitFor(Bw, (m) => m.t === 'dd' && m.state === 'answered'); assert.equal(rb.results.find((r) => r.name === 'Ana').correct, true);
 });
-await t('the shared wallet gets 2 shells per caretaker, right or wrong, once', async () => { assert.equal(shells(tk.id), before + 4); });
+await t('the shared wallet gets 2 shells for the day, earned by the first to answer (here wrongly), and no more for the others', async () => { assert.equal(shells(tk.id), before + 2); });
 await t('answers are final: a second answer (another phone, a reconnect) changes nothing and pays nothing', async () => {
   const A2 = await open(a.token); await dd(A2); const s0 = shells(tk.id);
   A2.send(JSON.stringify({ t: 'ddAnswer', id: va.id, choice: 0 })); const ack = await waitFor(A2, (m) => m.t === 'ddAck'); assert.equal(ack.dup, true); assert.equal(ack.paid, 0);
@@ -71,6 +72,13 @@ await t('two phones of one caretaker answering at the same moment: one answer st
   const k1 = await waitFor(C1, (m) => m.t === 'ddAck'), k2 = await waitFor(C2, (m) => m.t === 'ddAck');
   assert.equal([k1, k2].filter((k) => !k.dup).length, 1); assert.equal(shells(tk.id), s0 + 2);
   assert.equal(S.db.prepare('SELECT COUNT(*) n FROM dd_answer WHERE tank_id=? AND user_id=?').get(tk.id, c.userId).n, 1); C1.close(); C2.close();
+});
+await t('three caretakers answering at the same moment: everyone\'s answer counts, and the tank is paid 2 shells in all', async () => {
+  nextDay(); const P = await Promise.all([a, b, c].map((u) => open(u.token))), V = await Promise.all(P.map(dd)), s0 = shells(tk.id);
+  P.forEach((w, i) => w.send(JSON.stringify({ t: 'ddAnswer', id: V[i].id, choice: i })));
+  const K = await Promise.all(P.map((w) => waitFor(w, (m) => m.t === 'ddAck')));
+  assert.ok(K.every((k) => k.ok && !k.dup)); assert.equal(K.reduce((n, k) => n + k.paid, 0), 2); assert.equal(shells(tk.id), s0 + 2);
+  assert.equal(S.db.prepare("SELECT COUNT(*) n FROM transactions WHERE tank_id=? AND type='discovery' AND idem=?").get(tk.id, `dd:${V[0].day}`).n, 1); P.forEach((w) => w.close());
 });
 await t('a new caretaker joins on today\'s question, the same as everyone\'s, and is never given an old one', async () => {
   const B2 = await open(b.token), C3 = await open(c.token), vb2 = await dd(B2), vc = await dd(C3); assert.equal(vb2.id, vc.id); assert.notEqual(vb2.id, va.id); B2.close(); C3.close();
@@ -105,6 +113,11 @@ await t('seen live vs found out afterwards: only caretakers watching when it hap
 });
 A.close(); Bw.close();
 
+await t('a question whose wording tells another\'s answer waits until that other one has been asked', async () => {
+  const { openDb } = await import('./db.mjs'), { createDiscovery } = await import('./discovery.mjs'); let now = Date.parse('2026-11-02T15:00:00Z');
+  for (const tank of ['T1', 'T2', 'T3']) { const D = createDiscovery(openDb(':memory:'), { bank: [fx(1, { givesAway: ['dd-0002'] }), fx(2)], now: () => now }); assert.equal(D.today(tank).q.id, 'dd-0002'); now += 864e5; assert.equal(D.today(tank).q.id, 'dd-0001'); }
+});
+
 console.log('Field Guide in the game rules');
 await t('an octopus escapes on its own, whether or not anyone answered anything; the tank records it happened', async () => {
   const now = Date.now(), w = R.newWorld(now - 20 * 864e5); w.flags.tut = 5; const o = { id: 'o1', name: 'Inky', species: 'octopus', seed: 3, born: now - 30 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, hunger: 0.1, fedAt: now, home: null };
@@ -123,7 +136,10 @@ await t('the validator rejects each kind of bad entry', async () => {
   const bad = (patch) => checkEntry({ ...fx(1), ...patch }).errors.length > 0;
   assert.ok(!bad({})); assert.ok(bad({ id: '7' })); assert.ok(bad({ choices: ['a', 'b'] })); assert.ok(bad({ choices: ['a', 'b', 'c', 'd'] })); assert.ok(bad({ choices: ['Same', 'same', 'x'] }));
   assert.ok(bad({ answer: 3 })); assert.ok(bad({ explain: '' })); assert.ok(bad({ source: { url: 'notaurl', publisher: 'x' } })); assert.ok(bad({ category: 'space' })); assert.ok(bad({ difficulty: 'tricky' }));
-  assert.ok(bad({ verification: null })); assert.ok(bad({ review: { ok: false } })); assert.ok(bad({ verifiedAt: '2999-01-01' })); assert.ok(bad({ behavior: 'flying' })); assert.ok(bad({ fact: '' }));
+  assert.ok(bad({ verification: null })); assert.ok(bad({ review1: null })); assert.ok(bad({ review2: { ...fx(1).review2, unambiguous: false } }));
+  assert.ok(bad({ review2: { ...fx(1).review2, by: 'ai:first' } }), 'the second review must be by a different reviewer');
+  assert.ok(bad({ risk: 'numeric' }), 'a precise number needs a person'); assert.ok(bad({ risk: 'numeric', humanReview: { by: 'ai:third', ok: true } }), 'a model can never be the human review');
+  assert.ok(!bad({ risk: 'numeric', humanReview: { by: 'Falcon', at: today, ok: true } })); assert.ok(bad({ verifiedAt: '2999-01-01' })); assert.ok(bad({ behavior: 'flying' })); assert.ok(bad({ fact: '' }));
 });
 await t('the bank check rejects duplicate ids, duplicate facts and the same question twice, flags look-alikes, and publishes only clean verified questions', async () => {
   const r = checkBank([fx(1), fx(2, { id: 'dd-0001' }), fx(3, { fact: fx(1).fact }), fx(4, { q: fx(1).q }), fx(5, { status: 'unverified' }), fx(6)]);

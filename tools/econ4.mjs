@@ -12,6 +12,7 @@
 import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath, pathToFileURL } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), H = 3600e3, DAY = 864e5;
 const arg = (k) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || '').split('=')[1];
+const DD = process.argv.includes('--discovery') ? 2 : 0;      // Daily Discovery's shared reward, per tank per day
 
 async function load(which, level8) {
   const base = which === 'baseline' ? path.join(here, 'baseline') : path.join(here, '../web/src/game');
@@ -50,7 +51,7 @@ export async function run(which, sc, DAYS = 90, seed = 1, level8 = null) {
   } });
   const members = sc.players.map((_, i) => ({ id: 'p' + (i + 1), name: NAMES3[i] }));
   const log = { level: {}, wishDays: new Set(), bought: { fish: 0, decor: 0 }, snaps: {}, visits: 0, away: null };
-  const bought = new Set(), events = [], SNAP = [7, 14, 30, 60, 90, 120].filter((d) => d <= DAYS);
+  const bought = new Set(), events = [], SNAP = [7, 14, 30, 60, 90, 120].filter((d) => d <= DAYS), ddDays = new Set();
   for (let d = 0; d < DAYS; d++) {
     if (sc.away && d >= sc.away[0] && d < sc.away[1]) continue;
     sc.players.forEach((spec, p) => {
@@ -73,6 +74,7 @@ export async function run(which, sc, DAYS = 90, seed = 1, level8 = null) {
     log.visits++;
     act({ t: 'tut', step: 5 });
     { const r = act({ t: 'dailyGift', tz: 0 }); if (r?.ok && r.delta > 0) log.gifts = (log.gifts ?? 0) + 1; }
+    if (DD && !ddDays.has(Math.floor(rel(now)))) { ddDays.add(Math.floor(rel(now))); ctx.tag = 'dailyDiscovery'; t.shells += DD; }      // --discovery: the day's question, answered by whoever opens the tank first (2 shells per TANK per day, server-paid)
     if (e.passive) { for (const f of t.fish.slice(0, 2)) act({ t: 'pet', id: f.id }); jot(R.advance(t, now + 1000)); continue; }      // the observer: opens the tank, takes the gift, looks
     for (const f of t.fish.filter((x) => !x.dead && R.ownFood?.(x) && R.canFeedOwn?.(x, uid, true) && R.ownHunger?.(x) > 0.3)) act({ t: 'feed', food: R.ownFood(f), fish: f.id });
     if (e.first) { const o = t.fish.find((f) => R.canPuzzle?.(f, now)); if (o && (now / DAY | 0) % 2 === 0) { const r = act({ t: 'puzzle', id: o.id }); if (r?.ok && r.applied) log.plays = (log.plays ?? 0) + 1; }
