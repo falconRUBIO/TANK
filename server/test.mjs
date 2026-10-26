@@ -548,6 +548,9 @@ await t('analytics: sessions and actions are recorded without personal data, pla
   const cols = S.db.prepare('PRAGMA table_info(events)').all().map((c) => c.name).join(); assert.equal(cols, 'id,ts,user_id,tank_id,type,n', 'no names, no ips');
   process.env.ADMIN_KEY = 'secret-key-1'; const bad = await fetch(base + '/admin/stats?key=nope'); assert.equal(bad.status, 404); const none = await fetch(base + '/admin/stats'); assert.equal(none.status, 404);
   { const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.ok(html.includes('RECENT TANKS') && html.includes(S.db.prepare('SELECT code FROM tanks ORDER BY created_at DESC LIMIT 1').get().code), 'the developer page lists recent tanks with their codes'); }
+  { await (await fetch(base + '/')).text(); const r = S.traffic.report(), d = r.days[0]; assert.ok(d.kinds['Tank updates'] > 0 && d.kinds['App files'] > 0 && d.live > 0 && d.wire >= d.live, 'bytes out are counted by kind: ' + JSON.stringify(d));
+    assert.ok(r.sofar > 0 && r.allowance === 5 * 1024 ** 3); const html = await (await fetch(base + '/admin?key=secret-key-1')).text(); assert.match(html, /BANDWIDTH[\s\S]*Tank updates[\s\S]*Animal positions/, 'the developer page shows where the bandwidth goes');
+    S.traffic.save(); assert.ok(JSON.parse(S.db.prepare("SELECT v FROM kv WHERE k='traffic'").get().v)[d.day], 'kept in the database, so a restart does not lose the month'); }
   const good = await fetch(base + '/admin/stats?key=secret-key-1'); assert.equal(good.status, 200); const st = await good.json(); assert.ok(st.players.distinctPlayers >= 2); assert.ok(st.tanks.activeTanksPerDay.length >= 1); assert.ok(st.interactions.mostUsed.length >= 1);
   assert.ok(st.tanks.avgActiveCaretakersPerTankDay >= 1); const page = await fetch(base + '/admin?key=secret-key-1'); assert.match(await page.text(), /PLAYERS \(individual\)[\s\S]*TANKS \(shared\)/); delete process.env.ADMIN_KEY;
 });

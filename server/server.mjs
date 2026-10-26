@@ -10,6 +10,7 @@ import { openDb } from './db.mjs';
 import * as L from './logic.mjs';
 import * as R from '../web/src/game/rules.js';
 import { makePush, vapidFor } from './push.mjs';
+import { makeTraffic } from './traffic.mjs';
 import { offsiteFromEnv, restoreIfEmpty, makeUploader, stampAll } from './offsite.mjs';
 import { makeAnalytics, CLIENT_EVENTS } from './analytics.mjs';
 import { createDiscovery } from './discovery.mjs';
@@ -22,7 +23,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 // static files are read once, compressed once, and answered with an ETag so a returning phone only re-downloads what changed
 const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.webmanifest']);
 const staticCache = new Map();
-function sendStatic(req, res, file) {
+function sendStatic(req, res, file, onSent = null) {
   const st = fs.statSync(file), ext = path.extname(file); let e = staticCache.get(file);
   if (!e || e.mtime !== st.mtimeMs) {
     const raw = fs.readFileSync(file);
@@ -32,7 +33,7 @@ function sendStatic(req, res, file) {
   const head = { 'Content-Type': MIME[ext] ?? 'application/octet-stream', ETag: e.etag, 'Cache-Control': /\.(png|webmanifest)$/.test(file) ? 'public, max-age=86400' : 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', Vary: 'Accept-Encoding' };
   if (req.headers['if-none-match'] === e.etag) { res.writeHead(304, head); return res.end(); }
   const gz = e.gz && /\bgzip\b/.test(req.headers['accept-encoding'] ?? ''), body = gz ? e.gz : e.raw;
-  res.writeHead(200, { ...head, 'Content-Length': body.length, ...(gz ? { 'Content-Encoding': 'gzip' } : {}) }); res.end(req.method === 'HEAD' ? undefined : body);
+  res.writeHead(200, { ...head, 'Content-Length': body.length, ...(gz ? { 'Content-Encoding': 'gzip' } : {}) }); res.end(req.method === 'HEAD' ? undefined : body); if (req.method !== 'HEAD') onSent?.(body.length);
 }
 
 let offsiteInfo = () => null;      // set when the server is started from the command line with a bucket
@@ -40,6 +41,15 @@ const BIG = new Set(['chooseFirst', 'firstFish', 'buyFish', 'claimOcto', 'releas
 let offsiteSoon = () => {};        // a copy goes out shortly after something people would really miss: a tank made or joined, an octopus chosen, a fish bought
 let diskKept = null;                // on Render: whether /data already held a marker from an earlier start (a real, kept disk)
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const mb = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + ' GB' : n >= 1024 ** 2 ? (n / 1024 ** 2).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB');
+// bandwidth: how much has gone out this month against the host's allowance, and where it went day by day (traffic.mjs)
+function trafficHtml(tr) {
+  if (!tr) return '';
+  const KINDS = ['Tank updates', 'Animal positions', 'Photos', 'Other live messages', 'App files', 'Backups'], pct = Math.round((100 * tr.sofar) / tr.allowance);
+  const warn = tr.projected != null && tr.projected > tr.allowance ? ` <b style="color:#ffb27a">At this rate the month ends near ${mb(tr.projected)}, over the allowance.</b>` : tr.projected != null ? ` At this rate the month ends near ${mb(tr.projected)}.` : '';
+  return `<h2>BANDWIDTH (bytes sent out)</h2><p>${esc(tr.month)} so far: ${mb(tr.sofar)} of ${mb(tr.allowance)} (${pct}%).${warn} Live messages are shown after compression, shared out by kind; app files and backups as sent.</p>
+<div style="overflow-x:auto"><table style="font-size:12px;white-space:nowrap"><tr><td>Day (UTC)</td>${KINDS.map((k) => `<td>${esc(k)}</td>`).join('')}<td>Other requests</td><td>Total</td></tr>${tr.days.map((d) => `<tr><td>${esc(d.day)}</td>${KINDS.map((k) => `<td>${mb(d.kinds[k] ?? 0)}</td>`).join('')}<td>${mb(Math.max(0, d.http - (d.kinds['App files'] ?? 0)))}</td><td>${mb(d.wire)}</td></tr>`).join('') || '<tr><td>nothing yet</td></tr>'}</table></div>`;
+}
 function dashboardHtml(st) {
   const dataSince = st.meta?.dataSince ?? '', dbPathShown = st.meta?.db ?? '';
   const row = (k, v) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`, p = st.players, tk = st.tanks;
@@ -48,6 +58,7 @@ function dashboardHtml(st) {
   return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OUR TANK developer view</title>
 <style>body{font:14px -apple-system,system-ui,sans-serif;background:#0a1220;color:#dbe8f7;margin:0;padding:20px;max-width:760px;margin-inline:auto}h1{font-size:18px;letter-spacing:.1em}h2{font-size:12px;letter-spacing:.14em;color:#7e93ad;margin:26px 0 8px}table{width:100%;border-collapse:collapse}td{padding:6px 8px;border-bottom:1px solid #1d2c44}td:last-child{text-align:right;font-variant-numeric:tabular-nums}p{color:#7e93ad;font-size:12px}</style>
 <h1>OUR TANK · developer view</h1><p>Data since: ${esc(dataSince)} · database file: ${esc(dbPathShown)} · Notifications: ${esc(st.meta?.push ?? '')} · Time-step errors: ${esc((st.meta?.stuck ?? []).join(', ') || 'none')} · Tanks with a fish on order: ${esc(st.meta?.orders ?? 0)} · Offsite copy: ${esc(st.meta?.offsite ? (st.meta.offsite.on ? 'on' + (st.meta.offsite.at ? ', last sent ' + new Date(st.meta.offsite.at).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : ', first copy not sent yet') + (st.meta.offsite.err ? ' (last error: ' + st.meta.offsite.err + ')' : '') : 'off') : 'off')} (if "data since" keeps resetting to the last deploy, the disk is not attached)</p><p>Last ${st.window.days} days from ${esc(st.window.from)} · ${st.window.events} events · random ids only, no names or message text.</p>
+${trafficHtml(st.meta?.traffic)}
 <h2>RECENT TANKS (newest first)</h2><table>${(st.meta?.tanks ?? []).map((x) => `<tr><td>${esc(x.code)}</td><td>${esc(x.name)}</td><td>${esc(new Date(x.c).toISOString().slice(0, 16).replace('T', ' '))} UTC</td><td>${esc(x.n)} player(s)</td><td>last seen ${esc(x.seen ? new Date(x.seen).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'never')}</td></tr>`).join('') || '<tr><td>none yet</td></tr>'}</table>
 <h2>PLAYERS (individual)</h2><table>${row('Distinct players', p.distinctPlayers)}${row('Sessions', p.sessions)}${row('Average session', p.avgSessionSeconds + ' s')}${row('Visits per player per active day', p.visitsPerPlayerPerActiveDay)}${row('Median hours between visits', p.medianHoursBetweenVisits)}${row('Actions per session', p.actionsPerSession)}${row('Sessions with care', p.sessionsWithCarePct + '%')}${row('Sessions with fish interaction', p.sessionsWithFishInteractionPct + '%')}${row('Sessions with decoration', p.sessionsWithDecorationPct + '%')}${row('Sessions with social interaction', p.sessionsWithSocialPct + '%')}${row('Retention, day 1', ret(p.retention.day1))}${row('Retention, day 7', ret(p.retention.day7))}${row('Retention, day 30', ret(p.retention.day30))}</table>
 <p>Daily active players: ${esc(series(p.dailyActive))}</p>
@@ -70,7 +81,7 @@ class Limiter {
 
 export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.join(here, '..', 'web'), limits = {}, push: pushOpts = null, devUsers = null, discovery = {} } = {}) {
   const isDev = (u) => L.isDev(u, devUsers ?? process.env.DEV_USERS);      // the developer's tools are for these player ids only (DEV_USERS in the server's environment)
-  const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db); an.prune();
+  const db = openDb(dbPath), lim = new Limiter(), an = makeAnalytics(db), traffic = makeTraffic(db); an.prune();
   try { const rf = new URL('./returns.json', import.meta.url); if (fs.existsSync(rf)) L.applyReturns(db, JSON.parse(fs.readFileSync(rf, 'utf8'))); } catch (e) { console.error('returns:', e.message); }      // animals put back from a backup, once
   const push = makePush(db, pushOpts ?? vapidFor(db));
   const cfg = { joinPerMin: 12, userPerHour: 30, tankPerHour: 8, recoverPerHour: 10, recoverFailsPerHour: 300, actionsPer10s: 30, ...limits };
@@ -94,7 +105,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     dirs.set(tankId, cur); return cur;
   };
   const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
-  const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o.t === 'snapshot' || o.t === 'state' ? { ...o, now: Date.now() } : o)); };        // the server's clock rides along so every phone counts down by the same time
+  const send = (ws, o) => { if (ws.readyState !== 1) return; const s = JSON.stringify(o.t === 'snapshot' || o.t === 'state' ? { ...o, now: Date.now() } : o); traffic.message(o.t, s.length); ws.send(s); };        // the server's clock rides along so every phone counts down by the same time
   const broadcast = (tankId, o) => { for (const w of rooms.get(tankId) ?? []) send(w, o); };
   // The tank goes out as only what changed since the copy each phone already has (patch.js: about 2 KB compressed instead of about 15 KB). Each
   // phone's copy is numbered (sv); a phone that is behind, has just connected, or was due a fresh whole copy (every 5 minutes, so nothing it
@@ -239,14 +250,14 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (!key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
       const st = an.stats(Date.now(), +url.searchParams.get('days') || 30);
       if (url.pathname === '/admin/stats') { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify(st, null, 1)); }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); const first = db.prepare('SELECT MIN(created_at) f FROM users').get().f; return res.end(dashboardHtml({ ...st, meta: { dataSince: first ? new Date(first).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'no players yet', db: dbPath, tanks: db.prepare('SELECT t.code, t.name, t.created_at c, (SELECT COUNT(*) FROM members m WHERE m.tank_id=t.id) n, (SELECT MAX(last_seen) FROM members m WHERE m.tank_id=t.id) seen FROM tanks t ORDER BY t.created_at DESC LIMIT 15').all(), stuck: R.timeStepErrors(), orders: db.prepare("SELECT COUNT(*) n FROM tanks WHERE world LIKE '%\"orders\":[{%'").get().n, offsite: offsiteInfo(), push: push.enabled ? `on, ${db.prepare('SELECT COUNT(*) n FROM push_subs').get().n} phone(s) subscribed` : 'off' } }));
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }); const first = db.prepare('SELECT MIN(created_at) f FROM users').get().f; return res.end(dashboardHtml({ ...st, meta: { dataSince: first ? new Date(first).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'no players yet', db: dbPath, tanks: db.prepare('SELECT t.code, t.name, t.created_at c, (SELECT COUNT(*) FROM members m WHERE m.tank_id=t.id) n, (SELECT MAX(last_seen) FROM members m WHERE m.tank_id=t.id) seen FROM tanks t ORDER BY t.created_at DESC LIMIT 15').all(), stuck: R.timeStepErrors(), orders: db.prepare("SELECT COUNT(*) n FROM tanks WHERE world LIKE '%\"orders\":[{%'").get().n, offsite: offsiteInfo(), traffic: traffic.report(), push: push.enabled ? `on, ${db.prepare('SELECT COUNT(*) n FROM push_subs').get().n} phone(s) subscribed` : 'off' } }));
     }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel; try { rel = decodeURIComponent(url.pathname); } catch { res.writeHead(400); return res.end('Bad request'); }      // a malformed address once threw out of the handler and took the server down
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
     const file = path.normalize(path.join(staticDir, rel));
     if (!(file === staticDir || file.startsWith(staticDir + path.sep)) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
-    return sendStatic(req, res, file);
+    return sendStatic(req, res, file, (n) => traffic.sent('App files', n));
   });
 
   // messages are compressed (permessage-deflate, which every browser speaks): the whole tank goes to every phone after most actions, about
@@ -254,7 +265,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   // squeeze too. The host meters every byte that goes out, so this is most of the game's bandwidth. Small messages are sent as they are.
   const wss = new WebSocketServer({ noServer: true, maxPayload: 96 * 1024, perMessageDeflate: { threshold: 512, zlibDeflateOptions: { level: 6, memLevel: 7 }, concurrencyLimit: 4 },      // (a journal photo is the biggest message: about 25 KB)
     handleProtocols: (protocols) => [...protocols].find((x) => x.startsWith('ourtank.')) ?? false });
+  server.on('connection', (sock) => traffic.socket(sock));      // (every byte out is counted for the developer view: traffic.mjs)
   server.on('upgrade', (req, socket, head) => {
+    traffic.live(socket);
     const url = new URL(req.url, 'http://x');
     if (url.pathname !== '/ws') return socket.destroy();
     // the sign-in travels in the connection's protocol header, not in the address (addresses end up in logs); the address form still works for older phones
@@ -397,7 +410,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     ws.on('close', () => { const nowT = Date.now(); try { L.touch(db, ws.userId, nowT); } catch { /* last seen is a nicety */ }      // (last seen: when they left, shown on the Crew tab)
       if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); tankCopy.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) { rooms.delete(ws.tankId); tankCopy.delete(ws.tankId); } else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
   });
-  const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref(); L.pruneOld(db); const pruner = setInterval(() => L.pruneOld(db), 24 * 3600e3); pruner.unref();      // (old rows the game no longer reads)
+  const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref(); L.pruneOld(db); const pruner = setInterval(() => L.pruneOld(db), 24 * 3600e3); pruner.unref();
+  const trafficSave = setInterval(() => traffic.save(), 5 * 60e3); trafficSave.unref();      // (old rows the game no longer reads)
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
   const backup = () => { if (dbPath === ':memory:') return; const tmp = dbPath + '.backup.tmp'; try { fs.rmSync(tmp, { force: true }); db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); fs.renameSync(tmp, dbPath + '.backup'); } catch (e) { console.error('backup failed', e.message); } };
   const firstBackup = setTimeout(backup, 60e3), backups = setInterval(backup, 6 * 3600e3); firstBackup.unref(); backups.unref();
@@ -471,8 +485,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
-    port: server.address().port, db, backup, push, pushSweep, dd,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(pruner); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
+    port: server.address().port, db, backup, push, pushSweep, dd, traffic,
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(trafficSave); traffic.save(); clearInterval(pruner); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
   })));
 }
 
@@ -491,7 +505,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     s = await start({ port, dbPath: process.env.DB || 'ourtank.db' });
     setTimeout(() => s.pushSweep().catch(() => {}), 20e3).unref();      // a server woken by a request catches up on what happened while it slept
     if (off) {
-      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { baseFile, expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
+      uploader = makeUploader(off, () => { s.backup(); const f = dbFile + '.backup'; return fs.existsSync(f) ? f : null; }, console.log, { baseFile, onSent: (n) => s.traffic.sent('Backups', n), expect: restoreFailed ? undefined : stamp, holdUntil: Date.now() + HANDOVER, onStale: (cur) => { if (Date.now() - bootAt < 10 * 60e3) reload(); else { console.warn('offsite backup: the copy changed under this server (another instance writing to the same place?); this server stays live and keeps sending its own copy'); uploader?.adopt?.(cur); } } });
       if (restoreFailed) { uploader.block(); console.error('The offsite copy could not be read, so nothing will be uploaded until the server is restarted (a good copy must not be overwritten).'); }
       const watch = setInterval(() => { if (!uploader.status.holding) clearInterval(watch); else uploader.check(); }, 15e3); watch.unref();
       let soonT = null; offsiteSoon = () => { clearTimeout(soonT); soonT = setTimeout(() => uploader?.run(false, true).catch(() => {}), 8000); soonT.unref(); };

@@ -170,7 +170,7 @@ export async function restoreIfEmpty(off, file, log = console.log, { baseFile = 
 // another server wrote it (on a redeploy the old server sends its last copy after the new one has started), so this one is the stale one:
 // it never overwrites that copy, it calls onStale so the newer copy can be loaded. holdUntil: no ordinary uploads before then (the handover).
 // baseFile: keep a base copy and send only the changes on top of it (see "Only what changed"); without one, every copy is whole.
-export function makeUploader(off, snapshot, log = console.log, { expect, holdUntil = 0, onStale = null, baseFile = null } = {}) {
+export function makeUploader(off, snapshot, log = console.log, { expect, holdUntil = 0, onStale = null, baseFile = null, onSent = null } = {}) {
   let last = '', at = 0, err = '', lastDated = 0, blocked = false, stale = false, sent = { full: 0, delta: 0, bytes: 0 };
   const checks = expect !== undefined && typeof off.stamp === 'function', stampNow = () => (baseFile ? stampAll(off) : off.stamp());
   const fresh = async () => {
@@ -200,15 +200,15 @@ export function makeUploader(off, snapshot, log = console.log, { expect, holdUnt
           const tables = diffDb(readDb(baseFile), next), body = tables && Buffer.from(JSON.stringify({ v: 1, base: meta.sha, baseAt: meta.at, hash: h, at: Date.now(), tables }));
           const size = body && gz(body).length;
           if (body && size < meta.size * BASE_RATIO) {
-            await off.put(body, deltaName(off)); last = h; at = Date.now(); err = ''; sent = { ...sent, delta: sent.delta + 1, bytes: sent.bytes + size };
+            await off.put(body, deltaName(off)); last = h; at = Date.now(); err = ''; sent = { ...sent, delta: sent.delta + 1, bytes: sent.bytes + size }; onSent?.(size);
             if (checks) expect = await stampNow();
             log(`offsite backup: uploaded the changes since the base copy (${size} bytes compressed; the whole copy is ${meta.size})`); return true;
           }
         }
-        const got = await off.put(buf); last = h; at = Date.now(); err = ''; const size = gz(buf).length; sent = { ...sent, full: sent.full + 1, bytes: sent.bytes + size };
+        const got = await off.put(buf); last = h; at = Date.now(); err = ''; const size = gz(buf).length; sent = { ...sent, full: sent.full + 1, bytes: sent.bytes + size }; onSent?.(size);
         if (baseFile) { try { keepBase(baseFile, buf, { sha: sha(buf), size, at, main: await off.stamp() }); } catch (e) { dropBase(baseFile); log('offsite backup: could not keep the base copy: ' + e.message); } }
         if (checks) expect = baseFile ? await stampAll(off) : got ?? await off.stamp();
-        if (at - lastDated > DATED_GAP) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; }                                  // a dated copy of each whole copy (at most one a day) is kept too
+        if (at - lastDated > DATED_GAP) { await off.put(buf, dated(off, dayStr(at))); lastDated = at; onSent?.(size); }                                  // a dated copy of each whole copy (at most one a day) is kept too
         log(`offsite backup: uploaded ${buf.length} bytes`); return true;
       } catch (e) { err = String(e.message); log('offsite backup failed: ' + err); return false; }
     },
