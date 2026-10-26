@@ -7,6 +7,7 @@ const gOf = (p, seed) => ({ ...(p?.genes ?? genesOf(p?.seed ?? seed)), m: allele
 import { adventures, isAway, awayLine, moveKeep, advForecast, advMemOf, KEEPSAKES, ADV, ADV_KINDS, OUTCOME_IDS, canAdventure, eligibleLong } from './adventures.js';
 import { lifeDay, noteVisit, carried, keepStory, visitorArrives, todOf, TOD, LIFE, decorVisit, decorMoved, decorStory } from './life.js';
 export { keepStory, todOf, TOD, LIFE, decorStory };
+import { EGG_FACTS } from '../facts.js';
 import { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell, crabInit } from './crabs.js';
 export { isCrab, CRAB_IDS, CRAB_SIZE, CRAB_TYPES, SHELLS, isShell, shellLabel, shellSz, crabNeed, shellFit, outgrown, bestShell } from './crabs.js';
 import { touchKeep, knowsKeep, historyDay, recordHistory, stayOffer, decideStay, dayOfTank, HIST } from './history.js';
@@ -710,15 +711,16 @@ export const awayOwner = (f, members, now = Date.now()) => { if (!f?.owner || f.
 // chasing others off), the mother never far; mouth: the father carries them in his mouth and eats nothing until they hatch; drift: the pair rise
 // together at dusk and let the eggs go to drift, as they do in the sea, so the care is all yours.
 export const EGG_CARE = {
-  goldfish: { mode: 'guard', on: 'rock', fact: 'Clownfish fathers guard their eggs, fanning water over them and picking out any that go bad.' },
-  guppy: { mode: 'guard', on: 'rock', fact: 'A damselfish father guards his eggs fiercely, chasing off fish far bigger than he is.' },
-  cory: { mode: 'guard', on: 'rock', fact: 'Goby fathers guard their eggs in a hollow under a rock, fanning them clean.' },
-  blue: { mode: 'guard', on: 'plant', fact: 'A royal gramma father lines a nest with bits of seaweed and guards the eggs in it.' },
-  platy: { mode: 'mouth', fact: 'Cardinalfish fathers carry the eggs in their mouths, and eat nothing until they hatch.' },
-  angelfish: { mode: 'drift', fact: 'Angelfish pairs rise together at dusk and let their eggs drift away on the current.' },
-  betta: { mode: 'drift', fact: 'Mandarin pairs rise together at dusk and release their eggs to drift.' },
-  octopus: { mode: 'den', fact: 'An octopus mother hangs her eggs in strings from the roof of her den and guards them: she cleans them, blows fresh water over them, and hardly leaves until they hatch.' },
+  goldfish: { mode: 'guard', on: 'rock' },
+  guppy: { mode: 'guard', on: 'rock' },
+  cory: { mode: 'guard', on: 'rock' },
+  blue: { mode: 'guard', on: 'plant' },
+  platy: { mode: 'mouth' },
+  angelfish: { mode: 'drift' },
+  betta: { mode: 'drift' },
+  octopus: { mode: 'den' },
 };
+for (const [k, v] of Object.entries(EGG_CARE)) Object.defineProperty(v, 'fact', { get: () => EGG_FACTS[k] ?? null, enumerable: true });      // (what each kind really does: the checked fact, from the one store of facts)
 export const eggCareOf = (e) => EGG_CARE[e?.species] ?? EGG_CARE.goldfish;
 // who is looking after an egg now: its guardian if still here, else the other parent, else nobody (the caretaker)
 function eggGuard(t, e, ev, now = Date.now()) {

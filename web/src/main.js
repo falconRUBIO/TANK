@@ -703,28 +703,8 @@ function octoLine(m, f) {
   if (m.type === 'collector') return kind ? `Fetches shells and stones for ${kind} and rearranges them when nobody is looking.` : 'Fetches shells and stones, and is looking for a den to keep them by.';
   return m.line;
 }
-// a few true things worth knowing: what this animal has done in the tank, and one fact about its kind that changes from day to day
-const SPECIES_FACTS = {
-  goldfish: ['Clownfish are all born male; the biggest one in a group becomes the female.', 'A coat of slime lets a clownfish live among an anemone\'s stings without being hurt.'],
-  neon: ['Blue chromis shoal by the hundred over branching coral and vanish into it when danger comes.', 'Chromis change from blue to green depending on how the light hits their scales.'],
-  cory: ['A yellow goby can spend its whole life perched on one branch of coral.', 'Gobies are one of the largest families of fish, with over 2,000 kinds.'],
-  blue: ['Royal grammas often hang upside down under ledges, belly to the rock.', 'A royal gramma builds a nest of algae for its eggs.'],
-  guppy: ['Damselfish farm little lawns of algae and chase off anything that comes near.', 'Some damselfish make clicking sounds to warn others away.'],
-  angelfish: ['A young emperor angelfish is ringed in blue and white; it changes completely into stripes as it grows up.', 'Emperor angelfish can make a loud knocking sound when they are startled.'],
-  platy: ['Male cardinalfish carry the eggs in their mouths until they hatch.', 'Cardinalfish rest in groups by day and hunt at night.'],
-  neongoby: ['Fish line up at a neon goby\'s station and hold still, mouths open, to be cleaned.', 'A neon goby\'s blue stripe is an advertisement: it says cleaner, do not eat.'],
-  tang: ['Blue tangs sleep wedged into the rocks, and turn paler at night.', 'A tang never stops swimming for long: it laps the reef all day.'],
-  puffer: ['Puffers swim with their small fins like a little helicopter, and can hover and reverse.', 'A puffer\'s beak-like teeth never stop growing; crunchy food wears them down.'],
-  danio: ['Anthias live in groups led by one male; if he is lost, the biggest female becomes the new male.', 'An anthias shoal moves like a single orange-pink cloud.'],
-  betta: ['Mandarin dragonets have no scales; a bitter slime protects them instead.', 'Mandarins dance in pairs at dusk, rising together off the reef.'],
-  seahorse: ['A father seahorse carries the babies in a pouch until they are born.', 'A seahorse can move each eye on its own, looking two ways at once.', 'Seahorses have no stomach, so they eat almost all day.'],
-  hawksbill: ['A hawksbill pries sponges out of the reef with its narrow, hooked beak.', 'Hawksbill shells are tortoiseshell, once made into combs; today the trade is banned to protect them.'],
-  loggerhead: ['A loggerhead has the biggest head of any hard-shelled turtle, with jaws that crush conch shells.', 'Loggerheads cross whole oceans and find their way home by Earth\'s magnetic field.'],
-  kemps: ["Kemp's ridley is the smallest and most endangered sea turtle.", 'Ridleys nest by day, thousands at once, in mass arrivals called arribadas.'],
-  leatherback: ['The leatherback is the biggest turtle alive, with a leathery shell instead of plates.', 'Leatherbacks eat jellyfish and dive over a kilometer deep.'],
-  turtle: ['A sea turtle comes up to breathe, then sinks back down to rest.', 'Green turtles graze sea grass like cows graze a meadow, and keep the grass beds healthy.'],
-  octopus: ['An octopus has three hearts and blue blood.', 'Two-thirds of an octopus\'s nerve cells are in its arms; each arm can taste and decide a little on its own.', 'An octopus can squeeze through any gap bigger than its beak.', 'Octopuses can taste with their suckers.'],
-};
+// a few true things worth knowing: what this animal has done in the tank, and one fact about its kind that changes from day to day (from the
+// same checked facts as the profile: web/src/facts.js, generated from server/discovery/facts.json)
 function didYouKnow(rec, f) {
   const out = [], b = (n, s1, s2) => `${n} ${n === 1 ? s1 : s2}`;
   if (rec.crabs) out.push(`🦀 Has caught <b>${b(rec.crabs, 'crab', 'crabs')}</b> here.`);
@@ -733,7 +713,7 @@ function didYouKnow(rec, f) {
   if (f?.fears?.length) out.push('😶 Keeps away from a spot where something startled it.');
   if (rec.tricks?.length) out.push(`🎓 Knows ${rec.tricks.map((k) => TRICKS[k]?.label).filter(Boolean).join(', ')}.`);
   const kids = childrenOf(game.state, rec.id).length; if (kids) out.push(`🥚 Has ${b(kids, 'youngster', 'youngsters')} in the tank.`);
-  const fx = SPECIES_FACTS[rec.species]; if (fx?.length) out.push(`💡 ${fx[(Math.floor(Date.now() / 864e5) + (rec.seed ?? 0)) % fx.length]}`);
+  const fx = FACTS[rec.species]; if (fx?.length) out.push(`💡 ${esc(fx[(Math.floor(Date.now() / 864e5) + 1 + (rec.seed ?? 0)) % fx.length])}`);      // (one along from the profile's fact of the day)
   return out.slice(0, 4);
 }
 // an octopus nobody in the crew looks after (its caretaker left, or the server once lost the tank and gave them a new identity): someone can take it on, or let it go

@@ -1,0 +1,4103 @@
+{
+ "meta": {
+  "transition": true,
+  "note": "transition: until source pages can be fetched, profiles keep showing the audited facts that were already in the game (kept or corrected, with a candidate source). Verified facts always show; rejected or held ones never do. Set transition to false to show verified facts only."
+ },
+ "facts": [
+  {
+   "id": "pf-0001",
+   "fact": "cephalopods.coconut-octopus.coconut-octopuses-carry-coconut",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "Coconut octopuses carry coconut shell halves around and put them together as a shelter when they need one. Scientists count this as tool use, which is rare in invertebrates.",
+   "source": {
+    "url": "https://ui.adsabs.harvard.edu/abs/2009CBio...19R1069F/abstract",
+    "publisher": "Current Biology (Finn, Tregenza & Norman 2009), via Harvard ADS",
+    "title": "Defensive tool use in a coconut-carrying octopus"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "Coconut octopuses carry coconut shell halves around and hide inside them. It was the first tool use ever recorded in an octopus."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'First tool use ever recorded in an octopus' is a priority claim that is hard to pin down and is often overstated (the paper is commonly described as early evidence of invertebrate tool use, not a confirmed first). Reworded to the documented behavior.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Abstract of the 2009 Current Biology paper reports soft-sediment octopuses repeatedly carrying coconut shell halves and assembling them into a shelter only when needed, and frames it as tool use.",
+   "corrections": [
+    {
+     "from": "Coconut octopuses carry coconut shell halves around and hide inside them. It was the first tool use ever recorded in an octopus.",
+     "to": "Coconut octopuses carry coconut shell halves around and put them together as a shelter when they need one. Scientists count this as tool use, which is rare in invertebrates.",
+     "why": "'First tool use ever recorded in an octopus' is a priority claim that is hard to pin down and is often overstated (the paper is commonly described as early evidence of invertebrate tool use, not a confirmed first). Reworded to the documented behavior.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0002",
+   "fact": "cephalopods.coconut-octopus.carry-shells-coconut-octopus",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "To carry its shells, a coconut octopus stacks them, tucks them under its body and walks on stiffened arms. Scientists call it stilt-walking.",
+   "source": {
+    "url": "https://ui.adsabs.harvard.edu/abs/2009CBio...19R1069F/abstract",
+    "publisher": "Current Biology (Finn, Tregenza & Norman 2009), via Harvard ADS",
+    "title": "Defensive tool use in a coconut-carrying octopus"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "To carry its shells, a coconut octopus stacks them, climbs on top and walks on stiffened arms, like stilts."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "It holds the nested shells beneath its body rather than 'climbing on top'; tightened to match the description.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Same abstract describes carrying the shells as a novel, cumbersome form of locomotion called stilt-walking.",
+   "corrections": [
+    {
+     "from": "To carry its shells, a coconut octopus stacks them, climbs on top and walks on stiffened arms, like stilts.",
+     "to": "To carry its shells, a coconut octopus stacks them, tucks them under its body and walks on stiffened arms. Scientists call it stilt-walking.",
+     "why": "It holds the nested shells beneath its body rather than 'climbing on top'; tightened to match the description.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0003",
+   "fact": "cephalopods.coconut-octopus.coconut-octopus-walk-just",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "The coconut octopus can walk on just two arms, rolling along the seabed while its other six arms help it stay disguised.",
+   "source": {
+    "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8093653/",
+    "publisher": "PMC / NCBI",
+    "title": "Bipedal locomotion in Octopus vulgaris: A complementary observation and some preliminary considerations"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "The coconut octopus is one of only two octopuses known to walk on just two arms."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'One of only two' is out of date: two-armed walking was first described in two tropical species (A. marginatus and Abdopus aculeatus), but has since been reported in the common octopus, Octopus vulgaris.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "2021 PMC paper reports bipedal walking in Octopus vulgaris and notes the gait was previously known only from A. marginatus and Abdopus aculeatus, which walk on two alternating arms and use the other arms for camouflage.",
+   "corrections": [
+    {
+     "from": "The coconut octopus is one of only two octopuses known to walk on just two arms.",
+     "to": "The coconut octopus can walk on just two arms, rolling along the seabed while its other six arms help it stay disguised.",
+     "why": "'One of only two' is out of date: two-armed walking was first described in two tropical species (A. marginatus and Abdopus aculeatus), but has since been reported in the common octopus, Octopus vulgaris.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0004",
+   "fact": "cephalopods.coconut-octopus.wants-vanish-coconut-octopus",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "When it wants to vanish, a coconut octopus buries itself in the sand until only its eyes show.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+    "publisher": "Australian Museum",
+    "title": "Veined Octopus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "When it wants to vanish, a coconut octopus buries itself in the sand until only its eyes show."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Search summary reported a source saying the species buries itself in sand with only its eyes uncovered; most likely the Australian Museum veined octopus page (verify wording on fetch)."
+  },
+  {
+   "id": "pf-0005",
+   "fact": "cephalopods.coconut-octopus.coconut-octopus-small-enough",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "A coconut octopus is small enough to tuck its whole body inside a pair of coconut shell halves.",
+   "source": {
+    "url": "https://ui.adsabs.harvard.edu/abs/2009CBio...19R1069F/abstract",
+    "publisher": "Current Biology (Finn, Tregenza & Norman 2009), via Harvard ADS",
+    "title": "Defensive tool use in a coconut-carrying octopus"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "A coconut octopus is small: about 8 cm in the body, around 15 cm with its arms out."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Size figures disagree across sources (Australian Museum gives an armspan up to 50 cm; other pages give about 15 cm), and the 8 cm mantle figure found in search belonged to a different Amphioctopus species. Dropped the numbers.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Abstract describes the octopus assembling coconut shell halves into a shelter it hides in; no consistent size figures found on reputable pages.",
+   "corrections": [
+    {
+     "from": "A coconut octopus is small: about 8 cm in the body, around 15 cm with its arms out.",
+     "to": "A coconut octopus is small enough to tuck its whole body inside a pair of coconut shell halves.",
+     "why": "Size figures disagree across sources (Australian Museum gives an armspan up to 50 cm; other pages give about 15 cm), and the 8 cm mantle figure found in search belonged to a different Amphioctopus species. Dropped the numbers.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0006",
+   "fact": "cephalopods.coconut-octopus.look-dark-branching-vein",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "Look for the dark, branching, vein-like lines on its skin. They give it its other name: the veined octopus.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+    "publisher": "Australian Museum",
+    "title": "Veined Octopus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "Look for the dark, vein-like lines on its skin and its yellow siphon. They give it its other name: the veined octopus."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "No source found for a 'yellow siphon'; dropped that detail.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum identifies the species by branching dark veins over the mantle and down the arms.",
+   "corrections": [
+    {
+     "from": "Look for the dark, vein-like lines on its skin and its yellow siphon. They give it its other name: the veined octopus.",
+     "to": "Look for the dark, branching, vein-like lines on its skin. They give it its other name: the veined octopus.",
+     "why": "No source found for a 'yellow siphon'; dropped that detail.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0007",
+   "fact": "cephalopods.coconut-octopus.coconut-octopuses-hunt-shrimp",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "Coconut octopuses hunt shrimp, crabs and other small animals on sandy and muddy seabeds in the tropical Indian and western Pacific Oceans.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+    "publisher": "Australian Museum",
+    "title": "Veined Octopus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "Coconut octopuses hunt shrimp, crabs and clams on sandy seabeds in the tropical Pacific and Indian Oceans."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Clams' was not supported; the species' range is the Indo-West Pacific rather than the whole Pacific. Broadened the diet and tightened the range.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum says it lives on sandy/muddy bottoms and forages at dusk and dawn, catching shrimp and fish by pushing arms into holes; a Smithsonian photo shows one eating a crab.",
+   "corrections": [
+    {
+     "from": "Coconut octopuses hunt shrimp, crabs and clams on sandy seabeds in the tropical Pacific and Indian Oceans.",
+     "to": "Coconut octopuses hunt shrimp, crabs and other small animals on sandy and muddy seabeds in the tropical Indian and western Pacific Oceans.",
+     "why": "'Clams' was not supported; the species' range is the Indo-West Pacific rather than the whole Pacific. Broadened the diet and tightened the range.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0008",
+   "fact": "cephalopods.coconut-octopus.octopus-has-three-hearts",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "An octopus has three hearts and blue blood.",
+   "source": {
+    "url": "https://www.sheddaquarium.org/stories/eight-strange-and-wonderful-facts-about-octopuses",
+    "publisher": "Shedd Aquarium",
+    "title": "Eight Strange and Wonderful Facts About Octopuses"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "An octopus has three hearts and blue blood."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "octopus",
+     "text": "An octopus has three hearts and blue blood.",
+     "merged": "Identical to p9."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Shedd page explains two hearts pump blood through the gills and one to the body, and that copper-based hemocyanin makes the blood blue.",
+   "questions": [
+    "dd-0001",
+    "dd-0002"
+   ]
+  },
+  {
+   "id": "pf-0009",
+   "fact": "cephalopods.coconut-octopus.octopus-s-neurons-arms",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "Most of an octopus's neurons are in its arms: each arm can taste and feel what it touches on its own.",
+   "source": {
+    "url": "https://www.sheddaquarium.org/stories/eight-strange-and-wonderful-facts-about-octopuses",
+    "publisher": "Shedd Aquarium",
+    "title": "Eight Strange and Wonderful Facts About Octopuses"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "Most of an octopus's neurons are in its arms: each arm can taste and feel what it touches on its own."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "octopus",
+     "text": "Two-thirds of an octopus's nerve cells are in its arms; each arm can taste and decide a little on its own.",
+     "merged": "Same claim as p10; 'decide' is more anthropomorphic."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "octopus",
+     "text": "Octopuses can taste with their suckers.",
+     "merged": "Covered by p10 (arms taste what they touch)."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Shedd says about two-thirds of the nervous system is in the arms, with sensors in the suckers that let the octopus taste what it touches."
+  },
+  {
+   "id": "pf-0010",
+   "fact": "cephalopods.coconut-octopus.octopus-change-color-skin",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "An octopus can change its color and skin texture in a fraction of a second, using tiny color cells in its skin called chromatophores.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+    "publisher": "Smithsonian Ocean",
+    "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Thousands' is an unsourced count; replaced with the name of the cells.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian cephalopod overview covers color change using chromatophores (verify the speed wording on fetch).",
+   "corrections": [
+    {
+     "from": "An octopus changes color and texture in a fraction of a second, using thousands of tiny color cells in its skin.",
+     "to": "An octopus can change its color and skin texture in a fraction of a second, using tiny color cells in its skin called chromatophores.",
+     "why": "'Thousands' is an unsourced count; replaced with the name of the cells.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0011",
+   "fact": "sea-turtles.loggerhead.loggerhead-named-big-head",
+   "kind": "profile",
+   "species": [
+    "loggerhead"
+   ],
+   "text": "A loggerhead is named for its big head, which holds jaw muscles strong enough to crush whelks and conchs.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/species/loggerhead-turtle",
+    "publisher": "NOAA Fisheries",
+    "title": "Loggerhead Turtle"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "loggerhead",
+     "text": "A loggerhead has the biggest head of any hard-shelled turtle, with jaws strong enough to crush conch shells."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "loggerhead",
+     "text": "A loggerhead has the biggest head of any hard-shelled turtle, with jaws that crush conch shells.",
+     "merged": "Same claim as p12 (and shares its unsupported superlative)."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Biggest head of any hard-shelled turtle' is a superlative no source states; NOAA says the large head supports powerful jaws for hard-shelled prey.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA species page: named for large heads supporting powerful jaw muscles that let them feed on hard-shelled prey such as whelks and conch.",
+   "corrections": [
+    {
+     "from": "A loggerhead has the biggest head of any hard-shelled turtle, with jaws strong enough to crush conch shells.",
+     "to": "A loggerhead is named for its big head, which holds jaw muscles strong enough to crush whelks and conchs.",
+     "why": "'Biggest head of any hard-shelled turtle' is a superlative no source states; NOAA says the large head supports powerful jaws for hard-shelled prey.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0203"
+   ]
+  },
+  {
+   "id": "pf-0012",
+   "fact": "sea-turtles.loggerhead.loggerheads-swim-right-across",
+   "kind": "profile",
+   "species": [
+    "loggerhead"
+   ],
+   "text": "Loggerheads swim right across oceans: some hatched in Japan feed off Mexico before swimming home to nest.",
+   "source": {
+    "url": "https://lohmannlab.web.unc.edu/wp-content/uploads/sites/8154/2026/08/Long-distance-navigation-in-sea-turtles.pdf",
+    "publisher": "Lohmann Lab, University of North Carolina",
+    "title": "Long-distance navigation in sea turtles"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "loggerhead",
+     "text": "Loggerheads swim right across oceans: some hatched in Japan feed off Mexico before swimming home to nest."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Lohmann lab review says loggerheads hatched in Japan apparently cross the Pacific to Baja California before returning to Japan to nest."
+  },
+  {
+   "id": "pf-0013",
+   "fact": "sea-turtles.loggerhead.loggerhead-shell-often-carries",
+   "kind": "profile",
+   "species": [
+    "loggerhead"
+   ],
+   "text": "A loggerhead shell often carries a whole little world of barnacles, crabs and algae along for the ride.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/reptiles/loggerhead-turtle",
+    "publisher": "Smithsonian Ocean",
+    "title": "Loggerhead Turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "loggerhead",
+     "text": "A loggerhead shell often carries a whole little world of barnacles, crabs and algae along for the ride."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian loggerhead page says more than 100 kinds of epibionts, including barnacles, algae and small crabs, have been found on loggerhead shells."
+  },
+  {
+   "id": "pf-0014",
+   "fact": "sea-turtles.loggerhead.loggerheads-find-way-home",
+   "kind": "profile",
+   "species": [
+    "loggerhead"
+   ],
+   "text": "Loggerheads find their way home using Earth's magnetic field, like a built-in compass.",
+   "source": {
+    "url": "https://lohmannlab.web.unc.edu/wp-content/uploads/sites/8154/2026/08/How-sea-turtles-navigate.pdf",
+    "publisher": "Lohmann Lab, University of North Carolina",
+    "title": "How Sea Turtles Navigate"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "loggerhead",
+     "text": "Loggerheads find their way home using Earth's magnetic field, like a built-in compass."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "loggerhead",
+     "text": "Loggerheads cross whole oceans and find their way home by Earth's magnetic field.",
+     "merged": "Same claims as p13 and p15."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Lohmann lab papers show loggerheads detect Earth's magnetic field and use it to orient and to home to natal nesting areas."
+  },
+  {
+   "id": "pf-0015",
+   "fact": "sea-turtles.kemps-ridley.kemp-s-ridley-smallest",
+   "kind": "profile",
+   "species": [
+    "kemps"
+   ],
+   "text": "Kemp's ridley is the smallest sea turtle and the most endangered. Most of them nest along one stretch of coast in Tamaulipas, Mexico.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/species/kemps-ridley-turtle",
+    "publisher": "NOAA Fisheries",
+    "title": "Kemp's Ridley Turtle"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "kemps",
+     "text": "Kemp's ridley is the smallest sea turtle and the most endangered; nearly all of them nest on one beach in Mexico."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "kemps",
+     "text": "Kemp's ridley is the smallest and most endangered sea turtle.",
+     "merged": "Same claim as p16."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Nearly all nest on one beach' is out of date: about 95% of nesting is in Tamaulipas, spread over several beaches (Rancho Nuevo is one of three main ones), with some nesting in Texas.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA calls it the smallest sea turtle and reports 95% of nesting in Tamaulipas, Mexico, with Rancho Nuevo among three main beaches; FWS/NPS call it the most endangered sea turtle.",
+   "corrections": [
+    {
+     "from": "Kemp's ridley is the smallest sea turtle and the most endangered; nearly all of them nest on one beach in Mexico.",
+     "to": "Kemp's ridley is the smallest sea turtle and the most endangered. Most of them nest along one stretch of coast in Tamaulipas, Mexico.",
+     "why": "'Nearly all nest on one beach' is out of date: about 95% of nesting is in Tamaulipas, spread over several beaches (Rancho Nuevo is one of three main ones), with some nesting in Texas.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0016",
+   "fact": "sea-turtles.kemps-ridley.kemp-s-ridleys-nest",
+   "kind": "profile",
+   "species": [
+    "kemps"
+   ],
+   "text": "Kemp's ridleys nest by day, and many females come ashore together in mass nestings called arribadas.",
+   "source": {
+    "url": "https://www.nps.gov/pais/learn/nature/kridley.htm",
+    "publisher": "National Park Service, Padre Island National Seashore",
+    "title": "Kemp's ridley sea turtles"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "kemps",
+     "text": "Kemp's ridleys nest by day, thousands at once, in mass arrivals called arribadas."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "kemps",
+     "text": "Ridleys nest by day, thousands at once, in mass arrivals called arribadas.",
+     "merged": "Same claim as p17. Saying 'Ridleys' is also ambiguous: olive ridleys mostly nest at night."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Thousands at once' describes historical arribadas (42,000 in one day in 1947); modern arribadas are much smaller. Removed the count.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NPS Padre Island page says Kemp's ridleys are the only sea turtles that nest mainly by day and describes the mass nesting events, citing the 1947 film of 42,000 females.",
+   "corrections": [
+    {
+     "from": "Kemp's ridleys nest by day, thousands at once, in mass arrivals called arribadas.",
+     "to": "Kemp's ridleys nest by day, and many females come ashore together in mass nestings called arribadas.",
+     "why": "'Thousands at once' describes historical arribadas (42,000 in one day in 1947); modern arribadas are much smaller. Removed the count.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0207",
+    "dd-0206"
+   ]
+  },
+  {
+   "id": "pf-0017",
+   "fact": "sea-turtles.kemps-ridley.kemp-s-ridleys-feed",
+   "kind": "profile",
+   "species": [
+    "kemps"
+   ],
+   "text": "Kemp's ridleys feed mostly on crabs, and now and then eat fish, jellies and mollusks.",
+   "source": {
+    "url": "https://www.nps.gov/pais/learn/nature/kridley.htm",
+    "publisher": "National Park Service, Padre Island National Seashore",
+    "title": "Kemp's ridley sea turtles"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "kemps",
+     "text": "A Kemp's ridley digs in the sandy bottom of shallow bays for crabs, its favorite food."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Favorite food' is anthropomorphic and 'digs in the sandy bottom' was not supported; reworded to the documented diet.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NPS page says they feed mostly on crabs and occasionally fish, sea jellies and mollusks.",
+   "corrections": [
+    {
+     "from": "A Kemp's ridley digs in the sandy bottom of shallow bays for crabs, its favorite food.",
+     "to": "Kemp's ridleys feed mostly on crabs, and now and then eat fish, jellies and mollusks.",
+     "why": "'Favorite food' is anthropomorphic and 'digs in the sandy bottom' was not supported; reworded to the documented diet.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0018",
+   "fact": "sea-turtles.kemps-ridley.kemp-s-ridleys-known",
+   "kind": "profile",
+   "species": [
+    "kemps"
+   ],
+   "text": "Kemp's ridleys are known for being feisty: they snap and flap when picked up.",
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "kemps",
+     "text": "Kemp's ridleys are known for being feisty: they snap and flap when picked up."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "'Feisty when picked up' is anecdotal handling lore, not a sourced biological fact, and is about how they react to people.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "No reputable source found describing this temperament."
+  },
+  {
+   "id": "pf-0019",
+   "fact": "sea-turtles.leatherback.leatherback-largest-living-turtle",
+   "kind": "profile",
+   "species": [
+    "leatherback"
+   ],
+   "text": "The leatherback is the largest living turtle: adults can reach about 2 meters long and weigh up to around 900 kg.",
+   "source": {
+    "url": "https://www.nps.gov/pais/learn/nature/leatherback.htm",
+    "publisher": "National Park Service, Padre Island National Seashore",
+    "title": "The Leatherback Sea Turtle"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "leatherback",
+     "text": "The leatherback is the largest turtle alive: it can be over two meters long and weigh as much as a small car."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "leatherback",
+     "text": "The leatherback is the biggest turtle alive, with a leathery shell instead of plates.",
+     "merged": "Same claims as p20 and p21."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'As much as a small car' is a loose comparison; replaced with sourced figures.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NPS gives adults up to 2,000 lb (900 kg) and up to 6.5 ft (2 m), and calls it the largest living turtle.",
+   "corrections": [
+    {
+     "from": "The leatherback is the largest turtle alive: it can be over two meters long and weigh as much as a small car.",
+     "to": "The leatherback is the largest living turtle: adults can reach about 2 meters long and weigh up to around 900 kg.",
+     "why": "'As much as a small car' is a loose comparison; replaced with sourced figures.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0020",
+   "fact": "sea-turtles.leatherback.leatherback-has-no-hard",
+   "kind": "profile",
+   "species": [
+    "leatherback"
+   ],
+   "text": "A leatherback has no hard plates: its shell is a mosaic of small bones under firm, rubbery skin, with seven ridges running along it.",
+   "source": {
+    "url": "https://www.nps.gov/pais/learn/nature/leatherback.htm",
+    "publisher": "National Park Service, Padre Island National Seashore",
+    "title": "The Leatherback Sea Turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "leatherback",
+     "text": "A leatherback has no hard plates: its shell is thick, oily skin over a mosaic of tiny bones, with seven ridges."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Sources describe the skin as firm and rubbery, not 'oily'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Leatherback pages describe a mosaic of small bones covered by firm, rubbery skin with seven longitudinal ridges.",
+   "corrections": [
+    {
+     "from": "A leatherback has no hard plates: its shell is thick, oily skin over a mosaic of tiny bones, with seven ridges.",
+     "to": "A leatherback has no hard plates: its shell is a mosaic of small bones under firm, rubbery skin, with seven ridges running along it.",
+     "why": "Sources describe the skin as firm and rubbery, not 'oily'.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0021",
+   "fact": "sea-turtles.leatherback.leatherbacks-eat-jellyfish-inside",
+   "kind": "profile",
+   "species": [
+    "leatherback"
+   ],
+   "text": "Leatherbacks eat jellyfish, and the inside of their throats is lined with backward-pointing spines to hold them.",
+   "source": {
+    "url": "https://www.nps.gov/pais/learn/nature/leatherback.htm",
+    "publisher": "National Park Service, Padre Island National Seashore",
+    "title": "The Leatherback Sea Turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "leatherback",
+     "text": "Leatherbacks eat jellyfish, and the inside of their throats is lined with backward-pointing spines to hold them."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Pages note backward-pointing spines in the mouth and esophagus that help it swallow jellyfish and stop them escaping.",
+   "questions": [
+    "dd-0192"
+   ]
+  },
+  {
+   "id": "pf-0022",
+   "fact": "sea-turtles.leatherback.leatherbacks-deepest-diving-turtles",
+   "kind": "profile",
+   "species": [
+    "leatherback"
+   ],
+   "text": "Leatherbacks are the deepest-diving turtles on record, reaching more than a kilometer down.",
+   "source": {
+    "url": "https://srelherp.uga.edu/turtles/leatherback-sea-turtle/",
+    "publisher": "Savannah River Ecology Lab, University of Georgia",
+    "title": "Leatherback Sea Turtle (Dermochelys coriacea)"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "leatherback",
+     "text": "Leatherbacks dive deeper than any other turtle, over a kilometer down."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "leatherback",
+     "text": "Leatherbacks eat jellyfish and dive over a kilometer deep.",
+     "merged": "Same claims as p22 and p23."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Deeper than any other turtle' recast as 'on record', which is what sources support (record dive about 1,200 m).",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "A leatherback page states the deepest recorded sea turtle dive was a leatherback at about 1,200 m; other pages give 1,280 m (verify which page has the record wording).",
+   "corrections": [
+    {
+     "from": "Leatherbacks dive deeper than any other turtle, over a kilometer down.",
+     "to": "Leatherbacks are the deepest-diving turtles on record, reaching more than a kilometer down.",
+     "why": "'Deeper than any other turtle' recast as 'on record', which is what sources support (record dive about 1,200 m).",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0023",
+   "fact": "sea-turtles.hawksbill.hawksbill-eats-mostly-sponges",
+   "kind": "profile",
+   "species": [
+    "hawksbill"
+   ],
+   "text": "A hawksbill eats mostly sponges, picking them out of reef crevices with its narrow, pointed beak. It is the only sea turtle that can live mainly on sponges.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+    "publisher": "NOAA Fisheries",
+    "title": "Hawksbill Turtle"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "hawksbill",
+     "text": "A hawksbill eats sponges, prying them out of the reef with its narrow, hooked beak. Few other animals can eat them."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "hawksbill",
+     "text": "A hawksbill pries sponges out of the reef with its narrow, hooked beak.",
+     "merged": "Same claim as p24."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Few other animals can eat them' is unsupported and too broad; NOAA supports the narrower claim about sea turtles. 'Hooked' changed to 'pointed' to match sources.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA hawksbill page: narrow pointed beak for picking prey from crevices; the only sea turtle that can survive on a diet mainly of sponges.",
+   "corrections": [
+    {
+     "from": "A hawksbill eats sponges, prying them out of the reef with its narrow, hooked beak. Few other animals can eat them.",
+     "to": "A hawksbill eats mostly sponges, picking them out of reef crevices with its narrow, pointed beak. It is the only sea turtle that can live mainly on sponges.",
+     "why": "'Few other animals can eat them' is unsupported and too broad; NOAA supports the narrower claim about sea turtles. 'Hooked' changed to 'pointed' to match sources.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0024",
+   "fact": "sea-turtles.hawksbill.hawksbill-shells-tortoiseshell-once",
+   "kind": "profile",
+   "species": [
+    "hawksbill"
+   ],
+   "text": "Hawksbill shells are the 'tortoiseshell' once made into combs and glasses frames. International trade in it is now banned, though illegal trade goes on.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+    "publisher": "NOAA Fisheries",
+    "title": "Hawksbill Turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "hawksbill",
+     "text": "Hawksbill shells are the tortoiseshell people once made combs and glasses from; today the trade is banned to protect them."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "hawksbill",
+     "text": "Hawksbill shells are tortoiseshell, once made into combs; today the trade is banned to protect them.",
+     "merged": "Same claim as p25."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'The trade is banned' overstates it: international trade is banned under CITES, but illegal trade continues.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA says CITES forbids international trade in turtle products including hawksbill shell, but illegal hunting continues; FWS notes Japan stopped imports in 1993.",
+   "corrections": [
+    {
+     "from": "Hawksbill shells are the tortoiseshell people once made combs and glasses from; today the trade is banned to protect them.",
+     "to": "Hawksbill shells are the 'tortoiseshell' once made into combs and glasses frames. International trade in it is now banned, though illegal trade goes on.",
+     "why": "'The trade is banned' overstates it: international trade is banned under CITES, but illegal trade continues.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0025",
+   "fact": "sea-turtles.hawksbill.eating-sponges-hawksbills-may",
+   "kind": "profile",
+   "species": [
+    "hawksbill"
+   ],
+   "text": "By eating sponges, hawksbills may help keep them from crowding out corals on a reef.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+    "publisher": "NOAA Fisheries",
+    "title": "Hawksbill Turtle"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "review",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "hawksbill",
+     "text": "By eating sponges, hawksbills keep them from crowding out the corals on a reef."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Hedged: the ecological role is described in general terms (helping reef health), not as a measured effect.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26",
+    "conflict": "Says hawksbills keep sponges from crowding out corals; question dd-0202 says they keep common sponges from crowding out rarer reef species. Settle against the source and make both say the same thing."
+   },
+   "searchNote": "NOAA hawksbill page links their sponge-eating to reef health (check exact wording on fetch; drop if the page does not mention it).",
+   "corrections": [
+    {
+     "from": "By eating sponges, hawksbills keep them from crowding out the corals on a reef.",
+     "to": "By eating sponges, hawksbills may help keep them from crowding out corals on a reef.",
+     "why": "Hedged: the ecological role is described in general terms (helping reef health), not as a measured effect.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0202"
+   ],
+   "conflict": true
+  },
+  {
+   "id": "pf-0026",
+   "fact": "sea-turtles.hawksbill.2015-hawksbill-became-first",
+   "kind": "profile",
+   "species": [
+    "hawksbill"
+   ],
+   "text": "In 2015 a hawksbill became the first reptile seen to glow under blue light, shining green and red. The red may come from algae on its shell.",
+   "source": {
+    "url": "https://www.cuny.edu/news/exclusive-video-first-glowing-sea-turtle-found/",
+    "publisher": "City University of New York",
+    "title": "Exclusive Video: First “Glowing” Sea Turtle Found"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "hawksbill",
+     "text": "Some hawksbills glow: their shells fluoresce red and green under blue light, the first reptile seen to do it."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Added the date and the caveat that the red glow is likely from algae, so the claim is not overstated.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "CUNY news story reports David Gruber's 2015 night dive in the Solomon Islands where a hawksbill fluoresced green and red, the first reptile seen to biofluoresce; authors think the red came from algae.",
+   "corrections": [
+    {
+     "from": "Some hawksbills glow: their shells fluoresce red and green under blue light, the first reptile seen to do it.",
+     "to": "In 2015 a hawksbill became the first reptile seen to glow under blue light, shining green and red. The red may come from algae on its shell.",
+     "why": "Added the date and the caveat that the red glow is likely from algae, so the claim is not overstated.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0027",
+   "fact": "sea-turtles.green-turtle.sea-turtle-cannot-pull",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "A sea turtle cannot pull its head into its shell the way a land tortoise can.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+    "publisher": "Smithsonian Ocean",
+    "title": "Sea Turtles"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "A sea turtle cannot pull its head into its shell the way a land tortoise can."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian sea turtle page says sea turtles cannot pull their head or flippers into the shell.",
+   "questions": [
+    "dd-0215"
+   ]
+  },
+  {
+   "id": "pf-0028",
+   "fact": "sea-turtles.green-turtle.green-turtles-named-greenish",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Green turtles are named for the greenish color of their fat, not their shell. As adults they eat mostly seagrass and algae.",
+   "source": {
+    "url": "https://oceanservice.noaa.gov/facts/green-turtle.html",
+    "publisher": "NOAA Ocean Service",
+    "title": "What makes the green turtle...green?"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "Green turtles are named for the green color of their fat, not their shell: as adults they eat mostly sea grass and algae."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "The original's colon implied the diet explains the name; NOAA says the diet link is uncertain since other sea turtles also have greenish fat.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA Ocean Service says the name comes from the greenish fat; adults are herbivores eating seagrass and algae.",
+   "corrections": [
+    {
+     "from": "Green turtles are named for the green color of their fat, not their shell: as adults they eat mostly sea grass and algae.",
+     "to": "Green turtles are named for the greenish color of their fat, not their shell. As adults they eat mostly seagrass and algae.",
+     "why": "The original's colon implied the diet explains the name; NOAA says the diet link is uncertain since other sea turtles also have greenish fat.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0029",
+   "fact": "sea-turtles.green-turtle.sea-turtle-hold-breath",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "A sea turtle can hold its breath for hours while it sleeps, wedged under a ledge, then rises to the surface to breathe.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+    "publisher": "Smithsonian Ocean",
+    "title": "Sea Turtles"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "A sea turtle can hold its breath for hours while it sleeps, wedged under a ledge, then rises to the surface to breathe."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "turtle",
+     "text": "A sea turtle comes up to breathe, then sinks back down to rest.",
+     "merged": "Covered by p30."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian page says resting sea turtles can hold their breath for 4 to 7 hours, with the heart rate slowing sharply."
+  },
+  {
+   "id": "pf-0030",
+   "fact": "sea-turtles.green-turtle.sea-turtles-fly-through",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Sea turtles fly through the water with their long front flippers and steer with the small back ones.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+    "publisher": "Smithsonian Ocean",
+    "title": "Sea Turtles"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "Sea turtles fly through the water with their long front flippers and steer with the small back ones."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian says the large front flippers work like paddles and the smaller back flippers act as rudders."
+  },
+  {
+   "id": "pf-0031",
+   "fact": "sea-turtles.green-turtle.female-green-turtle-usually",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "A female green turtle usually comes back to nest in the region where she hatched, often decades later.",
+   "source": {
+    "url": "https://lohmannlab.web.unc.edu/wp-content/uploads/sites/8154/2026/08/Long-distance-navigation-in-sea-turtles.pdf",
+    "publisher": "Lohmann Lab, University of North Carolina",
+    "title": "Long-distance navigation in sea turtles"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "A female green turtle comes back to the very beach she hatched on to lay her own eggs, decades later."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'The very beach' overstates natal homing, which is to the natal region or nearby beaches.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Lohmann lab review discusses natal homing, with adults returning to their natal area to nest guided by magnetic cues.",
+   "corrections": [
+    {
+     "from": "A female green turtle comes back to the very beach she hatched on to lay her own eggs, decades later.",
+     "to": "A female green turtle usually comes back to nest in the region where she hatched, often decades later.",
+     "why": "'The very beach' overstates natal homing, which is to the natal region or nearby beaches.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0032",
+   "fact": "sea-turtles.green-turtle.whether-turtle-egg-hatches",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Whether a turtle egg hatches male or female depends on how warm the sand is: warm nests make mostly females.",
+   "source": {
+    "url": "https://www.fisheries.noaa.gov/feature-story/10-tremendous-turtle-facts",
+    "publisher": "NOAA Fisheries",
+    "title": "10 Tremendous Turtle Facts"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "Whether a turtle egg hatches male or female depends on how warm the sand is: warm nests make mostly females."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA says nest temperature sets hatchling sex: cooler nests produce males and warmer nests females."
+  },
+  {
+   "id": "pf-0033",
+   "fact": "sea-turtles.green-turtle.young-green-turtles-spend",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Young green turtles spend their first years far out at sea, often among floating seaweed. Because they were so hard to follow, this stretch is called the lost years.",
+   "source": {
+    "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/green-turtle",
+    "publisher": "Monterey Bay Aquarium",
+    "title": "Green turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "Young sea turtles drift for years in floating seaweed in the open ocean. Scientists call them the lost years."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Drift for years in floating seaweed' overstates it; sources describe an open-ocean stage often associated with Sargassum mats.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Monterey Bay Aquarium says green turtle hatchlings spend their early years in the open ocean among floating Sargassum for roughly 5 to 7 years (verify 'lost years' wording on fetch).",
+   "corrections": [
+    {
+     "from": "Young sea turtles drift for years in floating seaweed in the open ocean. Scientists call them the lost years.",
+     "to": "Young green turtles spend their first years far out at sea, often among floating seaweed. Because they were so hard to follow, this stretch is called the lost years.",
+     "why": "'Drift for years in floating seaweed' overstates it; sources describe an open-ocean stage often associated with Sargassum mats.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0034",
+   "fact": "sea-turtles.green-turtle.sea-turtles-have-lived",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Sea turtles have lived in the oceans for over 100 million years, since the age of the dinosaurs.",
+   "source": {
+    "url": "https://response.restoration.noaa.gov/about/media/working-help-save-sea-turtles.html",
+    "publisher": "NOAA Office of Response and Restoration",
+    "title": "Working to Help Save Sea Turtles"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "turtle",
+     "text": "Sea turtles have lived in the oceans for over 100 million years, since the age of the dinosaurs."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA Response and Restoration page says sea turtles have lived in Earth's oceans for more than 100 million years."
+  },
+  {
+   "id": "pf-0035",
+   "fact": "seahorses.seahorse.seahorse-s-eyes-move",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "A seahorse's eyes move on their own: it can watch something in front and something behind at the same time.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+    "publisher": "Smithsonian Ocean",
+    "title": "10 Things You Never Knew About Seahorses"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "A seahorse's eyes move on their own: it can watch something in front and something behind at the same time."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "seahorse",
+     "text": "A seahorse can move each eye on its own, looking two ways at once.",
+     "merged": "Same claim as p36."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian list notes seahorse eyes move independently, so they can look forward and back at once."
+  },
+  {
+   "id": "pf-0036",
+   "fact": "seahorses.seahorse.seahorses-male-gets-pregnant",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "In seahorses the male gets pregnant: the female puts her eggs in his pouch, and he carries them until he gives birth to the young.",
+   "source": {
+    "url": "https://oceanservice.noaa.gov/facts/seahorse.html",
+    "publisher": "NOAA Ocean Service",
+    "title": "How do seahorses differ from all other animals?"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "In seahorses the male gets pregnant: the female puts her eggs in his pouch and he carries them until they hatch."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "seahorse",
+     "text": "A father seahorse carries the babies in a pouch until they are born.",
+     "merged": "Same claim as p37."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "The eggs hatch inside the pouch and the male then gives birth; 'until they hatch' slightly misdescribes it.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA Ocean Service says seahorses and sea dragons are the only animals in which the male gets pregnant and gives birth.",
+   "corrections": [
+    {
+     "from": "In seahorses the male gets pregnant: the female puts her eggs in his pouch and he carries them until they hatch.",
+     "to": "In seahorses the male gets pregnant: the female puts her eggs in his pouch, and he carries them until he gives birth to the young.",
+     "why": "The eggs hatch inside the pouch and the male then gives birth; 'until they hatch' slightly misdescribes it.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0037",
+   "fact": "seahorses.seahorse.depending-species-male-seahorse",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Depending on the species, a male seahorse can give birth to anything from a few dozen to as many as a thousand babies at once.",
+   "source": {
+    "url": "https://oceanservice.noaa.gov/facts/seahorse.html",
+    "publisher": "NOAA Ocean Service",
+    "title": "How do seahorses differ from all other animals?"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "A male seahorse can give birth to anything from five to over a thousand tiny babies at once."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Five to over a thousand' did not match the sourced range.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA Ocean Service gives a few dozen to as many as 1,000 fully formed babies per birth.",
+   "corrections": [
+    {
+     "from": "A male seahorse can give birth to anything from five to over a thousand tiny babies at once.",
+     "to": "Depending on the species, a male seahorse can give birth to anything from a few dozen to as many as a thousand babies at once.",
+     "why": "'Five to over a thousand' did not match the sourced range.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0038",
+   "fact": "seahorses.seahorse.many-seahorse-pairs-greet",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Many seahorse pairs greet each other each morning with a short dance, sometimes changing color as they do.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+    "publisher": "Smithsonian Ocean",
+    "title": "10 Things You Never Knew About Seahorses"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "A seahorse pair greets each other each morning with a little dance, circling and changing color together."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Not every species does this; added 'many' and softened 'circling and changing color together'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian says seahorse couples greet each other every morning with a dance that sometimes involves changing color.",
+   "corrections": [
+    {
+     "from": "A seahorse pair greets each other each morning with a little dance, circling and changing color together.",
+     "to": "Many seahorse pairs greet each other each morning with a short dance, sometimes changing color as they do.",
+     "why": "Not every species does this; added 'many' and softened 'circling and changing color together'.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0072"
+   ]
+  },
+  {
+   "id": "pf-0039",
+   "fact": "seahorses.seahorse.seahorses-court-swimming-side",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Seahorses court by swimming side by side with their tails linked, turning brighter as they go.",
+   "source": {
+    "url": "https://www.sheddaquarium.org/stories/seahorse-valentines-together-forever",
+    "publisher": "Shedd Aquarium",
+    "title": "Seahorse Valentines: Together Forever"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "Seahorses court by swimming side by side with their tails linked, turning brighter as they go."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Shedd describes courting pairs twining tails around a holdfast, then promenading with tails linked, and changing color when they meet."
+  },
+  {
+   "id": "pf-0040",
+   "fact": "seahorses.seahorse.seahorses-poor-swimmers-spend",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Seahorses are poor swimmers. They spend much of their time holding on to seagrass, coral or other plants with their curled tails.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/lined-seahorse/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Lined Seahorse"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "Seahorses are poor swimmers. They spend most of the day holding on to seagrass with their curled tails."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Seahorses also anchor to coral, mangroves and seaweed, not only seagrass.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum says lined seahorses are poor swimmers that wrap their prehensile tails around coral, seaweed and plants to stay put.",
+   "corrections": [
+    {
+     "from": "Seahorses are poor swimmers. They spend most of the day holding on to seagrass with their curled tails.",
+     "to": "Seahorses are poor swimmers. They spend much of their time holding on to seagrass, coral or other plants with their curled tails.",
+     "why": "Seahorses also anchor to coral, mangroves and seaweed, not only seagrass.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0041",
+   "fact": "seahorses.seahorse.seahorse-has-no-teeth",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "A seahorse has no teeth and no stomach. It snaps up tiny shrimp with a flick of its snout, so it eats almost all day.",
+   "source": {
+    "url": "https://www.seattleaquarium.org/animal/seahorses/",
+    "publisher": "Seattle Aquarium",
+    "title": "Seahorses"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "A seahorse has no teeth and no stomach. It snaps up tiny shrimp with a flick of its snout, so it eats almost all day."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "seahorse",
+     "text": "Seahorses have no stomach, so they eat almost all day.",
+     "merged": "Same claim as p42."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Seattle Aquarium says seahorses have no teeth and no stomach, so they eat frequently."
+  },
+  {
+   "id": "pf-0042",
+   "fact": "seahorses.seahorse.seahorses-change-color-match",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Seahorses can change color to match the plants they cling to.",
+   "source": {
+    "url": "https://oceanservice.noaa.gov/facts/seahorse.html",
+    "publisher": "NOAA Ocean Service",
+    "title": "How do seahorses differ from all other animals?"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "Seahorses can change color to match the plants they cling to."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NOAA Ocean Service says chromatophores in seahorse skin let them change color to mimic their surroundings.",
+   "questions": [
+    "dd-0062"
+   ]
+  },
+  {
+   "id": "pf-0043",
+   "fact": "seahorses.seahorse.seahorses-swim-upright-pushed",
+   "kind": "profile",
+   "species": [
+    "seahorse"
+   ],
+   "text": "Seahorses swim upright, pushed along by a little fin on their back that flutters dozens of times a second.",
+   "source": {
+    "url": "https://www.nhm.ac.uk/discover/are-seahorses-the-quirkiest-fish.html",
+    "publisher": "Natural History Museum (London)",
+    "title": "Are seahorses the ocean's quirkiest fish?"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "seahorse",
+     "text": "Seahorses swim upright, pushed along by a little fin on their back that beats up to 50 times a second."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Sources disagree on the rate (up to 40 per second at one aquarium, 30 to 70 at the NHM); 'up to 50' is not a sourced figure.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "NHM page says the dorsal fin flutters 30 to 70 times a second for forward propulsion.",
+   "corrections": [
+    {
+     "from": "Seahorses swim upright, pushed along by a little fin on their back that beats up to 50 times a second.",
+     "to": "Seahorses swim upright, pushed along by a little fin on their back that flutters dozens of times a second.",
+     "why": "Sources disagree on the rate (up to 40 per second at one aquarium, 30 to 70 at the NHM); 'up to 50' is not a sourced figure.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0044",
+   "fact": "fish.clownfish.clownfish-all-start-life",
+   "kind": "profile",
+   "species": [
+    "goldfish"
+   ],
+   "text": "Clownfish all start life as males. The biggest fish in a group is the female, and if she dies, the largest male changes sex to take her place.",
+   "source": {
+    "url": "https://australian.museum/learn/teachers/learning/sleek-geeks-videos/sex-change-in-clownfish/",
+    "publisher": "Australian Museum",
+    "title": "Sex change in clownfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "goldfish",
+     "text": "Every clownfish is born male. The biggest in a group can become female."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "goldfish",
+     "text": "Clownfish are all born male; the biggest one in a group becomes the female.",
+     "merged": "Same claim as p45."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'The biggest can become female' is garbled: the biggest already is the female; the largest male changes sex when she is lost.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum explains clownfish start life as males; the largest in the group is the female, and if she dies the dominant male becomes female.",
+   "corrections": [
+    {
+     "from": "Every clownfish is born male. The biggest in a group can become female.",
+     "to": "Clownfish all start life as males. The biggest fish in a group is the female, and if she dies, the largest male changes sex to take her place.",
+     "why": "'The biggest can become female' is garbled: the biggest already is the female; the largest male changes sex when she is lost.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0136"
+   ]
+  },
+  {
+   "id": "pf-0045",
+   "fact": "fish.clownfish.clownfish-live-among-anemone",
+   "kind": "profile",
+   "species": [
+    "goldfish"
+   ],
+   "text": "Clownfish live among anemone tentacles, protected by a slimy coat that stops the stings.",
+   "source": {
+    "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/clownfish",
+    "publisher": "Monterey Bay Aquarium",
+    "title": "Clownfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "goldfish",
+     "text": "Clownfish live among anemone tentacles, protected by a slimy coat that stops the stings."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "goldfish",
+     "text": "A coat of slime lets a clownfish live among an anemone's stings without being hurt.",
+     "merged": "Same claim as p46."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Monterey Bay Aquarium says the fish touches the anemone's tentacles over hours or days until a mucus layer protects it from stings.",
+   "questions": [
+    "dd-0135"
+   ]
+  },
+  {
+   "id": "pf-0046",
+   "fact": "fish.clownfish.clownfish-make-chirps-pops",
+   "kind": "profile",
+   "species": [
+    "goldfish"
+   ],
+   "text": "Clownfish make chirps and pops, mostly during squabbles over rank within their group.",
+   "source": {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3492317/",
+    "publisher": "PMC / NCBI",
+    "title": "Overview on the Diversity of Sounds Produced by Clownfishes (Pomacentridae): Importance of Acoustic Signals in Their Peculiar Way of Life"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "goldfish",
+     "text": "Clownfish make little popping and clicking sounds to talk to each other."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'To talk to each other' is vague; research links their sounds mainly to aggressive and submissive interactions.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "PMC review describes pulsed clownfish sounds produced mainly by dominant fish during chases and threat displays, with no reproduction-related sound found.",
+   "corrections": [
+    {
+     "from": "Clownfish make little popping and clicking sounds to talk to each other.",
+     "to": "Clownfish make chirps and pops, mostly during squabbles over rank within their group.",
+     "why": "'To talk to each other' is vague; research links their sounds mainly to aggressive and submissive interactions.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0047",
+   "fact": "fish.royal-gramma.royal-gramma-swims-belly",
+   "kind": "profile",
+   "species": [
+    "blue"
+   ],
+   "text": "A royal gramma swims belly to the nearest surface, so under a ledge it hangs upside down. It is not unwell; it is at home.",
+   "source": {
+    "url": "https://sta.uwi.edu/fst/lifesciences/sites/default/files/lifesciences/documents/ogatt/Gramma_loreto%20-%20Fairy%20Basslet.pdf",
+    "publisher": "University of the West Indies (OGATT)",
+    "title": "Gramma loreto (Fairy Basslet)"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "blue",
+     "text": "A royal gramma swims belly to the nearest surface, so under a ledge it hangs upside down. It is not unwell; it is at home."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "blue",
+     "text": "Royal grammas often hang upside down under ledges, belly to the rock.",
+     "merged": "Same claim as p48."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "UWI species sheet says the fairy basslet swims upside down under overhangs with its belly toward the roof."
+  },
+  {
+   "id": "pf-0048",
+   "fact": "fish.royal-gramma.intruder-comes-too-close",
+   "kind": "profile",
+   "species": [
+    "blue"
+   ],
+   "text": "When an intruder comes too close, a royal gramma gapes its mouth wide as a warning.",
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "blue",
+     "text": "When an intruder comes too close, a royal gramma gapes its mouth wide as a warning."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "No reputable source found for a mouth-gaping threat display in royal grammas.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Search returned nothing specific to Gramma loreto aggression displays."
+  },
+  {
+   "id": "pf-0049",
+   "fact": "fish.royal-gramma.royal-grammas-have-been",
+   "kind": "profile",
+   "species": [
+    "blue"
+   ],
+   "text": "Royal grammas have been seen picking at other fish, possibly to remove parasites.",
+   "source": {
+    "url": "https://www.aoml.noaa.gov/general/lib/CREWS/Cleo/PuertoRico/prpdfs/randall-habits.pdf",
+    "publisher": "NOAA AOML library (John E. Randall)",
+    "title": "Food Habits of Reef Fishes of the West Indies"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "blue",
+     "text": "Royal grammas sometimes pick tiny parasites off bigger fish, like little cleaners."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Like little cleaners' overstates an occasional observation.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Randall's food-habits study found mostly small crustaceans in their stomachs and noted fish picking at other fish, possibly for ectoparasites.",
+   "corrections": [
+    {
+     "from": "Royal grammas sometimes pick tiny parasites off bigger fish, like little cleaners.",
+     "to": "Royal grammas have been seen picking at other fish, possibly to remove parasites.",
+     "why": "'Like little cleaners' overstates an occasional observation.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0050",
+   "fact": "fish.blue-chromis.blue-chromis-feed-plankton",
+   "kind": "profile",
+   "species": [
+    "neon"
+   ],
+   "text": "Blue chromis feed on plankton in groups above the reef, and dart down into coral crevices when something startles them.",
+   "source": {
+    "url": "https://www.georgiaaquarium.org/animal/blue-chromis/",
+    "publisher": "Georgia Aquarium",
+    "title": "Blue Chromis"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "neon",
+     "text": "Blue chromis live in loose shoals and dart back into the coral together when something startles them."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "neon",
+     "text": "Blue chromis shoal by the hundred over branching coral and vanish into it when danger comes.",
+     "merged": "Same as p51. 'By the hundred over branching coral' fits the Indo-Pacific green chromis rather than the Caribbean blue chromis."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Tightened to the sourced behavior of Chromis cyanea.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Georgia Aquarium says blue chromis feed on zooplankton in groups and quickly retreat into coral crevices if frightened.",
+   "corrections": [
+    {
+     "from": "Blue chromis live in loose shoals and dart back into the coral together when something startles them.",
+     "to": "Blue chromis feed on plankton in groups above the reef, and dart down into coral crevices when something startles them.",
+     "why": "Tightened to the sourced behavior of Chromis cyanea.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0051",
+   "fact": "fish.blue-chromis.chromis-shoal-shimmers-because",
+   "kind": "profile",
+   "species": [
+    "neon"
+   ],
+   "text": "A chromis shoal shimmers because each fish turns at almost the same moment.",
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "neon",
+     "text": "A chromis shoal shimmers because each fish turns at almost the same moment."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "Unsupported claim about synchronized turning; blue chromis form loose aggregations, and no source describes this mechanism.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "No source found."
+  },
+  {
+   "id": "pf-0052",
+   "fact": "fish.watchman-goby.yellow-watchman-goby-shares",
+   "kind": "profile",
+   "species": [
+    "cory"
+   ],
+   "text": "A yellow watchman goby shares a burrow with a pistol shrimp: the shrimp digs, the goby keeps watch.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/watchman_goby",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Watchman Goby"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "cory",
+     "text": "A yellow watchman goby shares a burrow with a pistol shrimp: the shrimp digs, the goby keeps watch."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Aquarium of the Pacific says the shrimp builds and maintains the burrow while the goby stands watch and warns it of danger."
+  },
+  {
+   "id": "pf-0053",
+   "fact": "fish.watchman-goby.watchman-goby-sits-mouth",
+   "kind": "profile",
+   "species": [
+    "cory"
+   ],
+   "text": "A watchman goby sits at the mouth of its burrow as a lookout. If danger comes, it flicks its tail to warn its shrimp partner.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/watchman_goby",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Watchman Goby"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "cory",
+     "text": "Gobies perch on the sand on their fins, like a little lookout."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Generic 'gobies perch on the sand on their fins' replaced with the watchman goby's sourced lookout behavior.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Watchman goby page describes the goby keeping lookout at the burrow and warning the shrimp with a tail flick.",
+   "corrections": [
+    {
+     "from": "Gobies perch on the sand on their fins, like a little lookout.",
+     "to": "A watchman goby sits at the mouth of its burrow as a lookout. If danger comes, it flicks its tail to warn its shrimp partner.",
+     "why": "Generic 'gobies perch on the sand on their fins' replaced with the watchman goby's sourced lookout behavior.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0054",
+   "fact": "fish.damselfish.damselfish-farm-own-patch",
+   "kind": "profile",
+   "species": [
+    "guppy"
+   ],
+   "text": "Some damselfish farm their own patch of algae and chase off anything that comes to graze on it.",
+   "source": {
+    "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7527513/",
+    "publisher": "PMC / NCBI",
+    "title": "Herbivorous damselfishes expand their territories after causing white scars on Porites corals"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "guppy",
+     "text": "Damselfish farm their own patch of algae and chase off anything that comes to graze on it."
+    },
+    {
+     "from": "facts.js FACTS",
+     "species": "guppy",
+     "text": "For their size, damselfish are some of the boldest fish on the reef.",
+     "merged": "'Some of the boldest fish on the reef' is subjective; the supportable part (fierce defense of their patch) is already in p55."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "guppy",
+     "text": "Damselfish farm little lawns of algae and chase off anything that comes near.",
+     "merged": "Same claim as p55."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Only some damselfish are algae farmers; added 'some'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "PMC study describes farmer damselfishes (e.g. Stegastes) that maintain algal turfs, weed them and drive off grazers.",
+   "corrections": [
+    {
+     "from": "Damselfish farm their own patch of algae and chase off anything that comes to graze on it.",
+     "to": "Some damselfish farm their own patch of algae and chase off anything that comes to graze on it.",
+     "why": "Only some damselfish are algae farmers; added 'some'.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0055",
+   "fact": "fish.angelfish.young-emperor-angelfish-has",
+   "kind": "profile",
+   "species": [
+    "angelfish"
+   ],
+   "text": "A young emperor angelfish has blue and white rings; it changes completely into stripes as it grows up.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/fishes/emperor-angelfish-pomacanthus-imperator/",
+    "publisher": "Australian Museum",
+    "title": "Emperor Angelfish, Pomacanthus imperator"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "angelfish",
+     "text": "A young emperor angelfish has blue and white rings; it changes completely into stripes as it grows up."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "angelfish",
+     "text": "A young emperor angelfish is ringed in blue and white; it changes completely into stripes as it grows up.",
+     "merged": "Same claim as p57."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum describes juveniles with blue and white rings and adults with diagonal yellow and blue stripes."
+  },
+  {
+   "id": "pf-0056",
+   "fact": "fish.angelfish.angelfish-make-loud-thumping",
+   "kind": "profile",
+   "species": [
+    "angelfish"
+   ],
+   "text": "Some angelfish can make loud thumping sounds: the blue angelfish uses them to startle predators.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/blue-angelfish/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Blue Angelfish"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "angelfish",
+     "text": "Angelfish can make a loud knocking sound to warn others off."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "angelfish",
+     "text": "Emperor angelfish can make a loud knocking sound when they are startled.",
+     "merged": "Same topic as p58. No source found for knocking sounds in emperor angelfish specifically."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "No source found for a knocking sound in emperor angelfish specifically; the Florida Museum documents loud thumping in the blue angelfish.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum blue angelfish profile says it can produce loud thumping sounds to startle predators and attract attention.",
+   "corrections": [
+    {
+     "from": "Angelfish can make a loud knocking sound to warn others off.",
+     "to": "Some angelfish can make loud thumping sounds: the blue angelfish uses them to startle predators.",
+     "why": "No source found for a knocking sound in emperor angelfish specifically; the Florida Museum documents loud thumping in the blue angelfish.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0057",
+   "fact": "fish.cardinalfish.cardinalfish-father-keeps-eggs",
+   "kind": "profile",
+   "species": [
+    "platy"
+   ],
+   "text": "In most cardinalfish, the father keeps the eggs safe in his mouth until they hatch, and he can hardly eat, if at all, while he does.",
+   "source": {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9065974/",
+    "publisher": "PMC / NCBI",
+    "title": "Diverse parentage relationships in paternal mouthbrooding fishes"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "platy",
+     "text": "In cardinalfish the dad keeps the eggs safe in his mouth until they hatch, and does not eat until they do."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "platy",
+     "text": "Male cardinalfish carry the eggs in their mouths until they hatch.",
+     "merged": "Same claim as p59."
+    },
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "platy",
+     "text": "Cardinalfish fathers carry the eggs in their mouths, and eat nothing until they hatch.",
+     "merged": "Same claim as p59, with the same over-certain 'eat nothing'."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Does not eat' is documented for some species but the review says brooders are typically unable to feed or severely constrained; hedged and added 'most'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Review of paternal mouthbrooding says the brooder is typically unable to feed, or severely constrained; a Siphamia study found brooding males' stomachs empty.",
+   "corrections": [
+    {
+     "from": "In cardinalfish the dad keeps the eggs safe in his mouth until they hatch, and does not eat until they do.",
+     "to": "In most cardinalfish, the father keeps the eggs safe in his mouth until they hatch, and he can hardly eat, if at all, while he does.",
+     "why": "'Does not eat' is documented for some species but the review says brooders are typically unable to feed or severely constrained; hedged and added 'most'.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0058",
+   "fact": "fish.cardinalfish.cardinalfish-rest-groups-day",
+   "kind": "profile",
+   "species": [
+    "platy"
+   ],
+   "text": "Most cardinalfish rest in groups by day and come out to hunt at night.",
+   "source": {
+    "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11700633/",
+    "publisher": "PMC / NCBI",
+    "title": "Inconspicuous breeding coloration to conceal eggs during mouthbrooding in male cardinalfish"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "platy",
+     "text": "Cardinalfish rest in quiet groups by day and hunt at night."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "platy",
+     "text": "Cardinalfish rest in groups by day and hunt at night.",
+     "merged": "Same claim as p60."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Added 'most': the Banggai cardinalfish, a common aquarium species, is active by day.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Search summary attributed to this paper's introduction that cardinalfishes forage at night and shelter by day, sometimes in dense groups (verify; the Siphamia life-history paper on deepblue.lib.umich.edu may be the page that says it).",
+   "corrections": [
+    {
+     "from": "Cardinalfish rest in quiet groups by day and hunt at night.",
+     "to": "Most cardinalfish rest in groups by day and come out to hunt at night.",
+     "why": "Added 'most': the Banggai cardinalfish, a common aquarium species, is active by day.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0059",
+   "fact": "fish.neon-goby.neon-gobies-run-cleaning",
+   "kind": "profile",
+   "species": [
+    "neongoby"
+   ],
+   "text": "Neon gobies run cleaning stations: big fish, even predators, hold still and let them pick parasites off their skin and out of their mouths.",
+   "source": {
+    "url": "https://utmsi.utexas.edu/science-and-the-sea/print-article/dentists-and-beauticians-of-the-sea/",
+    "publisher": "Marine Science Institute, University of Texas at Austin",
+    "title": "Dentists and Beauticians of the Sea"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "neongoby",
+     "text": "Neon gobies run cleaning stations: big fish, even predators, hold still and let them pick parasites off their skin and gills."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "neongoby",
+     "text": "Fish line up at a neon goby's station and hold still, mouths open, to be cleaned.",
+     "merged": "Same claim as p61."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Source mentions mouths and scales; 'gills' swapped for 'mouths'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "UT Marine Science Institute piece says cleaner gobies gather at stations where larger fish come to have parasites picked from their mouths and scales.",
+   "corrections": [
+    {
+     "from": "Neon gobies run cleaning stations: big fish, even predators, hold still and let them pick parasites off their skin and gills.",
+     "to": "Neon gobies run cleaning stations: big fish, even predators, hold still and let them pick parasites off their skin and out of their mouths.",
+     "why": "Source mentions mouths and scales; 'gills' swapped for 'mouths'.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0060",
+   "fact": "fish.neon-goby.aquarium-neon-gobies-bred",
+   "kind": "profile",
+   "species": [
+    "neongoby"
+   ],
+   "text": "Aquarium neon gobies are bred in captivity, so keeping one takes nothing from the reef.",
+   "source": null,
+   "source2": null,
+   "risk": "none",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "neongoby",
+     "text": "Aquarium neon gobies are bred in captivity, so keeping one takes nothing from the reef."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "A sweeping claim about the pet trade, not marine biology; also not true of all neon gobies sold.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": ""
+  },
+  {
+   "id": "pf-0061",
+   "fact": "fish.blue-tang.tang-has-scalpel-sharp",
+   "kind": "profile",
+   "species": [
+    "tang"
+   ],
+   "text": "A tang has a scalpel-sharp spine at the base of its tail, which is where the name surgeonfish comes from.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/blue-tang/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Blue Tang"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "tang",
+     "text": "A tang has a scalpel-sharp spine at the base of its tail, which is where the name surgeonfish comes from."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum says surgeonfish are named for scalpel-like spines at the base of the tail used against predators and rivals."
+  },
+  {
+   "id": "pf-0062",
+   "fact": "fish.blue-tang.blue-tangs-graze-algae",
+   "kind": "profile",
+   "species": [
+    "tang"
+   ],
+   "text": "Blue tangs graze on algae, which helps keep it from overgrowing and smothering coral.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/blue-tang/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Blue Tang"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "review",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "tang",
+     "text": "Blue tangs graze algae all day and help keep the reef from being overgrown."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'All day' dropped; reworded to the sourced role.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26",
+    "species": "The game's Blue Tang is the Indo-Pacific blue tang (Paracanthurus hepatus: yellow tail base). This source is about the Atlantic blue tang (Acanthurus coeruleus), a different species. Needs a source for the right species, or rewording."
+   },
+   "searchNote": "Florida Museum says blue tangs graze algae and help keep it from overgrowing and smothering coral (note: this is the Atlantic blue tang, Acanthurus coeruleus).",
+   "corrections": [
+    {
+     "from": "Blue tangs graze algae all day and help keep the reef from being overgrown.",
+     "to": "Blue tangs graze on algae, which helps keep it from overgrowing and smothering coral.",
+     "why": "'All day' dropped; reworded to the sourced role.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0063",
+   "fact": "fish.valentini-puffer.puffer-gulps-water-blow",
+   "kind": "profile",
+   "species": [
+    "puffer"
+   ],
+   "text": "A puffer gulps water to blow itself up two or three times bigger, so a predator cannot swallow it.",
+   "source": {
+    "url": "https://askdruniverse.wsu.edu/2018/05/25/puffer-fish-puff/",
+    "publisher": "Ask Dr. Universe, Washington State University",
+    "title": "Why do puffer fish puff up?"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "puffer",
+     "text": "A puffer gulps water to blow itself up two or three times bigger, so a predator cannot swallow it."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "WSU Ask Dr. Universe says puffers inflate with water or air to two or three times normal size when threatened."
+  },
+  {
+   "id": "pf-0064",
+   "fact": "fish.valentini-puffer.valentini-puffer-toxic-eat",
+   "kind": "profile",
+   "species": [
+    "puffer"
+   ],
+   "text": "The valentini puffer is toxic to eat. A harmless filefish copies its black saddles so closely that predators avoid it too.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/fishes/blacksaddle-filefish-paraluteres-prionurus/",
+    "publisher": "Australian Museum",
+    "title": "Blacksaddle Filefish, Paraluteres prionurus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "puffer",
+     "text": "The valentini puffer is poisonous to eat, and its saddle pattern warns predators off."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Saddle pattern warns predators off' was implied, not stated; the documented fact is the filefish mimic.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum says the blacksaddle filefish mimics the poisonous blacksaddle toby, Canthigaster valentini.",
+   "corrections": [
+    {
+     "from": "The valentini puffer is poisonous to eat, and its saddle pattern warns predators off.",
+     "to": "The valentini puffer is toxic to eat. A harmless filefish copies its black saddles so closely that predators avoid it too.",
+     "why": "'Saddle pattern warns predators off' was implied, not stated; the documented fact is the filefish mimic.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0065",
+   "fact": "fish.anthias.anthias-form-harems-many",
+   "kind": "profile",
+   "species": [
+    "danio"
+   ],
+   "text": "Anthias form harems of many females and one male. If he is lost, a female can change sex and take his place.",
+   "source": {
+    "url": "https://www.georgiaaquarium.org/animal/squarespot-anthias/",
+    "publisher": "Georgia Aquarium",
+    "title": "Squarespot Anthias"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "danio",
+     "text": "Anthias live in groups of many females and one male. If he goes, a female can turn into the new male."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "danio",
+     "text": "Anthias live in groups led by one male; if he is lost, the biggest female becomes the new male.",
+     "merged": "Same claim as p67."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Large anthias schools contain several harems; 'groups of many females and one male' tightened to 'harems'.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Georgia Aquarium says schools contain harem units led by one male; anthias start as females and a female replacing the male can change sex in 2 to 3 weeks.",
+   "corrections": [
+    {
+     "from": "Anthias live in groups of many females and one male. If he goes, a female can turn into the new male.",
+     "to": "Anthias form harems of many females and one male. If he is lost, a female can change sex and take his place.",
+     "why": "Large anthias schools contain several harems; 'groups of many females and one male' tightened to 'harems'.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0066",
+   "fact": "fish.anthias.anthias-hover-above-reef",
+   "kind": "profile",
+   "species": [
+    "danio"
+   ],
+   "text": "Anthias hover above the reef, picking plankton out of the current.",
+   "source": {
+    "url": "https://www.georgiaaquarium.org/animal/squarespot-anthias/",
+    "publisher": "Georgia Aquarium",
+    "title": "Squarespot Anthias"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "danio",
+     "text": "Anthias hover above the reef, picking plankton out of the current."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "danio",
+     "text": "An anthias shoal moves like a single orange-pink cloud.",
+     "merged": "Overlaps p68; 'orange-pink cloud' is poetic, and anthias colors vary by species."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Georgia Aquarium says anthias spend most of their time above the reef feeding on plankton."
+  },
+  {
+   "id": "pf-0067",
+   "fact": "fish.mandarin-dragonet.mandarin-dragonets-among-few",
+   "kind": "profile",
+   "species": [
+    "betta"
+   ],
+   "text": "Mandarin dragonets are among the few animals that make true blue color in their skin.",
+   "source": {
+    "url": "https://naturalhistory.si.edu/education/teaching-resources/featured-collections/what-makes-things-blue",
+    "publisher": "Smithsonian National Museum of Natural History",
+    "title": "What Makes Things Blue (featured collection)"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "betta",
+     "text": "Mandarin dragonets are among the few animals that make true blue color in their skin."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian NMNH notes the mandarinfish is one of only two vertebrates known to make blue with blue pigment cells (cyanophores)."
+  },
+  {
+   "id": "pf-0068",
+   "fact": "fish.mandarin-dragonet.mandarin-dragonet-picks-tiny",
+   "kind": "profile",
+   "species": [
+    "betta"
+   ],
+   "text": "A mandarin dragonet picks tiny copepods off the rocks all day long, one by one.",
+   "source": {
+    "url": "https://www.georgiaaquarium.org/animal/mandarinfish/",
+    "publisher": "Georgia Aquarium",
+    "title": "Mandarinfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "betta",
+     "text": "A mandarin dragonet picks tiny copepods off the rocks all day long, one by one."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Georgia Aquarium mandarinfish page covers its diet of tiny crustaceans (verify 'copepods' on fetch)."
+  },
+  {
+   "id": "pf-0069",
+   "fact": "fish.mandarin-dragonet.mandarins-have-no-scales",
+   "kind": "profile",
+   "species": [
+    "betta"
+   ],
+   "text": "Mandarins have no scales. Instead they are coated in a foul-tasting, toxic slime that helps keep predators away.",
+   "source": {
+    "url": "https://www.georgiaaquarium.org/animal/mandarinfish/",
+    "publisher": "Georgia Aquarium",
+    "title": "Mandarinfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js FACTS",
+     "species": "betta",
+     "text": "Mandarins have no scales: a slimy coat protects them instead."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "betta",
+     "text": "Mandarin dragonets have no scales; a bitter slime protects them instead.",
+     "merged": "Same as p71; its 'bitter slime' detail was folded into p71."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Added what the slime does and that it is toxic, merging the detail from p94.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Georgia Aquarium says mandarinfish lack scales and produce an odorous, foul-tasting, toxic mucus that deters predators and parasites.",
+   "corrections": [
+    {
+     "from": "Mandarins have no scales: a slimy coat protects them instead.",
+     "to": "Mandarins have no scales. Instead they are coated in a foul-tasting, toxic slime that helps keep predators away.",
+     "why": "Added what the slime does and that it is toxic, merging the detail from p94.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0070",
+   "fact": "fish.blue-chromis.chromis-change-blue-green",
+   "kind": "profile",
+   "species": [
+    "neon"
+   ],
+   "text": "Chromis change from blue to green depending on how the light hits their scales.",
+   "source": null,
+   "source2": null,
+   "risk": "species-specific",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "neon",
+     "text": "Chromis change from blue to green depending on how the light hits their scales."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "Appears to confuse the blue chromis with the blue-green (green) chromis; no source says blue chromis shift from blue to green with the light.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Randall noted one blue chromis dulling to grayish blue when sheltering, not a blue-to-green shift."
+  },
+  {
+   "id": "pf-0071",
+   "fact": "fish.watchman-goby.yellow-goby-spend-whole",
+   "kind": "profile",
+   "species": [
+    "cory"
+   ],
+   "text": "A yellow goby can spend its whole life perched on one branch of coral.",
+   "source": null,
+   "source2": null,
+   "risk": "species-specific",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "cory",
+     "text": "A yellow goby can spend its whole life perched on one branch of coral."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "Wrong species: perching on a coral branch describes coral-dwelling clown gobies. The game's yellow goby is a watchman goby that lives on sand at a shrimp burrow.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": ""
+  },
+  {
+   "id": "pf-0072",
+   "fact": "fish.watchman-goby.gobies-one-largest-families",
+   "kind": "profile",
+   "species": [
+    "cory"
+   ],
+   "text": "Gobies are one of the largest families of fish, with over 2,000 kinds.",
+   "source": {
+    "url": "https://ask.ifas.ufl.edu/publication/FA226",
+    "publisher": "UF/IFAS Extension",
+    "title": "FA226: Aquaculture Applications of the Family Gobiidae"
+   },
+   "source2": null,
+   "risk": "numeric",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "cory",
+     "text": "Gobies are one of the largest families of fish, with over 2,000 kinds."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "UF/IFAS publication calls Gobiidae the most diverse family of marine fishes, with over 2,000 species."
+  },
+  {
+   "id": "pf-0073",
+   "fact": "fish.damselfish.damselfish-make-pulsing-sounds",
+   "kind": "profile",
+   "species": [
+    "guppy"
+   ],
+   "text": "Some damselfish make pulsing sounds when they chase off intruders.",
+   "source": {
+    "url": "https://www.hawaii.edu/behavior/490E/Parmentier%20et%20al.%202010.%20Sound%20production%20in%20damselfishes.pdf",
+    "publisher": "University of Hawaii (course reading)",
+    "title": "Parmentier et al. 2010. Sound production in damselfishes"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "guppy",
+     "text": "Some damselfish make clicking sounds to warn others away."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Clicking sounds to warn others away' made more precise to what the research describes.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Parmentier et al. 2010 reviews sound production in damselfishes; search summary mentioned sounds during threat postures and chases of intruders (verify wording).",
+   "corrections": [
+    {
+     "from": "Some damselfish make clicking sounds to warn others away.",
+     "to": "Some damselfish make pulsing sounds when they chase off intruders.",
+     "why": "'Clicking sounds to warn others away' made more precise to what the research describes.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0074",
+   "fact": "fish.neon-goby.neon-goby-s-blue",
+   "kind": "profile",
+   "species": [
+    "neongoby"
+   ],
+   "text": "A neon goby's blue stripe acts like a sign: among these gobies, blue stripes are found only in the species that clean.",
+   "source": {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/20825524/",
+    "publisher": "PubMed / NCBI",
+    "title": "Colourful stripes send mixed messages to safe and risky partners in a diffuse cleaning mutualism"
+   },
+   "source2": null,
+   "risk": "surprising",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "neongoby",
+     "text": "A neon goby's blue stripe is an advertisement: it says cleaner, do not eat."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'It says cleaner, do not eat' overstates it; research shows blue stripes mark cleaner species but are also more conspicuous to predators.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "PubMed abstract (2010) on Elacatinus gobies reports blue stripes are unique to cleaners and more conspicuous to predators than yellow or green stripes.",
+   "corrections": [
+    {
+     "from": "A neon goby's blue stripe is an advertisement: it says cleaner, do not eat.",
+     "to": "A neon goby's blue stripe acts like a sign: among these gobies, blue stripes are found only in the species that clean.",
+     "why": "'It says cleaner, do not eat' overstates it; research shows blue stripes mark cleaner species but are also more conspicuous to predators.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0075",
+   "fact": "fish.blue-tang.blue-tangs-shelter-reef",
+   "kind": "profile",
+   "species": [
+    "tang"
+   ],
+   "text": "Blue tangs shelter in reef holes and crevices at night, and may show pale stripes after dark.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/blue-tang/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Blue Tang"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "review",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "tang",
+     "text": "Blue tangs sleep wedged into the rocks, and turn paler at night."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Turn paler' adjusted to the sourced night pattern (white vertical stripes).",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26",
+    "species": "The game's Blue Tang is the Indo-Pacific blue tang (Paracanthurus hepatus: yellow tail base). This source is about the Atlantic blue tang (Acanthurus coeruleus), a different species. Needs a source for the right species, or rewording."
+   },
+   "searchNote": "Florida Museum says blue tangs shelter in holes and crevices at night and may display white vertical stripes after dark.",
+   "corrections": [
+    {
+     "from": "Blue tangs sleep wedged into the rocks, and turn paler at night.",
+     "to": "Blue tangs shelter in reef holes and crevices at night, and may show pale stripes after dark.",
+     "why": "'Turn paler' adjusted to the sourced night pattern (white vertical stripes).",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0076",
+   "fact": "fish.blue-tang.tang-never-stops-swimming",
+   "kind": "profile",
+   "species": [
+    "tang"
+   ],
+   "text": "A tang never stops swimming for long: it laps the reef all day.",
+   "source": null,
+   "source2": null,
+   "risk": "none",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "tang",
+     "text": "A tang never stops swimming for long: it laps the reef all day."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "Vague and unsupported ('never stops swimming'); no source describes this.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": ""
+  },
+  {
+   "id": "pf-0077",
+   "fact": "fish.valentini-puffer.puffers-swim-small-fins",
+   "kind": "profile",
+   "species": [
+    "puffer"
+   ],
+   "text": "Puffers swim with their small fins like a little helicopter, and can hover and reverse.",
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "rejected",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "puffer",
+     "text": "Puffers swim with their small fins like a little helicopter, and can hover and reverse."
+    }
+   ],
+   "prereview": {
+    "verdict": "remove",
+    "why": "No source supports helicopter-style hovering and reversing in puffers; the only fin-swimming description found was for porcupinefish.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Aquarium of the Pacific balloonfish page describes swimming by undulating dorsal, anal and pectoral fins, but that is a porcupinefish."
+  },
+  {
+   "id": "pf-0078",
+   "fact": "fish.valentini-puffer.puffer-s-teeth-fused",
+   "kind": "profile",
+   "species": [
+    "puffer"
+   ],
+   "text": "A puffer's teeth are fused into a beak that keeps renewing itself throughout its life.",
+   "source": {
+    "url": "https://news.clas.ufl.edu/fish-reshape-dentistry/",
+    "publisher": "University of Florida College of Liberal Arts and Sciences",
+    "title": "Three peculiar sea creatures could reshape human dentistry"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "puffer",
+     "text": "A puffer's beak-like teeth never stop growing; crunchy food wears them down."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Never stop growing' and 'crunchy food wears them down' are aquarium-care claims; reworded to the biological point.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "UF article on puffer tooth regeneration describes the fused beak and its tooth replacement (verify wording on fetch; remove if not stated).",
+   "corrections": [
+    {
+     "from": "A puffer's beak-like teeth never stop growing; crunchy food wears them down.",
+     "to": "A puffer's teeth are fused into a beak that keeps renewing itself throughout its life.",
+     "why": "'Never stop growing' and 'crunchy food wears them down' are aquarium-care claims; reworded to the biological point.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0079",
+   "fact": "sea-turtles.green-turtle.green-turtles-graze-sea",
+   "kind": "profile",
+   "species": [
+    "turtle"
+   ],
+   "text": "Green turtles graze sea grass like cows graze a meadow, and keep the grass beds healthy.",
+   "source": {
+    "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/green-turtle",
+    "publisher": "Monterey Bay Aquarium",
+    "title": "Green turtle"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "turtle",
+     "text": "Green turtles graze sea grass like cows graze a meadow, and keep the grass beds healthy."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Monterey Bay Aquarium says green turtles' grazing trims seagrass, which stimulates new growth and keeps beds productive."
+  },
+  {
+   "id": "pf-0080",
+   "fact": "cephalopods.coconut-octopus.octopus-squeeze-through-surprisingly",
+   "kind": "profile",
+   "species": [
+    "octopus"
+   ],
+   "text": "An octopus can squeeze through surprisingly small gaps: its beak is the only hard part of its body, so that is what limits it.",
+   "source": {
+    "url": "https://caseagrant.ucsd.edu/seafood-profiles/giant-pacific-octopus",
+    "publisher": "California Sea Grant (UC San Diego)",
+    "title": "Giant Pacific Octopus"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "octopus",
+     "text": "An octopus can squeeze through any gap bigger than its beak."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Any gap bigger than its beak' is overstated; sources say the beak is the limiting factor.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "California Sea Grant GPO profile says the octopus can squeeze through small spaces, limited only by the size of its beak, the hardest part of its body.",
+   "corrections": [
+    {
+     "from": "An octopus can squeeze through any gap bigger than its beak.",
+     "to": "An octopus can squeeze through surprisingly small gaps: its beak is the only hard part of its body, so that is what limits it.",
+     "why": "'Any gap bigger than its beak' is overstated; sources say the beak is the limiting factor.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0008"
+   ]
+  },
+  {
+   "id": "pf-0081",
+   "fact": "cephalopods.coconut-octopus.trait-curious",
+   "kind": "trait",
+   "species": [
+    "octopus"
+   ],
+   "trait": "Curious",
+   "game": "In the tank, a curious octopus takes to the puzzle jar quickest.",
+   "real": "In the wild, coconut octopuses hunt by pushing their arms into holes in the seabed to find hidden prey.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+    "publisher": "Australian Museum",
+    "title": "Veined Octopus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "octopus",
+     "text": "Curious octopuses solve puzzle jars faster: in the wild they poke into every shell and crack."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split game behavior from wild behavior; 'pokes into every shell and crack' replaced with the sourced foraging behavior.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum says it catches shrimp and fish by pushing its arms into holes in the mud.",
+   "corrections": [
+    {
+     "from": "Curious octopuses solve puzzle jars faster: in the wild they poke into every shell and crack.",
+     "to": "In the tank, a curious octopus takes to the puzzle jar quickest. In the wild, coconut octopuses hunt by pushing their arms into holes in the seabed to find hidden prey.",
+     "why": "Split game behavior from wild behavior; 'pokes into every shell and crack' replaced with the sourced foraging behavior.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0082",
+   "fact": "cephalopods.coconut-octopus.trait-shy",
+   "kind": "trait",
+   "species": [
+    "octopus"
+   ],
+   "trait": "Shy",
+   "game": "In the tank, a shy octopus spends more time tucked inside its shell.",
+   "real": "Wild coconut octopuses do much of their foraging around dusk and dawn.",
+   "source": {
+    "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+    "publisher": "Australian Museum",
+    "title": "Veined Octopus"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "octopus",
+     "text": "A shy octopus spends more time in its shell, like wild ones that only come out at dusk."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'only come out at dusk' overstated (sources say dusk and dawn).",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Australian Museum says the veined octopus forages at dusk and dawn.",
+   "corrections": [
+    {
+     "from": "A shy octopus spends more time in its shell, like wild ones that only come out at dusk.",
+     "to": "In the tank, a shy octopus spends more time tucked inside its shell. Wild coconut octopuses do much of their foraging around dusk and dawn.",
+     "why": "Split; 'only come out at dusk' overstated (sources say dusk and dawn).",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0083",
+   "fact": "cephalopods.coconut-octopus.trait-brave",
+   "kind": "trait",
+   "species": [
+    "octopus"
+   ],
+   "trait": "Brave",
+   "game": "In the tank, a bold octopus comes right up to the glass.",
+   "real": null,
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "octopus",
+     "text": "Bold octopuses come to the glass. Wild ones will even inspect divers."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'wild ones will even inspect divers' is anecdotal and no reputable source was found, so real is null.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "No source found.",
+   "corrections": [
+    {
+     "from": "Bold octopuses come to the glass. Wild ones will even inspect divers.",
+     "to": "In the tank, a bold octopus comes right up to the glass.",
+     "why": "Split; 'wild ones will even inspect divers' is anecdotal and no reputable source was found, so real is null.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0084",
+   "fact": "cephalopods.coconut-octopus.trait-playful",
+   "kind": "trait",
+   "species": [
+    "octopus"
+   ],
+   "trait": "Playful",
+   "game": "In the tank, a playful octopus keeps coming back to push its toys around.",
+   "real": "In a Seattle Aquarium study, some giant Pacific octopuses repeatedly jetted water at a floating bottle to push it around, which researchers described as play.",
+   "source": {
+    "url": "https://commonreader.wustl.edu/alien-intelligence/",
+    "publisher": "The Common Reader (Washington University in St. Louis)",
+    "title": "Alien Intelligence"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "octopus",
+     "text": "Octopuses really do play: in studies they push floating bottles about again and again."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'octopuses really do play' generalized from a small study (two of the octopuses tested), so the real part names the study.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Search found accounts of the 1999 Seattle Aquarium study in which two octopuses repeatedly jetted floating pill bottles against the current; the counts tested differ between accounts (8 vs 10), so numbers were left out.",
+   "corrections": [
+    {
+     "from": "Octopuses really do play: in studies they push floating bottles about again and again.",
+     "to": "In the tank, a playful octopus keeps coming back to push its toys around. In a Seattle Aquarium study, some giant Pacific octopuses repeatedly jetted water at a floating bottle to push it around, which researchers described as play.",
+     "why": "Split; 'octopuses really do play' generalized from a small study (two of the octopuses tested), so the real part names the study.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0085",
+   "fact": "cephalopods.coconut-octopus.trait-calm",
+   "kind": "trait",
+   "species": [
+    "octopus"
+   ],
+   "trait": "Calm",
+   "game": "In the tank, a calm octopus sits still and blends into its surroundings.",
+   "real": "Wild octopuses can change the color and texture of their skin to hide in plain sight.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+    "publisher": "Smithsonian Ocean",
+    "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "octopus",
+     "text": "A calm octopus sits still and blends in, the way wild ones hide in plain sight."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split game behavior from the wild fact.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian cephalopod page covers color and texture change for camouflage.",
+   "corrections": [
+    {
+     "from": "A calm octopus sits still and blends in, the way wild ones hide in plain sight.",
+     "to": "In the tank, a calm octopus sits still and blends into its surroundings. Wild octopuses can change the color and texture of their skin to hide in plain sight.",
+     "why": "Split game behavior from the wild fact.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0086",
+   "fact": "seahorses.seahorse.trait-shy",
+   "kind": "trait",
+   "species": [
+    "seahorse"
+   ],
+   "trait": "Shy",
+   "game": "In the tank, a shy seahorse keeps to the thickest plants.",
+   "real": "Wild seahorses rely on camouflage, blending in among seagrass, coral and mangroves.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/lined-seahorse/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Lined Seahorse"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "seahorse",
+     "text": "Shy seahorses keep to thick plants, where wild ones are hardest to spot."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'where wild ones are hardest to spot' restated as the sourced camouflage fact.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum says lined seahorses rely on coloring and texture to camouflage themselves among coral, seagrass or mangroves.",
+   "corrections": [
+    {
+     "from": "Shy seahorses keep to thick plants, where wild ones are hardest to spot.",
+     "to": "In the tank, a shy seahorse keeps to the thickest plants. Wild seahorses rely on camouflage, blending in among seagrass, coral and mangroves.",
+     "why": "Split; 'where wild ones are hardest to spot' restated as the sourced camouflage fact.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0087",
+   "fact": "seahorses.seahorse.trait-calm",
+   "kind": "trait",
+   "species": [
+    "seahorse"
+   ],
+   "trait": "Calm",
+   "game": "In the tank, a calm seahorse stays anchored to one spot for hours.",
+   "real": "Wild lined seahorses wrap their tails around coral, seaweed or seagrass to stay put, and tend to stay in the same territory their whole lives.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/lined-seahorse/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Lined Seahorse"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "seahorse",
+     "text": "Calm seahorses stay anchored for hours, just as wild ones hold one stem most of the day."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'hold one stem most of the day' replaced with the sourced behavior.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum says lined seahorses wrap their prehensile tails around coral, seaweed and plants and tend to stay in the same territory their whole lives.",
+   "corrections": [
+    {
+     "from": "Calm seahorses stay anchored for hours, just as wild ones hold one stem most of the day.",
+     "to": "In the tank, a calm seahorse stays anchored to one spot for hours. Wild lined seahorses wrap their tails around coral, seaweed or seagrass to stay put, and tend to stay in the same territory their whole lives.",
+     "why": "Split; 'hold one stem most of the day' replaced with the sourced behavior.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0088",
+   "fact": "seahorses.seahorse.trait-curious",
+   "kind": "trait",
+   "species": [
+    "seahorse"
+   ],
+   "trait": "Curious",
+   "game": "In the tank, a curious seahorse turns one eye toward anything new while the other keeps watch.",
+   "real": "A seahorse can move each eye on its own, looking two ways at once.",
+   "source": {
+    "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+    "publisher": "Smithsonian Ocean",
+    "title": "10 Things You Never Knew About Seahorses"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "seahorse",
+     "text": "A curious seahorse turns one eye to anything new while the other keeps watch."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split game behavior from the wild fact.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Smithsonian says seahorse eyes move independently.",
+   "corrections": [
+    {
+     "from": "A curious seahorse turns one eye to anything new while the other keeps watch.",
+     "to": "In the tank, a curious seahorse turns one eye toward anything new while the other keeps watch. A seahorse can move each eye on its own, looking two ways at once.",
+     "why": "Split game behavior from the wild fact.",
+     "at": "2026-10-26"
+    }
+   ],
+   "questions": [
+    "dd-0058"
+   ]
+  },
+  {
+   "id": "pf-0089",
+   "fact": "seahorses.seahorse.trait-social",
+   "kind": "trait",
+   "species": [
+    "seahorse"
+   ],
+   "trait": "Social",
+   "game": "In the tank, friendly seahorses link tails and drift together.",
+   "real": "Wild seahorse pairs link tails during their courtship dances.",
+   "source": {
+    "url": "https://www.sheddaquarium.org/stories/seahorse-valentines-together-forever",
+    "publisher": "Shedd Aquarium",
+    "title": "Seahorse Valentines: Together Forever"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "seahorse",
+     "text": "Seahorses that are friendly link tails and drift together, as pairs do in the wild."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; tail-linking is a courtship behavior of pairs, not general friendliness.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Shedd describes courting seahorses twining tails and promenading with tails still linked.",
+   "corrections": [
+    {
+     "from": "Seahorses that are friendly link tails and drift together, as pairs do in the wild.",
+     "to": "In the tank, friendly seahorses link tails and drift together. Wild seahorse pairs link tails during their courtship dances.",
+     "why": "Split; tail-linking is a courtship behavior of pairs, not general friendliness.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0090",
+   "fact": "seahorses.seahorse.trait-brave",
+   "kind": "trait",
+   "species": [
+    "seahorse"
+   ],
+   "trait": "Brave",
+   "game": "In the tank, a bold seahorse swims out into open water more often.",
+   "real": null,
+   "source": null,
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "facts.js TRAIT_FACTS",
+     "species": "seahorse",
+     "text": "Bold seahorses swim out into open water more, which wild ones only do to find a mate."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "Split; 'wild ones only do it to find a mate' is an unsupported 'only' claim, so real is null.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "No source found.",
+   "corrections": [
+    {
+     "from": "Bold seahorses swim out into open water more, which wild ones only do to find a mate.",
+     "to": "In the tank, a bold seahorse swims out into open water more often.",
+     "why": "Split; 'wild ones only do it to find a mate' is an unsupported 'only' claim, so real is null.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0091",
+   "fact": "fish.clownfish.clownfish-fathers-guard-eggs",
+   "kind": "eggcare",
+   "species": [
+    "goldfish"
+   ],
+   "text": "Clownfish fathers guard their eggs, fanning water over them and picking out any that go bad.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/clown_anemonefish",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Clownfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "goldfish",
+     "text": "Clownfish fathers guard their eggs, fanning water over them and picking out any that go bad."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Aquarium of the Pacific says the male fans the eggs to aerate and clean them, eats infertile or damaged ones and chases off predators."
+  },
+  {
+   "id": "pf-0092",
+   "fact": "fish.damselfish.damselfish-father-guards-eggs",
+   "kind": "eggcare",
+   "species": [
+    "guppy"
+   ],
+   "text": "A damselfish father guards his eggs, chasing off would-be egg thieves and fanning the eggs to keep fresh water flowing over them.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/garabaldi/",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Garibaldi"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "guppy",
+     "text": "A damselfish father guards his eggs fiercely, chasing off fish far bigger than he is."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Fish far bigger than he is' is not stated in sources; reworded to sourced egg care.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Garibaldi (a damselfish) pages describe the male driving away intruders and fanning and grooming the eggs.",
+   "corrections": [
+    {
+     "from": "A damselfish father guards his eggs fiercely, chasing off fish far bigger than he is.",
+     "to": "A damselfish father guards his eggs, chasing off would-be egg thieves and fanning the eggs to keep fresh water flowing over them.",
+     "why": "'Fish far bigger than he is' is not stated in sources; reworded to sourced egg care.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0093",
+   "fact": "fish.watchman-goby.watchman-goby-father-guards",
+   "kind": "eggcare",
+   "species": [
+    "cory"
+   ],
+   "text": "A watchman goby father guards the eggs and fans them with his fins to keep them supplied with oxygen.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/watchman_goby",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Watchman Goby"
+   },
+   "source2": null,
+   "risk": "species-specific",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "cory",
+     "text": "Goby fathers guard their eggs in a hollow under a rock, fanning them clean."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'In a hollow under a rock' does not fit the game's watchman goby, which lives in a burrow with a shrimp.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Search summary attributed to an aquarium resource on watchman gobies that the male guards the eggs and fans them for oxygen (verify on the Aquarium of the Pacific page).",
+   "corrections": [
+    {
+     "from": "Goby fathers guard their eggs in a hollow under a rock, fanning them clean.",
+     "to": "A watchman goby father guards the eggs and fans them with his fins to keep them supplied with oxygen.",
+     "why": "'In a hollow under a rock' does not fit the game's watchman goby, which lives in a burrow with a shrimp.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0094",
+   "fact": "fish.royal-gramma.royal-gramma-father-builds",
+   "kind": "eggcare",
+   "species": [
+    "blue"
+   ],
+   "text": "A royal gramma father builds a nest in a small hole in the reef and guards and cleans the eggs laid there.",
+   "source": {
+    "url": "https://sta.uwi.edu/fst/lifesciences/sites/default/files/lifesciences/documents/ogatt/Gramma_loreto%20-%20Fairy%20Basslet.pdf",
+    "publisher": "University of the West Indies (OGATT)",
+    "title": "Gramma loreto (Fairy Basslet)"
+   },
+   "source2": null,
+   "risk": "disputed-check",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "blue",
+     "text": "A royal gramma father lines a nest with bits of seaweed and guards the eggs in it."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "blue",
+     "text": "A royal gramma builds a nest of algae for its eggs.",
+     "merged": "Same as p126. Nest of algae could not be sourced."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "No source found for lining the nest with seaweed; kept the sourced parts.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "UWI sheet says males build nests in small openings in the substrate and protect, maintain and clean the den with the eggs.",
+   "corrections": [
+    {
+     "from": "A royal gramma father lines a nest with bits of seaweed and guards the eggs in it.",
+     "to": "A royal gramma father builds a nest in a small hole in the reef and guards and cleans the eggs laid there.",
+     "why": "No source found for lining the nest with seaweed; kept the sourced parts.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0095",
+   "fact": "fish.angelfish.angelfish-pairs-rise-up",
+   "kind": "eggcare",
+   "species": [
+    "angelfish"
+   ],
+   "text": "Angelfish pairs rise up off the reef together to spawn, and their eggs drift away on the current.",
+   "source": {
+    "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/queen-angelfish/",
+    "publisher": "Florida Museum of Natural History",
+    "title": "Queen Angelfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "angelfish",
+     "text": "Angelfish pairs rise together at dusk and let their eggs drift away on the current."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'At dusk' is not consistent across species (some spawn at dusk, some early morning); dropped.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Florida Museum angelfish profiles describe pairs rising in the water column to release eggs and sperm; eggs are pelagic.",
+   "corrections": [
+    {
+     "from": "Angelfish pairs rise together at dusk and let their eggs drift away on the current.",
+     "to": "Angelfish pairs rise up off the reef together to spawn, and their eggs drift away on the current.",
+     "why": "'At dusk' is not consistent across species (some spawn at dusk, some early morning); dropped.",
+     "at": "2026-10-26"
+    }
+   ]
+  },
+  {
+   "id": "pf-0096",
+   "fact": "fish.mandarin-dragonet.mandarin-pairs-rise-together",
+   "kind": "eggcare",
+   "species": [
+    "betta"
+   ],
+   "text": "Mandarin pairs rise together at dusk and release their eggs to drift.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/mandarin_goby",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Mandarinfish"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "betta",
+     "text": "Mandarin pairs rise together at dusk and release their eggs to drift."
+    },
+    {
+     "from": "main.js SPECIES_FACTS",
+     "species": "betta",
+     "text": "Mandarins dance in pairs at dusk, rising together off the reef.",
+     "merged": "Same behavior as p129, which also says why they rise (spawning)."
+    }
+   ],
+   "prereview": {
+    "verdict": "keep",
+    "why": "",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Aquarium of the Pacific says mandarins spawn after sunset, a female and male rising together; the eggs are pelagic (verify 'rise' wording)."
+  },
+  {
+   "id": "pf-0097",
+   "fact": "cephalopods.coconut-octopus.octopus-mother-guards-eggs",
+   "kind": "eggcare",
+   "species": [
+    "octopus"
+   ],
+   "text": "An octopus mother guards her eggs in her den: she keeps them clean, sends fresh water over them, and rarely leaves until they hatch.",
+   "source": {
+    "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/giant_pacific_octopus",
+    "publisher": "Aquarium of the Pacific",
+    "title": "Giant Pacific Octopus"
+   },
+   "source2": null,
+   "risk": "none",
+   "status": "unverified",
+   "verifiedAt": null,
+   "evidence": null,
+   "verification": null,
+   "legacy": true,
+   "was": [
+    {
+     "from": "rules.js EGG_CARE",
+     "species": "octopus",
+     "text": "An octopus mother hangs her eggs in strings from the roof of her den and guards them: she cleans them, blows fresh water over them, and hardly leaves until they hatch."
+    },
+    {
+     "from": "facts.js FACTS",
+     "species": "octopus",
+     "text": "A mother coconut octopus lays her eggs inside a shell and guards them for 15 to 17 days, cleaning them and puffing water over them.",
+     "merged": "Same egg-care content as p130. The '15 to 17 days' figure only appeared on a machine-summarized academia.edu page, and other pages give about 20 days, so the number is not supportable."
+    }
+   ],
+   "prereview": {
+    "verdict": "fix",
+    "why": "'Hangs her eggs in strings from the roof of her den' describes species like the giant Pacific octopus; the game's coconut octopus lays its eggs inside a shell. Made general.",
+    "by": "profile-fact audit (search summaries only; not verification)",
+    "at": "2026-10-26"
+   },
+   "searchNote": "Aquarium of the Pacific GPO page says the mother keeps eggs clean, fans or squirts water over them and does not eat while brooding.",
+   "corrections": [
+    {
+     "from": "An octopus mother hangs her eggs in strings from the roof of her den and guards them: she cleans them, blows fresh water over them, and hardly leaves until they hatch.",
+     "to": "An octopus mother guards her eggs in her den: she keeps them clean, sends fresh water over them, and rarely leaves until they hatch.",
+     "why": "'Hangs her eggs in strings from the roof of her den' describes species like the giant Pacific octopus; the game's coconut octopus lays its eggs inside a shell. Made general.",
+     "at": "2026-10-26"
+    }
+   ]
+  }
+ ]
+}

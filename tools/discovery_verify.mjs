@@ -7,6 +7,7 @@
 //   node tools/discovery_verify.mjs --candidates [id|category ...]   fetch the pages of questions with no evidence yet and write, for each, the
 //                                                                    sentences most likely to settle it (server/discovery/worksheet.json), for a
 //                                                                    reviewer to copy the exact supporting sentence into `evidence`
+//   add --facts to work on the profile facts (server/discovery/facts.json) instead of the questions
 //   node tools/discovery_verify.mjs --check [id|category ...]        fetch and check every question that has evidence; mark it verified (with
 //                                                                    today's date) or unverified, and say why
 import fs from 'node:fs';
@@ -16,12 +17,12 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { normText, words, reviewProblems } from '../server/discovery/validate.mjs';
 
-const BANK = 'server/discovery/bank.json', SHEET = 'server/discovery/worksheet.json', CACHE = path.join(os.tmpdir(), 'tako-discovery-pages');
+const FACTS_STORE = process.argv.includes('--facts'), BANK = FACTS_STORE ? 'server/discovery/facts.json' : 'server/discovery/bank.json', SHEET = 'server/discovery/worksheet.json', CACHE = path.join(os.tmpdir(), 'tako-discovery-pages');
 fs.mkdirSync(CACHE, { recursive: true });
 const args = process.argv.slice(2), mode = args.includes('--check') ? 'check' : args.includes('--candidates') ? 'candidates' : null, pick = args.filter((a) => !a.startsWith('--'));
 if (!mode) { console.log('usage: --candidates | --check [id|category ...]'); process.exit(2); }
-const bank = JSON.parse(fs.readFileSync(BANK, 'utf8')), today = new Date().toISOString().slice(0, 10);
-const chosen = bank.filter((q) => q.status !== 'rejected' && (!pick.length || pick.includes(q.id) || pick.includes(q.category)));
+const doc = JSON.parse(fs.readFileSync(BANK, 'utf8')), bank = FACTS_STORE ? doc.facts : doc, today = new Date().toISOString().slice(0, 10);
+const chosen = bank.filter((q) => q.status !== 'rejected' && q.source?.url && (!pick.length || pick.includes(q.id) || pick.includes(q.category)));
 
 // a page as text: scripts, styles and tags out, entities decoded, spaces collapsed (cached for the run's day, so a re-run does not hammer a site)
 function page(url) {
@@ -42,9 +43,9 @@ if (mode === 'candidates') {
   const sheet = fs.existsSync(SHEET) ? JSON.parse(fs.readFileSync(SHEET, 'utf8')) : {}; let ok = 0, bad = 0;
   for (const q of chosen.filter((x) => !x.evidence)) {
     const P = page(q.source.url); if (P.error) { sheet[q.id] = { url: q.source.url, error: P.error, at: today }; bad++; continue; }
-    const want = words(`${q.q} ${q.choices[q.answer]} ${q.explain}`), sents = P.text.split(/(?<=[.!?])\s+|\n/).map((x) => x.trim()).filter((x) => x.length > 30 && x.length < 400);
+    const want = words(FACTS_STORE ? `${q.text ?? ''} ${q.real ?? ''}` : `${q.q} ${q.choices[q.answer]} ${q.explain}`), sents = P.text.split(/(?<=[.!?])\s+|\n/).map((x) => x.trim()).filter((x) => x.length > 30 && x.length < 400);
     const scored = sents.map((x) => { const w = words(x); let n = 0; for (const t of w) if (want.has(t)) n++; return [n / Math.sqrt(w.size + 1), x]; }).sort((a, b) => b[0] - a[0]).slice(0, 6).map(([, x]) => x);
-    sheet[q.id] = { url: q.source.url, q: q.q, answer: q.choices[q.answer], wrong: q.choices.filter((_, i) => i !== q.answer), explain: q.explain, candidates: scored, at: today }; ok++;
+    sheet[q.id] = FACTS_STORE ? { url: q.source.url, fact: q.text ?? q.real, candidates: scored, at: today } : { url: q.source.url, q: q.q, answer: q.choices[q.answer], wrong: q.choices.filter((_, i) => i !== q.answer), explain: q.explain, candidates: scored, at: today }; ok++;
   }
   fs.writeFileSync(SHEET, JSON.stringify(sheet, null, 1) + '\n'); console.log(`pages read: ${ok}; could not read: ${bad} (see ${SHEET})`);
 }
@@ -57,5 +58,5 @@ if (mode === 'check') {
     q.verification = { url: q.source.url, quoteFound: !!found(q.evidence, P.text), checkedAt: today, sha: crypto.createHash('sha256').update(P.text).digest('hex').slice(0, 16) };
     if (q.verification.quoteFound && !reviewProblems(q).length) { q.status = 'verified'; q.verifiedAt = today; v++; } else { if (q.status === 'verified') q.status = 'unverified'; u++; if (!hit) q.verification.note = 'the quoted words are not on the page'; }
   }
-  fs.writeFileSync(BANK, JSON.stringify(bank, null, 1) + '\n'); console.log(`verified: ${v}; not verified: ${u}; page could not be read: ${e}`);
+  fs.writeFileSync(BANK, JSON.stringify(doc, null, 1) + '\n'); console.log(`verified: ${v}; not verified: ${u}; page could not be read: ${e}`);
 }

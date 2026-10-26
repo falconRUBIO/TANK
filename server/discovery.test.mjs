@@ -150,6 +150,14 @@ await t('the bank check rejects duplicate ids, duplicate facts and the same ques
   assert.equal(checkBank(look.entries.length ? [fx(1, { q: 'How many hearts does an octopus have?', choices: ['One', 'Two', 'Three'], answer: 2 }), fx(2, { q: 'An octopus has how many hearts?', choices: ['Three', 'Five', 'Eight'], answer: 0 })] : [], { reviewed: [{ a: 'dd-0001', b: 'dd-0002', verdict: 'duplicate' }] }).published.length, 1);
 });
 
+await t('the profile facts come only from the one store: nothing rejected or held is ever shown, and the store passes its checks', async () => {
+  const fs = await import('node:fs'), { checkFacts } = await import('./discovery/validate.mjs'), F = await import('../web/src/facts.js');
+  const store = JSON.parse(fs.readFileSync(new URL('./discovery/facts.json', import.meta.url))), bank = JSON.parse(fs.readFileSync(new URL('./discovery/bank.json', import.meta.url)));
+  const c = checkFacts(store.facts, bank); assert.equal(c.bankErrors.length, 0, c.bankErrors.join('; ')); assert.ok(c.entries.every((x) => !x.errors.length), JSON.stringify(c.entries.filter((x) => x.errors.length).slice(0, 2)));
+  const ok = new Map(store.facts.map((r) => [r.text, r])); for (const L of Object.values(F.FACTS)) for (const text of L) { const r = ok.get(text); assert.ok(r, `shown but not in the store: ${text}`); assert.ok(r.status === 'verified' || (store.meta.transition && r.legacy && r.status === 'unverified'), `shown while ${r.status}: ${text}`); }
+  for (const r of store.facts.filter((x) => x.status === 'rejected' || x.status === 'review')) assert.ok(!Object.values(F.FACTS).flat().includes(r.text), `a ${r.status} fact is shown: ${r.text}`);
+});
+
 await S.close?.();
 console.log(`\n${pass} discovery tests passed${process.exitCode ? ' (some failed)' : ''}`);
 process.exit(process.exitCode ?? 0);

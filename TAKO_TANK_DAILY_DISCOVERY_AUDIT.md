@@ -1,11 +1,11 @@
 # Tako Tank: Daily Discovery and the Living Field Guide
 
-Audit, build report and status. Date: October 26, 2026. Builds on v330 (client cache `ourtank-v380`).
+Audit, build report and status. Date: October 26, 2026. Builds on v330 (client cache `ourtank-v381`). Updated after the decisions on the four open questions.
 
 ## Summary
 
 - **Built and tested:**
-  - Daily Discovery: server-chosen and private until you answer, with an instant reveal, live results across phones and a 2-shell reward paid once per caretaker.
+  - Daily Discovery: server-chosen and private until you answer, with an instant reveal, live results across phones and **one shared reward: 2 shells per tank per day**, earned by the first caretaker to answer, right or wrong.
   - The Field Guide, brought back: learned, seen live, and happened while you were away.
   - The question-bank pipeline: drafts, a validator, a source verifier and an export.
 - **Live question bank: 0 questions.** 608 questions are drafted and **none is verified**. This cloud environment refuses connections to the source sites (NOAA, Smithsonian, Monterey Bay Aquarium, WHOI, NCBI and the rest). With no source page readable, no question can pass verification. The game shows "New discoveries are being prepared" until verified questions exist. See `TAKO_TANK_TRIVIA_VERIFICATION.md`.
@@ -34,7 +34,7 @@ Audit, build report and status. Date: October 26, 2026. Builds on v330 (client c
 | `dd_tank` | tank_id, tz_min, since | The tank's day boundary, fixed the first time the tank is asked. A phone in another zone, or a changed clock, cannot move it. |
 | `dd_day` | tank_id, day, qid, q, at | One question per tank-day, chosen under the write lock so phones opening at the same moment get the same one. `q` is a copy of the question as it was asked, so later edits to the bank can't change past results. **A unique index on (tank_id, qid) makes it impossible to ask a tank the same question twice.** |
 | `dd_answer` | tank_id, day, user_id, qid, choice, correct, ts | The primary key is (tank, day, user), so answers are final. A second submit, whether from a reconnect, a reinstall or two phones at once, is ignored. |
-| `transactions` (existing) | idem `dd:<day>` | The 2-shell reward. It is written in the same transaction as the answer and can only be paid once. |
+| `dd_day.paid_by`, `paid_at` (+ one `transactions` line, idem `dd:<day>`) | | **The day's one reward: 2 shells for the tank.** Set inside the first answer's transaction, only while empty. However many caretakers, phones or retries, the tank gets 2 shells a day, and correct and incorrect answers are treated the same. |
 | `dd_seen` | tank_id, user_id, beh, ts, fish, page | The Field Guide behaviors each caretaker saw happen live (the first time only). |
 
 **What a phone receives (`server/discovery.mjs`, `view`):**
@@ -122,9 +122,37 @@ Not done: anything on a real iPhone. No WebKit is available here, so the card ha
 3. **"Seen" means the tank was on screen,** not that the person was looking at that corner of it. It is the best evidence the app has; a sheet covering the tank still counts.
 4. **A phone left open across midnight** shows yesterday's question until it reconnects. Answering it gets "A new day has started" and the new question loads.
 
-## Decisions needed before launch
+## Decisions taken (October 26) and what was done
 
-1. **Network access** for the source domains, so questions can be verified (see the verification report for the list).
-2. **Human sign-off:** should a person sign off each question's review (`review.by`), or is "the quote is on the page, plus a second reviewer agreeing it settles the answer" enough?
-3. **`web/src/facts.js`** (the daily "Did you know?" in animal profiles) doesn't meet this standard: some facts cite Wikipedia and fish-keeping guides. Retire it, or put those facts through the same verifier?
-4. **Reward:** 2 shells per caretaker a day is a new, small, steady income, which I built because you asked for it. With four caretakers that is up to 8 shells a day for the tank, and it lands in the economy you asked me not to change without approval. Please confirm.
+1. **Network access:** still unavailable. The offline work is done: the bank-wide duplicate check, the schema, format and consistency checks, and the tests. Verification and the remaining drafting wait for access. See `TAKO_TANK_TRIVIA_VERIFICATION.md`.
+2. **Sign-off:**
+   - The two-stage review (`review1` against the source, then `review2` by a different reviewer on the quote, the choices and any ambiguity) is enforced by the validator.
+   - A person's approval is required only for flagged items (disputed, surprising, numeric or conflicting): 191 at present.
+   - Model reviewers are recorded as `ai:…` and can't stand in for a person.
+   - The QC sample is in `TAKO_TANK_DISCOVERY_QC_SAMPLE.md`.
+3. **"Did you know?" facts:** all 130 entries across the three old lists were audited and merged into one store (`server/discovery/facts.json`). `web/src/facts.js` is now generated from it, and the duplicate list in `main.js` is gone. See the verification report.
+4. **Reward:** changed to **2 shells per tank per day, earned by the first to answer**. Everyone still answers and sees the results.
+
+## Economy with the new income (tools/econ4.mjs, 3 seeds, 120 days; `--discovery` adds the 2 shells on each day's first visit)
+
+| Household | Earned/day at day 30, without → with | Balance at day 120, without → with | Level 8 reached (day), without → with | Fish bought by day 120 |
+|---|---|---|---|---|
+| A. Solo, 3 visits a day | 22.5 → 23.9 | 1364 → 1685 | 32.5 → 32.9 | 14 → 14 |
+| B. Two caretakers | 27.4 → 29.4 | 1390 → 1655 | 30.1 → 31.3 | 15 → 14 |
+| C. Four caretakers | 31.7 → 34.3 | 1481 → 1703 | 30.5 → 30.0 | 14 → 14 |
+| D. Uneven four | 24.8 → 27.2 | 1364 → 1627 | 30.6 → 30.8 | 15 → 15 |
+
+**Reading:**
+- Daily Discovery adds 2.0 shells a day in every household, about 6 to 9% of income.
+- Level pace doesn't change, because levels come from the score, not shells. The small differences between seeds go both ways.
+- What players buy doesn't change either.
+- The only real effect: savings by day 120 are about 260 to 320 shells (about 20%) higher. That makes a weakness the tank already has slightly larger: after about day 60 there is little to spend shells on.
+- **No prices or rewards were changed.** If late-game savings matter, the fix is a new thing to spend on, not a cut to this reward. That is your call.
+- Full tables: `docs/sim/discovery_econ_without.md` and `docs/sim/discovery_econ_with.md`.
+
+## Remaining blockers
+
+1. **No network access to the source sites.** Until it exists, nothing can be verified and the live rotation stays empty.
+2. **About 100 more questions to draft**, in 6 under-filled categories, and about 40 more behavior-linked ones (none yet about octopus puzzles).
+3. **Human approvals for the 191 flagged items**, or a decision to leave flagged items out.
+4. **The profile facts' transition setting.** They currently show audited but unverified facts that were already in the game; switching to verified-only would empty the profiles for now.
