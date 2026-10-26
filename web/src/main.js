@@ -7,6 +7,7 @@ import { ADULT_DAYS, KEEPSAKES, keepStory, decorStory, paletteOf, TOD as DAYPART
 import * as stg from './w3/stage.js';
 window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 15000); addEventListener('pointerdown', () => { window.__quietUntil = 0; }, { capture: true, once: true });      // the first 15 s belong to the tank (a touch ends it)
 import { makeStudio, planShot } from './w3/photo.js';
+import { photoKind, encodePhoto, PHOTO_DAY_MAX, PHOTO_DAYS } from './game/photos.js';
 import { GROW, specialOf, specialPrice, canSend, goalOf, GOAL_SHELLS, harmonyOf, mysteryOf, MYSTERY, storyNext, morphOf, carriesOf, morphOdds, MORPHS, isOcto as isOctoF } from './game/rules.js';
 import { raySand, sandH, GLASS_Z } from './w3/terrain.js';
 import { algaeTint } from './w3/decor.js';
@@ -989,7 +990,7 @@ function clearView(cam, c, d, who) {
   return best[1] > 0.75 ? best[0] : null;      // only partly hidden from every side: the clearest view, if most of it shows
 }
 // the whole tank, as it looks right now, without the interface (for a time capsule): a small jpeg
-function tankShot() { composer.render(); const src = stg.renderer.domElement, k = 480 / Math.max(src.width, src.height), W = Math.round(src.width * k), H = Math.round(src.height * k), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(src, 0, 0, W, H); let q = 0.7, img = cv.toDataURL('image/jpeg', q); while (img.length > 85000 && q > 0.3) img = cv.toDataURL('image/jpeg', (q -= 0.1)); return img.length > 85000 ? null : img; }      // (small enough for the server to keep)
+function tankShot() { composer.render(); const src = stg.renderer.domElement, k = 480 / Math.max(src.width, src.height), W = Math.round(src.width * k), H = Math.round(src.height * k), cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(src, 0, 0, W, H); return encodePhoto(cv); }      // (small enough for the server to keep: see game/photos.js)
 window.__tankShot = tankShot;
 // a moment for the journal: staged and developed by the photographer (w3/photo.js), from the animals' best side, the background soft
 function shootAt(A) {
@@ -1012,7 +1013,8 @@ function shootAt(A) {
 }
 game.on('journal', (e) => {
   if (e?.text?.startsWith('Time capsule: day') && !document.hidden && (!game.shared || (isDirector() && e.id)) && Date.now() - (e.ts ?? Date.now()) < 6 * 3600e3) { setTimeout(() => { try { const img = tankShot(); if (!img) return; if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; } else { const list = JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').filter((m) => m.text !== e.text); list.push({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.capsules', JSON.stringify(list.length > 12 ? [list[0], ...list.slice(-11)] : list)); } } catch (er) { console.error('capsule photo', er); } }, 1500); return; }      // a time capsule's photo: the tank itself, right then (later, it stays a record without a photo)
-  if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden) return;
+  if (!e?.text || SHOT_SKIP.test(e.text) || document.hidden || !photoKind(e.text)) return;      // only a moment worth a photo gets one (game/photos.js)
+  if (photoKind(e.text) === 'moment') { const d0 = new Date().setHours(0, 0, 0, 0), today = (game.journal ?? []).filter((j) => j.photo && j.ts >= d0 && photoKind(j.text) === 'moment').length; if (today >= PHOTO_DAY_MAX) return; }      // (the day's best few are enough)
   if (game.shared && !(isDirector() && e.id)) return;      // one phone takes it, for everyone
   if (Date.now() - (e.ts ?? Date.now()) > 60e3) return;      // only a moment happening now (lines caught up from while the tank was closed are not photographed: no burst of photos at launch)
   shotQ.push({ e, at: Date.now() + (/hatched|swam out|made it/.test(e.text) ? 4600 : /gave birth/.test(e.text) ? 3600 : 450) }); shotPump();      // one photo at a time, spaced out, so the tank never stutters
@@ -1027,7 +1029,7 @@ function shotPump() {
 function momentPhoto(e) {
   const A = actorOf(e.text); if (!A) return false; const img = shootAt(A); if (!img) return false;
   if (game.shared) { game.live?.send({ t: 'photo', jid: e.id, img }); (game.photos ||= new Map()).set(e.id, img); e.photo = true; }
-  else { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text); list.unshift({ text: e.text, ts: Date.now(), img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); }
+  else { const now = Date.now(), list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]').filter((m) => m.text !== e.text && (photoKind(m.text) === 'keep' || now - (m.ts ?? 0) < PHOTO_DAYS * 864e5)); list.unshift({ text: e.text, ts: now, img }); localStorage.setItem('ourtank.moments', JSON.stringify(list.slice(0, 30))); }      // (the same rule as a shared tank's: keepsakes stay, the rest fade after a few days)
 }
 window.__shootText = (text) => { const A = actorOf(text); return A ? shootAt(A) : null; };      // (checks: the photo a journal line would get)
 // a new Field Guide page, seen right now on this phone: a photo of the animal that did it (or of the tank), kept as the page's picture

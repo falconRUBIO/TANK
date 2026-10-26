@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import { tx } from './db.mjs';
 import * as R from '../web/src/game/rules.js';
+import { photoKind, PHOTO_DAYS, PHOTO_KEEP_MAX } from '../web/src/game/photos.js';
 import { normAvatar } from '../web/src/game/avatar.js';
 import { WORDS } from './words.mjs';
 
@@ -404,10 +405,21 @@ export function snapshot(db, user, online = [], tank = null) {
 }
 export const publicTank = (w) => ({ ...w, day: dayOf(w) });
 
+// Journal photos: a keepsake (a life begun, a bond, a homecoming, a time capsule) is kept, the newest PHOTO_KEEP_MAX of them per tank and every
+// time capsule's; any other photo fades after PHOTO_DAYS (its line stays). Photos from before this rule are sorted once by their line.
+export function prunePhotos(db, now = Date.now(), tankId = null) {
+  for (const r of db.prepare('SELECT p.journal_id AS id, j.text FROM photos p JOIN journal j ON j.id=p.journal_id WHERE p.keep IS NULL').all()) db.prepare('UPDATE photos SET keep=? WHERE journal_id=?').run(photoKind(r.text) === 'keep' ? 1 : 0, r.id);
+  const where = tankId ? ' AND tank_id=?' : '', a = tankId ? [tankId] : [];
+  let n = db.prepare(`DELETE FROM photos WHERE keep=0 AND ts<?${where}`).run(now - PHOTO_DAYS * 864e5, ...a).changes;
+  for (const t of tankId ? [{ tank_id: tankId }] : db.prepare('SELECT DISTINCT tank_id FROM photos WHERE keep=1').all())
+    n += db.prepare("DELETE FROM photos WHERE tank_id=? AND keep=1 AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? AND keep=1 ORDER BY journal_id DESC LIMIT ?) AND journal_id NOT IN (SELECT id FROM journal WHERE tank_id=? AND text LIKE 'Time capsule:%')").run(t.tank_id, t.tank_id, PHOTO_KEEP_MAX, t.tank_id).changes;
+  return n;
+}
 // Old rows the game no longer reads, once a day: idempotency keys after two months, the activity feed after six, the newest 300 messages and
 // 3000 journal lines of each tank (every time capsule's line is kept), and hearts, thanks and photos whose line or entry is gone.
 export function pruneOld(db, now = Date.now()) {
   const D = 864e5, run = (q, ...a) => { try { return db.prepare(q).run(...a).changes; } catch { return 0; } };
+  try { prunePhotos(db, now); } catch (e) { console.error('photo prune', e.message); }
   return tx(db, () => run('DELETE FROM transactions WHERE ts<?', now - 60 * D) + run('DELETE FROM activity WHERE ts<?', now - 180 * D)
     + run('DELETE FROM messages WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY tank_id ORDER BY id DESC) r FROM messages) WHERE r>300)')
     + run("DELETE FROM journal WHERE text NOT LIKE 'Time capsule:%' AND id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY tank_id ORDER BY id DESC) r FROM journal) WHERE r>3000)")

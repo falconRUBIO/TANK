@@ -857,7 +857,7 @@ await t('an oversized message drops only that connection, never the server; a jo
   const w1 = await open(a.token), w2 = await open(a.token); await waitFor(w1, (m) => m.t === 'snapshot'); await waitFor(w2, (m) => m.t === 'snapshot');
   const closed = new Promise((r) => w1.on('close', r)); w1.send('x'.repeat(200 * 1024)); await closed;
   assert.equal((await fetch(`http://localhost:${S.port}/healthz`)).status, 200, 'the server is still up');
-  const jid = Number(S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tank.id, 1, 'Inky swam right up to the glass and looked in at you.', null, Date.now()).lastInsertRowid);
+  const jid = Number(S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tank.id, 1, 'Inky climbed out over the top of the tank!', null, Date.now()).lastInsertRowid);
   w2.send(JSON.stringify({ t: 'photo', jid, img: 'data:image/jpeg;base64,' + 'A'.repeat(30000) })); await waitFor(w2, (m) => m.t === 'photo' && m.jid === jid);
   w2.send(JSON.stringify({ t: 'photoGet', ids: [jid] })); const d = await waitFor(w2, (m) => m.t === 'photoData' && m.jid === jid); assert.ok(d.img.length > 30000);
   w2.send(JSON.stringify({ t: 'photo', jid: jid + 999, img: 'data:image/jpeg;base64,AAAA' })); w2.send(JSON.stringify({ t: 'note', text: 'y'.repeat(9000) })); await new Promise((r) => setTimeout(r, 200));
@@ -866,6 +866,23 @@ await t('an oversized message drops only that connection, never the server; a jo
   w2.send(JSON.stringify({ t: 'heart', jid })); await new Promise((r) => setTimeout(r, 100)); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM hearts WHERE journal_id=?').get(jid).n, 1, 'one heart per person');
   w2.send(JSON.stringify({ t: 'heart', jid, on: false })); await waitFor(w2, (m) => m.t === 'hearts' && m.jid === jid && m.by.length === 0);
   w2.send(JSON.stringify({ t: 'heart', jid: jid + 999 })); await new Promise((r) => setTimeout(r, 100)); assert.ok(!S.db.prepare('SELECT 1 FROM hearts WHERE journal_id=?').get(jid + 999), 'no hearts on lines outside your tank'); w2.close();
+});
+await t('photos: only a moment worth one gets a photo, three a day at most; ordinary ones fade after a few days, keepsakes stay', async () => {
+  const o = await mkUser('Pho'), tk = (await call('/api/tanks', { name: 'Pics' }, o.token)).body, w = await open(o.token); await waitFor(w, (m) => m.t === 'snapshot');
+  const lines0 = S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(tk.id).n, line = (text, ts = Date.now()) => Number(S.db.prepare('INSERT INTO journal (tank_id,day,text,user_id,ts) VALUES (?,?,?,?,?)').run(tk.id, 1, text, null, ts).lastInsertRowid);
+  const send = async (jid, type = 'webp') => { w.send(JSON.stringify({ t: 'photo', jid, img: `data:image/${type};base64,` + 'B'.repeat(20000) })); await new Promise((r) => setTimeout(r, 120)); return S.db.prepare('SELECT keep FROM photos WHERE journal_id=?').get(jid); };
+  assert.equal(await send(line('Inky ate some brine shrimp.')), undefined, 'an everyday line gets no photo');
+  assert.equal((await send(line('Pip hatched!'))).keep, 1, 'a hatching is a keepsake (and WebP is taken)');
+  for (const k of [1, 2, 3]) assert.equal((await send(line(`Inky climbed out over the top of the tank ${k}`), 'jpeg')).keep, 0);
+  assert.equal(await send(line('Inky squeezed through the gap again')), undefined, 'a fourth ordinary moment in a day gets no photo');
+  assert.equal(await send(line('Pip and Pop have paired up.')).then((r) => r?.keep), 1, 'a keepsake is never held back by the day\'s limit');
+  w.send(JSON.stringify({ t: 'photo', jid: line('Pip hatched again!'), img: 'data:image/png;base64,AAAA' })); await new Promise((r) => setTimeout(r, 120));
+  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM photos WHERE tank_id=?').get(tk.id).n, 5, 'a PNG is refused');
+  S.db.prepare('UPDATE photos SET ts=? WHERE tank_id=?').run(Date.now() - 6 * 864e5, tk.id);
+  const { prunePhotos } = await import('./logic.mjs'); prunePhotos(S.db);
+  assert.deepEqual(S.db.prepare('SELECT keep FROM photos WHERE tank_id=? ORDER BY journal_id').all(tk.id).map((r) => r.keep), [1, 1], 'after six days the ordinary photos are gone and the keepsakes stay');
+  assert.equal(S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(tk.id).n - lines0, 8, 'every journal line stays');
+  w.close();
 });
 await t('four caretakers at once: one decision is made once, the mystery plays out once, a lid sighting counts once', async () => {
   const us = await Promise.all(['Ann', 'Bea', 'Cal', 'Dov'].map(mkUser)), tk = (await call('/api/tanks', { name: 'Four' }, us[0].token)).body;

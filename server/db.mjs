@@ -75,6 +75,7 @@ export function openDb(path = 'ourtank.db') {
     CREATE UNIQUE INDEX IF NOT EXISTS dd_day_once ON dd_day (tank_id, qid) WHERE qid IS NOT NULL;
     CREATE TABLE IF NOT EXISTS dd_answer ( tank_id TEXT NOT NULL, day INTEGER NOT NULL, user_id TEXT NOT NULL, qid TEXT NOT NULL, choice INTEGER NOT NULL CHECK (choice BETWEEN 0 AND 2), correct INTEGER NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (tank_id, day, user_id) );
     CREATE TABLE IF NOT EXISTS dd_seen ( tank_id TEXT NOT NULL, user_id TEXT NOT NULL, beh TEXT NOT NULL, ts INTEGER NOT NULL, fish TEXT, page TEXT, PRIMARY KEY (tank_id, user_id, beh) );`);
+  try { db.exec('ALTER TABLE photos ADD COLUMN keep INTEGER'); } catch { /* column already there */ }      // (a keepsake photo, kept for good; the rest fade: see logic.mjs prunePhotos)
   try { db.exec('ALTER TABLE dd_day ADD COLUMN paid_by TEXT'); db.exec('ALTER TABLE dd_day ADD COLUMN paid_at INTEGER'); } catch { /* columns already there */ }      // (the day's one shared reward: who earned it for the tank)
   return db;
 }

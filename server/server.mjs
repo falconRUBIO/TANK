@@ -14,6 +14,7 @@ import { offsiteFromEnv, restoreIfEmpty, makeUploader } from './offsite.mjs';
 import { makeAnalytics, CLIENT_EVENTS } from './analytics.mjs';
 import { createDiscovery } from './discovery.mjs';
 import { diffTank } from '../web/src/game/patch.js';
+import { photoKind, PHOTO_DAY_MAX } from '../web/src/game/photos.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -293,10 +294,12 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           return;
         }
         if (m.t === 'photo') {      // a picture of a moment, taken by the phone running the animals, for everyone's journal
-          const jid = Math.floor(+m.jid), img = String(m.img ?? ''); if (!jid || !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 90000 || !lim.hit('ph:' + ws.userId, 20, 600e3)) return;
-          const j = db.prepare('SELECT id FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId); if (!j || db.prepare('SELECT 1 FROM photos WHERE journal_id=?').get(jid)) return;
-          db.prepare('INSERT INTO photos (journal_id,tank_id,ts,img) VALUES (?,?,?,?)').run(jid, ws.tankId, Date.now(), img);
-          db.prepare('DELETE FROM photos WHERE tank_id=? AND journal_id NOT IN (SELECT journal_id FROM photos WHERE tank_id=? ORDER BY journal_id DESC LIMIT 60) AND journal_id NOT IN (SELECT id FROM journal WHERE tank_id=? AND text LIKE \'Time capsule:%\')').run(ws.tankId, ws.tankId, ws.tankId);      // the newest sixty are kept (and every time capsule's)
+          const jid = Math.floor(+m.jid), img = String(m.img ?? ''); if (!jid || !/^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(img) || img.length > 64000 || !lim.hit('ph:' + ws.userId, 20, 600e3)) return;
+          const j = db.prepare('SELECT id,text FROM journal WHERE id=? AND tank_id=?').get(jid, ws.tankId); if (!j || db.prepare('SELECT 1 FROM photos WHERE journal_id=?').get(jid)) return;
+          const kind = photoKind(j.text); if (!kind) return;      // only a moment worth a photo keeps one (game/photos.js): an older phone may still send one for every line
+          if (kind === 'moment' && db.prepare('SELECT COUNT(*) n FROM photos WHERE tank_id=? AND keep=0 AND ts>?').get(ws.tankId, Date.now() - 864e5).n >= PHOTO_DAY_MAX) return;      // (the day's best few are enough)
+          db.prepare('INSERT INTO photos (journal_id,tank_id,ts,img,keep) VALUES (?,?,?,?,?)').run(jid, ws.tankId, Date.now(), img, kind === 'keep' ? 1 : 0);
+          L.prunePhotos(db, Date.now(), ws.tankId);      // (fading photos older than a few days go; keepsakes stay)
           broadcast(ws.tankId, { t: 'photo', jid }); return;
         }
         if (m.t === 'photoDel') {      // a photo that came out badly: anyone in the tank can take it out of the journal (the moment's line stays)

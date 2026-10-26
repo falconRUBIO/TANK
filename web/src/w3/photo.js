@@ -3,6 +3,7 @@
 // from behind the back wall or through the sand), anything that would block or crowd them is kept out of the shot, and the picture is
 // developed on its own: a long lens with a shallow depth of field (the subject sharp, the tank behind melting into soft bokeh), a little
 // bloom on the light, a warm grade, gentle vignette and a whisper of film grain. Everything happens off screen; the player sees nothing.
+import { encodePhoto } from '../game/photos.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -43,7 +44,7 @@ export function makeStudio({ renderer, scene, hideForDepth = [], W = 640, H = 48
   composer.addPass(new OutputPass());      // tone mapped into display colour, as the tank itself is
   const develop = new ShaderPass(DEVELOP), print = new THREE.WebGLRenderTarget(W, H);      // developed onto an ordinary 8-bit print, so it can be read back
   const px = new Uint8Array(W * H * 4), cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H);
-  const out = document.createElement('canvas'); out.width = 480; out.height = 360; const og = out.getContext('2d');
+  const out = document.createElement('canvas'); out.width = 400; out.height = 300; const og = out.getContext('2d');
 
   // shoot: the camera at `from`, looking at `at`, focused on it; returns a small jpeg (or null)
   function shoot({ from, at, focusDist, aperture = 0.004, warm = 1 }) {
@@ -52,8 +53,8 @@ export function makeStudio({ renderer, scene, hideForDepth = [], W = 640, H = 48
     const prev = renderer.getRenderTarget(); composer.render(0.016); develop.render(renderer, print, composer.readBuffer, 0, false); renderer.setRenderTarget(prev);
     renderer.readRenderTargetPixels(print, 0, 0, W, H, px);
     for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);      // (the picture comes out upside down)
-    g.putImageData(im, 0, 0); og.drawImage(cv, 0, 0, 480, 360);      // drawn down a size: crisp, and small enough to keep
-    let q = 0.8, img = out.toDataURL('image/jpeg', q); while (img.length > 85000 && q > 0.35) img = out.toDataURL('image/jpeg', (q -= 0.1)); return img.length > 85000 ? null : img;
+    g.putImageData(im, 0, 0); og.drawImage(cv, 0, 0, 400, 300);      // drawn down a size: crisp, and small enough to keep
+    return encodePhoto(out);      // (WebP where the phone can make it: about half the size of a JPEG that looks the same)
   }
   return { camera, shoot };
 }
