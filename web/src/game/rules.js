@@ -210,21 +210,30 @@ export function tankHealth(t, now = Date.now()) {
 // what each kind of care is worth toward the level (before the health multiplier)
 // The best next step for the Tank chart: each fix is tried on a copy of the tank and the one that lifts Tank Health most is offered first.
 // An animal asking to leave always comes first; with nothing to fix, playing is the step (it still earns care points)
-export function bestStep(t, now = Date.now()) {
+export function bestStep(t, now = Date.now(), viewer = null) {      // viewer: { uid, shared, members }: a step is only offered to someone who can take it
   const H = tankHealth(t, now), live = t.fish.filter((f) => !f.dead && !f.away && !f.gift?.wrapped), out = [];
   const ask = live.find((f) => f.leaveAsk); if (ask) return { act: 'wellopen', fid: ask.id, title: `Help ${ask.name}`, why: ask.leaveAsk.why ? `It is missing ${ask.leaveAsk.why} and wants to leave.` : 'It is unhappy and wants to leave.', gain: null, urgent: true };
   const tryFix = (fn) => { try { const c = structuredClone(t); fn(c); return tankHealth(c, now).score - H.score; } catch { return 0; } };
   const n = needs(t);
   if (n.includes('feed') && mealHungry(t)) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry animals pull the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
-  { const o = live.filter((f) => ownHungry(f) && ownHunger(f) > OCTO_DUE).sort((a, b) => ownHunger(b) - ownHunger(a))[0];      // an octopus or a seahorse is fed by hand, from its own card: the step says which one and with what
-    if (o) { const food = ownFood(o); out.push({ act: 'feeddrawer', title: `Feed ${o.name} ${food === 'crab' ? 'a crab' : 'its mysis'}`, why: `${o.name} is hungry, and a hungry animal pulls the health down most.`, gain: tryFix((c) => applyAction(c, { t: 'feed', food, fish: o.id }, { now, uid: o.owner, solo: true })) }); } }
+  let nudge = null;
+  { const uid = viewer?.uid ?? null, shared = !!viewer?.shared, hungry = live.filter((f) => ownHungry(f) && ownHunger(f) > OCTO_DUE).sort((a, b) => ownHunger(b) - ownHunger(a));
+    // an octopus or a seahorse is fed by hand, and only by its own caretaker: the step says which one and with what, to the one who can do it
+    const o = hungry.find((f) => canFeedOwn(f, uid, shared));
+    if (o) { const food = ownFood(o); out.push({ act: 'feeddrawer', title: `Feed ${o.name} ${food === 'crab' ? 'a crab' : 'its mysis'}`, why: `${o.name} is hungry, and a hungry animal pulls the health down most.`, gain: tryFix((c) => applyAction(c, { t: 'feed', food, fish: o.id }, { now, uid: o.owner, solo: true })) }); }
+    // a friend's animal: if they have been gone a long while it can be taken on from its card; otherwise the friend can be told
+    for (const f of hungry.filter((x) => !canFeedOwn(x, uid, shared))) { const aw = awayOwner(f, viewer?.members, now);
+      if (aw) { out.push({ act: 'wellopen', fid: f.id, title: `Look after ${f.name}`, why: `${aw.left ? `${aw.name} has left the tank` : `${aw.name} has not been in for ${aw.days} days`}, and ${f.name} is hungry. Take it on from its card and you can feed it.`, gain: null, takeOn: true }); break; }
+      if (!nudge && f.owner) nudge = { act: 'nudgefeed', to: f.owner, title: `Let ${f.ownerName ?? 'its caretaker'} know ${f.name} is hungry`, why: `Only ${f.ownerName ?? 'its caretaker'} feeds ${f.name}. A nudge sends them a reminder.`, gain: null }; } }
   if (n.includes('water')) out.push({ act: 'water', title: 'Change the water', why: 'Old water makes up a big part of the tank score.', gain: tryFix((c) => applyAction(c, { t: 'water' }, { now })) });
   if (n.includes('glass')) out.push({ act: 'clean', title: 'Wipe the glass', why: 'A clear view keeps the tank score up.', gain: tryFix((c) => applyAction(c, { t: 'glass' }, { now })) });
-  let cared = t; try { cared = structuredClone(t); for (const k of ['feed', 'water', 'glass']) applyAction(cared, { t: k }, { now }); } catch { cared = t; }      /* (judge each animal as it would be once fed and cleaned, so hunger is not counted twice) */
+  let cared = t; try { cared = structuredClone(t); for (const k of ['feed', 'water', 'glass']) applyAction(cared, { t: k }, { now }); for (const f of cared.fish) if (ownHungry(f)) f.hunger = 0; } catch { cared = t; }      /* (hand-fed ones too) */      /* (judge each animal as it would be once fed and cleaned, so hunger is not counted twice) */
   let worst = null; for (const f of cared.fish.filter((x) => live.some((y) => y.id === x.id))) { try { const w = wellOf(cared, f, now); if (w.score < 75 && (!worst || w.score < worst[1].score)) worst = [f, w]; } catch { /* */ } }
   if (worst) { const miss = (worst[1].wants ?? []).find((x) => !x.met && x.k !== 'food'); out.push({ act: 'wellopen', fid: worst[0].id, title: `Help ${worst[0].name}`, why: miss ? `${worst[0].name} needs ${miss.label.toLowerCase()}.` : `${worst[0].name} could be happier.`, gain: Math.max(1, Math.round((75 - worst[1].score) * 0.6 / Math.max(1, live.length))) }); }
-  out.sort((x, y) => (x.act === 'feed') - (y.act === 'feed') ? (y.act === 'feed') - (x.act === 'feed') : (y.gain ?? 0) - (x.gain ?? 0));      /* (hungry animals are fed first, whatever the numbers say) */
-  return out[0] ?? { act: 'nowcare', title: live.length === 1 ? `Play with ${live[0].name}` : 'Play with them', why: `Everything is looked after. Play still earns care points and keeps ${live.length === 1 ? 'it' : 'them'} happy.`, gain: null };
+  const first = (x) => x.act === 'feed' || x.act === 'feeddrawer' || !!x.takeOn;
+  out.sort((x, y) => first(x) !== first(y) ? first(y) - first(x) : (y.gain ?? 0) - (x.gain ?? 0));      /* (hungry animals are fed first, whatever the numbers say) */
+  // (a friend's hungry animal is mentioned only when there is nothing the viewer can do themselves)
+  return out[0] ?? nudge ?? { act: 'nowcare', title: live.length === 1 ? `Play with ${live[0].name}` : 'Play with them', why: `Everything is looked after. Play still earns care points and keeps ${live.length === 1 ? 'it' : 'them'} happy.`, gain: null };
 }
 // About how many days to the next level at the current health: passive growth plus a usual day of care
 export function levelEta(t, now = Date.now()) {

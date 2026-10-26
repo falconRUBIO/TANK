@@ -1292,3 +1292,14 @@ ok('journal lines carry the animals they are about, and the habitat report only 
   const N = R.habitatNotes(t, now).map((n) => n.text); assert.ok(N.some((x) => x === 'Pip has started resting by the reef cave.'), N.join(' | ')); assert.ok(!N.some((x) => /Quill has started/.test(x)), 'an old favorite is not news');
   assert.ok(N.some((x) => x === 'Pip and Quill regularly share the reef cave.')); assert.ok(N.some((x) => x === 'Sol holds on to the sea fan most of all.')); assert.ok(N.some((x) => x === 'Ink spends most evenings near the sea grass.')); assert.ok(N.some((x) => x === 'Mo is still looking for its old clay pot.'));
 });
+ok('the best next step is only what the viewer can do: their own hungry octopus, a friend\'s taken on after a long absence, otherwise a nudge to the friend', () => {
+  const now = 50 * 864e5, t = R.newWorld(0); R.norm(t, now); t.decor = []; t.water = 1; t.glass = 0; t.hunger = 0;
+  t.decor = [{ id: 'd1', type: 'coconut', x: 1, z: 1, ry: 0 }]; t.fish = [{ id: 'o1', species: 'octopus', name: 'Sunnie', owner: 'ana', ownerName: 'Ana', born: now - 20 * 864e5, hunger: 0.9, traits: ['Calm'], happy: 0.8, health: 1, puzzleAt: now - 3600e3, petAt: { ana: now - 3600e3, ben: now - 3600e3 } }];      // (nothing else it wants: only the meal)
+  const active = [{ id: 'ana', name: 'Ana', lastSeen: now - 3600e3 }, { id: 'ben', name: 'Ben', lastSeen: now }];
+  assert.equal(R.bestStep(t, now, { uid: 'ana', shared: true, members: active }).act, 'feeddrawer', 'its caretaker is told to feed it');
+  const ben = R.bestStep(t, now, { uid: 'ben', shared: true, members: active }); assert.equal(ben.act, 'nudgefeed'); assert.equal(ben.to, 'ana'); assert.ok(/Ana/.test(ben.title) && /Sunnie/.test(ben.title), ben.title);
+  const gone = [{ id: 'ana', name: 'Ana', lastSeen: now - 20 * 864e5 }, { id: 'ben', name: 'Ben', lastSeen: now }];
+  const take = R.bestStep(t, now, { uid: 'ben', shared: true, members: gone }); assert.equal(take.act, 'wellopen'); assert.equal(take.fid, 'o1'); assert.ok(/Look after Sunnie/.test(take.title), take.title);
+  assert.equal(R.bestStep(t, now).act, 'feeddrawer', 'alone (no viewer given) it is yours to feed');
+  t.water = 0.5; assert.equal(R.bestStep(t, now, { uid: 'ben', shared: true, members: active }).act, 'water', 'something the viewer can do comes before a nudge');
+});

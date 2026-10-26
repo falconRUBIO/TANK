@@ -296,7 +296,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const to = String(m.to ?? ''), mine = L.tankOf(db, ws.userId), theirs = to && L.tankOf(db, to);
           if (!mine || !theirs || mine.id !== theirs.id || to === ws.userId) return send(ws, { t: 'nudged', ok: false, reason: 'NOT_A_FRIEND' });
           if (!lim.hit(`n:${ws.userId}:${to}`, 1, 2 * 3600e3)) return send(ws, { t: 'nudged', ok: false, reason: 'TOO_SOON' });
-          const { w } = L.loadWorld(db, mine.id); const theirOcto = w.fish.find((f) => (f.species === 'octopus' || f.species === 'seahorse') && !f.dead && f.owner === to && (f.hunger ?? 0) > 0.5); const why = theirOcto ? 'octo' : (w.hunger > 0.5 && w.fish.some((f) => f.species !== 'octopus')) ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null; const octoName = theirOcto?.name;
+          const { w } = L.loadWorld(db, mine.id); const theirOcto = w.fish.find((f) => (f.species === 'octopus' || f.species === 'seahorse') && !f.dead && f.owner === to && (f.hunger ?? 0) > 0.4); const why = theirOcto ? 'octo' : (w.hunger > 0.5 && w.fish.some((f) => f.species !== 'octopus')) ? 'feed' : w.glass > 0.5 ? 'glass' : w.water < 0.6 ? 'water' : null; const octoName = theirOcto?.name;      // (0.4: the same point at which the game itself calls a hand-fed animal hungry, OCTO_DUE)
           if (!why) { lim.h.delete(`n:${ws.userId}:${to}`); return send(ws, { t: 'nudged', ok: false, reason: 'NOTHING_NEEDED' }); }
           const there = [...(rooms.get(mine.id) ?? [])].filter((o) => o.userId === to);
           for (const o of there) send(o, { t: 'nudge', from: ws.user.name, why, name: octoName });
