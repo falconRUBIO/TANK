@@ -1,0 +1,648 @@
+[
+  {
+    "fact": "seabirds.emperor-penguin.male-incubates-egg",
+    "q": "Through the Antarctic winter, which emperor penguin parent keeps the egg warm on its feet?",
+    "choices": [
+      "The father",
+      "The mother",
+      "Both parents, swapping daily"
+    ],
+    "answer": 0,
+    "explain": "The female hands the egg over and heads to sea to feed, while the male balances it on his feet under a warm fold of skin for about two months.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/breeding-cycle/",
+      "publisher": "Australian Antarctic Division",
+      "title": "Emperor penguin breeding cycle"
+    },
+    "source2": {
+      "url": "https://www.whoi.edu/ocean-learning-hub/ocean-topics/ocean-life/sea-birds/emperor-penguins/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Emperor penguins"
+    },
+    "searchNote": "AAD breeding-cycle page: emperors build no nest; the male balances the egg on his feet under his brood pouch for 60 to 64 days while the female feeds at sea. WHOI page says males incubate on their feet for two months.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.emperor-penguin.male-weight-loss",
+    "q": "While fasting through incubation, male emperor penguins can lose about how much of their body weight?",
+    "choices": [
+      "Up to about a tenth",
+      "Up to about half",
+      "Almost none"
+    ],
+    "answer": 1,
+    "explain": "Males can't feed while holding the egg, so the long winter fast takes a heavy toll: they often lose as much as half their body weight.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/penguins",
+      "publisher": "Smithsonian Ocean",
+      "title": "Penguins - Smithsonian Ocean Portal"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian Ocean penguins page says incubating males often lose as much as half their body weight. AAD Mawson station notes say fathers have fasted for about 4 months by the time chicks appear.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seabirds.king-penguin.incubates-on-feet",
+    "q": "Besides the emperor penguin, which penguin also incubates its single egg on its feet instead of in a nest?",
+    "choices": [
+      "Gentoo penguin",
+      "Little penguin",
+      "King penguin"
+    ],
+    "answer": 2,
+    "explain": "Like emperors, king penguins build no nest; the single egg is kept warm balanced on top of a parent's feet.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/penguins",
+      "publisher": "Smithsonian Ocean",
+      "title": "Penguins - Smithsonian Ocean Portal"
+    },
+    "source2": null,
+    "searchNote": "Search summary of the Smithsonian penguins page noted the egg-on-feet incubation is shared by emperor and king penguins; a king penguin study in the results also said king penguins build no nest and incubate a single egg on their feet. Gentoos build stone nests and little penguins use burrows.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seabirds.emperor-penguin.winter-huddle",
+    "q": "How do male emperor penguins get through the Antarctic winter while incubating eggs?",
+    "choices": [
+      "Huddling together in large groups",
+      "Sheltering in burrows dug in snow",
+      "Taking turns feeding at sea every few days"
+    ],
+    "answer": 0,
+    "explain": "Incubating males crowd together in huddles and stay that way all winter, through every temperature and wind.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.bas.ac.uk/blogpost/halley-diary-august-2004/",
+      "publisher": "British Antarctic Survey",
+      "title": "Halley Diary — August 2004 - British Antarctic Survey"
+    },
+    "source2": {
+      "url": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/breeding-cycle/",
+      "publisher": "Australian Antarctic Division",
+      "title": "Emperor penguin breeding cycle"
+    },
+    "searchNote": "British Antarctic Survey Halley diary describes the male emperors spending all winter huddled through all temperatures and winds; AAD pages say males cannot feed while carrying the egg.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.emperor-penguin.esa-listing-2022",
+    "q": "In 2022, which Antarctic penguin received protection under the US Endangered Species Act?",
+    "choices": [
+      "Adélie penguin",
+      "Emperor penguin",
+      "Chinstrap penguin"
+    ],
+    "answer": 1,
+    "explain": "The US Fish and Wildlife Service extended Endangered Species Act protection to the emperor penguin in October 2022.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fws.gov/press-release/2022-10/emperor-penguin-gets-endangered-species-act-protections",
+      "publisher": "U.S. Fish and Wildlife Service",
+      "title": "Emperor Penguin Gets Endangered Species Act Protections"
+    },
+    "source2": null,
+    "searchNote": "US Fish and Wildlife Service press release (URL dated 2022-10) titled 'Emperor Penguin Gets Endangered Species Act Protections'.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seabirds.wandering-albatross.wingspan",
+    "q": "About how wide can a wandering albatross's wings stretch, tip to tip?",
+    "choices": [
+      "About 1.5 m (5 ft)",
+      "About 7 m (23 ft)",
+      "About 3.5 m (11.5 ft)"
+    ],
+    "answer": 2,
+    "explain": "The wandering albatross has the largest wingspan of any living bird, about 3.5 meters (11.5 feet) from tip to tip.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/wandering-albatross",
+      "publisher": "Smithsonian Ocean",
+      "title": "Wandering albatross"
+    },
+    "source2": {
+      "url": "https://legacy.bas.ac.uk/about_antarctica/wildlife/birds/albatross.php",
+      "publisher": "British Antarctic Survey",
+      "title": "Albatrosses - British Antarctic Survey"
+    },
+    "searchNote": "Smithsonian Ocean: wandering albatross wingspan 3.5 m (11.5 ft), largest of any bird. BAS: wingspan over three meters, greatest of any living bird. AAD gives 2.5 to 3.5 m.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seabirds.atlantic-puffin.bill-plates-shed",
+    "q": "What happens to an Atlantic puffin's colorful bill after the breeding season?",
+    "choices": [
+      "It sheds its bright outer plates",
+      "It grows a hard knob on top",
+      "It turns from gray to bright orange"
+    ],
+    "answer": 0,
+    "explain": "Both sexes grow bright plates on the bill each spring for courtship, then shed them, leaving a smaller, duller bill for winter at sea.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/field-guide/bird/atlantic-puffin",
+      "publisher": "National Audubon Society",
+      "title": "Atlantic Puffin"
+    },
+    "source2": {
+      "url": "https://www.audubon.org/news/art-seduction-some-birds-exotic-breeding-attire-goes-beyond-flashy-feathers",
+      "publisher": "National Audubon Society",
+      "title": "Art of Seduction: Some Birds’ Exotic Breeding Attire Goes Beyond Flashy Feathers"
+    },
+    "searchNote": "Audubon field guide: in winter the bill is smaller and less colorful after the outer plates are shed. Audubon 'Art of Seduction' article: bright plates grow in early spring and are shed after breeding.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.atlantic-puffin.uv-glowing-bill",
+    "q": "What happens when ultraviolet light shines on a breeding Atlantic puffin's beak?",
+    "choices": [
+      "The whole beak turns black",
+      "Streaks on it glow cyan-green",
+      "The beak's colors fade away"
+    ],
+    "answer": 1,
+    "explain": "Streaks on the breeding bill fluoresce a bright cyan-green under UV light, which may act as a signal to potential mates.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/news/puffins-amp-their-sex-appeal-glowing-beaks",
+      "publisher": "National Audubon Society",
+      "title": "Puffins Amp Up Their Sex Appeal With Glowing Beaks"
+    },
+    "source2": null,
+    "searchNote": "Audubon news article reports that if you shine ultraviolet light on a puffin in breeding plumage, streaks on its beak glow a bright cyan-green; the plates are UV-reactive.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seabirds.atlantic-puffin.spiny-tongue-holds-fish",
+    "q": "How does an Atlantic puffin keep hold of a beakful of fish while it catches more?",
+    "choices": [
+      "It stores the fish in a stretchy throat pouch",
+      "It skewers the fish on its hooked bill tip",
+      "Its tongue pins fish against spines in its mouth"
+    ],
+    "answer": 2,
+    "explain": "A puffin's tongue presses each catch against spines on the roof of its mouth, so it can hold ten or more small fish at once.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://projectpuffin.audubon.org/birds/puffin-faqs",
+      "publisher": "Audubon Project Puffin",
+      "title": "Puffin FAQs"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/puffin-mouthful-fish",
+      "publisher": "Smithsonian Ocean",
+      "title": "Puffin with a Mouthful of Fish"
+    },
+    "searchNote": "Project Puffin FAQ: average catch around 10 fish per trip, held by the tongue pressing fish against spines on the palate. Smithsonian: spiny tongues let Atlantic puffins hold ten or more small fish at once.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.tufted-puffin.fish-per-load",
+    "q": "A tufted puffin bringing food to its chick routinely carries how many fish at once?",
+    "choices": [
+      "About 5 to 20",
+      "Only 1 or 2",
+      "More than 100"
+    ],
+    "answer": 0,
+    "explain": "Tufted puffins line up small fish crosswise in their bills, routinely carrying 5 to 20 at a time back to the burrow.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.allaboutbirds.org/guide/Tufted_Puffin/overview",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Tufted Puffin Overview, All About Birds, Cornell Lab of Ornithology"
+    },
+    "source2": {
+      "url": "https://audubon.org/news/tufted-puffins-are-getting-boost-pacific-northwest",
+      "publisher": "National Audubon Society",
+      "title": "Tufted Puffins are Getting a Boost in the Pacific Northwest"
+    },
+    "searchNote": "All About Birds: tufted puffins routinely carry 5 to 20 fish at a time. Audubon Pacific Northwest article: up to 20 fish crosswise in the specialized beak.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seabirds.brown-pelican.plunge-diving-species",
+    "q": "Which pelicans catch fish by plunge-diving from the air?",
+    "choices": [
+      "American white and Australian pelicans",
+      "Brown and Peruvian pelicans",
+      "Every pelican species"
+    ],
+    "answer": 1,
+    "explain": "The brown pelican and its close cousin the Peruvian pelican are the only plunge-divers; other pelicans feed while sitting on the water's surface.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/chis/learn/nature/brown-pelican.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "California Brown Pelican - Channel Islands National Park (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/guis/learn/nature/brown-pelican.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Brown Pelican - Gulf Islands National Seashore (U.S. National Park Service)"
+    },
+    "searchNote": "NPS brown pelican page (search summary) said the brown pelican and the Peruvian pelican are the only pelican species that plunge dive; all others feed by sitting on the surface. Verifier: the sentence may be on the Gulf Islands page rather than Channel Islands.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seabirds.brown-pelican.dive-rotation",
+    "q": "Just before hitting the water, a diving brown pelican rotates slightly to protect what?",
+    "choices": [
+      "Its eyes",
+      "Its flight feathers",
+      "Its windpipe and esophagus"
+    ],
+    "answer": 2,
+    "explain": "Pelicans twist slightly to the left as they hit the water, shielding the windpipe and esophagus, which run along the right side of the neck.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/magazine/10-fun-facts-about-brown-pelican",
+      "publisher": "National Audubon Society",
+      "title": "10 Fun Facts About the Brown Pelican"
+    },
+    "source2": null,
+    "searchNote": "Audubon '10 Fun Facts' says pelicans rotate their bodies slightly to the left just before impact to protect the esophagus and trachea, on the right side of the neck.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seabirds.blue-footed-booby.foot-display",
+    "q": "What does a male blue-footed booby show off when courting a female?",
+    "choices": [
+      "His bright blue feet",
+      "An inflated red throat pouch",
+      "A crest of long head plumes"
+    ],
+    "answer": 0,
+    "explain": "Males strut in front of females, lifting their blue feet high one at a time and spreading them to show them off.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.allaboutbirds.org/guide/Blue-footed_Booby/lifehistory",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Blue-footed Booby Life History, All About Birds, Cornell Lab of Ornithology"
+    },
+    "source2": {
+      "url": "https://www.allaboutbirds.org/guide/Blue-footed_Booby/overview",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Blue-footed Booby Overview, All About Birds, Cornell Lab of Ornithology"
+    },
+    "searchNote": "All About Birds: during courtship males spread their blue feet and march around lifting their feet high; females also show feet to potential partners.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.blue-footed-booby.blue-feet-fathers-healthy-chicks",
+    "q": "In one study, blue-footed booby chicks were healthiest when their fathers had what?",
+    "choices": [
+      "The longest wings",
+      "The bluest feet",
+      "The loudest calls"
+    ],
+    "answer": 1,
+    "explain": "Vivid blue feet seem to signal a well-fed male; one study found chicks of the most intensely blue-footed fathers were the healthiest.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.allaboutbirds.org/guide/Blue-footed_Booby/overview",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Blue-footed Booby Overview, All About Birds, Cornell Lab of Ornithology"
+    },
+    "source2": null,
+    "searchNote": "All About Birds overview: bluer feet help attract mates, and one study found chicks with intensely blue-footed fathers were the healthiest, possibly reflecting the father's feeding ability.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seabirds.blue-footed-booby.juvenile-brown-feet",
+    "q": "What color are the feet of a young blue-footed booby?",
+    "choices": [
+      "Bright blue",
+      "Red",
+      "Brown"
+    ],
+    "answer": 2,
+    "explain": "Despite the name, young blue-footed boobies have brownish feet; the famous blue comes with adulthood.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.allaboutbirds.org/guide/Blue-footed_Booby/id",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Blue-footed Booby Identification, All About Birds, Cornell Lab of Ornithology"
+    },
+    "source2": null,
+    "searchNote": "All About Birds identification page: adults have blue feet while young birds have brown feet.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seabirds.blue-footed-booby.galapagos-sardine-decline",
+    "q": "Researchers linked a sharp decline of Galápagos blue-footed boobies to a shortage of which fish?",
+    "choices": [
+      "Sardines",
+      "Tuna",
+      "Salmon"
+    ],
+    "answer": 0,
+    "explain": "A study tied the steep drop in the Galápagos population to a scarcity of sardines in the boobies' diet.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/news/blue-footed-boobies-take-puzzling-dive",
+      "publisher": "National Audubon Society",
+      "title": "Blue-footed Boobies Take a Puzzling Dive"
+    },
+    "source2": null,
+    "searchNote": "Audubon 'Blue-footed Boobies Take a Puzzling Dive': Galápagos populations declined sharply, and a study linked the drop to a sardine shortage in their diet.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.brown-booby.plunge-foraging",
+    "q": "How does the brown booby catch most of its food?",
+    "choices": [
+      "Wading through shallow water",
+      "Plunging headfirst into the water from flight",
+      "Stealing fish from other seabirds"
+    ],
+    "answer": 1,
+    "explain": "Brown boobies mostly plunge headfirst from flight, usually diving at an angle and from fairly low above the water.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/field-guide/bird/brown-booby",
+      "publisher": "National Audubon Society",
+      "title": "Brown Booby"
+    },
+    "source2": null,
+    "searchNote": "Audubon field guide for brown booby: forages mostly by plunging headfirst into water from flight, usually diving at an angle and from fairly low above the surface.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.magnificent-frigatebird.not-waterproof",
+    "q": "Why do magnificent frigatebirds rarely land on the ocean?",
+    "choices": [
+      "Their wings are too short for takeoff",
+      "Their legs are too long to swim",
+      "Their feathers aren't waterproof"
+    ],
+    "answer": 2,
+    "explain": "Unlike nearly all other seabirds, frigatebirds have feathers that aren't waterproof, so they can't float well and seldom settle on the sea.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.audubon.org/news/why-frigatebirds-cant-float",
+      "publisher": "National Audubon Society",
+      "title": "Why Frigatebirds Can't Float"
+    },
+    "source2": {
+      "url": "https://www.allaboutbirds.org/guide/Magnificent_Frigatebird/overview",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Magnificent Frigatebird Overview, All About Birds, Cornell Lab of Ornithology"
+    },
+    "searchNote": "Audubon 'Why Frigatebirds Can't Float': frigatebird feathers, unlike those of nearly all other seabirds, aren't waterproof. All About Birds: they rarely land on water.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seabirds.magnificent-frigatebird.red-throat-pouch",
+    "q": "What does a male magnificent frigatebird inflate to attract a mate?",
+    "choices": [
+      "A bright red throat pouch",
+      "A blue air sac on its back",
+      "A yellow crest of feathers"
+    ],
+    "answer": 0,
+    "explain": "Courting males puff up a scarlet throat pouch like a balloon and use it to make a drumming sound.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://academy.allaboutbirds.org/an-inflatable-throat-magnificent-frigatebird-mating-display/",
+      "publisher": "Cornell Lab of Ornithology (Bird Academy)",
+      "title": "Inflatable Throat: Magnificent Frigatebird Mating Display"
+    },
+    "source2": {
+      "url": "https://www.allaboutbirds.org/guide/Magnificent_Frigatebird/overview",
+      "publisher": "Cornell Lab of Ornithology (All About Birds)",
+      "title": "Magnificent Frigatebird Overview, All About Birds, Cornell Lab of Ornithology"
+    },
+    "searchNote": "Cornell Bird Academy and All About Birds: males inflate a bright red gular (throat) pouch in courtship and use it to produce a drumming sound.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.great-frigatebird.unihemispheric-flight-sleep",
+    "q": "When great frigatebirds sleep while flying, how much of the brain can be asleep?",
+    "choices": [
+      "None; they never sleep aloft",
+      "One half, or both halves at once",
+      "Only a tiny region near the spine"
+    ],
+    "answer": 1,
+    "explain": "Brain recordings from frigatebirds flying over the ocean showed they can sleep with one hemisphere or both, mostly while circling in rising air.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4976198/",
+      "publisher": "Nature Communications (via PubMed Central)",
+      "title": "Evidence that birds sleep in mid-flight"
+    },
+    "source2": {
+      "url": "https://www.nature.com/articles/ncomms12468",
+      "publisher": "Nature Communications",
+      "title": "Evidence that birds sleep in mid-flight"
+    },
+    "searchNote": "2016 Nature Communications study (Rattenborg et al.): great frigatebirds in flight can sleep with either one hemisphere at a time or both simultaneously, mainly while circling in rising air currents.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seabirds.great-frigatebird.flight-sleep-amount",
+    "q": "About how much did great frigatebirds sleep per day while flying, in a 2016 study?",
+    "choices": [
+      "About 6 hours",
+      "About 12 hours",
+      "Less than an hour"
+    ],
+    "answer": 2,
+    "explain": "In flight they slept only about 0.69 hours a day, just 7.4% of the sleep they got back on land.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4976198/",
+      "publisher": "Nature Communications (via PubMed Central)",
+      "title": "Evidence that birds sleep in mid-flight"
+    },
+    "source2": {
+      "url": "https://www.nature.com/articles/ncomms12468",
+      "publisher": "Nature Communications",
+      "title": "Evidence that birds sleep in mid-flight"
+    },
+    "searchNote": "Same study: total sleep in flight was 0.69 hours per day, 7.4% of time spent sleeping on land.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seabirds.northern-gannet.dive-speed",
+    "q": "About how fast can a northern gannet be moving when it plunges into the sea?",
+    "choices": [
+      "About 100 km/h (60 mph)",
+      "About 15 km/h (10 mph)",
+      "About 400 km/h (250 mph)"
+    ],
+    "answer": 0,
+    "explain": "Gannets fold their wings and plunge from around 30 meters up, reaching roughly 97 km/h (60 mph) before hitting the water.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/diving-gannets",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Diving Gannets"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 'The Diving Gannets': gannets plunge from about 30 m (100 ft) and reach about 97 km/h (up to 60 mph) during the dive.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seabirds.northern-gannet.air-sacs-cushion",
+    "q": "What cushions a northern gannet's body when it slams into the water?",
+    "choices": [
+      "A thick fat layer on its skull",
+      "Air sacs in its face and chest",
+      "Its outstretched wings"
+    ],
+    "answer": 1,
+    "explain": "Air sacs under the skin of the face and chest work like a car's airbags, absorbing the shock of a high-speed dive.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/diving-gannets",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Diving Gannets"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 'The Diving Gannets': air sacs in the face and chest cushion the impact, like airbags in a car.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.northern-gannet.no-external-nostrils",
+    "q": "Unlike most birds, northern gannets lack external nostrils. How do they breathe?",
+    "choices": [
+      "Through holes behind the eyes",
+      "Through pores in the skin",
+      "Through openings inside the mouth"
+    ],
+    "answer": 2,
+    "explain": "Gannets breathe through nostrils inside the mouth rather than through openings on the bill like most birds.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/diving-gannets",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Diving Gannets"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 'The Diving Gannets': unlike most birds, gannets do not have external nostrils but breathe through nostrils inside their mouths.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seabirds.northern-gannet.bass-rock-colony",
+    "q": "Bass Rock, an island off Scotland, is famous for a huge colony of which seabird?",
+    "choices": [
+      "Northern gannet",
+      "Magnificent frigatebird",
+      "Wandering albatross"
+    ],
+    "answer": 0,
+    "explain": "The Bass Rock hosts one of the world's biggest northern gannet colonies, with tens of thousands of nest sites counted in surveys.",
+    "category": "seabirds",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "http://nora.nerc.ac.uk/id/eprint/509002/",
+      "publisher": "NERC Open Research Archive",
+      "title": "The Bass Rock - now the world's largest northern gannet colony - NERC Open Research Archive"
+    },
+    "source2": {
+      "url": "https://www.napier.ac.uk/about-us/news/bass-rock-gannet-drone-survey-research",
+      "publisher": "Edinburgh Napier University",
+      "title": "Innovative research suggests Bass Rock gannet colony may be stabilising after avian flu outbreak"
+    },
+    "searchNote": "NERC archive record titled 'The Bass Rock - now the world's largest northern gannet colony'; Edinburgh Napier news covers drone surveys of the Bass Rock gannet colony.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.northern-gannet.bass-rock-avian-flu-2022",
+    "q": "What devastated the Bass Rock northern gannet colony in 2022?",
+    "choices": [
+      "A major oil spill",
+      "An avian flu outbreak",
+      "A volcanic eruption"
+    ],
+    "answer": 1,
+    "explain": "Avian flu swept through the colony in 2022; a 2025 drone survey suggested numbers may be stabilising but still well below earlier levels.",
+    "category": "seabirds",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.napier.ac.uk/about-us/news/bass-rock-gannet-drone-survey-research",
+      "publisher": "Edinburgh Napier University",
+      "title": "Innovative research suggests Bass Rock gannet colony may be stabilising after avian flu outbreak"
+    },
+    "source2": null,
+    "searchNote": "Edinburgh Napier University news: a 2022 avian flu outbreak decimated the Bass Rock gannet colony; a 2025 drone survey suggests the colony may be stabilising but remains about 30% below its previous size.",
+    "risk": "none"
+  },
+  {
+    "fact": "seabirds.northern-gannet.dive-handedness",
+    "q": "A study of plunge-diving northern gannets found that individual birds tend to do what?",
+    "choices": [
+      "Dive only in synchronized pairs",
+      "Close one eye just before impact",
+      "Favor rolling to one particular side"
+    ],
+    "answer": 2,
+    "explain": "Like left- or right-handed people, individual gannets showed a consistent preferred roll direction as they twisted into their dives.",
+    "category": "seabirds",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10480694/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Handedness and individual roll-angle specialism when plunge diving in the northern gannet"
+    },
+    "source2": null,
+    "searchNote": "Peer-reviewed paper titled 'Handedness and individual roll-angle specialism when plunge diving in the northern gannet' (PMC10480694): individual gannets specialize in a roll angle/direction when diving.",
+    "risk": "surprising"
+  }
+]

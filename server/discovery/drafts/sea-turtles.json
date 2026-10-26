@@ -1,0 +1,1316 @@
+[
+  {
+    "fact": "sea-turtles.leatherback.no-hard-shell",
+    "q": "What sets the leatherback apart from the other sea turtle species?",
+    "choices": [
+      "It has no hard shell",
+      "It never leaves the tropics",
+      "It lays its eggs at sea"
+    ],
+    "answer": 0,
+    "explain": "Leatherbacks are the only sea turtles without scales or a hard shell. Their shell is covered in tough, rubbery skin, which gives them their name.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/leatherback-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Leatherback Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the leatherback is the only sea turtle species that lacks scales and a hard shell; its rubbery skin gives it its name.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.leatherback.diet-jellyfish",
+    "q": "What is the main food of the leatherback sea turtle?",
+    "choices": [
+      "Seagrass and algae",
+      "Jellyfish and other soft-bodied animals",
+      "Crabs and clams"
+    ],
+    "answer": 1,
+    "explain": "Leatherbacks feed on soft-bodied prey such as jellyfish and salps, which are drifting, barrel-shaped animals of the open ocean.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/leatherback-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Leatherback Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA's leatherback page says it eats soft-bodied prey such as jellyfish and salps.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.leatherback.mouth-spines",
+    "q": "How does a leatherback turtle keep hold of slippery jellyfish?",
+    "choices": [
+      "Sticky saliva on its tongue",
+      "Rows of sharp, curved teeth",
+      "Backward-pointing spines in its mouth"
+    ],
+    "answer": 2,
+    "explain": "Pointed, tooth-like cusps and backward-facing spines in the leatherback's mouth help it grip soft, slippery prey like jellyfish.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/leatherback-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Leatherback Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA describes pointed tooth-like cusps and backward-facing spines in the leatherback's mouth that help it hold slippery food.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.leatherback.dive-depth",
+    "q": "About how deep can a leatherback sea turtle dive?",
+    "choices": [
+      "About 400 feet",
+      "About 4,000 feet",
+      "About 14,000 feet"
+    ],
+    "answer": 1,
+    "explain": "Leatherbacks dive deeper than other sea turtles, to about 4,000 feet (roughly 1,200 meters), and can stay under for up to 85 minutes.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/leatherback-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Leatherback Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA material says leatherbacks dive deeper than other sea turtles, to about 4,000 feet, staying under up to 85 minutes.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.leatherback.widest-range",
+    "q": "Which reptile has the widest global distribution?",
+    "choices": [
+      "Leatherback sea turtle",
+      "Saltwater crocodile",
+      "Yellow-bellied sea snake"
+    ],
+    "answer": 0,
+    "explain": "Leatherbacks roam the Atlantic, Pacific and Indian Oceans, giving them the widest global distribution of any reptile.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/leatherback-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Leatherback Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA's leatherback page says it is found across the Atlantic, Pacific and Indian Oceans and has the widest global distribution of any reptile.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.leatherback.salt-gland-size",
+    "q": "Leatherbacks need big salt glands because jellyfish are mostly seawater. How big are the glands?",
+    "choices": [
+      "About the size of a pea",
+      "About the size of its brain",
+      "More than twice the size of its brain"
+    ],
+    "answer": 2,
+    "explain": "Eating jellyfish means swallowing lots of salt, so leatherbacks have the largest salt glands of any sea turtle, more than twice the size of their brains.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://response.restoration.noaa.gov/sites/default/files/Oil_Sea_Turtles_2021.pdf",
+      "publisher": "NOAA Office of Response and Restoration",
+      "title": "Oil and Sea Turtles BIOLOGY, PLANNING, AND RESPONSE U.S. DEPARTMENT OF COMMERCE"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sea Turtles"
+    },
+    "searchNote": "Search summary: leatherbacks have the largest salt glands, more than twice the size of their brains, because jellies are mostly seawater and they ingest more salt than other sea turtles. Verifier: confirm which of the two pages carries the brain comparison.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.turtles.salt-glands-tears",
+    "q": "Why do sea turtles often look like they are crying?",
+    "choices": [
+      "Sand is irritating their eyes",
+      "Glands by their eyes are getting rid of salt",
+      "They are releasing stress hormones"
+    ],
+    "answer": 1,
+    "explain": "Sea turtles take in salty water as they eat. Modified tear glands behind the eyes pour out the extra salt, and the discharge looks like tears.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sea Turtles"
+    },
+    "source2": {
+      "url": "https://response.restoration.noaa.gov/sites/default/files/Oil_Sea_Turtles_2021.pdf",
+      "publisher": "NOAA Office of Response and Restoration",
+      "title": "Oil and Sea Turtles BIOLOGY, PLANNING, AND RESPONSE U.S. DEPARTMENT OF COMMERCE"
+    },
+    "searchNote": "Sources say sea turtles excrete excess salt through modified tear (lachrymal) glands behind the eyes, and the excretions can make them look like they are crying.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.green-turtle.herbivore",
+    "q": "What do adult green sea turtles mainly eat?",
+    "choices": [
+      "Jellyfish",
+      "Sponges",
+      "Seagrasses and algae"
+    ],
+    "answer": 2,
+    "explain": "Adult green turtles are unusual among sea turtles because they are herbivores, grazing mostly on seagrasses, seaweed and algae.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/green-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Green Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says green turtles are unique among sea turtles as herbivores, eating mostly seaweed, seagrasses and algae.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.green-turtle.name-fat",
+    "q": "Where does the green sea turtle get its name?",
+    "choices": [
+      "The color of its body fat",
+      "The color of its shell",
+      "Green algae growing on its back"
+    ],
+    "answer": 0,
+    "explain": "The name comes from the greenish color of the turtle's fat, not its shell. That color was once credited to its diet, though other sea turtles have greenish fat too.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/10-tremendous-turtle-facts",
+      "publisher": "NOAA Fisheries",
+      "title": "10 Tremendous Turtle Facts"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/green-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Green Turtle"
+    },
+    "searchNote": "NOAA says the name comes from the color of their fat, not their shells; this was attributed to diet, but other sea turtles have greenish fat as well.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.hawksbill.diet-sponges",
+    "q": "What makes up most of the hawksbill sea turtle's diet?",
+    "choices": [
+      "Seagrass",
+      "Sponges",
+      "Fish"
+    ],
+    "answer": 1,
+    "explain": "Hawksbills feed mainly on sponges growing on coral reefs, and also eat algae, corals, mollusks, sea urchins and other invertebrates.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Hawksbill Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the hawksbill's diet consists mainly of sponges that live on coral reefs, plus algae, corals, mollusks, tunicates, crustaceans and others.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.hawksbill.narrow-beak",
+    "q": "How is the hawksbill's mouth suited to feeding on coral reefs?",
+    "choices": [
+      "A broad jaw built for crushing shells",
+      "A long snout for sucking up sand",
+      "A narrow beak that reaches into crevices"
+    ],
+    "answer": 2,
+    "explain": "The hawksbill's narrow, pointed beak lets it probe cracks and crevices in the reef to pull out sponges and other prey.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Hawksbill Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the hawksbill's narrow beak lets it reach into reef crevices to extract sponges and other prey.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.hawksbill.eastern-pacific-mangrove-seeds",
+    "q": "In the eastern Pacific, adult hawksbill turtles eat large amounts of which unusual food?",
+    "choices": [
+      "Mangrove seeds",
+      "Kelp holdfasts",
+      "Fish eggs"
+    ],
+    "answer": 0,
+    "explain": "Hawksbill diets vary by region. In the eastern Pacific, adults eat large quantities of mangrove seeds along with marine algae and invertebrates.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/s3/2023-09/Sea-Turtle-Framework-for-ESA-Sections-7.pdf",
+      "publisher": "NOAA Fisheries",
+      "title": "Sea Turtle Framework"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/west-coast/science-data/hawksbill-turtles-eastern-pacific",
+      "publisher": "NOAA Fisheries",
+      "title": "Hawksbill Turtles in the Eastern Pacific"
+    },
+    "searchNote": "NOAA's sea turtle framework notes regional diet differences: in the eastern Pacific, adult hawksbills consume large quantities of mangrove seeds plus algae and invertebrates.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.hawksbill.reef-diversity",
+    "q": "How does the hawksbill's choosy sponge-eating benefit coral reefs?",
+    "choices": [
+      "It spreads coral larvae across the reef",
+      "It lets rarer species become established",
+      "It clears sand off the reef surface"
+    ],
+    "answer": 1,
+    "explain": "Because hawksbills eat only certain sponge types, they allow rarer species to get established, helping keep the reef diverse and healthy.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/hawksbill-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Hawksbill Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says that by eating only specific sponge types, hawksbills allow rarer species to become established and promote a healthy, diverse reef.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.loggerhead.name-jaws",
+    "q": "The loggerhead is named for its big head. What do its powerful jaw muscles let it do?",
+    "choices": [
+      "Tear up tough seagrass",
+      "Dig deep nests in sand",
+      "Crush hard-shelled prey like conch"
+    ],
+    "answer": 2,
+    "explain": "A loggerhead's large head anchors strong jaw muscles for cracking hard-shelled prey such as whelks, conch, crabs and horseshoe crabs.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/loggerhead-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Loggerhead Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the loggerhead is named for its large head, which supports powerful jaw muscles for feeding on hard-shelled prey such as whelks and conch.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.loggerhead.most-common-us-nester",
+    "q": "Which sea turtle is the most common species nesting on U.S. beaches?",
+    "choices": [
+      "Loggerhead",
+      "Leatherback",
+      "Hawksbill"
+    ],
+    "answer": 0,
+    "explain": "Loggerheads are the most common sea turtle in U.S. coastal waters and the species that nests most often on U.S. beaches.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/loggerhead-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Loggerhead Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says loggerheads are the most common sea turtle in U.S. coastal waters and the most common species nesting on U.S. beaches.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.loggerhead.shell-color",
+    "q": "What does an adult loggerhead's top shell look like?",
+    "choices": [
+      "Black, smooth and ridged lengthwise",
+      "Reddish-brown and slightly heart-shaped",
+      "Bright green and almost perfectly round"
+    ],
+    "answer": 1,
+    "explain": "Adult loggerheads have a slightly heart-shaped, reddish-brown carapace (top shell) and a pale yellowish plastron (bottom shell).",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/loggerhead-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Loggerhead Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the loggerhead's carapace is slightly heart-shaped and reddish-brown in adults; the plastron is pale yellowish.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.ridley.arribada-meaning",
+    "q": "Some sea turtles nest in mass events called arribadas. What does the Spanish word mean?",
+    "choices": [
+      "Storm",
+      "Full moon",
+      "Arrival"
+    ],
+    "answer": 2,
+    "explain": "Arribada is Spanish for 'arrival.' Females gather offshore near the nesting beach, then come ashore together in large groups to nest.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pais/learn/nature/nesters.htm",
+      "publisher": "National Park Service",
+      "title": "Habits of Nesting Kemp's ridley turtles - Padre Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS says Kemp's ridleys nest in arribadas, the Spanish word for 'arrival'; females gather offshore and come ashore together.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.ridley.arribada-species",
+    "q": "Which two sea turtle species nest in mass arribadas?",
+    "choices": [
+      "Kemp's ridley and olive ridley",
+      "Green turtle and hawksbill",
+      "Loggerhead and flatback"
+    ],
+    "answer": 0,
+    "explain": "Kemp's ridleys and olive ridleys are the two sea turtles known for arribadas, when thousands of females can come ashore together to nest.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pais/learn/nature/nesters.htm",
+      "publisher": "National Park Service",
+      "title": "Habits of Nesting Kemp's ridley turtles - Padre Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/olive-ridley-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Olive Ridley Turtle"
+    },
+    "searchNote": "NPS says Kemp's ridleys are one of two species that nest in arribadas, the other being the olive ridley; NOAA's olive ridley page describes its arribadas of thousands of turtles.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.kemps-ridley.daytime-nesting",
+    "q": "What is unusual about when Kemp's ridley turtles nest?",
+    "choices": [
+      "They nest only in midwinter",
+      "They routinely nest during the day",
+      "They nest only on moonless nights"
+    ],
+    "answer": 1,
+    "explain": "Kemp's ridleys are the only sea turtles that routinely nest in daylight, though some do nest at night.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pais/learn/nature/nesters.htm",
+      "publisher": "National Park Service",
+      "title": "Habits of Nesting Kemp's ridley turtles - Padre Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Padre Island says Kemp's ridleys are the only sea turtles that routinely nest during the day, though some nest at night.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.kemps-ridley.tamaulipas",
+    "q": "Where does most of the world's Kemp's ridley nesting take place?",
+    "choices": [
+      "Florida's Atlantic coast",
+      "Costa Rica's Pacific coast",
+      "Tamaulipas, Mexico"
+    ],
+    "answer": 2,
+    "explain": "About 95 percent of Kemp's ridley nesting happens in the Mexican state of Tamaulipas, at Gulf of Mexico beaches such as Rancho Nuevo.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pais/learn/nature/kridley.htm",
+      "publisher": "National Park Service",
+      "title": "Kemp's ridley sea turtles - Padre Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/kemps-ridley-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Kemp's Ridley Turtle"
+    },
+    "searchNote": "NPS says 95 percent of worldwide Kemp's ridley nesting occurs in Tamaulipas, Mexico; main beaches Rancho Nuevo, Tepehuajes and Barra del Tordo.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.kemps-ridley.padre-island",
+    "q": "Which U.S. park unit has worked to re-establish a nesting colony of Kemp's ridley turtles?",
+    "choices": [
+      "Padre Island National Seashore",
+      "Cape Hatteras National Seashore",
+      "Everglades National Park"
+    ],
+    "answer": 0,
+    "explain": "Padre Island National Seashore in Texas has worked to build a secondary Kemp's ridley colony, and more of the species' nests are found there than anywhere else in the U.S.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pais/learn/nature/kridley.htm",
+      "publisher": "National Park Service",
+      "title": "Kemp's ridley sea turtles - Padre Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Padre Island says it has worked to re-establish a secondary Kemp's ridley colony there, where more nests are found than anywhere else in the U.S.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.olive-ridley.name",
+    "q": "Where does the olive ridley sea turtle get its name?",
+    "choices": [
+      "The greenish color of its body fat",
+      "The olive-green color of its shell",
+      "Algae that grow on its back"
+    ],
+    "answer": 1,
+    "explain": "The olive ridley is named for the olive-green color of its heart-shaped shell. It is one of the smallest sea turtles.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/olive-ridley-turtle",
+      "publisher": "NOAA Fisheries",
+      "title": "Olive Ridley Turtle"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the olive ridley's common name comes from the olive-green color of its heart-shaped shell, and it is one of the smallest sea turtles.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.flatback.australia-only",
+    "q": "Where does the flatback sea turtle nest?",
+    "choices": [
+      "Across the Caribbean",
+      "Around the Mediterranean",
+      "Only in Australia"
+    ],
+    "answer": 2,
+    "explain": "Flatbacks nest only in Australia, on inshore islands and mainland beaches from southern Queensland to northern Western Australia.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.dcceew.gov.au/environment/marine/marine-species/marine-turtles/flatback",
+      "publisher": "Australian Government DCCEEW",
+      "title": "Flatback turtle (Natator depressus) - DCCEEW"
+    },
+    "source2": null,
+    "searchNote": "DCCEEW says flatbacks nest on inshore islands and the mainland from Mon Repos in southern Queensland to Exmouth in northern Western Australia; summary states they nest only in Australia.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.flatback.clutch-size",
+    "q": "Flatback turtles lay unusually few eggs. About how many are in a typical nest?",
+    "choices": [
+      "About 50",
+      "About 150",
+      "About 500"
+    ],
+    "answer": 0,
+    "explain": "Female flatbacks lay about 50 eggs per nest, the fewest of any sea turtle, but the eggs are large for the species' body size.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.dcceew.gov.au/environment/marine/marine-species/marine-turtles/flatback",
+      "publisher": "Australian Government DCCEEW",
+      "title": "Flatback turtle (Natator depressus) - DCCEEW"
+    },
+    "source2": {
+      "url": "https://www.awe.gov.au/environment/biodiversity/threatened/publications/flatback-turtle-natator-depressus-2008",
+      "publisher": "Australian Government DAWE",
+      "title": "Flatback turtle - Natator depressus - DAWE"
+    },
+    "searchNote": "Australian government material says female flatbacks lay approximately 50 eggs per nest, the fewest of any marine turtle, with eggs large relative to body size. Verifier: confirm which page carries this.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.flatback.feral-pigs",
+    "q": "On some Cape York beaches in Australia, which introduced animal eats up to 90 percent of flatback turtle eggs?",
+    "choices": [
+      "Feral pigs",
+      "Cane toads",
+      "European rabbits"
+    ],
+    "answer": 0,
+    "explain": "Feral pigs dig up turtle nests on Cape York, and on some beaches they have been reported to eat up to 90 percent of the eggs.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.dcceew.gov.au/environment/marine/marine-species/marine-turtles/flatback",
+      "publisher": "Australian Government DCCEEW",
+      "title": "Flatback turtle (Natator depressus) - DCCEEW"
+    },
+    "source2": null,
+    "searchNote": "Search summary of Australian flatback pages: feral pigs are a major problem on Cape York, reportedly eating up to 90 per cent of eggs on some beaches.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.turtles.cannot-retract",
+    "q": "Can a sea turtle pull its head and flippers into its shell?",
+    "choices": [
+      "Yes, just like a tortoise",
+      "No, they stay outside the shell",
+      "Only its head, not its flippers"
+    ],
+    "answer": 1,
+    "explain": "Unlike freshwater turtles and tortoises, sea turtles cannot withdraw their head or flippers. Instead they have streamlined shells and paddle-like flippers for swimming.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/10-tremendous-turtle-facts",
+      "publisher": "NOAA Fisheries",
+      "title": "10 Tremendous Turtle Facts"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/reptiles/sea-turtles",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sea Turtles"
+    },
+    "searchNote": "NOAA says unlike other turtles, sea turtles cannot retract their flippers and head into their shells; Smithsonian says head and limbs are fixed outside the shell.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.turtles.tsd-warm-female",
+    "q": "In sea turtle nests, what do warmer incubation temperatures tend to produce?",
+    "choices": [
+      "More male hatchlings",
+      "Faster hatching, equal sexes",
+      "More female hatchlings"
+    ],
+    "answer": 2,
+    "explain": "A sea turtle's sex is set by nest temperature. Warmer sand yields mostly females and cooler sand mostly males, so climate warming is a concern.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7288305/",
+      "publisher": "PMC (NCBI)",
+      "title": "Climate Change and Green Sea Turtle Sex Ratio—Preventing Possible Extinction"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7060753/",
+      "publisher": "PMC (NCBI)",
+      "title": "Recent advances on the estimation of the thermal reaction norm for sex ratios"
+    },
+    "searchNote": "Peer-reviewed sources describe temperature-dependent sex determination in sea turtles, with warmer incubation producing more females.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.turtles.tsd-middle-third",
+    "q": "During which part of incubation does temperature decide a sea turtle embryo's sex?",
+    "choices": [
+      "The middle third of incubation",
+      "The first day after laying",
+      "The last hours before hatching"
+    ],
+    "answer": 0,
+    "explain": "Temperatures in the middle third of incubation set the sex. In loggerheads, nests warmer than about 29°C then produce mainly females.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/50641/noaa_50641_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "Colonization of new nesting areas could provide climate ..."
+    },
+    "source2": null,
+    "searchNote": "A NOAA-hosted loggerhead paper says temperatures below a pivotal ~29 °C in the middle third of incubation produce mainly males, above it mainly females.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.turtles.pivotal-temperature",
+    "q": "What is the 'pivotal temperature' of a sea turtle nest?",
+    "choices": [
+      "The temperature at which eggs stop developing",
+      "The temperature giving equal males and females",
+      "The temperature that makes hatchlings emerge"
+    ],
+    "answer": 1,
+    "explain": "At the pivotal temperature about half the hatchlings are female. It differs between species and even between populations of the same species.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7060753/",
+      "publisher": "PMC (NCBI)",
+      "title": "Recent advances on the estimation of the thermal reaction norm for sex ratios"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7288305/",
+      "publisher": "PMC (NCBI)",
+      "title": "Climate Change and Green Sea Turtle Sex Ratio—Preventing Possible Extinction"
+    },
+    "searchNote": "Peer-reviewed sources define the pivotal temperature as the temperature at which 50% of hatchlings are female, and note it varies between populations.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.turtles.magnetic-imprinting",
+    "q": "What does research suggest loggerheads imprint on as hatchlings to find their home beach years later?",
+    "choices": [
+      "The sound of waves on that beach",
+      "The pattern of stars above it",
+      "The beach's magnetic signature"
+    ],
+    "answer": 2,
+    "explain": "Evidence suggests loggerheads imprint on the unique magnetic field of their natal beach and use it to return as adults to nest.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": "turtle-home",
+    "source": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25601546/",
+      "publisher": "PubMed (NCBI)",
+      "title": "Evidence for geomagnetic imprinting and magnetic navigation in the natal homing of sea turtles - PubMed"
+    },
+    "source2": {
+      "url": "https://magazine.college.unc.edu/college-news-notes/turtles/",
+      "publisher": "UNC-Chapel Hill College of Arts & Sciences",
+      "title": "For sea turtles, there’s no place like magnetic home - Carolina Arts & Sciences Magazine"
+    },
+    "searchNote": "Lohmann and colleagues propose loggerheads imprint on the geomagnetic signature of their natal area and use it to return; the evidence is correlational.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "sea-turtles.turtles.nesting-follows-field-drift",
+    "q": "A 19-year study of Florida loggerheads found nesting shifted along the coast in step with what?",
+    "choices": [
+      "Slow drift in Earth's magnetic field",
+      "Changes in the color of the sand",
+      "Rising numbers of beach visitors"
+    ],
+    "answer": 0,
+    "explain": "As Earth's magnetic field slowly drifted, loggerhead nesting shifted to match, as expected if turtles imprint on the magnetic signature of their home beach.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": "turtle-home",
+    "source": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25601546/",
+      "publisher": "PubMed (NCBI)",
+      "title": "Evidence for geomagnetic imprinting and magnetic navigation in the natal homing of sea turtles - PubMed"
+    },
+    "source2": {
+      "url": "https://lohmannlab.web.unc.edu/wp-content/uploads/sites/8154/2026/08/Evidence-for-geomagnetic-imprinting-and-magnetic-navigation-in-the-natal-homing-of-sea-turtles.pdf",
+      "publisher": "UNC-Chapel Hill (Lohmann Lab)",
+      "title": "Report Evidence for Geomagnetic Imprinting and Magnetic"
+    },
+    "searchNote": "A 19-year analysis of Florida loggerhead nesting found nest distribution tracked small shifts in Earth's magnetic field, as geomagnetic imprinting predicts.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.turtles.magnetic-cues",
+    "q": "Sea turtles appear to tell coastal locations apart using which pair of cues?",
+    "choices": [
+      "Water saltiness and depth",
+      "Magnetic field strength and inclination angle",
+      "Air temperature and humidity"
+    ],
+    "answer": 1,
+    "explain": "Each stretch of coast has its own mix of magnetic field strength and inclination, the angle at which field lines meet Earth's surface. Turtles seem to read both.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": "turtle-home",
+    "source": {
+      "url": "https://endeavors.unc.edu/sea-turtle-secrets/",
+      "publisher": "UNC-Chapel Hill",
+      "title": "Sea Turtle Secrets - UNC Research Stories"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8918461/",
+      "publisher": "PMC (NCBI)",
+      "title": "Magnetic maps in animal navigation - PMC - NIH"
+    },
+    "searchNote": "UNC research describes turtles reading magnetic intensity and inclination angle (angle at which field lines intersect Earth's surface), with each coastline having a distinct combination.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.turtles.magnetic-genetics",
+    "q": "A 2018 study compared loggerhead nesting beaches. What did similar magnetic fields between beaches predict?",
+    "choices": [
+      "Similar sand temperatures",
+      "The same nesting month",
+      "Genetically similar turtles"
+    ],
+    "answer": 2,
+    "explain": "Magnetic differences between loggerhead nesting beaches predicted genetic differences better than distance or environment did, supporting magnetic homing.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": "turtle-home",
+    "source": {
+      "url": "https://lohmannlab.web.unc.edu/wp-content/uploads/sites/8154/2019/03/2018_MagneticGenetics_BrothersLohmann_CB.pdf",
+      "publisher": "UNC-Chapel Hill (Lohmann Lab)",
+      "title": "Evidence that Magnetic Navigation and Geomagnetic ..."
+    },
+    "source2": null,
+    "searchNote": "Brothers and Lohmann 2018 report that spatial variation in Earth's magnetic field strongly predicts genetic differentiation between nesting beaches, even after accounting for distance and environment.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.hatchlings.night-emergence-cue",
+    "q": "What mainly prompts sea turtle hatchlings to leave the nest at night?",
+    "choices": [
+      "A drop in sand temperature",
+      "The rising tide",
+      "Moonlight on the sand"
+    ],
+    "answer": 0,
+    "explain": "Hatchlings respond to sand temperature, which leads them to emerge mostly at night. It is a myth that they come out only around the full moon.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://myfwc.com/research/wildlife/sea-turtles/florida/faq/",
+      "publisher": "Florida Fish and Wildlife Conservation Commission",
+      "title": "Sea Turtle FAQ"
+    },
+    "source2": {
+      "url": "https://home.nps.gov/caha/learn/nature/seaturtles.htm",
+      "publisher": "National Park Service",
+      "title": "Sea Turtles - Cape Hatteras National Seashore (U.S. National Park Service)"
+    },
+    "searchNote": "Search summary: a temperature cue prompts hatchlings to emerge primarily at night, with some late-afternoon and early-morning emergences; emerging only at full moon is a myth. Verifier: confirm the cue is described as cooling sand.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.hatchlings.brightest-direction",
+    "q": "On a natural beach, how do newly emerged sea turtle hatchlings find the ocean?",
+    "choices": [
+      "They follow the sound of the waves",
+      "They head toward the brightest direction",
+      "They follow their mother's tracks"
+    ],
+    "answer": 1,
+    "explain": "Hatchlings instinctively crawl toward the brightest direction, normally the open night sky over the sea, which is why artificial lights can lure them inland.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://myfwc.com/research/wildlife/sea-turtles/threats/artificial-lighting/",
+      "publisher": "Florida Fish and Wildlife Conservation Commission",
+      "title": "Artificial Lighting and Sea Turtle Hatchling Behavior"
+    },
+    "source2": null,
+    "searchNote": "FWC says hatchlings have an inborn tendency to move in the brightest direction, usually the night sky over the ocean, and to move away from dark dune silhouettes.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.lost-years.sargassum",
+    "q": "During their early 'lost years' at sea, young loggerheads are often found among what?",
+    "choices": [
+      "Deep-sea coral reefs",
+      "Tangled mangrove roots",
+      "Floating mats of sargassum seaweed"
+    ],
+    "answer": 2,
+    "explain": "Hatchling loggerheads seem to seek out ocean fronts where floating sargassum seaweed collects, which may give them food and shelter.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/9151/noaa_9151_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "NOAA Technical Memorandum NMFS-SEFSC-296 UTILIZATION OF TIlE SARGASSUM HABITAT"
+    },
+    "source2": null,
+    "searchNote": "A NOAA technical memo says hatchling turtles are thought to actively seek out frontal zones and sargassum rafts, used for forage and protection during the 'lost year'.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.lost-years.sargasso-sea",
+    "q": "Young green turtles tagged and released off Florida's Atlantic coast were tracked to which region?",
+    "choices": [
+      "The Sargasso Sea",
+      "The Mediterranean Sea",
+      "The Red Sea"
+    ],
+    "answer": 0,
+    "explain": "University of Central Florida researchers tracked young green turtles from Florida into the Sargasso Sea, a seaweed-rich part of the North Atlantic, during their 'lost years'.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": "turtle-home",
+    "source": {
+      "url": "https://www.ucf.edu/news/legendary-sargasso-sea-may-be-sea-turtles-destination-during-mysterious-lost-years/",
+      "publisher": "University of Central Florida",
+      "title": "Legendary Sargasso Sea May be Sea Turtles’ Destination During Mysterious ‘Lost Years’"
+    },
+    "source2": null,
+    "searchNote": "UCF reported evidence of baby green sea turtles arriving at the Sargasso Sea after entering the ocean off Florida's east coast; earlier work tracked loggerheads there too.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.lost-years.active-swimmers",
+    "q": "Tracking of young 'toddler' sea turtles challenged which long-held assumption?",
+    "choices": [
+      "That they stay near their nesting beach",
+      "That they simply drift with currents",
+      "That they feed only at night"
+    ],
+    "answer": 1,
+    "explain": "It was widely assumed young sea turtles just drift wherever currents take them. Tracking showed yearlings are active swimmers instead.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/media-release/ocean-myth-busted-toddler-sea-turtles-are-very-active-swimmers",
+      "publisher": "NOAA Fisheries",
+      "title": "Ocean Myth Busted: ‘Toddler’ Sea Turtles Are Very Active Swimmers"
+    },
+    "source2": null,
+    "searchNote": "NOAA media release: it had been widely assumed turtles simply drift with ocean currents, but toddler sea turtles proved to be very active swimmers.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "sea-turtles.clean.hawaii-green-turtle",
+    "q": "Which sea turtle is well known for visiting reef 'cleaning stations' in Hawaii?",
+    "choices": [
+      "Leatherback",
+      "Kemp's ridley",
+      "Green turtle"
+    ],
+    "answer": 2,
+    "explain": "Green turtles in Hawaiian waters visit reef spots where fish pick algae and parasites off their shells, a stop NOAA has called the turtle spa.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": "clean",
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/magazine/5/day-at-the-turtle-spa/",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Day at the Turtle Spa"
+    },
+    "source2": {
+      "url": "https://sanctuaries.noaa.gov/news/2025/sanctuary-symbioses.html",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Match Made in the Ocean: Sanctuary Symbioses"
+    },
+    "searchNote": "NOAA sanctuary pages describe green sea turtles in Hawaiian waters visiting 'turtle cleaning stations' where reef fish clean their shells.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.clean.convict-tang",
+    "q": "Which fish is often seen picking at green turtles at Hawaiian cleaning stations?",
+    "choices": [
+      "Convict tang",
+      "Moray eel",
+      "Great barracuda"
+    ],
+    "answer": 0,
+    "explain": "Convict tangs and other reef fish nibble algae and parasites off resting green turtles, getting a meal while the turtle gets cleaned.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": "clean",
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/news/2025/sanctuary-symbioses.html",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Match Made in the Ocean: Sanctuary Symbioses"
+    },
+    "source2": {
+      "url": "https://sanctuaries.noaa.gov/magazine/5/day-at-the-turtle-spa/",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Day at the Turtle Spa"
+    },
+    "searchNote": "NOAA sanctuary symbioses page: convict tangs and other fish eat the parasites while the turtle rests.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.clean.what-is-removed",
+    "q": "At turtle cleaning stations, what do reef fish remove from sea turtles?",
+    "choices": [
+      "Sand and grit",
+      "Algae and parasites",
+      "Shed skin from the eyes"
+    ],
+    "answer": 1,
+    "explain": "Grazing reef fish keep turtles free of algae and parasites and get a meal in return. The stations also help lower parasite loads on the reef.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": "clean",
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/magazine/5/day-at-the-turtle-spa/",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Day at the Turtle Spa"
+    },
+    "source2": {
+      "url": "https://sanctuaries.noaa.gov/news/2025/sanctuary-symbioses.html",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "A Match Made in the Ocean: Sanctuary Symbioses"
+    },
+    "searchNote": "NOAA says reef fish at cleaning stations keep turtles free of algae and other organisms while the fish get a meal, and the stations lower parasite loads.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.marine-iguana.only-marine-lizard",
+    "q": "What makes the Galápagos marine iguana unusual among lizards?",
+    "choices": [
+      "It glides between trees",
+      "It eats only insects",
+      "It feeds in the sea"
+    ],
+    "answer": 2,
+    "explain": "The marine iguana is the only lizard known to forage in the sea. It lives on rocky Galápagos shores and grazes algae underwater.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.galapagos.org/newsroom/surprising-facts-galapagos-species/",
+      "publisher": "Galápagos Conservancy",
+      "title": "Surprising Facts About 10 Galápagos Species"
+    },
+    "source2": {
+      "url": "https://www.biorxiv.org/content/10.1101/2020.05.16.099184.full.pdf",
+      "publisher": "bioRxiv (preprint)",
+      "title": "The Mystery of a Marine Monster: Morphological and Performance Modifications in the World’s only Marine Lizard, the Galápagos Marine Iguana"
+    },
+    "searchNote": "Galápagos Conservancy says it is the only lizard known to forage underwater; a 2020 paper calls it the world's only marine lizard.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.marine-iguana.salt-sneeze",
+    "q": "How does the marine iguana get rid of the extra salt it swallows while feeding?",
+    "choices": [
+      "It sneezes it out of its nostrils",
+      "It sweats it out through its skin",
+      "It passes it in its urine"
+    ],
+    "answer": 0,
+    "explain": "Eating seaweed brings in a lot of salt. A special gland clears it from the blood, and the iguana expels it through its nostrils in a sneeze-like burst.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/shrinking-galapagos-marine-iguanas.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Marine iguanas: the incredible shrinking lizards of the Galápagos"
+    },
+    "source2": {
+      "url": "https://www.galapagos.org/newsroom/surprising-facts-galapagos-species/",
+      "publisher": "Galápagos Conservancy",
+      "title": "Surprising Facts About 10 Galápagos Species"
+    },
+    "searchNote": "NHM says a special gland removes excess salt, which the iguana pushes out through its nostrils in a sneeze.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.marine-iguana.shrinking",
+    "q": "What can adult marine iguanas do when El Niño cuts their food supply?",
+    "choices": [
+      "Switch to eating fish",
+      "Shrink in body size",
+      "Hibernate in burrows"
+    ],
+    "answer": 1,
+    "explain": "When El Niño warming reduces algae, adult marine iguanas can shrink, which may cut their energy needs. Smaller iguanas tend to survive these shortages better.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/shrinking-galapagos-marine-iguanas.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Marine iguanas: the incredible shrinking lizards of the Galápagos"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12450463/",
+      "publisher": "PMC (NCBI)",
+      "title": "Marine iguanas have lower metabolic rates during El Niño"
+    },
+    "searchNote": "NHM describes marine iguanas as 'incredible shrinking lizards'; a 2025 study notes adults may shrink during El Niño food shortages, possibly to reduce energy needs.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.marine-iguana.basking",
+    "q": "Why do marine iguanas bask on rocks after diving to feed?",
+    "choices": [
+      "To dry out their salt glands",
+      "To attract birds that clean them",
+      "To warm up after the cold water"
+    ],
+    "answer": 2,
+    "explain": "Marine iguanas dive into cool water to graze on algae, then return to land to warm their bodies in the sun before feeding again.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.galapagos.org/about_galapagos/about-galapagos/biodiversity/reptiles/",
+      "publisher": "Galápagos Conservancy",
+      "title": "Biodiversity"
+    },
+    "source2": null,
+    "searchNote": "Galápagos Conservancy says marine iguanas dive to graze seaweed and return to land to warm up.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.saltwater-crocodile.largest-reptile",
+    "q": "What is the largest living reptile?",
+    "choices": [
+      "Saltwater crocodile",
+      "Leatherback sea turtle",
+      "Komodo dragon"
+    ],
+    "answer": 0,
+    "explain": "The saltwater, or estuarine, crocodile is the largest living reptile. It lives in coastal rivers, estuaries and seas, including across northern Australia.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/reptiles/estuarine-crocodile/",
+      "publisher": "Australian Museum",
+      "title": "Estuarine Crocodile - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/reptiles/",
+      "publisher": "Australian Museum",
+      "title": "Reptiles - The Australian Museum"
+    },
+    "searchNote": "Australian Museum describes the saltwater (estuarine) crocodile as the largest living reptile, with adults typically 3 to 5 metres.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.saltwater-crocodile.ride-currents",
+    "q": "How do saltwater crocodiles appear to make long journeys at sea?",
+    "choices": [
+      "By swimming fast against the current",
+      "By riding surface ocean currents",
+      "By drifting on floating logs"
+    ],
+    "answer": 1,
+    "explain": "Tracking studies suggest saltwater crocodiles ride surface currents on long trips, which could explain how they reach distant islands.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://news.uq.edu.au/2010-06-04-crocodiles-ride-ocean-currents-travel-high-seas",
+      "publisher": "The University of Queensland",
+      "title": "Crocodiles ride ocean currents to travel the high seas - News - The University of Queensland"
+    },
+    "source2": null,
+    "searchNote": "UQ reports tracked estuarine crocodiles appear to ride surface currents over long distances, potentially allowing movement between oceanic islands.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "sea-turtles.saltwater-crocodile.homing",
+    "q": "When scientists moved tagged saltwater crocodiles far from where they were caught, what did the crocodiles do?",
+    "choices": [
+      "Settled in their new location",
+      "Moved upriver into fresh water",
+      "Swam back to where they were caught"
+    ],
+    "answer": 2,
+    "explain": "In the first satellite-tracking study of a crocodilian, all three relocated male crocodiles eventually returned to their capture sites; one swam over 400 km in 20 days.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0000949",
+      "publisher": "PLOS ONE",
+      "title": "Satellite Tracking Reveals Long Distance Coastal Travel and Homing by Translocated Estuarine Crocodiles, Crocodylus porosus"
+    },
+    "source2": {
+      "url": "https://news.uq.edu.au/2007-09-26-marathon-swimming-crocs-find-their-way-home",
+      "publisher": "The University of Queensland",
+      "title": "Marathon swimming crocs find their way home - News - The University of Queensland"
+    },
+    "searchNote": "PLoS ONE 2007: three translocated adult males all eventually returned to their capture sites; UQ news says one covered more than 400 km in 20 days.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sea-turtles.saltwater-crocodile.range",
+    "q": "Which crocodilian is the most widely distributed, ranging from Sri Lanka through Southeast Asia to northern Australia?",
+    "choices": [
+      "Saltwater crocodile",
+      "Nile crocodile",
+      "American alligator"
+    ],
+    "answer": 0,
+    "explain": "Saltwater crocodiles range from Sri Lanka through Southeast Asia to northern Australia, the widest distribution of any living crocodilian.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6946029/",
+      "publisher": "PMC (NCBI)",
+      "title": "A High-Quality Reference Genome Assembly of the Saltwater Crocodile, Crocodylus porosus, Reveals Patterns of Selection in Crocodylidae"
+    },
+    "source2": null,
+    "searchNote": "Genome paper describes C. porosus as the largest and most widely distributed living crocodilian, from Sri Lanka through Southeast Asia to northern Australia.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.sea-snakes.breathe-air",
+    "q": "How do true sea snakes get most of the oxygen they need?",
+    "choices": [
+      "Through gills behind the head",
+      "By surfacing to breathe air",
+      "By filtering it from their food"
+    ],
+    "answer": 1,
+    "explain": "Sea snakes have no gills. They come to the surface to fill their lungs, then dive again.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/sea-snakes-sea-kraits-and-their-aquatic-adaptations.html",
+      "publisher": "Natural History Museum, London",
+      "title": "A deep dive into sea snakes, sea kraits and their aquatic adaptations"
+    },
+    "source2": null,
+    "searchNote": "NHM says sea snakes lack gills and surface periodically to fill their lungs before diving again.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.sea-snakes.paddle-tail",
+    "q": "What body feature helps true sea snakes swim efficiently?",
+    "choices": [
+      "Small fins along the sides",
+      "Webbed skin between the ribs",
+      "A flattened, paddle-like tail"
+    ],
+    "answer": 2,
+    "explain": "True sea snakes have tails flattened like paddles, and their bodies are squeezed flat from side to side, helping them move through water.",
+    "category": "sea-turtles",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/sea-snakes-sea-kraits-and-their-aquatic-adaptations.html",
+      "publisher": "Natural History Museum, London",
+      "title": "A deep dive into sea snakes, sea kraits and their aquatic adaptations"
+    },
+    "source2": null,
+    "searchNote": "NHM says sea snake tails are flattened like paddles to help them move efficiently, and belly scales maintain a laterally compressed shape.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.sea-snakes.skin-oxygen",
+    "q": "Besides using their lungs, some sea snakes take in oxygen in what other way?",
+    "choices": [
+      "Through their skin",
+      "Through their tongue",
+      "Through their eyes"
+    ],
+    "answer": 0,
+    "explain": "Highly vascular skin lets some sea snakes absorb part of their oxygen directly from seawater, though they still need to surface to breathe.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6774945/",
+      "publisher": "PMC (NCBI)",
+      "title": "Novel vascular plexus in the head of a sea snake (Elapidae, Hydrophiinae) revealed by high-resolution computed tomography and histology"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12395837/",
+      "publisher": "PMC (NCBI)",
+      "title": "Wiggle and glide: fine-scale telemetry reveals unique diving strategies in benthic-foraging sea snakes - PMC"
+    },
+    "searchNote": "Sources say sea snakes can take up oxygen from seawater through their skin, aided by highly vascularised skin; lungs still do most of the work.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sea-turtles.sea-snakes.live-birth",
+    "q": "How does a true sea snake, such as the dusky sea snake, have its young?",
+    "choices": [
+      "It lays eggs on sandy beaches",
+      "It gives birth to live young underwater",
+      "It lays eggs in floating seaweed"
+    ],
+    "answer": 1,
+    "explain": "True sea snakes like the dusky sea snake develop their young inside the body and give birth underwater, so they can breed without coming ashore.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/dusky-sea-snake",
+      "publisher": "NOAA Fisheries",
+      "title": "Dusky Sea Snake"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/sea-snakes-sea-kraits-and-their-aquatic-adaptations.html",
+      "publisher": "Natural History Museum, London",
+      "title": "A deep dive into sea snakes, sea kraits and their aquatic adaptations"
+    },
+    "searchNote": "NOAA's dusky sea snake review says it is viviparous, conceiving and bearing young fully underwater; NHM says true sea snakes give birth in water.",
+    "risk": "none"
+  },
+  {
+    "fact": "sea-turtles.sea-kraits.eggs-on-land",
+    "q": "Where does the banded sea krait lay its eggs?",
+    "choices": [
+      "In floating rafts of seaweed",
+      "In crevices on the reef underwater",
+      "On land, on or just under the sand"
+    ],
+    "answer": 2,
+    "explain": "Unlike true sea snakes, banded sea kraits come ashore to lay their eggs, placing them on the sand or just beneath it.",
+    "category": "sea-turtles",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/banded_sea_krait",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Banded Sea Krait"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/sea-snakes-sea-kraits-and-their-aquatic-adaptations.html",
+      "publisher": "Natural History Museum, London",
+      "title": "A deep dive into sea snakes, sea kraits and their aquatic adaptations"
+    },
+    "searchNote": "Aquarium of the Pacific says the banded sea krait lays eggs on land, on the sand or just under it; NHM says sea kraits come onto land to lay eggs.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sea-turtles.yellow-bellied-sea-snake.drinks-rain",
+    "q": "How does the yellow-bellied sea snake get drinking water?",
+    "choices": [
+      "It drinks rainwater floating on the sea",
+      "It drinks seawater and removes the salt",
+      "It gets all its water from its prey"
+    ],
+    "answer": 0,
+    "explain": "These snakes dehydrate in seawater. Rain is less dense than seawater, so it can float as a fresh layer, and the snakes surface to drink it during or after storms.",
+    "category": "sea-turtles",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6366689/",
+      "publisher": "PMC (NCBI)",
+      "title": "Drinking by sea snakes from oceanic freshwater lenses at first rainfall ending seasonal drought"
+    },
+    "source2": {
+      "url": "https://archive.news.ufl.edu/articles/2014/03/sea-snakes-need-fresh-water-for-drinking-uf-researcher-finds.html",
+      "publisher": "University of Florida",
+      "title": "Sea snakes need fresh water for drinking, UF researcher finds - News - University of Florida"
+    },
+    "searchNote": "A 2019 study and UF research found yellow-bellied sea snakes drink only fresh or highly diluted water, from freshwater lenses that float on the sea surface after rain.",
+    "risk": "species-specific"
+  }
+]

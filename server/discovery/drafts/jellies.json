@@ -1,0 +1,1316 @@
+[
+  {
+    "fact": "jellies.jellyfish.water-content",
+    "q": "Roughly how much of a jellyfish's body is water?",
+    "choices": [
+      "About 50 percent",
+      "About 75 percent",
+      "About 95 percent"
+    ],
+    "answer": 2,
+    "explain": "A jellyfish's body is about 95 percent water. NOAA describes jellyfish as pretty simple critters.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/jellyfish.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What are jellyfish made of?"
+    },
+    "source2": null,
+    "searchNote": "NOAA's 'What are jellyfish made of?' page says jellyfish bodies are about 95 percent water and calls them simple animals.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.jellyfish.nerve-net",
+    "q": "Jellyfish have no brain. What do they have instead?",
+    "choices": [
+      "A network of nerves spread through the body",
+      "A small brain at the top of the bell",
+      "A separate brain inside each tentacle"
+    ],
+    "answer": 0,
+    "explain": "Instead of a brain, jellyfish have a net of nerves with no central nervous system, yet they can still sense and respond to their surroundings.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.noaa.gov/stories/fact-vs-fiction-3-things-you-thought-you-knew-about-jellyfish",
+      "publisher": "NOAA",
+      "title": "Fact vs. fiction: 3 things you thought you knew about jellyfish"
+    },
+    "source2": null,
+    "searchNote": "NOAA's fact-vs-fiction story says jellyfish lack a brain and instead have a network of nerves, with no central nervous system.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.jellyfish.not-a-fish",
+    "q": "Despite the name, what kind of animal is a jellyfish?",
+    "choices": [
+      "An invertebrate, not a fish",
+      "A fish that has lost its bones",
+      "A sea snail without a shell"
+    ],
+    "answer": 0,
+    "explain": "Jellyfish are invertebrates, animals without a backbone, and they have no bones at all, so the 'fish' in their name is misleading.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.noaa.gov/stories/fact-vs-fiction-3-things-you-thought-you-knew-about-jellyfish",
+      "publisher": "NOAA",
+      "title": "Fact vs. fiction: 3 things you thought you knew about jellyfish"
+    },
+    "source2": null,
+    "searchNote": "NOAA's fact-vs-fiction story addresses the myth that jellyfish are fish: they are invertebrates and lack bones.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.jellyfish.world-jellyfish-day",
+    "q": "On which date is World Jellyfish Day, which NOAA Ocean Exploration marks each year?",
+    "choices": [
+      "June 8",
+      "April 22",
+      "November 3"
+    ],
+    "answer": 2,
+    "explain": "World Jellyfish Day falls on November 3. NOAA Ocean Exploration uses the day to share facts about these brainless, mostly-water drifters.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://archive.oceanexplorer.noaa.gov/facts/worldjellyfishday.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "November 3: World Jellyfish Day : Ocean Exploration Facts: NOAA Office of Ocean Exploration and Research"
+    },
+    "source2": {
+      "url": "https://oceanexplorer.noaa.gov/expedition-feature/okeanos-ex1907-logs-nov3/",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Happy World Jellyfish Day - NOAA Ocean Exploration"
+    },
+    "searchNote": "NOAA Ocean Exploration fact page is titled 'November 3: World Jellyfish Day', and a separate Okeanos expedition log for Nov 3 is titled 'Happy World Jellyfish Day'.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.jellyfish.rhopalia",
+    "q": "What are the rhopalia of a jellyfish?",
+    "choices": [
+      "Sense organs that detect light and movement",
+      "Stinging cells on its tentacles",
+      "Reproductive organs inside its bell"
+    ],
+    "answer": 0,
+    "explain": "Rhopalia are sensory structures that can detect light, chemicals and movement, helping a brainless jellyfish respond to its world.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://archive.oceanexplorer.noaa.gov/facts/worldjellyfishday.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "November 3: World Jellyfish Day : Ocean Exploration Facts: NOAA Office of Ocean Exploration and Research"
+    },
+    "source2": null,
+    "searchNote": "NOAA's World Jellyfish Day page describes rhopalia as sensory structures that detect light, chemicals and movement.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.box-jelly.tripedalia-eye-count",
+    "q": "How many eyes does the box jellyfish Tripedalia cystophora have?",
+    "choices": [
+      "Two",
+      "Eight",
+      "Twenty-four"
+    ],
+    "answer": 2,
+    "explain": "Its 24 eyes come in four types and sit in four sensory clusters of six. Only some of them have lenses; the rest are simpler light-sensing pits and slits.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2825319/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Temporal properties of the lens eyes of the box jellyfish Tripedalia cystophora - PMC"
+    },
+    "source2": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/20147327/",
+      "publisher": "PubMed (NCBI)",
+      "title": "Visual pigment in the lens eyes of the box jellyfish Chiropsella bronzie - PubMed"
+    },
+    "searchNote": "The Tripedalia paper describes its 24 eyes as four morphological types, two being lens eyes; the Chiropsella bronzie paper notes six eyes on each of four rhopalia.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.box-jelly.lens-eyes",
+    "q": "Some box jellyfish have complex eyes. Which structures found in human eyes do they have?",
+    "choices": [
+      "A lens and a retina",
+      "Eyelids",
+      "Tear glands"
+    ],
+    "answer": 0,
+    "explain": "Some box jellyfish have eyes with lenses, corneas and retinas, though scientists still don't know how these brainless animals interpret what they see.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://archive.oceanexplorer.noaa.gov/facts/worldjellyfishday.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "November 3: World Jellyfish Day : Ocean Exploration Facts: NOAA Office of Ocean Exploration and Research"
+    },
+    "source2": null,
+    "searchNote": "NOAA's World Jellyfish Day page says some cubozoan (box) jellyfish have complex eyes with lenses, corneas and retinas, and that how they interpret images is unknown.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.box-jelly.tripedalia-obstacle-avoidance",
+    "q": "Experiments on the box jellyfish Tripedalia cystophora show it uses its eyes for what?",
+    "choices": [
+      "Sensing the body heat of prey",
+      "Steering around obstacles",
+      "Judging the water temperature"
+    ],
+    "answer": 1,
+    "explain": "In lab tests, Tripedalia cystophora used vision to avoid obstacles, turning away from objects in its path instead of bumping into them.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/17921163/?amp=&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_RVDocSum&ordinalpos=1",
+      "publisher": "PubMed (NCBI)",
+      "title": "Visually guided obstacle avoidance in the box jellyfish Tripedalia cystophora and Chiropsella bronzie - PubMed"
+    },
+    "source2": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/21832123/",
+      "publisher": "PubMed (NCBI)",
+      "title": "Visual control of steering in the box jellyfish Tripedalia cystophora - PubMed"
+    },
+    "searchNote": "PubMed abstract 'Visually guided obstacle avoidance in the box jellyfish Tripedalia cystophora and Chiropsella bronzie'; a second paper covers visual control of steering in Tripedalia.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.box-jelly.copula-bioluminescent-hunting",
+    "q": "The small box jellyfish Copula sivickisi hunts at night. What light does research suggest it uses to find prey?",
+    "choices": [
+      "Heat given off by its prey",
+      "A glowing lure on its own tentacles",
+      "Light from bioluminescent organisms"
+    ],
+    "answer": 2,
+    "explain": "Researchers found the eyes of Copula sivickisi suit dim light and proposed that it hunts by the glow of bioluminescent organisms at night.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4812875/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Hunting in Bioluminescent Light: Vision in the Nocturnal Box Jellyfish Copula sivickisi - PMC"
+    },
+    "source2": null,
+    "searchNote": "Paper titled 'Hunting in Bioluminescent Light: Vision in the Nocturnal Box Jellyfish Copula sivickisi' links its night hunting to bioluminescent light.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.box-jelly.chironex-range",
+    "q": "Where in Australia does the box jellyfish Chironex fleckeri live?",
+    "choices": [
+      "Cool waters around Tasmania",
+      "Tropical coastal waters of the north",
+      "The deep sea off Sydney"
+    ],
+    "answer": 1,
+    "explain": "Chironex fleckeri lives in tropical Australian coastal waters, from Western Australia through the Northern Territory to Queensland.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/jellyfish/boxjellyfish/",
+      "publisher": "Australian Museum",
+      "title": "Box Jellyfish - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum says the species occupies tropical Australian coastal waters from Western Australia through the Northern Territory to Queensland.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.box-jelly.chironex-vinegar",
+    "q": "Australian first-aid advice for a sting from the box jellyfish Chironex fleckeri is to flood the sting with what?",
+    "choices": [
+      "Fresh water",
+      "Rubbing alcohol",
+      "Vinegar"
+    ],
+    "answer": 2,
+    "explain": "Call emergency services, then flood the sting with vinegar for at least 30 seconds. Vinegar stops stinging cells that haven't fired yet from discharging.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/jellyfish/boxjellyfish/",
+      "publisher": "Australian Museum",
+      "title": "Box Jellyfish - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12448702/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Evidence-Based Management of Box Jellyfish Stings - PMC"
+    },
+    "searchNote": "Australian Museum advises flooding the sting with vinegar for at least 30 seconds and calling emergency services; an evidence review says vinegar prevents further discharge but does not neutralise venom already injected.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.irukandji.carukia-bell-size",
+    "q": "About how wide is the bell of the Irukandji jellyfish Carukia barnesi?",
+    "choices": [
+      "About 2 centimetres",
+      "About 30 centimetres",
+      "About 1 metre"
+    ],
+    "answer": 0,
+    "explain": "Carukia barnesi has a bell only about 2 centimetres across. Its small size and transparency make it almost impossible to spot in the water.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/jellyfish/irukandji-carukia-barnesi/",
+      "publisher": "Australian Museum",
+      "title": "Irukandji, Carukia-barnesi - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9352007/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Environmental drivers of the occurrence and abundance of the Irukandji jellyfish (Carukia barnesi)"
+    },
+    "searchNote": "Search result described Carukia barnesi as having a bell about 2 cm in diameter with 4 tentacles, and as nearly impossible to detect due to small size and transparency.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.irukandji.syndrome-name",
+    "q": "Irukandji syndrome, a severe illness caused by stings from some small box jellyfish, is named after what?",
+    "choices": [
+      "The scientist who first described it",
+      "The Irukandji people of the Cairns region",
+      "A beach in Western Australia"
+    ],
+    "answer": 1,
+    "explain": "Toxicologist Hugo Flecker first documented the syndrome in 1952. It was named after the Irukandji people, who lived near Cairns in Queensland.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/sites/books/NBK562264/",
+      "publisher": "NCBI Bookshelf (StatPearls)",
+      "title": "Irukandji Syndrome - StatPearls - NCBI Bookshelf - NIH"
+    },
+    "source2": null,
+    "searchNote": "StatPearls says the syndrome was first documented by Hugo Flecker in 1952 and named after the Irukandji people near Cairns, Queensland.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.irukandji.bloom-wind-forecast",
+    "q": "A study titled 'Dangerous jellyfish blooms are predictable' linked Irukandji jellyfish arrivals in Queensland mainly to what?",
+    "choices": [
+      "The phase of the moon",
+      "A weakening of the trade winds",
+      "The colour of the seawater"
+    ],
+    "answer": 1,
+    "explain": "Irukandji jellyfish tended to appear when the prevailing trade winds slackened, which suggests risky days for swimmers could be forecast.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4032527/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Dangerous jellyfish blooms are predictable - PMC"
+    },
+    "source2": null,
+    "searchNote": "PMC paper 'Dangerous jellyfish blooms are predictable' (Irukandji, Queensland) appeared in the Irukandji search; my recollection is that it ties occurrences to weakened south-east trade winds. Verifier must confirm.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.turritopsis.reverts-to-polyp",
+    "q": "When injured or starving, what can the so-called 'immortal' jellyfish Turritopsis dohrnii do?",
+    "choices": [
+      "Split into two identical adults",
+      "Hatch new adults straight from eggs",
+      "Revert to its earlier polyp stage"
+    ],
+    "answer": 2,
+    "explain": "Turritopsis dohrnii can turn back into a polyp, which later produces new jellyfish, restarting its life cycle. That is where the 'immortal' nickname comes from.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/immortal-jellyfish-secret-to-cheating-death.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Immortal jellyfish: The secret to cheating death"
+    },
+    "source2": {
+      "url": "https://www.amnh.org/explore/news-blogs/immortal-jellyfish",
+      "publisher": "American Museum of Natural History",
+      "title": "The \"Immortal\" Jellyfish That Resets When Damaged"
+    },
+    "searchNote": "NHM and AMNH pages describe Turritopsis dohrnii reverting from the medusa to the polyp stage when damaged or stressed, resetting its life cycle.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.turritopsis.transdifferentiation",
+    "q": "Turritopsis dohrnii's life-cycle reversal relies on specialised cells changing into other cell types. What is this process called?",
+    "choices": [
+      "Photosynthesis",
+      "Transdifferentiation",
+      "Bioluminescence"
+    ],
+    "answer": 1,
+    "explain": "In transdifferentiation, cells that already have one job become a different cell type. This lets the adult medusa rebuild itself as a polyp.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8480191/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Cellular Reprogramming and Immortality: Expression Profiling Reveals Putative Genes Involved in Turritopsis dohrnii’s Life Cycle Reversal - PMC"
+    },
+    "source2": null,
+    "searchNote": "The Turritopsis gene-expression paper describes the reversal as passing through a cyst stage where cellular transdifferentiation occurs.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.turritopsis.cyst-stage",
+    "q": "On its way back to being a polyp, what does Turritopsis dohrnii briefly become?",
+    "choices": [
+      "A cyst-like mass of cells",
+      "A free-swimming larva",
+      "A hard-shelled egg"
+    ],
+    "answer": 0,
+    "explain": "The medusa settles and shrinks into a cyst-like blob of cells, which starts to show polyp features within about one to three days.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8480191/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Cellular Reprogramming and Immortality: Expression Profiling Reveals Putative Genes Involved in Turritopsis dohrnii’s Life Cycle Reversal - PMC"
+    },
+    "source2": null,
+    "searchNote": "Paper says the medusa settles and becomes a cyst-like mass of cells that shows polyp features within 24 to 72 hours.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.turritopsis.not-invulnerable",
+    "q": "Why is 'immortal' a misleading word for the jellyfish Turritopsis dohrnii?",
+    "choices": [
+      "It lives only a few hours as an adult",
+      "It can still die from predators or disease",
+      "It is really a colony, not one animal"
+    ],
+    "answer": 1,
+    "explain": "Turritopsis dohrnii can reset its life cycle instead of simply ageing and dying, but it can still be eaten or killed by disease.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/immortal-jellyfish-secret-to-cheating-death.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Immortal jellyfish: The secret to cheating death"
+    },
+    "source2": {
+      "url": "https://www.amnh.org/explore/news-blogs/immortal-jellyfish",
+      "publisher": "American Museum of Natural History",
+      "title": "The \"Immortal\" Jellyfish That Resets When Damaged"
+    },
+    "searchNote": "NHM and AMNH pages put 'immortal' in quotes; the reverted animal can still be killed, so it avoids death by resetting rather than being truly immortal.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.comb-jelly.own-phylum",
+    "q": "Comb jellies look like jellyfish. Which group do they actually belong to?",
+    "choices": [
+      "Cnidarians, along with true jellyfish",
+      "Tunicates, along with sea squirts",
+      "Their own group, the ctenophores"
+    ],
+    "answer": 2,
+    "explain": "Comb jellies form their own phylum, Ctenophora. Despite their jelly-like bodies, they are not closely related to true jellyfish.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/jellyfish-and-comb-jellies",
+      "publisher": "Smithsonian Ocean",
+      "title": "Jellyfish and Comb Jellies - Smithsonian Ocean Portal"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/comb_jelly/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Comb Jelly (Sea Walnut)"
+    },
+    "searchNote": "Smithsonian Ocean Portal and Aquarium of the Pacific pages say comb jellies are ctenophores, not cnidarian jellyfish, and are not closely related.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.comb-jelly.colloblasts",
+    "q": "Comb jellies don't sting. How do many of them catch their prey?",
+    "choices": [
+      "With sticky cells called colloblasts",
+      "By injecting venom through spines",
+      "By stunning prey with electricity"
+    ],
+    "answer": 0,
+    "explain": "Instead of the stinging cells jellyfish use, many comb jellies trap prey with sticky cells called colloblasts.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/comb_jelly/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Comb Jelly (Sea Walnut)"
+    },
+    "source2": null,
+    "searchNote": "Search result: unlike jellyfish, comb jellies do not sting; they catch prey with sticky cells called colloblasts.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.comb-jelly.eight-comb-rows",
+    "q": "How many rows of beating, comb-like cilia do most comb jellies have?",
+    "choices": [
+      "Two",
+      "Eight",
+      "Thirty"
+    ],
+    "answer": 1,
+    "explain": "Most comb jellies have eight rows of cilia (tiny hairs) that beat in rhythm, paddling the animal along. These 'combs' give the group its name.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/multimedia/daily-image-media-20211027/",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Ctenophore - NOAA Ocean Exploration"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/comb_jelly/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Comb Jelly (Sea Walnut)"
+    },
+    "searchNote": "Search result: most species have eight rows of cilia that beat rhythmically and refract light as they paddle through the water.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.comb-jelly.rainbow-is-scattered-light",
+    "q": "What creates the rainbow shimmer that ripples along a comb jelly's body?",
+    "choices": [
+      "Its own bioluminescent glow",
+      "Coloured pigments in its skin",
+      "Light scattering off its beating cilia"
+    ],
+    "answer": 2,
+    "explain": "The flickering rainbows come from light scattering off the moving cilia. They are not light the animal makes itself.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "http://galleries.neaq.org/2015/03/local-species-mnemiopsis-jellies.html",
+      "publisher": "New England Aquarium",
+      "title": "Local Species: Mnemiopsis jellies - Exhibit Galleries Blog"
+    },
+    "source2": null,
+    "searchNote": "New England Aquarium blog on Mnemiopsis says the rainbow effect is merely light scattering off the cilia, not light generated by the animal.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.comb-jelly.sea-walnut-bioluminescence",
+    "q": "Apart from their rainbow shimmer, many comb jellies, including the sea walnut, can do what?",
+    "choices": [
+      "Produce their own light",
+      "Sting with venomous cells",
+      "Change colour to match the seabed"
+    ],
+    "answer": 0,
+    "explain": "Many comb jellies are bioluminescent and make their own light. That glow is separate from the rainbow effect caused by light hitting their cilia.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/comb_jelly/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Comb Jelly (Sea Walnut)"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific comb jelly (sea walnut) page says many ctenophores are bioluminescent, including this species.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.comb-jelly.mnemiopsis-reverse-development",
+    "q": "Researchers have reported that stressed adults of the comb jelly Mnemiopsis leidyi can do what?",
+    "choices": [
+      "Grow a hard protective shell",
+      "Revert to a younger, larval form",
+      "Switch to making food from sunlight"
+    ],
+    "answer": 1,
+    "explain": "Stressed Mnemiopsis leidyi adults were seen turning back into their larval form, a kind of reversal once mostly associated with the 'immortal' jellyfish.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.pnas.org/doi/full/10.1073/pnas.2411499121",
+      "publisher": "PNAS",
+      "title": "Reverse development in the ctenophore Mnemiopsis leidyi"
+    },
+    "source2": null,
+    "searchNote": "PNAS paper titled 'Reverse development in the ctenophore Mnemiopsis leidyi' reports adults reverting to an earlier developmental stage.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.comb-jelly.duobrachium-video-discovery",
+    "q": "How did NOAA scientists describe a new species of comb jelly found near Puerto Rico?",
+    "choices": [
+      "From a specimen found in a fish's stomach",
+      "From a fossil in seafloor rock",
+      "Entirely from high-definition underwater video"
+    ],
+    "answer": 2,
+    "explain": "NOAA scientists 'virtually' discovered the comb jelly from footage filmed by a remotely operated vehicle, without collecting a physical specimen.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/noaa-scientists-virtually-discover-new-species-comb-jelly-near-puerto-rico",
+      "publisher": "NOAA Fisheries",
+      "title": "NOAA Scientists Virtually Discover New Species of Comb Jelly Near Puerto Rico"
+    },
+    "source2": null,
+    "searchNote": "NOAA Fisheries feature titled 'NOAA Scientists Virtually Discover New Species of Comb Jelly Near Puerto Rico' (described from video, no specimen collected).",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.comb-jelly.mnemiopsis-black-sea",
+    "q": "The comb jelly Mnemiopsis leidyi became notorious in the 1980s after it was accidentally introduced to which sea?",
+    "choices": [
+      "The Black Sea",
+      "The Red Sea",
+      "The Coral Sea"
+    ],
+    "answer": 0,
+    "explain": "Probably carried in ships' ballast water, Mnemiopsis leidyi spread through the Black Sea, where its boom was linked to a sharp decline in fisheries.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/jellyfish-and-comb-jellies",
+      "publisher": "Smithsonian Ocean",
+      "title": "Jellyfish and Comb Jellies - Smithsonian Ocean Portal"
+    },
+    "source2": {
+      "url": "http://galleries.neaq.org/2015/03/local-species-mnemiopsis-jellies.html",
+      "publisher": "New England Aquarium",
+      "title": "Local Species: Mnemiopsis jellies - Exhibit Galleries Blog"
+    },
+    "searchNote": "Smithsonian Ocean Portal jellyfish and comb jellies page (and NEAQ Mnemiopsis post) discuss Mnemiopsis; my recollection is the Smithsonian page describes its 1980s Black Sea invasion. Verifier must confirm wording.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.salp.tunicate",
+    "q": "Salps look like see-through jellies. What are they actually?",
+    "choices": [
+      "Tunicates, relatives of sea squirts",
+      "Young jellyfish without tentacles",
+      "Comb jellies that lost their combs"
+    ],
+    "answer": 0,
+    "explain": "Salps are pelagic tunicates: open-water filter feeders that are not jellyfish at all, despite their clear, jelly-like bodies.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/tiny-drifters-massive-impact-salps-climate-carbon/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Tiny drifters, massive impact"
+    },
+    "source2": {
+      "url": "https://repository.library.noaa.gov/view/noaa/46504/noaa_46504_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "Global ecological and biogeochemical impacts of pelagic tunicates 1 2 3"
+    },
+    "searchNote": "WHOI feature on salps and a NOAA repository review on pelagic tunicates treat salps as tunicates.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.salp.fast-sinking-pellets",
+    "q": "Why are salps important for moving carbon into the deep ocean?",
+    "choices": [
+      "They release carbon as bubbles of gas",
+      "Their fast-sinking fecal pellets carry it down",
+      "They build carbon-rich shells that pile up"
+    ],
+    "answer": 1,
+    "explain": "Salp fecal pellets can sink up to about 1,000 metres a day, carrying carbon into deep water where it can stay for decades or centuries.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/tiny-drifters-massive-impact-salps-climate-carbon/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Tiny drifters, massive impact"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9894854/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Salp blooms drive strong increases in passive carbon export in the Southern Ocean"
+    },
+    "searchNote": "WHOI reports salp pellets can sink up to about 1,000 m per day, strengthening the biological carbon pump; a Southern Ocean study ties salp blooms to increased carbon export.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.salp.krill-pellet-comparison",
+    "q": "Near the Antarctic Peninsula, salps produced more fecal-pellet carbon than krill, yet both added equally to carbon sinking past 300 metres. Why?",
+    "choices": [
+      "Krill pellets sank ten times faster",
+      "Salp pellets floated back to the surface",
+      "Most salp pellets broke apart near the surface"
+    ],
+    "answer": 2,
+    "explain": "Salps made about four times more pellet carbon than krill, but roughly 80 percent of salp pellets fragmented and stayed in the surface layer.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8660819/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Krill and salp faecal pellets contribute equally to the carbon flux at the Antarctic Peninsula"
+    },
+    "source2": null,
+    "searchNote": "Study found salps produced about four times more pellet carbon than krill, but about 80% of salp pellets stayed in the mixed layer because they fragment, so both contributed equally at 300 m.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.salp.jet-propulsion",
+    "q": "How do salps swim?",
+    "choices": [
+      "By pumping water through their bodies like a jet",
+      "By beating rows of comb-like hairs",
+      "By flapping a pair of side fins"
+    ],
+    "answer": 0,
+    "explain": "Salps move by jet propulsion, pushing water through their barrel-shaped bodies. WHOI researchers used dye to make those jets visible.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/dye-sheds-light-on-jet-propelled-salps/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Dye Sheds Light on Jet-Propelled Salps"
+    },
+    "source2": null,
+    "searchNote": "WHOI feature 'Dye Sheds Light on Jet-Propelled Salps' describes salps swimming by jet propulsion, studied with dye.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.velella.wind-sail",
+    "q": "How does the by-the-wind sailor (Velella velella) travel across the ocean?",
+    "choices": [
+      "It swims by pulsing its bell",
+      "It is pushed by the wind on a small sail",
+      "It rides currents deep below the surface"
+    ],
+    "answer": 1,
+    "explain": "Velella floats at the surface with a stiff, triangular sail set diagonally across its body, so the wind carries it. It does not steer on purpose.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pore/learn/nature/otherinvertebrates-velella.htm",
+      "publisher": "U.S. National Park Service (Point Reyes National Seashore)",
+      "title": "Velella Velella (or By-the-Wind-Sailors) - Point Reyes National Seashore (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Point Reyes describes a stiff triangular sail set diagonally; Velella do not actively navigate and are at the mercy of the winds.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.velella.sail-handedness",
+    "q": "By-the-wind sailors have sails angled either left or right. Which form is usually found in the Northern Hemisphere?",
+    "choices": [
+      "Right-handed",
+      "Left-handed",
+      "Both in equal numbers"
+    ],
+    "answer": 1,
+    "explain": "Because of prevailing winds, left-handed Velella are usually found in the Northern Hemisphere and right-handed ones in the Southern Hemisphere.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/by_the_wind_sailor",
+      "publisher": "Aquarium of the Pacific",
+      "title": "By-The-Wind Sailor"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/pore/learn/upload/sitebulletin-velella-velella.pdf",
+      "publisher": "U.S. National Park Service (Point Reyes National Seashore)",
+      "title": "Point Reyes National Park Service U.S. Department of the Interior"
+    },
+    "searchNote": "Search result: due to prevailing winds, left-handed Velella are usually found in the Northern Hemisphere, right-handed ones in the Southern Hemisphere. Exact page not pinned; verifier should confirm.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.velella.mass-strandings",
+    "q": "Why do by-the-wind sailors sometimes wash up on beaches by the thousands?",
+    "choices": [
+      "They come ashore to lay eggs",
+      "They are fleeing predators offshore",
+      "Shifting winds drive them toward the coast"
+    ],
+    "answer": 2,
+    "explain": "Velella can't steer, so when prevailing winds shift, such as during storms, they are driven toward the coast and stranded in great numbers.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/pore/learn/nature/otherinvertebrates-velella.htm",
+      "publisher": "U.S. National Park Service (Point Reyes National Seashore)",
+      "title": "Velella Velella (or By-the-Wind-Sailors) - Point Reyes National Seashore (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Point Reyes: when prevailing winds shift, e.g. during a storm, Velella are driven toward the coast and stranded on beaches in great numbers.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.velella.sting-harmless",
+    "q": "How dangerous is the sting of a by-the-wind sailor to people?",
+    "choices": [
+      "Rarely harmful",
+      "Often life-threatening",
+      "Worse than a man o' war's"
+    ],
+    "answer": 0,
+    "explain": "Velella has stinging cells for catching food, but unlike those of the Portuguese man o' war, they are rarely harmful to humans.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://seagrant.oregonstate.edu/visitor-center/found-beach/velella-velella",
+      "publisher": "Oregon Sea Grant (Oregon State University)",
+      "title": "Jellyfish on the Oregon coast"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/by_the_wind_sailor",
+      "publisher": "Aquarium of the Pacific",
+      "title": "By-The-Wind Sailor"
+    },
+    "searchNote": "Search result: Velella's stinging cells are rarely harmful to humans, as opposed to those of the Portuguese man o' war.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.velella.diet",
+    "q": "What does the by-the-wind sailor mainly eat?",
+    "choices": [
+      "Tiny drifting crustaceans and other plankton",
+      "Seaweed scraped from floating debris",
+      "Small fish that it chases down"
+    ],
+    "answer": 0,
+    "explain": "Drifting at the surface, Velella uses its short stinging tentacles to catch tiny floating crustaceans and other plankton.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/by_the_wind_sailor",
+      "publisher": "Aquarium of the Pacific",
+      "title": "By-The-Wind Sailor"
+    },
+    "source2": null,
+    "searchNote": "Search result: Velella feeds on tiny floating crustaceans, using tentacles with stinging cells.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.velella.range",
+    "q": "Where do by-the-wind sailors live?",
+    "choices": [
+      "On the surface of temperate and tropical seas",
+      "On the deep seafloor",
+      "Frozen into polar sea ice"
+    ],
+    "answer": 0,
+    "explain": "By-the-wind sailors drift at the sea surface in temperate and tropical waters, mainly in the Pacific and Atlantic oceans.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fws.gov/species/wind-sailor-velella-velella",
+      "publisher": "U.S. Fish and Wildlife Service",
+      "title": "By-the-wind Sailor (Velella velella)"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/by_the_wind_sailor",
+      "publisher": "Aquarium of the Pacific",
+      "title": "By-The-Wind Sailor"
+    },
+    "searchNote": "Search result: by-the-wind sailors are distributed throughout temperate and tropical waters, mainly in the Pacific and Atlantic.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.man-o-war.colony",
+    "q": "What is a Portuguese man o' war?",
+    "choices": [
+      "A single giant jellyfish",
+      "A colony of many specialised individuals",
+      "A floating type of sea anemone"
+    ],
+    "answer": 1,
+    "explain": "The man o' war is a siphonophore: a colony of genetically identical individuals called zooids, each specialised for a job such as floating or feeding.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/portuguese-man-o-war.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is a Portuguese Man o’ War?"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/holding-tank/images-hide/siphonophores",
+      "publisher": "Smithsonian Ocean",
+      "title": "Siphonophores"
+    },
+    "searchNote": "NOAA NOS says the man o' war is a siphonophore, a colony of specialised, genetically identical zooids; Smithsonian says siphonophores resemble jellyfish but are colonies.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.man-o-war.four-polyp-types",
+    "q": "According to the U.S. National Park Service, a Portuguese man o' war colony is made of how many types of polyps?",
+    "choices": [
+      "Two",
+      "Four",
+      "Twelve"
+    ],
+    "answer": 1,
+    "explain": "The colony has four types of polyps that split the work: one forms the float, and others catch prey, digest food or reproduce.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/fiis/learn/news/portuguese-man-o-war-reported.htm",
+      "publisher": "U.S. National Park Service (Fire Island National Seashore)",
+      "title": "Portuguese Man O’ War Reported on Fire Island and Long Island South Shore Beaches - Fire Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/science/five-facts-portuguese-man-of-war/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Five Facts: Portuguese man-of-war"
+    },
+    "searchNote": "Fire Island NPS release calls it a floating hydrozoan colony of four types of polyps; another source lists tasks as floating, capturing prey, feeding and reproduction.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.man-o-war.beached-still-stings",
+    "q": "Can a Portuguese man o' war that has washed up on the beach still sting?",
+    "choices": [
+      "No, it is harmless once out of water",
+      "Only if it is still floating upright",
+      "Yes, its tentacles can still sting"
+    ],
+    "answer": 2,
+    "explain": "Park officials warn beachgoers not to touch stranded man o' war, because their tentacles can still deliver a painful sting after washing ashore.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/fiis/learn/news/portuguese-man-o-war-reported.htm",
+      "publisher": "U.S. National Park Service (Fire Island National Seashore)",
+      "title": "Portuguese Man O’ War Reported on Fire Island and Long Island South Shore Beaches - Fire Island National Seashore (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/science/five-facts-portuguese-man-of-war/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Five Facts: Portuguese man-of-war"
+    },
+    "searchNote": "Fire Island NPS release reported man o' war on beaches; my recollection is that it warns stranded ones can still sting. Verifier must confirm.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.man-o-war.name-origin",
+    "q": "Where does the Portuguese man o' war get its name?",
+    "choices": [
+      "From a Portuguese sailor stung by one",
+      "From the island where it was first found",
+      "From its likeness to an old warship under sail"
+    ],
+    "answer": 2,
+    "explain": "Its float resembles an 18th-century Portuguese warship under full sail, which inspired the name.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/portuguese-man-o-war.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is a Portuguese Man o’ War?"
+    },
+    "source2": null,
+    "searchNote": "NOAA NOS man o' war page (from memory of the page; verifier must confirm) explains the name comes from resemblance to an 18th-century Portuguese warship under full sail.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "jellies.man-o-war.gas-float",
+    "q": "What keeps a Portuguese man o' war at the sea surface?",
+    "choices": [
+      "A gas-filled float",
+      "A droplet of oil inside its body",
+      "Constant pulsing of a bell"
+    ],
+    "answer": 0,
+    "explain": "One member of the colony forms a gas-filled float that rides above the water, so the whole colony drifts with the wind and currents.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/portuguese-man-o-war.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is a Portuguese Man o’ War?"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/science/five-facts-portuguese-man-of-war/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Five Facts: Portuguese man-of-war"
+    },
+    "searchNote": "NOAA and Florida Museum describe one zooid forming a gas-filled float (pneumatophore) that keeps the colony at the surface.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.lions-mane.tentacle-length",
+    "q": "In cold Arctic waters, roughly how long can the tentacles of the lion's mane jellyfish (Cyanea capillata) grow?",
+    "choices": [
+      "About 30 centimetres (1 foot)",
+      "About 1 metre (3 feet)",
+      "About 30 metres (100 feet)"
+    ],
+    "answer": 2,
+    "explain": "Most lion's mane jellies have tentacles around 2 metres long, but in cold Arctic waters they can reach about 30 metres.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/lions_mane_jelly",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Lion’s Mane Jelly"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-jellyfish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Jellyfish: The smart stinging creatures drifting through our oceans"
+    },
+    "searchNote": "Aquarium of the Pacific gives typical tentacles of 1.8-2.4 m and up to 30 m (100 ft) in cold Arctic waters; NHM says tentacles can reach over 30 m.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.moon-jelly.ephyrae",
+    "q": "When a moon jelly (Aurelia aurita) polyp divides into a stack of discs, what does each disc become?",
+    "choices": [
+      "A swimming larva called a planula",
+      "A young medusa called an ephyra",
+      "A new polyp attached nearby"
+    ],
+    "answer": 1,
+    "explain": "In a process called strobilation, the polyp splits into stacked discs that are released one by one as tiny jellies called ephyrae, which grow into adults.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10433978/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "The Life Cycle of Aurelia aurita Depends on the Presence of a Microbiome in Polyps Prior to Onset of Strobilation"
+    },
+    "source2": null,
+    "searchNote": "Aurelia aurita microbiome paper describes strobilation: each polyp segment develops into a young medusa, the ephyra, released in sequence.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.moon-jelly.strobilation-needs-microbes",
+    "q": "A 2023 study found moon jelly (Aurelia aurita) polyps struggle to release baby jellyfish when they lack what?",
+    "choices": [
+      "Contact with adult jellies",
+      "Bright sunlight",
+      "Their natural bacteria"
+    ],
+    "answer": 2,
+    "explain": "Polyps without their native microbes produced and released few ephyrae, and adding the microbes back after the process had started did not fix it.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10433978/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "The Life Cycle of Aurelia aurita Depends on the Presence of a Microbiome in Polyps Prior to Onset of Strobilation"
+    },
+    "source2": null,
+    "searchNote": "Paper reports strobilation is severely compromised without the natural polyp microbiome, and supplying microbes after onset did not restore it.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.moon-jelly.aurelia-life-cycle-reversal",
+    "q": "Life-cycle reversal, made famous by the 'immortal' jellyfish, has also been documented in which animal?",
+    "choices": [
+      "A moon jelly (Aurelia)",
+      "The Portuguese man o' war",
+      "A salp"
+    ],
+    "answer": 0,
+    "explain": "Researchers found that degenerating young medusae of a moon jelly, Aurelia sp.1, could form new polyps, so this trick is not unique to Turritopsis.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4687044/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Life Cycle Reversal in Aurelia sp.1 (Cnidaria, Scyphozoa)"
+    },
+    "source2": null,
+    "searchNote": "Paper 'Life Cycle Reversal in Aurelia sp.1' documents polyps forming from degenerating juvenile medusae and medusa tissue fragments.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.moon-jelly.horseshoe-gonads",
+    "q": "What feature makes the moon jelly (Aurelia aurita) easy to recognise?",
+    "choices": [
+      "Four horseshoe-shaped gonads in its bell",
+      "A bright red stripe around its rim",
+      "Thick brown tentacles a metre long"
+    ],
+    "answer": 0,
+    "explain": "Moon jellies have a clear bell through which four horseshoe-shaped reproductive organs, or gonads, are easy to see.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/moon_jelly",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Moon Jelly"
+    },
+    "source2": {
+      "url": "https://www.georgiaaquarium.org/animal/moon-jelly/",
+      "publisher": "Georgia Aquarium",
+      "title": "Moon Jelly - Georgia Aquarium"
+    },
+    "searchNote": "Aquarium moon jelly pages (Aquarium of the Pacific, Georgia Aquarium) describe four horseshoe-shaped gonads visible through the bell; from memory of the pages, verifier must confirm.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.jellyfish.medusa-stage",
+    "q": "What is the free-swimming, bell-shaped stage of a jellyfish's life called?",
+    "choices": [
+      "The polyp",
+      "The medusa",
+      "The planula"
+    ],
+    "answer": 1,
+    "explain": "Many jellyfish alternate between a polyp attached to a surface and the swimming medusa, the bell-shaped form most people picture. The medusa reproduces sexually.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://blog.seattleaquarium.org/marine-animals/facts-jellyfish-life",
+      "publisher": "Seattle Aquarium",
+      "title": "The facts of (jellyfish) life"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10433978/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "The Life Cycle of Aurelia aurita Depends on the Presence of a Microbiome in Polyps Prior to Onset of Strobilation"
+    },
+    "searchNote": "Seattle Aquarium life-cycle post and the Aurelia paper describe sexual reproduction at the medusa stage and a sessile polyp stage.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.cassiopea.sleep",
+    "q": "Researchers reported in 2017 that the upside-down jellyfish Cassiopea, which has no brain, shows signs of what?",
+    "choices": [
+      "Tool use",
+      "Hibernation",
+      "Sleep"
+    ],
+    "answer": 2,
+    "explain": "At night Cassiopea pulses more slowly and responds more sluggishly, and it is drowsier after a disturbed night, meeting key tests for a sleep-like state.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://authors.library.caltech.edu/records/psp7j-nmv35",
+      "publisher": "Caltech Authors (California Institute of Technology)",
+      "title": "The Jellyfish Cassiopea Exhibits a Sleep-like State"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/jellyfish-and-comb-jellies",
+      "publisher": "Smithsonian Ocean",
+      "title": "Jellyfish and Comb Jellies - Smithsonian Ocean Portal"
+    },
+    "searchNote": "Caltech record 'The Jellyfish Cassiopea Exhibits a Sleep-like State'; Smithsonian notes slower pulsing the day after being kept awake; first animal without a brain observed sleeping (2017).",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.cassiopea.algae-food",
+    "q": "Where does the upside-down jellyfish Cassiopea get much of its food?",
+    "choices": [
+      "Mud it filters from the seafloor",
+      "Dead fish it scavenges",
+      "Algae living inside its tissues"
+    ],
+    "answer": 2,
+    "explain": "Cassiopea hosts photosynthetic algae in its tissues, and their photosynthesis supplies a significant share of the jellyfish's carbon needs.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12091945/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Co-option of immune and digestive cellular machinery to support photosymbiosis in amoebocytes of the upside-down jellyfish Cassiopea xamachana"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7779505/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Amoebocytes facilitate efficient carbon and nitrogen assimilation in the Cassiopea-Symbiodiniaceae symbiosis"
+    },
+    "searchNote": "Cassiopea photosymbiosis papers: symbiotic algae (Symbiodiniaceae) photosynthesis supplies the host with a significant portion of its organic carbon.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.cassiopea.cassiosomes",
+    "q": "People wading near upside-down jellyfish (Cassiopea) can be stung without touching one. What causes this?",
+    "choices": [
+      "Tiny clusters of stinging cells released into the water",
+      "Venom the jellyfish sprays from its arms",
+      "An electric charge given off by its bell"
+    ],
+    "answer": 0,
+    "explain": "Cassiopea releases cassiosomes, tiny self-contained structures packed with stinging cells that can go on stinging after leaving the jellyfish.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10826341/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "Symbiotic nutrient exchange enhances the long-term survival of cassiosomes, the autonomous stinging-cell structures of Cassiopea"
+    },
+    "source2": null,
+    "searchNote": "Paper title describes cassiosomes as the autonomous stinging-cell structures of Cassiopea, which survive long-term; the 'stinging water' link to waders is from my background knowledge, verifier should confirm.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "jellies.crystal-jelly.gfp-nobel",
+    "q": "The 2008 Nobel Prize in Chemistry honoured work on a glowing protein first found in which organism?",
+    "choices": [
+      "A firefly",
+      "A jellyfish",
+      "A glowing mushroom"
+    ],
+    "answer": 1,
+    "explain": "Osamu Shimomura first isolated green fluorescent protein (GFP) from a jellyfish. Scientists now use it to tag and watch processes inside living cells.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nobelprize.org/prizes/chemistry/2008/popular-information/",
+      "publisher": "NobelPrize.org",
+      "title": "The Nobel Prize in Chemistry 2008 - Popular information - NobelPrize.org"
+    },
+    "source2": {
+      "url": "https://www.nobelprize.org/prizes/chemistry/2008/press-release/",
+      "publisher": "NobelPrize.org",
+      "title": "Press release: The Nobel Prize in Chemistry 2008 - NobelPrize.org"
+    },
+    "searchNote": "Nobel 2008 chemistry prize went to Shimomura, Chalfie and Tsien for GFP; Shimomura isolated it in the 1960s from a jellyfish.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.crystal-jelly.green-rim",
+    "q": "What colour does the rim of the crystal jelly Aequorea victoria glow when it is disturbed?",
+    "choices": [
+      "Deep red",
+      "Green",
+      "White"
+    ],
+    "answer": 1,
+    "explain": "The crystal jelly's outer edge glows green when agitated. The protein behind that glow, GFP, is now widely used to tag and track processes in living cells.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nobelprize.org/prizes/chemistry/2008/popular-information/",
+      "publisher": "NobelPrize.org",
+      "title": "The Nobel Prize in Chemistry 2008 - Popular information - NobelPrize.org"
+    },
+    "source2": null,
+    "searchNote": "Nobel popular information describes the jellyfish Aequorea victoria, whose outer edge glows green when agitated.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "jellies.nematocyst.hydra-firing-speed",
+    "q": "In Hydra, a tiny freshwater relative of jellyfish, how long does a stinging capsule take to fire?",
+    "choices": [
+      "Within about 3 milliseconds",
+      "About half a second",
+      "About 5 seconds"
+    ],
+    "answer": 0,
+    "explain": "Stinging-capsule discharge is among the fastest mechanical processes in nature. In Hydra it is over within about 3 milliseconds.",
+    "category": "jellies",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4321713/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "A fast recoiling silk-like elastomer facilitates nanosecond nematocyst discharge - PMC"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9205923/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "The architecture and operating mechanism of a cnidarian stinging organelle - PMC"
+    },
+    "searchNote": "Search result: nematocyst discharge is among the fastest mechanical processes in nature, completed within 3 ms in Hydra; initial phase as fast as 700 ns.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "jellies.nematocyst.single-use",
+    "q": "How many times can a single nematocyst, a cnidarian's stinging capsule, fire?",
+    "choices": [
+      "About ten times",
+      "As often as the animal needs",
+      "Only once"
+    ],
+    "answer": 2,
+    "explain": "Each stinging capsule fires just once, so stinging is costly, and cnidarians tightly control when their capsules go off.",
+    "category": "jellies",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7250568/",
+      "publisher": "PubMed Central (NCBI)",
+      "title": "A molecular filter for the cnidarian stinging response - PMC - NIH"
+    },
+    "source2": null,
+    "searchNote": "'A molecular filter for the cnidarian stinging response' notes each nematocyst fires once, making stinging energetically expensive and tightly regulated.",
+    "risk": "none"
+  },
+  {
+    "fact": "jellies.jellyfish.fossils-rare",
+    "q": "Why are jellyfish fossils rare?",
+    "choices": [
+      "Jellyfish appeared only recently",
+      "They have no hard parts to preserve",
+      "They lived only in the deep sea"
+    ],
+    "answer": 1,
+    "explain": "With no bones or shells, jellyfish rarely fossilise. Even so, jellyfish fossils about 505 million years old have been found in Utah.",
+    "category": "jellies",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://archive.oceanexplorer.noaa.gov/facts/worldjellyfishday.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "November 3: World Jellyfish Day : Ocean Exploration Facts: NOAA Office of Ocean Exploration and Research"
+    },
+    "source2": null,
+    "searchNote": "NOAA World Jellyfish Day page says jellyfish fossils are rare because they have no hard parts, but some about 505 million years old were found in Utah.",
+    "risk": "none"
+  }
+]

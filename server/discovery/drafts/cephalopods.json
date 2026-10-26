@@ -1,0 +1,1222 @@
+[
+  {
+    "fact": "cephalopods.octopus.heart-count",
+    "q": "How many hearts does an octopus have?",
+    "choices": [
+      "One",
+      "Two",
+      "Three"
+    ],
+    "answer": 2,
+    "explain": "Two hearts pump blood through the gills to pick up oxygen, and a third sends that oxygen-rich blood around the rest of the body.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/news/feb26/undersea-creatures-valentines-day.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "Heartless or hopelessly romantic?"
+    },
+    "source2": {
+      "url": "https://montereybayaquarium.org/animals/animals-a-to-z/day-octopus",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Day octopus"
+    },
+    "searchNote": "NOAA says octopuses have three hearts: two pump blood to the gills and the third circulates oxygenated blood to the body; Monterey Bay Aquarium's day octopus page describes the same split.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.octopus.blood-copper",
+    "q": "Octopus blood is blue because its oxygen-carrying protein is built around which metal?",
+    "choices": [
+      "Iron",
+      "Copper",
+      "Zinc"
+    ],
+    "answer": 1,
+    "explain": "Our hemoglobin uses iron, but octopus haemocyanin uses copper, which turns blue when it carries oxygen.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "searchNote": "NHM says the oxygen-carrying protein haemocyanin contains copper rather than iron; Smithsonian makes the same contrast with human iron-based blood.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.octopus.hemocyanin-acidic-water",
+    "q": "Smithsonian scientists note that octopus blood's oxygen carrier, hemocyanin, loses its hold on oxygen in what kind of water?",
+    "choices": [
+      "Colder water",
+      "More acidic water",
+      "Darker water"
+    ],
+    "answer": 1,
+    "explain": "Hemocyanin works best in cold water but grips oxygen less well as water acidifies, so warming, acidifying seas could strain cephalopod circulation.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian Ocean says hemocyanin is most efficient in cold water but loses its hold on oxygen in more acidic water.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.octopus.neuron-count",
+    "q": "Roughly how many neurons does the common octopus have?",
+    "choices": [
+      "About 5 million",
+      "About 500 million",
+      "About 50 billion"
+    ],
+    "answer": 1,
+    "explain": "The common octopus has around 500 million neurons, a count in the range of a dog's, and most of them are not in its head.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3073264/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "A new perspective on the organization of an invertebrate brain - PMC"
+    },
+    "searchNote": "NHM says the common octopus (Octopus vulgaris) has roughly 500 million neurons. A PMC review gives about 50 million in the central brain plus about 300 million in the arms, broadly consistent.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.octopus.arm-neurons",
+    "q": "Where are about two-thirds of an octopus's neurons found?",
+    "choices": [
+      "In its arms",
+      "In its head",
+      "Around its gills"
+    ],
+    "answer": 0,
+    "explain": "Roughly two-thirds of an octopus's neurons sit in its arms, which can sense and react to the world with a lot of local control.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "searchNote": "NHM and Smithsonian both say about two-thirds of an octopus's neurons are in its arms.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.octopus.brain-around-esophagus",
+    "q": "An octopus's ring-shaped brain wraps around which body part, so its food must be broken into small pieces?",
+    "choices": [
+      "Its heart",
+      "Its ink sac",
+      "Its esophagus"
+    ],
+    "answer": 2,
+    "explain": "The food tube runs right through the octopus brain, so prey has to be broken down finely before it is swallowed.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "searchNote": "Smithsonian says the esophagus runs through the brain so prey must be finely broken up before swallowing; NHM describes the central brain as ring-shaped around the esophagus.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.gpo.beak-material",
+    "q": "What is the beak of a giant Pacific octopus made of?",
+    "choices": [
+      "Bone",
+      "Coral-like shell",
+      "Chitin"
+    ],
+    "answer": 2,
+    "explain": "The beak is made of chitin, a tough material that works much like the keratin in human hair and nails. It is not bone.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/giant-pacific-octopus/",
+      "publisher": "Seattle Aquarium",
+      "title": "Giant Pacific octopus - Seattle Aquarium"
+    },
+    "source2": {
+      "url": "https://oceantoday.noaa.gov/howtofeedagiantoctopus/",
+      "publisher": "NOAA Ocean Today",
+      "title": "How to Feed a Giant Octopus - Ocean Today - NOAA"
+    },
+    "searchNote": "Seattle Aquarium says the beak is made of chitin, which functions similarly to keratin; a NOAA Ocean Today transcript says the beak is not bone but very tough.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.gpo.beak-limits-squeeze",
+    "q": "When a giant Pacific octopus squeezes through a tight gap, which body part limits how small the gap can be?",
+    "choices": [
+      "Its mantle",
+      "Its beak",
+      "Its suckers"
+    ],
+    "answer": 1,
+    "explain": "With a soft, boneless body, the hard beak is the main limit. If the beak fits through, the rest of the octopus can follow.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "escape",
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/giant-pacific-octopus/",
+      "publisher": "Seattle Aquarium",
+      "title": "Giant Pacific octopus - Seattle Aquarium"
+    },
+    "source2": {
+      "url": "https://www.ocean.si.edu/ocean-life/invertebrates/beautiful-and-deadly-octopus",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Beautiful and Deadly Octopus"
+    },
+    "searchNote": "Seattle Aquarium says the main restriction in a tight space is the beak and that if the beak fits, the body will too; Smithsonian notes that with no bones except the beak, octopuses fit through almost any hole.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.gpo.lemon-sized-hole",
+    "q": "About how small a hole can a fully grown giant Pacific octopus squeeze through?",
+    "choices": [
+      "About the size of a lemon",
+      "About the size of a dinner plate",
+      "About the size of a car tire"
+    ],
+    "answer": 0,
+    "explain": "An adult giant Pacific octopus can weigh dozens of pounds yet pour itself through an opening about the size of a lemon.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "escape",
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/giant-pacific-octopus/",
+      "publisher": "Seattle Aquarium",
+      "title": "Giant Pacific octopus - Seattle Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Seattle Aquarium says a fully grown giant Pacific octopus can fit through a hole about the size of a lemon.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.gpo.lifespan",
+    "q": "How long does a giant Pacific octopus typically live?",
+    "choices": [
+      "About 6 months",
+      "About 30 years",
+      "About 3 to 5 years"
+    ],
+    "answer": 2,
+    "explain": "Three to five years is short for an animal this big, but it is long by octopus standards.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/giant-pacific-octopus",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Giant Pacific octopus"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/giant_pacific_octopus",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Giant Pacific Octopus"
+    },
+    "searchNote": "Monterey Bay Aquarium says the species lives about three to five years, long for an octopus; Aquarium of the Pacific gives two to five years.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.gpo.egg-size",
+    "q": "A giant Pacific octopus, which can grow to many feet across, hatches from an egg about the size of what?",
+    "choices": [
+      "A grain of rice",
+      "A golf ball",
+      "A chicken egg"
+    ],
+    "answer": 0,
+    "explain": "One of the biggest octopuses in the world starts life in an egg about the size of a grain of rice.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/giant-pacific-octopus",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Giant Pacific octopus"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium says the giant Pacific octopus hatches from an egg the size of a rice grain.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.gpo.female-senescence",
+    "q": "What happens to a female giant Pacific octopus after she lays her eggs?",
+    "choices": [
+      "She leaves to find a new mate",
+      "She lays another clutch next year",
+      "She enters senescence and dies"
+    ],
+    "answer": 2,
+    "explain": "After laying, the female enters senescence, a natural end-of-life decline, and does not survive to breed again.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/giant-pacific-octopus",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Giant Pacific octopus"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium says that after laying eggs, female giant Pacific octopuses enter senescence, the end-of-life process that ends the female's life.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.gpo.suckers-per-arm",
+    "q": "Up to about how many suckers can each arm of a giant Pacific octopus carry?",
+    "choices": [
+      "About 24",
+      "About 240",
+      "About 2,400"
+    ],
+    "answer": 1,
+    "explain": "Each arm can carry a couple of hundred suckers, adding up to more than 2,000 across all eight arms.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/giant-pacific-octopus",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Giant Pacific octopus"
+    },
+    "source2": {
+      "url": "https://www.seattleaquarium.org/animal/giant-pacific-octopus/",
+      "publisher": "Seattle Aquarium",
+      "title": "Giant Pacific octopus - Seattle Aquarium"
+    },
+    "searchNote": "Search summary: sources give up to about 240 suckers on each arm, and Monterey Bay Aquarium gives roughly 2,240 total for females. Verifier should confirm which page carries the per-arm figure.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.gpo.adult-weight",
+    "q": "How much does an adult giant Pacific octopus typically weigh?",
+    "choices": [
+      "1 to 2 pounds",
+      "40 to 100 pounds",
+      "1,000 to 2,000 pounds"
+    ],
+    "answer": 1,
+    "explain": "Typical adults weigh about 40 to 100 pounds and can stretch 12 to 14 feet from arm tip to arm tip.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/giant-pacific-octopus/",
+      "publisher": "Seattle Aquarium",
+      "title": "Giant Pacific octopus - Seattle Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Seattle Aquarium says adults can weigh from 40 to 100 pounds with a relaxed tip-to-tip span of 12 to 14 feet. Record weights differ between sources, so the question asks only about typical adults.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.octopus.chromatophore-muscles",
+    "q": "How does an octopus make a chromatophore, a tiny pigment sac in its skin, show its color?",
+    "choices": [
+      "It pumps blood into the sac",
+      "Muscles stretch the sac open",
+      "It grows new pigment overnight"
+    ],
+    "answer": 1,
+    "explain": "Each chromatophore is an elastic bag of pigment. Nerve-controlled muscles pull it wide to show color and relax to hide it.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "camo",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9590006/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Colours of Octopus: Using Spectral Data to Measure Octopus Camouflage - PMC"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "searchNote": "The octopus spectral-data study describes chromatophores as pigment-filled elastic sacs: muscle contraction stretches the sac to show pigment and relaxation lets it retract. Smithsonian notes thousands of pigment cells cover the body.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.octopus.colorblind-pigment",
+    "q": "Octopuses match colorful backgrounds even though their eyes have how many types of visual pigment?",
+    "choices": [
+      "One",
+      "Three",
+      "Twelve"
+    ],
+    "answer": 0,
+    "explain": "With only one visual pigment, octopuses are colorblind, so their color-changing skin likely tracks brightness rather than hue.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": "camo",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9590006/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Colours of Octopus: Using Spectral Data to Measure Octopus Camouflage - PMC"
+    },
+    "source2": null,
+    "searchNote": "The spectral camouflage study says octopuses are colour-blind because their eyes have only one type of visual pigment, so chromatophores likely respond to brightness rather than chromaticity.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.octopus.papillae-texture",
+    "q": "What do octopuses control to change their skin from smooth to bumpy or spiky?",
+    "choices": [
+      "Small skin projections called papillae",
+      "Rows of hard scales",
+      "The suckers on their arms"
+    ],
+    "answer": 0,
+    "explain": "By raising or flattening skin projections called papillae, an octopus can mimic the texture of rock, algae or coral.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "camo",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9590006/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Colours of Octopus: Using Spectral Data to Measure Octopus Camouflage - PMC"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6059360/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Neural Control of Dynamic 3-Dimensional Skin Papillae for Cuttlefish Camouflage"
+    },
+    "searchNote": "The spectral study says octopuses modulate texture by controlling the size of projections (papillae) on their skin, from smooth to bumps and spikes.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.cuttlefish.papillae-lock",
+    "q": "Once a cuttlefish raises the bumps in its skin, what lets it hold that textured disguise using little energy?",
+    "choices": [
+      "The bumps lock in place",
+      "It stops breathing to stay still",
+      "It fills the bumps with sand"
+    ],
+    "answer": 0,
+    "explain": "Research on cuttlefish skin found that extended papillae become locked, so the animal can stay textured without constant effort.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": "camo",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6059360/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Neural Control of Dynamic 3-Dimensional Skin Papillae for Cuttlefish Camouflage"
+    },
+    "source2": null,
+    "searchNote": "The cuttlefish papillae study found that once papillae extend they become locked in place, letting the cuttlefish hold a textured disguise while expending minimal energy.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.ink.pseudomorph",
+    "q": "What is a cephalopod 'pseudomorph'?",
+    "choices": [
+      "A newly hatched octopus",
+      "A mucus-rich ink blob shaped roughly like the animal",
+      "A layer of skin the animal sheds"
+    ],
+    "answer": 1,
+    "explain": "Some squid and octopuses squirt a mucus-thickened blob of ink about their own size. A predator may attack the decoy while the real animal slips away.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "ink",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4052311/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cephalopod Ink: Production, Chemistry, Functions and Applications - PMC"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "searchNote": "The Marine Drugs ink review describes pseudomorphs as darkened blobs with relatively more mucus, named because they resemble the form of a cephalopod; Smithsonian says ink can act as a look-alike the predator attacks.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.ink.melanin",
+    "q": "What pigment gives cephalopod ink its dark color?",
+    "choices": [
+      "Chlorophyll",
+      "Hemocyanin",
+      "Melanin"
+    ],
+    "answer": 2,
+    "explain": "Cephalopod ink gets its color from melanin, the same family of pigment that colors human skin and hair.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "ink",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4052311/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cephalopod Ink: Production, Chemistry, Functions and Applications - PMC"
+    },
+    "source2": null,
+    "searchNote": "The ink review says the ink gland makes the dark pigment melanin, while the funnel organ adds mucus.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.ink.sepia-pigment",
+    "q": "The brown art pigment 'sepia', used from Greco-Roman times into the 1800s, came from the ink of which animal?",
+    "choices": [
+      "Cuttlefish",
+      "Squid",
+      "Octopus"
+    ],
+    "answer": 0,
+    "explain": "Sepia is the name for ink from cuttlefish of the genus Sepia. Artists and writers prized it for its rich brown tones and permanence.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "ink",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4052311/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cephalopod Ink: Production, Chemistry, Functions and Applications - PMC"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/common-cuttlefish",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Common cuttlefish"
+    },
+    "searchNote": "The ink review says sepia, the name for the ink from Sepia, was used from Greco-Roman times through the 19th century as an ink and pigment. A Monterey Bay Aquarium result says the common cuttlefish's dark-brown ink, called sepia, was once widely used for writing and drawing.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.ink.tyrosinase",
+    "q": "Lab tests on European cuttlefish ink found that, apart from its pigment, it contains which cell-damaging enzyme?",
+    "choices": [
+      "Lactase",
+      "Tyrosinase",
+      "Amylase"
+    ],
+    "answer": 1,
+    "explain": "Even with the melanin removed, cuttlefish ink harmed cells in lab tests. The active ingredient turned out to be the enzyme tyrosinase.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": "ink",
+    "source": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/12901867/",
+      "publisher": "PubMed (NIH)",
+      "title": "Toxicity of melanin-free ink of Sepia officinalis to transformed cell lines: identification of the active factor as tyrosinase - PubMed"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4052311/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cephalopod Ink: Production, Chemistry, Functions and Applications - PMC"
+    },
+    "searchNote": "A PubMed study of Sepia officinalis found melanin-free ink contains a heat-labile protein toxic to several cell lines and identified it as tyrosinase.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.mimic-octopus.lionfish",
+    "q": "The mimic octopus is known for impersonating which venomous fish?",
+    "choices": [
+      "Pufferfish",
+      "Stonefish",
+      "Lionfish"
+    ],
+    "answer": 2,
+    "explain": "By spreading its striped arms, the mimic octopus can look like a lionfish, one of several animals it imitates along with flatfish and sea snakes.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "mimic",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/how-octopuses-and-squids-change-color",
+      "publisher": "Smithsonian Ocean",
+      "title": "How Octopuses and Squids Change Color"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10755188/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Inner Lives of Cephalopods - PMC - NIH"
+    },
+    "searchNote": "Smithsonian says the mimic octopus has been known to impersonate more than 15 marine species, including flounders, lionfish and sea snakes.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.mimic-octopus.sea-snake-damselfish",
+    "q": "Field researchers saw the mimic octopus imitate a banded sea snake in response to attacks by which animal?",
+    "choices": [
+      "Territorial damselfish",
+      "Reef sharks",
+      "Sea eagles"
+    ],
+    "answer": 0,
+    "explain": "Researchers noted the mimic octopus's sea snake act appeared when territorial damselfish attacked, as if picking a disguise for that audience.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": "mimic",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1088805/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Dynamic mimicry in an Indo-Malayan octopus - PMC - NIH"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10755188/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Inner Lives of Cephalopods - PMC - NIH"
+    },
+    "searchNote": "The 2001 dynamic mimicry study reports sea snake mimicry was only observed in response to attacks by territorial damselfish. A later review suggests mimicry may be an automatic threat response, so the question only states what was observed.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "cephalopods.mimic-octopus.flounder-method",
+    "q": "How does the mimic octopus impersonate a flounder?",
+    "choices": [
+      "It flattens its body and swims low with its arms trailing behind",
+      "It puffs up into a ball and drifts",
+      "It buries itself and leaves one arm sticking up"
+    ],
+    "answer": 0,
+    "explain": "To pass as a flatfish, the mimic octopus flattens out, draws all its arms behind it and glides just above the seafloor.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "mimic",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10755188/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Inner Lives of Cephalopods - PMC - NIH"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1088805/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Dynamic mimicry in an Indo-Malayan octopus - PMC - NIH"
+    },
+    "searchNote": "A review describes the flounder disguise as flattening the body, draping all arms behind the body, and swimming low to the substrate.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.mimic-octopus.daylight-sand",
+    "q": "Unlike many octopuses that hide in reefs, where does the mimic octopus forage?",
+    "choices": [
+      "Inside deep-sea vents",
+      "Out on open sand in daylight",
+      "Only in caves at night"
+    ],
+    "answer": 1,
+    "explain": "The mimic octopus hunts on exposed sand by day, in full view of predatory fish, which may be why its impersonations pay off.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1088805/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Dynamic mimicry in an Indo-Malayan octopus - PMC - NIH"
+    },
+    "source2": null,
+    "searchNote": "The dynamic mimicry study says the mimic octopus emerges during daylight to forage on sand substrates in full view of pelagic fish predators.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.mimic-octopus.jawfish-follower",
+    "q": "Divers in Indonesia filmed which fish shadowing a mimic octopus while matching its banded pattern?",
+    "choices": [
+      "A moray eel",
+      "A clownfish",
+      "A jawfish"
+    ],
+    "answer": 2,
+    "explain": "A black-marble jawfish was seen sticking close to a mimic octopus and copying its colors, an animal mimicking the master mimic.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/blog-archive/science/fish-mimicking-ocotopus-mimicking-fish/",
+      "publisher": "Australian Museum",
+      "title": "Fish mimicking octopus mimicking fish! - The Australian Museum Blog"
+    },
+    "source2": null,
+    "searchNote": "The Australian Museum blog post 'Fish mimicking octopus mimicking fish!' describes a fish mimicking the mimic octopus. Identity as a black-marble jawfish and the Indonesia location come from my background knowledge of the report and must be checked on the page.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.veined-octopus.coconut-shelter",
+    "q": "The veined octopus is known for carrying what to use as a portable shelter?",
+    "choices": [
+      "Kelp fronds",
+      "Sea urchin spines",
+      "Halves of coconut shells"
+    ],
+    "answer": 2,
+    "explain": "Veined octopuses gather split coconut shells, carry them across the seabed and then reassemble the halves and climb inside.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": "den",
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/molluscs/veined-octopus-octopus-marginatus/",
+      "publisher": "Australian Museum",
+      "title": "Veined Octopus - The Australian Museum"
+    },
+    "searchNote": "NHM and an ncbi review describe veined octopuses (Amphioctopus marginatus) gathering coconut halves, carrying them under their arms and reassembling them as a shelter.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.veined-octopus.stilt-walk-risk",
+    "q": "Carrying coconut shells forces the veined octopus into a slow 'stilt walk.' What is the cost?",
+    "choices": [
+      "It cannot change color",
+      "It is more exposed to predators",
+      "It cannot breathe while walking"
+    ],
+    "answer": 1,
+    "explain": "The awkward stilt walk leaves the octopus more vulnerable, but it seems to accept the short-term risk for a ready-made shelter later.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": "den",
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/octopuses-keep-surprising-us-here-are-eight-examples-how.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Octopuses keep surprising us - here are eight examples how"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5824970/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Octopus engineering, intentional and inadvertent - PMC"
+    },
+    "searchNote": "NHM says the shell-carrying stilt walk makes the octopuses more vulnerable to predators but they seem willing to accept the short-term risk for future protection.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.common-octopus.juvenile-bivalve-shelters",
+    "q": "A 2025 study off northwest Spain found juvenile common octopuses on sandy seafloor using what as shelters?",
+    "choices": [
+      "Empty clam-type shells",
+      "Living sea anemones",
+      "Floating seaweed mats"
+    ],
+    "answer": 0,
+    "explain": "Where sand offers no rocky crevices, young common octopuses moved into empty bivalve shells such as clam shells as makeshift dens.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": "den",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12081824/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Bivalve Shell Utilization by Juvenile Octopus vulgaris in Sandy Substrates - PMC"
+    },
+    "source2": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40386488/",
+      "publisher": "PubMed (NIH)",
+      "title": "Bivalve Shell Utilization by Juvenile Octopus vulgaris in Sandy Substrates - PubMed"
+    },
+    "searchNote": "A 2025 study from NW Spain reports juvenile Octopus vulgaris in sandy substrates using empty bivalve shells as shelters (nine juveniles found inhabiting bivalve shells).",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.blue-ringed.ttx-bacteria",
+    "q": "What produces the tetrodotoxin in a blue-ringed octopus's bite?",
+    "choices": [
+      "Symbiotic bacteria",
+      "Its ink gland",
+      "Pigment cells in its blue rings"
+    ],
+    "answer": 0,
+    "explain": "The blue-ringed octopus gets its tetrodotoxin from bacteria living on and in its body, including its salivary glands.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/blue-ringed-octopus-small-vibrant-deadly.html",
+      "publisher": "Natural History Museum, London",
+      "title": "The blue-ringed octopus: small, vibrant and exceptionally deadly"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6563023/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Toxicity and Toxin Composition of the Greater Blue-Ringed Octopus Hapalochlaena lunulata from Ishigaki Island, Okinawa Prefecture, Japan"
+    },
+    "searchNote": "NHM says symbiotic bacteria in the salivary glands make tetrodotoxin and that the octopus acquires it from bacteria living on and in its body. Note: which bacteria and how they are acquired is still researched.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "cephalopods.blue-ringed.ttx-paralysis",
+    "q": "How does the tetrodotoxin of a blue-ringed octopus endanger a person?",
+    "choices": [
+      "It blocks nerve signals to muscles and can stop breathing",
+      "It thins the blood so wounds keep bleeding",
+      "It triggers a severe allergic rash"
+    ],
+    "answer": 0,
+    "explain": "The toxin interferes with nerve signals to muscles. In a serious bite this can paralyze the muscles used for breathing.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/blue-ringed-octopus-small-vibrant-deadly.html",
+      "publisher": "Natural History Museum, London",
+      "title": "The blue-ringed octopus: small, vibrant and exceptionally deadly"
+    },
+    "source2": null,
+    "searchNote": "NHM says tetrodotoxin interferes with nerve signaling to muscles, which can paralyze breathing.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.blue-ringed.saliva-into-shell",
+    "q": "How does the greater blue-ringed octopus get its venom into shelled prey such as crabs?",
+    "choices": [
+      "It squirts ink into the gills",
+      "It dribbles saliva into a wound it makes in the shell",
+      "It stings with spines on its arm tips"
+    ],
+    "answer": 1,
+    "explain": "The octopus breaches the prey's shell and lets toxic saliva seep into the opening, subduing the animal.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/greater_blue_ringed_octopus1",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Greater Blue-ringed Octopus"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific says the venom is used to subdue prey, with saliva dribbled into a wound the octopus has made in its prey's shell.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.nautilus.chamber-count",
+    "q": "A mature chambered nautilus shell is divided into more than how many chambers?",
+    "choices": [
+      "3",
+      "30",
+      "300"
+    ],
+    "answer": 1,
+    "explain": "The coiled shell holds more than 30 chambers. The nautilus adds a new one as it grows and seals off the old ones behind it.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum (search summary) says the shell is divided into more than 30 chambers connected by a siphuncle.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.nautilus.outer-chamber",
+    "q": "Which part of its shell does a living chambered nautilus occupy?",
+    "choices": [
+      "Only the outermost chamber",
+      "Only the innermost chamber",
+      "All the chambers at once"
+    ],
+    "answer": 0,
+    "explain": "The animal lives in the newest, outermost chamber. The older chambers behind it hold gas and liquid.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/chambered_nautilus",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Chambered Nautilus"
+    },
+    "searchNote": "Search summary: the animal occupies only the outermost chamber, which it can close for protection.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.nautilus.buoyancy-gas-liquid",
+    "q": "How does a chambered nautilus adjust its buoyancy?",
+    "choices": [
+      "By gulping air at the surface",
+      "By shedding pieces of its shell",
+      "By changing the ratio of gas to liquid in its shell chambers"
+    ],
+    "answer": 2,
+    "explain": "Shifting the mix of gas and liquid in its chambers changes the nautilus's weight, much like a submarine filling or emptying its dive tanks.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/chambered_nautilus",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Chambered Nautilus"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "searchNote": "Search summary (Aquarium of the Pacific, Australian Museum, NOAA): the siphuncle lets the nautilus change the ratio of liquid to gas, modifying its weight, like a submarine's dive tanks.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.nautilus.siphuncle",
+    "q": "What is the tube of living tissue that links the chambers of a nautilus shell called?",
+    "choices": [
+      "The radula",
+      "The siphuncle",
+      "The mantle"
+    ],
+    "answer": 1,
+    "explain": "The siphuncle threads through every chamber of the shell and moves fluid in and out of them.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/chambered-nautilus",
+      "publisher": "NOAA Fisheries",
+      "title": "Chambered Nautilus"
+    },
+    "searchNote": "Australian Museum says the chambers are connected via a tube containing living tissue known as a siphuncle.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.nautilus.implosion-depth",
+    "q": "Experiments found living nautilus shells implode at roughly what depth?",
+    "choices": [
+      "75 to 90 meters",
+      "750 to 900 meters",
+      "7,500 to 9,000 meters"
+    ],
+    "answer": 1,
+    "explain": "The gas-filled chambers cannot withstand extreme pressure, and shells implode at roughly 750 to 900 meters, which limits how deep a nautilus can go.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Search summary: experiments on living nautilus found shells implode at depths between 750 and 900 m.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.nautilus.suckerless-tentacles",
+    "q": "How do the 90-plus tentacles of a chambered nautilus differ from an octopus's arms?",
+    "choices": [
+      "They end in sharp hooks",
+      "They are filled with venom",
+      "They have no suckers"
+    ],
+    "answer": 2,
+    "explain": "A nautilus has dozens more tentacles than an octopus has arms, but none of them carry suckers.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Search summary (Australian Museum): more than 90 suckerless tentacles protrude from the shell.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.nautilus.leathery-hood",
+    "q": "What does a chambered nautilus use to close off the opening of its shell?",
+    "choices": [
+      "A hard trapdoor of shell",
+      "A web of mucus",
+      "A leathery hood"
+    ],
+    "answer": 2,
+    "explain": "When it pulls back inside, the nautilus seals the opening with a tough, leathery hood.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/molluscs/chambered-nautilus/",
+      "publisher": "Australian Museum",
+      "title": "Chambered Nautilus - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Search summary: the animal lives in the outermost chamber, which it can seal with a leathery hood.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.nautilus.esa-threatened",
+    "q": "What is the status of the chambered nautilus under the U.S. Endangered Species Act?",
+    "choices": [
+      "Not listed",
+      "Threatened",
+      "Extinct in the wild"
+    ],
+    "answer": 1,
+    "explain": "NOAA Fisheries lists the chambered nautilus as threatened, largely because the shells are heavily harvested for the international shell trade.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/chambered-nautilus",
+      "publisher": "NOAA Fisheries",
+      "title": "Chambered Nautilus"
+    },
+    "source2": {
+      "url": "https://media.fisheries.noaa.gov/dam-migration/final_nautilus_status_review_508_compliant.pdf",
+      "publisher": "NOAA Fisheries",
+      "title": "FISHERIES ENDANGERED SPECIES ACT STATUS REVIEW REPORT: Chambered Nautilus"
+    },
+    "searchNote": "The search returned NOAA Fisheries' chambered nautilus species page, its ESA status review report and a listing petition. The snippet did not quote the status; the threatened listing (2018) is from background knowledge and must be checked on the NOAA page.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.cuttlefish.w-pupil",
+    "q": "Which cephalopod has a W-shaped pupil?",
+    "choices": [
+      "Octopus",
+      "Squid",
+      "Cuttlefish"
+    ],
+    "answer": 2,
+    "explain": "Octopus pupils are rectangular, squid pupils are round, and cuttlefish pupils curve into a distinctive W.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopus-eyes",
+      "publisher": "Smithsonian Ocean",
+      "title": "Octopus Eyes"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian's Octopus Eyes page says an octopus has a rectangular pupil, a cuttlefish a W-shaped pupil, and a squid a circular pupil.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.cuttlefish.cuttlebone-buoyancy",
+    "q": "What is a cuttlefish's 'cuttlebone'?",
+    "choices": [
+      "A true bone like a fish's backbone",
+      "A hardened beak",
+      "An internal chambered shell used to control buoyancy"
+    ],
+    "answer": 2,
+    "explain": "The cuttlebone is an internal, chambered shell of calcium carbonate. Moving liquid in and out of it lets the cuttlefish rise or sink.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7407613/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cuttlefish Buoyancy in Response to Food Availability and Ocean Acidification"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4471886/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The cuttlefish Sepia officinalis (Sepiidae, Cephalopoda) constructs cuttlebone from a liquid-crystal precursor"
+    },
+    "searchNote": "Search summary: cuttlebones are internal chambered calcium-carbonate structures, not true bones, used for buoyancy by pumping liquid in and out of the chambers.",
+    "risk": "none"
+  },
+  {
+    "fact": "cephalopods.cuttlefish.hatchlings-float-starved",
+    "q": "A study of newborn cuttlefish found that the share of hatchlings 'floating' was greatest under which condition?",
+    "choices": [
+      "Starvation",
+      "Overfeeding",
+      "Bright light"
+    ],
+    "answer": 0,
+    "explain": "Cuttlebone shape and weight affect buoyancy, and newborn cuttlefish that went without food were the most likely to end up floating.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7407613/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cuttlefish Buoyancy in Response to Food Availability and Ocean Acidification"
+    },
+    "source2": null,
+    "searchNote": "The cuttlefish buoyancy study linked cuttlebone weight-to-area ratio to buoyancy control in newborns and found the proportion of floating newborns was greatest under starvation.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.bobtail-squid.vibrio-fischeri",
+    "q": "What makes the light in the Hawaiian bobtail squid's light organ?",
+    "choices": [
+      "Glowing bacteria",
+      "Its own glowing cells",
+      "Glowing algae it eats"
+    ],
+    "answer": 0,
+    "explain": "The squid houses Vibrio fischeri bacteria in its light organ, and they produce the glow in exchange for food and shelter.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3187790/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Characterizing the Host and Symbiont Proteomes in the Association between the Bobtail Squid, Euprymna scolopes, and the Bacterium, Vibrio fischeri"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC106330/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Vibrio fischeri-Euprymna scolopes Light Organ Association: Current Ecological Paradigms - PMC"
+    },
+    "searchNote": "PMC papers describe Vibrio fischeri as the only bacterium that colonizes the light organ of Euprymna scolopes and the source of its luminescence.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.bobtail-squid.counterillumination",
+    "q": "What does the Hawaiian bobtail squid use its bacterial light for at night?",
+    "choices": [
+      "To attract mates",
+      "To lure prey closer",
+      "To match moonlight from above and hide its silhouette"
+    ],
+    "answer": 2,
+    "explain": "By glowing downward to match moonlight and starlight, the squid erases the shadow it would cast to predators below.",
+    "category": "cephalopods",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4000693/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Eye-specification genes in the bacterial light organ of the bobtail squid Euprymna scolopes, and their expression in response to symbiont cues - PMC"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13200733/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Lighting the way: how the squid–Vibrio model can inform thermal impacts on symbiotic dynamics - PMC"
+    },
+    "searchNote": "A PMC paper describes the squid using the symbionts' light as counterillumination camouflage that matches downwelling moonlight and starlight; another notes the squid is nocturnal.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.bobtail-squid.morning-expulsion",
+    "q": "Each morning, roughly what share of its light-organ bacteria does the Hawaiian bobtail squid expel?",
+    "choices": [
+      "About 5%",
+      "About 50%",
+      "About 95%"
+    ],
+    "answer": 2,
+    "explain": "At dawn the squid vents about 95% of its glowing bacteria. The rest regrow during the day, ready to light up again by night.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3187790/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Characterizing the Host and Symbiont Proteomes in the Association between the Bobtail Squid, Euprymna scolopes, and the Bacterium, Vibrio fischeri"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5216023/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Role of Hemocytes in the Hawaiian Bobtail Squid, Euprymna scolopes: A Model Organism for Studying Beneficial Host–Microbe Interactions - PMC"
+    },
+    "searchNote": "A PMC paper says each morning the squid expels about 95% of its bacterial population along with host cells; the remaining bacteria regrow on a daily cycle.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "cephalopods.bobtail-squid.colonized-after-hatching",
+    "q": "When does a Hawaiian bobtail squid acquire the bacteria for its light organ?",
+    "choices": [
+      "They are passed inside the egg",
+      "Soon after hatching, from seawater",
+      "Only once it reaches adulthood"
+    ],
+    "answer": 1,
+    "explain": "Hatchlings start out without their glowing partners and pick up Vibrio fischeri from the surrounding seawater soon after hatching.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3187790/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Characterizing the Host and Symbiont Proteomes in the Association between the Bobtail Squid, Euprymna scolopes, and the Bacterium, Vibrio fischeri"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC106330/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Vibrio fischeri-Euprymna scolopes Light Organ Association: Current Ecological Paradigms - PMC"
+    },
+    "searchNote": "A PMC paper says the light organ's crypts are the site of colonization and the squid is colonized soon after hatching. The 'from seawater' detail is from background knowledge; verify.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "cephalopods.bobtail-squid.dark-symbiont-rejected",
+    "q": "If a Hawaiian bobtail squid's bacteria cannot glow, what happens to them over the following weeks?",
+    "choices": [
+      "The squid's light organ loses them",
+      "They switch to making ink",
+      "They spread through the squid's body"
+    ],
+    "answer": 0,
+    "explain": "Non-glowing mutant bacteria can colonize at first but fade out within weeks, as if the squid only keeps partners that pay their way in light.",
+    "category": "cephalopods",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13200733/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Lighting the way: how the squid–Vibrio model can inform thermal impacts on symbiotic dynamics - PMC"
+    },
+    "source2": null,
+    "searchNote": "Search summary: dark mutants can colonize at 24 hours but show defects by 48 hours and are undetectable after a few weeks; a symbiont that stops luminescing is rejected by the host.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "cephalopods.squid.arms-and-tentacles",
+    "q": "Besides eight arms, what else does a typical squid have?",
+    "choices": [
+      "Two pairs of legs",
+      "A hard outer shell",
+      "Two long feeding tentacles"
+    ],
+    "answer": 2,
+    "explain": "Squid and cuttlefish have eight arms plus two longer tentacles that shoot out to snag prey. Octopuses have arms only.",
+    "category": "cephalopods",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/octopuses-squids-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Cephalopods: Octopus, Squid, Cuttlefish, and Nautilus"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian cephalopod overview (search result). The snippet did not quote the arm-and-tentacle count; the claim is from background knowledge of the page and must be checked.",
+    "risk": "none"
+  }
+]

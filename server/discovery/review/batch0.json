@@ -1,0 +1,867 @@
+[
+ {
+  "id": "dd-0001",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0002",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0003",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0004",
+  "verdict": "fix",
+  "why": "The dog comparison is extra risk: a dog's whole brain has ~2 billion neurons; ~500 million is roughly its cerebral cortex only. Drop it.",
+  "fixed": {
+   "explain": "The common octopus has around 500 million neurons, and most of them are not in its head but in its arms."
+  }
+ },
+ {
+  "id": "dd-0005",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0006",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0007",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0008",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0009",
+  "verdict": "review",
+  "why": "Hole size is quoted very differently across sources (quarter, beak-sized, orange, lemon). Check the source says 'lemon' for an adult GPO. Also overlaps dd-0008 (beak limits the gap); if kept, keep both only if the lemon figure is confirmed."
+ },
+ {
+  "id": "dd-0010",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0011",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0012",
+  "verdict": "fix",
+  "why": "She does not die right after laying: she broods the eggs for months without feeding and dies around when they hatch. Explanation implies immediate decline.",
+  "fixed": {
+   "explain": "She stays to guard and clean her eggs for months, hardly eating, and dies around the time they hatch. She never breeds again."
+  }
+ },
+ {
+  "id": "dd-0013",
+  "verdict": "fix",
+  "why": "Explanation is internally inconsistent: 8 x ~240 = ~1,920, not 'more than 2,000'. Per-arm counts vary by source (about 225 to 280). Use a band, not a point figure.",
+  "fixed": {
+   "q": "Roughly how many suckers can each arm of a giant Pacific octopus carry?",
+   "choices": [
+    "A couple dozen",
+    "A couple hundred",
+    "A couple thousand"
+   ],
+   "answer": 1,
+   "explain": "Each arm can carry a couple of hundred suckers, which adds up to roughly 2,000 across all eight arms."
+  }
+ },
+ {
+  "id": "dd-0014",
+  "verdict": "fix",
+  "why": "'Typically 40 to 100 lb' is source-dependent (many sources give ~22 to 110 lb or average ~33 lb), and the 12 to 14 ft arm span added in the explanation is a large-animal figure. Hedge the band and drop the span.",
+  "fixed": {
+   "q": "Roughly how much can an adult giant Pacific octopus weigh?",
+   "choices": [
+    "A pound or two",
+    "Tens of pounds, up to around 100",
+    "Over 1,000 pounds"
+   ],
+   "answer": 1,
+   "explain": "Adults commonly weigh tens of pounds, and large ones approach 100 pounds or more, making this one of the biggest octopuses."
+  }
+ },
+ {
+  "id": "dd-0015",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0016",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0017",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0018",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0019",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0020",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0021",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0022",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0023",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0024",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0025",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0026",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0027",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0028",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0029",
+  "verdict": "fix",
+  "why": "The vulnerability cost is the researchers' interpretation, not a measured result. Hedge the question.",
+  "fixed": {
+   "q": "Carrying coconut shells forces the veined octopus into a slow, awkward 'stilt walk.' What is the likely cost?"
+  }
+ },
+ {
+  "id": "dd-0030",
+  "verdict": "review",
+  "why": "Recent (2025) single study I cannot confirm from memory. Check the study exists, the location (NW Spain/Galicia), that the animals were juvenile Octopus vulgaris, and that the shells were bivalve (clam-type) shells."
+ },
+ {
+  "id": "dd-0031",
+  "verdict": "review",
+  "why": "Origin of tetrodotoxin in blue-ringed octopuses is not settled: early work attributed it to symbiotic bacteria in the salivary glands, but later studies found TTX throughout the body and eggs and questioned a purely bacterial source. Stating bacteria as fact is risky; if kept it needs 'is thought to' and a source that says so, otherwise reject."
+ },
+ {
+  "id": "dd-0032",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0033",
+  "verdict": "review",
+  "why": "Unsure this specific behavior (breaching the shell then dribbling saliva into the opening) is documented for the greater blue-ringed octopus (Hapalochlaena lunulata) rather than octopuses generally; blue-ringed octopuses are also described biting or releasing saliva into water near prey. Check the source names this species and this mechanism."
+ },
+ {
+  "id": "dd-0034",
+  "verdict": "fix",
+  "why": "'More than 30' is too precise; mature shells have roughly 30 or so chambers (often quoted as about 30 to 36). Ask for the approximate count.",
+  "fixed": {
+   "q": "About how many chambers does a mature chambered nautilus shell have?",
+   "choices": [
+    "About 3",
+    "About 30",
+    "About 300"
+   ],
+   "answer": 1,
+   "explain": "A mature shell has around 30 chambers. The nautilus adds a new one as it grows and seals off the old ones behind it."
+  }
+ },
+ {
+  "id": "dd-0035",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0036",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0037",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0038",
+  "verdict": "fix",
+  "why": "Implosion experiments were done on shells (not living animals inside them). Minor wording.",
+  "fixed": {
+   "q": "Experiments found chambered nautilus shells implode at roughly what depth?"
+  }
+ },
+ {
+  "id": "dd-0039",
+  "verdict": "fix",
+  "why": "'90-plus' overstates: nautilus tentacle counts are commonly given as about 90 (and differ between the sexes). Hedge.",
+  "fixed": {
+   "q": "How do the roughly 90 tentacles of a chambered nautilus differ from an octopus's arms?"
+  }
+ },
+ {
+  "id": "dd-0040",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0041",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0042",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0043",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0044",
+  "verdict": "review",
+  "why": "Cannot confirm this study or its result from memory; the explanation also implies a cuttlebone mechanism that may not be what the study concluded. Check the study, the species, and that starvation (not another condition) gave the highest share of floating hatchlings."
+ },
+ {
+  "id": "dd-0045",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0046",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0047",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0048",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0049",
+  "verdict": "fix",
+  "why": "'Over the following weeks' is too specific; dark mutants are lost from the light organ over days. Make the timescale vague.",
+  "fixed": {
+   "q": "If a Hawaiian bobtail squid's bacteria cannot glow, what happens to them over time?",
+   "choices": [
+    "The squid's light organ gradually loses them",
+    "They switch to making ink",
+    "They spread through the squid's body"
+   ],
+   "explain": "Non-glowing mutant bacteria can colonize at first but are not kept for long, as if the squid only keeps partners that pay their way in light."
+  }
+ },
+ {
+  "id": "dd-0050",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0051",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0052",
+  "verdict": "fix",
+  "why": "Gestation varies widely between species (about 10 days to 6 weeks; 2 to 4 weeks is common). 'About two weeks' is too precise, and attribution in the question is awkward.",
+  "fixed": {
+   "q": "Roughly how long after the eggs enter a male seahorse's pouch do the young typically emerge?",
+   "choices": [
+    "A couple of days",
+    "A few weeks",
+    "About six months"
+   ],
+   "answer": 1,
+   "explain": "Depending on species and water temperature, the young typically emerge from the father's pouch after a few weeks."
+  }
+ },
+ {
+  "id": "dd-0053",
+  "verdict": "review",
+  "why": "Obscure single-study fact; I cannot confirm when the pouch forms in H. abdominalis (pouch development is often reported starting in the juvenile stage). Check the study's exact wording on the stage at which the pouch appears."
+ },
+ {
+  "id": "dd-0054",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0055",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0056",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0057",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0058",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0059",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0060",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0061",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0062",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0063",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0064",
+  "verdict": "fix",
+  "why": "Fin-beat rates vary by source (often 30 to 70 per second, sometimes 'up to 50'). Also the correct choice 'Up to about 40' has no unit while distractors do. Use a band.",
+  "fixed": {
+   "q": "About how fast can a seahorse's small dorsal fin flutter?",
+   "choices": [
+    "About once a second",
+    "About once a minute",
+    "Dozens of times a second"
+   ],
+   "answer": 2,
+   "explain": "The dorsal fin can beat dozens of times a second, too fast for the eye to follow."
+  }
+ },
+ {
+  "id": "dd-0065",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0066",
+  "verdict": "fix",
+  "why": "'Lip-smacking' is misleading: the click is made by skull bones (supraoccipital rubbing against the coronet), not lips. Also seahorses make low growls when stressed, so 'grunts' is close to true for some contexts.",
+  "fixed": {
+   "q": "What sound do seahorses typically make while feeding and courting?",
+   "choices": [
+    "Sharp clicks",
+    "Long, high whistles",
+    "Deep, booming calls"
+   ],
+   "answer": 0,
+   "explain": "Seahorses make clicking sounds, produced by bones at the back of the skull, when they eat and during courtship."
+  }
+ },
+ {
+  "id": "dd-0067",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0068",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0069",
+  "verdict": "fix",
+  "why": "The '72% of suction power' figure is a single-study number I cannot confirm; drop it.",
+  "fixed": {
+   "explain": "Like a drawn bow, a seahorse stores elastic energy in tendons and releases it at once, letting the head snap toward prey faster than muscle alone could."
+  }
+ },
+ {
+  "id": "dd-0070",
+  "verdict": "review",
+  "why": "Direction of the trade-off is easy to get backwards and the distractor is its mirror image. Check the study (snout length versus head-rotation speed and suction flow) says exactly 'longer snout = faster rotation, slower suction'."
+ },
+ {
+  "id": "dd-0071",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0072",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0073",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0074",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0075",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0076",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0077",
+  "verdict": "fix",
+  "why": "'Permanent' is absolute; studies followed pairs across several seasons, not for life.",
+  "fixed": {
+   "choices": [
+    "They pick a new partner every day",
+    "Females raise the young alone",
+    "They form long-lasting pairs"
+   ],
+   "explain": "White's seahorses form long-term pairs; researchers in Port Stephens and Sydney Harbour followed pairs that stayed together for multiple breeding seasons."
+  }
+ },
+ {
+  "id": "dd-0078",
+  "verdict": "fix",
+  "why": "'Now mostly found' is a changing situation (nets have been removed/replaced and artificial 'seahorse hotels' installed). Reword to a stable fact.",
+  "fixed": {
+   "q": "In Sydney Harbour, which human-made structures became important habitat for endangered White's seahorses?",
+   "choices": [
+    "Oil-rig legs",
+    "Floating plastic bags",
+    "Nets around harbour swimming areas"
+   ],
+   "answer": 2,
+   "explain": "With much of their natural habitat lost, White's seahorses in Sydney Harbour came to rely heavily on the nets that enclose harbour swimming areas."
+  }
+ },
+ {
+  "id": "dd-0079",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0080",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0081",
+  "verdict": "fix",
+  "why": "'Only on Muricella' is absolute; hedge.",
+  "fixed": {
+   "explain": "This species is found on gorgonian sea fans, mainly of the genus Muricella, and spends its life clinging to them."
+  }
+ },
+ {
+  "id": "dd-0082",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0083",
+  "verdict": "reject",
+  "why": "Duplicate of dd-0079: both test that pygmy seahorses are only 1 to 2 cm long (closely related species, same underlying fact). Keep dd-0079.",
+  "dupOf": "dd-0079"
+ },
+ {
+  "id": "dd-0084",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0085",
+  "verdict": "review",
+  "why": "Recent (2025) genome study I cannot confirm. Check the study exists, the species, and that it specifically links coral living to immune gene loss."
+ },
+ {
+  "id": "dd-0086",
+  "verdict": "review",
+  "why": "Obscure; I cannot confirm the red pipefish (Notiocampus ruber) brooding photos from memory. Check the Australian Museum source says it was thought to be a tail brooder and was shown to be a trunk brooder."
+ },
+ {
+  "id": "dd-0087",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0088",
+  "verdict": "review",
+  "why": "Counter-intuitive single-study result. Check the study (likely comparing pouch types across pipefish species) actually found no survival or growth advantage, and in which species/conditions; 'surprisingly' framing invites error."
+ },
+ {
+  "id": "dd-0089",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0090",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0091",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0092",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0093",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0094",
+  "verdict": "fix",
+  "why": "Egg counts vary by source (often 'up to 250' for leafy seadragons; 250 to 300 is sometimes given for weedy). Use a band.",
+  "fixed": {
+   "q": "Roughly how many eggs does a female leafy seadragon pass to the male?",
+   "choices": [
+    "About 5",
+    "A few hundred",
+    "About 50,000"
+   ],
+   "answer": 1,
+   "explain": "The female transfers a few hundred eggs to the male, who carries them on the underside of his tail until they hatch."
+  }
+ },
+ {
+  "id": "dd-0095",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0096",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0097",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0098",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0099",
+  "verdict": "review",
+  "why": "'Up to 24 hours' of mirrored courtship is an aquarium-sourced claim I cannot confirm. Check Shedd says this for weedy (not leafy) seadragons and the exact duration."
+ },
+ {
+  "id": "dd-0100",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0101",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0102",
+  "verdict": "fix",
+  "why": "The 1919 Cottesloe Beach specimen is an extra specific claim not needed for the question. Drop it.",
+  "fixed": {
+   "explain": "Museum specimens collected decades earlier had been filed as common (weedy) seadragons until DNA work in 2015 showed they were a separate species."
+  }
+ },
+ {
+  "id": "dd-0103",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0104",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0105",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0106",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0107",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0108",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0109",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0110",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0111",
+  "verdict": "review",
+  "why": "Unsure: which species is 'striped hermit crab' (Clibanarius vittatus?) and whether its shell exchanges are described as non-violent. Hermit crab shell exchanges in several species involve rapping/aggressive behavior. Check source names the species and the behavior."
+ },
+ {
+  "id": "dd-0112",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0113",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0114",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0115",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0116",
+  "verdict": "fix",
+  "why": "Six-row midband with 4 colour + 2 polarization rows applies to many (gonodactyloid/lysiosquilloid) mantis shrimp, not all; some have 2-row midbands. Hedge.",
+  "fixed": {
+   "q": "In many mantis shrimp, a band of specialized rows across the middle of the eye detects color and what other property of light?",
+   "explain": "In many species, six rows of eye units run across the middle of each eye: four handle color, and two are devoted to polarized light, the direction in which light waves vibrate."
+  }
+ },
+ {
+  "id": "dd-0117",
+  "verdict": "fix",
+  "why": "'Five of six UV receptors share the same pigment' is a precise number I cannot confirm; keep the explanation general.",
+  "fixed": {
+   "explain": "Several of this species' UV receptor types share a visual pigment. Filters in the eye, which researchers liken to sunscreens, tune each type to a different slice of UV."
+  }
+ },
+ {
+  "id": "dd-0118",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0119",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0120",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0121",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0122",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0123",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0124",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0125",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0126",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0127",
+  "verdict": "fix",
+  "why": "Eye counts for Limulus vary by source (9 or 10, plus light sensors on the tail). Hedge the count.",
+  "fixed": {
+   "q": "Counting its small light-sensitive eyes as well as its two big ones, about how many eyes does the Atlantic horseshoe crab have?",
+   "choices": [
+    "Two",
+    "About ten",
+    "About forty"
+   ],
+   "answer": 1,
+   "explain": "Besides two large compound eyes, the horseshoe crab has several smaller light-sensitive eyes, for around ten in all."
+  }
+ },
+ {
+  "id": "dd-0128",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0129",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0130",
+  "verdict": "fix",
+  "why": "'As well as or better' overstates; reviews generally conclude rFC is comparable/equivalent.",
+  "fixed": {
+   "explain": "Recombinant Factor C (rFC) is made without bleeding horseshoe crabs, and reviews have found it detects bacterial endotoxin about as well as the blood-based LAL test."
+  }
+ },
+ {
+  "id": "dd-0131",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0132",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0133",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0134",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0245",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0246",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0247",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0248",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0249",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0250",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0251",
+  "verdict": "fix",
+  "why": "'More ampullae than other sharks' is shaky: studies (Kajiura) found the hammerhead's advantage is a wider spread of pores and search swath, not better sensitivity; pore count comparison is species-dependent.",
+  "fixed": {
+   "choices": [
+    "It holds air that keeps the shark afloat",
+    "It is used to dig burrows",
+    "It spreads electric-sensing pores over a wider area"
+   ],
+   "answer": 2,
+   "explain": "A hammerhead's broad head spreads its electric-sensing pores across a wide area, letting it sweep more seafloor for prey buried in the sand."
+  }
+ },
+ {
+  "id": "dd-0252",
+  "verdict": "reject",
+  "why": "Same underlying fact and same correct answer ('Weak electric fields') as dd-0249 (elasmobranch electroreception); players will see it as a repeat. Keep dd-0249.",
+  "dupOf": "dd-0249"
+ },
+ {
+  "id": "dd-0253",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0254",
+  "verdict": "fix",
+  "why": "'First known omnivorous shark' is an absolute 'first' claim; test the finding itself.",
+  "fixed": {
+   "q": "Which shark was shown in 2018 to digest seagrass and absorb its nutrients?"
+  }
+ },
+ {
+  "id": "dd-0255",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0256",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0257",
+  "verdict": "fix",
+  "why": "'As they age' is misleading: shark cartilage is reinforced with mineralized tesserae from early life. Also most shark fossils are teeth.",
+  "fixed": {
+   "choices": [
+    "Parts of their cartilage are hardened with calcium salts",
+    "Shark cartilage turns into bone after death",
+    "Sharks swallow stones that harden their skeletons"
+   ],
+   "answer": 0,
+   "explain": "Much of a shark's cartilage is reinforced with calcium salts, and this hardened cartilage can fossilize. Teeth, though, are by far the most common shark fossils."
+  }
+ },
+ {
+  "id": "dd-0258",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0259",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0260",
+  "verdict": "fix",
+  "why": "Earliest 'shark' scales (~450 to 455 Ma) are of debated affinity; the exact figure is too precise. Use a band and hedge.",
+  "fixed": {
+   "choices": [
+    "About 2 million years ago",
+    "About 66 million years ago",
+    "More than 400 million years ago"
+   ],
+   "answer": 2,
+   "explain": "Fossil scales suggest shark relatives were swimming around 450 million years ago, long before dinosaurs, though whether the oldest scales are from true sharks is debated."
+  }
+ },
+ {
+  "id": "dd-0261",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0262",
+  "verdict": "fix",
+  "why": "Nurse sharks mainly breathe at rest by buccal pumping (their spiracles are tiny); spiracle breathing is characteristic of angel sharks, skates and rays. Reframe on the spiracle itself.",
+  "fixed": {
+   "q": "Many bottom-dwelling sharks and rays have a spiracle, an extra opening behind each eye. What is it for?",
+   "choices": [
+    "Drawing in water to breathe while resting",
+    "Squirting water to scare predators",
+    "Hearing sounds in the water"
+   ],
+   "answer": 0,
+   "explain": "A spiracle lets bottom-dwellers such as angel sharks and rays draw in water from above while they lie still on or in the seafloor."
+  }
+ },
+ {
+  "id": "dd-0263",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0264",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0265",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0266",
+  "verdict": "fix",
+  "why": "Maturity age is a population-specific estimate (western North Atlantic, Natanson and Skomal 2015). Name the population and hedge.",
+  "fixed": {
+   "q": "Female white sharks mature slowly. In the western North Atlantic, at about what age are they estimated to be ready to carry pups?",
+   "explain": "Female white sharks in the western North Atlantic are estimated to mature around 33 years old, and males at about 26. Slow maturity makes populations slow to recover."
+  }
+ },
+ {
+  "id": "dd-0267",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0268",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0269",
+  "verdict": "ok"
+ }
+]

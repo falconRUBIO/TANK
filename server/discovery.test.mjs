@@ -93,7 +93,8 @@ await t('a server restart keeps every answer and every used question (the databa
   const n = S.db.prepare('SELECT COUNT(*) n FROM dd_answer').get().n, u = S.db.prepare('SELECT COUNT(*) n FROM dd_day WHERE qid IS NOT NULL').get().n; assert.ok(n >= 3 && u >= 6);
 });
 await t('the Field Guide: a question about a behavior counts as learned for the caretaker who answered it, not for the others', async () => {
-  const q = S.db.prepare('SELECT day,q FROM dd_day WHERE tank_id=?').all(tk.id).map((r) => ({ day: r.day, q: JSON.parse(r.q) })).find((r) => r.q.behavior);
+  const cyDays = new Set(S.db.prepare('SELECT day FROM dd_answer WHERE tank_id=? AND user_id=?').all(tk.id, c.userId).map((r) => r.day));      // (one Cy never answered: the order questions come in differs from tank to tank)
+  const q = S.db.prepare('SELECT day,q FROM dd_day WHERE tank_id=? AND qid IS NOT NULL').all(tk.id).map((r) => ({ day: r.day, q: JSON.parse(r.q) })).find((r) => r.q.behavior && !cyDays.has(r.day));
   assert.ok(q, 'a behavior question was asked'); S.db.prepare('INSERT OR IGNORE INTO dd_answer (tank_id,day,user_id,qid,choice,correct,ts) VALUES (?,?,?,?,?,?,?)').run(tk.id, q.day, b.userId, q.q.id, 0, 0, clock);
   assert.ok(S.dd.learnedOf(tk.id, b.userId).by[q.q.behavior]); assert.ok(!S.dd.learnedOf(tk.id, c.userId).by[q.q.behavior]);
 });

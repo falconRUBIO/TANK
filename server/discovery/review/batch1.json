@@ -1,0 +1,734 @@
+[
+  {
+    "id": "dd-0135",
+    "verdict": "fix",
+    "why": "Distractor 'An immunity it is born with' is arguably true for some anemonefish (some individuals/species are protected without acclimation; how the mucus works is still debated). Replace it, and hedge the explanation.",
+    "fixed": {
+      "choices": [
+        "A layer of mucus on its skin",
+        "Extra-thick armored scales",
+        "Venom-proof blood"
+      ],
+      "explain": "A clownfish usually gets used to its anemone by gently touching the tentacles over hours or days. Its coat of mucus then protects it from the stings."
+    }
+  },
+  {
+    "id": "dd-0136",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0137",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0138",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0139",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0140",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0141",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0142",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0143",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0144",
+    "verdict": "fix",
+    "why": "Explanation says parrotfish 'mostly eat algae'; recent work suggests many parrotfish target microscopic organisms (e.g. cyanobacteria) living on and in reef rock. Hedge it.",
+    "fixed": {
+      "explain": "Parrotfish graze algae and other tiny growth off reef surfaces. That grazing helps stop algae from crowding out corals for light and space."
+    }
+  },
+  {
+    "id": "dd-0145",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0146",
+    "verdict": "fix",
+    "why": "Same species (Labroides dimidiatus) is called 'common cleanerfish' here and 'bluestreak cleaner wrasse' in dd-0147/0148; use one name so players are not confused.",
+    "fixed": {
+      "q": "How does the bluestreak cleaner wrasse, also called the common cleanerfish, attract larger fish to its cleaning station?"
+    }
+  },
+  {
+    "id": "dd-0147",
+    "verdict": "fix",
+    "why": "Explanation repeats the per-day parasite count tested by dd-0148 ('by the hundreds each day'); trim it.",
+    "fixed": {
+      "explain": "Gnathiid isopods are tiny crustaceans that feed on fish blood and body fluids. Cleaner wrasses pluck them off the fish that visit their stations."
+    }
+  },
+  {
+    "id": "dd-0148",
+    "verdict": "fix",
+    "why": "The figures are field estimates from one study, not direct counts; say 'estimated'.",
+    "fixed": {
+      "explain": "One study estimated that a single wrasse has more than 2,000 cleaning visits and eats over 1,000 parasites a day, a very busy reef doctor."
+    }
+  },
+  {
+    "id": "dd-0149",
+    "verdict": "fix",
+    "why": "In the Caribbean most cleaning of groupers is done by cleaning gobies as well as wrasses; 'small wrasses' alone is too narrow.",
+    "fixed": {
+      "explain": "At cleaning stations, small cleaner fish such as gobies and wrasses pick parasites and dead tissue from a Nassau grouper's gills and body, and the big predator lets them work."
+    }
+  },
+  {
+    "id": "dd-0150",
+    "verdict": "fix",
+    "why": "Explanation adds an unsupported causal claim about the 'doctors of the reef' nickname; trim.",
+    "fixed": {
+      "explain": "In removal experiments, reefs without cleaner wrasses ended up with less healthy, less diverse fish communities."
+    }
+  },
+  {
+    "id": "dd-0151",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0152",
+    "verdict": "fix",
+    "why": "Distractor 'Hide from predatory fish' is defensible: protective mimicry has been proposed as a benefit of the disguise, and fin-biting is only part of the false cleanerfish's diet. Replace the distractor and hedge the explanation.",
+    "fixed": {
+      "choices": [
+        "Steal mates from the real cleaner",
+        "Lure fish into a sea anemone",
+        "Bite pieces of fin and skin from fish"
+      ],
+      "explain": "Fish that trust the cleanerfish's look let the mimic get close, and it can nip off pieces of fin or skin instead of cleaning."
+    }
+  },
+  {
+    "id": "dd-0153",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0154",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0155",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0156",
+    "verdict": "fix",
+    "why": "Tunas do have the usual gill-pumping structures but cannot pump enough water with them; 'lack the structures' overstates it.",
+    "fixed": {
+      "explain": "Like other tunas, albacore can't pump enough water over their gills while still, so they swim with mouths open to keep water flowing through."
+    }
+  },
+  {
+    "id": "dd-0157",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0158",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0159",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0160",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0161",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0162",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0163",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0164",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0165",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0166",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0167",
+    "verdict": "fix",
+    "why": "A few flatfish species (e.g. starry flounder) are mixed left- and right-eyed, so 'set by the species' needs a hedge.",
+    "fixed": {
+      "explain": "Which side ends up on top is usually set by the species. In right-eyed flatfish, the left eye migrates over to join the right."
+    }
+  },
+  {
+    "id": "dd-0168",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0169",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0170",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0171",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0172",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0173",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0174",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0175",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0176",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0177",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0178",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0179",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0180",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0181",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0182",
+    "verdict": "fix",
+    "why": "Larval-duration estimates for American eels vary between studies (several months to over a year); keep the answer from implying precision.",
+    "fixed": {
+      "choices": [
+        "About a week",
+        "About ten years",
+        "Many months, up to about a year"
+      ],
+      "explain": "Tiny eel larvae ride the currents for many months, often estimated at around a year, before arriving in coastal waters and moving into rivers."
+    }
+  },
+  {
+    "id": "dd-0183",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0184",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0185",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0186",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0187",
+    "verdict": "fix",
+    "why": "'A favorite food' is contradicted in-batch by dd-0188 and diet is size-dependent; soften.",
+    "fixed": {
+      "choices": [
+        "They block sunlight the fish needs",
+        "They look like jellies, a major food",
+        "They tangle around its long tail"
+      ],
+      "explain": "Drifting at the surface, a plastic bag looks a lot like a jelly, so sunfish can mistake it for a meal."
+    }
+  },
+  {
+    "id": "dd-0188",
+    "verdict": "reject",
+    "why": "Trick question built on one DNA-barcoding study whose result runs against the established view (and dd-0187); sunfish diet shifts with body size, and DNA methods may under-detect quickly digested jellies. 'Jellyfish' is defensible for adults."
+  },
+  {
+    "id": "dd-0189",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0190",
+    "verdict": "fix",
+    "why": "Leatherback hatchlings have small bead-like scales; 'without scales' adds an unneeded absolute. Trim.",
+    "fixed": {
+      "explain": "Leatherbacks are the only sea turtles without a hard shell. Their shell is covered in tough, rubbery skin, which gives them their name."
+    }
+  },
+  {
+    "id": "dd-0191",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0192",
+    "verdict": "fix",
+    "why": "The backward-pointing papillae line the mouth and especially the throat (esophagus); also the explanation's 'tooth-like cusps' makes the 'sharp, curved teeth' distractor arguable. Replace that distractor.",
+    "fixed": {
+      "choices": [
+        "Sticky saliva on its tongue",
+        "Hooked claws on its front flippers",
+        "Backward-pointing spines in its mouth and throat"
+      ],
+      "explain": "Backward-facing spines lining the leatherback's mouth and throat help it grip soft, slippery prey like jellyfish."
+    }
+  },
+  {
+    "id": "dd-0193",
+    "verdict": "fix",
+    "why": "Extra dive-duration figure (85 minutes) is extra risk and not needed.",
+    "fixed": {
+      "explain": "Leatherbacks dive deeper than any other sea turtle, to about 4,000 feet (roughly 1,200 meters)."
+    }
+  },
+  {
+    "id": "dd-0194",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0195",
+    "verdict": "review",
+    "why": "Unsure of the exact comparison: confirm the source says the salt glands are 'more than twice the size of the brain' (and whether that is one gland or the pair). Distractor 'About the size of its brain' is close enough that any imprecision makes it wrong. The question stem also gives away why the glands are big."
+  },
+  {
+    "id": "dd-0196",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0197",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0198",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0199",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0200",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0201",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0202",
+    "verdict": "fix",
+    "why": "'Lets rarer species become established' is unclear (rarer species of what?), and 'eat only certain sponge types' conflicts with dd-0199, which says hawksbills also eat algae, corals and other invertebrates.",
+    "fixed": {
+      "choices": [
+        "It spreads coral larvae across the reef",
+        "It keeps common sponges from crowding out rarer reef species",
+        "It clears sand off the reef surface"
+      ],
+      "explain": "Because hawksbills feed mostly on certain sponge types, they keep those sponges in check, letting rarer species get established and helping the reef stay diverse."
+    }
+  },
+  {
+    "id": "dd-0203",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0204",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0205",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0206",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0207",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0208",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0209",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0210",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0211",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0212",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0213",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0214",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0215",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0216",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0217",
+    "verdict": "fix",
+    "why": "Explanation repeats the warm-equals-female fact that dd-0216 tests; trim it.",
+    "fixed": {
+      "explain": "The thermosensitive period is roughly the middle third of incubation; temperatures then largely decide whether an embryo becomes male or female."
+    }
+  },
+  {
+    "id": "dd-0218",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0219",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0220",
+    "verdict": "reject",
+    "why": "Duplicate of dd-0219: both test that loggerheads home to their natal beach's magnetic signature (0220's answer is just 'the magnetic field' again). Keep dd-0219.",
+    "dupOf": "dd-0219"
+  },
+  {
+    "id": "dd-0221",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0222",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0223",
+    "verdict": "fix",
+    "why": "The full-moon 'myth' line is an extra claim the question does not need.",
+    "fixed": {
+      "explain": "Hatchlings stay quiet while the sand near the surface is hot. As it cools after dark they become active, so most emerge at night."
+    }
+  },
+  {
+    "id": "dd-0224",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0225",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0226",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0227",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0228",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0229",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0230",
+    "verdict": "reject",
+    "why": "Duplicate of dd-0228 (and dd-0229): the same Hawaiian turtle cleaning-station fact, and the answer 'algae and parasites' is stated in both of those explanations. Its explanation also adds a vague claim that stations lower parasite loads. Keep dd-0228.",
+    "dupOf": "dd-0228"
+  },
+  {
+    "id": "dd-0231",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0232",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0233",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0234",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0235",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0236",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0237",
+    "verdict": "fix",
+    "why": "'First satellite-tracking study of a crocodilian' is an unneeded record claim; trim.",
+    "fixed": {
+      "explain": "In a satellite-tracking study, all three relocated male crocodiles eventually returned to their capture sites; one swam over 400 km in 20 days."
+    }
+  },
+  {
+    "id": "dd-0238",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0239",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0240",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0241",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0242",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0243",
+    "verdict": "fix",
+    "why": "Sea krait nests are rarely found and are usually reported in rock crevices or caves above the tideline, not on or under sand. Keep the answer to 'on land'.",
+    "fixed": {
+      "choices": [
+        "In floating rafts of seaweed",
+        "In crevices on the reef underwater",
+        "On land, out of the water"
+      ],
+      "explain": "Unlike true sea snakes, which give birth at sea, banded sea kraits come ashore to lay their eggs."
+    }
+  },
+  {
+    "id": "dd-0244",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0270",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0271",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0272",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0273",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0274",
+    "verdict": "review",
+    "why": "Tusk identity is listed as disputed-check: many references (older and current) still call it an incisor, so the 'incisor' distractor may be defensible. Confirm the canine identification is the current consensus before using it."
+  },
+  {
+    "id": "dd-0275",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0276",
+    "verdict": "fix",
+    "why": "Nerves are in the pulp; it is tiny fluid-filled tubules that connect it to the surface. The 'sensory organ' role is a hypothesis.",
+    "fixed": {
+      "choices": [
+        "It grows from the lower jaw",
+        "Tiny channels link its nerve-filled core to the surface",
+        "It is made of solid bone"
+      ],
+      "explain": "Millions of tiny fluid-filled channels run from the tusk's surface to its nerve-filled core, which has led researchers to propose it works as a sensory organ."
+    }
+  },
+  {
+    "id": "dd-0277",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0278",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0279",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0280",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0281",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0282",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0283",
+    "verdict": "fix",
+    "why": "Ice thickness figure varies by source (some report bowheads breaking ice much thicker than 8 inches); drop the number.",
+    "fixed": {
+      "explain": "Bowheads live in icy Arctic waters, and their large, thick skulls let them break through sea ice to reach air."
+    }
+  },
+  {
+    "id": "dd-0284",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0285",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0286",
+    "verdict": "fix",
+    "why": "Sucker scars on sperm whales may come from other large squid species, not only giant squid; hedge.",
+    "fixed": {
+      "explain": "Giant squid beaks have turned up in sperm whale stomachs, and sucker scars on some whales suggest that big squid fight back."
+    }
+  },
+  {
+    "id": "dd-0287",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0288",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0289",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0290",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0291",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0292",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0293",
+    "verdict": "review",
+    "why": "Many sources say whale lice (cyamids) feed mainly on the whale's sloughing skin, not algae; confirm the source supports 'algae' as their main food. If skin is right, the answer must change."
+  },
+  {
+    "id": "dd-0294",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0295",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0296",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0297",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0298",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0299",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0300",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0301",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0302",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0303",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0304",
+    "verdict": "fix",
+    "why": "Sponging is passed mostly but not only to daughters; 'within one family line' was the early finding and has been revised. Hedge.",
+    "fixed": {
+      "explain": "Sponging is passed down mainly from mothers to their offspring, especially daughters, which researchers called the first known material culture in a marine mammal."
+    }
+  },
+  {
+    "id": "dd-0305",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0306",
+    "verdict": "ok"
+  }
+]

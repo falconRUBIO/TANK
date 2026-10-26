@@ -98,9 +98,17 @@ export class Game {
     else if (m.t === 'thanks') this.emit('thanks', m.text);
     else if (m.t === 'thanked') { const w = this.thankWait?.get(m.ref); this.thankWait?.delete(m.ref); if (m.ok) this.thanked?.add(m.ref); w?.(m); }
     else if (m.t === 'nudged') { const w = this.nudgeWait; this.nudgeWait = null; w?.(m); }
+    else if (m.t === 'dd') { const was = this.dd; this.dd = m; this.emit('dd', m, was); }      // today's Daily Discovery, as this caretaker may see it
+    else if (m.t === 'ddAck') { const w = this.ddWait; this.ddWait = null; w?.(m); }
     else if (m.t === 'ack') { const w = this.waiting.get(m.idem); if (w) { this.waiting.delete(m.idem); w(m); } }
   }
 
+  // Daily Discovery: the server holds the answer; this only sends the choice, once, and the server's reply (a new 'dd') shows the result
+  ddAnswer(choice) {
+    if (!this.live?.connected || !this.dd?.id) return Promise.resolve({ ok: false, reason: 'OFFLINE' });
+    return new Promise((res) => { const t = setTimeout(() => { this.ddWait = null; res({ ok: false, reason: 'TIMEOUT' }); }, 8000); this.ddWait = (m) => { clearTimeout(t); res(m); }; this.live.send({ t: 'ddAnswer', id: this.dd.id, choice }); });
+  }
+  ddRefresh() { if (this.live?.connected) this.live.send({ t: 'ddGet' }); }
   nudge(to) {
     if (!this.live?.connected) return Promise.resolve({ ok: false, reason: 'OFFLINE' });
     return new Promise((res) => { const t = setTimeout(() => { this.nudgeWait = null; res({ ok: false, reason: 'TIMEOUT' }); }, 6000); this.nudgeWait = (m) => { clearTimeout(t); res(m); }; this.live.send({ t: 'nudge', to }); });

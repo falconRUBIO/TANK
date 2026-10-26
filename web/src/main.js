@@ -1504,6 +1504,11 @@ game.on('levelup', (lv) => {
 game.on('arrival', (ids) => { sfx('arrive'); ui?.hush(10000);      // a new arrival gets the screen to itself for a moment: tips and toasts wait
   for (const id of ids) { const f = fishes.byId.get(id); if (f) { f.pos.set((rng() - 0.5) * 4, 13.5, 1.4); f.target.set(f.pos.x, 8, 1.4); f.retarget = 3; fishes.burst(f.pos); } else pendingArrivals.add(id); } spotlightFish(ids[0], 4200, 1800); });
 game.on('placed', () => tut.onPlaced());
+// Daily Discovery: it comes up by itself on the first opening of the day, once the tank has loaded and nothing else is on screen (and not until
+// the first-feed tips are done). 'Not now' puts it away for the day: it waits on Today, and it is never pushed again the same day.
+let ddPending = false;
+game.on('dd', (d) => { if (d.state !== 'open' || !game.shared || ddPending || (game.state?.flags?.tut ?? 0) < 5) return; const tag = `${game.code}:${d.day}`; let shown = null; try { shown = localStorage.getItem('ourtank.ddShown'); } catch { /* storage unavailable */ } if (shown === tag) return;
+  ddPending = true; setTimeout(() => ui?.discovery({ auto: true }).then((ok) => { ddPending = false; if (ok) try { localStorage.setItem('ourtank.ddShown', tag); } catch { /* storage unavailable */ } }), 2500); });
 game.on('nudged', (from, why, name) => { sfx('arrive'); ui?.toast(`${from} says ${({ octo: `${name ?? 'your octopus'} is hungry`, feed: 'the fish are hungry', glass: 'the glass needs a wipe', water: 'the water needs changing' })[why] ?? 'the tank could use you'}`, 4200); });
 game.on('crab', (id) => { fishes.dropCrab(id); });
 { let told = false; game.on('state', () => { const s = game.state; if (told || !s || (s.flags.tut ?? 0) < 5 || s.goal || !(s.goalOffer ?? []).length || (s.goalsDone ?? []).length) return; told = true; try { if (localStorage.getItem('ourtank.goalTip')) return; localStorage.setItem('ourtank.goalTip', '1'); } catch { return; } setTimeout(() => ui?.toast('Your tank has goals now. Tap the bell to choose one.', 5200), 4000); }); }      // the first time goals are on offer, once

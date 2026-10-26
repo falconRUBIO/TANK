@@ -1,0 +1,592 @@
+[
+  {
+    "fact": "sharks-rays.whale-shark.largest-fish",
+    "q": "Which of these is the biggest fish in the ocean?",
+    "choices": [
+      "Whale shark",
+      "Basking shark",
+      "Giant manta ray"
+    ],
+    "answer": 0,
+    "explain": "Despite its name, the whale shark is a fish, not a whale, and it is the biggest fish in the sea. Some estimates put it at over 12 meters long.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/whale-shark/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Whale Shark - Florida Museum of Natural History"
+    },
+    "searchNote": "NOAA's shark facts page says whale sharks are the biggest fish in the ocean, growing to 12.2 m and up to 40 tons by some estimates.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.whale-shark.spot-pattern-id",
+    "q": "How do researchers tell individual whale sharks apart?",
+    "choices": [
+      "By the calls they make",
+      "By their unique spot patterns",
+      "By counting their teeth"
+    ],
+    "answer": 1,
+    "explain": "No two whale sharks share the same pattern of spots and stripes, so photos of a shark's skin work much like a fingerprint for identifying it.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/whale-shark/",
+      "publisher": "Georgia Aquarium",
+      "title": "Whale Shark - Georgia Aquarium"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "searchNote": "Georgia Aquarium says each whale shark's spot-and-stripe pattern is unique, like a human fingerprint, and is used to tell individuals apart. NOAA's shark facts page says the same.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.greenland-shark.age-method-eye-lens",
+    "q": "To estimate the ages of Greenland sharks, a 2016 study radiocarbon-dated which part of their bodies?",
+    "choices": [
+      "Their vertebrae",
+      "Their teeth",
+      "The lenses of their eyes"
+    ],
+    "answer": 2,
+    "explain": "The center of the eye lens forms before birth and never changes afterward, so dating its carbon reveals when the shark was born.",
+    "category": "sharks-rays",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://researchprofiles.ku.dk/en/publications/eye-lens-radiocarbon-reveals-centuries-of-longevity-in-the-greenl/",
+      "publisher": "University of Copenhagen",
+      "title": "Eye lens radiocarbon reveals centuries of longevity in the Greenland shark (Somniosus microcephalus) - University of Copenhagen Research Portal"
+    },
+    "source2": null,
+    "searchNote": "The 2016 study, titled 'Eye lens radiocarbon reveals centuries of longevity in the Greenland shark', dated eye lens tissue from 28 females; the lens nucleus does not change after birth.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sharks-rays.greenland-shark.oldest-age-estimate",
+    "q": "A 2016 study estimated that the oldest Greenland shark it examined was at least how old?",
+    "choices": [
+      "About 72 years",
+      "At least 272 years",
+      "At least 1,200 years"
+    ],
+    "answer": 1,
+    "explain": "The oldest shark in the study was estimated at 272 to 512 years old, with about 390 years as the most likely figure. That makes Greenland sharks extraordinarily long-lived.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://researchprofiles.ku.dk/en/publications/eye-lens-radiocarbon-reveals-centuries-of-longevity-in-the-greenl/",
+      "publisher": "University of Copenhagen",
+      "title": "Eye lens radiocarbon reveals centuries of longevity in the Greenland shark (Somniosus microcephalus) - University of Copenhagen Research Portal"
+    },
+    "source2": {
+      "url": "https://researchprofiles.ku.dk/en/publications/the-greenland-shark-isomniosus-microcephalusi-diet-tracking-and-r/",
+      "publisher": "University of Copenhagen",
+      "title": "The Greenland shark (Somniosus microcephalus): Diet, tracking and radiocarbon age estimates reveal the world's oldest vertebrate - University of Copenhagen Research Portal"
+    },
+    "searchNote": "Search results on the 2016 eye-lens study said the oldest of 28 female sharks was estimated at 272 to 512 years, with a best estimate of about 390-392 years; 512 is an upper bound, not a confirmed age.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.ampullae.detect-electric-fields",
+    "q": "What do the tiny pores on a shark's snout, called ampullae of Lorenzini, detect?",
+    "choices": [
+      "Weak electric fields",
+      "Changes in light",
+      "Odors in the water"
+    ],
+    "answer": 0,
+    "explain": "These jelly-filled pores sense the faint electric fields made by other animals' muscles, letting sharks find prey hidden in the sand.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/sharks/shark-biology/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Shark Biology - Florida Museum of Natural History"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "searchNote": "Search results (Florida Museum and NOAA shark pages) describe the ampullae of Lorenzini as electroreceptors that sense weak electric fields, mainly used to locate hidden prey such as stingrays buried in sand.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.ampullae.gel-filled-canals",
+    "q": "Each pore of a shark's electric-sensing ampullae of Lorenzini leads into a canal filled with what?",
+    "choices": [
+      "Air",
+      "A jelly-like gel",
+      "Blood"
+    ],
+    "answer": 1,
+    "explain": "Each pore opens to the water and leads through a gel-filled canal to a sensory sac under the skin, which is wired to the nervous system.",
+    "category": "sharks-rays",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12782034/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Bacterial diversity in the jelly of shark Ampullae of Lorenzini: a holobiont perspective"
+    },
+    "source2": null,
+    "searchNote": "The search summary described each ampulla as a pore open to the water connected to a gel-filled canal ending in a sensory sac under the skin; the paper's title refers to the 'jelly' of the ampullae.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.hammerhead.head-electroreceptors",
+    "q": "How does the scalloped hammerhead's wide head help it hunt?",
+    "choices": [
+      "It holds air that keeps the shark afloat",
+      "It is used to dig burrows",
+      "It carries extra electric-sensing pores"
+    ],
+    "answer": 2,
+    "explain": "A hammerhead's broad head has more electric-sensing ampullae than other sharks, helping it quickly pinpoint prey buried in the sand.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/scalloped-hammerhead-sphyrna-lewini/",
+      "publisher": "Australian Museum",
+      "title": "Scalloped Hammerhead, Sphyrna lewini (Griffin & Smith, 1834) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "The Australian Museum page on the scalloped hammerhead says the broad head carries more ampullae than other sharks, which helps it locate prey buried in sand.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sharks-rays.sawfish.electric-field-detection",
+    "q": "Sawfish are rays with a long, toothed snout. What did researchers show these rays can detect?",
+    "choices": [
+      "Weak electric fields",
+      "Infrared heat",
+      "Ultrasound"
+    ],
+    "answer": 0,
+    "explain": "Like sharks, sawfish can sense the weak electric fields given off by other animals, which helps them find prey.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3404968/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Electric Field Detection in Sawfish and Shovelnose Rays"
+    },
+    "source2": null,
+    "searchNote": "The search returned this peer-reviewed study titled 'Electric Field Detection in Sawfish and Shovelnose Rays'; only the title was shown, so the verifier should confirm the abstract reports sawfish responding to electric fields.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sharks-rays.spiny-dogfish.gestation-length",
+    "q": "About how long is a spiny dogfish's pregnancy?",
+    "choices": [
+      "About 3 months",
+      "About 9 months",
+      "18 to 24 months"
+    ],
+    "answer": 2,
+    "explain": "Spiny dogfish carry their young for 18 to 24 months, one of the longest pregnancies known in any animal with a backbone. They give birth to live pups.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/atlantic-spiny-dogfish",
+      "publisher": "NOAA Fisheries",
+      "title": "Atlantic Spiny Dogfish"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/pacific-spiny-dogfish",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Pacific spiny dogfish"
+    },
+    "searchNote": "NOAA Fisheries says spiny dogfish eggs are fertilized internally and, after 18 to 24 months of gestation, females give birth to live young (about six pups on average). Monterey Bay Aquarium cites 22 to 24 months.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.bonnethead.digests-seagrass",
+    "q": "Which shark was found to digest seagrass, making it the first known omnivorous shark?",
+    "choices": [
+      "Lemon shark",
+      "Bonnethead",
+      "Nurse shark"
+    ],
+    "answer": 1,
+    "explain": "A 2018 study found bonnetheads don't just swallow seagrass by accident: they digest it and absorb its nutrients, alongside crabs, shrimp and fish.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6158537/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Seagrass digestion by a notorious 'carnivore' - PMC - NIH"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/bonnethead-shark",
+      "publisher": "NOAA Fisheries",
+      "title": "Bonnethead Shark"
+    },
+    "searchNote": "The 2018 Proc. R. Soc. B study fed captive bonnetheads labelled seagrass and found they assimilated it; UC Irvine called the bonnethead the first known omnivorous shark. NOAA's page says bonnetheads are omnivores that graze on seagrass.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "sharks-rays.shark.skeleton-cartilage",
+    "q": "What are sharks' skeletons made of?",
+    "choices": [
+      "Bone",
+      "Chitin",
+      "Cartilage"
+    ],
+    "answer": 2,
+    "explain": "Sharks have no bones. Their skeletons are made of cartilage, the same flexible tissue found in your nose and ears, which is much lighter than bone.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says sharks have no bones; their skeletons are cartilage, which is much lighter than true bone.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.liver-oil-buoyancy",
+    "q": "Sharks have no gas-filled swim bladder. What helps keep them buoyant instead?",
+    "choices": [
+      "Hollow, air-filled bones",
+      "Thick layers of blubber",
+      "A large liver full of oil"
+    ],
+    "answer": 2,
+    "explain": "Along with a lightweight cartilage skeleton, sharks have large livers full of low-density oils that help them stay afloat.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA says sharks' cartilage skeletons are lighter than bone and their large livers are full of low-density oils, both of which help them be buoyant.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.calcified-cartilage-fossils",
+    "q": "Shark skeletons are made of cartilage, yet they can still become fossils. Why?",
+    "choices": [
+      "Sharks deposit calcium salts in their cartilage as they age",
+      "Shark cartilage turns into bone after death",
+      "Sharks swallow stones that harden their skeletons"
+    ],
+    "answer": 0,
+    "explain": "As most sharks age, they lay down calcium salts in their skeletal cartilage to strengthen it, and this hardened cartilage can fossilize.",
+    "category": "sharks-rays",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says that as most sharks age they deposit calcium salts in their skeletal cartilage to strengthen it, which is why their skeletons can fossilize.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.dermal-denticles",
+    "q": "Why does shark skin feel like sandpaper when rubbed the wrong way?",
+    "choices": [
+      "It is covered in tiny tooth-like scales",
+      "It is coated with salt crystals",
+      "It is lined with stiff bristles"
+    ],
+    "answer": 0,
+    "explain": "Shark skin is covered in placoid scales, also called dermal denticles: tiny structures built much like teeth.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA says shark skin feels like sandpaper because it is made up of tiny teeth-like structures called placoid scales, or dermal denticles.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.tonic-immobility",
+    "q": "What often happens when a shark is flipped upside down?",
+    "choices": [
+      "It thrashes and swims away faster",
+      "It goes still in a trance-like state",
+      "It rapidly changes color"
+    ],
+    "answer": 1,
+    "explain": "Turning a shark upside down can put it into a trance-like state called tonic immobility, which researchers sometimes use to handle sharks calmly.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says flipping a shark upside down puts it into a trance-like state called tonic immobility.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.origin-455-million-years",
+    "q": "Based on fossil scales, roughly when do scientists think sharks first appeared?",
+    "choices": [
+      "About 2 million years ago",
+      "About 66 million years ago",
+      "About 455 million years ago"
+    ],
+    "answer": 2,
+    "explain": "Fossil scales found in Australia and the United States suggest sharks were swimming in the oceans around 455 million years ago, long before dinosaurs.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA says that, based on fossil scales found in Australia and the US, scientists hypothesize sharks first appeared about 455 million years ago.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.blue-shark.white-underside",
+    "q": "The blue shark is a brilliant blue on top. What color is its underside?",
+    "choices": [
+      "Snowy white",
+      "Deep blue",
+      "Dark brown"
+    ],
+    "answer": 0,
+    "explain": "The blue shark's vivid blue back stands out among sharks, most of which are brown, olive or gray on top. Underneath, it is normally snowy white.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says the blue shark is brilliant blue on the upper body and normally snowy white beneath, while most sharks are brown, olive or gray.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.nurse-shark.spiracle-breathing",
+    "q": "How do bottom-dwelling sharks like nurse sharks breathe while resting on the seafloor?",
+    "choices": [
+      "They gulp air at the surface first",
+      "They pull in water through a spiracle behind each eye",
+      "They breathe through their nostrils"
+    ],
+    "answer": 1,
+    "explain": "A spiracle is an extra opening behind the eye. Bottom-dwellers such as nurse and angel sharks use it to draw in water while they lie still.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA says bottom-dwelling sharks such as angel sharks and nurse sharks use a spiracle behind the eye, an extra respiratory opening, to breathe while resting on the seafloor.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.sandbar-shark.lifetime-teeth",
+    "q": "About how many teeth does a sandbar shark go through in its lifetime?",
+    "choices": [
+      "About 350",
+      "About 3,500",
+      "About 35,000"
+    ],
+    "answer": 2,
+    "explain": "Sharks constantly shed and replace their teeth. NOAA estimates a single sandbar shark goes through around 35,000 over its life.",
+    "category": "sharks-rays",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says a sandbar shark will have around 35,000 teeth over the course of its lifetime.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.shark.reproduction-modes",
+    "q": "Which statement about how sharks reproduce is correct?",
+    "choices": [
+      "Sharks lay eggs, like most bony fish",
+      "Some sharks lay eggs and others give birth to live young",
+      "Sharks give birth to live young, like mammals"
+    ],
+    "answer": 1,
+    "explain": "Sharks reproduce in different ways depending on the species: some lay eggs (oviparous) while others give birth to live pups (viviparous).",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/12-shark-facts-may-surprise-you",
+      "publisher": "NOAA Fisheries",
+      "title": "12 Shark Facts That May Surprise You"
+    },
+    "source2": null,
+    "searchNote": "NOAA's shark facts page says there are oviparous (egg-laying) and viviparous (live-bearing) shark species.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.white-shark.lifespan-70-years",
+    "q": "A radiocarbon study changed what we know about white shark lifespans. About how long can they live?",
+    "choices": [
+      "About 15 years",
+      "About 300 years",
+      "More than 70 years"
+    ],
+    "answer": 2,
+    "explain": "Radiocarbon dating showed white sharks can live past 70 years, roughly twice as long as earlier estimates.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/white-shark",
+      "publisher": "NOAA Fisheries",
+      "title": "White Shark"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/eight-surprising-shark-facts",
+      "publisher": "NOAA Fisheries",
+      "title": "Eight Surprising Shark Facts"
+    },
+    "searchNote": "A search summary of NOAA pages said white sharks can live past 70 years, about twice as long as previously estimated, based on a radiocarbon technique. It did not say which NOAA page; the white shark species page or 'Eight Surprising Shark Facts' is likely. Verifier must confirm.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.white-shark.female-maturity-age",
+    "q": "Female white sharks mature slowly. At about what age are they ready to carry pups?",
+    "choices": [
+      "About 3 years",
+      "About 33 years",
+      "About 100 years"
+    ],
+    "answer": 1,
+    "explain": "Female white sharks aren't ready to carry pups until around 33 years old, and males mature at about 26. Slow maturity makes populations slow to recover.",
+    "category": "sharks-rays",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/five-wild-facts-about-shark-reproduction",
+      "publisher": "NOAA Fisheries",
+      "title": "Five Wild Facts About Shark Reproduction"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/white-shark",
+      "publisher": "NOAA Fisheries",
+      "title": "White Shark"
+    },
+    "searchNote": "A search summary of NOAA pages said male white sharks reach sexual maturity after 26 years and females are not ready to carry pups until 33 years. It did not say which page; the reproduction feature is most likely. Verifier must confirm.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "sharks-rays.spiny-dogfish.venomous-spines",
+    "q": "What gives the spiny dogfish its name?",
+    "choices": [
+      "A spine in front of each dorsal fin",
+      "Spiky scales covering its head",
+      "Sharp spines along its tail"
+    ],
+    "answer": 0,
+    "explain": "The spiny dogfish has a sharp spine at the front of each of its two dorsal fins, and the spines are mildly venomous.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/spiny-dogfish/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Spiny Dogfish"
+    },
+    "source2": {
+      "url": "https://www.seattleaquarium.org/animal/dogfish/",
+      "publisher": "Seattle Aquarium",
+      "title": "Dogfish - Seattle Aquarium"
+    },
+    "searchNote": "Species profile for the spiny dogfish returned in search. NOTE: the search snippet did not show this claim; it is expected on this species profile from general knowledge. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "sharks-rays.whale-shark.filter-feeder",
+    "q": "What does the whale shark mainly eat?",
+    "choices": [
+      "Seals and sea lions",
+      "Plankton and small fish filtered from the water",
+      "Squid caught in the deep sea"
+    ],
+    "answer": 1,
+    "explain": "Despite its huge size, the whale shark is a filter feeder, straining plankton and other small prey out of the water it takes in.",
+    "category": "sharks-rays",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/whale-shark/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Whale Shark - Florida Museum of Natural History"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/whale_shark",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Whale Shark"
+    },
+    "searchNote": "Whale shark species profile returned in search. NOTE: the search snippet did not show this claim; it is expected on this species profile from general knowledge. Verifier must confirm on the page.",
+    "risk": "none"
+  },
+  {
+    "fact": "sharks-rays.shark.lateral-line",
+    "q": "What does a shark's lateral line, a row of sensors along its sides, detect?",
+    "choices": [
+      "Water movements and vibrations",
+      "Weak electric fields",
+      "Changes in light"
+    ],
+    "answer": 0,
+    "explain": "The lateral line picks up vibrations and movement in the water, letting a shark sense prey and obstacles nearby even when it can't see them.",
+    "category": "sharks-rays",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/sharks/shark-biology/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Shark Biology - Florida Museum of Natural History"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum shark biology page returned in search (covers shark senses). NOTE: the search snippet did not show this claim; it is expected on this species profile from general knowledge. Verifier must confirm on the page.",
+    "risk": "none"
+  }
+]

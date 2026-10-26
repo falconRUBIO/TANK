@@ -1,0 +1,1276 @@
+[
+  {
+    "fact": "fish.clownfish.mucus-protection",
+    "q": "What protects a clownfish from the stings of its host anemone?",
+    "choices": [
+      "A layer of mucus on its skin",
+      "Extra-thick armored scales",
+      "An immunity it is born with"
+    ],
+    "answer": 0,
+    "explain": "A clownfish gently touches the anemone's tentacles over hours or days until it builds up a mucus coat that protects it from the stings.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/clownfish",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Clownfish"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/clown-anemonefish/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Clown Anemonefish - Florida Museum of Natural History"
+    },
+    "searchNote": "MBA clownfish page: fish touches tentacles over several hours or days until it forms a protective mucus layer. Florida Museum: acclimation (rubbing against tentacles) must occur before the fish is immune.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.clownfish.protandry",
+    "q": "If the breeding female in a clownfish group dies, what usually happens?",
+    "choices": [
+      "The group abandons its anemone",
+      "The breeding male becomes a female",
+      "A newcomer female moves in"
+    ],
+    "answer": 1,
+    "explain": "Clownfish all start life as males. When the female is lost, the breeding male changes sex and grows, and the next-largest male becomes the new breeding male.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/clown_anemonefish",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Clownfish"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/teachers/learning/sleek-geeks-videos/sex-change-in-clownfish/",
+      "publisher": "Australian Museum",
+      "title": "Sex change in clownfish - The Australian Museum"
+    },
+    "searchNote": "Aquarium of the Pacific: clownfish are protandrous; if the female dies the breeding male changes to female and the next largest male becomes breeding male. Australian Museum page on clownfish sex change covers the same.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.clown-anemonefish.male-egg-care",
+    "q": "In clown anemonefish, which parent does most of the work of guarding and tending the eggs?",
+    "choices": [
+      "The female",
+      "Neither; the eggs are left alone",
+      "The male"
+    ],
+    "answer": 2,
+    "explain": "Clown anemonefish lay their eggs on a hard surface right beside the anemone, and the male does most of the fanning and guarding until they hatch.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/clown-anemonefish/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Clown Anemonefish - Florida Museum of Natural History"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum species profile for the clown anemonefish (Amphiprion percula); expected to describe eggs laid near the anemone and male parental care. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.clownfish.anemone-benefit",
+    "q": "In the clownfish and sea anemone partnership, what does the clownfish do for the anemone?",
+    "choices": [
+      "Drives off fish that nibble anemones",
+      "Carries the anemone to new rocks",
+      "Stings prey for the anemone"
+    ],
+    "answer": 0,
+    "explain": "The anemone shelters the clownfish, and in return the clownfish chases away fish such as butterflyfish that would eat the anemone's tentacles.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/mutualism-examples-of-species-that-work-together.html",
+      "publisher": "Natural History Museum (London)",
+      "title": "Mutualism: Eight examples of species that work together to get ahead"
+    },
+    "source2": null,
+    "searchNote": "NHM mutualism article lists clownfish and anemones as an example of species that work together; expected to state the clownfish defends the anemone from predators. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.parrotfish.cocoon-purpose",
+    "q": "Some parrotfish wrap themselves in a mucus cocoon at night. What is its main known job?",
+    "choices": [
+      "Keeping their bodies warm",
+      "Shielding them from blood-sucking parasites",
+      "Storing food for the morning"
+    ],
+    "answer": 1,
+    "explain": "Like a mosquito net, the cocoon protects a sleeping parrotfish from parasites such as blood-sucking isopods that are active after dark.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/parrotfish-mucus-cocoon",
+      "publisher": "Smithsonian Ocean",
+      "title": "Parrotfish in Mucus Cocoon"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/aquarium-faq-do-fishes-sleep",
+      "publisher": "Shedd Aquarium",
+      "title": "Aquarium FAQ: Do Fishes Sleep?"
+    },
+    "searchNote": "Smithsonian: Chlorurus sordidus makes a mucus cocoon to protect against parasites like bloodsucking isopods while sleeping. Shedd: cocoon works like mosquito netting against blood-sucking parasites active after dark.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.parrotfish.cocoon-energy-cost",
+    "q": "Roughly how much of a parrotfish's daily energy goes into making its nightly mucus cocoon?",
+    "choices": [
+      "About 25 percent",
+      "About 50 percent",
+      "About 2.5 percent"
+    ],
+    "answer": 2,
+    "explain": "Researchers estimate the cocoon costs only about 2.5 percent of the fish's daily energy budget, a modest price for a night free of parasites.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/parrotfish-mucus-cocoon",
+      "publisher": "Smithsonian Ocean",
+      "title": "Parrotfish in Mucus Cocoon"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian parrotfish cocoon page estimates the nightly cocoon costs about 2.5 percent of the fish's daily energy budget.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "fish.parrotfish.cocoon-alarm",
+    "q": "What does a sleeping parrotfish do if something disturbs its mucus cocoon?",
+    "choices": [
+      "Wakes up and dashes away",
+      "Squirts a cloud of ink",
+      "Plays dead on the bottom"
+    ],
+    "answer": 0,
+    "explain": "The cocoon may double as an alarm: if it is disturbed, the parrotfish immediately wakes and flees.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/southflorida/habitats/corals/reef-communities/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Reef Communities"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum Reef Communities page: if the parrotfish's cocoon is disturbed, the fish immediately awakens and dashes off.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.parrotfish.sand-production",
+    "q": "How do parrotfish help make the white sand on many tropical beaches?",
+    "choices": [
+      "They crush seashells with their fins",
+      "They grind up reef rock and excrete it",
+      "They dig sand up from the deep sea"
+    ],
+    "answer": 1,
+    "explain": "Parrotfish bite into coral and rock while feeding, grind the hard calcium carbonate in their guts, and pass it out as fine white sand.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/parrotfish-and-sand.html",
+      "publisher": "Natural History Museum (London)",
+      "title": "The unusual link between parrotfish and sand"
+    },
+    "source2": {
+      "url": "https://oceanservice.noaa.gov/facts/sand.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "How does sand form?"
+    },
+    "searchNote": "NHM: parrotfish grind up calcium-carbonate reef material in their guts and excrete it as sand. NOAA 'How does sand form?' also credits parrotfish for some tropical sand.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.parrotfish.tooth-replacement",
+    "q": "What happens when the front teeth of a parrotfish wear down?",
+    "choices": [
+      "The fish switches to soft food",
+      "The fish can no longer feed",
+      "A new row of teeth moves in to replace them"
+    ],
+    "answer": 2,
+    "explain": "A parrotfish's beak is built from many rows of teeth. As the front ones wear away from scraping rock, the next row moves up to take over.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/tough-teeth-and-parrotfish-poop",
+      "publisher": "Smithsonian Ocean",
+      "title": "Tough Teeth and Parrotfish Poop"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 'Tough Teeth and Parrotfish Poop': parrotfish have roughly 1,000 teeth in 15 rows; when front teeth wear out another row takes over.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.parrotfish.algae-grazing",
+    "q": "How does parrotfish feeding help coral reefs?",
+    "choices": [
+      "It keeps algae from overgrowing coral",
+      "It spreads coral larvae between reefs",
+      "It adds oxygen to the water"
+    ],
+    "answer": 0,
+    "explain": "Parrotfish mostly eat algae. By grazing it down, they stop algae from crowding out corals for light and space.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/parrotfish-and-sand.html",
+      "publisher": "Natural History Museum (London)",
+      "title": "The unusual link between parrotfish and sand"
+    },
+    "source2": null,
+    "searchNote": "NHM parrotfish page: parrotfish mostly feed on algae, which stops it growing too much and outcompeting coral for resources such as light.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.stoplight-parrotfish.sex-change-direction",
+    "q": "Stoplight parrotfish can change sex during life. Which way does the change go?",
+    "choices": [
+      "Male to female",
+      "Female to male",
+      "Back and forth each season"
+    ],
+    "answer": 1,
+    "explain": "Stoplight parrotfish females can transform into large, brightly colored 'terminal phase' males, the reverse of the clownfish pattern.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/stoplight-parrotfish/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Stoplight Parrotfish - Florida Museum of Natural History"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum stoplight parrotfish profile (Sparisoma viride); expected to describe female-to-terminal-male sex change and color phases. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.cleaner-wrasse.bobbing-display",
+    "q": "How does the common cleanerfish, a small wrasse, attract larger fish to its cleaning station?",
+    "choices": [
+      "It flashes a glowing light",
+      "It releases a sweet-smelling scent",
+      "It swims with a bobbing, dancing motion"
+    ],
+    "answer": 2,
+    "explain": "From a cave or overhang that serves as its station, the cleanerfish swims in a bobbing dance that draws in bigger fish, then picks off and eats their parasites.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": "clean",
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/common-cleanerfish-labroides-dimidiatus/",
+      "publisher": "Australian Museum",
+      "title": "Common Cleanerfish, Labroides dimidiatus (Valenciennes, 1839) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum common cleanerfish (Labroides dimidiatus): station is often a cave or overhang; cleaner swims in a bobbing motion that attracts larger fish, then eats their parasites.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.bluestreak-cleaner-wrasse.gnathiid-diet",
+    "q": "The bluestreak cleaner wrasse gets most of its food from which parasites?",
+    "choices": [
+      "Gnathiid isopods, tiny crustaceans",
+      "Tapeworms from fish intestines",
+      "Leeches clinging to scales"
+    ],
+    "answer": 0,
+    "explain": "Gnathiid isopods are tiny crustaceans that feed on fish body fluids. Cleaner wrasses pluck them off their clients by the hundreds each day.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": "clean",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9213755/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Access to Cleaning Services Alters Fish Physiology Under Parasite Infection and Ocean Acidification"
+    },
+    "source2": null,
+    "searchNote": "Peer-reviewed paper on cleaning services: the bluestreak cleaner wrasse diet is mostly gnathiid isopods, body-fluid-feeding ectoparasites removed from clients.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.bluestreak-cleaner-wrasse.parasites-per-day",
+    "q": "Roughly how many parasites can a single bluestreak cleaner wrasse eat in a day?",
+    "choices": [
+      "About 10",
+      "More than 1,000",
+      "About 100"
+    ],
+    "answer": 1,
+    "explain": "One study counted more than 2,200 cleaning visits and over 1,100 parasites eaten per wrasse per day, which makes it a very busy reef doctor.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": "clean",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9213755/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Access to Cleaning Services Alters Fish Physiology Under Parasite Infection and Ocean Acidification"
+    },
+    "source2": null,
+    "searchNote": "Same paper reports more than 2,200 client interactions and over 1,100 ectoparasites eaten per day by a bluestreak cleaner wrasse.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "fish.nassau-grouper.cleaning-station",
+    "q": "Why do Nassau groupers visit cleaning stations on the reef?",
+    "choices": [
+      "To lay their eggs in safety",
+      "To hunt the small fish gathered there",
+      "To have parasites and dead tissue removed"
+    ],
+    "answer": 2,
+    "explain": "At cleaning stations, small wrasses pick parasites and dead tissue from a Nassau grouper's gills and body, and the big predator lets them work.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": "clean",
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/nassau-grouper/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Nassau Grouper - Florida Museum of Natural History"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum Nassau grouper profile: groupers visit cleaning stations where wrasses take parasites and dead tissue from the gills and body.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.cleaner-wrasse.removal-experiment",
+    "q": "When cleaner wrasses were removed from experimental reefs, what happened to the other reef fish?",
+    "choices": [
+      "Their health and diversity declined",
+      "They grew larger and more numerous",
+      "No measurable change occurred"
+    ],
+    "answer": 0,
+    "explain": "Removing cleaner wrasses led to less healthy, less diverse fish communities, which is why they're called the doctors of the reef.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": "clean",
+    "source": {
+      "url": "https://australian.museum/about/organisation/media-centre/two-new-cleaner-wrasse-species-identified/",
+      "publisher": "Australian Museum",
+      "title": "Two new 'doctors of the reef' cleaner wrasses identified by museum scientists - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum media release on two new cleaner wrasse species: an experiment found removing cleaner wrasses from reef systems reduced the health and diversity of fish communities.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.bluehead.client-pose",
+    "q": "At a bluehead wrasse cleaning station, how does a client fish show it is ready to be cleaned?",
+    "choices": [
+      "It nudges the wrasse with its snout",
+      "It opens its mouth and spreads its fins",
+      "It blows bubbles toward the wrasse"
+    ],
+    "answer": 1,
+    "explain": "Clients hold still with mouths open and fins spread so the bluehead can reach their gills and fins to pick off parasites.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": "clean",
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/bluehead/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Bluehead"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum bluehead profile (per search result): clients signal readiness by opening the mouth and spreading fins; the wrasse removes parasites from fins and gills.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.false-cleanerfish.mimicry",
+    "q": "The false cleanerfish, a blenny that looks like the common cleanerfish, uses its disguise to do what?",
+    "choices": [
+      "Steal mates from the real cleaner",
+      "Hide from predatory fish",
+      "Bite pieces of fin and skin from fish"
+    ],
+    "answer": 2,
+    "explain": "Fish that trust the cleanerfish's look let the mimic get close, and it nips off pieces of fin or skin instead of cleaning.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": "clean",
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/common-cleanerfish-labroides-dimidiatus/",
+      "publisher": "Australian Museum",
+      "title": "Common Cleanerfish, Labroides dimidiatus (Valenciennes, 1839) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum common cleanerfish page; expected to mention the mimic False Cleanerfish (Aspidontus taeniatus), which bites fins of fish it fools. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.giant-moray.night-cleaning",
+    "q": "Researchers recorded giant moray eels being cleaned at night by which animal?",
+    "choices": [
+      "The clear cleaner shrimp",
+      "The bluestreak cleaner wrasse",
+      "The remora"
+    ],
+    "answer": 0,
+    "explain": "Cleaning on reefs isn't only a daytime job. Scientists documented clear cleaner shrimp tending giant morays after dark.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": "clean",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11664319/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Nocturnal Cleaning Interactions Between the Giant Moray (Gymnothorax javanicus) and the Clear Cleaner Shrimp (Urocaridella antonbruunii) - PMC"
+    },
+    "source2": null,
+    "searchNote": "Paper title itself: 'Nocturnal Cleaning Interactions Between the Giant Moray (Gymnothorax javanicus) and the Clear Cleaner Shrimp (Urocaridella antonbruunii)'.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.atlantic-bluefin-tuna.countercurrent-heat",
+    "q": "How do Atlantic bluefin tuna keep parts of their body warmer than the surrounding water?",
+    "choices": [
+      "A thick layer of blubber",
+      "A blood vessel network that holds in heat",
+      "Basking at the surface in the sun"
+    ],
+    "answer": 1,
+    "explain": "A countercurrent exchanger, a special arrangement of blood vessels, keeps muscle heat from being lost at the gills, so bluefin run warmer than the sea.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/fun-facts-about-atlantic-tunas",
+      "publisher": "NOAA Fisheries",
+      "title": "Fascinating Atlantic Tunas Facts"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6340463/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Phylotranscriptomic Insights into the Diversification of Endothermic Thunnus Tunas"
+    },
+    "searchNote": "NOAA Fisheries Atlantic tunas facts: bluefin keep body temperature warmer than water thanks to a specialized blood vessel structure called a countercurrent exchanger. Phylotranscriptomic paper: Thunnus tunas keep locomotor muscle, viscera, brain and eyes warm.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.pacific-bluefin-tuna.cold-heart",
+    "q": "Pacific bluefin tuna keep their swimming muscles warm. Which organ works at about the temperature of the surrounding sea?",
+    "choices": [
+      "The brain",
+      "The eyes",
+      "The heart"
+    ],
+    "answer": 2,
+    "explain": "Bluefin warm their muscles, gut, brain and eyes, but the heart runs at sea temperature, so it has to keep beating well even in cold water.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7499911/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Skeletal muscle and cardiac transcriptomics of a regionally endothermic fish, the Pacific bluefin tuna, Thunnus orientalis"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6340463/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Phylotranscriptomic Insights into the Diversification of Endothermic Thunnus Tunas"
+    },
+    "searchNote": "Search summary: in bluefin tunas the heart operates at ambient temperature while oxidative muscle, viscera, brain and eyes are warmed (phylotranscriptomic paper). Attributed the heart point to the Pacific bluefin cardiac transcriptomics paper; verifier should confirm which paper states it.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "fish.albacore.ram-ventilation",
+    "q": "Why does an albacore tuna swim with its mouth open?",
+    "choices": [
+      "To push water over its gills to breathe",
+      "To scoop up plankton as it swims",
+      "To cool its warm muscles"
+    ],
+    "answer": 0,
+    "explain": "Albacore lack the structures other fish use to pump water over their gills, so they keep moving with mouths open to let water flow through.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/pacific-albacore-tuna",
+      "publisher": "NOAA Fisheries",
+      "title": "Pacific Albacore Tuna"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/yellowfin-tuna",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Yellowfin tuna"
+    },
+    "searchNote": "NOAA albacore page: albacore lack structures needed to pump oxygen-rich water over gills, so they keep their mouths open while moving. MBA yellowfin page describes water passing over gills as the fish moves.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.pacific-bluefin-tuna.spawning-area",
+    "q": "Pacific bluefin tuna caught off California were born in which part of the ocean?",
+    "choices": [
+      "The Gulf of California",
+      "The western Pacific, near Japan",
+      "The Indian Ocean"
+    ],
+    "answer": 1,
+    "explain": "Pacific bluefin spawn in the western Pacific. Some young fish then make an ocean-crossing journey to feed off California and Mexico.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/pacific-bluefin-tuna",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Pacific bluefin tuna"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium Pacific bluefin tuna page; expected to state spawning in the western Pacific (near Japan) and trans-Pacific migration of juveniles to the eastern Pacific. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.bluefin-tuna.retractable-fins",
+    "q": "How do bluefin tuna cut drag when swimming fast?",
+    "choices": [
+      "They release air bubbles along their skin",
+      "They shed scales from their sides",
+      "They fold their fins into grooves in the body"
+    ],
+    "answer": 2,
+    "explain": "A bluefin's fins can tuck into slots along its torpedo-shaped body, smoothing its outline when it needs speed.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/big-tunas",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Big Tunas"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 'The Big Tunas'; expected to describe fins that fold into grooves/slots to reduce drag. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.salmon.odor-imprinting",
+    "q": "When do salmon learn the smell of the home stream they return to as adults?",
+    "choices": [
+      "As juveniles migrating downstream",
+      "During their final year at sea",
+      "From older salmon guiding them"
+    ],
+    "answer": 0,
+    "explain": "Young salmon memorize the scent of their home stream on the way to the sea, then use that odor memory years later to find it again.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4754751/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Involvement of hormones in olfactory imprinting and homing in chum salmon"
+    },
+    "source2": null,
+    "searchNote": "Chum salmon hormone paper: many studies show juvenile salmon imprint olfactory memory of natal stream odors during downstream migration, used during upstream spawning migration.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.sockeye-salmon.homing-brain-area",
+    "q": "A brain scan study found sockeye salmon respond most to home-stream water in an area similar to which part of the mammal brain?",
+    "choices": [
+      "The visual cortex",
+      "The hippocampus, tied to memory",
+      "The cerebellum, tied to balance"
+    ],
+    "answer": 1,
+    "explain": "The strongest response was in a forebrain region thought to match the mammalian hippocampus, a center for memory, which fits the idea that homing is learned.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3022028/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Olfactory Responses to Natal Stream Water in Sockeye Salmon by BOLD fMRI"
+    },
+    "source2": null,
+    "searchNote": "BOLD fMRI study of sockeye salmon: strongest response to natal stream water in a telencephalon region considered homologous to the mammalian hippocampus.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.coho-salmon.acidification-smell",
+    "q": "NOAA-linked research found ocean acidification can affect young coho salmon in what way?",
+    "choices": [
+      "It turns their flesh white",
+      "It makes their scales fall off",
+      "It dulls their ability to smell and react"
+    ],
+    "answer": 2,
+    "explain": "Salmon rely on smell to find food, avoid predators and get home, so acidification that blunts their sense of smell could make life harder for them.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanacidification.noaa.gov/ocean-acidification-research/ocean-acidification-biological-response/fish/",
+      "publisher": "NOAA Ocean Acidification Program",
+      "title": "Fish - NOAA Ocean Acidification Program"
+    },
+    "source2": null,
+    "searchNote": "NOAA Ocean Acidification Program fish page: ocean acidification can affect juvenile coho salmon's ability to smell and respond to scents.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.sockeye-salmon.death-after-spawning",
+    "q": "What happens to sockeye salmon after they spawn?",
+    "choices": [
+      "They die",
+      "They return to the ocean to feed",
+      "They spawn again the next year"
+    ],
+    "answer": 0,
+    "explain": "Sockeye spawn once. After the journey upstream and spawning they die, and their bodies feed bears, birds and the stream itself.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/katm/learn/photosmultimedia/sockeye-salmon-frequently-asked-questions.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Sockeye Salmon Frequently Asked Questions - Katmai National Park & Preserve (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Katmai sockeye salmon FAQ; expected to state sockeye die after spawning. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.sockeye-salmon.red-spawning-color",
+    "q": "How does a sockeye salmon's color change as it heads upstream to spawn?",
+    "choices": [
+      "It turns pale white",
+      "Its body turns bright red",
+      "It turns dark blue all over"
+    ],
+    "answer": 1,
+    "explain": "Silvery at sea, sockeye turn vivid red with greenish heads as they prepare to spawn, one of the best-known color changes in fish.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/katm/learn/photosmultimedia/sockeye-salmon-frequently-asked-questions.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Sockeye Salmon Frequently Asked Questions - Katmai National Park & Preserve (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Katmai sockeye salmon FAQ; expected to explain why sockeye turn red at spawning. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.salmon.smolt-stage",
+    "q": "What is a young salmon called when its body changes to prepare for life in salt water?",
+    "choices": [
+      "A fry",
+      "A kelt",
+      "A smolt"
+    ],
+    "answer": 2,
+    "explain": "As smolts, young salmon turn silvery and change their body chemistry so they can survive in the ocean. A kelt is a salmon that has already spawned.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fws.gov/sites/default/files/documents/06_Life%20Stage%20Adaptations%20Cheat%20Sheet.pdf",
+      "publisher": "U.S. Fish and Wildlife Service",
+      "title": "Columbia River FWCO Information and Education, 2022"
+    },
+    "source2": null,
+    "searchNote": "USFWS Columbia River life-stage adaptations cheat sheet; expected to describe the smolt stage and its saltwater adaptations. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.flatfish.symmetric-larvae",
+    "q": "What does a young flounder look like soon after hatching?",
+    "choices": [
+      "A normal fish, with an eye on each side",
+      "Flat, with both eyes already on one side",
+      "Eyeless until it settles on the bottom"
+    ],
+    "answer": 0,
+    "explain": "Flatfish start life as ordinary-looking, open-water larvae. Only later does one eye move across the head as the fish flattens and settles.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10907633/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Unraveling the transcriptomic landscape of eye migration and visual adaptations during flatfish metamorphosis"
+    },
+    "source2": null,
+    "searchNote": "Flatfish metamorphosis paper: flatfish begin as pelagic fishes with bilateral symmetry, an eye on each side of the head; one eye migrates during metamorphosis.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.flatfish.thyroid-metamorphosis",
+    "q": "Which hormone drives the change that moves one eye across a flatfish's head?",
+    "choices": [
+      "Adrenaline",
+      "Thyroid hormone",
+      "Insulin"
+    ],
+    "answer": 1,
+    "explain": "Thyroid hormone is necessary and sufficient to drive flatfish metamorphosis, the same hormone family that turns tadpoles into frogs.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6095868/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "A thyroid hormone regulated asymmetric responsive centre is correlated with eye migration during flatfish metamorphosis"
+    },
+    "source2": null,
+    "searchNote": "Paper title: 'A thyroid hormone regulated asymmetric responsive centre is correlated with eye migration during flatfish metamorphosis'; search summary: thyroid hormones are necessary and sufficient to drive flatfish metamorphosis. (Tadpole comparison is general knowledge; verifier may trim it.)",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.flatfish.which-eye-moves",
+    "q": "In a 'right-eyed' flatfish, which eye travels across the head during development?",
+    "choices": [
+      "The right eye",
+      "Both eyes move to the top",
+      "The left eye"
+    ],
+    "answer": 2,
+    "explain": "Which side ends up on top is set by the species. In right-eyed flatfish, the left eye migrates over to join the right.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10907633/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Unraveling the transcriptomic landscape of eye migration and visual adaptations during flatfish metamorphosis"
+    },
+    "source2": null,
+    "searchNote": "Search summary: the eye that moves is the left in dextral (right-eyed) species and the right in sinistral ones; both eyes end up on the side set by the species. Exact paper for this line unclear; verifier should confirm on this page. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.peacock-flounder.color-change",
+    "q": "How does the peacock flounder blend into the seafloor?",
+    "choices": [
+      "It changes color to match the bottom",
+      "It wraps itself in seaweed",
+      "It mimics the shape of a sea star"
+    ],
+    "answer": 0,
+    "explain": "Peacock flounders can shift their skin color and pattern within seconds to match the sand or rubble they lie on.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/peacock-flounder/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Peacock Flounder - Florida Museum of Natural History"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum peacock flounder (Bothus lunatus) profile; expected to describe rapid color change to match the substrate. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.northern-puffer.inflation-sac",
+    "q": "When a northern puffer inflates, where does the water it gulps go?",
+    "choices": [
+      "Into its swim bladder",
+      "Into a stretchy sac off its stomach",
+      "Into its gills"
+    ],
+    "answer": 1,
+    "explain": "Throat muscles pump water or air into a sac branching from the stomach, swelling the puffer into a ball that's hard for predators to swallow.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/33313/noaa_33313_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "BIOLOGICAL 8Y' FISHERIES DATA ON NORTHERN PUFFER, Sphoeroides maculatus"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/pufferfish-underwater-balloon-of-death.html",
+      "publisher": "Natural History Museum (London)",
+      "title": "Pufferfish: An underwater balloon of death?"
+    },
+    "searchNote": "NOAA northern puffer report: muscles of the first branchiostegal ray enlarge the mouth cavity and draw in water or air, which is forced into a sac that is a ventral diverticulum of the stomach.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.pufferfish.ttx-bacterial-origin",
+    "q": "Where does the tetrodotoxin in marine pufferfish originally come from?",
+    "choices": [
+      "Venom glands the fish grows at birth",
+      "Jellyfish that the puffer eats",
+      "Bacteria, passed up the food chain"
+    ],
+    "answer": 2,
+    "explain": "Pufferfish don't make the toxin themselves. It is produced by marine bacteria and builds up in puffers through the food they eat.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2525488/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Tetrodotoxin – Distribution and Accumulation in Aquatic Organisms, and Cases of Human Intoxication"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658506/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Tetrodotoxin Poisoning Due to Pufferfish and Gastropods, and Their Intoxication Mechanism"
+    },
+    "searchNote": "TTX review: TTX is originally produced by marine bacteria, and pufferfish are intoxicated through the food chain that starts with the bacteria.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.pufferfish.ttx-mechanism",
+    "q": "How does tetrodotoxin, the pufferfish poison, harm the body?",
+    "choices": [
+      "It blocks nerve signals and can stop breathing",
+      "It thins the blood and causes bleeding",
+      "It slowly destroys the liver over weeks"
+    ],
+    "answer": 0,
+    "explain": "Tetrodotoxin blocks sodium channels that nerves and muscles need to fire, which can lead to paralysis of the breathing muscles.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658506/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Tetrodotoxin Poisoning Due to Pufferfish and Gastropods, and Their Intoxication Mechanism"
+    },
+    "source2": null,
+    "searchNote": "TTX poisoning paper: TTX inhibits nerve and muscle conduction by selectively blocking sodium channels, resulting in respiratory paralysis that causes death.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.marine-pufferfish.ttx-organs",
+    "q": "In marine pufferfish, which body parts usually hold the most tetrodotoxin?",
+    "choices": [
+      "The fins and tail",
+      "The liver and ovaries",
+      "The gills and blood"
+    ],
+    "answer": 1,
+    "explain": "In marine puffers the toxin generally concentrates in the liver and ovaries. In freshwater species the skin tends to be the most toxic.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2525488/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Tetrodotoxin – Distribution and Accumulation in Aquatic Organisms, and Cases of Human Intoxication"
+    },
+    "source2": null,
+    "searchNote": "TTX distribution review: in marine pufferfish toxicity is generally high in liver and ovary, whereas in freshwater species toxicity is higher in the skin.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.pufferfish.fugu-licensed-chefs",
+    "q": "In Japan, who is allowed to prepare pufferfish, served as fugu, for diners?",
+    "choices": [
+      "Any restaurant cook",
+      "Only fishers who caught it",
+      "Specially trained, licensed chefs"
+    ],
+    "answer": 2,
+    "explain": "Because tetrodotoxin can kill, fugu must be prepared by chefs trained and licensed to remove the toxic parts safely.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/pufferfish-underwater-balloon-of-death.html",
+      "publisher": "Natural History Museum (London)",
+      "title": "Pufferfish: An underwater balloon of death?"
+    },
+    "source2": null,
+    "searchNote": "NHM 'Pufferfish: an underwater balloon of death?'; expected to discuss fugu and specially licensed chefs in Japan. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.moray.pharyngeal-jaws",
+    "q": "How does a moray eel pull prey down into its throat?",
+    "choices": [
+      "A second set of jaws shoots forward to grab it",
+      "It sucks prey in with powerful suction",
+      "Its long tongue drags prey inward"
+    ],
+    "answer": 0,
+    "explain": "After the outer jaws grab prey, toothed jaws in the throat lunge forward, seize it and haul it back for swallowing, all in a fraction of a second.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ucdavis.edu/news/alien-jaws-help-moray-eels-feed",
+      "publisher": "UC Davis",
+      "title": "'Alien' Jaws Help Moray Eels Feed"
+    },
+    "source2": {
+      "url": "https://www.ucdavis.edu/news/eels-really-put-bite-2nd-set-jaws-lunges-forward-carries-food-back",
+      "publisher": "UC Davis",
+      "title": "Eels really put the bite on: 2nd set of jaws lunges forward, carries food back"
+    },
+    "searchNote": "UC Davis: morays grasp food with outer jaws, then pharyngeal jaws with curved teeth reach forward, seize it and bring it back for swallowing. Morays have weak suction ability.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.california-moray.gaping-breathing",
+    "q": "Why do moray eels such as the California moray often open and close their mouths?",
+    "choices": [
+      "To warn divers they will bite",
+      "To pump water over their gills",
+      "To catch drifting plankton"
+    ],
+    "answer": 1,
+    "explain": "That menacing gape is mostly breathing. Morays open and close their mouths to keep water moving over their gills.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/california_moray",
+      "publisher": "Aquarium of the Pacific",
+      "title": "California Moray"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific California moray page; expected to explain the open-and-close mouth motion is for respiration, not aggression. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.red-sea-grouper.head-shake-signal",
+    "q": "In the Red Sea, how do groupers recruit giant moray eels to hunt with them?",
+    "choices": [
+      "By nudging the eel with their tails",
+      "By dropping food at the eel's crevice",
+      "By shaking their heads rapidly in front of the eel"
+    ],
+    "answer": 2,
+    "explain": "Groupers visit a resting moray and shake their heads several times a second right in front of it. Often the eel then leaves its crevice to hunt together.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://journals.plos.org/plosbiology/article?id=10.1371%2Fjournal.pbio.0040431",
+      "publisher": "PLOS Biology (peer-reviewed)",
+      "title": "Interspecific Communicative and Coordinated Hunting between Groupers and Giant Moray Eels in the Red Sea"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1750927/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Interspecific Communicative and Coordinated Hunting between Groupers and Giant Moray Eels in the Red Sea"
+    },
+    "searchNote": "PLOS Biology study: groupers visit morays and shake the head at high frequency (3-6 shakes per second) a few centimetres from the moray's head; morays left crevices in 58% of cases.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.grouper-moray.complementary-hunting",
+    "q": "Why do groupers and giant moray eels make effective hunting partners?",
+    "choices": [
+      "The grouper hunts open water; the eel probes holes",
+      "The eel's venom stuns prey for the grouper",
+      "They take turns sleeping and keeping watch"
+    ],
+    "answer": 0,
+    "explain": "Prey fleeing the grouper into a crack meets the moray, and prey fleeing the moray into open water meets the grouper. There is nowhere safe to hide.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://journals.plos.org/plosbiology/article?id=10.1371%2Fjournal.pbio.0040431",
+      "publisher": "PLOS Biology (peer-reviewed)",
+      "title": "Interspecific Communicative and Coordinated Hunting between Groupers and Giant Moray Eels in the Red Sea"
+    },
+    "source2": null,
+    "searchNote": "PLOS Biology study: groupers hunt in open water while morays corner prey in holes, so coordinated hunts confront prey with a multipredator attack.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.red-sea-grouper.hunger-recruitment",
+    "q": "In the Red Sea study of groupers and giant morays, when did groupers recruit morays most often?",
+    "choices": [
+      "Right after the groupers had eaten",
+      "When the groupers were hungry",
+      "Only during the full moon"
+    ],
+    "answer": 1,
+    "explain": "Groupers signaled for moray partners more often when hungry, suggesting the teamwork is a deliberate strategy for getting a meal.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://journals.plos.org/plosbiology/article?id=10.1371%2Fjournal.pbio.0040431",
+      "publisher": "PLOS Biology (peer-reviewed)",
+      "title": "Interspecific Communicative and Coordinated Hunting between Groupers and Giant Moray Eels in the Red Sea"
+    },
+    "source2": null,
+    "searchNote": "PLOS Biology study: groupers showed recruitment (head-shaking) more often when hungry.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.grouper.headstand-signal",
+    "q": "Groupers can show partners such as moray eels or octopuses where prey is hiding. What signal do they use?",
+    "choices": [
+      "A burst of loud grunts",
+      "A flash of their belly color",
+      "A headstand over the hiding spot"
+    ],
+    "answer": 2,
+    "explain": "By hanging head-down over the crevice where prey hides, a grouper points it out to a partner that can reach inside.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8441117/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "No evidence for conspecific recruitment for cooperative hunting in lionfish Pterois miles - PMC"
+    },
+    "source2": {
+      "url": "https://www.cam.ac.uk/research/news/memory-like-a-fish",
+      "publisher": "University of Cambridge",
+      "title": "Memory like a fish"
+    },
+    "searchNote": "Lionfish cooperative-hunting paper (per search summary) notes groupers may perform a headstand signal to attract partner species (moray eels, Napoleon wrasse or octopus) to a crevice where prey hides. Cambridge 'Memory like a fish' appeared for the same query; its content was not shown and may not cover this.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "fish.american-eel.sargasso-spawning",
+    "q": "Where do American eels from US East Coast rivers travel to spawn?",
+    "choices": [
+      "The Sargasso Sea",
+      "The Gulf of Maine",
+      "The headwaters of their rivers"
+    ],
+    "answer": 0,
+    "explain": "Mature American eels leave rivers and estuaries and head far out into the Atlantic's Sargasso Sea to spawn.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fws.gov/species/american-eel-anguilla-rostrata",
+      "publisher": "U.S. Fish and Wildlife Service",
+      "title": "American Eel (Anguilla rostrata)"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/articles/eels-in-the-potomac.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "American Eels in the Potomac Watershed (U.S. National Park Service)"
+    },
+    "searchNote": "USFWS American eel page and NPS Potomac page: mature American eels leave rivers and estuaries to return to the Sargasso Sea to spawn.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.american-eel.catadromous",
+    "q": "American eels are 'catadromous.' What does that mean?",
+    "choices": [
+      "They grow up at sea and spawn in rivers",
+      "They grow up in fresh water and spawn at sea",
+      "They spend their whole lives in salt marshes"
+    ],
+    "answer": 1,
+    "explain": "Catadromous fish do the reverse of salmon: American eels mature in rivers and estuaries, then return to the ocean to breed.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fws.gov/species/american-eel-anguilla-rostrata",
+      "publisher": "U.S. Fish and Wildlife Service",
+      "title": "American Eel (Anguilla rostrata)"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/miss/learn/nature/american-eel-anguilla-rostrata.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "American Eel (Anguilla rostrata) - Mississippi National River & Recreation Area (U.S. National Park Service)"
+    },
+    "searchNote": "Search results describe the American eel as catadromous: it grows up in fresh or brackish water and travels to the Sargasso Sea to spawn (USFWS, NPS).",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.american-eel.larval-drift",
+    "q": "After hatching, roughly how long do American eel larvae drift on ocean currents before reaching the coast?",
+    "choices": [
+      "About a week",
+      "About ten years",
+      "About a year"
+    ],
+    "answer": 2,
+    "explain": "Tiny, leaf-shaped eel larvae ride the currents for around a year before arriving in coastal waters and moving into rivers.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/62468/noaa_62468_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "ARTICLE Oceanic Environmental Effects on American Eel Recruitment to the East"
+    },
+    "source2": null,
+    "searchNote": "NOAA repository article on American eel recruitment: mean migration period from spawning to stream entrance estimated at 1.2 years; search summary also said larvae drift about one year. ('Leaf-shaped' is general knowledge; verifier may trim.)",
+    "risk": "numeric"
+  },
+  {
+    "fact": "fish.splendid-garden-eel.mucus-burrow",
+    "q": "How does the splendid garden eel keep its sandy burrow from collapsing?",
+    "choices": [
+      "It coats the walls with body mucus",
+      "It lines the walls with pebbles",
+      "A partner shrimp keeps rebuilding it"
+    ],
+    "answer": 0,
+    "explain": "The eel digs its burrow tail-first, then seals the walls with mucus from its body so the sand holds its shape.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/splendid-garden-eel/",
+      "publisher": "Georgia Aquarium",
+      "title": "Splendid Garden Eel - Georgia Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Georgia Aquarium splendid garden eel: digs its burrow tail-first and seals the walls with body mucus to keep the sand from collapsing.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "fish.garden-eel.burrow-spawning",
+    "q": "How do garden eels mate?",
+    "choices": [
+      "They leave the sand and swim to the surface",
+      "They stretch out from neighboring burrows",
+      "They gather in a ball in open water"
+    ],
+    "answer": 1,
+    "explain": "Garden eels rarely leave their burrows, even to spawn. Mates simply stretch toward each other from neighboring holes and entwine.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/splendid-garden-eel/",
+      "publisher": "Georgia Aquarium",
+      "title": "Splendid Garden Eel - Georgia Aquarium"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/fishes/spotted-garden-eel-heteroconger-hassi-klausewitz-eibl-eibesfeldt-1959/",
+      "publisher": "Australian Museum",
+      "title": "Spotted Garden Eel, Heteroconger hassi (Klausewitz & Eibl-Eibesfeldt, 1959) - The Australian Museum"
+    },
+    "searchNote": "Georgia Aquarium: garden eels rarely leave burrows, even to spawn; mates stretch from neighboring burrows to join bodies. Australian Museum: spotted garden eels stay in burrows while spawning.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.spotted-garden-eel.plankton-feeding",
+    "q": "What does the spotted garden eel feed on as it sways above its burrow?",
+    "choices": [
+      "Worms dug from the sand",
+      "Small fish chased down at night",
+      "Plankton drifting past in the current"
+    ],
+    "answer": 2,
+    "explain": "Anchored in the sand, garden eels rise up and pick plankton from the passing current, ducking back down when danger approaches.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/spotted-garden-eel/",
+      "publisher": "Georgia Aquarium",
+      "title": "Spotted Garden Eel - Georgia Aquarium"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/fishes/spotted-garden-eel-heteroconger-hassi-klausewitz-eibl-eibesfeldt-1959/",
+      "publisher": "Australian Museum",
+      "title": "Spotted Garden Eel, Heteroconger hassi (Klausewitz & Eibl-Eibesfeldt, 1959) - The Australian Museum"
+    },
+    "searchNote": "Georgia Aquarium spotted garden eel: only the head and upper body come out so the eel can sway in the current and catch plankton.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.spotted-garden-eel.body-exposed",
+    "q": "When feeding, how much of its body can a spotted garden eel extend out of its burrow?",
+    "choices": [
+      "Up to about two-thirds",
+      "Only its eyes",
+      "All of it, tail included"
+    ],
+    "answer": 0,
+    "explain": "Spotted garden eels can rise up to two-thirds of their length out of the sand to feed, keeping the tail end anchored in the burrow.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/spotted-garden-eel-heteroconger-hassi-klausewitz-eibl-eibesfeldt-1959/",
+      "publisher": "Australian Museum",
+      "title": "Spotted Garden Eel, Heteroconger hassi (Klausewitz & Eibl-Eibesfeldt, 1959) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum spotted garden eel: can expose up to two-thirds of the body when feeding.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "fish.ocean-sunfish.plastic-bags",
+    "q": "Why are floating plastic bags a particular danger to ocean sunfish?",
+    "choices": [
+      "They block sunlight the fish needs",
+      "They look like jellies, a favorite food",
+      "They tangle around its long tail"
+    ],
+    "answer": 1,
+    "explain": "Drifting at the surface, a plastic bag looks a lot like a jelly, so sunfish can mistake it for a meal.",
+    "category": "fish",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/ocean-sunfish",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Ocean sunfish"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium ocean sunfish page: bags in the ocean float at the surface looking a lot like jellies, a large ocean sunfish's favorite meal.",
+    "risk": "none"
+  },
+  {
+    "fact": "fish.ocean-sunfish.dna-diet",
+    "q": "A DNA study of ocean sunfish stomach contents in the northeast Atlantic found their prey was mostly what?",
+    "choices": [
+      "Jellyfish",
+      "Seaweed",
+      "Crustaceans and bony fish"
+    ],
+    "answer": 2,
+    "explain": "Jellies made up only about 16 percent of identified prey, challenging the old idea that sunfish eat almost nothing but gelatinous animals.",
+    "category": "fish",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4931451/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "DNA barcoding identifies a cosmopolitan diet in the ocean sunfish"
+    },
+    "source2": null,
+    "searchNote": "DNA barcoding study of 57 sunfish: fed mainly on crustaceans and teleosts (bony fish), with cnidarians only 16% of consumed prey. Note other sources describe jellies as the main adult diet; question is framed on this study only.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "fish.yellowhead-jawfish.mouthbrooding",
+    "q": "How does a male yellowhead jawfish protect his eggs?",
+    "choices": [
+      "He carries them in his mouth",
+      "He buries them in the sand",
+      "He glues them under a ledge"
+    ],
+    "answer": 0,
+    "explain": "Male yellowhead jawfish brood the eggs in their mouths until they hatch, keeping them safe from egg-eating fish.",
+    "category": "fish",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/yellowhead-jawfish/",
+      "publisher": "Georgia Aquarium",
+      "title": "Yellowhead Jawfish - Georgia Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Georgia Aquarium yellowhead jawfish page; expected to describe males incubating eggs in their mouths. NOTE: the search snippet did not show this specific claim (search budget ran out before a targeted search); the URL did appear in a search result for this topic. Verifier must confirm on the page.",
+    "risk": "species-specific"
+  }
+]

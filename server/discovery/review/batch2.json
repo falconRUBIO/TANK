@@ -1,0 +1,782 @@
+[
+  {
+    "id": "dd-0307",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0308",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0309",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0310",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0311",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0312",
+    "verdict": "fix",
+    "why": "Overstated: many vivid coral colors (pinks, purples, blues, fluorescent greens) come from the coral's own host pigments, not the algae. Hedge to 'much of' / 'many corals'.",
+    "fixed": {
+      "q": "Where does much of the color of many reef-building corals come from?",
+      "explain": "Zooxanthellae algae living in coral tissue supply much of many corals' color, which is why corals that lose them turn pale or white. Some bright colors come from the coral's own pigments."
+    }
+  },
+  {
+    "id": "dd-0313",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0314",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0315",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0316",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0317",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0318",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0319",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0320",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0321",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0322",
+    "verdict": "fix",
+    "why": "Explanation adds an absolute 'first known' priority claim the question does not need; trim it.",
+    "fixed": {
+      "explain": "In experiments, settling coral larvae swam toward recorded reef sounds, which are made mainly by fish and crustaceans such as snapping shrimp."
+    }
+  },
+  {
+    "id": "dd-0323",
+    "verdict": "fix",
+    "why": "'Within about two days' is source-specific and arguable: many broadcast-spawned larvae need several days to become competent to settle. The distractors are months/years, so 'within days' keeps the point without the precise figure.",
+    "fixed": {
+      "choices": [
+        "After about six months",
+        "Within days",
+        "After about a year"
+      ],
+      "explain": "Most coral larvae settle within days of spawning, though some can keep swimming for weeks before choosing a spot."
+    }
+  },
+  {
+    "id": "dd-0324",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0325",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0326",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0327",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0328",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0329",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0330",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0331",
+    "verdict": "fix",
+    "why": "Outdated taxonomy: Lophelia pertusa was moved to Desmophyllum pertusum (2019). Drop the genus name. Also 'drift down' is narrower than the source (food also arrives on currents).",
+    "fixed": {
+      "q": "Deep-sea corals live where sunlight does not reach. How do they get food?",
+      "choices": [
+        "Catching plankton and particles drifting past",
+        "Using algae that glow in the dark",
+        "Absorbing minerals from rock"
+      ],
+      "explain": "Deep-sea corals do not host the sunlight-using algae of shallow reefs. They feed on plankton and organic matter sinking from above or carried by currents."
+    }
+  },
+  {
+    "id": "dd-0332",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0333",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0334",
+    "verdict": "fix",
+    "why": "Claim about 'soft corals' in general is wrong: true soft corals (e.g. leather corals) are supported by sclerites, not a gorgonin axis. Gorgonin is specific to sea fans/sea whips (gorgonians). Narrow to sea fans.",
+    "fixed": {
+      "q": "Instead of rigid limestone, what supports the flexible skeleton of a sea fan?",
+      "explain": "Sea fans and their relatives the sea whips have a bendable internal skeleton built around gorgonin, a tough protein, which lets them sway in currents."
+    }
+  },
+  {
+    "id": "dd-0335",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0336",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0337",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0338",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0339",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0340",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0341",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0342",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0343",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0344",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0345",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0346",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0347",
+    "verdict": "fix",
+    "why": "Acrorhagi are not tentacles: they are inflatable stinging bulbs on the margin of the column, just outside the tentacles. Calling them 'tentacles' is inaccurate.",
+    "fixed": {
+      "choices": [
+        "Their sticky pedal discs",
+        "Special stinging bulbs near their tentacles",
+        "Clouds of toxic ink"
+      ],
+      "explain": "Aggregating anemones inflate special bulbs called acrorhagi, which sit just outside the ring of tentacles and are packed with stinging cells, and press them onto rivals from other clones."
+    }
+  },
+  {
+    "id": "dd-0348",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0349",
+    "verdict": "fix",
+    "why": "Explanation calls acrorhagi 'fighting tentacles'; they are marginal stinging bulbs, not tentacles.",
+    "fixed": {
+      "explain": "Polyps on a clone's border do most of the fighting. They tend to be smaller and carry more and larger acrorhagi, the stinging bulbs used in fights, than clonemates inside."
+    }
+  },
+  {
+    "id": "dd-0350",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0351",
+    "verdict": "review",
+    "why": "Disputed source of colour: some references say the giant green anemone's green comes mainly from its own epidermal pigment, with symbiotic zoochlorellae/zooxanthellae only adding to it. Monterey Bay Aquarium says 'mostly algae'. Check that the cited page says 'mostly' from algae and whether other authoritative sources agree; if they conflict, reject or reword to 'partly'."
+  },
+  {
+    "id": "dd-0352",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0353",
+    "verdict": "fix",
+    "why": "Distractor 'A skeleton' is arguably correct: some sponges (e.g. Halisarca, other myxospongians) have no spicules or spongin skeleton. Replace it.",
+    "fixed": {
+      "choices": [
+        "Pores that let water in",
+        "A brain, heart or gut",
+        "A way to take in food"
+      ]
+    }
+  },
+  {
+    "id": "dd-0354",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0355",
+    "verdict": "fix",
+    "why": "Distractor 'reversing to shoot water jets' is close to the documented contraction 'sneezes' of freshwater sponges (Ephydatia), which flush water out; a well-read player could argue it. Replace.",
+    "fixed": {
+      "choices": [
+        "By 'sneezing' out mucus",
+        "By shedding their outer skin",
+        "By scraping them clean with spines"
+      ]
+    }
+  },
+  {
+    "id": "dd-0356",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0357",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0358",
+    "verdict": "fix",
+    "why": "Explanation's 'taller than a person' is an extra size claim not needed and risky for typical specimens; keep it general.",
+    "fixed": {
+      "explain": "Giant barrel sponges grow very large and can live for a very long time, so scientists call them the 'redwoods of the reef.'"
+    }
+  },
+  {
+    "id": "dd-0359",
+    "verdict": "fix",
+    "why": "Distractor 'Crushed seashells' is partly true: shell fragments are a real component of Hawaiian white sand. Replace with a clearly wrong option.",
+    "fixed": {
+      "choices": [
+        "Salt crystals from dried seawater",
+        "Parrotfish droppings",
+        "Eroded volcanic glass"
+      ]
+    }
+  },
+  {
+    "id": "dd-0360",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0361",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0362",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0363",
+    "verdict": "fix",
+    "why": "Explanation's 'no central nervous system' is disputed for box jellyfish, whose rhopalia and nerve ring are often described as a centralized nervous system. Trim.",
+    "fixed": {
+      "explain": "Instead of a brain, jellyfish have a net of nerves spread through the body, yet they can still sense and respond to their surroundings."
+    }
+  },
+  {
+    "id": "dd-0364",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0365",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0366",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0367",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0368",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0369",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0370",
+    "verdict": "fix",
+    "why": "Wording: the stem asks 'what light' but a distractor is 'heat', which is not light. Reword the stem.",
+    "fixed": {
+      "q": "The small box jellyfish Copula sivickisi hunts at night. What does research suggest helps it see its prey?"
+    }
+  },
+  {
+    "id": "dd-0371",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0372",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0373",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0374",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0375",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0376",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0377",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0378",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0379",
+    "verdict": "fix",
+    "why": "Distractor 'It is really a colony, not one animal' is partly defensible: the polyp stage Turritopsis reverts to is a colonial hydroid. Replace.",
+    "fixed": {
+      "choices": [
+        "It lives only a few hours as an adult",
+        "It can still die from predators or disease",
+        "It cannot reproduce at all"
+      ]
+    }
+  },
+  {
+    "id": "dd-0380",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0381",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0382",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0383",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0384",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0385",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0386",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0387",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0388",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0389",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0390",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0391",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0392",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0393",
+    "verdict": "reject",
+    "why": "Disputed and definition-dependent: which Velella form is 'left-' or 'right-handed' depends on the viewing convention, sources contradict each other, and both forms occur in both hemispheres with proportions set by regional wind patterns. Not fair as a single-answer question."
+  },
+  {
+    "id": "dd-0394",
+    "verdict": "reject",
+    "why": "Duplicate: tests the same underlying fact as dd-0392 (Velella cannot steer and is carried by the wind). Keep dd-0392.",
+    "dupOf": "dd-0392"
+  },
+  {
+    "id": "dd-0395",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0396",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0397",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0398",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0399",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0400",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0401",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0402",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0403",
+    "verdict": "fix",
+    "why": "The ~30 m figure is a record-type claim based on a few old specimens (the famous one, about 37 m, was from Massachusetts Bay, not the Arctic). Frame it as the largest reported, not a typical Arctic size.",
+    "fixed": {
+      "q": "Roughly how long have the tentacles of the largest lion's mane jellyfish (Cyanea capillata) been reported to grow?",
+      "explain": "Most lion's mane jellies have tentacles a couple of metres long, but the largest reported specimens, from cold northern waters, had tentacles of around 30 metres."
+    }
+  },
+  {
+    "id": "dd-0404",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0405",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0406",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0407",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0408",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0409",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0410",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0411",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0412",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0413",
+    "verdict": "reject",
+    "why": "Duplicate: tests the same GFP/Aequorea fact as dd-0412, and the protein's name (green fluorescent protein) given in dd-0412 gives this answer away. Keep dd-0412.",
+    "dupOf": "dd-0412"
+  },
+  {
+    "id": "dd-0414",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0415",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0416",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0417",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0418",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0419",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0420",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0421",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0422",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0423",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0424",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0425",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0426",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0427",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0428",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0429",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0430",
+    "verdict": "fix",
+    "why": "Explanation adds a weakly sourced specific claim (1998 event hit T. gigas hard; searchNote cites a petition). Trim.",
+    "fixed": {
+      "explain": "Heat stress and intense light can drive out the food-making algae in a giant clam's mantle, much as happens to bleaching corals."
+    }
+  },
+  {
+    "id": "dd-0431",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0432",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0433",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0434",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0435",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0436",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0437",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0438",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0439",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0440",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0441",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0442",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0443",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0444",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0445",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0446",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0447",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0448",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0449",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0450",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0451",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0452",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0453",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0454",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0455",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0456",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0457",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0458",
+    "verdict": "fix",
+    "why": "Lifespan is estimate-based and sources disagree (NOAA 25-30, other NOAA documents up to 40, lesson plan says largely unknown). Avoid the precise range.",
+    "fixed": {
+      "q": "NOAA describes the queen conch as long-lived. About how long can it live?",
+      "choices": [
+        "About 1 year",
+        "A few decades",
+        "More than 200 years"
+      ],
+      "explain": "NOAA says queen conch generally reach 25 to 30 years old, though estimates vary, and they take about 3.5 to 4 years to mature."
+    }
+  },
+  {
+    "id": "dd-0459",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0460",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0598",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0599",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0600",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0601",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0602",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0603",
+    "verdict": "fix",
+    "why": "'Up to 10 percent' is a precise single-source number (literature figures vary, some higher) and 'byproduct' is unverified. Remove the number from the stem and the mechanism claim from the explanation.",
+    "fixed": {
+      "q": "The gas inside a bull kelp's float can contain a surprising amount of which gas?",
+      "explain": "Surprisingly, the gas in a bull kelp's float can include a significant share of carbon monoxide, which the kelp itself produces."
+    }
+  },
+  {
+    "id": "dd-0604",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0605",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0606",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0607",
+    "verdict": "ok"
+  },
+  {
+    "id": "dd-0608",
+    "verdict": "ok"
+  }
+]

@@ -1,0 +1,1304 @@
+[
+  {
+    "fact": "corals-reefs.coral.is-animal",
+    "q": "Corals stay fixed to the seafloor like plants. What are they actually?",
+    "choices": [
+      "Animals",
+      "Plants",
+      "Algae"
+    ],
+    "answer": 0,
+    "explain": "Corals are invertebrate animals. They look plant-like because they are anchored in place, but unlike plants they do not make their own food by photosynthesis.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/facts/coral-animal.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Are corals animals, plants, or something else? - NOAA Ocean Exploration"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/what-coral-coral-polyp-and-zooxanthellae",
+      "publisher": "Smithsonian Ocean",
+      "title": "What Is Coral? A Coral Polyp and Zooxanthellae"
+    },
+    "searchNote": "NOAA Ocean Exploration says corals are invertebrate animals in phylum Cnidaria, often mistaken for plants because they are attached to the seafloor; they do not photosynthesize themselves.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.polyp-unit",
+    "q": "What is each of the many tiny individual animals that make up a coral colony called?",
+    "choices": [
+      "A medusa",
+      "A polyp",
+      "A frond"
+    ],
+    "answer": 1,
+    "explain": "What we call a coral is usually hundreds or thousands of small animals called polyps, living together as one colony.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/facts/coral-animal.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Are corals animals, plants, or something else? - NOAA Ocean Exploration"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/what-coral-coral-polyp-and-zooxanthellae",
+      "publisher": "Smithsonian Ocean",
+      "title": "What Is Coral? A Coral Polyp and Zooxanthellae"
+    },
+    "searchNote": "NOAA says a coral is made up of hundreds to thousands of individual animals called polyps.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.phylum-cnidaria",
+    "q": "Corals belong to the phylum Cnidaria. Which of these animals is also in that group?",
+    "choices": [
+      "Sponges",
+      "Sea stars",
+      "Jellyfish"
+    ],
+    "answer": 2,
+    "explain": "Corals share the phylum Cnidaria with jellyfish and sea anemones, animals that all carry stinging cells.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/facts/coral-animal.html",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Are corals animals, plants, or something else? - NOAA Ocean Exploration"
+    },
+    "source2": null,
+    "searchNote": "NOAA Ocean Exploration places corals in phylum Cnidaria and says they share it with sea anemones and jellies.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.zooxanthellae.what-they-are",
+    "q": "What are the zooxanthellae that live inside reef-building corals?",
+    "choices": [
+      "Single-celled algae",
+      "Tiny shrimp larvae",
+      "Skeleton-building bacteria"
+    ],
+    "answer": 0,
+    "explain": "Zooxanthellae are microscopic algae living in coral tissue. They photosynthesize and pass food to the coral, which gives them shelter in return.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/education/tutorial_corals/media/supp_coral02a.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "Corals Tutorial: Zooxanthellae purpose"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/what-coral-coral-polyp-and-zooxanthellae",
+      "publisher": "Smithsonian Ocean",
+      "title": "What Is Coral? A Coral Polyp and Zooxanthellae"
+    },
+    "searchNote": "NOAA's corals tutorial and Smithsonian Ocean describe zooxanthellae as single-celled algae living in coral tissue that supply the coral with food made by photosynthesis.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.zooxanthellae.food-share",
+    "q": "Up to roughly what share of the food made by a coral's zooxanthellae is passed to the coral?",
+    "choices": [
+      "About 40 percent",
+      "About 90 percent",
+      "About 10 percent"
+    ],
+    "answer": 1,
+    "explain": "NOAA estimates that as much as 90 percent of the organic material the algae make by photosynthesis goes to the host coral's tissue.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://cdn.oceanservice.noaa.gov/oceanserviceprod/education/tutorial_corals/lessons/corals_tutorial.pdf",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals"
+    },
+    "source2": null,
+    "searchNote": "NOAA corals tutorial says as much as 90 percent of the organic material produced photosynthetically by zooxanthellae is transferred to the coral tissue. (A Smithsonian-linked source cites up to 95%, also far from the distractors.)",
+    "risk": "numeric"
+  },
+  {
+    "fact": "corals-reefs.coral.color-source",
+    "q": "Where does most of the color of a reef-building coral come from?",
+    "choices": [
+      "Its limestone skeleton",
+      "Pigment from prey it eats",
+      "Algae living in its tissue"
+    ],
+    "answer": 2,
+    "explain": "The zooxanthellae algae in coral tissue supply much of a coral's color. That is why corals that lose them turn pale or white.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/coral_bleach.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is coral bleaching?"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/zooxanthellae-and-coral-bleaching",
+      "publisher": "Smithsonian Ocean",
+      "title": "Zooxanthellae and Coral Bleaching"
+    },
+    "searchNote": "NOAA's coral bleaching page says the algae living in coral tissue give corals their color; without them the white skeleton shows.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.bleaching.main-cause",
+    "q": "What is the most common cause of coral bleaching?",
+    "choices": [
+      "Unusually warm water",
+      "A lack of moonlight",
+      "Too many reef fish"
+    ],
+    "answer": 0,
+    "explain": "When water gets too warm, stressed corals expel the algae living in their tissues and turn white. Changes in light or nutrients can also trigger it.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/coral_bleach.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is coral bleaching?"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/zooxanthellae-and-coral-bleaching",
+      "publisher": "Smithsonian Ocean",
+      "title": "Zooxanthellae and Coral Bleaching"
+    },
+    "searchNote": "NOAA says corals stressed by changes in temperature, light or nutrients expel their symbiotic algae, and that warm water is the most common cause.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.bleaching.still-alive",
+    "q": "What is true of a coral that has just bleached white?",
+    "choices": [
+      "It has already died",
+      "It is alive but stressed",
+      "It has become a new species"
+    ],
+    "answer": 1,
+    "explain": "A bleached coral is not dead and can recover if conditions improve. If bleaching is severe or lasts too long, though, the coral can die.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/coral_bleach.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is coral bleaching?"
+    },
+    "source2": null,
+    "searchNote": "NOAA says a bleached coral is not dead and can survive bleaching, but becomes more vulnerable and may die if the stress is prolonged.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.bleaching.cold-water",
+    "q": "Besides heat, which of these has caused coral bleaching in the Florida Keys?",
+    "choices": [
+      "Bright full moonlight",
+      "Large schools of fish",
+      "Unusually cold water"
+    ],
+    "answer": 2,
+    "explain": "Bleaching is a stress response, and cold snaps can trigger it too. A cold-water event in the Florida Keys bleached corals and killed some of them.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/pgallery/pgflorida/living/living_13.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Florida Keys NMS: Coral Bleaching"
+    },
+    "source2": {
+      "url": "https://oceanservice.noaa.gov/facts/coral_bleach.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is coral bleaching?"
+    },
+    "searchNote": "The Florida Keys NMS bleaching page says cold water temperatures caused a coral bleaching event that resulted in some coral death.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.spawning.egg-sperm-bundles",
+    "q": "Many reef corals spawn by releasing eggs and sperm in what form?",
+    "choices": [
+      "Bundles that float upward",
+      "Egg cases glued to rock",
+      "Live young that crawl away"
+    ],
+    "answer": 0,
+    "explain": "Many spawning corals pack eggs and sperm together into small buoyant bundles. These float to the surface and break apart so eggs can be fertilized.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://flowergarden.noaa.gov/education/coralspawning.html",
+      "publisher": "NOAA Flower Garden Banks National Marine Sanctuary",
+      "title": "Coral Spawning"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ecosystems/coral-reefs/coral-spawning",
+      "publisher": "Smithsonian Ocean",
+      "title": "Coral Spawning"
+    },
+    "searchNote": "NOAA Flower Garden Banks says many hermaphroditic broadcast spawners release bundles of eggs and sperm that float to the surface and break apart.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.spawning.flower-garden-timing",
+    "q": "At the Flower Garden Banks in the Gulf, when does the main coral spawning usually happen?",
+    "choices": [
+      "1 to 2 nights before August's full moon",
+      "7 to 10 nights after August's full moon",
+      "About 30 nights after August's full moon"
+    ],
+    "answer": 1,
+    "explain": "Spawning there is tied to the moon. Different species release eggs and sperm on different nights in the week or so after the August full moon.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://flowergarden.noaa.gov/education/spawningobservations.html",
+      "publisher": "NOAA Flower Garden Banks National Marine Sanctuary",
+      "title": "Spawning Observations"
+    },
+    "source2": null,
+    "searchNote": "NOAA Flower Garden Banks spawning observations say the main event occurs about seven to ten nights after the August full moon, with species spawning on different nights.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "corals-reefs.elkhorn.spawn-time",
+    "q": "Elkhorn coral in the Caribbean spawns for just a few nights each summer. At about what time?",
+    "choices": [
+      "Around midday",
+      "Just after sunrise",
+      "About three hours after sunset"
+    ],
+    "answer": 2,
+    "explain": "Elkhorn coral spawns on only a few summer nights after a full moon, typically about three hours after sunset, so researchers must be ready to collect it.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://nationalzoo.si.edu/news/spawning-hope",
+      "publisher": "Smithsonian's National Zoo",
+      "title": "Spawning Hope"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian's National Zoo says elkhorn coral spawns only a few nights each summer after a full moon, typically about three hours after sunset.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.spawning.separate-sexes",
+    "q": "Some coral species are 'gonochoric.' What does that mean?",
+    "choices": [
+      "Each colony is either male or female",
+      "They reproduce only by budding",
+      "They spawn only in winter"
+    ],
+    "answer": 0,
+    "explain": "In gonochoric corals, female colonies release egg bundles and male colonies release clouds of sperm, rather than each colony making both.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://flowergarden.noaa.gov/education/coralspawning.html",
+      "publisher": "NOAA Flower Garden Banks National Marine Sanctuary",
+      "title": "Coral Spawning"
+    },
+    "source2": null,
+    "searchNote": "NOAA Flower Garden Banks says some species are gonochoric: female colonies release egg bundles while male colonies release sperm.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.larvae.planula-name",
+    "q": "What is a free-swimming coral larva called?",
+    "choices": [
+      "A nauplius",
+      "A planula",
+      "A veliger"
+    ],
+    "answer": 1,
+    "explain": "A fertilized coral egg develops into a tiny larva called a planula, which drifts and swims until it finds a place to settle and become a polyp.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/education/tutorial_corals/coral06_reproduction.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals Tutorial"
+    },
+    "source2": {
+      "url": "https://cdhc.noaa.gov/coral-biology/coral-reproduction/",
+      "publisher": "NOAA Coral Disease & Health Consortium",
+      "title": "Coral Reproduction - Coral Disease & Health Consortium"
+    },
+    "searchNote": "NOAA corals tutorial and the NOAA CDHC reproduction page describe coral larvae as planulae that settle and metamorphose into polyps.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.larvae.coralline-algae-cue",
+    "q": "What is thought to be the strongest cue telling a coral larva where to settle?",
+    "choices": [
+      "Warmth from sunlit sand",
+      "The shadow of passing fish",
+      "A chemical from coralline algae"
+    ],
+    "answer": 2,
+    "explain": "Larvae respond to several signals, but a chemical released by certain crusty, pink coralline algae is considered the most potent settlement cue.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://cdhc.noaa.gov/coral-biology/coral-reproduction/",
+      "publisher": "NOAA Coral Disease & Health Consortium",
+      "title": "Coral Reproduction - Coral Disease & Health Consortium"
+    },
+    "source2": null,
+    "searchNote": "NOAA CDHC says a variety of cues guide larvae to suitable substrate, and the most potent is a chemical signal released by certain crustose coralline algae.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.larvae.reef-sounds",
+    "q": "In experiments, settling coral larvae moved toward which reef cue?",
+    "choices": [
+      "Reef sounds from fish and shrimp",
+      "Magnetic pulses from rocks",
+      "Scent of sea turtles"
+    ],
+    "answer": 0,
+    "explain": "Larvae swam toward recorded reef sounds made mainly by fish and crustaceans. It was the first known hearing-type response in the coral and jellyfish group.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2871043/",
+      "publisher": "PLOS ONE via NCBI PMC",
+      "title": "Coral Larvae Move toward Reef Sounds"
+    },
+    "source2": null,
+    "searchNote": "PLOS ONE study: settling coral larvae were attracted to reef sounds produced mainly by fish and crustaceans, the first auditory response described in Cnidaria.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.larvae.settle-timing",
+    "q": "For most coral species, how soon do larvae settle after spawning?",
+    "choices": [
+      "After about six months",
+      "Within about two days",
+      "After about a year"
+    ],
+    "answer": 1,
+    "explain": "Most coral larvae settle within a couple of days, though some swim for up to three weeks before choosing a spot.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://cdhc.noaa.gov/coral-biology/coral-reproduction/",
+      "publisher": "NOAA Coral Disease & Health Consortium",
+      "title": "Coral Reproduction - Coral Disease & Health Consortium"
+    },
+    "source2": null,
+    "searchNote": "NOAA CDHC says in most species larvae settle within two days, though some swim for up to three weeks, and one known case two months.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "corals-reefs.larvae.brooder-settlement",
+    "q": "Compared with broadcast-spawned larvae, larvae released by brooding corals usually do what?",
+    "choices": [
+      "Drift for months across oceans",
+      "Never leave the parent colony",
+      "Settle sooner and nearer the parent"
+    ],
+    "answer": 2,
+    "explain": "Brooding corals keep developing young inside, so their larvae are released ready to settle quickly and tend to land close to the parent colony.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://cdhc.noaa.gov/coral-biology/coral-reproduction/",
+      "publisher": "NOAA Coral Disease & Health Consortium",
+      "title": "Coral Reproduction - Coral Disease & Health Consortium"
+    },
+    "source2": null,
+    "searchNote": "NOAA CDHC says brooding species release larvae that are ready to settle sooner and usually settle closer to the parent colony.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.larvae.poor-swimmers",
+    "q": "How does a coral larva's swimming speed compare with the water currents around reefs?",
+    "choices": [
+      "Far slower than the currents",
+      "Much faster than the currents",
+      "About the same speed"
+    ],
+    "answer": 0,
+    "explain": "A review found coral larvae swim orders of magnitude slower than reef water flow, so they have very little ability to steer themselves to a settling spot.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5440398/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Coral larvae are poor swimmers and require fine-scale reef structure to settle"
+    },
+    "source2": null,
+    "searchNote": "Peer-reviewed meta-analysis: coral larval swimming speeds are orders of magnitude lower than water flow on and off reefs, so navigation ability is extremely limited.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.asexual.fragmentation",
+    "q": "A broken piece of coral reattaches and keeps growing. What is this an example of?",
+    "choices": [
+      "Mass spawning",
+      "Asexual reproduction",
+      "Coral bleaching"
+    ],
+    "answer": 1,
+    "explain": "Corals can reproduce asexually by budding new polyps or by fragmentation, when a broken piece survives and grows into a new colony.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/education/tutorial_corals/coral06_reproduction.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals Tutorial"
+    },
+    "source2": null,
+    "searchNote": "NOAA corals tutorial reproduction page describes asexual reproduction in corals by budding and by fragmentation of broken pieces.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.skeleton-material",
+    "q": "What do stony corals build their hard skeletons from?",
+    "choices": [
+      "Silica, like glass",
+      "Keratin, like hair",
+      "Calcium carbonate (limestone)"
+    ],
+    "answer": 2,
+    "explain": "Each stony coral polyp secretes a skeleton of calcium carbonate. Over many generations these skeletons build the massive structure of a reef.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/coralmadeof.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is a coral reef made of?"
+    },
+    "source2": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "searchNote": "NOAA Ocean Service says reef structures form when each stony coral polyp secretes a skeleton of calcium carbonate.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.night-feeding",
+    "q": "When do most coral polyps stretch out their tentacles to feed?",
+    "choices": [
+      "At night",
+      "At midday",
+      "Only at low tide"
+    ],
+    "answer": 0,
+    "explain": "Most coral polyps feed at night, emerging from their skeletons to snag drifting zooplankton. By day, many rely on food from their algae.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "source2": {
+      "url": "https://cdn.oceanservice.noaa.gov/oceanserviceprod/education/tutorial_corals/lessons/corals_tutorial.pdf",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals"
+    },
+    "searchNote": "NOAA Florida Keys and the NOAA corals tutorial say most polyps feed at night, coming out of their skeletons to catch floating prey.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.nematocysts",
+    "q": "What do coral polyps use to capture prey such as zooplankton?",
+    "choices": [
+      "Tiny teeth around the mouth",
+      "Stinging cells on their tentacles",
+      "Sticky silk threads"
+    ],
+    "answer": 1,
+    "explain": "Coral tentacles carry stinging cells called nematocysts. When prey brushes against them, they fire and help hold the food.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://cdn.oceanservice.noaa.gov/oceanserviceprod/education/tutorial_corals/lessons/corals_tutorial.pdf",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals"
+    },
+    "source2": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "searchNote": "NOAA corals tutorial says nematocysts are stinging cells in coral tentacles and outer tissues used to capture food, triggered when prey contacts the tentacles.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.coral.mucus-feeding",
+    "q": "Besides catching prey with tentacles, how can some corals collect fine food particles?",
+    "choices": [
+      "By filtering water through gills",
+      "By absorbing them through roots",
+      "By trapping them in mucus"
+    ],
+    "answer": 2,
+    "explain": "Some corals produce mucus that traps fine bits of organic matter, which they then draw into their mouths.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://cdn.oceanservice.noaa.gov/oceanserviceprod/education/tutorial_corals/lessons/corals_tutorial.pdf",
+      "publisher": "NOAA National Ocean Service",
+      "title": "NOAA National Ocean Service Education: Corals"
+    },
+    "source2": null,
+    "searchNote": "NOAA corals tutorial says some corals trap fine organic particles in mucus, then draw them into their mouths.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.deep-sea.feeding",
+    "q": "Deep-sea corals such as Lophelia live where sunlight does not reach. How do they get food?",
+    "choices": [
+      "Catching particles that drift down",
+      "Using algae that glow in the dark",
+      "Absorbing minerals from rock"
+    ],
+    "answer": 0,
+    "explain": "Deep-sea corals do not host the sunlight-using algae of shallow reefs. They feed on plankton and organic matter sinking from above or carried by currents.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/news/2025/deep-sea-corals.html",
+      "publisher": "NOAA National Marine Sanctuaries",
+      "title": "Why Deep-Sea Corals Are Essential to Our Ocean"
+    },
+    "source2": {
+      "url": "https://3d.si.edu/corals/depth-distribution",
+      "publisher": "Smithsonian",
+      "title": "Depth & Distribution"
+    },
+    "searchNote": "Search results: cold-water corals like Lophelia lack symbiotic algae and feed on sinking particulate matter and organic matter carried by currents. Verify which of the two pages states it.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.soft-coral.eight-tentacles",
+    "q": "How many tentacles does each polyp of a soft coral (octocoral) have?",
+    "choices": [
+      "Five",
+      "Eight",
+      "Ten"
+    ],
+    "answer": 1,
+    "explain": "Soft corals are also called octocorals because each polyp has eight tentacles, which are often feathery.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/education/tutorial_corals/media/supp_coral03c.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "Corals Tutorial: Types of soft coral"
+    },
+    "source2": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "searchNote": "NOAA corals tutorial and Florida Keys pages say soft coral polyps have eight (often feathery, pinnate) tentacles.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.stony-coral.six-multiples",
+    "q": "Stony coral polyps grow tentacles in multiples of which number?",
+    "choices": [
+      "Five",
+      "Eight",
+      "Six"
+    ],
+    "answer": 2,
+    "explain": "Hard, reef-building corals have tentacles in multiples of six, such as 6, 12 or 18, which sets them apart from eight-tentacled soft corals.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "source2": null,
+    "searchNote": "NOAA Florida Keys page says stony coral polyps have tentacles in multiples of six (6, 12, 18...).",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.gorgonian.gorgonin-skeleton",
+    "q": "Instead of rigid limestone, what supports soft corals such as sea fans?",
+    "choices": [
+      "A flexible core of gorgonin",
+      "A shell of silica glass",
+      "Hollow tubes of bone"
+    ],
+    "answer": 0,
+    "explain": "Sea fans and similar soft corals have a bendable internal skeleton built around gorgonin, a tough protein, which lets them sway in currents.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://floridakeys.noaa.gov/corals/coralreefs.html",
+      "publisher": "NOAA Florida Keys National Marine Sanctuary",
+      "title": "Coral Reefs - Florida Keys National Marine Sanctuary - NOAA"
+    },
+    "source2": null,
+    "searchNote": "NOAA Florida Keys page says soft corals have a more flexible skeleton with a gorgonin core rather than the rigid calcium carbonate of stony corals.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.black-coral.hexacoral",
+    "q": "Black corals are often mistaken for soft corals. How many tentacles do their polyps have?",
+    "choices": [
+      "Eight",
+      "Six",
+      "Twelve"
+    ],
+    "answer": 1,
+    "explain": "Despite looking like soft corals, black corals are hexacorals with six tentacles per polyp, unlike the eight-tentacled octocorals.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/get-involved/amri/amri-seminars-and-lectures/species-identification-of-black-corals/",
+      "publisher": "Australian Museum",
+      "title": "Species identification of Australian Museum black corals - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum says black corals have six tentacles, which is why they are often mistaken for soft corals.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.fire-coral.hydrozoan",
+    "q": "Fire coral is a stinging reef builder. What kind of animal is it?",
+    "choices": [
+      "A type of reef sponge",
+      "A colonial sea squirt",
+      "A hydrozoan, not a true coral"
+    ],
+    "answer": 2,
+    "explain": "Fire corals build hard skeletons like corals but are hydrozoans, a different cnidarian class. Their name comes from their painful sting.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/southflorida/habitats/corals/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Corals"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum page on South Florida corals describes fire corals (Millepora) as hydrozoans rather than true (scleractinian) corals, named for their stinging polyps.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.anthozoa.class",
+    "q": "Corals and sea anemones belong to which class of animals?",
+    "choices": [
+      "Anthozoa",
+      "Hydrozoa",
+      "Scyphozoa"
+    ],
+    "answer": 0,
+    "explain": "Corals and sea anemones are grouped together in the class Anthozoa, a name meaning 'flower animals.' Jellyfish and hydroids belong to other classes.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://nationalzoo.si.edu/animals/corals-and-sea-anemones-anthozoa",
+      "publisher": "Smithsonian's National Zoo",
+      "title": "Corals and sea anemones (anthozoa)"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian's National Zoo page is titled 'Corals and sea anemones (anthozoa)', grouping both in class Anthozoa.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.reef-types.fringing-most-common",
+    "q": "Which type of coral reef is the most common?",
+    "choices": [
+      "Barrier reef",
+      "Fringing reef",
+      "Atoll"
+    ],
+    "answer": 1,
+    "explain": "Fringing reefs grow seaward directly from the shore, bordering coastlines and islands. They are the most common of the three main reef types.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/threecorals.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What are the three main types of coral reefs?"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the three main types are fringing, barrier and atoll, and fringing reefs are the most common, growing seaward directly from shore.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.reef-types.atoll",
+    "q": "What is a ring-shaped coral reef with an open lagoon in the middle called?",
+    "choices": [
+      "A fringing reef",
+      "A patch reef",
+      "An atoll"
+    ],
+    "answer": 2,
+    "explain": "An atoll forms when a reef keeps growing upward around a volcanic island that slowly sinks, leaving a ring of reef around a central lagoon.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/threecorals.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What are the three main types of coral reefs?"
+    },
+    "source2": null,
+    "searchNote": "NOAA says atolls are rings of coral around a central lagoon, formed when a fringing reef keeps growing up from a volcanic island that subsides.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.reef-types.barrier-lagoon",
+    "q": "What separates a barrier reef from the shore?",
+    "choices": [
+      "A lagoon of open water",
+      "A strip of sand dunes",
+      "A mangrove forest"
+    ],
+    "answer": 0,
+    "explain": "Barrier reefs sit farther from land than fringing reefs, with a lagoon of open, often deep water between the reef and the coast.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/threecorals.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What are the three main types of coral reefs?"
+    },
+    "source2": null,
+    "searchNote": "NOAA says barrier reefs are separated from the shore by a lagoon of open, often deep water.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.atoll.darwin-theory",
+    "q": "Who proposed that reefs develop from fringing reef to barrier reef to atoll as volcanic islands sink?",
+    "choices": [
+      "Jacques Cousteau",
+      "Charles Darwin",
+      "Alfred Wegener"
+    ],
+    "answer": 1,
+    "explain": "Charles Darwin's subsidence theory linked the three reef types in one sequence, with reefs growing upward as the islands they surround slowly sink.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4028904/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Postglacial Fringing-Reef to Barrier-Reef conversion on Tahiti links Darwin's reef types"
+    },
+    "source2": {
+      "url": "https://oceanservice.noaa.gov/facts/threecorals.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What are the three main types of coral reefs?"
+    },
+    "searchNote": "The PMC Tahiti study refers to 'Darwin's reef types' and his subsidence theory that reefs form in sequence from fringing to barrier to atoll.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.growth.branching-rate",
+    "q": "Under good conditions, about how fast can branching corals grow?",
+    "choices": [
+      "Up to about 1 meter a year",
+      "Less than 1 mm a year",
+      "Up to about 10 cm a year"
+    ],
+    "answer": 2,
+    "explain": "Branching corals can add up to about 4 inches (10 cm) a year, while dense, boulder-shaped massive corals add only up to about 2 cm.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://americansamoa.noaa.gov/explore/coral-reefs.html",
+      "publisher": "NOAA National Marine Sanctuary of American Samoa",
+      "title": "Coral reefs"
+    },
+    "source2": null,
+    "searchNote": "NOAA American Samoa says under optimum conditions massive corals may grow up to 2 cm a year and branching corals up to 10 cm a year.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "corals-reefs.growth.gbr-latitude",
+    "q": "A study of branching corals on the Great Barrier Reef found growth was highest in the north. How did it change southward?",
+    "choices": [
+      "It decreased",
+      "It increased",
+      "It stayed the same"
+    ],
+    "answer": 0,
+    "explain": "Growth of branching corals was highest at northern Lizard Island and fell with increasing latitude, matching cooler water temperatures farther south.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5462780/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Variation in growth rates of branching corals along Australia's Great Barrier Reef"
+    },
+    "source2": null,
+    "searchNote": "PMC study: annual growth in branching species was highest at Lizard Island and dropped with increasing latitude, tracking temperature.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.anemone.pedal-disc",
+    "q": "What does a sea anemone use to anchor itself and slowly glide along?",
+    "choices": [
+      "Suction cups on its tentacles",
+      "A sticky base called a pedal disc",
+      "Tiny hooked spines"
+    ],
+    "answer": 1,
+    "explain": "Anemones hold on with a sticky base called the pedal disc. If conditions turn bad, many can slowly slide along the seafloor on it.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/anemones/",
+      "publisher": "Seattle Aquarium",
+      "title": "Anemones - Seattle Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Seattle Aquarium says anemones attach with a sticky pedal disc and can slowly slide along the ocean floor on it when conditions are poor.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.anemone.single-opening",
+    "q": "How does a sea anemone get rid of waste after digesting a meal?",
+    "choices": [
+      "Through a separate anal pore",
+      "Through pores in its tentacles",
+      "It expels it through its mouth"
+    ],
+    "answer": 2,
+    "explain": "An anemone's gut has a single opening. Food goes in through the mouth, and once it is digested the leftovers come back out the same way.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.seattleaquarium.org/animal/anemones/",
+      "publisher": "Seattle Aquarium",
+      "title": "Anemones - Seattle Aquarium"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/green_sea_anemone",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Green Sea Anemone"
+    },
+    "searchNote": "Search result summary: after food is digested, anemones expel waste products out of the mouth. Verify which of the two pages states this.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.anemone.pedal-laceration",
+    "q": "Some sea anemones reproduce by 'pedal laceration.' What happens?",
+    "choices": [
+      "Base fragments grow into new anemones",
+      "Eggs hatch inside the tentacles",
+      "Two anemones fuse together"
+    ],
+    "answer": 0,
+    "explain": "In pedal laceration, bits of an anemone's base tear off and are left behind as it moves. Each piece can grow into a new anemone.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8757374/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Tentacle patterning during Exaiptasia diaphana pedal lacerate development differs between symbiotic and aposymbiotic animals"
+    },
+    "source2": null,
+    "searchNote": "PMC study on Exaiptasia describes pedal lacerates: fragments of the pedal disc left behind that develop into new anemones.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.aggregating.acrorhagi",
+    "q": "What do aggregating anemones use to fight anemones from rival clones?",
+    "choices": [
+      "Their sticky pedal discs",
+      "Special stinging tentacles",
+      "Clouds of toxic ink"
+    ],
+    "answer": 1,
+    "explain": "Aggregating anemones swell special tentacles called acrorhagi, packed with stinging cells, and press them onto rivals from other clones.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/aggregating-anemone",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Aggregating anemone"
+    },
+    "source2": {
+      "url": "https://grosberglab.faculty.ucdavis.edu/wp-content/uploads/sites/453/2017/05/2005-Ayre-D.-J.-R.-K.-Grosberg.pdf",
+      "publisher": "UC Davis Grosberg Lab (Animal Behaviour, 2005)",
+      "title": "Behind anemone lines: factors affecting division of labour ..."
+    },
+    "searchNote": "Monterey Bay Aquarium and the Grosberg lab paper say contact between non-clonemates triggers aggression using acrorhagi packed with nematocysts.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.aggregating.neutral-zone",
+    "q": "When two clones of aggregating anemones meet, what usually forms between them?",
+    "choices": [
+      "A mixed zone of both clones",
+      "A ridge of fused anemones",
+      "An empty strip with no anemones"
+    ],
+    "answer": 2,
+    "explain": "After fighting, rival clones draw apart and leave a bare neutral zone between them, a border you can see in tide pools.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.pugetsound.edu/puget-sound-museum-natural-history/exhibits/marine-panel/aggregating-anemone",
+      "publisher": "University of Puget Sound, Slater Museum of Natural History",
+      "title": "Aggregating Anemone"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/aggregating-anemone",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Aggregating anemone"
+    },
+    "searchNote": "Puget Sound museum and MBA pages: colonies draw away from each other, leaving an anemone-free neutral zone between clones.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.aggregating.border-warriors",
+    "q": "In a clone of aggregating anemones, where are the 'warrior' polyps found?",
+    "choices": [
+      "Along the clone's edges",
+      "In the clone's center",
+      "Scattered randomly"
+    ],
+    "answer": 0,
+    "explain": "Polyps on a clone's border do most of the fighting. They tend to be smaller and carry more and larger fighting tentacles than clonemates inside.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://grosberglab.faculty.ucdavis.edu/wp-content/uploads/sites/453/2017/05/2005-Ayre-D.-J.-R.-K.-Grosberg.pdf",
+      "publisher": "UC Davis Grosberg Lab (Animal Behaviour, 2005)",
+      "title": "Behind anemone lines: factors affecting division of labour ..."
+    },
+    "source2": null,
+    "searchNote": "Grosberg lab paper: border 'warriors' tend to be smaller, carry more and larger acrorhagi, and invest less in growth and reproduction than interior clonemates.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.aggregating.cloning",
+    "q": "How do aggregating anemones form dense patches of genetically identical individuals?",
+    "choices": [
+      "By budding off swimming larvae",
+      "By splitting in two",
+      "By fusing with neighbors"
+    ],
+    "answer": 1,
+    "explain": "An aggregating anemone can divide in two, again and again, building a carpet of identical clones on tide-pool rocks.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/aggregating-anemone",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Aggregating anemone"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium describes aggregating anemones forming clones by dividing (splitting). Verify wording on the page.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.giant-green.color",
+    "q": "What gives the giant green anemone most of its green color?",
+    "choices": [
+      "Copper in its blood",
+      "The green crabs it eats",
+      "Algae living in its tissue"
+    ],
+    "answer": 2,
+    "explain": "Some color is the anemone's own pigment, but most comes from microscopic algae in its tissues, which also supply it with nutrients.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/giant-green-anemone",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Giant green anemone"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium says the giant green anemone's color comes partly from its own pigment but mostly from symbiotic zoochlorellae and zooxanthellae in its tissues.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.sponge.oscula",
+    "q": "Water enters a sponge through many small pores. How does it leave?",
+    "choices": [
+      "Through larger openings called oscula",
+      "Through gill slits on its sides",
+      "Through two tube-like siphons"
+    ],
+    "answer": 0,
+    "explain": "A sponge draws water in through tiny pores called ostia and pushes it out through bigger openings called oscula, filtering food along the way.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://qrius.si.edu/taxonomy/term/11906",
+      "publisher": "Smithsonian Science Education Center (Qrius)",
+      "title": "About Sponges (Phylum Porifera): Feeding"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/sea-stars/sponges/",
+      "publisher": "Australian Museum",
+      "title": "Sponges - The Australian Museum"
+    },
+    "searchNote": "Smithsonian Qrius sponge feeding page: water enters through small inlet pores (ostia) and exits through larger outlet pores (oscula).",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.sponge.no-organs",
+    "q": "Which of these does a sponge lack?",
+    "choices": [
+      "A skeleton",
+      "A brain, heart or gut",
+      "A way to take in food"
+    ],
+    "answer": 1,
+    "explain": "Sponges are animals without organs. They have no brain, heart or gut, yet they filter food from water and many have skeletons of tiny spicules.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/sea-stars/sponges/",
+      "publisher": "Australian Museum",
+      "title": "Sponges - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/orange-puffball-sponge",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Orange puffball sponge"
+    },
+    "searchNote": "Australian Museum and Monterey Bay Aquarium say sponges have no organs (and no true tissues); they feed by filtering water.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.sponge.choanocytes",
+    "q": "Inside a sponge, what are the cells that beat whip-like flagella to pump water and trap food?",
+    "choices": [
+      "Nematocysts",
+      "Neurons",
+      "Choanocytes"
+    ],
+    "answer": 2,
+    "explain": "Choanocytes, or collar cells, line a sponge's internal chambers. Their beating flagella drive water through the body and catch food particles.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://qrius.si.edu/taxonomy/term/11906",
+      "publisher": "Smithsonian Science Education Center (Qrius)",
+      "title": "About Sponges (Phylum Porifera): Feeding"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian Qrius: flagellated choanocytes drive the water current and form the filter-feeding apparatus, trapping suspended food particles.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.sponge.sneeze",
+    "q": "How have some sponges been seen clearing waste from their inlet pores?",
+    "choices": [
+      "By 'sneezing' out mucus",
+      "By shedding their outer skin",
+      "By reversing to shoot water jets"
+    ],
+    "answer": 0,
+    "explain": "Researchers found that sponges can 'sneeze,' slowly pushing out mucus that carries trapped particles away from their inlet pores.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9473484/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Sponges sneeze mucus to shed particulate waste from their seawater inlet pores"
+    },
+    "source2": null,
+    "searchNote": "Peer-reviewed study titled 'Sponges sneeze mucus to shed particulate waste from their seawater inlet pores.'",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.glass-sponge.silica",
+    "q": "What are the skeletons of glass sponges made of?",
+    "choices": [
+      "Calcium carbonate",
+      "Silica, the stuff of glass",
+      "Hardened protein fibers"
+    ],
+    "answer": 1,
+    "explain": "Glass sponges build skeletons from silica spicules, using silicon drawn from seawater. The spicules can fuse into an intricate, rigid lattice.",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/glass-sponge.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "What is a glass sponge?"
+    },
+    "source2": {
+      "url": "https://oceanexplorer.noaa.gov/ocean-fact/glass-sponges/",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Are glass sponges made of glass? - NOAA Ocean Exploration"
+    },
+    "searchNote": "NOAA Ocean Service and NOAA Ocean Exploration say glass sponge skeletons are made of silica spicules.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.monorhaphis.giant-spicule",
+    "q": "The deep-sea glass sponge Monorhaphis chuni anchors itself with one huge glass spicule. About how long can it be?",
+    "choices": [
+      "About 3 centimeters",
+      "About 30 meters",
+      "About 3 meters"
+    ],
+    "answer": 2,
+    "explain": "The single anchoring spicule of Monorhaphis chuni can reach about 3 meters long and 1 cm thick, built from hundreds of thin layers of silica.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3166767/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "The largest Bio-Silica Structure on Earth: The Giant Basal Spicule from the Deep-Sea Glass Sponge Monorhaphis chuni"
+    },
+    "source2": null,
+    "searchNote": "PMC paper: the giant basal spicule of Monorhaphis chuni reaches about 3 m length and 10 mm width.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "corals-reefs.giant-barrel.nickname",
+    "q": "The giant barrel sponge of Caribbean reefs is nicknamed what, for its size and long life?",
+    "choices": [
+      "The redwood of the reef",
+      "The bulldozer of the reef",
+      "The lighthouse of the reef"
+    ],
+    "answer": 0,
+    "explain": "Giant barrel sponges can grow taller than a person and live a very long time, so scientists call them the 'redwoods of the reef.'",
+    "category": "corals-reefs",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://coastalscience.noaa.gov/data_reports/patterns-population-structure-dispersal-long-lived-redwood-coral-reef-giant-barrel-sponge-xestospongia-muta/",
+      "publisher": "NOAA National Centers for Coastal Ocean Science",
+      "title": "Patterns of population structure and dispersal in the long-lived \"redwood\" of the coral reef, the giant barrel sponge (Xestospongia muta) - NCCOS"
+    },
+    "source2": {
+      "url": "https://people.uncw.edu/pawlikj/2008MarBiolMcMurray.pdf",
+      "publisher": "University of North Carolina Wilmington (Marine Biology, 2008)",
+      "title": "Redwood of the reef: growth and age of the giant barrel sponge"
+    },
+    "searchNote": "NOAA NCCOS calls Xestospongia muta the long-lived 'redwood' of the coral reef; a UNC Wilmington paper is titled 'Redwood of the reef'.",
+    "risk": "none"
+  },
+  {
+    "fact": "corals-reefs.parrotfish.sand",
+    "q": "Much of the white sand on Hawaii's famous beaches comes from what?",
+    "choices": [
+      "Crushed seashells from crabs",
+      "Parrotfish droppings",
+      "Eroded volcanic glass"
+    ],
+    "answer": 1,
+    "explain": "Parrotfish scrape algae and bits of coral with beak-like teeth, grind the hard material and excrete it as fine white sand.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/sand.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "How does sand form?"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/fish/tough-teeth-and-parrotfish-poop",
+      "publisher": "Smithsonian Ocean",
+      "title": "Tough Teeth and Parrotfish Poop"
+    },
+    "searchNote": "NOAA 'How does sand form?' says Hawaii's famous white-sand beaches come largely from parrotfish poop; Smithsonian describes parrotfish excreting ground coral as sand.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "corals-reefs.crown-of-thorns.feeding",
+    "q": "How does the crown-of-thorns starfish eat coral?",
+    "choices": [
+      "It cracks the skeleton with its spines",
+      "It sucks out polyps with a tube",
+      "It pushes its stomach out onto the coral"
+    ],
+    "answer": 2,
+    "explain": "The starfish pushes its stomach out over the coral and releases enzymes that digest the living polyps, leaving behind a bare white skeleton.",
+    "category": "corals-reefs",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pifsc-www.irc.noaa.gov/cred/crown-of-thorns_seastar.php",
+      "publisher": "NOAA Pacific Islands Fisheries Science Center",
+      "title": "NOAA PIFSC - Crown-of-thorns Seastars (Acanthaster planci)"
+    },
+    "source2": {
+      "url": "https://www.aims.gov.au/research-topics/marine-life/crown-thorns-starfish",
+      "publisher": "Australian Institute of Marine Science",
+      "title": "Crown-of-thorns starfish"
+    },
+    "searchNote": "NOAA PIFSC says when consuming coral it extrudes its stomach and releases digestive enzymes; AIMS notes it retracts its stomach when done.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "corals-reefs.spawning.sediment-sinking",
+    "q": "How can muddy, sediment-filled water harm coral spawning?",
+    "choices": [
+      "It makes egg bundles sink",
+      "It dissolves the eggs",
+      "It stops polyps opening at all"
+    ],
+    "answer": 0,
+    "explain": "Suspended sediment can stick to rising egg-and-sperm bundles and weigh them down, so fewer reach the surface where fertilization happens.",
+    "category": "corals-reefs",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4761919/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "That sinking feeling: Suspended sediments can prevent the ascent of coral egg bundles"
+    },
+    "source2": null,
+    "searchNote": "PMC study: suspended sediments can prevent the ascent of coral egg bundles, reducing fertilization chances.",
+    "risk": "none"
+  }
+]

@@ -1,0 +1,896 @@
+[
+  {
+    "fact": "marine-mammals.humpback-whale.song-on-feeding-grounds",
+    "q": "Scientists once thought male humpback whales sang only on their breeding grounds. Where else have recordings caught them singing?",
+    "choices": [
+      "Inside coastal sea caves",
+      "On their feeding grounds",
+      "In freshwater rivers"
+    ],
+    "answer": 1,
+    "explain": "Decades of underwater recordings show humpback males also sing on their feeding grounds and while migrating between feeding and breeding areas.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/news/sep22/mysteries-of-humpback-whale-song.html",
+      "publisher": "NOAA Office of National Marine Sanctuaries",
+      "title": "Unraveling Mysteries of Humpback Whale Song at Olympic Coast National Marine Sanctuary"
+    },
+    "source2": {
+      "url": "https://stellwagen.noaa.gov/science/baleen-whales.html",
+      "publisher": "NOAA Stellwagen Bank National Marine Sanctuary",
+      "title": "Baleen Whales"
+    },
+    "searchNote": "NOAA sanctuaries article says song was once thought limited to breeding grounds, but 50 years of recordings show males also sing on feeding grounds and during migration.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.humpback-whale.bubble-net-lunge",
+    "q": "In group bubble-net feeding, how do humpback whales finally catch the fish trapped by their bubbles?",
+    "choices": [
+      "They lunge upward through the net",
+      "They scoop them off the seafloor",
+      "They herd them onto the beach"
+    ],
+    "answer": 0,
+    "explain": "Curtains of rising bubbles bunch the fish together. The whales then push them toward the surface and lunge up through the circular net to engulf them.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/humpback-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Humpback Whale"
+    },
+    "source2": null,
+    "searchNote": "NOAA species page describes group coordinated bubble net feeding: bubble curtains condense prey, fish are pushed toward the surface and engulfed as whales lunge upward through the circular net.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.humpback-whale.pectoral-herding",
+    "q": "Besides bubbles, which body part have humpback whales been seen using to herd and corral prey?",
+    "choices": [
+      "Their lower jaws",
+      "Their tongues",
+      "Their long pectoral fins"
+    ],
+    "answer": 2,
+    "explain": "NOAA notes humpbacks corral prey using bubbles, sounds, the seafloor and even their huge pectoral fins, a tactic researchers have called pectoral herding.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/humpback-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Humpback Whale"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6837203/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Pectoral herding: an innovative tactic for humpback whale foraging"
+    },
+    "searchNote": "NOAA species page lists bubbles, sounds, the seafloor and pectoral fins as ways humpbacks herd, corral and disorient prey; a PMC paper is titled 'Pectoral herding: an innovative tactic for humpback whale foraging'.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "marine-mammals.baleen.keratin",
+    "q": "Baleen, the bristly plates some whales use to filter food, is made of the same material as what?",
+    "choices": [
+      "Shark teeth",
+      "Human fingernails",
+      "Fish scales"
+    ],
+    "answer": 1,
+    "explain": "Baleen is made of keratin, the same tough but flexible protein found in our fingernails and hair.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/right-whale-baleen",
+      "publisher": "Smithsonian Ocean",
+      "title": "Right Whale Baleen"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/baleen-whales-filter-feeding-explained.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Baleen whales: Filter feeding explained"
+    },
+    "searchNote": "Smithsonian Ocean says baleen is strong but flexible and made of keratin, the same substance as fingernails; NHM London says the same protein makes our nails and hair.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.narwhal.tusk-canine",
+    "q": "The male narwhal's long spiral tusk is a type of tooth. Which kind?",
+    "choices": [
+      "An incisor",
+      "A molar",
+      "A canine"
+    ],
+    "answer": 2,
+    "explain": "Researchers traced the tusk to the maxillary bone, where mammal canine teeth form, showing it is a canine rather than an incisor.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.si.edu/stories/understanding-narwhals-smile",
+      "publisher": "Smithsonian Institution",
+      "title": "For a dentist, the narwhal's smile is a mystery of evolution"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/narwhals-mysterious-unicorns-of-the-sea.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Curious collections: two-tusked narwhal"
+    },
+    "searchNote": "Smithsonian results say the tusk is one of a pair of canine teeth; it was identified as a canine, not an incisor, because it originates in the maxillary bone. NHM London also calls it a canine tooth.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.narwhal.tusk-males",
+    "q": "Which narwhals usually grow the long, visible tusk?",
+    "choices": [
+      "Males",
+      "Females",
+      "Young calves of both sexes"
+    ],
+    "answer": 0,
+    "explain": "The tusk usually erupts in males. In females it rarely does; they typically keep two small teeth embedded in the upper jaw.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/why-tusk-real-life-unicorns-sea-and-tusks-make-them-famous",
+      "publisher": "Smithsonian Ocean",
+      "title": "Why a Tusk? The real-life unicorns of the sea and the tusks that make them famous"
+    },
+    "source2": {
+      "url": "https://naturalhistory.si.edu/exhibits/narwhal-revealing-arctic-legend",
+      "publisher": "Smithsonian National Museum of Natural History",
+      "title": "Narwhal: Revealing an Arctic Legend"
+    },
+    "searchNote": "Smithsonian results describe the tusk as the male narwhal's; a tusk rarely erupts in females, which instead have two small embedded teeth in the upper jaw. Verifier: confirm which Smithsonian page carries the female detail.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.narwhal.tusk-nerves",
+    "q": "What makes the narwhal's tusk unusual compared with most teeth?",
+    "choices": [
+      "It grows from the lower jaw",
+      "Nerves inside connect to its outer surface",
+      "It is made of solid bone"
+    ],
+    "answer": 1,
+    "explain": "Nerves in the tusk's core connect to the outside through millions of tiny fluid-filled channels, which is why researchers study it as a sensory organ.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://insider.si.edu/2014/03/researchers-map-pathway-narwhals-sensitive-tusk-brain/",
+      "publisher": "Smithsonian Insider",
+      "title": "Researchers map pathway of narwhal's sensitive tusk to brain"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/why-tusk-real-life-unicorns-sea-and-tusks-make-them-famous",
+      "publisher": "Smithsonian Ocean",
+      "title": "Why a Tusk? The real-life unicorns of the sea and the tusks that make them famous"
+    },
+    "searchNote": "Smithsonian results say the tusk's inner nerve system connects directly to the outside, with an estimated 10 million fluid-filled tubules from base to tip; the tusk originates in the upper (maxillary) bone.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "marine-mammals.beluga.unfused-neck-vertebrae",
+    "q": "Unlike most whales, a beluga can turn its head up, down and sideways. Why?",
+    "choices": [
+      "Its neck vertebrae are not fused",
+      "It has no neck bones at all",
+      "Its skull rests on a fat cushion"
+    ],
+    "answer": 0,
+    "explain": "Most whales have fused neck vertebrae, but a beluga's are separate, giving it a flexible neck that can move its head in several directions.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/beluga-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Beluga Whale"
+    },
+    "source2": null,
+    "searchNote": "NOAA beluga page: unlike most whales, belugas' cervical vertebrae are not fused, letting them move the head up, down and side to side.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.beluga.sea-canary-name",
+    "q": "Why did sailors long ago nickname beluga whales 'sea canaries'?",
+    "choices": [
+      "Their pale yellow skin",
+      "Their chirps, squeals and squeaks",
+      "Their habit of following ships"
+    ],
+    "answer": 1,
+    "explain": "Belugas are very vocal. Their squeals, squeaks and chirps earned them the old sailors' nickname 'sea canaries'.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/beluga-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Beluga Whale"
+    },
+    "source2": null,
+    "searchNote": "NOAA says belugas squeal, squeak and chirp, which is why sailors long ago called them sea canaries.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.beluga.flexible-melon",
+    "q": "A beluga's rounded forehead, called the melon, is unusually flexible. What does that let the whale do?",
+    "choices": [
+      "Store extra oxygen for dives",
+      "Crack open shellfish",
+      "Make different facial expressions"
+    ],
+    "answer": 2,
+    "explain": "The beluga's melon can change shape, which lets the whale make a range of different facial expressions.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.georgiaaquarium.org/animal/beluga-whale/",
+      "publisher": "Georgia Aquarium",
+      "title": "Beluga Whale - Georgia Aquarium"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/animals/belugas",
+      "publisher": "Shedd Aquarium",
+      "title": "Beluga Whales"
+    },
+    "searchNote": "Beluga search results said the bulbous forehead, called a melon, is very flexible, allowing many different facial expressions. Verifier: confirm the Georgia Aquarium page (or Shedd's belugas page) carries this.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.gray-whale.bottom-feeding",
+    "q": "How does a gray whale usually feed?",
+    "choices": [
+      "Lunging through schools of herring",
+      "Rolling on its side to suck up seafloor mud",
+      "Diving deep to hunt squid"
+    ],
+    "answer": 1,
+    "explain": "A gray whale turns on its side and sucks in sediment from the seafloor, then strains out the mud and water through its baleen, keeping the small animals inside.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/gray-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Gray Whale"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/eastern_pacific_gray_whale",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Eastern Pacific Gray Whale"
+    },
+    "searchNote": "NOAA describes the gray whale turning on its side and scooping the top few inches of seafloor sediment; baleen holds back food while mud and water pass out.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.gray-whale.amphipod-prey",
+    "q": "In its Arctic feeding grounds, what is the gray whale's favorite food?",
+    "choices": [
+      "Amphipods, small shrimp-like crustaceans",
+      "Arctic cod",
+      "Young ringed seals"
+    ],
+    "answer": 0,
+    "explain": "Gray whales feeding in the Arctic mainly target amphipods, tiny crustaceans that live in the seafloor sediment the whales suck up.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/sentinels-change-gray-whales-arctic",
+      "publisher": "NOAA Fisheries",
+      "title": "Sentinels of Change: Gray Whales in the Arctic"
+    },
+    "source2": null,
+    "searchNote": "NOAA Arctic feature describes amphipods as the gray whales' favorite food in the Arctic.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.bowhead-whale.lifespan",
+    "q": "About how long do studies suggest a bowhead whale may live?",
+    "choices": [
+      "About 50 years",
+      "Over 200 years",
+      "Over 1,000 years"
+    ],
+    "answer": 1,
+    "explain": "New ways of estimating age suggest bowheads may live for more than 200 years, making them the longest-lived marine mammal known.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/bowhead.html",
+      "publisher": "NOAA Ocean Service",
+      "title": "What is the longest-lived marine mammal?"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/species/bowhead-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Bowhead Whale"
+    },
+    "searchNote": "NOAA Ocean Service fact page on the longest-lived marine mammal is about the bowhead; NOAA's species page says studies suggest bowheads may live over 200 years.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "marine-mammals.bowhead-whale.ice-breaking",
+    "q": "What can a bowhead whale do with its huge, thick skull?",
+    "choices": [
+      "Break through sea ice to breathe",
+      "Stun fish with head-butts",
+      "Dig clams from the seafloor"
+    ],
+    "answer": 0,
+    "explain": "Bowheads live in icy Arctic waters, and their large, thick skulls let them break through sea ice to reach air. NOAA says ice about 8 inches thick.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/bowhead-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Bowhead Whale"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/alaska/outreach-and-education/5-icebreakers-about-bowhead-whales",
+      "publisher": "NOAA Fisheries",
+      "title": "5 Icebreakers About Bowhead Whales"
+    },
+    "searchNote": "NOAA species page: the bowhead's large, thick skull allows it to break through 8-inch-thick sea ice; a Sea Grant article says it uses its head to break ice from below to breathe.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.whales.baleen-whale-blowhole-count",
+    "q": "How many blowholes does a baleen whale, such as a humpback, have?",
+    "choices": [
+      "One",
+      "Two",
+      "Three"
+    ],
+    "answer": 1,
+    "explain": "Baleen whales have two blowholes side by side, while toothed whales such as dolphins and sperm whales have just one.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceantoday.noaa.gov/whaleanatomy/",
+      "publisher": "NOAA Ocean Today",
+      "title": "Whale Anatomy - Ocean Today - NOAA"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/whales",
+      "publisher": "Smithsonian Ocean",
+      "title": "Whales and Dolphins - Smithsonian Ocean Portal"
+    },
+    "searchNote": "NOAA whale anatomy resource: Mysticeti (baleen whales) have two blowholes, while toothed whales (Odontoceti) have only one.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.sperm-whale.head-length",
+    "q": "About how much of a sperm whale's total body length is taken up by its head?",
+    "choices": [
+      "A tenth",
+      "Two-thirds",
+      "A third"
+    ],
+    "answer": 2,
+    "explain": "A sperm whale's enormous, boxy head makes up about one-third of its body length.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/sperm-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Sperm Whale"
+    },
+    "source2": null,
+    "searchNote": "NOAA sperm whale page says the head is about one-third of the total body length.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "marine-mammals.sperm-whale.giant-squid-prey",
+    "q": "Remains found in sperm whale stomachs show they eat which deep-sea animal?",
+    "choices": [
+      "Walruses",
+      "Sea turtles",
+      "Giant squid"
+    ],
+    "answer": 2,
+    "explain": "Giant squid beaks have turned up in sperm whale stomachs, and large sucker scars on stranded whales suggest the squid fight back.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/giant-squid",
+      "publisher": "Smithsonian Ocean",
+      "title": "How Big is the Giant Squid? - Smithsonian Ocean Portal"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/giant-squid-vs-sperm-whale",
+      "publisher": "Smithsonian Ocean",
+      "title": "Giant Squid vs. Sperm Whale"
+    },
+    "searchNote": "Smithsonian says giant squid beaks and other undigested remains have been found in sperm whale stomachs; stranded sperm whales carry large sucker scars.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.killer-whale.dolphin-family",
+    "q": "The killer whale, or orca, is the largest member of which animal family?",
+    "choices": [
+      "The oceanic dolphin family",
+      "The sperm whale family",
+      "The rorqual whale family"
+    ],
+    "answer": 0,
+    "explain": "Despite its name, the orca belongs to Delphinidae, the oceanic dolphin family, and is its largest member.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/killer-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Killer Whale"
+    },
+    "source2": {
+      "url": "https://oceanservice.noaa.gov/facts/dolphin_porpoise.html",
+      "publisher": "NOAA Ocean Service",
+      "title": "What's the difference between dolphins and porpoises?"
+    },
+    "searchNote": "NOAA: the killer whale is the largest member of the Delphinidae family, or dolphins; NOAA Ocean Service says the orca is actually the largest member of the dolphin family.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.killer-whale.resident-diet",
+    "q": "In the Pacific Northwest, what do 'resident' killer whales mainly eat?",
+    "choices": [
+      "Harbor seals",
+      "Sea turtles",
+      "Salmon"
+    ],
+    "answer": 2,
+    "explain": "Resident killer whales in the Pacific Northwest eat fish, mainly salmon, while the Bigg's (transient) killer whales in the same waters hunt marine mammals.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/killer-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Killer Whale"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/new-research-reveals-full-diversity-killer-whales-two-species-come-view-pacific-coast",
+      "publisher": "NOAA Fisheries",
+      "title": "New killer whale species: Bigg's and resident killer whales"
+    },
+    "searchNote": "NOAA says one Pacific Northwest ecotype eats fish, mainly salmon; transient (Bigg's) killer whales prey on marine mammals, most often harbor seals in one study.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.killer-whale.diet-learned",
+    "q": "What mainly determines the diet of each killer whale ecotype (a distinct regional type of orca)?",
+    "choices": [
+      "Learned hunting traditions",
+      "Water temperature",
+      "Body size"
+    ],
+    "answer": 0,
+    "explain": "Killer whale groups pass down their hunting tactics, so culture largely decides whether an ecotype specializes in fish, seals or other prey.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/killer-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "Killer Whale"
+    },
+    "source2": null,
+    "searchNote": "Search summary quoted NOAA: diet is primarily determined by the culture (learned hunting tactics) of each ecotype. Verifier: confirm this sentence is on the species page.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "marine-mammals.killer-whale.transient-quiet-echolocation",
+    "q": "Compared with fish-eating 'resident' killer whales, how often do mammal-hunting 'transient' killer whales use echolocation clicks?",
+    "choices": [
+      "Far more often",
+      "Far less often",
+      "About as often"
+    ],
+    "answer": 1,
+    "explain": "One study found residents produced echolocation click trains about 27 times more often than the marine-mammal-eating transients.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/27306/noaa_27306_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "Killer Whale (Orcinus orca) Predation of Marine Mammals Bibliography"
+    },
+    "source2": null,
+    "searchNote": "NOAA bibliography entry: resident killer whales produced trains of sonar clicks on average 4% of the time, 27 times more often than marine-mammal-eating transients.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "marine-mammals.right-whale.callosity-color",
+    "q": "What makes the rough patches, or callosities, on a right whale's head look white?",
+    "choices": [
+      "Crusts of sea salt",
+      "Patches of pale fur",
+      "Colonies of whale lice"
+    ],
+    "answer": 2,
+    "explain": "Callosities are patches of rough skin on an otherwise dark whale. They look white because they are covered in whale lice, tiny crustaceans called cyamids.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/whale-lice",
+      "publisher": "Smithsonian Ocean",
+      "title": "Whale Lice"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/tale-right-whale",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Tale of a Right Whale - Smithsonian Ocean Portal"
+    },
+    "searchNote": "Search results: right whales have knobby white patches of rough skin that appear white because of whale lice (cyamids) covering the otherwise black skin.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.right-whale.callosity-identification",
+    "q": "How do researchers tell individual North Atlantic right whales apart?",
+    "choices": [
+      "By the pattern of callosities on their heads",
+      "By counting their baleen plates",
+      "By the pitch of their songs"
+    ],
+    "answer": 0,
+    "explain": "Each right whale has a unique pattern of callosities, rough skin patches on its head, that researchers match against photo catalogs, much like fingerprints.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/north-atlantic-right-whale",
+      "publisher": "NOAA Fisheries",
+      "title": "North Atlantic Right Whale"
+    },
+    "source2": null,
+    "searchNote": "NOAA: callosities occur in unique patterns on North Atlantic right whales and help researchers identify and track individuals via photo catalogs.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.right-whale.whale-lice-diet",
+    "q": "What do the whale lice living on a right whale's callosities mainly feed on?",
+    "choices": [
+      "The whale's blood",
+      "Algae settling on the skin",
+      "Krill the whale swallows"
+    ],
+    "answer": 1,
+    "explain": "Whale lice are small crustaceans that eat algae settling on the callosities, causing only minor damage to the whale's skin.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/whale-lice",
+      "publisher": "Smithsonian Ocean",
+      "title": "Whale Lice"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian whale lice page: the cyamid amphipods on callosities eat algae that settles there and cause only minor skin damage.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "marine-mammals.porpoises.teeth-shape",
+    "q": "How do porpoise teeth typically differ from the teeth of most dolphins?",
+    "choices": [
+      "They are long and tusk-like",
+      "They are flat and spade-shaped",
+      "They are cone-shaped and pointed"
+    ],
+    "answer": 1,
+    "explain": "Most dolphins have cone-shaped teeth, while porpoise teeth are flattened and spade-shaped, one way to tell the two apart up close.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/dolphin_porpoise.html",
+      "publisher": "NOAA Ocean Service",
+      "title": "What's the difference between dolphins and porpoises?"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/it-dolphin-or-porpoise",
+      "publisher": "NOAA Fisheries",
+      "title": "What's the Difference Between Dolphins and Porpoises?"
+    },
+    "searchNote": "NOAA Ocean Service: most dolphins have cone-shaped teeth while porpoise teeth are flattened; NOAA Fisheries calls porpoise teeth flat and spade shaped.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.porpoises.dorsal-fin-shape",
+    "q": "What dorsal fin shape is typical of porpoises?",
+    "choices": [
+      "Tall and sickle-curved",
+      "Long and flag-shaped",
+      "Triangular"
+    ],
+    "answer": 2,
+    "explain": "Porpoises usually have triangular dorsal fins, while most dolphins have curved, sickle-like fins, though NOAA notes there are exceptions.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/it-dolphin-or-porpoise",
+      "publisher": "NOAA Fisheries",
+      "title": "What's the Difference Between Dolphins and Porpoises?"
+    },
+    "source2": null,
+    "searchNote": "NOAA Fisheries: dolphins have hooked or curved (falcate) dorsal fins like a sickle; porpoises have triangular dorsal fins.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.pacific-white-sided-dolphin.hookfin-nickname",
+    "q": "Which dolphin is nicknamed the 'hookfin porpoise' for its large, curved dorsal fin?",
+    "choices": [
+      "Risso's dolphin",
+      "Pacific white-sided dolphin",
+      "Spinner dolphin"
+    ],
+    "answer": 1,
+    "explain": "The Pacific white-sided dolphin's big, hooked fin earned it the nickname 'hookfin porpoise', even though it is a dolphin, not a porpoise.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/pacific-white-sided-dolphin",
+      "publisher": "NOAA Fisheries",
+      "title": "Pacific White-Sided Dolphin"
+    },
+    "source2": null,
+    "searchNote": "NOAA species page: the Pacific white-sided dolphin is nicknamed the hookfin porpoise for its large curved fin, but it is not technically a porpoise.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.vaquita.range",
+    "q": "Where does the vaquita, the world's smallest porpoise, live?",
+    "choices": [
+      "The Baltic Sea",
+      "The Amazon River",
+      "The northern Gulf of California"
+    ],
+    "answer": 2,
+    "explain": "The vaquita lives only in the northern Gulf of California, Mexico, giving it one of the smallest ranges of any marine mammal.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/vaquita",
+      "publisher": "NOAA Fisheries",
+      "title": "Vaquita"
+    },
+    "source2": null,
+    "searchNote": "NOAA: the vaquita (Phocoena sinus) is the world's smallest porpoise and lives only in the northern Gulf of California, mostly east of San Felipe, Baja California.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.vaquita.gillnet-threat",
+    "q": "What is the main threat to the endangered vaquita?",
+    "choices": [
+      "Drowning in fishing gillnets",
+      "Oil spills",
+      "Collisions with ships"
+    ],
+    "answer": 0,
+    "explain": "Vaquitas get tangled and drown in gillnets, especially illegal nets set for a large fish called the totoaba.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/vanishing-vaquita",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Vanishing Vaquita"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/endangered-vaquita-remain-genetically-healthy-even-low-numbers-new-analysis-shows",
+      "publisher": "NOAA Fisheries",
+      "title": "Endangered Vaquita Remain Genetically Healthy Even in Low Numbers, New Analysis Shows"
+    },
+    "searchNote": "Smithsonian and NOAA results: the decline is due to bycatch in gillnets, especially an illegal fishery for the totoaba; NOAA genetic study says recovery is possible if illegal gillnetting stops.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.bottlenose-dolphin.signature-whistle",
+    "q": "What is a bottlenose dolphin's 'signature whistle'?",
+    "choices": [
+      "A call that warns of sharks",
+      "A song that only males sing",
+      "A call that identifies the individual"
+    ],
+    "answer": 2,
+    "explain": "Each bottlenose dolphin develops its own learned whistle, and other dolphins can recognize who is calling from the whistle's shape alone.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1472465/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Signature whistle shape conveys identity information to bottlenose dolphins - PMC"
+    },
+    "source2": null,
+    "searchNote": "Study shows bottlenose dolphins extract identity information from signature whistles even with voice features removed; whistles are learned and individually distinctive.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.bottlenose-dolphin.mother-whistle-change",
+    "q": "When their calves are nearby, how do bottlenose dolphin mothers change their signature whistles?",
+    "choices": [
+      "They use higher, wider-ranging pitches",
+      "They stop whistling altogether",
+      "They copy their calf's whistle"
+    ],
+    "answer": 0,
+    "explain": "Rather like human baby talk, dolphin mothers in a long-term study whistled with higher maximum pitches and a wider pitch range when with their calves.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/59408/noaa_59408_DS1.pdf",
+      "publisher": "NOAA Institutional Repository",
+      "title": "Bottlenose dolphin mothers modify signature whistles in ..."
+    },
+    "source2": null,
+    "searchNote": "Only the result title was shown ('Bottlenose dolphin mothers modify signature whistles in...'). Verifier: confirm the paper reports higher maximum frequency and wider frequency range when calves are present.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "marine-mammals.dolphins.unihemispheric-sleep",
+    "q": "How do dolphins manage to sleep while still surfacing to breathe?",
+    "choices": [
+      "They rest one half of the brain at a time",
+      "They hold their breath for hours",
+      "They sleep only on the seafloor"
+    ],
+    "answer": 0,
+    "explain": "In unihemispheric sleep, one half of the brain rests while the other stays alert, letting dolphins keep moving, surface for air and stay watchful.",
+    "category": "marine-mammals",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/ocean-learning-hub/ocean-facts/how-do-marine-animals-sleep/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "How do marine animals sleep?"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8665646/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Sleep in Aquatic Mammals - PMC - NIH"
+    },
+    "searchNote": "Search results: dolphins sleep with one brain hemisphere at a time (unihemispheric slow-wave sleep); the awake side lets them surface for air and stay vigilant.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.bottlenose-dolphin.echolocation-vigilance",
+    "q": "In one study, how long did bottlenose dolphins keep up alert echolocation without a break or signs of mental fatigue?",
+    "choices": [
+      "15 minutes",
+      "15 days",
+      "15 hours"
+    ],
+    "answer": 1,
+    "explain": "Bottlenose dolphins in the study kept detecting targets with echolocation for 15 days straight without signs of cognitive impairment.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3474785/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Dolphins Can Maintain Vigilant Behavior through Echolocation for 15 Days without Interruption or Cognitive Impairment"
+    },
+    "source2": null,
+    "searchNote": "Paper title states dolphins maintained vigilant behavior through echolocation for 15 days without interruption or cognitive impairment. Verifier: confirm species is bottlenose dolphin.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "marine-mammals.bottlenose-dolphin.sponging-purpose",
+    "q": "Some bottlenose dolphins in Shark Bay, Australia, carry sea sponges on their snouts. Why?",
+    "choices": [
+      "To attract a mate",
+      "To carry food to their calves",
+      "To protect them while probing the seafloor"
+    ],
+    "answer": 2,
+    "explain": "A dolphin breaks off a cone-shaped sponge and wears it over its beak, apparently as protection while it probes the sandy seafloor for hidden fish.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/sponge-wielding-bottlenose-dolphin",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sponge-Wielding Bottlenose Dolphin"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2587914/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Why Do Dolphins Carry Sponges?"
+    },
+    "searchNote": "Results: a dolphin breaks a sponge off the seafloor and wears it over its closed rostrum to probe the substrate for fish; dolphins seeking burrowing prey benefit from protective sponges.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.bottlenose-dolphin.sponging-transmission",
+    "q": "How is sponge tool use mainly passed on among Shark Bay bottlenose dolphins?",
+    "choices": [
+      "From mothers to their offspring",
+      "Between rival adult males",
+      "By instinct, with no learning"
+    ],
+    "answer": 0,
+    "explain": "Genetic work shows sponging stays almost entirely within one family line, passed from mother to daughter, which researchers called the first known material culture in a marine mammal.",
+    "category": "marine-mammals",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1157020/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Cultural transmission of tool use in bottlenose dolphins - PMC"
+    },
+    "source2": null,
+    "searchNote": "Paper found sponging shows almost exclusive vertical social transmission within a single matriline from mother to female offspring, called the first case of material culture in a marine mammal.",
+    "risk": "none"
+  },
+  {
+    "fact": "marine-mammals.dalls-porpoise.rooster-tail",
+    "q": "What does a Dall's porpoise create when it surfaces quickly while swimming fast?",
+    "choices": [
+      "A ring of bubbles",
+      "A loud trumpeting blow",
+      "A 'rooster tail' of spray"
+    ],
+    "answer": 2,
+    "explain": "Dall's porpoises surface so briskly that they throw up a 'rooster tail' of water spray, a trademark of the species.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/dalls-porpoise",
+      "publisher": "NOAA Fisheries",
+      "title": "Dall's Porpoise"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/kefj/learn/nature/dalls-porpoise.htm",
+      "publisher": "National Park Service",
+      "title": "Dall's Porpoise - Phocoenoides Dalli - Kenai Fjords National Park"
+    },
+    "searchNote": "NOAA: Dall's porpoises briskly surface while swimming, creating a rooster tail of water spray that is a unique characteristic of the species.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "marine-mammals.whales.earwax-plug-age",
+    "q": "What can scientists learn from the layers in a baleen whale's earwax plug?",
+    "choices": [
+      "The whale's age",
+      "The whale's top speed",
+      "The depth of its deepest dive"
+    ],
+    "answer": 0,
+    "explain": "Earwax builds up in layers over a baleen whale's life, a bit like tree rings, so a plug from a museum specimen can reveal the whale's age.",
+    "category": "marine-mammals",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/whale-earwax-what-you-can-learn-strange-collections",
+      "publisher": "Smithsonian Ocean",
+      "title": "Whale Earwax: What You Can Learn From Strange Collections"
+    },
+    "source2": null,
+    "searchNote": "Only the result title was shown. Verifier: confirm the Smithsonian page says earwax plugs form layers that can be counted to estimate a whale's age.",
+    "risk": "surprising"
+  }
+]

@@ -1,0 +1,1324 @@
+[
+  {
+    "fact": "deep-sea.anglerfish.lure-glow-source",
+    "q": "What produces the glow in the lure of a deep-sea anglerfish?",
+    "choices": [
+      "Bacteria living inside the lure",
+      "Chemicals from the fish's last meal",
+      "Heat given off by the fish's body"
+    ],
+    "answer": 0,
+    "explain": "Glowing bacteria take up residence in the lure, called the esca, turning it into a living light for attracting prey.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/meet-tiny-bacteria-give-anglerfishes-their-spooky-glow",
+      "publisher": "Smithsonian Ocean",
+      "title": "Meet the Tiny Bacteria That Give Anglerfishes Their Spooky Glow"
+    },
+    "source2": {
+      "url": "https://www.mbari.org/animal/deep-sea-anglerfish/",
+      "publisher": "MBARI",
+      "title": "Deep-sea anglerfish • Animals of the Deep • MBARI"
+    },
+    "searchNote": "Smithsonian result: tiny glowing bacteria (Photobacterium) live in the anglerfish's esca and provide its glow, not the fish itself.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.anglerfish.lure-modified-fin",
+    "q": "The deep-sea anglerfish's fishing lure is a modified version of which body part?",
+    "choices": [
+      "A front tooth",
+      "A gill flap",
+      "A dorsal fin ray"
+    ],
+    "answer": 2,
+    "explain": "Over millions of years, the front of the anglerfish's dorsal fin evolved into a rod tipped with a glowing lure.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/animal/deep-sea-anglerfish/",
+      "publisher": "MBARI",
+      "title": "Deep-sea anglerfish • Animals of the Deep • MBARI"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/fish/anglerfish-lure-prey-throughout-ocean",
+      "publisher": "Smithsonian Ocean",
+      "title": "Anglerfish Lure Prey Throughout the Ocean"
+    },
+    "searchNote": "Results said the lure is a modified fin ray; the front elements of the fin evolved into the luring apparatus.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.anglerfish.symbiont-genome-reduction",
+    "q": "How do the genomes of the glowing bacteria in deep-sea anglerfish lures compare with those of their free-living relatives?",
+    "choices": [
+      "About twice the size",
+      "About half the size",
+      "About ten times the size"
+    ],
+    "answer": 1,
+    "explain": "A 2018 study found these lure bacteria have genomes about 50% smaller than their free-living relatives, and the shrinking is still under way.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6020299/",
+      "publisher": "mBio (via NCBI PMC)",
+      "title": "Ongoing Transposon-Mediated Genome Reduction in the Luminous Bacterial Symbionts of Deep-Sea Ceratioid Anglerfishes"
+    },
+    "source2": null,
+    "searchNote": "The 2018 mBio paper reported deep-sea anglerfish symbiont genomes are reduced by about 50% relative to free-living relatives; title calls it ongoing genome reduction.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "deep-sea.anglerfish.bacteria-mutualism",
+    "q": "What do the glowing bacteria get from living in a deep-sea anglerfish's lure?",
+    "choices": [
+      "A safe home and nutrients",
+      "A ride up to the sunlit surface",
+      "Protection from freezing water"
+    ],
+    "answer": 0,
+    "explain": "It's a two-way deal: the bacteria get shelter and food from the fish, and the anglerfish gets a glowing lure to hunt with.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://sanctuaries.noaa.gov/news/2025/sanctuary-symbioses.html",
+      "publisher": "NOAA National Marine Sanctuaries",
+      "title": "A Match Made in the Ocean: Sanctuary Symbioses"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/fish/meet-tiny-bacteria-give-anglerfishes-their-spooky-glow",
+      "publisher": "Smithsonian Ocean",
+      "title": "Meet the Tiny Bacteria That Give Anglerfishes Their Spooky Glow"
+    },
+    "searchNote": "Result said the bacteria gain a safe habitat and nutrients from the anglerfish, while the fish gets an effective hunting tool.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.anglerfish.male-finds-female-by-smell",
+    "q": "How do tiny male deep-sea anglerfish track down females in the dark?",
+    "choices": [
+      "By listening for the female's calls",
+      "By sensing the female's body heat",
+      "By following the female's pheromones"
+    ],
+    "answer": 2,
+    "explain": "Males have a strong sense of smell and follow chemical signals called pheromones to find a mate in the darkness.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/bizarre-love-life-of-the-anglerfish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "The bizarre love life of the anglerfish"
+    },
+    "source2": {
+      "url": "https://www.mbari.org/animal/deep-sea-anglerfish/",
+      "publisher": "MBARI",
+      "title": "Deep-sea anglerfish • Animals of the Deep • MBARI"
+    },
+    "searchNote": "Search summary: tiny males have a strong sense of smell and follow pheromones to find females. The summary did not make clear which of the NHM/MBARI pages states this; verifier should check both.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.anglerfish.male-size",
+    "q": "In deep-sea anglerfish, how do males compare in size with females?",
+    "choices": [
+      "Males are much larger",
+      "Males are much smaller",
+      "Both are about the same size"
+    ],
+    "answer": 1,
+    "explain": "The males are tiny next to the females, and in some species they attach themselves to their much larger mates.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/animal/deep-sea-anglerfish/",
+      "publisher": "MBARI",
+      "title": "Deep-sea anglerfish • Animals of the Deep • MBARI"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/bizarre-love-life-of-the-anglerfish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "The bizarre love life of the anglerfish"
+    },
+    "searchNote": "Results described tiny males that attach to much larger females, and MBARI noted that only some species have parasitic males.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.anglerfish.soft-leftvent-bite-fusion",
+    "q": "How does a male soft leftvent angler (Haplophryne mollis) attach to a female?",
+    "choices": [
+      "He bites her and his mouth fuses to her",
+      "He wraps his fins tightly around her tail",
+      "He glues himself on with sticky mucus"
+    ],
+    "answer": 0,
+    "explain": "A free-living male bites the female, and over time the skin of his mouth fuses with hers.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/soft-leafvent-angler-haplophryne-mollis-brauer-1902/",
+      "publisher": "Australian Museum",
+      "title": "Soft Leftvent Angler, Haplophryne mollis (Brauer, 1902) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: when a free-living male encounters a female it bites her, and the skin of his mouth eventually fuses with hers.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.anglerfish.fused-male-loses-eyes",
+    "q": "In deep-sea anglerfish species where males fuse permanently to females, what happens to the male's eyes?",
+    "choices": [
+      "They grow much larger",
+      "They begin to glow",
+      "He loses them"
+    ],
+    "answer": 2,
+    "explain": "Once attached he no longer needs them, so his eyes are lost, and eventually his bloodstream links up with the female's.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/anglerfish/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Creature Feature: Anglerfish"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/bizarre-love-life-of-the-anglerfish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "The bizarre love life of the anglerfish"
+    },
+    "searchNote": "Result said fused males lose their eyes because they no longer need them and the male's bloodstream eventually connects with hers.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.anglerfish.fusion-immune-genes",
+    "q": "Why don't some female deep-sea anglerfish reject the males that fuse to their bodies?",
+    "choices": [
+      "The males are clones of the females",
+      "They lack key immune system genes",
+      "The males numb the female with venom"
+    ],
+    "answer": 1,
+    "explain": "Fused tissue would normally trigger rejection, but these anglerfish have lost working genes for critical parts of the adaptive immune system.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8780861/",
+      "publisher": "NCBI PMC (peer-reviewed review)",
+      "title": "Histocompatibility and Reproduction: Lessons from the Anglerfish"
+    },
+    "source2": null,
+    "searchNote": "Isakov 2022 review: fusion avoids graft rejection; the mating strategy coevolved with loss of functional genes for critical adaptive immune components.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "deep-sea.anglerfish.upside-down-filmed",
+    "q": "In 2023, London's Natural History Museum reported footage of a deep-sea anglerfish doing what?",
+    "choices": [
+      "Swimming upside down",
+      "Swimming tail-first",
+      "Spinning in tight circles"
+    ],
+    "answer": 0,
+    "explain": "The anglerfish was seen hanging upside down, and scientists suggested the odd posture might be a way of hunting prey.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/news/2023/december/upside-down-deep-sea-anglerfish-might-be-hunting-prey.html",
+      "publisher": "Natural History Museum, London",
+      "title": "An upside down deep-sea anglerfish might be hunting for prey"
+    },
+    "source2": null,
+    "searchNote": "NHM news headline (December 2023): an upside down deep-sea anglerfish might be hunting for prey.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.eats-marine-snow",
+    "q": "What does the vampire squid mainly eat?",
+    "choices": [
+      "Blood it sucks from fish",
+      "Live fish it hunts with its arms",
+      "Drifting particles called marine snow"
+    ],
+    "answer": 2,
+    "explain": "Despite its name, the vampire squid dines mostly on marine snow: a mix of dead plankton, feces and mucus drifting down from above.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/news/mbari-researchers-discover-what-vampire-squids-eat-its-not-what-you-think/",
+      "publisher": "MBARI",
+      "title": "MBARI researchers discover what vampire squids eat (it's not what you think) • MBARI"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/vampire-squid-hell",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Vampire Squid from Hell"
+    },
+    "searchNote": "MBARI: Hoving and Robison showed vampire squids eat mostly marine snow, a mix of dead animal bodies, feces and mucus.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.filament-length",
+    "q": "A vampire squid collects food with thin filaments. How long can a filament stretch?",
+    "choices": [
+      "Up to half its body length",
+      "Up to eight times its body length",
+      "Up to a tenth of its body length"
+    ],
+    "answer": 1,
+    "explain": "It drifts with a filament extended like a fishing line, up to eight times as long as its body, then reels in whatever sticks.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/news/mbari-researchers-discover-what-vampire-squids-eat-its-not-what-you-think/",
+      "publisher": "MBARI",
+      "title": "MBARI researchers discover what vampire squids eat (it's not what you think) • MBARI"
+    },
+    "source2": null,
+    "searchNote": "MBARI news: the squid extends one of its thin filaments, up to eight times as long as its body, like a fishing line.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.mucus-food-balls",
+    "q": "Before eating the particles it collects, what does a vampire squid wrap them in?",
+    "choices": [
+      "Mucus",
+      "Silk",
+      "Seaweed"
+    ],
+    "answer": 0,
+    "explain": "It draws the filament through its arms, packs the particles into a ball of mucus and then eats the whole package.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/news/mbari-researchers-discover-what-vampire-squids-eat-its-not-what-you-think/",
+      "publisher": "MBARI",
+      "title": "MBARI researchers discover what vampire squids eat (it's not what you think) • MBARI"
+    },
+    "source2": null,
+    "searchNote": "MBARI news: the squid draws the filament through its arms and wraps the particles in mucus before eating the mucus-and-food ball.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.glowing-mucus-defense",
+    "q": "The vampire squid has no ink sac. What does it release when startled?",
+    "choices": [
+      "A cloud of stinging cells",
+      "A spray of tiny sharp spines",
+      "A cloud of glowing mucus"
+    ],
+    "answer": 2,
+    "explain": "Light organs on its arm tips release glowing clouds of mucus, which scientists think distract predators while the squid gets away.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": "ink",
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/vampire-squid",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Vampire squid"
+    },
+    "source2": {
+      "url": "https://www.mbari.org/animal/vampire-squid/",
+      "publisher": "MBARI",
+      "title": "Vampire squid • Animals of the Deep • MBARI"
+    },
+    "searchNote": "Results: lacking ink sacs, it emits luminescent mucus clouds from arm-tip light organs when startled, thought to be a defense.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.name-meaning",
+    "q": "What does the vampire squid's scientific name, Vampyroteuthis infernalis, mean?",
+    "choices": [
+      "Bloodsucking cuttlefish",
+      "Vampire squid from hell",
+      "Night-dwelling octopus"
+    ],
+    "answer": 1,
+    "explain": "Despite the fearsome name, this gentle animal feeds on drifting debris called marine snow, not blood.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/vampire-squid-hell",
+      "publisher": "Smithsonian Ocean",
+      "title": "The Vampire Squid from Hell"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/vampire-squid",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Vampire squid"
+    },
+    "searchNote": "Monterey Bay Aquarium and Smithsonian: Vampyroteuthis infernalis means 'vampire squid from hell'.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.not-true-squid",
+    "q": "Despite its name, how do scientists classify the vampire squid?",
+    "choices": [
+      "Not a true squid but its own kind of cephalopod",
+      "A true squid closely related to the giant squid",
+      "A jellyfish that looks like a squid"
+    ],
+    "answer": 0,
+    "explain": "The vampire squid is no squid at all: scientists place it in its own group of cephalopods, separate from true squids.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/vampire-squid",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Vampire squid"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium: 'the vampire squid is no squid at all' and it is the only living member of its family. Note a 2023 bioRxiv preprint proposed a second species, so the question avoids 'only'.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.low-oxygen-habitat",
+    "q": "The vampire squid thrives in deep water that is unusually low in what?",
+    "choices": [
+      "Salt",
+      "Pressure",
+      "Oxygen"
+    ],
+    "answer": 2,
+    "explain": "It lives in the oxygen minimum zone, where its slow, low-energy way of feeding works well and few predators can follow.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/animal/vampire-squid/",
+      "publisher": "MBARI",
+      "title": "Vampire squid • Animals of the Deep • MBARI"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/vampire-squid",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Vampire squid"
+    },
+    "searchNote": "MBARI: thrives where oxygen is very scarce; passive feeding needs little energy; the low-oxygen habitat has few predators.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.fossil-oligocene",
+    "q": "Fossils show vampire squids have lived in oxygen-poor ocean zones since at least when?",
+    "choices": [
+      "The last ice age",
+      "The Oligocene epoch",
+      "The past few centuries"
+    ],
+    "answer": 1,
+    "explain": "Fossil evidence shows vampire squids have occupied oxygen-depleted waters since at least the Oligocene, tens of millions of years ago.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7893013/",
+      "publisher": "NCBI PMC (peer-reviewed)",
+      "title": "Fossil evidence for vampire squid inhabiting oxygen-depleted ocean zones since at least the Oligocene"
+    },
+    "source2": null,
+    "searchNote": "Paper title: fossil evidence for vampire squid inhabiting oxygen-depleted ocean zones since at least the Oligocene.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "deep-sea.vampire-squid.omz-expanding",
+    "q": "As the ocean warms, what is happening to the deep, low-oxygen layer where vampire squid live?",
+    "choices": [
+      "It is expanding",
+      "It is shrinking",
+      "It is rising to the surface"
+    ],
+    "answer": 0,
+    "explain": "The Monterey Bay Aquarium notes that the oxygen-poor layer this animal depends on is expanding as the ocean warms.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/vampire-squid",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Vampire squid"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium: the deep low-oxygen layer where the vampire squid lives is expanding as the ocean warms.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.marine-snow.larvacean-mucus",
+    "q": "Much of the mucus in the marine snow eaten by vampire squid comes from the discarded feeding nets of which animals?",
+    "choices": [
+      "Sea urchins",
+      "Lanternfish",
+      "Larvaceans"
+    ],
+    "answer": 2,
+    "explain": "Larvaceans are small drifting animals that trap particles in mucus nets; their cast-off nets become part of the marine snow.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/news/mbari-researchers-discover-what-vampire-squids-eat-its-not-what-you-think/",
+      "publisher": "MBARI",
+      "title": "MBARI researchers discover what vampire squids eat (it's not what you think) • MBARI"
+    },
+    "source2": null,
+    "searchNote": "MBARI news: the 'snot' in marine snow is largely debris from larvaceans, which trap particles in mucus nets.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.marine-snow.definition",
+    "q": "In the deep sea, what is 'marine snow'?",
+    "choices": [
+      "Ice crystals that form in cold deep water",
+      "Falling bits of dead matter, feces and mucus",
+      "Ash drifting from undersea volcanoes"
+    ],
+    "answer": 1,
+    "explain": "Marine snow is a steady drift of dead plankton, droppings and mucus from the waters above, and it feeds many deep-sea animals.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.mbari.org/news/mbari-researchers-discover-what-vampire-squids-eat-its-not-what-you-think/",
+      "publisher": "MBARI",
+      "title": "MBARI researchers discover what vampire squids eat (it's not what you think) • MBARI"
+    },
+    "source2": null,
+    "searchNote": "MBARI news defines marine snow as a mix of dead animal bodies, feces and mucus, the dead material coming from algae and animals farther up.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.dumbo-octopus.name-origin",
+    "q": "Why are dumbo octopuses named after Disney's flying elephant?",
+    "choices": [
+      "Their fins look like large ears",
+      "One arm looks like a trunk",
+      "Their skin is gray and wrinkled"
+    ],
+    "answer": 0,
+    "explain": "Dumbo octopuses get their nickname from a pair of large, ear-like fins on their heads.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-dumbo-octopus.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Dumbo octopus: The murky world of the deepest octopus species"
+    },
+    "source2": null,
+    "searchNote": "NHM: dumbo octopuses are named for their large ear-like fins, which resemble those of the Disney elephant.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.dumbo-octopus.swimming",
+    "q": "How does a dumbo octopus mainly move through the water?",
+    "choices": [
+      "Spinning its arms like a propeller",
+      "Rolling along the seafloor",
+      "Flapping its ear-like fins"
+    ],
+    "answer": 2,
+    "explain": "It flaps its ear-like fins slowly to swim, using its eight webbed arms to steer.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-dumbo-octopus.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Dumbo octopus: The murky world of the deepest octopus species"
+    },
+    "source2": null,
+    "searchNote": "NHM: they navigate the water by slowly flapping their ear-like fins, using their eight limbs to steer.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.dumbo-octopus.cirri-feeding",
+    "q": "What are the hair-like cirri on a dumbo octopus's arms thought to help it do?",
+    "choices": [
+      "Sting and paralyze fish",
+      "Waft food toward its mouth",
+      "Glow to attract mates"
+    ],
+    "answer": 1,
+    "explain": "Dumbo octopuses aren't thought to be agile hunters; the fine cirri on their arms likely help sweep small food toward the mouth.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-dumbo-octopus.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Dumbo octopus: The murky world of the deepest octopus species"
+    },
+    "source2": null,
+    "searchNote": "NHM: the arms' hair-like cirri are thought to waft food towards the mouth; researchers don't think they are agile predators.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.dumbo-octopus.diet",
+    "q": "Which of these is a likely food of dumbo octopuses?",
+    "choices": [
+      "Small crustaceans such as copepods",
+      "Fish larger than the octopus",
+      "Seaweed and kelp"
+    ],
+    "answer": 0,
+    "explain": "Their likely prey includes small crustaceans such as copepods, amphipods and isopods, along with snails and bristle worms.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-dumbo-octopus.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Dumbo octopus: The murky world of the deepest octopus species"
+    },
+    "source2": null,
+    "searchNote": "NHM: likely prey includes molluscs, small crustaceans such as copepods, amphipods and isopods, bivalves, snails and bristle worms.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.giant-squid.first-filmed-japan",
+    "q": "Off which country did scientists first film a giant squid in its natural deep-sea habitat?",
+    "choices": [
+      "Norway",
+      "South Africa",
+      "Japan"
+    ],
+    "answer": 2,
+    "explain": "In 2012, scientists from Japan's National Science Museum, with NHK and the Discovery Channel, filmed a giant squid in the deep sea.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/giant-squid-caught-live-screen",
+      "publisher": "Smithsonian Ocean",
+      "title": "Giant Squid Caught Live On Screen"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/caught-video-giant-squid",
+      "publisher": "Smithsonian Ocean",
+      "title": "Caught on Video: Giant Squid"
+    },
+    "searchNote": "Smithsonian: in 2012 a Japanese National Science Museum team with NHK and Discovery filmed a giant squid in the deep sea for the first time. NHM says the video emerged in 2013, so the question avoids the year.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.giant-squid.electronic-jelly-lure",
+    "q": "What helped attract the first giant squid filmed in the deep sea?",
+    "choices": [
+      "A trail of fresh tuna blood",
+      "Flashing lights mimicking a glowing jelly",
+      "Recorded sperm whale calls"
+    ],
+    "answer": 1,
+    "explain": "The lure, developed by bioluminescence scientist Edie Widder, used flashing lights that imitate a bioluminescent jellyfish.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/caught-video-giant-squid",
+      "publisher": "Smithsonian Ocean",
+      "title": "Caught on Video: Giant Squid"
+    },
+    "source2": {
+      "url": "https://www.whoi.edu/oceanus/feature/edie-widder-a-light-in-the-darkness/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Edie Widder: A light in the darkness"
+    },
+    "searchNote": "Results: the team used flashing lights imitating bioluminescent jellies; the lure was developed by Edie Widder.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.giant-squid.gulf-of-mexico-2019",
+    "q": "In 2019, a NOAA-funded expedition filmed a live giant squid in which body of water?",
+    "choices": [
+      "Gulf of Mexico",
+      "Mediterranean Sea",
+      "Red Sea"
+    ],
+    "answer": 0,
+    "explain": "The footage, taken off Louisiana, showed a giant squid in its natural habitat for only the second time.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://research.noaa.gov/2020/07/03/noaa-funded-expedition-captures-rare-footage-of-giant-squid-in-the-gulf-of-mexico/",
+      "publisher": "NOAA Research",
+      "title": "NOAA-Funded Expedition Captures Rare Footage of Giant Squid in the Gulf of Mexico - NOAA Research"
+    },
+    "source2": null,
+    "searchNote": "NOAA Research: expedition captured rare footage of a giant squid in the Gulf of Mexico in 2019, off Louisiana; second in-habitat video. (US federal naming is now Gulf of America; source uses Gulf of Mexico.)",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.giant-squid.sperm-whale-scars",
+    "q": "What marks on sperm whales point to their battles with giant squid?",
+    "choices": [
+      "Ink stains on their teeth",
+      "Burn marks from glowing squid",
+      "Circular scars from squid suckers"
+    ],
+    "answer": 2,
+    "explain": "Stranded sperm whales often carry large circular scars on their faces and backs, left by the suckers of struggling giant squid.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/giant-squid-sucker-marks",
+      "publisher": "Smithsonian Ocean",
+      "title": "Giant Squid Sucker Marks"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: stranded sperm whales carry large circular scars from giant squid suckers, often on the face and back.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.giant-squid.beaks-in-ambergris",
+    "q": "Giant squid beaks have been found in ambergris, a waxy substance made in the gut of which animal?",
+    "choices": [
+      "Blue whale",
+      "Sperm whale",
+      "Great white shark"
+    ],
+    "answer": 1,
+    "explain": "Squid beaks turn up in sperm whale stomachs and in ambergris, a waxy substance produced in the whales' digestive system.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/giant-squid",
+      "publisher": "Smithsonian Ocean",
+      "title": "How Big is the Giant Squid? - Smithsonian Ocean Portal"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/marine-mammals/whales",
+      "publisher": "Smithsonian Ocean",
+      "title": "Whales and Dolphins - Smithsonian Ocean Portal"
+    },
+    "searchNote": "Search summary (Smithsonian pages): squid beaks turn up in sperm whale stomachs and in ambergris, a waxy substance produced in sperm whale digestive systems. Exact Smithsonian page for the ambergris line was not shown; verifier should check both.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.hooks",
+    "q": "Besides suckers, what does the colossal squid have on its arms and tentacles?",
+    "choices": [
+      "Sharp hooks",
+      "Venomous spines",
+      "Stinging cells"
+    ],
+    "answer": 0,
+    "explain": "Its arms carry a double row of hooks between the suckers, and its tentacle clubs have more hooks, which help grip struggling prey.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://tepapa.govt.nz/discover-collections/read-watch-play/colossal-squid/anatomy-colossal-squid/arms-and-tentacles",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The arms and tentacles of the colossal squid"
+    },
+    "source2": {
+      "url": "https://blog.tepapa.govt.nz/2008/04/30/hooks-and-suckers/",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "Colossal squid: Hooks and suckers"
+    },
+    "searchNote": "Te Papa: hooks in a double row in the middle of each arm between suckers, plus two rows of hooks on the tentacle clubs; they probably help hold prey.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.swivel-hooks-tentacles",
+    "q": "Which of the colossal squid's hooks can swivel?",
+    "choices": [
+      "The hooks on its eight arms",
+      "The hooks around its beak",
+      "The hooks on its two tentacle clubs"
+    ],
+    "answer": 2,
+    "explain": "The arm hooks are fixed, but the 22 to 25 hooks on the tentacle clubs can rotate, helping latch onto prey.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://tepapa.govt.nz/discover-collections/read-watch-play/colossal-squid/anatomy-colossal-squid/arms-and-tentacles",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The arms and tentacles of the colossal squid"
+    },
+    "source2": {
+      "url": "http://squid.tepapa.govt.nz/anatomy/article/how-the-colossal-squid-feeds",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "How the colossal squid feeds"
+    },
+    "searchNote": "Te Papa: arm hooks do not rotate; there are two rows of rotating hooks on the tentacle club, 22 to 25 tentacle hooks in total.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.southern-ocean",
+    "q": "Where does the colossal squid live?",
+    "choices": [
+      "The Arctic Ocean near Greenland",
+      "The Southern Ocean around Antarctica",
+      "The Mediterranean Sea"
+    ],
+    "answer": 1,
+    "explain": "Colossal squid are found only in the cold Southern Ocean that surrounds Antarctica.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://tepapa.govt.nz/discover-collections/read-watch-play/colossal-squid/anatomy-colossal-squid/arms-and-tentacles",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The arms and tentacles of the colossal squid"
+    },
+    "source2": {
+      "url": "https://collections.tepapa.govt.nz/topic/588",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "Colossal squid Mesonychoteuthis hamiltoni"
+    },
+    "searchNote": "Te Papa: colossal squid occur only in the Southern Ocean, surrounding Antarctica.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.glass-squid-family",
+    "q": "The colossal squid belongs to which squid family?",
+    "choices": [
+      "The glass squids (Cranchiidae)",
+      "The giant squids (Architeuthidae)",
+      "The vampire squids (Vampyroteuthidae)"
+    ],
+    "answer": 0,
+    "explain": "Surprisingly, it is a glass squid, and the only one of about 20 species in that family to carry hooks.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://blog.tepapa.govt.nz/2008/04/30/hooks-and-suckers/",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "Colossal squid: Hooks and suckers"
+    },
+    "source2": {
+      "url": "https://tepapa.govt.nz/discover-collections/read-watch-play/colossal-squid/anatomy-colossal-squid/arms-and-tentacles",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The arms and tentacles of the colossal squid"
+    },
+    "searchNote": "Te Papa: the colossal squid is the only hooked squid in its family, the Cranchiidae, which includes about 20 species.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.first-footage-juvenile",
+    "q": "The first confirmed footage of a colossal squid in its natural habitat showed what?",
+    "choices": [
+      "A huge adult female",
+      "A male guarding eggs",
+      "A young juvenile"
+    ],
+    "answer": 2,
+    "explain": "Schmidt Ocean Institute's footage showed a baby, and hooks on its arms helped tell it apart from a similar-looking glass squid.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://schmidtocean.org/first-colossal-squid-footage/",
+      "publisher": "Schmidt Ocean Institute",
+      "title": "First Confirmed Footage of a Colossal Squid—and it's a Baby! - Schmidt Ocean Institute"
+    },
+    "source2": null,
+    "searchNote": "Schmidt Ocean Institute headline: first confirmed footage of a colossal squid, and it's a baby; arm hooks distinguish it from the glass squid Galiteuthis glacialis.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.colossal-squid.te-papa-museum",
+    "q": "Te Papa, a national museum famous for its preserved colossal squid, is in which country?",
+    "choices": [
+      "Australia",
+      "New Zealand",
+      "Argentina"
+    ],
+    "answer": 1,
+    "explain": "Te Papa, the Museum of New Zealand, has a dedicated colossal squid exhibition and publishes detailed pages on the animal's anatomy.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.tepapa.govt.nz/visit/exhibitions/colossal-squid",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The Colossal Squid"
+    },
+    "source2": {
+      "url": "https://tepapa.govt.nz/discover-collections/read-watch-play/colossal-squid/anatomy-colossal-squid/arms-and-tentacles",
+      "publisher": "Te Papa (Museum of New Zealand)",
+      "title": "The arms and tentacles of the colossal squid"
+    },
+    "searchNote": "Te Papa (Museum of New Zealand) runs 'The Colossal Squid' exhibition and publishes colossal squid anatomy pages.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.goblin-shark.slingshot-jaws",
+    "q": "What is special about the way a goblin shark grabs prey?",
+    "choices": [
+      "Its jaws shoot far forward from its head",
+      "It stuns prey with electric shocks",
+      "It spits jets of water at prey"
+    ],
+    "answer": 0,
+    "explain": "In 'slingshot feeding', the goblin shark's jaws catapult forward to snatch prey, then pull back into place.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4901258/",
+      "publisher": "Scientific Reports (via NCBI PMC)",
+      "title": "Slingshot feeding of the goblin shark Mitsukurina owstoni (Pisces: Lamniformes: Mitsukurinidae)"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/mitsukurina-owstoni/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Goblin Shark"
+    },
+    "searchNote": "Nakaya et al. 2016: first video documentation in the wild; jaws are protruded a long distance forward (slingshot feeding) and then retracted.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.goblin-shark.ligament-power",
+    "q": "What powers the goblin shark's slingshot jaws?",
+    "choices": [
+      "Gas-filled sacs inside its head",
+      "Strong muscles in its fins",
+      "Stretched ligaments at the jaw joints"
+    ],
+    "answer": 2,
+    "explain": "Ligaments at the jaw joints are stretched when the jaws close, and they snap the jaws forward when the mouth opens.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/mitsukurina-owstoni/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Goblin Shark"
+    },
+    "source2": {
+      "url": "https://australian.museum/blog-archive/science/what-has-long-pointy-teeth-and-a-slingshot-mouth/",
+      "publisher": "Australian Museum",
+      "title": "What has long pointy teeth and a slingshot mouth? - The Australian Museum Blog"
+    },
+    "searchNote": "Florida Museum and Australian Museum blog: ligaments at the jaw joints are stretched when the jaws close and snap the jaws forward when the mouth opens.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.six-gill-pairs",
+    "q": "How many pairs of gill slits does the frilled shark have?",
+    "choices": [
+      "Five",
+      "Six",
+      "Three"
+    ],
+    "answer": 1,
+    "explain": "Most sharks have five pairs of gill slits, but the frilled shark has six, one of its unusual features.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/frill-shark-chlamydoselachus-anguineus-garman-1884/",
+      "publisher": "Australian Museum",
+      "title": "Frill Shark, Chlamydoselachus anguineus Garman, 1884 - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: frilled shark has six pairs of gill slits; summary noted most other sharks have five.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.name-origin",
+    "q": "Where does the frilled shark get its name?",
+    "choices": [
+      "Its frilly gill slits",
+      "A frill of skin along its back",
+      "Frilly fins on its tail"
+    ],
+    "answer": 0,
+    "explain": "The edges of its gill slits are frilly, giving the shark its name; its gill covers even extend across the throat.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/frill-shark-chlamydoselachus-anguineus-garman-1884/",
+      "publisher": "Australian Museum",
+      "title": "Frill Shark, Chlamydoselachus anguineus Garman, 1884 - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum/summary: its gill slits are frilly, which gives the species its name; gill covers extend across the throat.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.three-pronged-teeth",
+    "q": "What shape are the frilled shark's teeth?",
+    "choices": [
+      "Flat, like grinding plates",
+      "Single smooth cones",
+      "Three-pronged"
+    ],
+    "answer": 2,
+    "explain": "Its mouth holds several rows of sharp teeth, each with three points.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/frill-shark-chlamydoselachus-anguineus-garman-1884/",
+      "publisher": "Australian Museum",
+      "title": "Frill Shark, Chlamydoselachus anguineus Garman, 1884 - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: three-pronged teeth; mouths filled with several rows of long, sharp teeth.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.living-fossil",
+    "q": "Why is the frilled shark often called a 'living fossil'?",
+    "choices": [
+      "It was found frozen in ancient ice",
+      "It has some primitive features",
+      "Its skeleton is turned to stone"
+    ],
+    "answer": 1,
+    "explain": "Some of its features look primitive compared with most modern sharks, earning it the 'living fossil' nickname.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/revealing-unknowns-unusual-catch",
+      "publisher": "NOAA Fisheries",
+      "title": "Revealing the Unknowns of an Unusual Catch"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/sharks-rays/sharks",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sharks - Smithsonian Ocean Portal"
+    },
+    "searchNote": "Search summary: frilled sharks have been called 'living fossils' due to some of their more primitive features. Page attribution (NOAA vs Smithsonian) not certain; verifier should check both.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.terminal-mouth",
+    "q": "Where is the frilled shark's mouth located?",
+    "choices": [
+      "At the very front of its head",
+      "Underneath its snout",
+      "On top of its head"
+    ],
+    "answer": 0,
+    "explain": "Its mouth is described as terminal, meaning it sits at the very tip of the head.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/frill-shark-chlamydoselachus-anguineus-garman-1884/",
+      "publisher": "Australian Museum",
+      "title": "Frill Shark, Chlamydoselachus anguineus Garman, 1884 - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: slender eel-like body, six pairs of gill slits, a terminal mouth, three-pronged teeth, single dorsal fin.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.eel-like-body",
+    "q": "Which best describes the frilled shark's body shape?",
+    "choices": [
+      "Flat and wide like a ray",
+      "Short and round like a pufferfish",
+      "Long, slender and eel-like"
+    ],
+    "answer": 2,
+    "explain": "With its slender, eel-like body and single dorsal fin, the frilled shark looks unlike most familiar sharks.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/frill-shark-chlamydoselachus-anguineus-garman-1884/",
+      "publisher": "Australian Museum",
+      "title": "Frill Shark, Chlamydoselachus anguineus Garman, 1884 - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: slender, eel-like body; single dorsal fin; brown colour.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.frilled-shark.southern-african-species",
+    "q": "A second, more recently described frilled shark species lives in deep waters off which region?",
+    "choices": [
+      "Iceland",
+      "Southern Africa",
+      "Hawaii"
+    ],
+    "answer": 1,
+    "explain": "The southern African frilled shark is found only in deep waters off southern Africa and is hard to tell apart from its relative.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/sharks-rays/sharks",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sharks - Smithsonian Ocean Portal"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/revealing-unknowns-unusual-catch",
+      "publisher": "NOAA Fisheries",
+      "title": "Revealing the Unknowns of an Unusual Catch"
+    },
+    "searchNote": "Search summary: the southern African frilled shark (C. africana) is found only in deep waters off southern Africa and is hard to tell from the frilled shark. Which result page carried this line was not clear; verifier should check.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.gulper-eel.pelican-name",
+    "q": "Why is the gulper eel also called the pelican eel?",
+    "choices": [
+      "Its huge mouth balloons like a pelican's pouch",
+      "It dives on prey from the sea surface",
+      "It has a long, beak-like snout"
+    ],
+    "answer": 0,
+    "explain": "Its enormous, expandable mouth and throat remind many people of a pelican scooping up fish with its pouch.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/pelican-eel-eurypharynx-pelecanoides/",
+      "publisher": "Australian Museum",
+      "title": "Pelican Eel, Eurypharynx pelecanoides Vaillant, 1882 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://sanctuaries.noaa.gov/news/oct23/odd-ocean-critters.html",
+      "publisher": "NOAA National Marine Sanctuaries",
+      "title": "Odd Ocean Critters to Inspire Your Next Halloween Costume"
+    },
+    "searchNote": "Results: pelican eel is also called the gulper eel; the name refers to its throat pouch, like a pelican expanding its pouch to scoop up fish.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.gulper-eel.glowing-tail",
+    "q": "What does the pelican eel (also called the gulper eel) have at the tip of its tail?",
+    "choices": [
+      "A venomous spine",
+      "A sucker for gripping rocks",
+      "A light-producing organ"
+    ],
+    "answer": 2,
+    "explain": "Its long tail ends in a luminous organ, which scientists suggest might act as a glowing lure for prey.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/pelican-eel-eurypharynx-pelecanoides/",
+      "publisher": "Australian Museum",
+      "title": "Pelican Eel, Eurypharynx pelecanoides Vaillant, 1882 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/fish/gulper-eels-massive-jaws",
+      "publisher": "Smithsonian Ocean",
+      "title": "Gulper Eel's Massive Jaws"
+    },
+    "searchNote": "Australian Museum: elongate body with a luminous organ at the end of the tail; a Smithsonian page suggests the glowing tip might act as a lure.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "deep-sea.gulper-eel.jaw-length",
+    "q": "The gulper eel's lower jaw is estimated to be about what share of its body length?",
+    "choices": [
+      "About one twentieth",
+      "About one quarter",
+      "About three quarters"
+    ],
+    "answer": 1,
+    "explain": "Its lower jaw is estimated at about a quarter of its body length, letting the mouth open to enormous size.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/gulper-eels-massive-jaws",
+      "publisher": "Smithsonian Ocean",
+      "title": "Gulper Eel's Massive Jaws"
+    },
+    "source2": null,
+    "searchNote": "Search summary: the gulper eel's lower jaw is estimated to be a quarter of the length of its body, letting it expand its jaw to massive sizes. Likely from the Smithsonian 'Gulper Eel's Massive Jaws' page.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "deep-sea.gulper-eel.mbari-logo",
+    "q": "Which deep-sea fish inspired the logo of MBARI, the Monterey Bay Aquarium Research Institute?",
+    "choices": [
+      "The gulper eel",
+      "The anglerfish",
+      "The barreleye"
+    ],
+    "answer": 0,
+    "explain": "MBARI's logo is based on the gulper eel, a fish its robotic vehicles have rarely seen in decades of deep-sea exploration.",
+    "category": "deep-sea",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://annualreport.mbari.org/2018/story/gulper-eel-inspires-the-mbari-logo",
+      "publisher": "MBARI",
+      "title": "The elusive gulper eel — MBARI Annual Report: 2018"
+    },
+    "source2": null,
+    "searchNote": "MBARI 2018 annual report story (URL: gulper-eel-inspires-the-mbari-logo); also says MBARI ROVs saw gulper eels fewer than twenty times in 30 years.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.tube-worm.no-gut",
+    "q": "The giant tube worm Riftia pachyptila has no mouth or gut. How does it get food?",
+    "choices": [
+      "By absorbing plankton through its skin",
+      "By filtering food particles with its plume",
+      "From bacteria living inside its body"
+    ],
+    "answer": 2,
+    "explain": "Bacteria packed into an organ called the trophosome make food for the worm, which depends on them entirely as an adult.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/deep-sea-tubeworms-get-versatile-inside-help/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Deep-sea Tubeworms Get Versatile 'Inside' Help"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4701499/",
+      "publisher": "PLoS ONE (via NCBI PMC)",
+      "title": "Trophosome of the Deep-Sea Tubeworm Riftia pachyptila Inhibits Bacterial Growth"
+    },
+    "searchNote": "Results: tubeworms have no mouth, gut or anus; nutrition comes from symbiotic bacteria housed in the trophosome.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.tube-worm.symbionts-use-sulfide",
+    "q": "The bacteria inside giant tube worms (Riftia pachyptila) get their energy from which chemical in vent fluid?",
+    "choices": [
+      "Table salt",
+      "Hydrogen sulfide",
+      "Helium"
+    ],
+    "answer": 1,
+    "explain": "The bacteria use hydrogen sulfide from the vents as an energy source to turn carbon into food for the worm.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/deep-sea-tubeworms-get-versatile-inside-help/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Deep-sea Tubeworms Get Versatile 'Inside' Help"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4701499/",
+      "publisher": "PLoS ONE (via NCBI PMC)",
+      "title": "Trophosome of the Deep-Sea Tubeworm Riftia pachyptila Inhibits Bacterial Growth"
+    },
+    "searchNote": "Results: the sulfur-oxidizing symbionts oxidize hydrogen sulfide to fix carbon.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.tube-worm.plume-function",
+    "q": "What does the giant tube worm's red plume do?",
+    "choices": [
+      "Takes in oxygen and sulfide, like a gill",
+      "Catches small fish, like a net",
+      "Produces light to attract mates"
+    ],
+    "answer": 0,
+    "explain": "The feathery red plume works like a gill, taking oxygen from seawater and hydrogen sulfide from vent fluid for its bacteria.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.whoi.edu/oceanus/feature/deep-sea-tubeworms-get-versatile-inside-help/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Deep-sea Tubeworms Get Versatile 'Inside' Help"
+    },
+    "source2": null,
+    "searchNote": "Search summary: the feathery red plume acts as a gill, taking up oxygen from seawater and hydrogen sulfide from vent fluid.",
+    "risk": "none"
+  },
+  {
+    "fact": "deep-sea.tube-worm.hemoglobin-sulfide",
+    "q": "What substance in the giant tube worm's blood carries hydrogen sulfide to its bacteria?",
+    "choices": [
+      "Chlorophyll",
+      "Hemocyanin",
+      "Hemoglobin"
+    ],
+    "answer": 2,
+    "explain": "Hemoglobin in the worm's blood ferries sulfide from the plume to the bacteria living inside its body.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.pmel.noaa.gov/eoi/nemo2003/logbook/sep06.html",
+      "publisher": "NOAA PMEL",
+      "title": "NeMO September 6, 2003"
+    },
+    "source2": {
+      "url": "https://www.whoi.edu/oceanus/feature/deep-sea-tubeworms-get-versatile-inside-help/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Deep-sea Tubeworms Get Versatile 'Inside' Help"
+    },
+    "searchNote": "Search summary: hemoglobin in the blood carries the sulfide to the bacteria in the trophosome (attributed to the NOAA PMEL NeMO 2003 log).",
+    "risk": "surprising"
+  },
+  {
+    "fact": "deep-sea.hydrothermal-vent.chemosynthesis",
+    "q": "Food webs at deep-sea hydrothermal vents are built mainly on which process?",
+    "choices": [
+      "Photosynthesis",
+      "Chemosynthesis",
+      "Fermentation"
+    ],
+    "answer": 1,
+    "explain": "With no sunlight, microbes at vents make food from chemicals in the vent fluid, a process called chemosynthesis.",
+    "category": "deep-sea",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/wp-content/uploads/2025/04/vent-food-web.pdf",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Introduction: Chemosynthesis at Hydrothermal Vents"
+    },
+    "source2": {
+      "url": "https://www.whoi.edu/oceanus/feature/deep-sea-tubeworms-get-versatile-inside-help/",
+      "publisher": "Woods Hole Oceanographic Institution",
+      "title": "Deep-sea Tubeworms Get Versatile 'Inside' Help"
+    },
+    "searchNote": "NOAA Ocean Exploration document titled 'Introduction: Chemosynthesis at Hydrothermal Vents' (vent food web). Search summary did not quote its body text; verifier should confirm.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "deep-sea.hydrothermal-vent.discovery-galapagos",
+    "q": "Deep-sea hydrothermal vent communities were first discovered in 1977 near which islands?",
+    "choices": [
+      "The Galápagos Islands",
+      "The Hawaiian Islands",
+      "The Canary Islands"
+    ],
+    "answer": 0,
+    "explain": "In 1977 scientists diving near the Galápagos Islands found vents teeming with life, an ecosystem fueled by chemicals rather than sunlight.",
+    "category": "deep-sea",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://website.whoi.edu/gfd/wp-content/uploads/sites/14/2018/10/Mullineaux_2013_MCEC_17_205305.pdf",
+      "publisher": "Woods Hole Oceanographic Institution (Mullineaux 2013)",
+      "title": "Deep-Sea Hydrothermal Vent Communities Lauren S. Mullineaux 17"
+    },
+    "source2": null,
+    "searchNote": "Source is a WHOI-hosted review chapter on deep-sea hydrothermal vent communities. The search summary did not show the 1977/Galápagos line (search budget ran out before a confirming search); verifier must confirm or drop.",
+    "risk": "disputed-check"
+  }
+]

@@ -1,0 +1,670 @@
+[
+ {
+  "id": "dd-0461",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0462",
+  "verdict": "fix",
+  "why": "Premise is shaky: in sea stars nutrients are moved mainly by coelomic fluid and the hemal system; the water vascular system chiefly powers the tube feet. 'No blood' and 'seawater carries nutrients' is a popular simplification. Re-aim the question at the solid fact.",
+  "fixed": {
+   "q": "Sea stars have no blood like ours. What fills the canals that work their tube feet?",
+   "choices": [
+    "A copper-based blue blood",
+    "Air held in hollow tubes",
+    "Mostly seawater"
+   ],
+   "answer": 2,
+   "explain": "Sea stars have a water vascular system: a network of canals filled with a seawater-based fluid. Changing the pressure in it extends and retracts the tube feet."
+  }
+ },
+ {
+  "id": "dd-0463",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0464",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0465",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0466",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0467",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0468",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0469",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0470",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0471",
+  "verdict": "fix",
+  "why": "Extra claim: eyespots help with orientation, but bat stars find food mainly by smell/chemical cues. Also, eyespots at arm tips are general to sea stars, which is fine.",
+  "fixed": {
+   "explain": "Like other sea stars, bat stars have a simple eyespot at the end of each arm. It senses light rather than forming sharp images and helps the star find its way."
+  }
+ },
+ {
+  "id": "dd-0472",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0473",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0474",
+  "verdict": "review",
+  "why": "Check the year: the IUCN listing of Pycnopodia as Critically Endangered was announced in December 2020, while the Red List citation is dated 2021 (Gravem et al. 2021). A player who remembers '2020' could object. Red List statuses also change. Suggest dropping the year: 'After the sea star wasting outbreak, how did the IUCN Red List classify the sunflower sea star?' and confirm the status is still current."
+ },
+ {
+  "id": "dd-0475",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0476",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0477",
+  "verdict": "review",
+  "why": "'A recent study' is relative wording that dates fast. Confirm the study and its year (large adults surviving in British Columbia fjords) on the source and name the year in the question. The distractors (Hawaii, Gulf of Mexico) are outside the species' range, so this is easier than 'hard'."
+ },
+ {
+  "id": "dd-0478",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0479",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0480",
+  "verdict": "review",
+  "why": "The species is not named, and 'deep-sea sunstar' is not a standard unique common name. The explanation gives depths from about 30 m, which contradicts 'deep-sea'. Confirm which species the source means (name it in the question) and whether 'speeds over the seafloor stalking prey' is the source's description. It may be too obscure to be fair."
+ },
+ {
+  "id": "dd-0481",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0482",
+  "verdict": "fix",
+  "why": "The explanation overstates: Aristotle likened the urchin's whole shell to a horn lantern, and the name was later attached to the jaw apparatus. Saying he compared the mouthparts to a lantern is the common misreading.",
+  "fixed": {
+   "explain": "The name comes from Aristotle, who more than 2,000 years ago compared a sea urchin to a lantern. It was later attached to the urchin's five-toothed jaw apparatus."
+  }
+ },
+ {
+  "id": "dd-0483",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0484",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0485",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0486",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0487",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0488",
+  "verdict": "fix",
+  "why": "Urchins are not colonial, so 'colony' is the wrong word. Better to name the result (an urchin barren).",
+  "fixed": {
+   "explain": "Purple urchins mostly eat algae. When their numbers boom they can mow down a giant kelp forest, leaving a bare 'urchin barren'."
+  }
+ },
+ {
+  "id": "dd-0489",
+  "verdict": "review",
+  "why": "Unsure: urchins store reserves mainly in their gonads and gut tissue, not as 'fat' in the usual sense. Check the source's exact wording. Also check the name: the species has been moved from Strongylocentrotus fragilis to Allocentrotus fragilis, so use whichever name the source uses."
+ },
+ {
+  "id": "dd-0490",
+  "verdict": "fix",
+  "why": "Uni is the gonads of either sex. 'Roe' strictly means eggs, so the answer is slightly wrong for male urchins.",
+  "fixed": {
+   "choices": [
+    "Its softened spines",
+    "Its gonads (reproductive organs)",
+    "Its tube feet"
+   ],
+   "explain": "Uni is the sea urchin's gonads, the reproductive organs of males and females alike. Green and red urchins are among the species harvested for it."
+  }
+ },
+ {
+  "id": "dd-0491",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0492",
+  "verdict": "reject",
+  "why": "Duplicate: tests the same five-part (pentaradial) symmetry as dd-0483 (five teeth, five sections). 'Five matching sections' is also loose: the test is made of ten double columns of plates in five ambulacral and five interambulacral areas.",
+  "dupOf": "dd-0483"
+ },
+ {
+  "id": "dd-0493",
+  "verdict": "fix",
+  "why": "Its toxin is delivered by its pedicellariae, so the correct term is 'venomous', not 'toxic'. 'Most toxic' is a superlative; hedge it.",
+  "fixed": {
+   "choices": [
+    "Able to swim short distances",
+    "Highly venomous",
+    "Bioluminescent at night"
+   ],
+   "explain": "The flower urchin looks pretty but packs a punch: its flower-like pincers (pedicellariae) deliver a potent venom, and it is often called the most dangerous sea urchin."
+  }
+ },
+ {
+  "id": "dd-0494",
+  "verdict": "fix",
+  "why": "The explanation is inaccurate: the photoreceptors are in the tube feet, and the spines shade them. They are not 'packed across its surface'.",
+  "fixed": {
+   "explain": "Light-sensing cells sit in the urchin's many tube feet, with its spines shading them from different directions, so researchers have described the whole animal as acting like one big compound eye."
+  }
+ },
+ {
+  "id": "dd-0495",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0496",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0497",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0498",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0499",
+  "verdict": "fix",
+  "why": "Lifespan figures for Dendraster excentricus vary across sources (often about 6 to 10 years, sometimes up to about 13 to 15). 'About 15' is stated too precisely. The distractors are far enough apart to allow a looser answer.",
+  "fixed": {
+   "choices": [
+    "About 15 weeks",
+    "About 150 years",
+    "More than a decade"
+   ],
+   "explain": "Pacific sand dollars are surprisingly long-lived for their size: they can survive for more than a decade in the wild."
+  }
+ },
+ {
+  "id": "dd-0500",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0501",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0502",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0503",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0504",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0505",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0506",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0507",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0508",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0509",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0510",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0511",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0512",
+  "verdict": "reject",
+  "why": "Too obscure: an Australian regional common name for one species. It is also guessable for the wrong reason, since 'snake star' is a general nickname for brittle stars, so the question tests nothing specific to Schayer's brittle star."
+ },
+ {
+  "id": "dd-0513",
+  "verdict": "review",
+  "why": "The species is not named, and several brittle stars are called 'spiny brittle star' (for example Ophiothrix spiculata and Ophiocoma species). The answer says 'buries itself' but the explanation says 'tucks itself away'; Ophiothrix hides in crevices and under rocks rather than burying. Name the species and change the answer to 'It hides away, leaving an arm or two out' if the source supports that."
+ },
+ {
+  "id": "dd-0514",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0515",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0516",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0517",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0518",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0519",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0520",
+  "verdict": "fix",
+  "why": "Mate-finding by smell is inferred from the males' large nostrils/olfactory organs. It has not been directly observed, and males of some species may also use their eyes. Hedge it.",
+  "fixed": {
+   "q": "How are tiny male deep-sea anglerfish thought to track down females in the dark?",
+   "explain": "Males have large nostrils and a keen sense of smell, and are thought to follow chemical signals (pheromones) given off by females."
+  }
+ },
+ {
+  "id": "dd-0521",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0522",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0523",
+  "verdict": "fix",
+  "why": "The choices are inconsistent ('He loses them' among 'They...'), and the eyes degenerate rather than simply disappear.",
+  "fixed": {
+   "choices": [
+    "They grow much larger",
+    "They begin to glow",
+    "They degenerate"
+   ],
+   "explain": "Once attached he no longer needs them, so his eyes degenerate, and eventually his bloodstream links up with the female's."
+  }
+ },
+ {
+  "id": "dd-0524",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0525",
+  "verdict": "review",
+  "why": "This hinges on one news report with a year and an outlet. Upside-down swimming was documented in the whipnose anglerfish Gigantactis from ROV footage (published 2005). Check what the 2023 NHM item actually reported (species, and whether it was new footage). Better to drop the year and outlet and name the genus: 'Deep-sea footage of a whipnose anglerfish has shown it doing what?'"
+ },
+ {
+  "id": "dd-0526",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0527",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0528",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0529",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0530",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0531",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0532",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0533",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0534",
+  "verdict": "fix",
+  "why": "The 'rising to the surface' distractor is partly true: oxygen minimum zones are shoaling (their upper boundary is rising) as they expand. Replace it.",
+  "fixed": {
+   "choices": [
+    "It is expanding",
+    "It is shrinking",
+    "It is disappearing"
+   ]
+  }
+ },
+ {
+  "id": "dd-0535",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0536",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0537",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0538",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0539",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0540",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0541",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0542",
+  "verdict": "review",
+  "why": "Possibly two defensible readings. In the 2012 Ogasawara expedition, Widder's 'e-jelly' lure attracted a giant squid to the Medusa camera, but the famous submersible footage by Kubodera was filmed using a bait squid. Check which filming the source means. Also note the e-jelly imitates the 'burglar alarm' display of the Atolla jellyfish, and specify that in the question."
+ },
+ {
+  "id": "dd-0543",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0544",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0545",
+  "verdict": "fix",
+  "why": "The beaks found in ambergris are squid beaks in general, not specifically giant squid. Saying 'giant squid' overclaims.",
+  "fixed": {
+   "q": "Squid beaks are often found embedded in ambergris, a waxy substance made in the gut of which animal?",
+   "explain": "Sperm whales eat huge numbers of squid. The hard beaks they can't digest often end up in ambergris, a waxy substance produced in the whale's digestive system."
+  }
+ },
+ {
+  "id": "dd-0546",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0547",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0548",
+  "verdict": "fix",
+  "why": "'Found only' is an absolute. The species is centred on the Southern Ocean, but its range edges into sub-Antarctic waters off South America, South Africa and New Zealand.",
+  "fixed": {
+   "explain": "Colossal squid live in the cold waters of the Southern Ocean around Antarctica, with some records farther north in sub-Antarctic waters."
+  }
+ },
+ {
+  "id": "dd-0549",
+  "verdict": "fix",
+  "why": "Two errors in the explanation. Cranchiidae has about 60 species, not about 20. And Galiteuthis (also a cranchiid) has hooks on its tentacle clubs, so the colossal squid is not the only hooked glass squid; it is the only one with hooks on its arms.",
+  "fixed": {
+   "explain": "Surprisingly, it is a glass squid (family Cranchiidae), and the only member of that family with hooks on its arms."
+  }
+ },
+ {
+  "id": "dd-0550",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0551",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0552",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0553",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0554",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0555",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0556",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0557",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0558",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0559",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0560",
+  "verdict": "fix",
+  "why": "'Found only' is an absolute for a species known from few records. Soften it.",
+  "fixed": {
+   "explain": "The southern African frilled shark, described in 2009, is known from deep waters off southern Africa and is hard to tell apart from its better-known relative."
+  }
+ },
+ {
+  "id": "dd-0561",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0562",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0563",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0564",
+  "verdict": "review",
+  "why": "I cannot confirm from memory that MBARI's logo depicts a gulper eel. Check the logo and the source. This is institutional trivia rather than marine biology. The barreleye distractor is MBARI's best-known filmed animal, so the question may mislead."
+ },
+ {
+  "id": "dd-0565",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0566",
+  "verdict": "reject",
+  "why": "Near-duplicate of dd-0567, whose answer ('takes in oxygen and sulfide') and explanation state the same fact. dd-0568 repeats it too. The distractors here (table salt, helium) are also too weak.",
+  "dupOf": "dd-0567"
+ },
+ {
+  "id": "dd-0567",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0568",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0569",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0570",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0571",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0572",
+  "verdict": "fix",
+  "why": "'Often lose as much as half' overstates: typical figures are about 40 to 45 percent. The answer 'up to about half' is fine.",
+  "fixed": {
+   "explain": "Males can't feed while holding the egg, so the long winter fast takes a heavy toll: they can lose up to around 40 to 45 percent of their body weight."
+  }
+ },
+ {
+  "id": "dd-0573",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0574",
+  "verdict": "fix",
+  "why": "The explanation overclaims: huddles constantly form, shuffle and break up, and are tightest in the coldest, windiest weather. They don't stay put 'all winter, through every temperature'.",
+  "fixed": {
+   "explain": "Incubating males crowd together in tight huddles, slowly shuffling so birds take turns in the warm middle, especially in the coldest, windiest weather."
+  }
+ },
+ {
+  "id": "dd-0575",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0576",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0577",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0578",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0579",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0580",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0581",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0582",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0583",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0584",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0585",
+  "verdict": "review",
+  "why": "Not sure it is right. Juvenile blue-footed booby feet are often described as dull or grayish-blue rather than brown. Check the source's exact colour word. If it says 'dull blue-gray', then 'brown' is wrong."
+ },
+ {
+  "id": "dd-0586",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0587",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0588",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0589",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0590",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0591",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0592",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0593",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0594",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0595",
+  "verdict": "ok"
+ },
+ {
+  "id": "dd-0596",
+  "verdict": "fix",
+  "why": "The explanation adds a time-sensitive population claim (a '2025 drone survey... stabilising') that will date and adds risk. Remove it.",
+  "fixed": {
+   "explain": "Highly pathogenic avian flu swept through the Bass Rock colony in 2022, killing many thousands of gannets."
+  }
+ },
+ {
+  "id": "dd-0597",
+  "verdict": "review",
+  "why": "I can't confirm this study from memory (individual gannets having a consistent preferred roll direction when diving). Check that the source reports a per-bird side preference, rather than a population-level bias or a claim about head-turning."
+ }
+]

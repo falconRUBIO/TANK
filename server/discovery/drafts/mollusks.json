@@ -1,0 +1,1082 @@
+[
+  {
+    "fact": "mollusks.cone-snail.harpoon-tooth",
+    "q": "What does a cone snail use as a harpoon to inject venom into its prey?",
+    "choices": [
+      "A spine on the edge of its shell",
+      "A hollow, modified tooth",
+      "A stinger at the tip of its foot"
+    ],
+    "answer": 1,
+    "explain": "Cone snails fire a hollow, harpoon-like tooth from their radula, the toothed feeding ribbon, and push venom through it to paralyze prey.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10892987/",
+      "publisher": "Toxins (via PubMed Central, NIH)",
+      "title": "Predatory and Defensive Strategies in Cone Snails - PMC"
+    },
+    "source2": null,
+    "searchNote": "Review describes cone snails using a modified radula tooth shaped like a hollow harpoon, delivered ballistically, to inject a cocktail of peptide neurotoxins into prey.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.geographic-cone.deadly-sting",
+    "q": "The geographic cone snail of the Indo-Pacific is best known for what?",
+    "choices": [
+      "A sting that can be fatal to people",
+      "A shell that glows in the dark",
+      "Swimming by jet propulsion"
+    ],
+    "answer": 0,
+    "explain": "The geographic cone's venom is potent enough to kill a person, which is why divers and beachcombers are warned not to handle live cone snails.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/sites/books/NBK470586/",
+      "publisher": "StatPearls (NCBI Bookshelf, NIH)",
+      "title": "Cone Snail Toxicity - StatPearls - NCBI Bookshelf - NIH"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/geographic_cone_snail",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Geographic Cone Snail"
+    },
+    "searchNote": "StatPearls cone snail toxicity page and Aquarium of the Pacific geographic cone page came up for cone snail venom; the search summary did not quote the human-fatality line, so verifier should confirm Conus geographus is named as dangerous/fatal to humans.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.cone-snail.conotoxins",
+    "q": "Cone snail venom is a mix of many small nerve-blocking molecules known as what?",
+    "choices": [
+      "Saxitoxins",
+      "Tetrodotoxins",
+      "Conotoxins"
+    ],
+    "answer": 2,
+    "explain": "Conotoxins are short peptides, small chains of amino acids, that jam the signals nerves use, quickly paralyzing a cone snail's prey.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10892987/",
+      "publisher": "Toxins (via PubMed Central, NIH)",
+      "title": "Predatory and Defensive Strategies in Cone Snails - PMC"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/sites/books/NBK470586/",
+      "publisher": "StatPearls (NCBI Bookshelf, NIH)",
+      "title": "Cone Snail Toxicity - StatPearls - NCBI Bookshelf - NIH"
+    },
+    "searchNote": "Sources say cone snail venom contains hundreds of different compounds called conotoxins that interfere with nerve impulses and paralyze prey.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.cone-snail.ziconotide-pain",
+    "q": "Ziconotide, a medicine made as a copy of a cone snail venom molecule, is approved to treat what?",
+    "choices": [
+      "High blood pressure",
+      "Severe chronic pain",
+      "Bacterial infections"
+    ],
+    "answer": 1,
+    "explain": "Ziconotide, sold as Prialt, is a lab-made version of a toxin from the magician cone snail. It is reserved for severe pain when other treatments fail.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/sites/books/NBK459151/",
+      "publisher": "StatPearls (NCBI Bookshelf, NIH)",
+      "title": "Ziconotide - StatPearls - NCBI Bookshelf - NIH"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2654521/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Ziconotide: a review of its pharmacology and use in the treatment of pain - PMC"
+    },
+    "searchNote": "StatPearls: ziconotide (Prialt) is a synthetic version of omega-conotoxin MVIIA from the fish-hunting cone snail Conus magus, FDA-approved for severe chronic pain when other options fail.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.cone-snail.ziconotide-mechanism",
+    "q": "Unlike morphine, the cone-snail-derived painkiller ziconotide works by blocking what?",
+    "choices": [
+      "Calcium channels in nerve cells",
+      "Opioid receptors in the brain",
+      "Histamine release in the skin"
+    ],
+    "answer": 0,
+    "explain": "Ziconotide plugs N-type calcium channels, tiny gates that pain-sensing nerves need to pass on signals, and it does not act on opioid receptors.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/15578997/",
+      "publisher": "PubMed (NIH)",
+      "title": "Ziconotide: neuronal calcium channel blocker for treating severe chronic pain - PubMed"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/sites/books/NBK459151/",
+      "publisher": "StatPearls (NCBI Bookshelf, NIH)",
+      "title": "Ziconotide - StatPearls - NCBI Bookshelf - NIH"
+    },
+    "searchNote": "PubMed title calls ziconotide a neuronal calcium channel blocker; StatPearls says it blocks N-type calcium channels in the spinal cord and does not bind opioid receptors.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.magician-cone.chemical-detection",
+    "q": "How does the fish-hunting magician cone snail (Conus magus) detect a nearby fish?",
+    "choices": [
+      "By sensing body heat",
+      "By echolocation clicks",
+      "By sensing chemicals in the water"
+    ],
+    "answer": 2,
+    "explain": "It picks up chemical cues from the fish, then extends its long proboscis and stabs the fish with a venom-filled, harpoon-like tooth.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10892987/",
+      "publisher": "Toxins (via PubMed Central, NIH)",
+      "title": "Predatory and Defensive Strategies in Cone Snails - PMC"
+    },
+    "source2": null,
+    "searchNote": "Review says species such as Conus magus detect fish with chemosensors, then extend the proboscis to impale the fish with a hollow, venom-filled harpoon-like tooth.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.white-abalone.first-esa-invertebrate",
+    "q": "In 2001 the white abalone became the first marine invertebrate to be what?",
+    "choices": [
+      "Listed under the U.S. Endangered Species Act",
+      "Declared extinct in the wild",
+      "Bred on a commercial farm"
+    ],
+    "answer": 0,
+    "explain": "So few white abalone were left that NOAA listed the species as endangered in 2001, the first marine invertebrate protected under the Act.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/white-abalone",
+      "publisher": "NOAA Fisheries",
+      "title": "White Abalone"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/reportcard/info/white_abalone",
+      "publisher": "Aquarium of the Pacific",
+      "title": "White Abalone"
+    },
+    "searchNote": "NOAA and Aquarium of the Pacific: white abalone (Haliotis sorenseni) was the first marine invertebrate listed under the ESA, final rule effective June 2001.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.white-abalone.overfishing-decline",
+    "q": "What was the main cause of the white abalone's collapse?",
+    "choices": [
+      "Oil spills along the coast",
+      "Commercial overfishing in the 1970s",
+      "Predation by invasive crabs"
+    ],
+    "answer": 1,
+    "explain": "Heavy commercial harvest in the 1970s left survivors too scattered to recover, and numbers kept falling even after California closed the fishery in 1996.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/white-abalone",
+      "publisher": "NOAA Fisheries",
+      "title": "White Abalone"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/reportcard/info/white_abalone",
+      "publisher": "Aquarium of the Pacific",
+      "title": "White Abalone"
+    },
+    "searchNote": "Commercial harvesting in the 1970s drove the population to very low levels and fragmented it; a 1996 California fishery closure and 2001 listing did not reverse the decline.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.white-abalone.captive-breeding-release",
+    "q": "How are scientists working to rebuild wild white abalone populations?",
+    "choices": [
+      "Moving adults into freshwater lakes",
+      "Hand-feeding wild adults kelp",
+      "Breeding them and releasing the young"
+    ],
+    "answer": 2,
+    "explain": "Partners including NOAA and the Aquarium of the Pacific raise young white abalone in captivity and release, or 'outplant', them into the wild.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/conservation/research/abalone_breeding",
+      "publisher": "Aquarium of the Pacific",
+      "title": "White Abalone"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/press/info/endangered_species_to_get_a_helping_hand_as_white_abalones_will_be_released_to_the_wild_after_years_of_research_by_aquarium_and_partners/newsroom",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Endangered Species to Get a Helping Hand as White Abalones Will Be Released to the Wild After Years of Research by Aquarium and Partners"
+    },
+    "searchNote": "Aquarium of the Pacific pages describe captive breeding of white abalone and releasing them into the wild; a 2024 workshop with NOAA planned the next five years of outplanting.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.white-abalone.range",
+    "q": "Where does the endangered white abalone live?",
+    "choices": [
+      "Coastal Hawaii",
+      "The Gulf of Maine",
+      "Southern California and Baja California"
+    ],
+    "answer": 2,
+    "explain": "Its range runs from Point Conception, California, south to Punta Abreojos in Baja California, Mexico.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/white-abalone",
+      "publisher": "NOAA Fisheries",
+      "title": "White Abalone"
+    },
+    "source2": null,
+    "searchNote": "NOAA says the white abalone listing covers its range from Point Conception, California, to Punta Abreojos, Baja California, Mexico.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.giant-clam.algae-food",
+    "q": "Where does an adult true giant clam (Tridacna gigas) get most of its food?",
+    "choices": [
+      "From algae living in its mantle",
+      "From small fish it traps",
+      "From algae it scrapes off rocks"
+    ],
+    "answer": 0,
+    "explain": "Single-celled algae living in the clam's fleshy mantle use sunlight to make sugars, and adult clams get most of their food from what the algae share.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://lifg.australian.museum/Group.html?groupId=wuDqZWyv",
+      "publisher": "Australian Museum (Lizard Island Field Guide)",
+      "title": "Giant Clam (species: Tridacna gigas) in taxonomy (Lizard Island Field Guide)"
+    },
+    "source2": null,
+    "searchNote": "Lizard Island Field Guide: giant clams host dinoflagellate algae in mantle tissue; adults get most of their food from sugars the algae produce, while filter feeding matters more for juveniles.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.true-giant-clam.size",
+    "q": "How wide can the true giant clam (Tridacna gigas) grow?",
+    "choices": [
+      "About 30 centimeters (1 foot)",
+      "About 10 meters (33 feet)",
+      "More than 1 meter (over 3 feet)"
+    ],
+    "answer": 2,
+    "explain": "The true giant clam is the biggest of the giant clam species, with a shell that can stretch more than a meter across.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/true-giant-clam",
+      "publisher": "NOAA Fisheries",
+      "title": "True Giant Clam"
+    },
+    "source2": null,
+    "searchNote": "NOAA true giant clam page says Tridacna gigas is the largest species, reaching over a meter wide.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "mollusks.giant-clam.algae-acquired-from-water",
+    "q": "How does a young giant clam acquire its algae partners?",
+    "choices": [
+      "Inherited inside the egg from its mother",
+      "Taken in from the surrounding seawater",
+      "Produced from its own body cells"
+    ],
+    "answer": 1,
+    "explain": "Giant clams aren't born with their algae. Juveniles take them in from the water around the time they settle, and the algae spread through tubes into the mantle.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://lifg.australian.museum/Group.html?groupId=wuDqZWyv",
+      "publisher": "Australian Museum (Lizard Island Field Guide)",
+      "title": "Giant Clam (species: Tridacna gigas) in taxonomy (Lizard Island Field Guide)"
+    },
+    "source2": {
+      "url": "https://lifg.australian.museum/Group.html?groupId=Ok7OQ2sH",
+      "publisher": "Australian Museum (Lizard Island Field Guide)",
+      "title": "Fluted Giant Clam (species: Tridacna squamosa) in taxonomy (Lizard Island Field Guide)"
+    },
+    "searchNote": "Lizard Island guide: algae sit in tubules branching from the gut through the mantle, and the clam takes the algae in from the water when it settles as a juvenile.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.giant-clam.bleaching",
+    "q": "Like corals, giant clams can 'bleach'. What happens when they do?",
+    "choices": [
+      "They lose the algae living in their tissues",
+      "Their shells dissolve and turn white",
+      "They shed their whole mantle"
+    ],
+    "answer": 0,
+    "explain": "Heat stress and intense light can drive out the food-making algae in a giant clam's mantle; the 1998 bleaching event hit true giant clams hard.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/s3/2024-07/StatusReview-GiantClams-508.pdf",
+      "publisher": "NOAA Fisheries",
+      "title": "Status Review Report of Seven Giant Clam Species"
+    },
+    "source2": {
+      "url": "https://media.fisheries.noaa.gov/dam-migration/clam_petition_2016_opr3.pdf",
+      "publisher": "NOAA Fisheries (hosted petition)",
+      "title": "Giant Clam Petition 1"
+    },
+    "searchNote": "Search summary: mantle algae density dropped sharply under prolonged high light, and the 1998 bleaching event cut algae in T. gigas about 30-fold (petition). Status review expected to discuss clam bleaching; verifier check.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.oyster.filter-50-gallons",
+    "q": "Under good conditions, roughly how much water can one adult oyster filter in a day?",
+    "choices": [
+      "About 2 gallons",
+      "About 2,000 gallons",
+      "About 50 gallons"
+    ],
+    "answer": 2,
+    "explain": "A single adult oyster can strain around 50 gallons of water a day, pulling out algae and particles, which is why oyster reefs help keep coastal water clear.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/national/habitat-conservation/oyster-reef-habitat",
+      "publisher": "NOAA Fisheries",
+      "title": "Oyster Reef Habitat"
+    },
+    "source2": {
+      "url": "https://coastalscience.noaa.gov/news/water-cleaning-capacity-of-oysters-could-mean-extra-income-for-chesapeake-bay-growers-video/",
+      "publisher": "NOAA National Centers for Coastal Ocean Science",
+      "title": "Water Cleaning Capacity of Oysters Could Mean Extra Income for Chesapeake Bay Growers (video) - NCCOS Coastal Science Website"
+    },
+    "searchNote": "NOAA oyster reef habitat page: one adult oyster can filter 50 gallons a day under certain conditions; NCCOS Chesapeake item says more than 50 gallons a day.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "mollusks.oyster.nitrogen-removal",
+    "q": "Oyster farms can improve coastal water by removing which nutrient pollutant?",
+    "choices": [
+      "Mercury",
+      "Chlorine",
+      "Nitrogen"
+    ],
+    "answer": 2,
+    "explain": "Oysters filter out algae fed by excess nitrogen and lock some of that nitrogen into their shells and tissues, removing it from the water.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/s3/2022-03/Fact-Sheet-Aquaculture-Provides-Beneficial-Ecosystem-Services.pdf",
+      "publisher": "NOAA Fisheries",
+      "title": "Removing Nitrogen, Improving Water Quality"
+    },
+    "source2": {
+      "url": "https://seagrant.noaa.gov/Woods-Hole-Sea-Grant-research-documents-first-nitrogen-removal-by-oysters-in-local-waters/",
+      "publisher": "NOAA Sea Grant",
+      "title": "Woods Hole Sea Grant research documents first nitrogen removal by oysters in local waters - NOAA Sea Grant"
+    },
+    "searchNote": "NOAA aquaculture fact sheet 'Removing Nitrogen, Improving Water Quality': oysters remove nitrogen by incorporating it into shells and tissues; Woods Hole Sea Grant documented nitrogen removal by oysters.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.oyster.shell-recycling-reefs",
+    "q": "Why do coastal programs collect used oyster shells from restaurants?",
+    "choices": [
+      "To grind them into road salt",
+      "To return them to the water to build new reefs",
+      "To use them as fishing bait"
+    ],
+    "answer": 1,
+    "explain": "Young oysters need a hard surface to settle on, and old shells are ideal, so recycled shells help rebuild reefs that protect coastlines.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/gulf-coast-oyster-shell-recycling-key-sustainable-seafood-and-coastal-protection",
+      "publisher": "NOAA Fisheries",
+      "title": "Gulf Coast: Oyster Shell Recycling Key to Sustainable Seafood and Coastal Protection"
+    },
+    "source2": null,
+    "searchNote": "NOAA Gulf Coast feature on oyster shell recycling as key to sustainable seafood and coastal protection (title); verifier should confirm shells are returned to build reef habitat for young oysters.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.scallop.mirror-eyes",
+    "q": "What mainly focuses the image in a scallop's eye?",
+    "choices": [
+      "A curved mirror at the back of the eye",
+      "A thick crystal lens at the front",
+      "A tiny pinhole opening"
+    ],
+    "answer": 0,
+    "explain": "Scallop eyes work like reflecting telescopes: a concave mirror at the back of each eye reflects light onto the retina to form an image.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.science.org/doi/10.1126/science.aam9506",
+      "publisher": "Science (AAAS)",
+      "title": "The image-forming mirror in the eye of the scallop"
+    },
+    "source2": {
+      "url": "https://www.science.org/content/article/hubble-bubble-scallop-eyes-act-just-tiny-telescopes",
+      "publisher": "Science (AAAS)",
+      "title": "Hubble in a bubble: Scallop eyes act just like tiny telescopes"
+    },
+    "searchNote": "Palmer et al. 2017 (Science): each scallop eye uses a concave mirror to focus light; Science news compares scallop eyes to tiny telescopes.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.scallop.guanine-mirror",
+    "q": "The mirror inside each scallop eye is built from tiny square tiles of what?",
+    "choices": [
+      "Silica glass",
+      "Guanine crystals",
+      "Calcium carbonate"
+    ],
+    "answer": 1,
+    "explain": "The tiles are crystals of guanine, one of the building blocks of DNA, laid out in a mosaic of squares that reduces blurring.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.science.org/doi/10.1126/science.aam9506",
+      "publisher": "Science (AAAS)",
+      "title": "The image-forming mirror in the eye of the scallop"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9898273/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Macromolecular sheets direct the morphology and orientation of plate-like biogenic guanine crystals - PMC"
+    },
+    "searchNote": "Science paper: the mirror is built from guanine crystals arranged as a mosaic of square tiles, which reduces optical aberrations; later study notes square guanine crystals are unusual.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.scallop.eye-count",
+    "q": "How many eyes can a single scallop have?",
+    "choices": [
+      "Just two",
+      "Several thousand",
+      "Up to about 200"
+    ],
+    "answer": 2,
+    "explain": "Depending on the species and the individual, a scallop can have anywhere from about 30 to 200 tiny eyes.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3726758/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "De Novo Assembly and Characterization of Two Transcriptomes Reveal Multiple Light-Mediated Functions in the Scallop Eye (Bivalvia: Pectinidae) - PMC"
+    },
+    "source2": {
+      "url": "https://www.science.org/doi/10.1126/science.aam9506",
+      "publisher": "Science (AAAS)",
+      "title": "The image-forming mirror in the eye of the scallop"
+    },
+    "searchNote": "Transcriptome study: each scallop has between 30 and 200 non-cephalic eyes; Science paper describes a system of up to 200 eyes. Pecten maximus described as having 'hundreds'.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "mollusks.scallop.eye-location",
+    "q": "Where are a scallop's eyes located?",
+    "choices": [
+      "On two stalks on its head",
+      "Inside its gills",
+      "Along the edge of its mantle"
+    ],
+    "answer": 2,
+    "explain": "A scallop's eyes line the fleshy edge of its mantle, so they peek out from between the two shells when it gapes open.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3726758/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "De Novo Assembly and Characterization of Two Transcriptomes Reveal Multiple Light-Mediated Functions in the Scallop Eye (Bivalvia: Pectinidae) - PMC"
+    },
+    "source2": {
+      "url": "https://www.science.org/doi/10.1126/science.aam9506",
+      "publisher": "Science (AAAS)",
+      "title": "The image-forming mirror in the eye of the scallop"
+    },
+    "searchNote": "Transcriptome study describes scallop eyes as non-cephalic (not on a head); verifier should confirm the pages state they sit along the mantle edge.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.aeolid-nudibranch.stolen-stinging-cells",
+    "q": "Aeolid nudibranchs eat stinging animals like anemones. What happens to the prey's stinging cells?",
+    "choices": [
+      "They are fully digested for energy",
+      "They are stored in the slug's back for defense",
+      "They are released to attract mates"
+    ],
+    "answer": 1,
+    "explain": "Unfired stinging cells pass through the slug's gut to sacs at the tips of its cerata, the fingerlike projections on its back, ready to fire at attackers.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/how-sea-slugs-steal-defenses-their-prey",
+      "publisher": "Smithsonian Ocean",
+      "title": "How Sea Slugs Steal the Defenses of Their Prey"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/opalescent-nudibranch",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Opalescent nudibranch"
+    },
+    "searchNote": "Smithsonian: aeolid nudibranchs eat stinging animals; stinging cells pass through the digestive gland and collect in sacs at the cerata tips, and the slugs shoot them out when threatened.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.nudibranch.name-naked-gills",
+    "q": "What does the name 'nudibranch' mean?",
+    "choices": [
+      "Naked gills",
+      "Soft body",
+      "Sea flower"
+    ],
+    "answer": 0,
+    "explain": "Many nudibranchs carry their gills openly on their backs as feathery plumes rather than tucked inside a shell, which gave the group its name.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.seattleaquarium.org/stories/getting-to-know-nudibranchs/",
+      "publisher": "Seattle Aquarium",
+      "title": "Getting to know nudibranchs - Seattle Aquarium"
+    },
+    "source2": null,
+    "searchNote": "Seattle Aquarium: nudibranch means 'naked gills', referring to the external, feathery gills many species display on their backs.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.sea-hare.name-origin",
+    "q": "How did the sea hare get its name?",
+    "choices": [
+      "It moves across the seafloor in hops",
+      "Its head has two projections that look like rabbit ears",
+      "Its skin is covered in fine, furlike hairs"
+    ],
+    "answer": 1,
+    "explain": "Early observers thought the two rolled sensory organs on its head, called rhinophores, looked like a hare's ears.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/foma/learn/nature/sea-hares.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Sea Hares - Fort Matanzas National Monument (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://australian.museum/learn/animals/molluscs/sea-hare/",
+      "publisher": "Australian Museum",
+      "title": "Sea Hare - The Australian Museum"
+    },
+    "searchNote": "NPS and Australian Museum pages: the 'rabbit ears' are rhinophores, and the head projections are the origin of the common name because they resemble a hare's ears.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.sea-hare.rhinophores-smell",
+    "q": "What do a sea hare's 'rabbit ears', its rhinophores, actually do?",
+    "choices": [
+      "Pick up sounds in the water",
+      "Release heat from the body",
+      "Sense chemicals, much like a nose"
+    ],
+    "answer": 2,
+    "explain": "Rhinophores 'smell' chemicals in the water, and they help sea hares track down mates during breeding season.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://home.nps.gov/cabr/blogs/species-spotlight-california-brown-sea-hare.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Species Spotlight: California Brown Sea Hare - Cabrillo National Monument (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.nps.gov/foma/learn/nature/sea-hares.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Sea Hares - Fort Matanzas National Monument (U.S. National Park Service)"
+    },
+    "searchNote": "NPS pages: rhinophores are sensory organs for smell rather than hearing, described as the sea hare's equivalent of a nose and tongue, and they help find mates in breeding season.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.california-brown-sea-hare.ink-defense",
+    "q": "What does a California brown sea hare release when it is attacked?",
+    "choices": [
+      "A cloud of purple ink",
+      "A flash of blue light",
+      "A burst of air bubbles"
+    ],
+    "answer": 0,
+    "explain": "The purple cloud can act as a smoke screen, and it is irritating and bad-tasting, coating a predator's senses and mouth.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/california_brown_sea_hare",
+      "publisher": "Aquarium of the Pacific",
+      "title": "California Brown Sea Hare"
+    },
+    "source2": {
+      "url": "https://home.nps.gov/cabr/blogs/species-spotlight-california-brown-sea-hare.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Species Spotlight: California Brown Sea Hare - Cabrillo National Monument (U.S. National Park Service)"
+    },
+    "searchNote": "Sources describe sea hare purple ink as a defensive cloud that distracts or blinds predators, irritating and unpalatable, coating predators' sensory structures and mouth in Aplysia.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.sea-hare.ink-color-red-algae",
+    "q": "Where does the color of a sea hare's purple ink come from?",
+    "choices": [
+      "Pigments from the red algae it eats",
+      "Iron compounds in its blood",
+      "Bacteria living in its gills"
+    ],
+    "answer": 0,
+    "explain": "Sea hares graze on seaweed, and pigments from the red algae in their diet end up in their ink, giving it its vivid purple color.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://home.nps.gov/cabr/blogs/species-spotlight-california-brown-sea-hare.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Species Spotlight: California Brown Sea Hare - Cabrillo National Monument (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/sea-hare",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Sea hare"
+    },
+    "searchNote": "Search summary of the NPS/aquarium results: the purple color comes from pigments derived from the red algae the animal eats.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.aplysia.kandel-nobel-memory",
+    "q": "Research on the sea slug Aplysia helped Eric Kandel win a Nobel Prize for discoveries about what?",
+    "choices": [
+      "How hearts keep their rhythm",
+      "How memories form at connections between nerve cells",
+      "How the immune system fights infection"
+    ],
+    "answer": 1,
+    "explain": "Kandel showed that learning strengthens synapses, the junctions between nerve cells, and that long-term memory needs new proteins. He shared the 2000 Nobel Prize.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nobelprize.org/prizes/medicine/2000/press-release/",
+      "publisher": "NobelPrize.org",
+      "title": "The Nobel Prize in Physiology or Medicine 2000 - Press release - NobelPrize.org"
+    },
+    "source2": {
+      "url": "https://www.nobelprize.org/prizes/medicine/2000/ceremony-speech/",
+      "publisher": "NobelPrize.org",
+      "title": "Nobel Prize in Physiology or Medicine 2000"
+    },
+    "searchNote": "Nobel 2000 press release: Kandel used Aplysia to show how synapse efficiency is modified in learning; long-term memory required new protein synthesis.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.aplysia.gill-withdrawal-reflex",
+    "q": "Which simple reflex in the sea slug Aplysia did Eric Kandel study to learn how memory works?",
+    "choices": [
+      "Pulling in its gill when touched",
+      "Squirting ink when grabbed",
+      "Flipping over when turned upside down"
+    ],
+    "answer": 0,
+    "explain": "Aplysia's gill-withdrawal reflex grows stronger after a strong stimulus, and Kandel traced that simple form of learning to changes at the synapses.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nobelprize.org/prizes/medicine/2000/press-release/",
+      "publisher": "NobelPrize.org",
+      "title": "The Nobel Prize in Physiology or Medicine 2000 - Press release - NobelPrize.org"
+    },
+    "source2": null,
+    "searchNote": "Nobel press release: Aplysia has a gill-withdrawal reflex; amplification of the reflex was treated as learning and traced to strengthened synapses between sensory and motor neurons.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.aplysia.few-large-neurons",
+    "q": "Why was the sea slug Aplysia a good choice for studying learning?",
+    "choices": [
+      "It lives for several decades",
+      "It has relatively few nerve cells, and many are large",
+      "Its nerve cells glow under ultraviolet light"
+    ],
+    "answer": 1,
+    "explain": "With only about 20,000 nerve cells, many of them unusually large, Aplysia let researchers trace the exact circuits behind simple learning.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nobelprize.org/prizes/medicine/2000/press-release/",
+      "publisher": "NobelPrize.org",
+      "title": "The Nobel Prize in Physiology or Medicine 2000 - Press release - NobelPrize.org"
+    },
+    "source2": null,
+    "searchNote": "Nobel press release: Kandel chose Aplysia because its nervous system has comparatively few nerve cells (around 20,000), many of which are rather large.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.chiton.eight-plates",
+    "q": "How many overlapping plates make up a chiton's shell?",
+    "choices": [
+      "Two",
+      "Twenty",
+      "Eight"
+    ],
+    "answer": 2,
+    "explain": "A chiton's shell is a row of eight overlapping plates held together by a tough girdle, an arrangement that makes chitons easy to recognize.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/places/chiton.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Chiton (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS chiton page: chitons' shells are made of eight overlapping plates.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.chiton.aragonite-eye-lenses",
+    "q": "Some chitons have tiny eyes built into their shell plates. What are the lenses made of?",
+    "choices": [
+      "Aragonite, the same mineral as the shell",
+      "Clear protein, like a human lens",
+      "Iron oxide, like their teeth"
+    ],
+    "answer": 0,
+    "explain": "These chitons see through lenses of aragonite, a form of calcium carbonate, and the lenses can focus simple images.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.science.org/content/article/rock-eyes-help-mollusk-see-above-water",
+      "publisher": "Science (AAAS)",
+      "title": "'Rock Eyes' Help Mollusk See Above Water"
+    },
+    "source2": {
+      "url": "https://news.mit.edu/2015/sea-creature-armor-plating-transparent-ceramic-eyes-1119",
+      "publisher": "MIT News",
+      "title": "Armor plating with built-in transparent ceramic eyes"
+    },
+    "searchNote": "Speiser et al. 2011 (reported in Science): chiton shell-eye lenses are aragonite rather than protein and can focus images; MIT work notes lenses and shell are both mainly aragonite.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.chiton.shell-eyes-weak-spots",
+    "q": "What trade-off comes with the eyes built into some chitons' shells?",
+    "choices": [
+      "The eyes make the shell much heavier",
+      "The eye areas are weak spots in the armor",
+      "The eyes only work in total darkness"
+    ],
+    "answer": 1,
+    "explain": "Tests found the lens-bearing parts of the shell break more easily, a cost of building eyes directly into protective armor.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://news.mit.edu/2015/sea-creature-armor-plating-transparent-ceramic-eyes-1119",
+      "publisher": "MIT News",
+      "title": "Armor plating with built-in transparent ceramic eyes"
+    },
+    "source2": {
+      "url": "https://www.science.org/doi/10.1126/science.350.6263.899",
+      "publisher": "Science (AAAS)",
+      "title": "Crystalline eyes of chitons inspire materials scientists"
+    },
+    "searchNote": "MIT News and Science: mechanical tests found the lens-containing sections of chiton shell are weaker, creating weak spots in the armor.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.chiton.magnetite-teeth",
+    "q": "What is the hard coating on a chiton's teeth made of?",
+    "choices": [
+      "Magnetite, an iron mineral",
+      "Nacre, like pearls",
+      "Keratin, like fingernails"
+    ],
+    "answer": 0,
+    "explain": "Chitons take in iron from their food and cap their teeth with magnetite, letting them scrape algae from bare rock.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7850002/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Iron-Responsive Genome of the Chiton Acanthopleura granulata"
+    },
+    "source2": null,
+    "searchNote": "Chiton genome paper: chitons take in iron from their diet and keep high iron levels in hemolymph to make new teeth capped with magnetite.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.chiton.teeth-replaced",
+    "q": "What happens as a chiton's teeth wear down from scraping rock?",
+    "choices": [
+      "The chiton switches to filter feeding",
+      "New teeth move forward from behind to replace them",
+      "Minerals from seawater re-coat the worn teeth"
+    ],
+    "answer": 1,
+    "explain": "A chiton's radula works like a conveyor belt: fresh teeth form at the back and move forward as the front ones wear away.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7850002/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "The Iron-Responsive Genome of the Chiton Acanthopleura granulata"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8611077/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Finite element analysis relating shape, material properties, and dimensions of taenioglossan radular teeth with trophic specialisations in Paludomidae (Gastropoda)"
+    },
+    "searchNote": "Genome paper: chitons maintain iron supplies to make new teeth; search summary notes cusps are replaced as they wear with new teeth moving forward from behind; radula paper says radula is constantly regenerated from the back.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.gumboot-chiton.hidden-plates",
+    "q": "What is unusual about the gumboot chiton's eight shell plates?",
+    "choices": [
+      "They are hidden under a thick, reddish mantle",
+      "They are fused into one solid shell",
+      "They glow green at night"
+    ],
+    "answer": 0,
+    "explain": "The gumboot chiton's plates are covered by its tough, brick-red mantle, giving the world's largest chiton its leathery, boot-like look.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/gumboot-chiton",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Gumboot chiton"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium: the gumboot chiton (Cryptochiton stelleri), the largest chiton in the world, has a thick brick-red mantle hiding its eight shell plates.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "mollusks.gumboot-chiton.size",
+    "q": "The gumboot chiton, the largest chiton in the world, can grow up to about how long?",
+    "choices": [
+      "2 inches (5 cm)",
+      "6 feet (1.8 m)",
+      "13 inches (33 cm)"
+    ],
+    "answer": 2,
+    "explain": "Monterey Bay Aquarium says the gumboot chiton can reach about 13 inches (33 cm) long.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/gumboot-chiton",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Gumboot chiton"
+    },
+    "source2": null,
+    "searchNote": "Monterey Bay Aquarium: gumboot chiton is the largest chiton in the world and can reach up to 13 inches (33 cm).",
+    "risk": "numeric"
+  },
+  {
+    "fact": "mollusks.shipworm.is-a-clam",
+    "q": "Despite its name, what kind of animal is a shipworm?",
+    "choices": [
+      "A segmented worm",
+      "A clam",
+      "A sea snail"
+    ],
+    "answer": 1,
+    "explain": "Shipworms are wood-boring bivalves, relatives of clams, with long, wormlike bodies that tunnel through submerged wood.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4250168/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Gill bacteria enable a novel digestive strategy in a wood-feeding mollusk - PMC"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8561940/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Characterisation of the enzyme transport path between shipworms and their bacterial symbionts"
+    },
+    "searchNote": "PMC paper titles shipworms a wood-feeding mollusk; shipworm papers place them in Bivalvia: Teredinidae, wood-eating marine bivalves related to clams.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.shipworm.gill-bacteria",
+    "q": "Where do the bacteria that help shipworms digest wood live?",
+    "choices": [
+      "In the shipworm's stomach",
+      "On the surface of the wood",
+      "Inside cells in the shipworm's gills"
+    ],
+    "answer": 2,
+    "explain": "The bacteria live in special gill cells and make wood-digesting enzymes that are shipped to the gut, which is nearly bacteria-free where wood is broken down.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4250168/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Gill bacteria enable a novel digestive strategy in a wood-feeding mollusk - PMC"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8561940/",
+      "publisher": "PubMed Central (NIH)",
+      "title": "Characterisation of the enzyme transport path between shipworms and their bacterial symbionts"
+    },
+    "searchNote": "2014 study: symbionts live inside specialized gill cells; their wood-degrading enzymes are translocated from gill to gut, and the wood-digesting caecum is nearly bacteria-free. 2021 study traced the transport path.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "mollusks.moon-snail.drills-shells",
+    "q": "How does a moon snail get at the clam inside a closed shell?",
+    "choices": [
+      "It crushes the shell with powerful jaws",
+      "It drills a hole through the shell",
+      "It pries the shells apart with its foot"
+    ],
+    "answer": 1,
+    "explain": "A moon snail wraps a clam in its large foot, then bores a neat hole with its toothed radula and acid, and feeds through the opening.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/calo/learn/nature/mollusks.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Mollusks - Cape Lookout National Seashore (U.S. National Park Service)"
+    },
+    "source2": {
+      "url": "https://www.floridamuseum.ufl.edu/science/drill-holes-in-fossil-shells-point-to-bigger-predators-picking-on-small-prey/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Drill holes in fossil shells point to bigger predators picking on small prey"
+    },
+    "searchNote": "NPS: Atlantic moon snail covers the clam with its expanded foot and drills into the shell with its radula; Florida Museum: moon snails use radula teeth and acids to penetrate shells.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.fossil-drill-holes.predator-size",
+    "q": "What can the width of a drill hole in a fossil shell tell paleontologists?",
+    "choices": [
+      "How big the predator that drilled it was",
+      "How old the prey was when it died",
+      "How warm the sea was at the time"
+    ],
+    "answer": 0,
+    "explain": "A study of 556 measurements found that bigger drilling predators, such as predatory snails, make wider holes, so fossil holes hint at the hunters' size.",
+    "category": "mollusks",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.floridamuseum.ufl.edu/science/drill-holes-in-fossil-shells-point-to-bigger-predators-picking-on-small-prey/",
+      "publisher": "Florida Museum of Natural History",
+      "title": "Drill holes in fossil shells point to bigger predators picking on small prey"
+    },
+    "source2": null,
+    "searchNote": "Florida Museum: compiled 556 measurements of predator sizes and drill-hole diameters and found a strong correlation between predator size and hole diameter.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "mollusks.queen-conch.lifespan",
+    "q": "About how long can a queen conch live?",
+    "choices": [
+      "About 1 year",
+      "About 25 to 30 years",
+      "More than 200 years"
+    ],
+    "answer": 1,
+    "explain": "NOAA describes the queen conch as long-lived, generally reaching 25 to 30 years old, and it takes about 3.5 to 4 years to mature.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/species/queen-conch",
+      "publisher": "NOAA Fisheries",
+      "title": "Queen Conch"
+    },
+    "source2": {
+      "url": "https://www.ncei.noaa.gov/data/oceans/coris/library/NOAA/CRCP/project/1873/conserve_conch_lesson_plans_st_john_usvi.pdf",
+      "publisher": "NOAA Fisheries Southeast Fisheries Science Center",
+      "title": "St. John, USVI NOAA FISHERIES SERVICE SOUTHEAST FISHERIES SCIENCE CENTER"
+    },
+    "searchNote": "NOAA: queen conch generally reach 25 to 30 years old, mature around 3.5 to 4 years. Other NOAA documents give up to 40 years or older estimates of 7 to 12; lesson plan says 25-30 is still largely unknown.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "mollusks.snail.radula",
+    "q": "What is a snail's radula?",
+    "choices": [
+      "A trapdoor that seals its shell",
+      "A breathing tube",
+      "A tongue-like ribbon covered in tiny teeth"
+    ],
+    "answer": 2,
+    "explain": "Snails use the radula, a ribbon lined with rows of tiny teeth, to scrape or cut food before swallowing it.",
+    "category": "mollusks",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/snails-rainbow-radula",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Snail's Rainbow Radula"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: the radula is a tongue-like ribbon that snails use to scrape or cut food before swallowing.",
+    "risk": "none"
+  },
+  {
+    "fact": "mollusks.periwinkle.erodes-rock",
+    "q": "Over time, what can large numbers of grazing periwinkles do to a rocky shore?",
+    "choices": [
+      "Slowly wear down the rock",
+      "Turn the rock a deep purple",
+      "Make the rock magnetic"
+    ],
+    "answer": 0,
+    "explain": "Periwinkles scrape algae off rocks with thousands of microscopic teeth, and the scraping of many snails over time can wear down the rock itself.",
+    "category": "mollusks",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/articles/000/periwinkles-fast-facts.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Periwinkles Fast Facts (U.S. National Park Service)"
+    },
+    "source2": null,
+    "searchNote": "NPS Periwinkles Fast Facts: periwinkles scrape algae with thousands of microscopic teeth, and the combined scraping of many individuals can wear down rock over time.",
+    "risk": "surprising"
+  }
+]

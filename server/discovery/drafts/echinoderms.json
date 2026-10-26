@@ -1,0 +1,1300 @@
+[
+  {
+    "fact": "echinoderms.sea-star.not-a-fish",
+    "q": "Starfish, also called sea stars, belong to which group of animals?",
+    "choices": [
+      "Echinoderms",
+      "Bony fish",
+      "Mollusks"
+    ],
+    "answer": 0,
+    "explain": "Despite the name, starfish aren't fish at all. They're echinoderms, cousins of sea urchins and sand dollars, which is why scientists prefer the name sea star.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/starfish.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "Are starfish really fish?"
+    },
+    "source2": null,
+    "searchNote": "NOAA says starfish are not fish but echinoderms, related to sea urchins and sand dollars, and are also called sea stars.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sea-star.water-vascular-system",
+    "q": "What do sea stars use instead of blood to carry nutrients around their bodies?",
+    "choices": [
+      "A copper-based blue blood",
+      "Air held in hollow tubes",
+      "Seawater pumped through canals"
+    ],
+    "answer": 2,
+    "explain": "Sea stars have no blood. They pump seawater through a network of canals called the water vascular system, which also powers their tube feet.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanservice.noaa.gov/facts/starfish.html",
+      "publisher": "NOAA National Ocean Service",
+      "title": "Are starfish really fish?"
+    },
+    "source2": {
+      "url": "https://montereybayaquarium.org/animals/animals-a-to-z/bat-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Bat star"
+    },
+    "searchNote": "NOAA states sea water, instead of blood, is used to pump nutrients through their bodies via a water vascular system. MBA profiles also mention a water vascular system instead of a traditional circulatory system.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.sea-star.tube-feet-release",
+    "q": "Sea star tube feet grip with a sticky secretion. How do they let go?",
+    "choices": [
+      "They shed the tip of each foot",
+      "They release a second secretion",
+      "They wait for the glue to dry"
+    ],
+    "answer": 1,
+    "explain": "Each tube foot uses one secretion to stick to a surface and another to unstick, so a sea star can grip firmly yet keep walking.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6122182/",
+      "publisher": "PMC (NCBI)",
+      "title": "The structural and chemical basis of temporary adhesion in the sea star Asterina gibbosa"
+    },
+    "searchNote": "Smithsonian says sea stars walk on thousands of tube feet, each using adhesive secretions to grip and a second secretion to let go. The PMC paper describes strong but temporary attachment by the tube foot disc.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.speed",
+    "q": "Roughly how fast can a sunflower sea star move across the seafloor?",
+    "choices": [
+      "About 1 centimeter per hour",
+      "About 1 meter per minute",
+      "About 10 meters per minute"
+    ],
+    "answer": 1,
+    "explain": "Most sea stars creep, but the sunflower sea star can reach about a meter (40 inches) a minute, quick enough to catch scuttling crabs.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "source2": {
+      "url": "https://repository.library.noaa.gov/view/noaa/56479/noaa_56479_DS1.pdf",
+      "publisher": "NOAA Central Library",
+      "title": "Sunflower Sea Star (Pycnopodia helianthoides) 1834-2023 Bibliography"
+    },
+    "searchNote": "Smithsonian: sunflower sea star can reach speeds up to 40 inches per minute, fast enough to snag crabs. NOAA bibliography: adults can move at one meter per minute.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.tube-foot-count",
+    "q": "About how many tube feet does an adult sunflower sea star move on?",
+    "choices": [
+      "About 150",
+      "About 15 million",
+      "About 15,000"
+    ],
+    "answer": 2,
+    "explain": "An adult sunflower sea star glides on roughly 15,000 tube feet, which is how it manages such a brisk pace for a sea star.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://repository.library.noaa.gov/view/noaa/56479/noaa_56479_DS1.pdf",
+      "publisher": "NOAA Central Library",
+      "title": "Sunflower Sea Star (Pycnopodia helianthoides) 1834-2023 Bibliography"
+    },
+    "source2": null,
+    "searchNote": "The NOAA bibliography says adult sunflower sea stars move at about one meter per minute using 15,000 tube feet.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.sea-star.arm-autotomy",
+    "q": "What can a sea star do if a predator damages one of its arms?",
+    "choices": [
+      "Drop the arm and grow a new one",
+      "Pull the arm inside its body",
+      "Harden the arm into a shell"
+    ],
+    "answer": 0,
+    "explain": "Many sea stars can detach a damaged arm, sometimes to escape a predator, and then slowly grow a healthy replacement.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ssec.si.edu/stemvisions-blog/all-about-starfish",
+      "publisher": "Smithsonian Science Education Center",
+      "title": "All About Starfish"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "searchNote": "SSEC: if an arm is damaged by a predator such as a crab or another starfish, the starfish can detach it and grow a new one. Smithsonian Ocean: most species can regrow lost arms and some drop an arm to escape.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sea-star.external-stomach",
+    "q": "How do many sea stars start digesting a meal like a mussel?",
+    "choices": [
+      "They grind it with hard teeth",
+      "They soak it up through their skin",
+      "They push their stomach out onto it"
+    ],
+    "answer": 2,
+    "explain": "Many sea stars push their stomach out of their body and over the prey, digesting it outside before pulling the stomach back in.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/starfish-feeding-mussels",
+      "publisher": "Smithsonian Ocean",
+      "title": "Starfish Feeding on Mussels"
+    },
+    "searchNote": "Smithsonian: some sea stars push their stomachs out over prey and digest it externally before pulling the stomach back in.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sea-star.prying-bivalves",
+    "q": "How does a sea star get into a clam or mussel that is shut tight?",
+    "choices": [
+      "It drills a hole with a rasping tongue",
+      "It pulls the shells apart with its tube feet",
+      "It cracks the shell against a rock"
+    ],
+    "answer": 1,
+    "explain": "A sea star suctions its tube feet onto both halves of the shell and slowly pulls them apart.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nps.gov/articles/000/creaturefeatureacadiaseastar.htm",
+      "publisher": "U.S. National Park Service",
+      "title": "Creature Feature: Sea Stars"
+    },
+    "source2": null,
+    "searchNote": "NPS says sea stars use their tube feet to suction onto the shells of bivalves (animals with two shells) and pry them apart.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.ochre-star.digestion-time",
+    "q": "How long can it take an ochre sea star to digest a meal?",
+    "choices": [
+      "Two to three days",
+      "Two to three minutes",
+      "Two to three months"
+    ],
+    "answer": 0,
+    "explain": "Ochre sea stars release enzymes that turn prey tissue to liquid, and the whole digestion process can take two to three days.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/ochre-sea-star",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Ochre Sea Star"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific: ochre sea stars release digestive enzymes that liquefy prey tissues; digestion can take two to three days.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.ochre-star.two-stomachs",
+    "q": "How many stomachs does an ochre sea star have?",
+    "choices": [
+      "One",
+      "Four",
+      "Two"
+    ],
+    "answer": 2,
+    "explain": "The ochre sea star has two: a cardiac stomach that it pushes out through its mouth onto prey, and an internal pyloric stomach.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/ochre-sea-star",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Ochre Sea Star"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific describes a cardiac stomach that extends out through the mouth and an internal pyloric stomach.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.bat-star.eyespot-location",
+    "q": "Where are a bat star's light-sensing eyespots?",
+    "choices": [
+      "Around its mouth",
+      "At the tip of each arm",
+      "In the middle of its upper side"
+    ],
+    "answer": 1,
+    "explain": "Bat stars have a simple eyespot at the end of each arm. It senses light rather than forming sharp images, and helps the star find its way and its food.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/bat_star",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Bat Sea Star"
+    },
+    "source2": {
+      "url": "https://montereybayaquarium.org/animals/animals-a-to-z/bat-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Bat star"
+    },
+    "searchNote": "Aquarium of the Pacific: bat stars have eye spots at the end of each arm to aid in finding food. MBA also mentions light-detecting eyespots.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.bat-star.name-origin",
+    "q": "Why is the bat star called a bat star?",
+    "choices": [
+      "Webbing between its arms looks batlike",
+      "It feeds only at night",
+      "It hangs upside down in sea caves"
+    ],
+    "answer": 0,
+    "explain": "The bat star's short, triangular arms are joined by webbing, giving it the look of a bat's wing. It's a scavenger found from Alaska to Baja California.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://montereybayaquarium.org/animals/animals-a-to-z/bat-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Bat star"
+    },
+    "source2": null,
+    "searchNote": "MBA: bat star has webbing between its short, triangular arms giving it a batlike look; scavenger found from Alaska to Baja California.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.swallows-urchin",
+    "q": "What does a sunflower sea star do with a sea urchin it catches?",
+    "choices": [
+      "Cracks it open with its arms",
+      "Drags it back to a burrow",
+      "Swallows it whole, then spits out the shell"
+    ],
+    "answer": 2,
+    "explain": "The sunflower sea star can swallow an entire sea urchin, digest it inside its body and then expel the empty, spiny shell.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/sunflower-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Sunflower star"
+    },
+    "source2": null,
+    "searchNote": "MBA: a sunflower star can swallow an entire sea urchin, digest it internally and then expel the urchin's test.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.iucn-status",
+    "q": "In 2021, how did the IUCN Red List classify the sunflower sea star?",
+    "choices": [
+      "Critically endangered",
+      "Least concern",
+      "Near threatened"
+    ],
+    "answer": 0,
+    "explain": "After a disease outbreak wiped out most of the population, the IUCN listed the sunflower sea star as critically endangered in 2021.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/noaa-fisheries-weighs-protection-sunflower-sea-star-native-west-coast",
+      "publisher": "NOAA Fisheries",
+      "title": "NOAA Fisheries Weighs Protection for Sunflower Sea Star Native to West Coast"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11961252/",
+      "publisher": "PMC (NCBI)",
+      "title": "Fjord oceanographic dynamics provide refuge for critically endangered Pycnopodia helianthoides"
+    },
+    "searchNote": "NOAA Fisheries reports that in August 2021 the IUCN added the sunflower sea star to its Red List as critically endangered. One other NOAA-affiliated page gave 2020; the question says 2021 per the NOAA Fisheries feature.",
+    "risk": "disputed-check"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.wasting-die-off",
+    "q": "Sea star wasting disease killed roughly what share of sunflower sea stars from 2013 to 2017?",
+    "choices": [
+      "About 10 percent",
+      "More than 90 percent",
+      "About 40 percent"
+    ],
+    "answer": 1,
+    "explain": "The wasting outbreak killed more than 90 percent of sunflower sea stars between 2013 and 2017, and recovery in the wild has been slow.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/noaa-fisheries-proposes-listing-sunflower-sea-star-threatened-under-endangered-species",
+      "publisher": "NOAA Fisheries",
+      "title": "NOAA Fisheries Proposes Listing Sunflower Sea Star as Threatened under Endangered Species Act"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/noaa-fisheries-weighs-protection-sunflower-sea-star-native-west-coast",
+      "publisher": "NOAA Fisheries",
+      "title": "NOAA Fisheries Weighs Protection for Sunflower Sea Star Native to West Coast"
+    },
+    "searchNote": "NOAA results said the outbreak killed more than 90 percent of sunflower sea stars from 2013 to 2017. The search summary did not say which of the two NOAA Fisheries pages carried this line; verifier should confirm on either.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.sea-star.wasting-symptoms",
+    "q": "What happens to a sea star with sea star wasting syndrome?",
+    "choices": [
+      "It turns white and floats away",
+      "It grows extra arms that wither",
+      "It gets lesions, loses arms and falls apart"
+    ],
+    "answer": 2,
+    "explain": "Affected sea stars become sluggish, develop lesions and lose their arms, and within days can disintegrate into a gooey mass.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/noaa-fisheries-weighs-protection-sunflower-sea-star-native-west-coast",
+      "publisher": "NOAA Fisheries",
+      "title": "NOAA Fisheries Weighs Protection for Sunflower Sea Star Native to West Coast"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sickly-starfish-qa-dr-chris-mah",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sickly Starfish: A Q&A with Dr. Chris Mah"
+    },
+    "searchNote": "NOAA result: stars with the syndrome become lethargic, develop lesions, lose their arms and within days disintegrate into gooey masses. Smithsonian describes a condition that causes tissue to decay. Verifier: confirm which NOAA page holds the symptom wording.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sunflower-star.fjord-refuge",
+    "q": "Where did a recent study find surviving groups of large adult sunflower sea stars?",
+    "choices": [
+      "Coral reefs off Hawaii",
+      "Fjords in British Columbia",
+      "The Gulf of Mexico"
+    ],
+    "answer": 1,
+    "explain": "Conditions in British Columbia's fjords appear to have sheltered remnant populations of large adults, which may help efforts to bring the species back.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11961252/",
+      "publisher": "PMC (NCBI)",
+      "title": "Fjord oceanographic dynamics provide refuge for critically endangered Pycnopodia helianthoides"
+    },
+    "source2": null,
+    "searchNote": "The study found remnant populations of large adult Pycnopodia helianthoides in British Columbia fjords, which act as a refuge.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.sea-star.keystone-species",
+    "q": "Ochre and sunflower sea stars are called keystone species. What does that mean?",
+    "choices": [
+      "They strongly shape the community around them",
+      "They are the most numerous animals on the shore",
+      "They live only on rocky arches"
+    ],
+    "answer": 0,
+    "explain": "A keystone species has an outsized effect on its ecosystem. Remove these predatory sea stars and the mix of animals around them changes dramatically.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sickly-starfish-qa-dr-chris-mah",
+      "publisher": "Smithsonian Ocean",
+      "title": "Sickly Starfish: A Q&A with Dr. Chris Mah"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "searchNote": "Smithsonian results: species such as the ochre and sunflower sea stars are known as keystone species, whose presence affects the structure and dynamics of the animals around them profoundly. Summary merged Smithsonian pages; verifier should confirm which page has it.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.crown-of-thorns.diet",
+    "q": "What does the crown-of-thorns sea star feed on?",
+    "choices": [
+      "Seagrass",
+      "Coral",
+      "Jellyfish"
+    ],
+    "answer": 1,
+    "explain": "The crown-of-thorns sea star eats living coral, so when its numbers boom it can damage large areas of reef.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/plague-sea-stars",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Plague of Sea Stars"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: the crown-of-thorns species eats coral; its population booms are linked to nutrient runoff that feeds the larvae.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.deep-sea-sunstar.hunting",
+    "q": "How does the deep-sea sunstar of the northeastern Pacific get its food?",
+    "choices": [
+      "It grazes on bacterial mats",
+      "It filters drifting plankton",
+      "It speeds over the seafloor stalking prey"
+    ],
+    "answer": 2,
+    "explain": "This many-armed deep-sea star moves quickly over the bottom, hunting crustaceans, mollusks and even fish, at depths from about 30 to 3,500 meters.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/deep-sea-sunstar",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Deep-sea sunstar"
+    },
+    "source2": null,
+    "searchNote": "MBA: the deep-sea sunstar (Rathbunaster californicus) lives in the northeastern Pacific at about 30 to 3,500 m, speeds across the seafloor and stalks crustaceans, molluscs and fishes.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.fire-star.plankton-spines",
+    "q": "How does the deep-sea fire star (Hymenodiscus) catch its food?",
+    "choices": [
+      "Its spiny arms trap drifting plankton",
+      "It pries open clams on the seafloor",
+      "It scrapes algae off rocks"
+    ],
+    "answer": 0,
+    "explain": "Unlike sea stars that hunt clams, the fire star holds up long arms covered in spines that snag plankton from the water.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/fire-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Fire star"
+    },
+    "source2": null,
+    "searchNote": "MBA: the deep-sea fire star (Hymenodiscus sp.) has spines covering each long arm that help it trap plankton.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.urchin.aristotles-lantern-name",
+    "q": "A sea urchin's jaw is known as whose 'lantern'?",
+    "choices": [
+      "Archimedes'",
+      "Pythagoras'",
+      "Aristotle's"
+    ],
+    "answer": 2,
+    "explain": "More than 2,000 years ago Aristotle noticed that the urchin's mouthparts looked like the frame of a lantern, and the name Aristotle's lantern stuck.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.fisheries.noaa.gov/feature-story/meet-oonee-sea-urchin-ranchers-oregon",
+      "publisher": "NOAA Fisheries",
+      "title": "Meet the OoNee sea urchin ranchers of Oregon (Tide to Table profile)"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "searchNote": "Search result attributed to the NOAA OoNee profile: Aristotle noticed the structure resembled a lantern frame more than 2,000 years ago. NHM calls the urchin's chewing apparatus Aristotle's lantern.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.urchin.lantern-tooth-count",
+    "q": "How many teeth does a sea urchin's jaw (Aristotle's lantern) hold?",
+    "choices": [
+      "Two",
+      "Thirty-two",
+      "Five"
+    ],
+    "answer": 2,
+    "explain": "Like much of an urchin's body, its jaw has five-part symmetry: five pyramid-shaped sections, each holding a single tooth.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4727832/",
+      "publisher": "PMC (NCBI)",
+      "title": "Sea urchins have teeth? A review of their microstructure, biomineralization, development and mechanical properties"
+    },
+    "source2": {
+      "url": "https://qrius.si.edu/browse/object/10008964",
+      "publisher": "Smithsonian Qrius",
+      "title": "Green Sea Urchin"
+    },
+    "searchNote": "PMC review: Aristotle's lantern has five-fold symmetry with five pyramids, each holding one tooth. Smithsonian Qrius describes the teeth used for chewing and scraping.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.urchin.teeth-keep-growing",
+    "q": "What is unusual about a sea urchin's teeth?",
+    "choices": [
+      "They keep growing throughout its life",
+      "They are made of the same enamel as ours",
+      "They form only once, in the larva"
+    ],
+    "answer": 0,
+    "explain": "Each urchin tooth keeps growing for the animal's whole life, replacing the material it wears away scraping algae and rock.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4759641/",
+      "publisher": "PMC (NCBI)",
+      "title": "Calcite orientations and composition ranges within teeth across Echinoidea"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4727832/",
+      "publisher": "PMC (NCBI)",
+      "title": "Sea urchins have teeth? A review of their microstructure, biomineralization, development and mechanical properties"
+    },
+    "searchNote": "PMC4759641: each pyramid houses a single tooth that keeps growing throughout the urchin's life. PMC4727832: teeth wear down from abrasion and the body keeps replacing the material.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.purple-urchin.rock-boring",
+    "q": "How do purple sea urchins make hiding places on rocky shores?",
+    "choices": [
+      "They borrow empty snail shells",
+      "They grind hollows into the rock",
+      "They glue pebbles into a wall"
+    ],
+    "answer": 1,
+    "explain": "Purple sea urchins can slowly grind into solid rock with their teeth and spines, carving snug hollows that shelter them from waves and predators.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/purple-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Purple sea urchin"
+    },
+    "source2": null,
+    "searchNote": "MBA: the purple sea urchin can grind through rock to make hideaways.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.urchin.test-name",
+    "q": "What is the round, hard inner shell of a sea urchin called?",
+    "choices": [
+      "A carapace",
+      "A mantle",
+      "A test"
+    ],
+    "answer": 2,
+    "explain": "An urchin's spines sit on a rigid, rounded skeleton called a test. Its parts are arranged in five matching sections.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/purple-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Purple sea urchin"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "searchNote": "MBA: the purple urchin's pincushion look comes from a round inner shell called a test. NHM: their skeleton is called a test.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.purple-urchin.sea-otter-predator",
+    "q": "Which marine mammal helps keep purple sea urchin numbers in check in kelp forests?",
+    "choices": [
+      "The sea otter",
+      "The harbor seal",
+      "The gray whale"
+    ],
+    "answer": 0,
+    "explain": "Sea otters eat sea urchins, and by keeping their numbers down they help protect the giant kelp the urchins would otherwise devour.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/purple-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Purple sea urchin"
+    },
+    "source2": null,
+    "searchNote": "MBA: sea otters help keep purple sea urchin numbers in check.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.purple-urchin.kelp-stripping",
+    "q": "What can a large group of purple sea urchins do to a giant kelp forest?",
+    "choices": [
+      "Fertilize it so it grows faster",
+      "Spread its spores to new reefs",
+      "Strip it bare by eating the kelp"
+    ],
+    "answer": 2,
+    "explain": "Purple urchins mostly eat algae, and a large colony of them can strip away an entire giant kelp forest.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/purple-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Purple sea urchin"
+    },
+    "source2": null,
+    "searchNote": "MBA: purple urchins eat mostly algae, and a single purple urchin colony can strip a giant kelp forest.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.fragile-pink-urchin.fat-stores",
+    "q": "How does the deep-sea fragile pink sea urchin cope when food is scarce?",
+    "choices": [
+      "It eats its own spines",
+      "It shrinks to half its size",
+      "It lives off stored fat"
+    ],
+    "answer": 2,
+    "explain": "Food is patchy in the deep sea. The fragile pink sea urchin can go a long time without eating by drawing on its fat reserves.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://montereybayaquarium.org/animals/animals-a-to-z/fragile-pink-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Fragile pink sea urchin"
+    },
+    "source2": null,
+    "searchNote": "MBA: the fragile pink sea urchin (Strongylocentrotus fragilis) lives at about 300 to 1,600 feet and can go for long periods without food, surviving on stores of fat.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.urchin.uni-roe",
+    "q": "Uni, served at sushi bars, comes from which part of a sea urchin?",
+    "choices": [
+      "Its softened spines",
+      "Its roe (reproductive organs)",
+      "Its tube feet"
+    ],
+    "answer": 1,
+    "explain": "Uni is sea urchin roe, the animal's reproductive organs. Green and red urchins are among the species harvested for it.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/how-to-choose-sustainable-seafood/seafood-guides/sushi-guide",
+      "publisher": "Monterey Bay Aquarium (Seafood Watch)",
+      "title": "Sushi Guide"
+    },
+    "source2": null,
+    "searchNote": "MBA's sushi guide covers green and red urchin roe sold as uni.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.urchin.first-appearance",
+    "q": "Roughly when did sea urchins first appear?",
+    "choices": [
+      "About 450 million years ago",
+      "About 45 million years ago",
+      "About 4.5 billion years ago"
+    ],
+    "answer": 0,
+    "explain": "Sea urchins are an ancient group: according to London's Natural History Museum, they first appeared around 450 million years ago.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "source2": null,
+    "searchNote": "NHM: sea urchins first appeared around 450 million years ago.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.urchin.five-part-symmetry",
+    "q": "A sea urchin's skeleton is arranged in how many matching sections around its center?",
+    "choices": [
+      "Four",
+      "Eight",
+      "Five"
+    ],
+    "answer": 2,
+    "explain": "Sea urchins share the echinoderm hallmark of five-part symmetry: their test is built from five matching sections arranged around a central point.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "source2": null,
+    "searchNote": "NHM: the urchin skeleton, called a test, is arranged in five symmetrical parts around a central point.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.flower-urchin.toxicity",
+    "q": "The Indo-Pacific flower urchin is best known for being what?",
+    "choices": [
+      "Able to swim short distances",
+      "Highly toxic",
+      "Bioluminescent at night"
+    ],
+    "answer": 1,
+    "explain": "The flower urchin looks pretty but packs a punch: London's Natural History Museum describes it as the most toxic sea urchin species.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "source2": null,
+    "searchNote": "NHM describes the flower urchin as the most toxic sea urchin species and notes some tropical urchins have venom.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.purple-urchin.whole-body-eye",
+    "q": "How has the California purple sea urchin's sense of light been described?",
+    "choices": [
+      "It has a tiny eye at each spine tip",
+      "It senses light only through its mouth",
+      "Its whole body works like one big eye"
+    ],
+    "answer": 2,
+    "explain": "The purple sea urchin is so packed with light-sensing cells across its surface that scientists have described its entire body as a single eye.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/amazing-eyes-vision-champions.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Amazing eyes: 17 vision champions"
+    },
+    "source2": null,
+    "searchNote": "NHM 'Amazing eyes' notes the California purple sea urchin is so packed with photoreceptors on its surface that its body has been described as a single functional eye.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.sand-dollar.flattened-urchin",
+    "q": "A sand dollar is a flattened kind of which animal?",
+    "choices": [
+      "Sea urchin",
+      "Sea star",
+      "Clam"
+    ],
+    "answer": 0,
+    "explain": "Sand dollars are sea urchins with a flat, disc-shaped body. London's Natural History Museum calls them irregular sea urchins.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/sand-dollar",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Sand dollar"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/sea-urchins-strange-and-spiny-wonders-of-the-ocean.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea urchins: Strange and spiny wonders of the ocean"
+    },
+    "searchNote": "MBA describes sand dollars as close relatives of urchins, a type of flattened sea urchin. NHM calls the sand dollar an example of an irregular sea urchin.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sand-dollar.velvet-spines",
+    "q": "What covers the body of a living sand dollar?",
+    "choices": [
+      "A smooth, bare shell",
+      "Tiny spines that look like velvet",
+      "A coat of sticky slime"
+    ],
+    "answer": 1,
+    "explain": "A living sand dollar is covered in short, hair-like spines that give it a fuzzy, velvety look.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/sand-dollar",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Sand dollar"
+    },
+    "source2": null,
+    "searchNote": "MBA/Smithsonian results: live sand dollars are covered in tiny short, hair-like spines that make the surface look fuzzy or velvety.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sand-dollar.sand-ballast",
+    "q": "How do young sand dollars avoid being swept away by rough water?",
+    "choices": [
+      "They anchor with a sticky thread",
+      "They swallow sand grains as ballast",
+      "They hold onto adults' spines"
+    ],
+    "answer": 1,
+    "explain": "Young sand dollars swallow heavy sand grains that act like a weight belt, while adults lie flat or burrow when the water gets rough.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/sand-dollar",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Sand dollar"
+    },
+    "source2": null,
+    "searchNote": "MBA: in rough water sand dollars lie flat or burrow, and young ones swallow sand grains as ballast.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.pacific-sand-dollar.feeding-on-edge",
+    "q": "How does the Pacific sand dollar often position itself to feed?",
+    "choices": [
+      "Standing on edge, partly buried in sand",
+      "Floating upside down at the surface",
+      "Clinging to the underside of kelp"
+    ],
+    "answer": 0,
+    "explain": "The Pacific sand dollar can dig in and stand upright, catching drifting algae, tiny crustacean larvae and other bits of food from the water.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/pacific_sand_dollar",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Pacific Sand Dollar"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific: the Pacific sand dollar (Dendraster excentricus) digs in to stand vertically and suspension-feeds on algae, larval crustaceans and detritus.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.pacific-sand-dollar.lifespan",
+    "q": "Up to how long can a Pacific sand dollar live in the wild?",
+    "choices": [
+      "About 15 weeks",
+      "About 150 years",
+      "About 15 years"
+    ],
+    "answer": 2,
+    "explain": "Pacific sand dollars can live for up to about 15 years in the wild.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/pacific_sand_dollar",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Pacific Sand Dollar"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific: wild Pacific sand dollars can live up to about 15 years.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "echinoderms.sea-cucumber.evisceration",
+    "q": "What can many sea cucumbers do when attacked?",
+    "choices": [
+      "Shed a hard outer shell",
+      "Release a cloud of dark ink",
+      "Expel their internal organs and regrow them"
+    ],
+    "answer": 2,
+    "explain": "Many sea cucumbers can push out some or all of their internal organs to distract a predator, then regenerate them afterward.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9332576/",
+      "publisher": "PMC (NCBI)",
+      "title": "A Review of Histocytological Events and Molecular Mechanisms Involved in Intestine Regeneration in Holothurians"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/johnsons-sea-cucumber",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Johnson's sea cucumber"
+    },
+    "searchNote": "PMC review: many sea cucumber species can expel most or all internal organs when threatened and regenerate them. MBA Johnson's sea cucumber page: expelled organs can distract a predator.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.sea-cucumber.anal-breathing",
+    "q": "How do many sea cucumbers take in water to breathe?",
+    "choices": [
+      "Through their anus",
+      "Through gill slits on their sides",
+      "Through a blowhole on top"
+    ],
+    "answer": 0,
+    "explain": "Many sea cucumbers pump seawater in and out through the anus into branched organs called respiratory trees, where they absorb oxygen.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/pearlfish-sea-cucumber",
+      "publisher": "Smithsonian Ocean",
+      "title": "Pearlfish from a Sea Cucumber"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "searchNote": "Smithsonian pearlfish page: a sea cucumber breathes by taking in water through its anus. Smithsonian echinoderms page: sea cucumbers absorb oxygen by forcing water through hollow branched organs called respiratory trees.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.pearlfish.lives-in-sea-cucumber",
+    "q": "Which slender fish is known for living inside sea cucumbers?",
+    "choices": [
+      "The clownfish",
+      "The pearlfish",
+      "The pufferfish"
+    ],
+    "answer": 1,
+    "explain": "Pearlfish wait for a sea cucumber to open its rear end to breathe, then slip inside to shelter. Some species even eat their host's organs.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/pearlfish-sea-cucumber",
+      "publisher": "Smithsonian Ocean",
+      "title": "Pearlfish from a Sea Cucumber"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: pearlfish are slender, eel-shaped fish that often live inside sea cucumbers, swimming in when the cucumber opens to breathe; in some species the pearlfish is a parasite that eats the host's gonads and other organs.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.sea-cucumber.cuvierian-tubules",
+    "q": "Some sea cucumbers defend themselves by shooting out what?",
+    "choices": [
+      "Sharp, needle-like spines",
+      "Sticky threads that tangle attackers",
+      "Jets of stinging bubbles"
+    ],
+    "answer": 1,
+    "explain": "Some sea cucumbers expel sticky threads called Cuvierian tubules that can tangle or distract a predator while the sea cucumber gets away.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-sea-cucumber.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea cucumbers: Weird and wacky natural recyclers"
+    },
+    "source2": null,
+    "searchNote": "Search summary (citing NHM and MBA): expelled organs, often sticky Cuvierian tubules, can tangle or distract a predator, giving the animal time to escape.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.sea-cucumber.seafloor-recyclers",
+    "q": "What important job do many sea cucumbers do on the seafloor?",
+    "choices": [
+      "They recycle waste by eating sediment",
+      "They build reefs from their skeletons",
+      "They pollinate seagrass meadows"
+    ],
+    "answer": 0,
+    "explain": "Many sea cucumbers swallow sediment, digest the organic bits and leave cleaner sand behind, recycling ocean waste as they crawl along.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-sea-cucumber.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea cucumbers: Weird and wacky natural recyclers"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9879929/",
+      "publisher": "PMC (NCBI)",
+      "title": "Evaluating sea cucumbers as extractive species for benthic bioremediation in mussel farms"
+    },
+    "searchNote": "NHM: sea cucumbers move slowly over the sea floor recycling ocean waste products. Research results: deposit feeders ingest sediment and organic material, reducing organic waste.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.feather-star.swimming",
+    "q": "How do some feather stars swim?",
+    "choices": [
+      "By flapping a tail-like fin",
+      "By squirting water from a siphon",
+      "By waving their feathery arms"
+    ],
+    "answer": 2,
+    "explain": "Some feather stars can lift off and swim by beating their arms up and down, though most swimmers only do so for short bursts.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/feather-star",
+      "publisher": "Smithsonian Ocean",
+      "title": "Feather Star"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: some species of feather stars are capable of using their arms to swim; most which swim do so only for a short duration.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.feather-star.cirri",
+    "q": "What do feather stars use to cling to the seafloor or a coral?",
+    "choices": [
+      "Small leg-like hooks called cirri",
+      "Suction cups on their arm tips",
+      "A cement they produce from their mouth"
+    ],
+    "answer": 0,
+    "explain": "Feather stars hold on with cirri, short hooked 'legs' under the body that grip rocks, corals or sponges while the arms catch food.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/sea-stars/orange-feather-star/",
+      "publisher": "Australian Museum",
+      "title": "Orange Feather Star"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9297031/",
+      "publisher": "PMC (NCBI)",
+      "title": "Ausichicrinites zelenskyyi gen. et sp. nov., a first nearly complete feather star (Crinoidea) from the Upper Jurassic of Africa"
+    },
+    "searchNote": "Australian Museum: little 'legs' called cirri keep feather stars attached to the sea bottom. PMC paper: the centrodorsal bears hook-like cirri for clinging to the seafloor or other invertebrates such as corals and sponges.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.stalked-crinoid.feeding",
+    "q": "How does a stalked crinoid, or sea lily, feed?",
+    "choices": [
+      "It hunts crabs on the seafloor",
+      "It holds its arms up to catch drifting food",
+      "It scrapes algae off nearby rocks"
+    ],
+    "answer": 1,
+    "explain": "Anchored in place, a stalked crinoid spreads its arms into the water column and catches food particles carried past by the current.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/multimedia/stalked-crinoid/",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Stalked Crinoid"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/feather-star",
+      "publisher": "Smithsonian Ocean",
+      "title": "Feather Star"
+    },
+    "searchNote": "NOAA Ocean Exploration describes a stalked crinoid anchored with arms extended into the water column for feeding. Smithsonian: crinoids are suspension (filter) feeders. 'Sea lily' is the common name for stalked crinoids; verifier should confirm the page uses it or drop the alias.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.basket-star.night-feeding",
+    "q": "When do basket stars usually climb up and spread their arms to feed?",
+    "choices": [
+      "At midday",
+      "At dawn only",
+      "At night"
+    ],
+    "answer": 2,
+    "explain": "Basket stars tend to hide in crevices by day, then climb to a high spot at night and unfurl their branching arms to catch plankton.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceantoday.noaa.gov/creaturesofthedeep_basketstar/",
+      "publisher": "NOAA Ocean Today",
+      "title": "Creatures of the Deep: Basket Star"
+    },
+    "source2": {
+      "url": "https://oceantoday.noaa.gov/fullmoon-basketstar/welcome.html",
+      "publisher": "NOAA Ocean Today",
+      "title": "Creatures of the Deep: Basket Star"
+    },
+    "searchNote": "NOAA Ocean Today: basket stars usually hide in crevices during the day and then climb to an elevated point to feed at night, extending arms into the current to catch planktonic animals.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.basket-star.arm-hooks",
+    "q": "What helps a basket star hold onto the tiny animals it catches?",
+    "choices": [
+      "Small hooks along its arms",
+      "Stinging cells on its arm tips",
+      "A sticky net of silk"
+    ],
+    "answer": 0,
+    "explain": "Basket star arms bear tiny hooks that help them grab zooplankton such as copepods as the arms sweep through the current.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://oceanexplorer.noaa.gov/multimedia/basket-star-2/",
+      "publisher": "NOAA Ocean Exploration",
+      "title": "Basket Star"
+    },
+    "source2": null,
+    "searchNote": "NOAA Ocean Exploration: each basket star arm has several hooks that let it efficiently grab a meal; it feasts mainly on zooplankton.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.basket-star.fission",
+    "q": "What did Smithsonian scientists see a deep-sea basket star do for the first time?",
+    "choices": [
+      "Glow in the dark",
+      "Divide itself in two",
+      "Swim upward to the surface"
+    ],
+    "answer": 1,
+    "explain": "In a scientific first, researchers watched a deep-sea basket star spontaneously split, a way of reproducing without a mate.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://naturalhistory.si.edu/research/smithsonian-marine-station/news/scientific-first-deep-sea-basket-star-spontaneously-divides",
+      "publisher": "Smithsonian National Museum of Natural History",
+      "title": "In a scientific first, a deep-sea basket star spontaneously divides"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian NMNH news title states that in a scientific first, a deep-sea basket star spontaneously divided. Verifier: confirm the 'reproducing without a mate' framing is on the page; otherwise trim the explanation to the observation itself.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "echinoderms.brittle-star.body-plan",
+    "q": "What does a brittle star's body look like?",
+    "choices": [
+      "A round shell with no arms",
+      "Long, thin arms joined to a small disc",
+      "A thick pentagon with stubby arms"
+    ],
+    "answer": 1,
+    "explain": "Brittle stars have a small, round central disc with long, slender, jointed arms coming off it, quite unlike the broad arms of most sea stars.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/brittle-star",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Brittle Star"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian describes brittle star arms as long and connected to a center disk; other results describe five multi-jointed arms extending from a central disc.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.schayers-brittle-star.snake-star",
+    "q": "Schayer's brittle star in Australia has what other common name?",
+    "choices": [
+      "Sun Star",
+      "Cushion Star",
+      "Snake Star"
+    ],
+    "answer": 2,
+    "explain": "Its long, muscular arms wriggle in a snakelike way, which earned Schayer's brittle star the nickname Snake Star.",
+    "category": "echinoderms",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/sea-stars/schayers-brittle-star/",
+      "publisher": "Australian Museum",
+      "title": "Schayer's Brittle Star"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: Schayer's brittle star (Ophionereis schayeri) is also called the Snake Star; its long arms are muscle-linked and look snake-like.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.spiny-brittle-star.buried-feeding",
+    "q": "How does the spiny brittle star often feed?",
+    "choices": [
+      "It buries itself, leaving an arm or two out",
+      "It chases small fish across the reef",
+      "It scrapes algae with a beaklike jaw"
+    ],
+    "answer": 0,
+    "explain": "The spiny brittle star often tucks itself away, sticking out just an arm or two to snag food drifting past.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals/animals-a-to-z/spiny-brittle-star",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Spiny brittle star"
+    },
+    "source2": null,
+    "searchNote": "MBA: the spiny brittle star (Ophiothrix spiculata) buries itself and leaves an arm or two free to catch food.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "echinoderms.group.sea-cucumber-membership",
+    "q": "Which of these animals is an echinoderm, like sea stars?",
+    "choices": [
+      "Jellyfish",
+      "Sea cucumber",
+      "Octopus"
+    ],
+    "answer": 1,
+    "explain": "Sea cucumbers are echinoderms, in the same group as sea stars, sea urchins and sand dollars, despite their soft, sausage-shaped bodies.",
+    "category": "echinoderms",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/sea-stars-urchins-and-relatives",
+      "publisher": "Smithsonian Ocean",
+      "title": "Echinoderms: Sea Stars, Urchins, Sand Dollars, and Relatives"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/what-is-a-sea-cucumber.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Sea cucumbers: Weird and wacky natural recyclers"
+    },
+    "searchNote": "Smithsonian: sea stars are echinoderms, the same group as sea urchins, sand dollars and sea cucumbers. NHM: sea cucumbers are echinoderms related to sea urchins and starfish.",
+    "risk": "none"
+  },
+  {
+    "fact": "echinoderms.purple-urchin.pincers",
+    "q": "Besides its spines, what does the purple sea urchin use to defend itself and gather food?",
+    "choices": [
+      "Tiny pincers among its spines",
+      "A cloud of ink",
+      "Mild electric shocks"
+    ],
+    "answer": 0,
+    "explain": "Scattered among a purple urchin's spines are tiny pincers. Together with the spines, they help it fend off threats and grab bits of food.",
+    "category": "echinoderms",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/purple-sea-urchin",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Purple sea urchin"
+    },
+    "source2": null,
+    "searchNote": "MBA: the purple sea urchin's spines and pincers help it defend itself and gather food.",
+    "risk": "species-specific"
+  }
+]

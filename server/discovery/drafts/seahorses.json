@@ -1,0 +1,1288 @@
+[
+  {
+    "fact": "seahorses.seahorse.egg-transfer",
+    "q": "During seahorse mating, how do the eggs end up in the brood pouch?",
+    "choices": [
+      "The female deposits them in the male's pouch",
+      "The male scoops them off the seafloor",
+      "The female keeps them in her own pouch"
+    ],
+    "answer": 0,
+    "explain": "The female places her eggs in the male's pouch, where he fertilizes them and carries the young until birth.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "seabirth",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/pregnant-seahorse",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Pregnant Seahorse"
+    },
+    "source2": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10253279/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Seahorse Male Pregnancy as a Model System to Study Pregnancy, Immune Adaptations, and Environmental Effects"
+    },
+    "searchNote": "Search summary of the Smithsonian page: during mating the female deposits eggs into the male's pouch and he fertilizes them.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.pregnancy-length",
+    "q": "In the seahorses Smithsonian Ocean describes, roughly how long after the eggs enter the male's pouch do the young emerge?",
+    "choices": [
+      "About two days",
+      "About six months",
+      "About two weeks"
+    ],
+    "answer": 2,
+    "explain": "After roughly two weeks of development the tiny fry pop out of the father's pouch, though timing differs between species.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "seabirth",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "10 Things You Never Knew About Seahorses"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/pregnant-seahorse",
+      "publisher": "Smithsonian Ocean",
+      "title": "A Pregnant Seahorse"
+    },
+    "searchNote": "Smithsonian pages say the young emerge from the male's pouch after about two weeks; one summary notes timing varies by species.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.pot-bellied-seahorse.pouch-development",
+    "q": "Is a juvenile male pot-bellied seahorse (Hippocampus abdominalis) already equipped with a brood pouch?",
+    "choices": [
+      "Yes, every seahorse is born with one",
+      "No, it forms as he grows beyond the juvenile stage",
+      "Yes, but it shrinks away as he matures"
+    ],
+    "answer": 1,
+    "explain": "A study of pot-bellied seahorses found the brood pouch is absent in juveniles and develops during growth after the juvenile stage.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": "seabirth",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5646163/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Morphology of brood pouch formation in the pot-bellied seahorse Hippocampus abdominalis"
+    },
+    "source2": null,
+    "searchNote": "PMC study on pouch formation in H. abdominalis: the brood pouch is not present in juveniles and develops during post-juvenile growth.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.seahorse.pouch-placenta",
+    "q": "A pregnant male seahorse's brood pouch does more than hold the embryos. What else does it do?",
+    "choices": [
+      "Stores food for the male through winter",
+      "Pumps the eggs out to hatch in open water",
+      "Supplies the embryos with nutrients and oxygen"
+    ],
+    "answer": 2,
+    "explain": "Researchers compare the pouch to a mammal's placenta: it nourishes and aerates the embryos, regulates their salt balance and helps protect them from disease.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "seabirth",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10253279/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Seahorse Male Pregnancy as a Model System to Study Pregnancy, Immune Adaptations, and Environmental Effects"
+    },
+    "source2": null,
+    "searchNote": "PMC review: male seahorses carry embryos in a brood pouch that incubates and nourishes them, similar to a placenta, supplying nutrients and oxygen; it provides protection, aeration, osmoregulation, nutrition and immune defense.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.syngnathids.most-complex-pouch",
+    "q": "In the family that includes seahorses, pipefishes and seadragons, which group has the most complex brood pouch?",
+    "choices": [
+      "Leafy seadragons",
+      "Seahorses",
+      "Trunk-brooding pipefishes"
+    ],
+    "answer": 1,
+    "explain": "Seahorses have the most elaborate, enclosed pouch in the family. Some relatives simply carry eggs glued to their skin or tucked under skin flaps.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10253279/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Seahorse Male Pregnancy as a Model System to Study Pregnancy, Immune Adaptations, and Environmental Effects"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "searchNote": "PMC review: among syngnathids, seahorses (Hippocampus) have the most complex brood pouches; others have eggs attached to skin or covered by skin flaps. Shedd notes seadragons lack a pouch.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.no-spleen",
+    "q": "A genetic study found that seahorses functionally lack which organ, a change linked to immune gene losses?",
+    "choices": [
+      "The spleen",
+      "The liver",
+      "The heart"
+    ],
+    "answer": 0,
+    "explain": "Researchers found seahorses have functional asplenia (no working spleen), part of a set of immune gene losses that arose alongside male pregnancy.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9734139/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Immunogenetic losses co-occurred with seahorse male pregnancy and mutation in tlx1 accompanied functional asplenia"
+    },
+    "source2": null,
+    "searchNote": "Title and summary of PMC paper: immunogenetic losses co-occurred with seahorse male pregnancy, and a mutation in tlx1 accompanied functional asplenia (lack of a spleen).",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seahorses.pot-bellied-seahorse.pouch-microbiome",
+    "q": "What did researchers find inside the brood pouch of pregnant pot-bellied seahorses (Hippocampus abdominalis)?",
+    "choices": [
+      "No microbes of any kind",
+      "A microbe community distinct from the skin",
+      "Exactly the same microbes as the skin"
+    ],
+    "answer": 1,
+    "explain": "The pouch hosts its own community of microbes that differs from the male's skin, and that community shifts over the course of pregnancy.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11906128/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Changes to the reproductive microbiome of the brood pouch during male pregnancy in seahorses (Hippocampus abdominalis)"
+    },
+    "source2": null,
+    "searchNote": "PMC study title: changes to the reproductive microbiome of the brood pouch during male pregnancy in H. abdominalis; summary says the pouch has its own microbiome differing from the male's skin.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.seahorse.independent-eyes",
+    "q": "Like a chameleon, what can a seahorse do with its eyes?",
+    "choices": [
+      "Retract them into its head",
+      "Move each one independently",
+      "Close them with eyelids"
+    ],
+    "answer": 1,
+    "explain": "Each eye can swivel on its own, letting a seahorse track prey with one eye while watching elsewhere with the other. NOAA notes this aids feeding accuracy.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "eyes",
+    "source": {
+      "url": "https://www.aquariumofpacific.org/exhibits/tropical_pacific_gallery/what_are_seahorses_and_seadragons",
+      "publisher": "Aquarium of the Pacific",
+      "title": "What are Seahorses and Seadragons?"
+    },
+    "source2": {
+      "url": "https://www.fisheries.noaa.gov/s3/dam-migration/2017-dwarf-seahorse-status-review-final-508-1-.pdf",
+      "publisher": "NOAA Fisheries",
+      "title": "STATUS REVIEW REPORT: DWARF SEAHORSE (HIPPOCAMPUS ZOSTERAE) 2020"
+    },
+    "searchNote": "Aquarium of the Pacific: their eyes can move independently like a chameleon's to help spot prey. NOAA dwarf seahorse review: eyes move independently, allowing better accuracy during feeding.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.square-tail",
+    "q": "What unusual shape does a seahorse's tail have in cross-section?",
+    "choices": [
+      "Square",
+      "Perfectly round",
+      "Flat like a ribbon"
+    ],
+    "answer": 0,
+    "explain": "A 2015 study suggested the square cross-section could improve the tail's grip by increasing how much of it touches the object it holds.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "hitch",
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/are-seahorses-the-quirkiest-fish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Are seahorses the ocean's quirkiest fish?"
+    },
+    "source2": null,
+    "searchNote": "NHM article: seahorse tails are square in cross-section; a 2015 study suggested this could enhance grip by increasing surface area in contact with an object.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.prehensile-tail",
+    "q": "What do seahorses mainly use their flexible, monkey-like tails for?",
+    "choices": [
+      "Swimming in fast bursts",
+      "Stinging predators",
+      "Holding on to seagrass and corals"
+    ],
+    "answer": 2,
+    "explain": "Seahorses are weak swimmers, so they anchor themselves by wrapping their grasping tails around seagrass, corals and other objects.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "hitch",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/seahorses-have-monkey-tails",
+      "publisher": "Smithsonian Ocean",
+      "title": "Seahorses Have Monkey-Like Tails"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "searchNote": "Smithsonian: seahorses use monkey-like (prehensile) tails to hold onto corals, seagrass and other objects. Shedd: seahorses are poor swimmers that latch on with prehensile tails.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.rafting",
+    "q": "How can seahorses travel across the ocean farther than they could ever swim?",
+    "choices": [
+      "By swimming in fast-moving schools",
+      "By burrowing along the seafloor",
+      "By clinging to floating seaweed and debris"
+    ],
+    "answer": 2,
+    "explain": "Seahorses can hitch a ride by gripping drifting seaweed or debris, letting currents carry them long distances.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "hitch",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/hitchhiking-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "Hitchhiking Seahorses"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: seahorses can travel long distances, farther than they can swim, by attaching themselves to floating seaweed and debris.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.color-change-ambush",
+    "q": "Seahorses can change color to blend in. Besides hiding from predators, how does this help them?",
+    "choices": [
+      "It keeps their bodies warm",
+      "It lets them ambush prey",
+      "It attracts cleaner shrimp"
+    ],
+    "answer": 1,
+    "explain": "Shifting color to match their surroundings helps seahorses avoid predators and also lets them lie in wait for passing prey.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "blend",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "10 Things You Never Knew About Seahorses"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 10 Things: seahorses can change color to blend in, which helps them ambush prey and avoid predators.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.no-scales",
+    "q": "Instead of scales, what covers a seahorse's body?",
+    "choices": [
+      "A crab-like outer shell",
+      "Only a coat of slime",
+      "Bony plates under thin skin"
+    ],
+    "answer": 2,
+    "explain": "Seahorses have no scales. Their armor is a series of bony plates sitting just beneath a thin layer of skin.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/bigbelly-seahorse",
+      "publisher": "Smithsonian Ocean",
+      "title": "Bigbelly Seahorse"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian (bigbelly seahorse page): seahorses lack scales and have bony plates under a thin skin.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.fin-beat-rate",
+    "q": "A seahorse's small fins can flutter up to about how many times per second?",
+    "choices": [
+      "About once per second",
+      "About once per minute",
+      "Up to about 40"
+    ],
+    "answer": 2,
+    "explain": "The fins beat up to about forty times a second, too fast for the human eye to follow.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/exhibits/tropical_pacific_gallery/what_are_seahorses_and_seadragons",
+      "publisher": "Aquarium of the Pacific",
+      "title": "What are Seahorses and Seadragons?"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific: seahorses beat their fins up to forty times a second, too fast to be visible to the human eye.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.seahorse.no-caudal-fin",
+    "q": "Adult seahorses lack a fin that most fish rely on. Which one?",
+    "choices": [
+      "The tail (caudal) fin",
+      "The fin on the back (dorsal fin)",
+      "The fins behind the head (pectoral fins)"
+    ],
+    "answer": 0,
+    "explain": "Seahorses lost the tail fin over evolution; a skeletal study traced its progressive loss. They swim with dorsal and pectoral fins instead.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4407769/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Comparative developmental osteology of the seahorse skeleton reveals heterochrony amongst Hippocampus sp. and progressive caudal fin loss"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "searchNote": "PMC study title: comparative developmental osteology of the seahorse skeleton reveals progressive caudal fin loss. Other sources note dorsal and pectoral fins are used for swimming.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.sounds",
+    "q": "What sound do seahorses make while feeding and courting?",
+    "choices": [
+      "Lip-smacking clicks",
+      "Long, high whistles",
+      "Deep, booming grunts"
+    ],
+    "answer": 0,
+    "explain": "Seahorses produce clicking, lip-smacking sounds, both when they eat and during courtship.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "10 Things You Never Knew About Seahorses"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 10 Things: seahorses make lip-smacking sounds during feeding and courtship.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seahorses.seahorse.pivot-feeding",
+    "q": "How does a seahorse catch its tiny prey?",
+    "choices": [
+      "It bites prey with sharp teeth",
+      "It flicks its head up and sucks prey in",
+      "It stuns prey with an electric pulse"
+    ],
+    "answer": 1,
+    "explain": "In a strike called pivot feeding, the seahorse rotates its long snout up toward the prey very fast, then widens the snout to suck it in.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "snick",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2665837",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Suction is kid's play: extremely fast suction in newborn seahorses - PMC"
+    },
+    "source2": null,
+    "searchNote": "PMC (newborn seahorses): adult seahorses capture prey by rotating the long-snouted head quickly toward it, then generating powerful suction by widening the snout.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.newborn-feeding",
+    "q": "Can newborn seahorses of the species Hippocampus reidi already use the fast head-flick-and-suction strike?",
+    "choices": [
+      "No, they filter-feed for months",
+      "No, their father feeds them at first",
+      "Yes, they can from birth"
+    ],
+    "answer": 2,
+    "explain": "Researchers found newborn H. reidi already feed with a rapid snout rotation and high-volume suction, powered by elastic recoil like the adults.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": "snick",
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2665837",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Suction is kid's play: extremely fast suction in newborn seahorses - PMC"
+    },
+    "source2": null,
+    "searchNote": "PMC 'Suction is kid's play': newborn Hippocampus reidi already feed with rapid snout rotation and high-volume suction using elastic recoil.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.seahorse.elastic-strike",
+    "q": "What powers much of a seahorse's ultra-fast feeding strike?",
+    "choices": [
+      "Elastic energy stored in tendons",
+      "A jet of water from its gills",
+      "Muscles in its curled tail"
+    ],
+    "answer": 0,
+    "explain": "Like a drawn bow, a seahorse stores elastic energy in tendons and releases it at once; one study credits tendons with about 72% of the suction power.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "snick",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8443865/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Elastic energy storage in seahorses leads to a unique suction flow dynamics compared with other actinopterygians"
+    },
+    "source2": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/37040808/",
+      "publisher": "PubMed (peer-reviewed)",
+      "title": "A power amplification dyad in seahorses - PubMed"
+    },
+    "searchNote": "PMC: elastic energy storage in seahorses leads to unique suction flow. PubMed abstract: tendons in the sternohyoideus supply on average about 72% of the suction power.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.snout-length-tradeoff",
+    "q": "In seahorses, what comes with having a longer snout?",
+    "choices": [
+      "Slower head rotation and faster suction",
+      "Faster head rotation but slower suction",
+      "Stronger teeth for crushing prey"
+    ],
+    "answer": 1,
+    "explain": "A study found a trade-off: longer snouts swing toward prey faster, but the suction flow they generate is slower.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": "snick",
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8443865/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Elastic energy storage in seahorses leads to a unique suction flow dynamics compared with other actinopterygians"
+    },
+    "source2": null,
+    "searchNote": "PMC study: in seahorses, longer snouts were linked to faster head rotation but slower suction flows, a trade-off between pivot and suction feeding.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seahorses.seahorse.no-teeth",
+    "q": "What do seahorses lack that many other fish use for eating?",
+    "choices": [
+      "Teeth",
+      "Gills",
+      "Eyes"
+    ],
+    "answer": 0,
+    "explain": "Seahorses have no teeth. They suck up tiny prey such as small shrimp and other plankton whole.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.nhm.ac.uk/discover/are-seahorses-the-quirkiest-fish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Are seahorses the ocean's quirkiest fish?"
+    },
+    "source2": null,
+    "searchNote": "NHM: seahorses have no teeth and feed by sucking up tiny planktonic prey such as small shrimp.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.morning-greeting",
+    "q": "In seahorse species that form pairs, when do partners typically perform their greeting dance?",
+    "choices": [
+      "Once a year at full moon",
+      "Only after dark",
+      "Every morning"
+    ],
+    "answer": 2,
+    "explain": "Bonded pairs meet each morning to promenade and pirouette together, sometimes changing color, before going their separate ways for the day.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": "dance",
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/dancing-seahorse-pairs",
+      "publisher": "Smithsonian Ocean",
+      "title": "Dancing Seahorse Pairs"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian: couples greet each other every morning with a dance that sometimes involves color change, then separate for the rest of the day.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seahorse.greeting-duration",
+    "q": "According to Shedd Aquarium, how long does a seahorse pair's daily greeting display last?",
+    "choices": [
+      "About 6 to 10 seconds",
+      "About 6 to 10 minutes",
+      "About 3 days"
+    ],
+    "answer": 1,
+    "explain": "Partners twirl around a holdfast such as seagrass, then promenade tail in tail. The display lasts 6 to 10 minutes and ends when the female swims off to feed.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "dance",
+    "source": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-valentines-together-forever",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse Valentines: Together Forever"
+    },
+    "source2": null,
+    "searchNote": "Shedd: pairs entwine tails around a holdfast and twirl, then promenade; the display lasts 6 to 10 minutes, ending when the female swims away to forage.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.seahorse.greeting-sync",
+    "q": "Besides reinforcing the pair bond, what does the seahorse daily greeting appear to do?",
+    "choices": [
+      "Bring the pair into reproductive sync",
+      "Warm their bodies in the sun",
+      "Drive away rival fish"
+    ],
+    "answer": 0,
+    "explain": "The ritual seems to synchronize the pair's reproductive cycles, and Smithsonian notes it may also confirm that the partner is still alive.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "dance",
+    "source": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-valentines-together-forever",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse Valentines: Together Forever"
+    },
+    "source2": {
+      "url": "https://ocean.si.edu/ocean-life/invertebrates/dancing-seahorse-pairs",
+      "publisher": "Smithsonian Ocean",
+      "title": "Dancing Seahorse Pairs"
+    },
+    "searchNote": "Shedd: the greeting ritual reinforces the pair's relationship and appears to bring male and female into reproductive synchrony. Smithsonian: they greet to confirm partner is alive, reinforce the bond and synchronize reproductive cycles.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.potbelly-seahorse.courtship-length",
+    "q": "Before the female transfers her eggs, potbelly seahorse pairs may swim together with tails intertwined for up to how long?",
+    "choices": [
+      "Eight seconds",
+      "Eight hours",
+      "Eight days"
+    ],
+    "answer": 1,
+    "explain": "This marathon courtship lets the pair line up so the male is ready at the exact moment the female deposits her eggs.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": "dance",
+    "source": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "source2": null,
+    "searchNote": "Shedd: potbelly seahorses intertwine tails and swim together for up to eight hours before the female deposits eggs.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.seahorse.pair-bond-length",
+    "q": "Smithsonian Ocean notes that many seahorse species keep the same partner for how long?",
+    "choices": [
+      "A single breeding season",
+      "A single day",
+      "Exactly ten years"
+    ],
+    "answer": 0,
+    "explain": "Many species stay faithful for one breeding season. Lifelong pairing is the exception, believed to occur in one Australian species.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/seabirds/it-love-why-some-ocean-animals-sort-mate-life",
+      "publisher": "Smithsonian Ocean",
+      "title": "Is It Love? Why Some Ocean Animals (Sort Of) Mate For Life"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian results: many seahorse species bond for a single breeding season, and one Australian species is believed to mate for life.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.whites-seahorse.permanent-pairs",
+    "q": "How do White's seahorses (Hippocampus whitei) of eastern Australia pair up?",
+    "choices": [
+      "They pick a new partner every day",
+      "Females raise the young alone",
+      "They form permanent pairs"
+    ],
+    "answer": 2,
+    "explain": "White's seahorses form permanent pairs; researchers in Port Stephens and Sydney Harbour followed pairs that stayed together for three breeding seasons.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": "friend",
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/whites-seahorse-hippocampus-whitei-bleeker-1855/",
+      "publisher": "Australian Museum",
+      "title": "White's Seahorse, Hippocampus whitei Bleeker, 1855 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22957871/",
+      "publisher": "PubMed (peer-reviewed)",
+      "title": "Population dynamics and life history of a geographically restricted seahorse, Hippocampus whitei - PubMed"
+    },
+    "searchNote": "Australian Museum: White's seahorse forms permanent pairs. PubMed 2012 study reported life-long monogamy, with three pairs staying bonded over three consecutive breeding years.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.whites-seahorse.swimming-nets",
+    "q": "In Sydney Harbour, where are endangered White's seahorses now mostly found?",
+    "choices": [
+      "On oil-rig legs",
+      "On floating plastic bags",
+      "On human-made swimming nets"
+    ],
+    "answer": 2,
+    "explain": "With much of their natural habitat lost, White's seahorses in Sydney Harbour now cling mostly to the nets that enclose harbour swimming areas.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.dpird.nsw.gov.au/fishing/threatened-species/what-current/endangered-species2/whites-seahorse",
+      "publisher": "NSW Department of Primary Industries and Regional Development",
+      "title": "White's Seahorse"
+    },
+    "source2": null,
+    "searchNote": "Search summary (NSW government source): in Sydney Harbour, White's seahorse is now predominantly found on man-made swimming nets; habitat loss is the main threat.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.satomis-pygmy-seahorse.size",
+    "q": "Satomi's pygmy seahorse, one of the tiniest seahorses, is about how long?",
+    "choices": [
+      "About 13 centimeters",
+      "About 30 centimeters",
+      "About 13 millimeters"
+    ],
+    "answer": 2,
+    "explain": "Satomi's pygmy seahorse measures only about 13 mm. The big-bellied seahorse, by contrast, can grow past 35 cm.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "10 Things You Never Knew About Seahorses"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 10 Things: Satomi's pygmy seahorse is about 13 mm long; the big-bellied seahorse can exceed 35 cm.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.big-bellied-seahorse.size",
+    "q": "The big-bellied seahorse is among the largest seahorses. How long can it grow?",
+    "choices": [
+      "Over 2 meters",
+      "More than 35 centimeters",
+      "About 3 centimeters"
+    ],
+    "answer": 1,
+    "explain": "Big-bellied seahorses can exceed 35 cm (about 14 inches), many times the length of the smallest pygmy seahorses.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/fish/10-things-you-never-knew-about-seahorses",
+      "publisher": "Smithsonian Ocean",
+      "title": "10 Things You Never Knew About Seahorses"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian 10 Things: the big-bellied seahorse can exceed 35 cm.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.bargibants-pygmy-seahorse.host",
+    "q": "Bargibant's pygmy seahorse lives on what kind of host?",
+    "choices": [
+      "Gorgonian sea fans",
+      "Giant kelp",
+      "Sea anemones"
+    ],
+    "answer": 0,
+    "explain": "This species lives only on gorgonian sea fans of the genus Muricella, spending its life clinging to the coral.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/pygmy-seahorse-hippocampus-bargibanti-whitley-1970/",
+      "publisher": "Australian Museum",
+      "title": "Pygmy Seahorse, Hippocampus bargibanti Whitley, 1970 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12415253/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Symbiosis with and mimicry of corals were facilitated by immune gene loss and body remodeling in the pygmy seahorse - PMC"
+    },
+    "searchNote": "Australian Museum and PMC: H. bargibanti lives only on gorgonian sea fans of the genus Muricella.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.bargibants-pygmy-seahorse.tubercles",
+    "q": "How does Bargibant's pygmy seahorse blend in with its coral home?",
+    "choices": [
+      "It buries itself in sand",
+      "Its bumpy tubercles match the coral's polyps",
+      "It hides inside empty shells"
+    ],
+    "answer": 1,
+    "explain": "Its body is covered in bulbous bumps that take on the shape and color of the sea fan's polyps, making it nearly invisible.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/pygmy-seahorse-hippocampus-bargibanti-whitley-1970/",
+      "publisher": "Australian Museum",
+      "title": "Pygmy Seahorse, Hippocampus bargibanti Whitley, 1970 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12415253/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Symbiosis with and mimicry of corals were facilitated by immune gene loss and body remodeling in the pygmy seahorse - PMC"
+    },
+    "searchNote": "Australian Museum / PMC: its bulbous tubercles take on the shape and colour of the coral polyps of its gorgonian host.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.bargibants-pygmy-seahorse.size",
+    "q": "About how long is an adult Bargibant's pygmy seahorse?",
+    "choices": [
+      "About 50 centimeters",
+      "About 20 centimeters",
+      "About 2 centimeters"
+    ],
+    "answer": 2,
+    "explain": "Adults reach only about 2 cm, small enough to perch unnoticed on a single sea fan branch.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://ocean.si.edu/ocean-life/reptiles/bizarre-and-beautiful-coral-reef-animals",
+      "publisher": "Smithsonian Ocean",
+      "title": "Bizarre and Beautiful Coral Reef Animals"
+    },
+    "source2": null,
+    "searchNote": "Smithsonian (Bizarre and Beautiful Coral Reef Animals): adult pygmy seahorses reach about 2 cm.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.bargibants-pygmy-seahorse.discovery",
+    "q": "Where was the first Bargibant's pygmy seahorse collected, in 1969?",
+    "choices": [
+      "Hawaii",
+      "New Caledonia",
+      "The Red Sea"
+    ],
+    "answer": 1,
+    "explain": "Georges Bargibant collected a gorgonian coral for the Nouméa Aquarium in New Caledonia, and the tiny seahorse came with it. It was described in 1970.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/pygmy-seahorse-hippocampus-bargibanti-whitley-1970/",
+      "publisher": "Australian Museum",
+      "title": "Pygmy Seahorse, Hippocampus bargibanti Whitley, 1970 - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.nhm.ac.uk/discover/are-seahorses-the-quirkiest-fish.html",
+      "publisher": "Natural History Museum, London",
+      "title": "Are seahorses the ocean's quirkiest fish?"
+    },
+    "searchNote": "Australian Museum: Georges Bargibant collected the first specimen on a gorgonian coral for the Nouméa Aquarium, New Caledonia, in 1969; described 1970.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.pygmy-seahorse.immune-gene-loss",
+    "q": "A 2025 genome study linked the pygmy seahorse's life on corals to the loss of which kind of genes?",
+    "choices": [
+      "Immune genes",
+      "Genes for hearing",
+      "Genes for making venom"
+    ],
+    "answer": 0,
+    "explain": "Researchers found that losing immune genes and remodeling the body plan helped the pygmy seahorse live in close partnership with corals and mimic them.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12415253/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Symbiosis with and mimicry of corals were facilitated by immune gene loss and body remodeling in the pygmy seahorse - PMC"
+    },
+    "source2": null,
+    "searchNote": "PMC paper title: symbiosis with and mimicry of corals were facilitated by immune gene loss and body remodeling in the pygmy seahorse.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seahorses.red-pipefish.trunk-brooder",
+    "q": "Photos of a male red pipefish carrying eggs settled a long-standing question. What did they show?",
+    "choices": [
+      "Females carry the eggs, not males",
+      "It carries its eggs on its trunk, not its tail",
+      "It gives birth without any eggs"
+    ],
+    "answer": 1,
+    "explain": "Scientists had suspected the red pipefish was a tail brooder, but Australian Museum photos showed a male carrying eggs on his trunk (belly region).",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/blog/amri-news/rare-male-pipefish-carrying-eggs-spotted-in-sydney/",
+      "publisher": "Australian Museum",
+      "title": "Rare male red pipefish carrying eggs on its trunk spotted in Sydney - The Australian Museum Blog"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum blog: scientists suspected the red pipefish was a tail brooder; new photos of a brooding male showed eggs on its trunk, making it a trunk brooder.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.short-tail-pipefish.egg-count",
+    "q": "How many eggs can a large male short-tail pipefish carry in his belly pouch?",
+    "choices": [
+      "Only two",
+      "Around a million",
+      "Several hundred"
+    ],
+    "answer": 2,
+    "explain": "Male short-tail pipefish carry the eggs in a pouch on the belly, and large males can hold several hundred at once.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/short-tail-river-pipefish-microphis-brachyurus-bleeker-1853/",
+      "publisher": "Australian Museum",
+      "title": "Short-tail Pipefish, Microphis brachyurus (Bleeker, 1853) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum: short-tail pipefish males carry eggs in a belly pouch; large males can carry several hundred eggs.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.pipefish.pouch-no-advantage",
+    "q": "A study compared pipefish species with enclosed brood pouches to those carrying eggs more exposed. Did embryos survive and grow better in pouches?",
+    "choices": [
+      "No, survival and growth were not better",
+      "Yes, survival roughly doubled",
+      "Yes, but only in warm water"
+    ],
+    "answer": 0,
+    "explain": "Surprisingly, the researchers found that embryo survival and growth did not improve with a pouch.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4864203/",
+      "publisher": "PubMed Central (peer-reviewed)",
+      "title": "Evolutionary ecology of pipefish brooding structures: embryo survival and growth do not improve with a pouch"
+    },
+    "source2": null,
+    "searchNote": "PMC study title: evolutionary ecology of pipefish brooding structures: embryo survival and growth do not improve with a pouch.",
+    "risk": "surprising"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.tail-cannot-coil",
+    "q": "Can a leafy seadragon curl its tail around seaweed to hold on, as a seahorse does?",
+    "choices": [
+      "Yes, it anchors itself this way at night",
+      "No, its tail cannot coil",
+      "Only while carrying eggs"
+    ],
+    "answer": 1,
+    "explain": "Unlike a seahorse, a leafy seadragon cannot coil its tail, so it drifts and steers with tiny fins instead of anchoring.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "searchNote": "Aquarium of the Pacific leafy seadragon page: its tail cannot be coiled. Shedd: seadragons mostly drift and use tiny fins to steer.",
+    "risk": "species-specific"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.range",
+    "q": "Wild leafy seadragons live along the coasts of which country?",
+    "choices": [
+      "New Zealand",
+      "South Africa",
+      "Australia"
+    ],
+    "answer": 2,
+    "explain": "Leafy seadragons live only in the cool waters off southern and western Australia, usually on kelp-covered rocky reefs.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/leafy-seadragon-phycodurus-eques/",
+      "publisher": "Australian Museum",
+      "title": "Leafy Seadragon, Phycodurus eques (Günther, 1865) - The Australian Museum"
+    },
+    "source2": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "searchNote": "Australian Museum / Aquarium of the Pacific: leafy seadragons live off southern and western Australia on kelp-covered rocky reefs.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.appendage-purpose",
+    "q": "What is the main purpose of a leafy seadragon's leaf-like appendages?",
+    "choices": [
+      "Propelling it through the water",
+      "Holding its eggs",
+      "Camouflage among seaweed"
+    ],
+    "answer": 2,
+    "explain": "The frilly appendages make it look like drifting algae, so well that divers have missed one swimming right in front of their masks.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific: leafy appendages and color help them blend in; they look so much like floating algae that divers have missed them in front of their masks.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.constant-eating",
+    "q": "Leafy seadragons have no teeth and no stomach. How does that shape the way they eat?",
+    "choices": [
+      "They eat one huge meal a week",
+      "They feed almost constantly",
+      "They digest food in the brood patch"
+    ],
+    "answer": 1,
+    "explain": "Without a stomach to store food, leafy seadragons have to keep eating nearly all the time.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": {
+      "url": "https://www.montereybayaquarium.org/animals-the-ocean/animals-a-to-z/leafy-sea-dragon",
+      "publisher": "Monterey Bay Aquarium",
+      "title": "Leafy sea dragon"
+    },
+    "searchNote": "Search summary of leafy seadragon pages: they have no teeth or stomach, so they eat nearly constantly.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.diet",
+    "q": "What is the main food of leafy seadragons?",
+    "choices": [
+      "Mysid shrimp",
+      "Sea urchins",
+      "Kelp fronds"
+    ],
+    "answer": 0,
+    "explain": "They mainly slurp up mysids, tiny shrimp-like animals that live among algae and seagrass.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": null,
+    "searchNote": "Aquarium of the Pacific / Australian Museum: leafy seadragons mainly eat mysid shrimp, small shrimplike animals living among algae and seagrasses.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.egg-count",
+    "q": "About how many eggs does a female leafy seadragon lay?",
+    "choices": [
+      "About 5",
+      "About 50,000",
+      "About 250 to 300"
+    ],
+    "answer": 2,
+    "explain": "The female transfers 250 to 300 eggs to the male, who carries them on the underside of his tail until they hatch.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": null,
+    "searchNote": "Search summary of leafy seadragon pages: females lay 250 to 300 eggs; males brood them on the underside of the tail.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.leafy-seadragon.state-emblem",
+    "q": "The leafy seadragon is the official marine emblem of which Australian state?",
+    "choices": [
+      "Queensland",
+      "South Australia",
+      "Northern Territory"
+    ],
+    "answer": 1,
+    "explain": "South Australia adopted the leafy seadragon as its marine emblem, a nod to the species living in its cool coastal waters.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/leafy-seadragon-phycodurus-eques/",
+      "publisher": "Australian Museum",
+      "title": "Leafy Seadragon, Phycodurus eques (Günther, 1865) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Search summary of leafy seadragon results: the leafy sea dragon is the official marine emblem of the state of South Australia.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.seadragons.legal-protection",
+    "q": "How are leafy and weedy seadragons treated under Australian law?",
+    "choices": [
+      "They are freely fished for food",
+      "They are classed as pests",
+      "They are fully protected"
+    ],
+    "answer": 2,
+    "explain": "Both species are fully protected under local, state and federal legislation in Australia; habitat loss and pollution remain threats.",
+    "category": "seahorses",
+    "difficulty": "easy",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/leafy_seadragon",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Leafy Seadragon"
+    },
+    "source2": null,
+    "searchNote": "Search summary of leafy seadragon results: both leafy and weedy seadragons are fully protected under Australia's local, state and federal legislation.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.weedy-seadragon.brood-patch",
+    "q": "Seadragons have no brood pouch. Where does a male weedy seadragon carry the eggs?",
+    "choices": [
+      "Inside his mouth",
+      "On a brood patch under his tail",
+      "Buried in a nest of sand"
+    ],
+    "answer": 1,
+    "explain": "The female sticks her eggs to a patch on the underside of the male's tail, and he carries them in the open until they hatch.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/weedy_seadragon1/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Weedy Seadragon"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "searchNote": "Aquarium of the Pacific / Shedd: the female deposits eggs on a brood patch under the male weedy seadragon's tail; seadragons lack a pouch and carry eggs on the underside of the tail.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.weedy-seadragon.common-name",
+    "q": "The weedy seadragon (Phyllopteryx taeniolatus) is also known by what name?",
+    "choices": [
+      "The ruby seadragon",
+      "The leafy seahorse",
+      "The common seadragon"
+    ],
+    "answer": 2,
+    "explain": "The Australian Museum lists Phyllopteryx taeniolatus as the common seadragon. It lives on temperate reefs of southern Australia.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://australian.museum/learn/animals/fishes/weedy-seadragon-phyllopteryx-taeniolatus/",
+      "publisher": "Australian Museum",
+      "title": "Common Seadragon, Phyllopteryx taeniolatus (Lacépède, 1804) - The Australian Museum"
+    },
+    "source2": null,
+    "searchNote": "Australian Museum page title: Common Seadragon, Phyllopteryx taeniolatus; other pages call it the weedy seadragon.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.weedy-seadragon.courtship-mirroring",
+    "q": "During courtship, weedy seadragon pairs mirror each other's movements for up to how long?",
+    "choices": [
+      "24 seconds",
+      "24 days",
+      "24 hours"
+    ],
+    "answer": 2,
+    "explain": "Shedd Aquarium reports courting weedy seadragons copying each other's moves for up to a full day.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://www.sheddaquarium.org/stories/seahorse-or-seadragon-what-s-the-difference",
+      "publisher": "Shedd Aquarium",
+      "title": "Seahorse or Seadragon: What’s the Difference?"
+    },
+    "source2": {
+      "url": "https://www.sheddaquarium.org/about-shedd/press-releases/springtime-courtship-and-penguin-nesting-season-2024",
+      "publisher": "Shedd Aquarium",
+      "title": "Shedd Spotlights Springtime Courtship and Rituals of Aquatic Life"
+    },
+    "searchNote": "Shedd: weedy seadragons mirror each other's movements for up to 24 hours during courtship.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.seadragons.species-count",
+    "q": "Counting the ruby seadragon, described in 2015, how many seadragon species are known?",
+    "choices": [
+      "Three",
+      "Twelve",
+      "Thirty"
+    ],
+    "answer": 0,
+    "explain": "There are three: the leafy, the weedy (common) and the ruby seadragon, all from Australian waters.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://www.aquariumofpacific.org/onlinelearningcenter/species/weedy_seadragon1/",
+      "publisher": "Aquarium of the Pacific",
+      "title": "Weedy Seadragon"
+    },
+    "source2": {
+      "url": "https://scripps.ucsd.edu/news/new-species-ruby-seadragon-discovered-scripps-researchers",
+      "publisher": "Scripps Institution of Oceanography, UC San Diego",
+      "title": "New Species, the 'Ruby Seadragon,' Discovered by Scripps Researchers"
+    },
+    "searchNote": "Search summary of weedy seadragon results: it is one of three seadragon species, alongside the leafy and the ruby seadragon.",
+    "risk": "numeric"
+  },
+  {
+    "fact": "seahorses.ruby-seadragon.dna-discovery",
+    "q": "How did scientists first recognize the ruby seadragon as a new species?",
+    "choices": [
+      "Divers filmed a strange red fish",
+      "It hatched from eggs in an aquarium",
+      "DNA analysis of museum specimens"
+    ],
+    "answer": 2,
+    "explain": "Scripps researchers analyzed tissue samples supplied by the Western Australian Museum and found DNA evidence of a new species, described in 2015.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://scripps.ucsd.edu/news/new-species-ruby-seadragon-discovered-scripps-researchers",
+      "publisher": "Scripps Institution of Oceanography, UC San Diego",
+      "title": "New Species, the 'Ruby Seadragon,' Discovered by Scripps Researchers"
+    },
+    "source2": {
+      "url": "https://today.ucsd.edu/story/new_species_the_ruby_seadragon_discovered_by_scripps_researchers",
+      "publisher": "UC San Diego Today",
+      "title": "New Species, the ‘Ruby Seadragon,’ Discovered by Scripps Researchers"
+    },
+    "searchNote": "Scripps: the team started from WA Museum tissue samples and used DNA and anatomical tools to find evidence of a new species; specimen collected in 2007.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.ruby-seadragon.misidentified",
+    "q": "Before 2015, preserved ruby seadragon specimens had been mistaken for which animal?",
+    "choices": [
+      "Common (weedy) seadragons",
+      "Pipefishes",
+      "Seahorses"
+    ],
+    "answer": 0,
+    "explain": "Museum specimens, including one that washed up on Cottesloe Beach in 1919, had been filed as common seadragons for decades.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://museum.wa.gov.au/research/collections/aquatic-zoology/fish-ichthyology-section/meet-ruby-wa-s-new-seadragon-discovery-s-been-100-years-making",
+      "publisher": "Western Australian Museum",
+      "title": "Meet Ruby"
+    },
+    "source2": null,
+    "searchNote": "Western Australian Museum: preserved specimens had been misidentified as common seadragons; one washed up on Cottesloe Beach in 1919.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.ruby-seadragon.red-camouflage",
+    "q": "Why might the ruby seadragon's deep red color help it hide?",
+    "choices": [
+      "It glows to mimic jellyfish",
+      "Red light is absorbed in deeper water",
+      "It reflects sunlight like a mirror"
+    ],
+    "answer": 1,
+    "explain": "Red light fades out quickly with depth, so a red animal can look dark and hard to see. Researchers suggest this is why the ruby seadragon is red.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://scripps.ucsd.edu/news/new-species-ruby-seadragon-discovered-scripps-researchers",
+      "publisher": "Scripps Institution of Oceanography, UC San Diego",
+      "title": "New Species, the 'Ruby Seadragon,' Discovered by Scripps Researchers"
+    },
+    "source2": null,
+    "searchNote": "Scripps: the team suggests the red color may serve as camouflage in deeper water, where red light is absorbed.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.ruby-seadragon.first-wild-sighting",
+    "q": "Where were ruby seadragons first seen alive, in 2016?",
+    "choices": [
+      "Off Western Australia",
+      "Off Hawaii",
+      "Off South Africa"
+    ],
+    "answer": 0,
+    "explain": "Researchers filmed them near the Recherche Archipelago off Western Australia, in water more than 50 meters deep.",
+    "category": "seahorses",
+    "difficulty": "medium",
+    "behavior": null,
+    "source": {
+      "url": "https://scripps.ucsd.edu/news/research-highlight-researchers-capture-first-glimpse-ruby-seadragons-wild",
+      "publisher": "Scripps Institution of Oceanography, UC San Diego",
+      "title": "Research Highlight: Researchers Capture First Glimpse of Ruby Seadragons in the Wild"
+    },
+    "source2": null,
+    "searchNote": "Scripps research highlight: live ruby seadragons were found on April 7, 2016, near the Recherche Archipelago off Western Australia, in waters over 50 m deep.",
+    "risk": "none"
+  },
+  {
+    "fact": "seahorses.ruby-seadragon.no-leafy-appendages",
+    "q": "What surprised researchers when they first saw live ruby seadragons?",
+    "choices": [
+      "They lack leaf-like appendages",
+      "They swim in large schools",
+      "They are only a centimeter long"
+    ],
+    "answer": 0,
+    "explain": "The ruby seadragon has no leafy appendages, a feature that had been thought to define all seadragons.",
+    "category": "seahorses",
+    "difficulty": "hard",
+    "behavior": null,
+    "source": {
+      "url": "https://scripps.ucsd.edu/news/research-highlight-researchers-capture-first-glimpse-ruby-seadragons-wild",
+      "publisher": "Scripps Institution of Oceanography, UC San Diego",
+      "title": "Research Highlight: Researchers Capture First Glimpse of Ruby Seadragons in the Wild"
+    },
+    "source2": null,
+    "searchNote": "Scripps research highlight: the sightings showed the species lacks the leaf-like appendages thought to characterize all seadragons.",
+    "risk": "surprising"
+  }
+]
