@@ -258,8 +258,8 @@
 
   /* ── Liquid Glass bottom bar: a floating capsule of clear, bright glass with a bevelled rim and a lens that slides under the chosen tab ── */
   nav{left:14px;right:14px;padding:6px;border:0;border-radius:34px;overflow:hidden;isolation:isolate;
-    background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.05) 52%,rgba(255,255,255,.11)),rgba(8,30,54,.34);
-    -webkit-backdrop-filter:blur(22px) saturate(1.9) brightness(1.05);backdrop-filter:blur(22px) saturate(1.9) brightness(1.05);
+    background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.05) 52%,rgba(255,255,255,.11)),rgba(8,30,54,.44);
+    -webkit-backdrop-filter:blur(22px) saturate(1.5) brightness(1.03);backdrop-filter:blur(22px) saturate(1.5) brightness(1.03);      /* (less saturation: over the sand it read olive-yellow, and the labels lost contrast) */
     box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -1px 0 rgba(255,255,255,.14),inset 1px 0 0 rgba(255,255,255,.2),inset -1px 0 0 rgba(255,255,255,.12),0 12px 32px rgba(0,24,48,.38),0 2px 6px rgba(0,0,0,.16)}
   nav::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;background:radial-gradient(130% 100% at 18% -30%,rgba(255,255,255,.42),rgba(255,255,255,0) 58%),radial-gradient(90% 80% at 100% 130%,rgba(160,220,255,.22),rgba(160,220,255,0) 60%)}
   nav .lens{position:absolute;top:5px;bottom:5px;left:0;width:72px;border-radius:30px;z-index:0;pointer-events:none;opacity:0;
@@ -280,7 +280,7 @@
   /* ── Liquid Glass everywhere: the top buttons, the goal line, toasts, coach cards, the menu sheet, the fish card and every popup share the bottom bar's glass ── */
   :root{--lg-bg:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.05) 52%,rgba(255,255,255,.11)),rgba(8,30,54,.42);
     --lg-rim:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.12),inset 1px 0 0 rgba(255,255,255,.18),inset -1px 0 0 rgba(255,255,255,.1);
-    --lg-drop:0 10px 28px rgba(0,24,48,.34),0 2px 6px rgba(0,0,0,.16);--lg-blur:blur(22px) saturate(1.9) brightness(1.05);--lg-inner:rgba(255,255,255,.09);--lg-line:rgba(255,255,255,.2)}
+    --lg-drop:0 10px 28px rgba(0,24,48,.34),0 2px 6px rgba(0,0,0,.16);--lg-blur:blur(22px) saturate(1.5) brightness(1.03);--lg-inner:rgba(255,255,255,.09);--lg-line:rgba(255,255,255,.2)}
   .tod{display:none!important}
   header .pill,#gear,#goal,#toast,#coach,#placebar,#card,#sheet,#modal .box{background:var(--lg-bg);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);border:0;box-shadow:var(--lg-rim),var(--lg-drop);color:#f2f9ff}
   header .pill{border-radius:999px;padding:0 15px;font:600 14px -apple-system,system-ui,sans-serif;color:#fff}#gear{border-radius:50%}#goal{border-radius:999px}#toast{border-radius:999px}
@@ -1265,17 +1265,19 @@ window.__load={stage:function(s){if(!L.classList.contains('err'))T.textContent=s
    The grabber stays pinned at the top. Once content scrolls up under it, a soft frosted band fades in behind it: the content blurs and dims
    into the sheet's own glass instead of being cut off by the edge. At rest (nothing underneath) the band is not there at all.
    One look for all three kinds of sheet: the menus (#sheet), an animal's card (#card) and the item and note sheets (.notesheet). */
-:root{--edge-tint:rgba(18,42,68,.95);--edge-blur:blur(14px) saturate(1.5);--edge-mask:linear-gradient(180deg,#000 0%,#000 55%,rgba(0,0,0,.6) 75%,transparent 100%)}
+:root{--edge-rgb:45,67,91;--edge-blur:blur(20px) saturate(1.25);--edge-mask:linear-gradient(180deg,#000 0%,#000 50%,rgba(0,0,0,.55) 74%,transparent 100%)}
 #sheet .x,#card .grab,.notesheet .grab{isolation:isolate}
-#sheet .x::after,#card .grab::after,.notesheet .grab::after{content:'';position:absolute;left:0;right:0;top:0;bottom:-18px;inset:0 0 -22px 0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .18s ease;
-  background:linear-gradient(180deg,var(--edge-tint) 0%,rgba(18,42,68,.88) 50%,rgba(18,42,68,.5) 78%,rgba(18,42,68,0) 100%);-webkit-backdrop-filter:var(--edge-blur);backdrop-filter:var(--edge-blur);-webkit-mask-image:var(--edge-mask);mask-image:var(--edge-mask)}
-#sheet.scrolled .x::after,#card.scrolled .grab::after,.notesheet .nsw.scrolled .grab::after{opacity:1}
+#sheet .x::after,#card .grab::after,.notesheet .grab::after{content:'';position:absolute;inset:0 0 -22px 0;z-index:-1;pointer-events:none;opacity:var(--edge,0);
+  background:linear-gradient(180deg,rgba(var(--edge-rgb),.97) 0%,rgba(var(--edge-rgb),.9) 50%,rgba(var(--edge-rgb),.5) 76%,rgba(var(--edge-rgb),0) 100%);-webkit-backdrop-filter:var(--edge-blur);backdrop-filter:var(--edge-blur);-webkit-mask-image:var(--edge-mask);mask-image:var(--edge-mask)}
+/* (rounded like the sheet it sits in, so its corners never stand out past the sheet's own: Safari does not always clip a blur to a rounded scroller) */
+#sheet .x::after{border-radius:32px 32px 0 0}#card .grab::after{border-radius:28px 28px 0 0}.notesheet .grab::after{border-radius:30px 30px 0 0}
+@media (prefers-reduced-transparency:reduce){#sheet .x::after,#card .grab::after,.notesheet .grab::after,#card .tabs::before{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-mask-image:none;mask-image:none;background:linear-gradient(180deg,rgb(var(--edge-rgb)) 70%,rgba(var(--edge-rgb),0))!important}}
 /* the menus: the strip that holds the grabber is already pinned; it gets a little more room so the pill is not on the content's edge */
-#sheet .x{height:26px!important;margin-bottom:-4px!important}
+#sheet .x{height:26px!important;width:calc(100% + 36px)!important;margin:0 -18px -4px!important;left:auto!important}
 /* an animal's card: the grabber is pinned instead of scrolling away, and takes no more room at rest than it did */
 #card .grab{position:sticky!important;top:-18px!important;left:auto!important;right:auto!important;display:flex!important;width:calc(100% + 36px)!important;box-sizing:border-box!important;margin:-18px -18px -16px!important;height:34px!important;z-index:7!important}
 #card .tabs{top:16px!important}
-#card .tabs::before{top:-36px!important;background:linear-gradient(180deg,var(--edge-tint) 72%,rgba(16,40,66,0))!important;-webkit-backdrop-filter:var(--edge-blur);backdrop-filter:var(--edge-blur)}
+#card .tabs::before{top:-36px!important;bottom:-14px!important;background:linear-gradient(180deg,rgba(var(--edge-rgb),.97) 0%,rgba(var(--edge-rgb),.97) 78%,rgba(var(--edge-rgb),0) 100%)!important;-webkit-backdrop-filter:var(--edge-blur);backdrop-filter:var(--edge-blur)}
 /* an item or a note: the pill becomes a pinned strip too */
 .notesheet .grab{position:sticky;top:-14px;z-index:7;display:flex;justify-content:center;align-items:flex-start;align-self:stretch;flex:none;width:calc(100% + 36px);height:30px;margin:-14px -18px 0;padding-top:9px;box-sizing:border-box;border-radius:0;background:none}
 .notesheet .grab::before{content:'';width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.34)}
