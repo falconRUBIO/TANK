@@ -690,7 +690,7 @@ function noticedRow(rec) {
 function familyRows(rec) { const p = rec.parents ?? []; return p.length ? `<dt>Parents</dt><dd>${p.map((x) => x.name).join(' & ')}</dd>` : ''; }
 function showFamily(rec) {
   const t = game.state, p = rec.parents ?? [], gp = p.flatMap((x) => (x.parents ?? []).map((y) => y.name)), kids = childrenOf(t, rec.id), lines = [];
-  lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the first fish'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
+  lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the tank\'s first animals'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
   lines.push(kids.length ? `Children: ${kids.map((k) => k.name + (k.alive ? '' : ' (passed away)')).join(', ')}` : 'Children: none yet');
   ui.dialog({ title: `${rec.name}'s family`, lines, ok: 'Close' });
 }
@@ -1410,7 +1410,7 @@ const tut = (() => {
       } else if (step === 3) {
         ui.showCoach({ title: 'A gift for the tank', text: 'You have a starter pack of free items. Open the Shop, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
-        ui.pulse(null); ui.showCoach({ title: 'You are all set', text: 'Nicely done. Care for your fish and tap one any time to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'Coming up', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
+        ui.pulse(null); ui.showCoach({ title: 'You are all set', text: 'Nicely done. Look after your tank, and tap any animal to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'Coming up', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
       }
     } finally { busy = false; setTimeout(run, 0); }
   }
@@ -1649,7 +1649,7 @@ game.on('thanks', (text) => { sfx('arrive'); ui?.toast(text, 3600); });
 game.on('chat', (m) => { if (m.userId !== game.you?.userId) { ui?.toast(`${m.name}: ${m.text}`); ui?.flag('friends', true); } ui?.refresh(); });
 fishes.onEat = () => { sfx('eat'); }; fishes.onDance = () => { if (!document.hidden) sfx('click'); };
 
-// a quiet counter for 'watch your fish swim for 15 seconds': the tank is on screen, nothing is being done to it, and it is visible
+// a quiet counter for 'watch your animals for 15 seconds': the tank is on screen, nothing is being done to it, and it is visible
 let watchT = 0; const dayKey = () => Math.floor(Date.now() / 864e5);
 function watchTick(dt) {
   const d = game.state?.daily; if (!d || d.done || d.kind !== 'watch') { watchT = 0; return; }
@@ -2044,8 +2044,9 @@ fishes.momentOf = momentOf; toys.onBall = (f) => momentOf('ball', f);
 fishes.decor = decor; fishes.isLead = () => isDirector(); fishes.onMemo = (m) => { if (isDirector()) game.dispatch({ t: 'octoMemo', ...m }); }; fishes.onMoment = (m) => { if (isDirector() && !document.hidden) game.dispatch({ t: 'octoMoment', ...m }); }; fishes.onTouchDecor = (m) => { if (isDirector()) game.dispatch({ t: 'octoTouch', ...m }).catch(() => null); }; fishes.onMem = (m) => { if (isDirector()) game.dispatch({ t: 'octoMem', ...m }).catch(() => null); };      /* what an octopus learns, kept with the tank */ fishes.canMove = () => isDirector() && !wc.active && !play && !placing && !document.hidden; fishes.onMove = (m) => { game.dispatch({ t: 'octoMove', ...m }); };
 window.__wc = wc; window.__changeWater = changeWater;
 // the card's tab bar gets its backing only once it has stuck to the top (at rest the backing would cover the line above it)
-const stickTabs = (c) => { const tb = c?.querySelector('.tabs'); if (tb) tb.classList.toggle('stuck', c.scrollTop > 0 && tb.getBoundingClientRect().top - c.getBoundingClientRect().top < 2); };
-document.addEventListener('scroll', (e) => { const c = e.target; if (c instanceof Element && c.closest('#card')) stickTabs(c); }, true);
+const stickTabs = (c) => { const tb = c?.querySelector('.tabs'); if (tb) tb.classList.toggle('stuck', c.scrollTop > 0 && tb.getBoundingClientRect().top - c.getBoundingClientRect().top <= 36); };      // (it sticks just under the pinned grabber, 34px down)
+document.addEventListener('scroll', (e) => { const c = e.target; if (!(c instanceof Element)) return; if (c.closest('#card')) stickTabs(c);
+  if (c.id === 'sheet' || c.id === 'card' || c.classList.contains('nsw')) c.classList.toggle('scrolled', c.scrollTop > 2); }, true);      // (the frosted band at a sheet's top edge shows only once something has scrolled under it)
 new MutationObserver(() => stickTabs($('card'))).observe($('card'), { childList: true });      // (and again when the card is redrawn in place)
 window.__focus = (i) => setFocus(i == null ? null : fishes.list[i]); window.__camPos = () => [...camera.position.toArray(), ...camGoal.toArray()].map((v) => +v.toFixed(2));
 window.__eggs = eggSprites; window.__eggCare = eggCare; window.__showCard = (f) => { cardOpen = f.fid; showCard(f); }; window.__gifts = giftBags; window.__openGift = openGiftBag; window.__eggXY = () => [...eggSprites.values()].map((e) => { const v = e.group.position.clone().project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; });      // for the drills

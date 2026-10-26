@@ -1193,7 +1193,7 @@ const colorGoal = (m) => ({
   title: m ? `Breed ${/^[AEIOU]/.test(MORPHS[m].label) ? 'an' : 'a'} ${MORPHS[m].label} fish` : 'Breed a rare color', blurb: m ? `${MORPHS[m].label} is hidden in your tank's genes. Bring two carriers together and see.` : 'Somewhere in your tank a rare color is hiding in the genes. Find it and breed it out.',
   ok: (t) => !m || carrierOf(t, m), icon: 'hatched',
   steps: [
-    { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your fishes' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
+    { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your animals' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
     { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? (m && specialOf(t).color === m ? ` Today's special in the Shop carries ${MORPHS[m].label.toLowerCase()}: a second carrier.` : ' One carrier and a baby of its own can carry it too.') : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
     { text: 'Hatch their babies', hint: roomy('Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
     { text: m ? `A ${MORPHS[m].label.toLowerCase()} baby` : 'A rare-colored baby', hint: 'About one baby in four from two carriers shows it. Keep trying: a full moon helps.', n: m ? since(`morph_${m}`) : since('morphs'), need: 1 },
@@ -1666,7 +1666,7 @@ const mealHungry = (t) => t.hunger > 0.3 && t.fish.some((f) => !f.dead && !f.awa
 export const needs = (t) => [(mealHungry(t) || t.fish.some((f) => ownHungry(f) && !f.dead && ownHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
 const withSpot = (t) => t.fish.some((f) => f.found?.includes('spot') && t.decor.some((d) => d.id === f.spotId));
 export const DAILY = {
-  watch: { tier: 'easy', text: 'Watch your fish swim for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
+  watch: { tier: 'easy', text: 'Watch your animals for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
   greet: { tier: 'easy', text: 'Say hello to three fish', need: 3, ok: (t) => t.fish.length >= 3 },
   play: { tier: 'easy', text: 'Play with a fish', need: 1, ok: (t) => t.fish.length >= 1 },
   care: { tier: 'easy', text: 'Give the tank some care it needs', need: 1, ok: (t) => needs(t).length >= 1 },
@@ -2442,13 +2442,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
         const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-        furnish(t, now); events.push({ journal: `${name} brought in ${made.name}, the first fish.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
+        furnish(t, now); events.push({ journal: `${name} brought in ${made.name}, the tank's first animal.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
       Object.assign(f, { species: a.species, seed, palette: palOf(a, seed), name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);
       t.seen.fish = [a.species]; t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-      events.push({ journal: `${name} brought in ${f.name}, the first fish.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
+      events.push({ journal: `${name} brought in ${f.name}, the tank's first animal.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
     }
     case 'observe': {                                              // a phone that is watching reports what its fish are really doing
       const key = String(a.key ?? ''), f = t.fish.find((x) => x.id === a.fish); let did = false;

@@ -6,7 +6,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).
 const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
 await p.goto('http://localhost:8123/?dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 60000 }); await p.click('#mok'); await p.waitForTimeout(600);
 const r = await p.evaluate(async () => {
-  const g = window.__game, F = window.__fishes, T = window.__toys, D = 864e5; g.state.level = 5; g.state.flags.tut = 5;
+  const g = window.__game, F = window.__fishes, T = window.__toys, D = 864e5; g.state.level = 5; g.state.flags.tut = 5; g.state.decor.length = 0; g.emit('state');      /* (the toy on its own: with the starter den in the tank the octopus rests at home between games, slower than this drill waits) */
   const oc = g.state.fish.find((f) => f.species === 'octopus'); oc.born = Date.now() - 20 * D; oc.stage = 'adult';
   for (let i = 0; i < 4; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true });
   await g.dispatch({ t: 'buyFish', species: 'seahorse', name: 'Sol', seed: 3, rush: true, sex: 'm', kind: 'erectus' }, { dev: true }); await g.dispatch({ t: 'buyDecor', type: 'grass', x: -2.5, z: 0.5, ry: 0 }, { dev: true });
