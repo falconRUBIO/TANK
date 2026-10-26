@@ -1279,6 +1279,9 @@ window.__load={stage:function(s){if(!L.classList.contains('err'))T.textContent=s
 /* an item or a note: the pill becomes a pinned strip too */
 .notesheet .grab{position:sticky;top:-14px;z-index:7;display:flex;justify-content:center;align-items:flex-start;align-self:stretch;flex:none;width:calc(100% + 36px);height:30px;margin:-14px -18px 0;padding-top:9px;box-sizing:border-box;border-radius:0;background:none}
 .notesheet .grab::before{content:'';width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.34)}
+.notesheet .pvimg.trim{width:auto;height:auto;max-width:150px;max-height:96px;min-height:40px;margin:2px auto 8px}
+/* 'While you were away': Clear sits on the heading's own line, so the lines under it get the full width */
+#sheet h4.ntsh{display:flex;align-items:center;gap:6px}#sheet h4.ntsh small{font-weight:500;letter-spacing:.02em;text-transform:none}#sheet h4 .awayx{float:none!important;margin-left:auto;text-transform:none;letter-spacing:0}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>

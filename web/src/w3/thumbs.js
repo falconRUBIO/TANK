@@ -64,3 +64,14 @@ export function fishThumb(id, pal = null, morph = null) {
   g.drawImage(fr, (160 - fr.width * k) / 2, (160 - fr.height * k) / 2, fr.width * k, fr.height * k); if (M) morphPaint(g, 160, 160, M); const url = c.toDataURL(); cache.set(key, url); return url;
 }
 
+
+// a picture cut to the art itself (the tiles keep a common ground line, so a flat item sits low in an empty square): for a single item shown on its own
+const trimCache = new Map();
+export function trimToArt(url, done) {
+  if (!url) return; if (trimCache.has(url)) { done(trimCache.get(url)); return; }
+  const im = new Image(); im.onload = () => { try { const w = im.width, h = im.height, c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) { done(url); return; } const p = 3, o = document.createElement('canvas'); o.width = x1 - x0 + 1 + 2 * p; o.height = y1 - y0 + 1 + 2 * p; o.getContext('2d').drawImage(c, x0, y0, x1 - x0 + 1, y1 - y0 + 1, p, p, x1 - x0 + 1, y1 - y0 + 1);
+    const out = o.toDataURL(); trimCache.set(url, out); done(out); } catch { done(url); } };
+  im.src = url;
+}
