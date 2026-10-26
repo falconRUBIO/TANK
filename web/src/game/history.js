@@ -42,7 +42,7 @@ export function historyDay(t, now, ev, R) {
     for (const a of [7, 60, 90, 180, 365]) if (days >= a && days < a + 7 && a < L * 0.95 && !told.includes(a)) { told.push(a); const line = anniversaryLine(t, f, a, R); ev.push({ journal: line, story: f.id, text: line, anniv: a, hist: 'anniv' }); }
   }
   // time capsules, by the tank's age: day 1, 7, 30 and every 30 days after. What it holds is what the tank really was that day.
-  t.capsules ||= []; const due = [1, 7, 30].concat(d >= 60 ? [Math.floor(d / 30) * 30] : []).filter((x) => x <= d && x > d - 7 && !t.capsules.some((c) => c.day === x));
+  t.capsules ||= []; const due = !t.fish.some((f) => !f.dead) ? [] : [1, 7, 30].concat(d >= 60 ? [Math.floor(d / 30) * 30] : []).filter((x) => x <= d && x > d - 7 && !t.capsules.some((c) => c.day === x));      // (not of an empty tank: the first one waits for its first animal)
   { const all = [1, 7, 30]; for (let x = 60; x <= d; x += 30) all.push(x);      // a capsule day that went by while nobody opened the tank: said once, quietly, so the gap is not a mystery
     const miss = all.filter((x) => x <= d - 7 && x > d - 60 && !t.capsules.some((c) => c.day === x) && !(t.capMiss ?? []).includes(x)).at(-1);
     if (miss) { t.capMiss = [...(t.capMiss ?? []), miss].slice(-12); ev.push({ journal: `No time capsule for day ${miss}: the tank was quiet that week.`, hist: 'quiet', jat: Math.min(now, (t.createdAt ?? now) + (miss - 1) * DAY) }); } }

@@ -957,7 +957,8 @@ ok('scarcity: eggs laid under a full moon have better odds of the color both par
   const a = { genes: { m: ['gold', 'n'] } }, b = { genes: { m: ['gold', 'n'] } }; assert.ok(R.morphOdds(a, b, true).gold > R.morphOdds(a, b).gold);
   let plain = 0, moon = 0; for (let i = 0; i < 2000; i++) { if (G.blendGenes({ ...R.genesOf(1), m: ['gold', 'n'] }, { ...R.genesOf(2), m: ['gold', 'n'] }, G.seededRandom(i * 31 + 7)).m.every((x) => x === 'gold')) plain++; if (G.blendGenes({ ...R.genesOf(1), m: ['gold', 'n'] }, { ...R.genesOf(2), m: ['gold', 'n'] }, G.seededRandom(i * 31 + 7), true).m.every((x) => x === 'gold')) moon++; }
   assert.ok(moon > plain * 1.3, `${moon} vs ${plain}`);
-  const full = Date.UTC(2024, 0, 25, 12), t = R.newWorld(0); R.norm(t, full - 2 * 864e5); assert.ok(R.forecast(t, full - 2 * 864e5, 9).some((x) => /Full moon/.test(x.text)), JSON.stringify(R.forecast(t, full - 2 * 864e5, 9)));
+  const full = Date.UTC(2024, 0, 25, 12), t = R.newWorld(0); R.norm(t, full - 2 * 864e5); t.fish = [{ id: 'm1', species: 'goldfish', born: 0, name: 'A' }, { id: 'm2', species: 'goldfish', born: 0, name: 'B' }]; assert.ok(R.forecast(t, full - 2 * 864e5, 9).some((x) => /Full moon/.test(x.text)), JSON.stringify(R.forecast(t, full - 2 * 864e5, 9)));
+  t.fish = [{ id: 'o1', species: 'octopus', born: 0, name: 'Inky' }]; assert.ok(!R.forecast(t, full - 2 * 864e5, 9).some((x) => /Full moon/.test(x.text)), 'not shown where nothing could lay under it');
 });
 ok('regression: a rare-colored egg really hatches, in the tank, with its line in the journal, the color page, the weekly log and the crew told', () => {
   const D = 864e5, t0 = 40 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = 9e15; t.dilemmaAt = 9e15; t.level = 6;

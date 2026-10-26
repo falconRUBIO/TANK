@@ -224,7 +224,7 @@ export function bestStep(t, now = Date.now()) {
   let worst = null; for (const f of cared.fish.filter((x) => live.some((y) => y.id === x.id))) { try { const w = wellOf(cared, f, now); if (w.score < 75 && (!worst || w.score < worst[1].score)) worst = [f, w]; } catch { /* */ } }
   if (worst) { const miss = (worst[1].wants ?? []).find((x) => !x.met && x.k !== 'food'); out.push({ act: 'wellopen', fid: worst[0].id, title: `Help ${worst[0].name}`, why: miss ? `${worst[0].name} needs ${miss.label.toLowerCase()}.` : `${worst[0].name} could be happier.`, gain: Math.max(1, Math.round((75 - worst[1].score) * 0.6 / Math.max(1, live.length))) }); }
   out.sort((x, y) => (x.act === 'feed') - (y.act === 'feed') ? (y.act === 'feed') - (x.act === 'feed') : (y.gain ?? 0) - (x.gain ?? 0));      /* (hungry animals are fed first, whatever the numbers say) */
-  return out[0] ?? { act: 'nowcare', title: 'Play with them', why: 'Everything is looked after. Play still earns care points and keeps them happy.', gain: null };
+  return out[0] ?? { act: 'nowcare', title: live.length === 1 ? `Play with ${live[0].name}` : 'Play with them', why: `Everything is looked after. Play still earns care points and keeps ${live.length === 1 ? 'it' : 'them'} happy.`, gain: null };
 }
 // About how many days to the next level at the current health: passive growth plus a usual day of care
 export function levelEta(t, now = Date.now()) {
@@ -390,7 +390,7 @@ export const hasOcto = (t) => t.fish.some((f) => f.species === 'octopus' && !f.d
 export const hasSeahorse = (t) => t.fish.some((f) => f.species === 'seahorse' && !f.dead);
 export const favFoodOf = (f) => (isTurtle(f) ? 'greens' : f.species === 'octopus' ? 'crab' : f.species === 'seahorse' ? 'mysis' : (f.traits ?? []).includes('Greedy') ? 'treats' : (f.traits ?? []).some((x) => ['Shy', 'Lazy', 'Calm'].includes(x)) ? 'pellets' : 'flakes');
 // Favorite spots and friendships come from what is really in the tank. Each is found once per fish, after it has lived here a while.
-const SPOT = { Shy: ['PLANTS', 4, 'the plants'], Curious: ['STRUCTURES', 1, 'the structures'], Lazy: ['WOOD', 1, 'the driftwood'], Playful: ['SPECIAL', 1, 'the special things'], Brave: ['ROCKS', 2, 'the rocks'] };
+const SPOT = { Shy: ['PLANTS', 4, 'plants from the Shop'], Curious: ['STRUCTURES', 1, 'a structure from the Shop'], Lazy: ['WOOD', 1, 'driftwood from the Shop'], Playful: ['SPECIAL', 1, 'something from the Shop\'s Special shelf'], Brave: ['ROCKS', 2, 'rocks from the Shop'] };      // (said so a player knows where to find it)
 export function favouriteOf(f, t) {
   for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && count(t, sp[0]) >= sp[1]) { const hit = t.decor.find((d) => DECOR_DEF[d.type]?.cat === sp[0]); return { label: hit ? DECOR_DEF[hit.type].label.toLowerCase() : sp[2], key: tr }; } }
   return null;
@@ -1672,7 +1672,7 @@ export const DAILY = {
   care: { tier: 'easy', text: 'Give the tank some care it needs', need: 1, ok: (t) => needs(t).length >= 1 },
   plant: { tier: 'easy', text: 'Place a plant', need: 1, ok: (t) => t.decor.length < MAX_DECOR && t.shells >= 6 },
   together: { tier: 'normal', text: 'See two fish swimming together', need: 1, ok: (t) => t.fish.length >= 2 },
-  visit: { tier: 'normal', text: 'Watch a fish visit a decoration', need: 1, ok: (t) => t.fish.length >= 1 && seenDecor(t) },
+  visit: { tier: 'normal', text: 'Watch an animal visit a decoration', need: 1, ok: (t) => t.fish.length >= 1 && seenDecor(t) },
   play3: { tier: 'normal', text: 'Play with three different fish', need: 3, ok: (t) => t.fish.length >= 3 },
   care2: { tier: 'normal', text: 'Give two kinds of care the tank needs', need: 2, ok: (t) => needs(t).length >= 2 },
   friends: { tier: 'special', text: 'Watch two friends swim together', need: 1, ok: (t) => t.fish.some((f) => f.pal && t.fish.some((o) => o.id === f.pal)) },
@@ -1991,14 +1991,15 @@ export function milestonesOf(f, uid = null) {
 export function forecast(t, now = Date.now(), n = 3) {
   const c = [], nm = (id, sn) => t.fish.find((f) => f.id === id)?.name ?? sn?.name;
   for (const e of t.eggs ?? []) if (!e.ready) { const pa = e.pa ?? t.fish.find((f) => f.id === e.a), pb = e.pb ?? t.fish.find((f) => f.id === e.b), o = pa && pb ? Object.entries(morphOdds(pa, pb, !!e.moon)).sort((x, y) => y[1] - x[1])[0] : null; c.push([e.hatchAt - now, `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${nm(e.a, e.pa)} & ${nm(e.b, e.pb)}'s eggs are` : 'The eggs are'} ready to hatch${o ? ` (${Math.round(o[1] * 100)}% ${MORPHS[o[0]].label.toLowerCase()})` : ''}`, '🥚']); }
-  for (let d = 0; d <= 4; d++) { const at = now + d * DAY; if (skyOf(at).event?.key === 'fullmoon') { c.push([Math.max(1, at - now), d ? 'Full moon: eggs laid under it have better odds of a rare color' : 'Full moon tonight: eggs laid now have better odds of a rare color', '🌕']); break; } }      // a window that does not come back for a month
+  const couldLay = (() => { const n = {}; for (const f of t.fish) if (!f.dead && !f.away && !isCrab(f) && !isOcto(f)) n[f.species] = (n[f.species] ?? 0) + 1; return Object.values(n).some((k) => k >= 2); })();      // (the full moon only matters to a tank where two of a kind could lay)
+  for (let d = 0; d <= 4 && couldLay; d++) { const at = now + d * DAY; if (skyOf(at).event?.key === 'fullmoon') { c.push([Math.max(1, at - now), d ? 'Full moon: eggs laid under it have better odds of a rare color' : 'Full moon tonight: eggs laid now have better odds of a rare color', '🌕']); break; } }      // a window that does not come back for a month
   for (const f of t.fish) if (f.preg && !f.preg.ready && !f.dead) c.push([f.preg.due - now, f.preg.due - now > DAY ? `${f.name} is expecting: the babies are born` : `${f.name}'s babies are born`, '🌿', f]);
   for (const [k, ms] of Object.entries(t.bonds ?? {})) { if (ms < 0.4 * SEA.PAIR_DAYS * DAY) continue; const [a, b] = k.split('|').map((id) => t.fish.find((f) => f.id === id && !f.dead)); if (a && b && !a.mate && !b.mate) c.push([SEA.PAIR_DAYS * DAY - ms, `${a.name} and ${b.name} are getting close: they may pair up`, '💞', a]); }      // (the pairing clock: a seahorse pair forming)
   if (t.nursery?.readyAt > now) c.push([t.nursery.readyAt - now, 'The nursery babies are ready to choose', '🍼']);
   for (const o of t.orders ?? []) c.push([o.arrivesAt - now, o.surprise ? `A gift for ${o.ownerName ?? 'a friend'} arrives` : `${o.name || (SPECIES_DEF[o.species]?.label ?? 'A new fish')} arrives`, o.surprise ? '🎁' : '📦']);
   for (const f of t.fish) { const s = nextStage(f, now); if (s && !f.dead) c.push([s.ms, s.to === 'adult' ? `${f.name} turns 3 days old and becomes an adult` : `${f.name} turns 1 day old and becomes a youngster`, '🌱', f]); }      // (what really happens, not just "grows up")
   for (const f of t.fish) if (f.species === 'octopus' && !f.dead && f.puzzleAt != null && now - f.puzzleAt < PUZZLE_GAP) c.push([PUZZLE_GAP - (now - f.puzzleAt), `${f.name} is ready for a new puzzle`, '🧩', f]);
-  if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) c.push([1, "Today's surprise is waiting: feed the fish", '🎁']);
+  if (t.surpriseDay !== Math.floor(now / DAY) && t.fish.some((f) => !f.dead)) { const live = t.fish.filter((f) => !f.dead && !f.away), only = live.length === 1 ? live[0] : null; c.push([1, `Today's surprise is waiting: ${only ? `feed ${only.name}` : live.every((f) => isOcto(f)) ? 'feed the octopuses' : 'feed the tank'}`, '🎁']); }
   c.sort((a, b) => a[0] - b[0]);
   const when = (ms) => ms <= 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.max(1, Math.round(ms / 60e3))} min` : ms < 20 * 3600e3 ? `in ${Math.round(ms / 3600e3)} h` : ms < 40 * 3600e3 ? 'tomorrow' : `in ${Math.round(ms / DAY)} days`;
   const away = advForecast(t).map((x) => ({ ms: 0, text: x.text, icon: x.icon, when: '' }));
