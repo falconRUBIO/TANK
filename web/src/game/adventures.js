@@ -176,6 +176,7 @@ function leave(t, f, at, ev, R, cur) {
   const major = kind !== 'hide';
   if (o.inTank || kind === 'hide') ev.push({ story: f.id, text: 'Disappeared from its den for a while.', jat: at, adventure: { phase: 'go', id, fish: f.id, kind } });
   else ev.push({ journal: [`${f.name} climbed out over the top of the tank and slipped away.`, `${f.name} squeezed through the gap by the lid and was gone.`, `${f.name} slid up the glass, over the rim, and out of sight.`, `${f.name} went over the top of the tank, quiet as anything.`][Math.floor(H(sid(f.id), at / MIN | 0, 11) * 4)], jat: at, story: f.id, text: 'Went out exploring.', adventure: { phase: 'go', id, fish: f.id, kind }, major, toast: major && kind !== 'short' ? `${f.name} has gone out exploring.` : undefined });
+  if (!o.inTank && kind !== 'hide') R.witness?.(t, 'escape', f, at, ev, null, `${f.name} climbed out of the tank and went exploring.`);      // (the Field Guide: an octopus out over the top)
 }
 function back(t, f, at, ev, R, cur) {
   const a = f.away; delete f.away; const since = Math.max(0, (cur ?? at) - at) / 1000 * (R.OHR ?? 0);      // (home partway through a long catch-up: the time since it came back counts as usual)

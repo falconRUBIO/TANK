@@ -68,6 +68,13 @@ export function openDb(path = 'ourtank.db') {
     PRIMARY KEY (tank_id, user_id), UNIQUE (user_id)
   )`);
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_recovery ON users(recovery_hash) WHERE recovery_hash IS NOT NULL');
+  // Daily Discovery (discovery.mjs): a tank's fixed day boundary; the question of each tank-day (a copy, as asked); one answer per caretaker per
+  // day; and the Field Guide behaviors each caretaker saw happen live. No question can ever be asked twice in a tank: the database refuses it.
+  db.exec(`CREATE TABLE IF NOT EXISTS dd_tank ( tank_id TEXT PRIMARY KEY, tz_min INTEGER NOT NULL, since INTEGER NOT NULL );
+    CREATE TABLE IF NOT EXISTS dd_day ( tank_id TEXT NOT NULL, day INTEGER NOT NULL, qid TEXT, q TEXT, at INTEGER NOT NULL, PRIMARY KEY (tank_id, day) );
+    CREATE UNIQUE INDEX IF NOT EXISTS dd_day_once ON dd_day (tank_id, qid) WHERE qid IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS dd_answer ( tank_id TEXT NOT NULL, day INTEGER NOT NULL, user_id TEXT NOT NULL, qid TEXT NOT NULL, choice INTEGER NOT NULL CHECK (choice BETWEEN 0 AND 2), correct INTEGER NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY (tank_id, day, user_id) );
+    CREATE TABLE IF NOT EXISTS dd_seen ( tank_id TEXT NOT NULL, user_id TEXT NOT NULL, beh TEXT NOT NULL, ts INTEGER NOT NULL, fish TEXT, page TEXT, PRIMARY KEY (tank_id, user_id, beh) );`);
   return db;
 }
 

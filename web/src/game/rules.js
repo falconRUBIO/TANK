@@ -469,6 +469,7 @@ export function canBefriend(f, o) {
 function befriend(t, f, o, now, ev, where) {
   const key = [f.id, o.id].sort().join('+'), first = !(t.flags.pairs ||= {})[key]; t.flags.pairs[key] = now; f.pal = o.id; o.pal = f.id;
   for (const x of [f, o]) { (x.disc ||= {}).friend ??= now; x.found ||= []; if (!x.found.includes('friend')) x.found.push('friend'); }
+  witness(t, 'friend', f, now, ev, null, `${f.name} and ${o.name} became best friends.`);
   if (first) t.shells += FRIEND_REWARD;
   const line = `${f.name} and ${o.name} are best friends now.${where ? ` They keep each other company by the ${where}.` : ' They have been keeping each other company.'}`;
   ev.push({ journal: line, story: f.id, text: line, discovery: f.id, ...(first ? { toast: `${f.name} and ${o.name} are best friends. +${FRIEND_REWARD} shells` } : {}) }, { story: o.id, text: line });
@@ -545,6 +546,10 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
 export function norm(t, now = Date.now()) {
   for (const f of t.fish ?? []) if (f && isOcto(f) && Number.isInteger(f.pal)) { f.palette ??= f.pal; delete f.pal; }      // (v333: an octopus's color moved from pal to palette; a fish id left in pal is a friendship and stays)
   if ((t.flags?.growV ?? 1) < 2 && Array.isArray(t.fish)) { const R0 = { baby: 0, juvenile: 1, adult: 2 }, min = { juvenile: BABY_DAYS, adult: ADULT_DAYS }; for (const f of t.fish) { if (!f || !min[f.stage] || R0[stageOf(f, now)] >= R0[f.stage]) continue; f.born = Math.min(f.born, now - min[f.stage] * DAY); } (t.flags ||= {}).growV = 2; }      // (growing up now takes ten days, not three: an animal that had already grown keeps the stage it reached)
+  if (!t.flags?.guideV && Array.isArray(t.fish)) { const F = (t.field ||= {});      // (the Field Guide came back: what already happened in an older tank is filled in once, from each animal's own record, with no line of its own)
+    for (const f of t.fish) { if (!f) continue; const D = f.disc ?? {}, pg = { escape: D.escape1, den: D.den, hitch: D.hitch, blend: D.blend, eyes: D.eyes, dance: D.dance, snick: D.snick, camo: D.camo, friend: D.friend, puzzle: D.puzzle, shell: (f.crab?.hist ?? []).find((h) => h.how === 'moved')?.at };
+      for (const [p, at] of Object.entries(pg)) if (Number.isFinite(at) && (!F[p] || (F[p].v && F[p].at > at))) F[p] = { at, fish: f.id, name: f.name, text: null, v: 2 }; }
+    (t.flags ||= { tut: 0 }).guideV = 1; }
   t.flags ||= { tut: 0 }; if (!t.flags.turtleAdopted && ((t.fish ?? []).some((f) => f && TURTLES.has(f.species) && !f.visitor) || (t.orders ?? []).some((o) => o && TURTLES.has(o.species)) || (t.released?.length ?? 0) > 0 || (t.stats?.released ?? 0) > 0)) t.flags.turtleAdopted = now;      /* (a tank from before the adoption price that has or had a turtle has used it) */ t.style ||= { floor: 'sand', backdrop: 'candy' }; t.orders ||= []; t.eggs ||= []; t.memorial ||= []; if (t.memorial.length > 150) t.memorial.splice(0, t.memorial.length - 150);      /* (the oldest go first: a tank of many years stays small) */ t.floaters ||= []; t.bottles ||= []; t.visitor ??= null; t.visitAt ??= now + 6 * 3600e3; t.eggAt ??= now + 18 * 3600e3; t.storyAt ??= now + 3 * 3600e3; t.drift ??= null; t.driftAt ??= now + 20 * 60e3; t.wishIdx ??= 0; t.flags.collMs ??= 0; t.wantAt ??= now + 3 * 3600e3; t.want ??= null; t.req ??= null;
   // Repair: whatever an older version or a damaged save left behind must not stop a tank from running (one broken fish once kept an order from ever arriving).
   if (!Array.isArray(t.fish)) t.fish = []; if (!Array.isArray(t.decor)) t.decor = [];
@@ -679,6 +684,7 @@ function visitors(t, now, ev) {
   if (t.visitor || now < t.visitAt || (t.flags.tut ?? 0) < 5) return;
   { const R = t.released?.filter((x) => now - x.at > 2 * DAY); if (R?.length && hash32(Math.floor(now / 6e4) * 7 + R.length) % 100 < 35) { const T = R[hash32(Math.floor(now / 36e5)) % R.length], seq = (t.seq = (t.seq ?? 10) + 1); T.visits = (T.visits ?? 0) + 1;      // a turtle let go comes back now and then, grown, to see the tank it grew up in
     t.visitor = { id: 'v' + seq, species: T.species ?? 'turtle', seed: T.seed, until: now + 2 * HOUR, name: T.name, back: T.id };
+    witness(t, 'turtlehome', null, now, ev, null, `${T.name}, the turtle you released, swam back to visit.`);
     ev.push({ journal: T.visits === 1 ? `${T.name} came back! The turtle you raised swam in from the ocean to visit, bigger than before.` : `${T.name} came back to visit again, for the ${ordinal(T.visits)} time.`, toast: `${T.name} is back to visit! Tap it to say hello.`, visitor: true, hist: 'visitor' }); return; } }
   if (todOf(t, now) < 2 && hash32(Math.floor(t.visitAt / 6e4)) % 10 < 4 && !t.visitWait) { t.visitWait = true; const h = new Date(now + (Number(t.tzMin) || 0) * 60e3).getUTCHours(); t.visitAt = now + ((22 - h + 24) % 24 || 24) * HOUR; return; }      // some visitors only come at night: this one waits for the evening (life.js)
   t.visitWait = false;
@@ -1056,9 +1062,53 @@ export const FIELD = {
   hatch: { label: 'A hatching', who: 'fish', hint: 'Eggs ready to hatch wait for someone to watch.' },
   octohatch: { label: 'Baby octopuses', who: 'octopus', hint: 'Octopus partners, a den, and a lot of patience.' },
   seabirth: { label: 'A seahorse birth', who: 'seahorse', hint: 'Seahorse fathers carry the young. Be there when they are born.' },
+  // (pages added when the Field Guide came back: each one is a real thing the animals do in the game, recorded by the code that makes it happen)
+  escape: { label: 'Over the top', who: 'octopus', hint: 'An octopus that is ready for adventure climbs out of the tank and comes home later.' },
+  den: { label: 'A den of its own', who: 'octopus', hint: 'An octopus tucks itself into its den.' },
+  shell: { label: 'Moving house', who: 'crab', hint: 'A hermit crab moves into a bigger empty shell.' },
+  hitch: { label: 'Holding on', who: 'seahorse', hint: 'A seahorse wraps its tail round a stem and holds on.' },
+  blend: { label: 'Color matching', who: 'seahorse', hint: 'A seahorse slowly takes on the color of what it holds.' },
+  eyes: { label: 'Eyes both ways', who: 'seahorse', hint: 'A seahorse watches two things at once, one eye each way.' },
+  dance: { label: 'Greeting dance', who: 'seahorse', hint: 'Two seahorses meet and circle each other.' },
+  snick: { label: 'Snap!', who: 'seahorse', hint: 'A seahorse snaps up a speck of food with a flick of its head.' },
+  friend: { label: 'Best friends', who: 'fish', hint: 'Two fish that get on keep company until they are best friends.' },
+  turtlehome: { label: 'Back from the ocean', who: 'turtle', hint: 'A turtle you raised and released swims back to visit.' },
 };
+// The Field Guide: the real behaviors a Daily Discovery fact can be about, each one made of the pages above that show it in the tank. `real`
+// says how the game's version stands to the science: 'real' is a simplified version of what the animal truly does; 'inspired' is a playful
+// take on it (what the guide says about the science comes only from the question's checked source, never from here).
+export const GUIDE = {
+  escape: { kind: 'octopus', title: 'The escape artist', pages: ['escape'], real: 'inspired', game: 'Now and then an octopus here climbs out over the top of the tank and comes home later, sometimes carrying something.' },
+  puzzle: { kind: 'octopus', title: 'Puzzle solver', pages: ['puzzle'], real: 'real', game: 'Give an octopus a puzzle jar and it works out how to open it, and gets quicker with practice.' },
+  camo: { kind: 'octopus', title: 'Vanishing act', pages: ['camo', 'kelp'], real: 'real', game: 'A resting octopus changes its color and texture to match what is behind it.' },
+  ink: { kind: 'octopus', title: 'Ink cloud', pages: ['ink'], real: 'real', game: 'A startled octopus jets away behind a cloud of ink.' },
+  den: { kind: 'octopus', title: 'A den of its own', pages: ['den'], real: 'real', game: 'An octopus here claims a den and tucks itself in to rest.' },
+  mimic: { kind: 'octopus', title: 'Impressions', pages: ['lion', 'jelly', 'snake', 'flat'], real: 'inspired', game: 'Your octopus sometimes poses like a lionfish, a jellyfish, a sea snake or a flatfish. In the wild this is a talent of the mimic octopus in particular.' },
+  shell: { kind: 'crab', title: 'Moving house', pages: ['shell'], real: 'real', game: 'A hermit crab here outgrows its shell and moves into a bigger empty one.' },
+  seabirth: { kind: 'seahorse', title: 'A father gives birth', pages: ['seabirth'], real: 'real', game: 'A seahorse father here carries the eggs in his pouch until the young are born.' },
+  hitch: { kind: 'seahorse', title: 'Holding on', pages: ['hitch'], real: 'real', game: 'Seahorses here wrap their tails round stems and hold on, and keep going back to a favorite.' },
+  blend: { kind: 'seahorse', title: 'Color matching', pages: ['blend'], real: 'real', game: 'A seahorse here slowly takes on the color of the plant it holds.' },
+  eyes: { kind: 'seahorse', title: 'Eyes both ways', pages: ['eyes'], real: 'real', game: 'A seahorse here watches two things at once, one eye each way.' },
+  dance: { kind: 'seahorse', title: 'Greeting dance', pages: ['dance'], real: 'real', game: 'Two seahorses here meet and circle each other.' },
+  snick: { kind: 'seahorse', title: 'Snap feeding', pages: ['snick'], real: 'real', game: 'A seahorse here snaps up drifting food with a flick of its head.' },
+  clean: { kind: 'turtle', title: 'Cleaning station', pages: ['clean'], real: 'real', game: 'A sea turtle here hangs still by a rock while a fish picks its shell clean.' },
+  friend: { kind: 'fish', title: 'Best friends', pages: ['friend'], real: 'inspired', game: 'Fish here that get on and keep company become best friends.' },
+  'turtle-home': { kind: 'turtle', title: 'Finding the way home', pages: ['turtlehome'], real: 'inspired', game: 'A turtle you raised and released can swim back to visit.' },
+};
+export const guideOfPage = (id) => Object.keys(GUIDE).find((k) => GUIDE[k].pages.includes(id)) ?? null;
+// when a behavior first happened in this tank: the earliest of its pages
+export const guideHappened = (t, k) => (GUIDE[k]?.pages ?? []).map((p) => t.field?.[p]).filter(Boolean).sort((a, b) => a.at - b.at)[0] ?? null;
 export const FIELD_PAY = 0;      // (a page is its own reward: the photo, and the page filled in; the economy stays as it is)
-function witness() { return false; }      // (the Field Guide is retired: the tank's health is what the game is about now. The moment's own journal line is still written by its caller)
+// A page happened in the tank. The tank keeps the first time (who, when, its line); the event (beh) lets the server note which caretakers had the
+// tank open in front of them at that moment, and so saw it, as opposed to finding out afterwards. No journal line or toast of its own: the moment's
+// line is written by its caller. (by: kept for the old pages, which said who saw it first)
+function witness(t, id, f, now, ev, by = null, line = null) {
+  if (!FIELD[id]) return false; const who = FIELD[id].who;
+  if (f && who !== 'any' && (who === 'fish' ? isOcto(f) || f.species === 'seahorse' || isCrab(f) : who === 'crab' ? !isCrab(f) : who === 'turtle' ? !TURTLES.has(f.species) : f.species !== who)) return false;      /* (a page is only filled by the kind of animal it is about) */
+  ev.push({ beh: id, fish: f?.id ?? null, jat: now });
+  const F = (t.field ||= {}); if (F[id]) return false;
+  F[id] = { at: now, fish: f?.id ?? null, name: f?.name ?? null, text: line, v: 2 }; return true;
+}
 // ── The daily mystery ── one small thing in the tank each day, there to be found: a glint, a trail of bubbles, tracks across the sand. Tapping
 // it plays it out, and what it turns out to be differs from one day to the next; now and then it is not over, and tomorrow there is more.
 // Nothing is owed and nothing is lost if it is missed: it is simply gone the next day (no streak, no reward to chase).
@@ -1268,7 +1318,7 @@ function goalOffer(t, now) { const h = hash32(Math.floor(now / DAY) * 13 + ((t.c
   if (ok.includes('sanctuary') && !pick.includes('sanctuary')) pick[pick.length ? pick.length - 1 : 0] = 'sanctuary';      /* (level 7's own goal is always on offer until a turtle has lived here) */
   if (!(t.goalsDone ?? []).length && !pick.some((k) => k === 'family' || k === 'sleuth')) { const quick = ['family', 'sleuth'].find((k) => ok.includes(k)); if (quick) pick[Math.min(2, pick.filter(Boolean).length)] = quick; }      /* (a first goal on offer that takes days, not weeks) */
   return pick.filter(Boolean).slice(0, 3); }
-const baseOf = (t) => ({ ...(t.stats ?? {}), field: Object.keys(t.field ?? {}).length });
+const baseOf = (t) => ({ ...(t.stats ?? {}), field: Object.values(t.field ?? {}).filter((p) => p && !p.v).length });      // (pages since the Field Guide came back are not scored: levels go at the same pace as before)
 function goals(t, now, ev) {
   if ((t.flags.tut ?? 0) < 5) return;
   if (!t.goal) { if (!t.goalOffer?.length && now - (t.flags.promised ?? t.createdAt ?? now) >= 20 * HOUR) t.goalOffer = goalOffer(t, now); return; }      // (goals come on the second day: the first is for getting to know the tank)
@@ -2047,7 +2097,7 @@ function wellLog(t, now) {
 export function missingSince(f, label) { const L = f.well ?? []; let at = null; for (let i = L.length - 1; i >= 0; i--) { if (L[i].miss.includes(label)) at = L[i].at; else break; } return at; }
 const AWAY_BLOCK = new Set(['observe', 'moment', 'feed', 'puzzle', 'hide', 'crab', 'sellFish', 'letGo', 'releaseOcto', 'octoTouch', 'octoMove', 'pet', 'train', 'play', 'octoMem', 'octoMemo', 'octoMoment', 'fishNote']);
 // what adventures.js needs from here (passed in rather than imported back, so the two files never depend on each other at load time)
-const ADVR = { OHR, get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), ensureFish: (...x) => ensureFish(...x), pending: (...x) => pending(...x), capacity: (...x) => capacity(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
+const ADVR = { OHR, witness: (...x) => witness(...x), get DECOR_DEF() { return DECOR_DEF; }, get SPECIES_DEF() { return SPECIES_DEF; }, isOcto, stageOf, ownHunger, ownHungry, lifeOf, octoMind, unlock: (...x) => unlock(...x), ensureFish: (...x) => ensureFish(...x), pending: (...x) => pending(...x), capacity: (...x) => capacity(...x), memCap: (...x) => memCap(...x), get KEEPSAKES() { return KEEPSAKES; }, get AIL_TIRED() { return AIL_TIRED; } };
 function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, test = false, solo = false, uid = 'me', members = null } = {}) {
   const events = advance(t, now);
   const fail = (reason) => ({ ok: false, reason, events });
@@ -2143,7 +2193,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       t.decor.push({ id: nextId(t, 'd'), type: SHELLS[old.t] ? old.t : 'cshell_worn', x: +x.toFixed(2), z: +z.toFixed(2), ry: +(num(a.ry) || 0).toFixed(2), at: now, paid: 0, sz: old.sz, left: f.id });      // the old shell stays in the tank, free for another crab
       C.shell = { t: d.type, sz, from: d.id }; C.hist.push({ t: d.type, at: now, how: 'moved' }); if (C.hist.length > 12) C.hist.splice(0, C.hist.length - 12); C.swapAt = now;
       const lab = shellLabel(d.type), an = /^[aeiou]/i.test(lab) ? 'an' : 'a';
-      events.push({ journal: `${f.name} moved into ${an} ${lab} shell.`, story: f.id, text: `Moved into ${an} ${lab} shell.`, crabSwap: { fish: f.id, decor: d.id } });
+      events.push({ journal: `${f.name} moved into ${an} ${lab} shell.`, story: f.id, text: `Moved into ${an} ${lab} shell.`, crabSwap: { fish: f.id, decor: d.id } }); witness(t, 'shell', f, now, events, name, `${f.name} moved into ${an} ${lab} shell.`);
       return ok();
     }
     case 'crabMem': {                                              // what the phone running the animals has seen a crab do: its favorite spot, where it roams, who it keeps meeting
@@ -2469,7 +2519,9 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (d && d.line && !d.serverOnly && f && (!d.kind || d.kind === f.species) && !(f.stage === 'baby' && now - f.born < 3600e3)) {
         const tr = f.traits ?? [], decor = a.spot ? t.decor.find((x) => x.id === a.spot) : null, other = d.pair ? t.fish.find((x) => x.id === a.with && x.id !== f.id) : null;
         const okTrait = !d.traits || d.traits.some((x) => tr.includes(x)), okDecor = !d.needsDecor || decor, okPair = !d.pair || other, okBubble = !d.needsBubbler || t.decor.some((x) => x.type === 'bubbler');
-        if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other })) did = true;
+        const x = { decor: decor ? DECOR_DEF[decor.type].label.toLowerCase() : '', other: other?.name, otherId: other?.id, otherObj: other };
+        if (okTrait && okDecor && okPair && okBubble && unlock(t, f, key, now, events, x)) did = true;
+        if (okTrait && okDecor && okPair && okBubble && FIELD[key]) witness(t, key, f, now, events, name, d.line(f, x));      // (seen again counts too: the Field Guide notes who was watching)
       }
       return ok({ applied: did });
     }

@@ -124,7 +124,7 @@ export function resetTestTank(db, user, now = Date.now()) {
   const t = testTankOf(db, user.id); if (!t) throw new GameError('NO_TANK', 'You have no test aquarium.', 404);
   return tx(db, () => {
     const { w } = loadWorld(db, t.id), fresh = testWorld(now, (w.seq ?? 10) + 1000);
-    for (const tb of ['journal', 'activity', 'messages', 'transactions']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id);
+    for (const tb of ['journal', 'activity', 'messages', 'transactions', 'dd_tank', 'dd_day', 'dd_answer', 'dd_seen']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id);
     db.prepare('UPDATE tanks SET created_at=? WHERE id=?').run(now, t.id); saveWorld(db, t.id, fresh);
     addJournal(db, t.id, 'The test aquarium was reset.', user.id, now);
     return { id: t.id, world: fresh };
@@ -182,7 +182,7 @@ export function deleteUser(db, user) {
     if (t) { db.prepare('DELETE FROM members WHERE user_id=?').run(user.id); orphanOctopuses(db, t.id, user.id); const left = db.prepare('SELECT COUNT(*) n FROM members WHERE tank_id=?').get(t.id).n; if (left === 0) { for (const tb of ['journal', 'activity', 'messages']) db.prepare(`DELETE FROM ${tb} WHERE tank_id=?`).run(t.id); db.prepare('DELETE FROM transactions WHERE tank_id=?').run(t.id); for (const q of ['DELETE FROM hearts WHERE journal_id NOT IN (SELECT id FROM journal)', 'DELETE FROM photos WHERE tank_id=?']) db.prepare(q).run(...(q.includes('?') ? [t.id] : [])); db.prepare('DELETE FROM tanks WHERE id=?').run(t.id); tankGone = true; } else addJournal(db, t.id, `${user.name} left the tank.`, user.id); }
     for (const tb of ['push_subs', 'push_log']) { try { db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); } catch { /* table shape differs */ } }
     db.prepare('DELETE FROM test_members WHERE user_id=?').run(user.id);      // (a developer's seat in a test aquarium)
-    try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
+    try { db.prepare('DELETE FROM events WHERE user_id=?').run(user.id); } catch { /* none */ } for (const tb of ['dd_answer', 'dd_seen']) db.prepare(`DELETE FROM ${tb} WHERE user_id=?`).run(user.id); try { db.prepare('DELETE FROM thanks WHERE from_user=?').run(user.id); } catch { /* none */ }
     db.prepare('DELETE FROM users WHERE id=?').run(user.id); return { ok: true, tankId: t?.id ?? null, tankGone };
   });
 }
@@ -310,6 +310,7 @@ function writeEvents(db, tankId, events, now, userId = null) {
     if (e.journal) out.push({ journal: addJournal(db, tankId, e.journal, e.adventure || !userId ? null : userId, Math.min(now, e.jat ?? now), R.aboutOf(e)), ...pick(e) });
     else if (e.toast || e.arrival || e.placed) out.push({ toast: e.toast, arrival: e.arrival, placed: e.placed, levelUp: e.levelUp, grew: e.grew, discovery: e.discovery, surprise: e.surprise, teamGlow: e.teamGlow, wish: e.wish, dailyDone: e.dailyDone, want: e.want });
     if (e.activity) out.push({ activity: addActivity(db, tankId, e.activity.noUser || !userId ? null : userId, e.activity.type, e.activity.text, now) });
+    if (e.beh) out.push({ beh: e.beh, fish: e.fish ?? null, at: Math.min(now, e.jat ?? now) });      // (a Field Guide behavior happened: the server notes who was watching, see discovery.mjs)
   }
   return out;
 }

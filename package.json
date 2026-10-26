@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server/server.mjs",
-    "test": "node web/src/game/rules.test.mjs && node web/src/game/adventures.test.mjs && node web/src/game/life.test.mjs && node web/src/game/history.test.mjs && node --disable-warning=ExperimentalWarning server/biscuit.test.mjs && node --disable-warning=ExperimentalWarning server/test.mjs"
+    "test": "node web/src/game/rules.test.mjs && node web/src/game/adventures.test.mjs && node web/src/game/life.test.mjs && node web/src/game/history.test.mjs && node --disable-warning=ExperimentalWarning server/biscuit.test.mjs && node --disable-warning=ExperimentalWarning server/test.mjs && node --disable-warning=ExperimentalWarning server/discovery.test.mjs"
   },
   "dependencies": {
     "web-push": "^3.6.7",
