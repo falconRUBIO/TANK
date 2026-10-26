@@ -1132,7 +1132,7 @@ function rollDilemma(t, now, ev) {
   ev.push({ journal: t.dilemma.text + (turn ? ` It is ${turn[1].name}'s call.` : ''), toast: `${t.dilemma.text} ${turn ? `${turn[1].name}'s call.` : 'What will you do?'}`, dilemma: t.dilemma.id });
 }
 function settleDilemma(t, D, k, now, name) {
-  const events = [], F = D.fish.map((id) => t.fish.find((f) => f.id === id && !f.dead)), [x, y] = F, h = hash32((D.at / 6e4) | 0), luck = h % 100, who = name ? `${name} chose` : 'Nobody chose, so';
+  const events = [], F = D.fish.map((id) => t.fish.find((f) => f.id === id && !f.dead)), [x, y] = F, h = hash32((D.at / 6e4) | 0), luck = h % 100, who = name ? `${name} chose` : 'Nobody chose in time, so the tank went with the gentle choice:';      // (each line goes on 'to …': 'Ana chose to …', or this)
   const say = (line, f = x) => events.push({ journal: line, ...(f ? { story: f.id, text: line } : {}) }), hap = (f, d) => { if (f) f.happy = Math.max(0, Math.min(1, (f.happy ?? 0.7) + d)); };
   if (!x) { D.done = true; D.chose = k; return { ok: true, events }; }
   if (D.kind === 'den') { const dl = (DECOR_DEF[t.decor.find((d) => d.id === D.decor)?.type]?.label ?? 'den').toLowerCase();
@@ -1533,7 +1533,7 @@ export function needCtx(t, f, now = Date.now()) {
   const live = t.fish.filter((x) => !x.dead && !x.away), cr = crowdOf(t), cv = coverOf(t, f), cats = {}; for (const d of t.decor) { const k = DECOR_DEF[d.type]?.cat; if (k) cats[k] = (cats[k] ?? 0) + 1; }
   const types = {}; for (const d of t.decor) types[d.type] = (types[d.type] ?? 0) + 1;
   return { decorN: t.decor.length, others: live.filter((o) => o !== f).length, own: live.filter((o) => o.species === f.species).length, r: cr.r, roomTol: sanctCalm(t) ? 0.85 : 0.6, cover: cv.have, cats, types, has: (sp) => live.some((o) => o !== f && o.species === sp), fast: live.some((o) => o !== f && ECO[o.species]?.feed === 'fast'),
-    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7, ...(isCrab(f) ? { crabSpare: !outgrown(f, now) || !!bestShell(f, t.decor.filter((d) => isShell(d.type)), now) } : {}) };
+    ownFed: ownHungry(f) && ownHunger(f) < 0.35, fed: needsOf(f, t, now).fed, puzzled: !canPuzzle(f, now) || (f.puzzleAt != null && now - f.puzzleAt < 2 * DAY),      /* (a young octopus is not given jars yet, so it does not miss them) */ played: Object.values(f.petAt ?? {}).some((x) => now - x < DAY), cleanWater: t.water >= 0.7, ...(isCrab(f) ? { crabSpare: !outgrown(f, now) || !!bestShell(f, t.decor.filter((d) => isShell(d.type)), now) } : {}) };
 }
 export const coverOf = (t, f) => { const C = ECO[f.species]?.cover; if (!C) return { have: hides(t), need: 4, word: 'places to hide', cat: 'PLANTS' }; const have = t.decor.filter((d) => C.types?.includes(d.type) || C.cats?.includes(DECOR_DEF[d.type]?.cat)).length; return { have, need: C.need, word: C.word, cat: C.cat }; };
 // how full the tank feels: each animal weighed by its size (a tiny schooling chromis is half an animal, a big angelfish or an octopus one and a half)

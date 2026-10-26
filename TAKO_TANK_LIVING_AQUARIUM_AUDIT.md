@@ -179,6 +179,26 @@ Every species and decoration tile in the Guide now opens a sheet. A kind of anim
 | attach | marginal thresholds that fail on the old build too: the sword-plant spot (0.15 vs 0.08 old, 0.20 vs 0.10 new; the check wants a gap of 0.10), the homebody's den share and the seahorse favourite vary run to run | flaky drill, not a regression; thresholds left as they are |
 | clip, backup | pre-existing (sample count on the base build; a stale nightly backup date in this container) | environmental |
 
+## G10. Menus and the first week, played as a returning player (v365–v370)
+**How it was checked.** A week of visits driven in the browser: the page clock moved forward (8 h, then 1, 1⅓, 2, 3, 4, 5 and 7 days), the page reloaded as a returning player, the screen and Today/Care/Shop text recorded, then the day's care done (feed, water and glass when due). Every menu screen and both animal cards were screenshotted at 390×844 and the Today page at 320×640. Headless only: nothing here was seen on a phone.
+
+**What the week showed, and what changed.**
+| Found | Change |
+|---|---|
+| A new tank was bare (the starter pack only mentioned in a tip the shortened welcome no longer shows). With no den the lone octopus topped out at 56 ("Unsettled"), so the tank sat at Struggling/Unwell all week even with daily care, and level 4 was "about 18 days" away on day 8 | the starter pack is laid out across the three levels when the first animal arrives; its starfish (10 shells) is swapped for a coconut-shell den (12). After care the tank now reads 74–84 (Happy); level 3 came on day 6 instead of 8 |
+| Best next step said "Feed the tank" (flakes) with only an octopus, whose food is a crab from its card | flake hunger counts only when something eats flakes; a hungry octopus or seahorse gets "Feed Sunny a crab", opening the Feed screen |
+| The same daily surprise every day for a lone octopus, about "a pinch of food… before anyone else could" | the octopus has its own six, a different one each day in turn |
+| Visitors (about every 3–4 days, staying 3 h) were never mentioned to someone who missed them | "A Ghost Dragonet dropped by while you were away" in the away summary |
+| "How your tank grows" stayed on top of Today | retires after three visits to Today |
+| The octopus thumbnail had its arms over its head (posed below the sand, the arm-placement step lifted every arm onto the sand surface) | sits on the sand, mantle up, in its own color; also on the welcome picker, larger |
+| First-feed tip never changed; the tips were hidden behind open sheets | follows each step (Care → Feed → the card) with a glow on what to tap, shown above the sheet |
+| Today about 7 screens, health explained three times | level card and points breakdown folded behind a tap; one "What makes the health" row opening Health (2966 → 2149 px) |
+| Journal: one large photo per favorite-spot find and per birthday | same-day repeats fold into the day's "Also" line (6378 → 5184 px on the test tank) |
+| Cards: text showing through the sticky tab bar; a dangling subtitle line | the bar's backing appears only once it has stuck; the header shows the animal's picture |
+| Smaller copy | "about 3 days" not "3d 0h"; level-up banner names what opened; the dialog lists each thing once; Guide counts squares as shown; Settings shows the installed build |
+
+**Drills.** Unit tests 332/332. ux, care, loop, journal, notes_seen, road, chart, living, bonds, octopus_den, octopus_rest and playthrough pass when run alone. octopus_den and playthrough both failed once while five browsers ran together and passed alone (the previous commit passes them too). Three server tests and two playthrough checks encoded the bare opening and were updated to the new one (the starter pack in the tank; a further plant costs shells).
+
 ## H. Tests and remaining checks
 - `npm test`: **95 of 95** suites (rule tests now include the capacity switch's gates, play feedback, trick eligibility, the shared picks, the palette migration, journal references, habitat usage notes, the road tables, friendships, favorites, milestones).
 - Headless drills passing: `toys_check2` (cube cycle, hoop hitching and riding), `seahorse_check`, `road_check`, `play_check`, `story_check`, `friends_check`, `sync_check`, `sell_check`, `care_sync`, `bonds_check`, `profile_check`, `journal_check`, `adopt_check`, `fund_check`, `turtle_check`, `motion_check`.
