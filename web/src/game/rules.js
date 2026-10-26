@@ -573,6 +573,13 @@ export const WISHES = [
   { text: 'Find every fish and decoration in the book', done: (t) => t.seen.fish.length + t.seen.decor.length >= COLLECTION_SIZE(), reward: 25 },
   { text: 'Reach the top tank level', done: (t) => t.level >= TOP_LEVEL, reward: 15 },        // last: a wish that needs level 8 must not stand in front of wishes that count toward it
 ];
+// a new tank is not a bare one: the starter pack goes in with the first animal, laid out across the three levels (a coconut den on the open floor,
+// a reef rock on the terrace edge, a sea fan up on the back bank, sea grass on the right-hand terrace, a coralline ball by the front glass)
+const STARTER_LAYOUT = [['coconut', 2.3, 1.7, -0.6], ['rock', -1.3, 0.9, 0.4], ['fern', -2.9, -2.6, 0], ['grass', 2.7, -0.9, 0], ['moss', -3.0, 2.5, 0]];
+function furnish(t, now) {
+  if (t.decor.length) return;
+  for (const [type, x, z, ry] of STARTER_LAYOUT) { if (!((t.flags.starter?.[type] ?? 0) > 0)) continue; t.flags.starter[type]--; t.decor.push({ id: nextId(t, 'd'), type, x, z, ry, at: now, paid: 0 }); if (!t.seen.decor.includes(type)) t.seen.decor.push(type); }
+}
 export const COLLECTION_SIZE = () => Object.keys(SPECIES_DEF).length + Object.keys(DECOR_DEF).length;
 // It is a tank, not the sea: whatever turns up was brought by something that lives in it, or dropped in from above.
 function culprit(t, h) {
@@ -1776,7 +1783,7 @@ function milestones(t, now, ev) {
 // `empty` is a brand new tank: no fish at all until its first caretaker chooses one in the opening.
 export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
   return {
-    style: { floor: 'sand', backdrop: 'candy' }, shells: 20, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 2, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 } },
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 20, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 2, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, coconut: 1, moss: 1 } },
     fish: empty ? [] : [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }],
     decor: [],
     seen: { fish: empty ? [] : ['goldfish'], decor: [] },
@@ -1914,7 +1921,9 @@ function dailySurprise(t, now, ev) {
   if (young.length) opts.push(() => { const f = pick(young, 1); (f.raise ||= {}).meals = (f.raise.meals ?? 0) + 1; f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); return { f, text: `${f.name} ate its biggest meal yet and did a happy little wiggle.` }; });
   if (lonely.length >= 2) { const pairs = []; for (const a of lonely) for (const b of lonely) if (a.id < b.id && canBefriend(a, b) && ((a.know?.[b.id]?.[0] ?? 0) + (b.know?.[a.id]?.[0] ?? 0) >= 120 || (a.spotId && a.spotId === b.spotId))) pairs.push([a, b]);      /* (only two who really keep company: time seen together, or the same favorite place; never two strangers) */
     if (pairs.length) opts.push(() => { const [a, b] = pick(pairs, 2); a.pal = b.id; b.pal = a.id; (a.disc ||= {}).friend ??= now; (b.disc ||= {}).friend ??= now; const line = `${a.name} and ${b.name} shared the first flakes, and now they swim side by side. Friends!`; ev.push({ story: a.id, text: line }, { story: b.id, text: line }); return { f: a, text: line }; }); }
-  if (octo) opts.push(() => { octo.happy = Math.min(1, (octo.happy ?? 0.7) + 0.05); return { f: octo, text: `${octo.name} shot up and snatched the first pinch of food before anyone else could.` }; });
+  if (octo) opts.push(() => { octo.happy = Math.min(1, (octo.happy ?? 0.7) + 0.05); const n = octo.name, den = t.decor.some((x) => x.type === 'coconut' || x.type === 'pot');      /* (the octopus's own, a different one each day in turn: a tank with only an octopus has no other surprise to give) */
+    const L = [fish.length ? `${n} shot up and snatched the first pinch of food before anyone else could.` : `${n} stalked across the sand toward the crab, then pounced like a cat.`, `${n} tasted the crab with the tip of one arm before it pounced.`, `${n} flushed a deep red with excitement as dinner dropped in.`, den ? `${n} carried its crab home to the den and ate it in the doorway.` : `${n} wrapped its whole web round the crab like a parachute.`, `${n} finished, then pushed the leftover shell bits into a neat little pile.`, `${n} came to the front glass afterward and watched you with one eye.`];
+    return { f: octo, text: L[(d + (octo.seed ?? 0)) % L.length] }; });
   if (seas.length) opts.push(() => { const f = pick(seas, 3); return { f, text: `${f.name} snicked a flake right out of the water with a flick of its snout.` }; });
   if (fish.length) opts.push(() => { const f = pick(fish, 4); (f.disc ||= {}).glass ??= now; return { f, text: `${f.name} came right up to the glass to watch you feed.` }; });
   if (fish.length >= 3) opts.push(() => { const f = pick(fish, 5); return { f, text: `${f.name} led the whole tank in a little parade to the food.` }; });
@@ -2237,7 +2246,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const back = Math.floor((Number.isFinite(it.paid) ? it.paid : d.price) / 2); t.decor.splice(i, 1); t.shells += back; return ok({ delta: back });      // half of what was really paid (a starter gift once sold for shells, again and again in a solo tank)
     }
     case 'tut': {                                                    // tutorial progress; the free plant is granted once
-      if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, starfish: 1, moss: 1 }; return ok(); }
+      if (a.reset) { if (!(solo || dev)) return fail('FORBIDDEN'); t.flags.tut = 0; t.flags.starter = { fern: 1, grass: 1, rock: 1, coconut: 1, moss: 1 }; return ok(); }
       const step = Math.max(0, Math.min(9, num(a.step) | 0)); if (step > (t.flags.tut ?? 0)) { t.flags.tut = step; }
       if (step >= 5 && !t.flags.promised) { t.flags.promised = now; t.driftAt = now + (4 + (hash32(now / 6e4) % 4)) * HOUR; t.visitAt = Math.min(t.visitAt ?? Infinity, now + 22 * HOUR); }      // the first session ends with real things on their way
       return ok();
@@ -2430,7 +2439,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
         const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-        events.push({ journal: `${name} brought in ${made.name}, the first fish.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
+        furnish(t, now); events.push({ journal: `${name} brought in ${made.name}, the first fish.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;

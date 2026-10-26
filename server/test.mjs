@@ -209,7 +209,7 @@ await t('absence is bounded: 10 days away never starves the tank', async () => {
 });
 
 console.log('Shop & progression');
-await t('a new tank has the chosen first fish, no decor yet and 20 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.equal(w.decor.length, 0); assert.ok(w.level <= 2, JSON.stringify({ lv: w.level, xp: w.xp })); });      // (level 2 comes within the first day, and the tests before this one already ran the clock on)
+await t('a new tank has the chosen first fish, its starter pack laid out (a den among it) and 20 shells', async () => { const w = getW(tank.id); assert.equal(w.fish[0].name, 'Pip'); assert.deepEqual(w.decor.map((d) => d.type).sort(), ['coconut', 'fern', 'grass', 'moss', 'rock']); assert.ok(w.decor.every((d) => d.paid === 0)); assert.ok(Object.values(w.flags.starter).every((n) => n === 0)); assert.ok(w.level <= 2, JSON.stringify({ lv: w.level, xp: w.xp })); });      // (level 2 comes within the first day, and the tests before this one already ran the clock on)
 const wsA = await open(a.token);
 const ackOf = async (ws, msg) => { ws.send(JSON.stringify(msg)); return waitFor(ws, (m) => m.t === 'ack' && m.idem === msg.idem); };
 await t('buying is validated by the server: price, level, bounds', async () => {
@@ -238,7 +238,7 @@ await t('buying a school adds four fish; selling decor refunds half; capacity is
   setW(tank.id, { shells: 200, level: 1, simTs: Date.now() });
   const n0 = getW(tank.id).fish.length, o0 = getW(tank.id).orders.length;
   assert.equal((await ackOf(wsA, { t: 'buyFish', species: 'neon', idem: 's1' })).ok, true); assert.equal(getW(tank.id).fish.length, n0); assert.equal(getW(tank.id).orders.length, o0 + 1); setW(tank.id, { orders: getW(tank.id).orders.map((o) => ({ ...o, arrivesAt: 0 })) }); L_tick(); assert.equal(getW(tank.id).fish.length, n0 + 4 + o0);
-  const d = getW(tank.id).decor.at(-1); const s0 = getW(tank.id).shells;
+  assert.equal((await ackOf(wsA, { t: 'buyDecor', type: 'fern', x: 1, z: 1, idem: 's1d' })).ok, true); const d = getW(tank.id).decor.at(-1); const s0 = getW(tank.id).shells;      // (a bought one: the starter pieces were free and sell for nothing)
   assert.equal((await ackOf(wsA, { t: 'sellDecor', id: d.id, idem: 's2' })).ok, true); assert.equal(getW(tank.id).shells, s0 + Math.floor(DECOR_DEF[d.type].price / 2));
   setW(tank.id, { level: 1, shells: 500, simTs: Date.now() });
   let last; for (let i = 0; i < 4; i++) last = await ackOf(wsA, { t: 'buyFish', species: 'goldfish', idem: 'cap' + i });
@@ -581,7 +581,7 @@ await t('your data is yours: backup downloads, restores into a new tank, and del
   const del = await fetch(base + '/api/me', { method: 'DELETE', headers: { authorization: 'Bearer ' + u2.token } }); assert.equal(del.status, 200); assert.equal((await call('/api/me', null, u2.token)).status, 401, 'the player is gone'); assert.equal(S.db.prepare('SELECT COUNT(*) n FROM tanks WHERE id=?').get(r.body.id).n, 0, 'an empty tank goes with its last player');
   assert.equal(S.db.prepare('SELECT COUNT(*) n FROM users WHERE id=?').get(u2.userId).n, 0);
 });
-await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.equal(w.flags.starter.fern, 1); });
+await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.ok(w.decor.some((d) => d.type === 'fern' && d.paid === 0)); });
 await t('the octopus puzzle jar: costs shells once, cannot be doubled by two caretakers, and is solved on its own with the event delivered', async () => {
   const { tk, x, y } = globalThis.regress, now = Date.now(), wx = await open(x.token), wy = await open(y.token), w0 = getW(tk.id), tpl = w0.fish[0];
   const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 12 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: [], disc: {}, bond: {}, petAt: {}, puzzle: null };
