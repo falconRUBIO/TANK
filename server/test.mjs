@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { start } from './server.mjs';
+import { applyTank } from '../web/src/game/patch.js';
 import { ALPHABET, tickTank } from './logic.mjs';
 import { DECOR_DEF, WATER_PAY, GLASS_PAY, DAILY_GIFT } from '../web/src/game/rules.js';
 
@@ -20,9 +21,16 @@ const call = async (path, body, token, method = body ? 'POST' : 'GET') => {
   return { status: r.status, body: await r.json() };
 };
 const mkUser = async (name) => (await call('/api/users', { name, avatar: { skin: '#e8b890', hair: '#5a3ad0', hat: null } })).body;
+// a phone keeps the tank as the server sends it, whole or only what changed (web/src/game/patch.js), the way the game does: a patch it
+// cannot apply (not built on the copy it has) makes it ask for the whole tank. Here an applied patch is recorded as the whole tank it made.
+const take = (ws, m) => {
+  if (m.t === 'snapshot') { ws.cur = m.tank; ws.sv = null; } else if (m.t === 'state') { ws.cur = m.tank; ws.sv = m.v ?? null; }
+  else if (m.t === 'patch') { if (ws.sv == null || m.from !== ws.sv) { ws.sv = null; ws.send(JSON.stringify({ t: 'stateGet' })); return null; } ws.cur = applyTank(ws.cur, m.d); ws.sv = m.v; return { t: 'state', tank: ws.cur, v: m.v, ...(m.by ? { by: m.by } : {}), patched: true }; }
+  return m;
+};
 const open = (token) => new Promise((ok, no) => {
   const ws = new WebSocket(`ws://localhost:${S.port}/ws?token=${token}`); ws.msgs = [];
-  ws.on('message', (d) => ws.msgs.push(JSON.parse(d.toString()))); ws.on('open', () => ok(ws)); ws.on('error', no); ws.on('unexpected-response', (_, r) => no(new Error('HTTP ' + r.statusCode)));
+  ws.on('message', (d) => { const m = take(ws, JSON.parse(d.toString())); if (m) ws.msgs.push(m); }); ws.on('open', () => ok(ws)); ws.on('error', no); ws.on('unexpected-response', (_, r) => no(new Error('HTTP ' + r.statusCode)));
 });
 const waitFor = async (ws, pred, ms = 2000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const m = ws.msgs.find(pred); if (m) return m; await new Promise((r) => setTimeout(r, 10)); } throw new Error('timeout waiting for message'); };
 
@@ -702,7 +710,7 @@ await t('a phone that connects catches the tank up for everyone: the phone alrea
 await t('chaos: three phones act at random while connections drop and come back; in the end every phone agrees with the server', async () => {
   const u = [await mkUser('C1'), await mkUser('C2'), await mkUser('C3')], tk = (await call('/api/tanks', { name: 'Chaos' }, u[0].token)).body; await call('/api/join', { code: tk.code }, u[1].token); await call('/api/join', { code: tk.code }, u[2].token);
   setW(tk.id, { shells: 400, level: 8, flags: { ...getW(tk.id).flags, tut: 5, firsts: { [u[0].userId]: true, [u[1].userId]: true, [u[2].userId]: true } }, fish: [{ id: 'cf', name: 'Chaos', species: 'goldfish', seed: 1, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now(), hunger: 0.9, glass: 0.9, water: 0.4 });
-  const ph = u.map((x) => ({ x, ws: null, state: null })), conn = async (p) => { p.ws = await open(p.x.token); p.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'snapshot') p.state = m.tank; else if (m.t === 'state') p.state = m.tank; }); await waitFor(p.ws, (m) => m.t === 'snapshot'); };
+  const ph = u.map((x) => ({ x, ws: null, state: null })), conn = async (p) => { p.ws = await open(p.x.token); p.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'snapshot' || m.t === 'state' || m.t === 'patch') p.state = p.ws.cur; });      /* (the copy the phone holds, whole or patched) */ await waitFor(p.ws, (m) => m.t === 'snapshot'); };
   for (const p of ph) await conn(p); let seq = 0, rngS = 12345; const rnd = () => ((rngS = (rngS * 16807) % 2147483647) / 2147483647);
   const acts = [(i) => ({ t: 'feed', x: 0 }), (i) => ({ t: 'glass' }), (i) => ({ t: 'water' }), (i) => ({ t: 'pet', id: 'cf' }), (i) => ({ t: 'buyDecor', type: 'grass', x: (rnd() - 0.5) * 6, z: 1 + rnd(), ry: 0 }), (i) => ({ t: 'dailyGift', tz: 0 })];
   for (let i = 0; i < 70; i++) {
@@ -713,6 +721,19 @@ await t('chaos: three phones act at random while connections drop and come back;
   await new Promise((r) => setTimeout(r, 500)); const w = getW(tk.id);
   for (const p of ph) { assert.ok(p.state, 'phone has a tank'); assert.equal(p.state.shells, w.shells, 'shells agree'); assert.equal(p.state.level, w.level); assert.equal((p.state.decor ?? []).length, (w.decor ?? []).length, 'decor agrees'); assert.equal((p.state.fish ?? []).length, w.fish.length); assert.deepEqual(p.state.flags?.gift ?? {}, w.flags.gift ?? {}, 'gift claims agree'); }
   assert.ok(Object.keys(w.flags.gift ?? {}).length <= 3 && Object.values(w.flags.gift ?? {}).length >= 0); for (const p of ph) p.ws.close();
+});
+await t('bandwidth: after an action other phones get only what changed; a phone not being looked at gets nothing until it is looked at, then the whole tank', async () => {
+  const x = await mkUser('Bw1'), y = await mkUser('Bw2'), tk = (await call('/api/tanks', { name: 'Bw' }, x.token)).body; await call('/api/join', { code: tk.code }, y.token);
+  setW(tk.id, { shells: 300, level: 8, flags: { ...getW(tk.id).flags, tut: 5 } });
+  const wx = await open(x.token), wy = await open(y.token); await waitFor(wy, (m) => m.t === 'state'); await new Promise((r) => setTimeout(r, 200));
+  let raw = 0, patches = 0; wy.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'patch') { patches++; raw += d.length; } });
+  wx.send(JSON.stringify({ t: 'feed', x: 0, idem: 'bw1' })); const ack = await waitFor(wx, (m) => m.t === 'ack' && m.idem === 'bw1'); assert.ok(ack.ok, JSON.stringify(ack)); const st = await waitFor(wy, (m) => m.t === 'state' && m.patched && m.by === x.userId);
+  assert.ok(patches >= 1 && raw < JSON.stringify(st.tank).length / 3, `a patch is much smaller than the tank (${raw} vs ${JSON.stringify(st.tank).length})`); assert.equal(st.tank.shells, getW(tk.id).shells);
+  wy.send(JSON.stringify({ t: 'vis', hidden: true })); await new Promise((r) => setTimeout(r, 100)); const n0 = wy.msgs.length;
+  wx.send(JSON.stringify({ t: 'buyDecor', type: 'grass', x: 1, z: 1, ry: 0, idem: 'bw2' })); const k2 = await waitFor(wx, (m) => m.t === 'ack' && m.idem === 'bw2'); assert.ok(k2.ok && k2.applied !== false, JSON.stringify(k2)); await new Promise((r) => setTimeout(r, 200));
+  assert.ok(!wy.msgs.slice(n0).some((m) => m.t === 'state' || m.t === 'snap'), 'nothing heavy goes to a phone in a pocket');
+  wy.send(JSON.stringify({ t: 'vis', hidden: false })); const back = await waitFor(wy, (m) => m.t === 'state' && !m.patched && wy.msgs.indexOf(m) >= n0);
+  assert.equal(back.tank.decor.length, getW(tk.id).decor.length, 'looked at again: the whole tank, up to date'); assert.equal(back.tank.shells, getW(tk.id).shells); wx.close(); wy.close();
 });
 await t('every tank message carries the server clock, and a ping is answered', async () => {
   const w = await open(a.token); const snap = await waitFor(w, (m) => m.t === 'snapshot'); assert.ok(Math.abs(snap.now - Date.now()) < 5000, 'the snapshot has the server time');
@@ -770,7 +791,7 @@ await t('developer test aquarium: only listed players; real tanks untouched; the
   assert.equal((await call('/api/dev/test/open', {}, dev.token)).body.tank.id, op.body.tank.id, 'opening again finds the same one');
   // two phones in it: the second developer joins with the code; a socket to the test aquarium needs both the role and the seat
   assert.equal((await call('/api/dev/test/join', { code }, dev2.token)).status, 200);
-  const sock = (tok) => new Promise((ok, no) => { const ws = new WebSocket(`ws://localhost:${S.port}/ws?test=1`, ['ourtank.' + tok]); ws.msgs = []; ws.on('message', (d) => { const m = JSON.parse(d.toString()); ws.msgs.push(m); if (m.t === 'snapshot' || m.t === 'state') ws.tank = m.tank; }); ws.on('open', () => ok(ws)); ws.on('unexpected-response', (_, r) => no(new Error('HTTP ' + r.statusCode))); ws.on('error', no); });
+  const sock = (tok) => new Promise((ok, no) => { const ws = new WebSocket(`ws://localhost:${S.port}/ws?test=1`, ['ourtank.' + tok]); ws.msgs = []; ws.on('message', (d) => { const m = take(ws, JSON.parse(d.toString())); if (!m) return; ws.msgs.push(m); if (m.t === 'snapshot' || m.t === 'state') ws.tank = m.tank; }); ws.on('open', () => ok(ws)); ws.on('unexpected-response', (_, r) => no(new Error('HTTP ' + r.statusCode))); ws.on('error', no); });
   await assert.rejects(sock(plain.token), /401/, 'not a developer: no test socket');
   const A = await sock(dev.token), B = await sock(dev2.token); const sa = await waitFor(A, (m) => m.t === 'snapshot'); await waitFor(B, (m) => m.t === 'snapshot');
   assert.equal(sa.tank.id, op.body.tank.id); assert.equal(sa.test, true); assert.equal(sa.tank.fish.length, 0);

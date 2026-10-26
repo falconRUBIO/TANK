@@ -1,6 +1,7 @@
 // One game object for the UI and the scene. Solo play runs the shared rules in the browser and saves to
 // localStorage; shared tanks send the same actions to the server, which runs the same rules.
 import * as R from './rules.js';
+import { applyTank } from './patch.js';
 import { idbPut, askToKeep } from '../keep.js';
 
 const KEY = 'ourtank.world2';
@@ -76,7 +77,11 @@ export class Game {
       this.test = !!m.test; const { id, name, code, day, ...w } = m.tank; this.state = w; this.srvDay = day; this.tankName = name; this.code = code; this.you = m.you; this.away = m.away ?? null; this.members = m.members; this.online = m.online; this.activity = m.activity; this.messages = m.messages; this.thanked = new Set(m.thanked ?? []);
       this.journal = m.journal.map((e) => ({ id: e.id, day: e.day, text: e.text, ts: e.ts, userId: e.userId, photo: !!e.photo, hearts: e.hearts ?? [], ...(e.about ? { about: e.about } : {}) })); this.emit('state'); this.emit('members'); this.keepCopy();
     } else if (!this.state) return;
-    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }
+    else if (m.t === 'state') { const { day, ...w } = m.tank; this.state = w; this.sv = m.v ?? null; if (day) this.srvDay = day; this.emit('state'); this.keepCopy(); }
+    else if (m.t === 'patch') {      // only what changed since the copy this phone has; if it is not that copy (a message lost on a bad connection), ask for the whole tank
+      if (this.sv == null || m.from !== this.sv) { this.sv = null; this.live?.send({ t: 'stateGet' }); return; }
+      const { day, ...w } = applyTank({ ...this.state, day: this.srvDay }, m.d); this.state = w; this.sv = m.v; if (day) this.srvDay = day; this.emit('state'); this.keepCopy();
+    }
     else if (m.t === 'feed') { if (m.by !== this.you.userId) this.emit('remoteFeed', m.x, m.by, m.food, m.fish); }
     else if (m.t === 'event') {
       if (m.journal) { this.journal.push({ id: m.journal.id, day: m.journal.day, text: m.journal.text, ts: m.journal.ts, userId: m.journal.userId, ...(m.journal.about ? { about: m.journal.about } : {}) }); this.emit('journal', this.journal.at(-1)); }

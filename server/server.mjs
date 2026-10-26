@@ -13,6 +13,7 @@ import { makePush, vapidFor } from './push.mjs';
 import { offsiteFromEnv, restoreIfEmpty, makeUploader } from './offsite.mjs';
 import { makeAnalytics, CLIENT_EVENTS } from './analytics.mjs';
 import { createDiscovery } from './discovery.mjs';
+import { diffTank } from '../web/src/game/patch.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -94,6 +95,23 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   const roles = (tankId) => { const d = directorOf(tankId); for (const w of rooms.get(tankId) ?? []) send(w, { t: 'role', director: w === d }); };
   const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o.t === 'snapshot' || o.t === 'state' ? { ...o, now: Date.now() } : o)); };        // the server's clock rides along so every phone counts down by the same time
   const broadcast = (tankId, o) => { for (const w of rooms.get(tankId) ?? []) send(w, o); };
+  // The tank goes out as only what changed since the copy each phone already has (patch.js: about 2 KB compressed instead of about 15 KB). Each
+  // phone's copy is numbered (sv); a phone that is behind, has just connected, or was due a fresh whole copy (every 5 minutes, so nothing it
+  // changed by itself can drift) gets the whole tank instead. A phone that is not being looked at gets nothing until it is looked at again.
+  const tankCopy = new Map();      // tankId -> { v, w }: the last copy that went out
+  const sendFull = (w, pub, extra = {}) => { const c = tankCopy.get(w.tankId); send(w, { t: 'state', tank: pub, v: c?.w === pub ? c.v : undefined, ...extra }); w.sv = c?.w === pub ? c.v : undefined; w.fullAt = Date.now(); w.stale = false; };
+  const pushState = (tankId, pub, extra = {}, fresh = null) => {
+    const last = tankCopy.get(tankId), d = last ? diffTank(last.w, pub) : null, v = (last?.v ?? 0) + 1;
+    if (last && !d && !fresh) return;      // (nothing changed)
+    tankCopy.set(tankId, { v, w: pub });
+    for (const w of rooms.get(tankId) ?? []) {
+      if (w.hidden && w !== fresh) { w.stale = true; continue; }
+      if (last && !d && w !== fresh && w.sv === last.v && !w.stale) { w.sv = v; continue; }      // (its copy is already this one)
+      if (last && w.sv === last.v && !w.stale && w !== fresh && Date.now() - (w.fullAt ?? 0) < 5 * 60e3) { send(w, { t: 'patch', from: last.v, v, d: d ?? {}, ...extra }); w.sv = v; }
+      else sendFull(w, pub, extra);
+    }
+  };
+  const tankNowOf = (tankId) => tankCopy.get(tankId)?.w ?? L.publicTank(L.loadWorld(db, tankId).w);
   // each caretaker gets their own view of the day's question (what they may see depends on whether they have answered)
   const ddTz = (tankId) => { try { return L.loadWorld(db, tankId).w.tzMin ?? 0; } catch { return 0; } };
   const ddSend = (tankId, only = null) => { const tz = ddTz(tankId); for (const w of rooms.get(tankId) ?? []) if (!only || only(w)) { try { send(w, dd.view(tankId, w.userId, { tz })); } catch (e) { console.error('discovery', e.message); } } };
@@ -145,7 +163,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (req.method === 'POST' && p === '/api/dev/test/step') {
           const b = await readBody(req), t = L.testTankOf(db, user.id); if (!t) throw new L.GameError('NO_TANK', 'Open the test aquarium first.', 404);
           const r = L.act(db, user, { t: 'devSea', op: String(b.op ?? '') }, { idem: String(b.idem ?? '') || crypto.randomUUID(), tank: t });
-          if (r.ok && !r.dup) { broadcast(t.id, { t: 'state', tank: L.publicTank(r.world), by: user.id }); for (const e of r.events) broadcast(t.id, { t: 'event', ...e }); }
+          if (r.ok && !r.dup) { pushState(t.id, L.publicTank(r.world), { by: user.id }); for (const e of r.events) broadcast(t.id, { t: 'event', ...e }); }
           return json(res, 200, { ok: r.ok, reason: r.reason ?? null, ...info(t) });
         }
         if (req.method === 'POST' && p === '/api/dev/test/reset') {
@@ -193,7 +211,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (req.method === 'GET' && p === '/api/board') { if (!lim.hit('board:' + user.id, 60, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); const t = L.tankOf(db, user.id); return json(res, 200, L.weeklyBoard(db, t?.id ?? null)); }
       if (req.method === 'GET' && p === '/api/giftcode') { const t = L.tankOf(db, user.id); if (!t || t.test) throw new L.GameError('NO_TANK', 'You are not in a tank.', 404); return json(res, 200, { code: L.giftCodeOf(db, t.id) }); }      // the code a friend uses to send an animal here (not the join code)      // the week's rare colors, everywhere
       if (req.method === 'POST' && p === '/api/send') { if (!lim.hit('send:' + user.id, 6, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); const r = L.sendFish(db, user, await readBody(req));      // an animal bred here goes to a friend's tank
-        for (const id of [r.fromTank, r.toTank]) { const { w } = L.loadWorld(db, id); broadcast(id, { t: 'state', tank: L.publicTank(w) }); }
+        for (const id of [r.fromTank, r.toTank]) { const { w } = L.loadWorld(db, id); pushState(id, L.publicTank(w)); }
         const here = online(r.toTank); for (const m of L.listMembers(db, r.toTank)) if (!here.includes(m.id)) push.notify(m.id, `${user.name} is sending you ${r.name}. It arrives within the hour.`, { cap: 2, kind: 'gifts' }).catch(() => {});
         return json(res, 200, { ok: true, toName: r.toName, name: r.name }); }
       if (req.method === 'POST' && p === '/api/tanks/leave') {
@@ -201,7 +219,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         for (const w of [...(rooms.get(r.tankId) ?? [])]) if (w.userId === user.id) { w.close(); } broadcast(r.tankId, { t: 'members', members: L.listMembers(db, r.tankId) }); return json(res, 200, { ok: true });
       }
       if (req.method === 'GET' && p === '/api/export') { if (!lim.hit('x:' + user.id, 20, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); res.setHeader?.('Content-Disposition', 'attachment; filename="our-tank-backup.json"'); return json(res, 200, L.exportTank(db, user)); }
-      if (req.method === 'POST' && p === '/api/import') { if (!lim.hit('i:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); let imported; try { imported = L.importTank(db, user, await readBody(req)); } catch (e) { if (e.merged) { offsiteSoon(); broadcast(e.merged, { t: 'state', tank: L.publicTank(L.loadWorld(db, e.merged).w) }); } throw e; } offsiteSoon(); return json(res, 200, imported); }
+      if (req.method === 'POST' && p === '/api/import') { if (!lim.hit('i:' + user.id, 5, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429); let imported; try { imported = L.importTank(db, user, await readBody(req)); } catch (e) { if (e.merged) { offsiteSoon(); pushState(e.merged, L.publicTank(L.loadWorld(db, e.merged).w)); } throw e; } offsiteSoon(); return json(res, 200, imported); }
       if (req.method === 'DELETE' && p === '/api/me') { const t = L.tankOf(db, user.id); const r = L.deleteUser(db, user); offsiteSoon(); if (t) { for (const w of [...(rooms.get(t.id) ?? [])]) if (w.userId === user.id) w.close(); if (!r.tankGone) broadcast(t.id, { t: 'members', members: L.listMembers(db, t.id) }); } return json(res, 200, { ok: true }); }
       if (req.method === 'POST' && p === '/api/tanks/code' && !lim.hit('code:' + user.id, 10, 3600e3)) throw new L.GameError('RATE_LIMIT', 'Too many requests.', 429);
       if (req.method === 'POST' && p === '/api/tanks/code') return json(res, 200, { code: L.regenerateCode(db, user) });
@@ -254,7 +272,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     ws.sessionAt = Date.now(); ws.visSince = ws.sessionAt; an.record(ws.userId, tank.id, 'session_started');
     { const { news = [], ...snap } = L.snapshot(db, ws.user, online(tank.id), ws.test ? tank : null) ?? {}; send(ws, { t: 'snapshot', ...snap, away: ws.away }); for (const e of news) for (const o of rooms.get(tank.id) ?? []) if (o !== ws) send(o, { t: 'event', ...e }); if (news.length) an.fromTick?.(tank.id, news, Date.now()); }      // what time brought while catching up is told to the others too
     // catching the tank up for the newcomer can change it (growth, a reward): everyone already here must see the same tank
-    { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); for (const o of rooms.get(tank.id)) if (o !== ws) send(o, { t: 'state', tank: cur }); }
+    { const cur = L.publicTank(L.loadWorld(db, tank.id).w); stateKeys.set(tank.id, stateKey(cur)); pushState(tank.id, cur, {}, ws); }
     broadcast(tank.id, { t: 'presence', online: online(tank.id) }); roles(tank.id);
     ddSend(tank.id, (w) => w === ws);
     ws.on('message', (raw) => {
@@ -264,12 +282,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       if (raw.length > 4096 && m?.t !== 'photo' && m?.t !== 'snap') return;      // (and checked again once read: a message that only started like a photo or a snapshot is still too big)
       try {
         if (m.t === 'ping') return send(ws, { t: 'pong' });
+        if (m.t === 'stateGet') { if (lim.hit('sg:' + ws.userId, 12, 60e3)) sendFull(ws, tankNowOf(ws.tankId)); return; }      // (a phone whose copy fell out of step)
         if (m.t === 'ddGet') { if (lim.hit('ddg:' + ws.userId, 20, 60e3)) ddSend(ws.tankId, (w) => w === ws); return; }      // (a phone that was asleep across midnight asks for the new day's question)
         if (m.t === 'ddAnswer') {
           if (!lim.hit('dda:' + ws.userId, 10, 60e3)) return send(ws, { t: 'ddAck', ok: false, reason: 'RATE_LIMIT' });
           const tankId = ws.tankId, r = dd.answer(tankId, ws.userId, { id: m.id, choice: m.choice }, { pay: (n) => { const { w } = L.loadWorld(db, tankId); w.shells += n; L.saveWorld(db, tankId, w); } });
           send(ws, { t: 'ddAck', ok: r.ok, reason: r.reason, dup: !!r.dup, paid: r.paid ?? 0 });
-          if (r.ok && !r.dup) { an.record(ws.userId, tankId, 'discovery_answered'); if (r.paid) broadcast(tankId, { t: 'state', tank: L.publicTank(L.loadWorld(db, tankId).w) }); ddSend(tankId); }      // everyone who has answered sees the new guess at once
+          if (r.ok && !r.dup) { an.record(ws.userId, tankId, 'discovery_answered'); if (r.paid) pushState(tankId, L.publicTank(L.loadWorld(db, tankId).w)); ddSend(tankId); }      // everyone who has answered sees the new guess at once
           else ddSend(tankId, (w) => w === ws);
           return;
         }
@@ -295,13 +314,13 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if ((m.t === 'perf' || m.t === 'vis' || m.t === 'pushPrefs') && !lim.hit('soft:' + ws.userId, 60, 60e3)) return;      // (cheap messages, but each can wake every phone in the tank or write to the database: a sane cap)
         if (m.t === 'perf') { const f = Number(m.fps); if (Number.isFinite(f)) { const was = dirs.get(ws.tankId); ws.fps = Math.max(0, Math.min(240, f)); if (directorOf(ws.tankId) !== was) roles(ws.tankId); } return; }      // how smoothly this phone is drawing
         if (m.t === 'pushPrefs') { const p = {}; for (const k of ['eggs', 'gifts', 'hungry', 'friends', 'visitors']) if (m.prefs?.[k] === false) p[k] = false; db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run('pushpref:' + ws.userId, JSON.stringify(p)); return; }      // which kinds of notification this person wants
-        if (m.t === 'vis') { const h = !!m.hidden; if (!h) ws.beat = Date.now(); if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); } return; }
+        if (m.t === 'vis') { const h = !!m.hidden; if (!h) ws.beat = Date.now(); if (ws.hidden !== h) { ws.hidden = h; roles(ws.tankId); broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); if (!h && ws.stale) sendFull(ws, tankNowOf(ws.tankId)); } return; }
         if (m.t === 'snap') {
           if (ws !== directorOf(ws.tankId) || !Array.isArray(m.fish) || m.fish.length > 40 || !lim.hit('sn:' + ws.cid, 14, 1e3)) return;
           const n = (v, lim = 60) => (Number.isFinite(+v) ? Math.max(-lim, Math.min(lim, +v)) : 0), fish = m.fish.map((f) => ({ i: String(f.i).slice(0, 24), x: n(f.x), y: n(f.y), z: n(f.z), h: n(f.h, 7), p: n(f.p, 4), r: n(f.r, 4), ...(f.ph != null ? { ph: n(f.ph, 2000) } : {}), ...(Array.isArray(f.o) ? { o: f.o.slice(0, 32).map((v) => n(v, 4)) } : {}), ...(f.c != null ? { c: n(f.c, 2) } : {}), ...(f.g != null ? { g: n(f.g, 1) } : {}), ...(f.sh != null ? { sh: String(f.sh).slice(0, 48) } : {}) }));      // sh: a seahorse's compact state (see main.js seaPack)
           const crabs = Array.isArray(m.crabs) ? m.crabs.slice(0, 8).filter(Array.isArray).map((c) => c.slice(0, 5).map((v) => n(v, 60))) : [];
           const ts = Number.isFinite(+m.ts) ? Math.max(0, Math.min(1e7, +m.ts)) : null;
-          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws) send(o, { t: 'snap', fish, crabs, ts });
+          for (const o of rooms.get(ws.tankId) ?? []) if (o !== ws && !o.hidden) send(o, { t: 'snap', fish, crabs, ts });      // (a phone in a pocket does not need them)
           return;
         }
         if (m.t === 'fx') {
@@ -359,21 +378,21 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
           const r = L.act(db, ws.user, { t: type, ...rest }, { idem, dev: !!process.env.DEV, analytics: an, tank: tk });
           send(ws, { t: 'ack', idem, ok: r.ok, reason: r.reason, dup: !!r.dup, applied: r.applied !== false, delta: r.delta ?? 0, ids: r.ids, id: r.id, n: r.n, learned: r.learned, wait: r.wait, ...(type === 'openBottle' && r.applied !== false ? { from: r.from, fromId: r.fromId, note: r.note, at: r.at } : {}) });      // (the letter, for the one who opened it only)
           if (r.ok && !r.dup && type === 'observe' && r.applied === false && !r.events.length) return;      // nothing changed: say nothing to anyone
-          if ((!r.ok || r.dup) && r.events?.length) { broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world) }); for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e }); }      // a refused or repeated action whose time step still brought news: everyone hears it
+          if ((!r.ok || r.dup) && r.events?.length) { pushState(ws.tankId, L.publicTank(r.world)); for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e }); }      // a refused or repeated action whose time step still brought news: everyone hears it
           if (r.ok && !r.dup) {
             if (BIG.has(type)) offsiteSoon();
             if (type === 'feed' && r.applied !== false) broadcast(ws.tankId, { t: 'feed', by: ws.userId, x: Number.isFinite(m.x) ? Math.max(-4, Math.min(4, m.x)) : 0, food: r.food ?? 'flakes', fish: r.fish ?? null });
-            broadcast(ws.tankId, { t: 'state', tank: L.publicTank(r.world), by: ws.userId });
+            pushState(ws.tankId, L.publicTank(r.world), { by: ws.userId });
             for (const e of r.events) broadcast(ws.tankId, { t: 'event', ...e });
             ddSaw(ws.tankId, r.events);
             for (const e of r.events) if (e.giftOpened?.to && !online(ws.tankId).includes(e.giftOpened.to)) push.notify(String(e.giftOpened.to), e.giftOpened.text, { cap: 2 }).catch(() => {});      // the one who gave it hears it was opened, and thanked
             if (type === 'bottle' && !r.dup && m.to && !online(ws.tankId).includes(m.to)) push.notify(String(m.to), `${ws.user.name} sent you a bottle`, { cap: 2 }).catch(() => {});
-          } else if (!r.ok) send(ws, { t: 'state', tank: L.publicTank(r.world) });
+          } else if (!r.ok) sendFull(ws, L.publicTank(r.world));
         }
       } catch (e) { if (e instanceof L.GameError) send(ws, { t: 'error', code: e.code, message: e.message }); else console.error(e); }
     });
     ws.on('close', () => { const nowT = Date.now(); try { L.touch(db, ws.userId, nowT); } catch { /* last seen is a nicety */ }      // (last seen: when they left, shown on the Crew tab)
-      if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) rooms.delete(ws.tankId); else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
+      if (ws.visSince) ws.visMs = (ws.visMs ?? 0) + nowT - ws.visSince; if (ws.sessionAt) an.record(ws.userId, ws.tankId, 'session_ended', Math.round((ws.visMs ?? 0) / 1000), nowT); const r = rooms.get(ws.tankId); r?.delete(ws); if (r && !r.size) { rooms.delete(ws.tankId); tankCopy.delete(ws.tankId); stateKeys.delete(ws.tankId); dirs.delete(ws.tankId); } try { L.touch(db, ws.userId); } catch { /* server shutting down */ } if (r && !r.size) { rooms.delete(ws.tankId); tankCopy.delete(ws.tankId); } else { broadcast(ws.tankId, { t: 'presence', online: online(ws.tankId) }); roles(ws.tankId); } });
   });
   const sweep = setInterval(() => lim.sweep(), 600e3); sweep.unref(); L.pruneOld(db); const pruner = setInterval(() => L.pruneOld(db), 24 * 3600e3); pruner.unref();      // (old rows the game no longer reads)
   // a rolling copy of the whole database next to it, so a bad deploy or a corrupted write is never the end of anyone's tank
@@ -443,7 +462,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       try {
         const r = L.tickTank(db, tankId); an.fromTick(tankId, r.events); ddSaw(tankId, r.events);
         const pub = L.publicTank(r.world), key = stateKey(pub), changed = stateKeys.has(tankId) && stateKeys.get(tankId) !== key; stateKeys.set(tankId, key);
-        if (r.events.length || changed) { broadcast(tankId, { t: 'state', tank: pub }); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
+        if (r.events.length || changed) { pushState(tankId, pub); for (const e of r.events) broadcast(tankId, { t: 'event', ...e }); }
         const hit = hitOf(r.events, true); if (hit) tellAway(tankId, hit).catch(() => {});      // and the caretakers who are not looking hear the big news on their phones (growth and discoveries wait for the journal)
       } catch (e) { console.error('tick failed', e); }
     }
