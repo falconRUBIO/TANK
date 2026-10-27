@@ -29,6 +29,7 @@ import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
+import { pregDays as pregDaysR, dueWhen as dueWhenR } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister, webOrigin } from './online.js';
 import { makeWaterChange } from './waterchange.js';
@@ -1151,7 +1152,7 @@ function showCard(f) {
     if (rec.species !== 'seahorse') return ''; const now = game.now(), out = [], nm = (id) => game.state.fish.find((x) => x.id === id)?.name, day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
     if (rec.bornHere) out.push(`<b>BORN IN YOUR AQUARIUM</b><br>Mother: ${esc(rec.parents?.[1]?.name ?? '?')} · Father: ${esc(rec.parents?.[0]?.name ?? '?')}<br>Birth date: ${esc(day(rec.birthDate ?? rec.born))}`);
     if (rec.widowAt && now - rec.widowAt < 7 * 864e5 && !rec.mate) out.push('Still grieving: not ready to bond again yet.');
-    if (rec.preg) { const d = Math.floor((now - rec.preg.start) / 864e5) + 1, tot = Math.round((rec.preg.due - rec.preg.start) / 864e5); out.push(`Expecting: day ${d} of about ${tot}. His brood pouch is filling.`); }
+    if (rec.preg) { const pd = pregDaysR(rec.preg, now); out.push(rec.preg.ready ? 'About to give birth: his pouch is twitching.' : `Expecting: day ${pd.d} of ${pd.n}. The babies are born ${dueWhenR(rec.preg.due - now)}. His brood pouch is filling.`); }
     else if (rec.lastBirth && now - rec.lastBirth < 5 * 864e5) out.push('Just gave birth. The babies are growing up in the tank.');
     return out.length ? `<p class="mind fam">${out.join('<br>')}</p>` : ''; })();
   const ms = milestonesOf(rec, game.shared ? game.you?.userId : 'me'), msDone = ms.filter((m) => m.done).length, path = `<div class="mhead"><span>Milestones</span><b>${msDone} of ${ms.length}</b></div><div class="mpath" aria-label="Milestones ${msDone} of ${ms.length}">${ms.map((m) => `<span class="${m.done ? 'on' : ''}" title="${m.label}" data-ms="${m.done ? `${esc(rec.name)}: ${m.label} ✓` : `Not yet: ${m.label.toLowerCase()}`}"><i>${msIcon(m.key === 'home' && (rec.parents ?? []).length ? 'hatched' : m.key, m.done)}</i><small>${m.label}</small></span>`).join('')}</div>`;      // its milestones: one path for every fish, lit as it gets there

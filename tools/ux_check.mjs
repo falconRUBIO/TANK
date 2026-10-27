@@ -17,7 +17,7 @@ const still = await p.evaluate(() => document.querySelector('#coach.on')?.innerT
 ck('"Got it" puts it away', !still, still.replace(/\s+/g, ' ').slice(0, 80));
 await clear(); await p.evaluate(() => window.__game.addJournal('Marlin charged at Inky and drove it away from the eggs.')); await p.waitForTimeout(1500);
 let shot = {}; for (let i = 0; i < 20 && !/drove it away/.test(shot.text ?? ''); i++) { await p.waitForTimeout(1000); shot = await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /drove it away/.test(m.text)) ?? {}; } catch { return {}; } }); }      // (photos are taken one at a time, spaced out: an earlier line's photo can come first)
-ck('the moment you saw is kept with a photo', /^data:image\/jpeg/.test(shot.img ?? '') && /drove it away/.test(shot.text ?? ''), `${Math.round((shot.img?.length ?? 0) / 1024)} KB`);
+ck('the moment you saw is kept with a photo', /^data:image\/(jpeg|webp)/.test(shot.img ?? '') && /drove it away/.test(shot.text ?? ''), `${Math.round((shot.img?.length ?? 0) / 1024)} KB`);
 await p.evaluate(() => window.__ui.open('friends')); await p.waitForTimeout(600); await p.click('[data-sub="journal"]').catch(() => {}); await p.waitForTimeout(800);
 ck('the journal shows that photo with its line', await p.evaluate(() => !!document.querySelector('#sheet .jpost .jimg img')));
 await p.evaluate(() => { document.querySelector('nav [data-tab="tank"]')?.click(); }); await clear();

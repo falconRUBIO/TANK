@@ -175,13 +175,26 @@ export function nextStage(fish, now = Date.now()) {
   const ms = (s === 'baby' ? BABY_DAYS : ADULT_DAYS) * DAY - age, h = Math.ceil(ms / 36e5);
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 48 ? `about ${Math.round(h / 24)} days` : h >= 24 ? 'about a day' : h <= 1 ? 'under an hour' : `${h} hours` };      // (said the way a person would: not 3d 0h)
 }
+// The big moments a tank waits for: a seahorse father's babies being born, eggs hatching. Ready ones first (they wait for someone to watch), then
+// soonest first. The tank screen's countdown tag, the top of Care and the animals' cards all say these the same way (dueWhen).
+export function bigMoments(t, now = Date.now()) {
+  const out = [], nm = (id, sn) => t.fish.find((f) => f.id === id && !f.dead)?.name ?? sn?.name;
+  for (const f of t.fish) if (f.preg && !f.dead) out.push({ key: 'birth:' + f.id, kind: 'birth', fish: f.id, at: f.preg.due, ready: !!f.preg.ready, icon: '🌿', what: `${f.name}'s babies` });
+  for (const e of t.eggs ?? []) { const a = nm(e.a, e.pa), b = nm(e.b, e.pb); out.push({ key: 'eggs:' + e.id, kind: 'hatch', fish: [e.guard, e.a, e.b].find((id) => id && nm(id)) ?? null, egg: e.id, at: e.hatchAt, ready: !!e.ready, icon: '🥚', what: a && b ? `${a} & ${b}'s eggs` : a ? `${a}'s eggs` : 'The eggs' }); }
+  return out.sort((x, y) => Number(y.ready) - Number(x.ready) || x.at - y.at);
+}
+// when something is due, said one way everywhere: "in about 2 days", "in about 5 hours", "in 40 min", "any moment now"
+export const dueWhen = (ms) => (ms <= 60e3 ? 'any moment now' : ms < HOUR ? `in ${Math.ceil(ms / 60e3)} min` : ms < 36 * HOUR ? `in about ${Math.round(ms / HOUR)} hour${Math.round(ms / HOUR) === 1 ? '' : 's'}` : `in about ${Math.round(ms / DAY)} days`);
+// a pregnancy's day count: day d of n, never claiming fewer days than are left
+export const pregDays = (P, now = Date.now()) => { const n = Math.max(1, Math.ceil((P.due - P.start) / DAY - 0.05)); return { d: Math.max(1, Math.min(n, Math.floor((now - P.start) / DAY) + 1)), n }; };
 // The next chapter of one animal's life, in a line, for the top of its card: what it is on its way to, and roughly when (from the rules, so it is true).
 export function storyNext(t, f, now = Date.now()) {
   if (!f || f.dead) return null; const nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name, days = (ms) => { const d = Math.max(0, ms) / DAY; return d < 1 ? (ms < 3 * HOUR ? 'any time now' : 'later today') : d < 1.6 ? 'about a day' : `about ${Math.round(d)} days`; };
   if (f.away) return null;
   const egg = (t.eggs ?? []).find((e) => e.id === f.brood || e.guard === f.id || e.a === f.id || e.b === f.id);
   if (egg) return egg.ready ? 'The eggs are ready to hatch. Be there to watch.' : `${f.brood === egg.id ? 'Guarding' : 'Waiting on'} the eggs: they hatch in ${days(egg.hatchAt - now)}.`;
-  if (f.preg) return f.preg.ready ? 'About to give birth. Be there to watch.' : `Carrying young in his pouch: due in ${days(f.preg.due - now)}.`;
+  if (f.preg) return f.preg.ready ? 'About to give birth. Be there to watch.' : `Carrying young in his pouch: the babies are born ${dueWhen(f.preg.due - now)}.`;
+  { const dad = t.fish.find((m) => m.preg && !m.dead && m.preg.mother === f.id); if (dad) return dad.preg.ready ? `${dad.name} is about to give birth to their babies. Be there to watch.` : `${dad.name} is carrying their babies in his pouch: they are born ${dueWhen(dad.preg.due - now)}.`; }      // (the mother is who people tap: she says so too)
   const ns = nextStage(f, now); if (ns) { const L = raiseLean(f), how = L.pending ? (L.n ? ` Leaning ${L.tr.toLowerCase()} so far, from how you raise it.` : ' How you raise it now decides who it becomes: pet it, play, hide treats, feed it every day.') : ` If it grew up today it would be ${L.tr.toLowerCase()}.`; return `Grows into ${ns.to === 'adult' ? 'an adult' : 'a juvenile'} in ${ns.ms >= 1.5 * DAY ? `about ${Math.round(ns.ms / DAY)} days` : ns.ms >= DAY ? 'about a day' : ns.label === 'under an hour' ? 'under an hour' : `about ${ns.label.replace('h', ' hours')}`}.${how}`; }
   if (isOcto(f) && f.partner && nm(f.partner)) { const tog = (now - (f.partneredAt ?? now)) / DAY; return tog < OCTO_EGG_AFTER ? `Partners with ${nm(f.partner)} for ${Math.floor(tog)} day${Math.floor(tog) === 1 ? '' : 's'}. Octopus partners lay after about ${OCTO_EGG_AFTER}, if they have a den.` : `Partners with ${nm(f.partner)}. ${f.home ? 'Eggs could come any day now.' : 'They need a den of their own for eggs.'}`; }
   if (f.mate && nm(f.mate)) return `Paired with ${nm(f.mate)}. Seahorses pair for life, and the father carries the young.`;
@@ -827,7 +840,7 @@ export function seaStage(t, now = Date.now()) {
   const hs = (t.fish ?? []).filter((f) => f.species === 'seahorse' && !f.dead), m = hs.find((f) => f.preg) ?? hs.find((f) => sexOf(f) === 'm' && f.mate && hs.some((x) => x.id === f.mate)), w = m && hs.find((x) => x.id === (m.preg?.mother ?? m.mate));
   const N = t.nursery, out = { male: m?.name ?? null, female: w?.name ?? null, kept: t.lastDepart?.kept ? hs.find((f) => f.id === t.lastDepart.kept)?.name ?? null : null };
   if (N) { const day = Math.min(SEA.NURSERY, Math.floor((now - N.born) / DAY) + 1); return { ...out, stage: now >= N.readyAt ? 'ready' : 'nursery', nurseryDay: day, fed: N.fed ?? 0, babies: N.cands.map((c) => c.name), father: N.pa?.name ?? null }; }
-  if (m?.preg) { const P = m.preg; return { ...out, stage: 'pregnant', pregDay: Math.floor((now - P.start) / DAY) + 1, pregDays: Math.round((P.due - P.start) / DAY) }; }
+  if (m?.preg) { const P = m.preg, pd = pregDays(P, now); return { ...out, stage: 'pregnant', pregDay: pd.d, pregDays: pd.n }; }
   if (m) return { ...out, stage: 'paired' };
   return { ...out, stage: 'none' };
 }

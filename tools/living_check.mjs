@@ -42,6 +42,6 @@ ck('it stays: a fish of the tank now, swimming with the others', kept.fish.lengt
 // 4. a time capsule made while someone is looking gets a photo of the tank as it is
 await p.evaluate(() => { const g = window.__game; g.addJournal('Time capsule: day 30. 5 animals, 4 decorations, level 6.'); }); await p.waitForTimeout(2500);
 let ph = null; for (let i = 0; i < 60 && !ph; i++) { ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.capsules') || '[]').find((m) => m.text.startsWith('Time capsule: day 30'))?.img?.slice(0, 30) ?? null); if (!ph) await p.waitForTimeout(1000); }      // (a slow machine takes a while to draw it)
-ck('the capsule\'s photo is taken from the tank itself, right then', !!ph && ph.startsWith('data:image/jpeg'), ph ?? '');
+ck('the capsule\'s photo is taken from the tank itself, right then', !!ph && /^data:image\/(jpeg|webp)/.test(ph), ph ?? '');
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Living History checks passed'); process.exit(fails ? 1 : 0);

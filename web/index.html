@@ -1205,6 +1205,15 @@ body:has(.nsw.on) #sheet{opacity:.08;transition:opacity .25s}
 #sheet h4,#card h4,.mhead span,#sheet .sec,#card .sec{font-size:12px!important;letter-spacing:.08em!important;text-transform:uppercase;font-weight:700!important;color:rgba(200,222,240,.78)!important}
 /* the Feed screen is only as tall as what it shows */
 #sheet.feedv{height:auto!important;max-height:min(78vh,calc(100vh - var(--top) - var(--bar) - 30px))!important}
+  /* the countdown tag for a birth or a hatching (ui.js momentTag): quiet while days away, a ticking clock for the last 8 hours, a pulse when it is time */
+  #moment{all:unset;pointer-events:auto;cursor:pointer;box-sizing:border-box;max-width:100%;padding:7px 15px;border-radius:999px;font:600 13px -apple-system,system-ui,sans-serif;color:#eaf6ee;background:rgba(14,32,30,.6);border:1px solid rgba(160,230,190,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+  #moment[hidden]{display:none}#moment.live{border-color:rgba(160,240,190,.6);box-shadow:0 0 14px rgba(120,230,170,.35)}
+  #moment.now{color:#10241a;background:#bff0cf;border-color:#e8fff0;animation:mpulse 1.6s ease-in-out infinite}
+  @keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(170,245,200,.6)}50%{box-shadow:0 0 0 9px rgba(170,245,200,0)}}
+  @media (prefers-reduced-motion:reduce){#moment.now{animation:none}}
+  .care2 .mrows{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
+  .care2 .mrow{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:18px;background:rgba(40,90,70,.28);border:1px solid rgba(160,230,190,.3)}
+  .care2 .mrow i{display:grid;place-items:center;width:30px}.care2 .mrow span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.care2 .mrow b{font-size:15px}.care2 .mrow small{color:#b7d8c6;font-variant-numeric:tabular-nums}.care2 .mrow em{font-style:normal;opacity:.6}
 </style>
 </head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
@@ -1213,7 +1222,7 @@ body:has(.nsw.on) #sheet{opacity:.08;transition:opacity .25s}
 <canvas id="glass"></canvas><canvas id="wc"></canvas><div id="placebar"><span id="placehint">Drag to move</span><span class="pbtns"><button id="prot" aria-label="Rotate">⟳</button><button id="psell" hidden>Sell</button><button id="pcan">Cancel</button><button id="pok" class="go">Place</button></span></div>
 <div id="coach"></div><div id="card"></div><button id="fishpill" type="button" hidden><div class="pt"><b></b><small hidden><i></i></small></div><span>More info ›</span></button><div id="sheet"></div><div id="toast"></div><div id="foodbar"></div><div id="reunion"></div><div id="settle"></div>
 <div class="tod" hidden><button data-tod="morning">Morning</button><button data-tod="afternoon" class="on">Afternoon</button><button data-tod="evening">Evening</button><button data-tod="night">Night</button></div></main>
-<div id="sub"><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button><button id="quest" type="button" hidden><span class="qi">🎯</span><span class="qt"><b></b><small></small></span><i class="qb"><b></b></i></button></div>
+<div id="sub"><button id="moment" type="button" hidden></button><div class="lv"><b id="lvl">LV 1</b><div class="bar"><i id="lvbar"></i></div></div><button id="goal" type="button"></button><button id="quest" type="button" hidden><span class="qi">🎯</span><span class="qt"><b></b><small></small></span><i class="qb"><b></b></i></button></div>
 <nav><i class="lens" aria-hidden="true"></i><div data-tab="tank" class="on"><svg viewBox="0 0 24 24"><path d="M3 12c4-6 11-6 15 0-4 6-11 6-15 0zM18 12l3-3v6z"/></svg>Tank</div>
 
 <div data-tab="care"><svg viewBox="0 0 24 24"><path d="M9 3h6v3l2 3v11H7V9l2-3z"/></svg>Care</div>

@@ -33,6 +33,6 @@ ck('you name it', named); if (named) { await p.fill('#modal.on #mi', 'Pip'); awa
 for (let i = 0; i < 10; i++) { await p.waitForTimeout(500); await p.evaluate(() => { const m = document.querySelector('#modal.on'); if (/ONE MORE/i.test(m?.innerText ?? '')) m.querySelector('#mno')?.click(); }); }
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /Tiny octopuses/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
-ck('the journal keeps a staged photo of it', !!ph?.startsWith('data:image/jpeg'));
+ck('the journal keeps a staged photo of it', /^data:image\/(jpeg|webp)/.test(ph ?? ''));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Octopus baby checks passed'); process.exit(fails ? 1 : 0);

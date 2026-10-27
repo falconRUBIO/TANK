@@ -5,6 +5,7 @@ import { morphOdds } from './game/genes.js';
 import { plural, ECO, isOcto, isCrab, affordOf, suits, bestStep, levelEta, LEVEL_PRIZE, levelOpens, habitatNotes, paletteOf, hideOcto, puzzleOcto, HIDE_GAP, tankHealth, HEALTH_BANDS, wellOf, missingSince, needsOf, needsChecklist, eggCareOf, CRAB_PRICE, driftBlame, giftReady, sexOf, forecast, tankNeeds, LIFESPAN, awayLine, KEEPSAKES, decorUses, decorEffect, KIND_NEEDS } from './game/rules.js';
 import { msIcon } from './msicons.js';
 import { FACTS } from './facts.js';
+import { bigMoments, dueWhen, pregDays } from './game/rules.js';
 import { FIELD, GUIDE, guideHappened, mysteryOf, MYSTERY, DISCOVERIES, DAILY_GIFT, MORPHS, layoutOf, goalOf, GOALS, GOAL_SHELLS, GOAL_PACE, octoMind, morphOf, nextPrize, prizeLabel, specialOf, EARNED } from './game/rules.js';
 import { releasedCount, turtleHabitat, turtleDeal, turtleRoom, turtleEver, TURTLES, SCORE_W, SOCIAL, THEMES, themesOf, adoptAdvice, harmonyOf, canPuzzle, PUZZLE_COST, HIDE_COST, SPECIES_DEF, DECOR_DEF, DAILY_REWARD, AIL_TIRED, AIL_WARN, LEVEL_AT, WISHES, COLLECTION_SIZE, fishPrice, dailyFish, isFree, FLOORS, BACKDROPS, scoreOf, capacity, stageOf, nextStage, comfortOf, readyToTrim, growthOf, WANT_REWARD, FOODS, tankMood, dayTicks, STYLE_PRICE, styleOwned } from './game/rules.js';
 import { REASONS } from './game/game.js';
@@ -114,7 +115,7 @@ export function initUI({ game, social, cb }) {
     $('shells').textContent = '🐚 ' + s.shells; $('day').textContent = 'DAY ' + String(game.day).padStart(3, '0');
     const score = scoreOf(s), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, pct = b ? Math.round(((score - a) / (b - a)) * 100) : 100;
     $('lvl').textContent = 'LV ' + lv; $('lvbar').style.width = Math.max(4, Math.min(100, pct)) + '%'; $('lvbar').parentElement.title = b ? `${score}/${b} to level ${lv + 1}` : 'Max level';
-    questBar(s); bell();
+    questBar(s); bell(); momentTag();
     const g = goalText(); if (!quiet() && $('goal').textContent !== g.text) { $('goal').textContent = g.text; $('goal').dataset.tab = g.tab || ''; $('goal').dataset.gift = g.gift ? '1' : ''; if (g.text) { notice(g.text, { tab: g.tab || '', gift: !!g.gift, kind: 'hint' }); $('goal').classList.add('on'); clearTimeout($('goal')._t); $('goal')._t = setTimeout(() => $('goal').classList.remove('on'), 9000); } }
     document.querySelectorAll('nav [data-tab]').forEach((n) => n.classList.toggle('dot', n.dataset.tab === g.tab && g.tab !== 'tank'));
     { const me = game.you?.userId, due = (s.dilemma && !s.dilemma.done) || s.hunger > 0.55 || s.water < 0.5 || s.glass > 0.45 || s.fish.some((f) => !f.dead && ownFood(f) && canFeedOwn(f, me, game.shared) && ownHunger(f) > 0.6) || (s.eggs ?? []).some((e) => e.hatchAt - Date.now() < 6 * 3600e3); flag('care', due); }
@@ -919,7 +920,7 @@ export function initUI({ game, social, cb }) {
         upkeepChore(s, k)];
       for (const e of s.eggs ?? []) { const left = Math.max(0, e.hatchAt - Date.now()), h = Math.round(left / 36e5), c = e.cared?.length ?? 0, nm = (id, sn) => s.fish.find((f) => f.id === id)?.name ?? sn?.name;      // an egg waiting to hatch: how long, and how it is being looked after
         chores.push({ act: 'egg', info: e.ready ? '' : 'eggs:' + e.id, icon: '🥚', title: `${nm(e.a, e.pa) && nm(e.b, e.pb) ? `${esc(nm(e.a, e.pa))} & ${esc(nm(e.b, e.pb))}'s eggs` : 'Eggs'}`, sub: `${(() => { const G = s.fish.find((f) => f.id === e.guard && !f.dead); return G ? `${esc(G.name)} ${eggCareOf(e).mode === 'mouth' ? 'carries them' : eggCareOf(e).mode === 'den' ? 'guards them in her den' : 'guards them'} · ` : ''; })()}${e.ready ? 'ready to hatch · stay and watch' : `hatches <span class="cd" data-until="${e.hatchAt}">${countdown(e.hatchAt)}</span> · ${c >= 2 ? 'will hatch strong ✓' : `looked after ${c} of 2 days`}`}`, due: !!e.ready, btn: 'Watch', hot: !!e.ready }); }      // (a live countdown; ready, it moves up under Needs you)
-      for (const f of s.fish) if (f.preg && !f.preg.ready && !f.dead) { const d = Math.floor((Date.now() - f.preg.start) / 864e5) + 1, n = Math.max(1, Math.round((f.preg.due - f.preg.start) / 864e5)); chores.push({ act: 'notyet', info: 'preg:' + f.id, icon: '🥚', title: `${esc(f.name)} is expecting`, sub: `day ${Math.min(d, n)} of ${n} · babies born <span class="cd" data-until="${f.preg.due}">${countdown(f.preg.due)}</span>`, due: false }); }      // (a seahorse father: his babies counted down, live, like eggs)
+      // (a seahorse father expecting: shown at the top of Care, see coming below)      // (a seahorse father: his babies counted down, live, like eggs)
       for (const f of s.fish) if (f.preg?.ready && !f.dead) chores.push({ act: 'egg', icon: '🌿', title: `${esc(f.name)} is about to give birth`, sub: 'his pouch is twitching · stay and watch', due: true, hot: true, btn: 'Watch' });      // (a seahorse birth waits for someone to watch, like eggs)
       const row = (c) => `<div class="crow ${c.due ? 'due' : ''} ${c.hot ? 'hot' : ''}" role="button" tabindex="0" ${c.info && !c.due ? `data-info="${c.info}"` : `data-act="${c.due || c.feed || c.upkeep ? c.act : 'notyet'}"`} data-say="${esc(String(c.sub).replace(/<[^>]*>/g, ''))}"><span class="ci">${pix(c.icon)}</span><span class="ct"><b>${c.title}</b><small>${c.sub}</small></span>${c.due ? `<button class="cbtn" data-act="${c.quick ? 'feednow' : c.act}"${c.quick ? quick : ''}>${c.btn}</button>` : `<i class="chev">›</i>`}</div>${c.feed && feedOn ? feedDrawer() : ''}`;
       if (!s.fish.some((f) => !f.dead)) chores.shift();      // (nothing to feed: no Feed row)
@@ -943,7 +944,9 @@ export function initUI({ game, social, cb }) {
       const loop = (() => { const H = tankHealth(s, Date.now()), lv = s.level ?? 1, next = LEVEL_PRIZE[lv + 1], eta = levelEta(s, Date.now()), cls = bandCls(H.score);      /* (the loop in one line: care keeps the tank healthy, health sets the pace, the pace sets when the next level opens) */
         const thriveEta = eta && H.mult < 1.5 ? Math.max(1, Math.round(eta * H.mult / 1.5)) : null;
         return `<button class="tc-link loop ${cls}" data-open="notices"><b>${H.word}</b> · ${paceText(H)}${next ? `. Level ${lv + 1}, ${esc(next.title.toLowerCase())}, ${eta ? `in about ${eta} day${eta === 1 ? '' : 's'}${thriveEta && thriveEta < eta ? ` (about ${thriveEta} if the tank thrives)` : ''}` : 'is next'}` : '. Top level: what you earn keeps banking'} ›</button>`; })();
-      return `<div class="crew care2"><h3>Care</h3>${seg}<p class="todaysub">${dueN ? dueN === 1 ? 'One thing needs you right now.' : `${dueN} things need you right now.` : 'All done. Here is when each job comes around again.'}</p>${loop}${dl}<div class="cgroup">${chores.filter((c) => c.feed).map(row).join('')}${healthRow(s)}</div><h4>Tank</h4><div class="cgroup">${chores.filter((c) => !c.feed).map(row).join('')}</div>
+      const coming2 = bigMoments(s).filter((M) => !M.ready).slice(0, 2).map((M) => { const F = M.kind === 'birth' && s.fish.find((f) => f.id === M.fish), pd = F?.preg ? pregDays(F.preg) : null;
+        return `<button class="mrow" data-moment="${esc(M.key)}"><i>${pix(M.icon, 22)}</i><span><b>${esc(M.kind === 'birth' ? `${F?.name ?? ''} is expecting` : `${M.what} are growing`)}</b><small>${pd ? `day ${pd.d} of ${pd.n} · ` : ''}${M.kind === 'birth' ? 'babies born' : 'hatching'} <span class="cd" data-until="${M.at}">${countdown(M.at)}</span></small></span><em>›</em></button>`; }).join('');      // (the big moments first: they are what people come back for)
+      return `<div class="crew care2"><h3>Care</h3>${seg}${coming2 ? `<div class="mrows">${coming2}</div>` : ''}<p class="todaysub">${dueN ? dueN === 1 ? 'One thing needs you right now.' : `${dueN} things need you right now.` : 'All done. Here is when each job comes around again.'}</p>${loop}${dl}<div class="cgroup">${chores.filter((c) => c.feed).map(row).join('')}${healthRow(s)}</div><h4>Tank</h4><div class="cgroup">${chores.filter((c) => !c.feed).map(row).join('')}</div>
         ${comingCare}${(() => { const sk = skyOf(Date.now()); return sk.event ? `<div class="moodchip sky"><b>${esc(sk.event.label)}</b> · ${esc(sk.event.text)}</div>` : ''; })()}</div>`;      // Care is two things: what needs you, and what is coming (no daily checklist: this is not a chore list)
     },
     // ── the Tank chart: how healthy the tank is (the heart of the game), how fast that grows it, what the next level brings, and what to do about it
@@ -1122,6 +1125,7 @@ export function initUI({ game, social, cb }) {
       dialog({ title: x.name.toUpperCase(), text: `${SPECIES_DEF[x.species]?.label ?? x.species}${x.traits?.length ? ' · ' + x.traits.join(', ') : ''}`, lines: [`Arrived ${d(x.born)}`, `Passed away ${d(x.died)}`, `Original caretaker: ${x.ownerName ?? 'unknown'}`, ...(x.parents?.length ? [`Parents: ${x.parents.map((q) => q.name).join(' & ')}`] : []), ...(x.gen ? [`Generation ${x.gen}`] : []), x.rested ? `Laid to rest by ${x.rested.by}` : 'Still floating in the tank', ...(x.milestones ?? [])], ok: 'Close' });
     }));
     sheet.querySelectorAll('[data-info]').forEach((b) => (b.onclick = (e) => { e?.stopPropagation?.(); infoFor(b.dataset.info); }));
+    sheet.querySelectorAll('[data-moment]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); goMoment(b.dataset.moment); }));
     sheet.querySelectorAll('[data-animal]').forEach((b) => (b.onclick = () => { sfx('tap'); if (!cb.showAnimal?.(b.dataset.animal)) toast('Out exploring: it will be back.'); }));
     sheet.querySelectorAll('[data-sellfish]').forEach((b) => (b.onclick = async (e) => { e?.stopPropagation?.();
       const s = S(), f = s.fish.find((x) => x.id === b.dataset.sellfish); if (!f) return; sfx('tap'); const d = SPECIES_DEF[f.species], pay = sellValue(f), alive = s.fish.filter((x) => !x.dead).length;
@@ -1226,7 +1230,25 @@ export function initUI({ game, social, cb }) {
   let modalClaim = 0;
   // how long until: a countdown that reads naturally at every distance (the [data-until] spans tick by themselves, once a second)
   const countdown = (at) => { const ms = Math.max(0, at - Date.now()), m = Math.floor(ms / 6e4), h = Math.floor(m / 60), d = Math.floor(h / 24); return ms < 6e4 ? 'any moment now' : h >= 24 ? `in ${d} d ${h % 24} h` : h >= 1 ? `in ${h} h ${m % 60} m` : `in ${m} m ${Math.floor(ms / 1000) % 60} s`; };
-  setInterval(() => { for (const el of document.querySelectorAll('[data-until]')) { const t = countdown(+el.dataset.until); if (el.textContent !== t) el.textContent = t; } }, 1000);
+  setInterval(() => { for (const el of document.querySelectorAll('[data-until]')) { const t = countdown(+el.dataset.until); if (el.textContent !== t) el.textContent = t; } momentTag(); }, 1000);
+  // The countdown tag on the tank screen, for the moments a tank waits days for (a seahorse birth, eggs hatching): a quiet line while it is days
+  // away, a ticking clock for the last 8 hours, and a pulse once it is happening. Tapping it goes to the animal (or to watch, once it is time).
+  const LIVE = 8 * 3600e3, clock = (ms) => { const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, x = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}`; };
+  function momentText(M, now = Date.now()) {
+    if (M.ready) return M.kind === 'birth' ? `${M.what} are coming! Tap to watch` : `${M.what} are hatching! Tap to watch`;
+    const ms = M.at - now; return ms < LIVE ? `${M.what} · ${clock(ms)}` : `${M.what} · ${dueWhen(ms).replace(/^in about /, '')}`;
+  }
+  function momentTag() {
+    const el = $('moment'), s = S(); if (!el || !s) return; const M = (s.flags?.tut ?? 5) >= 5 ? bigMoments(s)[0] : null;
+    if (!M) { if (!el.hidden) el.hidden = true; return; }
+    const txt = `${M.icon} ${momentText(M)}`, cls = M.ready ? 'now' : M.at - Date.now() < LIVE ? 'live' : '';
+    if (el.hidden) el.hidden = false; if (el.textContent !== txt) el.textContent = txt; if (el.dataset.k !== M.key) el.dataset.k = M.key; if ((el.dataset.s ?? '') !== cls) { el.dataset.s = cls; el.className = cls; }
+    el.setAttribute('aria-label', M.ready ? txt.slice(3) : `${M.what}: ${M.kind === 'birth' ? 'born' : 'hatching'} ${dueWhen(M.at - Date.now())}`);
+  }
+  const goMoment = (key) => { const M = bigMoments(S()).find((x) => x.key === key) ?? bigMoments(S())[0]; if (!M) return; sfx('tap');
+    if (M.ready) { if (!cb.watchEggs?.()) toast('Not quite yet.'); return; }
+    if (!(M.fish && cb.showAnimal?.(M.fish))) { open('tank'); toast(`${M.what}: ${M.kind === 'birth' ? 'born' : 'hatching'} ${dueWhen(M.at - Date.now())}.`); } };
+  if ($('moment')) $('moment').onclick = () => goMoment($('moment').dataset.k);
   const modalFree = (moment = false) => new Promise((res) => { const w = () => (modal.classList.contains('on') || performance.now() < modalClaim || (!moment && Date.now() < (window.__quietUntil ?? 0)) ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : (modalClaim = performance.now() + 250, res())); w(); });
   function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
     return modalFree().then(() => new Promise((res) => {

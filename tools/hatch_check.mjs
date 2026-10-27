@@ -58,7 +58,7 @@ const j = await p.evaluate(() => window.__game.journal.slice(-12).map((e) => e.t
 ck('the journal tells it: wriggling, the larvae drifting off, the one that stayed, and the twin', j.some((x) => /drifted off on the current/.test(x)) && j.some((x) => /kept one more/.test(x)), j);
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/6-twins.png` });
 const ph = await p.evaluate(() => { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]'); return list.find((m) => /hatched/.test(m.text))?.img ?? null; }); if (ph) fs.writeFileSync(`${out}/7-journal-photo.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
-ck('the hatching is in the journal with its photo (the baby and its parent)', ph?.startsWith('data:image/jpeg;base64,'), ph?.slice(0, 23));
+ck('the hatching is in the journal with its photo (the baby and its parent)', /^data:image\/(jpeg|webp);base64,/.test(ph ?? ''), ph?.slice(0, 23));
 await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="journal"]')?.click()); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="history"]')?.click()); await p.waitForTimeout(700);
 const hist = await p.evaluate(() => [...document.querySelectorAll('#sheet .hrow')].filter((r) => /hatched/.test(r.textContent)).map((r) => !!r.querySelector('img.hpic')));
 await p.evaluate(() => { const r = [...document.querySelectorAll('#sheet .hrow')].find((x) => x.querySelector('img.hpic')); r?.scrollIntoView(); }); await p.waitForTimeout(400); await p.screenshot({ path: `${out}/8-history.png` });

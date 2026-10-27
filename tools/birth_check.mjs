@@ -15,7 +15,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
   document.querySelectorAll('#goal,#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
 await p.waitForTimeout(2500);
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(800);
-const r1 = await p.evaluate(() => [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).find((t) => /expecting/.test(t)) ?? '');
+const r1 = await p.evaluate(() => [...document.querySelectorAll('#sheet .mrow, #sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).find((t) => /expecting/.test(t)) ?? '');
 ck('Care counts his pregnancy down, live', /Sunny is expecting.*day \d of \d.*babies born in 9 h \d+ m/.test(r1), r1);
 await p.evaluate(() => { const s = window.__game.state; s.fish[0].preg.due = Date.now() - 1000; window.__game.emit('state'); window.__ui.open('care'); }); await p.waitForTimeout(400);
 await p.evaluate(() => window.__game.dispatch({ t: 'devSea', what: 'noop' }).catch(() => {})); await p.waitForTimeout(2500);
@@ -30,6 +30,6 @@ ck('watched: they are born, in front of you', born && !born.preg, { born, popups
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-birth.png` });
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /gave birth/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
-ck('the journal keeps a staged photo of the birth', !!ph?.startsWith('data:image/jpeg'));
+ck('the journal keeps a staged photo of the birth', /^data:image\/(jpeg|webp);base64,/.test(ph ?? ''));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Birth checks passed'); process.exit(fails ? 1 : 0);
