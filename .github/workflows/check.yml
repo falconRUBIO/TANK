@@ -6,7 +6,7 @@ on:
   pull_request:
 jobs:
   quick:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04      # (pinned: the browser tests do not yet support the newer Ubuntu that ubuntu-latest moved to)
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

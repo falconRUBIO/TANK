@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 jobs:
   full:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04      # (pinned: the browser tests do not yet support the newer Ubuntu that ubuntu-latest moved to)
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
           FULL: '1'
           PW_MODULE: ${{ github.workspace }}/node_modules/playwright/index.mjs
   backup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04      # (pinned: the browser tests do not yet support the newer Ubuntu that ubuntu-latest moved to)
     timeout-minutes: 15
     env:
       HAS_TOKEN: ${{ secrets.BACKUP_READ_TOKEN != '' }}
