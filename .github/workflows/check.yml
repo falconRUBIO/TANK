@@ -4,10 +4,15 @@ name: Quick check
 on:
   push:
   pull_request:
+# The drills run as three jobs side by side (tools/check_all.sh SHARD), each well inside its time limit; all three must pass.
 jobs:
   quick:
     runs-on: ubuntu-24.04      # (pinned: the browser tests do not yet support the newer Ubuntu that ubuntu-latest moved to)
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,3 +22,4 @@ jobs:
       - run: bash tools/check_all.sh
         env:
           PW_MODULE: ${{ github.workspace }}/node_modules/playwright/index.mjs
+          SHARD: ${{ matrix.shard }}/3
