@@ -1617,7 +1617,7 @@ export function socialOf(t, f) {
   const S = SOCIAL[f.species], out = { penalty: 0, notes: [], needs: [], good: [] }; if (!S) return out;
   const E = ECO[f.species] ?? {}, cv = coverOf(t, f), cover = Math.min(1, cv.have / Math.max(1, cv.need)), timid = S.size <= 1 && !S.bully, seen = new Set(), cr = crowdOf(t), meanK = 1 + Math.max(0, cr.r - 0.6);      /* (a crowded tank makes its bullies meaner) */
   for (const o of t.fish) {
-    if (o === f) continue; const O = SOCIAL[o.species]; if (!O) continue;
+    if (o === f || o.gift?.wrapped) continue; const O = SOCIAL[o.species]; if (!O) continue;      // (a gift still in its bag is not in the water yet, and nobody may know what it is)
     if (o.species === f.species && S.sameFoe) { out.penalty += 0.35; out.notes.push(`${o.name} and ${f.name} squabble: ${plural(f.species)} prefer to be the only one of their kind.`); }
     else if (E.clash?.[o.species] && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.2 * (1 - 0.5 * cover); out.notes.push(`${E.clash[o.species]}: ${f.name} and ${o.name} clash.`); }
     else if (O.bully && o.species !== f.species && timid && !seen.has(o.species)) { seen.add(o.species); out.penalty += 0.3 * (1 - 0.6 * cover) * (ECO[o.species]?.crowdMean ? meanK : 1); out.notes.push(`${o.name} bullies ${f.name}.${cover < 1 ? ' More hiding places (plants, rocks) would help.' : ''}`); }
@@ -1634,9 +1634,10 @@ export function socialOf(t, f) {
 }
 // The tank as a whole: how harmonious it is, and the most useful thing to fix.
 export function harmonyOf(t) {
-  if (t.fish.length < 2) return { key: 'calm', label: 'Calm', note: 'Nobody to squabble with.', strain: 0 };
-  let strain = 0, worst = null; for (const f of t.fish) { const s = socialOf(t, f); strain += s.penalty; if (s.notes[0] && (!worst || s.penalty > worst.p)) worst = { p: s.penalty, text: s.notes[0] }; }
-  const k = strain / t.fish.length; return k > 0.2 ? { key: 'tense', label: 'Tense', note: worst?.text ?? 'Some fish are not getting on.', strain: k } : k > 0 ? { key: 'uneasy', label: 'A little uneasy', note: worst?.text ?? 'A fish is wary.', strain: k } : { key: 'harmony', label: 'Harmonious', note: 'Everyone gets along.', strain: 0 };
+  const fish = t.fish.filter((f) => !f.gift?.wrapped);      // (a wrapped gift is not in the water yet: it neither squabbles nor gives itself away)
+  if (fish.length < 2) return { key: 'calm', label: 'Calm', note: 'Nobody to squabble with.', strain: 0 };
+  let strain = 0, worst = null; for (const f of fish) { const s = socialOf(t, f); strain += s.penalty; if (s.notes[0] && (!worst || s.penalty > worst.p)) worst = { p: s.penalty, text: s.notes[0] }; }
+  const k = strain / fish.length; return k > 0.2 ? { key: 'tense', label: 'Tense', note: worst?.text ?? 'Some fish are not getting on.', strain: k } : k > 0 ? { key: 'uneasy', label: 'A little uneasy', note: worst?.text ?? 'A fish is wary.', strain: k } : { key: 'harmony', label: 'Harmonious', note: 'Everyone gets along.', strain: 0 };
 }
 // A heads-up before adopting: who in the tank this newcomer would clash with. Soft advice only.
 export function adoptAdvice(t, species) {
