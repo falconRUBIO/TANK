@@ -71,6 +71,7 @@ const OCTO_STYLE = {
 };
 
 export class Fish3D {
+  static openFloor(z) { return Math.min(Fish3D.topY - 1, 7.4 + 0.4 * (z - 1.2)); }      // how low an open-water swimmer comes, at this depth
   static world = { push: null };
   static poseScale = 1;                     // 1 at full quality; larger on slower phones, so the rig is posed less often
   static topY = 13.2;                       // the highest a fish may go: below the status bar and the phone's safe area, so nothing swims out of view
@@ -1373,7 +1374,7 @@ export class Fish3D {
     if (!Number.isFinite(this.pos.x + this.pos.y + this.pos.z)) { this.pos.set(Number.isFinite(this.target.x) ? this.target.x : 0, Number.isFinite(this.target.y) ? this.target.y : 6, Number.isFinite(this.target.z) ? this.target.z : 1); this.vel.set(0, 0, 0); if (!this.lostSaid) { this.lostSaid = true; Fish3D.onLost?.(this); } }      // never lost in the water: a broken position puts it back where it was heading
     if (this.species.move === 'hover') return this.hoverUpdate(dt, rng, others);
     if (this.species.move === 'jet') return this.jetUpdate(dt, rng, others);
-    if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding && !this.brood && !this.hiding && !this.nursery && !((this.fleeT ?? 0) > 0) && !((this.coverT ?? 0) > 0) && (this.growth ?? 1) >= 0.92) { const fl = Math.min(Fish3D.topY - 1, 7.4 + 0.4 * (this.target.z - 1.2)); if (this.target.y < fl) this.target.y = fl;      /* (the open-water floor sits in the upper part of the screen: on a phone, height 6 is the middle of the picture and 8 to 12 the upper band; a frightened, hiding, brooding or small one is let down to cover) */ }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
+    if (this.openWater && !this.seeking && !this.weak && !this.script?.length && !this.guarding && !this.brood && !this.hiding && !this.nursery && !((this.fleeT ?? 0) > 0) && !((this.coverT ?? 0) > 0) && (this.growth ?? 1) >= 0.92 && this.settle?.why !== 'pal' && !(this.restWith && this.idle > 0)) { const fl = Fish3D.openFloor(this.target.z); if (this.target.y < fl) this.target.y = fl;      /* (the open-water floor sits in the upper part of the screen: on a phone, height 6 is the middle of the picture and 8 to 12 the upper band; a frightened, hiding, brooding or small one is let down to cover, and one resting with its friend rests where they agreed) */ }      // an open-water swimmer keeps to the upper half of the screen (the halfway line sits lower in the water further back); food still brings it down
     this.retarget -= dt;
     if (!this.seeking && (this.retarget <= 0 || (this.pos.distanceTo(this.target) < 0.5 && !this.lureCalm && !(this.restK && this.idle > 0)))) this.pick(rng);      // (a fish resting at its place or by its friend stays until its rest is over)
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
