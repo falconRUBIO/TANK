@@ -1214,6 +1214,20 @@ body:has(.nsw.on) #sheet{opacity:.08;transition:opacity .25s}
   .care2 .mrows{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
   .care2 .mrow{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:18px;background:rgba(40,90,70,.28);border:1px solid rgba(160,230,190,.3)}
   .care2 .mrow i{display:grid;place-items:center;width:30px}.care2 .mrow span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.care2 .mrow b{font-size:15px}.care2 .mrow small{color:#b7d8c6;font-variant-numeric:tabular-nums}.care2 .mrow em{font-style:normal;opacity:.6}
+  /* the birth countdown at the top of a seahorse parent's card (main.js birthBanner) */
+  #card .bwait{display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:12px 16px 12px 12px;border-radius:22px;cursor:pointer;background:linear-gradient(135deg,rgba(70,170,130,.30),rgba(46,84,128,.34));border:1px solid rgba(170,240,200,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.18)}
+  #card .bwait .bring{position:relative;flex:none;width:62px;height:62px}#card .bwait svg{width:62px;height:62px;transform:rotate(-90deg)}
+  #card .bwait .bt{fill:rgba(0,0,0,.18);stroke:rgba(255,255,255,.12);stroke-width:6}#card .bwait .bp{fill:none;stroke:#9ff0c4;stroke-width:6;stroke-linecap:round;transition:stroke-dasharray .6s}
+  #card .bwait .bd{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:#eafff3;font-size:22px}#card .bwait .bd b{font:800 21px -apple-system,system-ui,sans-serif}#card .bwait .bd small{font-size:10.5px;color:#a8e8c6;margin-top:2px;letter-spacing:.04em}
+  #card .bwait .btx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}#card .bwait .btx small{font:700 11px -apple-system,system-ui,sans-serif;letter-spacing:.14em;color:#a8e8c6}
+  #card .bwait .btx strong{font:800 27px -apple-system,system-ui,sans-serif;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}#card .bwait .btx strong i{font-style:normal}#card .bwait .btx strong u{text-decoration:none;font-size:15px;font-weight:700;color:#bfe9d3;margin-left:1px}
+  #card .bwait .btx span{font-size:13px;line-height:1.3;color:#cfe3da;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #card .bwait.live{border-color:rgba(170,250,205,.7);animation:bglow 2.4s ease-in-out infinite}
+  #card .bwait.now{background:linear-gradient(135deg,rgba(110,220,160,.45),rgba(60,120,150,.4));border-color:#d6ffe6;animation:bglow 1.4s ease-in-out infinite}#card .bwait.now strong{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#card .bwait.now{gap:11px;padding-right:12px}#card .bwait.now .bring,#card .bwait.now svg{width:50px;height:50px}#card .bwait.now .bgo{padding:8px 13px}
+  #card .bwait .bgo{flex:none;padding:9px 16px;border-radius:999px;background:#bff0cf;color:#10241a;font:800 14px -apple-system,system-ui,sans-serif}
+  @keyframes bglow{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 0 rgba(160,240,195,.0)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 18px 2px rgba(160,240,195,.35)}}
+  @media (prefers-reduced-motion:reduce){#card .bwait{animation:none!important}}
+  @media (max-width:350px){#card .bwait .btx strong{font-size:22px}}
 </style>
 </head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
