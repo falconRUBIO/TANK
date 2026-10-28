@@ -105,7 +105,8 @@ export class Fishes {
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
-        if (d.nursery) { const dad = this.byId.get(d.father); if (dad && Date.now() - (state.nursery?.born ?? 0) < 15 * 60e3) f.pos.set(dad.pos.x + (this.rng() - 0.5) * 0.6, dad.pos.y - 0.3, dad.pos.z + 0.3); }      // just born: out of his pouch
+        if (d.nursery) { const dad = this.byId.get(d.father), age = Date.now() - (state.nursery?.born ?? 0); if (dad && age < 15 * 60e3) f.pos.set(dad.pos.x + (this.rng() - 0.5) * 0.6, dad.pos.y - 0.3, dad.pos.z + 0.3);      // just born: out of his pouch
+          if (dad && age < 30e3) { const i = Math.max(0, (state.nursery?.cands ?? []).findIndex((c) => c.id === d.id)); f.emergeT = 1.6 + i * 1.8; f.emergeDad = dad; f.group.visible = false; } }      // being born right now: each of the three waits in the pouch for its turn (among the rest of the brood, nursery.js)
         f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
         f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; f.role = d.role ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
@@ -1111,10 +1112,27 @@ export class Fishes {
       m.visible = k > 0.02; if (!m.visible) continue; m.position.set(f.pos.x, gy + 0.04, f.pos.z); const s = r * (1.1 + h * 0.12); m.scale.set(s * 1.3, s, 1); m.material.opacity = 0.55 * k * k;
     }
   }
+  // the named babies of a birth come out of the father's pouch one at a time, from the front of his belly, and swim clear of him: none
+  // starts out inside his body. For the first half minute a baby that drifts into him is eased back out.
+  emergeTick(dt) {
+    for (const f of this.list) {
+      const dad = f.emergeDad; if (!dad) continue;
+      const fx = Math.cos(dad.heading ?? 0), fz = -Math.sin(dad.heading ?? 0);
+      if (f.emergeT > 0) { f.emergeT -= dt; f.group.visible = false; if (f.emote) f.emote.visible = false; f.pos.set(dad.pos.x + fx * 0.28, dad.pos.y - 0.4, dad.pos.z + fz * 0.28); f.group.position.copy(f.pos);
+        if (f.emergeT <= 0) { f.group.visible = true; f.vel?.set(fx * 0.35 + (this.rng() - 0.5) * 0.15, 0.3, fz * 0.35 + (this.rng() - 0.5) * 0.15); f.clearT = 30; this.burst?.(f.pos, 0.4); }
+        continue; }
+      if ((f.clearT = (f.clearT ?? 0) - dt) <= 0 || dad.dead) { f.emergeDad = null; continue; }
+      const dx = f.pos.x - dad.pos.x, dz = f.pos.z - dad.pos.z, dy = f.pos.y - dad.pos.y, h = Math.hypot(dx, dz);
+      if (Math.abs(dy) < 0.75 && h < 0.38) { const ux = h > 1e-3 ? dx / h : fx, uz = h > 1e-3 ? dz / h : fz, k = Math.min(1, dt * 4); f.pos.x += ux * (0.38 - h) * k; f.pos.z += uz * (0.38 - h) * k; }
+    }
+  }
   update(dt, t) {
+    this.emergeTick(dt);
     this.senseTick(dt); this.shadeTick(); (this.enc ||= new Encounters(this)).tick(dt);      // now and then a moment between them: a chase, a nip, a fright (encounters.js)
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
-    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec) f.brood = broodOf(f.rec, now);      /* (the pouch shows only what the rules say it holds; the old greeting puff read as a white patch) */
+    for (const f of this.list) { if (f.birthT > 0 && f.sk === 'seahorse') { f.brood = Math.max(broodOf(f.rec, Date.now()), 0.25 + 0.75 * Math.min(1, f.birthT / 7.5)); f.birthing = true; if (typeof window !== 'undefined') window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 1500); }      // (his pouch empties as the babies come out; nothing pops up over it while it lasts)
+      else if (f.birthing) { f.birthing = false; const n = this.state?.nursery?.n; f.thought = `${n ? `All ${n} babies are out` : 'The babies are out'}. He is catching his breath.`; } }
+    if ((this.broodT = (this.broodT ?? 0) - dt) <= 0) { this.broodT = 2; const now = Date.now(); for (const f of this.list) if (f.sk === 'seahorse' && f.rec && !(f.birthT > 0)) f.brood = broodOf(f.rec, now);      /* (the pouch shows only what the rules say it holds; the old greeting puff read as a white patch) */
       // an octopus nobody has fed for a long time goes listless: from about 60% hunger it lies about more, slower and a little paler, until a crab comes
       for (const f of this.list) if ((f.species?.move === 'jet' || (f.sk === 'seahorse' && !f.nursery)) && f.rec && !f.dead && !f.visitor) {      /* (a seahorse has its own hunger too) */ const k = Math.max(0, Math.min(1, ((f.rec.hunger ?? 0) - 0.6) / 0.3)); if (Math.abs(k - (f.starve ?? 0)) > 0.04 || (k === 0) !== !f.starve) { f.starve = k; f.tmul = this.mulFor(f); this.sicken(f, f.rec); } } }      // a male's brood pouch, as full as his pregnancy says
     // laid to rest: the body sinks slowly and fades away, rather than vanishing

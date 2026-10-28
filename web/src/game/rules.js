@@ -824,7 +824,7 @@ export const SEA = { PAIR_DAYS: 2, COURT_AFTER: 1, PREG_MIN: 6, PREG_MAX: 9, NUR
 export const sexOf = (f) => f?.sex ?? ((hash32((f?.seed ?? 0) * 31 + 7) & 1) ? 'm' : 'f');
 export const relatedFish = (a, b) => { const pa = (a.parents ?? []).map((p) => p.id), pb = (b.parents ?? []).map((p) => p.id); return pa.includes(b.id) || pb.includes(a.id) || pa.some((id) => pb.includes(id)); };
 // how full a male's brood pouch is now (0 to 1): it fills through his pregnancy, and after the birth goes back down over two days
-export const broodOf = (f, now = Date.now()) => f?.preg ? Math.max(0, Math.min(1, (now - f.preg.start) / Math.max(1, f.preg.due - f.preg.start))) : Number.isFinite(f?.lastBirth) ? Math.max(0, 0.7 * (1 - (now - f.lastBirth) / (2 * DAY))) : 0;
+export const broodOf = (f, now = Date.now()) => f?.preg ? Math.max(0, Math.min(1, (now - f.preg.start) / Math.max(1, f.preg.due - f.preg.start))) : Number.isFinite(f?.lastBirth) ? Math.max(0, 0.25 * (1 - (now - f.lastBirth) / (2 * DAY))) : 0;      // (after the birth a little slack is left, gone over two days)
 // the three tracked babies: one roams the tank, one keeps to the plants, one stays close to its family
 export const BABY_ROLES = ['explore', 'plants', 'social'], ROLE_TRAIT = { explore: 'Curious', plants: 'Calm', social: 'Social' };
 export const babyRole = (N, c) => c?.role ?? BABY_ROLES[Math.max(0, N?.cands?.indexOf(c) ?? 0) % 3];

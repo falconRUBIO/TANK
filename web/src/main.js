@@ -795,17 +795,17 @@ function eggWatch(egg, dt) {
   if (!free) { egg.watchT = Math.min(egg.watchT ?? 0, 1); return; }
   const was = egg.watchT ?? 0; egg.watchT = was + gap; window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 4000);      /* (while it happens, nothing else pops up over it) */
   if (Math.floor(was / 1.4) !== Math.floor(egg.watchT / 1.4)) sfx('twitch');      /* (a little wriggle you can hear, every second or so) */
-  if (was < 2 && egg.watchT >= 2) { if (egg.fish) { if (!focus) setFocus(egg.fish); egg.fish.thought = 'His pouch is twitching. Any moment now.'; } else if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast(egg.fish ? 'The babies are coming. Stay and watch…' : "They're hatching. Stay and watch…", 3200); haptic(8); }
+  if (was < 2 && egg.watchT >= 2) { if (egg.fish) { if (!focus) setFocus(egg.fish); egg.fish.thought = 'His pouch is twitching. Any moment now.'; } else if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast(egg.fish ? 'The babies are coming. Stay and watch…' : "They're hatching. Stay and watch…", 3200, egg.fish ? stillTrue('babies are coming') : stillTrue('hatching. Stay')); haptic(8); }
   if (egg.watchT >= 6) { egg.asked = true; game.dispatch({ t: 'watchEggs', id: egg.e.id }).then((r) => { if (!r?.ok) egg.asked = false; }); }
 }
 // a seahorse father about to give birth is watched the same way: the camera comes to him, his pouch twitches, and then they come
 const birthW = new Map();
 function birthWatchTick() {
-  for (const rec of game.state?.fish ?? []) { if (!rec.preg?.ready || rec.dead) { birthW.delete(rec.id); continue; } const f3 = fishes.byId.get(rec.id); if (!f3) continue;
+  for (const rec of game.state?.fish ?? []) { if (!rec.preg?.ready || rec.dead) { if (birthW.delete(rec.id)) { const f3 = fishes.byId.get(rec.id); if (f3 && /pouch is twitching/.test(f3.thought ?? '')) f3.thought = null; } continue; } const f3 = fishes.byId.get(rec.id); if (!f3) continue;
     const W = birthW.get(rec.id) ?? { egg: null }; birthW.set(rec.id, W); const pseudo = { e: { id: rec.id, ready: true }, group: f3.group, get asked() { return W.asked; }, set asked(v) { W.asked = v; }, get watchT() { return W.t; }, set watchT(v) { W.t = v; }, get watchAt() { return W.at; }, set watchAt(v) { W.at = v; }, fish: f3 };
     eggWatch(pseudo, 0); }
 }
-window.__onBirth = (dad) => { if (document.hidden) return; sfx('crack'); setTimeout(() => sfx('newlife'), 900); haptic(12); if (dad && !focus) setFocus(dad); if (dad) setTimeout(() => { if (focus === dad) setFocus(null); }, 9000); };      // a seahorse birth seen: the pouch opens, the chime, a close look at the father and his brood
+window.__onBirth = (dad) => { if (dad) { const n = game.state?.nursery?.n; dad.thought = `Giving birth: ${n ? `${n} tiny seahorses are` : 'the babies are'} coming out of his pouch, a few at a time.`; } if (document.hidden) return; sfx('crack'); setTimeout(() => sfx('newlife'), 900); haptic(12); if (dad && !focus) setFocus(dad); if (dad) setTimeout(() => { if (focus === dad) setFocus(null); }, 9000); };      // a seahorse birth seen: the pouch opens, the chime, a close look at the father and his brood
 window.__watchEggs = () => { for (const egg of eggSprites.values()) if (egg.e.ready && !egg.asked) { window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 8000); ui.open('tank'); egg.watchT = Math.max(egg.watchT ?? 0, 1.9); return true; } for (const [id, W] of birthW) if (!W.asked) { window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 8000); ui.open('tank'); W.t = Math.max(W.t ?? 0, 1.9); return true; } return false; };      // (Care: Watch)
 // a little cloud of larvae comes out of the eggs and rises, wriggling; most drift off on the current and fade, as in the sea (one stays: the baby)
 const fryCloud = [];
@@ -1469,7 +1469,8 @@ function maybeGift() {
   else giftOffered = Date.now();
 }
 let lastLive = 0, advSig = null; game.on('tick', () => { ui?.updateHeader(); maybeSettle(); maybeGift(); if ((game.state?.nursery?.id ?? null) !== nurseryFx.id) syncWorld(); nurseryCheck();      /* a birth or a choice that came with time passing, not with an action */ if ((ui?.tab === 'today' || ui?.tab === 'care') && Date.now() - lastLive > 15000) { lastLive = Date.now(); ui.refresh(); } if (focus && !play && !focus.dead && Date.now() - lastCard > 4000) { lastCard = Date.now(); showCard(focus); } fishes.sync(game.state); { const st = game.state, sig = st ? (st.keeps ?? []).map((k) => `${k.id}:${k.x}:${k.z}`).join() + '|' + st.decor.map((d) => `${d.x}:${d.z}`).join() : ''; if (sig !== advSig) { advSig = sig; if (st) decor.sync(st.decor, st); } }      /* (a keepsake brought home, or something an adventure moved, while time passed) */ }).on('state', syncWorld).on('members', () => ui?.refresh()).on('journal', () => ui?.refresh());
-game.on('toast', (m) => ui?.toast(m, 3200));
+const stillTrue = (m) => (/about to give birth|babies are coming/i.test(m) ? () => (game.state?.fish ?? []).some((f) => f.preg?.ready && !f.dead) : /ready to hatch|hatching\. Stay/i.test(m) ? () => (game.state?.eggs ?? []).some((e) => e.ready) : null);      // a popup held back while something else played is dropped if it is no longer true (a birth that already happened)
+game.on('toast', (m) => ui?.toast(m, 3200, stillTrue(m)));
 game.on('levelup', (lv) => {
   moment({ at: new THREE.Vector3(0, 6, 1), haptics: 30 });
   /* the level-up is a moment in the tank itself: everyone swims up to the glass, bubbles rise, and a banner names what opened */
