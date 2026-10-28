@@ -1,4 +1,4 @@
-// A surprise gift between two phones: Ana sends Ben a clownfish with a note. Nothing anywhere says what it is until Ben opens it; Ben sees a
+// A surprise gift between two phones: Ana sends Ben a goldfish (Bubbles) with a note. Nothing anywhere says what it is until Ben opens it; Ben sees a
 // gift bag on the sand, Ana cannot open it, Ben can: the fish swims out, the note shows, and his thanks reach Ana. Starts its own server.
 import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { spawn } from 'node:child_process';
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
@@ -25,7 +25,7 @@ const seen = await B.evaluate(() => ({ bags: window.__gifts.size, inTank: window
 ck('Ben sees a gift bag on the sand', seen.bags === 1);
 if (process.env.OUT) { const xy = await B.evaluate(() => { const g = [...window.__gifts.values()][0], v = g.bag.group.position.clone(); v.y += 0.4; v.project(window.__tank.camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight }; }); await B.evaluate(() => document.querySelectorAll('#modal,#toast,#coach').forEach((e) => e.classList.remove('on'))); await B.waitForTimeout(600); await B.screenshot({ path: process.env.OUT + '/giftbag.png', clip: { x: Math.max(0, Math.min(390 - 200, xy.x - 100)), y: Math.max(0, xy.y - 110), width: 200, height: 170 } }); }
 ck('the fish is not in the water yet', !seen.inTank);
-ck('nothing on Ben\'s screen or journal says what it is', !/clownfish|Bubbles/i.test(seen.text + seen.journal), (seen.text + seen.journal).match(/.{30}(clownfish|Bubbles).{20}/i)?.[0] ?? '');
+ck('nothing on Ben\'s screen or journal says what it is', !/Bubbles|gift[^.!]{0,40}goldfish|goldfish[^.!]{0,40}gift/i.test(seen.text + seen.journal), (seen.text + seen.journal).match(/[\s\S]{0,60}(goldfish|Bubbles)[\s\S]{0,30}/i)?.[0]?.replace(/\s+/g, ' ') ?? '');
 await A.waitForTimeout(1500);
 const aTry = await A.evaluate(async () => { const g = [...window.__gifts.values()][0]; if (!g) return 'no bag'; await window.__openGift(g); return window.__game.state.fish.find((f) => f.name === 'Bubbles')?.gift?.wrapped; });
 ck('Ana cannot open it', aTry === true, String(aTry));

@@ -1,4 +1,4 @@
-// The journal as a feed: a moment on one phone (an octopus at the glass) gets a photo taken by the phone running the animals, and the other
+// The journal as a feed: a moment on one phone (an octopus passing for a lionfish: a moment the photographer keeps) gets a photo taken by the phone running the animals, and the other
 // phone's journal shows it as a post with that photo, which opens full screen. Notices stay under the bell, not in the journal. Starts its own server.
 import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { spawn } from 'node:child_process';
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
@@ -21,17 +21,17 @@ for (const P of [A, B]) await P.evaluate(() => document.querySelectorAll('#modal
 const [D, O] = (await A.evaluate(() => window.__game.director)) ? [A, B] : [B, A];
 const oct = await D.evaluate(() => window.__game.state.fish.find((f) => f.species === 'octopus' && !f.dead)?.id);
 ck('there is an octopus to have a moment', !!oct);
-const r = await D.evaluate((id) => window.__game.dispatch({ t: 'moment', kind: 'glass', fish: id }), oct); ck('the moment is written', r.ok && r.applied !== false, JSON.stringify(r).slice(0, 80));
-const again = await D.evaluate((id) => window.__game.dispatch({ t: 'moment', kind: 'glass', fish: id }), oct); ck('the same moment again soon after is not written twice', again.applied === false);
-const got = await O.waitForFunction(() => window.__game.journal.some((e) => /looked in at you/.test(e.text) && e.photo), null, { timeout: 30000 }).then(() => true, () => false);
+const r = await D.evaluate((id) => window.__game.dispatch({ t: 'octoMoment', kind: 'lion', fish: id }), oct); ck('the moment is written', r.ok && r.applied !== false, JSON.stringify(r).slice(0, 80));
+const again = await D.evaluate((id) => window.__game.dispatch({ t: 'octoMoment', kind: 'lion', fish: id }), oct); ck('the same moment again soon after is not written twice', again.applied === false);
+const got = await O.waitForFunction(() => window.__game.journal.some((e) => /passed for a lionfish/.test(e.text) && e.photo), null, { timeout: 30000 }).then(() => true, () => false);
 ck('the phone running the animals took its photo, and the other phone hears of it', got);
 await O.evaluate(() => window.__ui.open('friends')); await O.waitForTimeout(600); await O.evaluate(() => document.querySelector('[data-sub="journal"]')?.click());
-const mine = () => O.evaluate(() => { window.__mp = () => [...document.querySelectorAll('#sheet .jpost')].find((q) => /looked in at you/.test(q.textContent)); });      // (the post of this check's own moment: the animals may add moments of their own meanwhile)
+const mine = () => O.evaluate(() => { window.__mp = () => [...document.querySelectorAll('#sheet .jpost')].find((q) => /passed for a lionfish/.test(q.textContent)); });      // (the post of this check's own moment: the animals may add moments of their own meanwhile)
 await mine();
 const img = await O.waitForFunction(() => !!window.__mp()?.querySelector('.jimg img'), null, { timeout: 30000 }).then(() => true, () => false);
 ck('the journal shows it as a post with the photo', img);
 const tag = await O.evaluate(() => window.__mp()?.querySelector('.jtag')?.textContent ?? '');
-ck('the post says what kind of moment it is', /Hello/.test(tag), tag);
+ck('the post says what kind of moment it is', /Disguise/.test(tag), tag);
 ck('the bell\'s notices are not mixed into the journal', await O.evaluate(() => !document.querySelector('#sheet .crew .nts')));
 const jid = await O.evaluate(() => +window.__mp()?.querySelector('.jheart')?.dataset.jid || 0);
 ck('each moment has a heart button', jid > 0);
@@ -47,7 +47,7 @@ await O.evaluate(() => document.querySelectorAll('#modal,#coach,#reunion,#toast'
 await O.evaluate(() => window.__mp()?.querySelector('.jheart').click());
 ck('tapping again takes it back', await D.waitForFunction(([jid, me]) => !(window.__game.journal.find((e) => e.id === jid)?.hearts ?? []).includes(me), [jid, meO], { timeout: 20000 }).then(() => true, () => false));
 await O.waitForFunction(() => !!window.__mp()?.querySelector('.jimg img'), null, { timeout: 30000 }).catch(() => {}); const post = await O.evaluate(() => window.__mp()?.innerHTML.slice(0, 160) ?? 'no post'); await O.evaluate(() => window.__mp()?.querySelector('.jimg')?.click()); await O.waitForSelector('.lightbox.on', { timeout: 10000 }).catch(() => {});      /* (after the reload the photo comes back from the server: wait for it, and say what the post held if it never came) */      // (a single tap opens it a moment later: it could have been the first of a double tap)
-ck('tapping the photo opens it full screen with its line', await O.evaluate(() => /looked in at you/.test(document.querySelector('.lightbox.on p')?.textContent ?? '')), post);
+ck('tapping the photo opens it full screen with its line', await O.evaluate(() => /passed for a lionfish/.test(document.querySelector('.lightbox.on p')?.textContent ?? '')), post);
 if (process.env.OUT) { await O.screenshot({ path: process.env.OUT + '/lightbox.png' }); await O.evaluate(() => document.querySelector('.lightbox')?.click()); await O.waitForTimeout(500); await O.screenshot({ path: process.env.OUT + '/journal.png' }); }
 await O.evaluate(() => document.querySelector('.lightbox')?.remove()); await O.evaluate(() => window.__mp()?.querySelector('.jpc').click());
 const pc = await O.waitForSelector('#modal.on .pcprev img', { timeout: 30000 }).then(() => true, () => false);

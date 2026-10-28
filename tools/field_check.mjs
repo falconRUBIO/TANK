@@ -1,5 +1,5 @@
-// The Field Guide is retired: a remarkable moment still writes its own journal line, but no page fills, nothing says "Field Guide",
-// and Our Tank's third tab is the Guide (goals, colors, what the animals have shown you, every kind met). Needs the solo game on 8123.   node tools/field_check.mjs
+// The Field Guide is back (Daily Discovery and the living Field Guide): a remarkable moment writes its own journal line and fills its Field
+// Guide page with the animal that did it, and the Guide tab shows the Field Guide beside the kinds met. Needs the solo game on 8123.   node tools/field_check.mjs
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 import fs from 'node:fs';
 const base = process.env.BASE || 'http://localhost:8123', out = process.env.OUT || '/tmp/field'; fs.mkdirSync(out, { recursive: true });
@@ -13,12 +13,12 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
   s.decor.length = 0; s.decor.push({ id: 'p1', type: 'grass', x: -2, z: 0.2, ry: 0 }); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
 await p.waitForTimeout(3000);
 const r = await p.evaluate(async () => { const g = window.__game, r1 = await g.dispatch({ t: 'octoMoment', fish: 'o1', kind: 'lion' }); const r2 = await g.dispatch({ t: 'moment', fish: 'g1', kind: 'glass' }); return { f: g.state.field, j: g.journal.slice(-6).map((e) => e.text) }; });
-ck('two moments seen: each writes its journal line, no Field Guide page fills', Object.keys(r.f ?? {}).length === 0 && r.j.some((x) => /stiff/.test(x)) && r.j.length >= 2, r);
+ck('two moments seen: each writes its journal line and fills its Field Guide page with the animal that did it', r.f?.lion?.fish === 'o1' && r.f?.glass?.fish === 'g1' && r.j.some((x) => /stiff/.test(x)) && r.j.some((x) => /up to the glass/.test(x)), r);
 ck('nothing mentions the Field Guide', !r.j.some((x) => /Field Guide/.test(x)), r.j);
 await p.waitForTimeout(1500);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(1200);
 const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', fg: document.querySelectorAll('#sheet .fg').length }));
 await p.screenshot({ path: `${out}/collection.png`, timeout: 120000 }).catch(() => {});
-ck('the Guide tab holds goals, colors and the kinds met, with no Field Guide pages or hints', /Guide/.test(page.text) && /Species and decorations/.test(page.text) && !/Field Guide/.test(page.text) && page.fg === 0, page.text.slice(0, 200));
+ck('the Guide tab shows the Field Guide beside the kinds met', /Field Guide/.test(page.text) && /Species and decorations/.test(page.text), page.text.slice(0, 300));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
