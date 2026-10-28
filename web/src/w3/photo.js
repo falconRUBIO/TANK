@@ -76,9 +76,10 @@ export function planShot({ subjects, seen, clutter = () => 0, why = null, sizes 
   // animals really shows, for at most a few of the best (a photo should never make the tank stutter)
   const clear = [], cluttered = [];
   for (const [yaw, pitch] of tries) {
-    const v = new THREE.Vector3(c.x + Math.cos(yaw) * Math.cos(pitch) * d, c.y + Math.sin(pitch) * d, c.z + Math.sin(yaw) * Math.cos(pitch) * d);
-    if (v.z < bounds.back || v.z > bounds.front || Math.abs(v.x) > bounds.x || v.y < bounds.floor || v.y > bounds.top) { why?.push('bounds'); continue; }
-    const dx = (c.x - v.x) / d, dz = (c.z - v.z) / d; if (dz > -0.72 || Math.abs(c.x + dx * 9) > 6.5) { why?.push('angle'); continue; }      /* (mostly from the front: the tank is wide and shallow, so a side view shows a wall) */
+    const at = (k) => new THREE.Vector3(c.x + Math.cos(yaw) * Math.cos(pitch) * d * k, c.y + Math.sin(pitch) * d * k, c.z + Math.sin(yaw) * Math.cos(pitch) * d * k), out = (q) => q.z < bounds.back || q.z > bounds.front || Math.abs(q.x) > bounds.x || q.y < bounds.floor || q.y > bounds.top;
+    let v = at(1); for (const k of [0.85, 0.7, 0.55]) { if (!out(v)) break; v = at(k); }      // (two far apart need a long way back: where that is outside the tank, the lens comes in along the same line; how much of them still shows is tested below)
+    if (out(v)) { why?.push('bounds'); continue; }
+    const dv = v.distanceTo(c) || d, dx = (c.x - v.x) / dv, dz = (c.z - v.z) / dv; if (dz > -0.72 || Math.abs(c.x + dx * 9) > 6.5) { why?.push('angle'); continue; }      /* (mostly from the front: the tank is wide and shallow, so a side view shows a wall) */
     (clutter(v, c) > 0 ? cluttered : clear).push(v);      // (with something in front of the lens: only if there is no clean view at all)
   }
   let best = null;
