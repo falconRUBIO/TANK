@@ -472,6 +472,24 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     }
   };
   const pushTimer = setInterval(() => pushSweep().catch(() => {}), +(process.env.PUSH_SWEEP_MS || 300000)); pushTimer.unref();
+  // A seahorse birth, counted down on people's phones: 5 minutes and 1 minute before the father gives birth, everyone in the tank who does not
+  // have it open hears it (and once he is due, the sweep above says the babies are waiting). Each goes once per caretaker per pregnancy, by day
+  // only, like every notification. The sweep runs every few minutes, so each one gets a timer of its own, set when the birth is near.
+  const BIRTH_PINGS = [[5 * 60e3, 90e3, (f) => `${f.name}'s babies arrive in 5 minutes! Open the tank to watch them being born.`], [60e3, 0, (f) => `1 minute! ${f.name}'s babies are almost here. Come and watch.`]];
+  const pregnant = () => db.prepare(`SELECT id, world FROM tanks WHERE test=0 AND world LIKE '%"preg":{%'`).all().flatMap((t) => { try { return (JSON.parse(t.world).fish ?? []).filter((f) => f.preg && !f.preg.ready && !f.dead && Number.isFinite(f.preg.due)).map((f) => ({ tank: t.id, f })); } catch { return []; } });
+  const birthPings = async (now = Date.now()) => {
+    if (!push.enabled) return 0; let n = 0;
+    for (const { tank, f } of pregnant()) {
+      const left = f.preg.due - now, here = online(tank);
+      for (const [lead, until, text] of BIRTH_PINGS) { if (left > lead || left <= until) continue;      // (its moment, and not once it is stale: a server that woke late does not send "5 minutes" with one left)
+        for (const m of L.listMembers(db, tank)) { if (here.includes(m.id)) continue; const k = `push:bp${lead / 60e3}:${tank}:${f.id}:${f.preg.start}:${m.id}`;
+          if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, text(f), { now, cap: 6 })) { db.prepare('INSERT OR REPLACE INTO kv (k,v) VALUES (?,?)').run(k, String(now)); n++; } } }
+    }
+    return n;
+  };
+  const planned = new Set();
+  const planBirths = (now = Date.now()) => { if (!push.enabled) return; for (const { tank, f } of pregnant()) for (const [lead] of BIRTH_PINGS) { const at = f.preg.due - lead, k = `${tank}:${f.id}:${f.preg.start}:${lead}`; if (at > now && at - now < 16 * 60e3 && !planned.has(k)) { planned.add(k); setTimeout(() => birthPings().catch(() => {}), at - now + 300).unref(); } } };
+  const birthTimer = setInterval(() => { try { planBirths(); } catch (e) { console.error('birth pings', e.message); } }, 120e3); birthTimer.unref(); setTimeout(() => { try { planBirths(); } catch { /* next round */ } }, 5e3).unref();
   // while people are connected, time passes for their tank: growth, moods and discoveries are announced to everyone
   const tick = setInterval(() => {
     for (const [tankId, set] of rooms) {
@@ -485,8 +503,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     }
   }, +(process.env.TICK_MS || 30000)); tick.unref();
   return new Promise((ok) => server.listen(port, () => ok({
-    port: server.address().port, db, backup, push, pushSweep, dd, traffic,
-    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(trafficSave); traffic.save(); clearInterval(pruner); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
+    port: server.address().port, db, backup, push, pushSweep, dd, traffic, birthPings,
+    close: () => new Promise((done) => { clearInterval(sweep); clearInterval(birthTimer); clearInterval(trafficSave); traffic.save(); clearInterval(pruner); clearInterval(pushTimer); clearInterval(backups); clearTimeout(firstBackup); clearInterval(tick); for (const c of wss.clients) c.terminate(); wss.close(); server.close(() => { db.close(); done(); }); server.closeAllConnections?.(); }),
   })));
 }
 

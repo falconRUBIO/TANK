@@ -16,7 +16,7 @@ const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|up
 // what a notification is about, for the per-kind switches in Settings
 // how much a message matters when the day's limit is near: what needs a caretaker or happens once (hungry, a birth, a gift for you) still gets
 // through after something lighter went out; the lighter news (a new pair, growing up) never takes the day's only place from it
-export const prioOf = (body) => { const b = String(body); return /hungry|gave birth|ready! Choose|about to hatch|passed away|gift is waiting|sent you a bottle/i.test(b) ? 'high' : /are a pair now|is expecting|all grown up|is an adult/i.test(b) ? 'low' : 'normal'; };
+export const prioOf = (body) => { const b = String(body); return /hungry|gave birth|babies arrive|babies are almost here|ready! Choose|about to hatch|passed away|gift is waiting|sent you a bottle/i.test(b) ? 'high' : /are a pair now|is expecting|all grown up|is an adult/i.test(b) ? 'low' : 'normal'; };
 export const kindOf = (body) => { const b = String(body); return /\begg|hatch|spawn|gave birth|expecting|baby|babies|are a pair now/i.test(b) ? 'eggs' : /gift|bottle|thank/i.test(b) ? 'gifts' : /hungry|water|shrimp|crab/i.test(b) ? 'hungry' : /joined|says/i.test(b) ? 'friends' : 'visitors'; };
 export function makePush(db, { publicKey, privateKey, subject, sender } = {}) {
   const enabled = !!(sender || (publicKey && privateKey));

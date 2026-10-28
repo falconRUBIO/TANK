@@ -455,6 +455,24 @@ await t('push: a seahorse birth in a closed tank reaches the caretakers who are 
   const { kindOf } = await import('./push.mjs'); assert.equal(kindOf(b.payload.body), 'eggs'); assert.equal(kindOf("They're ready! Choose one baby seahorse to stay."), 'eggs'); assert.equal(kindOf('Sunny is expecting! The babies will come in about a week.'), 'eggs');
   assert.ok(getW(tk.id).nursery, 'and the nursery began');
 });
+await t('push: 5 minutes and 1 minute before a seahorse birth, everyone away hears it once each; nothing stale, nobody looking is told', async () => {
+  const x = await mkUser('Countdown'), tk = (await call('/api/tanks', { name: 'Soon' }, x.token)).body, y = await mkUser('Watcher'); await call('/api/join', { code: tk.code }, y.token);
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;      // (their local time is midday: notifications are by day only)
+  for (const [u, e] of [[x, 'cd1'], [y, 'cd2']]) assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/' + e, keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, u.token)).status, 200);
+  const now = Date.now(), due = now + 4.5 * 60e3, born = now - 20 * 864e5, sea = (id, name, sex, extra = {}) => ({ id, name, species: 'seahorse', seed: id.length * 7, born, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, hunger: 0, ...extra });
+  setW(tk.id, { fish: [sea('cm', 'Sunny', 'm', { preg: { start: now - 7 * 864e5, due, mother: 'cf', ma: { id: 'cf', name: 'Pearl' }, seed: 9, n: 11 } }), sea('cf', 'Pearl', 'f')], flags: { tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0;
+  const w = await open(y.token); await waitFor(w, (m) => m.t === 'snapshot');      // Watcher has the tank open
+  assert.equal(await S.birthPings(due - 6 * 60e3), 0, 'six minutes out: nothing yet');
+  assert.equal(await S.birthPings(due - 4.5 * 60e3), 1, 'five minutes out: told once');
+  const five = pushed.filter((q) => /arrive in 5 minutes/.test(q.payload.body)); assert.equal(five.length, 1); assert.match(five[0].payload.body, /Sunny's babies/);
+  assert.equal(await S.birthPings(due - 3 * 60e3), 0, 'not again'); w.close(); await new Promise((r) => setTimeout(r, 150));
+  assert.equal(await S.birthPings(due - 50e3), 2, 'one minute out: both told (Watcher has closed the tank)'); assert.equal(pushed.filter((q) => /^1 minute!/.test(q.payload.body)).length, 2);
+  assert.equal(await S.birthPings(due - 30e3), 0, 'and not again');
+  setW(tk.id, { fish: [sea('cm', 'Sunny', 'm', { preg: { start: now - 6 * 864e5, due: now + 50e3, mother: 'cf', seed: 9, n: 11 } }), sea('cf', 'Pearl', 'f')] }); pushed.length = 0;
+  await S.birthPings(now); assert.ok(!pushed.some((q) => /5 minutes/.test(q.payload.body)), 'a server that wakes with a minute left does not say "5 minutes"');
+  const { prioOf } = await import('./push.mjs'); assert.equal(prioOf("Sunny's babies arrive in 5 minutes! Open the tank to watch them being born."), 'high');
+});
 await t('push: opt in, a visitor reaches a closed tank once, quiet hours and the one-a-day cap are respected', async () => {
   const k = await call('/api/push/key', null, a.token); assert.equal(k.body.enabled, true);
   const x = await mkUser('Pushy'), tk = (await call('/api/tanks', { name: 'Quiet' }, x.token)).body;
