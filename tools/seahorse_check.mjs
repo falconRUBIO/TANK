@@ -45,7 +45,7 @@ await p.evaluate(() => { window.__cam = null; }); await p.waitForTimeout(1500); 
 // holding tails: two that have shared the tank for days link tails now and then; one that arrived today does not
 const tl = await p.evaluate(async () => {
   window.__simClock(true); const F = window.__fishes, [a, b] = ['h1', 'h2'].map((id) => F.byId.get(id)), step = (n) => { for (let i = 0; i < n; i++) { const t = (window.__t = (window.__t ?? 0) + 0.05); F.update(0.05, t); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); F.observe(0.05, t); } };
-  a.unlink?.(); a.linkCool = 0; b.linkCool = 0; a.linkWith(b, { x: 0, y: 6, z: 1 }, 60); step(20 * 25);
+  a.unlink?.(); a.linkCool = 0; b.linkCool = 0; a.linkWith(b, { x: 0, y: 6, z: 1 }, 60); for (let k = 0; k < 30 && !(a.link?.on && b.link?.on); k++) step(20); step(20 * 3);      /* (until both are there, within the 30 s the game allows for the swim over, then a moment to curl up: a fixed 25 s once caught one just arriving, its tail still coiling) */
   const on = !!(a.link?.on && b.link?.on), gap = +a.pos.distanceTo(b.pos).toFixed(2), facing = Math.cos(a.heading) > 0.8 && Math.cos(b.heading) < -0.8 && a.pos.x < b.pos.x, curl = [a.curlK, b.curlK].map((v) => +v.toFixed(2)), thought = a.thought;
   F.drop(0, 7); step(20 * 4); const parted = !a.link && !b.link;
   // a newcomer: the same pair, but one of them only just arrived
