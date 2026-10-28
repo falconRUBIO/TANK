@@ -10,7 +10,7 @@ const r = await p.evaluate(async () => {
   await g.dispatch({ t: 'buyDecor', type: 'cave', x: 0, z: 1, ry: 0 }, { dev: true }); await new Promise((r) => setTimeout(r, 900));
   const cave = g.state.decor.find((d) => d.type === 'cave'), pip = g.state.fish.find((f) => f.name === 'Pip'), q = g.state.fish.find((f) => f.name === 'Quill 1');
   // a real report from the lead phone: Pip spent its time by the cave, and kept company with Quill, three times
-  for (let k = 1; k <= 3; k++) await g.dispatch({ t: 'fishLog', logs: [{ fish: pip.id, dist: 2, lv: { low: 100 }, places: [cave.id], secs: { [cave.id]: 170 }, near: { [q.id]: 180 } }] }, { dev: true, now: g.now() + k * 6e5 });
+  const logRes = []; for (let k = 1; k <= 3; k++) logRes.push(await g.dispatch({ t: 'fishLog', logs: [{ fish: pip.id, dist: 2, lv: { low: 100 }, places: [cave.id], secs: { [cave.id]: 170 }, near: { [q.id]: 180 } }] }, { dev: true, now: g.now() + k * 6e5 }).then((x) => JSON.stringify(x).slice(0, 120), (e) => 'threw ' + e.message));      /* (each report's answer, for the line below when it is not taken) */
   const J = (g.journal ?? []).filter((j) => j.about?.includes(pip.id)).map((j) => j.text);
   // the Health screen
   window.__ui.open('care'); await new Promise((r) => setTimeout(r, 400)); document.querySelector('#sheet [data-act="healthopen"]')?.click(); await new Promise((r) => setTimeout(r, 600));
@@ -18,10 +18,10 @@ const r = await p.evaluate(async () => {
   // the card's Journal tab
   window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(pip.id))); await new Promise((r) => setTimeout(r, 800)); document.querySelector('#card .tb[data-tab="jour"]')?.click(); await new Promise((r) => setTimeout(r, 500));
   const life = [...document.querySelectorAll('#card .life li')].map((e) => e.textContent), story = [...document.querySelectorAll('#card ul.story li')].map((e) => e.textContent);
-  return { pal: pip.pal, spot: pip.spotId, cave: cave.id, J, hab, life, story };
+  return { pal: pip.pal, spot: pip.spotId, cave: cave.id, J, hab, life, story, logRes };
 });
 console.log(JSON.stringify(r).slice(0, 1200));
-ok(r.spot === r.cave, 'Pip took to the cave from real time spent'); ok(r.pal, 'Pip and Quill are best friends from real time together');
+ok(r.spot === r.cave, 'Pip took to the cave from real time spent' + (r.spot === r.cave ? '' : ` (its spot ${r.spot}, the cave ${r.cave}; the three reports: ${r.logRes.join(' | ')})`)); ok(r.pal, 'Pip and Quill are best friends from real time together');
 ok(r.J.some((x) => /favorite|taken to the reef cave|best friends/.test(x)), 'the tank journal lines about Pip carry its id: ' + r.J.join(' | '));
 ok(r.hab.some((x) => /Pip has started resting by the reef cave/.test(x)), 'Health says how Pip uses the habitat: ' + r.hab.join(' | '));
 ok(r.life.some((x) => /Came home/.test(x)) && r.life.some((x) => /favorite spot/.test(x)) && r.life.some((x) => /Best friends with Quill/.test(x)), 'the card keeps its life summary: ' + r.life.join(' | '));

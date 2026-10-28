@@ -39,8 +39,9 @@ const noCrab = await p.evaluate(() => !document.querySelector('[data-feed="crab"
 await p.evaluate(() => window.__ui.open('tank')); await p.waitForTimeout(300);
 // home again: the rules resolve the return, the keepsake lies by its den, and it climbs back in
 await p.evaluate(() => { const s = window.__game.state, f = s.fish[0]; f.away.until = Date.now() - 10; window.__game.emit('state'); });
-await p.waitForTimeout(1500);
-const back = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'); return { list: F.list.includes(f), puppet: !!f?.puppet, keeps: window.__game.state.keeps.length, mesh: window.__decor.keeps?.size ?? 0, journal: window.__game.journal.slice(-3).map((e) => e.text) }; });
+await p.waitForFunction(() => { const F = window.__fishes; return F.list.includes(F.byId.get('x1')); }, null, { timeout: 20000 }).catch(() => {}); await p.waitForTimeout(300);      /* (until the rules' next tick has brought it home: a fixed 1.5 s once fell between two ticks on a slow machine, where a frame of the tank can take over a second) */
+const back = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('x1'), sf = window.__game.state.fish.find((x) => x.id === 'x1'); return { away: sf?.away ? Math.round((sf.away.until - Date.now()) / 1000) : null, sim: window.__game.state.simTs ? Math.round((Date.now() - window.__game.state.simTs) / 1000) : null, list: F.list.includes(f), puppet: !!f?.puppet, keeps: window.__game.state.keeps.length, mesh: window.__decor.keeps?.size ?? 0, journal: window.__game.journal.slice(-3).map((e) => e.text) }; });
+back.errs = errors.slice(0, 3).map((e) => String(e).slice(0, 160));      /* (anything the page reported: a rules step that failed is logged, not thrown) */
 ck('home again: back in the water, climbing in over the rim', back.list && back.puppet, JSON.stringify(back));
 ck('the bottle cap it brought lies on the sand (a mesh by its den)', back.keeps === 1 && back.mesh === 1, JSON.stringify(back));
 ck('the journal says it came back with a bottle cap', back.journal.some((t) => /bottle cap/.test(t)), JSON.stringify(back.journal));
