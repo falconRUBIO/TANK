@@ -47,7 +47,7 @@ for (const [i, [kx, kz]] of SPOTS.entries()) {
 }
 for (const r of rows) console.log('   ', r);
 ck('from all six places it reaches the shell and carries it (rendered)', carriedN === SPOTS.length, 'rendered', `${carriedN} of ${SPOTS.length}`);
-ck('it brings it home to its den', homeN >= SPOTS.length - 1, 'rendered', `${homeN} of ${SPOTS.length} end by the den`);
+ck('it brings it home to its den', homeN >= SPOTS.length - 1, 'rendered', `${homeN} of ${SPOTS.length} end by the den${homeN >= SPOTS.length - 1 ? '' : ' :: ' + rows.join(' // ')}`);      // (on a miss, each place's story on the same line: the CI log keeps only the ✓/✗ lines)
 ck('no pickup loop: at most two pickups in a run (one, or one after a slip)', loops === 0, 'state', `${loops} runs with more`);
 ck('no page errors', errors.length === 0, 'page', errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Keepsake checks passed'); process.exit(fails ? 1 : 0);
