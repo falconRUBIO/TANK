@@ -233,9 +233,17 @@ export class Fish3D {
       }
       // a baby is drawn as a baby: big shining eyes, a big head on a short, round little body (eased out as it grows up)
       if (this.cute > 0.01 && !jet && this.cuteEye) { const c = this.cute, E = this.cuteEye;
-        if (v.em) { x = E.x + (x - E.x) * (1 + 0.85 * c); y = E.y + 0.5 * c + (y - E.y) * (1 + 0.85 * c); z += Math.sign(z || 1) * 0.5 * c; grow *= 1 + 0.75 * c; }
+        if (v.em) { const ek = tailRig ? 0.3 : 0.85; x = E.x + (x - E.x) * (1 + ek * c); y = E.y + 0.5 * c + (y - E.y) * (1 + ek * c); z += Math.sign(z || 1) * 0.5 * c; grow *= 1 + (tailRig ? 0.25 : 0.75) * c; }      /* (a seahorse's head grows round its eye already, below) */
         else if (!tailRig) { const back = E.x - x; if (back > 0) x = E.x - back * (1 - 0.38 * c * Math.min(1, back / (this.cuteSpan * 0.2))); y = this.cuteMid + (y - this.cuteMid) * (1 + 0.2 * c); if (back < this.cuteSpan * 0.3) grow *= 1 + 0.1 * c; }
         else if (v.tag !== 'tail' && y > E.y - 3) grow *= 1 + 0.1 * c; }
+      if (this.cute > 0.01 && tailRig && this.cuteEye) {      // a newborn seahorse is no small copy of its father: a big head with a short stubby snout and a tiny crown, a short slim body, a short tail
+        const c = this.cute, E = this.cuteEye, Ny = E.y - 8, Sx = E.x + 3.5, Sy = E.y - 1.5, hx = E.x - 1.5, hy = E.y - 0.5;
+        if (y > Ny || (!v.em && x > Sx && y > E.y - 16)) {
+          if (!v.em && x > Sx && y > E.y - 16) { x = Sx + (x - Sx) * (1 - 0.7 * c); y = Sy + (y - Sy) * (1 - 0.55 * c); }      // the snout, a short stub
+          if (!v.em && y > E.y + 4) y = E.y + 4 + (y - E.y - 4) * (1 - 0.6 * c);      // the crown, barely begun
+          const s = 1 + 0.34 * c; x = hx + (x - hx) * s; y = hy + (y - hy) * s; z *= s; grow *= s;      // the head, big for its body
+        } else { y = Ny - (Ny - y) * (1 - 0.4 * c); x = hx - 1.5 + (x - hx + 1.5) * (1 - 0.18 * c); z *= 1 - 0.24 * c; }      // the body and tail, short and slim
+      }
       else if (this.cute > 0.01 && jet) { const c = this.cute, O = (this.octEye ||= (() => { let x = 0, y = 0, n = 0; for (const q of this.vox) if (q.tag === 'eye' || q.em) { x += q.x; y += q.y; n++; } return n ? { x: x / n, y: y / n } : { x: 0, y: 0 }; })());      // a baby octopus: huge shining eyes set wide, a round head too big for it, little arms
         if (v.tag === 'eye' || v.em) { grow *= Math.max(0, 1 - 1.6 * c); }      /* (its grown-up slit eyes give way to big round baby eyes: babyFace) */
         else if (v.arm < 0) { const dy = y - O.y; y = O.y + dy * (1 + 0.18 * c) + 0.3 * c; x *= 1 + 0.12 * c; z *= 1 + 0.12 * c; grow *= 1 + 0.18 * c; }
@@ -697,6 +705,7 @@ export class Fish3D {
     this.pos.addScaledVector(this.vel, dt); this.rdt = dt; this.resolve(others);
     const sp = this.face(dt, this.sp.tail ? 1.8 : 0.9);      // (a seahorse pivots easily: it faces the way it swims within half a second, instead of sliding along side-on)
     this.pitch += ((-this.vel.y * 0.12) + Math.sin(t * 0.8 + this.phase) * 0.04 - (this.strikeT > 0 ? 0.25 * Math.sin(Math.PI * (1 - this.strikeT / SEA_STRIKE)) : 0) - this.pitch) * Math.min(1, dt * (this.strikeT > 0 ? 40 : 2)); this.roll += (Math.sin(t * 0.6 + this.phase) * 0.03 - this.roll) * Math.min(1, dt * 2);
+    if (this.nursery && (this.nk ?? 1) < 0.5) { const fy = 1 - (this.nk ?? 1) / 0.5; this.roll += Math.sin(t * 1.9 + this.seed) * 0.4 * fy * Math.min(1, dt * 3); this.pitch += Math.sin(t * 1.3 + this.seed * 2) * 0.22 * fy * Math.min(1, dt * 3); }      // (a newborn tumbles a little: it is not yet steady in the water)
     this.phase += dt * (12 + sp * 4);                                    // the dorsal fin flutters fast even when hardly moving
     if (this.sp.tail) {
       const going = this.vel.length() > 0.08, H = this.holdfast, near = H && !H.on ? Math.max(0, Math.min(1, (1.6 - this.pos.distanceTo(this.target)) / 1.1)) : 0;
@@ -1006,6 +1015,13 @@ export class Fish3D {
     // a nursery baby shows its own character in where it goes next: the explorer seldom settles and heads off anywhere, the plant-lover
     // goes back to a stem whenever it can, the social one swims over to its father or a brother or sister
     const role = this.nursery ? this.role : null;
+    // a newborn's first two days: it cannot hold on to anything yet, so it drifts high in the water, up toward the light, in a loose little cloud
+    // with its brothers and sisters, snapping at whatever drifts past (as seahorse fry do). After that it starts to come down to the plants.
+    if (this.nursery && (this.nk ?? 1) < 0.4 && !this.seeking) {
+      const kin = (this.kin?.() ?? []).filter((o) => o.nursery && !o.dead && o !== this), cx = kin.length ? kin.reduce((a, o) => a + o.pos.x, 0) / kin.length : this.pos.x, cz = kin.length ? kin.reduce((a, o) => a + o.pos.z, 0) / kin.length : this.pos.z;
+      const hi = Fish3D.topY - 3.4 - (this.nk ?? 0) * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 2.4)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.2));
+      this.target.set(x, hi - rng() * 1.8, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
+    }
     if (role === 'social') {      // goes over to its family, the ones swimming about first (not just whoever is resting on a stem), and swims alongside
       const kin = (this.kin?.() ?? []).filter((o) => !o.dead), free = kin.filter((o) => !o.holdfast?.on && !o.perch?.on), calm = free.filter((o) => !(o.nursery && o.role === 'explore')), pick = calm.length && rng() < 0.6 ? calm : free.length ? free : kin;      /* its parents and the plant-lover more often than the explorer, which never stays */
       if (pick.length && rng() < 0.85) { const o = pick.slice().sort((x, y) => y.vel.length() - x.vel.length())[rng() < 0.7 ? 0 : (rng() * pick.length) | 0];      /* mostly the one on the move */ this.follow = o; this.followT = 10 + rng() * 10; this.idle = 0; this.retarget = 1.5; return; }

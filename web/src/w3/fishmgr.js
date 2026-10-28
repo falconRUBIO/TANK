@@ -101,7 +101,7 @@ export class Fishes {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
         const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
         f = new Fish3D(sp, d.seed, { look: d.palette != null || d.pal != null || d.kind ? { pal: d.palette ?? (Number.isInteger(d.pal) ? d.pal : null), kind: d.kind ?? null } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05) * (KINDS[d.species]?.[d.kind]?.speed ?? 1), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
-        f.fid = d.id; f.sk = d.species; f.baseScale = KINDS[d.species]?.[d.kind]?.scale ?? 1; f.setGrowth(f.growth ?? 1); f.nursery = d.nursery ?? null; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.cute = cute; f.setGrowth(k);
+        f.fid = d.id; f.sk = d.species; f.baseScale = KINDS[d.species]?.[d.kind]?.scale ?? 1; f.setGrowth(f.growth ?? 1); f.nursery = d.nursery ?? null; f.nk = d.nk ?? 1; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.cute = cute; f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
         f.pos.set(arriving ? (this.rng() - 0.5) * 5 : (this.rng() - 0.5) * 6, arriving ? 13.5 : band.y[0] + this.rng() * (band.y[1] - band.y[0]), (band.z[0] + band.z[1]) / 2);
         if (!arriving) f.pick(this.rng); else { f.target.set(f.pos.x, 8, f.pos.z); f.retarget = 3; this.burst(f.pos); }
@@ -109,7 +109,7 @@ export class Fishes {
           if (dad && age < 30e3) { const i = Math.max(0, (state.nursery?.cands ?? []).findIndex((c) => c.id === d.id)); f.emergeT = 1.6 + i * 1.8; f.emergeDad = dad; f.group.visible = false; } }      // being born right now: each of the three waits in the pouch for its turn (among the rest of the brood, nursery.js)
         f.openWater = OPEN_WATER.has(d.species); f.leadOf = () => (this.isLead ? this.isLead() : true); this.relate(f, d); f.home = { x: (((d.seed * 37) % 100) / 100 - 0.5) * 6, y: f.band.y[0] + (((d.seed * 13) % 100) / 100) * (f.band.y[1] - f.band.y[0]) }; this.wrapPick(f, d); this.sicken(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f);
       } else {
-        f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; f.role = d.role ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
+        f.name = d.name; f.rec = d; f.mateId = d.mate ?? null; f.nursery = d.nursery ?? null; f.nk = d.nk ?? 1; f.role = d.role ?? null; this.relate(f, d); this.sicken(f, d); f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1);
         if (Math.abs((f.growth ?? 1) - k) > 1e-3 || f.cute !== cute) { f.cute = cute; f.setGrowth(k); }
       }
     });
@@ -1115,6 +1115,10 @@ export class Fishes {
   // the named babies of a birth come out of the father's pouch one at a time, from the front of his belly, and swim clear of him: none
   // starts out inside his body. For the first half minute a baby that drifts into him is eased back out.
   emergeTick(dt) {
+    // a newborn is dark and smoky, nearly see-through in the sea; its own colors come in over its nursery days. And it snaps at tiny food all the time.
+    for (const f of this.list) { if (!f.nursery || f.dead || f.sk !== 'seahorse') continue; const nk = f.nk ?? 1;
+      if (!f.tintCol || f.fryTint !== true) { f.tintCol = [58, 50, 46]; f.fryTint = true; f.tintApplied = -1; } f.setTint?.(0.72 * Math.max(0, 1 - nk));
+      if (nk < 0.6 && (f.snickT = (f.snickT ?? 1 + this.rng() * 3) - dt) <= 0) { f.snickT = 1.2 + this.rng() * 3 + nk * 6; f.strikeT = 0.16; f.strikeSeq = (f.strikeSeq ?? 0) + 1; } }
     for (const f of this.list) {
       const dad = f.emergeDad; if (!dad) continue;
       const fx = Math.cos(dad.heading ?? 0), fz = -Math.sin(dad.heading ?? 0);

@@ -185,8 +185,8 @@ export function bigMoments(t, now = Date.now()) {
 }
 // when something is due, said one way everywhere: "in about 2 days", "in about 5 hours", "in 40 min", "any moment now"
 export const dueWhen = (ms) => (ms <= 60e3 ? 'any moment now' : ms < HOUR ? `in ${Math.ceil(ms / 60e3)} min` : ms < 36 * HOUR ? `in about ${Math.round(ms / HOUR)} hour${Math.round(ms / HOUR) === 1 ? '' : 's'}` : `in about ${Math.round(ms / DAY)} days`);
-// a pregnancy's day count: day d of n, never claiming fewer days than are left
-export const pregDays = (P, now = Date.now()) => { const n = Math.max(1, Math.ceil((P.due - P.start) / DAY - 0.05)); return { d: Math.max(1, Math.min(n, Math.floor((now - P.start) / DAY) + 1)), n }; };
+// a pregnancy's day count: day d of n (n to the nearest day: a birth moved to the next morning, so people are awake for it, adds only hours)
+export const pregDays = (P, now = Date.now()) => { const n = Math.max(1, Math.round((P.due - P.start) / DAY)); return { d: Math.max(1, Math.min(n, Math.floor((now - P.start) / DAY) + 1)), n }; };
 // The next chapter of one animal's life, in a line, for the top of its card: what it is on its way to, and roughly when (from the rules, so it is true).
 export function storyNext(t, f, now = Date.now()) {
   if (!f || f.dead) return null; const nm = (id) => t.fish.find((x) => x.id === id && !x.dead)?.name, days = (ms) => { const d = Math.max(0, ms) / DAY; return d < 1 ? (ms < 3 * HOUR ? 'any time now' : 'later today') : d < 1.6 ? 'about a day' : `about ${Math.round(d)} days`; };
