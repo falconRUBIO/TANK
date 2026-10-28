@@ -3,7 +3,7 @@
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
 const base = process.env.BASE || 'http://localhost:8123', out = 'docs/audit/loading/';
 let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, JSON.stringify(x).slice(0, 300)); if (!ok) fails++; };
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const shot = async (vp, name, opts = {}) => { const ctx = await b.newContext({ viewport: vp, deviceScaleFactor: 2, reducedMotion: opts.rm ? 'reduce' : 'no-preference' }), p = await ctx.newPage(), errors = [];
   p.on('pageerror', (e) => errors.push(e.message));
   if (opts.block) await p.route('**/src/main.js', (rt) => rt.fulfill({ contentType: 'application/javascript', body: '' }));      // the game's code never arrives: the cove alone
