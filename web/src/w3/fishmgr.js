@@ -1033,7 +1033,7 @@ export class Fishes {
     for (const f of this.list) {
       if (f.dead || f.nursery || f.visitor || f.sk === 'seahorse' || f.species?.tail || (f.cute ?? 0) < 0.4 || f.species?.move === 'jet' || f.holdfast || f.perch?.on) continue;      // (seahorses keep their own ways: they hunt for stems to hold)
       f.target.y += Math.sin((f.tt ?? performance.now() / 1e3) * 5 + (f.phase ?? 0)) * 0.012 * f.cute;      // the bob
-      if (f.settle || (f.restK && f.idle > 0)) continue;      // (on its way to a rest, or resting by its friend: no darting off; the darts once kept it a body's height below)
+      if (f.settle || f.idle > 0 || (f.coverT ?? 0) > 0) continue;      // (on its way to a rest, holding a spot it chose (resting by its friend, watching something new from a distance) or in cover: no darting off; the darts once kept it a body's height below its friend, and carried a shy one right up to the thing it was wary of)
       if ((f.kidT = (f.kidT ?? Math.random() * 2) - dt) > 0) continue; f.kidT = (f.sleepy ? 6 : 1.6) + Math.random() * 2.2;
       const par = (f.rec?.parents ?? []).map((p) => this.byId.get(p.id)).filter((o) => o && !o.dead), near = par.sort((a, b) => a.pos.distanceTo(f.pos) - b.pos.distanceTo(f.pos))[0];
       if (near && Math.random() < 0.6 * f.cute) { f.target.set(near.pos.x - Math.cos(near.heading ?? 0) * 0.6 + (Math.random() - 0.5) * 0.5, near.pos.y + (Math.random() - 0.4) * 0.5, near.pos.z + (Math.random() - 0.5) * 0.5); f.retarget = 2.5; }      // tagging along just behind mum or dad
