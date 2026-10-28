@@ -798,6 +798,35 @@ function eggWatch(egg, dt) {
   if (was < 2 && egg.watchT >= 2) { if (egg.fish) { if (!focus) setFocus(egg.fish); egg.fish.thought = 'His pouch is twitching. Any moment now.'; } else if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast(egg.fish ? 'The babies are coming. Stay and watch…' : "They're hatching. Stay and watch…", 3200, egg.fish ? stillTrue('babies are coming') : stillTrue('hatching. Stay')); haptic(8); }
   if (egg.watchT >= 6) { egg.asked = true; game.dispatch({ t: 'watchEggs', id: egg.e.id }).then((r) => { if (!r?.ok) egg.asked = false; }); }
 }
+// ── a clear view of a birth or a hatching: while you watch it, animals swim out of the line between you and it, and a plant or rock in the
+// way fades to a ghost of itself, then everything comes back. (The thing the father is holding on to stays as it is.) ──
+const CV_IN = 0.1, cvFaded = new Map(), _cvB = new THREE.Vector3(), _cvP = new THREE.Vector3(), _cvBox = new THREE.Box3(), _cvS = new THREE.Vector3();
+function cvSubject() { const f = focus; if (!f || f.dead) return null; return f.isEgg || f.birthT > 0 || f.restT > 0 || f.rec?.preg?.ready ? f : null; }
+function clearViewTick(dt) {
+  const S = cvSubject(), sp = S ? (S.pos ?? S.group?.position) : null, want = new Map();
+  if (sp) {
+    for (const f of fishes.list) {      // animals in the way swim aside (not the parent and the babies, nor the mother come to see them)
+      if (f === S || f.dead || f.nursery || f.exploreAt?.say || f.sk === 'crab' || f.away) continue;
+      const { t, d, at } = (() => { _cvB.subVectors(sp, camera.position); const L2 = _cvB.lengthSq() || 1, t = Math.max(0, Math.min(1, _cvP.subVectors(f.pos, camera.position).dot(_cvB) / L2)); _cvP.copy(camera.position).addScaledVector(_cvB, t); return { t, d: f.pos.distanceTo(_cvP), at: _cvP }; })();
+      if (t < 0.06 || t > 0.94 || d > 1.0) continue;
+      const dir = _cvS.subVectors(f.pos, at).setY(0); if (dir.lengthSq() < 1e-4) dir.set(f.pos.x < sp.x ? -1 : 1, 0, 0); dir.normalize();
+      f.pos.addScaledVector(dir, (1.0 - d) * Math.min(1, dt * 3)); f.target?.set(at.x + dir.x * 1.8, f.pos.y, at.z + dir.z * 1.8); f.retarget = Math.max(f.retarget ?? 0, 2);
+    }
+    for (const it of decor.items.values()) {      // a plant or rock between you and it fades
+      if (!it.group || it.haul || S.holdfast?.id === it.id) continue;
+      _cvBox.setFromObject(it.group); const c = _cvBox.getCenter(new THREE.Vector3()), sz = _cvBox.getSize(_cvS), r = 0.5 * Math.max(sz.x, sz.z);
+      _cvB.subVectors(sp, camera.position); const L2 = _cvB.lengthSq() || 1, t = Math.max(0, Math.min(1, _cvP.subVectors(c, camera.position).dot(_cvB) / L2)); _cvP.copy(camera.position).addScaledVector(_cvB, t);
+      const near = Math.hypot(c.x - _cvP.x, c.z - _cvP.z) < r * 0.85 + 0.35 && _cvP.y > _cvBox.min.y - 0.2 && _cvP.y < _cvBox.max.y + 0.2;
+      if (near && t > 0.04 && t < 0.97 && c.z > sp.z - 0.2) want.set(it.id, it);
+    }
+  }
+  for (const [id, it] of want) if (!cvFaded.has(id)) { const mats = []; it.group.traverse((o) => { if (o.isMesh && o.material && !Array.isArray(o.material)) { const m0 = o.material, c = m0.clone(); c.onBeforeCompile = m0.onBeforeCompile; c.customProgramCacheKey = m0.customProgramCacheKey; c.transparent = true; c.depthWrite = false; mats.push([o, m0, c]); o.material = c; } }); cvFaded.set(id, { it, mats, k: 1 }); }
+  for (const [id, F] of cvFaded) {
+    const goal = want.has(id) ? CV_IN : 1; F.k += (goal - F.k) * Math.min(1, dt * 4); for (const [, , c] of F.mats) c.opacity = F.k;
+    if (goal === 1 && F.k > 0.98) { for (const [o, m0, c] of F.mats) { o.material = m0; c.dispose(); } cvFaded.delete(id); }      // (back to itself)
+  }
+}
+window.__clearView = () => ({ subject: cvSubject()?.name ?? null, faded: [...cvFaded.keys()] });
 // a seahorse father about to give birth is watched the same way: the camera comes to him, his pouch twitches, and then they come
 const birthW = new Map();
 function birthWatchTick() {
@@ -1815,6 +1844,7 @@ function frameBody(now) {
   // the picture must keep moving whatever one fish does: a fish whose update throws is skipped this frame (and said so, a few times), the rest of the tank carries on
   const simT0 = performance.now();
   if (!window.__simHold) {      /* (a check that runs the tank's clock itself holds this one, so a slow machine cannot move the animals in between) */
+  try { clearViewTick(dt); } catch (e) { if (simErrors++ < 5) console.error('clear view', e); }
   try { decor.tick(t, dt); fishes.bubbleAt = decor.bubbleSpot() ?? fishes.defaultBubble; fishes.update(dt, t); grazeGlass(dt); toys.update(dt, t); spotDim(); fishes.observe(dt, t); watchTick(dt); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
   for (const f of fishes.list) { try { f.update(dt, rng, fishes.list); } catch (e) { if ((f.errs = (f.errs ?? 0) + 1) <= 3) console.error('fish error', f.name, e); } } try { toys.settle(); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); } }
   try { nurseryFx.update(dt, t, game.state, fishes); } catch (e) { if (simErrors++ < 5) console.error('tank error', e); }
