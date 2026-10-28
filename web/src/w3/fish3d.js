@@ -962,9 +962,9 @@ export class Fish3D {
     const X = this.exploreAt; if (!X) return false;
     X.t += dt; const d = Math.hypot(X.x - this.pos.x, X.z + 0.7 - this.pos.z);
     this.target.set(X.x + 0.35, X.y, X.z + 0.7); this.idle = 0; this.retarget = 2;
-    if (d < 1.0 && !X.seen) { X.seen = this.tt; X.stay = 6 + rng() * 5; this.inspects = (this.inspects ?? 0) + 1; this.glance = new THREE.Vector3(X.x, X.y, X.z); this.glanceT = X.stay; this.thought = 'Looking over something new.'; }      // there: it hangs beside it, both eyes on it, for a while
-    if (X.seen && this.tt - X.seen > X.stay) { this.novel = X.id; this.exploreAt = null; this.retarget = 0; }      // then it may well try holding on to it
-    else if (!X.seen && X.t > 30) this.exploreAt = null;      // could not get there
+    if (d < 1.0 && !X.seen) { X.seen = this.tt; X.stay = X.stayFor ?? 6 + rng() * 5; this.inspects = (this.inspects ?? 0) + 1; this.glance = new THREE.Vector3(X.look?.x ?? X.x, X.look?.y ?? X.y, X.look?.z ?? X.z); this.glanceT = X.stay; this.thought = X.say ?? 'Looking over something new.'; }      // there: it hangs beside it, both eyes on it, for a while
+    if (X.seen && this.tt - X.seen > X.stay) { if (X.id) this.novel = X.id; if (X.say && this.thought === X.say) this.thought = null; this.exploreAt = null; this.retarget = 0; }      // then it may well try holding on to it
+    else if (!X.seen && X.t > (X.max ?? 30)) this.exploreAt = null;      // could not get there
     return false;
   }
   // the group follows its position and pose, and the rig is posed at 24 Hz
