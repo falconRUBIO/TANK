@@ -31,5 +31,9 @@ await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/2-birth.png` })
 let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /gave birth/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
 ck('the journal keeps a staged photo of the birth', /^data:image\/(jpeg|webp);base64,/.test(ph ?? ''));
+// a baby in the nursery, tapped: its own card (name, nature, the nursery day), not the whole nursery's summary every time
+await p.evaluate(() => { document.querySelector('#modal.on #mok')?.click(); document.getElementById('reunion')?.click(); });
+const tap = await p.evaluate(async () => { const f = window.__fishes.list.find((x) => x.nursery); if (!f) return { none: 1 }; window.__focus(window.__fishes.list.indexOf(f));      /* (as a tap does: the camera goes to it, then its card) */ await new Promise((r) => setTimeout(r, 300)); document.getElementById('fishpill')?.click(); await new Promise((r) => setTimeout(r, 600)); return { name: f.name, card: document.querySelector('#card.on')?.innerText?.replace(/\s+/g, ' ') ?? null, modal: document.querySelector('#modal.on h2')?.textContent ?? null }; });
+ck('tapping a nursery baby opens its own card: its name, nature and nursery day, with the whole nursery a tap away', !!tap.card && tap.card.includes(tap.name) && /nursery day \d of 5/.test(tap.card) && /See the whole nursery|Choose who stays/.test(tap.card) && tap.modal !== 'The nursery', tap);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Birth checks passed'); process.exit(fails ? 1 : 0);

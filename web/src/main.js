@@ -1140,12 +1140,27 @@ function showEggCard(fx) {
     ${e.risk && !cared && e.laid && now > e.laid + 864e5 ? `<p class="warn">${esc(s.fish.find((x) => x.species === 'octopus' && !x.dead)?.name ?? 'The octopus')} has been sniffing around it. Feed the fish or change the water today to keep it safe.</p>` : ''}<p class="dim">${cared >= 2 ? 'Well looked after. The baby will hatch happy, with a head start in growing.' : 'Feed the fish or change the water on two different days and the baby hatches strong: happy, with a head start in growing.'}</p><p class="dim">${esc(C.fact)}</p>`;
   card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
 }
+// a baby still in the nursery: its own little card (who it is, what it is like, the nursery day), and the whole nursery a tap away
+function showBabyCard(f) {
+  const N = game.state?.nursery, c = N?.cands.find((x) => x.id === f.fid); if (!N || !c) return openNursery();
+  const pill = $('fishpill'), now = game.now(), ready = now >= N.readyAt, d = Math.min(5, Math.floor((now - N.born) / 864e5) + 1), left = N.readyAt - now, hrs = Math.round(left / 36e5);
+  if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = c.name; { const sm = pill.querySelector('small'); sm.hidden = true; sm.classList.remove('tick'); sm.querySelector('i').dataset.t = ''; } pill.hidden = false; pill.onclick = () => { cardOpen = f.fid; sfx('tap'); showBabyCard(f); }; return; }
+  pill.hidden = true;
+  const others = N.cands.filter((x) => x !== c).map((x) => x.name), role = ROLE_LINE[babyRole(N, c)], doing = f.thought || f.doing || null;
+  card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
+    <div class="chd"><h2>${esc(c.name)}</h2><div class="sp">Baby seahorse · <b class="mood">${ready ? 'ready to leave' : `nursery day ${d} of 5`}</b></div></div>
+    <dl><dt>Is</dt><dd>${c.sex === 'm' ? 'A little male' : 'A little female'}</dd><dt>Nature</dt><dd>${esc((c.traits ?? []).join(', ').toLowerCase() || 'still finding its way')}</dd>${role ? `<dt>Likes to</dt><dd>${esc(role.replace(/^\w/, (x) => x.toUpperCase()))}</dd>` : ''}<dt>Parents</dt><dd>${esc(N.pa?.name ?? 'its father')} and ${esc(N.ma?.name ?? 'its mother')}</dd>${doing ? `<dt>Now</dt><dd>${esc(doing)}</dd>` : ''}</dl>
+    <p class="dim">${ready ? `Ready now: choose which baby stays in your aquarium, ${esc(c.name)}, ${esc(others.join(' or '))}.` : `One of ${N.n} babies, and one of the three you can tell apart, with ${esc(others.join(' and '))}. ${left < 36e5 ? 'Very soon' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `On ${new Date(N.readyAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}`} you choose one of them to stay in your aquarium; the rest swim off to new homes.`}</p>
+    <button class="big ${ready ? 'gold' : ''}" id="nurs">${ready ? 'Choose who stays' : 'See the whole nursery'}</button>`;
+  card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showBabyCard(f); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
+  $('nurs').onclick = (e) => { e.stopPropagation(); sfx('tap'); openNursery(); };
+}
 window.__showCard = (f) => showCard(f);
 function showCard(f) {
   if (f && f.species?.move !== 'jet' && !f.dead) fishes.attention?.(f.fid);      // someone is looking at another animal: an octopus that knows them well may come to the glass
   if (f.isEgg) return showEggCard(f);
   if (f.dead) return showDeadCard(f);
-  if (f.nursery) return openNursery();      // a baby still in the nursery: the nursery's own card
+  if (f.nursery) return showBabyCard(f);      // a baby still in the nursery: its own little card (the whole nursery is a tap away on it)
   if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
