@@ -1141,18 +1141,19 @@ function showEggCard(fx) {
   card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showEggCard(fx); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
 }
 // a baby still in the nursery: its own little card (who it is, what it is like, the nursery day), and the whole nursery a tap away
-function showBabyCard(f) {
-  const N = game.state?.nursery, c = N?.cands.find((x) => x.id === f.fid); if (!N || !c) return openNursery();
+function showBabyCard(f, open = true) {
+  const N = game.state?.nursery; if (!N) return; const c = N.cands.find((x) => x.id === f.fid) ?? { id: f.fid, name: null, sex: f.rec?.sex, traits: [], role: f.rec?.role };      // (one of the unnamed brood: still finding its way)
+  if (open) cardOpen = f.fid;      // (a tap on a baby opens its card at once, every time; closed, it folds to its name)
   const pill = $('fishpill'), now = game.now(), ready = now >= N.readyAt, d = Math.min(5, Math.floor((now - N.born) / 864e5) + 1), left = N.readyAt - now, hrs = Math.round(left / 36e5);
-  if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = c.name; { const sm = pill.querySelector('small'); sm.hidden = true; sm.classList.remove('tick'); sm.querySelector('i').dataset.t = ''; } pill.hidden = false; pill.onclick = () => { cardOpen = f.fid; sfx('tap'); showBabyCard(f); }; return; }
+  if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = c.name ?? 'Baby seahorse'; { const sm = pill.querySelector('small'); sm.hidden = true; sm.classList.remove('tick'); sm.querySelector('i').dataset.t = ''; } pill.hidden = false; pill.onclick = () => { cardOpen = f.fid; sfx('tap'); showBabyCard(f); }; return; }
   pill.hidden = true;
-  const others = N.cands.filter((x) => x !== c).map((x) => x.name), role = ROLE_LINE[babyRole(N, c)], doing = f.thought || f.doing || null;
+  const named = !!c.name, others = N.cands.filter((x) => x.id !== c.id).map((x) => x.name), role = ROLE_LINE[c.role ?? babyRole(N, c)], doing = f.thought || f.doing || null;
   card.innerHTML = `<button class="grab" id="grab" aria-label="Fold the card away"></button><button class="x" aria-label="Close">×</button>
-    <div class="chd"><h2>${esc(c.name)}</h2><div class="sp">Baby seahorse · <b class="mood">${ready ? 'ready to leave' : `nursery day ${d} of 5`}</b></div></div>
+    <div class="chd"><h2>${esc(c.name ?? 'Baby seahorse')}</h2><div class="sp">${c.name ? 'Baby seahorse' : `${esc(N.pa?.name ?? 'Their father')} and ${esc(N.ma?.name ?? 'their mother')}'s baby`} · <b class="mood">${ready ? 'ready to leave' : `nursery day ${d} of 5`}</b></div></div>
     <dl><dt>Is</dt><dd>${c.sex === 'm' ? 'A little male' : 'A little female'}</dd><dt>Nature</dt><dd>${esc((c.traits ?? []).join(', ').toLowerCase() || 'still finding its way')}</dd>${role ? `<dt>Likes to</dt><dd>${esc(role.replace(/^\w/, (x) => x.toUpperCase()))}</dd>` : ''}<dt>Parents</dt><dd>${esc(N.pa?.name ?? 'its father')} and ${esc(N.ma?.name ?? 'its mother')}</dd>${doing ? `<dt>Now</dt><dd>${esc(doing)}</dd>` : ''}</dl>
-    <p class="dim">${ready ? `Ready now: choose which baby stays in your aquarium, ${esc(c.name)}, ${esc(others.join(' or '))}.` : `One of ${N.n} babies, and one of the three you can tell apart, with ${esc(others.join(' and '))}. ${left < 36e5 ? 'Very soon' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `On ${new Date(N.readyAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}`} you choose one of them to stay in your aquarium; the rest swim off to new homes.`}</p>
+    <p class="dim">${ready ? `Ready now: choose which baby stays in your aquarium${named ? `, ${esc(c.name)}, ${esc(others.join(' or '))}` : `: ${esc(others.join(', ').replace(/, ([^,]*)$/, ' or $1'))}`}.` : named ? `One of ${N.n} babies, and one of the three you can tell apart, with ${esc(others.join(' and '))}.` : `One of ${N.n} babies, still finding its way. Three of them have already shown who they are: ${esc(others.join(', ').replace(/, ([^,]*)$/, ' and $1'))}.`}${ready ? '' : ` ${left < 36e5 ? 'Very soon' : hrs < 24 ? `In about ${hrs} hour${hrs === 1 ? '' : 's'}` : `On ${new Date(N.readyAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}`} you choose one of them to stay in your aquarium; the rest swim off to new homes.`}</p>
     <button class="big ${ready ? 'gold' : ''}" id="nurs">${ready ? 'Choose who stays' : 'See the whole nursery'}</button>`;
-  card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showBabyCard(f); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
+  card.classList.add('on'); card.classList.remove('peek'); const close = () => { cardOpen = null; showBabyCard(f, false); }; card.querySelector('.x').onclick = close; $('grab').onclick = close;
   $('nurs').onclick = (e) => { e.stopPropagation(); sfx('tap'); openNursery(); };
 }
 window.__showCard = (f) => showCard(f);
@@ -1525,7 +1526,7 @@ let heldChapters = [], tipsDoneAt = 0, sawTips = false;
 function maybeGift() {
   return;      // (the day's gift now comes with the daily mystery: no box of its own)
   const s = game.state; if (!s || giftBusy || (s.flags.tut ?? 0) < 5 || heldChapters.length || (tipsDoneAt && Date.now() - tipsDoneAt < 45e3) || Date.now() - giftOffered < 60e3 || (game.giftTried && Date.now() - game.giftTried < 20 * 3600e3)) return;
-  if (nurseryFx.going || fishes.list.some((f) => f.birthT > 0)) return;      // (a birth or the babies' send-off on screen: the gift waits)
+  if (nurseryFx.going || fishes.broodOff?.length || fishes.list.some((f) => f.birthT > 0)) return;      // (a birth or the babies' send-off on screen: the gift waits)
   if (ui?.tab !== 'tank' || focus || play || placing || feedMode || cleanMode || wc.active || $('modal').classList.contains('on') || $('reunion').classList.contains('on') || $('coach').classList.contains('on') || document.hidden) return;
   if (giftReady(s, game.you?.userId ?? 'me', game.now(), -new Date().getTimezoneOffset())) { const tryGift = () => { if (wbPending || $('reunion').classList.contains('on')) return setTimeout(tryGift, 1500); if (!$('modal').classList.contains('on')) offerGift(); }; setTimeout(tryGift, 1200); }      /* (after the welcome-back note has been read, never on top of it) */
   else giftOffered = Date.now();

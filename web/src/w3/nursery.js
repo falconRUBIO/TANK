@@ -1,8 +1,7 @@
-// The nursery: after a male gives birth, his brood grows up in the tank for five days. Three of the babies are tracked one by one (they swim as
-// tiny seahorses of their own, see Fishes.sync); the rest of the brood is this light swarm: little voxel seahorses in one instanced mesh, each
-// with a few numbers of its own. Newborns drift up near their father; as the days go by they explore, dart at food (they never eat it, so
-// nothing in the care or the economy changes), and from the second day learn to hold on to plant stems. If a phone is watching when the
-// birth happens, it sees it: the father lets go, straightens, his pouch contracts and the babies come out of it one by one.
+// The nursery: after a male gives birth, his brood grows up in the tank for five days. Every baby swims as a tiny seahorse of its own (see
+// Fishes.sync: three named, the rest unnamed, all tappable). What is left here is the birth's start on a phone that is watching: the father
+// lets go, straightens, his pouch contracts and the babies come out of it one by one (Fishes.emergeTick). The old instanced swarm (a flat
+// little voxel shape for the unnamed babies) is kept below but no longer drawn.
 import * as THREE from 'three';
 import { sandH } from './terrain.js';
 
@@ -24,7 +23,7 @@ export class Nursery {
   set(state, fishes) {
     const N = state?.nursery; if (!N) { this.depart(state); if (this.fry.length && !this.going) { this.fry = []; this.mesh.count = 0; } this.id = null; return; }
     if (this.id === N.id) return; this.id = N.id;
-    const n = Math.max(0, Math.min(MAX, (N.n ?? 12) - 3)), dad = fishes.byId.get(N.father), fresh = Date.now() - N.born < 10 * 60e3 && !this.played(N.id);
+    const n = 0,      /* (the whole brood now swims as real little seahorses, each one tappable: see Fishes.sync. This keeps the birth's timing and sound) */ dad = fishes.byId.get(N.father), fresh = Date.now() - N.born < 10 * 60e3 && !this.played(N.id);
     let h = 0; for (const ch of N.id) h = (h * 31 + ch.charCodeAt(0)) | 0; const rnd = () => ((h = (h * 1103515245 + 12345) | 0) >>> 8) / 16777216;
     const base = [[214, 168, 82], [236, 140, 40], [146, 96, 196], [178, 42, 46], [92, 76, 64]][Math.abs(N.pa?.seed ?? 3) % 5];
     this.fry = Array.from({ length: n }, (_, i) => {
@@ -39,6 +38,7 @@ export class Nursery {
   // a baby has been chosen: the others gather, swim up together and fade into the water. Every phone that was watching the nursery sees it
   // once (the choice is in the tank record with its time, so a phone that opens the game later, or reloads, does not see it again)
   depart(state) {
+    return;      // (the babies not kept swim off as themselves now: Fishes.broodOff)
     const D = state?.lastDepart; if (!D || this.going || this.id !== D.nursery || Date.now() - D.at > 90e3 || this.played('left:' + D.nursery)) return;
     this.markPlayed('left:' + D.nursery);
     for (const id of D.left ?? []) { const k = this.track.get(id); if (k) this.fry.push({ pos: k.pos.clone(), vel: new THREE.Vector3(), head: k.head, ph: Math.random() * 6.28, out: true, big: k.size / CELL, col: k.col }); }

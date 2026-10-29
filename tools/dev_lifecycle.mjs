@@ -49,9 +49,9 @@ await A.evaluate(() => window.__ui.open('tank')); await A.screenshot({ path: `${
 s = await press('birth'); await A.evaluate(() => window.__ui.open('tank'));
 const birthA = await until(A, () => window.__nursery?.id && window.__sawBirth), birthB = await until(B, () => window.__nursery?.id && window.__sawBirth);
 ck('Trigger birth: both phones see it, from one birth on the server', s.stage.stage === 'nursery' && birthA && birthA === birthB, { a: birthA, b: birthB });
-await until(A, () => window.__nursery.fry.filter((f) => f.out).length >= 4, 90); await A.screenshot({ path: `${OUT}/4_birth.png` });
-const kids = await until(B, () => window.__fishes.list.filter((f) => f.nursery).map((f) => f.role).join() || null);
-ck('the nursery: the three tracked babies (explorer, plant-lover, social) and the swarm, on the other phone too', kids === 'explore,plants,social' && (await B.evaluate(() => window.__nursery.fry.length)) >= 7, kids);
+await until(A, () => window.__fishes.list.filter((f) => f.nursery && f.group.visible).length >= 4, 90); await A.screenshot({ path: `${OUT}/4_birth.png` });
+const kids = await until(B, () => window.__fishes.list.filter((f) => f.nursery && f.name).map((f) => f.role).join() || null);
+ck('the nursery: the three named babies (explorer, plant-lover, social) and the rest of the brood, on the other phone too', kids === 'explore,plants,social' && (await B.evaluate(() => window.__fishes.list.filter((f) => f.nursery && !f.name).length)) >= 7, kids);
 s = await press('nurs2'); ck('Advance nursery to day 2', s.stage.nurseryDay === 2, s.stage); s = await press('nurs4'); ck('Advance nursery to day 4', s.stage.nurseryDay === 4, s.stage);
 await A.evaluate(() => window.__ui.open('tank')); await B.evaluate(() => window.__ui.open('tank'));
 s = await press('ready'); await A.evaluate(() => window.__ui.open('tank'));

@@ -26,22 +26,23 @@ await hide(); await until(() => window.__fishes.byId.get('h1')?.brood != null);
 // the pouch, half way and nearly full; none on the female
 const pouch = () => p.evaluate(() => { const F = window.__fishes, out = {}; for (const id of ['h1', 'h2']) { const f = F.byId.get(id); out[id] = { brood: +(f?.brood ?? 0).toFixed(2), shown: f ? f.vox.filter((v) => v.tag === 'pouch' && (f.brood ?? 0) >= v.pk).length : -1, all: f ? f.vox.filter((v) => v.tag === 'pouch').length : -1 }; } return out; });
 const half = await pouch();
-await p.evaluate(() => window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('h1')))); await p.waitForTimeout(1800); await hide(); await p.screenshot({ path: `${OUT}/1_pouch_half.png` });
+await p.evaluate(() => window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get('h1')))); await p.waitForTimeout(1800); await hide(); await p.screenshot({ timeout: 120000, path: `${OUT}/1_pouch_half.png` });
 await p.evaluate((D) => { const s = window.__game.state, m = s.fish.find((f) => f.id === 'h1'), now = Date.now(); m.preg.start = now - 6.8 * D; m.preg.due = now + 0.2 * D; window.__game.emit('state'); }, D); await until(() => (window.__fishes.byId.get('h1')?.brood ?? 0) > 0.9);
-const full = await pouch(); await hide(); await p.screenshot({ path: `${OUT}/2_pouch_full.png` });
+const full = await pouch(); await hide(); await p.screenshot({ timeout: 120000, path: `${OUT}/2_pouch_full.png` });
 console.log('  pouch', JSON.stringify({ half, full }));
 ck('a pregnant male has a brood pouch, fuller as his pregnancy goes on', half.h1.shown > 0 && full.h1.shown > half.h1.shown && half.h1.brood > 0.4 && half.h1.brood < 0.6 && full.h1.brood > 0.9, { half: half.h1, full: full.h1 });
 ck('the female has none', half.h2.shown === 0 && full.h2.shown === 0, { half: half.h2, full: full.h2 });
 // the birth, on his due time, while this phone watches
 await p.evaluate(() => { const s = window.__game.state, m = s.fish.find((f) => f.id === 'h1'); m.preg.due = Date.now() + 2500; window.__game.emit('state'); });
-await until(() => window.__nursery?.id && (window.__nursery.fry.some((f) => f.out) || window.__fishes.byId.get('h1')?.birthT > 0)); await until(() => window.__nursery.fry.filter((f) => f.out).length >= 3, 60); await hide(); await p.screenshot({ path: `${OUT}/3_birth.png` });
+const outN = () => window.__fishes.list.filter((f) => f.nursery && f.group.visible).length;      /* (the whole brood swims as little seahorses now, not a swarm) */
+await until(() => window.__nursery?.id && (window.__fishes.list.some((f) => f.nursery && f.group.visible) || window.__fishes.byId.get('h1')?.birthT > 0)); await until(() => window.__fishes.list.filter((f) => f.nursery && f.group.visible).length >= 3, 60); await hide(); await p.screenshot({ timeout: 120000, path: `${OUT}/3_birth.png` });
 const b1 = await p.evaluate(() => { const g = window.__game, s = g.state, F = window.__fishes, dad = F.byId.get('h1'); return { nursery: s.nursery && { id: s.nursery.id, n: s.nursery.n, cands: s.nursery.cands.length, ready: s.nursery.readyAt - s.nursery.born }, preg: s.fish.find((f) => f.id === 'h1').preg, births: g.journal.filter((j) => /gave birth/.test(j.text)).length, birthT: +(dad?.birthT ?? 0).toFixed(1), held: !!dad?.holdfast?.on, sawBirth: !!window.__sawBirth, tracked: F.list.filter((f) => f.nursery).map((f) => +(f.growth ?? 0).toFixed(2)) }; });
-await until(() => window.__nursery.fry.every((f) => f.out), 240); await p.evaluate(() => window.__focus(null)); await p.waitForTimeout(1500); await hide(); await p.screenshot({ path: `${OUT}/4_nursery.png` });
-const b2 = await p.evaluate(() => { const g = window.__game, s = g.state; return { id: s.nursery?.id, births: g.journal.filter((j) => /gave birth/.test(j.text)).length, fry: window.__nursery?.fry?.length ?? -1, out: (window.__nursery?.fry ?? []).filter((f) => f.out).length }; });
+await until(() => window.__fishes.list.filter((f) => f.nursery).every((f) => f.group.visible), 240); await p.evaluate(() => window.__focus(null)); await p.waitForTimeout(1500); await hide(); await p.screenshot({ timeout: 120000, path: `${OUT}/4_nursery.png` });
+const b2 = await p.evaluate(() => { const g = window.__game, s = g.state; return { id: s.nursery?.id, births: g.journal.filter((j) => /gave birth/.test(j.text)).length, fry: window.__fishes.list.filter((f) => f.nursery && !f.name).length, out: window.__fishes.list.filter((f) => f.nursery && !f.name && f.group.visible).length }; });
 console.log('  birth', JSON.stringify({ b1, b2 }));
-ck('he gives birth on his due time: the pregnancy ends, the nursery begins with three tracked babies and the rest of the brood', b1.nursery && b1.nursery.cands === 3 && b1.preg == null && b1.nursery.n >= 10 && b1.nursery.n <= 15 && b1.nursery.ready === 5 * 864e5, b1);
+ck('he gives birth on his due time: the pregnancy ends, the nursery begins with three tracked babies and the rest of the brood', b1.nursery && b1.nursery.cands === 3 && b1.preg == null && b1.nursery.n >= 10 && b1.nursery.n <= 15 && b1.nursery.ready >= 5 * 864e5 && b1.nursery.ready < 6 * 864e5      /* (five days, ending the next morning: rules wakeAt) */, b1);
 ck('this phone sees it happen: he lets go and the brood comes out of his pouch', (b1.birthT > 0 || b1.sawBirth) && !b1.held && b2.fry === b1.nursery.n - 3 && b2.out === b2.fry, { birthT: b1.birthT, saw: b1.sawBirth, held: b1.held, fry: b2.fry, out: b2.out });
-ck('the three tracked babies swim in the tank, tiny', b1.tracked.length === 3 && b1.tracked.every((k) => k < 0.4), b1.tracked);
+ck('the whole brood swims in the tank as little seahorses, tiny', b1.tracked.length === b1.nursery.n && b1.tracked.every((k) => k < 0.4), b1.tracked);
 ck('the birth is written once, and never happens twice', b1.births === 1 && b2.births === 1 && b2.id === b1.nursery.id, { first: b1.births, later: b2.births });
 // the babies eat: food dropped near them, and the tracked ones catch the tiniest bits themselves (stepped quickly, without drawing)
 const fed = await p.evaluate(() => { const F = window.__fishes, kids = F.list.filter((f) => f.nursery); for (const k of kids) k.meals = 0;
@@ -53,23 +54,24 @@ ck('the tracked babies catch food themselves', fed.filter((k) => k.meals > 0).le
 await p.evaluate(() => { const s = window.__game.state; s.nursery.readyAt = Date.now() + 1500; window.__game.emit('state'); });
 for (let i = 0; i < 12; i++) { await p.waitForTimeout(700); const t = await p.evaluate(() => document.querySelector('#modal.on h2')?.textContent ?? ''); if (/READY/i.test(t)) break; if (t) await p.evaluate(() => document.querySelector('#modal.on #mok')?.click()); }      // (a daily gift may be showing first)
 const ask = await p.evaluate(() => ({ on: document.querySelector('#modal')?.classList.contains('on'), title: document.querySelector('#modal h2')?.textContent, opts: [...document.querySelectorAll('#modal [data-i]')].map((x) => x.textContent) }));
-await p.screenshot({ path: `${OUT}/5_ready.png` });
+await p.screenshot({ timeout: 120000, path: `${OUT}/5_ready.png` });
 ck("when they are ready: THEY'RE READY, with the three babies to choose from", ask.on && /READY/i.test(ask.title ?? '') && ask.opts.length === 3, ask);
-await p.click('#modal [data-i="1"]'); await p.click('#modal #mok'); await p.waitForFunction(() => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''), null, { timeout: 8000, polling: 200 }).catch(() => {});      // (the confirmation comes once the choice has closed)
+const tapIn = (sel) => p.evaluate((q) => document.querySelector(q)?.click(), sel);      /* (tapped from inside the page: Playwright's click waits for frames, which a dozen babies on a software renderer are slow to draw) */
+await tapIn('#modal [data-i="1"]'); await tapIn('#modal #mok'); await p.waitForFunction(() => /KEEP/i.test(document.querySelector('#modal.on h2')?.textContent ?? ''), null, { timeout: 8000, polling: 200 }).catch(() => {});      // (the confirmation comes once the choice has closed)
 const conf = await p.evaluate(() => ({ title: document.querySelector('#modal h2')?.textContent, ok: document.querySelector('#mok')?.textContent }));
 ck('choosing asks for a confirmation first', /KEEP/i.test(conf.title ?? ''), conf);
 const pick = await p.evaluate(() => window.__game.state.nursery?.cands[1]);
-await p.click('#mok'); await p.waitForTimeout(3000);
+await tapIn('#modal.on #mok'); await p.waitForTimeout(3000);
 const kept = await p.evaluate((id) => { const s = window.__game.state, f = s.fish.find((x) => x.id === id), F = window.__fishes; return { f: f && { name: f.name, bornHere: f.bornHere, birthDate: !!f.birthDate, parents: (f.parents ?? []).map((q) => q.name), stage: f.stage }, nursery: s.nursery, seahorses: s.fish.filter((x) => x.species === 'seahorse').length, onScreen: F.list.filter((x) => x.nursery).length, same: !!F.byId.get(id), fry: window.__nursery?.mesh?.count ?? -1 }; }, pick.id);
-const dep = await p.evaluate(() => { const N = window.__nursery, out = { departed: window.__departed ?? null, going: !!N.going, count: N.mesh.count, ys: [] }; let t = 0;
-  while (N.going && t < 10) { N.update(0.05, t, window.__game.state, window.__fishes); t += 0.05; if (Math.abs(t % 1) < 0.05) out.ys.push(+(N.fry.reduce((a, f) => a + f.pos.y, 0) / Math.max(1, N.fry.length)).toFixed(1)); }
-  out.secs = +t.toFixed(1); out.after = N.mesh.count; return out; });
+const dep = await p.evaluate(() => { const F = window.__fishes, B = () => F.broodOff ?? [], out = { departed: B().length > 0, going: B().length > 0, count: B().length, ys: [] }; let t = 0;      /* (the babies not kept leave as themselves: Fishes.broodOff) */
+  while (B().length && t < 10) { F.update(0.05, t); t += 0.05; if (Math.abs(t % 1) < 0.05 && B().length) out.ys.push(+(B().reduce((a, L) => a + L.f.group.position.y, 0) / B().length).toFixed(1)); }
+  out.secs = +t.toFixed(1); out.after = B().length; return out; });
 ck('the others gather, swim up together and fade into the water, briefly', dep.departed && dep.going && dep.count > 0 && dep.after === 0 && dep.secs < 6 && dep.ys.at(-1) > dep.ys[0], dep);
 ck('one baby is kept, with its own name, parents and birth date; the others leave', kept.f && kept.f.name === pick.name && kept.f.bornHere && kept.f.birthDate && kept.f.parents.join() === 'Sunny,Pearl' && kept.nursery === null && kept.seahorses === 3 && kept.onScreen === 0 && kept.same && dep.after === 0, kept);
 await p.evaluate((id) => { window.__game.profTab = 'over'; window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(id))); }, pick.id); await p.waitForTimeout(600);
 await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
 const prof = await p.evaluate(() => document.querySelector('#card .tpane')?.innerText ?? '');
-await p.screenshot({ path: `${OUT}/6_profile.png` });
+await p.screenshot({ timeout: 120000, path: `${OUT}/6_profile.png` });
 ck('its profile says it was born here, with its mother, father and birth date', /BORN IN YOUR AQUARIUM/i.test(prof) && /Mother: Pearl/.test(prof) && /Father: Sunny/.test(prof) && /Birth date/.test(prof), prof.slice(0, 160).replace(/\s+/g, ' '));
 await p.reload(); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(3000);
 const again = await p.evaluate(() => ({ departed: window.__departed ?? null, going: !!window.__nursery?.going, kept: window.__game.state.fish.filter((f) => f.bornHere).length }));
