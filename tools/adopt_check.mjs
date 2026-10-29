@@ -16,7 +16,7 @@ const hawk = await p.evaluate(() => document.querySelector('#sheet .card[data-k=
 await p.evaluate(() => document.querySelector('#sheet .card[data-k="fish:turtle"]')?.click()); await p.waitForTimeout(700);
 const detail = await p.evaluate(() => document.querySelector('.notesheet.deco .nsw')?.innerText ?? ''); await p.evaluate(() => { document.querySelector('.notesheet.deco .close')?.click(); document.querySelectorAll('.notesheet.deco').forEach((n) => n.remove()); });
 ck('the preview explains the one-time adoption and the room a turtle would have', /first sea turtle for 120/i.test(detail) && /counts as 4 small fish/i.test(detail), detail.replace(/\n/g, ' ').slice(0, 260));
-await p.evaluate(() => window.__ui.open('notices')); await p.waitForTimeout(800);
+await p.evaluate(() => window.__ui.open('decorate')); await p.waitForTimeout(800);
 const fund = await p.evaluate(() => document.querySelector('#sheet .tc-fund')?.innerText ?? null);
 ck('the Tank chart says the adoption price, the shared shells, the habitat and the room', !!fund && /120/.test(fund) && /first turtle/i.test(fund) && /ledge to sleep under ✓/.test(fund) && /Room:/.test(fund), (fund ?? '').replace(/\n/g, ' '));
 // buy it (the client's own rules, the same code the server runs), then look again
@@ -28,7 +28,7 @@ const card2 = await p.evaluate(() => document.querySelector('#sheet .card[data-k
 await p.evaluate(() => { const g = window.__game, s = g.state, born = Date.now() - 20 * 864e5; for (let i = 0; i < 16; i++) s.fish.push({ id: 'gf' + i, name: 'G' + i, species: 'goldfish', seed: i + 2, born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1 }); g.emit('state'); window.__ui.open('notices'); }); await p.waitForTimeout(900);
 const fund2 = await p.evaluate(() => document.querySelector('#sheet .tc-fund')?.innerText ?? null);
 ck('once a turtle is ordered the savings line is gone', fund2 == null, (fund2 ?? 'no fund line: a turtle is on its way').replace(/\n/g, ' ').slice(0, 120));
-await p.evaluate(() => { window.__game.state.flags.turtleAdopted = 0; window.__game.state.orders = []; window.__game.emit('state'); window.__ui.open('notices'); }); await p.waitForTimeout(900);
+await p.evaluate(() => { window.__game.state.flags.turtleAdopted = 0; window.__game.state.orders = []; window.__game.emit('state'); window.__ui.open('decorate'); }); await p.waitForTimeout(900);
 const fund3 = await p.evaluate(() => document.querySelector('#sheet .tc-fund')?.innerText ?? null);
 ck('a busy tank is told how many fewer small fish a turtle would want (nothing is moved out)', !!fund3 && /fewer small fish/i.test(fund3), (fund3 ?? '').replace(/\n/g, ' ').slice(-160));
 ck('no page errors', !errors.length, errors.slice(0, 2));

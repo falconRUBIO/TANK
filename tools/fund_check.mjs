@@ -12,7 +12,7 @@ const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); await
 const p = await ctx.newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
 await p.goto(base + '/?q=1&tod=afternoon'); await p.waitForFunction(() => window.__game?.state && window.__ui, null, { timeout: 180000 }); await p.waitForTimeout(4000);
 for (let i = 0; i < 6; i++) { await p.evaluate(() => { document.querySelectorAll('#modal.on #mok').forEach((b) => b.click()); }); await p.waitForTimeout(400); }
-await p.evaluate(() => window.__ui.open('notices')); await p.waitForTimeout(2000);
+await p.evaluate(() => window.__ui.open('decorate')); await p.waitForTimeout(2000);      /* (the turtle fund is in the Shop now) */
 const r = await p.evaluate(() => { const el = document.querySelector('#sheet .tc-fund'); if (el) el.scrollIntoView({ block: 'center' }); return { text: el?.innerText ?? null, bar: el?.querySelector('.tc-bar i')?.style.width ?? null, level: window.__game.state.level, shells: window.__game.state.shells }; });
 await p.waitForTimeout(800); await p.screenshot({ path: `${out}/turtle-fund.png`, timeout: 180000 }).catch(() => {});
 const m = /Saving for a sea turtle: (\d+) of (\d+)/.exec(r.text ?? '');
