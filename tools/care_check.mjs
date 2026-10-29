@@ -38,7 +38,7 @@ await open(); r = await read(); console.log('calm', JSON.stringify(r));
 ck('calm: no count on the Care tab, nothing needs you, Feed and Tank upkeep say when they are next due, and Health lists every animal', !r.hero && !r.due.length && r.later.length >= 2 && r.later.some((x) => /^Tank upkeep \| All clean · next:/.test(x)) && r.later.some((x) => /^(Animal h|H)ealth \| /.test(x)), r);
 ck('calm: the food list is folded away', !r.drawer);
 { await p.evaluate(() => document.querySelector('#sheet [data-csub="play"]')?.click()); await p.waitForTimeout(400); const ex = await p.evaluate(() => [...document.querySelectorAll('#sheet .acts.mini .tile')].map((t) => t.textContent.trim().slice(0, 30)));
-  ck('calm: Puzzle jar and Postcard are on the Play tab', ex.some((x) => /Puzzle/.test(x)) && ex.some((x) => /Postcard/.test(x)), ex); await p.evaluate(() => document.querySelector('#sheet [data-csub="care"]')?.click()); await p.waitForTimeout(400); }
+  ck('calm: the Puzzle jar is on the Play tab, and the postcard is not (it is under Crew, with the other ways to share)', ex.some((x) => /Puzzle/.test(x)) && !ex.some((x) => /Postcard/.test(x)), ex); await p.evaluate(() => document.querySelector('#sheet [data-csub="care"]')?.click()); await p.waitForTimeout(400); }
 await p.screenshot({ path: `${OUT}/v_calm_top.png` }); await p.evaluate(() => { document.getElementById('sheet').scrollTop = 99999; }); await p.waitForTimeout(300); await p.screenshot({ path: `${OUT}/v_calm_end.png` });
 // a tap on a not-due row still does something sensible (it opens the food list / says when)
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="upkeep"]').click()); await p.waitForTimeout(600);
