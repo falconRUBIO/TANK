@@ -58,7 +58,7 @@ ck("Ana's answer earns nothing more: the tank's 2 shells for the day were alread
 cb = await until(B, (v) => v?.who.some((w) => /Ana A ✓/.test(w)));
 ck("Ben's open card shows Ana's answer by itself", cb?.who.some((w) => /Ana A ✓/.test(w)), cb?.who);
 await A.evaluate(() => document.getElementById('ddok').click());
-await A.evaluate(() => { window.__ui.open('notices'); document.querySelector('#sheet [data-nsub="guide"]').click(); }); await A.waitForTimeout(600);
+await A.evaluate(() => { window.__ui.open('friends'); document.querySelector('#sheet [data-sub="guide"]').click();      /* (the Guide is under Crew now) */ }); await A.waitForTimeout(600);
 const fg = await A.evaluate(() => [...document.querySelectorAll('#sheet .fgrow')].map((r) => r.innerText.replace(/\s+/g, ' ')));
 ck('the Field Guide: the escape is learned (from the answer) and happened (in the tank)', fg.some((r) => /The escape artist/.test(r) && /Learned/.test(r) && /Happened/.test(r)), fg.slice(0, 4));
 await A.evaluate(() => document.querySelector('#sheet .fgrow[data-k="escape"]').scrollIntoView({ block: 'center' })); await A.waitForTimeout(300); await A.screenshot({ path: `${OUT}/dd_guide.png` });

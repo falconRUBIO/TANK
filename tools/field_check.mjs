@@ -19,6 +19,6 @@ await p.waitForTimeout(1500);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(1200);
 const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', fg: document.querySelectorAll('#sheet .fg').length }));
 await p.screenshot({ path: `${out}/collection.png`, timeout: 120000 }).catch(() => {});
-ck('the Guide tab shows the Field Guide beside the kinds met', /Field Guide/.test(page.text) && /Species and decorations/.test(page.text), page.text.slice(0, 300));
+ck('the Guide tab shows the Field Guide beside the kinds met', /Field Guide/i.test(page.text) && /Species and decorations/.test(page.text), page.text.slice(0, 300));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
