@@ -94,7 +94,7 @@ export class Fishes {
     if (N && kids.length === N.cands.length) {      // the rest of the brood swims as the same little seahorses (they once were a flat swarm of specks): unnamed, each one tappable, sharing its looks with one of the three
       const nk = kids[0]?.nk ?? 0; let h = 0; for (const ch of N.id) h = (h * 31 + ch.charCodeAt(0)) | 0;
       for (let k = 0; k < Math.min(12, Math.max(0, (N.n ?? 12) - N.cands.length)); k++) { const c = N.cands[k % N.cands.length]; h = (h * 1103515245 + 12345) | 0;
-        kids.push({ id: `${N.id}~${k}`, name: null, brood: k + 1, species: 'seahorse', seed: Math.abs(h >> 8) % 997, born: N.born, stage: 'baby', traits: [], genes: c?.genes, sex: (h >>> 3) & 1 ? 'm' : 'f', nursery: N.id, role: BABY_ROLES[k % 3], happy: 0.8, health: 1, nk, father: N.father, mother: N.mother }); }
+        kids.push({ id: `${N.id}~${k}`, name: null, brood: k + 1, species: 'seahorse', seed: Math.abs(h >> 8) % 997, born: N.born, stage: 'baby', traits: [], genes: c?.genes, sex: (h >>> 3) & 1 ? 'm' : 'f', nursery: N.id, role: null, happy: 0.8, health: 1, nk, father: N.father, mother: N.mother });      /* (no role: still finding its way; it drifts as the brood's cloud near the three named ones, who have the personalities) */ }
     }
     if (N) { const m = kids.length, named = kids.filter((k) => !k.brood), at = (i) => Math.round((i + 0.5) * m / Math.max(1, named.length) - 0.5), taken = new Set(named.map((k, i) => at(i))); let q = 0;      // the order they come out of the pouch: the three named ones spread through the brood
       this.broodSlot = new Map(named.map((k, i) => [k.id, at(i)])); for (const k of kids) if (k.brood) { while (taken.has(q)) q++; this.broodSlot.set(k.id, q++); } }
@@ -1052,7 +1052,7 @@ export class Fishes {
     if ((this.bsT = (this.bsT ?? 0) - dt) <= 0) { this.bsT = 1; this.bsp = this.spots?.() ?? []; }      // (the decorations, looked up once a second)
     const sp = this.bsp ?? [], plants = sp.filter((q) => PLANTS.has(q.type));
     for (const f of kids) {
-      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f)].filter(Boolean);
+      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f && k.name)].filter(Boolean);      /* (its parents and the three named siblings: the rest of the brood is the crowd it swims in, not who it keeps close to) */
       L.secs += dt; if (f.lp) L.dist += f.lp.distanceTo(f.pos); (f.lp ||= new THREE.Vector3()).copy(f.pos);
       if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9)) L.plant += dt;
       if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt;

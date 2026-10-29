@@ -657,7 +657,7 @@ export class Fish3D {
   separate(others, gain = 2.8) {
     const jet = this.species.move === 'jet';
     for (const o of others) {
-      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : 1.0);      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
+      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : this.nursery && o.nursery ? 0.7 : 1.0);      /* (a brood crowds close: less room between two nursery babies, so one can keep up with its family through the others) */      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
       if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.065; this.vel.z += (dz / dd) * k * 0.035; }      /* (a little more give up and down: two fish on a line part in height first, so they do not sit on top of each other) */
     }
   }
@@ -1018,8 +1018,8 @@ export class Fish3D {
     const role = this.nursery ? this.role : null;
     // a newborn's first two days: it cannot hold on to anything yet, so it drifts high in the water, up toward the light, in a loose little cloud
     // with its brothers and sisters, snapping at whatever drifts past (as seahorse fry do). After that it starts to come down to the plants.
-    if (this.nursery && (this.nk ?? 1) < 0.4 && !this.seeking) {
-      const kin = (this.kin?.() ?? []).filter((o) => o.nursery && !o.dead && o !== this), cx = kin.length ? kin.reduce((a, o) => a + o.pos.x, 0) / kin.length : this.pos.x, cz = kin.length ? kin.reduce((a, o) => a + o.pos.z, 0) / kin.length : this.pos.z;
+    if (this.nursery && ((this.nk ?? 1) < 0.4 || !this.role) && !this.seeking) {      // (a newborn, or one of the unnamed brood all through the nursery)
+      const kin = (this.kin?.() ?? []).filter((o) => !o.dead && o !== this && (this.role ? o.nursery : !o.nursery)), cx = kin.length      /* (a newborn keeps with its brood; an unnamed one, all through the nursery, keeps near its parents, so the cloud does not trail the three named ones about) */ ? kin.reduce((a, o) => a + o.pos.x, 0) / kin.length : this.pos.x, cz = kin.length ? kin.reduce((a, o) => a + o.pos.z, 0) / kin.length : this.pos.z;
       const hi = Fish3D.topY - 3.4 - (this.nk ?? 0) * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 4.6)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.8));      /* (a brood of a dozen keeps together but spread out, a loose cloud you can pick one baby out of, not one clump) */
       this.target.set(x, hi - rng() * 3, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
     }
