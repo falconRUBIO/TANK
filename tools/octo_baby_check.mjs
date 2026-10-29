@@ -18,8 +18,8 @@ await p.waitForTimeout(3000); await p.evaluate(() => { window.__cam = [1.2, 1.2,
 const den = await p.evaluate(() => { const st = window.__game.state; return { eggs: st.eggs.length, thought: window.__fishes.byId.get('oA')?.thought ?? null }; });
 ck('the eggs hang in her den and she stays with them', den.eggs === 1 && /eggs/.test(den.thought ?? ''), den);
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(800);
-const row = await p.evaluate(() => [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).find((t) => /eggs/.test(t)) ?? '');
-ck('Care counts them down', /Ada & Bo's eggs.*hatches in [45] h \d+ m/.test(row), row);
+const row = await p.evaluate(() => [...document.querySelectorAll('#sheet .mrow, #sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()).find((t) => /eggs/.test(t)) ?? '');
+ck('Care counts them down', /Ada & Bo's eggs.*hatch(es|ing) in [45] h \d+ m/.test(row), row);      /* (the big-moment row at the top of Care: eggs that need nothing today have no second row) */
 await p.evaluate(() => { const s = window.__game.state; s.eggs[0].hatchAt = Date.now() - 1000; window.__game.emit('state'); }); await p.evaluate(() => window.__game.dispatch({ t: 'devSea', what: 'noop' }).catch(() => {})); await p.waitForTimeout(2000);
 for (let i = 0; i < 3; i++) { await p.evaluate(() => document.querySelector('#modal.on #mok')?.click()); await p.waitForTimeout(400); }      // (close the new-life card first, as a player would)
 await p.evaluate(() => { window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(600); await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
