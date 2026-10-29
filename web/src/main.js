@@ -680,7 +680,11 @@ window.__postcard = postcardCaption; window.__photo = takePhoto; window.__openBo
 
 // ── tap a fish: the camera glides in and a profile card slides up ──
 const card = $('card'), look = new THREE.Vector3(0, stg.LOOK_Y, 0), camGoal = new THREE.Vector3(), lookGoal = new THREE.Vector3();
-function pickFish(ev) { const r = rayFrom(ev); let best = null, bd = 1e9; for (const f of fishes.list) { const h = r.ray.distanceToPoint(f.pos); if (h < f.radius * 0.9) { const d = f.pos.distanceTo(camera.position); if (d < bd) { bd = d; best = f; } } } return best; }
+function pickFish(ev) {      // the animal under the finger: at least a fingertip's worth of target (a newborn seahorse is a few pixels across), and in a crowd the one the finger is most squarely on
+  const r = rayFrom(ev), px = 2 * Math.tan((camera.fov * Math.PI) / 360) / Math.max(1, innerHeight); let best = null, bs = 1e9;
+  for (const f of fishes.list) { if (f.group && !f.group.visible) continue; const d = f.pos.distanceTo(camera.position), R = Math.max(f.radius * 0.9, d * px * 28), h = r.ray.distanceToPoint(f.pos); if (h >= R) continue; const sc = h / R + d * 0.002; if (sc < bs) { bs = sc; best = f; } }
+  return best;
+}
 // how it is doing, in one line instead of four bars: all well, or the one thing that is low
 const needsLine = (n) => { const low = [['hungry', n[0]], ['a little low', n[1]], ['tired', n[2]], ['unwell', n[3]]].filter(([, v]) => v < 0.45).sort((a, b) => a[1] - b[1]); return low.length ? `<span class="low">Feeling ${low.map(([w]) => w).slice(0, 2).join(' and ')}</span>` : '<span>Doing well</span>'; };
 let lastCard = 0, lastInspect = null;
@@ -1157,6 +1161,7 @@ function showBabyCard(f, open = true) {
   $('nurs').onclick = (e) => { e.stopPropagation(); sfx('tap'); openNursery(); };
 }
 window.__showCard = (f) => showCard(f);
+window.__screenOf = (f) => { const v = f.pos.clone().project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight, v.z < 1]; };      // (for the drills: where an animal is on the screen, to tap it like a finger)
 function showCard(f) {
   if (f && f.species?.move !== 'jet' && !f.dead) fishes.attention?.(f.fid);      // someone is looking at another animal: an octopus that knows them well may come to the glass
   if (f.isEgg) return showEggCard(f);

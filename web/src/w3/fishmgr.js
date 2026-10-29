@@ -99,7 +99,7 @@ export class Fishes {
     if (N) { const m = kids.length, named = kids.filter((k) => !k.brood), at = (i) => Math.round((i + 0.5) * m / Math.max(1, named.length) - 0.5), taken = new Set(named.map((k, i) => at(i))); let q = 0;      // the order they come out of the pouch: the three named ones spread through the brood
       this.broodSlot = new Map(named.map((k, i) => [k.id, at(i)])); for (const k of kids) if (k.brood) { while (taken.has(q)) q++; this.broodSlot.set(k.id, q++); } }
     [...state.fish.filter((d) => !d.gift?.wrapped), ...kids].forEach((d, idx) => {      // (a gift still wrapped is not in the water yet: it is in its bag)
-      seen.add(d.id); const k = d.nursery ? 0.3 + 0.32 * d.nk : growthScale(d);      /* (it grows a little every day, from tiny fresh from the egg to full size at ten days) */ const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
+      seen.add(d.id); const k = d.nursery ? 0.36 + 0.44 * d.nk : growthScale(d);      /* (newborn to the size a kept baby carries on at: no jump when one stays) */      /* (it grows a little every day, from tiny fresh from the egg to full size at ten days) */ const cute = d.nursery ? 1 : { baby: 1, juvenile: 0.45 }[stageOf(d)] ?? 0;
       if (this.adventure(d)) return;
       if ((d.restUntil ?? 0) > Date.now()) { const q = this.byId.get(d.id); if (q) q.fatigue = Math.max(q.fatigue ?? 0, 0.9); }      // a mother worn out from guarding: sleepy, in her den      // out on an adventure (or hiding where nobody can see): not in the water until it is back
       let f = this.byId.get(d.id);

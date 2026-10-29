@@ -1020,8 +1020,8 @@ export class Fish3D {
     // with its brothers and sisters, snapping at whatever drifts past (as seahorse fry do). After that it starts to come down to the plants.
     if (this.nursery && (this.nk ?? 1) < 0.4 && !this.seeking) {
       const kin = (this.kin?.() ?? []).filter((o) => o.nursery && !o.dead && o !== this), cx = kin.length ? kin.reduce((a, o) => a + o.pos.x, 0) / kin.length : this.pos.x, cz = kin.length ? kin.reduce((a, o) => a + o.pos.z, 0) / kin.length : this.pos.z;
-      const hi = Fish3D.topY - 3.4 - (this.nk ?? 0) * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 2.4)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.2));
-      this.target.set(x, hi - rng() * 1.8, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
+      const hi = Fish3D.topY - 3.4 - (this.nk ?? 0) * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 4.6)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.8));      /* (a brood of a dozen keeps together but spread out, a loose cloud you can pick one baby out of, not one clump) */
+      this.target.set(x, hi - rng() * 3, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
     }
     if (role === 'social') {      // goes over to its family, the ones swimming about first (not just whoever is resting on a stem), and swims alongside
       const kin = (this.kin?.() ?? []).filter((o) => !o.dead), free = kin.filter((o) => !o.holdfast?.on && !o.perch?.on), calm = free.filter((o) => !(o.nursery && o.role === 'explore')), pick = calm.length && rng() < 0.6 ? calm : free.length ? free : kin;      /* its parents and the plant-lover more often than the explorer, which never stays */

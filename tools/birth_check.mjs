@@ -37,5 +37,11 @@ await p.evaluate(() => { const F = window.__fishes; for (let i = 0; i < 600 && (
 await p.waitForTimeout(1500);
 const tap = await p.evaluate(async () => { const f = window.__fishes.list.find((x) => x.nursery); if (!f) return { none: 1 }; window.__focus(window.__fishes.list.indexOf(f));      /* (as a tap does: the camera goes to it, then its card) */ await new Promise((r) => setTimeout(r, 300)); document.getElementById('fishpill')?.click(); await new Promise((r) => setTimeout(r, 600)); return { name: f.name, card: document.querySelector('#card.on')?.innerText?.replace(/\s+/g, ' ') ?? null, modal: document.querySelector('#modal.on h2')?.textContent ?? null }; });
 ck('tapping a nursery baby opens its own card: its name, nature and nursery day, with the whole nursery a tap away', !!tap.card && tap.card.includes(tap.name) && /nursery day \d of 5/.test(tap.card) && /See the whole nursery|Choose who stays/.test(tap.card) && tap.modal !== 'The nursery', tap);
+// a real tap, with a finger, on one of the unnamed babies (newborns are a few pixels across: the tap target is a fingertip at least)
+await p.evaluate(() => { document.querySelector('#card .x')?.click(); window.__focus(null); document.querySelector('#goal')?.classList.remove('on'); }); await p.waitForTimeout(1500);
+const spot = await p.evaluate(() => { window.__simClock(true); const ks = window.__fishes.list.filter((x) => x.nursery && !x.name && x.group.visible), f = ks.map((k) => ({ k, s: window.__screenOf(k) })).find((q) => q.s[2] && q.s[1] > 220 && q.s[1] < 620 && q.s[0] > 30 && q.s[0] < 360); return f ? { id: f.k.fid, x: f.s[0], y: f.s[1] } : null; });
+if (spot) { await p.mouse.click(spot.x + 6, spot.y + 4); await p.waitForTimeout(1500); }
+const fing = await p.evaluate(() => { window.__simClock(false); return { card: document.querySelector('#card.on')?.innerText?.replace(/\s+/g, ' ').slice(0, 120) ?? null }; });
+ck('a finger tap just beside an unnamed baby opens its card', !!spot && /Sunny and Pearl's baby/.test(fing.card ?? ''), { spot, ...fing });
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Birth checks passed'); process.exit(fails ? 1 : 0);
