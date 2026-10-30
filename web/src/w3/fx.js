@@ -106,7 +106,8 @@ export class Glow {
     this.p = Array.from({ length: n }, () => ({ x: -4.2 + Math.random() * 8.4, y: 0.8 + Math.random() * 12, z: -1.2 + Math.random() * 3.6, ph: Math.random() * 6, sp: 0.15 + Math.random() * 0.3, r: 0.035 + Math.random() * 0.05 }));
   }
   setPhase(phase) { this.ph = phase; this.refresh(); }
-  setSky(key) { this.sky = key; this.mesh.material.color.set(key === 'spawn' ? 0xffa6d8 : 0x9fffe8); this.boost = key === 'darkmoon' ? 1.8 : key === 'spawn' ? 1.35 : 1; this.refresh(); }     // a new moon makes the plankton blaze; spawning night turns them pink
+  setSky(key) { this.sky = key; this.mesh.material.color.set(this.seasonColor ?? (key === 'spawn' ? 0xffa6d8 : 0x9fffe8)); this.boost = (key === 'darkmoon' ? 1.8 : key === 'spawn' ? 1.35 : 1) * (this.seasonColor ? 1.25 : 1); this.refresh(); }
+  setSeason(color) { this.seasonColor = color ?? null; }      // a holiday's glow (orange for Halloween, frost for midwinter): set before setSky     // a new moon makes the plankton blaze; spawning night turns them pink
   refresh() { const base = this.ph === 'night' ? 1 : this.ph === 'evening' ? 0.6 : 0; this.want = this.sky === 'spawn' && base > 0 ? Math.max(base, 0.85) : base; }
   update(dt, t) {
     this.level += (this.want - this.level) * Math.min(1, dt * 0.6); this.mesh.visible = this.level > 0.02; if (!this.mesh.visible) return;

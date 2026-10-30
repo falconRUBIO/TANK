@@ -29,6 +29,8 @@ import { habitLines } from './game/habits.js';
 import { lanternGlow } from './w3/items.js';
 import { initUI, drawAvatar } from './ui.js';
 import { ADV_KINDS } from './game/adventures.js';
+import { seasonOf, seasonById } from './game/seasons.js';
+import { SeasonDress } from './w3/season.js';
 import { KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { pregDays as pregDaysR, dueWhen as dueWhenR, nurseryBrood, nurseryLine } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
@@ -45,6 +47,7 @@ window.__game = game;
 
 // ── managers ──
 const fishes = new Fishes(scene), decor = new DecorMgr(scene, env.colliders); decor.fishes = fishes;
+const season = new SeasonDress(scene, env.colliders);      // the holiday dressing: what the calendar puts in the tank (seasons.js), solid like any decoration
 const sights = new Sightings(stg.scene); sights.hide = stg.hideForDepth; sights.onSpawn = () => { if (game.shared && sights.cur) game.live?.send({ t: 'fx', kind: 'sight', what: sights.cur.kind, ...sights.cur.look }); try { if (localStorage.getItem('ourtank.memory')) return; localStorage.setItem('ourtank.memory', '1'); } catch { /* shown again next time */ } ui?.toast('The fish are remembering the open sea…', 5200); }; window.__sights = sights; window.__sight = (k) => { sights.clear(); return sights.spawn(k); };
 const glow = new Glow(); stg.scene.add(glow.mesh); stg.hideForDepth.push(fishes.mesh, fishes.bm, decor.marker, glow.mesh);
 const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
@@ -57,15 +60,23 @@ const moonTexture = (ph) => { const c = document.createElement('canvas'); c.widt
 const moon = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, opacity: 0 })); moon.scale.set(1.5, 1.5, 1); moon.position.set(2.9, 12.4, -4); moon.renderOrder = 4; scene.add(moon); stg.hideForDepth.push(moon);
 const moonHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(220,232,255,.55)'); gr.addColorStop(1, 'rgba(220,232,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); moonHalo.scale.set(5, 5, 1); moonHalo.position.copy(moon.position); moonHalo.renderOrder = 3; scene.add(moonHalo); stg.hideForDepth.push(moonHalo);
 let skyNow = null, moonK = 0, moonWant = 0, wildT = 0;
+let lastPhase = 'day';
 function applySky(phaseName) {
+  lastPhase = phaseName;
   const sk = skyOf(Date.now()), ev = qs.get('sky') || (sk.event?.key ?? null); const dark = phaseName === 'night' || phaseName === 'evening';
   moon.material.map = moonTexture(sk.phase); moon.material.needsUpdate = true; moonWant = phaseName === 'night' ? 1 : phaseName === 'evening' ? 0.55 : 0; skyNow = sk;
-  stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0; glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain' && !REDUCED; fishes.rain = ev === 'rain';
+  stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0;
+  const se = seasonNow(); stg.stage.season = se ? { night: se.night, day: se.day } : null; glow.setSeason(se?.glow ?? null); season.apply(se, decor); season.setPhase(phaseName);      /* the calendar's dressing, if today is a holiday */
+  glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain' && !REDUCED; fishes.rain = ev === 'rain';
 }
+// the season from the calendar, or ?season=<id> for a look at any of them (and ?season=none for a plain tank)
+const seasonNow = () => { const q = qs.get('season'); if (q === 'none') return null; if (q) return seasonById(q); return seasonOf(Date.now()); };
+window.__seasonNow = seasonNow; window.__season = season;      /* (the menus ask the same question, with the same ?season= override) */
+let seasonId = null; setInterval(() => { const se = seasonNow(); if ((se?.id ?? null) !== seasonId) { seasonId = se?.id ?? null; applySky(lastPhase); ui?.refresh?.(); } }, 60e3);      /* (midnight comes while the tank is open: the dressing goes up, or comes down, within the minute) */
 const tune = (p) => { glow.setPhase(p); setMusicPhase(p); applySky(p); };
 fishes.onGoodbye = () => { if (REDUCED) return; const d = document.createElement('div'); d.className = 'restdim'; document.body.appendChild(d); setTimeout(() => d.remove(), 3400); };      // the light dims softly while it is laid to rest
 fishes.onSprite = (sp) => stg.hideForDepth.push(sp); fishes.onSpriteGone = (sp) => { const i = stg.hideForDepth.indexOf(sp); if (i >= 0) stg.hideForDepth.splice(i, 1); };
-fishes.spots = () => decor.spots(); fishes.keepSpots = () => decor.keepSpots();
+fishes.spots = () => [...decor.spots(), ...season.spots()]; fishes.keepSpots = () => decor.keepSpots();      /* (a holiday pumpkin is a thing to hide behind too) */
 fishes.onCrabShell = (m) => (game.state ? game.dispatch({ t: 'crabShell', ...m }).then((r) => !!r?.ok).catch(() => false) : false);      // a crab moving house: the first crab in has the shell
 fishes.onCrabMem = (m) => { if (game.state) game.dispatch({ t: 'crabMem', ...m }).catch(() => null); };      // what a crab has been up to: its favorite spot, where it roams, who it meets
 fishes.onKeep = (m) => { if (game.state) game.dispatch({ t: 'keepMove', ...m }).catch(() => null); };      // an octopus carried or dropped a keepsake (Emergent Life)
@@ -1892,7 +1903,7 @@ function frameBody(now) {
   simMs += (performance.now() - simT0 - simMs) * 0.05;
   // a wild sea turtle passing far behind the tank, now and then from level 7 (a preview of level 8 and nothing more: no capacity, no care, no tap, no notice). About once in a long sitting
   if ((game.state?.level ?? 1) >= 7 && !REDUCED && !stg.env.wildOn?.() && (wildT += dt) > 60) { wildT = 0; if (Math.random() < 1 / 22) stg.env.wildPass?.(t); }
-  stg.env.tick(t); rain.update(dt); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.motes?.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
+  stg.env.tick(t); rain.update(dt); season.update(t); moonK += (moonWant - moonK) * Math.min(1, dt * 0.8); moon.material.opacity = 0.9 * moonK; moonHalo.material.opacity = (0.35 + 0.65 * (skyNow?.event?.key === 'fullmoon' ? 1 : 0.4)) * moonK; lureTick(dt); sights.dusk = ['evening', 'night'].includes(fishes.phase()); sights.enabled = (game.state?.flags?.tut ?? 0) >= 5 && !play && !REDUCED && isDirector(); sights.update(dt, t); glow.update(dt, t); stg.shafts.update(t); stg.surf.mat.uniforms.uTime.value = t; grade.uniforms.uT.value = t; stg.snow.update(dt, t); stg.motes?.update(dt, t); stg.bubbles.update(dt, t); stg.bubbles2.update(dt, t);
   stg.watchPerf(dt);
   if (meter && (fpsN++, fpsT += (now - lastMeter) / 1000, lastMeter = now, fpsT) > 0.5) { meter.textContent = `${Math.round(fpsN / fpsT)} fps · q${stage.quality} · sim ${simMs.toFixed(1)} ms\n${stg.renderer.info.render.calls} calls`; fpsN = fpsT = 0; }
   if (LITE) { window.__load?.done(); return true; }
@@ -2105,6 +2116,7 @@ async function boot() {
   document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => { tune(b.dataset.tod); fishes.setNight(b.dataset.tod === 'night'); }));
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
+  setTimeout(() => { const se = seasonNow(); if (!se || (game.state?.flags?.tut ?? 0) < 5) return; const key = `ourtank.season.${se.id}.${new Date(se.from).getFullYear()}`; try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { /* storage unavailable */ } ui?.toast(`${se.icon} ${se.label}. ${se.text}`, 7000); }, 9000);      /* once a holiday: what the tank has dressed up for, and until when */
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
   // the first 15 seconds belong to the tank: nothing pops up by itself (the first touch ends that at once, so anything you open works straight away)
   if ((game.state?.flags?.tut ?? 0) < 5) window.__quietUntil = 0;      // (a brand-new tank: the opening card is the first thing, straight away)
