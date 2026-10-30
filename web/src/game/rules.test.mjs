@@ -704,6 +704,10 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
   assert.equal(new Set(a.map((x) => x.name)).size, 10, 'ten different names'); assert.ok(!a.some((x) => ['Ash', 'Bay', 'Fin', 'Misty', 'Pearl'].includes(x.name)), 'none of the names already in the tank or among the three');
   assert.ok(a.every((x) => x.name && ['m', 'f'].includes(x.sex) && x.traits.length === 1 && ['explore', 'plants', 'social'].includes(x.role)), 'each with a name, a sex, one trait and a way of living');
   const other = R.nurseryBrood({ ...N, id: 'n8' }, []); assert.notDeepEqual(other.map((x) => x.name), a.map((x) => x.name), 'another nursery, other names'); n++; }
+// the nursery is a big moment: a countdown row in Care and on the tank tag while the babies grow, then 'ready' on the morning they can be chosen
+{ const born = 1700000000000, t = { fish: [{ id: 'm', name: 'Kelp' }, { id: 'w', name: 'Coral' }], eggs: [], nursery: { id: 'n7', father: 'm', mother: 'w', pa: { name: 'Kelp' }, ma: { name: 'Coral' }, born, readyAt: born + 5 * 864e5, n: 13, cands: [] } };
+  const M = R.bigMoments(t, born + 1.5 * 864e5)[0]; assert.equal(M?.kind, 'nursery', 'the nursery is a big moment'); assert.equal(M.what, "Kelp and Coral's babies"); assert.equal(M.ready, false); assert.deepEqual(M.day, { d: 2, n: 5 }); assert.equal(M.fish, 'm');
+  const R2 = R.bigMoments(t, born + 5 * 864e5)[0]; assert.equal(R2.ready, true, 'ready on the morning they can be chosen'); assert.equal(R.bigMoments({ fish: [], eggs: [], nursery: null }).length, 0); n++; }
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

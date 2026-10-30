@@ -2061,7 +2061,7 @@ async function boot() {
       try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
     devReset: async () => { const yes = await ui.dialog({ title: 'Reset test?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
-    gift: () => offerGift(), watchEggs: () => window.__watchEggs(), closeCard: () => { sfx('tap'); setFocus(null); },
+    gift: () => offerGift(), watchEggs: () => window.__watchEggs(), openNursery: () => openNursery(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, momentPostcard: (img, text, tag, ts) => { const who = fishes.list.filter((f) => f.name && text.includes(f.name)).sort((a, b) => text.indexOf(a.name) - text.indexOf(b.name))[0]; return takePhoto({ img, title: who ? `${who.name}${tag ? ' · ' + tag.replace(/^\S+\s/, '') : ''}` : (tag.replace(/^\S+\s/, '') || 'A moment in the tank'), line: text, ts }); }, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {
         const k = await ensureRecoveryKey(), old = /^[A-Z0-9]{4}-[A-Z0-9]{4}/i.test(k) && !/^[a-z]+-[a-z]+-[a-z]+-[a-z]+$/.test(k);

@@ -192,6 +192,8 @@ export function bigMoments(t, now = Date.now()) {
   const out = [], nm = (id, sn) => t.fish.find((f) => f.id === id && !f.dead)?.name ?? sn?.name;
   for (const f of t.fish) if (f.preg && !f.dead) out.push({ key: 'birth:' + f.id, kind: 'birth', fish: f.id, at: f.preg.due, ready: !!f.preg.ready, icon: '🌿', what: `${f.name}'s babies` });
   for (const e of t.eggs ?? []) { const a = nm(e.a, e.pa), b = nm(e.b, e.pb); out.push({ key: 'eggs:' + e.id, kind: 'hatch', fish: [e.guard, e.a, e.b].find((id) => id && nm(id)) ?? null, egg: e.id, at: e.hatchAt, ready: !!e.ready, icon: '🥚', what: a && b ? `${a} & ${b}'s eggs` : a ? `${a}'s eggs` : 'The eggs' }); }
+  if (t.nursery && Number.isFinite(t.nursery.readyAt)) { const N = t.nursery, pa = nm(N.father, N.pa), ma = nm(N.mother, N.ma), n = SEA.NURSERY, d = Math.max(1, Math.min(n, Math.floor((now - N.born) / DAY) + 1));      /* the nursery: five days of babies growing, then the choice of one to stay (the loop's next step after a birth, so Care and the tank tag show it) */
+    out.push({ key: 'nursery:' + N.id, kind: 'nursery', fish: nm(N.father) ? N.father : null, nursery: N.id, at: N.readyAt, ready: now >= N.readyAt, icon: '🍼', what: pa && ma ? `${pa} and ${ma}'s babies` : 'The baby seahorses', day: { d, n } }); }
   return out.sort((x, y) => Number(y.ready) - Number(x.ready) || x.at - y.at);
 }
 // when something is due, said one way everywhere: "in about 2 days", "in about 5 hours", "in 40 min", "any moment now"
