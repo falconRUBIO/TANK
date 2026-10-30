@@ -157,6 +157,7 @@ export function applyTod(dt) {
   beams.mat.uniforms.uI.value = cur.shaft * 3.0; beams.mat.uniforms.uCol.value.copy(cur.sunCol).lerp(tmpC.set(0xfff4d0), 0.4);
   surf.mat.uniforms.uI.value = cur.surf; surf.mat.uniforms.uCol.value.copy(cur.sunCol);
   stage.settleK += (stage.settle - stage.settleK) * Math.min(1, dt * 0.6); stage.dimK += (stage.dim - stage.dimK) * Math.min(1, dt * 1.6); renderer.toneMappingExposure = cur.exposure * (1 - 0.14 * stage.settleK) * (1 - 0.3 * stage.dimK); bloom.strength = cur.bloom;
+  if (stage.season?.mood) { const m = stage.season.mood; hemi.intensity *= 1 - 0.3 * m; sun.intensity *= 1 - 0.2 * m; amb.intensity *= 1 - 0.2 * m; renderer.toneMappingExposure *= 1 - 0.16 * m; scene.fog.color.lerp(tmpC.set(0x1c1838), 0.4 * m); scene.fog.near -= 5 * m; bgMat.uniforms.uTop.value.lerp(tmpC.set(0x4a3a78), 0.5 * m); bgMat.uniforms.uBot.value.lerp(tmpC.set(0x120c2a), 0.5 * m); shafts.mat.uniforms.uI.value *= 1 - 0.5 * m; beams.mat.uniforms.uI.value *= 1 - 0.5 * m; }      // a holiday that keeps the tank dim and violet all day (Halloween): the sun's shafts fade, the water goes dusky
   if (stage.dimK > 0.001) { shafts.mat.uniforms.uI.value *= 1 - stage.dimK; beams.mat.uniforms.uI.value *= 1 - stage.dimK; surf.mat.uniforms.uI.value *= 1 - 0.7 * stage.dimK; }      // lights down: the sun's shafts fade, the spot stays bright
   grade.uniforms.uTint.value.copy(cur.tint);
 

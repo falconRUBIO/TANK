@@ -2,8 +2,8 @@
 // itself, and at midnight after the holiday it is plain again. Pure and shared, so the rules, the scene and the menus agree.
 // A window runs from local midnight on `from` to local midnight on `to` (exclusive): Halloween is October 30 00:00 to November 1 00:00.
 export const SEASONS = [
-  { id: 'halloween', label: 'Halloween', icon: '🎃', from: [10, 30], to: [11, 1], glow: 0xffa040, night: 0x8a5cff, day: 0xffd7a8,
-    text: 'A full moon and a haunted house over the water, jack-o’-lanterns and a skull on the sand, cobwebs in the plants, and everyone in costume. Ghosts after dark. Until midnight on Halloween.', decor: 'pumpkins' },
+  { id: 'halloween', label: 'Halloween', icon: '🎃', from: [10, 30], to: [11, 1], glow: 0xffa040, night: 0x8a5cff, day: 0xb89ad8, mood: 1,
+    text: 'A full moon and a haunted house over dusky water, your decorations turned: the coconut a jack-o’-lantern, the pot a cauldron, the rocks skulls, the plants bare bones in cobwebs. Everyone in costume, candy at every feed, ghosts after dark. Until midnight on Halloween.', decor: 'pumpkins' },
   { id: 'yule', label: 'Winter holidays', icon: '❄️', from: [12, 24], to: [12, 27], glow: 0xdff4ff, night: 0x9fd0ff, day: 0xe8f4ff,
     text: 'A cold, clear light on the water, and the plankton glow frost-white after dark. Until the 27th.' },
   { id: 'newyear', label: 'New Year', icon: '🎆', from: [12, 31], to: [1, 2], glow: 0xffe08a, night: 0xffc96a, day: 0xfff0c8,

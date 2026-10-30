@@ -66,7 +66,7 @@ function applySky(phaseName) {
   const sk = skyOf(Date.now()), ev = qs.get('sky') || (sk.event?.key ?? null); const dark = phaseName === 'night' || phaseName === 'evening';
   moon.material.map = moonTexture(sk.phase); moon.material.needsUpdate = true; moonWant = phaseName === 'night' ? 1 : phaseName === 'evening' ? 0.55 : 0; skyNow = sk;
   stg.stage.moonlit = ev === 'fullmoon' && phaseName === 'night' ? 1 : 0;
-  const se = seasonNow(); stg.stage.season = se ? { night: se.night, day: se.day } : null; glow.setSeason(se?.glow ?? null); season.apply(se, decor); season.setPhase(phaseName);      /* the calendar's dressing, if today is a holiday */
+  const se = seasonNow(); stg.stage.season = se ? { night: se.night, day: se.day, mood: se.mood ?? 0 } : null; glow.setSeason(se?.glow ?? null); season.apply(se, decor); season.setPhase(phaseName); fishes.setCandy?.(!!season.ghostly);      /* the calendar's dressing, if today is a holiday */
   glow.setSky(ev === 'darkmoon' ? 'darkmoon' : ev === 'spawn' ? 'spawn' : null); rain.on = ev === 'rain' && !REDUCED; fishes.rain = ev === 'rain';
 }
 // the season from the calendar, or ?season=<id> for a look at any of them (and ?season=none for a plain tank)

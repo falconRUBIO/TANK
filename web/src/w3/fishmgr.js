@@ -72,6 +72,7 @@ export class Fishes {
     this.mesh.frustumCulled = false; this.mesh.count = 0; this.mesh.castShadow = true; scene.add(this.mesh);
     this.cols = [0xff7a1a, 0xffb02a, 0xe8442a, 0x9ad04a].map((c) => new THREE.Color(c));
     this.foodCols = { greens: [0x3f9d4a, 0x5cc06a, 0x2e7d3c, 0x7fd38a].map((c) => new THREE.Color(c)), pellets: [0x8a5a2a, 0x9c6a34, 0x7a4c24, 0xa87a44].map((c) => new THREE.Color(c)), treats: [0xff6fa8, 0xff9ac0, 0xe8508a, 0xffc2d8].map((c) => new THREE.Color(c)), mysis: [0xf2c4b4, 0xe8a894, 0xf7d8cc, 0xd99080].map((c) => new THREE.Color(c)) };      // mysis: tiny pale pink shrimp
+    this.candyCols = [0xff8c1a, 0xffd23a, 0xfff6e0, 0x9b4de0, 0x5ad26a, 0xe8324a, 0x3aa6ff].map((c) => new THREE.Color(c)); this.flakeGeo = this.mesh.geometry;      // candy corn, wrapped sweets: every feed for the two Halloween days
     this.m = new THREE.Matrix4(); this.tmp = new THREE.Vector3(); this.bursts = []; this.onEat = null; this.bubbleAt = bubbleSpot; this.onSprite = null; this.onSpriteGone = null; this.clock = 0;
     SPECIES.neon.school = true; SPECIES.danio.school = true;
     this.bm = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.22, 4, 8), new THREE.MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0.7, depthWrite: false }), 160);
@@ -869,9 +870,11 @@ export class Fishes {
   route(f) { if (f.species.move !== 'jet') { f.pick(this.rng); return true; } f.trickPts = f.script.map((w) => ({ x: w.x, y: w.y, z: w.z })); f.script = null; const w = f.trickPts.shift(); f.glassAt = { ...w, until: performance.now() + 6000, trick: true }; return true; }
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
+  // for the two Halloween days every feed is candy: chunky sweets in candy-corn orange, yellow and white and wrapper purple, green, red and blue
+  setCandy(on) { on = !!on; if (on === !!this.candy) return; this.candy = on; this.mesh.geometry = on ? (this.candyGeo ||= new THREE.BoxGeometry(0.13, 0.1, 0.13)) : this.flakeGeo; this.mesh.material.emissiveIntensity = on ? 0.35 : 0.6; for (const f of this.flakes) f.c = on ? this.candyCols[(this.rng() * this.candyCols.length) | 0] : (this.foodCols[f.kind] ?? this.cols)[(this.rng() * 4) | 0]; }
   drop(x, n = 7, kind = 'flakes') {
     for (const f of this.list) if (this.rng() < 0.5 || (kind === 'mysis' && f.sk === 'seahorse')) { f.flake = null;      /* a seahorse never misses its shrimp */ f.hold = this.rng() * 0.9 + (f.weak ? 5 : 0); }      // fish in a critical state have little appetite      // about half the fish notice the new food, the rest stay on the old
-    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, Fish3D.topY + 0.2 + this.rng() * 0.4, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, kind, c: (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
+    for (let i = 0; i < n && this.flakes.length < 190; i++) this.flakes.push({ pos: new THREE.Vector3(x + (this.rng() - 0.5) * 0.9, Fish3D.topY + 0.2 + this.rng() * 0.4, 0.3 + this.rng() * 1.6), age: 0, ph: this.rng() * 6, kind, c: this.candy ? this.candyCols[(this.rng() * this.candyCols.length) | 0] : (this.foodCols[kind] ?? this.cols)[(this.rng() * 4) | 0] });
   }
   // an octopus's den (a rock or structure it has taken to), its collection of shells at the entrance, and the shell it carries home now and then
   syncDen(f, d) {
