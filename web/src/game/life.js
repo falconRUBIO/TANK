@@ -78,7 +78,8 @@ export function decorVisit(t, d, f, now, ev, R) {
 export function decorMoved(d, now, from = null) { const h = (d.h ||= { by: {}, moves: [] }); h.moves.push({ x: d.x, z: d.z, at: now, ...(from ? { from: { x: from.x, z: from.z } } : {}) }); if (h.moves.length > 3) h.moves.shift(); }
 export function decorStory(t, d, R, day0 = t.createdAt ?? 0) {
   const h = d?.h; if (!h?.first) return null; const day = (ms) => Math.floor((ms - day0) / DAY) + 1, top = Object.entries(h.by).sort((a, b) => b[1][0] - a[1][0])[0];
-  const out = [`${h.first.name} found it first, on day ${day(h.first.at)}`]; if (top && top[1][0] >= 3) out.push(`${top[1][2]} has come back on ${top[1][0]} days`); if (h.gen) out.push(`two generations: ${h.gen.an}, then ${h.gen.bn}`); if (h.moves?.length) out.push(`moved ${h.moves.length === 3 ? '3 or more' : h.moves.length} time${h.moves.length === 1 ? '' : 's'}`);
+  let line = `${h.first.name} found it first, on day ${day(h.first.at)}`; if (top && top[1][0] >= 3) line += top[1][2] === h.first.name ? `, and has come back on ${top[1][0]} days` : `; ${top[1][2]} has come back on ${top[1][0]} days`;      /* (one sentence, not a list of fragments) */
+  const out = [line]; if (h.gen) out.push(`two generations: ${h.gen.an}, then ${h.gen.bn}`); if (h.moves?.length) out.push(`moved ${h.moves.length === 3 ? '3 or more times' : h.moves.length === 1 ? 'once' : `${h.moves.length} times`}`);
   return `${R.DECOR_DEF[d.type]?.label ?? 'Decoration'}: ${out.join('; ')}.`;
 }
 
