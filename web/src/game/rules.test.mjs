@@ -699,6 +699,11 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     const t = tank(); t.eggAt = 0; live(t, 0, 5 * D); assert.equal(t.eggs.length, 0);
     const old = JSON.parse(JSON.stringify(tank())); for (const f of old.fish) { delete f.sex; } delete old.nursery; R.norm(old, 0); R.advance(old, H); assert.ok(old.fish.every((f) => f.sex === 'm' || f.sex === 'f')); assert.equal(old.nursery, null); });
 }
+{ const N = { id: 'n7', born: 1700000000000, n: 13, cands: [{ id: 'f1', name: 'Fin' }, { id: 'f2', name: 'Misty' }, { id: 'f3', name: 'Pearl' }] }, a = R.nurseryBrood(N, ['Ash', 'Bay']), b = R.nurseryBrood(N, ['Ash', 'Bay']);
+  assert.equal(a.length, 10, 'the rest of a brood of 13: ten babies'); assert.deepEqual(a, b, 'the same brood on every phone');
+  assert.equal(new Set(a.map((x) => x.name)).size, 10, 'ten different names'); assert.ok(!a.some((x) => ['Ash', 'Bay', 'Fin', 'Misty', 'Pearl'].includes(x.name)), 'none of the names already in the tank or among the three');
+  assert.ok(a.every((x) => x.name && ['m', 'f'].includes(x.sex) && x.traits.length === 1 && ['explore', 'plants', 'social'].includes(x.role)), 'each with a name, a sex, one trait and a way of living');
+  const other = R.nurseryBrood({ ...N, id: 'n8' }, []); assert.notDeepEqual(other.map((x) => x.name), a.map((x) => x.name), 'another nursery, other names'); n++; }
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

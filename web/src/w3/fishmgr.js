@@ -18,7 +18,7 @@ import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
 import { temperOf, affordOf, habitKind } from '../game/habitat.js';
 import { Encounters } from './encounters.js';
-import { KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole, BABY_ROLES } from '../game/rules.js';
+import { nurseryBrood, KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole, BABY_ROLES } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
 const OPEN_WATER = new Set(['neon', 'danio', 'guppy', 'angelfish', 'tang']);      // the kinds that live in open water: they keep to the upper part of the tank (fish3d's floor), so the sand is left to the ones that belong there
@@ -91,10 +91,9 @@ export class Fishes {
     // the nursery's three babies swim in the tank as tiny seahorses of their own (the rest of the brood is a light swarm, see Nursery);
     // they grow through the five days, and the one that is kept carries on as the same seahorse
     const N = state.nursery, kids = N ? N.cands.filter((c) => !state.fish.some((x) => x.id === c.id)).map((c) => ({ id: c.id, name: c.name, species: 'seahorse', seed: c.seed, born: N.born, stage: 'baby', traits: c.traits, genes: c.genes, sex: c.sex, nursery: N.id, role: babyRole(N, c), happy: 0.8, health: 1, nk: Math.max(0, Math.min(1, (Date.now() - N.born) / Math.max(1, N.readyAt - N.born))), father: N.father, mother: N.mother })) : [];
-    if (N && kids.length === N.cands.length) {      // the rest of the brood swims as the same little seahorses (they once were a flat swarm of specks): unnamed, each one tappable, sharing its looks with one of the three
-      const nk = kids[0]?.nk ?? 0; let h = 0; for (const ch of N.id) h = (h * 31 + ch.charCodeAt(0)) | 0;
-      for (let k = 0; k < Math.min(12, Math.max(0, (N.n ?? 12) - N.cands.length)); k++) { const c = N.cands[k % N.cands.length]; h = (h * 1103515245 + 12345) | 0;
-        kids.push({ id: `${N.id}~${k}`, name: null, brood: k + 1, species: 'seahorse', seed: Math.abs(h >> 8) % 997, born: N.born, stage: 'baby', traits: [], genes: c?.genes, sex: (h >>> 3) & 1 ? 'm' : 'f', nursery: N.id, role: null, happy: 0.8, health: 1, nk, father: N.father, mother: N.mother });      /* (no role: still finding its way; it drifts as the brood's cloud near the three named ones, who have the personalities) */ }
+    if (N && kids.length === N.cands.length) {      // the rest of the brood swims as the same little seahorses, each with a name, a nature and a way of living of its own (rules nurseryBrood: the same on every phone)
+      const nk = kids[0]?.nk ?? 0, taken = state.fish.map((f) => f.name);
+      for (const b of nurseryBrood(N, taken)) { const c = N.cands[(b.brood - 1) % N.cands.length]; kids.push({ ...b, species: 'seahorse', born: N.born, stage: 'baby', genes: c?.genes, nursery: N.id, happy: 0.8, health: 1, nk, father: N.father, mother: N.mother }); }      /* (its looks come from one of the three: the same parents) */
     }
     if (N) { const m = kids.length, named = kids.filter((k) => !k.brood), at = (i) => Math.round((i + 0.5) * m / Math.max(1, named.length) - 0.5), taken = new Set(named.map((k, i) => at(i))); let q = 0;      // the order they come out of the pouch: the three named ones spread through the brood
       this.broodSlot = new Map(named.map((k, i) => [k.id, at(i)])); for (const k of kids) if (k.brood) { while (taken.has(q)) q++; this.broodSlot.set(k.id, q++); } }
@@ -1052,7 +1051,7 @@ export class Fishes {
     if ((this.bsT = (this.bsT ?? 0) - dt) <= 0) { this.bsT = 1; this.bsp = this.spots?.() ?? []; }      // (the decorations, looked up once a second)
     const sp = this.bsp ?? [], plants = sp.filter((q) => PLANTS.has(q.type));
     for (const f of kids) {
-      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f && k.name)].filter(Boolean);      /* (its parents and the three named siblings: the rest of the brood is the crowd it swims in, not who it keeps close to) */
+      const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f && !k.rec?.brood)].filter(Boolean);      /* (its parents and the three named siblings: the rest of the brood is the crowd it swims in, not who it keeps close to) */
       L.secs += dt; if (f.lp) L.dist += f.lp.distanceTo(f.pos); (f.lp ||= new THREE.Vector3()).copy(f.pos);
       if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9)) L.plant += dt;
       if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt;
@@ -1061,7 +1060,7 @@ export class Fishes {
       if (dn > 2) f.blFar = true; else if (dn < 0.8 && f.blFar) { f.blFar = false; L.meets = (L.meets ?? 0) + 1; }      // came over to one of its family from across the tank
       const on = !!f.holdfast?.on || !!f.perch?.on; if (on) L.hitched += dt; if (on && !f.blOn) { L.holds++; if (f.homeId && (f.holdfast?.id ?? f.perch?.id) === f.homeId) L.home++; } f.blOn = on;
       const near = (q, r) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < r, keep = f.blAt && sp.find((q) => q.id === f.blAt && near(q, 1.4)), at = keep ? f.blAt : sp.find((q) => near(q, 0.8))?.id ?? null; if (at) L.places.add(at); if (at && at !== f.blAt) L.looks = (L.looks ?? 0) + 1; f.blAt = at;      // each time it comes up to a decoration
-      f.kin = () => fam;      // (who its family is, for where it swims: see Fish3D.pickHover)
+      f.kin = () => (f.rec?.brood ? fam.filter((o) => !o.nursery) : fam);      // (who its family is, for where it swims: see Fish3D.pickHover. One of the brood keeps to its parents, so the three who could stay are not crowded)
     }
   }
   seahorseTick(dt, t) {

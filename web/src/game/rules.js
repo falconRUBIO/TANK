@@ -108,6 +108,17 @@ export const TOP_LEVEL = LEVELS.length;
 export const MAX_DECOR = 60;
 export const BOUNDS = { x: [-4.4, 4.4], z: [-3.6, 3.9] };              // the sand you can put things on: from the back of the high bank to the glass
 export const NAMES = ['Pip', 'Mango', 'Bubbles', 'Nori', 'Coral', 'Biscuit', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Waffles', 'Misty'];
+// the rest of a seahorse brood: each with a name, a sex, a nature and a way of living of its own, the same on every phone, worked out from
+// the nursery record alone (the three candidates keep their own names; these never repeat them, or a name already in the tank)
+export const BROOD_NAMES = ['Ash', 'Bay', 'Clem', 'Dew', 'Echo', 'Fern', 'Gil', 'Hop', 'Ivy', 'Juno', 'Kip', 'Lux', 'Moss', 'Nell', 'Oak', 'Pim', 'Quill', 'Reed', 'Sky', 'Tam', 'Una', 'Vim', 'Wren', 'Yara', 'Zed', 'Bean', 'Coco', 'Dash', 'Fig', 'Gem', 'Haze', 'Isla', 'Jet', 'Kai', 'Lark', 'Mika', 'Noor', 'Opal', 'Pico', 'Rue'];
+const BROOD_TRAITS = ['Curious', 'Calm', 'Social', 'Shy', 'Brave', 'Lazy'], BROOD_ROLE = { Curious: 'explore', Brave: 'explore', Calm: 'plants', Lazy: 'plants', Shy: 'plants', Social: 'social' };
+export function nurseryBrood(N, taken = []) {
+  if (!N) return []; const n = Math.max(0, Math.min(12, (N.n ?? 12) - (N.cands?.length ?? 0))), used = new Set([...taken, ...(N.cands ?? []).map((c) => c.name)]), out = [];
+  let h = 0; for (const ch of String(N.id ?? '')) h = hash32(h * 31 + ch.charCodeAt(0));      /* (from the nursery's id alone: it never changes, so the names never do) */
+  for (let k = 0; k < n; k++) { h = hash32(h + k * 7919); let j = h % BROOD_NAMES.length, tries = 0; while (used.has(BROOD_NAMES[j]) && tries++ < BROOD_NAMES.length) j = (j + 1) % BROOD_NAMES.length; const name = BROOD_NAMES[j]; used.add(name);
+    const trait = BROOD_TRAITS[(h >>> 3) % BROOD_TRAITS.length]; out.push({ id: `${N.id}~${k}`, name, seed: h % 90000, sex: (h >>> 7) & 1 ? 'm' : 'f', traits: [trait], role: BROOD_ROLE[trait], brood: k + 1 }); }
+  return out;
+}
 // The rhythm of looking after the tank (the water and glass come due a little before three full days, so someone who visits once a day at about the same time meets them on the third). Feeding is the everyday visit, about twice a day, because watching the fish rush for food
 // and the octopus hunt its crab is the fun part. The water and the glass are a bigger job every few days, and pay more for it.
 // A tank that misses a day is fine: a fish only starts to suffer after a day and a half with no food, or about five days of old water.
@@ -896,6 +907,15 @@ function octoPartners(t, now, ev) {
     x.partner = y.id; y.partner = x.id; x.partneredAt = y.partneredAt = now; delete t.octoBonds[k];
     const line = `${x.name} and ${y.name} have stopped sizing each other up. They touch arms now, and take turns resting in each other's den.`; ev.push({ journal: line, toast: `${x.name} and ${y.name} are partners now.` }, { story: x.id, text: `Became partners with ${y.name}.` }, { story: y.id, text: `Became partners with ${x.name}.` }); }
 }
+// one line about a nursery baby on one of its days, from its own way of living and the tank's real plants and parents: the journal gets the
+// candidates' lines in turn, and every baby's card tells its story so far from the same lines
+export function nurseryLine(t, N, c, day, avoid = null) { const role = babyRole(N, c), h = hash32((N.born % 1e9) + day * 131 + c.seed),
+        plants = t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS').map((d) => (DECOR_DEF[d.type]?.label ?? 'plant').toLowerCase()), plant = plants.length ? plants[h % plants.length] : 'sea grass',
+        dad = N.pa?.name ?? 'its father', mom = N.ma?.name, other = t.fish.find((f) => !f.dead && !f.nursery && f.id !== N.father && f.id !== N.mother && f.species !== 'seahorse')?.name;
+      const lines = { explore: [`Nursery, day ${day}: ${c.name} swam the whole length of the tank today, all on its own.`, `Nursery, day ${day}: ${c.name} came right up to the glass to look out at you.`, other ? `Nursery, day ${day}: ${c.name} followed ${other} halfway across the tank before turning back.` : `Nursery, day ${day}: ${c.name} found the far corner of the tank and liked it there.`],
+        plants: [`Nursery, day ${day}: ${c.name} has found the ${plant} and holds on to it with its tiny tail for hours.`, `Nursery, day ${day}: ${c.name} spent the day tucked in the ${plant}, snapping up whatever drifted past.`, `Nursery, day ${day}: ${c.name} tried a new stem today, then went back to the ${plant}.`],
+        social: [`Nursery, day ${day}: ${c.name} never strayed far from ${dad} today.`, mom ? `Nursery, day ${day}: ${c.name} kept close to ${mom}, copying the way she sways.` : `Nursery, day ${day}: ${c.name} stayed with its brothers and sisters all day.`, `Nursery, day ${day}: ${c.name} swims to ${dad} whenever something new happens in the tank.`] }[role] ?? [];
+  if (!lines.length) return null; let k = h % lines.length; if (lines[k] === avoid) k = (k + 1) % lines.length; return lines[k]; }      // (avoid: yesterday's line, so a story does not say the same thing two days running)
 function seaFamilies(t, now, ev) {
   const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
   for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) {      // a partner that has left: seahorses pair for life, so the one left behind grieves a while before it could pair again
@@ -946,13 +966,7 @@ function seaFamilies(t, now, ev) {
   // each nursery day, one baby's line in the journal, in turn: what its own way of living (roaming, the plants, staying near family) had it
   // do in this tank, with the tank's real plants and parents, so the choice at the end is between three babies the caretakers have come to know
   if (t.nursery && now < t.nursery.readyAt) { const N = t.nursery, day = Math.floor((now - N.born) / DAY);
-    if (day >= 1 && day > (N.told ?? 0) && N.cands?.length) { N.told = day; const c = N.cands[(day - 1) % N.cands.length], role = babyRole(N, c), h = hash32((N.born % 1e9) + day * 131 + c.seed),
-        plants = t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS').map((d) => (DECOR_DEF[d.type]?.label ?? 'plant').toLowerCase()), plant = plants.length ? plants[h % plants.length] : 'sea grass',
-        dad = N.pa?.name ?? 'its father', mom = N.ma?.name, other = t.fish.find((f) => !f.dead && !f.nursery && f.id !== N.father && f.id !== N.mother && f.species !== 'seahorse')?.name;
-      const lines = { explore: [`Nursery, day ${day}: ${c.name} swam the whole length of the tank today, all on its own.`, `Nursery, day ${day}: ${c.name} came right up to the glass to look out at you.`, other ? `Nursery, day ${day}: ${c.name} followed ${other} halfway across the tank before turning back.` : `Nursery, day ${day}: ${c.name} found the far corner of the tank and liked it there.`],
-        plants: [`Nursery, day ${day}: ${c.name} has found the ${plant} and holds on to it with its tiny tail for hours.`, `Nursery, day ${day}: ${c.name} spent the day tucked in the ${plant}, snapping up whatever drifted past.`, `Nursery, day ${day}: ${c.name} tried a new stem today, then went back to the ${plant}.`],
-        social: [`Nursery, day ${day}: ${c.name} never strayed far from ${dad} today.`, mom ? `Nursery, day ${day}: ${c.name} kept close to ${mom}, copying the way she sways.` : `Nursery, day ${day}: ${c.name} stayed with its brothers and sisters all day.`, `Nursery, day ${day}: ${c.name} swims to ${dad} whenever something new happens in the tank.`] }[role] ?? [];
-      if (lines.length) ev.push({ journal: lines[h % lines.length], nurseryDay: day }); } }
+    if (day >= 1 && day > (N.told ?? 0) && N.cands?.length) { N.told = day; const line = nurseryLine(t, N, N.cands[(day - 1) % N.cands.length], day); if (line) ev.push({ journal: line, nurseryDay: day }); } }
   // the babies are ready (said once); the choice itself is a caretaker's (keepBaby)
   if (t.nursery && now >= t.nursery.readyAt && !t.nursery.said) { t.nursery.said = true; ev.push({ journal: 'The baby seahorses are ready to leave the nursery. One can stay in the tank.', toast: "They're ready! Choose one baby seahorse to stay.", ready: true }); }
   if (t.nursery && !byId.has(t.nursery.father) && !t.nursery.pa) t.nursery = null;      // (a damaged record)
