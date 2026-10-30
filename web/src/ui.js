@@ -1270,6 +1270,23 @@ export function initUI({ game, social, cb }) {
   // ── Today's detail card: tap a row and it opens with what is really known about it, and the one thing to do next ──
   const when = (ms) => { const d = ms / 864e5; return d < 1 / 24 ? 'within the hour' : d < 1 ? `in about ${Math.max(1, Math.round(d * 24))} h` : `in about ${Math.round(d)} day${Math.round(d) > 1 ? 's' : ''}`; };
   const onDay = (ts) => new Date(ts).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  // The nursery page: the day of five, the three who could stay as rows, every other baby as its own tile; a tap on any of them goes to that baby
+  function nurseryCard({ day, n, parents, born, fed, chooseOn, cands, brood, onBaby }) {
+    const sex = (c) => (c.sex === 'm' ? '♂' : '♀'), nature = (c) => (c.traits ?? []).join(', ').toLowerCase() || 'still finding its way';
+    const dots = Array.from({ length: 5 }, (_, i) => `<i class="${i < day ? 'on' : ''}"></i>`).join('');
+    const rows = cands.map((c) => `<button class="nrow" data-baby="${esc(c.id)}"><img alt="" src="${fishThumb('seahorse', null)}"><span><b>${esc(c.name)} <em>${sex(c)}</em></b><small>${esc(nature(c))}${c.role ? ` · ${esc(c.role)}` : ''}</small></span><i class="chev">›</i></button>`).join('');
+    const tiles = brood.map((b) => `<button class="ntile" data-baby="${esc(b.id)}"><b>${esc(b.name)} <em>${sex(b)}</em></b><small>${esc(nature(b))}</small></button>`).join('');
+    return modalFree().then(() => new Promise((res) => {
+      modal.innerHTML = `<div class="box nurs"><h2>The nursery</h2><p class="nsub">${n} baby seahorses · ${esc(parents)}</p><div class="ndays">${dots}<span>Day ${day} of 5</span></div>
+        <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far; they` : 'They'} catch the tiniest bits themselves. On the morning of ${esc(chooseOn)}, one of these three can stay.</p>
+        <h4 class="csec">Could stay</h4><div class="nrows">${rows}</div>
+        <h4 class="csec">The rest of the brood <span>${brood.length}</span></h4><div class="ntiles">${tiles}</div>
+        <p class="nhint">Tap a baby to go and see it.</p><button class="big" id="mok">Close</button></div>`;
+      modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); modalShut = performance.now(); res(v); };
+      $('mok').onclick = () => { sfx('tap'); done(null); };
+      modal.querySelectorAll('[data-baby]').forEach((b) => { b.onclick = () => { sfx('tap'); done(b.dataset.baby); onBaby?.(b.dataset.baby); }; });
+    }));
+  }
   function infoCard({ title, img = null, icon = '', sub = '', facts = [], body = '', go = null, goLabel = 'Go and see' }) {
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box party info">${img ? `<div class="ipic"><img alt="" src="${img}"></div>` : icon ? `<div class="big-ic">${icon}</div>` : ''}<h2>${esc(title)}</h2>${sub ? `<p class="isub">${esc(sub)}</p>` : ''}${facts.length ? `<dl class="ifacts">${facts.filter((x) => x[1] != null && x[1] !== '').map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`).join('')}</dl>` : ''}${body ? `<p class="ibody">${esc(body)}</p>` : ''}${go ? `<button class="big gold" id="mok">${esc(goLabel)}</button><button class="lnk" id="mno">Close</button>` : '<button class="big" id="mok">Close</button>'}</div>`;
@@ -1432,5 +1449,5 @@ export function initUI({ game, social, cb }) {
       gb.hidden = false; document.body.classList.add('gifting'); gb.classList.toggle('soon', left < 60e3); gb.innerHTML = `${msIcon('gift', true, 20)}<span><small>${esc(who)}</small><b>${left < 1500 ? clock : `Arrives in ${clock}`}</b></span>`; gb.setAttribute('aria-label', `${who}, arrives ${left < 1500 ? 'now' : `in ${clock}`}`); };
     if (gb) { gb.onclick = () => { const s = S(), o = (s?.orders ?? []).filter((x) => x.giftFrom).sort((a, b) => a.arrivesAt - b.arrivesAt)[0]; if (!o) return; sfx('tap'); dialog({ title: 'A gift on its way', text: `${o.giftFromId === game.you?.userId ? 'You' : o.giftFrom} sent ${o.owner === game.you?.userId ? 'you' : o.ownerName ?? 'a friend'} ${o.surprise ? 'a surprise' : 'a fish'}${o.giftNote ? ` with a note` : ''}. It arrives ${countdown(o.arrivesAt)} in a gift bag on the sand.${o.surprise ? (o.owner === game.you?.userId ? ' It stays wrapped until you open it.' : ` It stays wrapped until ${o.ownerName ?? 'they'} opens it.`) : ''}`, ok: 'OK' }); }; tickGift(); setInterval(tickGift, 1000); } }
   const openHealth = (id = null) => { healthOpen = true; if (id) hOpen.add(id); open('care'); sheet.scrollTop = 0; };      // Health, with one animal's drawer open (from its card)
-  return { discovery, awayChip, openHealth, tankDetail, namedIn, newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
+  return { discovery, nurseryCard, awayChip, openHealth, tankDetail, namedIn, newLife, weekStory, goalSheet, postcardPreview, bottleLetter, sendBottle, noteBoard, readNote, writeNote, recap, surprise, together, sick, mourn, hush, celebrate, clearToasts, chapter, farewell, reunion, settle, choose, pickFish, toast, open, showBook: () => open('book'), flag, refresh, updateHeader, dialog, showCoach, hideCoach, pulse, setMembers, get tab() { return tab; }, get selected() { return selected; }, get rearrange() { return rearrange; }, set rearrange(v) { rearrange = v; }, select: (k) => { selected = k; }, REASONS };
 }
