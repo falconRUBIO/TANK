@@ -1983,7 +1983,7 @@ function leaveRequests(t, now, ev) {
 function levelCheck(t, now, ev) {
   milestones(t, now, ev);
   const lv = levelFor(scoreOf(t, now));
-  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; (t.lvAt ||= {})[lv] = now; ev.push({ journal: `Our tank reached level ${lv}.${LEVEL_PRIZE[lv] ? ` New: ${LEVEL_PRIZE[lv].title.toLowerCase()}.` : ''}`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
+  if (lv > t.level) { const bonus = 3 + lv; t.level = lv; t.shells += bonus; (t.lvAt ||= {})[lv] = now; ev.push({ journal: `Our tank reached level ${lv}.${LEVEL_PRIZE[lv] ? ` It opens ${LEVEL_PRIZE[lv].title.toLowerCase()}.` : ''}`, toast: `Tank level ${lv}! +${bonus} shells`, levelUp: lv }); }
 }
 const nextId = (t, p) => p + (t.seq = (t.seq ?? 10) + 1);
 const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);
