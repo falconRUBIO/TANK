@@ -745,7 +745,8 @@ export class Fishes {
     f.isShy = has('Shy');
     f.pick = (r) => {
       if (f.restK && f.idle > 0 && !f.seeking && !((f.fleeT ?? 0) > 0)) { f.retarget = Math.min(f.idle, 2); return; }      // resting at its place or by its friend: it stays (a 'stuck' check or a timer doesn't move it on)
-      base(r); const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
+      base(r); if (f.nursery) return;      /* (a nursery baby lives by the fry's own ways, Fish3D.pickHover: none of the grown habits below) */
+      const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
       const T = (x, y, z, rt) => { const rv = f.rivalId && this.byId.get(f.rivalId); if (rv && !rv.dead && Math.hypot(rv.pos.x - x, rv.pos.y - y) < 1.6) x += (x >= rv.pos.x ? 1 : -1) * 1.8;      /* a rival: it picks somewhere else rather than swim into it */
         const taken = others.find((o) => !o.dead && o.fid !== f.palId && o.species?.move !== 'jet' && !(f.settle && f.settle.o === o) && Math.hypot(o.pos.x - x, o.pos.y - y, (o.pos.z - z) * 1.6) < (f.radius + o.radius) * 1.3); if (taken) { x += (x >= taken.pos.x ? 1 : -1) * Math.max(0.9, f.radius + taken.radius); y += 0.3; }      /* someone is already there (two rock-lovers and one rock): it takes the other side of it, a little higher, rather than settle on top of them */
         f.target.set(Math.max(-4, Math.min(4, x)), Math.max(0.8, Math.min(Fish3D.topY - 0.3, y)), Math.max(-2, Math.min(2.8, z))); f.retarget = rt; };
@@ -1053,14 +1054,14 @@ export class Fishes {
     for (const f of kids) {
       const L = (f.bl ||= { secs: 0, dist: 0, plant: 0, fam: 0, hitched: 0, holds: 0, home: 0, swimWith: 0, places: new Set() }), dad = this.byId.get(f.rec?.father), mum = this.byId.get(this.world?.nursery?.mother ?? f.rec?.mother), fam = [dad, mum, ...kids.filter((k) => k !== f && !k.rec?.brood)].filter(Boolean);      /* (its parents and the three named siblings: the rest of the brood is the crowd it swims in, not who it keeps close to) */
       L.secs += dt; if (f.lp) L.dist += f.lp.distanceTo(f.pos); (f.lp ||= new THREE.Vector3()).copy(f.pos);
-      if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 0.9)) L.plant += dt;
-      if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt;
+      if (plants.some((q) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < 1.1)) L.plant += dt;
+      if (fam.some((o) => o.pos.distanceTo(f.pos) < 1.6)) L.fam += dt; if (kids.some((k) => k !== f && k.pos.distanceTo(f.pos) < 0.8)) L.sib = (L.sib ?? 0) + dt; { const dn = Math.min(...kids.filter((k) => k !== f).map((k) => k.pos.distanceTo(f.pos)), 9); L.sibD = (L.sibD ?? 0) + Math.min(dn, 9) * dt; }      /* (how far its nearest brother or sister is, over time) */      /* (holding on beside a brother or sister) */
       const v = f.vel.length(), dn = Math.min(...fam.map((o) => o.pos.distanceTo(f.pos)), 99);
       if (v > 0.03 && !f.perch?.on && fam.some((o) => { const d = o.pos.distanceTo(f.pos); return o.vel.length() > 0.03 && !o.holdfast?.on && !o.perch?.on && d < 1.5 && f.vel.dot(_tv.copy(o.pos).sub(f.pos)) > 0.5 * v * d; })) L.swimWith += dt;      // swimming after or alongside one of them while it is on the move (heading its way, not just passing)
       if (dn > 2) f.blFar = true; else if (dn < 0.8 && f.blFar) { f.blFar = false; L.meets = (L.meets ?? 0) + 1; }      // came over to one of its family from across the tank
-      const on = !!f.holdfast?.on || !!f.perch?.on; if (on) L.hitched += dt; if (on && !f.blOn) { L.holds++; if (f.homeId && (f.holdfast?.id ?? f.perch?.id) === f.homeId) L.home++; } f.blOn = on;
+      const on = !!f.holdfast?.on || !!f.perch?.on; if (on) L.hitched += dt; if (on && !f.blOn) { L.holds++; if (f.homeId && (f.holdfast?.id ?? f.perch?.id) === f.homeId) L.home++; if (kids.some((k) => k !== f && k.perch?.on && k.pos.distanceTo(f.pos) < 0.6)) L.chain = (L.chain ?? 0) + 1; } f.blOn = on;      /* (chain: settled right against a brother or sister, tail to tail) */
       const near = (q, r) => Math.hypot(q.x - f.pos.x, q.z - f.pos.z) < r, keep = f.blAt && sp.find((q) => q.id === f.blAt && near(q, 1.4)), at = keep ? f.blAt : sp.find((q) => near(q, 0.8))?.id ?? null; if (at) L.places.add(at); if (at && at !== f.blAt) L.looks = (L.looks ?? 0) + 1; f.blAt = at;      // each time it comes up to a decoration
-      f.kin = () => (f.rec?.brood ? fam.filter((o) => !o.nursery) : fam);      // (who its family is, for where it swims: see Fish3D.pickHover. One of the brood keeps to its parents, so the three who could stay are not crowded)
+      f.kin = () => (f.rec?.brood ? fam.filter((o) => !o.nursery) : fam); f.sibs = () => kids.filter((k) => k !== f); f.slot = this.broodSlot?.get(f.fid) ?? 0;      /* (its brood, for the cloud and the strands; its place in the birth order, for which strand and how high) */      // (who its family is, for where it swims: see Fish3D.pickHover. One of the brood keeps to its parents, so the three who could stay are not crowded)
     }
   }
   seahorseTick(dt, t) {

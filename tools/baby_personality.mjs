@@ -1,7 +1,7 @@
 // The three nursery babies, measured from what they do over a normal visit (3 and 5 minutes of tank time, stepped without drawing, for
-// three different broods): the explorer travels furthest, looks at the most decorations and never holds on for long; the plant-lover holds
-// on to plants most and keeps going back to its own stem; the social one swims along with its family, and not just because the father rests
-// on a plant. Needs the solo game on 8123.
+// three different broods) once the brood has settled (day 3 of 5): all of them have come down to the plants and hold on in groups; the
+// curious one makes the most little trips from its strand and holds on least; the calm one holds on most and keeps going back to its own
+// stem; the social one holds on right beside a brother or sister the most. Needs the solo game on 8123.
 const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');      // (CI points PW_MODULE at its own playwright)
 const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const p = await (await b.newContext({ viewport: { width: 430, height: 932 } })).newPage(); const errors = []; let fails = 0;
@@ -21,20 +21,20 @@ for (const [brood, mins] of [['n1', 3], ['n2', 5], ['n3', 5]]) {
     g.emit('state'); return true; }, { brood, mins });
   await p.waitForFunction(() => window.__fishes.list.filter((f) => f.nursery && window.__game.state.nursery.cands.some((c) => c.id === f.fid)).length === 3, null, { timeout: 60000 });      /* (the three who could stay; the rest of the brood, named too, swims as well) */ await p.waitForTimeout(1000);
   const out = await p.evaluate((mins) => { const F = window.__fishes, kids = F.list.filter((f) => f.nursery && window.__game.state.nursery.cands.some((c) => c.id === f.fid)); for (const f of kids) { f.bl = null; f.phN = 0; f.folT = 0; f.hs = 0; } const P = kids[0].constructor.prototype, o = P.pickHover, u = P.update; P.pickHover = function (r) { this.phN = (this.phN ?? 0) + 1; return o.call(this, r); }; window.__sim(Math.round(mins * 60 * 30), 1 / 30); P.pickHover = o;
-    return Object.fromEntries(kids.map((f) => { const L = f.bl; return [f.role, { dist: +L.dist.toFixed(1), places: L.places.size, looks: L.looks ?? 0, meets: L.meets ?? 0, ph: f.phN, foll: !!f.follow, st: [f.exploreAt ? 'x' : '', f.holdfast ? 'h' : '', f.link ? 'l' : '', f.greet ? 'g' : ''].join(''), hitch: +(L.hitched / L.secs).toFixed(2), holds: L.holds, avgHold: L.holds ? +(L.hitched / L.holds).toFixed(0) : 0, home: L.home, plant: +(L.plant / L.secs).toFixed(2), swimWith: +(L.swimWith / L.secs).toFixed(2), fam: +(L.fam / L.secs).toFixed(2) }]; })); }, mins);
+    return Object.fromEntries(kids.map((f) => { const L = f.bl; return [f.role, { dist: +L.dist.toFixed(1), places: L.places.size, looks: L.looks ?? 0, meets: L.meets ?? 0, sib: +((L.sib ?? 0) / L.secs).toFixed(2), sibD: +((L.sibD ?? 0) / L.secs).toFixed(2), chain: L.chain ?? 0, chainR: L.holds ? +((L.chain ?? 0) / L.holds).toFixed(2) : 0, ph: f.phN, foll: !!f.follow, st: [f.exploreAt ? 'x' : '', f.holdfast ? 'h' : '', f.link ? 'l' : '', f.greet ? 'g' : ''].join(''), hitch: +(L.hitched / L.secs).toFixed(2), holds: L.holds, avgHold: L.holds ? +(L.hitched / L.holds).toFixed(0) : 0, home: L.home, plant: +(L.plant / L.secs).toFixed(2), swimWith: +(L.swimWith / L.secs).toFixed(2), fam: +(L.fam / L.secs).toFixed(2) }]; })); }, mins);
   console.log(`  ${brood} (${mins} min)`, JSON.stringify(out)); runs.push(out);
 }
 // a short visit is noisy (a baby may spend a minute eating, or the father may swim past), so each difference is judged on the three broods
 // together, and must also hold in at least two of the three on its own
 const mean = (role, k) => runs.reduce((a, r) => a + r[role][k], 0) / runs.length, most = (role, k, by = 1) => { const o = ['explore', 'plants', 'social'].filter((x) => x !== role); return mean(role, k) > by * Math.max(...o.map((x) => mean(x, k))) && runs.filter((r) => o.every((x) => r[role][k] > r[x][k])).length >= 2; };
+const least = (role, k, by = 1) => { const o = ['explore', 'plants', 'social'].filter((x) => x !== role); return mean(role, k) * by < Math.min(...o.map((x) => mean(x, k))) && runs.filter((r) => o.every((x) => r[role][k] < r[x][k])).length >= 2; };
 const sum = (role, k) => runs.reduce((a, r) => a + r[role][k], 0);
 const show = (k) => Object.fromEntries(['explore', 'plants', 'social'].map((x) => [x, +mean(x, k).toFixed(2)]));
-ck('the explorer travels furthest', most('explore', 'dist', 1.15), show('dist'));
-ck('the explorer goes up to decorations the most often', most('explore', 'looks'), show('looks'));
-ck('the explorer seldom holds on, and never for long', mean('explore', 'hitch') < 0.1 && runs.every((r) => r.explore.avgHold <= 25), show('hitch'));
-ck('the plant-lover holds on to plants the most', most('plants', 'hitch', 2), show('hitch'));
-ck('the plant-lover keeps going back to its own stem', sum('plants', 'home') >= 0.6 * sum('plants', 'holds') && sum('plants', 'holds') >= 3, { holds: sum('plants', 'holds'), home: sum('plants', 'home') });
-ck('the social one swims along with its family the most', most('social', 'swimWith'), show('swimWith'));
-ck('the social one keeps closest to its family, without settling on the plants', most('social', 'fam') && mean('social', 'hitch') < mean('plants', 'hitch') / 2, { fam: show('fam'), hitch: show('hitch') });
+ck('the brood has come down to the plants: each of the three spends most of its time at a strand', ['explore', 'plants', 'social'].every((x) => mean(x, 'plant') > 0.5), show('plant'));
+ck('the curious one travels furthest: little trips out from the strand and back', most('explore', 'dist', 1.15), show('dist'));
+ck('the curious one holds on less than the calm one, and never for long', mean('explore', 'hitch') < mean('plants', 'hitch') && runs.every((r) => r.explore.avgHold <= 25), show('hitch'));
+ck('the calm one holds on longest at a time', most('plants', 'avgHold', 1.2), show('avgHold'));
+ck('the calm one keeps going back to its own stem', sum('plants', 'home') >= 0.6 * sum('plants', 'holds') && sum('plants', 'holds') >= 3, { holds: sum('plants', 'holds'), home: sum('plants', 'home') });
+ck('the social one makes little chains: most of the times it holds on, it settles right against a brother or sister', sum('social', 'chain') >= 3 && mean('social', 'chainR') >= 0.5, { chain: show('chain'), share: show('chainR') });
 ck('no page errors', errors.length === 0, errors.slice(0, 3));
 console.log(fails ? `${fails} failed` : 'Baby personality checks passed'); await b.close(); process.exit(fails ? 1 : 0);

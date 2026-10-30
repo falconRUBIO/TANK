@@ -1492,7 +1492,7 @@ let lastLamp = null, seenDecor = null;
 // ── the nursery: the brood grows up in the tank; after five days any caretaker chooses the one that stays ──
 const nurseryFx = new Nursery(stg.scene); window.__nursery = nurseryFx;
 let readyShown = null;
-const ROLE_LINE = { explore: 'roams all over the tank', plants: 'stays close to the plants', social: 'keeps near its family' };
+const ROLE_LINE = { explore: 'makes little trips from the group and comes back', plants: 'stays put on its strand', social: 'holds on beside its brothers and sisters' };      /* (once the brood has settled; the first two days they all drift together) */
 async function openNursery(auto = false) {
   const N = game.state?.nursery; if (!N || $('modal').classList.contains('on')) { if (auto && N && readyShown === N.id) readyShown = null; return; }      // (something else was on screen: the choice comes up again on the next check)
   const day = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }), who = (c) => `${c.name} · ${c.sex === 'm' ? 'a little male' : 'a little female'} · ${(c.traits ?? []).join(', ').toLowerCase() || 'still finding its way'}${ROLE_LINE[babyRole(N, c)] ? ' · ' + ROLE_LINE[babyRole(N, c)] : ''}`;

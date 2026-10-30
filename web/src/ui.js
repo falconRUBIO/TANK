@@ -1278,7 +1278,7 @@ export function initUI({ game, social, cb }) {
     const tiles = brood.map((b) => `<button class="ntile" data-baby="${esc(b.id)}"><b>${esc(b.name)} <em>${sex(b)}</em></b><small>${esc(nature(b))}</small></button>`).join('');
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box nurs"><h2>The nursery</h2><p class="nsub">${n} baby seahorses · ${esc(parents)}</p><div class="ndays">${dots}<span>Day ${day} of 5</span></div>
-        <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far; they` : 'They'} catch the tiniest bits themselves. On the morning of ${esc(chooseOn)}, one of these three can stay.</p>
+        <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${day <= 2 ? 'For now they drift high in the water in a loose cloud, as seahorse fry do; from day 3 they settle onto the plants in little groups.' : 'They have settled onto the plants in little groups, three or four to a strand.'} ${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far, and they` : 'They'} snap up the tiniest bits themselves. On the morning of ${esc(chooseOn)}, one of these three can stay.</p>
         <h4 class="csec">Could stay</h4><div class="nrows">${rows}</div>
         <h4 class="csec">The rest of the brood <span>${brood.length}</span></h4><div class="ntiles">${tiles}</div>
         <p class="nhint">Tap a baby to go and see it.</p><button class="big" id="mok">Close</button></div>`;

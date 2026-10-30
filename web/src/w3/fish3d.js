@@ -657,7 +657,7 @@ export class Fish3D {
   separate(others, gain = 2.8) {
     const jet = this.species.move === 'jet';
     for (const o of others) {
-      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : this.nursery && o.nursery ? 0.7 : 1.0);      /* (a brood crowds close: less room between two nursery babies, so one can keep up with its family through the others) */      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
+      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : this.nursery && o.nursery ? (this.perch && o.perch ? 0.35 : 0.7) : 1.0);      /* (two fry holding the same strand sit almost touching, like beads) */      /* (a brood crowds close: less room between two nursery babies, so one can keep up with its family through the others) */      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
       if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.065; this.vel.z += (dz / dd) * k * 0.035; }      /* (a little more give up and down: two fish on a line part in height first, so they do not sit on top of each other) */
     }
   }
@@ -797,7 +797,7 @@ export class Fish3D {
     if (visit) { d.visits[H.id] = (d.visits[H.id] ?? 0) + 1; d.pos[H.id] = [+H.qx.toFixed(2), +H.qz.toFixed(2)]; this.lastHitch = H.id; }
   }
   // how long it stays on a holdfast: an active seahorse moves on sooner, a quiet one holds on far longer
-  holdLength(rng) { return (this.nursery ? 1 : 1.7) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 1.5 : this.role === 'social' ? 0.6 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
+  holdLength(rng) { return (this.nursery ? 1 : 1.7) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 2.2 : this.role === 'social' ? 0.8 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
   // ── choosing a holdfast ── among the decorations with real grip points (found in the background, see grips.js), weighed by distance, by what it
   // knows and by its personality; then one of that decoration's grips, at the height its boldness likes and where no other seahorse is.
   pickHold(rng, spots, roost = false) {
@@ -1013,39 +1013,41 @@ export class Fish3D {
   }
   pickHover(rng) {
     const spots = this.getSpots?.() ?? [], b = this.band;
-    // a nursery baby shows its own character in where it goes next: the explorer seldom settles and heads off anywhere, the plant-lover
-    // goes back to a stem whenever it can, the social one swims over to its father or a brother or sister
-    const role = this.nursery ? this.role : null;
-    // a newborn's first two days: it cannot hold on to anything yet, so it drifts high in the water, up toward the light, in a loose little cloud
-    // with its brothers and sisters, snapping at whatever drifts past (as seahorse fry do). After that it starts to come down to the plants.
-    if (this.nursery && ((this.nk ?? 1) < 0.4 || !this.role) && !this.seeking) {      // (a newborn, or one of the unnamed brood all through the nursery)
-      const kin = (this.kin?.() ?? []).filter((o) => !o.dead && o !== this && (this.role ? o.nursery : !o.nursery)), cx = kin.length      /* (a newborn keeps with its brood; an unnamed one, all through the nursery, keeps near its parents, so the cloud does not trail the three named ones about) */ ? kin.reduce((a, o) => a + o.pos.x, 0) / kin.length : this.pos.x, cz = kin.length ? kin.reduce((a, o) => a + o.pos.z, 0) / kin.length : this.pos.z;
-      const hi = Fish3D.topY - 3.4 - (this.nk ?? 0) * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 4.6)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.8));      /* (a brood of a dozen keeps together but spread out, a loose cloud you can pick one baby out of, not one clump) */
-      this.target.set(x, hi - rng() * 3, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
+    // A nursery baby lives as seahorse fry do. Its first two days it cannot hold on to anything: it drifts high in the water, up toward the
+    // light, in a loose cloud with its brothers and sisters, snapping at whatever drifts past. Then the brood settles: it comes down to the
+    // plants and holds on in little groups, three or four to a strand, lined up like beads, and now and then the group moves to another
+    // strand together. Its nature only tints that: the curious one makes short trips from the strand and comes straight back, the calm
+    // one stays put longest, the social one holds on right beside a brother or sister. None of them follows its parents (fry do not).
+    if (this.nursery && !this.seeking) {
+      const nk = this.nk ?? 1, sibs = (this.sibs?.() ?? []).filter((o) => !o.dead && o !== this), role = this.role;
+      if (nk < 0.4) {
+        const cx = sibs.length ? sibs.reduce((a, o) => a + o.pos.x, 0) / sibs.length : this.pos.x, cz = sibs.length ? sibs.reduce((a, o) => a + o.pos.z, 0) / sibs.length : this.pos.z;
+        const hi = Fish3D.topY - 3.4 - nk * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 4.6)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 1.8));      /* (a brood of a dozen keeps together but spread out: a loose cloud you can pick one baby out of) */
+        this.target.set(x, hi - rng() * 3, z); this.perch = null; this.idle = 0.4 + rng() * 1.4; this.retarget = 2.5 + rng() * 3; return;
+      }
+      const plants = spots.filter((q) => PLANTS.has(q.type)), stands = plants.length ? plants : spots;
+      if (stands.length) {
+        const slot = this.slot ?? 0, n = sibs.length + 1, groups = Math.max(1, Math.ceil(n / 4)), g = slot % groups, epoch = Math.floor(Date.now() / 150e3);      /* (three or four to a strand; every couple of minutes a group drifts to another strand, together) */
+        let h = epoch * 104729 + g * 7919; for (const ch of String(this.nursery)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+        const strand = stands[h % stands.length], home = role === 'plants' && this.homeId ? stands.find((q) => q.id === this.homeId) : null, q = home && rng() < 0.8 ? home : strand;      /* (the calm one goes back to its own stem) */
+        if (role === 'plants' && !this.homeId) this.homeId = q.id;
+        if ((role === 'explore' && rng() < 0.55) || (role === 'social' && rng() < 0.2)) {      // a little trip out from the strand, then back (the curious one often, the social one now and then)
+          this.target.set(Math.max(b.x[0], Math.min(b.x[1], q.x + (rng() - 0.5) * 4.4)), Math.min(Fish3D.topY - 1, (q.y ?? 0) + 1 + rng() * 2.2), Math.max(b.z[0], Math.min(b.z[1], q.z + (rng() - 0.5) * 1.6)));
+          this.perch = null; this.idle = 0.3 + rng() * 0.8; this.retarget = 3 + rng() * 2; return;
+        }
+        let px = q.x + ((slot % 2) ? 0.16 : -0.16), py = Math.min(b.y[1] - 0.5, Fish3D.topY - 1.4, (q.y ?? 0) + 0.4 + Math.min(3, Math.max(0.9, (q.h ?? 1) * 0.75)) * (0.1 + 0.8 * ((slot % 4) / 3))), pz = q.z + 0.4, id = q.id;      /* (beads along the stem: each has its own height, a little to one side or the other) */
+        if (role === 'social') { const on = sibs.filter((o) => o.perch?.on && Math.hypot(o.pos.x - q.x, o.pos.z - q.z) < 1.2); if (on.length) { const o = on[(rng() * on.length) | 0]; px = Math.max(q.x - 0.45, Math.min(q.x + 0.45, o.pos.x)); py = o.pos.y - 0.16; pz = Math.max(q.z + 0.1, Math.min(q.z + 0.7, o.pos.z + 0.06)); id = o.perch.id; } }      /* (right beside a brother or sister: a little chain) */
+        this.target.set(px + (rng() - 0.5) * 0.22, Math.max(sandH(px, pz) + 0.6, Math.min(Fish3D.topY - 1, py)), pz); this.idle = 0; this.retarget = 25; this.perch = { id, on: false, wait: this.holdLength(rng) }; return;
+      }
+      const cx = sibs.length ? sibs.reduce((a, o) => a + o.pos.x, 0) / sibs.length : this.pos.x;      // nothing to hold on to: the brood keeps together low in the water
+      this.target.set(Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 2.4)), b.y[0] + 0.8 + rng() * 1.2, b.z[0] + rng() * (b.z[1] - b.z[0])); this.perch = null; this.idle = 1 + rng() * 2; this.retarget = 3 + rng() * 2; return;
     }
-    if (role === 'social') {      // goes over to its family, the ones swimming about first (not just whoever is resting on a stem), and swims alongside
-      const kin = (this.kin?.() ?? []).filter((o) => !o.dead), free = kin.filter((o) => !o.holdfast?.on && !o.perch?.on), calm = free.filter((o) => !(o.nursery && o.role === 'explore')), pick = calm.length && rng() < 0.6 ? calm : free.length ? free : kin;      /* its parents and the plant-lover more often than the explorer, which never stays */
-      if (pick.length && rng() < 0.85) { const o = pick.slice().sort((x, y) => y.vel.length() - x.vel.length())[rng() < 0.7 ? 0 : (rng() * pick.length) | 0];      /* mostly the one on the move */ this.follow = o; this.followT = 10 + rng() * 10; this.idle = 0; this.retarget = 1.5; return; }
-    }
-    if (role === 'explore' && rng() < 0.85) {      // somewhere new every time: half the time a decoration to look at, otherwise open water
-      const far = spots.filter((q) => Math.hypot(q.x - this.pos.x, q.z - this.pos.z) > 2.5 && q.id !== this.lastLook);
-      if (far.length && rng() < 0.7) { const q = far[(rng() * far.length) | 0]; this.lastLook = q.id; this.target.set(q.x + (rng() - 0.5) * 0.6, Math.min(Fish3D.topY - 1, (q.y ?? 0) + 0.6 + rng() * Math.max(0.4, (q.h ?? 1) * 0.6)), q.z + 0.5); }
-      else for (let k = 0; k < 6; k++) { this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); if (this.target.distanceTo(this.pos) > 3) break; }
-      this.idle = 0.2 + rng() * 0.5; this.retarget = 4 + this.target.distanceTo(this.pos) / Math.max(0.1, this.speed * 0.5); return;      // (time enough to get there)
-    }
-    if (this.sp.tail && !this.seeking && !this.nursery && this.pickHold(rng, spots, !!this.sleepy || (this.starve ?? 0) > 0.4 || (this.brood ?? 0) > 0.8)) return;      // (a hungry one, long unfed, goes back to a stem and clings there)      // (a nursery baby never grips: it perches, below)
-    // a nursery baby is still too small to coil its tail round a stem (grips.js finds none for it), so it perches: it settles close beside one
-    // and stays there a while. The plant-lover goes back to its own plant, the others now and then to any
+    if (this.sp.tail && !this.seeking && this.pickHold(rng, spots, !!this.sleepy || (this.starve ?? 0) > 0.4 || (this.brood ?? 0) > 0.8)) return;      // (a hungry one, long unfed, goes back to a stem and clings there)
     this.perch = null;
-    if (role && !this.seeking && (role === 'plants' || rng() < (role === 'explore' ? 0.1 : 0.25))) {
-      const plants = spots.filter((q) => PLANTS.has(q.type)), home = role === 'plants' && plants.find((q) => q.id === this.homeId);
-      const q = home && rng() < 0.8 ? home : plants[(rng() * plants.length) | 0];
-      if (q) { if (role === 'plants' && !this.homeId) this.homeId = q.id; this.target.set(q.x + (rng() - 0.5) * 0.3, (q.y ?? 0) + 0.5 + rng() * Math.max(0.3, (q.h ?? 1) * 0.5), q.z + 0.4); this.idle = 0; this.retarget = 25; this.perch = { id: q.id, on: false, wait: this.holdLength(rng) * (role === 'plants' ? 1 : 0.4) }; return; }
-    }
     // at the sand's own height under the thing it rests beside, not a fixed height above the floor
     if (spots.length && rng() < 0.6) { const s = spots[(rng() * spots.length) | 0], y = Math.max((s.y ?? 0) + 0.8, (s.y ?? 0) + s.h * (0.3 + rng() * 0.4) + 0.4); this.target.set(s.x + (rng() - 0.5) * 0.5, Math.min(Fish3D.topY - 1, y, this.sp.tail ? sandH(s.x, s.z + 0.55) + 1.8 : 99), s.z + 0.55); this.idle = 7 + rng() * 9; this.retarget = this.idle + 3; return; }   // hold on and rest
     this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); this.idle = 1.5 + rng() * 3; this.retarget = 4 + rng() * 4;
-    if (this.sp.tail && !role) { const pl = spots.filter((q) => PLANTS.has(q.type)), q = pl.length ? pl[(rng() * pl.length) | 0] : null; if (q) this.target.set(q.x + (rng() - 0.5) * 1.2, sandH(q.x, q.z) + 0.6 + rng() * 1.6, q.z + 0.3 + rng() * 0.4); else this.target.y = Math.min(this.target.y, sandH(this.target.x, this.target.z) + 2.2); this.retarget = Math.min(this.retarget, 4); }      // a seahorse between holds keeps low among the plants, looking for its next stem, not out in open water
+    if (this.sp.tail && !this.nursery) { const pl = spots.filter((q) => PLANTS.has(q.type)), q = pl.length ? pl[(rng() * pl.length) | 0] : null; if (q) this.target.set(q.x + (rng() - 0.5) * 1.2, sandH(q.x, q.z) + 0.6 + rng() * 1.6, q.z + 0.3 + rng() * 0.4); else this.target.y = Math.min(this.target.y, sandH(this.target.x, this.target.z) + 2.2); this.retarget = Math.min(this.retarget, 4); }      // a seahorse between holds keeps low among the plants, looking for its next stem, not out in open water
     if (this.sp.tail && this.sleepy) { this.idle *= 2; this.retarget = Math.min(this.retarget, 3); }      // at night: little wandering, soon back to a stem
     for (let k = 0; k < 8 && Fish3D.world.push; k++) { _o.set(0, 0, 0); if (!Fish3D.world.push(this.target, this.radius * 0.5 + 0.4, _o)) break; this.target.set(b.x[0] + rng() * (b.x[1] - b.x[0]), b.y[0] + rng() * (b.y[1] - b.y[0]), b.z[0] + rng() * (b.z[1] - b.z[0])); }
   }
