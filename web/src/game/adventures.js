@@ -44,6 +44,14 @@ const rate = (t) => { const r = Number(t.flags?.advRate); return Number.isFinite
 const escRate = (t) => { const os = (t.fish ?? []).filter((f) => f.species === 'octopus' && !f.dead); if (!os.length) return 1; const k = (f) => ({ bimac: 0.5, mimic: 0.8, cyanea: 1.1 })[f.kind] ?? 1.25; return Math.max(...os.map(k)); };
 const pickW = (opts, r) => { const tot = opts.reduce((s, o) => s + o.w, 0); if (tot <= 0) return null; let x = r * tot; for (const o of opts) { if ((x -= o.w) < 0) return o; } return opts[opts.length - 1]; };
 
+// Where it went, told afterwards: a place an escaped octopus really ends up, by how long it was gone (chosen when it leaves, so every
+// phone tells the same story; a hide is in the tank, and the hiding place is in the outcome line instead)
+export const WHERE = {
+  short: ['down the back of the stand, in the dark behind the pump', 'along the shelf behind the tank, knocking things over', 'across the floor as far as the window', 'into the bucket of water-change water', 'up onto the lid, and along the top of the tank'],
+  night: ['out along the windowsill in the dark', 'under the furniture, room by room', 'into the kitchen sink, where the tap drips', 'behind the bookshelf, in the dust', 'under the sofa, where it stayed until first light'],
+  long: ['all the way across the house and back', 'two rooms away, under a bed, for the best part of a day', 'out onto the garden step and back again (the rain must have helped)', 'somewhere nobody found, for a day and a night'],
+};
+export const whereOf = (kind, r) => { const L = WHERE[kind]; return L ? L[Math.floor(r * L.length) % L.length] : null; };
 export const isAway = (f) => !!f?.away;
 export const awayLine = (f) => (f?.away ? (f.away.inTank ? 'Hiding somewhere' : 'Out exploring') : null);
 export const advMemOf = (f) => (f.advMem ||= { n: 0, kinds: {}, items: [], fav: null, met: [], last: null });
@@ -171,8 +179,9 @@ function leave(t, f, at, ev, R, cur) {
   if (!R.isOcto(f) || f.dead || (h0 > 0.7 && !(f.fedAt && at - f.fedAt >= 0 && at - f.fedAt < DAY))) return;      // it got hungry while pacing: it stays (and nothing is lost)
   if (f.puzzle || f.seek || f.preg || f.nursery || f.brood || (f.health ?? 1) < 0.55) return;      // (something else came up while it paced: it stays for that)
   const o = OUTCOMES.find((x) => x.id === out) ?? OUTCOMES[0], dur = span(ADV_KINDS[kind].dur, H(sid(f.id), at / MIN | 0, 10)) * (o.late ?? 1);
-  f.away = { id, kind, at, until: at + dur, out: o.id, inTank: !!o.inTank || kind === 'hide', hunger: h0, fedAt: f.fedAt ?? null };
-  remember(t, { id, kind, fish: f.id, at, out: o.id });
+  const where = o.inTank || kind === 'hide' ? null : whereOf(kind, H(sid(f.id), at / MIN | 0, 12));
+  f.away = { id, kind, at, until: at + dur, out: o.id, inTank: !!o.inTank || kind === 'hide', hunger: h0, fedAt: f.fedAt ?? null, where };
+  remember(t, { id, kind, fish: f.id, at, out: o.id, where });
   const major = kind !== 'hide';
   if (o.inTank || kind === 'hide') ev.push({ story: f.id, text: 'Disappeared from its den for a while.', jat: at, adventure: { phase: 'go', id, fish: f.id, kind } });
   else ev.push({ journal: [`${f.name} climbed out over the top of the tank and slipped away.`, `${f.name} squeezed through the gap by the lid and was gone.`, `${f.name} slid up the glass, over the rim, and out of sight.`, `${f.name} went over the top of the tank, quiet as anything.`][Math.floor(H(sid(f.id), at / MIN | 0, 11) * 4)], jat: at, story: f.id, text: 'Went out exploring.', adventure: { phase: 'go', id, fish: f.id, kind }, major, toast: major && kind !== 'short' ? `${f.name} has gone out exploring.` : undefined });
@@ -186,16 +195,16 @@ function back(t, f, at, ev, R, cur) {
   const okNow = !o.ok || o.ok(c), use = okNow ? o : OUTCOMES.find((x) => x.id === 'quiet');      // the thing it would have moved was taken away meanwhile
   m.n++; m.kinds[a.kind] = (m.kinds[a.kind] ?? 0) + 1; m.last = { id: a.id, kind: a.kind, at: a.at, end: at, out: use.id };
   const longs = (m.kinds.night ?? 0) + (m.kinds.long ?? 0), shorts = (m.kinds.hide ?? 0) + (m.kinds.short ?? 0); m.pref = longs * 3 > shorts ? 'long' : shorts > 4 * Math.max(1, longs) ? 'short' : m.pref ?? null;
-  const h = (t.adv.hist ?? []).find((x) => x.id === a.id); if (h) { h.end = at; h.out = use.id; }
+  const h = (t.adv.hist ?? []).find((x) => x.id === a.id); if (h) { h.end = at; h.out = use.id; h.where = a.where ?? h.where ?? null; }
   if (c.who) { m.met = [...new Set([c.who, ...m.met])].slice(0, 6); if (h) h.who = c.who; }
   let keep = null;
   if (use.keep) keep = addKeep(t, f, use.keep, a.id, at, R, ev);
   if (use.fav && keep) m.fav = keep.id;
   if (use.id === 'missing' && c.collectible) { const d = t.decor.find((x) => x.id === c.collectible.id), den = t.decor.find((x) => x.id === f.home); if (d && den) { const p = near(den, H(sid(d.id), at / MIN | 0)); d.x = p.x; d.z = p.z; d.movedAt = at; } }
   if (use.id === 'rearrange' && c.movable) { const d = t.decor.find((x) => x.id === c.movable.id); if (d) { const p = nudge(d, H(sid(d.id), at / MIN | 0)); d.x = p.x; d.z = p.z; d.movedAt = at; const e = f.mem?.fam?.[d.id]; if (e) { e.x = d.x; e.z = d.z; } } }
-  const text = use.line(c), major = a.kind !== 'hide';
+  const text = use.line(c), major = a.kind !== 'hide'; if (h) { h.text = text; h.keep = keep?.k ?? null; }      /* (the whole story stays with the adventure: the Home again card and its card's Journal read it) */
   if (a.inTank || !major) ev.push({ story: f.id, text, jat: at, adventure: { phase: 'back', id: a.id, fish: f.id, kind: a.kind, out: use.id, keep: keep?.id ?? null } });
-  else ev.push({ journal: text, jat: at, story: f.id, text, adventure: { phase: 'back', id: a.id, fish: f.id, kind: a.kind, out: use.id, keep: keep?.id ?? null }, major, toast: `${f.name} is home again.` });
+  else ev.push({ journal: `${text}${a.where ? ` It had been ${a.where}.` : ''}`, jat: at, story: f.id, text, adventure: { phase: 'back', id: a.id, fish: f.id, kind: a.kind, out: use.id, keep: keep?.id ?? null, where: a.where ?? null }, major, toast: `${f.name} is home again.` });
   // what it is known for, in its profile (quiet: no shells, a line in its own story)
   if (!a.inTank) R.unlock(t, f, 'escape1', at, ev);
   if ((m.kinds.night ?? 0) + (m.kinds.long ?? 0) >= 1) R.unlock(t, f, 'homeagain', at, ev);
