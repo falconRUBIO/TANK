@@ -3,7 +3,7 @@
 // A window runs from local midnight on `from` to local midnight on `to` (exclusive): Halloween is October 30 00:00 to November 1 00:00.
 export const SEASONS = [
   { id: 'halloween', label: 'Halloween', icon: '🎃', from: [10, 30], to: [11, 1], glow: 0xffa040, night: 0x8a5cff, day: 0xffd7a8,
-    text: 'Jack-o’-lanterns glow on the sand, and after dark the water runs orange and violet. Until midnight on Halloween.', decor: 'pumpkins' },
+    text: 'Jack-o’-lanterns glow on the sand, a skull watches from the front, and ghosts drift through after dark. Until midnight on Halloween.', decor: 'pumpkins' },
   { id: 'yule', label: 'Winter holidays', icon: '❄️', from: [12, 24], to: [12, 27], glow: 0xdff4ff, night: 0x9fd0ff, day: 0xe8f4ff,
     text: 'A cold, clear light on the water, and the plankton glow frost-white after dark. Until the 27th.' },
   { id: 'newyear', label: 'New Year', icon: '🎆', from: [12, 31], to: [1, 2], glow: 0xffe08a, night: 0xffc96a, day: 0xfff0c8,
