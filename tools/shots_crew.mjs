@@ -33,7 +33,7 @@ const bl = await book(B), al = await book(A); await A.bringToFront(); await A.sc
 console.log('Ben sees', JSON.stringify(bl)); console.log('Ana sees', JSON.stringify(al));
 const benOcto = await A.evaluate(() => window.__game.state.fish.find((f) => f.species === 'octopus' && f.ownerName === 'Ben')?.id);
 console.log('Ben cannot sell Ana\'s octopus', bl.some((t) => /Ana's.*Theirs$/.test(t)), '· Ana can sell Ben\'s', al.some((t) => /Ben's.*Sell$/.test(t)));
-await A.click(`#sheet [data-sellfish=${benOcto}]`); await A.waitForTimeout(400); console.log('Ana is asked', JSON.stringify(await A.evaluate(() => document.getElementById('modal')?.textContent.replace(/\s+/g, ' ').trim()))); await A.screenshot({ path: `${out}/sell_others.png` });
+await A.evaluate((id) => window.__ui.sellFish(id), benOcto); await A.waitForTimeout(400); console.log('Ana is asked', JSON.stringify(await A.evaluate(() => document.getElementById('modal')?.textContent.replace(/\s+/g, ' ').trim()))); await A.screenshot({ path: `${out}/sell_others.png` });
 await A.click('#mok'); await A.waitForTimeout(2500);
 console.log('after the sale, fish on each phone', JSON.stringify(await A.evaluate(() => window.__game.state.fish.map((f) => f.name))), JSON.stringify(await B.evaluate(() => window.__game.state.fish.map((f) => f.name))), 'journal', JSON.stringify(await B.evaluate(() => window.__game.journal.slice(-1).map((e) => e.text))));
 console.log(errors.length ? 'page errors: ' + errors.join('; ') : 'No page errors'); await b.close();

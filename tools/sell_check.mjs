@@ -24,17 +24,21 @@ ck('Care has the tank upkeep row and an Animal health row', /Tank upkeep/.test(c
 // 2. Your animals lists the fish in the tank, the octopus first
 await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300); await p.waitForTimeout(500);
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });
-ck('Your animals lists every fish in the tank, the octopus first, each with Sell', list.length === 2 && /^Inky/.test(list[0]) && list.every((t) => /Sell$/.test(t)));
+ck('Your animals lists every fish in the tank, the octopus first, with no Sell button beside the names (that is on the card)', list.length === 2 && /^Inky/.test(list[0]) && !list.some((t) => /Sell$/.test(t)));
 // 3. selling Nori: a clear question with the price, then gone, and the shells added
-await p.click('#sheet [data-sellfish=g1]'); await p.waitForTimeout(400); const q = await p.evaluate(() => document.getElementById('modal')?.textContent ?? ''); await p.screenshot({ path: `${out}/sell_ask.png` });
+// selling lives at the end of the animal's own card (its Journal tab): open Nori's card, go to Journal, tap "Find Nori a new home"
+const sellVia = async (id) => { await p.evaluate(() => window.__ui.open('tank')); await p.evaluate((id) => window.__showCard(window.__fishes.byId.get(id)), id); await p.waitForTimeout(500); await p.evaluate(() => document.querySelector('#card [data-tab="jour"]')?.click()); await p.waitForTimeout(400); const btn = await p.evaluate(() => document.querySelector('#card #sellb')?.textContent ?? null); await p.evaluate(() => document.querySelector('#card #sellb')?.click()); await p.waitForTimeout(500); return btn; };
+const btn = await sellVia('g1'); ck('the card\'s Journal ends with the one way out: Find Nori a new home', btn === 'Find Nori a new home', btn);
+const q = await p.evaluate(() => document.getElementById('modal')?.textContent ?? ''); await p.screenshot({ path: `${out}/sell_ask.png` });
 ck('it asks first and says what it pays', /SELL NORI\?/i.test(q) && /You get 6 shells/.test(q) && /Sell for 6/.test(q), q.slice(0, 160));
 const s0 = await p.evaluate(() => window.__game.state.shells); await p.click('#mok'); await p.waitForTimeout(1200);
+await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(500);
 const after = await p.evaluate(() => ({ fish: window.__game.state.fish.map((f) => f.name), shells: window.__game.state.shells, meshes: window.__fishes.list.filter((f) => !f.dead).length, list: [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent), journal: window.__game.journal.slice(-2).map((e) => e.text) }));
 await p.screenshot({ path: `${out}/sold.png` });
 ck('Nori is gone from the tank, the list and the scene, and the wallet has 6 more shells', after.fish.join() === 'Inky' && after.shells === s0 + 6 && after.list.length === 1 && after.meshes === 1, JSON.stringify(after));
 ck('the journal says Nori went to a new home', after.journal.some((t) => /found Nori a new home/.test(t)), JSON.stringify(after.journal));
 // 4. the last fish cannot be sold
-await p.click('#sheet [data-sellfish=x1]'); await p.waitForTimeout(400); const last = await p.evaluate(() => document.getElementById('modal')?.textContent ?? '');
+await p.click('#mok').catch(() => {}); await p.waitForTimeout(300); await sellVia('x1'); const last = await p.evaluate(() => document.getElementById('modal')?.textContent ?? '');
 ck('the last fish stays, and it says why', /only fish in the tank/.test(last), last.slice(0, 120)); await p.click('#mok').catch(() => {});
 ck('no page errors', errors.length === 0, errors.join('; '));
 console.log(fails ? `${fails} failed` : 'Sell checks passed'); await b.close(); process.exit(fails ? 1 : 0);
