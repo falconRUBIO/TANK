@@ -13,6 +13,7 @@ export const COSTUMES = {      // label: for a sentence ("Dressed as …"); word
   ghost: { label: 'a ghost', word: 'Ghost' }, devil: { label: 'a little devil, pitchfork and all', word: 'Devil' }, cat: { label: 'a black cat', word: 'Cat' }, frank: { label: "Frankenstein's monster", word: 'Monster' }, bat: { label: 'a bat', word: 'Bat' }, pumpkin: { label: 'a jack-o’-lantern', word: 'Pumpkin' },
   firefighter: { label: 'a firefighter', word: 'Firefighter' }, police: { label: 'a police officer', word: 'Officer' }, racehorse: { label: 'a racehorse', word: 'Racehorse' },
   gnome: { label: 'a garden gnome', word: 'Gnome' }, candle: { label: 'a candle', word: 'Candle' }, candycorn: { label: 'a candy corn', word: 'Candy Corn' }, unicorn: { label: 'a unicorn', word: 'Unicorn' },
+  octoghost: { label: 'a ghost, sheet and all', word: 'Ghost' },
 };
 // an animal's name while it is dressed: the costume's title in front ("Cat Nori", "Racehorse Pearl")
 export const dressedName = (f, name = f?.name) => { const w = f?.hw?.kind ? COSTUMES[f.hw.kind]?.word : null; return w && name ? `${w} ${name}` : name; };
@@ -20,13 +21,13 @@ const FISH_SET = ['witch', 'vampire', 'pirate', 'skeleton', 'ghost', 'mummy', 'd
 const SEA_SET = ['racehorse', 'witch', 'racehorse', 'ghost', 'police', 'racehorse', 'skeleton', 'firefighter'];
 export const SHELL_KINDS = ['wizard', 'gnome', 'pumpkin', 'witch', 'candle', 'candycorn', 'unicorn'];      // what a shell can be painted as: the crab's own shell is its costume, and the empty shells on the sand dress the same way
 const CRAB_SET = SHELL_KINDS, TURTLE_SET = ['pirate', 'witch', 'mummy', 'skeleton', 'wizard', 'firefighter', 'police'], FRY_SET = ['mummy', 'skeleton', 'ghost'];
-const FREE = new Set(['racehorse', 'pumpkin']);      // worn by as many as like: the rest go round the tank one each before any repeats
+const FREE = new Set(['racehorse', 'pumpkin', 'octoghost']);      // worn by as many as like: the rest go round the tank one each before any repeats
 const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 // which costume an animal wears: the same on every phone (from its seed and name), the octopus always a pumpkin, a seahorse mostly a racehorse,
 // a crab or a turtle from the sets that fit a body with a shell, a nursery baby a paint-only costume (its head is still changing shape).
 // `used` is what the rest of the tank already wears, so no two fish dress alike while there are costumes to go round
 export function costumeFor(f, used = null) {
-  if (f.species?.move === 'jet') return 'pumpkin';
+  if (f.species?.move === 'jet') return used?.has('pumpkin') && !used.has('octoghost') ? 'octoghost' : 'pumpkin';      // the first octopus is the jack-o'-lantern, a second one the ghost under a sheet, a third a lantern again
   const set = f.crab ? CRAB_SET : TURTLES.has(f.species?.id) ? TURTLE_SET : (f.cute ?? 0) > 0.3 || f.nursery ? FRY_SET : f.sp?.tail ? SEA_SET : FISH_SET;
   const h = Math.abs((f.seed | 0) * 2654435761 + (f.name?.length ?? 0) * 97 + (f.name?.charCodeAt(0) ?? 0)) >>> 0, n = set.length;
   for (let t = 0; t < n; t++) { const kind = set[(h + t) % n]; if (!used || FREE.has(kind) || !used.has(kind)) return kind; }
@@ -99,6 +100,8 @@ function paint(kind, f, A) {
   const b = f.baseCol, n = f.vox.length, out = Float32Array.from(b); let ls = 0; for (let i = 0; i < n; i++) ls += b[i * 3] * 0.3 + b[i * 3 + 1] * 0.59 + b[i * 3 + 2] * 0.11; const lavg = ls / n;
   const E = A.E, mid = A.mid, silk = silkFor(f), num = DIGITS[1 + ((f.seed | 0) % 9)], bandY = A.y0 + (A.y1 - A.y0) * 0.42, bandH = Math.max(5.5, (A.y1 - A.y0) * 0.2);
   let bx = 0, bn = 0; for (const v of f.vox) if (v.tag !== 'tail' && Math.abs(v.y - bandY) <= bandH) { bx += v.x; bn++; } bx = bn ? bx / bn : E.x;      // the saddle cloth's middle
+  const eyes = [[0, 0, 0, 0], [0, 0, 0, 0]]; for (const v of f.vox) if (v.tag === 'eye' || v.em) { const e = eyes[v.z >= 0 ? 0 : 1]; e[0] += v.x; e[1] += v.y; e[2] += v.z; e[3]++; } const EYE = eyes.map((e) => (e[3] ? { x: e[0] / e[3], y: e[1] / e[3], z: e[2] / e[3] } : null));      // each eye's center, for a face cut round the real eyes
+  const nearEye = (v, r) => EYE.some((e) => e && Math.hypot(v.x - e.x, v.y - e.y, v.z - e.z) <= r);
   for (let i = 0; i < n; i++) {
     const v = f.vox[i], o = i * 3; if (kind === 'pumpkin' && v.tag === 'eye' && !v.pupil) { const L = lin([255, 236, 140]); out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; }      /* (the lantern's eyes are the octopus's own, lit) */
     if (v.tag === 'eye' || v.em || v.tag === 'beak' || v.tag === 'pouch') continue;
@@ -120,14 +123,19 @@ function paint(kind, f, A) {
       else if (Math.abs(v.y - bandY) <= bandH) { c = WHITE; keep = 0.1; const dx0 = Math.floor((v.x - bx + 3) / 2), dx = (v.nz ?? 0) > 0 ? dx0 : 2 - dx0, dy = Math.floor((bandY + 5 - v.y) / 2); if (Math.abs(v.nz ?? 0) > 0.4 && dx >= 0 && dx <= 2 && dy >= 0 && dy <= 4 && num[dy][dx] === '#') c = [20, 18, 28]; }      /* (mirrored on the far side, so it reads the right way round from either side of the tank) */      // the saddle cloth, its number two voxels to the stroke on both sides, big enough to read across the tank
     } else if (kind === 'pumpkin') {
       const onArm = v.arm >= 0 || !!v.web; if (onArm) { c = [70, 130, 50]; keep = 0.45; }                                                               // the arms, a tangle of green vine
-      else { const cx = f.mcx ?? 0, cy = f.mcy ?? 0, px = v.x - cx, py = v.y - cy, ang = Math.atan2(v.z, py), rib = 0.5 + 0.5 * Math.cos(ang * 8); c = mix([236, 118, 32], [172, 74, 18], 0.2 + 0.6 * rib);
-        const side = Math.abs(v.nz ?? 0) > 0.35, nose = Math.abs(px) <= 0.9 && py >= -0.9 && py <= 0.6, grin = py <= -1.8 && py >= -4.4 && Math.abs(px) <= 5 && (py > -3 || Math.round(px + 10) % 2 === 0);
-        if (side && (nose || grin)) c = [255, 232, 140]; } }      /* (a nose and a toothy grin cut in each side of the mantle; the eyes are its own) */
-    if (!c) continue; const L = lin(c); out[o] = L[0] * sh * (1 - keep) + b[o] * keep; out[o + 1] = L[1] * sh * (1 - keep) + b[o + 1] * keep; out[o + 2] = L[2] * sh * (1 - keep) + b[o + 2] * keep;
+      else { const cx = f.mcx ?? 0, cy = f.mcy ?? 0, ang = Math.atan2(v.z, v.y - cy), rib = 0.5 + 0.5 * Math.cos(ang * 8); c = mix([248, 134, 36], [152, 58, 10], 0.1 + 0.8 * rib * rib);      // deep ribs round the body
+        const tri = EYE.some((e) => e && Math.abs(v.z - e.z) <= (v.y - e.y + 2.6) * 0.95 && v.y - e.y >= -2.6 && v.y - e.y <= 1.6 && Math.abs(v.x - e.x) <= 2.6), grin = (v.nx ?? 0) > 0.15 && v.x > E.x - 3.5 && Math.abs(v.z) <= 5.5 && v.y < E.y - 2.6 && v.y > E.y - 6.2 && (v.y > E.y - 4.2 || Math.round(v.z + 10) % 2 === 0);      // a triangle cut round each of its own eyes, a wide toothy grin under them
+        const px = v.x - cx, py = v.y - cy, flank = Math.abs(v.nz ?? 0) > 0.3 && v.x < E.x - 3, fEye = flank && Math.abs(Math.abs(px) - 3.6) <= (py - 0.4) * 1.25 && py >= 0.4 && py <= 5.4, fNose = flank && Math.abs(px) <= (2.4 - py) * 0.8 && py >= -0.6 && py <= 2.4, fGrin = flank && py <= -1.6 && py >= -5.4 && Math.abs(px) <= 5.8 && (py > -3.2 || Math.round(px + 10) % 2 === 0);      // and the classic face cut big in each flank of the mantle: two triangle eyes, a nose, a wide toothy grin
+        if (tri || grin || fEye || fNose || fGrin) { c = [255, 236, 140]; keep = -1; } } }                                                              // (keep -1: lit flat, no shading)
+    else if (kind === 'octoghost') {
+      const onArm = v.arm >= 0 || !!v.web; if (!onArm) { const cx = f.mcx ?? 0, cy = f.mcy ?? 0, px = v.x - cx, py = v.y - cy, hemY = cy - 6, hem = v.y < hemY + 2.5 && (Math.round(Math.atan2(v.z, px) * 3) % 2 === 0) && v.y >= hemY - 2, hole = nearEye(v, 2.6);      // a white sheet over head and mantle, eye holes round its own eyes, a scalloped hem showing its own skin between the points
+        const flank = Math.abs(v.nz ?? 0) > 0.3 && v.x < E.x - 3, fEye = flank && Math.hypot(Math.abs(px) - 3.2, (py - 1.2) * 0.8) <= 2.3, fMouth = flank && Math.hypot(px, (py + 2.8) * 0.9) <= 1.6;      // and a ghost's face big on each flank of the sheet: two dark eyes and a round surprised mouth
+        if (v.y < hemY - 2 || hem) c = null; else if (hole || fEye || fMouth) { c = [16, 14, 24]; keep = 0; } else { c = mix(WHITE, [222, 226, 240], q * 0.5); keep = 0.04; } } }
+    if (!c) continue; const L = lin(c); if (keep < 0) { out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; } out[o] = L[0] * sh * (1 - keep) + b[o] * keep; out[o + 1] = L[1] * sh * (1 - keep) + b[o + 1] * keep; out[o + 2] = L[2] * sh * (1 - keep) + b[o + 2] * keep;
   }
   return out;
 }
-const PAINTED = new Set(['mummy', 'skeleton', 'ghost', 'frank', 'pumpkin', 'cat', 'devil', 'firefighter', 'police', 'racehorse', 'vampire', 'pirate', 'bat']);
+const PAINTED = new Set(['mummy', 'skeleton', 'ghost', 'frank', 'pumpkin', 'cat', 'devil', 'firefighter', 'police', 'racehorse', 'vampire', 'pirate', 'bat', 'octoghost']);
 const HATS = { witch: 'witch', wizard: 'wizard', pirate: 'pirate', devil: 'devil', cat: 'cat', frank: 'frank', vampire: 'hair', firefighter: 'firefighter', police: 'police', bat: 'bat' };
 
 // ── a shell as a hat (or a pumpkin, a skull, a candy corn): the shell's own voxels repainted along its coil, t = 0 at the opening (the brim)
@@ -238,7 +246,11 @@ export function dress(f, kind = costumeFor(f)) {
         put(v, backX, seatY, 0, u);
         const hx = backX + 1 * u, hy = seatY + 30 * u, dx = A.nose - 1.5 - hx, dy = A.E.y - 1 - hy, rein = box(Math.hypot(dx, dy), 0.25 * k, 0.25 * k, [250, 250, 255]); rein.rotation.z = Math.atan2(dy, dx); putBox(rein, hx + dx / 2, hy + dy / 2, 0); } }      // reins from the gloves to the bit
   }
-  if (octo) { const v = new Vox(1); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); v.set(-1, 0, 1, [110, 150, 60]); v.set(0, 0, -1, [110, 150, 60]); put(v, hatAt.x, hatAt.y, 0, 1.6); }      // a stem on the mantle, and two leaves
+  if (octo && kind === 'pumpkin') { const v = new Vox(1), ST = [92, 124, 46], ST2 = [70, 98, 36], LF = [96, 160, 60];      // a thick stem on the mantle, a curling tendril and a broad leaf
+    for (let j = 0; j <= 4; j++) for (let i = 0; i <= 1; i++) for (let z = 0; z <= 1; z++) v.set(i + (j >= 3 ? 1 : 0), j, z, (i + z) % 2 ? ST : ST2); v.set(3, 4, 0, ST); v.set(3, 4, 1, ST);
+    for (const [i, j, z] of [[-1, 1, 2], [-2, 2, 3], [-3, 2, 3], [-4, 1, 2], [-4, 0, 1]]) v.set(i, j, z, ST);                                          // the tendril curling away
+    for (let i = -1; i <= 3; i++) for (let z = -5; z <= -1; z++) if (Math.abs(i - 1) + Math.abs(z + 3) <= 3) v.set(i, 0, z, (i === 1 || z === -3) ? [70, 120, 44] : LF);      // the leaf, with a vein
+    put(v, hatAt.x, hatAt.y, 0, 1.9); }
   if (PAINTED.has(kind)) { hw.base0 = f.baseCol; f.baseCol = paint(kind, f, A); repaint(f); }
   for (const m of parts) { m.position.multiplyScalar(f.scale); m.scale.multiplyScalar(f.scale); }
   hw.place = () => { const q = f.scale / hw.s; if (Math.abs(q - 1) < 1e-6) return; for (const m of parts) { m.position.multiplyScalar(q); m.scale.multiplyScalar(q); } hw.s = f.scale; };
