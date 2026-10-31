@@ -2300,6 +2300,12 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (a.migrate && a.likes && typeof a.likes === 'object') for (const [id, n] of Object.entries(a.likes).slice(0, 20)) { const d = t.decor.find((x) => x.id === id); const c = Math.max(0, Math.min(20, n | 0)); if (d && c) m.fam[id] = { k: +Math.min(0.6, 0.12 * c).toFixed(3), n: c, x: d.x, z: d.z, at: 0 }; }      // its old likes, counted on one phone, kept as familiarity
       memCap(t, f, now); return ok();
     }
+    case 'costume': {                                               // a holiday costume, kept with the tank so every phone dresses the animal the same way and a reload keeps it (the look lives in costume.js; this is only the name)
+      const f = t.fish.find((x) => x.id === a.id && !x.dead); if (!f) return fail('NOT_FOUND');
+      const kind = typeof a.kind === 'string' && /^[a-z]{2,16}$/.test(a.kind) ? a.kind : null, tag = typeof a.tag === 'string' && /^[a-z]{2,16}-\d{4}$/.test(a.tag) ? a.tag : null; if (!kind || !tag) return fail('BAD');
+      if (f.costume?.kind === kind && f.costume?.tag === tag) return ok({ applied: false });
+      f.costume = { kind, tag }; return ok({});
+    }
     case 'octoMemo': {                                              // who an octopus gets on with and who it has it in for, kept with the tank so every phone shows the same
       const f = t.fish.find((x) => x.id === a.fish && isOcto(x) && !x.dead); if (!f) return fail('NOT_FOUND');
       const fishOk = (id) => id == null || t.fish.some((x) => x.id === id && !x.dead && x.id !== f.id); if (!fishOk(a.buddy) || !fishOk(a.rival) || (a.buddy && a.buddy === a.rival)) return fail('NOT_FOUND');

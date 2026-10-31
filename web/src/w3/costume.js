@@ -92,7 +92,7 @@ const SILKS = [[200, 30, 40], [30, 90, 200], [30, 150, 70], [240, 190, 40], [150
 const lin = (c) => c.map((x) => { const s = x / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
 function paint(kind, f, A) {
   const b = f.baseCol, n = f.vox.length, out = Float32Array.from(b); let ls = 0; for (let i = 0; i < n; i++) ls += b[i * 3] * 0.3 + b[i * 3 + 1] * 0.59 + b[i * 3 + 2] * 0.11; const lavg = ls / n;
-  const E = A.E, mid = A.mid, silk = SILKS[(f.seed | 0) % SILKS.length], num = DIGITS[1 + ((f.seed | 0) % 9)], bandY = A.y0 + (A.y1 - A.y0) * 0.42, bandH = Math.max(3, (A.y1 - A.y0) * 0.17);
+  const E = A.E, mid = A.mid, silk = SILKS[(f.seed | 0) % SILKS.length], num = DIGITS[1 + ((f.seed | 0) % 9)], bandY = A.y0 + (A.y1 - A.y0) * 0.42, bandH = Math.max(5.5, (A.y1 - A.y0) * 0.2);
   let bx = 0, bn = 0; for (const v of f.vox) if (v.tag !== 'tail' && Math.abs(v.y - bandY) <= bandH) { bx += v.x; bn++; } bx = bn ? bx / bn : E.x;      // the saddle cloth's middle
   for (let i = 0; i < n; i++) {
     const v = f.vox[i], o = i * 3; if (kind === 'pumpkin' && v.tag === 'eye' && !v.pupil) { const L = lin([255, 236, 140]); out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; }      /* (the lantern's eyes are the octopus's own, lit) */
@@ -112,7 +112,7 @@ function paint(kind, f, A) {
     else if (kind === 'racehorse') {
       if (v.tag === 'tail') { c = null; }
       else if (v.y > E.y - 6) { c = Math.abs(v.z) <= 0.5 && (v.nx ?? 0) > 0.4 ? WHITE : silk; keep = 0.2; }                                           // the hood in the stable's silk, a white blaze down the face
-      else if (Math.abs(v.y - bandY) <= bandH) { c = WHITE; keep = 0.1; const dx = Math.round(v.x - bx) + 1, dy = Math.round(bandY + 2 - v.y); if (Math.abs(v.nz ?? 0) > 0.4 && dx >= 0 && dx <= 2 && dy >= 0 && dy <= 4 && num[dy][dx] === '#') c = [20, 18, 28]; }      // the saddle cloth, numbered on both sides
+      else if (Math.abs(v.y - bandY) <= bandH) { c = WHITE; keep = 0.1; const dx0 = Math.floor((v.x - bx + 3) / 2), dx = (v.nz ?? 0) > 0 ? dx0 : 2 - dx0, dy = Math.floor((bandY + 5 - v.y) / 2); if (Math.abs(v.nz ?? 0) > 0.4 && dx >= 0 && dx <= 2 && dy >= 0 && dy <= 4 && num[dy][dx] === '#') c = [20, 18, 28]; }      /* (mirrored on the far side, so it reads the right way round from either side of the tank) */      // the saddle cloth, its number two voxels to the stroke on both sides, big enough to read across the tank
     } else if (kind === 'pumpkin') {
       const onArm = v.arm >= 0 || !!v.web; if (onArm) { c = [70, 130, 50]; keep = 0.45; }                                                               // the arms, a tangle of green vine
       else { const cx = f.mcx ?? 0, cy = f.mcy ?? 0, px = v.x - cx, py = v.y - cy, ang = Math.atan2(v.z, py), rib = 0.5 + 0.5 * Math.cos(ang * 8); c = mix([236, 118, 32], [172, 74, 18], 0.2 + 0.6 * rib);
@@ -187,7 +187,10 @@ export function dress(f, kind = costumeFor(f)) {
     if (kind === 'devil' && !turtle) { const H = A.hh * 1.9, z = A.wMax * 0.6 + 0.8 * k; putBox(box(0.3 * k, H, 0.3 * k, [60, 30, 30]), A.E.x - 1.5 * k, A.mid + H * 0.15, z);      // a pitchfork held at its side
       const v = new Vox(1); for (let i = -2; i <= 2; i += 2) for (let j = 1; j <= 3; j++) v.set(i, j, 0, j === 3 ? [220, 70, 60] : RED); for (let i = -2; i <= 2; i++) v.set(i, 0, 0, RED); put(v, A.E.x - 1.5 * k, A.mid + H * 0.65, z, k * 0.45); }
     if (kind === 'police') for (const side of [-1, 1]) putBox(box(0.5 * k, 0.6 * k, 0.4, GOLD), A.E.x - 3.5 * k, A.E.y - 0.5 * k, side * (A.wMax * 0.5 + 0.3));          // a badge on each side
-    if (kind === 'racehorse') for (const side of [-1, 1]) putBox(box(1.0 * k, 1.3 * k, 0.6 * k, SILKS[(f.seed | 0) % SILKS.length]), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.35));      // blinkers beside the eyes
+    if (kind === 'racehorse') { const silk = SILKS[(f.seed | 0) % SILKS.length], SKIN = [232, 190, 158]; for (const side of [-1, 1]) putBox(box(1.0 * k, 1.3 * k, 0.6 * k, silk), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.35));      // blinkers beside the eyes
+      const bandY = A.y0 + (A.y1 - A.y0) * 0.42; let backX = 1e9; for (const q of f.vox) if (q.tag !== 'tail' && Math.abs(q.y - bandY) <= 3) backX = Math.min(backX, q.x);      // and a jockey up on its back, crouched over the saddle cloth in the stable's silk: boots, breeches, a silk jacket, a cap with a peak
+      if (backX < 1e8) { const v = new Vox(1); for (const z of [-2, 2]) { v.set(1, 0, z, BLACK); v.set(1, 1, z, BLACK); v.set(0, 2, z, WHITE); v.set(0, 3, z, WHITE); } for (let j = 3; j <= 6; j++) for (let z = -1; z <= 1; z++) v.set(-1, j, z, silk); for (let z = -1; z <= 1; z++) v.set(0, 5, z, silk), v.set(1, 5, z, SKIN); for (let z = -1; z <= 1; z++) v.set(-1, 7, z, SKIN), v.set(-1, 8, z, silk); v.set(0, 8, 0, silk); v.set(1, 8, 0, silk);
+        put(v, backX - 1.5, bandY + 1, 0, Math.max(1.1, k)); } }
   }
   if (octo) { const v = new Vox(1); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); v.set(-1, 0, 1, [110, 150, 60]); v.set(0, 0, -1, [110, 150, 60]); put(v, hatAt.x, hatAt.y, 0, 1.6); }      // a stem on the mantle, and two leaves
   if (PAINTED.has(kind)) { hw.base0 = f.baseCol; f.baseCol = paint(kind, f, A); repaint(f); }

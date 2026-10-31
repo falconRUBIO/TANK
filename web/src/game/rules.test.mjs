@@ -728,6 +728,16 @@ console.log(`All ${n} rule tests passed`);
   { const t = W(); t.fish.find((f) => f.id === 'o').born = at; assert.equal(mv(t, { id: 'r', x: 2, z: 1 }).ok, false, 'a baby octopus cannot'); }
 }
 
+// a holiday costume is kept with the tank: the same on every phone, and still there after a reload
+ok('a costume is kept with the fish for every phone, only for a real fish, and writing the same one again changes nothing', () => {
+  const t = R.newWorld(0); t.fish.push(R.ensureFish({ id: 'a', name: 'Pip', species: 'goldfish', seed: 1, born: 0, traits: [] }));
+  const go = (a) => R.applyAction(t, { t: 'costume', ...a }, { now: 10 * DAY, uid: 'me', name: 'Me' }), fish = () => t.fish.find((f) => f.id === 'a');
+  assert.ok(go({ id: 'a', kind: 'witch', tag: 'halloween-2026' }).ok); assert.deepEqual(fish().costume, { kind: 'witch', tag: 'halloween-2026' });
+  assert.equal(go({ id: 'a', kind: 'witch', tag: 'halloween-2026' }).applied, false, 'nothing new, nothing written');
+  assert.ok(go({ id: 'a', kind: 'pirate', tag: 'halloween-2026' }).ok); assert.equal(fish().costume.kind, 'pirate', 'a new pick replaces the old');
+  assert.equal(go({ id: 'zz', kind: 'witch', tag: 'halloween-2026' }).ok, false, 'only a real fish'); assert.equal(go({ id: 'a', kind: 'Witch!', tag: 'halloween-2026' }).ok, false, 'only a plain name'); assert.equal(go({ id: 'a', kind: 'witch', tag: 'x' }).ok, false, 'only a holiday tag');
+});
+
 // an octopus's friend and rival are kept with the tank, and its memorable moments go in the journal, each kind only so often
 ok('an octopus remembers a friend and a rival for every phone, and its moments are written in the journal without spamming it', () => {
   const t = R.newWorld(0); t.fish.push(R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 3, born: 0, stage: 'adult', traits: [] }), R.ensureFish({ id: 'a', name: 'Pip', species: 'goldfish', seed: 1, born: 0, traits: [] }), R.ensureFish({ id: 'b', name: 'Miso', species: 'goldfish', seed: 2, born: 0, traits: [] }));
