@@ -9,15 +9,17 @@ const eyeM = new THREE.MeshBasicMaterial({ color: 0x14141c });
 
 // A proper little crab, built from the same chunky voxels as everything else: a domed red-orange shell with darker spots and a pale belly, two big raised claws with open pincers,
 // eight jointed legs, and two eyes on stalks. It is a group so the claws can snap and the legs scuttle (crab.userData.tick).
-export function buildCrab() {
-  const U = 0.045, g = new THREE.Group(), pick = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-  const shellHi = [238, 96, 58], shellLo = [196, 56, 40], dark = [140, 36, 34], belly = [250, 214, 190], tip = [252, 226, 206];
-  const body = new Vox(U);
-  body.ellipsoid(0, 5, 0, 9, 4.4, 6.6, (i, j, k) => (j < 3.4 ? belly : hash(i, j, k, 4) > 0.86 ? dark : pick(shellLo, shellHi, Math.max(0, Math.min(1, (j - 3) / 5)))), 5, 0.12);
-  for (const sx of [-1, 1]) { body.fill(sx * 3 - 1, 9, 5, sx * 3, 11, 5, [236, 190, 170]); body.fill(sx * 3 - 1, 12, 5, sx * 3, 13, 6, [18, 14, 20]); body.set(sx * 3 - (sx > 0 ? 0 : 1), 13, 6, [255, 255, 255]); }       // eyes on stalks
-  body.fill(-1, 3, 6, 1, 4, 7, [90, 30, 30]);                                                               // mouth
+// kind 'spider' (the two Halloween days): the same body, legs and pincers in black, a red hourglass on its back, eight red eyes and fangs, so the octopus hunts and eats it the same way
+export function buildCrab(kind = 'crab') {
+  const U = 0.045, g = new THREE.Group(), pick = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t], sp = kind === 'spider';
+  const shellHi = sp ? [44, 38, 52] : [238, 96, 58], shellLo = sp ? [26, 22, 32] : [196, 56, 40], dark = sp ? [66, 58, 78] : [140, 36, 34], belly = sp ? [36, 30, 42] : [250, 214, 190], tip = sp ? [96, 86, 110] : [252, 226, 206];
+  const body = new Vox(U), glass = (i, j, k) => j >= 7 && Math.abs(i) <= 2.6 && Math.abs(k) <= 0.5 + Math.abs(i) * 0.75 && Math.abs(k) <= 2.4;      /* (the hourglass on the back: two triangles meeting at a point) */
+  body.ellipsoid(0, 5, 0, 9, 4.4, 6.6, (i, j, k) => (sp && glass(i, j, k) ? [222, 34, 44] : j < 3.4 ? belly : hash(i, j, k, 4) > 0.86 ? dark : pick(shellLo, shellHi, Math.max(0, Math.min(1, (j - 3) / 5)))), 5, 0.12);
+  if (sp) { for (const sx of [-1, 1]) { for (const [dx, dy] of [[1, 8], [2, 8], [1, 9], [3, 9]]) body.set(sx * dx, dy, 6, [230, 40, 40]); body.fill(sx * 2 - 1, 2, 6, sx * 2, 3, 7, [120, 110, 130]); } }      // eight small red eyes in two rows, and a pair of pale fangs under the face
+  else { for (const sx of [-1, 1]) { body.fill(sx * 3 - 1, 9, 5, sx * 3, 11, 5, [236, 190, 170]); body.fill(sx * 3 - 1, 12, 5, sx * 3, 13, 6, [18, 14, 20]); body.set(sx * 3 - (sx > 0 ? 0 : 1), 13, 6, [255, 255, 255]); } }       // eyes on stalks
+  if (!sp) body.fill(-1, 3, 6, 1, 4, 7, [90, 30, 30]);                                                               // mouth
   topLit(body); const bm = body.mesh(); g.add(bm);
-  const lm = new THREE.Group(), legMeshes = [], leg = (sx, n) => { const legs = new Vox(U); const z = -4 + n * 2.6, kx = sx * (11 + (n === 1 || n === 2 ? 1.5 : 0)), a = [sx * 8, 4, z], k = [kx, 8 - n * 0.3, z + 0.6], f = [sx * (15 + n * 0.5), 0, z + 1.6]; for (const [p, q] of [[a, k], [k, f]]) for (let t = 0; t <= 1.001; t += 0.07) { const x = Math.round(p[0] + (q[0] - p[0]) * t), y = Math.round(p[1] + (q[1] - p[1]) * t), zz = Math.round(p[2] + (q[2] - p[2]) * t); legs.set(x, y, zz, t < 0.2 ? shellLo : [184, 52, 38]); if (t > 0.9 && q === f) legs.set(x, y, zz, tip); } legs.set(Math.round(k[0]), Math.round(k[1]), Math.round(k[2]), shellHi);  const m = legs.mesh(); m.userData.p0 = m.position.clone(); lm.add(m); legMeshes.push(m); };
+  const lm = new THREE.Group(), legMeshes = [], leg = (sx, n) => { const legs = new Vox(U); const z = -4 + n * 2.6, kx = sx * (11 + (n === 1 || n === 2 ? 1.5 : 0)), a = [sx * 8, 4, z], k = [kx, 8 - n * 0.3, z + 0.6], f = [sx * (15 + n * 0.5), 0, z + 1.6]; for (const [p, q] of [[a, k], [k, f]]) for (let t = 0; t <= 1.001; t += 0.07) { const x = Math.round(p[0] + (q[0] - p[0]) * t), y = Math.round(p[1] + (q[1] - p[1]) * t), zz = Math.round(p[2] + (q[2] - p[2]) * t); legs.set(x, y, zz, t < 0.2 ? shellLo : sp ? (Math.abs(t - 0.5) < 0.1 ? [80, 72, 92] : [30, 26, 36]) : [184, 52, 38]); if (t > 0.9 && q === f) legs.set(x, y, zz, tip); } legs.set(Math.round(k[0]), Math.round(k[1]), Math.round(k[2]), shellHi);  const m = legs.mesh(); m.userData.p0 = m.position.clone(); lm.add(m); legMeshes.push(m); };
   for (let n = 0; n < 4; n++) for (const sx of [-1, 1]) leg(sx, n);      // each leg is its own piece, so an octopus can pull them off one at a time
   g.add(lm);
   const claws = [-1, 1].map((sx) => {                                                                       // each claw: an arm, a palm and two pincers (one fixed, one that snaps)
