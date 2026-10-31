@@ -1247,9 +1247,19 @@ export function initUI({ game, social, cb }) {
     if (M.ready) return M.kind === 'birth' ? `${M.what} are coming! Tap to watch` : M.kind === 'nursery' ? `${M.what} are ready! Tap to choose one` : `${M.what} are hatching! Tap to watch`;
     const ms = M.at - now; return ms < LIVE ? `${M.what} · ${clock(ms)}` : `${M.what} · ${dueWhen(ms).replace(/^in about /, '')}`;
   }
+  // While it is still days away the tag shows itself once, then tucks away after you have seen it (8 seconds in view, or a tap); it comes
+  // back for one more look on the last day, and stays for good once the last hours are ticking. Seen is kept on this phone.
+  const SEEN_K = 'ourtank.momentSeen', seenTag = (() => { try { return JSON.parse(localStorage.getItem(SEEN_K) || '{}'); } catch { return {}; } })(), seenSince = {};
+  const markSeen = (k) => { seenTag[k] = Date.now(); try { const ks = Object.keys(seenTag); for (const old of ks.slice(0, Math.max(0, ks.length - 40))) delete seenTag[old]; localStorage.setItem(SEEN_K, JSON.stringify(seenTag)); } catch { /* storage unavailable */ } };
+  const tagStage = (M, now = Date.now()) => (M.ready ? 'now' : M.at - now < LIVE ? 'live' : M.at - now < 24 * 3600e3 ? 'day' : 'far');
   function momentTag() {
     const el = $('moment'), s = S(); if (!el || !s) return; const M = (s.flags?.tut ?? 5) >= 5 ? bigMoments(s)[0] : null;
     if (!M) { if (!el.hidden) el.hidden = true; return; }
+    const stage = tagStage(M), sk = `${M.key}:${stage}`;
+    if (stage === 'far' || stage === 'day') {
+      if (seenTag[sk]) { if (!el.hidden) el.hidden = true; return; }
+      if (!document.hidden && !modal.classList.contains('on')) { seenSince[sk] ??= Date.now(); if (Date.now() - seenSince[sk] > 8000) { markSeen(sk); if (!el.hidden) el.hidden = true; return; } }
+    }
     const txt = `${M.icon} ${momentText(M)}`, cls = M.ready ? 'now' : M.at - Date.now() < LIVE ? 'live' : '';
     if (el.hidden) el.hidden = false; if (el.textContent !== txt) el.textContent = txt; if (el.dataset.k !== M.key) el.dataset.k = M.key; if ((el.dataset.s ?? '') !== cls) { el.dataset.s = cls; el.className = cls; }
     el.setAttribute('aria-label', M.ready ? txt.slice(3) : `${M.what}: ${M.kind === 'birth' ? 'born' : M.kind === 'nursery' ? 'ready to choose' : 'hatching'} ${dueWhen(M.at - Date.now())}`);
@@ -1258,7 +1268,7 @@ export function initUI({ game, social, cb }) {
     if (M.kind === 'nursery') { open('tank'); cb.openNursery?.(); return; }      /* (the nursery page: the babies by name while they grow, the choice once they are ready) */
     if (M.ready) { if (!cb.watchEggs?.()) toast('Not quite yet.'); return; }
     if (!(M.fish && cb.showAnimal?.(M.fish))) { open('tank'); toast(`${M.what}: ${M.kind === 'birth' ? 'born' : 'hatching'} ${dueWhen(M.at - Date.now())}.`); } };
-  if ($('moment')) $('moment').onclick = () => goMoment($('moment').dataset.k);
+  if ($('moment')) $('moment').onclick = () => { const st0 = S(), M = st0 ? bigMoments(st0).find((x) => x.key === $('moment').dataset.k) : null; if (M) { const st = tagStage(M); if (st === 'far' || st === 'day') markSeen(`${M.key}:${st}`); } goMoment($('moment').dataset.k); };      /* (a tap counts as seen: the tag tucks away until the next stage) */
   const modalFree = (moment = false) => new Promise((res) => { const w = () => (modal.classList.contains('on') || performance.now() < modalClaim || (!moment && Date.now() < (window.__quietUntil ?? 0)) ? setTimeout(w, 300) : performance.now() - modalShut < 450 ? setTimeout(w, 460 - (performance.now() - modalShut)) : (modalClaim = performance.now() + 250, res())); w(); });
   function celebrate({ title, amount = 0, what = 'shells', why = '', ok = 'Claim', icon = '🐚' }) {
     return modalFree().then(() => new Promise((res) => {
