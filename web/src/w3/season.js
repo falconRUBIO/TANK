@@ -86,6 +86,27 @@ function buildSky() {
 // the rocks and the coralline ball skulls, the cave a crypt, and every plant a bleached, bony skeleton of itself ──
 const lin1 = (x) => { const s = x / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }, LIN = (c) => [lin1(c[0]), lin1(c[1]), lin1(c[2])];
 const SKINS = new Set(['coconut', 'pot', 'rock', 'boulder', 'cave', 'moss']);
+
+// the coconut shell as a jack-o'-lantern: a ribbed pumpkin squashed front-to-back to the shell's own depth, hollow inside and lit, its big round
+// mouth exactly where the shell's opening is (so an octopus going in through the mouth is going in through the real door), two triangle eyes and
+// a nose cut above it, jagged teeth round the mouth, a stem on top. The coconut's own voxels stay as the collider; only the look changes
+function buildLanternShell(seed = 5) {
+  const u = 0.068, v = new Vox(u), RI = 14, RJ = 15, RK = 7.5, CJ = 1, CK = -6, HOLE = 9.8, skin = [240, 126, 36], dark = [166, 70, 16], glow = [255, 222, 130], inner = [255, 170, 60];
+  for (let i = -RI - 1; i <= RI + 1; i++) for (let j = -RJ + CJ - 1; j <= RJ + CJ + 1; j++) for (let k = CK - RK - 1; k <= 1; k++) {
+    const dy = (j - CJ) / RJ, dz = (k - CK) / RK, rib = 1 - 0.07 * (0.5 + 0.5 * Math.cos(Math.atan2(j - CJ, i) * 9)), d = Math.sqrt((i / (RI * rib)) ** 2 + dy * dy + dz * dz);
+    if (d > 1) continue;
+    const front = k >= -2, mouth = Math.hypot(i, j) < HOLE && front;      // the round mouth: the shell's opening, kept clear
+    if (mouth) continue;
+    const inside = d < 0.78 && !(front && Math.hypot(i, j) < HOLE + 2.5);      // the hollow (lit from within)
+    if (inside) { if (d < 0.7) continue; v.set(i, j, k, mix(inner, glow, hash(i, j, k, seed) * 0.4), 1.15); continue; }
+    let c = mix(skin, dark, 0.2 + 0.6 * (0.5 + 0.5 * Math.cos(Math.atan2(j - CJ, i) * 9)) + (hash(i, j, k, seed) - 0.5) * 0.2);
+    if (front) { const r = Math.hypot(i, j); if (r < HOLE + 1.6 && (Math.round(Math.atan2(j, i) * 4.5) % 2 === 0 || r < HOLE + 0.8)) c = glow;      // the mouth's lit rim, with teeth
+      const eye = Math.abs(Math.abs(i) - 6) <= (j - 9.5) * 1.05 && j >= 9.5 && j <= 14.5, nose = Math.abs(i) <= (12.5 - j) * 0.9 && j >= 9.5 && j <= 12.5; if (eye || nose) c = [255, 240, 150]; }      // two big triangle eyes and a nose cut above the mouth, lit from inside
+    v.set(i, j, k, c);
+  }
+  for (let j = RJ + CJ; j <= RJ + CJ + 3; j++) v.set(0, j, CK, [84, 118, 42]); v.set(1, RJ + CJ + 3, CK, [84, 118, 42]); v.set(-1, RJ + CJ, CK + 1, [110, 150, 60]); v.set(1, RJ + CJ, CK - 1, [110, 150, 60]);      // the stem and two leaves
+  return v.mesh();
+}
 function skinMesh(im, type, it, extra) {
   if (im.userData.hw0 || !im.instanceColor) return; const a = im.instanceColor.array, u = im.geometry.parameters.width, mt = new THREE.Matrix4(), v = new THREE.Vector3(); im.userData.hw0 = Float32Array.from(a);
   const n = im.count; let R = [5.5, 3.6, 5]; if (type === 'boulder') R = [12, 7.8, 9]; if (type === 'moss') R = [5.4, 4.3, 5.1]; if (type === 'cave') R = [10.5, 8.5, 9];
@@ -108,13 +129,14 @@ function skinMesh(im, type, it, extra) {
 }
 function skinItem(it, lights) {
   if (it.hwSkin) return; const type = it.type; if (!SKINS.has(type) && !PLANTS.has(type)) return; it.hwSkin = true; it.hwExtra = [];
-  it.group.traverse((o) => { if (o.isInstancedMesh) skinMesh(o, type, it); });
-  if (type === 'coconut') { const v = new Vox(0.068); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); const m = v.mesh(); m.position.set(0, 0.068 * 13 + 0.6, -0.3); it.group.add(m); it.hwExtra.push(m);      // a stem on top
-    if (lights.n < 3) { const l = new THREE.PointLight(0xffa040, 0, 3.2, 2); l.position.set(0, 0.5, 0.5); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; lights.n++; } }
+  if (type === 'coconut') { it.hwHidden = []; it.group.traverse((o) => { if (o.isInstancedMesh && o.visible) { o.visible = false; it.hwHidden.push(o); } }); const m = buildLanternShell(5); m.position.set(0, 0.068 * 10, 0); it.group.add(m); it.hwExtra.push(m); }      // the shell's look gives way to a carved pumpkin (the collider is still the shell's)
+  else it.group.traverse((o) => { if (o.isInstancedMesh) skinMesh(o, type, it); });
+  if (type === 'coconut') {
+    if (lights.n < 3) { const l = new THREE.PointLight(0xffa040, 0, 3.4, 2); l.position.set(0, 0.7, 0.1); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; lights.n++; } }
   if (type === 'pot' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.6, 2); l.position.set(0, 1.0, 1.1); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
   if (type === 'cave' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.2, 2); l.position.set(0, 0.5, 0.2); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
 }
-function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; } }); for (const m of it.hwExtra ?? []) { it.group.remove(m); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; }
+function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; for (const o of it.hwHidden ?? []) o.visible = true; it.hwHidden = null; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; } }); for (const m of it.hwExtra ?? []) { it.group.remove(m); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; }
 // cobwebs strung from the tallest plants, with a spider on a thread under one
 let webTex = null;
 const cobwebTexture = () => { if (webTex) return webTex; const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.translate(64, 64); g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 1.4;
