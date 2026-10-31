@@ -27,7 +27,7 @@ const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherb
 // a crab or a turtle from the sets that fit a body with a shell, a nursery baby a paint-only costume (its head is still changing shape).
 // `used` is what the rest of the tank already wears, so no two fish dress alike while there are costumes to go round
 export function costumeFor(f, used = null) {
-  if (f.species?.move === 'jet') return used?.has('pumpkin') && !used.has('octoghost') ? 'octoghost' : 'pumpkin';      // the first octopus is the jack-o'-lantern, a second one the ghost under a sheet, a third a lantern again
+  if (f.species?.move === 'jet') return used?.has('pumpkin') && !used.has('octoghost') ? 'octoghost' : 'pumpkin';      // the first octopus is the jack-o'-lantern, a second one the ghost under a sheet (the season holds two octopuses to different costumes, see SeasonDress.dressAnimals)
   const set = f.crab ? CRAB_SET : TURTLES.has(f.species?.id) ? TURTLE_SET : (f.cute ?? 0) > 0.3 || f.nursery ? FRY_SET : f.sp?.tail ? SEA_SET : FISH_SET;
   const h = Math.abs((f.seed | 0) * 2654435761 + (f.name?.length ?? 0) * 97 + (f.name?.charCodeAt(0) ?? 0)) >>> 0, n = set.length;
   for (let t = 0; t < n; t++) { const kind = set[(h + t) % n]; if (!used || FREE.has(kind) || !used.has(kind)) return kind; }
@@ -223,7 +223,7 @@ function paint(kind, f, A) {
     else if (kind === 'police') { if (behind) { c = NAVY; keep = 0.05; } }                                                                            // navy blues
     else if (kind === 'racehorse') {
       if (v.tag === 'tail') { c = null; }
-      else if (v.y > E.y - 6) { c = Math.round((v.y - E.y + 20) / 2) % 2 === 0 ? silk : WHITE; keep = 0.1; }                                           // a racing hood in hoops of the stable's silk and white, down over the whole head
+      else if (v.y > E.y - 6) { const dEye = Math.hypot(v.x - E.x, v.y - E.y), ring = Math.abs(v.nz ?? 0) > 0.3 && dEye >= 1.5 && dEye <= 2.7, blaze = Math.abs(v.z) <= 0.6 && ((v.ny ?? 0) > 0.25 || (v.nx ?? 0) > 0.5), trim = v.y < E.y - 5.1; c = ring || blaze || trim ? WHITE : silk; keep = 0.1; }      // a racing hood in the stable's solid silk, a white ring round each eye hole, a white blaze down the center of the face, white trim at its edge
       else if (Math.abs(v.y - bandY) <= bandH) { c = WHITE; keep = 0.1; const dx0 = Math.floor((v.x - bx + 3) / 2), dx = (v.nz ?? 0) > 0 ? dx0 : 2 - dx0, dy = Math.floor((bandY + 5 - v.y) / 2); if (Math.abs(v.nz ?? 0) > 0.4 && dx >= 0 && dx <= 2 && dy >= 0 && dy <= 4 && num[dy][dx] === '#') c = [20, 18, 28]; }      /* (mirrored on the far side, so it reads the right way round from either side of the tank) */      // the saddle cloth, its number two voxels to the stroke on both sides, big enough to read across the tank
     } else if (kind === 'pumpkin') {
       const onArm = v.arm >= 0 || !!v.web; if (onArm) { c = [70, 130, 50]; keep = 0.45; }                                                               // the arms, a tangle of green vine
