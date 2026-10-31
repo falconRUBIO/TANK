@@ -18,9 +18,10 @@ const r = await p.evaluate(async () => {
   // the card's Journal tab
   window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(pip.id))); await new Promise((r) => setTimeout(r, 800)); document.querySelector('#card .tb[data-tab="jour"]')?.click(); await new Promise((r) => setTimeout(r, 500));
   const life = [...document.querySelectorAll('#card .life li')].map((e) => e.textContent), story = [...document.querySelectorAll('#card ul.story li')].map((e) => e.textContent);
-  return { pal: pip.pal, spot: pip.spotId, cave: cave.id, J, hab, life, story, logRes };
+  return { pal: pip.pal, spot: pip.spotId, cave: cave.id, J, hab, life, story, logRes, diag: { haunt: pip.haunt, know: pip.know, away: pip.away, log: pip.log, decor: g.state.decor.map((d) => d.id + ':' + d.type), fish: g.state.fish.map((f) => f.id + ':' + f.name + (f.away ? ':away' : '')), q: q && q.id, now: g.now(), shared: !!g.shared } };      /* (diag: what the rules saw, printed when a report is not taken) */
 });
 console.log(JSON.stringify(r).slice(0, 1200));
+if (r.spot !== r.cave || !r.pal) console.log('  diag', JSON.stringify(r.diag));      /* (what Pip's record held after the three reports, for a CI run that passes nowhere else) */
 ok(r.spot === r.cave, 'Pip took to the cave from real time spent' + (r.spot === r.cave ? '' : ` (its spot ${r.spot}, the cave ${r.cave}; the three reports: ${r.logRes.join(' | ')})`)); ok(r.pal, 'Pip and Quill are best friends from real time together');
 ok(r.J.some((x) => /favorite|taken to the reef cave|best friends/.test(x)), 'the tank journal lines about Pip carry its id: ' + r.J.join(' | '));
 ok(r.hab.some((x) => /Pip has started resting by the reef cave/.test(x)), 'Health says how Pip uses the habitat: ' + r.hab.join(' | '));
