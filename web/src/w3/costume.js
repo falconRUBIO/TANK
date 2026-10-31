@@ -12,11 +12,11 @@ export const COSTUMES = {
   witch: { label: 'a witch, broom and all' }, wizard: { label: 'a wizard' }, pirate: { label: 'a pirate' }, vampire: { label: 'a vampire' }, mummy: { label: 'a mummy' }, skeleton: { label: 'a skeleton' },
   ghost: { label: 'a ghost' }, devil: { label: 'a little devil, pitchfork and all' }, cat: { label: 'a black cat' }, frank: { label: "Frankenstein's monster" }, bat: { label: 'a bat' }, pumpkin: { label: 'a jack-o’-lantern' },
   firefighter: { label: 'a firefighter' }, police: { label: 'a police officer' }, racehorse: { label: 'a racehorse' },
-  gnome: { label: 'a garden gnome' }, skull: { label: 'a skull' }, candycorn: { label: 'a candy corn' },
+  gnome: { label: 'a garden gnome' }, candle: { label: 'a candle' }, candycorn: { label: 'a candy corn' }, unicorn: { label: 'a unicorn' },
 };
 const FISH_SET = ['witch', 'vampire', 'pirate', 'skeleton', 'ghost', 'mummy', 'devil', 'cat', 'frank', 'wizard', 'bat', 'firefighter', 'police'];
 const SEA_SET = ['racehorse', 'witch', 'racehorse', 'ghost', 'police', 'racehorse', 'skeleton', 'firefighter'];
-export const SHELL_KINDS = ['wizard', 'gnome', 'pumpkin', 'witch', 'skull', 'candycorn', 'ghost'];      // what a shell can be painted as: the crab's own shell is its costume, and the empty shells on the sand dress the same way
+export const SHELL_KINDS = ['wizard', 'gnome', 'pumpkin', 'witch', 'candle', 'candycorn', 'unicorn'];      // what a shell can be painted as: the crab's own shell is its costume, and the empty shells on the sand dress the same way
 const CRAB_SET = SHELL_KINDS, TURTLE_SET = ['pirate', 'witch', 'mummy', 'skeleton', 'wizard', 'firefighter', 'police'], FRY_SET = ['mummy', 'skeleton', 'ghost'];
 const FREE = new Set(['racehorse', 'pumpkin']);      // worn by as many as like: the rest go round the tank one each before any repeats
 const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
@@ -138,9 +138,9 @@ export function shellSkin(im, kind) {
     else if (kind === 'gnome') c = t < 0.14 ? [240, 232, 214] : t > 0.92 ? [230, 70, 70] : mix([204, 38, 40], [160, 24, 30], q * 0.3);                        // a red cone with a cream band at the brim
     else if (kind === 'pumpkin') c = t > 0.86 ? [84, 118, 42] : side && t > 0.3 && t < 0.5 && Math.abs(y) < R0 * 0.3 ? [255, 232, 140] : mix([236, 118, 32], [172, 74, 18], 0.2 + 0.6 * (0.5 + 0.5 * Math.cos(ang * 8)));      // ribbed orange, a green stem at the tip, a lit eye on each flank
     else if (kind === 'witch') c = t < 0.12 ? [50, 44, 64] : t < 0.24 ? (y > R0 * 0.45 && Math.abs(k) < 1.3 ? GOLD : PURPLE) : mix(BLACK, [0, 0, 0], 0.3 * t);      // black, a purple band with a gold buckle on top
-    else if (kind === 'skull') c = side && t > 0.28 && t < 0.5 && Math.abs(y) < R0 * 0.3 ? [26, 22, 30] : t < 0.1 && y < -R0 * 0.3 ? (Math.round(k) % 2 ? [30, 26, 30] : [240, 236, 220]) : mix([214, 206, 184], [160, 150, 128], q * 0.6);      // bone, eye sockets on the flanks, teeth under the opening
+    else if (kind === 'candle') { const drip = Math.round(ang * 2.5) % 2 === 0 && t < 0.45 && q > 0.35; c = t > 0.9 ? [255, 226, 110] : t > 0.8 ? [255, 140, 36] : t > 0.76 ? [40, 30, 30] : drip ? [252, 248, 236] : [238, 228, 204]; }      // a candle: cream wax with drips running down from the top, a dark wick, an orange flame with a yellow heart at the tip
     else if (kind === 'candycorn') c = t < 0.3 ? [250, 248, 236] : t < 0.65 ? [255, 150, 40] : [255, 222, 60];                                              // white, orange, yellow
-    else c = side && t > 0.28 && t < 0.48 && Math.abs(y) < R0 * 0.25 ? [20, 18, 28] : mix(WHITE, [214, 220, 240], q * 0.5);                                 // a ghost: white, two dark eyes
+    else { const band = ((t * 5 + ang / (Math.PI * 2)) % 1 + 1) % 1; c = t > 0.88 ? GOLD : band < 0.3 ? [244, 170, 210] : band < 0.5 ? [186, 160, 236] : mix([250, 248, 255], [226, 236, 250], q * 0.5); }      // a unicorn horn: pearly white with a pink and lilac stripe spiraling to a gold tip
     const Lc = lin(c), sh = Math.max(0.6, Math.min(1.3, 0.85 + 2.2 * (l0 - 0.12)));
     a[o] = Lc[0] * sh; a[o + 1] = Lc[1] * sh; a[o + 2] = Lc[2] * sh;
   }
