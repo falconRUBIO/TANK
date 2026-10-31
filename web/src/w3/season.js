@@ -64,7 +64,7 @@ function buildSky() {
   const H = new THREE.Group(); H.position.set(0, 5.2, 0.02);
   const poly = (pts, col = SIL, op = 0.96, ro = -7.1) => { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y))); sh.closePath(); const m = flat(sh, col, op, ro); H.add(m); return m; };
   const hillY = (x) => Math.max(0, 1.25 * Math.cos((x / 5.4) * Math.PI * 0.5) ** 0.8 - 0.05 + 0.06 * Math.sin(x * 3.1));
-  { const sh = new THREE.Shape(); sh.moveTo(-7, -0.5); for (let x = -7; x <= 7; x += 0.4) sh.lineTo(x, Math.max(0, 0.9 * Math.cos(((x + 2.5) / 7) * Math.PI * 0.5) ** 0.9 + 0.05 * Math.sin(x * 2.3) + 0.3)); sh.lineTo(7, -0.5); sh.closePath(); H.add(flat(sh, 0x16132c, 0.9, -7.15)); }      // the far hill
+  { const sh = new THREE.Shape(); sh.moveTo(-7, -0.5); for (let x = -7; x <= 7; x += 0.4) sh.lineTo(x, Math.max(0, 0.9 * Math.max(0, Math.cos(((x + 2.5) / 7) * Math.PI * 0.5)) ** 0.9 + 0.05 * Math.sin(x * 2.3) + 0.3)); sh.lineTo(7, -0.5); sh.closePath(); H.add(flat(sh, 0x16132c, 0.9, -7.15)); }      // the far hill
   { const sh = new THREE.Shape(); sh.moveTo(-5.4, -0.5); for (let x = -5.4; x <= 5.4; x += 0.3) sh.lineTo(x, hillY(x)); sh.lineTo(5.4, -0.5); sh.closePath(); H.add(flat(sh, SIL, 0.97, -7.1)); }      // the near hill
   // the house: a side wing, the main body with a porch, a steep gable with a dormer, a tall tower with a witch-hat roof and a weathervane
   poly([[-0.7, 0.5], [0.6, 0.5], [0.6, 1.9], [-0.7, 1.9]]); poly([[-0.95, 1.85], [-0.05, 2.65], [0.85, 1.85]]);                                              // the wing and its roof
