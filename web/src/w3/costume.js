@@ -9,8 +9,8 @@ import { mix } from '../color.js';
 
 const BLACK = [26, 20, 36], PURPLE = [122, 54, 176], GOLD = [240, 196, 80], RED = [196, 34, 40], BONE = [236, 230, 212], WRAP = [224, 212, 186], GREEN = [118, 176, 84], WHITE = [246, 246, 250], PINK = [240, 150, 180], NAVY = [36, 46, 100], STRAW = [196, 160, 80];
 export const COSTUMES = {      // label: for a sentence ("Dressed as …"); word: the title that goes in front of the animal's name while it wears it ("Cat Nori")
-  witch: { label: 'a witch, broom and all', word: 'Witch' }, wizard: { label: 'a wizard', word: 'Wizard' }, pirate: { label: 'a pirate', word: 'Pirate' }, vampire: { label: 'a vampire', word: 'Vampire' }, mummy: { label: 'a mummy', word: 'Mummy' }, skeleton: { label: 'a skeleton', word: 'Skeleton' },
-  ghost: { label: 'a ghost', word: 'Ghost' }, devil: { label: 'a little devil, pitchfork and all', word: 'Devil' }, cat: { label: 'a black cat', word: 'Cat' }, frank: { label: "Frankenstein's monster", word: 'Monster' }, bat: { label: 'a bat', word: 'Bat' }, pumpkin: { label: 'a jack-o’-lantern', word: 'Pumpkin' },
+  witch: { label: 'a witch, green nose, hat and broom', word: 'Witch' }, wizard: { label: 'a wizard, long white beard and all', word: 'Wizard' }, pirate: { label: 'a pirate, tricorn, cutlass and parrot', word: 'Pirate' }, vampire: { label: 'a vampire', word: 'Vampire' }, mummy: { label: 'a mummy', word: 'Mummy' }, skeleton: { label: 'a skeleton', word: 'Skeleton' },
+  ghost: { label: 'a ghost', word: 'Ghost' }, devil: { label: 'a little devil, horns, cape and pitchfork', word: 'Devil' }, cat: { label: 'a black cat', word: 'Cat' }, frank: { label: "Frankenstein's monster", word: 'Monster' }, bat: { label: 'a bat', word: 'Bat' }, pumpkin: { label: 'a jack-o’-lantern', word: 'Pumpkin' },
   firefighter: { label: 'a firefighter', word: 'Firefighter' }, police: { label: 'a police officer', word: 'Officer' }, racehorse: { label: 'a racehorse', word: 'Racehorse' },
   gnome: { label: 'a garden gnome', word: 'Gnome' }, candle: { label: 'a candle', word: 'Candle' }, candycorn: { label: 'a candy corn', word: 'Candy Corn' }, unicorn: { label: 'a unicorn', word: 'Unicorn' },
   octoghost: { label: 'a ghost, sheet and all', word: 'Ghost' },
@@ -34,6 +34,81 @@ export function costumeFor(f, used = null) {
   return set[h % n];
 }
 
+// ── finer pieces: built in cells half a body voxel across (placed at k * 0.5), so a beard has strands, a broom has twine, a parrot has an eye ──
+function capeVox(A, k, outer, lining, speck) {      // a cape over the back from a tall collar behind the head, falling down both sides, the lining showing at the hem and inside the collar
+  const v = new Vox(1), L = Math.max(6, Math.round(A.len * 0.42)), c0 = -Math.max(3, Math.round(A.hh * 0.45)); let w0 = 0;
+  for (let i = c0; i >= c0 - L; i--) { const x = Math.round(A.topX) + i, w = 1 + Math.round((c0 - i) * 0.4) + 1; let any = false; for (let z = -w; z <= w; z++) { const t = A.colTop(x, z); if (t < -1e8) continue; const edge = Math.abs(z) === w || A.colTop(x, z + Math.sign(z || 1)) < -1e8 || i === c0 - L; v.set(i, Math.round(t - A.top) + 1, z, edge ? lining : hash(x, 0, z, 3) > 0.85 ? speck : outer); any = true; if (i === c0) w0 = Math.max(w0, Math.abs(z)); } if (!any && i < c0 - 1) break; }
+  { const y0 = Math.round((A.colTop(Math.round(A.topX) + c0, 0) > -1e8 ? A.colTop(Math.round(A.topX) + c0, 0) : A.top) - A.top) + 1; for (let z = -(w0 + 1); z <= w0 + 1; z++) { const H = Math.round(1.6 * k + 1.2 * k * (1 - Math.abs(z) / (w0 + 1.5))); for (let j = 0; j <= H; j++) { v.set(c0, y0 + j, z, j === H || Math.abs(z) === w0 + 1 ? lining : outer); if (j > 0) v.set(c0 + 1, y0 + j, z, lining); } } }
+  return v;
+}
+function broomVox(Lf, Lb) {      // a broom with its origin at the hand-hold: the handle runs +x for Lf cells and -x for Lb, then the bound bristle head flares out behind
+  const v = new Vox(1), W1 = [172, 126, 68], W2 = [142, 100, 54], W3 = [196, 150, 86], TW = [112, 76, 38], S1 = STRAW, S2 = [172, 136, 62], S3 = [218, 186, 104];
+  for (let i = Lf; i >= -Lb; i--) for (const j of [0, 1]) for (const z of [0, 1]) v.set(i, j, z, ((i % 6) + 6) % 6 === 0 ? W2 : (j === 1 && z === 0) ? W3 : W1);      // the handle, two cells thick, lighter along its top, darker grain every so often
+  v.set(Lf + 1, 0, 0, W2); v.set(Lf + 1, 1, 1, W2); v.set(Lf + 1, 0, 1, W2);      // a worn cap at the end
+  for (let q = 0; q <= 11; q++) { const r = q < 3 ? 2.3 : 1.9 + q * 0.4;
+    for (let j = -5; j <= 5; j++) for (let z = -4; z <= 5; z++) { const d = Math.hypot(j - 0.5 + q * 0.14, z - 0.5); if (d > r) continue; if (q > 3 && d < r - 1.7 && hash(q, j, z, 7) > 0.35) continue;      // (hollow inside past the binding: it is a bundle, not a block)
+      v.set(-Lb - q, j, z, q < 3 ? (q === 1 ? [150, 100, 50] : TW) : hash(q, j, z, 5) > 0.66 ? S3 : hash(q, j, z, 6) > 0.5 ? S1 : S2); } }      // the twine binding, then the straw flaring out
+  for (let q = 12; q <= 15; q++) for (let j = -6; j <= 6; j++) for (let z = -5; z <= 6; z++) if (hash(q, j, z, 8) > 0.5 + (q - 12) * 0.12 && Math.hypot(j - 0.5 + q * 0.14, z - 0.5) <= 5.4) v.set(-Lb - q, j, z, hash(q, j, z, 9) > 0.5 ? S1 : S2);      // ragged ends
+  return v;
+}
+function parrotVox() {      // a parrot: green body, red head, white eye patches with black pupils, a hooked yellow beak, blue wings with feather rows, long tail feathers, orange feet
+  const v = new Vox(1), G = [52, 168, 78], G2 = [38, 134, 60], RD = [222, 48, 44], Y = [250, 204, 64], Y2 = [204, 150, 40], BL = [40, 112, 214], BL2 = [28, 78, 168], BL3 = [84, 160, 236], K = [20, 18, 24], OR = [240, 132, 40];
+  for (let i = -3; i <= 3; i++) for (let j = 0; j <= 6; j++) for (let z = -2; z <= 2; z++) { const d = (i / 3.5) ** 2 + ((j - 3) / 3.5) ** 2 + (z / 2.5) ** 2; if (d > 1) continue; v.set(i, j, z, j <= 1 ? G2 : i >= 1 && j >= 4 ? RD : G); }      // the body
+  for (let i = 1; i <= 4; i++) for (let j = 5; j <= 9; j++) for (let z = -2; z <= 2; z++) { const d = ((i - 2.5) / 2.2) ** 2 + ((j - 7) / 2.5) ** 2 + (z / 2.1) ** 2; if (d > 1) continue; v.set(i, j, z, RD); }      // the head
+  for (const z of [-2, 2]) { v.set(3, 7, z, WHITE); v.set(3, 8, z, WHITE); v.set(4, 7, z, K); }      // eyes
+  v.set(5, 7, 0, Y); v.set(5, 6, 0, Y); v.set(6, 7, 0, Y); v.set(6, 6, 0, Y2); v.set(6, 5, 0, Y2); v.set(5, 7, 1, Y2); v.set(5, 7, -1, Y2);      // the hooked beak
+  for (const z of [-3, 3]) for (let i = -3; i <= 1; i++) for (let j = 2; j <= 5; j++) if (i + 1 <= 2.5 - (j - 2) * 0.5 && i + 1 >= -2.5 + (j - 2) * 0.3) v.set(i, j, z, j === 2 || i === -3 ? BL2 : ((i + j) % 2 ? BL : BL3));      // the wings, folded
+  for (let q = 0; q <= 7; q++) { const y = 2 - Math.round(q * 0.55); v.set(-4 - q, y, 0, q < 3 ? RD : BL); v.set(-4 - q, y + 1, -1, q < 4 ? Y : G); v.set(-4 - q, y + 1, 1, q < 2 ? RD : BL2); if (q > 4) v.set(-4 - q, y - 1, 0, BL2); }      // tail feathers trailing back and down
+  for (const z of [-1, 1]) { v.set(0, -1, z, OR); v.set(1, -1, z, OR); v.set(2, -1, z, OR); }      // feet
+  return v;
+}
+function cutlassVox(N) {      // a curved cutlass: a single-edged blade bright along the edge and darker at the back, tapering to a point, a cupped gold guard, a wrapped grip, a gold pommel
+  const v = new Vox(1), ST = [214, 218, 230], ST2 = [168, 174, 194], ST3 = [236, 238, 246], DG = [58, 40, 36], DG2 = [86, 62, 50];
+  for (let j = 0; j <= N; j++) { const x = Math.round((j / N) ** 2 * N * 0.34), w = j > N - 4 ? 1 : 2; for (let i = 0; i < w; i++) v.set(x + i, j, 0, i === w - 1 ? ST : ST2); if (j % 5 === 2 && w > 1) v.set(x + 1, j, 0, ST3); }
+  for (let i = -2; i <= 3; i++) for (let j = -2; j <= 0; j++) if (!(i === 0 && j === -2) && !(Math.abs(i - 0.5) > 2 && j === -2)) v.set(i, j, 0, j === 0 ? GOLD : [206, 160, 56]);
+  for (let j = -3; j >= -8; j--) { v.set(0, j, 0, j % 2 ? DG : DG2); v.set(0, j, 1, j % 2 ? DG2 : DG); } v.set(0, -9, 0, GOLD); v.set(0, -9, 1, GOLD);
+  return v;
+}
+function pirateBeardVox(w) {      // a bushy dark beard under the chin, braided into two plaits with gold beads
+  const v = new Vox(1), B1 = [40, 30, 28], B2 = [64, 48, 42], B3 = [52, 38, 34];
+  for (let i = 1; i >= -5; i--) for (let z = -w; z <= w; z++) { const L = Math.round(3.5 - Math.abs(z) * 0.7 - (-i) * 0.35 + hash(i, 0, z, 11) * 1.2); for (let j = 0; j >= -L; j--) v.set(i, j, z, hash(i, j, z, 12) > 0.6 ? B1 : hash(i, j, z, 13) > 0.5 ? B2 : B3); }
+  for (const z of [-Math.max(1, w - 1), Math.max(1, w - 1)]) { for (let j = -3; j >= -9; j--) v.set(-1, j, z, j % 2 ? B1 : B2); v.set(-1, -6, z, GOLD); v.set(-1, -10, z, GOLD); }
+  return v;
+}
+function wizardBeardVox(len, wid, seed) {      // a long wavy white beard, longest in the middle and parted a little, and a mustache that sweeps out and curls up at the ends
+  const v = new Vox(1), C = [WHITE, [230, 232, 242], [208, 212, 228]];
+  for (let z = -wid; z <= wid; z++) { const L = Math.max(3, Math.round(len * (1 - (Math.abs(z) / (wid + 1)) ** 2 * 0.6) + (hash(z, 0, 0, seed) - 0.5) * len * 0.18)), col = C[(Math.abs(z) + (z > 0 ? 1 : 0)) % 3];
+    for (let j = 0; j >= -L; j--) { const wave = Math.round(Math.sin(-j * 0.5 + z * 1.3) * 1.1), i = -Math.round(-j * 0.16) + wave; v.set(i, j, z, j === -L ? C[2] : col); if (Math.abs(z) <= wid - 1 && j > -L * 0.55) v.set(i - 1, j, z, j % 4 === 0 ? C[1] : col); } }
+  for (const s of [-1, 1]) for (let q = 0; q <= 5; q++) { const z = s * (1 + q), j = 2 + Math.round(Math.max(0, q - 2) * 0.9), i = 2 - Math.round(q * 0.25); v.set(i, j, z, q > 3 ? C[1] : WHITE); if (q <= 2) v.set(i, j + 1, z, WHITE); v.set(i - 1, j, z, C[2]); }
+  v.set(2, 3, 0, WHITE); v.set(1, 3, 0, C[2]);
+  return v;
+}
+function staffVox(N) {      // a gnarled wooden staff with knots, a claw of wood at the top holding a glowing crystal
+  const v = new Vox(1), W1 = [122, 86, 50], W2 = [96, 66, 38], W3 = [152, 112, 66];
+  for (let j = 0; j <= N; j++) { const i = Math.round(Math.sin(j * 0.6) * 0.7), z = Math.round(Math.cos(j * 0.45) * 0.6); v.set(i, j, z, j % 3 ? W1 : W2); v.set(i, j, z + 1, j % 3 ? W2 : W1); if (j % 7 === 3) { v.set(i + 1, j, z, W3); v.set(i - 1, j + 1, z, W3); } }
+  const ti = Math.round(Math.sin(N * 0.6) * 0.7), tz = Math.round(Math.cos(N * 0.45) * 0.6);
+  for (const [di, dz] of [[-1, 0], [1, 0], [0, -1], [0, 2], [1, 1], [-1, 1]]) for (let j = N + 1; j <= N + 3; j++) v.set(ti + di, j, tz + dz, j === N + 3 ? W3 : W2);
+  for (let i = -1; i <= 1; i++) for (let j = N + 1; j <= N + 5; j++) for (let z = -1; z <= 1; z++) { const d = i * i + ((j - N - 3) ** 2) * 0.6 + z * z; if (d > 2.4) continue; v.set(ti + i, j, tz + z, d < 0.7 ? [236, 250, 255] : [132, 204, 255], 1.6); }
+  return v;
+}
+function witchHairVox(wc, seed) {      // stringy grey hair hanging from under the brim down both sides of the head
+  const v = new Vox(1), H1 = [186, 186, 198], H2 = [142, 142, 160], H3 = [212, 212, 222];
+  for (const s of [-1, 1]) for (let n = 0; n < 4; n++) { const i = -5 + n * 2 + (hash(n, s, 0, seed) > 0.5 ? 1 : 0), z = s * (wc + 1 + (n % 2)), L = 7 + Math.round(hash(n, s, 1, seed) * 7); for (let j = 0; j >= -L; j--) { const dz = Math.round(Math.sin(-j * 0.55 + n) * 0.9); v.set(i, j, z + dz, j % 3 === 0 ? H2 : n % 2 ? H1 : H3); if (j === 0 || j === -L) v.set(i + 1, j, z + dz, H2); } }
+  return v;
+}
+function witchNoseVox() {      // a long hooked green nose with a wart on top
+  const v = new Vox(1), G = [128, 178, 88], G2 = [98, 142, 66];
+  for (let i = 0; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let z = -1; z <= 1; z++) v.set(i, j, z, (i + j + z) % 2 ? G : G2);
+  for (let i = 2; i <= 4; i++) { v.set(i, 0, 0, G); v.set(i, 1, 0, G2); if (i >= 3) v.set(i, -1, 0, G); } v.set(5, -1, 0, G2); v.set(5, -2, 0, G); v.set(4, -2, 0, G2);      // the hook, drooping at the tip
+  v.set(2, 2, 0, [82, 118, 54]); v.set(3, 1, 1, [82, 118, 54]);      // warts
+  return v;
+}
+function goateeVox() {      // a pointed black goatee hanging from the chin
+  const v = new Vox(1), K = [22, 16, 24], K2 = [40, 30, 42];
+  for (let j = 0; j >= -6; j--) { const w = Math.max(0, Math.round(2.2 - (-j) * 0.38)); for (let z = -w; z <= w; z++) for (let i = 0; i >= -1; i--) v.set(i - Math.round(-j * 0.15), j, z, (z + j) % 2 ? K : K2); }
+  return v;
+}
+
 // ── where things go on a body (model voxel coordinates, +x forward) ──
 function anchors(f) {
   const V = f.vox; let ex = 0, ey = 0, n = 0; for (const v of V) if (v.tag === 'eye' || v.em) { ex += v.x; ey += v.y; n++; }
@@ -43,7 +118,7 @@ function anchors(f) {
   for (const v of V) { if (v.tag === 'pouch') continue; wMax = Math.max(wMax, Math.abs(v.z));
     if (Math.abs(v.x - E.x) <= 2.2 && Math.abs(v.z) <= 2.5) { if (v.y > top) { top = v.y; topX = v.x; } w = Math.max(w, Math.abs(v.z)); }
     if (Math.abs(v.y - E.y) <= 2.5 && Math.abs(v.z) <= 1.5 && v.x > nose) nose = v.x;
-    if (v.x > E.x - 1.5 && v.y < bot) bot = v.y;
+    if (f.sp?.tail ? (v.tag !== 'tail' && Math.abs(v.x - E.x) <= 2.5 && v.y >= E.y - 12) : v.x > E.x - 1.5) bot = Math.min(bot, v.y);      /* (a seahorse's chin is the underside of its head, not the tail curled below it) */
     if (v.tag !== 'head' && v.tag !== 'eye' && !v.em && v.y > shellTop - 0.5) { if (v.y > shellTop) { shellTop = v.y; shellX = 0; shellN = 0; } shellX += v.x; shellN++; }
     if (v.arm === undefined || (v.arm < 0 && !v.web)) { if (v.y > mTop - 0.5) { if (v.y > mTop) { mTop = v.y; mX = 0; mN = 0; } mX += v.x; mN++; } } }
   const cols = new Map(); for (const v of V) if (v.tag !== 'pouch') { const key = Math.round(v.x) + ',' + Math.round(v.z); cols.set(key, Math.max(cols.get(key) ?? -1e9, v.y)); }
@@ -54,18 +129,38 @@ function anchors(f) {
 }
 
 // ── the pieces: each a Vox in the fish's own voxel units, its origin where it sits on the body ──
+const FINE_HATS = new Set(['witch', 'wizard', 'pirate']);      // built at two cells to a body voxel, so they carry braid, buckles, stitches and stars
 function hatVox(kind, seed = 1) {
   const v = new Vox(1);
-  if (kind === 'witch' || kind === 'wizard') {
-    const col = kind === 'witch' ? BLACK : [40, 48, 140], band = kind === 'witch' ? PURPLE : [226, 180, 60];
-    for (let i = -3; i <= 3; i++) for (let k = -3; k <= 3; k++) if (i * i + k * k <= 10.5) v.set(i, 0, k, mix(col, [60, 50, 80], 0.2));                // the brim
-    for (let j = 1; j <= 8; j++) { const r = 2.6 - j * 0.3, bend = kind === 'witch' ? Math.max(0, j - 4) * 0.45 : 0;                                  // the cone, a witch's bent at the tip
-      for (let i = -3; i <= 3; i++) for (let k = -3; k <= 3; k++) if ((i + bend) ** 2 + k * k <= r * r + 0.3) v.set(i, j, k, j <= 2 ? band : kind === 'wizard' && hash(i, j, k, seed) > 0.8 ? GOLD : mix(col, [0, 0, 0], 0.15 * (j / 8))); }
-    if (kind === 'witch') { v.set(3, 1, 0, GOLD); v.set(3, 2, 0, GOLD); }                                                                            // the buckle, at the front
-  } else if (kind === 'pirate') {      // a black tricorn: a wide brim turned up on three sides with gold trim, a domed crown, a white skull and crossbones at the front
-    for (let i = -4; i <= 4; i++) for (let k = -4; k <= 4; k++) { const d = Math.hypot(i, k); if (d > 4.4) continue; const rim = d > 3.3, up = rim && (i > 1.5 || Math.abs(k) > 2.4); v.set(i, 0, k, rim ? mix(BLACK, GOLD, 0.35) : BLACK); if (up) { v.set(i, 1, k, BLACK); v.set(i, 2, k, GOLD); } }
-    for (let j = 1; j <= 4; j++) { const r = 2.8 - j * 0.35; for (let i = -3; i <= 3; i++) for (let k = -3; k <= 3; k++) if (i * i + k * k <= r * r + 0.3) v.set(i, j, k, j === 4 ? [50, 44, 60] : BLACK); }
-    v.set(3, 2, 0, WHITE); v.set(3, 3, 0, WHITE); v.set(3, 3, 1, WHITE); v.set(3, 3, -1, WHITE); v.set(3, 1, 1, WHITE); v.set(3, 1, -1, WHITE);      // the skull and the crossed bones below it
+  if (kind === 'witch') {      // (two cells to a body voxel) a wide ragged brim, a tall crooked cone flopping over at the point, a purple band with a gold buckle, patches with stitches, a spider on a thread
+    const HAT = [30, 24, 40], HAT2 = [44, 34, 58], PATCH = [78, 56, 104], STITCH = [150, 120, 180];
+    for (let i = -9; i <= 9; i++) for (let k = -8; k <= 8; k++) { const d = Math.sqrt(i * i * 0.8 + k * k); if (d > 7.6 || (d > 6.4 && hash(i, 0, k, seed) > 0.78)) continue; v.set(i, 0, k, d > 6.6 ? HAT2 : hash(i, 0, k, 2) > 0.85 ? HAT2 : HAT); }
+    for (let j = 1; j <= 21; j++) { const r = 5.6 - j * 0.255, ci = -(Math.max(0, j - 9) ** 1.6) * 0.17, cj = j - (j > 17 ? (j - 17) * 0.5 : 0);      // the cone leans back from half way up and its last stretch flops over
+      for (let i = -7; i <= 7; i++) for (let k = -6; k <= 6; k++) { if ((i - ci) ** 2 + k * k > r * r + 0.4) continue; let c = j <= 3 ? PURPLE : mix(HAT, [0, 0, 0], 0.25 * (j / 21));
+        if (j >= 6 && j <= 8 && i - ci > 1 && k >= 1 && k <= 3) c = (j === 6 || j === 8 || k === 1 || k === 3) ? STITCH : PATCH;      // a patch on the right, stitched round its edge
+        if (j >= 11 && j <= 12 && k <= -1 && k >= -3 && i - ci < 0) c = (j === 11 && k === -2) ? STITCH : PATCH;      // a smaller one on the left
+        v.set(i, Math.round(cj), k, c); } }
+    for (let j = 1; j <= 3; j++) for (let k = -1; k <= 1; k++) v.set(6, j, k, j === 2 && k === 0 ? BLACK : GOLD);      // the buckle on the band, at the front
+    for (let j = -1; j >= -4; j--) v.set(-7, j, 3, [120, 120, 130]); v.set(-7, -5, 3, BLACK); v.set(-7, -6, 3, BLACK); v.set(-8, -5, 3, BLACK); v.set(-6, -5, 3, BLACK); v.set(-7, -5, 2, BLACK); v.set(-7, -5, 4, BLACK);      // a spider hanging off the back of the brim on its thread
+  } else if (kind === 'wizard') {      // (two cells to a body voxel) a deep blue cone, tall, bending a little at the top, a gold band, gold stars and a crescent moon, a gold bell at the point
+    const BLU = [40, 48, 140], BLU2 = [30, 36, 112];
+    for (let i = -7; i <= 7; i++) for (let k = -7; k <= 7; k++) { const d = Math.hypot(i, k); if (d > 6.8) continue; v.set(i, 0, k, d > 6 ? GOLD : hash(i, 0, k, 3) > 0.88 ? BLU2 : BLU); }      // the brim, gold at its edge
+    const star = (i, j, k) => (Math.abs(i) <= 1 && j === 0) || (i === 0 && Math.abs(j) <= 1);
+    const STARS = [[6, 0], [11, 2.2], [15, -1.6], [8, -2.6], [13, 1.0], [18, 0.4]];
+    for (let j = 1; j <= 23; j++) { const r = 5.3 - j * 0.225, ci = -(Math.max(0, j - 15) ** 1.4) * 0.25;
+      for (let i = -6; i <= 6; i++) for (let k = -6; k <= 6; k++) { if ((i - ci) ** 2 + k * k > r * r + 0.4) continue; let c = j <= 2 ? GOLD : mix(BLU, [0, 0, 0], 0.2 * (j / 23)); const ang = Math.atan2(k, i - ci);
+        for (const [sj, sa] of STARS) if (Math.abs(ang - sa) < 0.9 && star(Math.round((ang - sa) * r), j - sj, 0) && i - ci > -r * 0.2 - 10) c = GOLD;      // stars round the cone
+        if (j >= 8 && j <= 12 && Math.abs(ang) < 0.5) { const mj = j - 10, mk = Math.round(ang * r); if (Math.hypot(mj, mk + 0.5) <= 2.4 && Math.hypot(mj, mk - 0.6) > 1.6) c = GOLD; }      // a crescent moon on the front
+        v.set(i, j, k, c); } }
+    for (let j = 23; j <= 25; j++) for (let i = -1; i <= 1; i++) for (let k = -1; k <= 1; k++) if (i * i + k * k + (j - 24) ** 2 <= 1.3) v.set(Math.round(-(8 ** 1.4) * 0.25) + i, j, k, GOLD);      // the bell at the point
+  } else if (kind === 'pirate') {      // (two cells to a body voxel) a black tricorn: a wide brim with gold braid, turned up in three walls, a domed crown, a skull and crossbones on the front, a red plume
+    const HAT = [28, 24, 36], HAT2 = [46, 40, 58], BRAID = [214, 176, 76];
+    for (let i = -9; i <= 9; i++) for (let k = -9; k <= 9; k++) { const d = Math.sqrt(i * i * 0.9 + k * k); if (d > 9) continue; const ang = Math.atan2(k, i), wall = d > 6.2 && (Math.abs(ang) > 2.25 || (Math.abs(ang) > 0.45 && Math.abs(ang) < 1.85));      // three sectors of the brim turn up: left, right and back
+      v.set(i, 0, k, d > 8.1 ? BRAID : hash(i, 0, k, 2) > 0.86 ? HAT2 : HAT); if (wall) { const h = Math.min(4, Math.round((d - 6.2) * 1.6)); for (let j = 1; j <= h; j++) v.set(i, j, k, j === h ? BRAID : HAT); } }
+    for (let j = 1; j <= 7; j++) { const r = 6.1 - j * 0.55; for (let i = -6; i <= 6; i++) for (let k = -6; k <= 6; k++) if (i * i + k * k <= r * r + 0.4) v.set(i, j, k, j >= 6 ? HAT2 : HAT); }      // the domed crown
+    for (const [j, k] of [[5, 0], [5, -1], [5, 1], [4, -1], [4, 1], [4, 0], [3, 0], [3, -1], [3, 1], [6, 0]]) v.set(Math.round(6.1 - j * 0.55) + 1, j, k, WHITE); v.set(Math.round(6.1 - 4 * 0.55) + 2, 4, -1, BLACK); v.set(Math.round(6.1 - 4 * 0.55) + 2, 4, 1, BLACK);      // the skull, two black eye sockets
+    for (const k of [-2, -1, 1, 2]) v.set(Math.round(6.1 - 2 * 0.55) + 1, 2, k, WHITE); v.set(Math.round(6.1 - 1 * 0.55) + 1, 1, -3, WHITE); v.set(Math.round(6.1 - 1 * 0.55) + 1, 1, 3, WHITE);      // the crossed bones under it
+    for (let q = 0; q <= 13; q++) { const i = 2 - Math.round(q * 0.55), j = 1 + q, k = -7 + Math.round(q * 0.25); v.set(i, j, k, q > 11 ? WHITE : q % 2 ? RED : [232, 70, 66]); if (q > 2 && q < 12) v.set(i, j, k + 1, [232, 70, 66]); if (q > 4 && q < 11) v.set(i - 1, j, k, RED); }      // a red plume from the left side, sweeping back, white at its tip
   } else if (kind === 'devil') {
     for (const side of [-1, 1]) for (let t = 0; t <= 11; t++) { const u = t / 11, x = -Math.round(u * u * 3.2), y = Math.round(u * 7.5), zc = side * (2.1 + u * 1.6 + u * u * 1.6), r = 1.05 - u * 0.85, c = u > 0.78 ? [34, 18, 26] : mix([176, 24, 32], [104, 12, 24], u * 1.2);      // dark crimson shading to near-black points
       for (let i = -1; i <= 1; i++) for (let k = -1; k <= 1; k++) if (i * i + k * k <= r * r + 0.3) v.set(x + i, y, Math.round(zc) + k, c); }      // two tall horns, set apart on the brow, each rising then sweeping back and out to a point
@@ -114,7 +209,10 @@ function paint(kind, f, A) {
     else if (kind === 'ghost') { const hole = Math.hypot(v.x - E.x, v.y - E.y) <= 1.9 && Math.abs(v.z) > 0.8, mouth = Math.hypot(v.x - (E.x + 0.6), v.y - (E.y - 3.2)) <= 1.2 && Math.abs(v.z) > 0.8; c = hole || mouth ? [18, 16, 28] : mix(WHITE, [214, 220, 240], q * 0.5); keep = hole || mouth ? 0 : 0.12; }      // the sheet, with two eye holes and a round surprised mouth cut in each side
     else if (kind === 'frank') { if (!behind) { const scar = Math.abs(v.z) > 0.8 && Math.abs(v.y - (E.y - 2.2)) <= 0.5 && v.x > E.x - 3 && v.x < E.x + 0.5, stitch = Math.abs(v.z) > 0.8 && Math.round(v.x - E.x) % 2 === 0 && Math.abs(v.y - (E.y - 2.2)) <= 1.4 && v.x > E.x - 3 && v.x < E.x + 0.5; c = scar || stitch ? [26, 24, 36] : GREEN; keep = scar || stitch ? 0 : 0.25; } else { c = [40, 42, 64]; keep = 0.08; } }      // a green face with a stitched scar, a dark square jacket
     else if (kind === 'vampire') { if (!behind) { c = [222, 216, 232]; keep = 0.25; } else { const shirt = v.y < mid + 0.5 && v.y > mid - 4.5 && v.x > E.x - 8 && Math.abs(v.z) > 0.8, tie = Math.abs(v.y - (mid + 0.5)) <= 0.6 && v.x > E.x - 4.5 && Math.abs(v.z) > 0.8; c = tie ? RED : shirt ? WHITE : [30, 28, 42]; keep = tie ? 0 : shirt ? 0.1 : 0.08; } }      /* (a dark paint needs almost none of the fish left in it: in linear light a fifth of a bright fish outshines a black suit) */      // a pale face, a black suit with a white shirt front and a red bow tie
-    else if (kind === 'pirate') { if (behind && !TURTLES.has(f.species?.id)) {      /* (a turtle keeps its shell: the tricorn is enough) */ const stripe = ((Math.round(v.y - mid) % 3) + 3) % 3 === 0; c = stripe ? [200, 34, 40] : WHITE; keep = 0.08; } }      // a red-and-white striped shirt
+    else if (kind === 'pirate') { if (!TURTLES.has(f.species?.id) && v.tag !== 'tail') {      /* (a turtle keeps its shell: the tricorn is enough) */ const belt = Math.abs(v.x - (E.x - 3.2)) <= 0.8, buckle = belt && Math.abs(v.nz ?? 0) > 0.5 && Math.abs(v.y - mid) <= 1.0;
+      if (belt) { c = buckle ? GOLD : [24, 20, 28]; keep = buckle ? 0 : 0.05; } else if (behind) { const stripe = ((Math.round(v.y - mid) % 3) + 3) % 3 === 0; c = stripe ? [200, 34, 40] : WHITE; keep = 0.08; } } }      // a red-and-white striped shirt behind a wide black belt with a gold buckle
+    else if (kind === 'witch') { if (v.tag !== 'tail') { if (!behind) { c = [122, 172, 84]; keep = 0.14; }      /* (a green face) */ else if (!TURTLES.has(f.species?.id)) { const belt = Math.abs(v.x - (E.x - 3.6)) <= 0.7, hem = v.y < mid - A.hh * 0.28 && ((Math.round(v.x - E.x) % 3) + 3) % 3 === 0; c = belt ? (Math.abs(v.nz ?? 0) > 0.5 && Math.abs(v.y - mid) <= 0.9 ? GOLD : PURPLE) : hem ? PURPLE : hash(v.x, v.y, v.z, 9) > 0.93 ? [78, 56, 104] : [30, 24, 40]; keep = belt ? 0 : 0.06; } } }      // a black dress with a purple belt and buckle, purple ragged hem, a patch or two
+    else if (kind === 'wizard') { if (behind && !TURTLES.has(f.species?.id) && v.tag !== 'tail') { const cuff = Math.abs(v.x - (E.x - 3.6)) <= 0.6; c = cuff ? GOLD : hash(v.x, v.y, v.z, 10) > 0.94 ? GOLD : [44, 52, 150]; keep = cuff ? 0 : 0.06; } }      // a deep blue robe scattered with gold stars, gold at the collar
     else if (kind === 'bat') { c = [34, 24, 48]; keep = 0.1; }                                                                                          // a bat is dark all over
     else if (kind === 'cat') { c = [24, 20, 30]; keep = 0.12; }                                                                                       // all in black
     else if (kind === 'devil') {      // deep devil red all over, darker along the back and brighter under the belly; a black goatee on the chin, two angry black brows slanting down to the nose
@@ -140,7 +238,7 @@ function paint(kind, f, A) {
   }
   return out;
 }
-const PAINTED = new Set(['mummy', 'skeleton', 'ghost', 'frank', 'pumpkin', 'cat', 'devil', 'firefighter', 'police', 'racehorse', 'vampire', 'pirate', 'bat', 'octoghost']);
+const PAINTED = new Set(['mummy', 'skeleton', 'ghost', 'frank', 'pumpkin', 'cat', 'devil', 'firefighter', 'police', 'racehorse', 'vampire', 'pirate', 'bat', 'octoghost', 'witch', 'wizard']);
 const HATS = { witch: 'witch', wizard: 'wizard', pirate: 'pirate', devil: 'devil', cat: 'cat', frank: 'frank', vampire: 'hair', firefighter: 'firefighter', police: 'police', bat: 'bat' };
 
 // ── a shell as a hat (or a pumpkin, a skull, a candy corn): the shell's own voxels repainted along its coil, t = 0 at the opening (the brim)
@@ -218,11 +316,16 @@ export function dress(f, kind = costumeFor(f)) {
     f.hw = hw; return hw;
   }
   if (!octo && (f.cute ?? 0) <= 0.3 && !f.nursery) {
-    if (HATS[kind] && (!turtle || kind !== 'cat')) put(hatVox(HATS[kind], f.seed), hatAt.x, hatAt.y + (kind === 'vampire' ? -0.3 : 0), 0, k * (kind === 'firefighter' ? 1.15 : 1));
-    if (kind === 'witch') { putBox(box(1.2 * k, 1.0 * k, 1.0 * k, [120, 168, 80]), A.nose + 0.6 * k, A.E.y - 0.5 * k, 0);                               // a warty green nose
-      if (!turtle) { const L = A.len * 0.95, hy = A.bot - 0.7 * k; putBox(box(L, 0.32 * k, 0.32 * k, [150, 110, 60]), A.x1 - L / 2 + 0.5 * k, hy, 0);      // and a broom under it, ridden along the body
-        const v = new Vox(1); for (let i = 0; i <= 5; i++) { const r = 1 + i * 0.45; for (let j = -3; j <= 3; j++) for (let z = -3; z <= 3; z++) if (Math.abs(j) + Math.abs(z) <= r) v.set(-i, j, z, i === 0 ? [110, 70, 40] : hash(i, j, z, 3) > 0.5 ? STRAW : [160, 124, 56]); } put(v, A.x1 - L + 0.5 * k, hy, 0, k * 0.55); } }      // the bristles, bound at the back end
-    if (kind === 'pirate' && !turtle) { putBox(box(0.5, 1.3 * k, 1.3 * k, BLACK), A.E.x, A.E.y, A.w + 0.45); for (let i = 0; i < 4; i++) putBox(box(0.5, 0.3 * k, 0.7 * k, BLACK), A.E.x, A.E.y + (0.7 + i * 0.42) * k, A.w + 0.2 - i * 0.3 * k); }      // an eye patch and its strap (not on a turtle: its head turns on its own)
+    if (HATS[kind] && (!turtle || kind !== 'cat')) put(hatVox(HATS[kind], f.seed), hatAt.x, hatAt.y + (kind === 'vampire' ? -0.3 : 0), 0, k * (kind === 'firefighter' ? 1.15 : FINE_HATS.has(HATS[kind]) ? 0.5 : 1));
+    if (kind === 'witch') { const u = k * 0.5; put(witchNoseVox(), A.nose - 0.2 * k, A.E.y - 0.6 * k, 0, u);      // a long hooked green nose with warts
+      if (!turtle) put(witchHairVox(Math.round(A.w / u) - 1, f.seed), hatAt.x, hatAt.y - 0.1, 0, u);      // stringy grey hair from under the brim
+      if (sea) { const Lf = Math.round((A.y1 - A.y0) * 0.55 / u), m = put(broomVox(Lf, 5), 0, A.y0, 0, u); m.rotation.z = Math.PI / 2;      // a seahorse holds its broom with its tail, upright like a stem: the hold follows the curl of the tail every frame
+        hw.tick = () => { const R = f.tailRig; if (!R || !R.x.length) return; const n = R.x.length, a = Math.floor(n * 0.6); let cx = 0, cy = 0, cz = 0, m0 = 0; for (let q = a; q < n; q++) { cx += R.x[q]; cy += R.y[q]; cz += R.z[q]; m0++; } m.position.set((cx / m0 + 0.6) * f.scale, (cy / m0) * f.scale, (cz / m0) * f.scale); }; hw.tick(); }
+      else if (!turtle) { const L = A.len * 0.95, Lc = Math.round(L / u) - 15, Lf = Math.round(Lc * 0.55); put(broomVox(Lf, Lc - Lf), A.x1 + 0.5 * k - Lf * u, A.bot - 0.9 * k, 0, u); } }      // a fish rides its broom along under its belly
+    if (kind === 'pirate' && !turtle) { const u = k * 0.5; putBox(box(0.5, 1.3 * k, 1.3 * k, BLACK), A.E.x, A.E.y, A.w + 0.45); for (let i = 0; i < 4; i++) putBox(box(0.5, 0.3 * k, 0.7 * k, BLACK), A.E.x, A.E.y + (0.7 + i * 0.42) * k, A.w + 0.2 - i * 0.3 * k);      // an eye patch and its strap (not on a turtle: its head turns on its own)
+      for (const [dy, dz] of [[0, 0], [-1, 0], [-2, 0], [-1, -1], [-1, 1]]) putBox(box(0.3 * k, 0.3 * k, 0.3 * k, GOLD), A.E.x - 1.6 * k, A.E.y - 1.1 * k + dy * 0.3 * k, -(A.w + 0.35) + dz * 0.3 * k);      // a gold hoop earring on the other side
+      put(pirateBeardVox(Math.max(1, Math.round(A.w / u * 0.55))), A.nose - 0.9 * k, A.bot + 0.1 * k, 0, u);      // a bushy beard in two plaits with gold beads
+      { const N = Math.round((sea ? (A.y1 - A.y0) * 0.4 : A.hh * 1.3) / u), m = put(cutlassVox(N), A.E.x - 1.2 * k, (sea ? A.y0 + (A.y1 - A.y0) * 0.25 : A.bot - 0.2 * k), A.wMax * 0.6 + 1.0 * k, u); m.rotation.z = 0.32; } }      // a cutlass carried at its side, leaning back
     if (kind === 'vampire') { const v = new Vox(1), L = Math.max(6, Math.round(A.len * 0.42)), c0 = -Math.max(3, Math.round(A.hh * 0.45)); let w0 = 0;      /* (the collar at the neck, behind the head) */      // a cape draped over its back from the collar, falling down both sides, red at the hem
       for (let i = c0; i >= c0 - L; i--) { const x = Math.round(A.topX) + i, w = 1 + Math.round((c0 - i) * 0.4) + 1; let any = false; for (let z = -w; z <= w; z++) { const t = A.colTop(x, z); if (t < -1e8) continue; const edge = Math.abs(z) === w || A.colTop(x, z + Math.sign(z || 1)) < -1e8 || i === c0 - L; v.set(i, Math.round(t - A.top) + 1, z, edge ? RED : hash(x, 0, z, 3) > 0.85 ? [50, 30, 60] : BLACK); any = true; if (i === c0) w0 = Math.max(w0, Math.abs(z)); } if (!any && i < c0 - 1) break; }
       { const y0 = Math.round((A.colTop(Math.round(A.topX) + c0, 0) > -1e8 ? A.colTop(Math.round(A.topX) + c0, 0) : A.top) - A.top) + 1; for (let z = -(w0 + 1); z <= w0 + 1; z++) { const H = Math.round(1.6 * k + 1.2 * k * (1 - Math.abs(z) / (w0 + 1.5))); for (let j = 0; j <= H; j++) { v.set(c0, y0 + j, z, j === H || Math.abs(z) === w0 + 1 ? RED : BLACK); if (j > 0) v.set(c0 + 1, y0 + j, z, RED); } } } put(v, A.topX, A.top, 0);      // a tall Dracula collar fanning up behind the head, scarlet on the inside
@@ -233,20 +336,24 @@ export function dress(f, kind = costumeFor(f)) {
       for (const z of [-0.5 * k, 0.5 * k]) putBox(box(0.35 * k, 0.8 * k, 0.35 * k, WHITE), A.nose - 0.8 * k, A.bot - 0.2 * k, z); }      // two little fangs
     if (kind === 'cat') { for (const side of [-1, 1]) for (let i = 0; i < 3; i++) putBox(box(0.22 * k, 0.16 * k, 2.4 * k, WHITE), A.nose - (0.5 + i * 0.3) * k, A.E.y - (1.2 - i * 0.4) * k, side * 1.5 * k);      // whiskers
       if (!sea) { const v = new Vox(1); for (let q = 0; q <= 7; q++) { v.set(-q, Math.round(q * q * 0.1), 0, BLACK); if (q > 5) v.set(-q, Math.round(q * q * 0.1) + 1, 0, BLACK); } put(v, A.x0 + 0.5, A.mid, 0, k * 0.7); } }      // a long black tail curling up behind
-    if (kind === 'wizard') { const v = new Vox(1); for (let j = 0; j >= -4; j--) { const w = 1.5 + 0.35 * j; for (let z = -2; z <= 2; z++) for (let i = -1; i <= 1; i++) if (Math.abs(z) <= w && Math.abs(i) <= w * 0.6) v.set(i, j, z, hash(i, j, z, 4) > 0.6 ? [226, 226, 232] : WHITE); } put(v, A.nose - 1.2 * k, A.bot + 0.2, 0, k * 0.55); }      // a long white beard
-    if (kind === 'pirate' && !turtle) { const v = new Vox(1); v.fill(-1, 0, -1, 1, 2, 1, [40, 160, 70]); v.fill(0, 3, -1, 1, 4, 1, [210, 40, 40]); v.set(2, 3, 0, GOLD); v.set(1, 4, 1, BLACK); v.set(1, 4, -1, BLACK); v.set(-2, 1, 0, [40, 120, 200]); v.set(-3, 0, 0, [40, 120, 200]); put(v, A.topX - A.len * 0.3, A.colTop(Math.round(A.topX - A.len * 0.3), 0) + 0.5, 0, k * 0.5); }      // a little parrot riding on its back
+    if (kind === 'wizard' && !turtle) { const u = k * 0.5, my = A.E.y - 2.0 * k; put(wizardBeardVox(Math.round(Math.min((my - A.bot) + A.hh * 0.6, sea ? (A.y1 - A.y0) * 0.45 : 1e9) / u), Math.max(3, Math.round(A.w * 1.05 / u)), f.seed), A.nose - 0.5 * k, my, 0, u);      // a long wavy white beard from under the mouth, wide across the chin, a mustache curling up at the ends
+      for (const side of [-1, 1]) putBox(box(1.0 * k, 0.32 * k, 0.35 * k, WHITE), A.E.x + 0.2 * k, A.E.y + 1.05 * k, side * (A.w + 0.25));      // bushy white brows
+      { const N = Math.max(8, Math.round((sea ? (A.y1 - A.y0) * 0.6 : A.hh * 2.0) / u) - 6), m = put(staffVox(N), A.E.x - 1.4 * k, (sea ? A.y0 + (A.y1 - A.y0) * 0.1 : A.bot - 0.4 * k), A.wMax * 0.6 + 1.0 * k, u); m.rotation.z = 0.22; } }      // a gnarled staff with a glowing crystal, carried at its side
+    if (kind === 'pirate' && !turtle && !sea) { const px = A.topX - A.len * 0.32, ty = A.colTop(Math.round(px), 0); put(parrotVox(), px, (ty > -1e8 ? ty : A.top) + 0.4 * k, 0, k * 0.42); }      // a parrot perched on its back behind the hat
     if (kind === 'mummy') { const v = new Vox(1); for (let q = 0; q <= 7; q++) v.set(-q, -Math.round(q * q * 0.06), 0, WRAP); put(v, A.x0 + 0.5, A.mid - 1, 0, k * 0.7);      // a loose end trailing behind
       for (let n = 0; n < 4; n++) { const x = Math.round(A.x0 + A.len * (0.2 + n * 0.2)), z = (n % 2 ? 1 : -1) * Math.min(1, Math.round(A.wMax * 0.3)), y = A.colBot(x, z); if (y > 1e8) continue; const v2 = new Vox(1), len = 3 + (n % 3); for (let q = 0; q <= len; q++) v2.set(-Math.round(q * 0.35), -q, 0, hash(n, q, 0, 2) > 0.5 ? WRAP : [240, 236, 226]); put(v2, x, y - 0.5, z, 1); }      // bandage ends hanging loose off its underside, swept back a little
       { const v3 = new Vox(1); for (let q = 0; q <= 4; q++) v3.set(-q, Math.round(q * 0.5) + 1, 0, WRAP); put(v3, A.topX - 1, A.top, 0, 1); } }      // and one waving off the top of its head
     if (kind === 'firefighter' && !turtle) { const H = A.hh * 1.6, z = A.wMax * 0.6 + 0.8 * k; putBox(box(0.3 * k, H, 0.3 * k, [120, 70, 40]), A.E.x - 2 * k, A.mid + H * 0.1, z);      // a fire axe held at its side: a wooden handle, a red head with a silver edge
       const v = new Vox(1); for (let i = -2; i <= 1; i++) for (let j = 0; j <= 2; j++) v.set(i, j, 0, i === -2 ? [220, 220, 230] : RED); v.set(2, 1, 0, RED); put(v, A.E.x - 2 * k, A.mid + H * 0.6, z, k * 0.5); }
+    if (kind === 'devil' && !turtle) { put(capeVox(A, k, [30, 22, 34], [200, 26, 36], [58, 30, 48]), A.topX, A.top, 0);      // a black cape lined in scarlet, a tall collar behind the horns
+      put(goateeVox(), A.nose - 1.0 * k, A.bot - 0.05 * k, 0, k * 0.5); for (const z of [-0.55 * k, 0.55 * k]) putBox(box(0.32 * k, 0.75 * k, 0.32 * k, WHITE), A.nose - 0.7 * k, A.bot - 0.15 * k, z); }      // a pointed goatee and two fangs
     if (kind === 'devil' && !sea) { const v = new Vox(1), N = 9, DK = [22, 16, 24]; let ty = 0; for (let q = 0; q <= N; q++) { ty = Math.round(q * q * 0.085); v.set(-q, ty, 0, RED); if (q >= 2) v.set(-q, ty + 1, 0, q % 3 ? RED : [168, 18, 30]); }      // a long tail curling up behind, two voxels thick
       const cx = -N - 1, cy = ty + 2; for (let j = -2; j <= 2; j++) v.set(cx, cy + j, 0, DK); for (let j = -1; j <= 1; j++) v.set(cx - 1, cy + j, 0, DK); v.set(cx - 2, cy, 0, DK); v.set(cx + 1, cy - 2, 0, DK); v.set(cx + 1, cy + 2, 0, DK); v.set(cx + 1, cy, 0, DK);      // a black spade at its tip, barbs swept back
       put(v, A.x0 + 0.5, A.mid, 0, k * 0.8); }
     if (kind === 'frank') for (const side of [-1, 1]) putBox(box(0.9 * k, 0.9 * k, 1.3 * k, [150, 150, 160]), A.E.x - 0.8 * k, A.E.y - 0.8 * k, side * (A.w + 0.5 * k));          // two bolts
     if (kind === 'devil' && !turtle) { const u = k * 0.5, L = sea ? (A.y1 - A.y0) * 0.5 : A.hh * 1.8, N = Math.max(8, Math.round(L / u)), z = A.wMax * 0.6 + 1.0 * k, v = new Vox(1), SH = [58, 30, 34], SH2 = [78, 42, 44], TIP = [255, 150, 110];      // a pitchfork carried at its side: a thick dark shaft leaning back, a red three-tined fork on top with hot tips
       for (let j = 0; j <= N; j++) { v.set(0, j, 0, j % 4 === 0 ? SH2 : SH); v.set(0, j, 1, j % 4 === 0 ? SH2 : SH); } v.set(0, -1, 0, [30, 18, 22]); v.set(0, -1, 1, [30, 18, 22]);      // (two voxels across, so it reads at a distance; a dark ferrule at the foot)
-      for (let i = -3; i <= 3; i++) { v.set(i, N + 1, 0, RED); v.set(i, N + 1, 1, RED); } for (const i of [-3, 0, 3]) { const h = i ? 4 : 6; for (let j = 2; j <= h; j++) { v.set(i, N + j, 0, j === h ? TIP : RED); v.set(i, N + j, 1, j === h ? TIP : RED); } }      // the crossbar and three tines, the middle one tallest
+      for (let i = -3; i <= 3; i++) { v.set(i, N + 1, 0, RED); v.set(i, N + 1, 1, RED); } for (const i of [-3, 0, 3]) { const h = i ? 4 : 6; for (let j = 2; j <= h; j++) { v.set(i, N + j, 0, j === h ? TIP : RED); v.set(i, N + j, 1, j === h ? TIP : RED); } v.set(i, N + h + 1, 0, [255, 200, 70], 1.5); v.set(i, N + h + 2, 1, [255, 140, 40], 1.4); if (!i) v.set(0, N + h + 3, 0, [255, 220, 120], 1.6); }      // the crossbar and three tines, the middle one tallest, a lick of flame off each point
       const m = put(v, A.E.x - 0.6 * k, (sea ? A.y0 + (A.y1 - A.y0) * 0.2 : A.bot - 0.3 * k), z, u); m.rotation.z = 0.26; }
     if (kind === 'police') for (const side of [-1, 1]) putBox(box(0.5 * k, 0.6 * k, 0.4, GOLD), A.E.x - 3.5 * k, A.E.y - 0.5 * k, side * (A.wMax * 0.5 + 0.3));          // a badge on each side
     if (kind === 'racehorse') { const silk = silkFor(f), SKIN = [232, 190, 158]; for (const side of [-1, 1]) { putBox(box(1.0 * k, 1.3 * k, 0.6 * k, WHITE), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.35)); putBox(box(0.6 * k, 0.8 * k, 0.3 * k, silk), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.75)); }      // white blinker cups with a silk patch, beside the eyes
