@@ -305,13 +305,47 @@ export function shellSkin(im, kind) {
     else if (kind === 'gnome') c = t < 0.14 ? [240, 232, 214] : t > 0.92 ? [230, 70, 70] : mix([204, 38, 40], [160, 24, 30], q * 0.3);                        // a red cone with a cream band at the brim
     else if (kind === 'pumpkin') c = t > 0.86 ? [84, 118, 42] : side && t > 0.3 && t < 0.5 && Math.abs(y) < R0 * 0.3 ? [255, 232, 140] : mix([236, 118, 32], [172, 74, 18], 0.2 + 0.6 * (0.5 + 0.5 * Math.cos(ang * 8)));      // ribbed orange, a green stem at the tip, a lit eye on each flank
     else if (kind === 'witch') c = t < 0.12 ? [50, 44, 64] : t < 0.24 ? (y > R0 * 0.45 && Math.abs(k) < 1.3 ? GOLD : PURPLE) : mix(BLACK, [0, 0, 0], 0.3 * t);      // black, a purple band with a gold buckle on top
-    else if (kind === 'candle') { const drip = Math.round(ang * 2.5) % 2 === 0 && t < 0.45 && q > 0.35; c = t > 0.9 ? [255, 226, 110] : t > 0.8 ? [255, 140, 36] : t > 0.76 ? [40, 30, 30] : drip ? [252, 248, 236] : [238, 228, 204]; }      // a candle: cream wax with drips running down from the top, a dark wick, an orange flame with a yellow heart at the tip
+    else if (kind === 'candle') { const col = Math.round(ang * 2.2), dripCol = ((col % 2) + 2) % 2 === 0, dl = 0.1 + 0.3 * hash(col, 7, 1, 5), top = 0.78, drip = dripCol && t > top - dl && t <= top, end = drip && t < top - dl + 0.05;      /* (drips start at the cut top and run down the wax, each its own length, with a rounded bead at the end) */
+      c = t > 0.93 ? [34, 26, 26] : t > top ? mix([253, 248, 230], [255, 222, 160], (t - top) / (1 - top) * 0.7) : end ? [255, 255, 250] : drip ? [255, 253, 246] : mix([250, 244, 226], [236, 226, 202], 0.5 + 0.5 * Math.cos(ang * 2) * 0.6);      /* (ivory wax, a little darker on the shaded side; the top warms toward the flame; the very tip is the wick's dark base, the flame itself stands on it in three dimensions: candleTop) */ }
     else if (kind === 'candycorn') c = t < 0.3 ? [250, 248, 236] : t < 0.65 ? [255, 150, 40] : [255, 222, 60];                                              // white, orange, yellow
     else { const band = ((t * 5 + ang / (Math.PI * 2)) % 1 + 1) % 1; c = t > 0.88 ? GOLD : band < 0.3 ? [244, 170, 210] : band < 0.5 ? [186, 160, 236] : mix([250, 248, 255], [226, 236, 250], q * 0.5); }      // a unicorn horn: pearly white with a pink and lilac stripe spiraling to a gold tip
     const Lc = lin(c), sh = Math.max(0.6, Math.min(1.3, 0.85 + 2.2 * (l0 - 0.12)));
     a[o] = Lc[0] * sh; a[o + 1] = Lc[1] * sh; a[o + 2] = Lc[2] * sh;
   }
   im.instanceColor.needsUpdate = true;
+}
+// the top of a candle shell: a flat cut cap of wax over the shell's pointed tip, a dark wick standing out of it, a little flame on the wick that
+// flutters (unlit colors, so it glows against the shaded shell) and always stands up in the world whichever way the shell is tilted, and a soft
+// warm halo. Built on the shell mesh itself (im), at its apex (the cells furthest along the coil), so it moves with the shell
+const _Q = new THREE.Quaternion();
+export function candleTop(im, r = 0.19) {
+  const mt = new THREE.Matrix4(), p = new THREE.Vector3(); let L = -Infinity; const P = [];
+  for (let id = 0; id < im.count; id++) { im.getMatrixAt(id, mt); p.setFromMatrixPosition(mt); P.push([p.x, p.y, p.z]); L = Math.max(L, p.x); }
+  let ay = 0, az = 0, n = 0; for (const [x, y, z] of P) if (x > L - r * 0.45) { ay += y; az += z; n++; } ay /= Math.max(1, n); az /= Math.max(1, n);      // the apex: where the coil ends
+  const u = Math.max(0.016, r * 0.13), g = new THREE.Group(); g.position.set(L - u * 1.5, ay, az);
+  { const v = new Vox(u), WAX = [250, 244, 222], WAX2 = [238, 228, 200], WICK = [34, 26, 26];      // the cut top: a short wax cap, round, a little wider than the tip, with a dished melted pool and the wick in its middle
+    for (let x = 0; x <= 2; x++) for (let y = -3; y <= 3; y++) for (let z = -3; z <= 3; z++) { const d = Math.hypot(y, z); if (d > 3.2) continue; v.set(x, y, z, x === 2 && d < 2.2 ? mix(WAX, [255, 220, 160], 0.35) : d > 2.6 ? WAX2 : WAX); }
+    for (let x = 3; x <= 6; x++) v.set(x, 0, 0, WICK); v.set(3, 1, 0, WAX2); v.set(3, 0, 1, WAX2);      // a dark wick standing well out of the pool, a bead of wax at its foot
+    const m = v.mesh(); g.add(m); g.userData.cap = m; }
+  // the flame: a teardrop of unlit color cells, a white-yellow heart in an orange body with a red-orange skirt and a blue lick at its base, standing up from the wick's end
+  const fu = u * 0.66, cells = [];      // finer cells than the wax: a flame is a small, soft thing
+  for (let y = 0; y <= 13; y++) { const rr = y < 2 ? 1.3 + y * 0.45 : 2.2 * Math.sqrt(Math.max(0, 1 - ((y - 2) / 11.5) ** 1.5)); for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) { const d = Math.hypot(x, z); if (d > rr + 0.1) continue; const k = rr > 0.01 ? d / rr : 1;
+    const col = y < 2 ? (k < 0.5 ? [150, 180, 255] : [90, 120, 240]) : y > 11 ? [255, 96, 28] : k < 0.4 && y < 8 ? [255, 255, 232] : k < 0.62 && y < 10 ? [255, 236, 150] : k < 0.85 ? [255, 176, 48] : [255, 112, 30]; cells.push([x, y, z, col]); } }      // a blue lick at the foot, a white heart, a yellow body, an orange skin and a red-orange tip
+  const fl = new THREE.InstancedMesh(new THREE.BoxGeometry(fu, fu, fu), new THREE.MeshBasicMaterial({ toneMapped: false }), cells.length), cc = new THREE.Color(); const M = new THREE.Matrix4();
+  cells.forEach(([x, y, z, col], i) => { M.makeTranslation(x * fu, (y + 0.5) * fu, z * fu); fl.setMatrixAt(i, M); fl.setColorAt(i, cc.setRGB(col[0] / 255, col[1] / 255, col[2] / 255)); }); fl.instanceMatrix.needsUpdate = true; if (fl.instanceColor) fl.instanceColor.needsUpdate = true; fl.frustumCulled = false;
+  const up = new THREE.Group(); up.position.set(6.2 * u, 0, 0); g.add(up); const flick = new THREE.Group(); up.add(flick); flick.add(fl);      // up: kept upright in the world each frame; flick: the flutter
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,200,110,0.9)'); gr.addColorStop(0.35, 'rgba(255,150,50,0.45)'); gr.addColorStop(1, 'rgba(255,120,30,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, opacity: 0.7, toneMapped: false })); halo.position.set(0, 5 * u, 0); halo.scale.setScalar(u * 30); halo.renderOrder = 5; flick.add(halo);
+  g.userData.flame = fl; g.userData.up = up; g.userData.flick = flick; g.userData.halo = halo; g.userData.u = u; g.userData.ph = Math.random() * 100;
+  im.add(g); return g;
+}
+// each frame: the flame leans and stretches like a flame in a draft, the halo breathes with it, and the whole thing stays upright however the shell is carried
+export function candleTick(top, t, night = false) {
+  const U = top.userData, up = U.up, fk = U.flick, ph = U.ph; if (!up) return;
+  up.parent.getWorldQuaternion(_Q); up.quaternion.copy(_Q).invert();
+  const s1 = Math.sin(t * 13 + ph), s2 = Math.sin(t * 29 + ph * 2), s3 = Math.sin(t * 7.3 + ph);
+  fk.scale.set(1 - 0.08 * s2, 1 + 0.16 * s1 + 0.1 * s2, 1 - 0.08 * s1); fk.rotation.z = 0.2 * s3 + 0.08 * s2; fk.rotation.x = 0.14 * Math.sin(t * 9.1 + ph) ;
+  U.halo.material.opacity = (night ? 0.85 : 0.6) + 0.12 * s1 + 0.06 * s2; U.halo.scale.setScalar(U.u * (night ? 34 : 26) * (1 + 0.1 * s1));
 }
 export function shellUnskin(im) { if (!im?.userData?.hw0) return; im.instanceColor.array.set(im.userData.hw0); im.instanceColor.needsUpdate = true; delete im.userData.hw0; delete im.userData.hwKind; }
 
@@ -363,7 +397,8 @@ export function dress(f, kind = costumeFor(f)) {
   const turtle = TURTLES.has(f.species?.id), octo = f.species?.move === 'jet', crab = !!f.crab, sea = !!f.sp?.tail;
   const k = turtle ? 1.1 : Math.max(0.9, Math.min(2.0, A.hh * 0.105)),      /* (a brim about three fifths of the head's height: a hat, not a tent) */ hatAt = turtle ? { x: A.shell.x, y: A.shell.y + 0.6 } : octo ? { x: A.mantle.x, y: A.mantle.y - 0.5 } : { x: A.topX, y: A.top + 0.3 };      // a hat in proportion to the head it sits on
   if (crab) {      // a crab's costume is the shell on its back, repainted as a hat, a pumpkin, a skull or a candy corn; a new shell it moves into is painted the same way
-    hw.group = null; hw.shell = () => { const m = f.shellG?.children?.[0]; if (m && m !== hw.shellMesh) { if (hw.shellMesh) shellUnskin(hw.shellMesh); hw.shellMesh = m; shellSkin(m, kind); } }; hw.shell(); hw.place = hw.shell;
+    hw.group = null; hw.shell = () => { const m = f.shellG?.children?.[0]; if (m && m !== hw.shellMesh) { if (hw.shellMesh) shellUnskin(hw.shellMesh); if (hw.top) { hw.top.parent?.remove(hw.top); const at = parts.indexOf(hw.top); if (at >= 0) parts.splice(at, 1); hw.top = null; } hw.shellMesh = m; shellSkin(m, kind); if (kind === 'candle') { hw.top = candleTop(m, f.dims?.r ?? 0.19); parts.push(hw.top); } } }; hw.shell(); hw.place = hw.shell;
+    if (kind === 'candle') ticks.push(() => { if (hw.top) candleTick(hw.top, performance.now() / 1000, !!f.isNight); });      // (the flame flutters and stays upright; the glow is stronger at night)
     const wrist = f.claws?.[1]?.userData?.wrist; if (wrist) { const U = 0.034, v = new Vox(1), OR = [240, 130, 40], DKo = [26, 20, 30];      // a trick-or-treat pail hung from its big claw: a little jack-o'-lantern bucket with a black handle, a face on the front, candy corn poking out of the top
       for (let j = 0; j <= 4; j++) { const r = 2.4 + j * 0.25; for (let i = -3; i <= 3; i++) for (let z = -3; z <= 3; z++) { const d = Math.hypot(i, z); if (d > r + 0.3 || (j > 0 && d < r - 0.9)) continue; v.set(i, j, z, OR); } }
       v.set(3, 3, -1, DKo); v.set(3, 3, 1, DKo); v.set(3, 1, 0, DKo); v.set(3, 1, -1, DKo); v.set(3, 1, 1, DKo); v.set(3, 2, -2, DKo); v.set(3, 2, 2, DKo);      // eyes and a grin, cut in the front
@@ -440,6 +475,6 @@ export function undress(f) {
   const hw = f.hw; if (!hw) return; f.hw = null;
   if (hw.base0) { f.baseCol = hw.base0; repaint(f); }
   if (hw.shellMesh) shellUnskin(hw.shellMesh);
-  for (const m of hw.parts) { m.parent?.remove(m); m.geometry?.dispose?.(); if (m.material && !m.isInstancedMesh) m.material.dispose?.(); }
+  for (const m of hw.parts) { m.parent?.remove(m); m.traverse?.((o) => { if (o === m) return; o.geometry?.dispose?.(); o.material?.map?.dispose?.(); o.material?.dispose?.(); }); m.geometry?.dispose?.(); if (m.material && !m.isInstancedMesh) m.material.dispose?.(); }      /* (a part that is a group, like the candle's top, frees its children too) */
   hw.group?.parent?.remove(hw.group);
 }

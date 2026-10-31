@@ -6,7 +6,7 @@ import { mix } from '../color.js';
 import { placeGroup, stampItem, disposeItem } from './items.js';
 import { DECOR_DEF } from '../game/rules.js';
 import { PLANTS } from './grips.js';
-import { dress, undress, costumeFor, shellSkin, SHELL_KINDS } from './costume.js';
+import { dress, undress, costumeFor, shellSkin, SHELL_KINDS, candleTop, candleTick } from './costume.js';
 
 const U = 0.07;
 // a jack-o'-lantern: a ribbed orange sphere, a green stem, and a cut face that reads from the front (toward the glass, +z)
@@ -152,7 +152,7 @@ function skinMesh(im, type, it, extra) {
 }
 function skinItem(it, lights) {
   if (it.hwSkin) return; const type = it.type, shell = type.startsWith('cshell_'); if (!SKINS.has(type) && !PLANTS.has(type) && !shell) return; it.hwSkin = true; it.hwExtra = [];
-  if (shell) { const h = [...String(it.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7), kind = SHELL_KINDS[h % SHELL_KINDS.length]; it.group.traverse((o) => { if (o.isInstancedMesh) shellSkin(o, kind); }); return; }      // an empty shell on the sand: a little hat or pumpkin or candy corn, the same way the crabs' shells are
+  if (shell) { const h = [...String(it.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7), kind = SHELL_KINDS[h % SHELL_KINDS.length]; it.group.traverse((o) => { if (o.isInstancedMesh) { shellSkin(o, kind); if (kind === 'candle' && !it.hwTop) { it.hwTop = candleTop(o, 0.19 * (it.sz ?? 1)); it.hwExtra.push(it.hwTop); } } }); return; }      /* (a candle shell on the sand is a lit candle too: cap, wick and a fluttering flame standing up from its tip, the same as on a crab's back) */      // an empty shell on the sand: a little hat or pumpkin or candy corn, the same way the crabs' shells are
   if (type === 'coconut') { it.hwHidden = []; it.group.traverse((o) => { if (o.isInstancedMesh && o.visible) { o.visible = false; it.hwHidden.push(o); } }); const m = buildLanternShell(5); m.position.set(0, 0.068 * 10, 0); it.group.add(m); it.hwExtra.push(m); }      // the shell's look gives way to a carved pumpkin (the collider is still the shell's)
   else it.group.traverse((o) => { if (o.isInstancedMesh) skinMesh(o, type, it); });
   if (type === 'coconut') {
@@ -160,7 +160,7 @@ function skinItem(it, lights) {
   if (type === 'pot' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.6, 2); l.position.set(0, 1.0, 1.1); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
   if (type === 'cave' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.2, 2); l.position.set(0, 0.5, 0.2); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
 }
-function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; for (const o of it.hwHidden ?? []) o.visible = true; it.hwHidden = null; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; delete o.userData.hwKind; } }); for (const m of it.hwExtra ?? []) { it.group.remove(m); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; }
+function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; for (const o of it.hwHidden ?? []) o.visible = true; it.hwHidden = null; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; delete o.userData.hwKind; } }); for (const m of it.hwExtra ?? []) { m.parent?.remove(m); m.traverse?.((o) => { if (o !== m) { o.geometry?.dispose?.(); o.material?.map?.dispose?.(); o.material?.dispose?.(); } }); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; it.hwTop = null; }
 // cobwebs strung from the tallest plants, with a spider on a thread under one
 let webTex = null;
 const cobwebTexture = () => { if (webTex) return webTex; const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.translate(64, 64); g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 1.4;
@@ -223,7 +223,7 @@ export class SeasonDress {
     if (this.decor?.items) for (const it of this.decor.items.values()) if (it.hwLight) it.hwLight.intensity = (it.hwGreen ? 0.8 : 1.8) * (0.25 + 0.75 * k);      /* (a candle in the lantern, a brew in the cauldron: low by day, bright after dark) */
     if (this.sky) { const S = this.sky; S.moon.material.opacity = 0.45 + 0.55 * k; S.halos.forEach((h, i) => (h.material.opacity = (i === 0 ? 0.13 : i === 1 ? 0.06 : 0.22) * (0.5 + 0.5 * k))); for (const w of S.windows) w.material.opacity = 0.15 + 0.8 * k; } }      // the moon pale by day, full and bright at night; the windows lit after dark
   update(dt, t, animals = null) {
-    if (this.ghostly) { this.dressAnimals(animals); if (animals) for (const f of animals) f.hw?.tick?.(dt, t); const nD = this.decor?.items?.size ?? 0; if ((this.plantT = (this.plantT ?? 0) + dt) > 1 || nD !== this.lastN) { this.plantT = 0; this.lastN = nD; this.dressDecor(); }      /* (and at once when a decoration comes or goes: a stand-in pumpkin leaves the moment a coconut arrives) */
+    if (this.ghostly) { this.dressAnimals(animals); if (animals) for (const f of animals) f.hw?.tick?.(dt, t); if (this.decor?.items) for (const it of this.decor.items.values()) if (it.hwTop) candleTick(it.hwTop, t, this.phase === 'night');      /* (the candle shells on the sand flicker too) */ const nD = this.decor?.items?.size ?? 0; if ((this.plantT = (this.plantT ?? 0) + dt) > 1 || nD !== this.lastN) { this.plantT = 0; this.lastN = nD; this.dressDecor(); }      /* (and at once when a decoration comes or goes: a stand-in pumpkin leaves the moment a coconut arrives) */
       if (this.decor?.items) for (const it of this.decor.items.values()) if (it.hwLight && !it.hwGreen) it.hwLight.intensity = 1.8 * (0.25 + 0.75 * (this.phase === 'night' ? 1 : this.phase === 'evening' ? 0.55 : 0)) * (0.85 + 0.15 * Math.sin(t * 6.3 + it.at.x * 3) * Math.sin(t * 2.7)); }
     if (this.sky) { const S = this.sky, dark = this.phase === 'night' || this.phase === 'evening'; for (const w of S.windows) w.material.opacity = (dark ? 0.95 : 0.15) * (0.82 + 0.18 * Math.sin(t * 9 + (w.userData.ph ?? 0)) * Math.sin(t * 2.3 + (w.userData.ph ?? 0)));      // candlelight in the windows
       for (const c of S.clouds) { c.position.x += c.userData.sp * dt; if (c.position.x > 9) c.position.x = -9; }      // the clouds drift across the moon
