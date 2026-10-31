@@ -178,7 +178,7 @@ export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dea
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
 export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
 // how big it is, smoothly, from the day it hatched to the day it is grown: tiny fresh from the egg, half grown by the end of the baby days
-export function growthScale(fish, now = Date.now()) { const d = Math.max(0, (now - fish.born) / DAY),      /* (the same clock as stageOf: a strong hatchling's head start shows in its size too) */ lerp = (a, b, k) => a + (b - a) * Math.max(0, Math.min(1, k)); const start = fish.parents?.length ? 0.2 : STAGE_SCALE.baby;
+export function growthScale(fish, now = Date.now()) { const d = Math.max(0, (now - fish.born) / DAY),      /* (the same clock as stageOf: a strong hatchling's head start shows in its size too) */ lerp = (a, b, k) => a + (b - a) * Math.max(0, Math.min(1, k)); const start = fish.birthDate ? 0.5 : fish.parents?.length ? 0.2 : STAGE_SCALE.baby;      /* (a seahorse kept from the nursery is half grown already, five days out of the pouch: it carries on from the size it had there) */
   return d < BABY_DAYS ? lerp(start, STAGE_SCALE.juvenile * 0.9, d / BABY_DAYS) : lerp(STAGE_SCALE.juvenile * 0.9, 1, (d - BABY_DAYS) / (ADULT_DAYS - BABY_DAYS)); }
 export function nextStage(fish, now = Date.now()) {
   const age = now - fish.born, s = stageOf(fish, now);
