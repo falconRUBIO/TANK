@@ -179,13 +179,15 @@ export class SeasonDress {
   dressAnimals(list) { if (!list) return; this.animals = list; const used = new Set(), S = this.store, tag = this.tag, sorted = [...list].sort((a, b) => String(a.fid ?? a.name).localeCompare(String(b.fid ?? b.name)));      /* (the same order on every phone) */
     const stored = (f) => { const c = S?.get?.(f); return c && c.tag === tag ? c.kind : null; };
     for (const f of sorted) { const k = stored(f) ?? f.hw?.kind; if (k) used.add(k); }
-    let anyRace = sorted.some((f) => f.sp?.tail && (stored(f) ?? f.hw?.kind) === 'racehorse'), budget = 2;      /* (two new costumes a frame: a full tank dresses over a second or so instead of stalling one frame at boot) */
+    const grownSea = (f) => !!f.sp?.tail && !f.nursery && (f.cute ?? 0) <= 0.3 && !!f.vox && !!f.mesh;      /* (a grown seahorse: a nursery baby wears paint only and does not count) */
+    let anyRace = sorted.some((f) => grownSea(f) && (stored(f) ?? f.hw?.kind) === 'racehorse'), budget = 2;      /* (two new costumes a frame: a full tank dresses over a second or so instead of stalling one frame at boot) */
+    if (!anyRace) { const first = sorted.find(grownSea); if (first) { if (first.hw && first.hw.kind !== 'racehorse') undress(first); if (!first.hw) { try { dress(first, 'racehorse'); if (first.fid) S?.set?.(first, 'racehorse', tag); anyRace = true; budget--; } catch (e) { first.hw = { kind: null, parts: [], label: null }; } } } }      // with seahorses in the tank one of them is always the racehorse, even if the one that was has left or the record says otherwise
     for (const f of sorted) { if (!f.vox || !f.mesh) continue;
       const rec = stored(f);
-      if (f.hw) { if (rec && f.hw.kind && rec !== f.hw.kind && budget-- > 0) { undress(f); try { dress(f, rec); } catch (e) { f.hw = { kind: null, parts: [], label: null }; } } else f.hw.place?.(); continue; }      // the tank's record wins over a provisional pick
+      if (f.hw) { if (rec && f.hw.kind && rec !== f.hw.kind && !(f.hw.kind === 'racehorse' && grownSea(f) && !sorted.some((o) => o !== f && grownSea(o) && stored(o) === 'racehorse')) && budget-- > 0) { undress(f); try { dress(f, rec); } catch (e) { f.hw = { kind: null, parts: [], label: null }; } } else f.hw.place?.(); continue; }      // the tank's record wins over a provisional pick (except the one racehorse the tank must keep)
       if (budget-- <= 0) continue;
-      let kind = rec; if (!kind) { kind = !anyRace && f.sp?.tail ? 'racehorse' : costumeFor(f, used); if (f.fid) S?.set?.(f, kind, tag); }
-      try { const hw = dress(f, kind); if (hw) { used.add(hw.kind); if (hw.kind === 'racehorse' && f.sp?.tail) anyRace = true; } } catch (e) { f.hw = { kind: null, parts: [], label: null }; console.warn('costume', e); } } }
+      let kind = rec; if (!kind) { kind = costumeFor(f, used); if (f.fid) S?.set?.(f, kind, tag); }
+      try { const hw = dress(f, kind); if (hw) used.add(hw.kind); } catch (e) { f.hw = { kind: null, parts: [], label: null }; console.warn('costume', e); } } }
   clear() { for (const it of this.items) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); } this.items = []; this.id = null; this.ghostly = false; for (const g of this.ghosts ?? []) this.scene.remove(g.group); this.ghosts = [];
     if (this.sky) { this.scene.remove(this.sky); this.sky.traverse((o) => { o.geometry?.dispose?.(); if (o.material && !Array.isArray(o.material)) o.material.dispose?.(); }); this.sky = null; }
     for (const w of this.webs ?? []) this.scene.remove(w); this.webs = []; this.spider = null;
