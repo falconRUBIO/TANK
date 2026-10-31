@@ -175,7 +175,8 @@ export class SeasonDress {
   // every animal in the tank wears a costume (costume.js), new arrivals included
   dressAnimals(list) { if (!list) return; this.animals = list; const used = new Set(); const sorted = [...list].sort((a, b) => String(a.fid ?? a.name).localeCompare(String(b.fid ?? b.name)));      /* (the same order on every phone) */
     for (const f of sorted) if (f.hw?.kind) used.add(f.hw.kind);
-    for (const f of sorted) { if (!f.vox || !f.mesh) continue; if (!f.hw) { try { const hw = dress(f, costumeFor(f, used)); if (hw) used.add(hw.kind); } catch (e) { f.hw = { kind: null, parts: [], label: null }; console.warn('costume', e); } } else f.hw.place?.(); } }
+    let budget = 2;      /* (two new costumes a frame: a full tank dresses over a second or so instead of stalling one frame at boot) */
+    for (const f of sorted) { if (!f.vox || !f.mesh) continue; if (!f.hw) { if (budget-- <= 0) continue; try { const hw = dress(f, costumeFor(f, used)); if (hw) used.add(hw.kind); } catch (e) { f.hw = { kind: null, parts: [], label: null }; console.warn('costume', e); } } else f.hw.place?.(); } }
   clear() { for (const it of this.items) { stampItem(it, this.solids, it.at.x, it.at.z, it.at.ry, -1); this.scene.remove(it.group); disposeItem(it); } this.items = []; this.id = null; this.ghostly = false; for (const g of this.ghosts ?? []) this.scene.remove(g.group); this.ghosts = [];
     if (this.sky) { this.scene.remove(this.sky); this.sky.traverse((o) => { o.geometry?.dispose?.(); if (o.material && !Array.isArray(o.material)) o.material.dispose?.(); }); this.sky = null; }
     for (const w of this.webs ?? []) this.scene.remove(w); this.webs = []; this.spider = null;
