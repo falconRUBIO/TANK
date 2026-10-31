@@ -650,6 +650,12 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     assert.equal(said.length, 4, 'days one to four, one line each: ' + JSON.stringify(said)); assert.ok(said.every((x, i) => x.startsWith(`Nursery, day ${i + 1}: `)));
     assert.deepEqual(said.slice(0, 3).map((x) => N.cands.find((c) => x.includes(c.name))?.id), N.cands.map((c) => c.id), 'each of the three babies in turn');
     assert.equal(R.advance(t, due + 4 * D + 5 * H).filter((e) => e.nurseryDay).length, 0, 'a day is told once'); });
+  ok('babies ready but not chosen: said once when ready, once more after two days of waiting, and never decided for the caretakers', () => {
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const N = t.nursery, ready = R.advance(t, N.readyAt + H).filter((e) => e.ready); assert.equal(ready.length, 1, 'ready, said once'); assert.match(ready[0].toast, /ready/i);
+    assert.equal(R.advance(t, N.readyAt + D).filter((e) => e.ready).length, 0, 'nothing more the next day');
+    const nudge = R.advance(t, N.readyAt + 2 * D + H).filter((e) => e.ready); assert.equal(nudge.length, 1, 'one gentle reminder after two days'); assert.match(nudge[0].journal, /still waiting/); for (const c of N.cands) assert.ok(nudge[0].journal.includes(c.name), 'names the three who could stay');
+    assert.equal(R.advance(t, N.readyAt + 9 * D).filter((e) => e.ready).length, 0, 'said once only'); assert.ok(t.nursery && t.nursery.id === N.id, 'the choice still waits: nothing is decided for them'); });
   ok('choosing the baby: not before five days, one choice wins even if two caretakers choose at once, it keeps its name and parents, the others leave', () => {
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due); R.advance(t, due + H);
     const N = t.nursery, [c0, c1] = N.cands, now = due + 2 * H;

@@ -912,10 +912,10 @@ function octoPartners(t, now, ev) {
 // one line about a nursery baby on one of its days, from its own way of living and the tank's real plants and parents: the journal gets the
 // candidates' lines in turn, and every baby's card tells its story so far from the same lines
 export function nurseryLine(t, N, c, day, avoid = null) { const role = babyRole(N, c), h = hash32((N.born % 1e9) + day * 131 + c.seed),
-        plants = t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS').map((d) => (DECOR_DEF[d.type]?.label ?? 'plant').toLowerCase()), plant = plants.length ? plants[h % plants.length] : 'sea grass',
+        plants = t.decor.filter((d) => DECOR_DEF[d.type]?.cat === 'PLANTS').map((d) => (DECOR_DEF[d.type]?.label ?? 'plant').toLowerCase()), plant = plants.length ? plants[hash32(c.seed * 7 + 17) % plants.length] : 'sea grass',      /* (one plant per baby across its whole story: the brood keeps to one stem, so its days are not told on a different plant each) */
         dad = N.pa?.name ?? 'its father', mom = N.ma?.name, other = t.fish.find((f) => !f.dead && !f.nursery && f.id !== N.father && f.id !== N.mother && f.species !== 'seahorse')?.name;
       const sib = nurseryBrood(N, [])[0]?.name ?? 'a brother or sister';      /* (one of the rest of the brood, so a line is about one of the three at a time) */
-      const lines = day <= 2 ? [`Nursery, day ${day}: ${c.name} drifted high in the water with the others, up near the light, snapping at specks too small to see.`, `Nursery, day ${day}: ${c.name} bobbed about just under the surface all day. Fry cannot hold on to anything yet.`, `Nursery, day ${day}: the brood drifted together like a little cloud, and ${c.name} was in the middle of it.`]
+      const lines = day <= 1 ? [`Nursery, day ${day}: ${c.name} came out of ${dad}'s pouch into a cloud of brothers and sisters, drifted up near the light for a few hours, then came down with the others onto the ${plant}.`, `Nursery, day ${day}: ${c.name} spent its first hours tumbling in the water, not yet steady, then found the ${plant} and held on for the first time.`, `Nursery, day ${day}: the brood drifted together like a little cloud until, one by one, they found the ${plant}; ${c.name} was in the middle of it.`]      /* (day 1: fry drift for their first hours, then the whole brood settles on one stem; from day 2 each baby's own way of living shows) */
         : { explore: [`Nursery, day ${day}: ${c.name} left the ${plant} for a little trip on its own, then came straight back to the others.`, `Nursery, day ${day}: ${c.name} came right up to the glass to look out at you, then hurried back to its strand.`, other ? `Nursery, day ${day}: ${c.name} swam out to look at ${other}, then thought better of it.` : `Nursery, day ${day}: ${c.name} is the first of the brood to let go and try the next strand.`],
           plants: [`Nursery, day ${day}: ${c.name} has settled on the ${plant} and holds on with its tiny tail for hours.`, `Nursery, day ${day}: ${c.name} spent the day tucked in the ${plant}, snapping up whatever drifted past.`, `Nursery, day ${day}: the others moved to a new strand today; ${c.name} went back to the ${plant}.`],
           social: [`Nursery, day ${day}: ${c.name} held on right beside ${sib} all day, tails on the same stem.`, `Nursery, day ${day}: ${c.name} grabbed ${sib}'s tail and the two of them drifted to the ${plant} together.`, `Nursery, day ${day}: wherever the others went today, ${c.name} went too.`] }[role] ?? [];
@@ -973,6 +973,7 @@ function seaFamilies(t, now, ev) {
     if (day >= 1 && day > (N.told ?? 0) && N.cands?.length) { N.told = day; const line = nurseryLine(t, N, N.cands[(day - 1) % N.cands.length], day); if (line) ev.push({ journal: line, nurseryDay: day }); } }
   // the babies are ready (said once); the choice itself is a caretaker's (keepBaby)
   if (t.nursery && now >= t.nursery.readyAt && !t.nursery.said) { t.nursery.said = true; ev.push({ journal: 'The baby seahorses are ready to leave the nursery. One can stay in the tank.', toast: "They're ready! Choose one baby seahorse to stay.", ready: true }); }
+  if (t.nursery && now >= t.nursery.readyAt + 2 * DAY && !t.nursery.nudged) { t.nursery.nudged = true; const N = t.nursery, names = N.cands.map((c) => c.name); ev.push({ journal: `The baby seahorses are still waiting in the nursery. ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} hold on to the plants a little bigger each day; one of them can stay whenever you choose.`, toast: 'The babies are still waiting. Choose one to stay.', ready: true }); }      // (two days with no choice made: said once more, gently; nothing is ever decided for the caretakers)
   if (t.nursery && !byId.has(t.nursery.father) && !t.nursery.pa) t.nursery = null;      // (a damaged record)
 }
 const STORY = {
@@ -2069,9 +2070,9 @@ export function tankNeeds(t, now = Date.now()) {
 }
 function needsMet(t, before, type, now, ev) { const after = new Set(tankNeeds(t, now).map((n) => n.key)); for (const n of before) { if (after.has(n.key)) continue; const N = NEEDS.find((x) => x.key === n.key), f = t.fish.find((x) => x.id === n.fish); if (f) f.happy = Math.min(1, (f.happy ?? 0.7) + 0.12); const line = N.done(n.name, (DECOR_DEF[type]?.label ?? type).toLowerCase()); ev.push({ journal: line, toast: line }); } }
 export function milestonesOf(f, uid = null) {
-  const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, grown = stageOf(f) === 'adult';
+  const D = f.disc ?? {}, hatched = (f.parents ?? []).length > 0, liveBorn = hatched && f.species === 'seahorse', grown = stageOf(f) === 'adult';      /* (a seahorse comes out of its father's pouch alive: born here, not hatched) */
   return [
-    { key: 'home', icon: hatched ? '🥚' : '🏠', label: hatched ? 'Hatched' : 'Came home', done: true },
+    { key: 'home', icon: liveBorn ? '🍼' : hatched ? '🥚' : '🏠', label: liveBorn ? 'Born here' : hatched ? 'Hatched' : 'Came home', done: true },
     { key: 'friend', icon: '💞', label: 'Made a friend', done: !!(f.pal || f.mate || f.partner || D.friend || D.together || Object.keys(D).some((k) => k.startsWith('together'))) },
     { key: 'spot', icon: '📍', label: 'Found a favorite spot', done: !!(D.spot || D.regular || D.hideaway || D.favhitch || D.den || (f.found ?? []).includes('spot')) },
     { key: 'trust', icon: '🤝', label: 'Trusts you', done: uid ? (f.bond?.[uid] ?? 0) >= 3 : !!(D.bond || D.trust) },      /* (yours, not anyone's: three pets or games from you) */
