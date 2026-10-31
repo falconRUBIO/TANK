@@ -103,9 +103,9 @@ function paint(kind, f, A) {
   const eyes = [[0, 0, 0, 0], [0, 0, 0, 0]]; for (const v of f.vox) if (v.tag === 'eye' || v.em) { const e = eyes[v.z >= 0 ? 0 : 1]; e[0] += v.x; e[1] += v.y; e[2] += v.z; e[3]++; } const EYE = eyes.map((e) => (e[3] ? { x: e[0] / e[3], y: e[1] / e[3], z: e[2] / e[3] } : null));      // each eye's center, for a face cut round the real eyes
   const nearEye = (v, r) => EYE.some((e) => e && Math.hypot(v.x - e.x, v.y - e.y, v.z - e.z) <= r);
   for (let i = 0; i < n; i++) {
-    const v = f.vox[i], o = i * 3; if (kind === 'pumpkin' && v.tag === 'eye' && !v.pupil) { const L = lin([255, 236, 140]); out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; }      /* (the lantern's eyes are the octopus's own, lit) */
+    const v = f.vox[i], o = i * 3; if (kind === 'pumpkin' && v.tag === 'eye' && v.pupil) { const L = lin([8, 8, 14]); out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; }      /* (the lantern's eyes are the octopus's own: its dark pupil stays, the rest of each eye is painted with the head, below) */
     if (kind === 'octoghost' && v.tag === 'eye') { const L = lin([16, 14, 24]); out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; }      /* (the ghost's eyes are the holes in its sheet: dark through and through) */
-    if (v.tag === 'eye' || v.em || v.tag === 'beak' || v.tag === 'pouch') continue;
+    if ((v.tag === 'eye' && kind !== 'pumpkin') || (v.em && kind !== 'pumpkin') || v.tag === 'beak' || v.tag === 'pouch') continue;
     const q = hash(v.x, v.y, v.z, 7), l = b[o] * 0.3 + b[o + 1] * 0.59 + b[o + 2] * 0.11, sh = Math.max(0.55, Math.min(1.25, 0.9 + 0.7 * (l - lavg))), behind = v.x < E.x - 3.2; let c = null, keep = 0;
     if (kind === 'mummy') { const ph = v.x * 1.15 + v.y * 0.4 + Math.abs(v.z) * 0.15, seam = Math.abs(Math.sin(ph)) < 0.1, near = Math.hypot(v.x - E.x, v.y - E.y) <= 2.2; c = near ? [150, 140, 128] : seam ? [206, 196, 178] : mix([246, 242, 232], [228, 220, 204], q * 0.7); keep = 0; }      // wrapped head to tail in white and off-white gauze, a faint seam where each wrap crosses the next, the eyes in a shaded slit
     else if (kind === 'skeleton') { const spine = Math.abs(v.y - mid) <= 0.9 && behind, rib = behind && ((Math.round(v.x - E.x) % 3) + 3) % 3 === 0 && v.y > mid - 5 && v.y < mid + 2.5 && Math.abs(v.z) >= 0.5; c = !behind || spine || rib ? mix(BONE, [200, 192, 170], q * 0.4) : [26, 22, 36]; }
@@ -125,11 +125,11 @@ function paint(kind, f, A) {
     } else if (kind === 'pumpkin') {
       const onArm = v.arm >= 0 || !!v.web; if (onArm) { c = [70, 130, 50]; keep = 0.45; }                                                               // the arms, a tangle of green vine
       else { const cx = f.mcx ?? 0, cy = f.mcy ?? 0, ang = Math.atan2(v.z, v.y - cy), rib = 0.5 + 0.5 * Math.cos(ang * 8); c = mix([248, 134, 36], [152, 58, 10], 0.1 + 0.8 * rib * rib);      // deep ribs round the body
-        const tri = EYE.some((e) => e && Math.abs(v.z - e.z) <= (v.y - e.y + 3.4) * 1.0 && v.y - e.y >= -3.4 && v.y - e.y <= 2.2 && Math.abs(v.x - e.x) <= 3.2), nose = Math.abs(v.z) <= (E.y - 2.2 - v.y) * 0.9 && v.y <= E.y - 2.2 && v.y >= E.y - 4.2 && v.x > E.x - 2.5 && (v.nx ?? 0) > 0.1, grin = ((v.nx ?? 0) > 0.1 || Math.abs(v.nz ?? 0) > 0.6) && v.x > E.x - 5 && Math.abs(v.z) <= 7 && v.y < E.y - 4.6 && v.y > E.y - 8.6 && (v.y > E.y - 6.4 || Math.round(v.z + 10) % 2 === 0);      // the face is where its face is: a big triangle cut round each of its own eyes, a nose between, a wide toothy grin under them, round to the sides
+        const tri = Math.abs(v.z) >= 5.5 && EYE.some((e) => e && Math.sign(v.z) === Math.sign(e.z) && Math.abs(v.x - e.x) <= (e.y + 3.0 - v.y) * 0.95 && v.y - e.y >= -3.6 && v.y - e.y <= 3.0), nose = Math.abs(v.z) <= (E.y - 2.2 - v.y) * 0.9 && v.y <= E.y - 2.2 && v.y >= E.y - 4.2 && v.x > E.x - 2.5 && (v.nx ?? 0) > 0.1, grin = ((v.nx ?? 0) > 0.1 || Math.abs(v.nz ?? 0) > 0.6) && v.x > E.x - 5 && Math.abs(v.z) <= 7 && v.y < E.y - 4.6 && v.y > E.y - 8.6 && (v.y > E.y - 6.4 || Math.round(v.z + 10) % 2 === 0);      // the face is where its face is: a big triangle cut round each of its own eyes, a nose between, a wide toothy grin under them, round to the sides
         if (tri || nose || grin) { c = [255, 236, 140]; keep = -1; } } }                                                                              // (keep -1: lit flat, no shading)
     else if (kind === 'octoghost') {
       const onArm = v.arm >= 0 || !!v.web, at = v.arm >= 0 ? v.at : v.web ? v.web.at * 0.4 : 0;      // a white sheet over the whole octopus, arms and all, the arm tips its trailing hem
-      const hole = !onArm && nearEye(v, 3.2), mouth = !onArm && v.x > E.x - 3 && ((v.nx ?? 0) > 0.1 || Math.abs(v.nz ?? 0) > 0.6) && Math.hypot((v.y - (E.y - 5.2)) * 0.9, v.z) <= 1.9;      // the face is where its face is: two big eye holes cut round its own eyes, a round surprised mouth under them
+      const hole = !onArm && nearEye(v, 3.6), mouth = !onArm && v.x > E.x - 3 && ((v.nx ?? 0) > 0.1 || Math.abs(v.nz ?? 0) > 0.6) && Math.hypot((v.y - (E.y - 5.2)) * 0.9, v.z) <= 1.9;      // the face is where its face is: two big eye holes cut round its own eyes, a round surprised mouth under them
       if (hole || mouth) { c = [16, 14, 24]; keep = 0; } else if (onArm && at > 0.86) { c = [206, 212, 230]; keep = 0.06; } else { c = mix(WHITE, [222, 226, 240], q * 0.5); keep = 0.05; } }
     if (!c) continue; const L = lin(c); if (keep < 0) { out[o] = L[0]; out[o + 1] = L[1]; out[o + 2] = L[2]; continue; } out[o] = L[0] * sh * (1 - keep) + b[o] * keep; out[o + 1] = L[1] * sh * (1 - keep) + b[o + 1] * keep; out[o + 2] = L[2] * sh * (1 - keep) + b[o + 2] * keep;
   }
@@ -245,21 +245,6 @@ export function dress(f, kind = costumeFor(f)) {
       if (backX < 1e8) { const J = Math.max(1.1, k * 1.05), u = J / 3, zl = Math.round(wz / u) + 2, v = jockeyVox(silk, zl);      // a jockey in cells a third of a body voxel across, in the racing crouch (see jockeyVox)
         put(v, backX, seatY, 0, u);
         const hx = backX + 1 * u, hy = seatY + 30 * u, dx = A.nose - 1.5 - hx, dy = A.E.y - 1 - hy, rein = box(Math.hypot(dx, dy), 0.25 * k, 0.25 * k, [250, 250, 255]); rein.rotation.z = Math.atan2(dy, dx); putBox(rein, hx + dx / 2, hy + dy / 2, 0); } }      // reins from the gloves to the bit
-  }
-  if (octo) {      // the face plates: pieces fixed at the octopus's own eyes (and under them), unlit so they read as cut-outs whatever the light and the pose
-    const eyes = [[0, 0, 0, 0], [0, 0, 0, 0]]; for (const q of f.vox) if (q.tag === 'eye' || q.em) { const e = eyes[q.z >= 0 ? 0 : 1]; e[0] += q.x; e[1] += q.y; e[2] += q.z; e[3]++; }
-    const EYE = eyes.map((e) => (e[3] ? { x: e[0] / e[3], y: e[1] / e[3], z: e[2] / e[3] } : null)), glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.86, 0.45) }), dark = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.03, 0.025, 0.05) });
-    const plate = (v, x, y, z, mat) => { const m = v.mesh(); m.material = mat; m.position.set(x, y, z); g.add(m); parts.push(m); return m; };
-    const outZ = (e) => { let z = Math.abs(e.z); for (const q of f.vox) if (!(q.arm >= 0) && !q.web && Math.abs(q.x - e.x) <= 3 && Math.abs(q.y - e.y) <= 3) z = Math.max(z, Math.abs(q.z)); return z; };      // the head's outermost skin beside an eye: a plate sits just outside it
-    const frontX = (y) => { let x = -1e9; for (const q of f.vox) if (!(q.arm >= 0) && !q.web && Math.abs(q.y - y) <= 1.5 && Math.abs(q.z) <= 5) x = Math.max(x, q.x); return x > -1e8 ? x : A.nose; };      // the front of the head at a height
-    if (kind === 'pumpkin') {
-      for (const e of EYE) if (e) { const v = new Vox(1), side = Math.sign(e.z || 1); for (let r = 0; r <= 6; r++) { const hw = r * 0.85; for (let i = -Math.floor(hw); i <= Math.floor(hw); i++) if (Math.abs(i) >= hw - 1.2 || r >= 5) v.set(i, 6 - r, 0, [255, 220, 115]); } plate(v, e.x, e.y - 2.5, side * (outZ(e) + 0.9), glow); }      // a glowing triangle frame round each eye, the eye looking out of it
-      { const v = new Vox(1); for (let k = -5; k <= 5; k++) { v.set(0, 2, k, [255, 220, 115]); if (k % 2 === 0) v.set(0, 1, k, [255, 220, 115]); v.set(0, 0, k, [255, 220, 115]); } for (let k = -4; k <= 4; k++) if (Math.abs(k) <= 2) v.set(0, 4, k, [255, 220, 115]); v.set(0, 5, 0, [255, 220, 115]);      // a wide toothy grin under the eyes, a little triangle nose above it
-        plate(v, frontX(A.E.y - 5) + 0.9, A.E.y - 6.5, 0, glow); }
-    } else if (kind === 'octoghost') {
-      for (const e of EYE) if (e) { const v = new Vox(1), side = Math.sign(e.z || 1); for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) if (i * i + j * j <= 9.5) v.set(i, j, 0, [12, 10, 18]); plate(v, e.x, e.y + 0.4, side * (outZ(e) + 0.9), dark); }      // two big black eye holes, right where its eyes are
-      { const v = new Vox(1); for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++) if (j * j * 1.2 + k * k <= 4.8) v.set(0, j, k, [12, 10, 18]); plate(v, frontX(A.E.y - 4.5) + 0.9, A.E.y - 4.5, 0, dark); }      // a round surprised mouth under them
-    }
   }
   if (octo && kind === 'pumpkin') { const v = new Vox(1), ST = [92, 124, 46], ST2 = [70, 98, 36], LF = [96, 160, 60];      // a thick stem on the mantle, a curling tendril and a broad leaf
     for (let j = 0; j <= 4; j++) for (let i = 0; i <= 1; i++) for (let z = 0; z <= 1; z++) v.set(i + (j >= 3 ? 1 : 0), j, z, (i + z) % 2 ? ST : ST2); v.set(3, 4, 0, ST); v.set(3, 4, 1, ST);
