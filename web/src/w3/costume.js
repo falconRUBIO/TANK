@@ -195,7 +195,14 @@ export function dress(f, kind = costumeFor(f)) {
   const turtle = TURTLES.has(f.species?.id), octo = f.species?.move === 'jet', crab = !!f.crab, sea = !!f.sp?.tail;
   const k = turtle ? 1.1 : Math.max(0.9, Math.min(2.0, A.hh * 0.105)),      /* (a brim about three fifths of the head's height: a hat, not a tent) */ hatAt = turtle ? { x: A.shell.x, y: A.shell.y + 0.6 } : octo ? { x: A.mantle.x, y: A.mantle.y - 0.5 } : { x: A.topX, y: A.top + 0.3 };      // a hat in proportion to the head it sits on
   if (crab) {      // a crab's costume is the shell on its back, repainted as a hat, a pumpkin, a skull or a candy corn; a new shell it moves into is painted the same way
-    hw.group = null; hw.shell = () => { const m = f.shellG?.children?.[0]; if (m && m !== hw.shellMesh) { if (hw.shellMesh) shellUnskin(hw.shellMesh); hw.shellMesh = m; shellSkin(m, kind); } }; hw.shell(); hw.place = hw.shell; f.hw = hw; return hw;
+    hw.group = null; hw.shell = () => { const m = f.shellG?.children?.[0]; if (m && m !== hw.shellMesh) { if (hw.shellMesh) shellUnskin(hw.shellMesh); hw.shellMesh = m; shellSkin(m, kind); } }; hw.shell(); hw.place = hw.shell;
+    const wrist = f.claws?.[1]?.userData?.wrist; if (wrist) { const U = 0.034, v = new Vox(1), OR = [240, 130, 40], DKo = [26, 20, 30];      // a trick-or-treat pail hung from its big claw: a little jack-o'-lantern bucket with a black handle, a face on the front, candy corn poking out of the top
+      for (let j = 0; j <= 4; j++) { const r = 2.4 + j * 0.25; for (let i = -3; i <= 3; i++) for (let z = -3; z <= 3; z++) { const d = Math.hypot(i, z); if (d > r + 0.3 || (j > 0 && d < r - 0.9)) continue; v.set(i, j, z, OR); } }
+      v.set(3, 3, -1, DKo); v.set(3, 3, 1, DKo); v.set(3, 1, 0, DKo); v.set(3, 1, -1, DKo); v.set(3, 1, 1, DKo); v.set(3, 2, -2, DKo); v.set(3, 2, 2, DKo);      // eyes and a grin, cut in the front
+      for (let z = -3; z <= 3; z++) v.set(0, 5 + Math.round(2.2 * Math.sqrt(Math.max(0, 1 - (z / 3.2) ** 2))), z, DKo); v.set(0, 5, -3, DKo); v.set(0, 5, 3, DKo);      // the handle arching over the top
+      v.set(-1, 4, 0, [255, 220, 60]); v.set(1, 4, 1, [250, 140, 40]); v.set(0, 5, -1, [250, 248, 236]);      // candy corn in the pail
+      const m = v.mesh(); m.scale.setScalar(U * 0.55); m.position.set(6.5 * 1.25 * U, -3.2 * U, 0); m.rotation.z = 0.15; wrist.add(m); parts.push(m); }
+    f.hw = hw; return hw;
   }
   if (!octo && (f.cute ?? 0) <= 0.3 && !f.nursery) {
     if (HATS[kind] && (!turtle || kind !== 'cat')) put(hatVox(HATS[kind], f.seed), hatAt.x, hatAt.y + (kind === 'vampire' ? -0.3 : 0), 0, k * (kind === 'firefighter' ? 1.15 : 1));
