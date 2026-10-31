@@ -1185,7 +1185,7 @@ function showCard(f) {
   if (f && f.species?.move !== 'jet' && !f.dead) fishes.attention?.(f.fid);      // someone is looking at another animal: an octopus that knows them well may come to the glass
   if (f.isEgg) return showEggCard(f);
   if (f.dead) return showDeadCard(f);
-  if (f.nursery) return showBabyCard(f);      // a baby still in the nursery: its own little card (the whole nursery is a tap away on it)
+  if (f.nursery) return showBabyCard(f, cardOpen === f.fid);      // a baby still in the nursery: its own little card (the whole nursery is a tap away on it); folded away, it stays folded until the next tap
   if (Date.now() - lastCard > 1500 || lastInspect !== f.fid) { lastInspect = f.fid; game.observe({ key: 'inspect', fish: f.fid }); game.track('fish_inspected'); }
   lastCard = Date.now();
   const rec = game.state.fish.find((x) => x.id === f.fid) ?? { traits: [], born: Date.now() }, p = fishes.profileOf(rec, game.state), nx = nextStage(rec);
@@ -1436,7 +1436,7 @@ addEventListener('pointerup', (ev) => {
   if (lightHeld) { lightHeld = false; toys.lightOff(); toys.armed = null; }
   if (hoopHeld) { hoopHeld = false; return; }
   dragging = false; const c = tapCand; tapCand = null;
-  if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) { if (c.decor) decorMenu(c.decor); else setFocus(c.f === focus ? null : c.f); }
+  if (c && !play && performance.now() - c.t < 380 && Math.hypot((ev.clientX ?? c.x) - c.x, (ev.clientY ?? c.y) - c.y) < 14) { if (c.decor) decorMenu(c.decor); else { const nf = c.f === focus ? null : c.f; if (nf?.nursery) cardOpen = nf.fid; setFocus(nf); } }      /* (a tap on a baby opens its card at once) */
   if (lure?.on) { lureEnd = performance.now(); lureRelease(); } lure = null;
 }); addEventListener('pointercancel', () => { if (lure?.on) lureRelease(); lure = null; tapCand = null; });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { setFocus(null); cancelModes(); } });

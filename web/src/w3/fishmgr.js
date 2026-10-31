@@ -106,7 +106,7 @@ export class Fishes {
       if (!f && isCrab(d.species)) { f = this.makeCrab(d); this.relate(f, d); this.makeEmote(f); this.scene.add(f.group); this.list.push(f); this.byId.set(d.id, f); f.profile = this.profileOf(d, state); f.persona = personaOf(d); return; }      // a hermit crab: its own body and walk (crab3d.js)
       if (!f) {
         const sp = SPECIES[d.species], def = SPECIES_DEF[d.species], band = BANDS[d.species] ?? BANDS.goldfish;
-        const back = idx % 2 === 1 && d.species !== 'cory' && d.species !== 'angelfish';
+        const back = idx % 2 === 1 && !d.nursery && d.species !== 'cory' && d.species !== 'angelfish';      /* (a nursery baby keeps its brood's own band: half a brood at the back of the tank would split the cloud in two) */
         f = new Fish3D(sp, d.seed, { look: d.palette != null || d.pal != null || d.kind ? { pal: d.palette ?? (Number.isInteger(d.pal) ? d.pal : null), kind: d.kind ?? null } : null, genes: d.genes, name: d.name, speed: def.speed * (0.9 + (d.seed % 5) * 0.05) * (KINDS[d.species]?.[d.kind]?.speed ?? 1), scale: 1, band: back ? { ...band, z: [-3.0, -1.8] } : band });
         f.fid = d.id; f.sk = d.species; f.baseScale = KINDS[d.species]?.[d.kind]?.scale ?? 1; f.setGrowth(f.growth ?? 1); f.nursery = d.nursery ?? null; if (f.nursery && f.mesh) f.mesh.castShadow = false;      /* (a newborn's shadow is a speck: not drawing it keeps a brood of a dozen light) */ f.nk = d.nk ?? 1; f.role = d.role ?? null; f.rec = d; f.mateId = d.mate ?? null; f.getSpots = () => this.spots?.() ?? []; f.decorVox = (x, z, r) => this.decorVox(x, z, r); f.decorVoxWarm = (x, z, r) => this.decorVoxWarm(x, z, r); f.decorSig = (x, z, r) => this.decorSig(x, z, r); f.food = () => this.flakes; f.tankHungry = () => (this.world?.hunger ?? 0) > 0.3; f.savedLog = () => this.recs?.get(f.fid)?.log; f.profile = this.profileOf(d, state); f.persona = personaOf(d); f.bornAt = d.born; f.vigor = f.profile.vigor * (f.profile.mood === 'Sleepy' ? 0.5 : 1); f.cute = cute; f.setGrowth(k);
         const arriving = arrivals.includes(d.id);
@@ -414,8 +414,8 @@ export class Fishes {
         if (f.greeted) { f.greeted = false; f.greets = (f.greets ?? 0) + 1; if (this.wants(f, 'dance')) this.said(f, 'dance'); }      // a real greeting (see Fish3D.hoverUpdate), not just two seahorses close together
         if (f.link?.on && f.link.o.link?.on) { d.tails = (d.tails ?? 0) + dt; if (d.tails > 5 && this.wants(f, 'tails')) this.said(f, 'tails'); }
         // two seahorses that have shared the tank a while now and then link tails: never on their first day, more often the longer they have been together
-        if (lead && !f.link && !f.seeking && !f.greet && !f.sleepy && !f.weak && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
-          if (o === f || o.species.id !== 'seahorse' || o.link || o.seeking || o.greet || o.sleepy || o.weak || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 7) continue;
+        if (lead && !f.link && !f.nursery && !f.seeking && !f.greet && !f.sleepy && !f.weak && !(f.linkCool > 0) && !this.night && !this.hungryNow?.()) for (const o of live) {
+          if (o === f || o.species.id !== 'seahorse' || o.nursery || o.link || o.seeking || o.greet || o.sleepy || o.weak || o.linkCool > 0 || o.pos.distanceTo(f.pos) > 7) continue;
           const days = Math.min(Date.now() - (f.bornAt ?? Date.now()), Date.now() - (o.bornAt ?? Date.now())) / 864e5, mates = f.mateId === o.fid, bond = mates ? 3 : days < 0.25 ? 0 : Math.max(0, Math.min(1, 0.4 + 0.6 * days / 3));      /* from the start now and then, more as they get to know each other */      // (a pair holds tails far more often)
           if (bond > 0 && Math.random() < dt * 0.012 * bond * (0.4 + 0.6 * ((f.persona?.soc ?? 0.5) + (o.persona?.soc ?? 0.5)))) { /* sociable pairs link more often */ const T = (x, z) => ({ x: Math.max(-3, Math.min(3, x)), z: Math.max(-1.5, Math.min(1.8, z)) }), m = T((f.pos.x + o.pos.x) / 2, (f.pos.z + o.pos.z) / 2); m.y = Math.max(sandUnder(m.x, m.z, 0.8) + 1.5, Math.min(sandUnder(m.x, m.z, 0.8) + 2.6, (f.pos.y + o.pos.y) / 2));
             // open water: nothing in the way of the pair or of the tails curled under them
@@ -1074,7 +1074,7 @@ export class Fishes {
   seahorseTick(dt, t) {
     if (this.isLead && !this.isLead()) return;      // only the lead phone decides when two seahorses greet; the other phones are shown it in its snapshots
     this.shT = (this.shT ?? 30 + this.rng() * 40) - dt; if (this.shT > 0) return;
-    const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.greet && !f.link && !f.sleepy && !f.weak && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2 || this.night) return;
+    const hs = this.list.filter((f) => f.sk === 'seahorse' && !f.dead && !f.nursery && !f.greet && !f.link && !f.sleepy && !f.weak && f.species.move === 'hover'); this.shT = (this.phase?.() === 'morning' ? 150 : 420) + this.rng() * 180; if (hs.length < 2 || this.night) return;
     hs.sort((x, y) => (y.persona?.soc ?? 0.5) + this.rng() * 0.6 - ((x.persona?.soc ?? 0.5) + this.rng() * 0.6));      // the sociable ones start it
     const mated = hs.find((x) => x.mateId && hs.some((o) => o.fid === x.mateId)), court = mated && [mated, hs.find((o) => o.fid === mated.mateId)].some((x) => x.rec?.preg && Date.now() - x.rec.preg.start < 3 * 3600e3);
     if (mated) { const o = hs.find((x) => x.fid === mated.mateId); hs.splice(hs.indexOf(mated), 1); hs.splice(hs.indexOf(o), 1); hs.unshift(mated, o); }      // a pair greets each other, every morning

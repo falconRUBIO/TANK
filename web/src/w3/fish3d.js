@@ -866,7 +866,7 @@ export class Fish3D {
     this.linkCool = Math.max(0, (this.linkCool ?? 0) - dt);
     // something new placed in the tank: it notices after a moment; a curious one may let go and go to look, another just watches it
     const N = this.noticeQ; if (N && t >= N.at) { this.noticeQ = null;
-      if (!this.sleepy && !this.link && rng() < (this.holdfast?.on ? 0.15 + 0.75 * cur : 0.35 + 0.6 * cur)) { if (this.holdfast) this.release(0.5); this.exploreAt = { x: N.x, y: N.y, z: N.z, id: N.id, t: 0 }; this.thought = 'Off to see what is new.'; }
+      if (!this.sleepy && !this.link && !this.nursery && rng() < (this.holdfast?.on ? 0.15 + 0.75 * cur : 0.35 + 0.6 * cur)) { if (this.holdfast) this.release(0.5); this.exploreAt = { x: N.x, y: N.y, z: N.z, id: N.id, t: 0 }; this.thought = 'Off to see what is new.'; }
       else { this.glance = new THREE.Vector3(N.x, N.y, N.z); this.glanceT = 3 + rng() * 3; this.thought = 'One eye on the new thing in the tank.'; } }
     if (this.link) { const L = this.link, o = L.o; L.t -= dt; if (o.dead || o.link?.o !== this || this.seeking || L.t <= 0) this.unlink(); else return this.linked(dt, L); }      // holding tails with a partner
     const food = this.food?.() ?? [], H = this.holdfast;
@@ -1022,7 +1022,7 @@ export class Fish3D {
     // one stays put longest, the social one holds on right beside a brother or sister. None of them follows its parents (fry do not).
     if (this.nursery && !this.seeking) {
       const nk = this.nk ?? 1, sibs = (this.sibs?.() ?? []).filter((o) => !o.dead && o !== this), role = this.role;
-      if (nk < 0.4) {
+      if (nk < 0.08) {      /* (its first hours only: after that the brood is down on its strand, holding on together as it grows) */
         const plants0 = spots.filter((q) => PLANTS.has(q.type)), stands0 = plants0.length ? plants0 : spots, anchor = stands0.length ? stands0[this.broodHash(0) % stands0.length] : null;      /* (the cloud hangs over the brood's own strand, the one it will settle on) */
         const cx = anchor ? anchor.x : sibs.length ? sibs.reduce((a, o) => a + o.pos.x, 0) / sibs.length : this.pos.x, cz = anchor ? anchor.z + 0.3 : sibs.length ? sibs.reduce((a, o) => a + o.pos.z, 0) / sibs.length : this.pos.z;
         const hi = Fish3D.topY - 3.4 - nk * 5, x = Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 1.8)), z = Math.max(b.z[0], Math.min(b.z[1], cz + (rng() - 0.5) * 0.9));      /* (a brood of a dozen keeps together in one tight cloud, over one place) */
