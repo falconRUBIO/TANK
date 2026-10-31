@@ -48,6 +48,6 @@ for (let tries = 0; tries < 3 && !fing.card; tries++) {      /* (a slow runner c
 }
 await p.evaluate(() => window.__simClock(false));
 const broodNames = await p.evaluate(() => window.__fishes.list.filter((x) => x.nursery && x.rec?.brood).map((x) => x.name));
-ck('a finger tap just beside one of the brood opens a brood baby\'s own card, with its name', !!spot && broodNames.some((nm) => (fing.card ?? '').startsWith(nm + ' ')) && /nursery day/i.test(fing.card ?? ''), { spot, ...fing });      /* (newborns swim in a tight cloud: the tap goes to whichever is most squarely under the finger, one of them) */
+ck('a finger tap just beside one of the brood opens a brood baby\'s own card, with its name', !!spot && broodNames.some((nm) => new RegExp('^(?:[A-Z][a-z]+(?: [A-Z][a-z]+)? )?' + nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' ').test(fing.card ?? ''))      /* (on a holiday the card's heading carries a costume title before the name: "Ghost Sky") */ && /nursery day/i.test(fing.card ?? ''), { spot, ...fing });      /* (newborns swim in a tight cloud: the tap goes to whichever is most squarely under the finger, one of them) */
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Birth checks passed'); process.exit(fails ? 1 : 0);

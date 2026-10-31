@@ -1295,8 +1295,8 @@ export function initUI({ game, social, cb }) {
   function nurseryCard({ day, n, parents, born, fed, chooseOn, cands, brood, onBaby }) {
     const sex = (c) => (c.sex === 'm' ? '♂' : '♀'), nature = (c) => (c.traits ?? []).join(', ').toLowerCase() || 'still finding its way';
     const dots = Array.from({ length: 5 }, (_, i) => `<i class="${i < day ? 'on' : ''}"></i>`).join('');
-    const rows = cands.map((c) => `<button class="nrow" data-baby="${esc(c.id)}"><img alt="" src="${fishThumb('seahorse', null)}"><span><b>${esc(c.name)} <em>${sex(c)}</em></b><small>${esc(nature(c))}${c.role ? ` · ${esc(c.role)}` : ''}</small></span><i class="chev">›</i></button>`).join('');
-    const tiles = brood.map((b) => `<button class="ntile" data-baby="${esc(b.id)}"><b>${esc(b.name)} <em>${sex(b)}</em></b><small>${esc(nature(b))}</small></button>`).join('');
+    const rows = cands.map((c) => `<button class="nrow" data-baby="${esc(c.id)}"><img alt="" src="${fishThumb('seahorse', null)}"><span><b>${esc(window.__dressedName?.(c.id, c.name) ?? c.name)} <em>${sex(c)}</em></b><small>${esc(nature(c))}${c.role ? ` · ${esc(c.role)}` : ''}</small></span><i class="chev">›</i></button>`).join('');
+    const tiles = brood.map((b) => `<button class="ntile" data-baby="${esc(b.id)}"><b>${esc(window.__dressedName?.(b.id, b.name) ?? b.name)} <em>${sex(b)}</em></b><small>${esc(nature(b))}</small></button>`).join('');
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box nurs"><h2>The nursery</h2><p class="nsub">${n} baby seahorses · ${esc(parents)}</p><div class="ndays">${dots}<span>Day ${day} of 5</span></div>
         <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${day <= 2 ? 'For now they drift high in the water in a loose cloud, as seahorse fry do; from day 3 they settle onto the plants in little groups.' : 'They have settled onto the plants in little groups, three or four to a strand.'} ${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far, and they` : 'They'} snap up the tiniest bits themselves. On the morning of ${esc(chooseOn)}, one of these three can stay.</p>
