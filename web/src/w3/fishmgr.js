@@ -1190,7 +1190,7 @@ export class Fishes {
     // a crab on the sand is not easy prey: when the octopus closes in it scuttles off in a burst (away, and a little sideways), twice at most, then it tires and the octopus has it
     for (const c of this.crabs ?? []) {
       const R = (c.run ||= { dodges: 0, burst: 0, vx: 0, vz: 0, down: 0, face: this.rng() * 6.28 }), hunter = this.list.find((o) => o.hunt === c);
-      c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > sandH(c.x, c.z) + 0.2 ? 0.6 : 0); if (c.held) continue;
+      c.mesh.userData.tick?.(t * (c.held ? 1.6 : R.burst > 0 ? 2.2 : 1), c.held || c.pinned ? 1 : R.burst > 0 ? 0.8 : c.y > sandH(c.x, c.z) + 0.2 ? 0.6 : 0); { const th = c.mesh.userData.thread; if (th) th.visible = !c.held && !c.pinned && c.y > sandH(c.x, c.z) + 0.25; }      /* (a spider comes down on its silk; the thread goes once it lands) */ if (c.held) continue;
       if (c.dazed > performance.now() && !c.pinned) { c.mesh.rotation.z = Math.sin(t * 7) * 0.1; c.mesh.rotation.y += dt * 0.6; } else if (!c.held && c.mesh.rotation.z && Math.abs(c.mesh.rotation.z) < 0.2) c.mesh.rotation.z *= 0.9;      // dazed in the ink: it reels on the spot
       if (c.net && performance.now() - c.net.at < 1200) { const k = Math.min(1, dt * 9), N = c.net; c.x += (N.x - c.x) * k; c.y += (N.y - c.y) * k; c.z += (N.z - c.z) * k; c.mesh.position.set(c.x, c.y, c.z); let dr = N.ry - c.mesh.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); c.mesh.rotation.y += dr * k; continue; }
       const cg = sandH(c.x, c.z) + 0.13; if (c.y > cg + 0.01) { c.y = Math.max(cg, c.y - 1.9 * dt); c.mesh.position.set(c.x + Math.sin(t * 2 + c.x) * 0.12, c.y, c.z); c.mesh.rotation.y += dt * 0.9; continue; }
