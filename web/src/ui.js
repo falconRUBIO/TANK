@@ -1293,12 +1293,14 @@ export function initUI({ game, social, cb }) {
   const onDay = (ts) => new Date(ts).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
   // Leaving day: the one who stays, then every baby who swam off, by name, each with a word of farewell from its own nature
   function leavingCard({ kept, gone, parents }) {
-    const sex = (c) => (c.sex === 'm' ? '♂' : '♀'), bye = { explore: 'first out, straight for the open water', plants: 'left its strand last of all', social: 'went with the others, side by side' };
-    const tiles = gone.map((b) => `<div class="ntile"><b>${esc(b.name)} <em>${sex(b)}</em></b><small>${esc(bye[b.role] ?? 'off to a new home')}</small></div>`).join('');
+    const sex = (c) => (c.sex === 'm' ? '♂' : '♀'), BYE = { explore: ['first out, straight for the open water', 'raced ahead before the others had let go', 'darted off to see where the water went'], plants: ['left its strand last of all', 'held on until the very end, then let go', 'looked back at its strand twice'], social: ['went with the others, side by side', 'waited for a brother, then went together', 'kept to the middle of the group all the way'], other: ['off to a new home', 'drifted up with the rest', 'went quietly with the others', 'circled the kelp once and went'] };
+    const h = (s) => [...String(s)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7), bye = (b) => { const L = BYE[b.role] ?? BYE.other; return L[h(b.name) % L.length]; };
+    const tiles = gone.map((b) => `<div class="ntile"><b>${esc(b.name)} <em>${sex(b)}</em></b><small>${esc(bye(b))}</small></div>`).join('');
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box nurs"><h2>Leaving day</h2><p class="nsub">${esc(parents)} brood</p>
         <p class="nline"><b>${esc(kept.name)}</b> stays: a seahorse of this tank for good. The other ${gone.length} are grown enough to go, and swim off to new homes.</p>
-        <h4 class="csec">Off to new homes <span>${gone.length}</span></h4><div class="ntiles">${tiles}</div><button class="big gold" id="mok">Safe travels</button></div>`;
+        <h4 class="csec">Off to new homes <span>${gone.length}</span></h4><div class="ntiles">${tiles}</div>
+        <p class="nhint">${esc(kept.name)} is down by the plants, a little seahorse of your own now. It grows up from here.</p><button class="big gold" id="mok">Meet ${esc(kept.name)}</button></div>`;
       modal.classList.add('on'); $('mok').onclick = () => { sfx('tap'); modal.classList.remove('on'); modalShut = performance.now(); res(true); };
     }));
   }
@@ -1310,7 +1312,7 @@ export function initUI({ game, social, cb }) {
     const tiles = brood.map((b) => `<button class="ntile" data-baby="${esc(b.id)}"><b>${esc(window.__dressedName?.(b.id, b.name) ?? b.name)} <em>${sex(b)}</em></b><small>${esc(nature(b))}</small></button>`).join('');
     return modalFree().then(() => new Promise((res) => {
       modal.innerHTML = `<div class="box nurs"><h2>The nursery</h2><p class="nsub">${n} baby seahorses · ${esc(parents)}</p><div class="ndays">${dots}<span>Day ${day} of 5</span></div>
-        <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${day <= 2 ? 'For now they drift high in the water in a loose cloud, as seahorse fry do; from day 3 they settle onto the plants in little groups.' : 'They have settled onto the plants in little groups, three or four to a strand.'} ${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far, and they` : 'They'} snap up the tiniest bits themselves. On the morning of ${esc(chooseOn)}, one of these three can stay.</p>
+        <p class="nline">${born ? `Born ${esc(born)}. ` : ''}${day <= 2 ? 'For now they drift high in the water in a loose cloud, as seahorse fry do; from day 3 they settle onto the plants in little groups.' : 'They have settled onto the plants in little groups, three or four to a strand.'} ${fed ? `Fed ${fed === 1 ? 'once' : `${fed} times`} so far, and they` : 'They'} snap up the tiniest bits themselves. ${esc(chooseOn)}, one of these three can stay.</p>
         <h4 class="csec">Could stay</h4><div class="nrows">${rows}</div>
         <h4 class="csec">The rest of the brood <span>${brood.length}</span></h4><div class="ntiles">${tiles}</div>
         <p class="nhint">Tap a baby to go and see it.</p><button class="big" id="mok">Close</button></div>`;
@@ -1383,12 +1385,12 @@ export function initUI({ game, social, cb }) {
     }));
   }
   // a small chooser: one tap on one of a few options (or Not now)
-  function choose({ title, text = '', options, cancel = 'Not now', moment = false }) {
+  function choose({ title, text = '', options, cancel = 'Not now', moment = false, confirmFor = null }) {
     return modalFree(moment).then(() => new Promise((res) => {
-      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${choiceList(options.map((o, i) => { const [t, ...rest] = String(o.label).split(' · '); return { title: t, sub: o.sub ?? rest.join(' · '), attr: `data-i="${i}"` }; }), true)}<button class="big" id="mok" disabled>Pick one above</button>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
+      modal.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ''}${choiceList(options.map((o, i) => { const [t, ...rest] = String(o.label).split(' · '); return { title: t, sub: o.sub ?? rest.join(' · '), meta: o.meta, attr: `data-i="${i}"` }; }), true)}<button class="big" id="mok" disabled>Pick one above</button>${cancel ? `<button class="lnk" id="mno">${esc(cancel)}</button>` : ''}</div>`;
       modal.classList.add('on'); const done = (v) => { modal.classList.remove('on'); res(v); };
       let pick = null; const ok = $('mok');      // a choice is picked first (its circle fills), then confirmed
-      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { sfx('tap'); pick = +b.dataset.i; modal.querySelectorAll('[data-i]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); ok.disabled = false; ok.textContent = 'Confirm'; }; });
+      modal.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { sfx('tap'); pick = +b.dataset.i; modal.querySelectorAll('[data-i]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b ? 'true' : 'false'); }); ok.disabled = false; ok.textContent = confirmFor ? confirmFor(options[pick]) : 'Confirm'; }; });
       ok.onclick = () => { if (pick != null) done(options[pick].value); }; const no = $('mno'); if (no) no.onclick = () => done(undefined);
     }));
   }
