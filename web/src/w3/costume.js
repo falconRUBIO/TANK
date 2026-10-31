@@ -8,12 +8,14 @@ import { Vox, hash } from './decor.js';
 import { mix } from '../color.js';
 
 const BLACK = [26, 20, 36], PURPLE = [122, 54, 176], GOLD = [240, 196, 80], RED = [196, 34, 40], BONE = [236, 230, 212], WRAP = [224, 212, 186], GREEN = [118, 176, 84], WHITE = [246, 246, 250], PINK = [240, 150, 180], NAVY = [36, 46, 100], STRAW = [196, 160, 80];
-export const COSTUMES = {
-  witch: { label: 'a witch, broom and all' }, wizard: { label: 'a wizard' }, pirate: { label: 'a pirate' }, vampire: { label: 'a vampire' }, mummy: { label: 'a mummy' }, skeleton: { label: 'a skeleton' },
-  ghost: { label: 'a ghost' }, devil: { label: 'a little devil, pitchfork and all' }, cat: { label: 'a black cat' }, frank: { label: "Frankenstein's monster" }, bat: { label: 'a bat' }, pumpkin: { label: 'a jack-o’-lantern' },
-  firefighter: { label: 'a firefighter' }, police: { label: 'a police officer' }, racehorse: { label: 'a racehorse' },
-  gnome: { label: 'a garden gnome' }, candle: { label: 'a candle' }, candycorn: { label: 'a candy corn' }, unicorn: { label: 'a unicorn' },
+export const COSTUMES = {      // label: for a sentence ("Dressed as …"); word: the title that goes in front of the animal's name while it wears it ("Cat Nori")
+  witch: { label: 'a witch, broom and all', word: 'Witch' }, wizard: { label: 'a wizard', word: 'Wizard' }, pirate: { label: 'a pirate', word: 'Pirate' }, vampire: { label: 'a vampire', word: 'Vampire' }, mummy: { label: 'a mummy', word: 'Mummy' }, skeleton: { label: 'a skeleton', word: 'Skeleton' },
+  ghost: { label: 'a ghost', word: 'Ghost' }, devil: { label: 'a little devil, pitchfork and all', word: 'Devil' }, cat: { label: 'a black cat', word: 'Cat' }, frank: { label: "Frankenstein's monster", word: 'Monster' }, bat: { label: 'a bat', word: 'Bat' }, pumpkin: { label: 'a jack-o’-lantern', word: 'Pumpkin' },
+  firefighter: { label: 'a firefighter', word: 'Firefighter' }, police: { label: 'a police officer', word: 'Officer' }, racehorse: { label: 'a racehorse', word: 'Racehorse' },
+  gnome: { label: 'a garden gnome', word: 'Gnome' }, candle: { label: 'a candle', word: 'Candle' }, candycorn: { label: 'a candy corn', word: 'Candy Corn' }, unicorn: { label: 'a unicorn', word: 'Unicorn' },
 };
+// an animal's name while it is dressed: the costume's title in front ("Cat Nori", "Racehorse Pearl")
+export const dressedName = (f, name = f?.name) => { const w = f?.hw?.kind ? COSTUMES[f.hw.kind]?.word : null; return w && name ? `${w} ${name}` : name; };
 const FISH_SET = ['witch', 'vampire', 'pirate', 'skeleton', 'ghost', 'mummy', 'devil', 'cat', 'frank', 'wizard', 'bat', 'firefighter', 'police'];
 const SEA_SET = ['racehorse', 'witch', 'racehorse', 'ghost', 'police', 'racehorse', 'skeleton', 'firefighter'];
 export const SHELL_KINDS = ['wizard', 'gnome', 'pumpkin', 'witch', 'candle', 'candycorn', 'unicorn'];      // what a shell can be painted as: the crab's own shell is its costume, and the empty shells on the sand dress the same way
@@ -151,6 +153,39 @@ export function shellSkin(im, kind) {
 }
 export function shellUnskin(im) { if (!im?.userData?.hw0) return; im.instanceColor.array.set(im.userData.hw0); im.instanceColor.needsUpdate = true; delete im.userData.hw0; delete im.userData.hwKind; }
 
+
+// a jockey in the racing crouch, in cells a third of a body voxel across (x forward toward the seahorse's back, y up, z sideways; the back
+// surface is x = 0 and the seat sits at y = 0): saddle pad and cantle with flaps and girth down the flanks, thighs forward along the flanks
+// and shins down into tall black boots in stirrup irons, white seat and breeches, a silk jacket with a white hoop and collar leaning forward,
+// a number cloth on the back, white sleeves to dark gloves on the reins, a tucked head with goggles and a strap, nose and mouth, a chin strap,
+// a domed helmet in the stable's silk with a white stripe and peak, and a whip raised in the right hand. zl is the half-width of the body
+// at the seat, in the same cells, so the legs lie against the flanks
+function jockeyVox(silk, zl) {
+  const v = new Vox(1), W = WHITE, K = BLACK, SK = [232, 190, 158], BR = [118, 76, 42], BR2 = [84, 52, 28], MT = [206, 206, 216], DK = [36, 32, 44], GL = [64, 78, 120];
+  const cell = (x, y, z, c) => v.set(Math.round(x), Math.round(y), Math.round(z), c), fill = (x0, y0, z0, x1, y1, z1, c) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) cell(x, y, z, c); };
+  const zw = Math.max(3, Math.min(6, zl - 2));
+  fill(-7, 0, -zw, 0, 2, zw, BR); fill(-8, 3, -zw + 1, -6, 5, zw - 1, BR2);                                                                 // the saddle pad and its raised cantle
+  for (const s of [-1, 1]) { const z = s * zl; fill(-4, -4, z - s, 2, 3, z, BR); fill(1, -6, z, 2, -4, z, BR2); }                              // saddle flaps and the girth down the flanks
+  for (const s of [-1, 1]) for (const zz of [s * zl, s * (zl + 1)]) {
+    for (let x = -4; x <= 9; x++) { const y0 = 6 + Math.round((x + 4) * 0.25); fill(x, y0, zz, x, y0 + 3, zz, W); }                                // the thigh, forward along the flank
+    fill(9, 9, zz, 11, 13, zz, W); fill(10, 4, zz, 12, 9, zz, W);                                                                             // the knee, the shin
+    fill(10, -4, zz, 12, 4, zz, K); fill(9, -4, zz, 9, -2, zz, K); fill(13, -4, zz, 13, -3, zz, K);                                             // a tall boot with heel and toe
+    fill(10, -7, zz, 13, -7, zz, MT); for (const x of [10, 13]) { cell(x, -6, zz, MT); cell(x, -5, zz, MT); } }                                 // the stirrup iron
+  fill(-10, 6, -4, -3, 10, 4, W);                                                                                                            // seat and breeches
+  for (let y = 11; y <= 24; y++) { const x0 = Math.round(-10 + (y - 11) * 0.4), w = y > 20 ? 5 : 4; fill(x0, y, -w, x0 + 6, y, w, (y >= 16 && y <= 18) || y === 24 ? W : silk); }      // the jacket, leaning forward: a white hoop and collar
+  fill(-11, 13, -2, -10, 16, 2, W); fill(-11, 14, 0, -10, 15, 0, DK);                                                                          // the number cloth on the back
+  for (const s of [-1, 1]) for (let t = 0; t <= 8; t++) { const x = -4 + t * 0.65, y = 22 + t; for (const z of [s * 5, s * 6]) { cell(x, y, z, t >= 7 ? DK : W); cell(x, y + 1, z, t >= 7 ? DK : W); } }      // arms forward to the reins, white sleeves, dark gloves
+  fill(-6, 25, -2, -3, 27, 2, SK); fill(-8, 27, -3, -1, 33, 3, SK); cell(-5, 30, -4, SK); cell(-5, 30, 4, SK);                                   // neck, head tucked low, ears
+  for (const zz of [-3, -2, -1, 1, 2, 3]) { cell(0, 30, zz, GL); cell(0, 31, zz, GL); cell(-1, 30, zz, DK); cell(-1, 31, zz, DK); } cell(0, 31, 0, DK); cell(0, 30, 0, SK);      // goggles: two lenses and a bridge
+  for (let x = -8; x <= -2; x++) { cell(x, 31, -4, DK); cell(x, 31, 4, DK); } fill(-9, 30, -3, -9, 31, 3, DK);                                   // the goggle strap round the back of the head
+  cell(0, 29, 0, SK); cell(0, 28, 0, [150, 90, 80]);                                                                                           // nose and mouth
+  for (let y = 28; y <= 32; y++) { cell(-3, y, -4, DK); cell(-3, y, 4, DK); } fill(-4, 26, -3, -2, 26, 3, DK);                                   // the chin strap
+  for (const [y, x0, x1, w] of [[33, -9, 1, 4], [34, -9, 1, 4], [35, -8, 0, 4], [36, -8, 0, 3], [37, -7, -1, 3], [38, -6, -2, 2], [39, -5, -3, 1]]) for (let x = x0; x <= x1; x++) for (let z = -w; z <= w; z++) cell(x, y, z, z === 0 ? W : silk);      // the helmet, domed, a white stripe over the crown
+  fill(1, 33, -3, 4, 33, 3, W); fill(4, 33, -2, 5, 33, 2, W);                                                                                  // the peak
+  for (let t = 0; t <= 14; t++) cell(1 - t * 0.8, 30 + t * 0.7, 6, t >= 13 ? W : K); cell(-11, 41, 6, W);                                        // the whip, raised back from the right glove, a white popper at the end
+  return v;
+}
+
 // ── on and off ──
 export function dress(f, kind = costumeFor(f)) {
   if (f.hw || !f.vox || !f.mesh) return null;
@@ -192,18 +227,9 @@ export function dress(f, kind = costumeFor(f)) {
     if (kind === 'police') for (const side of [-1, 1]) putBox(box(0.5 * k, 0.6 * k, 0.4, GOLD), A.E.x - 3.5 * k, A.E.y - 0.5 * k, side * (A.wMax * 0.5 + 0.3));          // a badge on each side
     if (kind === 'racehorse') { const silk = silkFor(f), SKIN = [232, 190, 158]; for (const side of [-1, 1]) { putBox(box(1.0 * k, 1.3 * k, 0.6 * k, WHITE), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.35)); putBox(box(0.6 * k, 0.8 * k, 0.3 * k, silk), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.75)); }      // white blinker cups with a silk patch, beside the eyes
       const bandY = A.y0 + (A.y1 - A.y0) * 0.42, bandH = Math.max(5.5, (A.y1 - A.y0) * 0.2), seatY = bandY + bandH + 1; let backX = 1e9, wz = 1; for (const q of f.vox) if (q.tag !== 'tail' && Math.abs(q.y - seatY) <= 3) { backX = Math.min(backX, q.x); wz = Math.max(wz, Math.abs(q.z)); }      /* (the seat just above the numbered cloth, so the boots hang beside its top edge and never over the number) */      // the back of the trunk at the saddle, and how wide it is there
-      if (backX < 1e8) { const J = Math.max(1.1, k * 1.05), zl = Math.round(wz / J) + 1, v = new Vox(1), W = WHITE, K = BLACK, SK = SKIN, BR = [118, 76, 42], MT = [206, 206, 216], DK = [36, 32, 44];      // a jockey in the racing crouch, in cells about one body voxel across: saddle and girth, knees up and feet in short stirrups, seat back, body folded forward over the neck, arms out to the reins, helmet with a peak and goggles, a whip in the right hand
-        const cell = (x, y, z, c) => v.set(Math.round(x), Math.round(y), Math.round(z), c), fill = (x0, y0, z0, x1, y1, z1, c) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) cell(x, y, z, c); };
-        fill(-2, 0, -Math.min(2, zl - 1), 0, 1, Math.min(2, zl - 1), BR); for (const z of [-zl, zl]) { cell(1, 1, z, BR); cell(1, 0, z, BR); }      // the saddle pad behind the back, girth straps down the flanks
-        for (const side of [-1, 1]) { const z = side * zl; fill(-1, 2, z, 3, 3, z, W); fill(3, 0, z, 3, 2, z, W); fill(3, -1, z, 4, 0, z, K); cell(4, -2, z, MT); cell(3, -2, z, MT); }      // thighs forward along the flanks, shins down, boots, short stirrups
-        fill(-3, 2, -1, -1, 3, 1, W);      // the seat
-        for (let y = 4; y <= 8; y++) { const x0 = y >= 7 ? -2 : -3; fill(x0, y, -1, x0 + 2, y, 1, y === 6 ? W : silk); }      // the jacket, leaning a little forward, a white hoop
-        for (const side of [-1, 1]) { cell(-1, 9, side * 2, W); cell(0, 10, side * 2, SK); }      // arms reaching forward round the neck, hands on the reins
-        fill(-2, 9, -1, -1, 10, 1, SK); for (const z of [-1, 0, 1]) cell(-1, 10, z, DK);      // the head tucked low, goggles across the face
-        fill(-3, 11, -1, -1, 11, 1, silk); fill(-2, 12, -1, -2, 12, 1, W); cell(-3, 12, 0, W); cell(-1, 12, 0, W); for (const z of [-1, 0, 1]) cell(0, 11, z, W);      // the helmet: silk, a white crown, a white peak over the face
-        cell(-1, 11, 2, K); cell(-2, 12, 2, K); cell(-3, 13, 2, K); cell(-4, 14, 2, W);      // the whip, raised back in the right hand
-        put(v, backX, seatY, 0, J);
-        const hx = backX, hy = seatY + 10 * J, dx = A.nose - 1.5 - hx, dy = A.E.y - 1 - hy, rein = box(Math.hypot(dx, dy), 0.3 * k, 0.3 * k, [250, 250, 255]); rein.rotation.z = Math.atan2(dy, dx); putBox(rein, hx + dx / 2, hy + dy / 2, 0); } }      // reins from the hands to the bit
+      if (backX < 1e8) { const J = Math.max(1.1, k * 1.05), u = J / 3, zl = Math.round(wz / u) + 2, v = jockeyVox(silk, zl);      // a jockey in cells a third of a body voxel across, in the racing crouch (see jockeyVox)
+        put(v, backX, seatY, 0, u);
+        const hx = backX + 1 * u, hy = seatY + 30 * u, dx = A.nose - 1.5 - hx, dy = A.E.y - 1 - hy, rein = box(Math.hypot(dx, dy), 0.25 * k, 0.25 * k, [250, 250, 255]); rein.rotation.z = Math.atan2(dy, dx); putBox(rein, hx + dx / 2, hy + dy / 2, 0); } }      // reins from the gloves to the bit
   }
   if (octo) { const v = new Vox(1); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); v.set(-1, 0, 1, [110, 150, 60]); v.set(0, 0, -1, [110, 150, 60]); put(v, hatAt.x, hatAt.y, 0, 1.6); }      // a stem on the mantle, and two leaves
   if (PAINTED.has(kind)) { hw.base0 = f.baseCol; f.baseCol = paint(kind, f, A); repaint(f); }
