@@ -1,6 +1,7 @@
 // Milestone icons drawn in the tank's own pixel style (12×12), one per step of a fish's life. Each row is a string; a letter is a color from the palette, '.' is empty.
-const P = { o: '#3b2a1e', w: '#fff8ea', c: '#ffd9a8', y: '#ffcf4a', Y: '#f2a93b', g: '#5fcf7a', G: '#2f9e57', b: '#7cc7ff', B: '#3d8fe0', p: '#ff8fb1', P: '#e0476b', r: '#ff7a59', s: '#e9c79a', S: '#c99a62', k: '#24323f', v: '#c9a7ff' };
+const P = { o: '#3b2a1e', w: '#fff8ea', c: '#ffd9a8', y: '#ffcf4a', Y: '#f2a93b', g: '#5fcf7a', G: '#2f9e57', b: '#7cc7ff', B: '#3d8fe0', p: '#ff8fb1', P: '#e0476b', r: '#ff7a59', s: '#e9c79a', S: '#c99a62', k: '#24323f', v: '#c9a7ff', O: '#ff9a2e' };
 const ART = {
+  candy: ['.....ww.....', '.....ww.....', '....wwww....', '....OOOO....', '...OOOOOO...', '...OOOOOO...', '..OOOOOOOO..', '..yyyyyyyy..', '.yyyyyyyyyy.', '.yyyyyyyyyy.', '.YYYYYYYYYY.', '............'],      // a candy corn: every food for the two Halloween days
   bolt: ['......yyy...', '.....yyy....', '....yyY.....', '...yyY......', '..yyyyyyy...', '.....yyY....', '....yyY.....', '...yyY......', '..yyY.......', '.yyY........', '.yY.........', '............'],
   clash: ['k..........k', '.kw......wk.', '..kw....wk..', '...kw..wk...', '....kwwk....', '.....kk.....', '....kwwk....', '...kw..wk...', '.SSk....kSS.', '.SS......SS.', '............', '............'],
   eye: ['............', '............', '....kkkk....', '..kkwwwwkk..', '.kwwwBBwwwk.', 'kwwwBkkBwwwk', 'kwwwBkkBwwwk', '.kwwwBBwwwk.', '..kkwwwwkk..', '....kkkk....', '............', '............'],
