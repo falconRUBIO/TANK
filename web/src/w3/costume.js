@@ -300,7 +300,13 @@ function jockeyVox(silk, zl) {
 // ── on and off ──
 export function dress(f, kind = costumeFor(f)) {
   if (f.hw || !f.vox || !f.mesh) return null;
-  const A = anchors(f), g = new THREE.Group(), parts = [], hw = { kind, label: COSTUMES[kind]?.label ?? kind, group: g, s: f.scale, parts, base0: null };
+  const A = anchors(f), g = new THREE.Group(), parts = [], ticks = [], hw = { kind, label: COSTUMES[kind]?.label ?? kind, group: g, s: f.scale, parts, base0: null, ticks, tick: () => { for (const t of ticks) t(); } };
+  // a piece hung on the tail (a devil's tail, a cat's, a mummy's loose end) rides the tail fin as it swings: each frame it is moved and turned by
+  // however far the fin's tip voxel has swung from where it sat when the piece was fitted
+  const _M = new THREE.Matrix4();
+  const rideTail = (m, x, y, z) => { if (!f.mesh?.isInstancedMesh || !f.vox) return; let ti = -1, bs = 1e9; f.vox.forEach((v, i) => { if (v.tag === 'pouch') return; const d = Math.abs(v.x - A.x0) * 1.5 + Math.abs(v.y - y) + Math.abs(v.z); if (d < bs) { bs = d; ti = i; } }); if (ti < 0) return;
+    const rest = f.vox[ti], L = Math.max(3, (f.sp?.bend ? (f.sp.bend.pivot - (f.cx ?? 0)) : A.len * 0.4) - A.x0);      /* (the fin tip voxel and how far it is from the body's flex point) */
+    ticks.push(() => { f.mesh.getMatrixAt(ti, _M); const e = _M.elements, s = f.scale, dx = e[12] - rest.x * s, dy = e[13] - rest.y * s, dz = e[14] - rest.z * s; m.position.set(x * s + dx, y * s + dy, z * s + dz); m.rotation.y = Math.atan2(dz, L * s) * 1.25; }); };
   const put = (v, x, y, z, k = 1, ry = 0) => { const m = v.mesh(); m.position.set(x, y, z); m.scale.setScalar(k); m.rotation.y = ry; g.add(m); parts.push(m); return m; };
   const putBox = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); parts.push(m); return m; };
   const turtle = TURTLES.has(f.species?.id), octo = f.species?.move === 'jet', crab = !!f.crab, sea = !!f.sp?.tail;
@@ -320,7 +326,7 @@ export function dress(f, kind = costumeFor(f)) {
     if (kind === 'witch') { const u = k * 0.5; put(witchNoseVox(), A.nose - 0.2 * k, A.E.y - 0.6 * k, 0, u);      // a long hooked green nose with warts
       if (!turtle) put(witchHairVox(Math.round(A.w / u) - 1, f.seed), hatAt.x, hatAt.y - 0.1, 0, u);      // stringy grey hair from under the brim
       if (sea) { const Lf = Math.round((A.y1 - A.y0) * 0.55 / u), m = put(broomVox(Lf, 5), 0, A.y0, 0, u); m.rotation.z = Math.PI / 2;      // a seahorse holds its broom with its tail, upright like a stem: the hold follows the curl of the tail every frame
-        hw.tick = () => { const R = f.tailRig; if (!R || !R.x.length) return; const n = R.x.length, a = Math.floor(n * 0.6); let cx = 0, cy = 0, cz = 0, m0 = 0; for (let q = a; q < n; q++) { cx += R.x[q]; cy += R.y[q]; cz += R.z[q]; m0++; } m.position.set((cx / m0 + 0.6) * f.scale, (cy / m0) * f.scale, (cz / m0) * f.scale); }; hw.tick(); }
+        ticks.push(() => { const R = f.tailRig; if (!R || !R.x.length) return; const n = R.x.length, a = Math.floor(n * 0.6); let cx = 0, cy = 0, cz = 0, m0 = 0; for (let q = a; q < n; q++) { cx += R.x[q]; cy += R.y[q]; cz += R.z[q]; m0++; } m.position.set((cx / m0 + 0.6) * f.scale, (cy / m0) * f.scale, (cz / m0) * f.scale); }); hw.tick(); }
       else if (!turtle) { const L = A.len * 0.95, Lc = Math.round(L / u) - 15, Lf = Math.round(Lc * 0.55); put(broomVox(Lf, Lc - Lf), A.x1 + 0.5 * k - Lf * u, A.bot - 0.9 * k, 0, u); } }      // a fish rides its broom along under its belly
     if (kind === 'pirate' && !turtle) { const u = k * 0.5; putBox(box(0.5, 1.3 * k, 1.3 * k, BLACK), A.E.x, A.E.y, A.w + 0.45); for (let i = 0; i < 4; i++) putBox(box(0.5, 0.3 * k, 0.7 * k, BLACK), A.E.x, A.E.y + (0.7 + i * 0.42) * k, A.w + 0.2 - i * 0.3 * k);      // an eye patch and its strap (not on a turtle: its head turns on its own)
       for (const [dy, dz] of [[0, 0], [-1, 0], [-2, 0], [-1, -1], [-1, 1]]) putBox(box(0.3 * k, 0.3 * k, 0.3 * k, GOLD), A.E.x - 1.6 * k, A.E.y - 1.1 * k + dy * 0.3 * k, -(A.w + 0.35) + dz * 0.3 * k);      // a gold hoop earring on the other side
@@ -335,12 +341,12 @@ export function dress(f, kind = costumeFor(f)) {
       put(v, sx, A.mid, 0, 1);
       for (const z of [-0.5 * k, 0.5 * k]) putBox(box(0.35 * k, 0.8 * k, 0.35 * k, WHITE), A.nose - 0.8 * k, A.bot - 0.2 * k, z); }      // two little fangs
     if (kind === 'cat') { for (const side of [-1, 1]) for (let i = 0; i < 3; i++) putBox(box(0.22 * k, 0.16 * k, 2.4 * k, WHITE), A.nose - (0.5 + i * 0.3) * k, A.E.y - (1.2 - i * 0.4) * k, side * 1.5 * k);      // whiskers
-      if (!sea) { const v = new Vox(1); for (let q = 0; q <= 7; q++) { v.set(-q, Math.round(q * q * 0.1), 0, BLACK); if (q > 5) v.set(-q, Math.round(q * q * 0.1) + 1, 0, BLACK); } put(v, A.x0 + 0.5, A.mid, 0, k * 0.7); } }      // a long black tail curling up behind
+      if (!sea) { const v = new Vox(1); for (let q = 0; q <= 7; q++) { v.set(-q, Math.round(q * q * 0.1), 0, BLACK); if (q > 5) v.set(-q, Math.round(q * q * 0.1) + 1, 0, BLACK); } rideTail(put(v, A.x0 + 0.5, A.mid, 0, k * 0.7), A.x0 + 0.5, A.mid, 0); } }      // a long black tail curling up behind
     if (kind === 'wizard' && !turtle) { const u = k * 0.5, my = A.E.y - 2.0 * k; put(wizardBeardVox(Math.round(Math.min((my - A.bot) + A.hh * 0.6, sea ? (A.y1 - A.y0) * 0.45 : 1e9) / u), Math.max(3, Math.round(A.w * 1.05 / u)), f.seed), A.nose - 0.5 * k, my, 0, u);      // a long wavy white beard from under the mouth, wide across the chin, a mustache curling up at the ends
       for (const side of [-1, 1]) putBox(box(1.0 * k, 0.32 * k, 0.35 * k, WHITE), A.E.x + 0.2 * k, A.E.y + 1.05 * k, side * (A.w + 0.25));      // bushy white brows
       { const N = Math.max(8, Math.round((sea ? (A.y1 - A.y0) * 0.6 : A.hh * 2.0) / u) - 6), m = put(staffVox(N), A.E.x - 1.4 * k, (sea ? A.y0 + (A.y1 - A.y0) * 0.1 : A.bot - 0.4 * k), A.wMax * 0.6 + 1.0 * k, u); m.rotation.z = 0.22; } }      // a gnarled staff with a glowing crystal, carried at its side
     if (kind === 'pirate' && !turtle && !sea) { const px = A.topX - A.len * 0.32, ty = A.colTop(Math.round(px), 0); put(parrotVox(), px, (ty > -1e8 ? ty : A.top) + 0.4 * k, 0, k * 0.42); }      // a parrot perched on its back behind the hat
-    if (kind === 'mummy') { const v = new Vox(1); for (let q = 0; q <= 7; q++) v.set(-q, -Math.round(q * q * 0.06), 0, WRAP); put(v, A.x0 + 0.5, A.mid - 1, 0, k * 0.7);      // a loose end trailing behind
+    if (kind === 'mummy') { const v = new Vox(1); for (let q = 0; q <= 7; q++) v.set(-q, -Math.round(q * q * 0.06), 0, WRAP); if (!sea) rideTail(put(v, A.x0 + 0.5, A.mid - 1, 0, k * 0.7), A.x0 + 0.5, A.mid - 1, 0); else put(v, A.x0 + 0.5, A.mid - 1, 0, k * 0.7);      // a loose end trailing behind
       for (let n = 0; n < 4; n++) { const x = Math.round(A.x0 + A.len * (0.2 + n * 0.2)), z = (n % 2 ? 1 : -1) * Math.min(1, Math.round(A.wMax * 0.3)), y = A.colBot(x, z); if (y > 1e8) continue; const v2 = new Vox(1), len = 3 + (n % 3); for (let q = 0; q <= len; q++) v2.set(-Math.round(q * 0.35), -q, 0, hash(n, q, 0, 2) > 0.5 ? WRAP : [240, 236, 226]); put(v2, x, y - 0.5, z, 1); }      // bandage ends hanging loose off its underside, swept back a little
       { const v3 = new Vox(1); for (let q = 0; q <= 4; q++) v3.set(-q, Math.round(q * 0.5) + 1, 0, WRAP); put(v3, A.topX - 1, A.top, 0, 1); } }      // and one waving off the top of its head
     if (kind === 'firefighter' && !turtle) { const H = A.hh * 1.6, z = A.wMax * 0.6 + 0.8 * k; putBox(box(0.3 * k, H, 0.3 * k, [120, 70, 40]), A.E.x - 2 * k, A.mid + H * 0.1, z);      // a fire axe held at its side: a wooden handle, a red head with a silver edge
@@ -349,7 +355,7 @@ export function dress(f, kind = costumeFor(f)) {
       put(goateeVox(), A.nose - 1.0 * k, A.bot - 0.05 * k, 0, k * 0.5); for (const z of [-0.55 * k, 0.55 * k]) putBox(box(0.32 * k, 0.75 * k, 0.32 * k, WHITE), A.nose - 0.7 * k, A.bot - 0.15 * k, z); }      // a pointed goatee and two fangs
     if (kind === 'devil' && !sea) { const v = new Vox(1), N = 9, DK = [22, 16, 24]; let ty = 0; for (let q = 0; q <= N; q++) { ty = Math.round(q * q * 0.085); v.set(-q, ty, 0, RED); if (q >= 2) v.set(-q, ty + 1, 0, q % 3 ? RED : [168, 18, 30]); }      // a long tail curling up behind, two voxels thick
       const cx = -N - 1, cy = ty + 2; for (let j = -2; j <= 2; j++) v.set(cx, cy + j, 0, DK); for (let j = -1; j <= 1; j++) v.set(cx - 1, cy + j, 0, DK); v.set(cx - 2, cy, 0, DK); v.set(cx + 1, cy - 2, 0, DK); v.set(cx + 1, cy + 2, 0, DK); v.set(cx + 1, cy, 0, DK);      // a black spade at its tip, barbs swept back
-      put(v, A.x0 + 0.5, A.mid, 0, k * 0.8); }
+      rideTail(put(v, A.x0 + 0.5, A.mid, 0, k * 0.8), A.x0 + 0.5, A.mid, 0); }
     if (kind === 'frank') for (const side of [-1, 1]) putBox(box(0.9 * k, 0.9 * k, 1.3 * k, [150, 150, 160]), A.E.x - 0.8 * k, A.E.y - 0.8 * k, side * (A.w + 0.5 * k));          // two bolts
     if (kind === 'devil' && !turtle) { const u = k * 0.5, L = sea ? (A.y1 - A.y0) * 0.5 : A.hh * 1.8, N = Math.max(8, Math.round(L / u)), z = A.wMax * 0.6 + 1.0 * k, v = new Vox(1), SH = [58, 30, 34], SH2 = [78, 42, 44], TIP = [255, 150, 110];      // a pitchfork carried at its side: a thick dark shaft leaning back, a red three-tined fork on top with hot tips
       for (let j = 0; j <= N; j++) { v.set(0, j, 0, j % 4 === 0 ? SH2 : SH); v.set(0, j, 1, j % 4 === 0 ? SH2 : SH); } v.set(0, -1, 0, [30, 18, 22]); v.set(0, -1, 1, [30, 18, 22]);      // (two voxels across, so it reads at a distance; a dark ferrule at the foot)
