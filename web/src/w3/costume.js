@@ -101,7 +101,7 @@ function paint(kind, f, A) {
     else if (kind === 'ghost') { const hole = Math.hypot(v.x - E.x, v.y - E.y) <= 1.9 && Math.abs(v.z) > 0.8, mouth = Math.hypot(v.x - (E.x + 0.6), v.y - (E.y - 3.2)) <= 1.2 && Math.abs(v.z) > 0.8; c = hole || mouth ? [18, 16, 28] : mix(WHITE, [214, 220, 240], q * 0.5); keep = hole || mouth ? 0 : 0.12; }      // the sheet, with two eye holes and a round surprised mouth cut in each side
     else if (kind === 'frank') { if (!behind) { const scar = Math.abs(v.z) > 0.8 && Math.abs(v.y - (E.y - 2.2)) <= 0.5 && v.x > E.x - 3 && v.x < E.x + 0.5, stitch = Math.abs(v.z) > 0.8 && Math.round(v.x - E.x) % 2 === 0 && Math.abs(v.y - (E.y - 2.2)) <= 1.4 && v.x > E.x - 3 && v.x < E.x + 0.5; c = scar || stitch ? [26, 24, 36] : GREEN; keep = scar || stitch ? 0 : 0.25; } else { c = [40, 42, 64]; keep = 0.08; } }      // a green face with a stitched scar, a dark square jacket
     else if (kind === 'vampire') { if (!behind) { c = [222, 216, 232]; keep = 0.25; } else { const shirt = v.y < mid + 0.5 && v.y > mid - 4.5 && v.x > E.x - 8 && Math.abs(v.z) > 0.8, tie = Math.abs(v.y - (mid + 0.5)) <= 0.6 && v.x > E.x - 4.5 && Math.abs(v.z) > 0.8; c = tie ? RED : shirt ? WHITE : [30, 28, 42]; keep = tie ? 0 : shirt ? 0.1 : 0.08; } }      /* (a dark paint needs almost none of the fish left in it: in linear light a fifth of a bright fish outshines a black suit) */      // a pale face, a black suit with a white shirt front and a red bow tie
-    else if (kind === 'pirate') { if (behind) { const stripe = ((Math.round(v.y - mid) % 3) + 3) % 3 === 0; c = stripe ? [200, 34, 40] : WHITE; keep = 0.08; } }      // a red-and-white striped shirt
+    else if (kind === 'pirate') { if (behind && !TURTLES.has(f.species?.id)) {      /* (a turtle keeps its shell: the tricorn is enough) */ const stripe = ((Math.round(v.y - mid) % 3) + 3) % 3 === 0; c = stripe ? [200, 34, 40] : WHITE; keep = 0.08; } }      // a red-and-white striped shirt
     else if (kind === 'bat') { c = [34, 24, 48]; keep = 0.1; }                                                                                          // a bat is dark all over
     else if (kind === 'cat') { c = [24, 20, 30]; keep = 0.12; }                                                                                       // all in black
     else if (kind === 'devil') { c = [190, 30, 36]; keep = 0.45; }                                                                                    // all in red
@@ -130,9 +130,9 @@ export function dress(f, kind = costumeFor(f)) {
   const put = (v, x, y, z, k = 1, ry = 0) => { const m = v.mesh(); m.position.set(x, y, z); m.scale.setScalar(k); m.rotation.y = ry; g.add(m); parts.push(m); return m; };
   const putBox = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); parts.push(m); return m; };
   const turtle = TURTLES.has(f.species?.id), octo = f.species?.move === 'jet', crab = !!f.crab, sea = !!f.sp?.tail;
-  const k = turtle ? 1.6 : Math.max(1.3, Math.min(3.2, A.hh * 0.17)), hatAt = turtle ? { x: A.shell.x, y: A.shell.y + 0.6 } : octo ? { x: A.mantle.x, y: A.mantle.y - 0.5 } : { x: A.topX, y: A.top + 0.3 };      // a hat as big as the head it sits on
+  const k = turtle ? 1.1 : Math.max(0.9, Math.min(2.0, A.hh * 0.105)),      /* (a brim about three fifths of the head's height: a hat, not a tent) */ hatAt = turtle ? { x: A.shell.x, y: A.shell.y + 0.6 } : octo ? { x: A.mantle.x, y: A.mantle.y - 0.5 } : { x: A.topX, y: A.top + 0.3 };      // a hat in proportion to the head it sits on
   if (crab) {      // a crab's hat sits on its front shield, behind the eyestalks (its own fine voxels: the crab's frame is in meters)
-    const U = 0.034, v = hatVox(HATS[kind] ?? kind), m = v.mesh(); m.scale.setScalar(U * 0.75); m.position.set(0.3 * U, 3.0 * U, 0); f.bodyG.add(m); parts.push(m); hw.group = m; f.hw = hw; return hw;
+    const U = 0.034, v = hatVox(HATS[kind] ?? kind), m = v.mesh(); m.scale.setScalar(U * 0.5); m.position.set(0.3 * U, 3.0 * U, 0); f.bodyG.add(m); parts.push(m); hw.group = m; f.hw = hw; return hw;
   }
   if (!octo && (f.cute ?? 0) <= 0.3 && !f.nursery) {
     if (HATS[kind] && (!turtle || kind !== 'cat')) put(hatVox(HATS[kind], f.seed), hatAt.x, hatAt.y + (kind === 'vampire' ? -0.3 : 0), 0, k * (kind === 'firefighter' ? 1.15 : 1));
@@ -164,7 +164,7 @@ export function dress(f, kind = costumeFor(f)) {
     if (kind === 'police') for (const side of [-1, 1]) putBox(box(0.5 * k, 0.6 * k, 0.4, GOLD), A.E.x - 3.5 * k, A.E.y - 0.5 * k, side * (A.wMax * 0.5 + 0.3));          // a badge on each side
     if (kind === 'racehorse') for (const side of [-1, 1]) putBox(box(1.0 * k, 1.3 * k, 0.6 * k, SILKS[(f.seed | 0) % SILKS.length]), A.E.x + 0.3 * k, A.E.y, side * (A.w + 0.35));      // blinkers beside the eyes
   }
-  if (octo) { const v = new Vox(1); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); v.set(-1, 0, 1, [110, 150, 60]); v.set(0, 0, -1, [110, 150, 60]); put(v, hatAt.x, hatAt.y, 0, 2.4); }      // a stem on the mantle, and two leaves
+  if (octo) { const v = new Vox(1); for (let j = 0; j <= 3; j++) v.set(j >= 2 ? 1 : 0, j, 0, [84, 118, 42]); v.set(2, 3, 0, [84, 118, 42]); v.set(-1, 0, 1, [110, 150, 60]); v.set(0, 0, -1, [110, 150, 60]); put(v, hatAt.x, hatAt.y, 0, 1.6); }      // a stem on the mantle, and two leaves
   if (PAINTED.has(kind)) { hw.base0 = f.baseCol; f.baseCol = paint(kind, f, A); repaint(f); }
   for (const m of parts) { m.position.multiplyScalar(f.scale); m.scale.multiplyScalar(f.scale); }
   hw.place = () => { const q = f.scale / hw.s; if (Math.abs(q - 1) < 1e-6) return; for (const m of parts) { m.position.multiplyScalar(q); m.scale.multiplyScalar(q); } hw.s = f.scale; };
