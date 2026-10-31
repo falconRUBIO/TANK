@@ -53,31 +53,54 @@ const SIL = 0x0b0a16;
 function buildSky() {
   const g = new THREE.Group(), flat = (shape, col, op = 1, ro = -7.2) => { const m = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthWrite: false, fog: false })); m.renderOrder = ro; return m; };
   const disc = (r, col, op, ro) => { const sh = new THREE.Shape(); sh.absarc(0, 0, r, 0, Math.PI * 2, false); return flat(sh, col, op, ro); };
-  const moon = disc(2.3, 0xfff1bc, 1, -7.3), halo1 = disc(3.1, 0xffe9a8, 0.13, -7.4), halo2 = disc(4.2, 0xffe9a8, 0.06, -7.5); moon.position.y = halo1.position.y = halo2.position.y = 8.0;
-  const craters = new THREE.Group(); for (const [x, y, r] of [[-0.8, 0.6, 0.5], [0.7, -0.4, 0.38], [-0.3, -1.1, 0.28], [1.1, 0.9, 0.22]]) { const c = disc(r, 0xcbb98a, 0.22, -7.25); c.position.set(x, 8.0 + y, 0.01); craters.add(c); }
-  g.add(halo2, halo1, moon, craters); g.moon = moon; g.halos = [halo1, halo2, ...craters.children];
-  // the hill and what stands on it (local: the hill's foot is y = 0)
+  const MY = 8.2;      // the moon: big and warm, a thin bright rim, the dark seas of its face, a two-step halo
+  const moon = disc(2.7, 0xfff1c4, 1, -7.3), rim = disc(2.8, 0xfff9e6, 0.55, -7.31), halo1 = disc(3.7, 0xffe9a8, 0.14, -7.4), halo2 = disc(5.2, 0xffe0a0, 0.06, -7.5); for (const m of [moon, rim, halo1, halo2]) m.position.y = MY;
+  const craters = new THREE.Group(); for (const [x, y, r, op] of [[-1.2, 0.5, 0.95, 0.14], [0.8, -0.9, 0.8, 0.12], [-0.4, -1.4, 0.34, 0.26], [1.5, 1.0, 0.28, 0.26], [0.2, 1.7, 0.22, 0.24], [-1.7, -0.5, 0.2, 0.26], [1.0, 0.3, 0.16, 0.22]]) { const c = disc(r, 0xd2be8e, op, -7.25); c.position.set(x, MY + y, 0.01); craters.add(c); }
+  g.add(halo2, halo1, moon, rim, craters); g.moon = moon; g.halos = [halo1, halo2, ...craters.children, rim];
+  // clouds: long dark wisps of a few overlapping rounds, drifting slowly across the moon's face
+  const cloud = (x, y, w, sp) => { const c = new THREE.Group(); for (let k = 0; k < 6; k++) { const d = disc(w * (0.12 + 0.1 * Math.sin(k * 2.1 + 1)), 0x171430, 0.8, -7.2); d.position.set(-w / 2 + (k / 5) * w, Math.sin(k * 1.7) * w * 0.05, 0); c.add(d); } c.position.set(x, y, 0.02); c.userData.sp = sp; c.userData.w = w; g.add(c); return c; };
+  g.clouds = [cloud(-4, MY + 0.9, 4.2, 0.045), cloud(3, MY - 1.4, 3.4, 0.03), cloud(-1, MY + 2.4, 2.6, 0.06)];
+  // the hill and what stands on it (local: the hill's foot is y = 0), with a lower hill behind for depth
   const H = new THREE.Group(); H.position.set(0, 5.2, 0.02);
-  const poly = (pts, col = SIL, op = 0.96) => { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y))); sh.closePath(); const m = flat(sh, col, op, -7.1); H.add(m); return m; };
-  { const sh = new THREE.Shape(); sh.moveTo(-5.2, -0.5); for (let x = -5.2; x <= 5.2; x += 0.4) sh.lineTo(x, Math.max(0, 1.05 * Math.cos((x / 5.2) * Math.PI * 0.5) ** 0.8 - 0.05 + 0.06 * Math.sin(x * 3.1))); sh.lineTo(5.2, -0.5); sh.closePath(); H.add(flat(sh, SIL, 0.96, -7.1)); }      // the hill
-  poly([[0.6, 0.5], [3.3, 0.5], [3.3, 2.5], [0.6, 2.5]]); poly([[0.3, 2.45], [1.95, 3.75], [3.55, 2.45]]);                                                    // the house and its roof
-  poly([[3.2, 0.5], [4.15, 0.5], [4.15, 3.5], [3.2, 3.5]]); poly([[3.0, 3.45], [3.68, 4.95], [4.35, 3.45]]);                                                 // the tower and its steeple
-  poly([[0.95, 2.8], [1.35, 2.8], [1.35, 3.6], [0.95, 3.6]]); poly([[0.4, 3.6], [1.9, 3.6], [1.9, 3.72], [0.4, 3.72]]);                                        // the chimney, the ridge
-  poly([[1.75, 0.5], [2.25, 0.5], [2.25, 1.3], [1.75, 1.3]], 0x030308, 1);                                                                                    // the door
-  const win = (x, y, w, h) => { const m = poly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 0xffb04a, 0.95); m.renderOrder = -7.05; return m; };
-  g.windows = [win(1.0, 1.45, 0.34, 0.45), win(2.35, 1.45, 0.34, 0.45), win(3.5, 2.7, 0.3, 0.42), win(1.0, 0.75, 0.34, 0.3)];
-  for (const [x, w, h, lean] of [[-1.9, 0.42, 0.55, 0.12], [-1.15, 0.34, 0.42, -0.08]]) { const m = poly([[x, 0.08], [x + w, 0.08], [x + w, h - w * 0.5], [x + w * 0.5, h + 0.05], [x, h - w * 0.5]]); m.rotation.z = lean; m.position.y = 0.4 * Math.cos((x / 5.2) * Math.PI * 0.5); }      // two gravestones
-  for (let i = 0; i < 7; i++) { const x = 0.95 - i * 0.37 - 1.5, lean = (i % 3 - 1) * 0.1, y0 = 1.05 * Math.cos((x / 5.2) * Math.PI * 0.5) ** 0.8 - 0.08; const m = poly([[x, y0], [x + 0.1, y0], [x + 0.1, y0 + 0.5], [x + 0.05, y0 + 0.6], [x, y0 + 0.5]]); m.rotation.z = lean; }      // a crooked fence
-  // a bare tree, its branches reaching toward the moon: a trunk and twigs as thin slabs
-  const limb = (x0, y0, ang, len, w, depth) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, len), new THREE.MeshBasicMaterial({ color: SIL, transparent: true, opacity: 0.96, depthWrite: false, fog: false })); m.renderOrder = -7.1;
+  const poly = (pts, col = SIL, op = 0.96, ro = -7.1) => { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y))); sh.closePath(); const m = flat(sh, col, op, ro); H.add(m); return m; };
+  const hillY = (x) => Math.max(0, 1.25 * Math.cos((x / 5.4) * Math.PI * 0.5) ** 0.8 - 0.05 + 0.06 * Math.sin(x * 3.1));
+  { const sh = new THREE.Shape(); sh.moveTo(-7, -0.5); for (let x = -7; x <= 7; x += 0.4) sh.lineTo(x, Math.max(0, 0.9 * Math.cos(((x + 2.5) / 7) * Math.PI * 0.5) ** 0.9 + 0.05 * Math.sin(x * 2.3) + 0.3)); sh.lineTo(7, -0.5); sh.closePath(); H.add(flat(sh, 0x16132c, 0.9, -7.15)); }      // the far hill
+  { const sh = new THREE.Shape(); sh.moveTo(-5.4, -0.5); for (let x = -5.4; x <= 5.4; x += 0.3) sh.lineTo(x, hillY(x)); sh.lineTo(5.4, -0.5); sh.closePath(); H.add(flat(sh, SIL, 0.97, -7.1)); }      // the near hill
+  // the house: a side wing, the main body with a porch, a steep gable with a dormer, a tall tower with a witch-hat roof and a weathervane
+  poly([[-0.7, 0.5], [0.6, 0.5], [0.6, 1.9], [-0.7, 1.9]]); poly([[-0.95, 1.85], [-0.05, 2.65], [0.85, 1.85]]);                                              // the wing and its roof
+  poly([[0.5, 0.5], [3.4, 0.5], [3.4, 2.7], [0.5, 2.7]]); poly([[0.2, 2.65], [1.95, 4.15], [3.7, 2.65]]);                                                  // the body and the steep gable
+  poly([[1.55, 3.0], [2.35, 3.0], [2.35, 3.45], [1.95, 3.75], [1.55, 3.45]]);                                                                              // the dormer
+  poly([[0.15, 1.45], [1.85, 1.45], [1.85, 1.62], [0.15, 1.62]]); for (const x of [0.25, 0.95, 1.65]) poly([[x, 0.5], [x + 0.09, 0.5], [x + 0.09, 1.45], [x, 1.45]]);      // the porch roof and its posts
+  poly([[1.2, 0.3], [1.7, 0.3], [1.7, 0.5], [1.2, 0.5]]); poly([[1.3, 0.5], [1.6, 0.5], [1.6, 1.2], [1.3, 1.2]], 0x040310, 1);                              // steps and the door
+  poly([[3.2, 0.5], [4.25, 0.5], [4.25, 3.9], [3.2, 3.9]]); poly([[2.85, 3.85], [3.72, 5.75], [4.6, 3.85]]);                                              // the tower and its witch-hat roof
+  poly([[3.69, 5.7], [3.75, 5.7], [3.75, 6.25], [3.69, 6.25]]); poly([[3.5, 6.05], [3.95, 6.12], [3.5, 6.19]]); poly([[3.62, 6.0], [3.82, 6.0], [3.82, 6.03], [3.62, 6.03]]);      // the weathervane
+  const chim1 = poly([[1.0, 2.95], [1.36, 2.95], [1.36, 3.75], [1.0, 3.75]]); chim1.rotation.z = 0.07; chim1.position.x = -0.1; poly([[3.95, 3.7], [4.2, 3.7], [4.2, 4.5], [3.95, 4.5]]);      // two chimneys, one leaning
+  const win = (x, y, w, h, col = 0xffb04a) => { const m = poly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], col, 0.95, -7.05); return m; };
+  g.windows = [win(0.75, 1.75, 0.34, 0.45), win(2.45, 1.75, 0.34, 0.45), win(3.5, 3.0, 0.3, 0.42), win(3.5, 1.5, 0.3, 0.42), win(-0.35, 1.0, 0.3, 0.4, 0x9affb0), win(2.3, 0.75, 0.34, 0.45), win(1.8, 3.1, 0.3, 0.3)];      // lit windows: one a sickly green, the attic a small square
+  for (const w of g.windows) w.userData.ph = Math.random() * 6;
+  poly([[2.3, 0.75], [2.64, 0.75], [2.64, 1.2], [2.3, 1.2]], 0x050412, 1, -7.04); poly([[2.36, 0.78], [2.44, 0.95], [2.38, 1.02], [2.52, 1.17], [2.5, 1.17], [2.36, 1.03], [2.42, 0.96]], 0x8a8aa0, 0.6, -7.03);      // one window dark and cracked
+  for (const [x, y] of [[0.68, 1.72], [1.12, 1.72], [2.82, 1.72]]) { const sh = poly([[x, y], [x + 0.07, y], [x + 0.07, y + 0.5], [x, y + 0.5]]); sh.rotation.z = (x > 2 ? -1 : 1) * 0.12; }      // shutters hanging askew
+  // the graveyard: stones of a few shapes behind a crooked iron fence with a gate, and a path up to the door
+  const stone = (x, kind, lean) => { const y0 = hillY(x) - 0.05; let m; if (kind === 'round') m = poly([[x, y0], [x + 0.36, y0], [x + 0.36, y0 + 0.4], [x + 0.3, y0 + 0.52], [x + 0.18, y0 + 0.58], [x + 0.06, y0 + 0.52], [x, y0 + 0.4]]); else if (kind === 'cross') { poly([[x + 0.12, y0], [x + 0.22, y0], [x + 0.22, y0 + 0.62], [x + 0.12, y0 + 0.62]]); m = poly([[x - 0.02, y0 + 0.4], [x + 0.36, y0 + 0.4], [x + 0.36, y0 + 0.5], [x - 0.02, y0 + 0.5]]); } else m = poly([[x, y0], [x + 0.3, y0], [x + 0.3, y0 + 0.45], [x, y0 + 0.45]]); if (m) m.rotation.z = lean; return m; };
+  stone(-2.6, 'round', 0.1); stone(-2.0, 'cross', -0.06); stone(-1.5, 'slab', 0.16); stone(-0.95, 'round', -0.12); stone(4.7, 'slab', 0.14); stone(5.05, 'round', -0.08);
+  for (let i = 0; i < 16; i++) { const x = -3.4 + i * 0.3; if (x > -1.75 && x < -1.25) continue; const y0 = hillY(x) - 0.08, lean = ((i * 7) % 5 - 2) * 0.05, m = poly([[x, y0], [x + 0.07, y0], [x + 0.07, y0 + 0.5], [x + 0.035, y0 + 0.6], [x, y0 + 0.5]]); m.rotation.z = lean; }      // iron railings, with a gap for the gate
+  { const y0 = hillY(-1.5) - 0.05, gate = poly([[-1.72, y0], [-1.28, y0], [-1.28, y0 + 0.45], [-1.5, y0 + 0.55], [-1.72, y0 + 0.45]]); gate.rotation.z = 0.35; gate.position.y = 0.08; }      // the gate, hanging open
+  { const sh = new THREE.Shape(); const pts = [[-1.5, hillY(-1.5) + 0.02], [-0.9, hillY(-0.9) + 0.1], [-0.2, hillY(-0.2) + 0.05], [0.6, 0.45], [1.3, 0.3]]; sh.moveTo(pts[0][0], pts[0][1] - 0.06); for (const [x, y] of pts) sh.lineTo(x, y + 0.04); for (const [x, y] of [...pts].reverse()) sh.lineTo(x, y - 0.06); sh.closePath(); H.add(flat(sh, 0x1c1934, 0.9, -7.09)); }      // the path
+  // two dead trees, gnarled, their branches reaching for the moon; an owl on a branch of the near one
+  const limb = (x0, y0, ang, len, w, depth) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, len), new THREE.MeshBasicMaterial({ color: SIL, transparent: true, opacity: 0.97, depthWrite: false, fog: false })); m.renderOrder = -7.1;
     m.position.set(x0 + Math.cos(ang) * len / 2, y0 + Math.sin(ang) * len / 2, 0); m.rotation.z = ang - Math.PI / 2; H.add(m); const x1 = x0 + Math.cos(ang) * len, y1 = y0 + Math.sin(ang) * len;
-    if (depth > 0) { limb(x1, y1, ang + 0.45 + 0.1 * depth, len * 0.62, w * 0.6, depth - 1); limb(x1, y1, ang - 0.5 + 0.08 * depth, len * 0.58, w * 0.6, depth - 1); if (depth > 1) limb(x1, y1, ang + 0.05, len * 0.5, w * 0.55, depth - 2); } };
-  limb(-3.1, 0.85, Math.PI / 2 + 0.12, 1.5, 0.32, 3);
+    if (depth > 0) { limb(x1, y1, ang + 0.5 + 0.12 * depth, len * 0.64, w * 0.62, depth - 1); limb(x1, y1, ang - 0.55 + 0.1 * depth, len * 0.6, w * 0.62, depth - 1); if (depth > 1) limb(x1, y1, ang + 0.08 * (depth % 2 ? 1 : -1), len * 0.5, w * 0.55, depth - 2); } return [x1, y1]; };
+  limb(-3.6, hillY(-3.6) - 0.05, Math.PI / 2 + 0.14, 1.6, 0.36, 4); limb(5.2, hillY(5.2) - 0.05, Math.PI / 2 - 0.2, 1.1, 0.26, 3);
+  { const owl = new THREE.Group(); const body = disc(0.17, SIL, 0.98, -7.05); body.scale.y = 1.35; owl.add(body); for (const sx of [-1, 1]) { const ear = flat((() => { const sh = new THREE.Shape(); sh.moveTo(sx * 0.05, 0.16); sh.lineTo(sx * 0.16, 0.34); sh.lineTo(sx * 0.14, 0.14); sh.closePath(); return sh; })(), SIL, 0.98, -7.05); owl.add(ear); const eye = disc(0.03, 0xffd060, 0.95, -7.04); eye.position.set(sx * 0.06, 0.08, 0.01); owl.add(eye); } owl.position.set(-2.45, hillY(-2.45) + 2.35, 0.01); H.add(owl); g.owl = owl; }
+  // ground fog along the hill's foot
+  g.fog = []; for (const [x, w] of [[-3, 3.2], [0.8, 2.6], [3.6, 2.4]]) { const f = disc(1, 0x8e86c0, 0.11, -7.08); f.scale.set(w, 0.28, 1); f.position.set(x, 0.1 + hillY(x) * 0.5, 0.03); f.userData.x0 = x; f.userData.ph = Math.random() * 6; H.add(f); g.fog.push(f); }
+  // smoke from the chimneys: little rounds that rise, drift and thin out, then start again
+  g.smoke = []; for (const [cx, cy] of [[1.08, 3.75], [4.07, 4.5]]) for (let k = 0; k < 4; k++) { const d = disc(0.12 + k * 0.03, 0x3a3558, 0.5, -7.06); d.position.set(cx, cy, 0.02); d.userData = { cx, cy, k, ph: k / 4 }; H.add(d); g.smoke.push(d); }
   g.add(H); g.hill = H;
-  // bats: three small ones that cross the moon now and then after dark, each flapping to its own beat
+  // bats: five, three crossing the moon now and then after dark and two circling the tower, each flapping to its own beat
   const bat = () => { const b = new THREE.Group(), wing = (side) => { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(side * 0.16, 0.12); sh.lineTo(side * 0.42, 0.06); sh.lineTo(side * 0.34, -0.06); sh.lineTo(side * 0.22, -0.02); sh.lineTo(side * 0.1, -0.1); sh.closePath(); const m = flat(sh, SIL, 0.98, -7.0); b.add(m); return m; };
     const body = disc(0.075, SIL, 0.98, -7.0); body.scale.y = 1.4; b.add(body); b.wings = [wing(1), wing(-1)]; b.visible = false; g.add(b); return b; };
-  g.bats = [bat(), bat(), bat()]; g.batsOn = false; g.batWait = 20;
+  g.bats = [bat(), bat(), bat()]; g.circlers = [bat(), bat()]; g.batsOn = false; g.batWait = 20;
   g.position.z = -12; return g;
 }
 
@@ -200,7 +223,11 @@ export class SeasonDress {
   update(dt, t, animals = null) {
     if (this.ghostly) { this.dressAnimals(animals); const nD = this.decor?.items?.size ?? 0; if ((this.plantT = (this.plantT ?? 0) + dt) > 1 || nD !== this.lastN) { this.plantT = 0; this.lastN = nD; this.dressDecor(); }      /* (and at once when a decoration comes or goes: a stand-in pumpkin leaves the moment a coconut arrives) */
       if (this.decor?.items) for (const it of this.decor.items.values()) if (it.hwLight && !it.hwGreen) it.hwLight.intensity = 1.8 * (0.25 + 0.75 * (this.phase === 'night' ? 1 : this.phase === 'evening' ? 0.55 : 0)) * (0.85 + 0.15 * Math.sin(t * 6.3 + it.at.x * 3) * Math.sin(t * 2.7)); }
-    if (this.sky) { const S = this.sky, dark = this.phase === 'night' || this.phase === 'evening'; for (const w of S.windows) w.material.opacity = (dark ? 0.95 : 0.15) * (0.82 + 0.18 * Math.sin(t * 9 + w.position.x * 7) * Math.sin(t * 2.3));      // candlelight in the windows
+    if (this.sky) { const S = this.sky, dark = this.phase === 'night' || this.phase === 'evening'; for (const w of S.windows) w.material.opacity = (dark ? 0.95 : 0.15) * (0.82 + 0.18 * Math.sin(t * 9 + (w.userData.ph ?? 0)) * Math.sin(t * 2.3 + (w.userData.ph ?? 0)));      // candlelight in the windows
+      for (const c of S.clouds) { c.position.x += c.userData.sp * dt; if (c.position.x > 9) c.position.x = -9; }      // the clouds drift across the moon
+      for (const d of S.smoke) { const u = ((t * 0.09 + d.userData.ph) % 1 + 1) % 1; d.position.set(d.userData.cx + Math.sin(u * 5 + d.userData.k) * 0.18 + u * 0.5, d.userData.cy + u * 1.4, 0.02); const sc = 0.6 + u * 1.6; d.scale.set(sc, sc, 1); d.material.opacity = (dark ? 0.5 : 0.3) * (1 - u) * Math.min(1, u * 6); }      // smoke rising and thinning
+      for (const f of S.fog) { f.position.x = f.userData.x0 + Math.sin(t * 0.07 + f.userData.ph) * 0.5; f.material.opacity = 0.09 + 0.04 * Math.sin(t * 0.11 + f.userData.ph); }      // ground fog breathing
+      for (const [i, b] of S.circlers.entries()) { b.visible = dark; if (dark) { const a = t * (0.5 + i * 0.13) + i * 2.1, R = 1.0 + 0.3 * Math.sin(t * 0.3 + i); b.position.set(3.72 + Math.cos(a) * R, 5.2 + 5.4 + Math.sin(a * 2) * 0.35 + i * 0.4, 0.05); b.scale.x = Math.cos(a) > 0 ? -1 : 1; const fl = Math.sin(t * 15 + i * 1.7); b.wings[0].rotation.x = fl * 0.9; b.wings[1].rotation.x = fl * 0.9; } }      // two bats circling the tower after dark
       if (!S.batsOn && dark && (S.batWait -= dt) <= 0) { S.batsOn = true; S.batT = 0; S.batDir = Math.random() < 0.5 ? 1 : -1; S.batY = 6.8 + Math.random() * 3; for (const b of S.bats) b.visible = true; }
       if (S.batsOn) { S.batT += dt; const u = S.batT / 11; if (u >= 1) { S.batsOn = false; S.batWait = 35 + Math.random() * 50; for (const b of S.bats) b.visible = false; }
         else S.bats.forEach((b, i) => { const uu = u - i * 0.06, x = (-7 + 14 * uu) * S.batDir; b.position.set(x, S.batY + Math.sin(t * 2.1 + i * 2) * 0.35 + i * 0.6 - 0.6, 0.05); b.scale.x = S.batDir; const fl = Math.sin(t * 14 + i * 1.7); b.wings[0].rotation.x = fl * 0.9; b.wings[1].rotation.x = fl * 0.9; }); } }
