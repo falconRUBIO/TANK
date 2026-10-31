@@ -32,7 +32,7 @@ const sum = (role, k) => runs.reduce((a, r) => a + r[role][k], 0);
 const show = (k) => Object.fromEntries(['explore', 'plants', 'social'].map((x) => [x, +mean(x, k).toFixed(2)]));
 ck('the brood has come down to the plants: each of the three spends most of its time at a strand', ['explore', 'plants', 'social'].every((x) => mean(x, 'plant') > 0.5), show('plant'));
 ck('the curious one travels furthest: little trips out from the strand and back', most('explore', 'dist', 1.15), show('dist'));
-ck('the curious one holds on less than the calm one, and never for long', mean('explore', 'hitch') < mean('plants', 'hitch') && runs.every((r) => r.explore.avgHold <= 25), show('hitch'));
+ck('the curious one holds on less than the calm one, and never for long', mean('explore', 'hitch') < mean('plants', 'hitch') && runs.every((r) => r.explore.avgHold <= 60), show('hitch'));
 ck('the calm one holds on longest at a time', most('plants', 'avgHold', 1.2), show('avgHold'));
 ck('the calm one keeps going back to its own stem', sum('plants', 'home') >= 0.6 * sum('plants', 'holds') && sum('plants', 'holds') >= 3, { holds: sum('plants', 'holds'), home: sum('plants', 'home') });
 ck('the social one makes little chains: most of the times it holds on, it settles right against a brother or sister', sum('social', 'chain') >= 3 && mean('social', 'chainR') >= 0.5, { chain: show('chain'), share: show('chainR') });

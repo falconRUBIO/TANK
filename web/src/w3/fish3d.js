@@ -657,7 +657,7 @@ export class Fish3D {
   separate(others, gain = 2.8) {
     const jet = this.species.move === 'jet';
     for (const o of others) {
-      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), min = (this.radius + o.radius) * (jet ? 0.9 : this.nursery && o.nursery ? (this.perch && o.perch ? 0.35 : 0.7) : 1.0);      /* (two fry holding the same strand sit almost touching, like beads) */      /* (a brood crowds close: less room between two nursery babies, so one can keep up with its family through the others) */      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
+      if (o === this || (jet && o.fid && o.fid === this.rec?.partner)) continue; const dx = this.pos.x - o.pos.x, dy = this.pos.y - o.pos.y, dz = (this.pos.z - o.pos.z) * 1.6, dd = Math.hypot(dx, dy, dz), rs = this.nursery ? this.radius * 0.35 : this.radius, ro = o.nursery ? o.radius * 0.35 : o.radius, min = (rs + ro) * (jet ? 0.9 : this.nursery && o.nursery ? (this.perch && o.perch ? 0.5 : 0.8) : (this.nursery || o.nursery) ? 0.6 : 1.0);      /* (a nursery baby is a third the size its growth says: a dozen pack onto one stem, and a parent passing by does not shove the brood off it) */      /* (two fry holding the same strand sit almost touching, like beads) */      /* (a brood crowds close: less room between two nursery babies, so one can keep up with its family through the others) */      /* (fish keep a full body apart; octopuses as before, and partners may touch) */
       if (dd < min && dd > 1e-3) { const k = ((min - dd) / min) * gain; this.vel.x += (dx / dd) * k * 0.05; this.vel.y += (dy / dd) * k * 0.065; this.vel.z += (dz / dd) * k * 0.035; }      /* (a little more give up and down: two fish on a line part in height first, so they do not sit on top of each other) */
     }
   }
@@ -696,7 +696,8 @@ export class Fish3D {
       if (o.dead || this.followT <= 0) { this.follow = null; this.retarget = 0; }
       else { const side = (this.fid ?? '').length & 1 ? 1 : -1, h = o.heading ?? 0; this.target.set(o.pos.x - Math.cos(h) * 0.35 + Math.sin(h) * 0.45 * side, o.pos.y + 0.15, o.pos.z + Math.sin(h) * 0.35 + Math.cos(h) * 0.45 * side); this.retarget = 1; this.idle = 0; }
     }
-    if (this.perch && !this.perch.on && !this.seeking && this.pos.distanceTo(this.target) < 0.5) { this.perch.on = true; this.idle = this.perch.wait; this.retarget = this.perch.wait; }      // a baby arrived beside its stem: it stays
+    if (this.perch && !this.perch.on && !this.seeking) { const pd = this.pos.distanceTo(this.target); this.perch.t = (this.perch.t ?? 0) + dt; if (pd < 0.5 || (this.perch.t > 6 && pd < 0.8)) { this.perch.on = true; this.idle = this.perch.wait; this.retarget = this.perch.wait; } }      // a baby arrived beside its stem: it stays (close beside it counts once it has been working its way in among the leaves for a few seconds)
+    if (this.perch?.on && this.nursery && this.broodGrown() <= 0.5 && (this.perchChk = (this.perchChk ?? 0) - dt) <= 0) { this.perchChk = 2 + rng(); const sp = this.getSpots?.() ?? [], st = sp.filter((q) => PLANTS.has(q.type)), stands = st.length ? st : sp; if (stands.length && stands[this.broodHash(0) % stands.length].id !== this.perch.id && !(this.perch.moveId === stands[this.broodHash(0) % stands.length].id)) { this.perch.moveId = stands[this.broodHash(0) % stands.length].id; this.idle = Math.min(this.idle, 2 + rng() * 8); } }      /* (the brood's strand has changed: it lets go within seconds, so the whole brood moves together, not one by one as holds run out) */
     if (this.perch?.on && (this.seeking || this.idle <= 0)) this.perch = null;
     if (!this.seeking && ((this.retarget <= 0 && this.idle <= 0) || (this.pos.distanceTo(this.target) < 0.3 && this.idle <= 0))) this.pickHover(rng);
     const to = this.target.clone().sub(this.pos), d = to.length() || 1, holding = this.idle > 0 && !this.seeking;
@@ -798,8 +799,9 @@ export class Fish3D {
   }
   // how long it stays on a holdfast: an active seahorse moves on sooner, a quiet one holds on far longer
   // the brood's shared strand: a hash of the nursery's id and a five-minute epoch, so every baby (on every phone) picks the same one and they move together
-  broodHash(salt = 0) { const epoch = Math.floor(Date.now() / 300e3); let h = (epoch * 104729 + salt * 7919) >>> 0; for (const ch of String(this.nursery)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0; return h; }
-  holdLength(rng) { return (this.nursery ? 1 : 1.7) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 2.2 : this.role === 'social' ? 0.8 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
+  broodGrown() { return Math.max(0, Math.min(1, ((this.nk ?? 1) - 0.3) / 0.4)); }      // 0 on its first days, 1 by the middle of day five: an older baby holds on nearly all the time
+  broodHash(salt = 0) { const epoch = this.broodGrown() > 0.5 ? 0 : Math.floor(Date.now() / 300e3);      /* (a young brood drifts to another strand every five minutes or so; a grown one stays on its plant, holding on) */ let h = (epoch * 104729 + salt * 7919) >>> 0; for (const ch of String(this.nursery)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0; return h; }
+  holdLength(rng) { return (this.nursery ? 1 + 7 * this.broodGrown() : 1.7) * (35 + rng() * 50) * (1.35 - (this.persona?.act ?? 0.45) * 0.8) * (this.role === 'explore' ? 0.25 : this.role === 'plants' ? 2.2 : this.role === 'social' ? 0.8 : 1) * (1 + 1.5 * (this.starve ?? 0)); }      // (a nursery baby: the explorer never holds on for long, the plant-lover settles in)
   // ── choosing a holdfast ── among the decorations with real grip points (found in the background, see grips.js), weighed by distance, by what it
   // knows and by its personality; then one of that decoration's grips, at the height its boldness likes and where no other seahorse is.
   pickHold(rng, spots, roost = false) {
@@ -1032,14 +1034,14 @@ export class Fish3D {
       if (stands.length) {
         const slot = this.slot ?? 0, n = sibs.length + 1, q = stands[this.broodHash(0) % stands.length];      /* (the whole brood on one strand, and every five minutes or so the whole brood drifts to another strand, together) */
         if (role === 'plants' && !this.homeId) this.homeId = q.id;
-        if ((role === 'explore' && rng() < 0.45) || (role === 'social' && rng() < 0.15)) {      // a little trip out from the strand, never far, then back (the curious one often, the social one now and then)
+        if ((role === 'explore' && rng() < 0.45 * (1 - 0.85 * this.broodGrown())) || (role === 'social' && rng() < 0.15 * (1 - 0.85 * this.broodGrown()))) {      /* (an older baby rarely leaves its strand) */      // a little trip out from the strand, never far, then back (the curious one often, the social one now and then)
           this.target.set(Math.max(b.x[0], Math.min(b.x[1], q.x + (rng() - 0.5) * 1.8)), Math.min(Fish3D.topY - 1, (q.y ?? 0) + 1 + rng() * 1.6), Math.max(b.z[0], Math.min(b.z[1], q.z + 0.3 + (rng() - 0.5) * 0.8)));
           this.perch = null; this.idle = 0.3 + rng() * 0.8; this.retarget = 3 + rng() * 2; return;
         }
         const rows = Math.max(3, Math.min(6, Math.ceil(n / 2))), side = (slot % 2) ? 1 : -1, lvl = Math.floor(slot / 2) % rows;      /* (two to a level, one each side of the stem, levels up the stem: a dozen babies in six beads of two) */
-        let px = q.x + side * 0.18, py = Math.min(b.y[1] - 0.5, Fish3D.topY - 1.4, (q.y ?? 0) + 0.4 + Math.min(3, Math.max(0.9, (q.h ?? 1) * 0.75)) * (0.1 + 0.8 * (lvl / Math.max(1, rows - 1)))), pz = q.z + 0.4, id = q.id;      /* (beads along the stem: each has its own height, a little to one side or the other) */
+        let px = q.x + side * 0.18, py = Math.min(b.y[1] - 0.5, Fish3D.topY - 1.4, (q.y ?? 0) + 0.4 + Math.min(3, Math.max(0.9, (q.h ?? 1) * 0.75)) * (0.1 + 0.8 * (lvl / Math.max(1, rows - 1)))), pz = q.z + 0.4, id = q.id; py = Math.max(py, sandH(px, pz) + 1.5);      /* (beads along the stem: each has its own height, a little to one side or the other; none so low that a hovering baby cannot get down to it) */
         if (role === 'social') { const on = sibs.filter((o) => o.perch?.on && Math.hypot(o.pos.x - q.x, o.pos.z - q.z) < 1.2); if (on.length) { const o = on[(rng() * on.length) | 0]; px = Math.max(q.x - 0.45, Math.min(q.x + 0.45, o.pos.x)); py = o.pos.y - 0.16; pz = Math.max(q.z + 0.1, Math.min(q.z + 0.7, o.pos.z + 0.06)); id = o.perch.id; } }      /* (right beside a brother or sister: a little chain) */
-        this.target.set(px + (rng() - 0.5) * 0.22, Math.max(sandH(px, pz) + 0.6, Math.min(Fish3D.topY - 1, py)), pz); this.idle = 0; this.retarget = 25; this.perch = { id, on: false, wait: this.holdLength(rng) }; return;
+        this.target.set(px + (rng() - 0.5) * 0.22, Math.max(sandH(px, pz) + 1.5, Math.min(Fish3D.topY - 1, py)), pz); this.idle = 0; this.retarget = 25; this.perch = { id, on: false, wait: this.holdLength(rng) }; return;
       }
       const cx = sibs.length ? sibs.reduce((a, o) => a + o.pos.x, 0) / sibs.length : this.pos.x;      // nothing to hold on to: the brood keeps together low in the water
       this.target.set(Math.max(b.x[0], Math.min(b.x[1], cx + (rng() - 0.5) * 2.4)), b.y[0] + 0.8 + rng() * 1.2, b.z[0] + rng() * (b.z[1] - b.z[0])); this.perch = null; this.idle = 1 + rng() * 2; this.retarget = 3 + rng() * 2; return;
