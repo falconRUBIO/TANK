@@ -6,7 +6,7 @@ import { mix } from '../color.js';
 import { placeGroup, stampItem, disposeItem } from './items.js';
 import { DECOR_DEF } from '../game/rules.js';
 import { PLANTS } from './grips.js';
-import { dress, undress, costumeFor } from './costume.js';
+import { dress, undress, costumeFor, shellSkin, SHELL_KINDS } from './costume.js';
 
 const U = 0.07;
 // a jack-o'-lantern: a ribbed orange sphere, a green stem, and a cut face that reads from the front (toward the glass, +z)
@@ -128,7 +128,8 @@ function skinMesh(im, type, it, extra) {
   im.instanceColor.needsUpdate = true;
 }
 function skinItem(it, lights) {
-  if (it.hwSkin) return; const type = it.type; if (!SKINS.has(type) && !PLANTS.has(type)) return; it.hwSkin = true; it.hwExtra = [];
+  if (it.hwSkin) return; const type = it.type, shell = type.startsWith('cshell_'); if (!SKINS.has(type) && !PLANTS.has(type) && !shell) return; it.hwSkin = true; it.hwExtra = [];
+  if (shell) { const h = [...String(it.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7), kind = SHELL_KINDS[h % SHELL_KINDS.length]; it.group.traverse((o) => { if (o.isInstancedMesh) shellSkin(o, kind); }); return; }      // an empty shell on the sand: a little hat or pumpkin or candy corn, the same way the crabs' shells are
   if (type === 'coconut') { it.hwHidden = []; it.group.traverse((o) => { if (o.isInstancedMesh && o.visible) { o.visible = false; it.hwHidden.push(o); } }); const m = buildLanternShell(5); m.position.set(0, 0.068 * 10, 0); it.group.add(m); it.hwExtra.push(m); }      // the shell's look gives way to a carved pumpkin (the collider is still the shell's)
   else it.group.traverse((o) => { if (o.isInstancedMesh) skinMesh(o, type, it); });
   if (type === 'coconut') {
@@ -136,7 +137,7 @@ function skinItem(it, lights) {
   if (type === 'pot' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.6, 2); l.position.set(0, 1.0, 1.1); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
   if (type === 'cave' && lights.n < 3) { const l = new THREE.PointLight(0x5cff9a, 0, 2.2, 2); l.position.set(0, 0.5, 0.2); it.group.add(l); it.hwExtra.push(l); it.hwLight = l; it.hwGreen = true; lights.n++; }
 }
-function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; for (const o of it.hwHidden ?? []) o.visible = true; it.hwHidden = null; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; } }); for (const m of it.hwExtra ?? []) { it.group.remove(m); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; }
+function unskinItem(it) { if (!it.hwSkin) return; it.hwSkin = false; for (const o of it.hwHidden ?? []) o.visible = true; it.hwHidden = null; it.group.traverse((o) => { if (o.isInstancedMesh && o.userData.hw0) { o.instanceColor.array.set(o.userData.hw0); o.instanceColor.needsUpdate = true; delete o.userData.hw0; delete o.userData.hwKind; } }); for (const m of it.hwExtra ?? []) { it.group.remove(m); m.geometry?.dispose?.(); } it.hwExtra = []; it.hwLight = null; }
 // cobwebs strung from the tallest plants, with a spider on a thread under one
 let webTex = null;
 const cobwebTexture = () => { if (webTex) return webTex; const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.translate(64, 64); g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 1.4;

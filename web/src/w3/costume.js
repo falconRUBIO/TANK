@@ -12,10 +12,12 @@ export const COSTUMES = {
   witch: { label: 'a witch, broom and all' }, wizard: { label: 'a wizard' }, pirate: { label: 'a pirate' }, vampire: { label: 'a vampire' }, mummy: { label: 'a mummy' }, skeleton: { label: 'a skeleton' },
   ghost: { label: 'a ghost' }, devil: { label: 'a little devil, pitchfork and all' }, cat: { label: 'a black cat' }, frank: { label: "Frankenstein's monster" }, bat: { label: 'a bat' }, pumpkin: { label: 'a jack-o’-lantern' },
   firefighter: { label: 'a firefighter' }, police: { label: 'a police officer' }, racehorse: { label: 'a racehorse' },
+  gnome: { label: 'a garden gnome' }, skull: { label: 'a skull' }, candycorn: { label: 'a candy corn' },
 };
 const FISH_SET = ['witch', 'vampire', 'pirate', 'skeleton', 'ghost', 'mummy', 'devil', 'cat', 'frank', 'wizard', 'bat', 'firefighter', 'police'];
 const SEA_SET = ['racehorse', 'witch', 'racehorse', 'ghost', 'police', 'racehorse', 'skeleton', 'firefighter'];
-const CRAB_SET = ['witch', 'pirate', 'wizard', 'devil', 'police', 'firefighter'], TURTLE_SET = ['pirate', 'witch', 'mummy', 'skeleton', 'wizard', 'firefighter', 'police'], FRY_SET = ['mummy', 'skeleton', 'ghost'];
+export const SHELL_KINDS = ['wizard', 'gnome', 'pumpkin', 'witch', 'skull', 'candycorn', 'ghost'];      // what a shell can be painted as: the crab's own shell is its costume, and the empty shells on the sand dress the same way
+const CRAB_SET = SHELL_KINDS, TURTLE_SET = ['pirate', 'witch', 'mummy', 'skeleton', 'wizard', 'firefighter', 'police'], FRY_SET = ['mummy', 'skeleton', 'ghost'];
 const FREE = new Set(['racehorse', 'pumpkin']);      // worn by as many as like: the rest go round the tank one each before any repeats
 const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
 // which costume an animal wears: the same on every phone (from its seed and name), the octopus always a pumpkin, a seahorse mostly a racehorse,
@@ -123,6 +125,29 @@ function paint(kind, f, A) {
 const PAINTED = new Set(['mummy', 'skeleton', 'ghost', 'frank', 'pumpkin', 'cat', 'devil', 'firefighter', 'police', 'racehorse', 'vampire', 'pirate', 'bat']);
 const HATS = { witch: 'witch', wizard: 'wizard', pirate: 'pirate', devil: 'devil', cat: 'cat', frank: 'frank', vampire: 'hair', firefighter: 'firefighter', police: 'police', bat: 'bat' };
 
+// ── a shell as a hat (or a pumpkin, a skull, a candy corn): the shell's own voxels repainted along its coil, t = 0 at the opening (the brim)
+// and 1 at the apex (the tip), its light and shade kept. Works on a crab's shell and on an empty one lying on the sand ──
+export function shellSkin(im, kind) {
+  if (!im?.instanceColor || im.userData.hwKind === kind) return; const a = im.instanceColor.array; if (!im.userData.hw0) im.userData.hw0 = Float32Array.from(a); else a.set(im.userData.hw0); im.userData.hwKind = kind;
+  const u = im.geometry.parameters.width, mt = new THREE.Matrix4(), p = new THREE.Vector3(), n = im.count, P = []; let L = 1, R0 = 1;
+  for (let id = 0; id < n; id++) { im.getMatrixAt(id, mt); p.setFromMatrixPosition(mt); P.push([p.x / u, p.y / u, p.z / u]); L = Math.max(L, p.x / u); }
+  for (const [i, , k] of P) if (i < L * 0.2) R0 = Math.max(R0, Math.abs(k));
+  for (let id = 0; id < n; id++) {
+    const [i, j, k] = P[id], t = Math.max(0, Math.min(1, i / L)), cy = R0 * 1.35 * t ** 0.8, y = j - R0 - cy, ang = Math.atan2(y, k), side = Math.abs(k) > R0 * 0.55 * (1 - t), o = id * 3, l0 = a[o] * 0.3 + a[o + 1] * 0.59 + a[o + 2] * 0.11, q = hash(Math.round(i), Math.round(j), Math.round(k), 3); let c;
+    if (kind === 'wizard') c = t < 0.1 ? [30, 34, 100] : t < 0.15 ? GOLD : q > 0.86 ? GOLD : [40, 48, 140];                                                  // deep blue, a gold band at the brim, yellow stars all over
+    else if (kind === 'gnome') c = t < 0.14 ? [240, 232, 214] : t > 0.92 ? [230, 70, 70] : mix([204, 38, 40], [160, 24, 30], q * 0.3);                        // a red cone with a cream band at the brim
+    else if (kind === 'pumpkin') c = t > 0.86 ? [84, 118, 42] : side && t > 0.3 && t < 0.5 && Math.abs(y) < R0 * 0.3 ? [255, 232, 140] : mix([236, 118, 32], [172, 74, 18], 0.2 + 0.6 * (0.5 + 0.5 * Math.cos(ang * 8)));      // ribbed orange, a green stem at the tip, a lit eye on each flank
+    else if (kind === 'witch') c = t < 0.12 ? [50, 44, 64] : t < 0.24 ? (y > R0 * 0.45 && Math.abs(k) < 1.3 ? GOLD : PURPLE) : mix(BLACK, [0, 0, 0], 0.3 * t);      // black, a purple band with a gold buckle on top
+    else if (kind === 'skull') c = side && t > 0.28 && t < 0.5 && Math.abs(y) < R0 * 0.3 ? [26, 22, 30] : t < 0.1 && y < -R0 * 0.3 ? (Math.round(k) % 2 ? [30, 26, 30] : [240, 236, 220]) : mix([214, 206, 184], [160, 150, 128], q * 0.6);      // bone, eye sockets on the flanks, teeth under the opening
+    else if (kind === 'candycorn') c = t < 0.3 ? [250, 248, 236] : t < 0.65 ? [255, 150, 40] : [255, 222, 60];                                              // white, orange, yellow
+    else c = side && t > 0.28 && t < 0.48 && Math.abs(y) < R0 * 0.25 ? [20, 18, 28] : mix(WHITE, [214, 220, 240], q * 0.5);                                 // a ghost: white, two dark eyes
+    const Lc = lin(c), sh = Math.max(0.6, Math.min(1.3, 0.85 + 2.2 * (l0 - 0.12)));
+    a[o] = Lc[0] * sh; a[o + 1] = Lc[1] * sh; a[o + 2] = Lc[2] * sh;
+  }
+  im.instanceColor.needsUpdate = true;
+}
+export function shellUnskin(im) { if (!im?.userData?.hw0) return; im.instanceColor.array.set(im.userData.hw0); im.instanceColor.needsUpdate = true; delete im.userData.hw0; delete im.userData.hwKind; }
+
 // ── on and off ──
 export function dress(f, kind = costumeFor(f)) {
   if (f.hw || !f.vox || !f.mesh) return null;
@@ -131,8 +156,8 @@ export function dress(f, kind = costumeFor(f)) {
   const putBox = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); parts.push(m); return m; };
   const turtle = TURTLES.has(f.species?.id), octo = f.species?.move === 'jet', crab = !!f.crab, sea = !!f.sp?.tail;
   const k = turtle ? 1.1 : Math.max(0.9, Math.min(2.0, A.hh * 0.105)),      /* (a brim about three fifths of the head's height: a hat, not a tent) */ hatAt = turtle ? { x: A.shell.x, y: A.shell.y + 0.6 } : octo ? { x: A.mantle.x, y: A.mantle.y - 0.5 } : { x: A.topX, y: A.top + 0.3 };      // a hat in proportion to the head it sits on
-  if (crab) {      // a crab's hat sits on its front shield, behind the eyestalks (its own fine voxels: the crab's frame is in meters)
-    const U = 0.034, v = hatVox(HATS[kind] ?? kind), m = v.mesh(); m.scale.setScalar(U * 0.5); m.position.set(0.3 * U, 3.0 * U, 0); f.bodyG.add(m); parts.push(m); hw.group = m; f.hw = hw; return hw;
+  if (crab) {      // a crab's costume is the shell on its back, repainted as a hat, a pumpkin, a skull or a candy corn; a new shell it moves into is painted the same way
+    hw.group = null; hw.shell = () => { const m = f.shellG?.children?.[0]; if (m && m !== hw.shellMesh) { if (hw.shellMesh) shellUnskin(hw.shellMesh); hw.shellMesh = m; shellSkin(m, kind); } }; hw.shell(); hw.place = hw.shell; f.hw = hw; return hw;
   }
   if (!octo && (f.cute ?? 0) <= 0.3 && !f.nursery) {
     if (HATS[kind] && (!turtle || kind !== 'cat')) put(hatVox(HATS[kind], f.seed), hatAt.x, hatAt.y + (kind === 'vampire' ? -0.3 : 0), 0, k * (kind === 'firefighter' ? 1.15 : 1));
@@ -175,6 +200,7 @@ function repaint(f) { const p = f.pale ?? 0; f.pale = -1; f.setPale(p); f.tintAp
 export function undress(f) {
   const hw = f.hw; if (!hw) return; f.hw = null;
   if (hw.base0) { f.baseCol = hw.base0; repaint(f); }
+  if (hw.shellMesh) shellUnskin(hw.shellMesh);
   for (const m of hw.parts) { m.parent?.remove(m); m.geometry?.dispose?.(); if (m.material && !m.isInstancedMesh) m.material.dispose?.(); }
   hw.group?.parent?.remove(hw.group);
 }
