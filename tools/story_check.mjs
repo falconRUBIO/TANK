@@ -5,7 +5,7 @@ const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefi
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); let fails = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) fails++; };
 await p.goto('http://localhost:8123/?lite=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 60000 }); await p.click('#mok'); await p.waitForTimeout(600);
 const r = await p.evaluate(async () => {
-  const g = window.__game, D = 864e5; g.state.level = 4; g.state.flags.tut = 5; for (let i = 0; i < 6; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true });
+  const g = window.__game, D = 864e5; window.__noLog = true;      /* (the drill files Pip's reports itself: the live tank's own reports must not race them) */ g.state.level = 4; g.state.flags.tut = 5; for (let i = 0; i < 6; i++) await g.dispatch({ t: 'dev', what: 'shells' }, { dev: true });
   await g.dispatch({ t: 'buyFish', species: 'goldfish', name: 'Pip', seed: 3, rush: true }, { dev: true }); await g.dispatch({ t: 'buyFish', species: 'platy', name: 'Quill', seed: 4, rush: true }, { dev: true });
   await g.dispatch({ t: 'buyDecor', type: 'cave', x: 0, z: 1, ry: 0 }, { dev: true }); await new Promise((r) => setTimeout(r, 900));
   const cave = g.state.decor.find((d) => d.type === 'cave'), pip = g.state.fish.find((f) => f.name === 'Pip'), q = g.state.fish.find((f) => f.name === 'Quill 1');
