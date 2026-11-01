@@ -664,7 +664,9 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     const r1 = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c0.id }, { now: ready }), r2 = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: c1.id }, { now: ready });
     assert.equal(r1.ok, true); assert.equal(r2.ok, false); assert.equal(t.nursery, null);
     const f = t.fish.find((x) => x.id === c0.id); assert.ok(f, 'the same identity'); assert.equal(f.name, c0.name); assert.equal(f.birthDate, due); assert.equal(f.bornHere, true); assert.deepEqual(f.parents.map((p) => p.name), ['Sunny', 'Pearl']);
-    assert.equal(R.stageOf(f, ready), 'baby', 'it starts its own growing up'); assert.equal(t.fish.filter((x) => x.species === 'seahorse').length, 3, 'one baby, not three'); });
+    assert.equal(R.stageOf(f, ready), 'baby', 'it starts its own growing up'); assert.equal(t.fish.filter((x) => x.species === 'seahorse').length, 3, 'one baby, not three');
+    assert.equal(f.arrived, due, 'in the tank since it was born, not since the day it was chosen');
+    const old = R.ensureFish({ ...f, arrived: ready }); assert.equal(old.arrived, due, 'a seahorse kept before this was mended is dated from its birth too'); });
   ok('a full tank: births still have a little room; past it the nursery still happens, the choice waits, and nothing is removed to make room', () => {
     const t = tank(); t.level = 8; while (t.fish.length < R.capacity(8)) t.fish.push(R.ensureFish({ id: 'g' + t.fish.length, name: 'G', species: 'neon', seed: t.fish.length, born: -20 * D, stage: 'adult', traits: [] }));
     live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 40 && !m.preg; d++) live(t, d * D, (d + 1) * D); assert.ok(m.preg); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due + 6 * D);

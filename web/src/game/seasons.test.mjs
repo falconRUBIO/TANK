@@ -13,4 +13,7 @@ ok('an ordinary day has no season, and every season has what the scene and the m
   assert.equal(seasonOf(at(2026, 3, 14)), null);
   for (const S of SEASONS) { assert.ok(S.id && S.label && S.icon && S.text && S.glow && S.night && S.day, S.id); assert.ok(S.from.length === 2 && S.to.length === 2); }
   assert.match(seasonUntil(seasonOf(at(2026, 10, 30))), /October 31|31/); });
+ok('Halloween comes back every year on its own: the same three days in 2027, 2030 and 2035, and a kept costume is filed under that year', () => {
+  for (const y of [2027, 2030, 2035]) { assert.equal(seasonOf(at(y, 10, 29, 23, 59)), null, `${y} not yet`); const S = seasonOf(at(y, 10, 30, 9)); assert.equal(S?.id, 'halloween', `${y} on`); assert.equal(seasonOf(at(y, 10, 31, 23, 59))?.id, 'halloween'); assert.equal(seasonOf(at(y, 11, 1, 0, 0)), null, `${y} over`); assert.equal(new Date(S.from).getFullYear(), y, 'the costume tag year is this year, so every animal gets a fresh costume'); } });
+ok('a leap year changes nothing: Halloween 2028 runs the same days', () => { assert.equal(seasonOf(at(2028, 10, 30, 0, 0))?.id, 'halloween'); assert.equal(seasonOf(at(2028, 11, 1, 0, 0)), null); });
 console.log(`All ${n} season tests passed`);

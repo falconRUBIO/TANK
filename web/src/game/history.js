@@ -51,7 +51,7 @@ export function historyDay(t, now, ev, R) {
 }
 function anniversaryLine(t, f, a, R) {
   const day = (ms) => dayOfTank(t, ms), facts = [], m = f.advMem, pal = t.fish.find((x) => x.id === f.pal);
-  facts.push(`It ${f.parents ? 'hatched' : 'arrived'} on day ${Math.max(1, day(f.arrived ?? f.born))}`);
+  facts.push(`It ${f.parents ? (f.species === 'seahorse' ? 'was born' : 'hatched') : 'arrived'} on day ${Math.max(1, day(f.birthDate ?? f.arrived ?? f.born))}`);
   if (m?.items?.length) { const first = m.firstAt ?? m.items.reduce((a, x) => Math.min(a, x.at ?? Infinity), Infinity); if (Number.isFinite(first)) facts.push(`its first adventure was on day ${Math.max(1, day(first))}`); }
   const fav = (t.keeps ?? []).find((k) => k.by === f.id && R.KEEPSAKES[k.k]); if (fav) facts.push(`it keeps the ${R.KEEPSAKES[fav.k].label.toLowerCase()} it found`);
   const place = f.log?.fav ?? f.spotId ?? f.mem?.likes?.[0], d = place && t.decor.find((x) => x.id === place); if (d) facts.push(`its favorite place is the ${(R.DECOR_DEF[d.type]?.label ?? 'decoration').toLowerCase()}`);
