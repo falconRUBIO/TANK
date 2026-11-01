@@ -726,7 +726,7 @@ function visitors(t, now, ev) {
 }
 export const EGG_DAYS = 3;
 export const OCTO_EGG_AFTER = 5, OCTO_EGG_DAYS = 5, OCTO_EGG_GAP = 25;      // octopus partners: days together before eggs, days the mother broods them, and days before she lays again
-export const EGG_WAIT = 10 * HOUR, FRY_KEEP = 45 * 60e3;      // ready eggs wait this long for someone to watch, then hatch anyway (in the morning); a second little one waits this long to be kept
+export const EGG_WAIT = 10 * HOUR, FRY_KEEP = 45 * 60e3, WAVE_SEEN = 3;      /* (WAVE_SEEN: a caretaker in the tank within this many days is someone the rest of a clutch waits for, see watchEggs) */      // ready eggs wait this long for someone to watch, then hatch anyway (in the morning); a second little one waits this long to be kept
 // a moment in the tank's own daytime (9 in the morning to 8 in the evening, its caretakers' clock): a hatching nobody has to set an alarm for
 export function wakeAt(t, ms) { const tz = (Number(t.tzMin) || 0) * 60e3, L = new Date(ms + tz), h = L.getUTCHours() + L.getUTCMinutes() / 60, j = (hash32(Math.floor(ms / 6e4)) % 90) * 60e3;
   if (h >= 9 && h < 20) return ms; const day = Date.UTC(L.getUTCFullYear(), L.getUTCMonth(), L.getUTCDate()) - tz; return (h < 9 ? day : day + DAY) + 9 * HOUR + j; }
@@ -791,16 +791,21 @@ function eggs(t, now, ev) {
     if (!e.ready) { e.ready = e.hatchAt; e.by = wakeAt(t, e.ready + EGG_WAIT); const nmA = t.fish.find((x) => x.id === e.a)?.name ?? e.pa?.name, nmB = t.fish.find((x) => x.id === e.b)?.name ?? e.pb?.name;
       ev.push({ journal: eggCareOf(e).mode === 'den' ? `${nmA ?? 'The mother'} is blowing water over her eggs, and tiny shapes are moving inside them. They are ready to hatch.` : `${nmA && nmB ? `${nmA} and ${nmB}'s eggs` : 'The eggs'} are wriggling. They are ready to hatch.`, toast: 'The eggs are ready to hatch! Stay and watch.', eggReady: e.id, jat: e.ready }); }
     if (!e.watch && now < e.by) continue;      // ready: they hatch while someone is watching (or, failing that, by the next morning)
-    t.eggs.splice(t.eggs.indexOf(e), 1);
+    if (e.wave) { eggWave(t, e, now, ev); continue; }      // the rest of a clutch that waited for another caretaker
+    const held = !!e.watch && (e.waitFor ?? []).length > 0;      // a shared tank: the first wave hatches now, and the rest of the eggs wait for the others
+    if (!held) t.eggs.splice(t.eggs.indexOf(e), 1);
     const { f, A, B, h, gen } = makeChild(t, e, now); morphBorn(t, f, now, ev); for (const P of [A, B]) if (P) (P.disc ||= {}).parent ??= now; bump(t, 'hatched'); if (e.watch) bump(t, 'watchedHatch'); if (gen >= 2) bump(t, 'gen2'); if (e.species === 'octopus') bump(t, 'octoHatch');
     f.hatched = now; const loved = (e.cared ?? []).length >= 2; if (loved) { f.happy = 1; f.born -= 8 * HOUR; f.loved = true; ev.push({ journal: `${f.name} hatched strong, from an egg that was well looked after.` }); }      // an egg looked after on two or more days hatches strong: a head start in growing (still a baby), and as happy as can be
     const md = eggCareOf(e).mode, G = t.fish.find((x) => x.id === e.guard && !x.dead);
-    for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) { o.restUntil = now + 2 * DAY; ev.push({ journal: `${o.name} is worn out after guarding her eggs for days. She is resting in her den.`, story: o.id, text: 'Worn out after guarding her eggs; resting in her den.', jat: now + 60e3 }); } }      // (her watch is over; an octopus mother rests a while)
+    if (!held) for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) { o.restUntil = now + 2 * DAY; ev.push({ journal: `${o.name} is worn out after guarding her eggs for days. She is resting in her den.`, story: o.id, text: 'Worn out after guarding her eggs; resting in her den.', jat: now + 60e3 }); } }      // (her watch is over; an octopus mother rests a while)
     const how = md === 'den' ? `${G?.name ?? 'The mother'}'s eggs hatched. Tiny octopuses jetted out of the den in a little cloud, and most drifted up and away on the current; one stayed close to ${G?.name ?? 'the den'}: meet ${f.name}` : md === 'mouth' && G ? `${G.name} opened his mouth and the little ones swam out. Most drifted off on the current, as larvae do; one stayed: meet ${f.name}` : md === 'guard' ? `The eggs hatched. A little cloud of larvae rose from them and most drifted off on the current; one stayed by ${G ? G.name : 'the rocks'}: meet ${f.name}` : `The drifting eggs hatched. Most of the tiny larvae floated away; one little one stayed: meet ${f.name}`;
     const fry = 5 + (h % 4), room = t.fish.length + pending(t) < capacityOf(t) + BIRTH_ROOM && fryRoom(t), watched = !!e.watch;
-    ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id], hatch: { egg: e.id, fish: f.id, fry, mode: md, watched } });
+    ev.push({ journal: A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`, toast: `The eggs hatched! Meet ${f.name}.`, arrival: [f.id], hatch: { egg: e.id, fish: f.id, fry, mode: md, watched, wave: held ? 1 : 0, last: !held } });
+    if (held) { const names = e.waitFor.map((id) => e.waitNames?.[id] ?? 'a friend'), list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+      e.wave = 1; e.seenBy = [e.watchUid]; e.firstFish = f.id; e.watch = null; e.by = Math.max(e.by ?? 0, wakeAt(t, now + EGG_WAIT));      /* (they wait until the morning after at the latest, then hatch anyway) */
+      ev.push({ journal: `The rest of the clutch is still wriggling. It is waiting for ${list} to come and watch.`, eggWave: e.id }); }
     if (watched) witness(t, md === 'den' ? 'octohatch' : 'hatch', f, now, ev, e.watchBy ?? null, A && B ? `${how}, child of ${A.name} and ${B.name}.` : `${how}.`);
-    if (watched && room) { t.fryOffer = { id: 'fo' + e.id, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: f.id }; ev.push({ fryOffer: t.fryOffer.id }); }      // you were there: one more is still by the eggs, for a little while
+    if (watched && room && !held) { t.fryOffer = { id: 'fo' + e.id, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: f.id }; ev.push({ fryOffer: t.fryOffer.id }); }      // you were there: one more is still by the eggs, for a little while
     if (A && B && [e.a, e.b].every((id) => t.fish.some((x) => x.id === id && !x.dead))) ev.push({ journal: `${A.name} and ${B.name} came over to meet ${f.name}.` });
     if (!t.flags.firstHatch) { t.flags.firstHatch = { at: now, fish: f.id, parents: [A?.id ?? null, B?.id ?? null] }; t.shells += FIRST_HATCH_REWARD; ev.push({ toast: `Your first baby fish hatched. +${FIRST_HATCH_REWARD} shells`, milestone: f.id }); }
     if (gen > (t.flags.topGen ?? 0)) { t.flags.topGen = gen; ev.push({ journal: gen === 1 ? 'The first generation hatched in this tank.' : `A ${['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'][gen] ?? gen + 'th'} generation has hatched in this tank.` }); }
@@ -920,6 +925,18 @@ export function nurseryLine(t, N, c, day, avoid = null) { const role = babyRole(
           plants: [`Nursery, day ${day}: ${c.name} has settled on the ${plant} and holds on with its tiny tail for hours.`, `Nursery, day ${day}: ${c.name} spent the day tucked in the ${plant}, snapping up whatever drifted past.`, `Nursery, day ${day}: the others moved to a new strand today; ${c.name} went back to the ${plant}.`],
           social: [`Nursery, day ${day}: ${c.name} held on right beside ${sib} all day, tails on the same stem.`, `Nursery, day ${day}: ${c.name} grabbed ${sib}'s tail and the two of them drifted to the ${plant} together.`, `Nursery, day ${day}: wherever the others went today, ${c.name} went too.`] }[role] ?? [];
   if (!lines.length) return null; let k = h % lines.length; if (lines[k] === avoid) k = (k + 1) % lines.length; return lines[k]; }      // (avoid: yesterday's line, so a story does not say the same thing two days running)
+// the rest of a clutch that waited in a shared tank: when another caretaker watches, the next wave hatches in front of them (and the chance to
+// keep one more little one comes with it, once per clutch); when nobody comes by the morning after, the last of them hatch on their own
+function eggWave(t, e, now, ev) {
+  const md = eggCareOf(e).mode, F = t.fish.find((x) => x.id === e.firstFish && !x.dead), nmA = t.fish.find((x) => x.id === e.a)?.name ?? e.pa?.name, nmB = t.fish.find((x) => x.id === e.b)?.name ?? e.pb?.name, whose = nmA && nmB ? `${nmA} and ${nmB}'s` : 'the', h = hash32(now / 6e4 + (e.wave ?? 1) * 17);
+  const done = () => { t.eggs.splice(t.eggs.indexOf(e), 1); for (const o of t.fish) if (o.brood === e.id) { delete o.brood; if (isOcto(o)) o.restUntil = now + 2 * DAY; } };
+  if (!e.watch) { done(); ev.push({ journal: `The last of ${whose} eggs hatched in the night, and the larvae drifted off on the current.`, hatch: { egg: e.id, fish: null, fry: 4 + (h % 3), mode: md, watched: false, wave: (e.wave ?? 1) + 1, last: true } }); return; }
+  const me = e.watchUid, more = (e.waitFor ?? []).filter((id) => id !== me); e.waitFor = more; (e.seenBy ||= []).push(me); e.wave = (e.wave ?? 1) + 1; bump(t, 'watchedHatch');
+  ev.push({ journal: `${e.watchBy} watched ${more.length ? 'more' : 'the rest'} of ${whose} eggs hatch: another little cloud of larvae rose and drifted off on the current${F ? `, and ${F.name} swam over to see` : ''}.`, toast: more.length ? 'More of the eggs hatched!' : 'The rest of the eggs hatched!', hatch: { egg: e.id, fish: null, fry: 5 + (h % 4), mode: md, watched: true, wave: e.wave, last: !more.length, by: me } });
+  const room = t.fish.length + pending(t) < capacityOf(t) + BIRTH_ROOM && fryRoom(t);
+  if (room && !e.offered && !t.fryOffer) { e.offered = true; t.fryOffer = { id: 'fo' + e.id + 'w' + e.wave, egg: { ...e, hatchAt: e.hatchAt + 7e3 }, at: now, until: now + FRY_KEEP, first: e.firstFish ?? null, for: me }; ev.push({ fryOffer: t.fryOffer.id }); }      // (one more little one is still by the eggs: theirs to keep, the same single chance a clutch always had)
+  if (more.length) e.watch = null; else done();
+}
 function seaFamilies(t, now, ev) {
   const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead), byId = new Map(hs.map((f) => [f.id, f])), adult = (f) => stageOf(f, now) === 'adult';
   for (const f of hs) { if (!f.sex) f.sex = sexOf(f); if (f.mate && !byId.has(f.mate)) {      // a partner that has left: seahorses pair for life, so the one left behind grieves a while before it could pair again
@@ -2141,7 +2158,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
   switch (a.t) {
     case 'watchEggs': {      // someone has the tank open and is looking: ready eggs hatch now, in front of them
       const e = (t.eggs ?? []).find((x) => x.id === a.id) ?? (t.eggs ?? []).find((x) => x.ready), m = t.fish.find((f) => f.preg?.ready && !f.dead && (!a.id || f.id === a.id));
-      if (e?.ready) { e.watch = now; e.watchBy = name; } else if (m) m.preg.watch = now; else return ok({ applied: false });      // (a seahorse father about to give birth is watched the same way)
+      if (e?.ready) { const me = String(uid);
+        if ((e.seenBy ?? []).includes(me) && (e.waitFor ?? []).length) return ok({ applied: false, waiting: e.waitFor });      // (this caretaker has watched a wave already: the rest of the clutch is waiting for the others)
+        e.watch = now; e.watchBy = name; e.watchUid = me;
+        if (!e.wave && Array.isArray(members) && members.length > 1) { const others = members.filter((x) => String(x.id) !== me && now - (x.lastSeen ?? x.last_seen ?? 0) < WAVE_SEEN * DAY); e.waitFor = others.map((x) => String(x.id)); e.waitNames = Object.fromEntries(others.map((x) => [String(x.id), x.name ?? 'a friend'])); } }      /* in a shared tank, the first to watch sees the first eggs hatch and the rest of the clutch waits for each caretaker who has been in the tank lately: everyone gets to see a hatching of their own */
+      else if (m) m.preg.watch = now; else return ok({ applied: false });      // (a seahorse father about to give birth is watched the same way)
       events.push(...advance(t, now)); return ok({ hatched: true });
     }
     case 'keepFry': {      // one more little one was still by the eggs: keep it too (or let it go with the others); the first answer decides

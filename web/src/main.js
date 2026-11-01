@@ -551,9 +551,9 @@ function syncExtras() {
   for (const e of s.eggs ?? []) if (!eggSprites.has(e.id)) {      // a voxel egg tucked in at the foot of a plant, clear of everything else
     const C = eggCareOf(e), mode = C.mode === 'mouth' && !e.guard ? 'guard' : C.mode;      // (a cardinalfish father gone: the eggs he dropped lie on the sand)
     const h = hashId(e.id), den = C.mode === 'den' && s.decor.find((d) => d.id === e.den), at = den ? { x: den.x, z: den.z + 0.95, by: den.type } : eggSpot(decor.spots(), (k) => decor.reach(k), h, [...eggSprites.values()].map((x) => x.at), C.on ?? 'plant'), egg = makeEgg(h, EGG_TINT[e.species] ?? 0xf06a9a, mode);
-    egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, mode === 'drift' ? 5.2 + (h % 18) / 10 : eggY(at.x, at.z), at.z); egg.home = egg.group.position.clone(); egg.group.rotation.y = mode === 'den' ? 0 : (h % 628) / 100;      /* (an octopus's strings face out of her den's mouth) */ scene.add(egg.group); eggSprites.set(e.id, egg);
+    egg.at = at; egg.e = e; egg.tint = EGG_TINT[e.species] ?? 0xf06a9a; egg.group.position.set(at.x, mode === 'drift' ? 5.2 + (h % 18) / 10 : eggY(at.x, at.z), at.z); egg.home = egg.group.position.clone(); egg.group.rotation.y = mode === 'den' ? 0 : (h % 628) / 100;      /* (an octopus's strings face out of her den's mouth) */ scene.add(egg.group); eggSprites.set(e.id, egg); egg.wave = e.wave ?? 0; if (egg.wave) egg.preHatched(Math.min(0.85, 0.55 + 0.15 * (egg.wave - 1)));      /* (opened on a clutch already part hatched: only the rest is drawn) */
   }
-  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if (egg.mode !== 'den' && decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggGone(egg, s); scene.remove(egg.group); egg.dispose(); eggSprites.delete(id); fishes.burst(egg.group.position); }
+  for (const [id, egg] of [...eggSprites]) { const e = (s.eggs ?? []).find((x) => x.id === id); if (e) { egg.e = e; if ((e.wave ?? 0) > (egg.wave ?? 0)) { const first = (egg.wave ?? 0) === 0; egg.wave = e.wave; eggWaveFx(egg, s, first); } if (egg.mode !== 'den' && decor.spots().some((d) => Math.hypot(d.x - egg.at.x, d.z - egg.at.z) < decor.reach(d.type) * 0.5 + 0.3)) { const others = [...eggSprites.values()].filter((x) => x !== egg).map((x) => x.at); egg.at = eggSpot(decor.spots(), (k) => decor.reach(k), hashId(id) + 1, others); egg.group.position.set(egg.at.x, eggY(egg.at.x, egg.at.z), egg.at.z); } continue; }      /* (something was placed on top of it: it rolls to a clear spot) */ if (focus?.egg === egg) setFocus(null); eggSprites.delete(id); eggGone(egg, s); }
 }
 function bottleHit(ev) { return bottleSp.visible && !bottleSp.userData.leave && rayFrom(ev).ray.distanceToPoint(bottleSp.position) < 1.4; }
 // tap it: the cork pops, the letter unrolls, and once it is read the empty bottle floats up and away
@@ -809,8 +809,11 @@ function eggWatch(egg, dt) {
   const free = !document.hidden && ui?.tab === 'tank' && !$('modal').classList.contains('on') && !$('reunion').classList.contains('on') && !play && !placing && !feedMode && !cleanMode && (game.state?.flags.tut ?? 0) >= 5;
   const nowS = Date.now() / 1000, gap = Math.min(0.5, nowS - (egg.watchAt ?? nowS)); egg.watchAt = nowS;      /* (real seconds, however smoothly this phone draws) */
   if (egg.asked) { window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 4000); return; }      /* (asked: the hatching is on its way, still nothing over it) */
-  if (!free) { egg.watchT = Math.min(egg.watchT ?? 0, 1); return; }
-  const was = egg.watchT ?? 0; egg.watchT = was + gap; window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 4000);      /* (while it happens, nothing else pops up over it) */
+  if (egg.e?.wave && (egg.e.waitFor ?? []).length && (egg.e.seenBy ?? []).includes(String(game.you?.userId ?? 'me'))) {      // you watched the first ones hatch: the rest wait for the others, so they get a hatching of their own
+    if (free && !egg.waitSaid) { egg.waitSaid = true; const n = egg.e.waitFor.map((id) => egg.e.waitNames?.[id] ?? 'a friend'); ui.toast(`The rest of the eggs are waiting for ${n.length > 1 ? `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}` : n[0]} to watch.`, 3600); } egg.build = 0; return; }
+  if (!free) { egg.watchT = Math.min(egg.watchT ?? 0, 1); egg.build = Math.max(0, (egg.build ?? 0) - 0.05); return; }
+  const was = egg.watchT ?? 0; egg.watchT = was + gap; egg.build = Math.min(1, egg.watchT / 6);      /* (the longer you watch, the harder they wriggle) */
+  for (const at of [3.3, 4.8]) if (was < at && egg.watchT >= at && !REDUCED && egg.liveCount() > 8) { const pp = egg.popSome(1)[0]; if (pp) { const w = egg.group.localToWorld(new THREE.Vector3(pp.x, pp.y, pp.z)); setTimeout(() => { fryOut(w, 1, egg.tint, egg.e.species === 'octopus'); sfx('twitch'); haptic(6); }, pp.delay * 1000 + 120); } }      // one, then another, goes early: the first little ones out window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 4000);      /* (while it happens, nothing else pops up over it) */
   if (Math.floor(was / 1.4) !== Math.floor(egg.watchT / 1.4)) sfx('twitch');      /* (a little wriggle you can hear, every second or so) */
   if (was < 2 && egg.watchT >= 2) { if (egg.fish) { if (!focus) setFocus(egg.fish); egg.fish.thought = 'His pouch is twitching. Any moment now.'; } else if (!focus || focus.isEgg) setFocus(eggFocusOf(egg)); ui.toast(egg.fish ? 'The babies are coming. Stay and watch…' : "They're hatching. Stay and watch…", 3200, egg.fish ? stillTrue('babies are coming') : stillTrue('hatching. Stay')); haptic(8); }
   if (egg.watchT >= 6) { egg.asked = true; game.dispatch({ t: 'watchEggs', id: egg.e.id }).then((r) => { if (!r?.ok) egg.asked = false; }); }
@@ -891,7 +894,7 @@ function fryTick(dt) {
 // you were there: one more little one is still by the eggs, for a while. Keep it too? (the first answer anyone gives decides)
 let fryAsked = null;
 async function fryOfferAsk() {
-  const O = game.state?.fryOffer; if (!O || fryAsked === O.id || document.hidden || Date.now() > O.until) return; fryAsked = O.id;
+  const O = game.state?.fryOffer; if (!O || fryAsked === O.id || document.hidden || Date.now() > O.until || (O.for && O.for !== String(game.you?.userId ?? 'me'))) return; fryAsked = O.id;      /* (a later wave's second little one is offered to the one who watched it) */
   const first = game.state.fish.find((f) => f.id === O.first)?.name ?? 'the baby';
   const k = await ui.choose({ moment: true, title: 'One more little one', text: `Most of the larvae drifted off, but one more is still by the eggs, close to ${first}. There is room for it. Keep it too?`, options: [{ label: 'Keep it too', value: 'keep' }, { label: 'Let it drift off', value: 'go' }], cancel: 'Not now' });
   if (!k) { fryAsked = null; return; } const r = await game.dispatch({ t: 'keepFry', id: O.id, keep: k === 'keep' }); if (!r.ok) return r.reason === 'NOT_FOUND' ? null : fail(r);
@@ -907,17 +910,47 @@ function revealFish(f3, rec, wait = 1400, rise = 1600) {
     if (k < 1) requestAnimationFrame(step); else if (rare) { sfx('reward'); haptic(30); for (let i = 0; i < 6; i++) setTimeout(() => fishes.burst(f3.pos.clone()), i * 120); moment({ at: f3.pos, haptics: 30 }); ui.toast(`${rec.name} is ${MORPHS[rare].label.toLowerCase()}!`, 5000); } };
   requestAnimationFrame(step);
 }
-function eggGone(egg, s) {
-  const at = egg.group.position.clone(), e = egg.e, baby = s.fish.filter((f) => f.stage === 'baby' && (f.parents ?? []).some((p) => p.id === e.a || p.id === e.b) && !eggBabies.has(f.id)).sort((a, b) => b.born - a.born)[0];      /* (the newest child of these parents) */
-  if (!baby) { fishes.burst(at); return; }
-  eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id); if (f3 && !document.hidden) revealFish(f3, baby, morphOf(baby) ? 3200 : 900, morphOf(baby) ? 2600 : 1200); if (f3) { f3.pos.copy(at); f3.pos.y += 0.1; f3.target.set(at.x + (Math.random() - 0.5) * 2, at.y + 1.6, at.z + 0.8); f3.retarget = 4; }
-  const col = egg.shell.material.color ? new THREE.Color(egg.tint ?? 0xf06a9a) : null;
-  if (!REDUCED) for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col ?? 0xf06a9a, transparent: true })); const a = (i / 9) * Math.PI * 2; m.position.copy(at); m.position.y += 0.1 + Math.random() * 0.3; scene.add(m); shards.push({ m, vx: Math.cos(a) * (0.8 + Math.random()), vy: 1.2 + Math.random() * 1.2, vz: Math.sin(a) * 0.8, rx: Math.random() * 8, age: 0 }); }
-  fishes.burst(at); sfx('crack'); setTimeout(() => sfx('newlife'), 450); haptic(12); setTimeout(() => haptic(8), 300); window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 9000); window.__crackAt = Date.now(); fryOut(at, 5 + (hashId(e.id) % 4), egg.tint, e.species === 'octopus');      // the larvae rise from the eggs; one of them is the baby
-  for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.fanK = 0; q.lureCalm = 0; q.brood = false; q.guarding = false; q.thought = null; } }      // the parents' watch is over
-  for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (!f3 || par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 600); }      // mum and dad swim over and circle their new baby
-  if (f3 && !document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 1600); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 8600); }      // you saw it hatch: a close look at the new baby
+// The hatching, in beats. The patch pops from the edge in, each little egg swelling and bursting into a pale empty case, a larva wriggling out of
+// one in three and rising; the big egg in the middle shakes hard, cracks and splits, and the baby squeezes out of it small, grows to its size and
+// its colors come up; then mum and dad come to see it. The empty cases lie on the sand a while and fade. In a shared tank the clutch can hatch
+// in turns (rules: watchEggs), each wave the same way: the first with the baby, the rest a cloud of larvae of their own.
+const eggLeft = [];
+function newestBaby(e, s) { return s.fish.filter((f) => f.stage === 'baby' && (f.parents ?? []).some((p) => p.id === e.a || p.id === e.b) && !eggBabies.has(f.id)).sort((a, b) => b.born - a.born)[0] ?? null; }
+function hatchFx(egg, s, frac, baby) {
+  const e = egg.e, octo = e.species === 'octopus', seen = !document.hidden && !REDUCED, pops = egg.popWave(frac, baby ? 2.6 : 3.2, 0.15);
+  if (seen) { let n = 0; pops.forEach((q, k) => { if (k % 3 || n >= 12) return; n++; const w = egg.group.localToWorld(new THREE.Vector3(q.x, q.y, q.z)); setTimeout(() => fryOut(w, 1, egg.tint, octo), q.delay * 1000 + 160); });      // a larva out of one egg in three, as each bursts
+    for (let k = 0; k < 6 && pops.length; k++) { const q = pops[Math.floor((k * pops.length) / 6)]; setTimeout(() => { sfx('twitch'); if (k % 2) haptic(5); }, q.delay * 1000); } }
+  window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + (baby ? 13000 : 7000)); window.__crackAt = Date.now();
+  if (baby) babyOut(egg, baby, seen ? 2.8 : 0);
+  for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.fanK = 0; q.lureCalm = 0; q.guarding = false; } }
 }
+function babyOut(egg, baby, delay) {
+  eggBabies.add(baby.id); const f3 = fishes.byId.get(baby.id), e = egg.e, p = egg.crackBig(delay) ?? egg.group.position.clone().add(new THREE.Vector3(0, 0.12, 0)), jet = f3?.species?.move === 'jet';
+  if (f3) { f3.group.visible = false; f3.pos.copy(p); f3.vel?.set(0, 0, 0); f3.target?.copy(p); f3.retarget = delay + 2; }      // still inside its egg: held hidden right there
+  const hold = () => { if (!f3 || f3.group.visible) return; f3.pos.copy(p); requestAnimationFrame(hold); }; hold();
+  setTimeout(() => {
+    egg.hideBig(); const col = new THREE.Color(egg.tint ?? 0xf06a9a).lerp(new THREE.Color(0xffffff), 0.35);
+    if (!REDUCED) for (const sd of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col, transparent: true })); m.position.copy(p); m.position.y += 0.05; scene.add(m); shards.push({ m, vx: sd * (0.5 + Math.random() * 0.3), vy: 0.9 + Math.random() * 0.4, vz: (Math.random() - 0.3) * 0.4, rx: sd * (5 + Math.random() * 3), age: 0 }); }      // the two halves of its shell, tumbling off
+    fishes.burst(p); sfx('crack'); setTimeout(() => sfx('newlife'), 420); haptic(14); setTimeout(() => haptic(8), 260);
+    if (!f3) return; f3.group.visible = true; f3.pos.copy(p); if (!document.hidden) revealFish(f3, baby, morphOf(baby) ? 2400 : 500, morphOf(baby) ? 2600 : 1300);      // the baby: dark at first, its colors coming up after a breath
+    if (!jet && !REDUCED) { const t0 = performance.now(), grow = () => { const k = Math.min(1, (performance.now() - t0) / 950), e2 = 1 - (1 - k) ** 3, over = Math.sin(k * Math.PI) * 0.12; f3.group.scale.setScalar(0.3 + 0.7 * e2 + over * (1 - k * 0.5)); if (k < 1) requestAnimationFrame(grow); else f3.group.scale.setScalar(1); }; f3.group.scale.setScalar(0.3); grow(); }      // it squeezes out small and unfolds to its size
+    f3.target.set(p.x + (Math.random() - 0.5) * 1.2, p.y + 1.1, p.z + 0.6); f3.retarget = 4;
+    for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 900); }      // mum and dad swim over and circle their new baby
+    if (!document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 900); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 7600); }      // you saw it hatch: a close look at the new baby, then its name
+  }, delay * 1000 + 700);
+}
+// a wave while the rest of the clutch stays: the first brings the baby; a later one (three or more caretakers) is a cloud of larvae of its own
+function eggWaveFx(egg, s, first) { const baby = first ? s.fish.find((f) => f.id === egg.e.firstFish && !eggBabies.has(f.id)) ?? newestBaby(egg.e, s) : null; hatchFx(egg, s, first ? 0.55 : 0.5, baby); if (!first) setTimeout(fryOfferAsk, 5200); }
+// the clutch is gone: the last of it hatches (or the octopus found it before it was ready)
+function eggGone(egg, s) {
+  const e = egg.e;
+  if (!e.ready) { fishes.burst(egg.group.position); scene.remove(egg.group); egg.dispose(); return; }      // (eaten: nothing hatched)
+  const baby = egg.wave ? null : newestBaby(e, s); hatchFx(egg, s, 1, baby); egg.done = true; eggLeft.push({ egg, t: 0 });
+  if (!baby && egg.wave) setTimeout(fryOfferAsk, 5200);      // (the last wave: the one more little one, for the one who watched it)
+  for (const pid of [e.a, e.b]) { const q = fishes.byId.get(pid); if (q) { q.brood = false; q.thought = null; } }      // the parents' watch is over
+}
+// the empty cases lie on the sand a while, then fade away
+function eggLeftTick(dt, t) { for (let i = eggLeft.length - 1; i >= 0; i--) { const L = eggLeft[i]; L.t += dt; L.egg.fadeK = Math.max(0, 1 - Math.max(0, L.t - 9) / 2.5); L.egg.tick(t); if (L.t > 11.5) { scene.remove(L.egg.group); L.egg.dispose(); eggLeft.splice(i, 1); } } }
 function shardTick(dt) { for (let i = shards.length - 1; i >= 0; i--) { const k = shards[i]; k.age += dt; k.vy -= 3.2 * dt; k.m.position.x += k.vx * dt; k.m.position.y = Math.max(sandH(k.m.position.x, k.m.position.z) + 0.03, k.m.position.y + k.vy * dt); k.m.position.z += k.vz * dt; if (k.m.position.y <= sandH(k.m.position.x, k.m.position.z) + 0.04) { k.vx *= 0.8; k.vz *= 0.8; k.vy = 0; } else { k.m.rotation.x += k.rx * dt; k.m.rotation.z += k.rx * 0.7 * dt; } if (k.age > 4) { k.m.material.opacity = Math.max(0, 1 - (k.age - 4) / 2); } if (k.age > 6) { scene.remove(k.m); k.m.geometry.dispose(); k.m.material.dispose(); shards.splice(i, 1); } } }
 const eggBabies = new Set(); let glowT = 0;
 // you were there when it hatched: name the baby (a name is already chosen; keep it or type another)
@@ -1890,7 +1923,7 @@ function frameBody(now) {
     else if (e < 15) { y = fl + Math.sin(t * 1.3 + 1) * 0.07; rot = -1.35 + Math.sin(t * 0.9) * 0.08; S.x += S.dir * 0.0012; }
     else { const q = Math.min(1, (e - 15) / 6); y = fl + Math.sin(t * 1.3 + 1) * 0.07 * (1 - q); rot = -1.35 + Math.sin(t * 0.9) * 0.08; S.x += S.dir * (0.004 + q * 0.03); sentM.glass.material.opacity = 0.5 * (1 - Math.max(0, q - 0.6) / 0.4); B.scale.setScalar(1 - Math.max(0, q - 0.7) / 0.3 * 0.5); if (Math.random() < 0.03) fishes.burst(B.position.clone()); if (q >= 1 || Math.abs(S.x) > 5) { sentB = null; B.visible = false; } }
     if (sentB) { B.position.set(S.x, y, S.z); B.rotation.set(0.25, 0, rot); } }
-  shardTick(Math.min(0.05, dt));
+  shardTick(Math.min(0.05, dt)); eggLeftTick(Math.min(0.05, dt), t);
   if (!REDUCED && (game.state?.glowUntil ?? 0) > Date.now() && (glowT -= dt) <= 0) { glowT = 2.2 + Math.random() * 1.5; const live = fishes.list.filter((f) => !f.dead && !f.visitor); if (live.length) fishes.burst(live[(Math.random() * live.length) | 0].pos); }      // the tank glows: little sparkles round the fish after you both cared for it
   fryTick(Math.min(0.05, dt)); birthWatchTick(); giftTick(t, Math.min(0.05, dt)); tipsTick(); perfTick(); noteSeenTick();
   for (const egg of eggSprites.values()) { const e = egg.e, now = Date.now(), p = e.laid ? Math.min(1, (now - e.laid) / Math.max(1, e.hatchAt - e.laid)) : 0.5; egg.set(p, e.cared?.length ?? 0); egg.ready = !!e.ready; if (!REDUCED) egg.tick(t); if (e.ready) eggWatch(egg, Math.min(0.05, dt));
