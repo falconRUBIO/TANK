@@ -34,7 +34,7 @@ ck('the seahorse tally counts its holdfasts', (st.h.log?.holds ?? 0) >= 1, Strin
 for (const [id, nm] of [['h1', 'seahorse'], ['o1', 'octopus'], ['g1', 'fish']]) {
   await p.evaluate((id) => { window.__game.profTab = 'over'; window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(id))); }, id); await p.waitForTimeout(500);
   await p.evaluate(() => document.getElementById('fishpill')?.click()); await p.waitForTimeout(900);
-  for (const tab of ['over', 'pers', 'stats', 'jour']) {
+  for (const tab of ['over', 'pers']) {      // (two tabs: the numbers and the story are on Overview)
     await p.evaluate((tab) => document.querySelector(`#card .tb[data-tab="${tab}"]`)?.click(), tab); await p.waitForTimeout(600);
     const info = await p.evaluate(() => ({ on: document.querySelector('#card .tb.on')?.dataset.tab, bars: document.querySelectorAll('#card .tg').length, h: document.getElementById('card').scrollHeight, text: document.querySelector('#card .tpane')?.innerText.slice(0, 160) }));
     if (tab === 'pers') ck(`${nm}: six personality tiles`, info.bars === 6);

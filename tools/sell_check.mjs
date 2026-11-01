@@ -26,7 +26,7 @@ await p.evaluate(() => window.__ui.open('animals')); await p.waitForTimeout(300)
 const list = await p.evaluate(() => [...document.querySelectorAll('#sheet .anr')].map((x) => x.textContent)); console.log('  in the tank', JSON.stringify(list)); await p.screenshot({ path: `${out}/collection.png` });
 ck('Your animals lists every fish in the tank, the octopus first, with no Sell button beside the names (that is on the card)', list.length === 2 && /^Inky/.test(list[0]) && !list.some((t) => /Sell$/.test(t)));
 // 3. selling Nori: a clear question with the price, then gone, and the shells added
-// selling lives at the end of the animal's own card (its Journal tab): open Nori's card, go to Journal, tap "Find Nori a new home"
+// selling lives at the end of the animal's own card (the foot of its Overview): open Nori's card, tap "Find Nori a new home"
 const sellVia = async (id) => { await p.evaluate(() => window.__ui.open('tank')); await p.evaluate((id) => window.__showCard(window.__fishes.byId.get(id)), id); await p.waitForTimeout(500); await p.evaluate(() => document.querySelector('#card [data-tab="jour"]')?.click()); await p.waitForTimeout(400); const btn = await p.evaluate(() => document.querySelector('#card #sellb')?.textContent ?? null); await p.evaluate(() => document.querySelector('#card #sellb')?.click()); await p.waitForTimeout(500); return btn; };
 const btn = await sellVia('g1'); ck('the card\'s Journal ends with the one way out: Find Nori a new home', btn === 'Find Nori a new home', btn);
 const q = await p.evaluate(() => document.getElementById('modal')?.textContent ?? ''); await p.screenshot({ path: `${out}/sell_ask.png` });

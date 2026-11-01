@@ -19,10 +19,10 @@ const r1 = await p.evaluate(() => [...document.querySelectorAll('#sheet .mrow, #
 ck('Care counts his pregnancy down, live', /Sunny is expecting.*day \d of \d.*babies born in 9 h \d+ m/.test(r1), r1);
 await p.evaluate(() => { const s = window.__game.state; s.fish[0].preg.due = Date.now() - 1000; window.__game.emit('state'); window.__ui.open('care'); }); await p.waitForTimeout(400);
 await p.evaluate(() => window.__game.dispatch({ t: 'devSea', what: 'noop' }).catch(() => {})); await p.waitForTimeout(2500);
-const r2 = await p.evaluate(() => ({ preg: window.__game.state.fish[0].preg, rows: [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()), soon: [...document.querySelectorAll('#sheet .soon div')].map((d) => d.textContent.trim()) }));
+const r2 = await p.evaluate(() => ({ preg: window.__game.state.fish[0].preg, rows: [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()), soon: [document.getElementById('moment')?.textContent ?? ''] }));      // (the top tag says it; Care's Today list keeps only the request and the mystery)
 ck('due: his pouch twitches and the babies wait for someone to watch', !!r2.preg?.ready && !r2.preg.watch, r2.preg);
 ck('Care has him under Needs you, with Watch', r2.rows.some((t) => /Sunny is about to give birth.*Watch/.test(t)), r2.rows);
-ck('Coming up says so, with no clock', r2.soon.some((t) => /about to give birth: stay and watch/.test(t)), r2.soon);
+ck('the top tag says so, with no clock', r2.soon.some((t) => /coming! Tap to watch/.test(t)), r2.soon);
 await p.screenshot({ path: `${out}/1-care.png` });
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click());
 let born = null; const seen = new Set(); for (let i = 0; i < 240 && !born; i++) { await p.waitForTimeout(500); const up = await p.evaluate(() => { const m = document.querySelector('#modal.on h2')?.textContent ?? ''; const r = document.getElementById('reunion')?.classList.contains('on'); document.querySelector('#modal.on #mok')?.click(); if (r) document.getElementById('reunion').click(); return m || (r ? 'reunion' : ''); }); if (up) seen.add(up); born = await p.evaluate(() => window.__game.state.nursery ? { n: window.__game.state.nursery.n, preg: window.__game.state.fish[0].preg } : null); }

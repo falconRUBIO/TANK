@@ -62,9 +62,9 @@ const th = await p.evaluate(() => window.__fishes.byId.get('o1').keepWhy ?? null
 ck('Biscuit goes over to its bottle cap, as its own (not as something strange)', th?.id === cap.id && th.known && /its bottle cap/.test(th.thought ?? ''), JSON.stringify(th));
 await clear(); await p.waitForTimeout(800); await p.screenshot({ path: `${out}/5-thirty-days-later.png` });
 // 6. the tank's history page
-await clear(); await p.waitForTimeout(800); await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('[data-sub="journal"]')?.click()); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('[data-sub="history"]')?.click()); await p.waitForTimeout(600);
+await clear(); await p.waitForTimeout(800); await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('[data-sub="journal"]')?.click()); await p.waitForTimeout(600);      // (the time capsules and the tank's moments are in the Journal now)
 const hv = await p.evaluate(() => document.querySelector('#sheet')?.innerText ?? ''); await p.screenshot({ path: `${out}/6-tank-history.png` });
-ck('Tank history lists the adventure with the cap, and the time capsules, by day', /came back holding a bottle cap/.test(hv) && /Time capsule/.test(hv), hv.slice(0, 300).replace(/\n/g, ' | '));
+ck('the Journal has the adventure with the cap, and the time capsules', /came back holding a bottle cap/.test(hv) && /Time capsule/.test(hv), hv.slice(0, 300).replace(/\n/g, ' | '));
 await p.evaluate(() => document.querySelector('.hrow.cap')?.click()); await p.waitForTimeout(600); await p.screenshot({ path: `${out}/7-time-capsule.png` });
 ck('a time capsule opens with its comparison', await p.evaluate(() => !!document.querySelector('.capcard .capcmp')));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));

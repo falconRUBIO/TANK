@@ -28,10 +28,10 @@ await p.screenshot({ path: `${out}/1-countdown.png` });
 // 2. ready: they wriggle and wait; Care has it under Needs you with Watch; Coming up says so
 await p.evaluate(() => { const s = window.__game.state; s.eggs[0].hatchAt = Date.now() - 1000; window.__game.emit('state'); }); await p.evaluate(() => window.__ui.open('care')); await p.waitForTimeout(400);      // (the sheet open: nobody is looking at the tank yet)
 await p.evaluate(() => window.__game.dispatch({ t: 'devSea', what: 'noop' }).catch(() => {})); await p.waitForTimeout(2500);
-const ready = await p.evaluate(() => ({ egg: window.__game.state.eggs[0] ?? null, rows: [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()), soon: [...document.querySelectorAll('#sheet .soon div')].map((d) => d.textContent.trim()) }));
+const ready = await p.evaluate(() => ({ egg: window.__game.state.eggs[0] ?? null, rows: [...document.querySelectorAll('#sheet .crow')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()), soon: [document.getElementById('moment')?.textContent ?? ''] }));      // (the top tag says it; Care's Today list keeps only the request and the mystery)
 ck('ready: still an egg, waiting to be watched', !!ready.egg?.ready && !ready.egg.watch, ready.egg);
 ck('Care has it under Needs you, with a Watch button', ready.rows.some((r) => /eggs.*ready to hatch.*Watch/i.test(r)), ready.rows);
-ck('Coming up says they are ready, with no clock', ready.soon.some((x) => /ready to hatch: stay and watch/.test(x)), ready.soon);
+ck('the top tag says they are ready, with no clock', ready.soon.some((x) => /hatching! Tap to watch/.test(x)), ready.soon);
 await p.screenshot({ path: `${out}/2-ready-care.png` });
 // 3. Watch: the camera comes over, they hatch in front of you, a cloud of larvae rises, the baby is tiny
 await p.evaluate(() => document.querySelector('#sheet .crow[data-act="egg"]')?.click()); 
@@ -59,10 +59,10 @@ ck('the journal tells it: wriggling, the larvae drifting off, the one that staye
 await p.waitForTimeout(1500); await p.screenshot({ path: `${out}/6-twins.png` });
 const ph = await p.evaluate(() => { const list = JSON.parse(localStorage.getItem('ourtank.moments') || '[]'); return list.find((m) => /hatched/.test(m.text))?.img ?? null; }); if (ph) fs.writeFileSync(`${out}/7-journal-photo.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
 ck('the hatching is in the journal with its photo (the baby and its parent)', /^data:image\/(jpeg|webp);base64,/.test(ph ?? ''), ph?.slice(0, 23));
-await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="journal"]')?.click()); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="history"]')?.click()); await p.waitForTimeout(700);
-const hist = await p.evaluate(() => [...document.querySelectorAll('#sheet .hrow')].filter((r) => /hatched/.test(r.textContent)).map((r) => !!r.querySelector('img.hpic')));
-await p.evaluate(() => { const r = [...document.querySelectorAll('#sheet .hrow')].find((x) => x.querySelector('img.hpic')); r?.scrollIntoView(); }); await p.waitForTimeout(400); await p.screenshot({ path: `${out}/8-history.png` });
-ck('Tank History shows the hatching with its photo', hist.length >= 1 && hist[0], hist);
+await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('#sheet [data-sub="journal"]')?.click()); await p.waitForTimeout(900);      // (the Tank history page is gone: the Journal shows the hatching with its photo)
+const hist = await p.evaluate(() => [...document.querySelectorAll('#sheet .jpost')].filter((r) => /hatched/.test(r.textContent)).map((r) => !!r.querySelector('.jimg')));
+await p.evaluate(() => { const r = [...document.querySelectorAll('#sheet .jpost')].find((x) => /hatched/.test(x.textContent)); r?.scrollIntoView(); }); await p.waitForTimeout(400); await p.screenshot({ path: `${out}/8-journal.png` });
+ck('the Journal shows the hatching with its photo', hist.length >= 1 && hist.some(Boolean), hist);
 const top = await p.evaluate(() => { const m = document.querySelector('#modal.on'); return m ? m.innerText.slice(0, 40) : null; });
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Hatch checks passed'); process.exit(fails ? 1 : 0);
