@@ -1,5 +1,6 @@
 // Real 3D voxel fish: the species voxel models become instanced cubes that are lit,
 // shadowed and animated (tail bend, fin flutter) in the scene, steered in 3D.
+import { gaitTick, shoalPull } from './gait.js';
 import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
 import { seahorseTail, SEAHORSE_LEAN, SEAHORSE_SNOUT, SEAHORSE_STEM } from '../species.js';
@@ -195,10 +196,10 @@ export class Fish3D {
       if (v.tag === 'pouch') { grow = Math.max(0, Math.min(1, ((this.brood ?? 0) - v.pk) / 0.08 + 1)); if (this.contractK) x -= 1.2 * this.contractK * v.pk; }      /* (each layer eases in as the pouch fills, so it swells instead of popping on) */      // a male's brood pouch, only as full as it is (squeezed as he gives birth)
       if (b) {
         const piv = b.pivot - this.cx;
-        if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
+        if (x < piv) { const d = piv - x, t = Math.min(1, d / b.len), th = b.amp * (this.bendK ?? 1) * Math.sin(phase) * Math.pow(t, 1.15); x = piv - d * Math.cos(th); z += d * Math.sin(th); y += b.bob * Math.sin(phase + 1.3) * t; }
       }
-      if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin(phase * 2 + x * 0.25));
-      if (v.wave) z += v.wave * Math.sin(phase + x * 0.45);
+      if (v.flap) z += Math.sign(v.z || 1) * v.flap * (0.55 + 0.45 * Math.sin((this.finPh != null ? this.finPh : phase * 2) + x * 0.25));      // (the pectorals keep their own beat: gait.js)
+      if (v.wave) z += v.wave * Math.sin((this.finPh != null && this.sk === 'puffer' ? this.finPh : phase) + x * 0.45);      // (a puffer's dorsal and anal fins ripple on their own beat: they are what drive it)
       if (v.tag === 'head' && TURTLE_IDS.has(this.species.id)) {             // a sea turtle's head on its neck: it reaches out, turns to look, tips up to breathe and dips to bite
         const px = 11.5, py = 1.2, hy = this.headYaw ?? 0, hp = this.headPitch ?? 0, ext = (this.neckK ?? 0) * Math.max(0, Math.min(1, (x - px) / 3));
         let dx = x - px + ext * 1.6, dy = y - py, dz = z; const cp = Math.cos(hp), sp2 = Math.sin(hp), nx = dx * cp - dy * sp2; dy = dx * sp2 + dy * cp; dx = nx; const cy = Math.cos(hy), sy = Math.sin(hy), nx2 = dx * cy - dz * sy; dz = dx * sy + dz * cy; dx = nx2;
@@ -1391,11 +1392,13 @@ export class Fish3D {
     const desired = this.target.clone().sub(this.pos); const d = desired.length() || 1;
     this.idle = (this.idle ?? 0) - dt; this.fleeT = (this.fleeT ?? 0) - dt; this.dartT = (this.dartT ?? 0) - dt;
     desired.multiplyScalar(this.speed * (this.tmul ?? 1) * (this.idle > 0 ? 0.3 : 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.55 : this.lureCalm ? 0.45 : 1) * (this.mul ?? 1) * (this.encMul ?? 1) * (this.vigor ?? 1) * (this.foodMul ?? 1) * (this.seeking ? Math.min(1, 0.45 + d * 0.35) : d < 2 ? 0.6 + d * 0.2 : 1) / d);
+    gaitTick(this, dt, desired, rng);      // its own way of swimming: rowing on its fins, burst and coast, hops, sculling (gait.js)
     // schooling: separation / alignment / cohesion among same-species mates
     if (this.species.school) {
-      const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0;
-      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 1.4) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
-      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.12); al.multiplyScalar(1 / cnt).multiplyScalar(0.25); desired.add(c).add(al).add(sep.multiplyScalar(1.3)); }
+      const c = new THREE.Vector3(), al = new THREE.Vector3(), sep = new THREE.Vector3(); let cnt = 0, pull = shoalPull(this, others);
+      for (const o of others) if (o !== this && o.id === this.id) { cnt++; c.add(o.pos); al.add(o.vel); const df = this.pos.clone().sub(o.pos), dl = df.length(); if (dl < 1.4 / Math.sqrt(pull)) sep.add(df.multiplyScalar(1 / (dl * dl + 0.05))); }
+      if (cnt && pull > 1) desired.multiplyScalar(0.3);      // (danger near: each one's own errand matters less than keeping together)
+      if (cnt) { c.multiplyScalar(1 / cnt).sub(this.pos).multiplyScalar(0.12 * pull); al.multiplyScalar(1 / cnt).multiplyScalar(0.25 * pull); desired.add(c).add(al).add(sep.multiplyScalar(1.3)); }
     }
     // personal space: never pile up on top of another fish (different species included)
     for (const o of others) {
@@ -1426,7 +1429,7 @@ export class Fish3D {
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length(), h0 = this.heading;
-    if (sp > 0.25) {
+    if (sp > 0.25 && !this.noTurn) {      // (a puffer backing off keeps facing the way it was)
       const wantYaw = Math.atan2(-this.vel.z, this.vel.x);
       let dy = wantYaw - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       this.heading += dy * Math.min(1, dt * 2.2);
@@ -1440,7 +1443,7 @@ export class Fish3D {
     if ((this.poseK ?? 0) > 0.001) { const k = Math.min(1, this.poseK), r = Math.min(1, dt * 3) * k;      // a pose an encounter asks for: broadside in a display, head-down to be cleaned, facing a rival or the glass
       if (this.posePitch != null) this.pitch += (this.posePitch - this.pitch) * r; if (this.poseRoll != null) this.roll += (this.poseRoll - this.roll) * r;
       if (this.poseFace) { const want = Math.atan2(-(this.poseFace.z - this.pos.z), this.poseFace.x - this.pos.x); let d = want - this.heading; d = Math.atan2(Math.sin(d), Math.cos(d)); this.heading += d * Math.min(1, dt * 2.5) * k; } }
-    this.flickT = Math.max(0, (this.flickT ?? 0) - dt); this.phase += dt * (3.0 + sp * 5.5 + 9 * (this.fanK ?? 0) + (this.flickT > 0 ? 16 : 0));      // (and a flick of the tail: a quick burst of beats)      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
+    this.flickT = Math.max(0, (this.flickT ?? 0) - dt); this.phase += dt * ((3.0 + sp * 5.5) * (this.tailRate ?? 1) + 9 * (this.fanK ?? 0) + (this.flickT > 0 ? 16 : 0));      // (and a flick of the tail: a quick burst of beats)      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
     this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));

@@ -197,7 +197,7 @@ export class Encounters {
     const e = this.begin('glass', [f], { max: 9 }), x = Math.max(-2.6, Math.min(2.6, f.pos.x * 0.5)), y = Math.max(sandH(x, GLASS_Z - 0.5) + 2.5, Math.min(Fish3D.topY - 2, f.pos.y)), dur = 4.5 + Math.random() * 2.5;
     f.idle = 0; f.settle = null; f.encMul = 1.3; f.thought = 'Came to the glass to look at you.';
     e.step = (dt) => { if (f.dead) return true; const at = new THREE.Vector3(x, y, GLASS_Z - 0.55);
-      if (!e.there) { f.target.copy(at); f.retarget = 0.4; if (f.pos.distanceTo(at) < 0.5) { e.there = e.t; f.encMul = 0.25; f.poseK = 1; f.poseFace = new THREE.Vector3(x, y, 12); f.fanK = 0.5; } if (e.t > 5) return true; }
+      if (!e.there) { f.target.copy(at); f.retarget = 0.4; if (f.pos.distanceTo(at) < 0.5) { e.there = e.t; f.encMul = 0.55;      /* (it noses the last little way up to the glass, then hangs there) */ f.poseK = 1; f.poseFace = new THREE.Vector3(x, y, 12); f.fanK = 0.5; } if (e.t > 5) return true; }
       else { f.target.set(x + Math.sin(e.t * 1.7) * 0.08, y + Math.sin(e.t * 1.1) * 0.06, GLASS_Z - 0.55); f.retarget = 0.3; if (f.sk === 'puffer' && !e.puffed && e.t - e.there > 2 && Math.random() < dt * 0.4) { e.puffed = true; f.puffT = 2.5; }      /* (a puffer may even puff a little at its own reflection) */
         if (e.t - e.there > dur) { f.fanK = 0; f.poseK = 0; f.encMul = 1.4; f.target.set(f.pos.x + (Math.random() < 0.5 ? -2 : 2), f.pos.y, 0.4); clampAim(f.target); f.retarget = 1; f.flickT = 0.3; return true; } }
       return false; };
