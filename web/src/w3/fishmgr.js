@@ -18,6 +18,7 @@ import { mulberry32 } from '../color.js';
 import { personaOf } from '../profile.js';
 import { temperOf, affordOf, habitKind } from '../game/habitat.js';
 import { Encounters } from './encounters.js';
+import { Routine, NIGHT_ACTIVE, dayFish as dayFishNow } from './routine.js';
 import { nurseryBrood, KINDS, wellOf, coverOf, ECO, crowdOf, octoTrust, SOCIAL, SPECIES_DEF, DECOR_DEF, STAGE_SCALE, hoardOf, octoMind, MOVABLE, MOVE_GAP, MOVE_MAX, AIL_TIRED, AIL_WARN, stageOf, growthScale, needsOf, FOODS, broodOf, favFoodOf, babyRole, BABY_ROLES } from '../game/rules.js';
 
 // the fish that live up in open water: on the phone they keep to the upper half of the screen, leaving the sand and the lower water to the reef fish
@@ -722,9 +723,9 @@ export class Fishes {
   // fish that are going without care look pale and tired, and keep low
   sicken(f, d) {
     const ail = d.ail ?? 0, k = ail >= AIL_WARN ? 0.55 : ail >= AIL_TIRED ? 0.3 : 0, weak = ail >= AIL_WARN, tired = ail >= AIL_TIRED;
-    const old = !!d.elder; f.setPale(Math.max(k, 0.5 * (f.starve ?? 0), old ? 0.22 : 0)); if (f.weak !== weak || f.tired !== tired || f.old !== old) { f.weak = weak; f.tired = tired; f.old = old; f.tmul = this.mulFor(f); }      // (an elder's colors have softened)
+    const old = !!d.elder; f.paleBase = Math.max(k, 0.5 * (f.starve ?? 0), old ? 0.22 : 0); f.setPale(Math.max(f.paleBase, f.nightQ ?? 0)); if (f.weak !== weak || f.tired !== tired || f.old !== old) { f.weak = weak; f.tired = tired; f.old = old; f.tmul = this.mulFor(f); }      // (an elder's colors have softened)
   }
-  mulFor(f) { return (f.baseT ?? 1) * (this.night ? (f.isShy ? 1.1 : 0.6) : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (f.old ? 0.72 : 1) * (1 - 0.65 * (f.starve ?? 0)); }      // (and an elder takes life slowly)
+  mulFor(f) { return (f.baseT ?? 1) * (f.isNight ? (NIGHT_ACTIVE.has(f.sk) ? 1.1 : f.isShy ? 1.1 : 0.6) : this.routine?.dusk && dayFishNow(f) ? 0.85 : 1) * (f.weak ? 0.5 : f.tired ? 0.8 : 1) * (f.old ? 0.72 : 1) * (1 - 0.65 * (f.starve ?? 0)); }      // (and an elder takes life slowly)
   // a rare visitor swims in from the side, glowing softly, until it is greeted or leaves
   addVisitor(v) {
     const sp = SPECIES[v.species], def = SPECIES_DEF[v.species]; if (!sp) return;
@@ -737,7 +738,9 @@ export class Fishes {
     f.tmul *= this.night ? 0.8 : 1;
   }
   // after dark most fish drift low and slow; the shy ones come out into open water
-  setNight(on) { this.night = !!on; for (const f of this.list) { f.isNight = !!on; if (!f.dead) f.tmul = this.mulFor(f); } }
+  // the lights change: the tank's light at once, each animal in its own time (routine.js); { now: true } for all at once (opening the tank, a forced time of day)
+  setNight(on, o = {}) { const was = this.night; this.night = !!on; const R = (this.routine ||= new Routine(this));
+    for (const f of this.list) { if (o.now || was === undefined || f.dead) { f.isNight = !!on; f.switchIn = 0; if (!f.dead) f.tmul = this.mulFor(f); if (dayFishNow(f)) { f.sleepy = !!on; if (!on) { f.nightPale = 0; } } } else if (f.isNight !== !!on) f.switchIn = R.delayFor(f, !!on); else f.switchIn = 0; } }
   // personality: traits decide how a fish moves, where it goes and who it goes with
   wrapPick(f, d) {
     const base = f.pick.bind(f), tr = d.traits ?? [], has = (t) => tr.includes(t), school = !!f.species.school;
@@ -754,6 +757,7 @@ export class Fishes {
       f.idle = 0; const y0 = f.band?.y?.[0] ?? 3, high = y0 >= 6.5, lowK = high ? 0.4 : y0 >= 4 ? 0.5 : 1;      // a surface swimmer is drawn down to the sand far less often, a midwater one less often: the sand is left to the kinds that live there
       if (f.script?.length) { const w = f.script.shift(); return T(w.x, w.y, w.z, w.rt ?? 1.3); }       // a trick being performed
       if (f.weak) return T(-2.5 + r() * 5, 0.9 + r() * 1.4, 0.4 + r() * 1.6, 8);
+      { const R = this.routine?.pick(f, r); if (R) { if (R.th) f.thought = R.th; if (/^Still asleep/.test(R.th ?? '')) f.idle = 3; return T(R.x, R.y, R.z, R.rt); } }      // the time of day first: still asleep, mealtime coming, winding down (routine.js)
       // what each kind of fish really does: the clownfish lives in its anemone, the gramma claims a cave (and rests upside down under it), the cardinalfish hides in shade by day,
       // the goby keeps watch low on the sand, and the dragonet picks over the rocks all day
       if (this.rain && (has('Curious') || has('Playful')) && !f.weak && r() < 0.4) return T(-3 + r() * 6, 11 + r() * 2, 0.8 + r() * 1.2, 3 + r() * 3);       // on a rainy day the curious ones drift up to look
@@ -1147,7 +1151,7 @@ export class Fishes {
   }
   update(dt, t) {
     this.emergeTick(dt);
-    this.senseTick(dt); this.shadeTick(); (this.enc ||= new Encounters(this)).tick(dt);      // now and then a moment between them: a chase, a nip, a fright (encounters.js)
+    this.senseTick(dt); this.shadeTick(); (this.enc ||= new Encounters(this)).tick(dt); (this.routine ||= new Routine(this)).tick(dt);      // the day's routine: waking, mealtimes, winding down, sleep (routine.js)      // now and then a moment between them: a chase, a nip, a fright (encounters.js)
     this.denRetry = (this.denRetry ?? 0) - dt; if (this.denRetry <= 0) { this.denRetry = 1.5; for (const f of this.list) if (!f.den && !f.dead && f.species.move === 'jet') { const d = this.recs?.get(f.fid); if (d && (this.spots?.() ?? []).length) this.syncDen(f, d); } }      // the decorations may not have been built when the fish were: an octopus with no den yet looks again
     for (const f of this.list) { if (f.birthT > 0 && f.sk === 'seahorse') { f.brood = Math.max(broodOf(f.rec, Date.now()), 0.25 + 0.75 * Math.min(1, f.birthT / 7.5)); f.birthing = true; if (typeof window !== 'undefined') window.__quietUntil = Math.max(window.__quietUntil ?? 0, Date.now() + 1500); }      // (his pouch empties as the babies come out; nothing pops up over it while it lasts)
       else if (f.birthing) { f.birthing = false; const n = this.state?.nursery?.n; f.thought = `${n ? `All ${n} babies are out` : 'The babies are out'}. He is catching his breath.`; f.restT = 40; if (typeof window !== 'undefined') window.__birthDone?.(f); }

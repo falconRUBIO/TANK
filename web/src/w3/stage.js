@@ -133,13 +133,15 @@ export const qs = new URLSearchParams(location.search);
 export const LITE = qs.has('lite');
 let target = TOD[qs.get('tod')] ? qs.get('tod') : 'afternoon';
 for (const k of Object.keys(TOD.afternoon)) cur[k] = ck.includes(k) ? new THREE.Color(TOD[target][k]) : Array.isArray(TOD[target][k]) ? [...TOD[target][k]] : TOD[target][k];
-export function setTod(n) { if (TOD[n]) { target = n; document.querySelectorAll('[data-tod]').forEach((b) => b.classList.toggle('on', b.dataset.tod === n)); const l = document.getElementById('todl'); if (l) l.textContent = n[0].toUpperCase() + n.slice(1); } }
+let todRate = 2;      // (how fast the light follows: quick for a change you picked, slow for the lights coming up in the morning)
+export function snapTod(n) { if (!TOD[n]) return; for (const k of Object.keys(TOD[n])) cur[k] = ck.includes(k) ? cur[k].set(TOD[n][k]) : Array.isArray(TOD[n][k]) ? [...TOD[n][k]] : TOD[n][k]; setTod(n); }
+export function setTod(n, rate = 2) { if (TOD[n]) { target = n; todRate = rate; document.querySelectorAll('[data-tod]').forEach((b) => b.classList.toggle('on', b.dataset.tod === n)); const l = document.getElementById('todl'); if (l) l.textContent = n[0].toUpperCase() + n.slice(1); } }
 window.__setTod = setTod;
 document.querySelectorAll('[data-tod]').forEach((b) => b.addEventListener('click', () => setTod(b.dataset.tod)));
 setTod(target);
 const tmpC = new THREE.Color(), murkCol = new THREE.Color(0x4f5a2a);
 export function applyTod(dt) {
-  const k = Math.min(1, dt * 2.0), T = TOD[target];
+  const k = Math.min(1, dt * todRate), T = TOD[target];
   for (const key of Object.keys(T)) {
     if (ck.includes(key)) cur[key].lerp(tmpC.set(T[key]), k);
     else if (Array.isArray(T[key])) cur[key] = cur[key].map((v, i) => v + (T[key][i] - v) * k);

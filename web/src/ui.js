@@ -925,7 +925,7 @@ export function initUI({ game, social, cb }) {
       if (feedOpen === true) return feedView();
       if (healthOpen) return healthView();
       const s = S(), M = feedModel(), k = careState(), feedOn = false, H = M.hungry[0];
-      const feedSub = !M.groups.length ? k.feed[0] : M.canEat.length ? (() => { const n = M.canEat.reduce((a, g) => a + (g.kind === 'fish' ? S().fish.filter((f) => !f.dead && f.species !== 'octopus' && f.species !== 'seahorse').length : 1), 0); return `${n} animal${n === 1 ? '' : 's'} could use food`; })() : `All full · next meal ${soon(Math.min(...M.groups.map((g) => g.canIn)))}`;
+      const feedSub = !M.groups.length ? k.feed[0] : M.canEat.length ? (() => { const n = M.canEat.reduce((a, g) => a + (g.kind === 'fish' ? S().fish.filter((f) => !f.dead && f.species !== 'octopus' && f.species !== 'seahorse').length : 1), 0); const E = typeof window !== 'undefined' && M.canEat.some((g) => g.kind === 'fish') ? window.__fishes?.routine?.expect : null; if (E) return `Waiting at the surface: they know it's ${E.at < 11 ? 'breakfast' : E.at < 16 ? 'lunch' : 'supper'} time`; return `${n} animal${n === 1 ? '' : 's'} could use food`; })()      /* (fed at the same time most days, the fish learn it and gather before it: routine.js) */ : `All full · next meal ${soon(Math.min(...M.groups.map((g) => g.canIn)))}`;
       const quick = H ? ` data-food="${quickFood(H)}"${H.id ? ` data-for="${esc(H.id)}"` : ''}` : '';
       const chores = [...(s.fish.some((f) => !f.dead) ? [] : [null]).filter(Boolean), { act: 'feeddrawer', icon: '🫙', title: 'Feed', sub: feedSub, due: false, need: M.hungry.length > 0, hot: M.canEat.length > 0, btn: 'Feed', feed: true },
         upkeepChore(s, k)];

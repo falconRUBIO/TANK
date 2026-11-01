@@ -411,6 +411,23 @@ function likes(f, t) {
 }
 let clockHour = null;
 export function setClockHour(h) { clockHour = Number.isFinite(h) ? h : null; }   // a forced time of day (?tod=) makes moods follow the light, not the phone's clock
+export const clockNow = (now = Date.now()) => clockHour ?? new Date(now).getHours() + new Date(now).getMinutes() / 60;      // (the hour of the day the tank is living in: the phone's clock, or the one ?tod= forced)
+// feeding times are learned: fish kept on a schedule come to expect their food and gather where it falls in the hour before it (food-anticipatory activity, studied in
+// goldfish and many others). The tank keeps how often each hour of the day brought a real meal, older meals fading, and reads its usual mealtimes back out.
+const localHour = (t, now) => { const L = new Date(now + (Number(t.tzMin) || 0) * 60e3); return L.getUTCHours() + L.getUTCMinutes() / 60; };
+export function feedLearn(t, now) {
+  const H = Array.isArray(t.feedHrs) && t.feedHrs.length === 24 ? t.feedHrs : Array(24).fill(0), h = localHour(t, now), b = Math.floor(h) % 24;
+  if (t.feedHrsAt && now - t.feedHrsAt < 2 * HOUR && Math.abs(((t.feedHrsH ?? h) - h + 36) % 24 - 12) < 2) return;      // (a second helping within the same sitting is the same meal)
+  t.feedHrs = H.map((v, i) => +((v * 0.88) + (i === b ? 1 : 0)).toFixed(3)); t.feedHrsAt = now; t.feedHrsH = +h.toFixed(2);
+}
+export function feedClock(t) {
+  const H = t.feedHrs; if (!Array.isArray(H) || H.length !== 24) return []; const tot = H.reduce((a, b) => a + b, 0); if (tot < 2.4) return [];      // (three meals or so before a pattern counts)
+  const left = [...H], out = [];
+  for (let k = 0; k < 2; k++) { let best = -1, bs = 0; for (let i = 0; i < 24; i++) { const w = left[i] + left[(i + 1) % 24]; if (w > bs) { bs = w; best = i; } }
+    if (best < 0 || bs < (k ? 1.6 : 1.9) || bs < tot * (k ? 0.28 : 0.4)) break; const a = left[best], c = left[(best + 1) % 24];
+    out.push(+((best + 0.5 + c / (a + c)) % 24).toFixed(2)); for (const d of [-1, 0, 1, 2]) left[(best + d + 24) % 24] = 0; }
+  return out.sort((a, b) => a - b);      // the usual mealtime or two, in local hours (8.5 = half past eight)
+}
 export function needsOf(f, t, now = Date.now()) {
   ensureFish(f);
   const fed = Math.max(0, Math.min(1, 1 - (ownHungry(f) ? ownHunger(f) : t.hunger) * (1 + f.appetite))), h = clockHour ?? new Date(now).getHours() + new Date(now).getMinutes() / 60;
@@ -2204,7 +2221,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       const needed = t.hunger > 0.25, pay = 0; careNeed = needed;
       t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
-      if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); }
+      if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); feedLearn(t, now); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
       if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care', needed);
       events.push({ activity: { type: 'feed', text: food === 'flakes' ? `${name} fed the fish.` : food === 'crab' ? `${name} fed the octopus a crab.` : food === 'mysis' ? (() => { const hs = t.fish.filter((f) => f.species === 'seahorse' && !f.dead); return `${name} fed ${hs.length === 1 ? hs[0].name : 'the seahorses'} mysis shrimp.`; })() : `${name} fed the fish ${FOODS[food].label.toLowerCase()}.` } });

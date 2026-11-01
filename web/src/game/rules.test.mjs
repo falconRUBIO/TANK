@@ -732,6 +732,15 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
 { const born = 1700000000000, t = { fish: [{ id: 'm', name: 'Kelp' }, { id: 'w', name: 'Coral' }], eggs: [], nursery: { id: 'n7', father: 'm', mother: 'w', pa: { name: 'Kelp' }, ma: { name: 'Coral' }, born, readyAt: born + 5 * 864e5, n: 13, cands: [] } };
   const M = R.bigMoments(t, born + 1.5 * 864e5)[0]; assert.equal(M?.kind, 'nursery', 'the nursery is a big moment'); assert.equal(M.what, "Kelp and Coral's babies"); assert.equal(M.ready, false); assert.deepEqual(M.day, { d: 2, n: 5 }); assert.equal(M.fish, 'm');
   const R2 = R.bigMoments(t, born + 5 * 864e5)[0]; assert.equal(R2.ready, true, 'ready on the morning they can be chosen'); assert.equal(R.bigMoments({ fish: [], eggs: [], nursery: null }).length, 0); n++; }
+ok('fish learn their mealtimes: a few days of breakfast at 8 and supper at 6 read back as two usual times; seconds in one sitting count once; a stray meal is no pattern', () => {
+  const D = 864e5, day0 = Date.UTC(2026, 10, 2), t = R.newWorld(0); R.norm(t, day0); t.tzMin = 0; t.fish = [];
+  assert.deepEqual(R.feedClock(t), [], 'nothing learned yet');
+  R.feedLearn(t, day0 + 13.2 * 3600e3); assert.deepEqual(R.feedClock(t), [], 'one meal is not a habit');
+  for (let d = 1; d <= 5; d++) { R.feedLearn(t, day0 + d * D + 8.1 * 3600e3); R.feedLearn(t, day0 + d * D + 8.4 * 3600e3); R.feedLearn(t, day0 + d * D + 18.2 * 3600e3); }
+  const c = R.feedClock(t); assert.equal(c.length, 2, JSON.stringify(c)); assert.ok(c[0] >= 8 && c[0] <= 9, `breakfast ${c}`); assert.ok(c[1] >= 18 && c[1] <= 19, `supper ${c}`);
+  assert.ok(t.feedHrs[8] < 5, 'second helpings in the same sitting were not counted again');
+  const t2 = R.newWorld(0); R.norm(t2, day0); t2.tzMin = -300; t2.fish = []; for (let d = 1; d <= 4; d++) R.feedLearn(t2, day0 + d * D + 13 * 3600e3); assert.ok(Math.abs(R.feedClock(t2)[0] - 8.5) < 0.6, 'the hour is the caretaker\'s own (UTC-5: 13:00 UTC is 8 in the morning)');
+});
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

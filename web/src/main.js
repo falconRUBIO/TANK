@@ -17,6 +17,7 @@ import { Toys } from './w3/toys.js';
 import { makeBottle } from './w3/bottle.js';
 import { SEAHORSE_GRIP_R } from './species.js';
 import { Fishes, TRAIT_TXT } from './w3/fishmgr.js';
+import { noteFeedX } from './w3/routine.js';
 import { DecorMgr } from './w3/decormgr.js';
 import { Glow, Sightings, Rain } from './w3/fx.js';
 import { Nursery } from './w3/nursery.js';
@@ -166,7 +167,7 @@ async function dropFood(x) {
   const oc = own ? (mine.find((o) => o.id === game.feedFor) ?? [...mine].sort((a, b) => ownHunger(b) - ownHunger(a))[0] ?? null) : null;      // the one you chose in Care, else your hungriest (not just the first one you have)
   if (own ? !oc || ownHunger(oc) < 0.08 : game.state.hunger < 0.08) { const hrs = (h) => (h < 1 ? 'within the hour' : `in about ${Math.round(h)} hour${Math.round(h) === 1 ? '' : 's'}`); ui.toast(oc ? `${oc.name} isn't hungry yet. Ready for ${food === 'crab' ? 'a crab' : 'shrimp'} ${hrs((0.08 - ownHunger(oc)) / OHR / 3600)}.` : `The fish aren't hungry yet. Feed them again ${hrs((0.08 - game.state.hunger) / HR / 3600)}.`, 3600); endFeed(); return; }
   if ((game.state.shells ?? 0) < FOODS[game.feedFood ?? 'flakes'].price) { game.feedFood = 'flakes'; ui.toast('Back to flakes. Not enough shells.'); }
-  if (food === 'crab') fishes.dropCrabAt(x, oc.id); else fishes.drop(x, 7, food); sfx('splash'); haptic(8);
+  if (food === 'crab') fishes.dropCrabAt(x, oc.id); else { fishes.drop(x, 7, food); if (food !== 'mysis') noteFeedX(x); } sfx('splash'); haptic(8);      // (where you feed is learned too: the fish wait there)
   feedDrops++; feedIdle = 0; if (feedDrops >= 3) endFeed(); else if (!autoFeed) renderFoodbar();
   const r = await game.dispatch({ t: 'feed', x, food, fish: oc?.id }); if (!r.ok) return fail(r);
   if (r.delta > 0) shellToast(r); tut.onFeed();
@@ -2160,6 +2161,9 @@ async function boot() {
   if (qs.get('tod')) setClockHour({ morning: 8, afternoon: 14, evening: 19, night: 23 }[qs.get('tod')]);
   fishes.setNight((qs.get('tod') ?? phase()) === 'night'); tune(qs.get('tod') ?? phase());
   setTimeout(() => { const se = seasonNow(); if (!se || (game.state?.flags?.tut ?? 0) < 5) return; const key = `ourtank.season.${se.id}.${new Date(se.from).getFullYear()}`; try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { /* storage unavailable */ } ui?.toast(`${se.icon} ${se.label}. ${se.text}`, 7000); }, 9000);      /* once a holiday: what the tank has dressed up for, and until when */
+  // the first look of the morning: the tank is still dark, then the lights come up slowly and the animals wake one by one (routine.js)
+  window.__lightsOn = () => { stg.snapTod('night'); fishes.setNight(true, { now: true }); for (const f of fishes.list) { f.nightPale = 0.3; f.nightQ = -1; } setTimeout(() => { stg.setTod('morning', 0.28); fishes.setNight(false); tune('morning'); }, 1800); };
+  if (!qs.get('tod') && phase() === 'morning' && (game.state?.flags?.tut ?? 0) >= 5) { const key = 'ourtank.lightsOn', today = new Date().toDateString(); let seen = null; try { seen = localStorage.getItem(key); localStorage.setItem(key, today); } catch { /* storage unavailable */ } if (seen && seen !== today) setTimeout(window.__lightsOn, 600); }
   if (!qs.get('tod')) { stg.setTod(phase()); let cur = phase(); setInterval(() => { const n = phase(); if (n !== cur) { cur = n; stg.setTod(n); fishes.setNight(n === 'night'); tune(n); } }, 30000); }
   // the first 15 seconds belong to the tank: nothing pops up by itself (the first touch ends that at once, so anything you open works straight away)
   if ((game.state?.flags?.tut ?? 0) < 5) window.__quietUntil = 0;      // (a brand-new tank: the opening card is the first thing, straight away)
