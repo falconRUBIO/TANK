@@ -72,5 +72,6 @@ ck('left to itself, something every twenty seconds or so, never constant (12 to 
 ck('of many kinds', Object.keys(nat.kinds).length >= 7, JSON.stringify(nat.kinds));
 ck('nothing left stuck', nat.stuck === 0, `${nat.stuck}`);
 await p.screenshot({ path: `${out}/enc.png`, timeout: 90000 }).catch(() => {});
+{ await p.waitForTimeout(1500); const K = await p.evaluate(() => Object.keys(window.__game.state.field ?? {})); const want = ['flare', 'circle', 'wheel', 'display', 'yield', 'sift', 'punch'].filter((k) => res[k]?.started); ck('each moment seen with the tank open fills its Field Guide page', want.length >= 4 && want.every((k) => K.includes(k)), { want, got: K }); }
 ck('no page errors', !errors.length, errors.slice(0, 2).join(' | '));
 console.log(fails ? `${fails} failed` : 'Encounter checks passed'); await b.close(); process.exit(fails ? 1 : 0);

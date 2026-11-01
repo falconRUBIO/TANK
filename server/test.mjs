@@ -426,6 +426,19 @@ await t('push: cliffhangers reach a closed tank: a decision waiting, with how lo
   const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /Your call: Amy keeps chasing Bob.*decides in 30 hours/.test(b)) || all.some((b) => /58% chance of a golden baby/.test(b)), JSON.stringify(all));
   pushed.length = 0; S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(now + 1000); const again = pushed.map((q) => q.payload.body); assert.ok(!again.some((b) => /Your call/.test(b)) || !all.some((b) => /Your call/.test(b)), 'each is said once');
 });
+await t('push: the usual mealtime: fish fed at about the same hour each day are waiting for it, and whoever is away hears once; not when just fed, not twice', async () => {
+  const x = await mkUser('Meal'), tk = (await call('/api/tanks', { name: 'Meal' }, x.token)).body;
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/meal1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
+  const now = Date.now(), L = new Date(now + off * 60e3), hr = L.getUTCHours() + L.getUTCMinutes() / 60, want = hr + 0.3, i = Math.floor(want - 0.5), fr = want - (i + 0.5), H = Array(24).fill(0); H[(i + 24) % 24] = 4 * (1 - fr); H[(i + 25) % 24] = 4 * fr;
+  const fish = { id: 'mf', name: 'Nemo', species: 'goldfish', seed: 3, born: now - 20 * 864e5, stage: 'adult', sex: 'f', traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id };
+  setW(tk.id, { fish: [fish], feedHrs: H, tzMin: off, hunger: 0.5, lastFed: now - 6 * 3600e3, simTs: now - 2000, flags: { tut: 5 } });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
+  const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /time: the fish are waiting at the surface where you usually feed them/.test(b)), JSON.stringify(all));
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now + 60e3); assert.ok(!pushed.some((q) => /waiting at the surface/.test(q.payload.body)), 'once a meal');
+  S.db.prepare("DELETE FROM kv WHERE k LIKE 'push:meal:%'").run(); setW(tk.id, { lastFed: now - 600e3, hunger: 0.5, simTs: now - 2000 });      // (the same meal, as if nobody had heard yet, but someone has just fed them)
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now + 120e3); assert.ok(!pushed.some((q) => /waiting at the surface/.test(q.payload.body)), 'just fed: no one is waiting');
+});
 await t('a baby bred here can be sent to a friend\'s tank by its code: it leaves one tank and arrives in the other with its genes and parents; not your own tank, not twice a day, not an animal bought from the shop', async () => {
   const a = await mkUser('Sendy'), ta = (await call('/api/tanks', { name: 'Reef' }, a.token)).body, b = await mkUser('Gets'), tb = (await call('/api/tanks', { name: 'Lagoon' }, b.token)).body;
   const now = Date.now(), kid = { id: 'kk', name: 'Sunny', species: 'goldfish', sex: 'm', seed: 7, born: now - 4 * 864e5, stage: 'juvenile', traits: ['Playful'], raisedAs: 'Playful', gen: 1, parents: [{ id: 'p1', name: 'Amy' }, { id: 'p2', name: 'Bob' }], genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'gold'] }, owner: a.userId ?? a.id, happy: 0.9, health: 1 };

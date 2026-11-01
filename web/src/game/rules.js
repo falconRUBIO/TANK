@@ -420,6 +420,11 @@ export function feedLearn(t, now) {
   if (t.feedHrsAt && now - t.feedHrsAt < 2 * HOUR && Math.abs(((t.feedHrsH ?? h) - h + 36) % 24 - 12) < 2) return;      // (a second helping within the same sitting is the same meal)
   t.feedHrs = H.map((v, i) => +((v * 0.88) + (i === b ? 1 : 0)).toFixed(3)); t.feedHrsAt = now; t.feedHrsH = +h.toFixed(2);
 }
+// a usual mealtime close now (up to 45 minutes before, a quarter of an hour after), the fish hungry and nobody has fed them since: they are waiting for it
+export function mealDue(t, now, hour = localHour(t, now)) {
+  const due = feedClock(t).find((m) => { const d = ((m - hour + 36) % 24) - 12; return d <= 0.75 && d >= -0.25; });
+  return due != null && (t.hunger ?? 0) > 0.15 && now - (t.lastFed ?? 0) > 2 * HOUR ? { at: due, meal: due < 11 ? 'breakfast' : due < 16 ? 'lunch' : 'supper' } : null;
+}
 export function feedClock(t) {
   const H = t.feedHrs; if (!Array.isArray(H) || H.length !== 24) return []; const tot = H.reduce((a, b) => a + b, 0); if (tot < 2.4) return [];      // (three meals or so before a pattern counts)
   const left = [...H], out = [];
@@ -1086,6 +1091,18 @@ export const MOMENTS = {
   eggchase: { gap: 4 * 3600e3, other: true, text: (n, o) => `${n} chased ${o} away from the eggs.` },
   ball: { gap: 12 * 3600e3, text: (n) => `${n} sent the ball spinning across the tank!` },
   clean: { gap: DAY, text: (n) => `${n} hung still by the rock with its flippers out while a fish picked its shell clean, the way wild turtles visit a cleaning station.` },
+  // seen while someone was watching (encounters.js, routine.js): each a real reef behavior, a line in the journal now and then and a Field Guide page the first time
+  flare: { gap: 2 * DAY, other: true, text: (n, o) => `${n} and ${o} turned side-on and spread their fins at each other, tails beating, until one of them gave way.` },
+  circle: { gap: 2 * DAY, other: true, text: (n, o) => `${n} and ${o} circled nose to tail, each trying to get at the other's flank, then broke off.` },
+  wheel: { gap: 2 * DAY, text: (n) => `The school pulled in tight behind ${n} and wheeled round the tank as one.` },
+  display: { gap: 2 * DAY, text: (n) => `${n} put on a display, diving in quick U-shapes in front of the others.` },
+  yield: { gap: 2 * DAY, other: true, text: (n, o) => `${n} swam at ${o}'s resting place, and ${o} gave it up: the pecking order.` },
+  sift: { gap: 2 * DAY, text: (n) => `${n} took a mouthful of sand and spat it out in a puff, sifting it for something to eat.` },
+  punch: { gap: 3 * DAY, other: true, text: (n, o) => `${n} punched ${o} with an arm for tagging along on its hunt without helping.` },
+  wake: { gap: 3 * DAY, text: (n) => `The lights came up and the tank woke slowly, one fish at a time, ${n} last of all.` },
+  mealtime: { gap: 3 * DAY, text: (n) => `${n} and the others were waiting at the surface before anyone fed them: they have learned when their meal comes.` },
+  dusk: { gap: 3 * DAY, text: (n) => `At dusk ${n} came out of the shade to hunt plankton in the open water, as cardinalfish do.` },
+  nightcolor: { gap: 3 * DAY, text: (n) => `${n} settled down to sleep, its colors fading to a pale night coloring.` },
 };
 export const OCTO_MOMENTS = {
   squirt: { gap: 12 * 3600e3, text: (n) => `${n} squirted water at whoever was watching.` },
@@ -1106,6 +1123,17 @@ export const OCTO_MOMENTS = {
 // reports it while the tank is open and being watched; nothing is filled in from a line written while everyone was away). Each page keeps who did
 // it, when, and the line that was written, so the journal's photo of that very moment is its picture.
 export const FIELD = {
+  flare: { label: 'Fins spread', who: 'fish', hint: "Two fish of a territorial kind meet where their patches touch and turn side-on, fins spread. Damselfish, the gramma, gobies, tangs, angelfish and clownfish do it." },
+  circle: { label: 'Circling', who: 'fish', hint: "Two of the same kind, two tangs or two damselfish, circle nose to tail sizing each other up." },
+  wheel: { label: 'The school wheels', who: 'fish', hint: "A school of chromis or anthias pulls in tight and sweeps round the tank as one. Keep three or more of them." },
+  display: { label: 'Showing off', who: 'fish', hint: "A male anthias dives in quick U-shapes in front of the others." },
+  yield: { label: 'Pecking order', who: 'fish', hint: "A bigger fish takes over a smaller one's resting place, and the smaller one gives way." },
+  sift: { label: 'Sand sifting', who: 'fish', hint: "A goby or the mandarin noses into the sand and spits out a puff of it, looking for food." },
+  punch: { label: 'The punch', who: 'octopus', hint: "An octopus out hunting with fish tagging along may punch one that is not pulling its weight, as divers have filmed in the Red Sea." },
+  wake: { label: 'Lights on', who: 'fish', hint: "Open the tank first thing in the morning and watch the fish wake one by one." },
+  mealtime: { label: 'They know the time', who: 'fish', hint: "Feed at about the same time each day for a few days, then look in a little before it." },
+  dusk: { label: 'Dusk hunter', who: 'platy', hint: "A cardinalfish hangs in the shade all day. Look in at dusk, the last hour before lights-out." },
+  nightcolor: { label: 'Night colors', who: 'fish', hint: "Look in after lights-out: sleeping fish fade into their night coloring, the tang most of all." },
   glass: { label: 'Face at the glass', who: 'any', hint: "Someone curious comes right up to the glass. Most likely when you have just opened the tank and stay a while." },
   camo: { label: 'Vanishing act', who: 'octopus', hint: "A resting octopus matches the ground so well it disappears. Look where it rests, on the sand or by the rocks." },
   ink: { label: 'Ink cloud', who: 'octopus', hint: "A startled octopus bursts away in a cloud of ink. Something sudden near it sets it off." },

@@ -741,6 +741,18 @@ ok('fish learn their mealtimes: a few days of breakfast at 8 and supper at 6 rea
   assert.ok(t.feedHrs[8] < 5, 'second helpings in the same sitting were not counted again');
   const t2 = R.newWorld(0); R.norm(t2, day0); t2.tzMin = -300; t2.fish = []; for (let d = 1; d <= 4; d++) R.feedLearn(t2, day0 + d * D + 13 * 3600e3); assert.ok(Math.abs(R.feedClock(t2)[0] - 8.5) < 0.6, 'the hour is the caretaker\'s own (UTC-5: 13:00 UTC is 8 in the morning)');
 });
+ok('what you saw happen is kept: a fin display, the punch, the dusk hunter each write a journal line and fill their Field Guide page the first time, not twice in a day; the wrong animal fills nothing; a mealtime is due only near the usual hour, hungry and not just fed', () => {
+  const now = 50 * 864e5, t = R.newWorld(0); R.norm(t, now); t.tzMin = 0; const A = { born: now - 30 * 864e5, stage: 'adult', happy: 0.9, health: 1, traits: ['Calm'] };
+  t.fish = [{ ...A, id: 'd1', name: 'Dash', species: 'guppy', seed: 1 }, { ...A, id: 'd2', name: 'Dot', species: 'guppy', seed: 2 }, { ...A, id: 'o1', name: 'Ink', species: 'octopus', seed: 3 }, { ...A, id: 'c1', name: 'Card', species: 'platy', seed: 4 }];
+  let r = R.applyAction(t, { t: 'moment', kind: 'flare', fish: 'd1', other: 'd2' }, { now }); assert.equal(r.ok, true); assert.ok(r.events.some((e) => /Dash and Dot turned side-on and spread their fins/.test(e.journal ?? '')), JSON.stringify(r.events)); assert.ok(t.field.flare, 'the Field Guide page is filled');
+  r = R.applyAction(t, { t: 'moment', kind: 'flare', fish: 'd1', other: 'd2' }, { now: now + 3600e3 }); assert.equal(r.applied, false, 'not again the same day');
+  R.applyAction(t, { t: 'moment', kind: 'punch', fish: 'o1', other: 'd1' }, { now }); assert.ok(t.field.punch, 'the octopus fills the punch page');
+  R.applyAction(t, { t: 'moment', kind: 'dusk', fish: 'd1' }, { now }); assert.ok(!t.field.dusk, 'a damselfish is not the dusk hunter');
+  R.applyAction(t, { t: 'moment', kind: 'dusk', fish: 'c1' }, { now: now + 1 }); assert.ok(t.field.dusk, 'the cardinalfish is');
+  const H = Array(24).fill(0); H[8] = 3; H[9] = 1; t.feedHrs = H; t.hunger = 0.5; t.lastFed = now - 6 * 3600e3; const at = (h) => now + h * 3600e3;
+  assert.equal(R.mealDue(t, at(8.2))?.meal, 'breakfast'); assert.equal(R.mealDue(t, at(6)), null, 'too early'); assert.equal(R.mealDue(t, at(10)), null, 'missed: no longer waiting');
+  t.lastFed = at(8.1); assert.equal(R.mealDue(t, at(8.2)), null, 'just fed'); t.lastFed = now - 6 * 3600e3; t.hunger = 0.1; assert.equal(R.mealDue(t, at(8.2)), null, 'not hungry');
+});
 console.log(`All ${n} rule tests passed`);
 
 // each octopus has a fixed, distinct temperament

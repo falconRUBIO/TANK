@@ -20,6 +20,7 @@ const GLASS_Z = 2.25;
 const _d = new THREE.Vector3();
 const clampAim = (v) => { v.x = Math.max(-4, Math.min(4, v.x)); v.z = Math.max(-1.8, Math.min(2.4, v.z)); v.y = Math.max(sandH(v.x, v.z) + 0.8, Math.min(Fish3D.topY - 0.6, v.y)); return v; };
 
+const SEEN = new Set(['flare', 'circle', 'wheel', 'display', 'yield', 'sift', 'punch', 'glass']);      // the moments worth remembering (rules MOMENTS)
 export class Encounters {
   constructor(fishes) { this.F = fishes; this.wait = 8 + Math.random() * 10; this.active = []; this.log = []; this.last = new Set(); }
   get now() { return performance.now(); }
@@ -62,7 +63,7 @@ export class Encounters {
     const order = Object.keys(W).filter((k) => !this.last.has(k)); for (let n = 0; n < 6 && order.length; n++) { let tot = 0; for (const k of order) tot += W[k]; let r = Math.random() * tot, k = order[0]; for (const q of order) { r -= W[q]; if (r <= 0) { k = q; break; } } const e = make[k](); if (e) { this.last = new Set([k]); return e; } order.splice(order.indexOf(k), 1); }
     return null;
   }
-  begin(kind, who, e) { e.kind = kind; e.t = 0; e.who = who; for (const f of who) { f.enc = e; f.encSave = { thought: f.thought }; } this.active.push(e); this.log.push({ kind, who: who.map((f) => f.name ?? f.sk), at: this.now }); if (this.log.length > 60) this.log.shift(); (this.onEncounter ?? (() => {}))(kind, who); return e; }
+  begin(kind, who, e) { if (SEEN.has(kind)) this.F.momentOf?.(kind, who[0], who[1] ?? null);      /* (seen with the tank open: a line in the journal now and then, a Field Guide page the first time) */ e.kind = kind; e.t = 0; e.who = who; for (const f of who) { f.enc = e; f.encSave = { thought: f.thought }; } this.active.push(e); this.log.push({ kind, who: who.map((f) => f.name ?? f.sk), at: this.now }); if (this.log.length > 60) this.log.shift(); (this.onEncounter ?? (() => {}))(kind, who); return e; }
   finish(e) { for (const f of e.who) { if (f.enc === e) f.enc = null; f.encMul = 1; f.encSnap = undefined; f.poseK = 0; f.posePitch = f.poseRoll = f.poseFace = null; f.encCool = this.now + 25e3 + Math.random() * 20e3; if (f.retarget != null && kindOf(f) !== 'crab') f.retarget = Math.min(f.retarget, 0.2); } e.end?.(); }
   // a fish fleeing: every so often a new heading away from the threat, jinking to one side or the other
   flee(v, from, e, dt, spread = 1.0, dist = 2.6) { e.jk = (e.jk ?? 0) - dt; if (e.jk > 0 && e.aim) { v.target.copy(e.aim); return; } e.jk = 0.32 + Math.random() * 0.25;

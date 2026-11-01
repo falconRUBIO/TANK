@@ -460,6 +460,9 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (fresh) { const nm = (x, sn) => w.fish.find((f) => f.id === x)?.name ?? sn?.name, G = w.fish.find((f) => f.id === fresh.guard && !f.dead), md = R.eggCareOf(fresh).mode;
           const text = md === 'den' ? `${G?.name ?? nm(fresh.a, fresh.pa)} laid eggs in her den! She will guard them until they hatch in ${R.OCTO_EGG_DAYS} days.` : md === 'mouth' && G ? `${G.name} is carrying eggs in his mouth! They hatch in ${R.EGG_DAYS} days.` : md === 'drift' ? `${nm(fresh.a, fresh.pa)} and ${nm(fresh.b, fresh.pb)} spawned. Their eggs are drifting in the tank, and they need you.` : `New eggs! ${G ? `${G.name} is guarding them.` : 'Come and see.'} They hatch in ${R.EGG_DAYS} days.`;
           for (const m of away) { const k = `push:laid:${id}:${fresh.id}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, text + oddsOf(fresh), { now })) mark(k); } }
+        // the usual mealtime (the hours the tank has been fed at most, rules feedClock): the fish start to wait for it, so whoever is away hears once, gently
+        { const M = R.mealDue(w, now); if (M && (w.hunger ?? 0) > 0.3 && (w.fish ?? []).some((f) => !f.dead && f.species !== 'octopus' && f.species !== 'seahorse')) { const day = Math.floor((now + (Number(w.tzMin) || 0) * 60e3) / 864e5);
+          for (const m of away) { const k = `push:meal:${id}:${day}:${M.meal}:${m.id}`; if (!db.prepare('SELECT v FROM kv WHERE k=?').get(k) && await push.notify(m.id, `${M.meal[0].toUpperCase() + M.meal.slice(1)} time: the fish are waiting at the surface where you usually feed them.`, { now, kind: 'hungry' })) mark(k); } } }
         // hunger is only news once an animal has started to suffer for it (a few hours of real neglect), not every time it gets peckish
         const runDown = (f) => (f.ail ?? 0) > 0.3 * 86400;
         for (const m of away) {
