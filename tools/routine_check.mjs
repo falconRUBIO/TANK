@@ -16,14 +16,14 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
   s.decor.length = 0; s.decor.push({ id: 'r1', type: 'rock', x: 2, z: -0.4, ry: 0 }, { id: 'p1', type: 'grass', x: -2.6, z: -0.6, ry: 0 }); s.hunger = 0.05; s.lastFed = now - 3600e3; s.water = 1; s.glass = 0; g.emit('state');
   for (const id of ['modal', 'coach', 'settle', 'toast']) document.getElementById(id)?.classList.remove('on'); });
 await p.waitForTimeout(3000);
-const look = () => p.evaluate(() => Object.fromEntries(window.__fishes.list.filter((f) => !f.dead).map((f) => [f.name, { night: !!f.isNight, sleepy: !!f.sleepy, pale: +(f.pale ?? 0).toFixed(2), roll: f.poseRoll ?? null, th: f.thought ?? '' }])));
+const look = () => p.evaluate(() => Object.fromEntries(window.__fishes.list.filter((f) => !f.dead).map((f) => [f.name, { night: !!f.isNight, sleepy: !!f.sleepy, pale: +(f.pale ?? 0).toFixed(2), roll: f.poseRoll ?? null, th: f.thought ?? '', woke: f.wokeSay ?? '' }])));
 const step = (sec) => p.evaluate((sec) => { const R = window.__fishes.routine; for (let i = 0; i < sec * 4; i++) R.tick(0.25); }, sec);
 // lights on
 await p.evaluate(() => window.__lightsOn()); await p.waitForTimeout(300); await step(3);
 let L = await look(); ck('lights off first: every day fish asleep, colors faded', ['Goldie', 'Doze', 'Neo', 'Siam'].every((n) => L[n].sleepy && L[n].pale > 0.1), L);
 ck('the cardinalfish (a night feeder) is not a day sleeper', !L.Corky.sleepy, L.Corky);
 await p.waitForTimeout(2200); const woke = {}; let lines = [];
-for (let sec = 1; sec <= 60; sec++) { await step(1); L = await look(); for (const [n, x] of Object.entries(L)) if (!x.night && woke[n] == null && n !== 'Corky') { woke[n] = sec; lines.push(x.th); } if (sec === 6) await p.screenshot({ path: `${out}/1-waking.png`, timeout: 180000 }); }
+for (let sec = 1; sec <= 60; sec++) { await step(1); L = await look(); for (const [n, x] of Object.entries(L)) if (!x.night && woke[n] == null && n !== 'Corky') { woke[n] = sec; lines.push(x.woke);      /* (what it said as it woke: a new rock or plant may catch its eye straight after) */ } if (sec === 6) await p.screenshot({ path: `${out}/1-waking.png`, timeout: 180000 }); }
 const ws = Object.values(woke); ck('they wake one by one, not all at once', ws.length === 4 && Math.max(...ws) - Math.min(...ws) >= 6, woke);
 ck('the brave one is up before the lazy one', woke.Goldie < woke.Doze, woke);
 ck('waking shows: a stretch line as each one wakes', lines.length === 4 && lines.every((t) => /stretch|Coming round|rising|yawn/i.test(t)), lines);

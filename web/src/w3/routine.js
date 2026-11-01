@@ -32,7 +32,7 @@ export class Routine {
     const F = this.F; f.isNight = !!F.night; f.switchIn = 0; if (!f.dead) f.tmul = F.mulFor(f);
     if (!dayFish(f) || f.dead) return;
     if (!F.night) {      // waking: a stretch (head up, every fin spread, a shiver of the tail), then up and about
-      f.sleepy = false; f.poseK = 1; f.posePitch = 0.32; f.poseRoll = 0; f.fanK = 1; f.flickT = 0.5; f.wokeAt = performance.now(); f.thought = WAKE_SAY[(f.seed ?? 0) % WAKE_SAY.length];
+      f.sleepy = false; f.poseK = 1; f.posePitch = 0.32; f.poseRoll = 0; f.fanK = 1; f.flickT = 0.5; f.wokeAt = performance.now(); f.wokeSay = f.thought = WAKE_SAY[(f.seed ?? 0) % WAKE_SAY.length];
       f.target.set(f.pos.x + (h01(f.seed, 7) - 0.5) * 1.4, Math.min(8, f.pos.y + 1.4 + h01(f.seed, 8) * 2), f.pos.z + 0.4); f.retarget = 3;
       setTimeout(() => { if (f.wokeAt && performance.now() - f.wokeAt > 1500) { f.poseK = 0; f.posePitch = null; f.fanK = 0; } }, 1700);
     } else { f.thought = BED_SAY[(f.seed ?? 0) % BED_SAY.length]; }
