@@ -932,9 +932,9 @@ function babyOut(egg, baby, delay) {
     egg.hideBig(); const col = new THREE.Color(egg.tint ?? 0xf06a9a).lerp(new THREE.Color(0xffffff), 0.35);
     if (!REDUCED) for (const sd of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.13, 0.05), new THREE.MeshLambertMaterial({ color: col, transparent: true })); m.position.copy(p); m.position.y += 0.05; scene.add(m); shards.push({ m, vx: sd * (0.5 + Math.random() * 0.3), vy: 0.9 + Math.random() * 0.4, vz: (Math.random() - 0.3) * 0.4, rx: sd * (5 + Math.random() * 3), age: 0 }); }      // the two halves of its shell, tumbling off
     fishes.burst(p); sfx('crack'); setTimeout(() => sfx('newlife'), 420); haptic(14); setTimeout(() => haptic(8), 260);
-    if (!f3) return; f3.group.visible = true; f3.pos.copy(p); if (!document.hidden) revealFish(f3, baby, morphOf(baby) ? 2400 : 500, morphOf(baby) ? 2600 : 1300);      // the baby: dark at first, its colors coming up after a breath
+    if (!f3) return; f3.group.visible = true; f3.pos.copy(p); f3.outAt = performance.now(); if (!document.hidden) revealFish(f3, baby, morphOf(baby) ? 2400 : 500, morphOf(baby) ? 2600 : 1300);      // the baby: dark at first, its colors coming up after a breath
     if (!jet && !REDUCED) { const t0 = performance.now(), grow = () => { const k = Math.min(1, (performance.now() - t0) / 950), e2 = 1 - (1 - k) ** 3, over = Math.sin(k * Math.PI) * 0.12; f3.group.scale.setScalar(0.3 + 0.7 * e2 + over * (1 - k * 0.5)); if (k < 1) requestAnimationFrame(grow); else f3.group.scale.setScalar(1); }; f3.group.scale.setScalar(0.3); grow(); }      // it squeezes out small and unfolds to its size
-    f3.target.set(p.x + (Math.random() - 0.5) * 1.2, p.y + 1.1, p.z + 0.6); f3.retarget = 4;
+    f3.target.set(p.x + (Math.random() - 0.5) * (jet ? 2 : 1.2), p.y + (jet ? 1.6 : 1.1), p.z + (jet ? 0.9 : 0.6)); f3.retarget = 4;      // (a tiny octopus jets well clear of the den, out where it can be seen)
     for (const pid of [e.a, e.b]) { const par = fishes.byId.get(pid); if (!par || par.dead || par.species.move === 'jet') continue; let n = 0; const go = () => { if (par.dead || ++n > 8) return; const a = n * 0.8 + (pid === e.a ? 0 : Math.PI); par.target.set(f3.pos.x + Math.cos(a) * 0.9, f3.pos.y + 0.2, f3.pos.z + Math.sin(a) * 0.6); par.retarget = 1.2; setTimeout(go, 1000); }; setTimeout(go, 900); }      // mum and dad swim over and circle their new baby
     if (!document.hidden && !play) { if (focus?.isEgg) setFocus(null); spotlightFish(baby.id, 6500, 900); setTimeout(async () => { await nameBaby(baby.id); setTimeout(fryOfferAsk, 600); }, 7600); }      // you saw it hatch: a close look at the new baby, then its name
   }, delay * 1000 + 700);
@@ -1119,7 +1119,10 @@ game.on('journal', (e) => {
 const shotQ = []; let shotBusy = false;
 function shotPump() {
   if (shotBusy || !shotQ.length) return; const wait = shotQ[0].at - Date.now(); if (wait > 0) { shotBusy = true; setTimeout(() => { shotBusy = false; shotPump(); }, wait); return; }
-  const q = shotQ.shift(), e = q.e; shotBusy = true; let got = true; try { if (!document.hidden) got = momentPhoto(e) !== false; } catch (err) { console.warn('moment photo', err); }
+  const q = shotQ.shift(), e = q.e; shotBusy = true; let got = true;
+  { const m = /meet (\S+?)[,.]/.exec(e.text), kid = m && /hatched|swam out|made it/.test(e.text) && fishes.list.find((f) => f.name === m[1] && !f.dead);      /* a newborn still held inside its egg (main.js babyOut): wait for it to come out, without spending a try */
+    if (kid && !kid.group.visible && (q.w ?? 0) < 30) { shotQ.unshift({ ...q, w: (q.w ?? 0) + 1, at: Date.now() + 600 }); shotBusy = false; shotPump(); return; }
+    const since = kid?.outAt ? performance.now() - kid.outAt : 1e9; if (since < 3800) { shotQ.unshift({ ...q, at: Date.now() + 3800 - since }); shotBusy = false; shotPump(); return; } }      /* (just out: a few seconds to pop free of the shell, grow and swim clear, as before the hatch played in beats) */ try { if (!document.hidden) got = momentPhoto(e) !== false; } catch (err) { console.warn('moment photo', err); }
   if (!got && (q.n ?? 0) < 3 && /hatched|swam out|jetted|gave birth|made it/.test(e.text)) shotQ.push({ e, n: (q.n ?? 0) + 1, at: Date.now() + 4000 });      /* (a newborn still coming out of its egg cannot be framed yet: try again in a moment) */
   setTimeout(() => { shotBusy = false; shotPump(); }, 1800);
 }
