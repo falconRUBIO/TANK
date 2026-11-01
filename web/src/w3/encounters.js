@@ -13,6 +13,10 @@ const TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherb
 const kindOf = (f) => (f.crab ? 'crab' : f.sk === 'octopus' || f.species?.move === 'jet' ? 'octopus' : f.sp?.tail ? 'seahorse' : TURTLES.has(f.sk) ? 'turtle' : 'fish');
 const DOMINANT = new Set(['guppy', 'angelfish', 'danio', 'goldfish', 'blue', 'tang', 'puffer']);      // damselfish, angelfish, anthias, clownfish, gramma, tang, puffer: the ones that chase
 const PLAYFUL = new Set(['neon', 'danio', 'guppy', 'goldfish', 'tang', 'platy']);                        // the ones seen racing their own kind
+const TERRITORIAL = new Set(['guppy', 'blue', 'cory', 'tang', 'angelfish', 'goldfish']);      // damselfish, gramma, goby, tang, angelfish, clownfish: the ones that stand their ground side-on
+const SHOALERS = new Set(['neon', 'danio']);                                                      // chromis and anthias: they wheel together and the males display
+const CURIOUS = new Set(['puffer', 'goldfish', 'angelfish', 'tang']);                             // the ones that come to the glass to look back at you
+const GLASS_Z = 2.25;
 const _d = new THREE.Vector3();
 const clampAim = (v) => { v.x = Math.max(-4, Math.min(4, v.x)); v.z = Math.max(-1.8, Math.min(2.4, v.z)); v.y = Math.max(sandH(v.x, v.z) + 0.8, Math.min(Fish3D.topY - 0.6, v.y)); return v; };
 
@@ -27,8 +31,9 @@ export class Encounters {
   tick(dt) {
     for (let i = this.active.length - 1; i >= 0; i--) { const e = this.active[i]; e.t += dt; let done = false; try { done = e.step(dt) === true; } catch (er) { done = true; console.warn('encounter', er); } if (done || e.t > (e.max ?? 8)) { this.finish(e); this.active.splice(i, 1); } }
     if (window.__encOff || (window.__quietUntil && Date.now() < window.__quietUntil) || window.__toys?.active) return;      // (not while you have a toy in the tank: they are playing with it)
-    if ((this.wait -= dt) > 0 || this.active.length) return;
-    const night = !!this.F.night; this.wait = (12 + Math.random() * 24) * (night ? 2.2 : 1) * (window.__encRate ?? 1);
+    const busy = this.F.list.filter((f) => !f.dead && !f.visitor).length >= 5;      // a busy tank can have two little moments going at once, in different corners
+    if ((this.wait -= dt) > 0 || this.active.length >= (busy ? 2 : 1)) return;
+    const night = !!this.F.night; this.wait = (9 + Math.random() * 17) * (night ? 2.2 : 1) * (window.__encRate ?? 1);
     this.start(null, night);
   }
   // start one: a given kind (tools), or one chosen by weight among those possible now
@@ -43,14 +48,22 @@ export class Encounters {
       claws: () => { const P = this.pairs((a, b) => a.crab && b.crab && a.fid < b.fid, 2.4); const p = this.pick(P); return p && this.claws(p[0], p[1]); },
       pester: () => { const P = this.pairs((a, b) => kindOf(a) === 'fish' && b.crab && (DOMINANT.has(a.sk) || a.sk === 'cory'), 4); const p = this.pick(P); return p && this.pester(p[0], p[1]); },
       spar: () => { const P = this.pairs((a, b) => kindOf(a) === 'seahorse' && kindOf(b) === 'seahorse' && a.fid < b.fid, 3.0); const p = this.pick(P); return p && this.spar(p[0], p[1]); },
+      flare: () => { const P = this.pairs((a, b) => kindOf(a) === 'fish' && kindOf(b) === 'fish' && TERRITORIAL.has(a.sk) && (SOCIAL[b.sk]?.size ?? 1) <= (SOCIAL[a.sk]?.size ?? 1) + 1 && (a.sk === b.sk || SOCIAL[a.sk]?.kind !== 'Friendly'), 3.0); const p = this.pick(P); return p && this.flare(p[0], p[1]); },
+      circle: () => { const P = this.pairs((a, b) => kindOf(a) === 'fish' && a.sk === b.sk && TERRITORIAL.has(a.sk) && a.fid < b.fid, 3.6); const p = this.pick(P); return p && this.circle(p[0], p[1]); },
+      wheel: () => { const by = {}; for (const f of this.F.list) if (this.free(f) && this.inView(f) && SHOALERS.has(f.sk)) (by[f.sk] ||= []).push(f); const g = Object.values(by).filter((l) => l.length >= 3).sort((x, y) => y.length - x.length)[0]; return g && this.wheel(g); },
+      display: () => { const L = this.F.list.filter((f) => this.free(f) && this.inView(f) && SHOALERS.has(f.sk) && this.F.list.some((o) => o !== f && o.sk === f.sk && !o.dead && o.pos.distanceTo(f.pos) < 4)); const f = this.pick(L); return f && this.display(f); },
+      glass: () => { const L = this.F.list.filter((f) => this.free(f) && kindOf(f) === 'fish' && CURIOUS.has(f.sk)); const f = this.pick(L); return f && this.glass(f); },
+      yield: () => { const P = this.pairs((a, b) => kindOf(a) === 'fish' && kindOf(b) === 'fish' && (SOCIAL[a.sk]?.size ?? 1) >= (SOCIAL[b.sk]?.size ?? 1) + 1 && SOCIAL[a.sk]?.bully, 4.5); const p = this.pick(P); return p && this.yieldTo(p[0], p[1]); },
+      sift: () => { const L = this.F.list.filter((f) => this.free(f) && this.inView(f) && (f.sk === 'cory' || f.sk === 'betta')); const f = this.pick(L); return f && this.sift(f); },
+      punch: () => { const P = this.pairs((a, b) => kindOf(a) === 'octopus' && kindOf(b) === 'fish' && (b.tagAlong ?? 0) > this.now, 3.4); const p = this.pick(P); return p && this.swat(p[0], p[1], true); },
     };
-    const W = night ? { spook: 3, swat: 2, claws: 1.5, pester: 0.5, snap: 0.5, chase: 0.6, nip: 0.4, play: 0.3, spar: 0.3 } : { chase: 3, nip: 2.2, play: 2, spook: 2.4, swat: 2, snap: 1.2, claws: 1.5, pester: 1, spar: 1 };
+    const W = night ? { spook: 3, swat: 2, claws: 1.5, pester: 0.5, snap: 0.5, chase: 0.6, nip: 0.4, play: 0.3, spar: 0.3, flare: 0.5, sift: 0.4, punch: 1 } : { chase: 2.6, nip: 1.8, play: 1.6, spook: 1.8, swat: 1.4, snap: 1.2, claws: 1.4, pester: 1, spar: 1, flare: 2.4, circle: 1.6, wheel: 2.2, display: 1.6, glass: 1.4, yield: 1.4, sift: 1.4, punch: 3 };      /* (punch: the octopus hunting with fish in tow, as filmed in the Red Sea, lands one on a fish that is only tagging along) */
     if (kind) return make[kind]?.() || null;
     const order = Object.keys(W).filter((k) => !this.last.has(k)); for (let n = 0; n < 6 && order.length; n++) { let tot = 0; for (const k of order) tot += W[k]; let r = Math.random() * tot, k = order[0]; for (const q of order) { r -= W[q]; if (r <= 0) { k = q; break; } } const e = make[k](); if (e) { this.last = new Set([k]); return e; } order.splice(order.indexOf(k), 1); }
     return null;
   }
   begin(kind, who, e) { e.kind = kind; e.t = 0; e.who = who; for (const f of who) { f.enc = e; f.encSave = { thought: f.thought }; } this.active.push(e); this.log.push({ kind, who: who.map((f) => f.name ?? f.sk), at: this.now }); if (this.log.length > 60) this.log.shift(); (this.onEncounter ?? (() => {}))(kind, who); return e; }
-  finish(e) { for (const f of e.who) { if (f.enc === e) f.enc = null; f.encMul = 1; f.encSnap = undefined; f.encCool = this.now + 25e3 + Math.random() * 20e3; if (f.retarget != null && kindOf(f) !== 'crab') f.retarget = Math.min(f.retarget, 0.2); } e.end?.(); }
+  finish(e) { for (const f of e.who) { if (f.enc === e) f.enc = null; f.encMul = 1; f.encSnap = undefined; f.poseK = 0; f.posePitch = f.poseRoll = f.poseFace = null; f.encCool = this.now + 25e3 + Math.random() * 20e3; if (f.retarget != null && kindOf(f) !== 'crab') f.retarget = Math.min(f.retarget, 0.2); } e.end?.(); }
   // a fish fleeing: every so often a new heading away from the threat, jinking to one side or the other
   flee(v, from, e, dt, spread = 1.0, dist = 2.6) { e.jk = (e.jk ?? 0) - dt; if (e.jk > 0 && e.aim) { v.target.copy(e.aim); return; } e.jk = 0.32 + Math.random() * 0.25;
     _d.subVectors(v.pos, from); _d.y *= 0.4; if (_d.lengthSq() < 1e-4) _d.set(1, 0, 0); _d.normalize(); const a = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.75) * spread, c = Math.cos(a), s = Math.sin(a), x = _d.x * c - _d.z * s; _d.z = _d.x * s + _d.z * c; _d.x = x;
@@ -104,9 +117,9 @@ export class Encounters {
     return e;
   }
   // ── the octopus lashes an arm at a fish that came close; the fish bolts ──
-  swat(o, f) {
-    if (!o.whipArm?.(f.pos, 0.42)) return null; const e = this.begin('swat', [o, f], { max: 3 }); o.flush = Math.max(o.flush ?? 0, 0.5); o.thought = `Swiped an arm at ${f.name}.`; o.swats = (o.swats ?? 0) + 1;
-    e.step = (dt) => { if (e.t > 0.2 && !e.went) { e.went = true; f.encMul = 2.7; f.encSnap = 8; f.idle = 0; f.flickT = 0.35; f.thought = `Swiped at by ${o.name}.`; this.F.burst?.(f.pos.clone()); }
+  swat(o, f, punch = false) {
+    if (!o.whipArm?.(f.pos, 0.42)) return null; const e = this.begin(punch ? 'punch' : 'swat', [o, f], { max: 3 }); o.flush = Math.max(o.flush ?? 0, 0.5); o.thought = punch ? `Punched ${f.name} for tagging along without helping.` : `Swiped an arm at ${f.name}.`; o.swats = (o.swats ?? 0) + 1;
+    e.step = (dt) => { if (e.t > 0.2 && !e.went) { e.went = true; f.encMul = 2.7; f.encSnap = 8; f.idle = 0; f.flickT = 0.35; f.thought = punch ? `Punched by ${o.name} for slacking on the hunt.` : `Swiped at by ${o.name}.`; this.F.burst?.(f.pos.clone()); }
       if (e.went) { this.flee(f, o.pos, e, dt, 0.8, 2.8); f.retarget = 0.4; f.fleeT = 0.5; } return e.t > 1.6; };
     return e;
   }
@@ -133,6 +146,82 @@ export class Encounters {
   spar(a, b) {
     const e = this.begin('spar', [a, b], { max: 4 }); a.thought = `Sparring with ${b.name}.`; b.thought = `Sparring with ${a.name}.`; let n = 0;
     e.step = () => { for (const [x, y] of [[a, b], [b, a]]) { x.glance = y.pos.clone(); x.glanceT = 0.6; } if (e.t > 0.35 * (n + 1) && n < 6) { const x = n % 2 ? b : a; x.snickT = 0.32; n++; x.flicks = (x.flicks ?? 0) + 1; } return e.t > 2.6; };
+    return e;
+  }
+
+  // ── a lateral display: a territorial fish and an intruder stop, turn side-on to each other with fins spread and tails beating, then the owner
+  // lunges and the other gives way (damselfish, grammas, gobies and tangs settle most quarrels like this, without a bite) ──
+  flare(a, b) {
+    const e = this.begin('flare', [a, b], { max: 5.5 }); a.thought = `Squaring up to ${b.name}, side-on.`; b.thought = `Being warned off by ${a.name}.`;
+    const mid = a.pos.clone().lerp(b.pos, 0.5), sx = a.pos.x < b.pos.x ? -1 : 1;
+    for (const [f, s] of [[a, sx], [b, -sx]]) { f.idle = 0; f.settle = null; f.encMul = 0.6; f.encSnap = 4; f.poseK = 1; f.poseRoll = 0.35 * s; f.encStand = new THREE.Vector3(mid.x + s * 0.55, mid.y, mid.z); }
+    e.step = (dt) => { if (a.dead || b.dead) return true;
+      if (e.t < 2.2) { for (const [f, o] of [[a, b], [b, a]]) { f.target.copy(f.encStand); f.retarget = 0.4; f.poseFace = new THREE.Vector3(f.pos.x + (o.pos.z - f.pos.z), f.pos.y, f.pos.z - (o.pos.x - f.pos.x)); } if (Math.random() < dt * 2.2) (Math.random() < 0.6 ? a : b).flickT = 0.25; }      // broadside, holding station, tails beating in bursts
+      else if (!e.go) { e.go = true; for (const f of [a, b]) { f.poseK = 0; } a.encMul = 2.6; a.encSnap = 7; b.encMul = 2.4; b.encSnap = 7; b.thought = `Gave way to ${a.name}.`; a.thought = `Saw ${b.name} off its patch.`; }
+      else { a.target.copy(b.pos); a.retarget = 0.3; this.flee(b, a.pos, e, dt, 0.6, 2.6); b.retarget = 0.4; b.fleeT = 0.5; if (e.t > 3.2 && !e.back) { e.back = true; a.encMul = 1.2; a.target.copy(a.encStand); } }
+      return e.t > 4.2; };
+    return e;
+  }
+  // ── two of the same kind circle nose to tail, each trying to get round to the other's flank (tangs show the scalpel by the tail), then part ──
+  circle(a, b) {
+    const e = this.begin('circle', [a, b], { max: 6 }), c = a.pos.clone().lerp(b.pos, 0.5), R = 0.55, dur = 3.6 + Math.random();
+    a.thought = `Circling ${b.name}, nose to tail.`; b.thought = `Circling ${a.name}, nose to tail.`;
+    for (const f of [a, b]) { f.idle = 0; f.settle = null; f.encMul = 1.7; f.encSnap = 6; }
+    e.step = () => { if (a.dead || b.dead) return true; const w = e.t * 2.4;
+      if (e.t < dur) { for (const [f, ph] of [[a, 0], [b, Math.PI]]) { f.target.set(c.x + Math.cos(w + ph) * R, c.y + Math.sin(w * 0.5 + ph) * 0.15, c.z + Math.sin(w + ph) * R * 0.7); clampAim(f.target); f.retarget = 0.3; } }
+      else if (!e.part) { e.part = true; for (const [f, s] of [[a, -1], [b, 1]]) { f.encMul = 1.6; f.target.set(c.x + s * 2.2, c.y + (Math.random() - 0.5), c.z); clampAim(f.target); f.retarget = 1; f.flickT = 0.3; } }
+      return e.t > dur + 1.2; };
+    return e;
+  }
+  // ── the shoal wheels: chromis or anthias pull in tight behind one of them and sweep round the tank together, turning as one, then loosen ──
+  wheel(group) {
+    const L = group.slice(0, 9), lead = L[0], e = this.begin('wheel', L, { max: 9 }), dur = 5.5 + Math.random() * 1.5, side = Math.random() < 0.5 ? 1 : -1, y0 = Math.max(4, Math.min(Fish3D.topY - 2.5, lead.pos.y));
+    for (const f of L) { f.idle = 0; f.settle = null; f.encMul = 1.9; f.encSnap = 6; f.thought = 'Wheeling round the tank with the shoal.'; }
+    e.step = () => { if (lead.dead) return true; const ang = e.t * 0.95 * side;
+      lead.target.set(Math.cos(ang) * 2.9, y0 + Math.sin(e.t * 1.3) * 0.7, 0.35 + Math.sin(ang) * 1.3); clampAim(lead.target); lead.retarget = 0.3;
+      L.forEach((f, i) => { if (i === 0 || f.dead) return; const back = 0.42 * Math.ceil(i / 2), off = (i % 2 ? 1 : -1) * 0.3, h = lead.heading ?? 0; f.target.set(lead.pos.x - Math.cos(h) * back + Math.sin(h) * off, lead.pos.y + ((i % 3) - 1) * 0.22, lead.pos.z + Math.sin(h) * back + Math.cos(h) * off); clampAim(f.target); f.retarget = 0.3; });      // tight, staggered, as a shoal turns
+      if (e.t > dur && !e.loose) { e.loose = true; for (const f of L) { f.encMul = 1; f.target.set(f.pos.x + (Math.random() - 0.5) * 2.4, f.pos.y + (Math.random() - 0.5), f.pos.z + (Math.random() - 0.5)); clampAim(f.target); f.retarget = 1.5; } }
+      return e.t > dur + 0.8; };
+    return e;
+  }
+  // ── a male anthias shows off: quick U-shaped dives in front of the others, flashing as it turns ──
+  display(f) {
+    const e = this.begin('display', [f], { max: 4.5 }), x0 = f.pos.x, y0 = Math.max(sandH(f.pos.x, f.pos.z) + 2.2, f.pos.y), z0 = f.pos.z;
+    f.idle = 0; f.settle = null; f.encMul = 2.8; f.encSnap = 9; f.thought = 'Showing off to the shoal with quick dives.';
+    for (const o of this.F.list) if (o !== f && o.sk === f.sk && !o.dead && o.pos.distanceTo(f.pos) < 4) { o.glance = f.pos.clone(); o.glanceT = 2.5; }
+    e.step = () => { if (f.dead) return true; const k = Math.floor(e.t / 0.55); if (k !== e.k) { e.k = k; const up = k % 2 === 1; f.target.set(x0 + (k % 4 < 2 ? 0.45 : -0.45), up ? y0 + 0.9 : y0 - 0.7, z0); clampAim(f.target); f.retarget = 0.3; f.flickT = 0.3; } return e.t > 3.3; };
+    return e;
+  }
+  // ── a curious fish comes up to the glass and hangs there looking out at you, fins fluttering, then turns away ──
+  glass(f) {
+    const e = this.begin('glass', [f], { max: 9 }), x = Math.max(-2.6, Math.min(2.6, f.pos.x * 0.5)), y = Math.max(sandH(x, GLASS_Z - 0.5) + 2.5, Math.min(Fish3D.topY - 2, f.pos.y)), dur = 4.5 + Math.random() * 2.5;
+    f.idle = 0; f.settle = null; f.encMul = 1.3; f.thought = 'Came to the glass to look at you.';
+    e.step = (dt) => { if (f.dead) return true; const at = new THREE.Vector3(x, y, GLASS_Z - 0.55);
+      if (!e.there) { f.target.copy(at); f.retarget = 0.4; if (f.pos.distanceTo(at) < 0.5) { e.there = e.t; f.encMul = 0.25; f.poseK = 1; f.poseFace = new THREE.Vector3(x, y, 12); f.fanK = 0.5; } if (e.t > 5) return true; }
+      else { f.target.set(x + Math.sin(e.t * 1.7) * 0.08, y + Math.sin(e.t * 1.1) * 0.06, GLASS_Z - 0.55); f.retarget = 0.3; if (f.sk === 'puffer' && !e.puffed && e.t - e.there > 2 && Math.random() < dt * 0.4) { e.puffed = true; f.puffT = 2.5; }      /* (a puffer may even puff a little at its own reflection) */
+        if (e.t - e.there > dur) { f.fanK = 0; f.poseK = 0; f.encMul = 1.4; f.target.set(f.pos.x + (Math.random() < 0.5 ? -2 : 2), f.pos.y, 0.4); clampAim(f.target); f.retarget = 1; f.flickT = 0.3; return true; } }
+      return false; };
+    e.end = () => { f.fanK = 0; };
+    return e;
+  }
+  // ── pecking order: a big fish swims straight at a smaller one where it rests, and the smaller one gives up its place without a fuss ──
+  yieldTo(big, small) {
+    const e = this.begin('yield', [big, small], { max: 6 }), spot = small.pos.clone(); big.idle = 0; big.settle = null; big.encMul = 1.1; big.thought = `Moving ${small.name} along.`;
+    e.step = (dt) => { if (big.dead || small.dead) return true; big.target.copy(spot); big.retarget = 0.4;
+      if (!e.moved && big.pos.distanceTo(spot) < (big.radius ?? 0.8) * 1.4 + 0.4) { e.moved = e.t; small.thought = `Gave its place to ${big.name}.`; small.encMul = 1.6; _d.subVectors(small.pos, big.pos).setY(0); if (_d.lengthSq() < 1e-4) _d.set(1, 0, 0); _d.normalize(); small.target.set(small.pos.x + _d.x * 1.6, small.pos.y + 0.3, small.pos.z + _d.z * 1.0); clampAim(small.target); small.retarget = 1.2; small.flickT = 0.2; }
+      if (e.moved != null && e.t - e.moved > 0.8) { big.encMul = 0.4; big.idle = 3; big.thought = `Took ${small.name}'s spot.`; return e.t - e.moved > 2.2; }
+      return e.t > 5; };
+    return e;
+  }
+  // ── a goby or a dragonet works the sand: a hop to a new patch, a mouthful taken and a puff of sand spat out through its gills ──
+  sift(f) {
+    const e = this.begin('sift', [f], { max: 7 }); let n = 0; f.idle = 0; f.settle = null; f.encMul = 1.6; f.encSnap = 6; f.thought = f.sk === 'cory' ? 'Sifting the sand for food.' : 'Picking at the bottom for tiny food.';
+    const hop = () => { const x = Math.max(-3.6, Math.min(3.6, f.pos.x + (Math.random() - 0.5) * 1.6)), z = Math.max(-1.4, Math.min(2.1, f.pos.z + (Math.random() - 0.5) * 0.8)); e.spot = new THREE.Vector3(x, sandH(x, z) + 0.35, z); e.at = null; };
+    hop();
+    e.step = () => { if (f.dead) return true; f.target.copy(e.spot); f.retarget = 0.3;
+      if (e.at == null && f.pos.distanceTo(e.spot) < 0.35) { e.at = e.t; f.poseK = 1; f.posePitch = -0.5; f.encMul = 0.3; }      // nose down into the sand
+      if (e.at != null && e.t - e.at > 0.7) { this.F.burst?.(new THREE.Vector3(f.pos.x - Math.cos(f.heading ?? 0) * 0.2, f.pos.y - 0.05, f.pos.z)); f.poseK = 0; f.flickT = 0.2; f.encMul = 1.6; n++; if (n >= 3) return true; hop(); }
+      return false; };
     return e;
   }
 }

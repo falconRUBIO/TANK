@@ -1437,6 +1437,9 @@ export class Fish3D {
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }
     if (this.invert || Math.abs(this.roll) > 1.2) this.roll += ((this.invert ? Math.PI : 0) - this.roll) * Math.min(1, dt * 2.5);
+    if ((this.poseK ?? 0) > 0.001) { const k = Math.min(1, this.poseK), r = Math.min(1, dt * 3) * k;      // a pose an encounter asks for: broadside in a display, head-down to be cleaned, facing a rival or the glass
+      if (this.posePitch != null) this.pitch += (this.posePitch - this.pitch) * r; if (this.poseRoll != null) this.roll += (this.poseRoll - this.roll) * r;
+      if (this.poseFace) { const want = Math.atan2(-(this.poseFace.z - this.pos.z), this.poseFace.x - this.pos.x); let d = want - this.heading; d = Math.atan2(Math.sin(d), Math.cos(d)); this.heading += d * Math.min(1, dt * 2.5) * k; } }
     this.flickT = Math.max(0, (this.flickT ?? 0) - dt); this.phase += dt * (3.0 + sp * 5.5 + 9 * (this.fanK ?? 0) + (this.flickT > 0 ? 16 : 0));      // (and a flick of the tail: a quick burst of beats)      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
