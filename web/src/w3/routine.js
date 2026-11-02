@@ -48,7 +48,7 @@ export class Routine {
     { const M = S && !F.night ? mealDue(S, Date.now(), h) : null; this.expect = M ? { x: Math.max(-3.5, Math.min(3.5, feedX)), at: M.at } : null; if (!M) this.mealSeen = false; }
     for (const f of F.list) {
       if (!dayFish(f)) continue;
-      const asleep = !!f.isNight && !(f.fleeT > 0) && !f.weak && !((f.wakeUntil ?? 0) > performance.now()); f.sleepy = asleep;      /* (a ball splashing in wakes it for a while: toys.js) */      // (still asleep until its own moment to wake; awake until its own bedtime)
+      const asleep = !!f.isNight && !(f.fleeT > 0) && !f.weak; f.sleepy = asleep;      // (still asleep until its own moment to wake; awake until its own bedtime)      // (still asleep until its own moment to wake; awake until its own bedtime)
       const want = asleep ? (NIGHT_PALE[f.sk] ?? 0.24) : 0, cur = f.nightPale ?? 0, nx = cur + Math.max(-0.12, Math.min(0.05, want - cur));      // (the color drains slowly as it sleeps, and comes back quicker at the light)
       f.nightPale = Math.abs(nx - want) < 0.01 ? want : nx; if (asleep && f.nightPale >= 0.3 && !f.nightSaid) { f.nightSaid = true; F.momentOf?.('nightcolor', f); } if (!asleep) f.nightSaid = false; const q = Math.round(f.nightPale * 25) / 25; if (q !== f.nightQ) { f.nightQ = q; f.setPale(Math.max(f.paleBase ?? 0, q)); }
       if (asleep && !f.enc) { f.poseK = 0.6; f.posePitch = SAND_SLEEP.has(f.sk) ? 0 : -0.1; f.poseRoll = 0; }      // asleep: hanging still, head a touch low (on the sand, a goby or the mandarin lies level on its fins)
