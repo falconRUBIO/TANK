@@ -1491,7 +1491,8 @@ nav [data-tab]:active{transform:scale(.92)}
 
 /* (specificity: the older layers style these with !important; the redesign's grouped rows and face row win by naming the app as well) */
 #app #sheet .cgroup{background:var(--surf-1)!important;border-radius:var(--r-l)!important;overflow:hidden;gap:0!important;padding:0!important;display:flex!important;flex-direction:column}
-#app #sheet .cgroup > .crow + .crow{border-top:1px solid var(--hair)!important}#app #sheet .cgroup > .crow + .crow::before{display:none}
+#app #sheet .cgroup > .crow + .crow{border-top:1px solid var(--hair)!important}
+#app #sheet .cgroup > .crow + .crow::before{display:none}
 #app #sheet .cgroup > .crow{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;margin:0!important;animation:none}
 #app #sheet .cgroup > .crow.hot,#app #sheet .cgroup > .crow.due{background:linear-gradient(90deg,rgba(255,143,124,.1),rgba(255,143,124,0) 75%)!important}
 #app #sheet .cgroup > .crow.tutpulse{box-shadow:inset 3px 0 0 var(--coral)!important}
@@ -1500,6 +1501,11 @@ nav [data-tab]:active{transform:scale(.92)}
 #app #sheet .crew .slot{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;margin:0!important;width:80px;padding:4px 2px!important}
 #app #sheet .crew .slot .avw{margin:0 0 4px!important}
 #app #sheet .crew .slot.me canvas.big{box-shadow:0 0 0 2px var(--gold),0 6px 14px rgba(0,0,0,.3)!important}
+
+/* (the first and last rows carry the group's own rounded corners: iOS Safari does not always clip a row's highlight to its rounded parent, and a hot or pressed row then showed square corners) */
+#app #sheet :is(.cgroup,.mrows) > :first-child{border-top-left-radius:var(--r-l)!important;border-top-right-radius:var(--r-l)!important}
+#app #sheet :is(.cgroup,.mrows) > :last-child{border-bottom-left-radius:var(--r-l)!important;border-bottom-right-radius:var(--r-l)!important}
+#app #sheet :is(.cgroup,.mrows){-webkit-mask-image:-webkit-radial-gradient(white,black);isolation:isolate}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
