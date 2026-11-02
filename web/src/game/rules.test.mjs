@@ -672,6 +672,14 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     assert.equal(R.advance(t, N.readyAt + D).filter((e) => e.ready).length, 0, 'nothing more the next day');
     const nudge = R.advance(t, N.readyAt + 2 * D + H).filter((e) => e.ready); assert.equal(nudge.length, 1, 'one gentle reminder after two days'); assert.match(nudge[0].journal, /still waiting/); for (const c of N.cands) assert.ok(nudge[0].journal.includes(c.name), 'names the three who could stay');
     assert.equal(R.advance(t, N.readyAt + 9 * D).filter((e) => e.ready).length, 0, 'said once only'); assert.ok(t.nursery && t.nursery.id === N.id, 'the choice still waits: nothing is decided for them'); });
+  ok('any baby of the brood can be the one that stays, not only the three: it keeps its nursery name and look, and every other baby is named as leaving', () => {
+    const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due; live(t, m.preg.start + H, due); R.advance(t, due + H);
+    const N = t.nursery, ready = due + 5 * D + H; live(t, due + 3 * H, ready); const brood = R.nurseryBrood(N, t.fish.map((x) => x.name)), b = brood[4];
+    assert.equal(N.cands.length + brood.length, N.n, 'all of them can be offered');
+    const r = R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: b.id }, { now: ready }); assert.equal(r.ok, true, JSON.stringify(r));
+    const f = t.fish.find((x) => x.id === b.id); assert.ok(f, 'the very one from the nursery'); assert.equal(f.name, b.name); assert.equal(f.sex, b.sex); assert.deepEqual(f.traits, b.traits); assert.deepEqual(f.genes, N.cands[(b.brood - 1) % N.cands.length].genes, 'the look it had in the nursery');
+    const line = r.events.find((e) => e.kept)?.journal ?? ''; assert.ok(N.cands.every((c) => line.includes(c.name)) && !line.slice(line.indexOf('.') + 1).includes(b.name + ' swam') && t.lastDepart.gone.length === N.n - 1 && !t.lastDepart.gone.includes(b.name), line);
+    assert.equal(R.applyAction(t, { t: 'keepBaby', nursery: N.id, baby: 'nope~9' }, { now: ready }).ok, false, 'and nobody else after it'); });
   ok('choosing the baby: not before five days, one choice wins even if two caretakers choose at once, it keeps its name and parents, the others leave', () => {
     const t = tank(); live(t, 0, 4 * D); let m = t.fish[0]; for (let d = 4; d < 30 && !m.preg; d++) live(t, d * D, (d + 1) * D); const due = m.preg.due; m.preg.watch = due;      /* (someone is there for it) */ live(t, m.preg.start + H, due); R.advance(t, due + H);
     const N = t.nursery, [c0, c1] = N.cands, now = due + 2 * H;
