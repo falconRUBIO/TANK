@@ -746,7 +746,7 @@ ok('fish learn their mealtimes: a few days of breakfast at 8 and supper at 6 rea
   R.feedLearn(t, day0 + 13.2 * 3600e3); assert.deepEqual(R.feedClock(t), [], 'one meal is not a habit');
   for (let d = 1; d <= 5; d++) { R.feedLearn(t, day0 + d * D + 8.1 * 3600e3); R.feedLearn(t, day0 + d * D + 8.4 * 3600e3); R.feedLearn(t, day0 + d * D + 18.2 * 3600e3); }
   const c = R.feedClock(t); assert.equal(c.length, 2, JSON.stringify(c)); assert.ok(c[0] >= 8 && c[0] <= 9, `breakfast ${c}`); assert.ok(c[1] >= 18 && c[1] <= 19, `supper ${c}`);
-  assert.ok(t.feedHrs[8] < 5, 'second helpings in the same sitting were not counted again');
+  assert.ok((t.feedHrs[8] ?? 0) < 5 && !Array.isArray(t.feedHrs) && Object.keys(t.feedHrs).length <= 4, 'second helpings in the same sitting were not counted again, and only the hours with meals are kept');
   const t2 = R.newWorld(0); R.norm(t2, day0); t2.tzMin = -300; t2.fish = []; for (let d = 1; d <= 4; d++) R.feedLearn(t2, day0 + d * D + 13 * 3600e3); assert.ok(Math.abs(R.feedClock(t2)[0] - 8.5) < 0.6, 'the hour is the caretaker\'s own (UTC-5: 13:00 UTC is 8 in the morning)');
 });
 ok('what you saw happen is kept: a fin display, the punch, the dusk hunter each write a journal line and fill their Field Guide page the first time, not twice in a day; the wrong animal fills nothing; a mealtime is due only near the usual hour, hungry and not just fed', () => {

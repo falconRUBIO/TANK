@@ -16,13 +16,13 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(),
   for (const id of ['modal', 'coach', 'settle', 'toast']) document.getElementById(id)?.classList.remove('on'); });
 await p.waitForTimeout(3500);
 // step every fish (not the octopus) for sec seconds of game time, recording what each does
-const run = (sec, setup = '') => p.evaluate(([sec, setup]) => { const F = window.__fishes, L = F.list.filter((f) => !f.dead && f.species?.move !== 'jet'); new Function('F', setup)(F); const st = {}, dt = 1 / 30;
+const run = (sec, setup = '', each = '') => p.evaluate(([sec, setup, each]) => { const per = each ? new Function('F', each) : null; const F = window.__fishes, L = F.list.filter((f) => !f.dead && f.species?.move !== 'jet'); new Function('F', setup)(F); const st = {}, dt = 1 / 30;
   for (const f of L) { f.hops = 0; f.pecks = 0; f.picks = 0; f.backs = 0; st[f.fid] = { sk: f.sk, sp: [], bend: [], still: 0, n: 0, h0: f.heading, spread: [] }; }
-  for (let i = 0; i < sec * 30; i++) { for (const f of L) { f.update(dt, Math.random, F.list); const S = st[f.fid], v = f.vel.length(); S.sp.push(v); S.n++; if (v < 0.08) S.still++; if (!(f.fleeT > 0) && !(f.dartT > 0) && !f.seeking) S.bend.push(f.bendK ?? 1); }
+  for (let i = 0; i < sec * 30; i++) { per?.(F); for (const f of L) { f.update(dt, Math.random, F.list); const S = st[f.fid], v = f.vel.length(); S.sp.push(v); S.n++; if (v < 0.08) S.still++; if (!(f.fleeT > 0) && !(f.dartT > 0) && !f.seeking) S.bend.push(f.bendK ?? 1); }
     const sch = L.filter((f) => f.sk === 'neon'); if (sch.length > 1 && i % 10 === 0) { let d = 0, k = 0; for (let a = 0; a < sch.length; a++) for (let c = a + 1; c < sch.length; c++) { d += sch[a].pos.distanceTo(sch[c].pos); k++; } st[sch[0].fid].spread.push(d / k); } }
   const out = {}; for (const f of L) { const S = st[f.fid], m = S.sp.reduce((a, b) => a + b, 0) / S.n, sd = Math.sqrt(S.sp.reduce((a, b) => a + (b - m) ** 2, 0) / S.n);
-    out[f.name + '#' + f.fid] = { sk: f.sk, mean: +m.toFixed(2), cv: +(sd / (m || 1)).toFixed(2), still: +(S.still / S.n).toFixed(2), bend: S.bend.length ? +(S.bend.reduce((a, b) => a + b, 0) / S.bend.length).toFixed(2) : null, fin: f.finK, hops: f.hops, pecks: f.pecks, picks: f.picks, backs: +f.backs.toFixed(2), turned: +Math.abs(Math.atan2(Math.sin(f.heading - S.h0), Math.cos(f.heading - S.h0))).toFixed(2), spread: S.spread.length ? +(S.spread.reduce((a, b) => a + b, 0) / S.spread.length).toFixed(2) : null }; }
-  return out; }, [sec, setup]);
+    out[f.name + '#' + f.fid] = { sk: f.sk, mean: +m.toFixed(2), cv: +(sd / (m || 1)).toFixed(2), still: +(S.still / S.n).toFixed(2), bend: S.bend.length ? +(S.bend.reduce((a, b) => a + b, 0) / S.bend.length).toFixed(2) : null, fin: f.finK, hops: f.hops, pecks: f.pecks, picks: f.picks, backs: +f.backs.toFixed(2), turned: +Math.abs(Math.atan2(Math.sin(f.heading - S.h0), Math.cos(f.heading - S.h0))).toFixed(2), spread: S.spread.length ? +(S.spread.slice(S.spread.length >> 1).reduce((a, b) => a + b, 0) / Math.max(1, S.spread.length - (S.spread.length >> 1))).toFixed(2) : null      /* (once it has settled: the second half of the run) */ }; }
+  return out; }, [sec, setup, each]);
 const by = (R, sk) => Object.values(R).find((x) => x.sk === sk);
 const R = await run(30);
 const clown = by(R, 'goldfish'), chro = by(R, 'neon'), goby = by(R, 'cory'), mand = by(R, 'betta');
@@ -34,7 +34,7 @@ ck('the mandarin potters and pecks every second or two', mand.pecks >= 8 && mand
 const back = await run(1.2, "const f = F.list.find((x) => x.sk === 'puffer'); f.vel.set(0, 0, 0); f.target.set(f.pos.x - Math.cos(f.heading) * 0.9, f.pos.y, f.pos.z + Math.sin(f.heading) * 0.9); f.retarget = 9; f.idle = 0; f.seeking = false; f.fleeT = 0; f.dartT = 0;");
 const pu = by(back, 'puffer'); ck('a puffer with something just behind it backs off without turning round', pu.backs > 0.3 && pu.turned < 0.35, pu);
 const school = "const o = F.list.find((x) => x.species?.move === 'jet'); let k = 0; for (const f of F.list) if (f.sk === 'neon') { f.fleeT = -9; f.retarget = 99; f.idle = 0; f.target.set(k % 2 ? 3 : -3, k < 2 ? 3 : 8, 1); f.pos.set(f.target.x * 0.5, f.target.y, 1); k++; }";
-const calm = by(await run(8, school + " if (o) o.pos.set(9, 9, 9);"), 'neon'), scared = by(await run(8, school + " for (const f of F.list) if (f.sk === 'neon') f.fleeT = -1;"), 'neon');
+const calm = by(await run(8, school + " if (o) o.pos.set(9, 9, 9);"), 'neon'), scared = by(await run(8, school, "for (const f of F.list) if (f.sk === 'neon') f.fleeT = -1;"), 'neon');      /* (danger kept near the whole time, as an octopus hanging about would) */
 ck('the chromis school bunches up when danger is near', scared.spread < calm.spread * 0.85, { calm: calm.spread, scared: scared.spread });
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Gait checks passed'); process.exit(fails ? 1 : 0);

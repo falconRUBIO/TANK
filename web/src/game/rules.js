@@ -416,17 +416,18 @@ export const clockNow = (now = Date.now()) => clockHour ?? new Date(now).getHour
 // goldfish and many others). The tank keeps how often each hour of the day brought a real meal, older meals fading, and reads its usual mealtimes back out.
 const localHour = (t, now) => { const L = new Date(now + (Number(t.tzMin) || 0) * 60e3); return L.getUTCHours() + L.getUTCMinutes() / 60; };
 export function feedLearn(t, now) {
-  const H = Array.isArray(t.feedHrs) && t.feedHrs.length === 24 ? t.feedHrs : Array(24).fill(0), h = localHour(t, now), b = Math.floor(h) % 24;
-  if (t.feedHrsAt && now - t.feedHrsAt < 2 * HOUR && Math.abs(((t.feedHrsH ?? h) - h + 36) % 24 - 12) < 2) return;      // (a second helping within the same sitting is the same meal)
-  t.feedHrs = H.map((v, i) => +((v * 0.88) + (i === b ? 1 : 0)).toFixed(3)); t.feedHrsAt = now; t.feedHrsH = +h.toFixed(2);
+  const h = localHour(t, now), b = String(Math.floor(h) % 24), H = hoursOf(t);
+  if (t.feedSit && now - t.feedSit < 2 * HOUR && Math.abs(((localHour(t, t.feedSit) - h + 36) % 24) - 12) < 2) return;      // (a second helping within the same sitting is the same meal)
+  const out = {}; for (let i = 0; i < 24; i++) { const v = H[i] * 0.88 + (String(i) === b ? 1 : 0); if (v >= 0.05) out[i] = +v.toFixed(2); }      // (only the hours that have meals: kept small, it rides along on every feed)
+  t.feedHrs = out; t.feedSit = now;
 }
-// a usual mealtime close now (up to 45 minutes before, a quarter of an hour after), the fish hungry and nobody has fed them since: they are waiting for it
+const hoursOf = (t) => { const H = t.feedHrs, a = Array(24).fill(0); if (Array.isArray(H)) H.forEach((v, i) => { if (i < 24) a[i] = +v || 0; }); else if (H && typeof H === 'object') for (const k of Object.keys(H)) { const i = +k; if (i >= 0 && i < 24) a[i] = +H[k] || 0; } return a; };
 export function mealDue(t, now, hour = localHour(t, now)) {
   const due = feedClock(t).find((m) => { const d = ((m - hour + 36) % 24) - 12; return d <= 0.75 && d >= -0.25; });
   return due != null && (t.hunger ?? 0) > 0.15 && now - (t.lastFed ?? 0) > 2 * HOUR ? { at: due, meal: due < 11 ? 'breakfast' : due < 16 ? 'lunch' : 'supper' } : null;
 }
 export function feedClock(t) {
-  const H = t.feedHrs; if (!Array.isArray(H) || H.length !== 24) return []; const tot = H.reduce((a, b) => a + b, 0); if (tot < 2.4) return [];      // (three meals or so before a pattern counts)
+  if (!t.feedHrs) return []; const H = hoursOf(t); const tot = H.reduce((a, b) => a + b, 0); if (tot < 2.4) return [];      // (three meals or so before a pattern counts)
   const left = [...H], out = [];
   for (let k = 0; k < 2; k++) { let best = -1, bs = 0; for (let i = 0; i < 24; i++) { const w = left[i] + left[(i + 1) % 24]; if (w > bs) { bs = w; best = i; } }
     if (best < 0 || bs < (k ? 1.6 : 1.9) || bs < tot * (k ? 0.28 : 0.4)) break; const a = left[best], c = left[(best + 1) % 24];
