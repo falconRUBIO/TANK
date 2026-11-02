@@ -1467,7 +1467,7 @@ button.lnk{border:0!important;background:none!important;color:var(--aqua)!import
 #modal .chooser > * + *{border-top:1px solid var(--hair)!important}
 #modal .chooser > .on{background:rgba(111,230,216,.1)!important}
 /* ── toasts and the coach: a slim capsule near the top ── */
-#toast{border-radius:999px!important;padding:9px 16px!important;font-size:13.5px;font-weight:600;max-width:min(330px,86vw);background:linear-gradient(180deg,rgba(22,62,94,.92),rgba(10,30,54,.94))!important;box-shadow:var(--glass-rim),0 10px 26px rgba(0,8,20,.4)!important}
+#toast{border-radius:20px!important;padding:10px 16px!important;line-height:1.35;text-align:center;font-size:13.5px;font-weight:600;max-width:min(330px,86vw);background:linear-gradient(180deg,rgba(22,62,94,.92),rgba(10,30,54,.94))!important;box-shadow:var(--glass-rim),0 10px 26px rgba(0,8,20,.4)!important}
 /* ── the bar: a floating capsule; the chosen place glows aqua ── */
 nav{border-radius:26px!important}
 nav [data-tab]{transition:color .2s,transform .25s var(--spring)}
@@ -1506,6 +1506,15 @@ nav [data-tab]:active{transform:scale(.92)}
 #app #sheet :is(.cgroup,.mrows) > :first-child{border-top-left-radius:var(--r-l)!important;border-top-right-radius:var(--r-l)!important}
 #app #sheet :is(.cgroup,.mrows) > :last-child{border-bottom-left-radius:var(--r-l)!important;border-bottom-right-radius:var(--r-l)!important}
 #app #sheet :is(.cgroup,.mrows){-webkit-mask-image:-webkit-radial-gradient(white,black);isolation:isolate}
+
+/* the fish's label: one row, name and what it is doing on the left, its actions on the right; the hunger dot sits beside the name, not above it */
+#fishpill .pt{position:relative;padding-left:14px;min-width:0;display:flex;flex-direction:column;justify-content:center}
+#fishpill .pt .hdot{position:absolute;left:0;top:50%;margin:-11px 0 0;width:8px;height:8px}
+#fishpill .pt small{padding-left:0!important;margin-left:0!important;-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent)!important;mask-image:linear-gradient(90deg,#000 82%,transparent)!important}
+#fishpill > span.pa,#fishpill span.pa{background:none!important;border:0!important;padding:0!important;box-shadow:none!important;display:flex;gap:6px;align-items:center}
+#fishpill span.pfeed{border:0!important;padding:7px 12px!important;font-size:13px!important}
+#fishpill .pfull{border:0;background:rgba(126,224,162,.14);padding:6px 11px;font-style:normal}
+#fishpill > span:last-child{border:0!important;background:var(--surf-2)!important;padding:7px 12px!important;border-radius:999px!important}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
