@@ -1346,6 +1346,161 @@ window.__load={stage:function(s){if(!L.classList.contains('err'))T.textContent=s
 #sheet .fgrow em{font-style:normal;font-weight:600;font-size:11px;padding:3px 8px;border-radius:99px;white-space:nowrap}
 #sheet .fgrow em.l{background:rgba(143,211,255,.18);color:#bfe6ff}#sheet .fgrow em.s{background:rgba(95,220,143,.2);color:#bff5d1}#sheet .fgrow em.h{background:rgba(255,214,120,.18);color:#ffe2a8}#sheet .fgrow em.n{color:rgba(225,235,245,.5);padding:3px 0}
 </style>
+<style id="ds">
+/* ═══ TANK design system ═══
+   One layer over everything before it. The aquarium is the centerpiece: the glass is used where it holds something (a sheet, a card, a dialog,
+   the bar) and nowhere else; inside a sheet things sit on quiet tinted surfaces with no borders, grouped like a list, not boxed one by one.
+   Palette: deep ocean blues, aqua and turquoise for what you can do, coral for what needs you, warm gold for what is precious (shells, levels,
+   the one main action). Type: one family, four sizes. Radii: 10 · 14 · 18 · 28 and pills. Motion: springy, short, and never in the way. */
+:root{
+  --ink:#f3faff;--ink-2:rgba(224,240,255,.74);--ink-3:rgba(206,228,248,.5);
+  --aqua:#6fe6d8;--aqua-d:#2fb8b4;--sea:#3fa2e8;--coral:#ff8f7c;--coral-d:#e8644f;--gold:#ffcf6e;--gold-d:#f0a83e;--mint:#7ee0a2;--danger:#ff6b6b;
+  --surf-1:rgba(255,255,255,.055);--surf-2:rgba(255,255,255,.09);--surf-3:rgba(255,255,255,.14);--hair:rgba(255,255,255,.075);
+  --glass:linear-gradient(180deg,rgba(26,70,104,.78),rgba(10,32,56,.9) 38%,rgba(6,22,42,.95));
+  --glass-rim:inset 0 1px 0 rgba(170,232,255,.32),inset 0 0 0 1px rgba(140,210,255,.07);
+  --lift:0 18px 44px rgba(0,10,24,.5),0 3px 10px rgba(0,0,0,.22);
+  --r-s:10px;--r-m:14px;--r-l:18px;--r-xl:28px;
+  --spring:cubic-bezier(.2,1.25,.32,1);--ease:cubic-bezier(.22,.8,.24,1);
+}
+/* ── the sheet: a pane of deep glass that rises only as far as what it holds ── */
+#sheet{background:var(--glass)!important;-webkit-backdrop-filter:blur(26px) saturate(1.35);backdrop-filter:blur(26px) saturate(1.35);box-shadow:var(--glass-rim),0 -12px 40px rgba(0,8,20,.35)!important;
+  border-radius:var(--r-xl) var(--r-xl) 0 0!important;max-height:74%;padding:10px 16px 18px!important;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 98px)!important;
+  transition:transform .5s var(--spring),max-height .35s var(--ease)!important;color:var(--ink)}
+#sheet .x{width:calc(100% + 32px)!important;margin:0 -16px -4px!important}:root{--edge-rgb:22,58,90}#sheet:not(.on){transition:transform .32s var(--ease)!important}
+#sheet.dragging{transition:none!important}
+/* titles and section labels: one clear hierarchy */
+#sheet .crew > h3,#sheet h3{font-size:22px;font-weight:750;letter-spacing:-.01em;text-align:left;margin:2px 44px 10px 2px;color:var(--ink)}
+#sheet h4,#sheet .crew h4,#sheet .soon h5,#card h4,#card .csec{font-size:11.5px!important;font-weight:700!important;letter-spacing:.09em!important;text-transform:uppercase;color:var(--ink-3)!important;margin:18px 4px 8px!important;text-align:left}
+#sheet p,#sheet .todaysub,#sheet .dim{color:var(--ink-2)}
+#sheet .todaysub{font-size:13px;margin:4px 4px 10px;text-align:left}
+/* the segmented control: one track, the chosen one lifted out of it */
+#sheet .seg,#card .seg{display:flex;gap:2px;padding:3px;border-radius:12px;background:rgba(0,10,24,.32);box-shadow:inset 0 1px 2px rgba(0,0,0,.28);margin:4px 0 12px}
+#sheet .seg button,#card .seg button{flex:1;border:0!important;border-radius:9px!important;background:transparent!important;color:var(--ink-2)!important;font-weight:650;font-size:14px;padding:8px 6px;transition:background .2s,color .2s}
+#sheet .seg button.on,#card .seg button.on{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.1))!important;color:var(--ink)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 8px rgba(0,0,0,.25)}
+#sheet .seg .nc,#sheet .nc{background:var(--coral);color:#2a0d07;font-style:normal;font-weight:800;font-size:11px;border-radius:9px;padding:1px 6px;margin-left:4px}
+/* rows: grouped on one quiet surface, hairlines between, no boxes */
+#sheet .cgroup,#sheet .mrows{background:var(--surf-1);border-radius:var(--r-l);overflow:hidden;display:flex;flex-direction:column;gap:0}
+#sheet .cgroup > .crow,#sheet .mrows > .mrow{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;min-height:58px;padding:10px 12px!important;position:relative}
+#sheet .cgroup > .crow + .crow::before,#sheet .mrows > .mrow + .mrow::before{content:'';position:absolute;left:58px;right:0;top:0;height:1px;background:var(--hair)}
+#sheet .crow,#sheet .mrow{display:flex;align-items:center;gap:12px;transition:background .15s,transform .2s var(--spring)}
+#sheet .crow:active,#sheet .mrow:active{background:var(--surf-2)!important}
+#sheet .crow .ci,#sheet .mrow > i{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(180deg,rgba(111,230,216,.22),rgba(63,162,232,.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+#sheet .crow.due .ci,#sheet .crow.hot .ci,#sheet .mrow.due > i{background:linear-gradient(180deg,rgba(255,143,124,.36),rgba(232,100,79,.2))}
+#sheet .crow .ct b,#sheet .mrow b{font-size:15px;font-weight:650;color:var(--ink)}
+#sheet .crow .ct small,#sheet .mrow small{font-size:12.5px;color:var(--ink-2);line-height:1.3}
+#sheet .crow.due,#sheet .crow.hot{box-shadow:none!important;border:0!important}
+#sheet .cgroup > .crow.hot,#sheet .cgroup > .crow.due{background:linear-gradient(90deg,rgba(255,143,124,.08),transparent 70%)!important}
+#sheet .crow .chev{width:auto;height:auto;background:none!important;border:0!important;box-shadow:none!important;font-size:20px;margin-left:2px}
+#sheet .shop2 .shopnext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crewsub,#sheet .crewsub,#sheet .todaysub{text-align:left!important;margin:-4px 2px 12px!important}
+#sheet .crow.due .ct b::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--coral);margin-left:7px;vertical-align:2px;box-shadow:0 0 8px var(--coral)}
+#sheet .cbtn{border:0!important;border-radius:999px!important;padding:7px 14px!important;font-weight:750;font-size:13px;background:linear-gradient(180deg,var(--gold),var(--gold-d))!important;color:#2b1a03!important;box-shadow:0 2px 10px rgba(240,168,62,.3)}
+#sheet .chev,#sheet .mrow em{color:var(--ink-3);font-style:normal}
+/* the little meters a row carries (how full, how clean) */
+.vm{display:flex;flex-direction:column;gap:3px;flex:none;width:72px;margin-left:auto}
+.vm i{display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+.vm i::after{content:'';position:absolute;inset:0;width:var(--v);border-radius:3px;background:linear-gradient(90deg,var(--aqua-d),var(--aqua))}
+.vm i.lo::after{background:linear-gradient(90deg,var(--coral-d),var(--coral))}
+.vm i.mid::after{background:linear-gradient(90deg,var(--gold-d),var(--gold))}
+.vm em{font-style:normal;font-size:9.5px;gap:4px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between}
+/* lists of plain lines (Today, what is coming) */
+#sheet .soon{background:var(--surf-1);border:0!important;border-radius:var(--r-l);padding:4px 12px!important;margin-top:10px;box-shadow:none!important}
+#sheet .soon > div{padding:9px 0;border-top:1px solid var(--hair);display:flex;align-items:center;gap:10px}
+#sheet .soon > h5 + div,#sheet .soon > div:first-child{border-top:0}
+#sheet .soon b{color:var(--aqua);font-weight:650;font-size:12.5px}
+/* tiles (play, toys): small and even, not a wall of boxes */
+#sheet :is(.tile,.toy){border:0!important;background:var(--surf-1)!important;border-radius:var(--r-l)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;transition:transform .2s var(--spring),background .15s}
+#sheet :is(.tile,.toy):active{transform:scale(.97);background:var(--surf-2)!important}
+#sheet .toybox{gap:8px}
+#sheet .toy.lock{opacity:.55}
+/* the pill chips (shop categories and the like) */
+#sheet .cats{gap:6px;padding:2px 0 6px;scrollbar-width:none}#sheet .cats::-webkit-scrollbar{display:none}
+#sheet .cat,#sheet .chipb{border:0!important;background:var(--surf-1)!important;color:var(--ink-2)!important;font-weight:650;font-size:13.5px;padding:7px 13px!important;border-radius:999px!important;white-space:nowrap;transition:background .2s,color .2s}
+#sheet .cat.on,#sheet .chipb.on,#sheet .shop2 .cat.on{background:rgba(111,230,216,.18)!important;color:var(--aqua)!important;box-shadow:inset 0 0 0 1px rgba(111,230,216,.38)!important}
+/* buttons: one gold primary, quiet secondaries, plain text for the least */
+.big{border-radius:var(--r-m)!important;font-weight:750!important;letter-spacing:.01em;min-height:48px;transition:transform .2s var(--spring),filter .2s}
+.big:not(.alt):not(.danger):not([disabled]){background:linear-gradient(180deg,var(--gold),var(--gold-d))!important;color:#2b1a03!important;box-shadow:0 6px 18px rgba(240,168,62,.28),inset 0 1px 0 rgba(255,255,255,.45)!important;border:0!important}
+.big.alt{background:var(--surf-2)!important;color:var(--ink)!important;border:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}
+.big[disabled]{background:var(--surf-1)!important;color:var(--ink-3)!important;box-shadow:none!important;border:0!important}
+.big:active:not([disabled]),.cbtn:active,.pk:active{transform:scale(.97)}
+button.lnk{border:0!important;background:none!important;color:var(--aqua)!important;font-weight:650;box-shadow:none!important}
+/* ── the shop: a little boutique ── */
+#sheet .shop2 .shopbar{display:flex;align-items:center;gap:10px;margin:-2px 0 8px}
+#sheet .shop2 .shopnext{font-size:12.5px;color:var(--ink-3);flex:1;min-width:0}
+#sheet .shellpill{background:rgba(255,207,110,.14);color:var(--gold);border-radius:999px;padding:6px 12px;font-weight:750;font-size:14px;box-shadow:inset 0 0 0 1px rgba(255,207,110,.25)}
+#sheet .shop2 .cards{gap:10px}
+#sheet .shop2 .card{border:0!important;border-radius:var(--r-l)!important;background:radial-gradient(120% 80% at 50% 28%,rgba(111,230,216,.14),rgba(111,230,216,0) 62%),var(--surf-1)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;transition:transform .22s var(--spring),background .2s}
+#sheet .shop2 .card:active{transform:scale(.96)}
+#sheet .shop2 .card.sel,#sheet .shop2 .card.on{box-shadow:inset 0 0 0 2px rgba(111,230,216,.6),0 8px 24px rgba(47,184,180,.18)!important}
+#sheet .shop2 .card img{filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+#sheet .shop2 .card.lock,#sheet .shop2 .card.poor{opacity:.62}
+#sheet .shop2 .card .new,#sheet .shop2 .card .badge{background:var(--coral)!important;color:#2a0d07!important;font-weight:800}
+/* the turtle fund and other savings: one slim line, not a slab */
+#sheet .fund{border:0!important;background:var(--surf-1)!important;border-radius:var(--r-m)!important;padding:10px 12px!important;box-shadow:none!important}
+#sheet .tc-fund2{background:var(--surf-1);border-radius:var(--r-m);margin:0 0 10px;overflow:hidden}
+#sheet .tc-fund2 .tc-fund{all:unset;box-sizing:border-box;display:block;width:100%;padding:11px 12px 10px;cursor:pointer}
+#sheet .tc-fund2 .tc-fund b{font-size:14px;font-weight:700;color:var(--ink)}
+#sheet .tc-fund2 .tc-bar{height:6px;border-radius:3px;margin-top:8px;background:rgba(255,255,255,.1);overflow:hidden}
+#sheet .tc-fund2 .tc-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold-d),var(--gold))}
+#sheet .fundmore{border-top:1px solid var(--hair);padding:0 12px}
+#sheet .fundmore summary{list-style:none;cursor:pointer;padding:9px 0;font-size:12.5px;font-weight:650;color:var(--aqua)}
+#sheet .fundmore summary::-webkit-details-marker{display:none}
+#sheet .fundmore summary::after{content:' ›';display:inline-block;transition:transform .2s}#sheet .fundmore[open] summary::after{transform:rotate(90deg)}
+#sheet .fundmore small{display:block;font-size:12.5px;color:var(--ink-2);margin:0 0 8px;line-height:1.4}
+#sheet .fundmore small.ok{color:var(--mint)}#sheet .fundmore small.warn{color:var(--gold)}
+/* ── Crew: the people as a row of faces, not a pair of boxes ── */
+#sheet .crew .slots{display:flex!important;justify-content:flex-start!important;gap:4px!important;padding:12px 8px!important;margin:0 0 10px!important;background:var(--surf-1)!important;border-radius:var(--r-l)!important;border:0!important;box-shadow:none!important;overflow-x:auto;scrollbar-width:none}
+#sheet .crew .slot{flex:0 0 auto!important;width:78px;min-height:0!important;padding:4px 2px!important;background:none!important;border:0!important;box-shadow:none!important;gap:3px!important}
+#sheet .crew .slot canvas.big,#sheet .crew .slot.empty span{width:54px!important;height:54px!important;box-shadow:0 0 0 2px rgba(111,230,216,.35),0 6px 14px rgba(0,0,0,.3)}
+#sheet .crew .slot.empty span{border:1.5px dashed rgba(111,230,216,.45)!important;background:rgba(111,230,216,.06)!important;color:var(--aqua)!important;box-shadow:none}
+#sheet .crew .slot b{font-size:13px!important}#sheet .crew .slot small{font-size:11px!important;color:var(--ink-3)!important}#sheet .crew .slot small.here{color:var(--mint)!important}
+#sheet .crew .slot .nudge{all:unset;cursor:pointer;font-size:11.5px;font-weight:650;color:var(--aqua)}
+/* ── dialogs: the same glass, centered, generous ── */
+#modal{background:rgba(2,10,22,.5)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#modal .box{background:var(--glass)!important;box-shadow:var(--glass-rim),var(--lift)!important;border-radius:var(--r-xl)!important;padding:22px 20px 18px!important;gap:12px}
+#modal.on .box{animation:dsPop .42s var(--spring)}
+@keyframes dsPop{from{transform:scale(.92) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+#modal .box h2{font-size:21px;font-weight:750;letter-spacing:-.01em;color:var(--ink)}
+#modal .box p{color:var(--ink-2);font-size:14.5px;line-height:1.45}
+#modal .chooser{background:var(--surf-1);border-radius:var(--r-l);gap:0!important;overflow:hidden}
+#modal .chooser > *{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#modal .chooser > * + *{border-top:1px solid var(--hair)!important}
+#modal .chooser > .on{background:rgba(111,230,216,.1)!important}
+/* ── toasts and the coach: a slim capsule near the top ── */
+#toast{border-radius:999px!important;padding:9px 16px!important;font-size:13.5px;font-weight:600;max-width:min(330px,86vw);background:linear-gradient(180deg,rgba(22,62,94,.92),rgba(10,30,54,.94))!important;box-shadow:var(--glass-rim),0 10px 26px rgba(0,8,20,.4)!important}
+/* ── the bar: a floating capsule; the chosen place glows aqua ── */
+nav{border-radius:26px!important}
+nav [data-tab]{transition:color .2s,transform .25s var(--spring)}
+nav [data-tab].on{color:var(--aqua)!important}
+nav [data-tab]:active{transform:scale(.92)}
+/* ── an animal's card ── */
+#card{border-radius:var(--r-xl) var(--r-xl) 0 0!important;background:var(--glass)!important;box-shadow:var(--glass-rim),0 -12px 40px rgba(0,8,20,.35)!important}
+#card :is(.fold,.rkbox),#sheet :is(.fold,.rkbox,.detail,.wish,.moodchip,.orders,.slot,.sty,.theme){border:0!important;background:var(--surf-1)!important;box-shadow:none!important;border-radius:var(--r-l)!important}
+/* ── the fish pill: name, what it is doing, and what you can do for it right here ── */
+#fishpill{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 14px!important;border-radius:999px!important}
+#fishpill > span{background:var(--surf-2);border-radius:999px;padding:7px 12px;font-weight:650;font-size:13px;color:var(--ink)}
+#fishpill .pa{display:flex;gap:6px}
+#fishpill .pfeed{border:0;border-radius:999px;padding:7px 12px;font:inherit;font-weight:750;font-size:13px;background:linear-gradient(180deg,var(--gold),var(--gold-d));color:#2b1a03;box-shadow:0 3px 10px rgba(240,168,62,.3);display:flex;align-items:center;gap:5px}
+#fishpill .pfeed:active{transform:scale(.95)}
+#fishpill .pfull{border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--mint);background:rgba(126,224,162,.12)}
+#fishpill .hdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+#fishpill .hdot.hungry{background:var(--coral);box-shadow:0 0 8px var(--coral)}#fishpill .hdot.soon{background:var(--gold)}#fishpill .hdot.full{background:var(--mint)}
+/* focus rings for keyboards; bigger targets on touch */
+:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#sheet,#modal.on .box{transition:none!important;animation:none!important}}
+
+/* (specificity: the older layers style these with !important; the redesign's grouped rows and face row win by naming the app as well) */
+#app #sheet .cgroup{background:var(--surf-1)!important;border-radius:var(--r-l)!important;overflow:hidden;gap:0!important;padding:0!important;display:flex!important;flex-direction:column}
+#app #sheet .cgroup > .crow + .crow{border-top:1px solid var(--hair)!important}#app #sheet .cgroup > .crow + .crow::before{display:none}
+#app #sheet .cgroup > .crow{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;margin:0!important;animation:none}
+#app #sheet .cgroup > .crow.hot,#app #sheet .cgroup > .crow.due{background:linear-gradient(90deg,rgba(255,143,124,.1),rgba(255,143,124,0) 75%)!important}
+#app #sheet .cgroup > .crow.tutpulse{box-shadow:inset 3px 0 0 var(--coral)!important}
+#app #sheet .soon{background:var(--surf-1)!important;border:0!important;box-shadow:none!important;border-radius:var(--r-l)!important}
+#app #sheet .crew .slots{background:var(--surf-1)!important;padding:12px 8px!important;gap:4px!important}
+#app #sheet .crew .slot{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;margin:0!important;width:80px;padding:4px 2px!important}
+#app #sheet .crew .slot .avw{margin:0 0 4px!important}
+#app #sheet .crew .slot.me canvas.big{box-shadow:0 0 0 2px var(--gold),0 6px 14px rgba(0,0,0,.3)!important}
+</style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
 <script type="module" src="src/main.js"></script>

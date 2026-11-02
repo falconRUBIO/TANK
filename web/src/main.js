@@ -1343,7 +1343,7 @@ function showCard(f) {
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
   if ($('sellb')) $('sellb').onclick = (e) => { e.stopPropagation(); ui.sellFish(rec.id); };
-  const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = dressedName(f); pillDoing(f); pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
+  const pill = $('fishpill'); if (cardOpen !== f.fid) { card.classList.remove('on'); pill.querySelector('b').textContent = dressedName(f); pillDoing(f); pillActs(f); pill.hidden = false; pill.onclick = () => { if (play) return; cardOpen = f.fid; sfx('tap'); showCard(f); }; return; }
   pill.hidden = true; card.classList.add('on'); card.classList.remove('peek'); awayBanner(rec); eggLink(rec); const setMore = () => {}; { const tr = $('turtrel'); if (tr) tr.onclick = () => releaseTurtle(rec); } { const lg = $('letgo'); if (lg) lg.onclick = async () => { const yes = await ui.dialog({ title: `Let ${rec.name} go?`, text: `${rec.name} goes back to the sea to find what it was missing. It won't come back, but it may send a postcard.`, ok: 'Let it go', cancel: 'Keep trying' }); if (!yes) return; const r = await game.dispatch({ t: 'letGo', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; } { const pz = $('puz'); if (pz) pz.onclick = () => { setFocus(null); givePuzzle(rec.id); }; const ct = $('crabt'); if (ct) ct.onclick = () => { setFocus(null); feedCrabTo(rec.id); }; } card.querySelector('.x').onclick = () => { cardOpen = null; showCard(f); }; $('grab').onclick = () => { if (!play) { cardOpen = null; showCard(f); } }; card.querySelectorAll('[data-wellopen]').forEach((b) => (b.onclick = () => { cardOpen = null; setFocus(null); ui.openHealth(rec.id); })); $('ren').onclick = () => renameFish(f); if ($('pet')) $('pet').onclick = () => playWith(f); if ($('fam')) $('fam').onclick = () => showFamily(rec);
   if ($('claimo')) $('claimo').onclick = async () => { const r = await game.dispatch({ t: 'claimOcto', id: rec.id }); if (!r.ok) return fail(r); sfx('arrive'); haptic(10); setFocus(null); };
   if ($('releaseo')) $('releaseo').onclick = async () => { const yes = await ui.dialog({ title: 'Let it go?', text: `${f.name} will slip away over the back of the tank to the reef. It is not hurt, and it will not come back.`, ok: 'Let it go', cancel: 'Keep', danger: true }); if (!yes) return; const r = await game.dispatch({ t: 'releaseOcto', id: rec.id }); if (!r.ok) return fail(r); setFocus(null); }; card.querySelectorAll('[data-train]').forEach((b) => { b.onclick = () => trainFish(f, b.dataset.train, b.dataset.spot); }); card.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showTrick(f, b.dataset.show); });
@@ -1400,9 +1400,28 @@ function tapReact(f) {
   f.vigor = Math.max(f.vigor ?? 1, 1.25); setTimeout(() => { if ((f.vigor ?? 1) > 1) f.vigor = 1; }, 700);      // a flick of the tail
   if (f.target && !f.holdfast?.on) { f.target.z = Math.min(f.target.z + 0.8, 2.2); f.retarget = Math.max(f.retarget ?? 0, 1.5); }      // and it drifts a little toward the glass
 }
+// what you can do for this animal right here, without a menu: how hungry it is, and Feed when it is yours to feed (the same meal and the same
+// rules as feeding from Care: an octopus gets its crab and a seahorse its shrimp from their caretakers, the fish and turtles their tank food)
+function pillFeedOf(f) {
+  const s = game.state, rec = s?.fish?.find((x) => x.id === f.fid && !x.dead); if (!rec || f.visitor || f.nursery || isCrab(rec.species)) return null;
+  const me = game.you?.userId, octo = rec.species === 'octopus', sea = rec.species === 'seahorse', turt = isTurtleR(rec);
+  const can = octo ? canFeedOcto(rec, me, game.shared) : sea ? canFeedOwn(rec, me, game.shared) : true, h = octo ? octoHunger(rec) : sea ? ownHunger(rec) : s.hunger ?? 0;
+  const food = octo ? 'crab' : sea ? 'mysis' : turt && FOODS.greens ? 'greens' : 'flakes';
+  return { rec, can, h, food, lvl: h >= 0.25 ? 'hungry' : h >= 0.08 ? 'soon' : 'full', owner: rec.ownerName ?? null };
+}
+function pillActs(f) {
+  const pill = $('fishpill'); let box = pill.querySelector('.pa'); if (!box) { box = document.createElement('span'); box.className = 'pa'; pill.insertBefore(box, pill.querySelector(':scope > span:last-child')); }
+  const P = pillFeedOf(f), key = P ? `${P.lvl}:${P.can}:${P.food}` : '';
+  pill.querySelector('.hdot')?.remove(); if (P) { const d = document.createElement('i'); d.className = `hdot ${P.lvl}`; d.title = P.lvl === 'full' ? 'Full' : P.lvl === 'soon' ? 'Getting peckish' : 'Hungry'; pill.querySelector('.pt b')?.before(d); }
+  if (box.dataset.k === key) return; box.dataset.k = key;
+  if (!P) { box.innerHTML = ''; return; }
+  box.innerHTML = P.lvl === 'full' ? '<i class="pfull">Full</i>' : P.can ? `<span class="pfeed" role="button" tabindex="0" data-pfeed>${FOOD_ICON[P.food] ?? '🫧'} Feed</span>` : '';
+  const b = box.querySelector('[data-pfeed]'); if (b) b.onclick = (e) => { e.stopPropagation(); const Q = pillFeedOf(f); if (!Q || !Q.can) return; sfx('tap'); haptic(8);      // (fed from the tank itself: the meal drops in over this animal)
+    game.feedFood = Q.food; game.feedFor = Q.rec.species === 'octopus' || Q.rec.species === 'seahorse' ? Q.rec.id : null; feedGo(); box.dataset.k = ''; setTimeout(() => pillActs(f), 1200); };
+}
 function pillDoing(f) { const pill = $('fishpill'), sm = pill.querySelector('small'), i = sm.querySelector('i'), d = (window.__doingOverride ?? doingOf(f)) || '';      // the name on its own line, what it is doing beneath; a line too long for the pill rolls past like a ticker instead of being crammed
   if (i.dataset.t !== d) { i.dataset.t = d; i.textContent = d; sm.hidden = !d; sm.classList.remove('tick'); i.style.animation = ''; if (d) requestAnimationFrame(() => { const over = i.scrollWidth - sm.clientWidth; if (over > 4) { sm.style.setProperty('--dur', `${Math.max(6, (i.scrollWidth + 40) / 28)}s`); sm.classList.add('tick'); } }); } }
-setInterval(() => { const p = $('fishpill'); if (p && !p.hidden && focus) pillDoing(focus); }, 1000);      // (it keeps up: a seahorse that lets go, a goby that starts cleaning)
+setInterval(() => { const p = $('fishpill'); if (p && !p.hidden && focus) { pillDoing(focus); pillActs(focus); } }, 1000);      // (it keeps up: a seahorse that lets go, a goby that starts cleaning)
 function setFocus(f) { if (play) return; if (focus) { focus.mul = 1; focus.fondFocus = false; focus.poseHz = null; } if (f && !f.isEgg) { f.poseHz = 60; tapReact(f); }      /* (up close, its body moves every frame) */ focus = f; if (!f) { $('fishpill').hidden = true; cardOpen = null; } if (f) { f.mul = 0.35; showCard(f); sfx('tap'); if (f.species.id === 'octopus' && !f.dead) { f.fondFocus = (f.bondMe ?? 0) >= 3; const cross = f.poke(); if (cross || Math.random() < 0.15) { fishes.squirt(f); sfx('splash'); } if (cross) ui.toast(`${f.name} has had enough of being poked`, 2600); } } else card.classList.remove('on'); }
 canvas.addEventListener('pointerdown', (ev) => {
   fishes.attnAt = Date.now();      // someone is looking and touching: an octopus about to fetch a keepsake leaves it for later (Emergent Life)
