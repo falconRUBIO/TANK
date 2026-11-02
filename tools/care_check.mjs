@@ -19,7 +19,7 @@ const read = () => p.evaluate(() => ({ hero: document.querySelector('#sheet [dat
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.7 }, { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, hunger: 0.6, sex: 'm' }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.6, g: 0.5 });
 await open(); let r = await read(); console.log('busy', JSON.stringify(r));
 ck('busy: the Care tab says how many things need you (feeding, the animals that need you, and the tank upkeep: one each, as the rows marked due)', r.hero === String(r.due.length), `${r.hero} for ${r.due.length} rows marked due`);
-ck('busy: Feed and Tank upkeep need you (Health too, when an animal is struggling); upkeep names both jobs and its button says 2 jobs', (() => { const d = r.due.filter((x) => !/^(Animal h|H)ealth/.test(x)); return d.length === 2 && /^Feed/.test(d[0]) && /^Tank upkeep \| The glass needs a wipe · the water is cloudy \| 2 jobs$/.test(d[1]); })(), r.due);
+ck('busy: Feed and Tank upkeep need you (Health too, when an animal is struggling); upkeep names both jobs and its button says 2 jobs', (() => { const d = r.due.filter((x) => !/^(Sea life h|Animal h|H)ealth/.test(x)); return d.length === 2 && /^Feed/.test(d[0]) && /^Tank upkeep \| The glass needs a wipe · the water is cloudy \| 2 jobs$/.test(d[1]); })(), r.due);
 ck('busy: no repeated messages (old headline, "worth doing now", "could use a hand")', !r.carehead && r.dupes === 0, r);
 await p.screenshot({ path: `${OUT}/v_busy_top.png` });
 // tapping Feed opens the Feed screen: a card for each animal that can eat; choosing the crab drops it in for Inky, no tap on the water needed
@@ -35,7 +35,7 @@ await p.mouse.click(10, 10).catch(() => {}); await p.evaluate(() => { window.__u
 // 2. all looked after
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.02 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.02, w: 0.95, g: 0.05 });
 await open(); r = await read(); console.log('calm', JSON.stringify(r));
-ck('calm: no count on the Care tab, nothing needs you, Feed and Tank upkeep say when they are next due, and Health lists every animal', !r.hero && !r.due.length && r.later.length >= 2 && r.later.some((x) => /^Tank upkeep \| All clean · next:/.test(x)) && r.later.some((x) => /^(Animal h|H)ealth \| /.test(x)), r);
+ck('calm: no count on the Care tab, nothing needs you, Feed and Tank upkeep say when they are next due, and Health lists every animal', !r.hero && !r.due.length && r.later.length >= 2 && r.later.some((x) => /^Tank upkeep \| All clean · next:/.test(x)) && r.later.some((x) => /^(Sea life h|Animal h|H)ealth \| /.test(x)), r);
 ck('calm: the food list is folded away', !r.drawer);
 { await p.evaluate(() => document.querySelector('#sheet [data-csub="play"]')?.click()); await p.waitForTimeout(400); const ex = await p.evaluate(() => [...document.querySelectorAll('#sheet .acts.mini .tile')].map((t) => t.textContent.trim().slice(0, 30)));
   ck('calm: the Puzzle jar is on the Play tab, and the postcard is not (it is under Crew, with the other ways to share)', ex.some((x) => /Puzzle/.test(x)) && !ex.some((x) => /Postcard/.test(x)), ex); await p.evaluate(() => document.querySelector('#sheet [data-csub="care"]')?.click()); await p.waitForTimeout(400); }
@@ -46,7 +46,7 @@ const tw = await p.evaluate(() => ({ sheet: document.getElementById('sheet').cla
 await p.evaluate(() => document.querySelector('#modal.on #mno')?.click()); await p.waitForTimeout(300);
 // 3. only fish, one thing due; 4. an empty tank
 await set({ fish: [{ id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
-ck('fish only, hungry: one job on the Care tab, and Feed for the fish', r.hero === '1' && r.due.length === 1 && /1 animal could use food/.test(r.due[0]), r.due);
+ck('fish only, hungry: one job on the Care tab, and Feed for the fish', r.hero === '1' && r.due.length === 1 && /1 of your sea life could use food/.test(r.due[0]), r.due);
 await set({ fish: [], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
 ck('an empty tank does not break the page, and has no Feed row', r.later.some((x) => /^Tank upkeep/.test(x)) && !r.later.some((x) => /^Feed/.test(x)), r);
 // the Tank status fold opens to the meters

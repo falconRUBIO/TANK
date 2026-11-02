@@ -13,7 +13,7 @@ ok(road.find((x) => x.l === '4')?.cls.includes('now') && road.find((x) => x.l ==
 const card = async () => p.evaluate(() => { const c = document.querySelector('#sheet .tc-next'); return { small: c?.querySelector('small')?.textContent, title: c?.querySelector('.tc-nh b')?.textContent, status: c?.querySelector('.tc-nh p')?.textContent, chips: [...c?.querySelectorAll('.tc-chip b') ?? []].map((x) => x.textContent), subs: [...c?.querySelectorAll('.tc-chip small') ?? []].map((x) => x.textContent), feats: [...c?.querySelectorAll('.tc-feat') ?? []].map((x) => x.textContent), imgs: [...c?.querySelectorAll('img') ?? []].filter((i) => i.src.startsWith('data:') || i.src.startsWith('blob:')).length, got: c?.querySelectorAll('.tc-chip.got').length }; });
 let c = await card(); console.log(JSON.stringify(c).slice(0, 600));
 ok(c.small === 'LEVEL 5 · NEW WAY TO PLAY' && /New habitats/.test(c.title), 'level 5 card: ' + c.small + ' / ' + c.title);
-ok(/points away/.test(c.status) && /holds 19 animals/.test(c.status), 'status says how far and how much room: ' + c.status);
+ok(/points away/.test(c.status) && /holds 19 sea life/.test(c.status), 'status says how far and how much room: ' + c.status);
 ok(c.chips.includes('Mandarin Dragonet') && c.chips.includes('Twist cube') && c.chips.includes('Maxima Clam') && c.chips.includes('Live Rock') && !c.chips.some((x) => /Giant Clam/.test(x)), 'what level 5 really opens, from the tables');
 ok(c.imgs >= 5, `thumbnails rendered (${c.imgs})`);
 const sel = async (l) => { await p.evaluate((l) => document.querySelector(`#sheet [data-lvl="${l}"]`).click(), l); await p.waitForTimeout(600); return card(); };
@@ -21,7 +21,7 @@ c = await sel(2); console.log(JSON.stringify(c).slice(0, 400));
 ok(/LEVEL 2/.test(c.small) && /Reached on day 2/.test(c.status), 'level 2: reached on day 2 (' + c.status + ')');
 ok(c.chips.includes('Yellow Goby') && c.subs.includes('in your tank') && c.chips.includes('Giant Clam') && c.subs.includes('placed') && c.got >= 2, 'the goby in the tank and the clam placed are marked');
 ok(c.feats.some((x) => /Crew tab/.test(x)), 'features listed');
-c = await sel(8); ok(/LEVEL 8 · NEW ANIMALS/.test(c.small) && c.chips.some((x) => /Hawksbill/.test(x)) && c.subs.includes('after a release') && /holds 28 animals/.test(c.status), 'level 8: turtles, the hawksbill after a release, 28 places');
+c = await sel(8); ok(/LEVEL 8 · NEW SEA LIFE/.test(c.small) && c.chips.some((x) => /Hawksbill/.test(x)) && c.subs.includes('after a release') && /holds 28 sea life/.test(c.status), 'level 8: turtles, the hawksbill after a release, 28 places');
 c = await sel(1); ok(/WHERE IT ALL STARTED/.test(c.small) && /Reached on day 1/.test(c.status) && c.chips.includes('Clownfish'), 'level 1: where it started');
 c = await sel(4); ok(/You are here/.test(c.status) && /to level 5/.test(c.status), 'level 4: you are here (' + c.status + ')');
 await p.evaluate(() => { const el = document.querySelector('#sheet .tc-level'); el.scrollIntoView({ block: 'start' }); }); await p.waitForTimeout(300);

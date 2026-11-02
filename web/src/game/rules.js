@@ -242,12 +242,12 @@ export function bestStep(t, now = Date.now(), viewer = null) {      // viewer: {
   const ask = live.find((f) => f.leaveAsk); if (ask) return { act: 'wellopen', fid: ask.id, title: `Help ${ask.name}`, why: ask.leaveAsk.why ? `It is missing ${ask.leaveAsk.why} and wants to leave.` : 'It is unhappy and wants to leave.', gain: null, urgent: true };
   const tryFix = (fn) => { try { const c = structuredClone(t); fn(c); return tankHealth(c, now).score - H.score; } catch { return 0; } };
   const n = needs(t);
-  if (n.includes('feed') && mealHungry(t)) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry animals pull the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
+  if (n.includes('feed') && mealHungry(t)) out.push({ act: 'feed', title: 'Feed the tank', why: 'Hungry sea life pulls the health down most.', gain: tryFix((c) => applyAction(c, { t: 'feed' }, { now })) });
   let nudge = null;
   { const uid = viewer?.uid ?? null, shared = !!viewer?.shared, hungry = live.filter((f) => ownHungry(f) && ownHunger(f) > OCTO_DUE).sort((a, b) => ownHunger(b) - ownHunger(a));
     // an octopus or a seahorse is fed by hand, and only by its own caretaker: the step says which one and with what, to the one who can do it
     const o = hungry.find((f) => canFeedOwn(f, uid, shared));
-    if (o) { const food = ownFood(o); out.push({ act: 'feeddrawer', title: `Feed ${o.name} ${food === 'crab' ? 'a crab' : 'its mysis'}`, why: `${o.name} is hungry, and a hungry animal pulls the health down most.`, gain: tryFix((c) => applyAction(c, { t: 'feed', food, fish: o.id }, { now, uid: o.owner, solo: true })) }); }
+    if (o) { const food = ownFood(o); out.push({ act: 'feeddrawer', title: `Feed ${o.name} ${food === 'crab' ? 'a crab' : 'its mysis'}`, why: `${o.name} is hungry, and hunger pulls the health down most.`, gain: tryFix((c) => applyAction(c, { t: 'feed', food, fish: o.id }, { now, uid: o.owner, solo: true })) }); }
     // a friend's animal: if they have been gone a long while it can be taken on from its card; otherwise the friend can be told
     for (const f of hungry.filter((x) => !canFeedOwn(x, uid, shared))) { const aw = awayOwner(f, viewer?.members, now);
       if (aw) { out.push({ act: 'wellopen', fid: f.id, title: `Look after ${f.name}`, why: `${aw.left ? `${aw.name} has left the tank` : `${aw.name} has not been in for ${aw.days} days`}, and ${f.name} is hungry. Take it on from its card and you can feed it.`, gain: null, takeOn: true }); break; }
@@ -296,7 +296,7 @@ export const KINDS = {
       temper: 'Gentle and friendly', note: 'Named for the two bright blue eyespots under its eyes, which can flicker like a warning. One of the calmest octopuses and the friendliest with its keepers.',
       breed: 'Lays a few hundred large eggs; the babies hatch big enough to crawl straight to the bottom.', care: 'The best octopus for a home tank. Bonds quickly and rarely tries to escape.' },
     mimic: { label: 'Mimic Octopus', sci: 'Thaumoctopus mimicus', size: '50–60 cm with arms', from: 'Sandy river mouths of Indonesia and the Philippines', scale: 0.9, speed: 1.05, mimic: true,
-      temper: 'A master of disguise', note: 'Banded brown and white, it impersonates other animals: a lionfish, a flatfish, a sea snake. It picks the impression to scare whoever is watching.',
+      temper: 'A master of disguise', note: 'Banded brown and white, it impersonates other sea creatures: a lionfish, a flatfish, a sea snake. It picks the impression to scare whoever is watching.',
       breed: 'Little is known about its breeding in the wild. It was only discovered in 1998.', care: 'Hard. Rarely kept: it needs a big sandy floor to burrow in.' },
   },
 };
@@ -479,7 +479,7 @@ export const DISCOVERIES = {
   camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the color and the texture of its skin to match what was behind it.` },
   den: { label: 'Den dwelling', kind: 'octopus', quiet: true, line: (f) => `${f.name} tucked itself into its den.` },
   grab: { label: 'Arm exploration', kind: 'octopus', quiet: true, line: (f) => `${f.name} wrapped its arms round something to feel it all over.` },
-  mimic: { label: 'Impressions', kind: 'octopus', quiet: true, line: (f) => `${f.name} pretended to be another animal.` },
+  mimic: { label: 'Impressions', kind: 'octopus', quiet: true, line: (f) => `${f.name} pretended to be another creature.` },
   bury: { label: 'Burying', kind: 'octopus', quiet: true, line: (f) => `${f.name} dug itself into the sand until only its eyes showed.` },
   squirt: { label: 'Squirting water', kind: 'octopus', quiet: true, line: (f) => `${f.name} squirted a jet of water.` },
   escape1: { label: 'First Escape', kind: 'octopus', quiet: true, line: (f) => `${f.name} went out over the top of the tank for the first time, and came home.` },
@@ -1349,7 +1349,7 @@ const colorGoal = (m) => ({
   title: m ? `Breed ${/^[AEIOU]/.test(MORPHS[m].label) ? 'an' : 'a'} ${MORPHS[m].label} fish` : 'Breed a rare color', blurb: m ? `${MORPHS[m].label} is hidden in your tank's genes. Bring two carriers together and see.` : 'Somewhere in your tank a rare color is hiding in the genes. Find it and breed it out.',
   ok: (t) => !m || carrierOf(t, m), icon: 'hatched',
   steps: [
-    { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your animals' cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
+    { text: m ? `Find a fish that carries ${MORPHS[m].label.toLowerCase()}` : 'Find a fish that carries a rare color', hint: "Open your sea life's cards: a carrier says \"Carries …\".", n: (t) => (carrierOf(t, m) ? 1 : 0), need: 1 },
     { text: 'Pair two carriers', hint: (t) => { const c = liveOf(t).filter((f) => (m ? allelesOf(f).includes(m) : allelesOf(f).some((x) => MORPHS[x]))).map((f) => f.name); return `${c.length ? `Your carriers: ${c.slice(0, 4).join(', ')}. ` : ''}On a carrier's card, tap "Pair with…": the odds are shown on each button.${c.length < 2 ? (m && specialOf(t).color === m ? ` Today's special in the Shop carries ${MORPHS[m].label.toLowerCase()}: a second carrier.` : ' One carrier and a baby of its own can carry it too.') : ''}`; }, n: since(m ? `paired_${m}` : 'pairedRare'), need: 1 },
     { text: 'Hatch their babies', hint: roomy('Keep the tank fed and the water clean while the eggs grow. Be there when they hatch.'), n: since('hatched'), need: 1 },
     { text: m ? `A ${MORPHS[m].label.toLowerCase()} baby` : 'A rare-colored baby', hint: 'About one baby in four from two carriers shows it. Keep trying: a full moon helps.', n: m ? since(`morph_${m}`) : since('morphs'), need: 1 },
@@ -1364,7 +1364,7 @@ export const GOALS = {
     ] },
   raise: { title: 'Three temperaments', blurb: 'Raise three young ones three different ways, and get three different grown-ups.', icon: 'grown', ok: (t) => liveOf(t).length >= 2,
     steps: [1, 2, 3].map((k) => ({ text: k === 1 ? 'Raise one the way you choose' : k === 2 ? 'A second, different temperament' : 'A third, different again', hint: 'While it is small: pet it often (Brave), play ball (Playful), let it chase the light or the bubbles (Curious), or feed it every day (Calm). Stick to one way.', n: (t, g) => ['Brave', 'Playful', 'Curious', 'Calm', 'Shy'].filter((x) => statOf(t, 'raised_' + x) > (g.base?.['raised_' + x] ?? 0)).length, need: k })) },      /* (any three, in any order: three childhoods, not a checklist of four) */
-  guide: { title: 'Field naturalist', blurb: 'Catch your animals doing remarkable things and fill the Field Guide.', icon: 'spot', ok: (t) => false &&  Object.keys(t.field ?? {}).length < Object.keys(FIELD).length - 6,
+  guide: { title: 'Field naturalist', blurb: 'Catch your sea life doing remarkable things and fill the Field Guide.', icon: 'spot', ok: (t) => false &&  Object.keys(t.field ?? {}).length < Object.keys(FIELD).length - 6,
     steps: [2, 4, 6].map((k) => ({ text: `${k} new Field Guide pages`, hint: 'Watch the tank: the Field Guide lists what to look for. A page fills the first time someone sees it.', n: (t, g) => Object.keys(t.field ?? {}).length - (g.base?.field ?? 0), need: k })) },
   octo: { title: 'An octopus family', blurb: 'Win an octopus over, give it a partner and a den, and see its babies hatch.', icon: 'trust', ok: (t) => { const os = liveOf(t).filter(isOcto); return os.some((f) => sexOf(f) === 'f') && os.some((f) => sexOf(f) === 'm'); },      /* (eggs need a mother and a father: never offered when they cannot come) */
     steps: [
@@ -1496,7 +1496,7 @@ export const puzzleOcto = (t, uid, shared, now = Date.now()) => t.fish.find((f) 
 // ways to play that have no shop entry. The road on the Tank chart and the level-up dialog are built from this, so they cannot drift from the shop.
 export const LEVEL_FEATURES = {
   1: ['Your own octopus', 'The daily mystery in the sand', 'Requests and rare visitors', 'Fish pair up and breed', 'Reef themes, floors and backdrops'],
-  2: ['The Crew tab: friends, your animals, the journal', 'The Shop\'s NEW tab'],
+  2: ['The Crew tab: friends, your sea life, the journal', 'The Shop\'s NEW tab'],
   3: ['Teach your octopus tricks', 'Empty shells for hermit crabs to grow into', 'Octopus adventures, once the tank is a week old'],
   4: ['Seahorses pair for life; the father carries the young'],
   5: ['The Maxima Clam keeps the water clean for longer'],
@@ -1542,8 +1542,8 @@ export function trickOptions(t, f, now = Date.now()) {
 // Each species has a real-world nature (reef-keeping guides, Project Seahorse and aquarium notes): who is a bully, who is territorial, who is shy, who needs a shoal or a pair,
 // what it likes to live in, and who it likes. The game turns that into plain comfort tips and a small happiness effect. Nothing here can hurt a fish by itself.
 export const SOCIAL = {
-  blueleg:   { kind: 'Curious', size: 1, crab: true, nature: 'A small, busy scavenger. Walks the sand and the rocks, picks at everything, and trades up to a bigger shell as it grows.', home: { cats: ['ROCKS'], text: 'rocks to climb and hide among' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Gets on with nearly everyone; keeps clear of big animals.' },
-  scarlet:   { kind: 'Cautious', size: 1, crab: true, shy: true, nature: 'Bright and careful. Likes a rock to tuck in beside, and pulls into its shell when something big comes by.', home: { cats: ['ROCKS'], text: 'a rock to tuck in beside' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Peaceful; hides from big animals.' },
+  blueleg:   { kind: 'Curious', size: 1, crab: true, nature: 'A small, busy scavenger. Walks the sand and the rocks, picks at everything, and trades up to a bigger shell as it grows.', home: { cats: ['ROCKS'], text: 'rocks to climb and hide among' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Gets on with nearly everyone; keeps clear of big fish.' },
+  scarlet:   { kind: 'Cautious', size: 1, crab: true, shy: true, nature: 'Bright and careful. Likes a rock to tuck in beside, and pulls into its shell when something big comes by.', home: { cats: ['ROCKS'], text: 'a rock to tuck in beside' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Peaceful; hides from big fish.' },
   halloween: { kind: 'Adventurous', size: 2, crab: true, nature: 'A bigger, bolder hermit crab. Climbs anything, roams the whole tank, and is not easily scared.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'rocks and structures to climb' }, likes: ['blueleg', 'scarlet', 'halloween'], line: 'Peaceful, but it barges past smaller crabs.' },
   goldfish:  { kind: 'Friendly', size: 1, nature: 'Friendly and curious. Nestles in an anemone, swaying with it, and gets on with nearly everyone.', home: { types: ['anemone'], text: 'a sea anemone to nestle in' }, likes: ['cory', 'neon', 'danio', 'blue'], line: 'Gets on with most peaceful fish. Loves an anemone.' },
   blue:      { kind: 'Territorial', size: 1, shy: true, sameFoe: true, nature: 'Claims a cave in the rocks and defends it from other grammas. Rests upside down under ledges.', home: { cats: ['ROCKS', 'STRUCTURES'], text: 'a rock cave to claim' }, likes: ['platy', 'goldfish'], line: 'Keep just one. Peaceful with other kinds.' },
@@ -1664,22 +1664,22 @@ export const KIND_NEEDS = {
     W_('fan', 'A sea fan to hitch on', 'Its favorite holdfast in the wild is a branching sea fan, where it can sit and watch for food drifting past.', 'A sea fan from the Shop', (c) => c.types.seafan >= 1),
     W_('pair', 'A partner for life', 'Seahorses pair for life and greet each other every morning with a little dance.', 'Another seahorse', (c) => c.own >= 2),
     W_('slow', 'Its own food, without competition', 'It eats slowly; quick fish beat it to food unless it gets mysis of its own.', 'Feed it mysis shrimp from Feed', (c) => !c.fast || c.ownFed),
-    W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Fewer animals, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
-  turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
+    W_('calm', 'Calm, uncrowded water', 'It tires in busy water and is easily stressed by chasing fish.', 'Less crowding, no damselfish', (c) => c.r <= 0.6 && !c.has('guppy'))],
+  turtle: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Less crowding, or nothing new added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Wild green turtles sleep wedged under rock ledges, coming up to breathe every so often.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
-    W_('graze', 'Sea grass to graze', 'Young green turtles start out eating small animals and move on to sea grass and algae as they grow.', 'A Sea Grass Bed, or two plants', (c) => (c.types.seagrass ?? 0) >= 1 || (c.cats.PLANTS ?? 0) >= 2),
+    W_('graze', 'Sea grass to graze', 'Young green turtles start out eating small creatures and move on to sea grass and algae as they grow.', 'A Sea Grass Bed, or two plants', (c) => (c.types.seagrass ?? 0) >= 1 || (c.cats.PLANTS ?? 0) >= 2),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
-  hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
+  hawksbill: [W_('room', 'Room to swim', 'A sea turtle cruises long distances; a crowded tank cramps it more than anyone.', 'Less crowding, or nothing new added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Hawksbills sleep wedged under reef ledges and in caves.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('reef', 'Reef rock to forage', 'Hawksbills eat sponges, prying them out of the reef with their narrow, hooked beaks.', 'A Sponge Garden, live rock or brain coral', (c) => (c.types.liverock ?? 0) + (c.types.brain ?? 0) + (c.types.sponge ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
-  loggerhead: [W_('room', 'Room to roam', 'Loggerheads travel widely along the sea floor; a crowded tank cramps it more than anyone.', 'Fewer animals, or none added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
+  loggerhead: [W_('room', 'Room to roam', 'Loggerheads travel widely along the sea floor; a crowded tank cramps it more than anyone.', 'Less crowding, or nothing new added for a while', (c) => c.r <= (c.roomTol ?? 0.6)),
     W_('ledge', 'A ledge to sleep under', 'Loggerheads sleep wedged under ledges and in reef holes.', 'A Turtle Ledge, or two rocks', (c) => (c.types.ledge ?? 0) >= 1 || c.cover >= 2),
     W_('crunch', 'Things to crunch', 'Loggerheads crack crabs, snails and clams with their huge jaws, foraging among shells and rubble.', 'Shell Rubble, shells or live rock', (c) => (c.types.rubble ?? 0) + (c.types.shell ?? 0) + (c.types.liverock ?? 0) + (c.types.chest ?? 0) >= 1),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   kemps: [W_('sand', 'Open sand to dig', "A Kemp's ridley digs in sandy bottoms for crabs; a tank packed with decorations leaves it nowhere to forage.", 'Keep some of the floor clear: no more than about ten pieces', (c) => Object.values(c.types).reduce((a, n) => a + n, 0) <= 10),
     W_('rock', 'A rock to rest by', 'It rests against a rock between bursts of digging.', 'A rock or a Turtle Ledge', (c) => c.cover >= 1),
-    W_('company', 'Lively company', 'A restless, social little turtle that does best with other active animals around.', 'A few other fish', (c) => c.has('goldfish') || c.has('neon') || c.has('danio') || c.has('guppy')),
+    W_('company', 'Lively company', 'A restless, social little turtle that does best with other active sea life around.', 'A few other fish', (c) => c.has('goldfish') || c.has('neon') || c.has('danio') || c.has('guppy')),
     W_('clean', 'Clean water', 'Turtles are messy eaters, so their water fouls quickly.', 'Change the water when it is due', (c) => c.cleanWater !== false)],
   octopus: [W_('den', 'A den of its own', 'An octopus always has a den to retreat to, and often decorates its doorway.', 'A clay pot or a coconut shell', (c) => c.cover >= 1),
     W_('puzzle', 'Puzzles to solve', 'Octopuses are clever and get bored; in the wild they open shells and pry into crevices.', 'A puzzle jar every day or two', (c) => c.puzzled),
@@ -1791,7 +1791,7 @@ export function needsChecklist(t, f, now = Date.now(), uid = null) {
   if (S.sameFoe) add('alone', `No other ${plural(f.species)}`, own <= 1, 'They squabble with their own kind');
   { const so = socialOf(t, f), threat = so.notes.find((x) => /bullies|wary/.test(x)); if (S.shy || (S.size <= 1 && !S.bully && threat)) add('cover', 'Places to hide', hides(t) >= 4, `${Math.min(hides(t), 4)} of 4 plants, rocks or structures`); if (threat && /bullies/.test(threat)) add('peace', 'Left in peace', false, threat.replace(/ More hiding.*$/, '')); }
   for (const tr of f.traits ?? []) { const sp = SPOT[tr]; if (sp && !(S.home?.cats?.includes(sp[0]))) add('spot', `${tr === 'Shy' ? 'Plants to hide among' : tr === 'Curious' ? 'Something to explore' : tr === 'Lazy' ? 'Driftwood to rest by' : tr === 'Playful' ? 'Something fun' : 'Rocks to perch on'}`, count(t, sp[0]) >= sp[1], `${Math.min(count(t, sp[0]), sp[1])} of ${sp[1]} · ${sp[2]}`); }
-  if ((f.traits ?? []).includes('Social') && f.species !== 'octopus') add('company', 'Company', t.fish.filter((o) => !o.dead).length >= 4, '4 animals in the tank');
+  if ((f.traits ?? []).includes('Social') && f.species !== 'octopus') add('company', 'Company', t.fish.filter((o) => !o.dead).length >= 4, '4 sea life in the tank');
   if (f.species === 'octopus' && stageOf(f, now) !== 'baby') add('puzzle', 'Puzzles to solve', f.puzzleAt != null && now - f.puzzleAt < 2 * DAY, 'A puzzle jar, every day or two');
   if (f.species === 'octopus' || (f.traits ?? []).some((x) => x === 'Playful' || x === 'Social')) add('play', 'Time with you', Object.values(f.petAt ?? {}).some((x) => now - x < DAY), 'Play from its card');
   return out;
@@ -1823,13 +1823,13 @@ const mealHungry = (t) => t.hunger > 0.3 && t.fish.some((f) => !f.dead && !f.awa
 export const needs = (t) => [(mealHungry(t) || t.fish.some((f) => ownHungry(f) && !f.dead && ownHunger(f) > OCTO_DUE)) && 'feed', t.water < 0.7 && 'water', t.glass > 0.3 && 'glass'].filter(Boolean);
 const withSpot = (t) => t.fish.some((f) => f.found?.includes('spot') && t.decor.some((d) => d.id === f.spotId));
 export const DAILY = {
-  watch: { tier: 'easy', text: 'Watch your animals for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
+  watch: { tier: 'easy', text: 'Watch your sea life for 15 seconds', need: 1, ok: (t) => t.fish.length >= 1 },
   greet: { tier: 'easy', text: 'Say hello to three fish', need: 3, ok: (t) => t.fish.length >= 3 },
   play: { tier: 'easy', text: 'Play with a fish', need: 1, ok: (t) => t.fish.length >= 1 },
   care: { tier: 'easy', text: 'Give the tank some care it needs', need: 1, ok: (t) => needs(t).length >= 1 },
   plant: { tier: 'easy', text: 'Place a plant', need: 1, ok: (t) => t.decor.length < MAX_DECOR && t.shells >= 6 },
   together: { tier: 'normal', text: 'See two fish swimming together', need: 1, ok: (t) => t.fish.length >= 2 },
-  visit: { tier: 'normal', text: 'Watch an animal visit a decoration', need: 1, ok: (t) => t.fish.length >= 1 && seenDecor(t) },
+  visit: { tier: 'normal', text: 'Watch your sea life visit a decoration', need: 1, ok: (t) => t.fish.length >= 1 && seenDecor(t) },
   play3: { tier: 'normal', text: 'Play with three different fish', need: 3, ok: (t) => t.fish.length >= 3 },
   care2: { tier: 'normal', text: 'Give two kinds of care the tank needs', need: 2, ok: (t) => needs(t).length >= 2 },
   friends: { tier: 'special', text: 'Watch two friends swim together', need: 1, ok: (t) => t.fish.some((f) => f.pal && t.fish.some((o) => o.id === f.pal)) },
@@ -1864,7 +1864,7 @@ function dayCheck(t, now, ev, key = null, due = false) {
 export function tankMood(t, now = Date.now()) {
   if (!t.fish.length) return { key: 'empty', label: 'Quiet', note: 'No fish yet.' };
   const worst = Math.max(...t.fish.map((f) => f.ail ?? 0)), happy = t.fish.reduce((n, f) => n + (f.happy ?? 0.7), 0) / t.fish.length;
-  if (worst >= AIL_WARN) return { key: 'neglected', label: 'Neglected', note: 'An animal is unwell. Food and clean water will bring it back.' };
+  if (worst >= AIL_WARN) return { key: 'neglected', label: 'Neglected', note: 'Some of your sea life is unwell. Food and clean water will bring it back.' };
   const hungryOcto = t.fish.find((f) => isOcto(f) && !f.dead && octoHunger(f) > 0.75);
   const fishHungry = t.hunger > 0.7 && t.fish.some((f) => !isOcto(f) && !f.dead);      // the tank's hunger is the fish's; an octopus has its own
   if (worst >= AIL_TIRED || hungryOcto || fishHungry || t.water < 0.5) return { key: 'attention', label: 'Needs care', note: fishHungry ? 'The fish are hungry.' : hungryOcto ? `${hungryOcto.name} is hungry.` : t.water < 0.5 ? 'The water is cloudy.' : 'A fish looks tired.' };
@@ -2612,13 +2612,13 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.flags.intro) return fail('ALREADY_HAVE'); if (!FIRST_FISH.includes(a.species)) return fail('UNKNOWN_SPECIES');
       if (!t.fish.length && !pending(t) && !(members && !members.some((m) => m.id === uid))) {   // an empty tank: the chosen fish simply arrives
         const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, made = makeFish(t, { species: a.species, name: cleanName(a.name), seed, palette: palOf(a, seed), owner: uid, ownerName: name, fromEgg: true }, now, 0); t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-        furnish(t, now); events.push({ journal: `${name} brought in ${made.name}, the tank's first animal.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
+        furnish(t, now); events.push({ journal: `${name} brought in ${made.name}, the first in the tank.`, arrival: [made.id] }); return ok({ id: made.id });      // (no toast: you just named it yourself, and the welcome is busy enough)
       }
       const f = t.fish.find((x) => x.id === 'f1'); if (!f || t.fish.length > 1 || (f.owner && f.owner !== uid)) return fail('FORBIDDEN');
       const seed = Math.abs(Math.floor(num(a.seed) || now)) % 100000, nm = cleanName(a.name) || f.name;
       Object.assign(f, { species: a.species, seed, palette: palOf(a, seed), name: nm, traits: traitsFor(a.species, seed), born: now, stage: 'baby', happy: 0.75, health: 1 }); delete f.appetite; delete f.genes; ensureFish(f);
       t.seen.fish = [a.species]; t.flags.intro = now; t.flags.firsts = { ...(t.flags.firsts ?? {}), [uid]: true };
-      events.push({ journal: `${name} brought in ${f.name}, the tank's first animal.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
+      events.push({ journal: `${name} brought in ${f.name}, the first in the tank.`, toast: `${f.name} is home.`, arrival: [f.id] }); return ok({ id: f.id });
     }
     case 'observe': {                                              // a phone that is watching reports what its fish are really doing
       const key = String(a.key ?? ''), f = t.fish.find((x) => x.id === a.fish); let did = false;

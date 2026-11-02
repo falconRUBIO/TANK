@@ -159,8 +159,12 @@ function feedGo() {
   const x0 = f ? f.pos.x : fish.length ? fish.reduce((a, o) => a + o.pos.x, 0) / fish.length : 0, at = (dx) => Math.max(-3.6, Math.min(3.6, x0 + dx));
   const still = () => { const oc = game.feedFor && game.state.fish.find((q) => q.id === game.feedFor); return food === 'crab' || food === 'mysis' ? !!oc && ownHunger(oc) >= 0.08 : (game.state.hunger ?? 0) >= 0.08; };
   const n = food === 'crab' ? 1 : 3, spread = [0, -0.9, 0.9];
-  (async () => { for (let i = 0; i < n; i++) { if (i && (!still() || !feedMode)) break; await dropFood(at(spread[i])); if (i < n - 1) await new Promise((r) => setTimeout(r, 650)); } autoFeed = false; endFeed(); })();
+  return (async () => { for (let i = 0; i < n; i++) { if (i && (!still() || !feedMode)) break; await dropFood(at(spread[i])); if (i < n - 1) await new Promise((r) => setTimeout(r, 650)); } autoFeed = false; endFeed(); })();
 }
+// Feed everyone (the Feed screen's one tap): each one that can eat gets its own everyday food in turn, the fish first, then each octopus and seahorse
+let feedingAll = false;
+async function feedAll(list) { if (feedingAll) return; feedingAll = true; try { const L = [...list].sort((a, b) => (a.for ? 1 : 0) - (b.for ? 1 : 0)); for (const it of L) { game.feedFood = it.food; game.feedFor = it.for; await feedGo(); await new Promise((r) => setTimeout(r, 500)); } } finally { feedingAll = false; } }
+window.__feedAll = feedAll;
 function endFeed() { feedMode = false; $('foodbar')?.classList.remove('on'); }
 async function dropFood(x) {
   const food = defaultFood(), own = food === 'crab' || food === 'mysis', mine = food === 'crab' ? myOctos() : food === 'mysis' ? mySeas() : [];
@@ -710,7 +714,7 @@ function noticedRow(rec) {
 function familyRows(rec) { const p = rec.parents ?? []; return p.length ? `<dt>Parents</dt><dd>${p.map((x) => x.name).join(' & ')}</dd>` : ''; }
 function showFamily(rec) {
   const t = game.state, p = rec.parents ?? [], gp = p.flatMap((x) => (x.parents ?? []).map((y) => y.name)), kids = childrenOf(t, rec.id), lines = [];
-  lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the tank\'s first animals'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
+  lines.push(`Generation: ${rec.gen ? rec.gen : 'founder'}`); lines.push(p.length ? `Parents: ${p.map((x) => x.name).join(' & ')}` : 'Parents: unknown, one of the first in the tank'); if (gp.length) lines.push(`Grandparents: ${[...new Set(gp)].join(', ')}`);
   lines.push(kids.length ? `Children: ${kids.map((k) => k.name + (k.alive ? '' : ' (passed away)')).join(', ')}` : 'Children: none yet');
   ui.dialog({ title: `${rec.name}'s family`, lines, ok: 'Close' });
 }
@@ -1038,7 +1042,7 @@ function giftSync(s) {
 // ── things worth knowing, each said once, the first time it matters ──
 const TIPS = [
   ['eggs', (s) => (s.eggs ?? []).length, 'EGGS IN THE TANK', 'Tap the eggs to see who is guarding them. Feeding the fish or changing the water on two days helps them hatch strong.'],
-  ['away', (s) => game.shared && s.fish.some((f) => awayOwner(f, game.members) && f.owner !== game.you?.userId), 'A FRIEND IS AWAY', 'One of the animals has not had its caretaker in for a while. Tap it to look after it until they are back.'],
+  ['away', (s) => game.shared && s.fish.some((f) => awayOwner(f, game.members) && f.owner !== game.you?.userId), 'A FRIEND IS AWAY', 'One of your sea life has not had its caretaker in for a while. Tap it to look after it until they are back.'],
   ['octo', (s) => s.fish.some((f) => f.species === 'octopus' && !f.dead && f.owner === game.you?.userId) && (s.flags?.tut ?? 0) >= 5, 'GETTING TO KNOW IT', 'Tap your octopus: its card says what it is thinking and how much it trusts you. Trust grows each time you feed it and come to visit.'],
   ['toys', (s) => (s.toyPlays ?? 0) === 0 && Date.now() - (s.createdAt ?? Date.now()) > 864e5, 'PLAYTIME', (s) => `Open Care, then Play: ${toysOpenR(s).map((k) => TOYS[k].label.toLowerCase()).join(', ')}. They learn which toys they like.`],
   ['crew', () => game.shared && (game.members?.length ?? 0) > 1, 'YOUR CREW', 'In Crew you can message your friends, stick a note on the glass, or send a message in a bottle.'],
@@ -1338,7 +1342,7 @@ function showCard(f) {
   if ($('bwait')) $('bwait').onclick = (e) => { e.stopPropagation(); sfx('tap'); if ($('bwait').classList.contains('now')) { setFocus(null); if (!window.__watchEggs?.()) ui.toast('Not quite yet.'); } else { const P = (rec.preg ? rec : game.state.fish.find((m) => m.preg?.mother === rec.id))?.preg; if (P) ui.toast(`The babies are born ${dueWhenR(P.due - game.now())}. Day ${pregDaysR(P, game.now()).d} of ${pregDaysR(P, game.now()).n}.`, 3000); } };      // (tap: watch, once it is time) if ($('dyk')) $('dyk').onclick = (e) => { e.stopPropagation(); sfx('tap'); game.factPeek = (game.factPeek ?? 0) + 1; showCard(f); };
   card.querySelectorAll('[data-send]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap');
     const code = await ui.dialog({ title: `Send ${f.name}?`, text: `${f.name} will leave this tank for good and grow up in your friend's, with its colors and its family's names. Ask them for their tank's gift code: it is at the top of their Field Guide.`, input: { value: '', placeholder: 'Their gift code' }, ok: 'Send', cancel: 'Keep it here' }); if (!code) return;
-    try { const r = await api('/api/send', { fish: f.fid, code }); haptic(20); sfx('bubble'); ui.toast(`${f.name} is on the way to ${r.toName}.`, 4200); setFocus(null); } catch (err) { ui.toast(err.offline ? 'Sending needs the tank to be online.' : ({ BAD_CODE: 'No tank has that code.', SAME_TANK: 'That is your own tank.', TANK_FULL: 'Their tank is full.', TOO_SOON: 'One a day: try again tomorrow.', NOT_YOURS: 'Only its own caretaker can send it.', BUSY: 'Not while it is looking after young.', NOT_BRED_HERE: 'Only an animal bred in this tank can be sent (one that came from another tank stays).', LAST_FISH: 'It is the last one in your tank.', CANT_SEND: 'This one cannot be sent.' })[err.code] ?? 'That did not work.', 3600); } }; });
+    try { const r = await api('/api/send', { fish: f.fid, code }); haptic(20); sfx('bubble'); ui.toast(`${f.name} is on the way to ${r.toName}.`, 4200); setFocus(null); } catch (err) { ui.toast(err.offline ? 'Sending needs the tank to be online.' : ({ BAD_CODE: 'No tank has that code.', SAME_TANK: 'That is your own tank.', TANK_FULL: 'Their tank is full.', TOO_SOON: 'One a day: try again tomorrow.', NOT_YOURS: 'Only its own caretaker can send it.', BUSY: 'Not while it is looking after young.', NOT_BRED_HERE: 'Only sea life bred in this tank can be sent (one that came from another tank stays).', LAST_FISH: 'It is the last one in your tank.', CANT_SEND: 'This one cannot be sent.' })[err.code] ?? 'That did not work.', 3600); } }; });
   card.querySelectorAll('[data-pair]').forEach((b) => { b.onclick = async (e) => { e.stopPropagation(); sfx('tap'); const r = await game.dispatch({ t: 'matchmake', a: f.fid, b: b.dataset.pair }); if (!r.ok) return fail(r); haptic(14); ui.toast('Brought together. Give them time.', 3000); showCard(f); }; });
   card.querySelectorAll('[data-ms]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); sfx('tap'); ui.toast(b.dataset.ms, 2200); }; });
   card.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); game.profTab = b.dataset.tab; sfx('tap'); showCard(f); card.scrollTop = 0; }; });
@@ -1508,7 +1512,7 @@ const tut = (() => {
     try {
       if (step === 0) {
         ui.pulse(null); ui.hideCoach();
-        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Feed, clean and play: a happy tank levels up, and every level opens new animals, toys and habitats. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Pip', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
+        const pk = await ui.pickFish({ title: 'Welcome to your tank', text: 'Feed, clean and play: a happy tank levels up, and every level opens new sea life, toys and habitats. Every tank starts with an octopus. Choose the color of yours, then give it a name.', species: FIRST_FISH, name: ['Biscuit', 'Nori', 'Pip', 'Fin', 'Pearl', 'Sunny', 'Dot', 'Misty'][(Math.random() * 8) | 0] });
         const r = await game.dispatch({ t: 'chooseFirst', species: pk.species, name: pk.name, pal: pk.pal, seed: (Math.random() * 90000) | 0 }); if (!r.ok && r.reason !== 'ALREADY_HAVE') fail(r); else sfx('arrive');
         await set(1);
       } else if (step === 1) {
@@ -1543,7 +1547,7 @@ const tut = (() => {
       } else if (step === 3) {
         ui.showCoach({ title: 'A gift for the tank', text: 'You have a starter pack of free items. Open the Shop, pick a plant and slide it into place.', skip: skip }); ui.pulse('decorate');
       } else if (step === 4) {
-        ui.pulse(null); ui.showCoach({ title: 'You are all set', text: 'Nicely done. Look after your tank, and tap any animal to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'Coming up', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
+        ui.pulse(null); ui.showCoach({ title: 'You are all set', text: 'Nicely done. Look after your tank, and tap any of your sea life to get to know it.', button: 'Show me what is coming', skipLabel: 'Done', skip: async () => { await set(5); ui.hideCoach(); }, onButton: async () => { await set(5); ui.hideCoach(); await new Promise((r) => setTimeout(r, 300)); await ui.dialog({ title: 'Coming up', lines: [...firstPromises(game.state, Date.now()), ...(game.shared ? [`Your tank code is ${game.code}. Share it from the Crew tab so friends can join.`] : [])], ok: 'See you soon' }); if (game.shared) offerNudges(); } });
       }
     } finally { busy = false; setTimeout(run, 0); }
   }
@@ -1591,7 +1595,7 @@ async function openNursery(auto = false) {
   const r = await game.dispatch({ t: 'keepBaby', nursery: N.id, baby: c.id });
   if (r.ok) { const t0 = performance.now(), wait = () => { if ((nurseryFx.going || fishes.broodOff?.length) && performance.now() - t0 < 8000) { setTimeout(wait, 300); return; }      /* (the card comes once they have gathered, swum up and faded, so nothing covers the send-off) */
       ui.leavingCard({ kept: c, gone, parents: `${N.pa?.name ?? 'Their father'} and ${N.ma?.name ?? 'their mother'}'s` }).then(() => { const kept = fishes.list.find((x) => x.fid === c.id && !x.dead); if (kept) { ui.open('tank'); cardOpen = kept.fid; setFocus(kept); } }); }; setTimeout(wait, 2200); }      /* (then the one who stays, up close with its card: your new seahorse) */
-  if (!r.ok) { if (r.reason === 'TANK_FULL') ui.dialog({ title: 'No room yet', text: `The tank is full, so ${c.name} cannot stay yet. The babies will wait as long as it takes. Make room by sending an animal to a friend's tank or a new home from its card, then tap the nursery tag at the top to choose again.`, ok: 'OK' }); else if (r.reason === 'NOT_FOUND') ui.toast('Someone has already chosen a baby to keep.'); else fail(r); }
+  if (!r.ok) { if (r.reason === 'TANK_FULL') ui.dialog({ title: 'No room yet', text: `The tank is full, so ${c.name} cannot stay yet. The babies will wait as long as it takes. Make room by sending one of your sea life to a friend's tank or a new home from its card, then tap the nursery tag at the top to choose again.`, ok: 'OK' }); else if (r.reason === 'NOT_FOUND') ui.toast('Someone has already chosen a baby to keep.'); else fail(r); }
 }
 function nurseryCheck() {      // the moment they are ready, once a session: the choice comes up by itself
   const N = game.state?.nursery; if (!N || game.now() < N.readyAt || readyShown === N.id || ui?.tab !== 'tank' || $('modal').classList.contains('on')) return;
@@ -1639,7 +1643,7 @@ game.on('levelup', (lv) => {
   const fresh = [...Object.values(SPECIES_DEF).filter((d) => d.level === lv).map((d) => d.label), ...Object.values(TOYS).filter((T) => T.unlock === lv).map((T) => T.label + ' (Toy box)'), ...Object.values(DECOR_DEF).filter((d) => d.level === lv).map((d) => d.label)];
   const ban = document.createElement('div'); ban.className = 'lvban';
   const P = LEVEL_PRIZE[lv];
-  ban.innerHTML = `<small>THE TANK GREW</small><b>Level ${lv}</b><span>${P ? (P.kind === 'play' ? 'New way to play: ' : 'New animals: ') + P.title : 'Your care made the tank grow'}</span>${fresh.length ? `<em>${esc(fresh.slice(0, 3).join(' · ').replace(/ \(Toy box\)/g, ''))}${fresh.length > 3 ? ` and ${fresh.length - 3} more` : ''}</em>` : ''}`;      // (named, not just titled)
+  ban.innerHTML = `<small>THE TANK GREW</small><b>Level ${lv}</b><span>${P ? (P.kind === 'play' ? 'New way to play: ' : 'New sea life: ') + P.title : 'Your care made the tank grow'}</span>${fresh.length ? `<em>${esc(fresh.slice(0, 3).join(' · ').replace(/ \(Toy box\)/g, ''))}${fresh.length > 3 ? ` and ${fresh.length - 3} more` : ''}</em>` : ''}`;      // (named, not just titled)
   document.body.appendChild(ban); setTimeout(() => ban.classList.add('off'), 4200); setTimeout(() => ban.remove(), 5000);
   ui?.toast(`Tank level ${lv}!`, 3000);
   const prepared = lv === 8 && (game.state?.goalsDone ?? []).some((g) => g.id === 'sanctuary');      /* (the sanctuary goal finished at level 7: the tank is ready for its first turtle) */
@@ -2134,6 +2138,7 @@ async function boot() {
   window.__load?.stage('Bringing the reef to life…');
   ui = initUI({ game, social, cb: {
     octoThought: (id) => fishes.byId.get(id)?.thought ?? null,
+    feedAll: (L) => feedAll(L),
     act: (a) => (String(a).startsWith('toy:') ? armToy(String(a).slice(4)) : { feedgo: feedGo, feed: feedGo, clean: startClean, water: changeWater, trim: trimPlants, puzzle: () => givePuzzle(), hide: () => hideTreat(), crab: () => giveCrab() }[a]?.()),
     meetFish: () => { const f = fishes.list[0]; if (f) setFocus(f); }, adopt, startPlace: (t) => startPlace(t),
     rearrange: (on) => setRearrange(on), onTab: (t) => { if (t !== 'tank') { endFeed(); if (placing) { decor.cancel(); endPlace(); } setRearrange(false); } },
@@ -2151,7 +2156,7 @@ async function boot() {
     devJoin: async () => { const code = await ui.dialog({ title: 'Join a test aquarium', text: 'The test code shown in Developer Tools on the other phone.', input: { max: 6, placeholder: 'Test code' }, ok: 'Join', cancel: 'Cancel' }); if (!code) return;
       try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
-    devReset: async () => { const yes = await ui.dialog({ title: 'Reset test?', text: 'This will remove the temporary animals, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
+    devReset: async () => { const yes = await ui.dialog({ title: 'Reset test?', text: 'This will remove the temporary sea life, pregnancy, nursery, and events from your test aquarium. Your normal aquarium will not be affected.', ok: 'Reset Test', cancel: 'Cancel' }); if (!yes) return; demoRun = null; try { await api('/api/dev/test/reset', {}); ui.toast('Test aquarium reset'); } catch (e) { ui.toast(e.message || 'Could not reset'); } },
     gift: () => offerGift(), watchEggs: () => window.__watchEggs(), openNursery: () => openNursery(), closeCard: () => { sfx('tap'); setFocus(null); },
     photo: takePhoto, momentPostcard: (img, text, tag, ts) => { const who = fishes.list.filter((f) => f.name && text.includes(f.name)).sort((a, b) => text.indexOf(a.name) - text.indexOf(b.name))[0]; return takePhoto({ img, title: who ? `${who.name}${tag ? ' · ' + tag.replace(/^\S+\s/, '') : ''}` : (tag.replace(/^\S+\s/, '') || 'A moment in the tank'), line: text, ts }); }, pushState, pushToggle, pushTest, recoveryKey: async () => {
       try {

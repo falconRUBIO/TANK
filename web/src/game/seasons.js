@@ -11,7 +11,7 @@ export const SEASONS = [
   { id: 'valentine', label: 'Valentine’s Day', icon: '💗', from: [2, 13], to: [2, 15], glow: 0xffa6d8, night: 0xff9ad0, day: 0xffe0ee,
     text: 'The plankton glow pink after dark, and the seahorse pairs dance a little longer. Until midnight on the 14th.' },
   { id: 'oceans', label: 'World Ocean Day', icon: '🌊', from: [6, 7], to: [6, 9], glow: 0x7fd3ff, night: 0x4fb0ff, day: 0xd6ecff,
-    text: 'A deep blue day for the sea the animals came from. Until midnight on June 8.' },
+    text: 'A deep blue day for the sea our sea life came from. Until midnight on June 8.' },
 ];
 const localMidnight = (y, m, d) => new Date(y, m - 1, d).getTime();
 // the active season at a moment (local time), or null. A window that crosses New Year is checked against both years.

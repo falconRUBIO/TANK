@@ -13,7 +13,7 @@ export const CRAB_TYPES = {
   explorer: { label: 'Explorer', line: 'Wanders far and climbs whatever it finds.', roam: 1.6, climb: 0.5, pick: 1, bold: 0.6, hide: 0.2, collect: 0.3 },
   homebody: { label: 'Homebody', line: 'Keeps to its favorite hiding place and comes back to it.', roam: 0.5, climb: 0.15, pick: 1, bold: 0.4, hide: 0.6, collect: 0.2 },
   picky: { label: 'Picky', line: 'Looks over every shell, often three or more, before it moves.', roam: 1, climb: 0.25, pick: 3, bold: 0.5, hide: 0.3, collect: 0.4 },
-  bold: { label: 'Bold', line: 'Walks up to animals it does not know and takes a look.', roam: 1.2, climb: 0.3, pick: 1, bold: 1, hide: 0.1, collect: 0.3 },
+  bold: { label: 'Bold', line: 'Walks up to sea life it does not know and takes a look.', roam: 1.2, climb: 0.3, pick: 1, bold: 1, hide: 0.1, collect: 0.3 },
   timid: { label: 'Timid', line: 'Pulls into its shell at the first shadow and peeks out slowly.', roam: 0.7, climb: 0.15, pick: 1.5, bold: 0.1, hide: 0.8, collect: 0.2 },
   collector: { label: 'Collector', line: 'Pokes at anything interesting, and empty shells most of all.', roam: 1.1, climb: 0.3, pick: 2, bold: 0.5, hide: 0.3, collect: 1 },
 };

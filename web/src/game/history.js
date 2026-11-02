@@ -63,7 +63,7 @@ function capsule(t, now, day, R) {
   const prev = t.capsules.at(-1), since = prev?.at ?? 0, animals = t.fish.filter((f) => !f.dead).map((f) => ({ id: f.id, name: f.name, species: f.species, days: Math.max(0, Math.floor((now - f.born) / DAY)), away: !!f.away }));
   const events = (t.history ?? []).filter((h) => h.at > since && h.kind !== 'capsule').slice(-6).map((h) => ({ id: h.id, text: h.text }));
   const kinds = {}; for (const a of animals) kinds[a.species] = (kinds[a.species] ?? 0) + 1;
-  const line = `${animals.length} animal${animals.length === 1 ? '' : 's'}, ${t.decor.length} decoration${t.decor.length === 1 ? '' : 's'}, level ${t.level}.`;
+  const line = `${animals.length} sea life, ${t.decor.length} decoration${t.decor.length === 1 ? '' : 's'}, level ${t.level}.`;
   return { day, at: now, level: t.level, decor: t.decor.length, decorTypes: [...new Set(t.decor.map((x) => x.type))].slice(0, 30), keeps: (t.keeps ?? []).length, animals: animals.slice(0, 30), n: animals.length, kinds, events, line };
 }
 
