@@ -1515,6 +1515,21 @@ nav [data-tab]:active{transform:scale(.92)}
 #fishpill span.pfeed{border:0!important;padding:7px 12px!important;font-size:13px!important}
 #fishpill .pfull{border:0;background:rgba(126,224,162,.14);padding:6px 11px;font-style:normal}
 #fishpill > span:last-child{border:0!important;background:var(--surf-2)!important;padding:7px 12px!important;border-radius:999px!important}
+
+/* ── one list language everywhere: toys, the Field Guide, the animals. Rows sit on one quiet surface with hairlines, not a box each ── */
+#app #sheet :is(.toybox,.fglist,.anl){display:flex!important;flex-direction:column!important;gap:0!important;background:var(--surf-1)!important;border-radius:var(--r-l)!important;overflow:hidden;padding:0!important;border:0!important;box-shadow:none!important;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+#app #sheet :is(.toybox > .toy,.fglist > .fgrow,.anl > .anr){border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;margin:0!important}
+#app #sheet :is(.toybox > .toy + .toy,.fglist > .fgrow + .fgrow,.anl > .anr + .anr){border-top:1px solid var(--hair)!important}
+#app #sheet .anl > .anr .anb{border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important}
+#app #sheet :is(.toybox > .toy,.fglist > .fgrow,.anl .anb):active{background:var(--surf-2)!important}
+#app #sheet .toybox > .toy.lock{opacity:.55}
+#app #sheet .fglist > .fgrow.nope b{color:var(--ink-2)}
+/* the play tiles: quiet surfaces, no borders */
+#app #sheet .grid2 .tile{border:0!important;background:var(--surf-1)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;border-radius:var(--r-l)!important}
+/* an animal's card: Overview / Personality as the same segmented control as everywhere else */
+#app #card .tabs{display:flex;gap:2px;padding:3px;border-radius:12px;background:rgba(0,10,24,.32);box-shadow:inset 0 1px 2px rgba(0,0,0,.28)}
+#app #card .tabs .tb{flex:1;border:0!important;border-radius:9px!important;background:transparent!important;color:var(--ink-2)!important;font-weight:650;font-size:14px;padding:7px 6px;box-shadow:none!important}
+#app #card .tabs .tb.on{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.1))!important;color:var(--ink)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 8px rgba(0,0,0,.25)!important}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
