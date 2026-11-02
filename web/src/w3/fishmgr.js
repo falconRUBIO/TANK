@@ -748,6 +748,7 @@ export class Fishes {
     f.baseT = f.tmul; f.tmul = this.mulFor(f);
     f.isShy = has('Shy');
     f.pick = (r) => {
+      if ((f.toyChase ?? 0) > performance.now() && !f.seeking && !((f.fleeT ?? 0) > 0)) { f.retarget = 0.4; return; }      // after the ball: it keeps after it (toys.js sets where), no wandering off mid-play
       if (f.restK && f.idle > 0 && !f.seeking && !((f.fleeT ?? 0) > 0)) { f.retarget = Math.min(f.idle, 2); return; }      // resting at its place or by its friend: it stays (a 'stuck' check or a timer doesn't move it on)
       base(r); if (f.nursery) return;      /* (a nursery baby lives by the fry's own ways, Fish3D.pickHover: none of the grown habits below) */
       const mood = f.profile?.mood, spots = this.spots?.() ?? [], others = this.list.filter((o) => o !== f);
