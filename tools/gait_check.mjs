@@ -31,6 +31,12 @@ ck('the chromis swims in burst and coast: its speed rises and falls', chro.cv > 
 { const all = Object.values(R).filter((x) => x.sk === 'neon').reduce((a, x) => a + x.picks, 0); ck('and the school picks at the water', all >= 2, all); }
 ck('a goby sits still most of the time and moves in hops', goby.still > 0.4 && goby.hops >= 5, goby);
 ck('the mandarin potters and pecks every second or two', mand.pecks >= 8 && mand.still > 0.3, mand);
+// asleep (lights out): no pottering, no pecking, no hops or darts. It rests level where it settled, as a sleeping mandarin lies on the rubble
+{ const Z = await run(20, 'window.__mp = 0; window.__mf = 0; for (const f of F.list) { f.isNight = true; f.sleepy = true; }', 'for (const f of F.list) { if (f.dead || f.species?.move === "jet") continue; f.isNight = true; f.sleepy = true; if (f.sk === "betta" && ++window.__mf > 60) window.__mp = Math.max(window.__mp, Math.abs(f.pitch ?? 0)); }      /* (after it has settled: the first two seconds it may still be finishing a peck from before) */');
+  const zm = by(Z, 'betta'), zg = by(Z, 'cory'), zc = Object.values(Z).filter((x) => x.sk === 'neon').reduce((a, x) => a + x.picks, 0), mp = await p.evaluate(() => +window.__mp.toFixed(2));
+  ck('asleep, the mandarin lies still: no pecks, no hops, no nodding up and down', zm.pecks === 0 && zm.hops === 0 && mp < 0.2, { ...zm, maxPitch: mp });
+  ck('asleep, the goby stops hopping and the chromis stop picking at the water', zg.hops === 0 && zc === 0, { goby: zg.hops, chromisPicks: zc });
+  await p.evaluate(() => { for (const f of window.__fishes.list) { f.isNight = false; f.sleepy = false; f.pitch = 0; } }); }      // (awake again for what follows)
 const back = await run(1.2, "const f = F.list.find((x) => x.sk === 'puffer'); f.vel.set(0, 0, 0); f.target.set(f.pos.x - Math.cos(f.heading) * 0.9, f.pos.y, f.pos.z + Math.sin(f.heading) * 0.9); f.retarget = 9; f.idle = 0; f.seeking = false; f.fleeT = 0; f.dartT = 0;");
 const pu = by(back, 'puffer'); ck('a puffer with something just behind it backs off without turning round', pu.backs > 0.3 && pu.turned < 0.35, pu);
 const school = "const o = F.list.find((x) => x.species?.move === 'jet'); let k = 0; for (const f of F.list) if (f.sk === 'neon') { f.fleeT = -9; f.retarget = 99; f.idle = 0; f.target.set(k % 2 ? 3 : -3, k < 2 ? 3 : 8, 1); f.pos.set(f.target.x * 0.5, f.target.y, 1); k++; }";

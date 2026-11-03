@@ -28,6 +28,10 @@ export function gaitTick(f, dt, desired, rng) {
   // a burst uses the tail; cruising the body stays nearly straight and the pectorals do the work
   let bend = hurry || fast > 1.2 ? 1 : g.bend + (1 - g.bend) * Math.max(0, Math.min(1, (fast - 1) / 0.2)), fin = g.fin, tail = 1;      // (its everyday pace is a cruise: only beyond it does the tail take over)
   f.gaitT = (f.gaitT ?? rng() * 0.5) - dt;
+  if (f.sleepy && !hurry) {      // asleep: no hops, no pecks, no darts. It rests where it settled, fins barely moving, level and still (a sleeping mandarin or goby lies on the sand; the others hang quietly)
+    f.hopping = false; f.coast = false; f.peckT = 0; desired.multiplyScalar(0.25); f.vel.multiplyScalar(Math.exp(-4 * dt)); f.pitch += ((f.posePitch ?? 0) - f.pitch) * Math.min(1, dt * 2);
+    f.bendK = (f.bendK ?? 1) + (0.05 - (f.bendK ?? 1)) * Math.min(1, dt * 4); f.finK = g.fin * 0.35; f.tailRate = (f.tailRate ?? 1) + (0.08 - (f.tailRate ?? 1)) * Math.min(1, dt * 4); f.finPh = (f.finPh ?? 0) + dt * 7 * f.finK * 0.6; return;
+  }
   if (g.k === 'pick' && !hurry) {      // burst and coast; hanging in place, a pick at the water now and then
     const near = f.pos.distanceTo(f.target) < 0.9 || f.idle > 0;
     if (f.gaitT <= 0) { f.coast = !f.coast; f.gaitT = f.coast ? 0.35 + rng() * 0.5 : 0.25 + rng() * 0.3;
