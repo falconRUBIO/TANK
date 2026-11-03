@@ -1,6 +1,6 @@
 // Real 3D voxel fish: the species voxel models become instanced cubes that are lit,
 // shadowed and animated (tail bend, fin flutter) in the scene, steered in 3D.
-import { gaitTick, shoalPull } from './gait.js';
+import { gaitTick, shoalPull, gaitOf } from './gait.js';
 import * as THREE from 'three';
 import { buildModel } from '../voxel.js';
 import { seahorseTail, SEAHORSE_LEAN, SEAHORSE_SNOUT, SEAHORSE_STEM } from '../species.js';
@@ -281,12 +281,12 @@ export class Fish3D {
       for (const off of jet ? [...offs, 'mantle'] : sea ? [...offs, 'snout'] : offs) {                   // samples down the length of the body (and an octopus's mantle, which trails up behind its head)
         if (off === 'mantle') { const sc = this.scale || 0.06; _p1.set(this.pos.x + fx * this.mcx * sc, this.pos.y + this.mcy * sc, this.pos.z + fz * this.mcx * sc); } else if (off === 'snout') this.snout(_p1); else if (sea) _p1.set(this.pos.x, this.pos.y + R * off, this.pos.z); else _p1.set(this.pos.x + fx * R * off, this.pos.y + fy * R * off, this.pos.z + fz * R * off); _o.set(0, 0, 0);
         const n = W.push(_p1, this.cr, _o) + (W.soft && (jet ? this.st?.s !== 'kelp' && this.st?.s !== 'jar' : !this.sp.tail) ? W.soft.push(_p1, this.cr * (jet ? 1.0 : 0.85), _o) : seaSoft && W.soft ? W.soft.push(_p1, this.cr * 0.9, _o) : 0);      // plants are soft: only the octopus, crawling through the floor clutter or coming down to land, is kept off their stems; jetting, it passes over the leaves like a fish
-        if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = jet ? Math.min(0.05, 0.01 * n + 0.01) : Math.min(0.25, 0.04 * n + 0.04);      /* (an octopus is eased out in small steps: a full step overshot, it walked back in, and it shivered against the rock) */ this.pos.addScaledVector(_o, step / m); const into = -(this.vel.x * _o.x + this.vel.y * _o.y + this.vel.z * _o.z) / m; if (into > 0) this.vel.addScaledVector(_o, into / m); moved = true; }      // pushed out of something, it also stops heading into it: it slides along instead of bouncing in and out every frame (which looked like shivering on the spot)
+        if (n) { if (_o.lengthSq() < 1e-6) _o.set(fx, 0, fz); const m = _o.length() || 1, step = Math.min(0.05, 0.01 * n + 0.01);      /* (every animal is eased out in small steps: a full step overshot, it swam or walked back in, and it shivered against the rock or was knocked backwards) */ this.pos.addScaledVector(_o, step / m); const into = -(this.vel.x * _o.x + this.vel.y * _o.y + this.vel.z * _o.z) / m; if (into > 0) this.vel.addScaledVector(_o, into / m); moved = true; }      // pushed out of something, it also stops heading into it: it slides along instead of bouncing in and out every frame (which looked like shivering on the spot)
       }
       if (!moved) break; if (jet) this.pushHit = true;
     }
     if (jet) { this.pushT = (this.pushT ?? 0) + ((this.pushHit ? 1 : 0) - (this.pushT ?? 0)) * Math.min(1, (this.rdt ?? 1 / 60) * 3); this.pushHit = false; }      // (how much of the last moment something has been holding it off: pressed against a rock, even every other frame, this climbs)
-    { const L = this.pos.distanceTo(_p2), capL = jet ? Math.min(0.08, 1.1 * (this.rdt ?? 1 / 60)) : 2.0 * (this.rdt ?? 1 / 60);      /* (an octopus: about a unit a second, whatever the frame rate; any faster and pressing against a rock it shivered back and forth) */ if (L > capL) this.pos.lerpVectors(_p2, this.pos, capL / L); }      // whatever pushed it this frame moved it no more than a nudge: it eases out of a rock or a clump of leaves over a few frames rather than jumping clear (which read as a twitch)
+    { const L = this.pos.distanceTo(_p2), capL = jet ? Math.min(0.08, 1.1 * (this.rdt ?? 1 / 60)) : (sea ? 0.6 : 1.0) * (this.rdt ?? 1 / 60);      /* (an octopus: about a unit a second, whatever the frame rate; any faster and pressing against a rock it shivered back and forth) */ if (L > capL) this.pos.lerpVectors(_p2, this.pos, capL / L); }      // whatever pushed it this frame moved it no more than a nudge: it eases out of a rock or a clump of leaves over a few frames rather than jumping clear (which read as a twitch)
     if (jet && this.pos.z < OCT_BACK && this.pos.y < sandH(this.pos.x, this.pos.z) + 1.3) this.pos.z = OCT_BACK;      // and on the sand it is never pushed off the back of the bank
     for (const o of others) {                                               // fish are solid too
       if (o === this || (jet && o.species.move !== 'jet') || this.link?.o === o) continue;      // a fish gets out of an octopus's way, never the other way round: a passing fish must not shove it off a ramp
@@ -658,7 +658,7 @@ export class Fish3D {
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
   }
   // ── shared helpers for the two non-fish gaits ──
-  face(dt, turn) { const sp = Math.hypot(this.vel.x, this.vel.z); if (sp > 0.06) { let dy = Math.atan2(-this.vel.z, this.vel.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.heading += dy * Math.min(1, dt * turn); } return sp; }
+  face(dt, turn) { const sp = Math.hypot(this.vel.x, this.vel.z); if (sp > 0.06) { let dy = Math.atan2(-this.vel.z, this.vel.x) - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); const step = dy * Math.min(1, dt * turn * Math.min(1, sp / 0.2)), cap = 2.6 * dt; this.heading += Math.max(-cap, Math.min(cap, step)); } return sp; }      // (barely drifting, which way it is moving is mostly noise: it turns lazily then; and never faster than a steady pivot)
   settle() { this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX')); this.accum += 1 / 60; }
   separate(others, gain = 2.8) {
     const jet = this.species.move === 'jet';
@@ -1432,17 +1432,19 @@ export class Fish3D {
       this.cool -= dt;
     }
     this.vel.lerp(desired, Math.min(1, dt * (this.encSnap ?? 1.5))); this.rdt = dt;      // (in a chase or a fright it turns on the spot: see encounters.js)
+    if (!this.noTurn && !this.link) { const fx = Math.cos(this.heading), fz = -Math.sin(this.heading), fwd = this.vel.x * fx + this.vel.z * fz; if (fwd < 0) { const k = 1 - Math.exp(-(this.fleeT > 0 ? 14 : 9) * dt); this.vel.x -= fx * fwd * k; this.vel.z -= fz * fwd * k; } }      // a fish swims head first: told to go back the way it came, it slows and turns round, never sliding tail first (the puffer backing off is the exception: noTurn)
     const vmax = this.speed * 1.4 * (this.tmul ?? 1) * (this.fleeT > 0 ? 1.6 : this.dartT > 0 ? 1.5 : 1) * (this.encMul ?? 1); if (this.vel.length() > vmax) this.vel.setLength(vmax);
     this.pos.addScaledVector(this.vel, dt);
     this.resolve(others);
     const sp = this.vel.length(), h0 = this.heading;
-    if (sp > 0.25 && !this.noTurn) {      // (a puffer backing off keeps facing the way it was)
-      const wantYaw = Math.atan2(-this.vel.z, this.vel.x);
+    const dsp = Math.hypot(desired.x, desired.z), hopper = ['hop', 'potter'].includes(gaitOf(this.sk)?.k), steer = sp > 0.25 ? this.vel : dsp > 0.2 && d > 0.5 && !hopper ? desired : null;      /* (a goby or a mandarin turns as it hops, not between hops) */      // (slowed right down to turn round, it turns toward where it wants to go)
+    if (steer && !this.noTurn) {      // (a puffer backing off keeps facing the way it was)
+      const wantYaw = Math.atan2(-steer.z, steer.x);
       let dy = wantYaw - this.heading; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       this.heading += dy * Math.min(1, dt * 2.2);
       // the turn has weight: it eases up to speed and is capped (a fish turning round takes about a second, a fleeing one much less, a turtle longer), instead of snapping through the first part of a big turn
       { const turtle = TURTLE_IDS.has(this.species.id), cap = turtle ? 1.3 : this.fleeT > 0 || this.dartT > 0 ? 7 : 3.2; let dh = this.heading - h0; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); const want = dh / Math.max(dt, 1e-3); this.hvel = (this.hvel ?? 0) + (Math.max(-cap, Math.min(cap, want)) - (this.hvel ?? 0)) * Math.min(1, dt * (turtle ? 4 : 7)); if (Math.abs(this.hvel) * dt > Math.abs(dh) && Math.sign(this.hvel) === Math.sign(dh)) this.hvel = want; this.heading = h0 + this.hvel * dt; dy = this.hvel / 2.2; }      /* (the bank below follows the turn it really makes) */
-      const wantPitch = TURTLE_IDS.has(this.species.id) ? Math.max(-0.45, Math.min(0.55, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.25))) : Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));      // (a turtle tilts, it never stands on its nose: it climbs and dives at a shallow angle)
+      const wantPitch = TURTLE_IDS.has(this.species.id) ? Math.max(-0.45, Math.min(0.55, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.25))) : Math.max(-0.95, Math.min(0.95, Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z) + 0.15)));      /* (barely moving forward, a little rise or fall no longer stands it on its nose or tail) */      // (a turtle tilts, it never stands on its nose: it climbs and dives at a shallow angle)
       this.pitch += (wantPitch - this.pitch) * Math.min(1, dt * 3);
       this.roll += ((this.invert ? Math.PI : 0) - dy * 0.5 - this.roll) * Math.min(1, dt * 4);
     }
@@ -1450,6 +1452,7 @@ export class Fish3D {
     if ((this.poseK ?? 0) > 0.001) { const k = Math.min(1, this.poseK), r = Math.min(1, dt * 3) * k;      // a pose an encounter asks for: broadside in a display, head-down to be cleaned, facing a rival or the glass
       if (this.posePitch != null) this.pitch += (this.posePitch - this.pitch) * r; if (this.poseRoll != null) this.roll += (this.poseRoll - this.roll) * r;
       if (this.poseFace) { const want = Math.atan2(-(this.poseFace.z - this.pos.z), this.poseFace.x - this.pos.x); let d = want - this.heading; d = Math.atan2(Math.sin(d), Math.cos(d)); this.heading += d * Math.min(1, dt * 2.5) * k; } }
+    { const pp = this.pitchShown ?? this.pitch, rr = this.rollShown ?? this.roll, mp = 4 * dt, mr = 3.5 * dt; this.pitch = pp + Math.max(-mp, Math.min(mp, this.pitch - pp)); let dr = this.roll - rr; this.roll = rr + Math.max(-mr, Math.min(mr, dr)); this.pitchShown = this.pitch; this.rollShown = this.roll; }      // a body tips and rolls with weight: never faster than this, so a gramma turning over under its ledge, or a mandarin's peck, is a movement and not a flick
     this.flickT = Math.max(0, (this.flickT ?? 0) - dt); this.phase += dt * ((3.0 + sp * 5.5) * (this.tailRate ?? 1) + 9 * (this.fanK ?? 0) + (this.flickT > 0 ? 16 : 0));      // (and a flick of the tail: a quick burst of beats)      // (a father over his eggs beats his fins fast while staying put: fanning fresh water over them)
     this.group.position.copy(this.pos);
     this.group.rotation.set(0, 0, 0);
