@@ -23,12 +23,12 @@ await p.evaluate(() => { window.__simClock(true); const F = window.__fishes; for
 const btn = await p.evaluate(() => [...document.querySelectorAll('#card [data-train]')].map((b) => ({ k: b.dataset.train, t: b.textContent })));
 ck('its card offers the twirl, with no decoration needed', btn.some((x) => x.k === 'twirl'), btn);
 await p.evaluate(() => document.querySelector('#card [data-train="twirl"]')?.click()); await p.waitForTimeout(800);
-const r = await p.evaluate(() => { const f = window.__oc, F = window.__fishes, tr = [], left = () => (f.script?.length ?? 0) + (f.trickPts?.length ?? 0) + (f.glassAt?.trick ? 1 : 0), scr0 = left(); let gone = null;
-  for (let i = 0; i < 1600; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (i % 4 === 0) { const q = f.group.position; tr.push([+q.x.toFixed(2), +q.y.toFixed(2), +q.z.toFixed(2)]); } if (gone == null && scr0 && !left()) gone = i; }
-  return { tr, scr0, gone, skill: window.__game.state.fish.find((x) => x.id === f.fid)?.skill }; });
+const r = await p.evaluate(() => { const f = window.__oc, F = window.__fishes, tr = [], st = [], left = () => (f.script?.length ?? 0) + (f.trickPts?.length ?? 0) + (f.glassAt?.trick ? 1 : 0), scr0 = left(); let gone = null;
+  for (let i = 0; i < 1600; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); if (i % 4 === 0) { const q = f.group.position; tr.push([+q.x.toFixed(2), +q.y.toFixed(2), +q.z.toFixed(2)]); } if (gone == null && scr0 && !left()) gone = i; if (i % 200 === 0) st.push([i, f.st?.s, f.st?.mode ?? null, f.hunt ? 'hunt' : '', f.jarAt ? 'jar' : '', f.seeking ? 'seek' : '', f.glassAt ? (f.glassAt.trick ? 'trick' : 'glass') : '', f.trickPts?.length ?? 0, f.keepCarry?.phase ?? '', f.task ? 'task' : '']); }
+  return { tr, st, scr0, gone, skill: window.__game.state.fish.find((x) => x.id === f.fid)?.skill }; });
 const front = r.tr.filter((a) => a[2] > 1.3), xs = front.map((a) => a[0]), ys = front.map((a) => a[1]);
 ck('tapping it starts the twirl: a six-step route is set and the lesson counts', r.scr0 === 6 && (r.skill?.twirl ?? 0) >= 1, { route: r.scr0, skill: r.skill });
-ck('rendered: it comes to the front glass', front.length > 10, `${front.length} of ${r.tr.length} samples in front (z > 1.3), max z ${Math.max(...r.tr.map((a) => a[2]))}`);
+ck('rendered: it comes to the front glass', front.length > 10, `${front.length} of ${r.tr.length} samples in front (z > 1.3), max z ${Math.max(...r.tr.map((a) => a[2]))}${front.length > 10 ? "" : " :: what it was doing every 10 s (frame, state, mode, busy flags, route left): " + JSON.stringify(r.st)}`);
 ck('rendered: there it loops, up and round (height and side to side both change by over a unit)', front.length > 10 && Math.max(...ys) - Math.min(...ys) > 1 && Math.max(...xs) - Math.min(...xs) > 1, `height ${Math.min(...ys).toFixed(1)}–${Math.max(...ys).toFixed(1)}, side ${Math.min(...xs).toFixed(1)}–${Math.max(...xs).toFixed(1)}`);
 ck('the route finishes, and it goes back to its own business', r.gone != null, `route done after ${r.gone == null ? '—' : (r.gone * 0.05).toFixed(1) + ' s'} of tank time`);
 // screenshots along the route: replay it in steps and draw

@@ -22,7 +22,7 @@ const r = await p.evaluate(async () => {
 });
 console.log(JSON.stringify(r).slice(0, 1200));
 if (r.spot !== r.cave || !r.pal) console.log('  diag', JSON.stringify(r.diag));      /* (what Pip's record held after the three reports, for a CI run that passes nowhere else) */
-ok(r.spot === r.cave, 'Pip took to the cave from real time spent' + (r.spot === r.cave ? '' : ` (its spot ${r.spot}, the cave ${r.cave}; the three reports: ${r.logRes.join(' | ')})`)); ok(r.pal, 'Pip and Quill are best friends from real time together');
+ok(r.spot === r.cave, 'Pip took to the cave from real time spent' + (r.spot === r.cave ? '' : ` (its spot ${r.spot}, the cave ${r.cave}; the three reports: ${r.logRes.join(' | ')}; what Pip held after them: ${JSON.stringify(r.diag)})`)); ok(r.pal, 'Pip and Quill are best friends from real time together');
 ok(r.J.some((x) => /favorite|taken to the reef cave|best friends/.test(x)), 'the tank journal lines about Pip carry its id: ' + r.J.join(' | '));
 ok(r.hab.some((x) => /Pip has started resting by the reef cave/.test(x)), 'Health says how Pip uses the habitat: ' + r.hab.join(' | '));
 ok(r.life.some((x) => /Came home/.test(x)) && r.life.some((x) => /favorite spot/.test(x)) && r.life.some((x) => /Best friends with Quill/.test(x)), 'the card keeps its life summary: ' + r.life.join(' | '));
