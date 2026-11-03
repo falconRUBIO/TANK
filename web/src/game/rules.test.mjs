@@ -195,6 +195,23 @@ ok('one shared daily wish when no fish has a wish of its own: feasible, replaced
   const seen = (id) => R.applyAction(g, { t: 'observe', key: 'inspect', fish: id }, { now: 70 * D + 500, name: 'Riley' }); seen('a'); seen('a'); seen('b'); assert.equal(g.daily.have, 2, 'the same fish twice counts once'); seen('c'); assert.ok(g.daily.done);
   const un = R.newWorld(0); R.norm(un, 0); un.flags.tut = 5; un.fish = []; un.simTs = 80 * D - 10; un.daily = { day: 80, kind: 'together', text: '', need: 1, have: 0, ids: [], done: false }; R.advance(un, 80 * D + 5); assert.ok(R.DAILY[un.daily.kind].ok(un), 'a wish that became impossible is swapped');
 });
+ok('family never breeds: no eggs, no matchmaking and no brood between a parent and its young, a grandparent and grandchild, or brothers and sisters', () => {
+  const D = 864e5, mk = (t, id, name, seed, sex, parents) => R.ensureFish({ id, name, species: 'goldfish', seed, sex, born: -11 * D, stage: 'adult', traits: ['Calm'], owner: 'u1', ownerName: 'Alex', ...(parents ? { parents } : {}) });
+  const P = (f) => ({ id: f.id, name: f.name, parents: (f.parents ?? []).map((p) => ({ id: p.id, name: p.name })) });
+  const world = (fish) => { const t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.createdAt = -50 * D; t.visitAt = t.storyAt = 1e15; t.fish = fish; t.eggAt = 0; return t; };
+  const mom = mk(null, 'm1', 'Mum', 4, 'f'), dad = mk(null, 'd1', 'Dad', 9, 'm'), son = mk(null, 's1', 'Son', 12, 'm', [P(mom), P(dad)]), girl = mk(null, 'g1', 'Girl', 15, 'f', [P(mom), P(dad)]), grandkid = mk(null, 'k1', 'Kid', 18, 'f', [P(son), { id: 'x9', name: 'Other', parents: [] }]);
+  assert.ok(R.relatedFish(mom, son) && R.relatedFish(son, mom), 'a parent and its young');
+  assert.ok(R.relatedFish(son, girl), 'brother and sister');
+  assert.ok(R.relatedFish(grandkid, mom) && R.relatedFish(dad, grandkid), 'a grandparent and grandchild');
+  assert.ok(!R.relatedFish(mom, dad), 'two unrelated fish');
+  // only family in the tank: no eggs, however long
+  { const t = world([mk(null, 'm1', 'Mum', 4, 'f'), mk(null, 's1', 'Son', 12, 'm', [P(mom), P(dad)])]); for (let h = 20; h < 24 * 20; h += 6) R.advance(t, h * 3600e3); assert.equal(t.eggs.length, 0, 'mother and son never spawn'); }
+  { const t = world([mk(null, 's1', 'Son', 12, 'm', [P(mom), P(dad)]), mk(null, 'g1', 'Girl', 15, 'f', [P(mom), P(dad)])]); for (let h = 20; h < 24 * 20; h += 6) R.advance(t, h * 3600e3); assert.equal(t.eggs.length, 0, 'brother and sister never spawn'); }
+  // with an unrelated fish there, the eggs are hers and his
+  { const t = world([mk(null, 'm1', 'Mum', 4, 'f'), mk(null, 's1', 'Son', 12, 'm', [P(mom), P(dad)]), mk(null, 'z1', 'Zed', 21, 'm')]); for (let h = 20; h < 24 * 20 && !t.eggs.length; h += 6) R.advance(t, h * 3600e3); assert.equal(t.eggs.length, 1); assert.deepEqual([t.eggs[0].a, t.eggs[0].b].sort(), ['m1', 'z1'], 'the unrelated pair'); }
+  // the matchmaker will not bring family together
+  { const t = world([mk(null, 'm1', 'Mum', 4, 'f'), mk(null, 's1', 'Son', 12, 'm', [P(mom), P(dad)])]); const r = R.applyAction(t, { t: 'matchmake', a: 'm1', b: 's1' }, { now: 30 * D }); assert.equal(r.ok, false); assert.equal(r.reason, 'RELATED'); }
+});
 ok('family trees: hatchlings keep their parents, grandparents, generation and blended colors; the record outlives the fish', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.level = 5; t.createdAt = -50 * D; t.visitAt = t.storyAt = 1e15; const mk = (id, name, seed, extra = {}) => R.ensureFish({ id, name, species: 'goldfish', seed, born: -11 * D, stage: 'adult', traits: ['Calm'], owner: 'u1', ownerName: 'Alex', ...extra });
   t.fish = [mk('a', 'Ada', 4), mk('b', 'Bix', 9)]; t.eggAt = 0; let now = 20 * 3600e3; R.advance(t, now); assert.equal(t.eggs.length, 1); assert.equal(t.eggs[0].pa.name, 'Ada'); assert.ok(t.eggs[0].pa.genes && t.eggs[0].pb.genes);

@@ -17,8 +17,8 @@ ck('two moments seen: each writes its journal line and fills its Field Guide pag
 ck('nothing mentions the Field Guide', !r.j.some((x) => /Field Guide/.test(x)), r.j);
 await p.waitForTimeout(1500);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(1200);
-const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', fg: document.querySelectorAll('#sheet .fg').length }));
+const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', tabs: [...document.querySelectorAll('#sheet .seg button')].map((b) => b.textContent.trim()) }));
 await p.screenshot({ path: `${out}/collection.png`, timeout: 120000 }).catch(() => {});
-ck('the Guide tab shows the Field Guide beside the kinds met', /Field Guide/i.test(page.text) && /Species and decorations/.test(page.text), page.text.slice(0, 300));
+ck('the Guide tab is gone: Crew has Friends, Sea life and Journal, and anything asking for the Guide gets the sea life', page.tabs.join() === 'Friends,Sea life,Journal' && /Everyone living in your tank/.test(page.text), page.tabs);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);

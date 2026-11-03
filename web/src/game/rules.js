@@ -839,7 +839,7 @@ function eggs(t, now, ev) {
   // two octopus partners, settled for a while, both well fed: now and then the mother lays her eggs in her den and stays with them
   { const os = t.fish.filter((f) => isOcto(f) && !f.dead && !f.away && f.partner && stageOf(f, now) === 'adult'), Mo = !t.eggs.some((e) => e.species === 'octopus') && os.find((f) => sexOf(f) === 'f' && f.home && t.decor.some((d) => d.id === f.home) && now - (f.partneredAt ?? now) >= OCTO_EGG_AFTER * DAY && now >= (f.broodAt ?? 0)), Fa = Mo && os.find((f) => f.id === Mo.partner && sexOf(f) === 'm' && kindOf(f) === kindOf(Mo));      /* (partners of two different kinds keep each other company, but lay no eggs) */
     const fed = (f) => ownHunger(f) < 0.5 || now - (f.fedAt ?? 0) < DAY;      /* (well fed: fed today, not full at this very minute) */
-    if (Mo && Fa && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.55 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
+    if (Mo && Fa && !relatedFish(Mo, Fa) && fed(Mo) && fed(Fa) && (Mo.health ?? 1) >= 0.55 && !Mo.puzzle && !Mo.seek && hash32(now / 6e4 + 11) % 3 === 0) {
       Mo.broodAt = now + OCTO_EGG_GAP * DAY;
       t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: 'octopus', a: Mo.id, b: Fa.id, seed: Mo.seed, pa: snap(Mo), pb: snap(Fa), laid: now, hatchAt: wakeAt(t, now + OCTO_EGG_DAYS * DAY), cared: [], guard: Mo.id, den: Mo.home }); Mo.brood = t.eggs.at(-1).id; bump(t, 'octoEggs');      /* (she stays: no adventures while she broods) */
       unlock(t, Mo, 'parent', now, ev); unlock(t, Fa, 'parent', now, ev); t.eggAt = now + (OCTO_EGG_DAYS + 3) * DAY;
@@ -849,8 +849,9 @@ function eggs(t, now, ev) {
   const adults = t.fish.filter((f) => !f.dead && stageOf(f, now) === 'adult' && !SPECIES_DEF[f.species].school && f.species !== 'tang' && f.species !== 'cory' && f.species !== 'seahorse' && f.species !== 'octopus'), by = {};      /* (a fish that needs to be the only one of its kind, a tang or a goby, does not raise a family of rivals) */      // (seahorses do not lay eggs: the male carries the young, see seaFamilies)
   for (const f of adults) (by[f.species] ||= []).push(f);
   const pairs = Object.values(by).filter((g) => g.some((f) => sexOf(f) === 'm') && g.some((f) => sexOf(f) === 'f')); if (!pairs.length) return;      // a father and a mother
-  const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1];      // the pair you brought together, if they are still here and grown
-  const g = pairs[hash32(now / 6e4) % pairs.length], A = set ? Mt[0] : g[0], B = set ? Mt[1] : g.find((f) => sexOf(f) !== sexOf(A)), [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
+  const Mt = t.match && now < t.match.until ? [t.match.a, t.match.b].map((id) => adults.find((f) => f.id === id)) : [], set = Mt[0] && Mt[1] && !relatedFish(Mt[0], Mt[1]);      // the pair you brought together, if they are still here and grown
+  const okPairs = pairs.map((g) => g.flatMap((x, i) => g.slice(i + 1).filter((y) => sexOf(y) !== sexOf(x) && !relatedFish(x, y)).map((y) => [x, y]))).filter((L) => L.length); if (!set && !okPairs.length) return;      // (each kind's first unrelated couple, as listed; only family left to pair: no eggs)
+  const gp = set ? null : okPairs[hash32(now / 6e4) % okPairs.length][0], A = set ? Mt[0] : gp[0], B = set ? Mt[1] : gp[1], [Mo, Fa] = sexOf(A) === 'f' ? [A, B] : [B, A], C = EGG_CARE[A.species] ?? EGG_CARE.goldfish;
   t.eggs.push({ id: nextId(t, 'e'), moon: skyOf(now).event?.key === 'fullmoon' || undefined, species: A.species, a: A.id, b: B.id, seed: A.seed, pa: snap(A), pb: snap(B), laid: now, hatchAt: wakeAt(t, now + EGG_DAYS * DAY), cared: [], guard: C.mode === 'drift' ? null : Fa.id, risk: C.mode !== 'mouth' && t.fish.some((f) => f.species === 'octopus' && !f.dead) && hash32(now / 6e4 + 7) % 40 === 0 });      /* (and only while no parent is guarding it, see eggs()) */ t.eggAt = now + (EGG_DAYS + 2 + (hash32(now / 6e4 + 3) % 3)) * DAY; unlock(t, A, 'parent', now, ev); unlock(t, B, 'parent', now, ev);
   const say = C.mode === 'mouth' ? { journal: `${Mo.name} laid eggs and ${Fa.name} took them into his mouth. He will carry them, eating nothing, until they hatch.` }
     : C.mode === 'drift' ? { journal: `${A.name} and ${B.name} rose together and let their eggs go, as their kind do. The eggs drift by the plants now.` }
@@ -863,7 +864,9 @@ function eggs(t, now, ev) {
 // choose one to stay, and the others swim off to new homes. All of it lives in the tank record, so every phone shows the same.
 export const SEA = { PAIR_DAYS: 2, COURT_AFTER: 1, PREG_MIN: 6, PREG_MAX: 9, NURSERY: 5, COOLDOWN: 14 };
 export const sexOf = (f) => f?.sex ?? ((hash32((f?.seed ?? 0) * 31 + 7) & 1) ? 'm' : 'f');
-export const relatedFish = (a, b) => { const pa = (a.parents ?? []).map((p) => p.id), pb = (b.parents ?? []).map((p) => p.id); return pa.includes(b.id) || pb.includes(a.id) || pa.some((id) => pb.includes(id)); };
+// family never breeds: a parent and its young, a grandparent and grandchild, or two that share a parent (brothers and sisters, half ones too)
+const lineIds = (f) => { const s = new Set(); for (const p of f?.parents ?? []) { if (p?.id) s.add(p.id); for (const q of p?.parents ?? []) if (q?.id) s.add(q.id); } return s; };
+export const relatedFish = (a, b) => { if (!a || !b) return false; const pa = (a.parents ?? []).map((p) => p.id).filter(Boolean), pb = (b.parents ?? []).map((p) => p.id).filter(Boolean), la = lineIds(a), lb = lineIds(b); return la.has(b.id) || lb.has(a.id) || pa.some((id) => pb.includes(id)); };
 // how full a male's brood pouch is now (0 to 1): it fills through his pregnancy, and after the birth goes back down over two days
 export const broodOf = (f, now = Date.now()) => f?.preg ? Math.max(0, Math.min(1, (now - f.preg.start) / Math.max(1, f.preg.due - f.preg.start))) : Number.isFinite(f?.lastBirth) ? Math.max(0, 0.25 * (1 - (now - f.lastBirth) / (2 * DAY))) : 0;      // (after the birth a little slack is left, gone over two days)
 // the three tracked babies: one roams the tank, one keeps to the plants, one stays close to its family
@@ -872,6 +875,7 @@ export const babyRole = (N, c) => c?.role ?? BABY_ROLES[Math.max(0, N?.cands?.in
 export const nurseryReady = (t, now = Date.now()) => !!t.nursery && now >= t.nursery.readyAt;
 // a courtship that takes: he carries their young for six to nine days (the length comes from h, a number of the moment)
 function conceive(m, w, now, h, ev, t = null) {
+  if (relatedFish(m, w)) return;      // (family: no brood)
   const days = SEA.PREG_MIN + ((h >>> 8) % 1000) / 1000 * (SEA.PREG_MAX - SEA.PREG_MIN);
   m.preg = { start: now, due: t ? wakeAt(t, Math.round(now + days * DAY)) : Math.round(now + days * DAY), mother: w.id, ma: snap(w), seed: h, n: (10 + ((h >>> 4) % 6)) + (kindDef(m)?.bigBrood ? 4 : 0) - (kindDef(m)?.dwarf ? 5 : 0) };      /* (a slender seahorse's broods are huge, a dwarf's small) */
   ev.push({ journal: `${m.name} and ${w.name} courted at dawn, circling with their tails linked. ${m.name} is carrying their young.`, court: m.id });      /* (told with its own card, on every phone: see lifeCheck in main.js) */
@@ -987,6 +991,7 @@ function seaFamilies(t, now, ev) {
     t.courtAt = now + 6 * HOUR;
     if (!t.nursery && !hs.some((f) => f.preg)) for (const m of hs) {
       const w = byId.get(m.mate); if (m.sex !== 'm' || !w || w.sex !== 'f' || !adult(m) || !adult(w) || m.elder || w.elder || now < (m.breedAt ?? 0) || now - (m.pairedAt ?? now) < SEA.COURT_AFTER * DAY) continue;
+      if (relatedFish(m, w)) continue;      // (a pair from before this rule that turn out to be family: companions, never parents)
       const h = hash32(Math.floor(now / 6e4) * 13 + (m.seed ?? 1)); if (h % 100 >= 15) continue;      // a small chance at each look (every six hours): courtship is not every day
       conceive(m, w, now, h, ev, t); break;
     }
@@ -2656,9 +2661,11 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const x = t.fish.find((f) => f.id === a.a && !f.dead), y = t.fish.find((f) => f.id === a.b && !f.dead); if (!x || !y || x === y) return fail('NOT_FOUND');
       if (x.species !== y.species || (x.species === 'seahorse' && kindOf(x) !== kindOf(y))) return fail('NOT_SAME_KIND');      /* (seahorses court only their own species) */ if (stageOf(x, now) !== 'adult' || stageOf(y, now) !== 'adult') return fail('TOO_YOUNG');
       if (now - (t.flags.matchAt ?? -Infinity) < DAY) return fail('TOO_SOON'); t.flags.matchAt = now;
+      if (relatedFish(x, y)) return fail('RELATED');      // family is never brought together to breed
       if (isOcto(x)) { if (x.partner || y.partner) return fail('ALREADY_PAIRED'); const k = [x.id, y.id].sort().join('|'); (t.octoBonds ||= {})[k] = (t.octoBonds[k] ?? 0) + 1.5 * DAY; events.push({ journal: `${name} brought ${x.name} and ${y.name} together. They are getting to know each other.` }); return ok(); }
       if (x.species === 'seahorse') return fail('SEAHORSES_CHOOSE');
       if (sexOf(x) === sexOf(y)) return fail('SAME_SEX');
+      if (relatedFish(x, y)) return fail('RELATED');
       t.match = { a: sexOf(x) === 'f' ? x.id : y.id, b: sexOf(x) === 'f' ? y.id : x.id, until: now + 5 * DAY, by: name }; t.eggAt = Math.min(t.eggAt ?? Infinity, now + 8 * HOUR);
       bump(t, 'paired'); const odds = morphOdds(x, y); if (Object.keys(odds).length) bump(t, 'pairedRare'); for (const k of Object.keys(odds)) bump(t, 'paired_' + k); const best = Object.entries(odds).sort((p, q) => q[1] - p[1])[0];
       events.push({ journal: `${name} brought ${x.name} and ${y.name} together.${best ? ` Their babies could be ${MORPHS[best[0]].label.toLowerCase()}.` : ''}` }); return ok({ odds });

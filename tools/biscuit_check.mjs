@@ -19,7 +19,7 @@ await p.evaluate((seed) => { const g = window.__game, s = g.state, now = Date.no
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.0, z: 1.2, ry: 0 }, { id: 'b1', type: 'boulder', x: -2.4, z: 0.4, ry: 0 }, { id: 'g1', type: 'grass', x: -3.0, z: 2.0, ry: 0 });
   s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.keeps = []; s.visitAt = now + 9e9; s.eggAt = now + 9e9; g.emit('state'); }, seed);
 await p.waitForTimeout(2500);
-const step = (n) => p.evaluate((n) => { window.__simClock(true); const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((f) => f.update(0.05, Math.random, F.list)); } }, n);
+const step = (n) => p.evaluate((n) => { window.__simClock(true); const F = window.__fishes; for (let i = 0; i < n; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((f) => f.update(0.05, Math.random, F.list)); const o = F.byId.get('o1'); if (o?.keepCarry?.phase === 'carry') window.__sawCarry = true; } }, n);      // (every frame: a quick carry can start and end between two looks)
 
 // 1. the escape, watched
 await p.evaluate(() => { const f = window.__game.state.fish[0], now = Date.now(); f.restless = { id: 'aB', at: now - 1000, until: now - 10, kind: 'short', out: 'cap' }; window.__game.emit('state'); });
@@ -35,7 +35,7 @@ ck('it comes home with a bottle cap from that adventure, and the cap lies on the
 // 3. the cap ends up away from the den (a trickster fish nudged it, say); Biscuit fetches it and carries it home, on screen
 await p.evaluate(() => { const k = window.__game.state.keeps[0]; k.x = -1.4; k.z = 2.6; window.__game.emit('state'); }); await p.waitForTimeout(800);
 await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('o1'); F.attnAt = 0; F.rng = () => 0.6; f.inspect = null; f.task = null; f.keepCarry = { id: window.__game.state.keeps[0].id, phase: 'go', t: 0, slip: null }; });
-let carried = false, home = false, shot = false; for (let i = 0; i < 40 && !home; i++) { await step(100); const s = await p.evaluate(() => window.__fishes.byId.get('o1').keepCarry?.phase ?? null); if (s === 'carry') { carried = true; if (!shot) { shot = true; await p.evaluate(() => { const f = window.__fishes.byId.get('o1'); window.__tank?.camera; }); await p.screenshot({ path: `${out}/3-carrying.png` }); } } if (!s && carried) home = true; }
+let carried = false, home = false, shot = false; for (let i = 0; i < 40 && !home; i++) { await step(100); const s = await p.evaluate(() => window.__fishes.byId.get('o1').keepCarry?.phase ?? null), saw = await p.evaluate(() => !!window.__sawCarry); if (s === 'carry' || saw) { carried = true; if (!shot) { shot = true; await p.evaluate(() => { const f = window.__fishes.byId.get('o1'); window.__tank?.camera; }); await p.screenshot({ path: `${out}/3-carrying.png` }); } } if (!s && carried) home = true; }
 await p.waitForTimeout(800); let k = await p.evaluate(() => window.__game.state.keeps[0]);
 ck('it fetches the cap and carries it to its coconut shell (recorded by the tank)', carried && home && k.h?.carries >= 1 && Math.hypot(k.x - 1.0, k.z - 1.2) < 2, JSON.stringify({ carried, home, x: k.x, z: k.z, h: k.h }));
 await p.screenshot({ path: `${out}/4-by-the-den.png` });
@@ -64,8 +64,6 @@ await clear(); await p.waitForTimeout(800); await p.screenshot({ path: `${out}/5
 // 6. the tank's history page
 await clear(); await p.waitForTimeout(800); await p.evaluate(() => { window.__ui.open('friends'); }); await p.waitForTimeout(400); await p.evaluate(() => document.querySelector('[data-sub="journal"]')?.click()); await p.waitForTimeout(600);      // (the time capsules and the tank's moments are in the Journal now)
 const hv = await p.evaluate(() => document.querySelector('#sheet')?.innerText ?? ''); await p.screenshot({ path: `${out}/6-tank-history.png` });
-ck('the Journal has the adventure with the cap, and the time capsules', /came back holding a bottle cap/.test(hv) && /Time capsule/.test(hv), hv.slice(0, 300).replace(/\n/g, ' | '));
-await p.evaluate(() => document.querySelector('.hrow.cap')?.click()); await p.waitForTimeout(600); await p.screenshot({ path: `${out}/7-time-capsule.png` });
-ck('a time capsule opens with its comparison', await p.evaluate(() => !!document.querySelector('.capcard .capcmp')));
+ck('the Journal has the adventure with the cap, and no time capsules', /came back holding a bottle cap/.test(hv) && !/Time capsule/i.test(hv), [(hv.match(/.{0,60}(bottle cap|Time capsule).{0,60}/gi) ?? []).join(' // '), hv.slice(0, 120)].join(' :: ').replace(/\n/g, ' | '));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Biscuit checks passed'); process.exit(fails ? 1 : 0);

@@ -33,7 +33,7 @@ import { ADV_KINDS } from './game/adventures.js';
 import { seasonOf, seasonById } from './game/seasons.js';
 import { SeasonDress } from './w3/season.js';
 import { dressedName } from './w3/costume.js';
-import { KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
+import { relatedFish, KINDS, kindOf, kindDef, LEVEL_PRIZE, wellOf, turtleReady, turtleDaysLeft, TURTLE_PAY, isTurtle as isTurtleR } from './game/rules.js';
 import { pregDays as pregDaysR, dueWhen as dueWhenR, nurseryBrood, nurseryLine } from './game/rules.js';
 import { soloLook, saveSoloLook } from './people.js';
 import { runOnboarding, Live, api, inTest, setTest, ensureRecoveryKey, newRecoveryKey, leaveTankNow, pushState, pushToggle, pushTest, pushRegister, webOrigin } from './online.js';
@@ -1265,7 +1265,7 @@ function showCard(f) {
   // its color genes, plainly, and who it could be paired with (and what their babies might look like)
   const geneLine = (() => { const live = game.state.fish.find((x) => x.id === rec.id); if (!live || live.dead) return ''; const mo = morphOf(live), car = carriesOf(live), out = [];
     if (mo) out.push(`<b>${esc(MORPHS[mo].label)}</b>, a rare color with two copies of the gene.`); if (car.length) out.push(`Carries a hidden ${car.map((x) => MORPHS[x].label.toLowerCase()).join(' and ')} color. It only shows in a baby that gets it from both parents.`);
-    const adult = stageOf(live) === 'adult', mates = adult && live.species !== 'seahorse' ? game.state.fish.filter((o) => o !== live && !o.dead && o.species === live.species && stageOf(o) === 'adult' && (isOctoF(live) ? !o.partner && !live.partner : sexOf(o) !== sexOf(live))) : [];
+    const adult = stageOf(live) === 'adult', mates = adult && live.species !== 'seahorse' ? game.state.fish.filter((o) => o !== live && !o.dead && o.species === live.species && stageOf(o) === 'adult' && !relatedFish(live, o) && (isOctoF(live) ? !o.partner && !live.partner : sexOf(o) !== sexOf(live))) : [];      // (never its own family)
     const btns = mates.slice(0, 3).map((o) => { const od = Object.entries(morphOdds(live, o, skyOf(Date.now()).event?.key === 'fullmoon')).map(([k, v]) => `${Math.round(v * 100)}% ${MORPHS[k].label.toLowerCase()}`).join(', '); return `<button class="pair" data-pair="${esc(o.id)}">Pair with ${esc(o.name)}${od ? ` <small>${od}</small>` : ''}</button>`; }).join('');
     const send = game.live && !canSend(game.state, live, game.you?.userId ?? 'me', Date.now()) ? `<button class="pair send" data-send="1">Send ${esc(live.name)} to a friend's tank</button>` : '';      // (bred here: it can go and grow up in a friend's tank)
     return out.length || btns || send ? `<div class="genes">${out.length ? `<p class="mind">${out.join(' ')}</p>` : ''}${btns}${send}</div>` : ''; })();
