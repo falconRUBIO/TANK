@@ -1,0 +1,53 @@
+// Octopus motion audit: a real tank (an octopus with its coconut den, rocks, plants, a few fish), run on the tank's own clock for several
+// minutes, every frame recorded from the rendered octopus. Scores what makes motion look wrong: turns that snap, speed that jumps, sinking into
+// or floating over the sand while crawling, walking in place, sliding sideways or backwards, flickering between states, and wobble.
+//   node tools/octo_motion_audit.mjs [minutes=6] [seed=7]        (needs the solo game on 8123)
+const { chromium } = await import(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs');
+const MIN = +(process.argv[2] ?? 6), SEED = +(process.argv[3] ?? 7);
+const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
+const ctx = await b.newContext({ viewport: { width: 390, height: 760 } });
+await ctx.addInitScript((seed) => { let a = seed; Math.random = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }, SEED * 7919);
+const p = await ctx.newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon&season=none'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
+await p.waitForFunction(() => window.__game?.state && window.__booted, null, { timeout: 120000 }); await p.waitForTimeout(1500);
+await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5, A = { born: now - 30 * D, stage: 'adult', happy: 0.85, health: 1, hunger: 0.15, owner: null };
+  s.flags.tut = 5; s.level = 6; s.createdAt = now - 40 * D; s.visitAt = s.eggAt = now + 9e9; s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.hunger = 0.1; s.water = 1; s.glass = 0;
+  s.fish.length = 0; s.fish.push({ ...A, id: 'o1', name: 'Inky', species: 'octopus', seed: 5, traits: ['Curious'], home: 'c1' }, { ...A, id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, traits: ['Calm'] }, { ...A, id: 'g2', name: 'Neo', species: 'neon', seed: 8, traits: ['Brave'] }, { ...A, id: 'g3', name: 'Tang', species: 'tang', seed: 11, traits: ['Curious'] });
+  s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: -2.4, z: 0.4, ry: 0 }, { id: 'r1', type: 'rock', x: 1.6, z: -0.8, ry: 0 }, { id: 'r2', type: 'boulder', x: 2.8, z: 1.4, ry: 0 }, { id: 'p1', type: 'grass', x: 0, z: 2.2, ry: 0 }, { id: 'p2', type: 'kelp', x: -0.8, z: -1.6, ry: 0 });
+  g.emit('state'); for (const id of ['modal', 'coach', 'settle', 'toast', 'goal']) document.getElementById(id)?.classList.remove('on'); });
+await p.waitForTimeout(3000);
+const R = await p.evaluate(async ([MIN, AROUND, JS]) => { const process = { env: { AROUND, JS, FS: 'crawl' } };
+  const { sandH } = await import('/src/w3/terrain.js'); window.__simClock(true); const F = window.__fishes, o = F.list.find((f) => f.species?.move === 'jet'), dt = 1 / 30, N = Math.round(MIN * 60 / dt);
+  const E = new (o.group.rotation.constructor)(), rows = []; let prev = null;
+  for (let i = 0; i < N; i++) { F.update(dt, (window.__t = (window.__t ?? 0) + dt)); F.list.forEach((f) => f.update(dt, Math.random, F.list));
+    const q = o.group.position; E.setFromQuaternion(o.group.quaternion, 'YZX'); const r = { s: o.st?.s ?? '?', m: o.st?.mode ?? '', x: q.x, y: q.y, z: q.z, yaw: E.y, pit: E.z, rol: E.x, gy: sandH(q.x, q.z), vx: o.vel.x, vz: o.vel.z, hd: o.heading, crawlK: o.crawlK ?? 0, ins: o.inspect ? (o.inspect.type ?? '') + ':' + (o.inspect.r ?? '') : '-', nd: Math.min(9, ...(window.__game.state.decor ?? []).map((d) => Math.hypot(d.x - q.x, d.z - q.z))), lift: +(o.lift ?? 0).toFixed(2), sh: +(o.shellK ?? 0).toFixed(2), tk: +(o.tuckK ?? 0).toFixed(2), tl: +(o.tallK ?? 0).toFixed(2), dk: +(o.dashK ?? 0).toFixed(2), sk: +(o.sink ?? 0).toFixed(2), gl: +((o.gait?.lift ?? 0) * (o.crawlK ?? 0)).toFixed(2), liftSand: +(o.liftSand ?? 0).toFixed(2), py: o.pos.y, pt: +(o.pushT ?? 0).toFixed(2), tgt: +Math.hypot(o.target.x - o.pos.x, o.target.z - o.pos.z).toFixed(2) };
+    rows.push(r); if (i % 900 === 0) await new Promise((res) => setTimeout(res, 0)); }
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a)), by = {}, add = (s, k, v) => { (by[s] ||= { n: 0 })[k] = (by[s][k] ?? 0) + v; };
+  const out = { frames: rows.length, jumps: [], snaps: [], segs: [], flick: 0 }; let seg = { s: rows[0].s, n: 0 }, still = 0, stillMax = 0, inPlace = 0;
+  for (let i = 1; i < rows.length; i++) { const a = rows[i - 1], c = rows[i], s = c.s; add(s, 'n', 1);
+    const dp = Math.hypot(c.x - a.x, c.y - a.y, c.z - a.z), sp = dp / dt, yawRate = Math.abs(wrap(c.yaw - a.yaw)) / dt, pr = Math.abs(c.pit - a.pit) / dt, rr = Math.abs(wrap(c.rol - a.rol)) / dt;
+    add(s, 'sp', sp); add(s, 'yawR', yawRate); add(s, 'tiltR', pr + rr); if (yawRate > 3.5) add(s, 'snap', 1); if (pr + rr > 4) add(s, 'tiltSnap', 1);
+    if (dp > 0.2) out.jumps.push({ i, s, dp: +dp.toFixed(2), from: [a.x, a.y, a.z].map((v) => +v.toFixed(2)), to: [c.x, c.y, c.z].map((v) => +v.toFixed(2)) });
+    if (i > 1) { const b0 = rows[i - 2], acc = Math.hypot((c.x - 2 * a.x + b0.x), (c.y - 2 * a.y + b0.y), (c.z - 2 * a.z + b0.z)) / dt / dt; add(s, 'acc', acc); if (acc > 25) add(s, 'jerk', 1); const hacc = Math.hypot((c.x - 2 * a.x + b0.x), (c.z - 2 * a.z + b0.z)) / dt / dt, vacc = Math.abs(c.y - 2 * a.y + b0.y) / dt / dt; if (hacc > 25) add(s, 'hjerk', 1); if (vacc > 25) add(s, 'vjerk', 1); if ((hacc > 25 || vacc > 25) && (out.jerkS ||= []).length < 14 && s === (process.env.JS ?? 'crawl')) out.jerkS.push(`${s}/${c.m} h${hacc.toFixed(0)} v${vacc.toFixed(0)} y${c.y.toFixed(2)} py${c.py.toFixed(2)} lift${c.lift}/${c.liftSand} gait${c.gl} v(${c.vx.toFixed(2)},${c.vz.toFixed(2)}) push${c.pt} tgt${c.tgt} insp${c.ins}`);
+      const yw2 = Math.abs(wrap(c.yaw - a.yaw) - wrap(a.yaw - b0.yaw)) / dt / dt; add(s, 'yawJerk', yw2); }
+    const h = c.y - c.gy; add(s, 'h', h); if (h < 0.3) add(s, 'sink', 1); { if (['crawl', 'rest', 'work', 'flat', 'bury'].includes(s) && h > 0.95 && c.nd > 1.3) { add(s, 'float', 1); if (s === (process.env.FS ?? s) && (out.floatS ||= []).length < 14 && i % 20 === 0) out.floatS.push(`${s}/${c.m} vy${((c.py - a.py) / dt).toFixed(2)} y${c.y.toFixed(2)} py${c.py.toFixed(2)} g${c.gy.toFixed(2)} lift${c.lift}/${c.liftSand} at(${c.x.toFixed(1)},${c.z.toFixed(1)}) nd${c.nd.toFixed(1)}`); } }      // (it lies 0.55 over the sand; on or by a decoration it may be up on it)
+    const hs = Math.hypot(c.x - a.x, c.z - a.z) / dt; if (hs > 0.15) { const fx = Math.cos(c.hd), fz = -Math.sin(c.hd), dot = ((c.x - a.x) * fx + (c.z - a.z) * fz) / (hs * dt); if (dot < -0.4) add(s, 'back', 1); else if (dot < 0.4) add(s, 'side', 1); }
+    if (s === 'crawl' && hs < 0.03) { still++; stillMax = Math.max(stillMax, still); } else { if (still > 45) inPlace++; still = 0; }
+    if (s === seg.s) seg.n++; else { out.segs.push(seg); if (seg.n < 12) out.flick++; seg = { s, n: 1 }; } }
+  out.around = out.jumps.slice(0, 4).map((j) => j.i).map((k) => rows.slice(Math.max(0, +k - 4), +k + 3).map((r) => `${r.s}/${r.m} y${r.y.toFixed(2)} py${r.py.toFixed(2)} g${r.gy.toFixed(2)} lift${r.lift}/${r.liftSand} sh${r.sh} tk${r.tk} tl${r.tl} dash${r.dk} sink${r.sk} gait${r.gl}`)); out.segs.push(seg); out.inPlace = inPlace; out.stillMaxSec = +(stillMax * dt).toFixed(1);
+  out.states = Object.fromEntries(Object.entries(by).map(([s, v]) => [s, { sec: +(v.n * dt).toFixed(1), speed: +(v.sp / v.n).toFixed(2), yawRate: +(v.yawR / v.n).toFixed(2), snaps: v.snap ?? 0, tiltRate: +(v.tiltR / v.n).toFixed(2), tiltSnaps: v.tiltSnap ?? 0, accel: +(v.acc / v.n).toFixed(1), jerks: v.jerk ?? 0, hj: v.hjerk ?? 0, vj: v.vjerk ?? 0, yawJerk: +((v.yawJerk ?? 0) / v.n).toFixed(1), height: +(v.h / v.n).toFixed(2), sink: v.sink ?? 0, float: v.float ?? 0, back: v.back ?? 0, side: v.side ?? 0 }]));
+  out.segCount = out.segs.length; out.jumps = out.jumps.slice(0, 12); delete out.segs; return out; }, [MIN, process.env.AROUND ?? '', process.env.JS ?? 'crawl']);
+if (process.env.JSON) console.log(JSON.stringify(R)); else {
+  console.log(`frames ${R.frames} · state changes ${R.segCount} (${R.flick} shorter than 0.4 s) · walking in place >1.5 s: ${R.inPlace} times (longest ${R.stillMaxSec} s) · jumps >0.2/frame: ${R.jumps.length}`);
+  for (const j of R.jumps) console.log('   jump', JSON.stringify(j)); for (const a of R.around ?? []) console.log('   around:\n     ' + a.join('\n     '));
+  for (const x of R.jerkS ?? []) console.log('   jerk', x); for (const x of R.floatS ?? []) console.log('   float', x);
+  const cols = ['sec', 'speed', 'yawRate', 'snaps', 'accel', 'jerks', 'hj', 'vj', 'yawJerk', 'height', 'sink', 'float', 'back', 'side']; console.log('state'.padEnd(8) + cols.map((c) => c.padStart(8)).join(''));
+  for (const [s, v] of Object.entries(R.states).sort((a, b) => b[1].sec - a[1].sec)) console.log(s.padEnd(8) + cols.map((c) => String(v[c]).padStart(8)).join('')); } console.log('errors', errors.slice(0, 3)); await b.close();
+if (process.env.CHECK) {      // as a drill (check_all): the things that read as glitches, held to what the fixes brought them to
+  let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
+  const st = R.states, rate = (k, keys) => keys.reduce((a, s) => a + (st[s]?.[k] ?? 0), 0) / Math.max(1, keys.reduce((a, s) => a + (st[s]?.sec ?? 0), 0));
+  ck('no jumps: the drawn octopus never moves more than 0.2 in one frame (going in and out of its shell included)', R.jumps.length === 0, R.jumps.slice(0, 3));
+  ck('crawling and jetting are smooth: under one sharp change of speed a second', rate('hj', ['crawl', 'jet', 'work']) < 1, { perSec: +rate('hj', ['crawl', 'jet', 'work']).toFixed(2) });
+  ck('it never walks in place', R.inPlace === 0, { longest: R.stillMaxSec });
+  ck('no page errors', errors.length === 0, errors.slice(0, 3));
+  console.log(fails ? `${fails} failed` : 'Octopus motion checks passed'); process.exit(fails ? 1 : 0); }

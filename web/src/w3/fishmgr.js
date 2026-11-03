@@ -485,14 +485,15 @@ export class Fishes {
       const T = f.task;
       if (T?.stage === 'haul' && !this.snag(f, T, dt)) { this.decor.haulMove(T.id, f.pos.x + T.ux * T.hold, f.pos.z + T.uz * T.hold, T.kind === 'home' ? 0.26 + Math.sin(t * 5) * 0.025 : T.kind === 'turn' ? 0.12 + Math.sin(t * 4) * 0.03 : 0.1, T.kind === 'home' ? 0 : T.kind === 'turn' ? T.ry : null, dt);
         const it = this.decor.items.get(T.id); if (it && T.kind === 'turn') { T.ht = (T.ht ?? 0) + dt; it.group.rotation.z += (0.42 * Math.sin(Math.min(1, T.ht / 5) * Math.PI) - it.group.rotation.z) * Math.min(1, dt * 3); } }      // tipped over on its side while it is shoved, then set back down
-      if (f.species.id === 'octopus') f.shellK = 0;
+      const ease = (want) => { f.shellK = (f.shellK ?? 0) + (want - (f.shellK ?? 0)) * Math.min(1, dt * 3.5); if (f.shellK < 0.005) f.shellK = 0; };      // (squeezing in under the shell and out again takes a moment: never a jump)
+      if (f.species.id === 'octopus' && (!f.den?.home || f.den.kind !== 'coconut')) ease(0);
       if (f.species.id !== 'octopus' || !f.den?.home || f.den.kind !== 'coconut') continue;
-      const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) continue;
+      const it = this.decor.items.get(f.den.id); if (!it || it.haul || it.slide) { ease(0); continue; }
       // the shell is lifted and tipped up at the front as the octopus goes in under it, then held just off the sand over itself, rocking a little as it breathes
       const S = f.st, dist = Math.hypot(f.pos.x - f.den.x, f.pos.z - (f.den.z - 0.2)), entering = !f.dead && S?.s === 'crawl' && (S.mode === 'den' || S.mode === 'tsettle') && dist < 1.5, under = !f.dead && S?.s === 'rest' && dist < 0.55, g = it.group.position;
       // like a real coconut octopus: its half shell lies dome up on the sand like a little hut. Coming home it lifts the near edge like a lid, crawls in
       // underneath and lets the shell down over itself, leaving a crack at the front to peek out of; leaving, it lifts the edge again and slips out
-      const m = it.group.children.find((c) => c.isMesh); if (!m) continue; m.userData.y0 ??= m.position.y;
+      const m = it.group.children.find((c) => c.isMesh); if (!m) { ease(0); continue; } m.userData.y0 ??= m.position.y;
       // the octopus opens it itself: only when it is really going in (at the rim, pushing under) or coming out (lifting the edge from inside);
       // passing by, the shell stays shut. Going in, the lid rises as it gets its arms under the rim; coming out, it drops once it is clear
       if (under) it.wasUnder = performance.now(); const leaving = !f.dead && !under && dist < 1.1 && performance.now() - (it.wasUnder ?? -1e9) < 6000;
@@ -505,7 +506,7 @@ export class Fishes {
       const q = it.flipK, e = q * q * (3 - 2 * q), L = it.lidK, R = 0.88, th = e * Math.PI / 2 - 0.85 * L * e;      // th: the cut face turned from facing you (0) to facing the sand (pi/2), less the lid's lift
       const hy = 0.17 + R * Math.cos(th), hz = R * (Math.sin(th) - 1);      // the shell hinges on its back rim, which stays on the sand
       m.rotation.x = th; m.position.y = m.userData.y0 * (1 - e) + hy * e; m.position.z = hz * e; m.scale.setScalar(1 + 0.18 * e);      /* (turned over, it is a roomier hut) */
-      f.shellK = under ? e * (1 - 0.6 * L) : entering ? e * 0.4 : 0;
+      ease(under ? e * (1 - 0.6 * L) : entering ? e * 0.4 : 0);
     }
   }
   // it walks up to a thing until its arms touch it (off), then carries it held close in front (hold)
@@ -876,7 +877,9 @@ export class Fishes {
   }
   // a fish follows a trick's route as its next swimming targets; an octopus moves by its own states, so it is steered point by point
   // through the same open-water steering that brings it to the glass (fish3d: S.s 'glass' with gl.trick), one point after another
-  route(f) { if (f.species.move !== 'jet') { f.pick(this.rng); return true; } f.trickPts = f.script.map((w) => ({ x: w.x, y: w.y, z: w.z })); f.script = null; const w = f.trickPts.shift(); f.glassAt = { ...w, until: performance.now() + 6000, trick: true }; return true; }
+  route(f) { if (f.species.move !== 'jet') { f.pick(this.rng); return true; }
+    if (f.task) { f.onTask?.(f, 'abort'); f.task = null; } if (f.st && ['tgo', 'thaul', 'tsettle'].includes(f.st.mode)) f.st.mode = null; if (f.keepCarry) this.letGo(f);      // asked for a trick: whatever it was moving about is put down first, so the trick starts at once (it used to wait, and the trick was lost)
+    f.trickPts = f.script.map((w) => ({ x: w.x, y: w.y, z: w.z })); f.script = null; const w = f.trickPts.shift(); f.glassAt = { ...w, until: performance.now() + 12000, trick: true }; return true; }      // (the first point gets longer: it may have to come all the way from the back)
   burst(p) { for (let i = 0; i < 14 && this.bursts.length < 150; i++) this.bursts.push({ pos: p.clone().add(new THREE.Vector3((this.rng() - 0.5) * 1.2, (this.rng() - 0.5) * 0.6, (this.rng() - 0.5) * 0.6)), v: 0.6 + this.rng() * 1.2, age: 0, r: 0.05 + this.rng() * 0.07 }); }
 
   // for the two Halloween days every feed is candy: chunky sweets in candy-corn orange, yellow and white and wrapper purple, green, red and blue
