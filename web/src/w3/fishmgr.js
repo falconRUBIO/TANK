@@ -273,7 +273,7 @@ export class Fishes {
         if (Date.now() - (this.attnAt ?? 0) < 6e3 && C.t > 1) { f.keepCarry = null; f.inspect = null; f.thought = 'Stopped to look at you'; continue; }      // a tap on the glass: it leaves it for now
         if (C.t > 45) { f.keepCarry = null; continue; }
         const kd = Math.hypot(f.pos.x - k.x, f.pos.z - k.z), atIt = f.st?.s === 'work' && f.st?.mode === 'inspect' && f.inspect?.id === k.id;      // arrived and working at it: its walk stops where the sand lets it, which can be a little short of a far shell (as at its den, below)
-        if (kd < 1.2 || (atIt && kd < 1.8)) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; }
+        if (kd < 1.2 || (atIt && kd < 1.8)) {      /* within an arm's reach */ C.it = k.it; C.it.carried = true; C.phase = 'carry'; C.dest ||= { x: den.x, z: den.z + 0.55 }; if (C.slip === undefined) C.slip = this.rng() < 0.15 * (f.mind?.type === 'trickster' ? 1.5 : 1) ? 1.5 + this.rng() * 6 : null;      /* now and then it will slip, a few seconds into the carry */ C.t0 = Date.now() / 1000; C.t = 0; C.lim = 40 + 6 * Math.hypot(f.pos.x - C.dest.x, f.pos.z - C.dest.z);      /* (from far across the tank, round the rocks and up the slope, it keeps at it longer) */ f.inspect = { x: C.dest.x, z: C.dest.z, id: 'den', type: 'keep' }; f.thought = 'Carrying its keepsake home'; if (f.st?.mode === 'inspect' && (f.st.s === 'work' || f.st.s === 'crawl')) f.st.mode = null; }      // (picked up, often within reach while still walking to it: the walk starts over toward home at once, not on to where the shell was and a look at it first)
         else if (!f.inspect) f.inspect = { x: k.x, z: k.z, id: k.id, type: 'keep' };
         continue;
       }
@@ -281,7 +281,7 @@ export class Fishes {
       const dest = C.dest ?? { x: den.x, z: den.z + 0.55 }; if (!f.inspect) f.inspect = { x: dest.x, z: dest.z, id: 'den', type: 'keep' };
       const dd = Math.hypot(f.pos.x - dest.x, f.pos.z - dest.z);
       if (dd < 1.0 || (f.st?.s === 'work' && dd < 2.0)) { put('carry');      /* at its den (or as close as it gets: it stops an arm's length from where it was going) */ f.thought = 'Left its keepsake by its den'; }
-      else if (C.t > 40) put('drop');
+      else if (C.t > (C.lim ?? 40)) put('drop');
       else if (C.slip != null && C.t > C.slip) { put('drop'); f.inspect = null; f.thought = 'Dropped it'; }      // butterfingers: it lands on the sand where it slipped
     }
   }

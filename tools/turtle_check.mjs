@@ -13,7 +13,7 @@ await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now();
 await p.waitForTimeout(3500);
 ck('the turtles are in the water, with flippers that stroke', await p.evaluate(() => { const f = window.__fishes.byId.get('tA'); return !!f && f.vox.some((v) => v.flip) && f.vox.some((v) => v.tag === 'head'); }));
 const life = await p.evaluate(async () => { const F = window.__fishes, f = F.byId.get('tA'), top = window.__Fish3D?.topY ?? 13, seen = new Set(); let hi = 0, low = 99; f.breathAt = performance.now() + 15e3; window.__simClock(true);
-  for (let i = 0; i < 5400; i++) { F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); hi = Math.max(hi, f.pos.y); low = Math.min(low, f.pos.y); if (f.thought) seen.add(f.thought.split(' ').slice(0, 2).join(' ')); if (i % 600 === 0) await new Promise((q) => setTimeout(q, 0)); }
+  for (let i = 0; i < 5400; i++) { if (i === 300) f.breathAt = performance.now();      /* (its breath comes due 15 s into the run on the tank's own clock: the run itself may take more or less real time than that) */ F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((x) => x.update(0.05, Math.random, F.list)); hi = Math.max(hi, f.pos.y); low = Math.min(low, f.pos.y); if (f.thought) seen.add(f.thought.split(' ').slice(0, 2).join(' ')); if (i % 600 === 0) await new Promise((q) => setTimeout(q, 0)); }
   return { hi, low, seen: [...seen] }; });
 ck('it comes right up to the surface to breathe', life.hi > 10, `highest ${life.hi.toFixed(1)}`);
 ck('and goes down low to rest or graze', life.low < 3.2, `lowest ${life.low.toFixed(1)}`);
