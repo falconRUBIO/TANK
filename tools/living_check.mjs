@@ -9,7 +9,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), A = { born: now - 12 * 864e5, stage: 'adult', happy: 0.9, health: 1, hunger: 0.1, owner: 'me', traits: [] }; s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 6; s.fish.length = 0;
+await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), A = { born: now - 30 * 864e5, stage: 'adult', happy: 0.9, health: 1, hunger: 0.1, owner: 'me', traits: [] }; s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 6; s.fish.length = 0;
   s.fish.push({ ...A, id: 'oA', name: 'Ada', species: 'octopus', seed: 5, home: 'c1', bond: { me: 20 } }, { ...A, id: 'oB', name: 'Bo', species: 'octopus', seed: 9, home: 'c2', bond: { me: 4 } }, { ...A, id: 'oC', name: 'Cy', species: 'octopus', seed: 13, bond: {} },
     { ...A, id: 'fF', name: 'Finn', species: 'goldfish', seed: 3, owner: null, spotId: 'r1', found: ['spot'] });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.6, z: 1.2, ry: 0 }, { id: 'c2', type: 'pot', x: -2.2, z: 1.0, ry: 0 }, { id: 'r1', type: 'boulder', x: -0.5, z: -0.8, ry: 0 }, { id: 'g1', type: 'grass', x: 3.0, z: 2.0, ry: 0 });

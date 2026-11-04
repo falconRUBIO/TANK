@@ -8,7 +8,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 800 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 5; s.xp = 140; s.thriveSec = 3 * 86400; s.visitAt = s.eggAt = s.dilemmaAt = now + 9e9;
-  s.fish.push({ id: 'h1', name: 'Coral', species: 'seahorse', sex: 'f', seed: 5, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1 }, { id: 'g1', name: 'Amy', species: 'goldfish', sex: 'f', seed: 3, born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.3, health: 1, leaveAsk: { at: now, by: now + 2 * D, why: 'an anemone to host' } });
+  s.fish.push({ id: 'h1', name: 'Coral', species: 'seahorse', sex: 'f', seed: 5, born: now - 30 * D, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1 }, { id: 'g1', name: 'Amy', species: 'goldfish', sex: 'f', seed: 3, born: now - 30 * D, stage: 'adult', traits: ['Calm'], happy: 0.3, health: 1, leaveAsk: { at: now, by: now + 2 * D, why: 'an anemone to host' } });
   s.postcards = [{ id: 'pc1', name: 'Shelly', species: 'turtle', kind: 'turtle', at: now - D, got: now - 3600e3, text: 'Shelly here! The ocean is SO big. Thank you for raising me.' }];
   g.emit('state'); document.querySelectorAll('#coach,#toast').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(1500);

@@ -11,8 +11,8 @@ const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(); s.flags.tut = 5; s.createdAt = now - 20 * 864e5; s.fish.length = 0;
-  s.fish.push({ id: 'x1', name: 'Biscuit', species: 'octopus', seed: 5, born: now - 12 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.9, health: 1, hunger: 0.1, owner: 'me', ownerName: 'You', home: 'c1' },
-    { id: 'n1', name: 'Dot', species: 'goldfish', seed: 2, born: now - 12 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, loss: { id: 'gone', name: 'Pip', at: now, until: now + 3 * 864e5, place: 'g1' } });
+  s.fish.push({ id: 'x1', name: 'Biscuit', species: 'octopus', seed: 5, born: now - 30 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.9, health: 1, hunger: 0.1, owner: 'me', ownerName: 'You', home: 'c1' },
+    { id: 'n1', name: 'Dot', species: 'goldfish', seed: 2, born: now - 30 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, loss: { id: 'gone', name: 'Pip', at: now, until: now + 3 * 864e5, place: 'g1' } });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.0, z: 1.2, ry: 0 }, { id: 'b1', type: 'boulder', x: -2.4, z: 0.6, ry: 0 }, { id: 'g1', type: 'grass', x: -3.0, z: 2.0, ry: 0 });
   s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.keeps = [{ id: 'k1', k: 'pebble', adv: 'a1', by: 'x1', byName: 'Biscuit', at: now - 864e5, x: -1.2, z: 2.6 }]; g.emit('state'); });
 await p.waitForTimeout(2500);

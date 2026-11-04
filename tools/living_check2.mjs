@@ -8,7 +8,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), A = { born: now - 12 * 864e5, stage: 'adult', happy: 0.9, health: 1 }; s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 6; s.fish.length = 0;
+await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), A = { born: now - 30 * 864e5, stage: 'adult', happy: 0.9, health: 1 }; s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 6; s.fish.length = 0;
   s.fish.push({ ...A, id: 'oA', name: 'Biscuit', species: 'octopus', seed: 5, hunger: 0.1, owner: 'me', home: 'c1', traits: [], buddy: 'fP' }, { ...A, id: 'fN', name: 'Nosy', species: 'goldfish', seed: 3, traits: ['Curious'] },
     { ...A, id: 'fP', name: 'Pal', species: 'blue', seed: 4, traits: ['Social'] }, { ...A, id: 'fK', name: 'Kid', species: 'goldfish', seed: 8, stage: 'baby', born: now - 864e5, traits: ['Curious'], parents: [{ id: 'm1', name: 'Mo' }, { id: 'm2', name: 'Ma' }], lean: { from: ['Mo', 'Ma'], bold: 0.1, soc: 0.05 } });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.0, z: 1.2, ry: 0 }, { id: 'r1', type: 'rock', x: -2, z: 0.6, ry: 0 });

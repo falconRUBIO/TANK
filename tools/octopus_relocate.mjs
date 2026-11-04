@@ -8,7 +8,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.fish.length = 0; s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 12 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', home: 'c1', movedAt: 0 });
+await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.fish.length = 0; s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', home: 'c1', movedAt: 0 });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 2.4, z: 1.5, ry: 0 }); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(2500);
 const r0 = await p.evaluate(() => { const F = window.__fishes, f = F.list[0]; f.pos.set(0.5, 0.6, 2.0); f.vel.set(0, 0, 0); f.inspect = null; f.st = { s: 'rest', t: 999, n: 0, pulse: 0 };

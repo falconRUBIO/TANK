@@ -8,7 +8,7 @@ await p.goto('http://localhost:8123/?q=1&dev=1&tod=noon'); await p.waitForSelect
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(1500);
 let fails = 0; const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 const set = (o) => p.evaluate((o) => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 6; s.shells = o.sh ?? 40; s.fish.length = 0;
-  for (const f of o.fish) s.fish.push({ born: now - 20 * D, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'me', ...f });
+  for (const f of o.fish) s.fish.push({ born: now - 30 * D, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'me', ...f });
   s.hunger = o.h; s.water = 1; s.glass = 0; g.emit('state'); for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); }, o);
 const openFeed = async () => { await p.evaluate(() => { for (let i = 0; i < 4; i++) document.querySelector('#modal.on #mok')?.click(); window.__ui.open('tank'); window.__ui.open('care'); }); await p.waitForTimeout(500);
   await p.evaluate(() => document.querySelector('#sheet .crow[data-act="feeddrawer"]')?.click()); await p.waitForTimeout(600); };

@@ -7,7 +7,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.goto(base + '/?q=1&dev=1&tod=night'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(async () => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 6; s.shells = 300; s.fish.length = 0;
-  s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 12 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You', bond: { me: 4 } });
+  s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You', bond: { me: 4 } });
   s.fish.push({ id: 'x2', name: 'Ari', species: 'seahorse', seed: 4, born: Date.now() - 6 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' });
   g.emit('state'); document.querySelectorAll('#goal,#coach,.coach,#toast').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(3500);

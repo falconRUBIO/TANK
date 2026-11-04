@@ -5,7 +5,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 await p.goto('http://localhost:8123/?q=2&dev=1&tod=afternoon&fps=1'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
 await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.fish.length = 0;
-  for (let i = 0; i < 3; i++) s.fish.push({ id: 'x' + i, name: 'Octo' + i, species: 'octopus', seed: 5 + i, born: Date.now() - 12 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'u' + i, ownerName: 'P' + i, home: i === 0 ? 'c1' : null, movedAt: 0 });
+  for (let i = 0; i < 3; i++) s.fish.push({ id: 'x' + i, name: 'Octo' + i, species: 'octopus', seed: 5 + i, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, owner: 'u' + i, ownerName: 'P' + i, home: i === 0 ? 'c1' : null, movedAt: 0 });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 2.4, z: 1.5, ry: 0 }, { id: 'r1', type: 'rock', x: -2.5, z: 1.2, ry: 0 }); g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
 await p.waitForTimeout(3000);
 const r = await p.evaluate(() => {

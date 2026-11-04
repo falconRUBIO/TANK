@@ -8,7 +8,7 @@ const p = await (await b.newContext({ viewport: { width: 390, height: 760 } })).
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, typeof x === 'string' ? x : JSON.stringify(x)); if (!ok) fails++; };
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.evaluate(() => { const g = window.__game, s = g.state, now = Date.now(), D = 864e5; s.flags.tut = 5; s.level = 6; s.fish.length = 0; s.visitAt = s.eggAt = now + 9e9; s.dilemmaAt = now + 9e9; s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.goalOffer = []; s.goal = null;
-  s.fish.push({ id: 'k1', name: 'Sunny', species: 'goldfish', sex: 'm', seed: 5, born: now - 12 * D, stage: 'adult', traits: ['Calm'], gen: 1, parents: [{ id: 'x', name: 'Amy' }], happy: 0.9, health: 1, genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'gold'] } });
+  s.fish.push({ id: 'k1', name: 'Sunny', species: 'goldfish', sex: 'm', seed: 5, born: now - 30 * D, stage: 'adult', traits: ['Calm'], gen: 1, parents: [{ id: 'x', name: 'Amy' }], happy: 0.9, health: 1, genes: { dh: 0, ds: 1, dl: 1, size: 1, m: ['gold', 'gold'] } });
   s.decor.length = 0; g.emit('state'); document.querySelectorAll('#coach,#toast,#goal,#quest').forEach((e) => (e.style.display = 'none')); for (const b of document.querySelectorAll('#modal.on #mok')) b.click(); });
 await p.waitForTimeout(2500); await p.evaluate(() => { window.__cam = [0, 4, 9, 0, 4, 0]; const f = window.__fishes.byId.get('k1'); f.pos.set(0, 4, 2); f.target.set(0, 4, 2); f.retarget = 30; });
 await p.waitForTimeout(1500);

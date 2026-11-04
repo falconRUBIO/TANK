@@ -11,7 +11,7 @@ await p.waitForFunction(() => window.__game?.state && window.__fishes?.list?.len
 for (const id of IDS) {
   await p.evaluate(async (id) => {
     const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.fish.length = 0; s.decor.length = 0; s.giftDay = null; g.giftTried = Date.now();
-    s.fish.push({ id: 'z_' + id, name: 'Z', species: id, seed: 5, born: Date.now() - 20 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, appetite: 0 });
+    s.fish.push({ id: 'z_' + id, name: 'Z', species: id, seed: 5, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.9, health: 1, appetite: 0 });
     g.emit('state'); await new Promise((r) => setTimeout(r, 1500)); for (const k of ['coach', 'goal', 'settle', 'toast', 'fishpill', 'card']) { const e = document.getElementById(k); if (e) e.style.visibility = 'hidden'; }
     const f = window.__fishes.list.find((q) => q.fid === 'z_' + id); f.update = () => {}; f.pos.set(0, 6, 1.5); f.heading = 0; f.pitch = 0; f.roll = 0; f.vel.set(0, 0, 0); f.group.position.copy(f.pos); f.group.quaternion.set(0, 0, 0, 1); const d = Math.max(4.5, f.radius * 7.2); window.__cam = [0.2, 6.15, 1.5 + d, 0, 6, 1.5];
   }, id);

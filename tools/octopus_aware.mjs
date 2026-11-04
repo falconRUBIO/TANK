@@ -13,7 +13,7 @@ const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);
 const setup = (seed) => p.evaluate((seed) => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 9; s.shells = 999; s.fish.length = 0; s.hunger = 0; s.water = 1;
-  s.fish.push({ id: 'o1', name: 'Inky', species: 'octopus', seed, born: Date.now() - 20 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.85, health: 1, owner: 'me', ownerName: 'You', fedAt: Date.now(), home: 'c1' });
+  s.fish.push({ id: 'o1', name: 'Inky', species: 'octopus', seed, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Calm'], happy: 0.85, health: 1, owner: 'me', ownerName: 'You', fedAt: Date.now(), home: 'c1' });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: -2.8, z: 1.6, ry: 0, at: Date.now() - 9 * 864e5 }, { id: 'r1', type: 'rock', x: 2.8, z: -0.6, ry: 0, at: Date.now() - 9 * 864e5 }, { id: 'p1', type: 'grass', x: 0.2, z: -1.2, ry: 0, at: Date.now() - 9 * 864e5 });
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,header,nav,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, seed);
 // run the tank for a while, sampling what the octopus does once a (simulated) second

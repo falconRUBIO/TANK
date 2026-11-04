@@ -15,7 +15,7 @@ const clear = () => p.evaluate(() => { for (const b of document.querySelectorAll
 await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await boot();
 const seed = await p.evaluate(async () => { const R = await import('/src/game/rules.js'); for (let s = 1; s < 5000; s++) if (R.octoMind({ seed: s }).type === 'collector') return s; });
 await p.evaluate((seed) => { const g = window.__game, s = g.state, now = Date.now(); s.flags.tut = 5; s.createdAt = now - 20 * 864e5; s.level = 5; s.fish.length = 0;
-  s.fish.push({ id: 'o1', name: 'Biscuit', species: 'octopus', seed, born: now - 15 * 864e5, arrived: now - 15 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.9, health: 1, hunger: 0.1, owner: 'me', ownerName: 'You', home: 'c1', bond: { me: 30 } });
+  s.fish.push({ id: 'o1', name: 'Biscuit', species: 'octopus', seed, born: now - 30 * 864e5, arrived: now - 15 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.9, health: 1, hunger: 0.1, owner: 'me', ownerName: 'You', home: 'c1', bond: { me: 30 } });
   s.decor.length = 0; s.decor.push({ id: 'c1', type: 'coconut', x: 1.0, z: 1.2, ry: 0 }, { id: 'b1', type: 'boulder', x: -2.4, z: 0.4, ry: 0 }, { id: 'g1', type: 'grass', x: -3.0, z: 2.0, ry: 0 });
   s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.keeps = []; s.visitAt = now + 9e9; s.eggAt = now + 9e9; g.emit('state'); }, seed);
 await p.waitForTimeout(2500);
