@@ -160,7 +160,7 @@ export const STAGE_SCALE = { baby: 0.62, juvenile: 0.82, adult: 1 };
 // lifespans in days: real aquarium lifespans, compressed about tenfold (the octopus a little less, so there is time to win its trust)
 export const LIFESPAN = { goldfish: 420, angelfish: 420, blue: 300, cory: 300, guppy: 300, betta: 300, neon: 240, platy: 240, danio: 240, seahorse: 180, octopus: 120, neongoby: 240, tang: 420, puffer: 300, turtle: 900, hawksbill: 900, loggerhead: 900, kemps: 900, leatherback: 900, sunangel: 420, moonbetta: 300, rosecory: 300, blueleg: 540, scarlet: 540, halloween: 600 }, ELDER_AT = 0.75;
 export const lifeOf = (f) => Math.round((LIFESPAN[f.species] ?? 300) * (kindDef(f)?.dwarf ? 0.6 : 1));      // (a dwarf seahorse lives about a year in the wild, much shorter than the big ones)
-export const BABY_DAYS = 3, ADULT_DAYS = 10;      // a baby for three days, a juvenile until day ten, then grown (slow enough to watch it happen)
+export const BABY_DAYS = 5, ADULT_DAYS = 21;      // a baby for five days, a juvenile until three weeks old, then grown: slow enough to watch it happen day by day
 // a sea turtle is raised to be let go: grown, and at least two weeks in the tank, it is ready for the ocean. Letting it go pays its keepers and leaves a
 // keepsake; it is never sold. Well looked after, it is worth more, and it comes back to visit now and then.
 export const TURTLE_DAYS = 14, TURTLE_PAY = 100, TURTLES = new Set(['turtle', 'hawksbill', 'loggerhead', 'kemps', 'leatherback']);
@@ -176,14 +176,17 @@ export const turtleRoom = (t, species = 'turtle') => { const cr = crowdOf(t), ne
 export const releasedCount = (t) => Math.max(t?.released?.length ?? 0, t?.stats?.released ?? 0);      // sea turtles raised here and let go (shared tank state, saved with everything else)
 export const turtleReady = (f, now = Date.now()) => !!f && isTurtle(f) && !f.dead && !f.away && stageOf(f, now) === 'adult' && now - (f.arrived ?? f.born) >= TURTLE_DAYS * DAY;
 export const turtleDaysLeft = (f, now = Date.now()) => Math.max(0, Math.ceil(Math.max(ADULT_DAYS * DAY - (now - f.born), TURTLE_DAYS * DAY - (now - (f.arrived ?? f.born))) / DAY));
-export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY; return d < BABY_DAYS ? 'baby' : d < ADULT_DAYS ? 'juvenile' : 'adult'; }
+// a sea turtle and a hermit crab keep their own, shorter clock (a baby three days, grown at ten): a turtle is let go to the ocean once grown, and a
+// crab outgrows its shell as it grows, so that timing is part of what each pays and costs
+export const growDays = (fish) => (isTurtle(fish) || isCrab(fish) ? [3, 10] : [BABY_DAYS, ADULT_DAYS]);
+export function stageOf(fish, now = Date.now()) { const d = (now - fish.born) / DAY, [B, A] = growDays(fish); return d < B ? 'baby' : d < A ? 'juvenile' : 'adult'; }
 // how big it is, smoothly, from the day it hatched to the day it is grown: tiny fresh from the egg, half grown by the end of the baby days
 export function growthScale(fish, now = Date.now()) { const d = Math.max(0, (now - fish.born) / DAY),      /* (the same clock as stageOf: a strong hatchling's head start shows in its size too) */ lerp = (a, b, k) => a + (b - a) * Math.max(0, Math.min(1, k)); const start = fish.birthDate ? 0.5 : fish.parents?.length ? 0.2 : STAGE_SCALE.baby;      /* (a seahorse kept from the nursery is half grown already, five days out of the pouch: it carries on from the size it had there) */
-  return d < BABY_DAYS ? lerp(start, STAGE_SCALE.juvenile * 0.9, d / BABY_DAYS) : lerp(STAGE_SCALE.juvenile * 0.9, 1, (d - BABY_DAYS) / (ADULT_DAYS - BABY_DAYS)); }
+  const [B, A] = growDays(fish); return d < B ? lerp(start, STAGE_SCALE.juvenile * 0.9, d / B) : lerp(STAGE_SCALE.juvenile * 0.9, 1, (d - B) / (A - B)); }
 export function nextStage(fish, now = Date.now()) {
   const age = now - fish.born, s = stageOf(fish, now);
   if (s === 'adult') return null;
-  const ms = (s === 'baby' ? BABY_DAYS : ADULT_DAYS) * DAY - age, h = Math.ceil(ms / 36e5);
+  const [B, A] = growDays(fish), ms = (s === 'baby' ? B : A) * DAY - age, h = Math.ceil(ms / 36e5);
   return { to: s === 'baby' ? 'juvenile' : 'adult', ms, label: h >= 48 ? `about ${Math.round(h / 24)} days` : h >= 24 ? 'about a day' : h <= 1 ? 'under an hour' : `${h} hours` };      // (said the way a person would: not 3d 0h)
 }
 // The big moments a tank waits for: a seahorse father's babies being born, eggs hatching. Ready ones first (they wait for someone to watch), then
@@ -595,7 +598,7 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
 // Older saves and fresh worlds both go through this, so every field below always exists.
 export function norm(t, now = Date.now()) {
   for (const f of t.fish ?? []) if (f && isOcto(f) && Number.isInteger(f.pal)) { f.palette ??= f.pal; delete f.pal; }      // (v333: an octopus's color moved from pal to palette; a fish id left in pal is a friendship and stays)
-  if ((t.flags?.growV ?? 1) < 2 && Array.isArray(t.fish)) { const R0 = { baby: 0, juvenile: 1, adult: 2 }, min = { juvenile: BABY_DAYS, adult: ADULT_DAYS }; for (const f of t.fish) { if (!f || !min[f.stage] || R0[stageOf(f, now)] >= R0[f.stage]) continue; f.born = Math.min(f.born, now - min[f.stage] * DAY); } (t.flags ||= {}).growV = 2; }      // (growing up now takes ten days, not three: an animal that had already grown keeps the stage it reached)
+  if ((t.flags?.growV ?? 1) < 3 && Array.isArray(t.fish)) { const R0 = { baby: 0, juvenile: 1, adult: 2 }, min = { juvenile: BABY_DAYS, adult: ADULT_DAYS }; for (const f of t.fish) { if (!f || isTurtle(f) || isCrab(f) || !min[f.stage] || R0[stageOf(f, now)] >= R0[f.stage]) continue; f.born = Math.min(f.born, now - min[f.stage] * DAY); } (t.flags ||= {}).growV = 3; }      // (growing up now takes three weeks (it was three days, then ten): an animal that had already grown keeps the stage it reached)
   if (!t.flags?.guideV && Array.isArray(t.fish)) { const F = (t.field ||= {});      // (the Field Guide came back: what already happened in an older tank is filled in once, from each animal's own record, with no line of its own)
     for (const f of t.fish) { if (!f) continue; const D = f.disc ?? {}, pg = { escape: D.escape1, den: D.den, hitch: D.hitch, blend: D.blend, eyes: D.eyes, dance: D.dance, snick: D.snick, camo: D.camo, friend: D.friend, puzzle: D.puzzle, shell: (f.crab?.hist ?? []).find((h) => h.how === 'moved')?.at };
       for (const [p, at] of Object.entries(pg)) if (Number.isFinite(at) && (!F[p] || (F[p].v && F[p].at > at))) F[p] = { at, fish: f.id, name: f.name, text: null, v: 2 }; }
@@ -1948,7 +1951,7 @@ function milestones(t, now, ev) {
 // `empty` is a brand new tank: no fish at all until its first caretaker chooses one in the opening.
 export function newWorld(now = Date.now(), seed = 1, { empty = false } = {}) {
   return {
-    style: { floor: 'sand', backdrop: 'candy' }, shells: 20, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 2, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, coconut: 1, moss: 1 } },
+    style: { floor: 'sand', backdrop: 'candy' }, shells: 20, hunger: 0.55, orders: [], drift: null, driftAt: now + 20 * 60e3, wishIdx: 0, water: 1, glass: 0, level: 1, createdAt: now, simTs: now, seq: 10, flags: { tut: 0, growV: 3, firsts: empty ? {} : { me: true }, starter: { fern: 1, grass: 1, rock: 1, coconut: 1, moss: 1 } },
     fish: empty ? [] : [{ id: 'f1', name: 'Pip', species: 'goldfish', seed: 1 + (seed % 5), born: now, stage: 'baby', traits: ['Curious', 'Social'], happy: 0.75, health: 1, appetite: 0.05, owner: 'me', ownerName: 'You' }],
     decor: [],
     seen: { fish: empty ? [] : ['goldfish'], decor: [] },

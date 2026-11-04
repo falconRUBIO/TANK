@@ -11,7 +11,7 @@ p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto('http://localhost:8123/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);
-await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.fish.length = 0; const born = Date.now() - 12 * 864e5;
+await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 8; s.fish.length = 0; const born = Date.now() - 30 * 864e5;
   s.fish.push({ id: 'h1', name: 'Sunny', species: 'seahorse', seed: 4, born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1 }, { id: 'h2', name: 'Pearl', species: 'seahorse', seed: 11, born, stage: 'adult', traits: ['Shy'], happy: 0.8, health: 1 }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born, stage: 'adult', traits: ['Brave'], happy: 0.8, health: 1 });
   s.decor.length = 0; s.decor.push({ id: 'p1', type: 'grass', x: -2.6, z: 2.3, ry: 0 }, { id: 'p2', type: 'fern', x: 1.2, z: 2.4, ry: 0 }, { id: 'p3', type: 'sword', x: -1.0, z: -0.3, ry: 0 }, { id: 'p4', type: 'brain', x: 2.6, z: 2.2, ry: 0 });
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });

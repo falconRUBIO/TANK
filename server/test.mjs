@@ -200,7 +200,7 @@ await t('a brand new tank is empty; its creator chooses and names the first fish
   assert.equal((await send({ t: 'chooseFirst', species: 'octopus', name: 'Two', idem: 'cf2' })).reason, 'ALREADY_HAVE', 'once'); wa.close();
 });
 await t('while players are connected the tank grows up and everyone is told', async () => {
-  const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 3.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
+  const w = getW(tank.id); const pip = w.fish[0]; pip.born = Date.now() - 5.5 * 864e5; pip.stage = 'baby'; setW(tank.id, { fish: w.fish, simTs: Date.now() - 2000 });
   const r = L_tick(); assert.ok(r.events.some((e) => e.grew === pip.id), JSON.stringify(r.events.map((e) => e.journal?.text)));
   assert.ok(S.db.prepare("SELECT 1 FROM journal WHERE tank_id=? AND text LIKE '%growing up%'").get(tank.id));
 });
@@ -399,10 +399,10 @@ await t('push: a caretaker hears that their own octopus is hungry (once in 12 ho
   { const w1 = getW(tk.id); w1.fish[0].ail = 0.5 * 86400; setW(tk.id, { fish: w1.fish, simTs: Date.now() - 1000 }); }      // (it has started to suffer for it)
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'the owner is told: ' + JSON.stringify(pushed.map((q) => q.payload.body))); assert.match(pushed[0].payload.body, /Ink is hungry/); assert.equal(pushed[0].sub.endpoint, sub.endpoint);
   S.db.prepare('DELETE FROM push_log').run(); await S.pushSweep(Date.now()); assert.equal(pushed.length, 1, 'not again within 12 hours even with the daily cap cleared');
-  { const w2 = getW(tk.id); w2.fish[0].born = Date.now() - 10 * 864e5 - 3600e3; w2.fish[0].stage = "juvenile"; w2.fish[0].hunger = 0; setW(tk.id, { fish: w2.fish, simTs: Date.now() - 1000 });
+  { const w2 = getW(tk.id); w2.fish[0].born = Date.now() - 21 * 864e5 - 3600e3; w2.fish[0].stage = "juvenile"; w2.fish[0].hunger = 0; setW(tk.id, { fish: w2.fish, simTs: Date.now() - 1000 });
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(pushed.some((q) => /Ink is an adult/.test(q.payload.body)), 'grown up is news: ' + JSON.stringify(pushed.map((q) => q.payload.body)));
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(!pushed.some((q) => /grown up|is an adult/.test(q.payload.body)), 'and told only once, not again in other words');
-    const wo = await open(y.token); await new Promise((r) => setTimeout(r, 100)); const w3 = getW(tk.id); w3.fish[0].born = Date.now() - 3 * 864e5 - 1800e3; w3.fish[0].id += 'b'; setW(tk.id, { fish: w3.fish });
+    const wo = await open(y.token); await new Promise((r) => setTimeout(r, 100)); const w3 = getW(tk.id); w3.fish[0].born = Date.now() - 21 * 864e5 - 1800e3; w3.fish[0].id += 'b'; setW(tk.id, { fish: w3.fish });
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(pushed.some((q) => /all grown up/.test(q.payload.body)), 'a friend has the tank open: the one away still hears it: ' + JSON.stringify(pushed.map((q) => q.payload.body))); wo.close(); }
 });
 await t('push: the day\'s limit keeps room for what matters: light news never blocks a hungry animal or a birth', async () => {
@@ -419,7 +419,7 @@ await t('push: cliffhangers reach a closed tank: a decision waiting, with how lo
   const x = await mkUser('Cliff'), tk = (await call('/api/tanks', { name: 'Cliff' }, x.token)).body;
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
   assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/cl1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
-  const now = Date.now(), fish = (id, name, sex, m) => ({ id, name, species: 'goldfish', seed: id.length * 7, born: now - 20 * 864e5, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id, genes: { dh: 0, ds: 1, dl: 1, size: 1, m } });
+  const now = Date.now(), fish = (id, name, sex, m) => ({ id, name, species: 'goldfish', seed: id.length * 7, born: now - 30 * 864e5, stage: 'adult', sex, traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id, genes: { dh: 0, ds: 1, dl: 1, size: 1, m } });
   const A = fish('ga', 'Amy', 'f', ['gold', 'n']), B = fish('gb', 'Bob', 'm', ['gold', 'n']);
   setW(tk.id, { fish: [A, B], eggs: [{ id: 'e9', species: 'goldfish', a: 'ga', b: 'gb', pa: A, pb: B, laid: now - 3600e3, hatchAt: now + 4 * 864e5, cared: [], guard: 'gb' }], dilemma: { id: 'dl1', kind: 'chase', fish: ['ga', 'gb'], at: now, until: now + 30 * 3600e3, text: 'Amy keeps chasing Bob around the tank.', opts: [], done: false }, dilemmaAt: now + 9e9, simTs: now - 2000, flags: { tut: 5 } });
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
@@ -431,7 +431,7 @@ await t('push: the usual mealtime: fish fed at about the same hour each day are 
   const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
   assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/meal1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
   const now = Date.now(), L = new Date(now + off * 60e3), hr = L.getUTCHours() + L.getUTCMinutes() / 60, want = hr + 0.3, i = Math.floor(want - 0.5), fr = want - (i + 0.5), H = Array(24).fill(0); H[(i + 24) % 24] = 4 * (1 - fr); H[(i + 25) % 24] = 4 * fr;
-  const fish = { id: 'mf', name: 'Nemo', species: 'goldfish', seed: 3, born: now - 20 * 864e5, stage: 'adult', sex: 'f', traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id };
+  const fish = { id: 'mf', name: 'Nemo', species: 'goldfish', seed: 3, born: now - 30 * 864e5, stage: 'adult', sex: 'f', traits: ['Calm'], happy: 0.9, health: 1, owner: x.userId ?? x.id };
   setW(tk.id, { fish: [fish], feedHrs: H, tzMin: off, hunger: 0.5, lastFed: now - 6 * 3600e3, simTs: now - 2000, flags: { tut: 5 } });
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now);
   const all = pushed.map((q) => q.payload.body); assert.ok(all.some((b) => /time: the fish are waiting at the surface where you usually feed them/.test(b)), JSON.stringify(all));
@@ -526,7 +526,7 @@ await t('four caretakers, one tank: seats, first fish ownership, and the world s
 });
 await t('neglect on the server: very unwell but alive, recovery with care, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now();
-  const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 11 * DAY, stage: 'adult' }));
+  const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 30 * DAY, stage: 'adult' }));
   let w = getW(tk.id); setW(tk.id, { fish: sick(w), createdAt: now - 20 * DAY, simTs: now - 1000, hunger: 0.85, water: 0.45, lastDeath: 0, flags: { ...w.flags, tut: 5 }, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 0, 'neglect does not kill'); assert.equal(w.memorial.length, 0); assert.ok(w.fish.every((f) => f.ail >= 3 * 86400), 'they are very unwell');
   tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).floaters.length, 0, 'not even after days more');
@@ -534,7 +534,7 @@ await t('neglect on the server: very unwell but alive, recovery with care, float
   const wx = await open(x.token), wy = await open(y.token); w = getW(tk.id); setW(tk.id, { simTs: Date.now(), hunger: 0.8, water: 0.5, fish: w.fish.map((f) => ({ ...f, ail: 3 * 86400, health: 0.3 })) });
   await ackOf(wx, { t: 'feed', x: 0, idem: 'rg-f' }); await ackOf(wx, { t: 'water', idem: 'rg-w' }); const rec = getW(tk.id); assert.ok(rec.hunger < 0.8 && rec.water > 0.9, 'care restored the tank');
   // floating dead fish, lay to rest: two caretakers at the same moment, exactly one succeeds
-  setW(tk.id, { floaters: [{ id: 'dead1', name: 'Gone', species: 'goldfish', seed: 1, stage: 'adult', born: now - 12 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'] }], memorial: [{ id: 'dead1', name: 'Gone', species: 'goldfish', born: now - 12 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'], milestones: ['Reached the adult stage'], rested: null }] });
+  setW(tk.id, { floaters: [{ id: 'dead1', name: 'Gone', species: 'goldfish', seed: 1, stage: 'adult', born: now - 30 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'] }], memorial: [{ id: 'dead1', name: 'Gone', species: 'goldfish', born: now - 30 * DAY, died: now - 1000, owner: x.userId, ownerName: 'Xan', traits: ['Calm'], milestones: ['Reached the adult stage'], rested: null }] });
   const [r1, r2] = await Promise.all([ackOf(wx, { t: 'scoop', id: 'dead1', idem: 'sc-1' }), ackOf(wy, { t: 'scoop', id: 'dead1', idem: 'sc-2' })]);
   assert.equal([r1, r2].filter((r) => r.applied).length, 1, 'only one scoop applies'); assert.equal(getW(tk.id).floaters.length, 0);
   const after = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); const mem = after.memorial.find((m) => m.id === 'dead1'); assert.ok(mem && mem.rested && mem.rested.by, 'memorial persisted with who laid it to rest'); assert.equal(mem.ownerName, 'Xan'); assert.deepEqual(mem.milestones, ['Reached the adult stage']);
@@ -542,13 +542,13 @@ await t('neglect on the server: very unwell but alive, recovery with care, float
 });
 await t('offline simulation: ten days away loses nobody and the tank is still there', async () => {
   const { tk } = globalThis.regress, DAY = 864e5, now = Date.now(); let w = getW(tk.id);
-  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 11 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
+  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 30 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.equal(before - a2.fish.length, 0, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
 });
 console.log('Discoveries, thank-yous, journal split, analytics');
 await t('observed discoveries are checked, saved once, journalled, shared with everyone, and a repeat says nothing', async () => {
   const { tk, x, y } = globalThis.regress, wx = await open(x.token), wy = await open(y.token); let w = getW(tk.id);
-  const shy = { ...w.fish[0], id: 'shy1', name: 'Mouse', traits: ['Shy'], born: Date.now() - 12 * 864e5, stage: 'adult', ail: 0, health: 1, disc: {} }; setW(tk.id, { fish: [shy, ...w.fish.slice(1)], decor: [{ id: 'dd1', type: 'rock', x: 0, z: 1, ry: 0 }], simTs: Date.now(), floaters: [], lastDeath: 0 });
+  const shy = { ...w.fish[0], id: 'shy1', name: 'Mouse', traits: ['Shy'], born: Date.now() - 30 * 864e5, stage: 'adult', ail: 0, health: 1, disc: {} }; setW(tk.id, { fish: [shy, ...w.fish.slice(1)], decor: [{ id: 'dd1', type: 'rock', x: 0, z: 1, ry: 0 }], simTs: Date.now(), floaters: [], lastDeath: 0 });
   const nj = () => S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(tk.id).n, before = nj();
   const r = await ackOf(wx, { t: 'observe', key: 'hideaway', fish: 'shy1', spot: 'dd1', idem: 'ob1' }); assert.equal(r.ok, true); assert.equal(r.applied, true);
   const ev = await waitFor(wy, (m) => m.t === 'event' && m.noticed === 'shy1'); assert.match(ev.toast, /hiding place/); assert.equal(nj(), before + 1);
@@ -587,7 +587,7 @@ await t('analytics: sessions and actions are recorded without personal data, pla
 });
 await t('economy integrity: milestones and the daily wish pay once even when caretakers act at the same moment, and one wallet cannot be double-spent', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now(), wx = await open(x.token), wy = await open(y.token), wz = await open(z.token), w0 = getW(tk.id), tpl = w0.fish[0];
-  const fish = ['m1', 'm2', 'm3'].map((id, i) => ({ ...tpl, id, name: id.toUpperCase(), species: 'goldfish', traits: ['Calm'], born: now - 14 * DAY - 60e3, arrived: now - 14 * DAY - 60e3, stage: 'adult', ail: 0, health: 1, happy: 0.8, found: [], disc: {}, bond: {}, petAt: {} }));
+  const fish = ['m1', 'm2', 'm3'].map((id, i) => ({ ...tpl, id, name: id.toUpperCase(), species: 'goldfish', traits: ['Calm'], born: now - 14 * DAY - 60e3, arrived: now - 14 * DAY - 60e3, stage: 'juvenile', ail: 0, health: 1, happy: 0.8, found: [], disc: {}, bond: {}, petAt: {} }));
   setW(tk.id, { fish, decor: [], orders: [], eggs: [], floaters: [], shells: 50, simTs: now - 2000, hunger: 0.3, water: 0.9, glass: 0, createdAt: now - 40 * DAY, lastDeath: now, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15, dayLog: { day: Math.floor(now / DAY), care: true, bond: true, paid: true }, flags: { ...w0.flags, tut: 5, msV: 1, pairs: {}, weeks: 5 }, daily: { day: Math.floor(now / DAY), kind: 'play', tier: 'normal', reward: 5, text: 'Play with a fish', need: 1, have: 0, ids: [], done: false } });
   const [r1, r2] = await Promise.all([ackOf(wx, { t: 'pet', id: 'm1', idem: 'ei-1' }), ackOf(wy, { t: 'pet', id: 'm2', idem: 'ei-2' })]); assert.ok(r1.ok && r2.ok);
   let w = getW(tk.id); assert.equal(w.daily.done, true, 'the shared wish is done'); assert.equal(w.shells, 50 + 15 + 5, 'three 14-day milestones (+5 each) and one wish (+5), each exactly once');
@@ -626,7 +626,7 @@ await t('your data is yours: backup downloads, restores into a new tank, and del
 await t('tutorial progress is saved with the tank', async () => { assert.equal((await ackOf(wsA, { t: 'tut', step: 3, idem: 'tu' })).ok, true); const w = getW(tank.id); assert.equal(w.flags.tut, 3); assert.ok(w.decor.some((d) => d.type === 'fern' && d.paid === 0)); });
 await t('the octopus puzzle jar: costs shells once, cannot be doubled by two caretakers, and is solved on its own with the event delivered', async () => {
   const { tk, x, y } = globalThis.regress, now = Date.now(), wx = await open(x.token), wy = await open(y.token), w0 = getW(tk.id), tpl = w0.fish[0];
-  const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 12 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: [], disc: {}, bond: {}, petAt: {}, puzzle: null };
+  const oct = { ...tpl, id: 'oc1', name: 'Inky', species: 'octopus', traits: ['Curious'], born: now - 25 * 864e5, stage: 'adult', ail: 0, health: 1, happy: 0.7, found: ['age14'], disc: {}, bond: {}, petAt: {}, puzzle: null };
   setW(tk.id, { fish: [oct], decor: [], orders: [], eggs: [], floaters: [], shells: 20, simTs: Date.now() - 2000, hunger: 0.3, water: 0.9, glass: 0, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15, drift: null, driftAt: 1e15 });
   const [a, b] = await Promise.all([ackOf(wx, { t: 'puzzle', id: 'oc1', idem: 'pz-1' }), ackOf(wy, { t: 'puzzle', id: 'oc1', idem: 'pz-2' })]);
   assert.ok(a.ok && b.ok); assert.equal([a, b].filter((r) => r.applied).length, 1, 'only one jar is given'); assert.equal(getW(tk.id).shells, 20 - 3, 'paid once');
@@ -774,7 +774,7 @@ await t('a phone that connects catches the tank up for everyone: the phone alrea
 });
 await t('chaos: three phones act at random while connections drop and come back; in the end every phone agrees with the server', async () => {
   const u = [await mkUser('C1'), await mkUser('C2'), await mkUser('C3')], tk = (await call('/api/tanks', { name: 'Chaos' }, u[0].token)).body; await call('/api/join', { code: tk.code }, u[1].token); await call('/api/join', { code: tk.code }, u[2].token);
-  setW(tk.id, { shells: 400, level: 8, flags: { ...getW(tk.id).flags, tut: 5, firsts: { [u[0].userId]: true, [u[1].userId]: true, [u[2].userId]: true } }, fish: [{ id: 'cf', name: 'Chaos', species: 'goldfish', seed: 1, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now(), hunger: 0.9, glass: 0.9, water: 0.4 });
+  setW(tk.id, { shells: 400, level: 8, flags: { ...getW(tk.id).flags, tut: 5, firsts: { [u[0].userId]: true, [u[1].userId]: true, [u[2].userId]: true } }, fish: [{ id: 'cf', name: 'Chaos', species: 'goldfish', seed: 1, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, appetite: 0.05, owner: null }], simTs: Date.now(), hunger: 0.9, glass: 0.9, water: 0.4 });
   const ph = u.map((x) => ({ x, ws: null, state: null })), conn = async (p) => { p.ws = await open(p.x.token); p.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'snapshot' || m.t === 'state' || m.t === 'patch') p.state = p.ws.cur; });      /* (the copy the phone holds, whole or patched) */ await waitFor(p.ws, (m) => m.t === 'snapshot'); };
   for (const p of ph) await conn(p); let seq = 0, rngS = 12345; const rnd = () => ((rngS = (rngS * 16807) % 2147483647) / 2147483647);
   const acts = [(i) => ({ t: 'feed', x: 0 }), (i) => ({ t: 'glass' }), (i) => ({ t: 'water' }), (i) => ({ t: 'pet', id: 'cf' }), (i) => ({ t: 'buyDecor', type: 'grass', x: (rnd() - 0.5) * 6, z: 1 + rnd(), ry: 0 }), (i) => ({ t: 'dailyGift', tz: 0 })];
@@ -844,7 +844,7 @@ await t('seahorse family across phones: born with nobody connected, once; two ph
 });
 await t('developer test aquarium: only listed players; real tanks untouched; the whole seahorse lifecycle step by step on the real rules; two phones; reset', async () => {
   const dev = await mkUser('Dev'), dev2 = await mkUser('Dev2'), plain = await mkUser('Plain'), mine = (await call('/api/tanks', { name: 'Home' }, dev.token)).body;
-  setW(mine.id, { shells: 77, level: 3, flags: { ...getW(mine.id).flags, tut: 5 }, fish: [{ id: 'hx', name: 'Homey', species: 'goldfish', seed: 2, born: Date.now() - 9e8, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, owner: dev.userId }] });
+  setW(mine.id, { shells: 77, level: 3, flags: { ...getW(mine.id).flags, tut: 5 }, fish: [{ id: 'hx', name: 'Homey', species: 'goldfish', seed: 2, born: Date.now() - 30 * 864e5, stage: 'adult', traits: ['Curious'], happy: 0.7, health: 1, owner: dev.userId }] });
   const homeBefore = JSON.stringify({ ...getW(mine.id), simTs: 0 }), homeJournal = S.db.prepare('SELECT COUNT(*) n FROM journal WHERE tank_id=?').get(mine.id).n;
   // not a developer: no tools, every endpoint refused, and no way into a test aquarium
   for (const [path, body] of [['/api/dev/test', null], ['/api/dev/test/open', {}], ['/api/dev/test/step', { op: 'pair' }], ['/api/dev/test/reset', {}], ['/api/dev/test/join', { code: 'AAAAAA' }]]) assert.equal((await call(path, body, plain.token)).status, 403, path);
@@ -892,7 +892,7 @@ await t('developer test aquarium: only listed players; real tanks untouched; the
 });
 await t('an octopus\'s memories: three caretakers, a handoff and duplicate reports agree on one memory and one journal line, and it is kept in the saved tank', async () => {
   const u = [await mkUser('Ann'), await mkUser('Bo'), await mkUser('Cy')], tk = (await call('/api/tanks', { name: 'Mem' }, u[0].token)).body; for (const x of u.slice(1)) await call('/api/join', { code: tk.code }, x.token);
-  const now = Date.now(), W = getW(tk.id); W.fish = [...(W.fish ?? []), { id: 'om', name: 'Mo', species: 'octopus', seed: 3, born: now - 20 * 864e5, stage: 'adult', traits: [], happy: 0.8, health: 1 }]; W.decor = [...(W.decor ?? []), { id: 'dm', type: 'pot', x: 1, z: 1, ry: 0, at: now - 30e3 }]; setW(tk.id, { fish: W.fish, decor: W.decor });
+  const now = Date.now(), W = getW(tk.id); W.fish = [...(W.fish ?? []), { id: 'om', name: 'Mo', species: 'octopus', seed: 3, born: now - 30 * 864e5, stage: 'adult', traits: [], happy: 0.8, health: 1 }]; W.decor = [...(W.decor ?? []), { id: 'dm', type: 'pot', x: 1, z: 1, ry: 0, at: now - 30e3 }]; setW(tk.id, { fish: W.fish, decor: W.decor });
   const ws = await Promise.all(u.map((x) => open(x.token))); await new Promise((r) => setTimeout(r, 150));
   const acks = await Promise.all(ws.map((w, i) => ackOf(w, { t: 'octoTouch', fish: 'om', decor: 'dm', kind: 'new', idem: 'touch' + i })));      // all three phones report the same go (a handoff, a reconnect)
   assert.equal(acks.filter((x) => x.ok && x.applied !== false).length, 1, JSON.stringify(acks));
@@ -907,7 +907,7 @@ await t('an octopus\'s memories: three caretakers, a handoff and duplicate repor
 });
 await t('an octopus adventure resolves on the server with no phone open: one return line, at the time it came home', async () => {
   const o = await mkUser('Adv'), tk = (await call('/api/tanks', { name: 'Adv' }, o.token)).body, now = Date.now(), W = getW(tk.id);
-  W.flags.tut = 5; W.createdAt = now - 20 * 864e5; W.fish = [{ id: 'oa', name: 'Ziggy', species: 'octopus', seed: 3, born: now - 20 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, hunger: 0.1, ownerName: 'Adv' }];
+  W.flags.tut = 5; W.createdAt = now - 20 * 864e5; W.fish = [{ id: 'oa', name: 'Ziggy', species: 'octopus', seed: 3, born: now - 30 * 864e5, stage: 'adult', traits: [], happy: 0.9, health: 1, hunger: 0.1, ownerName: 'Adv' }];
   W.fish[0].away = { id: 'aS', kind: 'short', at: now - 2 * 3600e3, until: now - 3600e3, out: 'quiet', inTank: false, hunger: 0.1, fedAt: null }; W.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [{ id: 'aS', kind: 'short', fish: 'oa', at: now - 2 * 3600e3, out: 'quiet' }] }; setW(tk.id, W);
   tickTank(S.db, tk.id, now); tickTank(S.db, tk.id, now + 60e3);
   const rows = S.db.prepare('SELECT text, ts FROM journal WHERE tank_id=? AND text LIKE ?').all(tk.id, '%Ziggy came back%'); assert.equal(rows.length, 1, JSON.stringify(rows)); assert.equal(rows[0].ts, now - 3600e3, 'kept at the time it came home');

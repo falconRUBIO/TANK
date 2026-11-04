@@ -58,7 +58,7 @@ await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'rush' }, { dev:
 const s4 = await S(); ck('a neon school adds four fish', s4.fish.length === 6, `${s4.fish.length} fish`);
 { const R = await p.evaluate(async () => { const M = await import('/src/game/rules.js'), g = window.__game; for (let d = 0; d < 3; d++) await g.dispatch({ t: 'dev', what: 'day' }, { dev: true }); const a = M.scoreOf(g.state);      /* (a few days on, the water and glass are due) */ await g.dispatch({ t: 'water' }); await g.dispatch({ t: 'glass' }); return [a, M.scoreOf(g.state)]; }); ck('care earns level points (levels come from care, not from buying fish)', R[1] > R[0], JSON.stringify(R)); }
 const g0 = (await p.evaluate(() => window.__tank.fishes.map((f) => f.growth)))[0];
-for (let d = 0; d < 3; d++) await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'day' }, { dev: true })); await p.waitForTimeout(500);      // (a baby for three days: BABY_DAYS)
+for (let d = 0; d < 5; d++) await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'day' }, { dev: true })); await p.waitForTimeout(500);      // (a baby for five days: BABY_DAYS)
 const s5 = await S(); const g1 = (await p.evaluate(() => window.__tank.fishes.map((f) => f.growth)))[0];
 ck('fish grow over days', s5.fish[0].stage !== 'baby' && g1 > g0, `${s5.fish[0].stage}, scale ${g0}→${g1}`);
 ck('journal records real events', (await p.evaluate(() => window.__game.journal.map((j) => j.text))).some((t) => /grow|adult|level|Mango|brought/i.test(t)), '');
