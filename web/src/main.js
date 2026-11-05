@@ -1721,7 +1721,7 @@ function careRows(rec) {
   const r = (k, v) => (v ? `<div class="ir"><span>${k}</span><b>${v}</b></div>` : ''), when = (ms) => (ms < 60e3 ? 'now' : ms < 3600e3 ? `in ${Math.round(ms / 60e3)} min` : `in about ${Math.round(ms / 3600e3)} h`);
   const ago2 = (ts) => { const m = (Date.now() - ts) / 60e3; return m < 1 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
   const bond = Math.min(1, (rec.bond?.[game.you?.userId ?? 'me'] ?? 0) / 15);
-  return r('Last fed', Number.isFinite(last) ? ago2(last) : 'Not yet') + r('Hungry again', next > 0 ? when(next) : 'Now: it would love a meal') + r('Eats', { crab: 'Crabs, from its own caretaker', mysis: 'Mysis shrimp, from its own caretaker', meal: 'Flakes and treats from anyone' }[food]) + r('Bond with you', bond >= 0.9 ? 'Best friends' : bond >= 0.5 ? 'Close' : bond >= 0.2 ? 'Warming up' : 'Just met');
+  return r('Last fed', Number.isFinite(last) ? ago2(last) : 'Not since it arrived') + r('Hungry again', next > 0 ? when(next) : Number.isFinite(last) && Date.now() - last < 30 * 60e3 ? 'Still hungry: it could eat another' : 'Now: it would love a meal')      /* (one meal takes off half its hunger: a very hungry one fed a moment ago can still want more) */ + r('Eats', { crab: 'Crabs, from its own caretaker', mysis: 'Mysis shrimp, from its own caretaker', meal: 'Flakes and treats from anyone' }[food]) + r('Bond with you', bond >= 0.9 ? 'Best friends' : bond >= 0.5 ? 'Close' : bond >= 0.2 ? 'Warming up' : 'Just met');
 }
 // who it is close to, with the numbers behind it: a partner (and since when, and how often they greet), or how far along two are in getting to know each other
 function bondLines(rec, now, LOG = {}) {

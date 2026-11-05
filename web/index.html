@@ -1551,6 +1551,8 @@ nav [data-tab]:active{transform:scale(.92)}
   #coach.low{top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translateY(160%)}#coach.low.on{transform:none}
   /* short explanations wrap evenly: no single word left alone on a last line ("Tap one to go and see / it.") */
   :is(#sheet,#card,#coach,#modal,#fishpill) :is(p,small,.todaysub,.crewsub){text-wrap:pretty}:is(#sheet,#card,#modal) :is(h2,h3,h4){text-wrap:balance}
+  /* reduce motion (iPhone Settings › Accessibility › Motion): every looping animation plays once and rests on its last frame, nothing pulses or bobs forever */
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-iteration-count:1!important;scroll-behavior:auto!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
