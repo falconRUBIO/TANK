@@ -1392,3 +1392,19 @@ ok('the best next step is only what the viewer can do: their own hungry octopus,
   assert.equal(R.bestStep(t, now).act, 'feeddrawer', 'alone (no viewer given) it is yours to feed');
   t.water = 0.5; assert.equal(R.bestStep(t, now, { uid: 'ben', shared: true, members: active }).act, 'water', 'something the viewer can do comes before a nudge');
 });
+ok('an ordinary fish gets a line about its day, made from what is true of it; the octopus, seahorses, crabs and turtles are left to their own stories', () => {
+  const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.decor = [{ id: 'c1', type: 'cave', x: 0, z: 0, ry: 0 }, { id: 'g1', type: 'grass', x: 2, z: 0, ry: 0 }];
+  const fish = (id, name, species, seed, x = {}) => R.ensureFish({ id, name, species, seed, born: -30 * D, stage: 'adult', traits: [], happy: 0.8, health: 1, ...x });
+  t.fish = [fish('p', 'Pip', 'goldfish', 1, { pal: 'q', spotId: 'c1' }), fish('q', 'Quill', 'goldfish', 2, { pal: 'p' }), fish('o', 'Ink', 'octopus', 3), fish('s', 'Sol', 'seahorse', 4)];
+  const L = R.fishDayLine(t, t.fish[0], 40); assert.ok(L && /^Pip /.test(L[1]), String(L)); assert.ok(['pal', 'spot'].includes(L[0]), 'only from its friend or its place: it has no traits here');
+  assert.ok(/Quill|reef cave/i.test(L[1]), L[1]); assert.equal(R.fishDayLine(t, t.fish[0], 40)[1], L[1], 'the same day gives the same line (every phone and the server agree)');
+  t.fish[0].dayK = L[0]; const L2 = R.fishDayLine(t, t.fish[0], 40); assert.notEqual(L2?.[0], L[0], 'not the same kind of line twice running');
+  const bare = fish('b', 'Bo', 'goldfish', 9); t.fish.push(bare); assert.equal(R.fishDayLine({ ...t, decor: [] }, { ...bare, pal: null }, 40), null, 'nothing true to say: no line');
+  // through advance: the first day sets the clock only; the next day one or two fish are told, never the octopus or the seahorse; and not the same fish two days running
+  R.advance(t, 40 * D + 1000); assert.equal(t.flags.fishDay, 40);
+  const ev = R.advance(t, 41 * D + 1000).filter((e) => e.story && e.journal && /^(Pip|Quill|Bo|Ink|Sol) /.test(e.journal) && !/best friends|favorite spot/.test(e.journal));
+  assert.ok(ev.length >= 1 && ev.length <= 2, JSON.stringify(ev)); assert.ok(!ev.some((e) => e.story === 'o' || e.story === 's'));
+  const told = ev.map((e) => e.story), ev2 = R.advance(t, 42 * D + 1000).filter((e) => e.story && e.journal && t.fish.some((f) => f.id === e.story && f.dayTold === 42));
+  assert.ok(!ev2.some((e) => told.includes(e.story)), 'a fish told yesterday is not told today');
+  assert.equal(R.advance(t, 42 * D + 5000).filter((e) => t.fish.some((f) => f.id === e.story && f.dayTold === 42) && e.journal).length, 0, 'once a day');
+});

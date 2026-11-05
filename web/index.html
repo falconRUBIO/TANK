@@ -1545,6 +1545,8 @@ nav [data-tab]:active{transform:scale(.92)}
   #sheet :is(.nudge,.foot a,.jpc,.anr .ansell,.tog,.lnk){position:relative!important}#sheet :is(.nudge,.foot a)::after{content:'';position:absolute;inset:-14px -6px}#sheet :is(.jpc,.anr .ansell,.tog,.lnk)::after{content:'';position:absolute;inset:-8px -4px}
   #card :is(.ren,.tabs .tb,.sellb){position:relative!important}#card .ren::after{content:'';position:absolute;inset:-12px -6px}#card :is(.tabs .tb,.sellb)::after{content:'';position:absolute;inset:-8px 0}      /* (the fish card's rename pencil, its tabs and the rehome link: the same invisible margin to a thumb's size) */
   #fishpill .pfeed{position:relative!important}#fishpill .pfeed::after{content:'';position:absolute;inset:-7px -3px}      /* (Feed on a fish's label: a thumb-sized tap area) */
+  /* Health: Tank Health (the same number as the ring at the top) and its two parts, each a labelled bar */
+  #sheet .havg .hparts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}#sheet .havg .hpart{display:flex;flex-direction:column;gap:4px;min-width:0}#sheet .havg .hpl{display:flex;justify-content:space-between;align-items:baseline;gap:6px}#sheet .havg .hpl b{font-size:12.5px}#sheet .havg .hpl em{font-style:normal;font-weight:700;font-size:13px}#sheet .havg .hpart .tc-bar{height:7px}#sheet .havg .hpart small{font-size:11px;opacity:.7;line-height:1.25}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>

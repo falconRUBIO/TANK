@@ -537,6 +537,37 @@ function knowFold(t, f, near, now, ev) {
   const o = live(top[0]); if (!o || (o.pal && live(o.pal)) || !canBefriend(f, o)) return;
   const spot = f.spotId && o.spotId === f.spotId ? t.decor.find((d) => d.id === f.spotId) : null; befriend(t, f, o, now, ev, spot ? DECOR_DEF[spot.type]?.label?.toLowerCase() : null);
 }
+// ── an ordinary fish's day ── The octopus, the seahorses, the crabs and the turtles have stories of their own; the other fish once had almost
+// nothing to show for the time you were away. Once a tank day, one or two of them get a line in the journal (and on their own page) made only
+// from what is true of them now: a best friend, a favorite place, a rival, a parent close by, its nature. It is what someone coming back finds
+// under While you were away. Picked by hash from the day, so every phone and the server write the same lines; a fish is not told about two
+// days running, and not the same kind of line twice in a row. No shells, no wellbeing: words only.
+// (the wording of those lines, for the While you were away list, which keeps them ahead of routine news: kept in step with fishDayLine below)
+export const FISHDAY_RE = / (spent (the morning|the afternoon|most of the day) side by side|kept close to the .+, its favorite place,|and .+ squared off again|stayed close to .+, its parent,|spent a while nosing around the |stayed tucked in by the |chased its own reflection |had a slow, quiet day, |patrolled the whole length |hung about near the surface, hoping|swam with .+ for (the morning|the afternoon|most of the day))/;
+const FISHDAY_SKIP = (f) => f.dead || f.away || f.gift?.wrapped || isOcto(f) || f.species === 'seahorse' || isCrab(f) || isTurtle(f) || f.stage === 'egg';
+export function fishDayLine(t, f, day) {
+  const live = (id) => id && t.fish.find((o) => o.id === id && !o.dead && !o.away), lab = (d) => DECOR_DEF[d?.type]?.label?.toLowerCase() ?? null, h = (k) => hash32(day * 7919 + (f.seed ?? 0) * 131 + k);
+  const pick = (a, k) => a[h(k) % a.length], decor = (t.decor ?? []).filter((d) => lab(d)), spot = f.spotId ? decor.find((d) => d.id === f.spotId) : null;
+  const cover = decor.filter((d) => ['ROCKS', 'PLANTS'].includes(DECOR_DEF[d.type]?.cat)), tr = f.traits ?? [], part = pick(['the morning', 'the afternoon', 'most of the day'], 1), out = [];
+  const pal = live(f.pal); if (pal) out.push(['pal', `${f.name} and ${pal.name} spent ${part} side by side${spot && pal.spotId === spot.id ? ` by the ${lab(spot)}` : ''}.`]);
+  if (spot) out.push(['spot', `${f.name} kept close to the ${lab(spot)}, its favorite place, for ${{ 'the morning': 'the whole morning', 'the afternoon': 'the whole afternoon' }[part] ?? part}.`]);
+  const rv = live(f.rival); if (rv) out.push(['rival', `${f.name} and ${rv.name} squared off again${spot ? ` near the ${lab(spot)}` : ''}, then went their separate ways.`]);
+  const par = (f.stage === 'baby' || f.stage === 'juvenile') ? (f.parents ?? []).map(live).find(Boolean) : null; if (par) out.push(['parent', `${f.name} stayed close to ${par.name}, its parent, for much of the day.`]);
+  const others = t.fish.filter((o) => o !== f && !FISHDAY_SKIP(o));
+  if (tr.includes('Curious') && decor.length) out.push(['curious', `${f.name} spent a while nosing around the ${lab(pick(decor, 2))}.`]);
+  if (tr.includes('Shy') && cover.length) out.push(['shy', `${f.name} stayed tucked in by the ${lab(pick(cover, 3))} for ${part}.`]);
+  if (tr.includes('Playful')) out.push(['playful', `${f.name} chased its own reflection along the glass for a while.`]);
+  if ((tr.includes('Lazy') || tr.includes('Calm')) && decor.length) out.push(['calm', `${f.name} had a slow, quiet day, drifting near the ${lab(pick(decor, 4))}.`]);
+  if (tr.includes('Brave')) out.push(['brave', `${f.name} patrolled the whole length of the tank, end to end.`]);
+  if (tr.includes('Greedy')) out.push(['greedy', `${f.name} hung about near the surface, hoping for food.`]);
+  if (tr.includes('Social') && others.length) out.push(['social', `${f.name} swam with ${others.length === 1 ? others[0].name : 'the others'} for ${part}.`]);
+  const fresh = out.filter(([k]) => k !== f.dayK); return fresh.length ? pick(fresh, 5) : null;
+}
+function fishDays(t, now, ev) {
+  if ((t.flags.tut ?? 0) < 5) return; const day = Math.floor(now / DAY), last = t.flags.fishDay; if (last != null && last >= day) return; t.flags.fishDay = day; if (last == null) return;      /* (a tank that has never had one starts tomorrow) */
+  const plain = t.fish.filter((f) => !FISHDAY_SKIP(f) && now - Math.max(f.born ?? 0, f.arrived ?? 0) >= DAY && (f.dayTold ?? -9) < day - 1).sort((a, b) => hash32(day + (a.seed ?? 0) * 31) - hash32(day + (b.seed ?? 0) * 31));      /* (settled in a day first; told at most every other day) */
+  let n = 0; for (const f of plain) { if (n >= (plain.length >= 4 ? 2 : 1)) break; const L = fishDayLine(t, f, day); if (!L) continue; f.dayTold = day; f.dayK = L[0]; n++; ev.push({ journal: L[1], story: f.id, text: L[1] }); }
+}
 function discover(t, now, ev) {
   const social = t.fish.filter((f) => (f.traits ?? []).includes('Social') && f.species !== 'neon' && !f.gift?.wrapped);
   for (const f of t.fish) {
@@ -2017,6 +2048,7 @@ function _advance(t, now = Date.now()) {
   guard('puzzles', () => puzzles(t, now, ev)); guard('hunts', () => hunts(t, now, ev)); guard('adventures', () => { adventures(t, now, ev, ADVR); for (const f of t.fish) { const p = pre.get(f.id); if (!p || !f.away || f.away.at <= t0 || now <= t0) continue; const k = Math.min(1, (f.away.at - t0) / (now - t0)); f.ail = p[0] + ((f.ail ?? 0) - p[0]) * k; f.health = p[1] + ((f.health ?? 1) - p[1]) * k; } }); guard('life', () => { const d0 = t.life?.day; lifeDay(t, now, ev, ADVR); if (t.life?.day !== d0 && (d0 != null || now - (t.createdAt ?? now) < DAY)) historyDay(t, now, ev, ADVR); });      /* (a brand-new tank gets its day 1 capsule on day 1) */ guard('visitors', () => visitors(t, now, ev)); guard('eggs', () => eggs(t, now, ev)); guard('want', () => rollWant(t, now, ev)); guard('daily', () => rollDaily(t, now)); guard('mystery', () => rollMystery(t, now)); guard('dilemma', () => rollDilemma(t, now, ev)); guard('layout', () => layoutDay(t, now, ev)); guard('goals', () => goals(t, now, ev)); guard('theme', () => themeCheck(t, now, ev));
   guard('birthday', () => { const weeks = Math.floor((now - t.createdAt) / (7 * DAY)); if (weeks > (t.flags.weeks ?? 0)) { t.flags.weeks = weeks; if (weeks === 4) ev.push({ journal: 'Our tank is one month old.' }); else if (weeks % 52 === 0) ev.push({ journal: `Our tank is ${weeks / 52} year${weeks > 52 ? 's' : ''} old.` });      /* (only the real milestones: a month, then each year) */ } });   // a birthday every week of the tank's life; missing a week costs nothing
   if (dt >= 1) guard('discover', () => discover(t, now, ev));
+  guard('fishdays', () => fishDays(t, now, ev));
   guard('wish', () => checkWant(t, now, ev));
   guard('level', () => levelCheck(t, now, ev));
   guard('leave', () => leaveRequests(t, now, ev));
