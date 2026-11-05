@@ -1440,7 +1440,7 @@ export function initUI({ game, social, cb }) {
     const { title, text, button = null, onButton = null, skip = null, skipLabel = 'Skip tips' } = args; coach._args = args; if (hushed()) { coachLater = args; coach.classList.remove('on'); return; }
     coach.innerHTML = `<b>${esc(title)}</b><p>${esc(text)}</p><div class="crow">${button ? `<button class="big sm" id="cbtn">${esc(button)}</button>` : ''}${skip ? `<button class="lnk" id="cskip">${esc(skipLabel)}</button>` : ''}</div>`;
     for (const o of ['settle', 'reunion']) if ($(o).classList.contains('top') || o === 'reunion') $(o).classList.remove('on');      /* (a tip takes the top of the screen: a line already there steps aside, it is kept in the Bell) */
-    coach.classList.toggle('over', !!args.over); coach.classList.add('on'); if (button) $('cbtn').onclick = () => onButton?.(); if (skip) $('cskip').onclick = skip;
+    coach.classList.toggle('over', !!args.over); coach.classList.toggle('low', !!args.low); coach.classList.add('on'); if (button) $('cbtn').onclick = () => onButton?.(); if (skip) $('cskip').onclick = skip;
   }
   const hideCoach = () => { coachLater = null; coach.classList.remove('on'); };
   const flag = (tabName, on) => document.querySelectorAll('nav [data-tab]').forEach((n) => { if (n.dataset.tab === tabName) n.classList.toggle('dot2', on && tab !== tabName); });

@@ -1547,6 +1547,10 @@ nav [data-tab]:active{transform:scale(.92)}
   #fishpill .pfeed{position:relative!important}#fishpill .pfeed::after{content:'';position:absolute;inset:-7px -3px}      /* (Feed on a fish's label: a thumb-sized tap area) */
   /* Health: Tank Health (the same number as the ring at the top) and its two parts, each a labelled bar */
   #sheet .havg .hparts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}#sheet .havg .hpart{display:flex;flex-direction:column;gap:4px;min-width:0}#sheet .havg .hpl{display:flex;justify-content:space-between;align-items:baseline;gap:6px}#sheet .havg .hpl b{font-size:12.5px}#sheet .havg .hpl em{font-style:normal;font-weight:700;font-size:13px}#sheet .havg .hpart .tc-bar{height:7px}#sheet .havg .hpart small{font-size:11px;opacity:.7;line-height:1.25}
+  /* a tip that must not cover the tank's upper half (Say hello: the octopus is up there when it starts): it sits just above the tab bar instead */
+  #coach.low{top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translateY(160%)}#coach.low.on{transform:none}
+  /* short explanations wrap evenly: no single word left alone on a last line ("Tap one to go and see / it.") */
+  :is(#sheet,#card,#coach,#modal,#fishpill) :is(p,small,.todaysub,.crewsub){text-wrap:pretty}:is(#sheet,#card,#modal) :is(h2,h3,h4){text-wrap:balance}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>

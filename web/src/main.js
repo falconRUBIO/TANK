@@ -1521,7 +1521,7 @@ const tut = (() => {
         let met = navigator.webdriver && !/[?&]hello=1/.test(location.search); try { met ||= localStorage.getItem('ourtank.met') === '1'; } catch { /* none */ }      // (automated checks skip it unless they ask for it)
         if (!met) { ui.hideCoach(); ui.pulse(null); const nm = s.fish[0]?.name ?? 'Your octopus';
           await new Promise((r) => setTimeout(r, 9000));
-          ui.showCoach({ title: 'Say hello', text: `Touch and hold the glass. ${nm} will come over to see who you are.`, skip: skip });
+          ui.showCoach({ title: 'Say hello', text: `Touch and hold the glass. ${nm} will come over to see who you are.`, skip: skip, low: true });      // (low: the octopus starts up top, where the tip would cover it)
           const t0 = Date.now(); let held = 0; await new Promise((res) => { const iv = setInterval(() => { held = lure?.on ? held + 0.3 : 0; if (held >= 1.5 || Date.now() - t0 > 40000 || (game.state?.flags.tut ?? 0) !== 1) { clearInterval(iv); res(); } }, 300); });
           if (held >= 1.5) { ui.hideCoach(); ui.toast(`${nm} came to see you.`, 2600); await new Promise((r) => setTimeout(r, 3200)); }
           try { localStorage.setItem('ourtank.met', '1'); } catch { /* none */ }
