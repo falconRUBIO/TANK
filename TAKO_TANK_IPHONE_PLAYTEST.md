@@ -1,13 +1,13 @@
 # Tako Tank: iPhone Playtest
 
-**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v477** (Settings shows the build; pull to refresh twice).
+**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v478** (Settings shows the build; pull to refresh twice).
 **Status: the physical-device test and the first-player test have NOT been run yet.** Sections 2, 4 and 5 are blank forms to fill in. Nothing in them is a result.
 
 ---
 
 ## 1. How to get this build on an iPhone
 
-- **Website (works today):** open the game's address in Safari, then Share → Add to Home Screen. Open it from the home screen icon, so it runs full screen like an app. If an older version shows, pull down to refresh twice and check that Settings shows v477.
+- **Website (works today):** open the game's address in Safari, then Share → Add to Home Screen. Open it from the home screen icon, so it runs full screen like an app. If an older version shows, pull down to refresh twice and check that Settings shows v478.
 - **TestFlight app:** the "iPhone app to TestFlight" workflow has **never been run**. It needs the Apple keys added to the repository first (four secrets and one variable; the steps are in `ios-app/README.md`). Once they're in, run it from GitHub → Actions → "iPhone app to TestFlight" → Run workflow. The build shows up in TestFlight about 15–30 minutes later.
 
 ## 2. The 10-minute check (what changed recently, on a real phone)

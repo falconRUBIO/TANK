@@ -9,7 +9,7 @@ p.on('pageerror', (e) => errors.push(e.message)); p.on('console', (m) => { if (m
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto('http://localhost:8123/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 4; s.fish.length = 0; s.hunger = 0; s.water = 1; s.glass = 0; s.shells = 20; const born = Date.now() - 12 * 864e5;
+await p.evaluate(() => { const g = window.__game, s = g.state; s.flags.tut = 5; s.level = 4; s.fish.length = 0; s.hunger = 0; s.water = 1; s.glass = 0; s.shells = 20; const born = Date.now() - 30 * 864e5;      // (grown up: an adult at 21 days)
   s.fish.push({ id: 'x1', name: 'Inky', species: 'octopus', seed: 5, born, stage: 'adult', traits: ['Curious'], happy: 0.8, health: 1, owner: 'me', ownerName: 'You', hunger: 0, paid: 0 },
     { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3, born, stage: 'adult', traits: ['Calm'], happy: 0.8, health: 1, paid: 12 });
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); });
