@@ -476,7 +476,7 @@ export const DISCOVERIES = {
   eyes: { label: 'Independent eyes', kind: 'seahorse', quiet: true, line: (f) => `${f.name} watched two things at once, one eye each way.` },
   snick: { label: 'Snaps up plankton', kind: 'seahorse', quiet: true, line: (f) => `${f.name} snapped up a speck of plankton with a flick of its head.` },
   blend: { label: 'Color matching', kind: 'seahorse', quiet: true, line: (f) => `${f.name} slowly took on the color of the plant it was holding.` },
-  favhitch: { label: 'Favourite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favorite place to hold on.` },
+  favhitch: { label: 'Favorite holdfast', kind: 'seahorse', quiet: true, needsDecor: true, line: (f, x) => `${f.name} keeps going back to the ${x.decor}. It seems to be its favorite place to hold on.` },
   dance: { label: 'Greeting dance', kind: 'seahorse', quiet: true, line: (f) => `${f.name} met another seahorse and they circled each other, glowing.` },
   tails: { label: 'Holding tails', kind: 'seahorse', quiet: true, line: (f) => `${f.name} curled its tail round another seahorse's and they drifted along together.` },
   camo: { label: 'Camouflage', kind: 'octopus', quiet: true, line: (f) => `${f.name} changed the color and the texture of its skin to match what was behind it.` },
@@ -1043,8 +1043,8 @@ function seaFamilies(t, now, ev) {
       let k = (h + i) % Math.max(1, names.length); while (names.length > cands.length && cands.some((c) => c.name === names[k])) k = (k + 1) % names.length;      // three different names
       cands.push({ id: nextId(t, 'f'), name: names[k] ?? NAMES[(h + i) % NAMES.length], seed: h % 90000, role, traits: tr, genes: ma && pa ? blendGenes(gOf(ma), gOf(pa), seededRandom(h)) : genesOf(h % 90000), sex: i === 0 ? 'm' : i === 1 ? 'f' : (h & 1 ? 'm' : 'f') }); }
     t.nursery = { id: fam, father: m.id, mother: P.mother, pa, ma, born, readyAt: wakeAt(t, born + SEA.NURSERY * DAY), n: P.n, gen: Math.max(pa.gen ?? 0, ma?.gen ?? 0) + 1, cands };
-    if (P.watch) witness(t, 'seabirth', m, now, ev, null, `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`);
-    ev.push({ journal: `${m.name} gave birth to ${P.n} tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n} tiny seahorses.`, birth: m.id });
+    if (P.watch) witness(t, 'seabirth', m, now, ev, null, `${m.name} gave birth to ${P.n ? `${P.n} ` : ''}tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`);
+    ev.push({ journal: `${m.name} gave birth to ${P.n ? `${P.n} ` : ''}tiny seahorses.${ma ? ` ${ma.name} is their mother.` : ''} They will grow up here in the tank for five days.`, toast: `${m.name} gave birth! ${P.n ? `${P.n} tiny seahorses.` : 'Tiny seahorses.'}`, birth: m.id });
   }
   // each nursery day, one baby's line in the journal, in turn: what its own way of living (roaming, the plants, staying near family) had it
   // do in this tank, with the tank's real plants and parents, so the choice at the end is between three babies the caretakers have come to know
@@ -1615,7 +1615,7 @@ export const ECO = {
   scarlet: { zone: 'Beside the rocks', cover: { cats: ['ROCKS'], need: 2, word: 'a rock to tuck in beside', cat: 'ROCKS' }, tol: 0.8, feed: 'scavenger', clash: {}, best: 'A quiet rock of its own, and a shell a size up waiting nearby.' },
   halloween: { zone: 'Anywhere it can climb', cover: { cats: ['ROCKS', 'STRUCTURES'], need: 2, word: 'rocks and structures to climb', cat: 'ROCKS' }, tol: 0.8, feed: 'scavenger', clash: {}, best: 'Things to climb, room to roam, and a big shell for when it outgrows this one.' },
   goldfish: { zone: 'Middle water, around its anemone', cover: { types: ['anemone'], need: 1, word: 'an anemone to nestle in', cat: 'PLANTS' }, tol: 0.85, feed: 'fast',
-    clash: { guppy: 'Damselfish and clownfish both guard a home patch and spar over it' }, best: 'A sea anemone of its own to sway in, and easygoing neighbours.' },
+    clash: { guppy: 'Damselfish and clownfish both guard a home patch and spar over it' }, best: 'A sea anemone of its own to sway in, and easygoing neighbors.' },
   neon: { zone: 'Open water near the top', cover: { cats: ['ROCKS', 'PLANTS'], need: 2, word: 'rocks or plants to dart into', cat: 'ROCKS' }, tol: 0.95, feed: 'fast',
     clash: {}, best: 'A shoal of three or more and open water to swim in.' },
   cory: { zone: 'The sand, by its burrow', cover: { cats: ['ROCKS'], need: 2, word: 'rocks to keep watch from', cat: 'ROCKS' }, tol: 0.8, feed: 'medium',
@@ -1672,7 +1672,7 @@ export const KIND_NEEDS = {
     W_('cover', 'Rocks or plants for the night', 'At night the school breaks up and each one tucks into a crevice.', 'A couple of rocks or plants', (c) => c.cover >= 2)],
   cory: [W_('burrow', 'Rocks to burrow under', 'A goby digs a burrow under a rock and sits at its mouth, keeping watch.', 'Two rocks on the sand', (c) => c.cover >= 2),
     W_('alone', 'To be the only goby', 'Gobies defend their burrow from other gobies.', 'Just one yellow goby', (c) => c.own <= 1),
-    W_('calm', 'Calm neighbours', 'It darts into its burrow at any threat; a bully keeps it hiding all day.', 'No damselfish or big angelfish', (c) => !c.has('guppy') && !c.has('angelfish'))],
+    W_('calm', 'Calm neighbors', 'It darts into its burrow at any threat; a bully keeps it hiding all day.', 'No damselfish or big angelfish', (c) => !c.has('guppy') && !c.has('angelfish'))],
   blue: [W_('cave', 'A cave to claim', 'A royal gramma claims a cave or overhang and often hangs upside down beneath it.', 'A Reef Cave, or rocks with an overhang', (c) => c.cover >= 2 || (c.types.cave ?? 0) >= 1),
     W_('alone', 'To be the only gramma', 'Grammas fight other grammas for the best cave.', 'Just one royal gramma', (c) => c.own <= 1),
     W_('dim', 'A shady corner', 'It prefers dim spots out of the brightest light.', 'A structure to cast some shade', (c) => c.cats.STRUCTURES >= 1)],
@@ -2488,7 +2488,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       const f = t.fish.find((x) => x.id === a.id); if (!f) return fail('NOT_FOUND'); ensureFish(f); f.bond ||= {}; f.petAt ||= {}; const u = uid;
       if (now - (f.petAt[u] ?? 0) < 4 * 60e3) return ok({ applied: false, delta: 0 });
       f.petAt[u] = now; raiseNote(t, now, 'pet', f); const tw = octoTrust(f, u).lvl; f.bond[u] = (f.bond[u] ?? 0) + 1; trustStep(f, u, tw, events); f.happy = Math.min(1, f.happy + 0.03); (f.disc ||= {}).trust ??= now; progress(t, 'play', events, name); progress(t, 'play3', events, name, f.id); checkWant(t, now, events, { type: 'pet', id: f.id }); dayCheck(t, now, events, 'bond');
-      f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { const first = !f.found.some((x) => x.startsWith('bond:')); f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; if (first) t.shells += 2; events.push({ journal: `${f.name} has started to recognise ${name}.`, toast: first ? `${f.name} knows you now! +2 shells` : `${f.name} knows you now!`, discovery: f.id }); return ok({ applied: true, delta: first ? 2 : 0, bond: f.bond[u] }); }      // (the shells once per animal: a new caretaker is welcome, not a payday)
+      f.found ||= []; if (f.bond[u] >= 10 && !f.found.includes('bond:' + u)) { const first = !f.found.some((x) => x.startsWith('bond:')); f.found.push('bond:' + u); (f.disc ||= {}).bond ??= now; if (first) t.shells += 2; events.push({ journal: `${f.name} has started to recognize ${name}.`, toast: first ? `${f.name} knows you now! +2 shells` : `${f.name} knows you now!`, discovery: f.id }); return ok({ applied: true, delta: first ? 2 : 0, bond: f.bond[u] }); }      // (the shells once per animal: a new caretaker is welcome, not a payday)
       return ok({ applied: true, delta: 0, bond: f.bond[u] });
     }
     case 'trim': {                                                  // snip every grown plant (or one): a small reward, and it starts growing again

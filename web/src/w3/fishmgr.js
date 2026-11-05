@@ -665,7 +665,7 @@ export class Fishes {
       if (f.sulk > 0.5) th = W.water < 0.62 ? 'Sulking in the cloudy water.' : W.glass > 0.6 ? 'Cannot see out through the dirty glass.' : 'Hungry and a bit grumpy.';
       else if (S?.s === 'work' && S.mode === 'greet') th = 'Come to say hello at the glass.';
       else if (S?.s === 'work' && S.mode === 'inspect' && f.inspect?.r && f.inspect.type) th = `Wrapping its arms round the ${(DECOR_DEF[f.inspect.type]?.label ?? 'thing').toLowerCase()}.`;
-      else if (S?.s === 'work' && S.mode === 'inspect') th = f.inspect && this.list.some((o) => o !== f && !o.dead && Math.hypot(o.pos.x - f.inspect.x, o.pos.z - f.inspect.z) < 1.2) ? 'Watching a neighbour.' : 'Examining something with its arms.';
+      else if (S?.s === 'work' && S.mode === 'inspect') th = f.inspect && this.list.some((o) => o !== f && !o.dead && Math.hypot(o.pos.x - f.inspect.x, o.pos.z - f.inspect.z) < 1.2) ? 'Watching a neighbor.' : 'Examining something with its arms.';
       else if (f.sleepK > 0.6) th = 'Asleep. Its skin is dreaming.';
       else if (f.audience >= 1 && f.bondMe >= 1) th = 'Knows you are here.';
       else if (f.bored > 0.5) th = M.cur > 0.6 ? 'Restless. Nothing new in a while.' : 'A little bored.';

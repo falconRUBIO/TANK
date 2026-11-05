@@ -33,7 +33,7 @@ export function newRecoveryKey(db, user) { const k = makeKey(); db.prepare('UPDA
 // Signing in with a recovery key issues a fresh token and retires the old one, so a lost phone can be locked out.
 export function recover(db, key) {
   const u = db.prepare('SELECT id FROM users WHERE recovery_hash=?').get(keyHash(key));
-  if (!u) throw new GameError('BAD_KEY', 'That recovery key was not recognised.', 404);
+  if (!u) throw new GameError('BAD_KEY', 'That recovery key was not recognized.', 404);
   const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), u.id);
   return { userId: u.id, token };
 }
@@ -207,7 +207,7 @@ export function claimSeat(db, code, slot, isOnline = () => false, key = null, no
   const m = db.prepare('SELECT user_id, last_seen FROM members WHERE tank_id=? AND slot=?').get(t.id, Number(slot));
   if (!m) throw new GameError('NO_SEAT', 'That seat is empty.', 404);
   const rh = db.prepare('SELECT recovery_hash FROM users WHERE id=?').get(m.user_id)?.recovery_hash;      // the tank code is shared with friends, so it alone cannot take over an account that has a recovery key:
-  if (rh && (!key || keyHash(String(key)) !== rh) && now - (m.last_seen ?? now) < CLAIM_IDLE) throw new GameError(key ? 'BAD_KEY' : 'NEED_KEY', key ? 'That recovery key was not recognised.' : 'Enter your recovery key to take this seat back.', 403);      // (a seat nobody has used for a month can still be taken back with the code, so a lost key is not the end)
+  if (rh && (!key || keyHash(String(key)) !== rh) && now - (m.last_seen ?? now) < CLAIM_IDLE) throw new GameError(key ? 'BAD_KEY' : 'NEED_KEY', key ? 'That recovery key was not recognized.' : 'Enter your recovery key to take this seat back.', 403);      // (a seat nobody has used for a month can still be taken back with the code, so a lost key is not the end)
   if (isOnline(t.id, m.user_id)) throw new GameError('SEAT_ACTIVE', 'That caretaker is in the tank right now. Ask them, or use a recovery key.', 409);
   const token = crypto.randomBytes(32).toString('hex'); db.prepare('UPDATE users SET token_hash=? WHERE id=?').run(sha(token), m.user_id);
   const u = db.prepare('SELECT name FROM users WHERE id=?').get(m.user_id); addJournal(db, t.id, `${u.name} signed back in.`, m.user_id);
@@ -363,7 +363,7 @@ export function sendFish(db, user, { fish, code }, now = Date.now()) {
   return tx(db, () => {
     const A = loadWorld(db, mine.id).w, B = loadWorld(db, to.id).w; writeEvents(db, mine.id, R.advance(A, now), now); writeEvents(db, to.id, R.advance(B, now), now);      // (whatever was due in either tank happens, and is told, first)
     if (B.fish.filter((f) => !f.dead).length + R.pending(B) + 1 > R.capacity(B.level)) throw new GameError('TANK_FULL', 'Their tank is full.', 409);
-    const r = R.sendOut(A, String(fish ?? ''), user.id, user.name, to.name, now); if (!r.ok) throw new GameError(r.reason, 'That animal cannot be sent.', 400);
+    const r = R.sendOut(A, String(fish ?? ''), user.id, user.name, to.name, now); if (!r.ok) throw new GameError(r.reason, 'That one cannot be sent.', 400);
     r.carry.fromTank = mine.name; B.orders.push({ id: 'o' + (B.seq = (B.seq ?? 10) + 1), species: r.species, name: r.carry.name, seed: r.carry.seed, arrivesAt: now + 30 * 60e3, by: user.name, owner: null, ownerName: null, carry: r.carry });
     saveWorld(db, mine.id, A); saveWorld(db, to.id, B);
     writeEvents(db, mine.id, r.events, now, user.id);
