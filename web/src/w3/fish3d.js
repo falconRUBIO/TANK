@@ -1427,7 +1427,7 @@ export class Fish3D {
           desired.addScaledVector(_o, this.speed * 0.5);                       // and ease away
         }
         this.blocked = (this.blocked ?? 0) + dt;
-        if (this.blocked > 0.9 && this.cool <= 0) { this.retarget = 0; this.cool = 2.5; this.blocked = 0; }   // not getting anywhere: choose somewhere else
+        if (this.blocked > 0.9 && this.cool <= 0) { if (this.settle && this.pos.distanceTo(this.target) < 2.2) this.target.copy(this.pos); else this.retarget = 0; this.cool = 2.5; this.blocked = 0; }   // not getting anywhere: choose somewhere else (on its way to settle, held off by the very plant or rock it came to: this is as close as it gets, and it rests here)
       } else this.blocked = Math.max(0, (this.blocked ?? 0) - dt);
       this.cool -= dt;
     }

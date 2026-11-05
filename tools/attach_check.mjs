@@ -17,13 +17,14 @@ const info = (ev, n, x = '') => console.log('  ·', `[${ev}]`, n, x);
 const r2 = (v) => Math.round(v * 100) / 100;
 await p.goto(base + '/?q=1&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2500);
-await p.evaluate(() => { window.__simClock(true); window.__seed = (s) => { let a = s; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+await p.evaluate(() => { window.__simClock(true, { date: true });      /* (the wall clock too: the same numbers every run) */ window.__seed = (s) => { let a = s; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   // a fresh tank: these animals, these decorations, these keepsakes; nothing else going on
-  window.__stage = (seed, fish, decor, keeps = []) => { const g = window.__game, s = g.state, now = Date.now(), F = window.__fishes; s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 8; F.rng = window.__seed(seed);
+  window.__reseed = (n) => { const r = window.__seed(20261021 + n * 7919); Math.random = r; };      /* (Math.random again from a known point: the page's drawing between steps draws from it a different number of times on every run) */
+  window.__stage = (seed, fish, decor, keeps = []) => { const g = window.__game, s = g.state, now = Date.now(), F = window.__fishes; window.__reseed(seed); s.flags.tut = 5; s.createdAt = now - 30 * 864e5; s.level = 8; F.rng = window.__seed(seed);
     s.fish.length = 0; s.fish.push(...fish.map((f) => ({ born: now - 30 * 864e5, stage: 'adult', happy: 0.9, health: 1, hunger: 0.1, owner: null, traits: [], ...f }))); s.decor.length = 0; s.decor.push(...decor.map((d) => ({ ry: 0, ...d })));
     s.adv = { octoAt: now + 9e9, smallAt: now + 9e9, hist: [] }; s.keeps = keeps; s.visitAt = now + 9e9; s.visitor = null; g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); };
   // n frames of 1/20 s; every 5th frame the rendered position of each id (and of any keepsake group) is recorded
-  window.__run = (n, ids, seed, each) => { const F = window.__fishes, rnd = window.__seed(seed), tr = Object.fromEntries(ids.map((id) => [id, []])), kt = {};
+  window.__run = (n, ids, seed, each) => { window.__reseed(seed * 31 + 7); const F = window.__fishes, rnd = window.__seed(seed), tr = Object.fromEntries(ids.map((id) => [id, []])), kt = {};
     for (let i = 0; i < n; i++) { each?.(i, F); F.update(0.05, (window.__t = (window.__t ?? 0) + 0.05)); F.list.forEach((f) => f.update(0.05, rnd, F.list));
       if (i % 5 === 0) { for (const id of ids) { const f = F.byId.get(id), q = f?.group?.position; tr[id].push(q ? [+q.x.toFixed(3), +q.y.toFixed(3), +q.z.toFixed(3), f.holdfast?.on ? f.holdfast.id : null, f.greet ? 1 : 0] : null); }
         for (const [kid, it] of F.keeps0 ?? []) (kt[kid] ||= []).push([+it.group.position.x.toFixed(3), +it.group.position.z.toFixed(3), it.carried ? 1 : 0]); } }
