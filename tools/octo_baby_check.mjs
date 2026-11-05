@@ -31,7 +31,7 @@ const other = () => p.evaluate(() => { const m = document.querySelector('#modal.
 let named = false; for (let i = 0; i < 40 && !named; i++) { await p.waitForTimeout(500); await other(); named = await p.evaluate(() => /NAME YOUR BABY/i.test(document.querySelector('#modal.on')?.innerText ?? '')); }
 ck('you name it', named); if (named) { await p.fill('#modal.on #mi', 'Pip'); await p.evaluate(() => document.querySelector('#modal.on #mok').click()); }
 for (let i = 0; i < 10; i++) { await p.waitForTimeout(500); await p.evaluate(() => { const m = document.querySelector('#modal.on'); if (/ONE MORE/i.test(m?.innerText ?? '')) m.querySelector('#mno')?.click(); }); }
-let ph = null; for (let i = 0; i < 20 && !ph; i++) { await p.waitForTimeout(500); ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /Tiny octopuses/.test(m.text))?.img ?? null); }
+let ph = null; for (let i = 0; i < 60 && !ph; i++) { await p.waitForTimeout(500);      /* (up to 30 s: photos are taken one at a time, spaced out, and a slow CI machine can have an earlier line's photo still to take) */ ph = await p.evaluate(() => JSON.parse(localStorage.getItem('ourtank.moments') || '[]').find((m) => /Tiny octopuses/.test(m.text))?.img ?? null); }
 if (ph) fs.writeFileSync(`${out}/3-journal.jpg`, Buffer.from(ph.split(',')[1], 'base64'));
 ck('the journal keeps a staged photo of it', /^data:image\/(jpeg|webp)/.test(ph ?? ''));
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
