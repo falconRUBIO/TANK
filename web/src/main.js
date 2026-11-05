@@ -1128,7 +1128,7 @@ function shotPump() {
   { const m = /meet (\S+?)[,.]/.exec(e.text), kid = m && /hatched|swam out|made it/.test(e.text) && fishes.list.find((f) => f.name === m[1] && !f.dead);      /* a newborn still held inside its egg (main.js babyOut): wait for it to come out, without spending a try */
     if (kid && !kid.group.visible && (q.w ?? 0) < 30) { shotQ.unshift({ ...q, w: (q.w ?? 0) + 1, at: Date.now() + 600 }); shotBusy = false; shotPump(); return; }
     const since = kid?.outAt ? performance.now() - kid.outAt : 1e9; if (since < 3800) { shotQ.unshift({ ...q, at: Date.now() + 3800 - since }); shotBusy = false; shotPump(); return; } }      /* (just out: a few seconds to pop free of the shell, grow and swim clear, as before the hatch played in beats) */ try { if (!document.hidden) got = momentPhoto(e) !== false; } catch (err) { console.warn('moment photo', err); }
-  if (!got && (q.n ?? 0) < 3 && /hatched|swam out|jetted|gave birth|made it/.test(e.text)) shotQ.push({ e, n: (q.n ?? 0) + 1, at: Date.now() + 4000 });      /* (a newborn still coming out of its egg cannot be framed yet: try again in a moment) */
+  if (!got && (q.n ?? 0) < 7 && /hatched|swam out|jetted|gave birth|made it/.test(e.text)) shotQ.push({ e, n: (q.n ?? 0) + 1, at: Date.now() + 4000 });      /* (a newborn still coming out of its egg, or with no clear view of it yet, cannot be framed: try again in a moment, for half a minute; a birth happens once) */
   setTimeout(() => { shotBusy = false; shotPump(); }, 1800);
 }
 function momentPhoto(e) {
