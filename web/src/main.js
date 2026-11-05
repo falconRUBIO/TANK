@@ -1460,7 +1460,7 @@ function lureTick(dt) {
   if (!rayFrom({ clientX: lure.x, clientY: lure.y }).ray.intersectPlane(lurePlane, lureAt)) return;
   if (!lure.on) { lure.on = true; lure.last = lureAt.clone(); lure.moved = 0; fishes.burst(lureAt.clone().setZ(1.2)); haptic(6); }
   lure.moved += lureAt.distanceTo(lure.last); lure.last.copy(lureAt);                      // how much the finger has travelled: movement re-excites a fish that has drifted off
-  for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) { f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600 }; if (f.glassNear > 0.7) { const k = (octoPlayed.get(f) ?? 0) + dt; octoPlayed.set(f, k); if (k > 2 && k - dt <= 2) playedWith(f); } }       // an octopus comes to press its arms against the glass where your finger is
+  for (const f of fishes.list) if (f.species.move === 'jet' && !f.dead && !f.shy && !f.jarAt && !f.hunt && f.pos.distanceTo(lureAt) < 12) { f.glassAt = { x: lureAt.x, y: lureAt.y, until: performance.now() + 2600, finger: true }; if (f.glassNear > 0.7) { const k = (octoPlayed.get(f) ?? 0) + dt; octoPlayed.set(f, k); if (k > 2 && k - dt <= 2) playedWith(f); } }       // an octopus comes to press its arms against the glass where your finger is
   let n = 0;
   for (const f of fishes.list) {
     if (f.dead || f.visitor || f.script?.length || f.isShy || f.weak || f.species.move === 'jet') continue;
