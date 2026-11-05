@@ -1,57 +1,47 @@
 # Tako Tank: iPhone Playtest
 
-**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v315** (Settings shows the build; pull to refresh twice).
-**Status: the physical-device test and the first-player test have NOT been run yet.** Sections 3 and 4 are blank forms to fill in. Nothing in them is a result.
+**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v477** (Settings shows the build; pull to refresh twice).
+**Status: the physical-device test and the first-player test have NOT been run yet.** Sections 2, 4 and 5 are blank forms to fill in. Nothing in them is a result.
 
 ---
 
-## 1. Code-verified behavior (what the code does; this is not what a player sees)
+## 1. How to get this build on an iPhone
 
-### Fish rest at their favorite place (new)
-- When a fish's own choice sends it to its earned favorite place, it **settles there** half the time: it slows to its idle swim for 8–14 seconds.
-- **What still moves it during a rest:** food, a fright, cleaning, or taking cover.
-- **What no longer moves it:**
-  - small whims: the bubbler, a curious detour, a schooling lag, swimming to the glass when someone's watching;
-  - the "stuck against a decoration" check;
-  - its own decision timer.
+- **Website (works today):** open the game's address in Safari, then Share → Add to Home Screen. Open it from the home screen icon, so it runs full screen like an app. If an older version shows, pull down to refresh twice and check that Settings shows v477.
+- **TestFlight app:** the "iPhone app to TestFlight" workflow has **never been run**. It needs the Apple keys added to the repository first (four secrets and one variable; the steps are in `ios-app/README.md`). Once they're in, run it from GitHub → Actions → "iPhone app to TestFlight" → Run workflow. The build shows up in TestFlight about 15–30 minutes later.
 
-### Best friends rest side by side (new)
-- By day, when a fish's choice turns to its best friend, and both are free, they swim to a spot between them and rest together for 10–16 seconds. The first one there waits up to 4 seconds for the other.
-- "Free" means not eating, fleeing, cleaning, taking cover, already resting, or asleep.
-- **Friendships come from the existing best-friend data** (`pal`), never from random pairing. At night best friends already settled near each other; that is unchanged.
+## 2. The 10-minute check (what changed recently, on a real phone)
 
-### Tap labels
-"resting at its favorite spot, the reef cave" and "resting with Pip, its best friend".
+Tick each one, or write what happened instead.
 
-### No effects
-No hearts, particles or popups were added. Movement is ordinary swimming toward a target; nothing teleports.
+| # | Do this | Expect | Result |
+|---|---|---|---|
+| 1 | Care → Feed → **Feed everyone** | every hungry sea life gets its own food, in one tap | ___ |
+| 2 | Tap a hungry fish → **Feed** on its label | that fish is fed right there, and the label says Full | ___ |
+| 3 | Care → **Sea life health** → tap a need (for example "Something to explore") | the Shop opens on that exact item | ___ |
+| 4 | Care → To do → the **best next step** row | the Shop opens on that item | ___ |
+| 5 | Crew → **Sea life** → **Sell** beside a name | asks first, then sells; the tap lands on the first try | ___ |
+| 6 | Crew → Journal | no time-capsule section; postcard buttons work | ___ |
+| 7 | Crew → Settings (gear) → **‹ Crew** | goes back; the page scrolls all the way to the Privacy link | ___ |
+| 8 | Watch the octopus for 2 minutes | no popping at its den, no shivering against rocks, no walking in place | ___ |
+| 9 | Watch a sleeping mandarin (or any sleeping fish) at night (`?tod=night`) | it rests still; no dipping and bowing over and over | ___ |
+| 10 | Watch a seahorse with a favorite plant | it keeps going back to the same plant | ___ |
+| 11 | A baby fish over a few days | still a baby for about 5 days; grown up at about 3 weeks | ___ |
+| 12 | Every button with your thumb, on the smallest phone you have | nothing needs a second try; nothing hides under the notch or the home bar | ___ |
 
-### A bug found and fixed in this pass
-The Phase 1 sensing code stored each animal's temperament under a property named `temper`. That overwrote the octopus's own `temper()` method, so an octopus's update could throw an error on every frame. That error was caught, so the game didn't crash, but **the octopus could stop behaving properly on any phone running v312–v314.** It is renamed now and checked.
-
----
-
-## 2. Automated results (headless Chromium; about 0.3 fps, so this says nothing about smoothness)
+## 3. Automated results for this build (headless Chromium, so nothing here says how smooth it is)
 
 | Test | Result |
 |---|---|
-| `npm test` | 95/95 |
-| `tools/habitat_check.mjs` | **3/3 runs pass, after fixes** |
-| `tools/toy_kinds.mjs` | passes |
-| `tools/playthrough.mjs` | passes |
+| `tools/phone_audit.mjs` (new): every menu screen, Feed, Health, the fish card and the tab bar at 390×844, 375×667 and 320×568 | **passes**: nothing scrolls sideways, no text spills, every button has a tap area of at least 32 px, most 44 |
+| `attach_check`, `octopus_pot` (nightly; failing before this build) | pass (`attach_check` on 3 random seeds) |
+| `seahorse_check`, `sealife_motion_check`, `octo_motion_check`, `octopus_den`, `routine_check`, `real_tank` | pass |
 
-What `habitat_check` covers in this pass:
-- a fish settles at its favorite place for several seconds, barely moving;
-- best friends both rest for 11–15 seconds together, measured;
-- the octopus turns to face the glass.
-
-**How the drills were made to pass:**
-- **Isolation:** the octopus and turtle were parked away and the octopus fed first. Otherwise a frightened or hungry animal (correctly) breaks the rest, and the check can't measure it.
-- **Measured gap:** best friends rest **about one body length apart, center to center: 1.9–3.3 units for a tang about 2.5 long.** The fishes' own personal-space push keeps them from touching. The limit is 1.5 body lengths.
+**What the phone audit found and fixed:** several buttons were smaller than a thumb. Edit look and the Privacy link were 15–16 px tall; the rename pencil was 20 px; Sell, the postcard button, the fish label's Feed button and the fish card's tabs were 27–30 px. Each one now has an invisible margin that brings its tap area to about 44 px, the size Apple recommends. They look exactly the same as before.
 
 ---
 
-## 3. Physical-device observations (fill in on a real iPhone)
+## 4. Physical-device observations (fill in on a real iPhone)
 
 Phone model: ______  iOS: ______  Date: ______
 
@@ -73,7 +63,7 @@ Open the game with **`?fps`** added to the address. A meter shows frames per sec
 
 ---
 
-## 4. First-player observation (15 minutes, fill in during the test)
+## 5. First-player observation (15 minutes, fill in during the test)
 
 **Setup:** a new player on their own iPhone, with a fresh tank. Say only: *"This is an aquarium game. Play for about 15 minutes and think out loud."* Don't explain anything about the animals. If asked, answer: "What do you think?"
 
@@ -102,17 +92,17 @@ Their answer, word for word: ________________________________
 
 ---
 
-## 5. Problems found (so far, from code and drills only)
-1. **Octopus behavior since v312:** see section 1. Fixed in v315. **If testers saw an odd, frozen-looking octopus on v312–v314, that was this bug.**
+## 6. Problems found (so far, from code and drills only)
+1. **Octopus behavior since v312:** a temperament value overwrote the octopus's own `temper()` method, so its update threw an error every frame. Fixed in v315. **If testers saw an odd, frozen-looking octopus on v312–v314, that was this bug.**
 2. **Rests are easy to interrupt.** A rest only shows when nothing frightening or interesting is nearby. In a busy tank with an octopus and a turtle, fish may rarely get a rest in. That is natural, but it may make rests rare on screen. The device test should check this.
 3. **Moving a decoration** still produces only a faint reaction (from the last pass).
 4. **Shell rubble** has no reaction that sets it apart from other rocks.
 
-## 6. Recommended fixes (after the device test, not before)
+## 7. Recommended fixes (after the device test, not before)
 - If the device test shows rests are rarely seen, make settling more likely when the fish is calm (Calm or Lazy traits). That's a one-number change.
 - If FPS falls under about 40 in a full tank, check the per-frame cost on the phone using the `?fps` meter's sim-time figure.
 
-## 7. Recommendation
+## 8. Recommendation
 **Fix player-experience problems before Living Ecosystem Phase 2.**
 - Phase 2 adds more behavior on top of behavior that hasn't been seen on a phone yet.
-- Run sections 3 and 4 first. Then do Phase 2 only if players notice the animals but want more; if they don't notice them, fix readability first.
+- Run sections 2, 4 and 5 first. Then do Phase 2 only if players notice the animals but want more; if they don't notice them, fix readability first.

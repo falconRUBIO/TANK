@@ -1541,6 +1541,10 @@ nav [data-tab]:active{transform:scale(.92)}
 #app #sheet .anr .ansell:active{background:rgba(255,255,255,.18)}
 #app #sheet .tc-step .tcpills{display:flex;flex-wrap:wrap;gap:6px;opacity:1}#app #sheet .tc-step .tcpills em{margin-top:8px}#app #sheet .tc-step em.shopit{background:rgba(255,207,92,.18);color:#ffcf5c}
 #app #sheet .hci.tap{cursor:pointer;align-items:center}#app #sheet .hci.tap:active{background:rgba(255,255,255,.08)}#app #sheet .hci em.hshop{flex:none;margin-left:auto;padding:4px 10px;border-radius:999px;background:rgba(255,207,92,.16);color:#ffcf5c;font:600 12.5px -apple-system,system-ui,sans-serif;font-style:normal;white-space:nowrap}
+  /* tap areas: the small pill buttons and links in the sheets get an invisible margin to about 44px, the size a thumb needs (Apple's guideline), without changing how they look */
+  #sheet :is(.nudge,.foot a,.jpc,.anr .ansell,.tog,.lnk){position:relative}#sheet :is(.nudge,.foot a)::after{content:'';position:absolute;inset:-14px -6px}#sheet :is(.jpc,.anr .ansell,.tog,.lnk)::after{content:'';position:absolute;inset:-8px -4px}
+  #card :is(.ren,.tabs .tb,.sellb){position:relative}#card .ren::after{content:'';position:absolute;inset:-12px -6px}#card :is(.tabs .tb,.sellb)::after{content:'';position:absolute;inset:-8px 0}      /* (the fish card's rename pencil, its tabs and the rehome link: the same invisible margin to a thumb's size) */
+  #fishpill .pfeed{position:relative}#fishpill .pfeed::after{content:'';position:absolute;inset:-7px -3px}      /* (Feed on a fish's label: a thumb-sized tap area) */
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
