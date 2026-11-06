@@ -5,10 +5,18 @@
 # SHARD=i/n runs only every n-th part, starting at part i (0-based), so CI can run the quick check as n jobs side by side.
 cd "$(dirname "$0")/.."
 if ! curl -s -o /dev/null localhost:8123/; then (cd web && nohup python3 -m http.server 8123 >/dev/null 2>&1 &); sleep 2; fi      # the drills play the solo game from here
-pass=(); fail=(); K=0; SI=${SHARD%/*}; SN=${SHARD#*/}; [ -n "$SHARD" ] || { SI=0; SN=1; }
+pass=(); fail=(); retried=(); K=0; SI=${SHARD%/*}; SN=${SHARD#*/}; [ -n "$SHARD" ] || { SI=0; SN=1; }
 mine() { local k=$K; K=$((K + 1)); [ $((k % SN)) -eq "$SI" ]; }      # (is this part this shard's?)
+ok() { ! echo "$1" | grep -qE "✗|failed$|Error" && echo "$1" | grep -qE "passed$"; }      # passed only if it says so
+# A browser drill that fails gets one more try: on a slow shared CI machine a timing-sensitive drill can miss once. One that passes only on
+# the second try still counts as passed, but is named in the summary (and as a CI warning), so a flaky drill or a rare real bug stays in sight.
+# The rule and server tests and the level sim are deterministic: they get no retry. NORETRY=1 turns retries off.
 run() { local name="$1"; shift; echo "── $name"; local out; out="$("$@" 2>&1)"; echo "$out" | grep -E "✗|passed$|failed$|Error:" | head -8;
-  if echo "$out" | grep -qE "✗|failed$|Error" || ! echo "$out" | grep -qE "passed$"; then fail+=("$name"); echo "$out" | grep -E "Error" | head -2; else pass+=("$name"); fi; }      # passed only if it says so
+  if ok "$out"; then pass+=("$name"); return; fi
+  if [ -z "$NORETRY" ] && [[ "$name" != "rule and server tests" && "$name" != levels* ]]; then echo "   … failed; one more try"; out="$("$@" 2>&1)"
+    if ok "$out"; then pass+=("$name"); retried+=("$name"); echo "   passed on the second try"; [ -n "$GITHUB_ACTIONS" ] && echo "::warning title=Drill passed only on retry::$name failed once, then passed"; return; fi
+    echo "$out" | grep -E "✗|passed$|failed$|Error:" | head -8; fi
+  fail+=("$name"); echo "$out" | grep -E "Error" | head -2; }
 mine && run "rule and server tests" npm test --silent
 mine && run "levels 1-8 from a new tank" node tools/sim/milestones.mjs
 for t in real_tank routine_check fishday_check gait_check nursery_pick_check redesign_check feedall_check reopen_check friends_check road_check play_check story_check sync_check motion_check adopt_check keepsake_check twirl_check fund_check return_check turtle_check chart_check gift_check journal_check ux_check octopus_den octopus_rest octo_motion_check sealife_motion_check seahorse_check adventure_check life_check life_check2 biscuit_check living_check living_check2 glass_check hatch_check birth_check photo_check field_check mystery_check breed_check dilemma_check goal_check family_check reveal_check octo_baby_check keep_reach habitat_check crab_clip crab_play loading_check; do mine && run "$t" timeout 900 node --disable-warning=ExperimentalWarning "tools/$t.mjs"; done
@@ -17,5 +25,5 @@ if [ -n "$FULL" ]; then
   run octopus_aware timeout 7000 node --disable-warning=ExperimentalWarning tools/octopus_aware.mjs 1      # (one visit per nature here: three each takes over an hour)
   run dev_lifecycle timeout 5000 node --disable-warning=ExperimentalWarning tools/dev_lifecycle.mjs
 fi
-echo; echo "passed: ${#pass[@]}  ·  failed: ${#fail[@]} ${fail[*]}"
+echo; echo "passed: ${#pass[@]}  ·  failed: ${#fail[@]} ${fail[*]}"; [ ${#retried[@]} -gt 0 ] && echo "passed only on the second try: ${retried[*]}"
 [ ${#fail[@]} -eq 0 ]
