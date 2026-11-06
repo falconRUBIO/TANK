@@ -189,7 +189,7 @@ export function initUI({ game, social, cb }) {
     el.innerHTML = `<b>${n === 1 ? '1 thing' : `${n} things`} happened while you were away</b><span>Today ›</span>`; el.onclick = () => { el.classList.remove('on'); open('notices'); }; requestAnimationFrame(() => el.classList.add('on')); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 7000); return true; };
   const awayHtml = () => { const { A, all, big } = awayLines(); if (!A) return '';
     const days = all.filter((x) => !AWAY_BIG.test(x) && FISHDAY_RE.test(x)).slice(-3), rest = all.filter((x) => !AWAY_BIG.test(x) && !FISHDAY_RE.test(x));      /* (what the ordinary fish got up to comes right after the big news, ahead of routine lines) */
-    const uniq = [...big.slice(-4), ...days, ...rest.slice(-5)].slice(0, 6); if (!uniq.length) return '';
+    const uniq = [...big.slice(-3), ...days.slice(-2), ...rest.slice(-5)].slice(0, 5);      /* (five lines at most: the big news, then a fish's day or two, then the rest) */ if (!uniq.length) return '';
     const h = Math.round((A.to - A.from) / 3600e3), span = h >= 48 ? `${Math.round(h / 24)} days` : h >= 1 ? `${h} hour${h > 1 ? 's' : ''}` : 'a little while';
     return `<h4 class="ntsh">While you were away <small>${span}</small><button class="lnk awayx" data-act="awayclear">Clear</button></h4><div class="awayl">${uniq.map((t) => `<p>${esc(t)}</p>`).join('')}</div>`; };
   const comingHtml = () => { const s = S(); if (!s || (s.flags.tut ?? 0) < 5) return ''; const out = [], ready = (s.eggs ?? []).some((e) => e.ready);
@@ -432,7 +432,7 @@ export function initUI({ game, social, cb }) {
   }
   const growLine = () => {
     const soon = S().fish.map((f) => ({ f, n: nextStage(f) })).filter((x) => x.n).sort((a, b) => a.n.ms - b.n.ms)[0];
-    return soon ? `<p class="grow">🌱 ${esc(soon.f.name)} grows up in ${esc(soon.n.label)}</p>` : '';
+    return soon ? `<p class="grow">🌱 ${esc(soon.f.name)} ${soon.n.to === 'adult' ? 'is fully grown' : 'is no longer a baby'} in ${esc(soon.n.label)}</p>` : '';
   };
   const lvRow = () => { const s = S(), lv = s.level, a = LEVEL_AT[lv - 1], b = LEVEL_AT[lv] ?? null, sc = scoreOf(s), pct = b ? Math.round(((sc - a) / (b - a)) * 100) : 100; return `<div class="lvrow"><b>LEVEL ${lv}</b><i><b style="width:${Math.max(4, Math.min(100, pct))}%"></b></i><span>Day ${game.day}</span></div>`; };
   const ordersHtml = () => { const o = S().orders ?? [], e = S().eggs ?? []; return o.length || e.length ? `<div class="orders"><small>ON THE WAY</small>${o.map((x) => `<div><span>${x.surprise ? `🎁 A gift for ${esc(x.ownerName ?? 'a friend')}` : `📦 ${esc(x.name || SPECIES_DEF[x.species].label)}`}</span><b>${eta(x.arrivesAt - game.now())}</b></div>`).join('')}${e.map((x) => `<div><span>🥚 Egg</span><b>${eta(x.hatchAt - game.now())}</b></div>`).join('')}</div>` : ''; };

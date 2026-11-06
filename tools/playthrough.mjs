@@ -49,7 +49,7 @@ const sd = await S(); ck('something turns up in the tank, with someone to blame,
 const sh0 = sd.shells; await p.evaluate(() => window.__game.dispatch({ t: 'collect', id: window.__game.state.drift.id })); const sd2 = await S(); ck('collecting the gift pays out and clears it', !sd2.drift && (sd.drift.kind === 'treat' || sd2.shells > sh0), `${sh0}→${sd2.shells}`);
 await p.evaluate(() => { const f = window.__tank.fishes[0]; window.__ui.open('tank'); }); 
 const pr = await p.evaluate(async () => { const g = window.__game, id = g.state.fish[0].id; const a = await g.dispatch({ t: 'pet', id }); const b = await g.dispatch({ t: 'pet', id }); return [a.applied, b.applied]; }); ck('petting works once, then the fish needs a moment', pr[0] === true && pr[1] === false, JSON.stringify(pr));
-await p.evaluate(() => window.__ui.showBook()); await p.waitForSelector('.bk'); ck('the collection book lists found and unfound', (await p.$$('.bk.nope')).length > 0 && (await p.$$('.bk:not(.nope)')).length >= 1, `${(await p.$$('.bk')).length} entries`); await p.evaluate(() => window.__ui.open('tank'));
+await p.evaluate(() => window.__ui.showBook()); await p.waitForSelector('#sheet .anr', { timeout: 30000 }); ck('the old collection link opens Crew › Sea life, listing who lives in the tank', (await p.$$('#sheet .anr')).length >= 1, `${(await p.$$('#sheet .anr')).length} rows`);      /* (the collection book went with the Guide; its link now lands on the tank's sea life) */ await p.evaluate(() => window.__ui.open('tank'));
 
 console.log('Progress');
 await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'shells' }, { dev: true })); await p.evaluate(() => window.__game.dispatch({ t: 'dev', what: 'shells' }, { dev: true }));
@@ -80,7 +80,7 @@ await p.evaluate(async () => { const g = window.__game, fx = g.state.fish.find((
 await p.waitForFunction(() => window.__game.journal.some((j) => /favou?rite spot/.test(j.text)), null, { timeout: 8000 }).then(() => ck('a fish discovers a favourite spot from what is really in the tank', true), () => ck('a fish discovers a favourite spot from what is really in the tank', false));
 await p.evaluate(() => { const s = window.__game.state; s.hunger = 0.9; window.__game.emit('state'); });
 const em = await p.waitForFunction(() => window.__tank.fishes.some((f) => f.emote && f.emote.visible && f.profile.mood === 'Hungry'), null, { timeout: 16000 }).then(() => true, () => false); ck('hungry fish show a mood bubble', em);
-const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]').click(); return document.querySelector('.grow')?.textContent ?? ''; }); ck('the care sheet shows what grows up next', /grows up in/.test(nxt) || nxt === '', nxt || '(all adults)');
+const nxt = await p.evaluate(() => { document.querySelector('nav [data-tab=care]').click(); return document.querySelector('.grow')?.textContent ?? ''; }); ck('the care sheet shows what grows up next', /(is fully grown|is no longer a baby) in/.test(nxt) || nxt === '', nxt || '(all adults)');
 await p.evaluate(() => window.__ui.open('tank'));
 console.log('Care & persistence');
 await p.evaluate(() => { const s = window.__game.state; s.glass = 0.7; s.water = 0.4; window.__game.emit('state'); });

@@ -221,7 +221,7 @@ export function storyNext(t, f, now = Date.now()) {
 }
 // What is coming, in plain words, for the end of the first session: a reason to come back that is actually true.
 export function firstPromises(t, now = Date.now()) {
-  const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(`${f.name} grows up in ${n.label}.`);
+  const out = [], f = t.fish[0], n = f && nextStage(f, now); if (n) out.push(n.to === 'adult' ? `${f.name} is fully grown in ${n.label}.` : `${f.name} is no longer a baby in ${n.label}.`);      // (which step it is: since babies grow slower, the first is days before it is grown)
   if (!t.drift && t.driftAt > now && now - (t.createdAt ?? now) < 2 * DAY) out.push('Something will turn up in the tank within a few hours.');
   if (t.visitAt && t.visitAt > now && t.visitAt - now < 30 * HOUR) out.push('A rare visitor may drop by tomorrow.');
   out.push('Tomorrow the tank has a new request for you.'); return out.slice(0, 4);

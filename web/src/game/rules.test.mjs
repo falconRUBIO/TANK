@@ -600,7 +600,7 @@ ok('chapters mark landmarks once, pay nothing, and a tank that already passed th
 ok('the first session ends with real promises, and a full moon brings pearls in the tank', () => {
   const t = R.newWorld(0, 1); R.norm(t, 0); t.flags.tut = 4; t.fish = [R.ensureFish({ id: 'f0', name: 'Pip', species: 'goldfish', seed: 1, born: 0, stage: 'baby', traits: ['Calm'] })]; t.simTs = 0;
   R.applyAction(t, { t: 'tut', step: 5 }, { now: 1000, name: 'A', uid: 'u1', solo: true }); assert.equal(t.flags.promised, 1000); assert.ok(t.driftAt > 1000 + 3 * 3600e3 && t.driftAt < 1000 + 9 * 3600e3, 'a gift is on its way within hours');
-  const lines = R.firstPromises(t, 2000); assert.ok(lines.some((x) => /Pip grows up/.test(x)) && lines.some((x) => /turn up in the tank/.test(x)) && lines.some((x) => /request/.test(x)), lines.join(' | '));
+  const lines = R.firstPromises(t, 2000); assert.ok(lines.some((x) => /Pip (is no longer a baby|is fully grown) in/.test(x)) && lines.some((x) => /turn up in the tank/.test(x)) && lines.some((x) => /request/.test(x)), lines.join(' | '));
   const again = t.driftAt; R.applyAction(t, { t: 'tut', step: 5 }, { now: 9e6, name: 'A', uid: 'u1', solo: true }); assert.equal(t.driftAt, again, 'promised only once');
   const full = Date.UTC(2024, 0, 25, 18), dark = Date.UTC(2024, 0, 11, 12); assert.equal(S.skyOf(full).event?.key, 'fullmoon'); assert.equal(S.skyOf(dark).event?.key, 'darkmoon'); assert.ok(S.moonPhase(full) > 0.47 && S.moonPhase(full) < 0.53);
   assert.equal(S.skyOf(full).moon, 'Full moon'); assert.equal(S.skyOf(Date.UTC(2024, 0, 18, 12)).event?.key === 'fullmoon', false);
