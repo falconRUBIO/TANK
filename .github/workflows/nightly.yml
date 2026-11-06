@@ -9,7 +9,7 @@ on:
 jobs:
   full:
     runs-on: ubuntu-24.04      # (pinned: the browser tests do not yet support the newer Ubuntu that ubuntu-latest moved to)
-    timeout-minutes: 300
+    timeout-minutes: 360      # (the most GitHub allows: a drill that fails gets one more try, which can add time)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
