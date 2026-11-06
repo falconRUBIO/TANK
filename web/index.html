@@ -1553,6 +1553,10 @@ nav [data-tab]:active{transform:scale(.92)}
   :is(#sheet,#card,#coach,#modal,#fishpill) :is(p,small,.todaysub,.crewsub){text-wrap:pretty}:is(#sheet,#card,#modal) :is(h2,h3,h4){text-wrap:balance}
   /* reduce motion (iPhone Settings › Accessibility › Motion): every looping animation plays once and rests on its last frame, nothing pulses or bobs forever */
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-iteration-count:1!important;scroll-behavior:auto!important}}
+  /* the first-fish picker on a small phone (320 wide): three columns share the width and the pictures shrink to fit, rather than the third column running out of the box */
+  #modal .pickrow{grid-template-columns:repeat(2,minmax(0,1fr))}#modal .pickrow.pcs{grid-template-columns:repeat(3,minmax(0,1fr))}#modal .pickrow .pk{min-width:0}#modal .pickrow .pk img{max-width:100%;height:auto;aspect-ratio:1}
+  /* a short phone (iPhone SE): the first-fish picker fits whole, its Bring it home button on screen without scrolling */
+  @media (max-height:700px){#modal .box.pick{padding-top:14px;padding-bottom:14px}#modal .box.pick h2{margin:0 0 4px}#modal .box.pick>p{margin:0 0 8px;font-size:13px}#modal .pickrow.pcs .pk img{width:52px!important;height:52px!important;margin:-4px 0 -2px!important}#modal .pickrow.pcs .pk{padding:6px 4px!important}#modal .box.pick .pkdesc{margin:6px 0;font-size:12.5px}#modal .box.pick .pkdesc small{display:none}#modal .box.pick #mi{margin:4px 0 8px}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
