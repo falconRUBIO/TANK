@@ -656,7 +656,10 @@ export class Fish3D {
   }
   // a fish that has died drifts up and floats belly-up at the surface until someone scoops it out
   deadUpdate(dt) {
-    this.tt = (this.tt ?? 0) + dt; this.pos.y += (12.7 + Math.sin(this.tt * 1.1 + this.phase) * 0.09 - this.pos.y) * Math.min(1, dt * 0.22); this.pos.x += Math.sin(this.tt * 0.23 + this.phase) * 0.06 * dt;
+    this.tt = (this.tt ?? 0) + dt;
+    // a fish or a turtle floats belly-up at the surface; an octopus or a seahorse sinks, limp, to the sand (a seahorse on its side), as they do
+    if (this.species.move === 'jet' || this.species.id === 'seahorse') { const side = this.species.id === 'seahorse' ? Math.PI / 2 : 0, floor = sandH(this.pos.x, this.pos.z) + (side ? 0.25 : 0.12); this.pos.y += (floor - this.pos.y) * Math.min(1, dt * 0.5); this.roll += (side - this.roll) * Math.min(1, dt * 0.8); this.pitch += (0 - this.pitch) * Math.min(1, dt); this.vel.set(0, 0, 0); this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX')); return; }
+    this.pos.y += (12.7 + Math.sin(this.tt * 1.1 + this.phase) * 0.09 - this.pos.y) * Math.min(1, dt * 0.22); this.pos.x += Math.sin(this.tt * 0.23 + this.phase) * 0.06 * dt;
     this.roll += (Math.PI - this.roll) * Math.min(1, dt * 1.6); this.pitch += (Math.sin(this.tt * 0.7) * 0.06 - this.pitch) * Math.min(1, dt); this.vel.set(0, 0, 0);
     this.group.position.copy(this.pos); this.group.quaternion.setFromEuler(new THREE.Euler(this.roll, this.heading, this.pitch, 'YZX'));
   }

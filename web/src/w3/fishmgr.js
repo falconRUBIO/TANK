@@ -128,7 +128,8 @@ export class Fishes {
     this.syncJars(state);
     for (const x of state.floaters ?? []) {
       seen.add(x.id); let f = this.byId.get(x.id);
-      if (!f) { f = new Fish3D(SPECIES[x.species], x.seed, { look: x.palette != null || x.pal != null ? { pal: x.palette ?? (Number.isInteger(x.pal) ? x.pal : null) } : null, name: x.name, speed: 0.5, scale: 1, band: BANDS.goldfish }); f.fid = x.id; f.setGrowth(STAGE_SCALE[x.stage] ?? 1); f.pos.set((this.rng() - 0.5) * 6, 12.7, 1.2); this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }
+      if (!f && isCrab(x.species)) { f = this.makeCrab(x); this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }      // (a crab that died stays drawn back into its shell on the sand)
+      if (!f) { f = new Fish3D(SPECIES[x.species], x.seed, { look: x.palette != null || x.pal != null ? { pal: x.palette ?? (Number.isInteger(x.pal) ? x.pal : null) } : null, name: x.name, speed: 0.5, scale: 1, band: BANDS.goldfish }); f.fid = x.id; f.setGrowth(STAGE_SCALE[x.stage] ?? 1); f.pos.set((this.rng() - 0.5) * 6, 12.7, 1.2); if (f.species.move === 'jet' || x.species === 'seahorse') f.pos.y = sandH(f.pos.x, f.pos.z) + 0.2; this.scene.add(f.group); this.list.push(f); this.byId.set(x.id, f); }
       if (!f.dead) { f.dead = true; f.floater = true; f.setPale(0.6); f.profile = { traits: [], mood: 'Passed away', needs: [0, 0, 0, 0] }; if (f.emote) { f.emote.visible = false; } this.burst(f.pos); }
     }
     for (const id of [...(this.out?.keys() ?? [])]) if (!state.fish.some((x) => x.id === id)) { const f = this.out.get(id); this.out.delete(id); this.byId.delete(id); this.scene.remove(f.group); if (f.shade) { this.scene.remove(f.shade); f.shade.geometry.dispose(); f.shade.material.dispose(); f.shade = null; }; }      // gone for good while it was away (sold, moved on)

@@ -147,11 +147,11 @@ export const founderOf = (members) => (members?.length ? members.reduce((a, m) =
 // may sell any fish, so a tank is never stuck with the octopus of someone who quit; alone, you may sell any
 export const canSell = (f, uid, members = null) => !!f && !f.dead && (!members || !f.owner || f.owner === uid || !members.some((m) => m.id === f.owner) || founderOf(members) === uid);
 // an octopus and a seahorse each have their own hunger, and only their own caretaker feeds them (an octopus a crab, a seahorse mysis shrimp);
-// one with no caretaker (or alone in a solo tank) anyone may feed. Every other fish eats from the tank's shared food.
+// one with no caretaker (or alone in a solo tank), or one on its last day, anyone may feed. Every other fish eats from the tank's shared food.
 export const ownFood = (f) => (isOcto(f) ? 'crab' : f?.species === 'seahorse' ? 'mysis' : null);
 export const ownHungry = (f) => !!ownFood(f);
 export const ownHunger = (f) => (ownHungry(f) ? Math.max(0, Math.min(1, f.hunger ?? 0.3)) : 0);
-export const canFeedOwn = (f, uid, shared = true) => ownHungry(f) && !f.dead && (!shared || !f.owner || f.owner === uid);
+export const canFeedOwn = (f, uid, shared = true) => ownHungry(f) && !f.dead && (!shared || !f.owner || f.owner === uid || (f.ail ?? 0) >= AIL_LAST);      // (one that is fading, its last day, anyone in the crew may feed: nobody has to watch a friend's octopus die)
 export const octoHunger = (f) => (isOcto(f) ? ownHunger(f) : 0);
 export const canFeedOcto = (f, uid, shared = true) => isOcto(f) && canFeedOwn(f, uid, shared);
 const DAY = 864e5;
@@ -579,10 +579,12 @@ function discover(t, now, ev) {
 }
 // Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
 // Days 1-2 normal. Day 3 (2d) sluggish and paler, growth pauses. Day 4 (3d) critical: slow, less appetite, a warning goes out.
-// It never dies of neglect: from day 4 it stays very unwell until it is looked after, then recovers (see tendFish). Only old age ends a life.
+// Day 7 (6d) last chance: a warning that it will not hold on much longer. Day 8 (7d) it dies, and its body is left in the tank until someone removes it.
+// Guard rails: no deaths in a new tank's first three days, at most one a day, the last animal never dies, and an expecting father, a mother with eggs
+// in her den, a nursery baby or an animal out on an adventure holds on (they stay very unwell). Care wins the time back twice as fast as neglect costs it.
 // A fish counts as going hungry only once it has gone this long without any feeding. Hunger itself rises to its cap within hours, so judging by the hunger bar alone would call a once-a-day caretaker neglectful.
 export const FED_GRACE = 30 * 3600e3;
-export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical; AIL_DIE is only the cap on how run down it gets
+export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400, AIL_LAST = 6 * 86400, AIL_DEATH = 7 * 86400;       // day 3 sluggish and paler, day 4 critical (AIL_DIE: as low as its health goes), day 7 last chance, day 8 it dies
 // the place it was most attached to, by decoration id: its holdfast, its favourite spot, the thing it loved most (kept with its memorial, so family can be compared with it)
 const memPlace = (t, f) => { const id = f.log?.fav ?? f.spotId ?? f.mem?.likes?.[0] ?? null; return id && t.decor.some((d) => d.id === id) ? { id } : null; };
 function memorialOf(t, f, now) {
@@ -590,6 +592,9 @@ function memorialOf(t, f, now) {
   const pal = t.fish.find((x) => x.id === f.pal); if (pal) ms.push(`Best friends with ${pal.name}`); for (const [d] of AGE_REWARDS) if (f.found?.includes('age' + d)) ms.push(`Reached ${d} days old`); for (const k of f.tricks ?? []) ms.push(`Learned to ${TRICKS[k]?.label ?? k}`); if (Object.values(f.bond ?? {}).some((n) => n >= 10)) ms.push('Learned to trust a caretaker');
   return { id: f.id, name: f.name, species: f.species, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], milestones: ms, parents: (f.parents ?? []).map(lineOf), gen: f.gen ?? 0, friend: pal?.name ?? null, elder: !!f.elder, disc: Object.keys(f.disc ?? {}), rested: null, place: memPlace(t, f), keeps: (t.keeps ?? []).filter((k) => k.by === f.id).map((k) => k.id) };
 }
+// who never dies of neglect, however long it is left: an expecting seahorse father (his young would go with him), an octopus mother with eggs in
+// her den, a nursery baby (its father looks after it), and an animal out on an adventure. They stay very unwell until someone cares for them.
+export const holdsOn = (t, f) => !!(f.preg || f.nursery || f.away || (t.eggs ?? []).some((e) => e.guard === f.id && eggCareOf(e).mode === 'den'));
 function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) {
   for (const f of [...t.fish]) {
     if (f.away) continue;      /* out on an adventure: nothing about it changes until it is back (see adventures.js) */
@@ -618,9 +623,17 @@ function tendFish(t, dt, now, ev = [], h0 = t.hunger, w0 = t.water, oh0 = null) 
           t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; const m = memorialOf(t, f, now); m.oldAge = true; (t.memorial ||= []).push(m);
           (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], oldAge: true });
           const yrs = Math.round(age); ev.push({ journal: `${f.name} passed away peacefully of old age, after ${yrs} days in the tank. A long, full life.`, toast: `${f.name} passed away peacefully of old age.`, died: f.id }); continue; } } }
-    // neglect never kills: a run-down animal stays very unwell (slow, pale, keeping to itself) until it is looked after, then recovers over a
-    // day or two and the journal says so. Only old age ends a life (above).
-    if (f.ail >= AIL_DIE) f.ail = AIL_DIE - 1;
+    // neglect, left long enough, kills: after a week of no care at all (the last day with a warning that says so) it dies, and its body stays in the
+    // tank, fouling the water, until someone removes it. Some always hold on (see holdsOn), and the guard rails keep a shared tank fair.
+    if (f.ail >= AIL_LAST && !f.lastSaid && f.ail < AIL_DEATH) { f.lastSaid = true; ev.push({ journal: `${f.name} is fading. Without food and clean water today, it will not last another day.`, toast: `${f.name} will not last another day without care.`, warn: f.id, last: f.id }); }
+    if (f.ail < AIL_LAST) f.lastSaid = false;
+    if (f.ail >= AIL_DEATH) {
+      const residents = t.fish.filter((x) => !x.dead && !x.away && !x.nursery && !x.visitor).length;
+      if (!holdsOn(t, f) && t.flags.mortality !== false && now - (t.createdAt ?? 0) > 3 * DAY && now - (t.lastDeath ?? 0) > DAY && residents > 1) {
+        t.fish.splice(t.fish.indexOf(f), 1); t.lastDeath = now; const m = memorialOf(t, f, now); m.neglect = true; (t.memorial ||= []).push(m);
+        (t.floaters ||= []).push({ id: f.id, name: f.name, species: f.species, seed: f.seed, stage: f.stage, born: f.born, died: now, owner: f.owner ?? null, ownerName: f.ownerName ?? null, traits: f.traits ?? [], neglect: true, ...(f.pal != null ? { pal: f.pal } : {}), ...(f.palette != null ? { palette: f.palette } : {}), ...(f.crab ? { crab: f.crab } : {}) });
+        ev.push({ journal: `${f.name} died. It went too long without food and clean water. Its body is still in the tank: remove it from Care.`, toast: `${f.name} has died.`, died: f.id }); continue; }
+      f.ail = AIL_DEATH - 1; }      // (one that holds on stays as unwell as it gets, until it is looked after)
     if (f.ail >= AIL_WARN) f.wasUnwell = true;
     else if (f.wasUnwell && f.ail < AIL_TIRED * 0.25) { f.wasUnwell = false; ev.push({ journal: `${f.name} is back to its old self.`, toast: `${f.name} has recovered.`, story: f.id, text: 'Recovered after a hard few days.' }); }
   }
@@ -2774,7 +2787,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (a.what === 'shells') t.shells += 50;
       if (a.what === 'level') t.level = Math.max(1, Math.min(TOP_LEVEL, Math.round(num(a.to)) || t.level + 1));      // (drills: straight to a level)
       if (a.what === 'rush') { for (const o of t.orders) o.arrivesAt = now; events.push(...advance(t, now)); }
-      if (a.what === 'neglect') { t.createdAt -= 10 * DAY; t.lastDeath = 0; t.hunger = 0.85; t.water = 0.45; t.fish.forEach((f, i) => { f.ail = i === 0 ? AIL_DIE : i === 1 ? AIL_WARN + 100 : f.ail; if (i === 0) f.health = 0.2; }); events.push(...advance(t, now)); }
+      if (a.what === 'neglect') { t.createdAt -= 10 * DAY; t.lastDeath = 0; t.hunger = 0.85; t.water = 0.45; t.fish.forEach((f, i) => { f.ail = i === 0 ? AIL_DEATH : i === 1 ? AIL_WARN + 100 : f.ail; if (i === 0) f.health = 0.2; }); events.push(...advance(t, now)); }
       if (a.what === 'visitor') { t.visitAt = now; t.visitWait = true; t.flags.tut = Math.max(t.flags.tut ?? 0, 5); events.push(...advance(t, now)); }
       if (a.what === 'egg') { t.eggAt = now; for (const f of t.fish) f.born -= 4 * DAY; events.push(...advance(t, now)); }
       if (a.what === 'hatch') { for (const e of t.eggs) { e.hatchAt = now; e.watch = now; } events.push(...advance(t, now)); }

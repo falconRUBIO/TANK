@@ -524,12 +524,12 @@ await t('four caretakers, one tank: seats, first fish ownership, and the world s
   const snap = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); assert.deepEqual(snap.fish.map((f) => f.id), w.fish.map((f) => f.id)); [wx, wy, wz].forEach((s) => s.close());
   globalThis.regress = { tk, x, y, z };
 });
-await t('neglect on the server: very unwell but alive, recovery with care, floating fish, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
+await t('neglect on the server: very unwell first, then after a week one dies (one a day) and stays in the tank; recovery with care, lay-to-rest, memorial persistence, simultaneous scoops', async () => {
   const { tk, x, y, z } = globalThis.regress, DAY = 864e5, now = Date.now();
   const sick = (w) => w.fish.map((f) => ({ ...f, ail: 5 * 86400 + 100, health: 0.2, born: now - 30 * DAY, stage: 'adult' }));
   let w = getW(tk.id); setW(tk.id, { fish: sick(w), createdAt: now - 20 * DAY, simTs: now - 1000, hunger: 0.85, water: 0.45, lastDeath: 0, flags: { ...w.flags, tut: 5 }, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
-  tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 0, 'neglect does not kill'); assert.equal(w.memorial.length, 0); assert.ok(w.fish.every((f) => f.ail >= 3 * 86400), 'they are very unwell');
-  tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); assert.equal(getW(tk.id).floaters.length, 0, 'not even after days more');
+  tickTank(S.db, tk.id, now); w = getW(tk.id); assert.equal(w.floaters.length, 0, 'five days of neglect does not kill'); assert.equal(w.memorial.length, 0); assert.ok(w.fish.every((f) => f.ail >= 3 * 86400), 'they are very unwell');
+  const n0 = getW(tk.id).fish.length; tickTank(S.db, tk.id, now + 20 * 3600e3 * 3); w = getW(tk.id); assert.equal(w.floaters.length, 1, 'past a week, one dies (one a day at most)'); assert.equal(w.fish.length, n0 - 1); assert.ok(w.memorial[0]?.neglect, 'remembered as lost to neglect');
   // recovery from neglect with real care
   const wx = await open(x.token), wy = await open(y.token); w = getW(tk.id); setW(tk.id, { simTs: Date.now(), hunger: 0.8, water: 0.5, fish: w.fish.map((f) => ({ ...f, ail: 3 * 86400, health: 0.3 })) });
   await ackOf(wx, { t: 'feed', x: 0, idem: 'rg-f' }); await ackOf(wx, { t: 'water', idem: 'rg-w' }); const rec = getW(tk.id); assert.ok(rec.hunger < 0.8 && rec.water > 0.9, 'care restored the tank');
@@ -540,9 +540,9 @@ await t('neglect on the server: very unwell but alive, recovery with care, float
   const after = JSON.parse(S.db.prepare('SELECT world FROM tanks WHERE id=?').get(tk.id).world); const mem = after.memorial.find((m) => m.id === 'dead1'); assert.ok(mem && mem.rested && mem.rested.by, 'memorial persisted with who laid it to rest'); assert.equal(mem.ownerName, 'Xan'); assert.deepEqual(mem.milestones, ['Reached the adult stage']);
   [wx, wy].forEach((s) => s.close());
 });
-await t('offline simulation: ten days away loses nobody and the tank is still there', async () => {
+await t('offline simulation: a week away loses nobody and the tank is still there', async () => {
   const { tk } = globalThis.regress, DAY = 864e5, now = Date.now(); let w = getW(tk.id);
-  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 30 * DAY, stage: 'adult' })), floaters: [], lastDeath: 0, simTs: now - 10 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
+  setW(tk.id, { fish: [...w.fish, ...w.fish.map((f, i) => ({ ...f, id: 'x' + i }))].map((f) => ({ ...f, ail: 0, health: 1, born: now - 30 * DAY, stage: 'adult', hunger: 0.3, fedAt: now - 7 * DAY })), floaters: [], lastDeath: 0, lastFed: now - 7 * DAY, simTs: now - 7 * DAY, createdAt: now - 30 * DAY, hunger: 0.3, water: 1, visitAt: 1e15, eggAt: 1e15, storyAt: 1e15 });
   const before = getW(tk.id).fish.length; tickTank(S.db, tk.id, now); const a2 = getW(tk.id); assert.equal(before - a2.fish.length, 0, 'lost ' + (before - a2.fish.length)); assert.ok(a2.fish.length >= 1 && a2.hunger <= 0.85 && a2.water >= 0.45);
 });
 console.log('Discoveries, thank-yous, journal split, analytics');

@@ -774,11 +774,11 @@ function awayBanner(rec) {
 function showDeadCard(f) {
   lastCard = Date.now(); const x = game.state.floaters?.find((z) => z.id === f.fid); if (!x) { card.classList.remove('on'); return; }
   const days = Math.max(1, Math.round((x.died - x.born) / 864e5)), who = x.ownerName ?? game.members?.find((mm) => mm.id === x.owner)?.name ?? 'Unknown';
-  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${esc(x.name)}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">Passed away</b></div>
+  card.innerHTML = `<button class="x" aria-label="Close">×</button><h2>${esc(x.name)}</h2><div class="sp">${SPECIES_DEF[x.species]?.label ?? x.species} · <b class="mood">${x.oldAge ? 'Passed away' : 'Died'}</b></div>
     <dl><dt>Age</dt><dd>${days} day${days === 1 ? '' : 's'}</dd><dt>Original caretaker</dt><dd>${esc(who)}</dd><dt>Died</dt><dd>${new Date(x.died).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</dd></dl>
     ${(() => { const lines = game.journal.filter((e) => e.text.includes(x.name) && !/passed away|died|lay|rest/i.test(e.text)).map((e) => e.text); const pick = [...new Set([lines[0], ...lines.filter((t) => /favou?rite|friends|loves|learned|hatched|guard|keeps going back|first/i.test(t)).slice(-3)].filter(Boolean))].slice(0, 4);
       return pick.length ? `<h4>Remembered for</h4><ul class="remember">${pick.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''; })()}
-    <button class="pet rest" id="rest">LAY TO REST</button>`;
+    <button class="pet rest" id="rest">REMOVE FROM THE TANK</button>`;
   card.classList.add('on'); card.querySelector('.x').onclick = () => setFocus(null);
   $('rest').onclick = async () => { $('rest').disabled = true; const r = await game.dispatch({ t: 'scoop', id: f.fid }); setFocus(null); if (!r.ok) return fail(r); if (r.applied) { sfx('tap'); haptic(10); } };
 }

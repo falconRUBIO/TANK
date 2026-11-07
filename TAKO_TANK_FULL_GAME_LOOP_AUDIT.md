@@ -48,7 +48,7 @@ Classes: 1 implemented and working · 2 implemented, not visually apparent · 3 
 | Physical history in the tank | 3 | Octopus keepsakes persist (`KEEP_MAX` 6) and are carried home visibly; algae tint on decor; tang grazing marks on glass. No lasting marks from births or old animals. | — |
 | Life stages | 1 | baby < 3 days, juvenile < 10, adult after; size changes; turtles ready at adult + 14 days. Old age is the only death. | — |
 | Health and progression | 1 | Values in section D/E verified by tests and simulation. | — |
-| Departures and neglect | 1 | No automatic departure (`if (false && f.leaveAsk)`). Distress shown in `reefTick` (mul 0.55, low and back, thought bubble). Neglect never kills. | — |
+| Departures and neglect | 1 | No automatic departure (`if (false && f.leaveAsk)`). Distress shown in `reefTick` (mul 0.55, low and back, thought bubble). Neglect kills only after a week with no care, with a last-chance warning first (see TAKO_TANK_NEGLECT_DEATH.md). | — |
 | Level unlocks | 1 | `LEVEL_PRIZE` 2–8, one `LEVELS` table. | — |
 | Streaks, leaderboards, new currency, random drama | 5 | Not present and not recommended (user constraints). | — |
 

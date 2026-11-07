@@ -5,7 +5,7 @@ const DAY = 864e5, H = 3600e3; let n = 0; const ok = (name, fn) => { fn(); n++; 
 const seedFor = (type) => { for (let s = 1; s < 5000; s++) if (R.octoMind({ seed: s }).type === type) return s; };
 const T0 = Date.UTC(2026, 3, 6, 0);      // a Monday, midnight UTC (the tank's time zone is UTC unless a phone says otherwise)
 function tank(type = 'collector') {
-  const t = R.newWorld(T0 - 10 * DAY, 4); R.norm(t, T0 - 10 * DAY); t.id = 'life-' + type; t.flags.tut = 5; t.flags.noLeave = true; t.shells = 100; t.level = 6; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] };
+  const t = R.newWorld(T0 - 10 * DAY, 4); R.norm(t, T0 - 10 * DAY); t.id = 'life-' + type; t.flags.tut = 5; t.flags.noLeave = true; t.flags.mortality = false; t.shells = 100; t.level = 6; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] };
   t.fish = [R.ensureFish({ id: 'o1', name: 'Biscuit', species: 'octopus', seed: seedFor(type), born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.85, owner: 'me', hunger: 0.1 }),
     R.ensureFish({ id: 'f1', name: 'Dot', species: 'neon', seed: 2, born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.8 }), R.ensureFish({ id: 'f2', name: 'Pip', species: 'goldfish', seed: 3, born: T0 - 9 * DAY, stage: 'adult', traits: [], happy: 0.8 })];
   t.decor = [['coconut', 1.2, 0.4], ['boulder', -1.5, -0.8], ['shell', 0.2, 1.4], ['grass', -2.5, 1], ['fern', 2.4, -1]].map(([type, x, z], i) => ({ id: 'd' + i, type, x, z, ry: 0 }));
@@ -47,9 +47,9 @@ ok('a young seahorse that comes to love its parent\'s plant on its own is notice
   kid.log = { fav: 'd4', hitch: { d4: [300, 3] } }; ev = R.advance(t, T0 + 2 * DAY + H); assert.ok(!ev.some((e) => e.life === 'family'), 'a different plant: nothing');
   kid.log = { fav: 'd3', hitch: { d3: [300, 3] } }; ev = R.advance(t, T0 + 3 * DAY + H); const f = ev.filter((e) => e.life === 'family'); assert.equal(f.length, 1); assert.equal(f[0].journal, "Apollo's daughter Luna has taken a liking to the same sea grass.");
   assert.ok(!R.advance(t, T0 + 4 * DAY + H).some((e) => e.life === 'family')); });
-ok('the parent\'s place is remembered in its memorial, so it still counts after it has died', () => { const t = tank(); const dad = R.ensureFish({ id: 's1', name: 'Apollo', species: 'seahorse', seed: 4, sex: 'm', born: T0 - 200 * DAY, stage: 'adult', traits: [] }); dad.log = { fav: 'd3', hitch: { d3: [900, 9] } }; t.fish.push(dad);
+ok('the parent\'s place is remembered in its memorial, so it still counts after it has died', () => { const t = tank(); t.flags.mortality = true; const dad = R.ensureFish({ id: 's1', name: 'Apollo', species: 'seahorse', seed: 4, sex: 'm', born: T0 - 200 * DAY, stage: 'adult', traits: [] }); dad.log = { fav: 'd3', hitch: { d3: [900, 9] } }; t.fish.push(dad);
   for (let d = 0; d < 300 && t.fish.includes(dad); d++) R.advance(t, T0 + d * DAY); assert.ok(!t.fish.includes(dad)); const m = t.memorial.find((x) => x.id === 's1'); assert.equal(m.place?.id, 'd3'); });
-ok('a companion that dies: its friend keeps going back to their place for a few days, quietly (no journal line), then it passes', () => { const t = tank(); t.fish[1].pal = 'f2'; t.fish[2].pal = 'f1'; t.fish[2].spotId = 'd3'; t.fish[2].born = T0 - 500 * DAY; R.advance(t, T0 + H);
+ok('a companion that dies: its friend keeps going back to their place for a few days, quietly (no journal line), then it passes', () => { const t = tank(); t.flags.mortality = true; t.fish[1].pal = 'f2'; t.fish[2].pal = 'f1'; t.fish[2].spotId = 'd3'; t.fish[2].born = T0 - 500 * DAY; R.advance(t, T0 + H);
   let ev = []; for (let d = 1; d < 200 && t.fish.some((f) => f.id === 'f2'); d++) { feed(t); ev.push(...R.advance(t, T0 + d * DAY)); } const at = t.memorial.find((m) => m.id === 'f2')?.died; assert.ok(at, 'died of old age');
   ev = R.advance(t, at + DAY + H); const dot = t.fish.find((f) => f.id === 'f1'); assert.ok(dot.loss && dot.loss.name === 'Pip', JSON.stringify(dot.loss)); assert.ok(!ev.some((e) => e.journal && /Pip/.test(e.journal) && /back/.test(e.journal)));
   for (let d = 2; d < 6; d++) R.advance(t, at + d * DAY + H); assert.ok(!dot.loss, 'it passes'); });

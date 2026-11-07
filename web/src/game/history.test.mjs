@@ -7,7 +7,7 @@ const DAY = 864e5, H = 3600e3; let n = 0; const ok = (name, fn) => { fn(); n++; 
 const seedFor = (type) => { for (let s = 1; s < 5000; s++) if (R.octoMind({ seed: s }).type === type) return s; };
 const T0 = Date.UTC(2026, 3, 6, 0);
 function tank({ age = 10 } = {}) {
-  const t = R.newWorld(T0 - age * DAY, 4); R.norm(t, T0 - age * DAY); t.id = 'hist'; t.flags.tut = 5; t.shells = 100; t.level = 4; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] }; t.visitAt = 9e15; t.eggAt = 9e15;
+  const t = R.newWorld(T0 - age * DAY, 4); R.norm(t, T0 - age * DAY); t.id = 'hist'; t.flags.tut = 5; t.flags.mortality = false; t.shells = 100; t.level = 4; t.adv = { octoAt: 9e15, smallAt: 9e15, hist: [] }; t.visitAt = 9e15; t.eggAt = 9e15;
   t.fish = [R.ensureFish({ id: 'o1', name: 'Biscuit', species: 'octopus', seed: seedFor('collector'), born: T0 - (age - 1) * DAY, stage: 'adult', traits: [], happy: 0.85, owner: 'me', hunger: 0.1, home: 'd1' }),
     R.ensureFish({ id: 'f1', name: 'Dot', species: 'neon', seed: 2, born: T0 - (age - 1) * DAY, stage: 'adult', traits: [], happy: 0.8 })];
   t.decor = [{ id: 'd1', type: 'coconut', x: 1.2, z: 0.6, ry: 0 }, { id: 'd2', type: 'boulder', x: -2, z: -0.6, ry: 0 }, { id: 'd3', type: 'grass', x: -2.8, z: 1.8, ry: 0 }];
