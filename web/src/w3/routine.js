@@ -34,7 +34,7 @@ export class Routine {
     if (!F.night) {      // waking: a stretch (head up, every fin spread, a shiver of the tail), then up and about
       f.sleepy = false; f.poseK = 1; f.posePitch = 0.32; f.poseRoll = 0; f.fanK = 1; f.flickT = 0.5; f.wokeAt = performance.now(); f.wokeSay = f.thought = WAKE_SAY[(f.seed ?? 0) % WAKE_SAY.length];
       f.target.set(f.pos.x + (h01(f.seed, 7) - 0.5) * 1.4, Math.min(8, f.pos.y + 1.4 + h01(f.seed, 8) * 2), f.pos.z + 0.4); f.retarget = 3;
-      setTimeout(() => { if (f.wokeAt && performance.now() - f.wokeAt > 1500) { f.poseK = 0; f.posePitch = null; f.fanK = 0; } }, 1700);
+      setTimeout(() => { if (f.wokeAt && performance.now() - f.wokeAt > 1500 && !f.sleepy && !f.enc && f.posePitch === 0.32) { f.poseK = 0; f.posePitch = null; f.poseRoll = null; f.fanK = 0; } }, 1700);      // (the stretch ends; a fish already back asleep, or posing for something else, keeps that pose)
       if (!F.list.some((o) => o !== f && dayFish(o) && o.isNight)) F.momentOf?.('wake', f);      // the last one up: the whole tank has woken in front of you
     } else { f.thought = BED_SAY[(f.seed ?? 0) % BED_SAY.length]; }
   }
