@@ -1004,7 +1004,7 @@ function octoNest(egg, G, P, C, t) {
     if (now < m.probeAt && d < 3.4 && now > (m.steerAt ?? 0)) { m.steerAt = now + 4e3; const q = o.inspect; if (!q || Math.hypot(q.x - P.x, q.z - P.z) < 3.2) { o.inspect = away(); if (o.st && (o.st.s === 'bury' || o.st.s === 'rest' || (o.st.s === 'crawl' && d < 2.6))) o.st.t = 0; } }      // it remembers: nothing near the eggs is worth it now, and it moves off on its own (a crawl already heading past them is cut short)
     if (d < 2.0 && C.s !== 'chase' && gd < 3.5) {      // too close: he goes for it
       C.s = 'chase'; C.t = 0; C.o = o; C.cool = 4; G.seeking = false; G.dartT = 1.1; G.fanK = 0; G.lureCalm = 0; G.thought = `Charging at ${o.name} to drive it off the eggs.`;
-      o.startle?.(G.pos, G); if (o.fears) { o.fears.push({ x: P.x, z: P.z, t: now, r: 2.6 }); if (o.fears.length > 4) o.fears.shift(); } m.strikes++; m.push = false; m.keepAt = 0; m.fleeing = now + 15e3; o.inspect = null;
+      o.startle?.(G.pos, G); if (o.fears) { o.fears.push({ x: P.x, z: P.z, t: now, r: 2.6 }); if (o.fears.length > 4) o.fears.shift(); if (o.unfeared && o.st?.s === 'jet') [o.target.x, o.target.z] = o.unfeared(o.target.x, o.target.z); } m.strikes++; m.push = false; m.keepAt = 0; m.fleeing = now + 15e3; o.inspect = null;
       if (o.den && o.st && Math.sign(o.den.x - P.x) === Math.sign(o.pos.x - P.x)) o.goDen?.(o.st, Math.random); else o.inspect = away();      // it retreats properly: home if that is not past the eggs, else well away on its own side
       m.probeAt = now + Math.min(15 * 60, 90 + 75 * m.strikes + Math.random() * 90) * 1e3;      // the more often it is driven off, the longer it stays away
       fishes.memSay?.(o, `${G.name} drove it off the eggs. Keeping well clear now.`);
