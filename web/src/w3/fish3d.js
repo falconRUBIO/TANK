@@ -431,7 +431,7 @@ export class Fish3D {
     const nx = S.route?.length ? S.route[0] : null, gx = nx ? nx.x : this.target.x, gz = nx ? nx.z : this.target.z, again = S.after && Math.hypot(S.after.x - gx, S.after.z - gz) < 0.5 ? S.after.n + 1 : 1;
     if (again > 2) { (this.failed ||= []).push({ x: gx, z: gz }); if (this.failed.length > 6) this.failed.shift(); S.after = null; } else S.after = { x: gx, z: gz, mode: S.mode, n: again };      // twice over the top and still not there: that spot is not for walking to
     let lx = Math.max(-3.8, Math.min(3.8, gx)), lz = Math.max(OCT_BACK, Math.min(OCT_FRONT - 0.1, gz)); if (S.mode !== 'den' && !(S.mode ?? '').startsWith('t')) [lx, lz] = this.unfeared(lx, lz);      // (not into a place it was driven from: a jet once took it straight back to a guarded nest)
-    for (let k = 0; k < 12 && (!this.freeSpot(lx, lz) || !walkable(lx, lz)); k++) { lx = Math.max(-3.8, Math.min(3.8, gx + (rng() - 0.5) * 2.4)); lz = Math.max(OCT_BACK, Math.min(OCT_FRONT - 0.1, gz + (rng() - 0.5) * 2)); }      // it comes down on open sand, not in a plant
+    for (let k = 0; k < 12 && (!this.freeSpot(lx, lz) || !walkable(lx, lz)); k++) { lx = Math.max(-3.8, Math.min(3.8, gx + (rng() - 0.5) * 2.4)); lz = Math.max(OCT_BACK, Math.min(OCT_FRONT - 0.1, gz + (rng() - 0.5) * 2)); if (S.mode !== 'den' && !(S.mode ?? '').startsWith('t')) [lx, lz] = this.unfeared(lx, lz); }      // it comes down on open sand, not in a plant
     S.detour = null; S.prog = null; S.sideBias = 0; S.backT = 0; S.mode = null; S.s = 'jet'; S.n = Math.hypot(lx - this.pos.x, lz - this.pos.z) > 2.5 ? 2 : 1; S.t = 9; S.pulse = 0;
     this.target.set(lx, sandH(lx, lz) + 1.9 + rng() * 0.6, lz); this.flush = Math.max(this.flush, 0.2);
   }
