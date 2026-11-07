@@ -579,10 +579,10 @@ function discover(t, now, ev) {
 }
 // Neglect is real. A fish that is starving or sitting in foul water slowly weakens (`ail`, in seconds); care wins the time back twice as fast.
 // Days 1-2 normal. Day 3 (2d) sluggish and paler, growth pauses. Day 4 (3d) critical: slow, less appetite, a warning goes out.
-// Day 5 (4d-5d) death is possible if the fish's own health stays critically low. Guard rails: no deaths in a new tank's first three days, at most one a day, the last fish never dies.
+// It never dies of neglect: from day 4 it stays very unwell until it is looked after, then recovers (see tendFish). Only old age ends a life.
 // A fish counts as going hungry only once it has gone this long without any feeding. Hunger itself rises to its cap within hours, so judging by the hunger bar alone would call a once-a-day caretaker neglectful.
 export const FED_GRACE = 30 * 3600e3;
-export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical, day 5 death becomes possible
+export const AIL_TIRED = 2 * 86400, AIL_WARN = 3 * 86400, AIL_DIE = 5 * 86400;       // day 3 sluggish and paler, day 4 critical; AIL_DIE is only the cap on how run down it gets
 // the place it was most attached to, by decoration id: its holdfast, its favourite spot, the thing it loved most (kept with its memorial, so family can be compared with it)
 const memPlace = (t, f) => { const id = f.log?.fav ?? f.spotId ?? f.mem?.likes?.[0] ?? null; return id && t.decor.some((d) => d.id === id) ? { id } : null; };
 function memorialOf(t, f, now) {
