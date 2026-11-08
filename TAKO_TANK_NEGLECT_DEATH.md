@@ -13,6 +13,12 @@ Time only counts while the animal is really neglected. It has to be hungry with 
 | 6 days | **Last chance** | Push notification: "will not last another day without care". The status line says what to bring today: a crab, mysis shrimp, or food, plus fresh water. **Anyone in the crew may now feed it**, not just its own caretaker. |
 | 7 days | **It dies** | Push notification: "has died". Goodbye card: "went too long without food and clean water… Its body is still in the tank", with **Remove from the tank** and **Later** buttons |
 
+Notifications never go out between 10pm and 8am, so a warning sent once could be lost. The two that matter most are therefore sent from the tank's state and repeated until they get through:
+- "‹name› will not last another day without care" goes to everyone away, again 12 hours later if the animal is still fading.
+- "‹name› has died. Its body is still in the tank…" goes out once, six hours after the death, while the body is still there.
+
+Both are high priority, so lighter news never uses up the day's notification allowance before them. Coming back to the game, a death or a last-day warning is the first line under "While you were away", and the Care row "Sea life health" says "‹name› will not last another day without care".
+
 Because of the 30-hour wait, a player who feeds the tank and leaves loses nobody in a week. A death needs roughly eight days with no care at all.
 
 ## The body stays until someone removes it

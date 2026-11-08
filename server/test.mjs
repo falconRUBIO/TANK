@@ -405,6 +405,23 @@ await t('push: a caretaker hears that their own octopus is hungry (once in 12 ho
     const wo = await open(y.token); await new Promise((r) => setTimeout(r, 100)); const w3 = getW(tk.id); w3.fish[0].born = Date.now() - 21 * 864e5 - 1800e3; w3.fish[0].id += 'b'; setW(tk.id, { fish: w3.fish });
     S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(pushed.some((q) => /all grown up/.test(q.payload.body)), 'a friend has the tank open: the one away still hears it: ' + JSON.stringify(pushed.map((q) => q.payload.body))); wo.close(); }
 });
+await t('push: an animal on its last day is told to everyone away (again only after 12 hours), and a body left in the tank once, after six hours', async () => {
+  const x = await mkUser('Fade'), y = await mkUser('FadePal'), tk = (await call('/api/tanks', { name: 'Fading' }, x.token)).body; assert.equal((await call('/api/join', { code: tk.code }, y.token)).status, 200);
+  const mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
+  assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/fade1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
+  const ws = await open(x.token); assert.equal((await ackOf(ws, { t: 'chooseFirst', species: 'octopus', name: 'Wisp', seed: 3, idem: 'fd-1' })).ok, true); ws.close(); await new Promise((r) => setTimeout(r, 100));
+  const w = getW(tk.id); setW(tk.id, { flags: { ...w.flags, tut: 5 }, fish: w.fish.map((f) => ({ ...f, hunger: 0.9, ail: 6 * 86400 + 600 })), simTs: Date.now() - 1000 });
+  const wy = await open(y.token);      // (a friend has it open: no tick here, so this is the state-based reminder, not the one-off event)
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now());
+  assert.ok(pushed.some((q) => /Wisp will not last another day without care\. A crab and fresh water, today\./.test(q.payload.body)), JSON.stringify(pushed.map((q) => q.payload.body)));
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(Date.now()); assert.ok(!pushed.some((q) => /will not last/.test(q.payload.body)), 'not again within 12 hours');
+  const now = Date.now(); setW(tk.id, { floaters: [{ id: 'gone1', name: 'Pebble', species: 'goldfish', seed: 2, stage: 'adult', born: now - 30 * 864e5, died: now - 1000, neglect: true }] });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(!pushed.some((q) => /Pebble/.test(q.payload.body)), 'a death just now was news already');
+  setW(tk.id, { floaters: [{ id: 'gone1', name: 'Pebble', species: 'goldfish', seed: 2, stage: 'adult', born: now - 30 * 864e5, died: now - 7 * 3600e3, neglect: true }] });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(pushed.some((q) => /Pebble has died\. Its body is still in the tank/.test(q.payload.body)), JSON.stringify(pushed.map((q) => q.payload.body)));
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(!pushed.some((q) => /Pebble/.test(q.payload.body)), 'once');
+  wy.close();
+});
 await t('push: the day\'s limit keeps room for what matters: light news never blocks a hungry animal or a birth', async () => {
   const x = await mkUser('Prio'), mid = ((720 - ((Date.now() / 60000) % 1440)) % 1440), off = mid > 840 ? mid - 1440 : mid < -840 ? mid + 1440 : mid;
   assert.equal((await call('/api/push/subscribe', { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/prio1', keys: { p256dh: 'k1', auth: 'k2' } }, offset: off }, x.token)).status, 200);
