@@ -7,8 +7,10 @@ const RUNS = +(process.argv[2] || 3), base = 'http://localhost:8123';
 const b = await chromium.launch({ executablePath: process.env.PW_MODULE ? undefined : '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 let ctx = await b.newContext({ viewport: { width: 390, height: 760 } }), p = await ctx.newPage(); const errors = []; let fails = 0;
 p.on('pageerror', (e) => errors.push(e.message));
+const seedCtx = (c) => c.addInitScript((sd) => { let a = 20261109 + sd * 7919; Math.random = () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }, +(process.env.SEED ?? 0));      // (seeded draws: each nature's visit plays out the same way every run)
+await seedCtx(ctx);
 const boot = async () => { await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok'); await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000); };
-const fresh = async () => { await ctx.close(); ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); await boot(); };      // a fresh page for each run: one page set up over and over runs out of memory and crashes
+const fresh = async () => { await ctx.close(); ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); await seedCtx(ctx); p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); await boot(); };      // a fresh page for each run: one page set up over and over runs out of memory and crashes
 const ck = (n, ok, x = '') => { console.log(ok ? '  ✓' : '  ✗', n, x); if (!ok) fails++; };
 await p.goto(base + '/?q=0&dev=1&tod=afternoon'); await p.waitForSelector('#modal.on #mok', { timeout: 120000 }); await p.click('#mok');
 await p.waitForFunction(() => window.__game?.state, null, { timeout: 120000 }); await p.waitForTimeout(2000);
@@ -18,7 +20,8 @@ const setup = (seed) => p.evaluate((seed) => { const g = window.__game, s = g.st
   g.emit('state'); document.querySelectorAll('#goal,#coach,#toast,header,nav,#modal,#settle,#reunion,#fishpill').forEach((e) => (e.style.display = 'none')); }, seed);
 // run the tank for a while, sampling what the octopus does once a (simulated) second
 const sim = (secs, watchId) => p.evaluate(async ([secs, watchId]) => { const F = window.__fishes, f = F.list.find((x) => x.sk === 'octopus'), g = window.__game; const out = { notice: null, watch: false, touch: null, phases: new Set(), thoughts: new Set(), minD: 99, oldMin: 99, awareMs: 0, awareN: 0 };
-  const aw = F.aware.bind(F); F.aware = (...a) => { const t0 = performance.now(); aw(...a); out.awareMs += performance.now() - t0; out.awareN++; };
+  if (!performance.__real) window.__simClock(true, { date: true });      /* (the game's clocks follow the stepped time, not the machine's speed) */ const rt = () => (performance.__real ?? performance.now.bind(performance))();
+  const aw = F.aware.bind(F); F.aware = (...a) => { const t0 = rt(); aw(...a); out.awareMs += rt() - t0; out.awareN++; };
   for (let i = 0; i < secs * 10; i++) { F.update(0.1, (window.__t = (window.__t ?? 0) + 0.1)); F.list.forEach((x) => x.update(0.1, Math.random, F.list));
     if (i % 10 === 0) { const ts = i / 10, I = f.inv; if (I?.id === watchId) { out.notice ??= ts; out.phases.add(I.phase); if (I.phase === 'watch') out.watch = true; } if (f.thought) out.thoughts.add(f.thought);
       const d = g.state.decor.find((x) => x.id === watchId); if (d) out.minD = Math.min(out.minD, Math.hypot(f.pos.x - d.x, f.pos.z - d.z)); if (window.__oldSpot) out.oldMin = Math.min(out.oldMin, Math.hypot(f.pos.x - window.__oldSpot.x, f.pos.z - window.__oldSpot.z));
@@ -45,7 +48,7 @@ ck('the awareness check is cheap (once a second)', Object.values(table).every((t
 // 2. an explorer learns it, goes back to it, finds it after it is moved out of sight, lets it go when it is taken out, remembers across a reload
 }
 if (process.env.ONLY === 'pers') { await b.close(); console.log(fails ? `${fails} failed` : 'Awareness checks passed'); process.exit(fails ? 1 : 0); }
-console.log('Memory: one collector and its pot'); await ctx.close(); ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); await boot();      // (a fresh page)
+console.log('Memory: one collector and its pot'); await ctx.close(); ctx = await b.newContext({ viewport: { width: 390, height: 760 } }); await seedCtx(ctx); p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(e.message)); await boot();      // (a fresh page)
 await setup(3); await p.waitForTimeout(600); const pot = await place('pot', 2.4, 1.2); await sim(150, pot);
 let m = await mem(); ck('it investigated the pot, so now it knows it (and only then)', m?.fam?.[pot]?.n >= 1, JSON.stringify(m?.fam?.[pot]));
 const j1 = await p.evaluate(() => window.__game.journal.filter((x) => /investigated the new clay pot/.test(x.text)).length); ck('one journal line for it', j1 === 1, String(j1));
