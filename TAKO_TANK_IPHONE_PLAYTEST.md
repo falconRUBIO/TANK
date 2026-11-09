@@ -1,13 +1,13 @@
 # Tako Tank: iPhone Playtest
 
-**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v478** (Settings shows the build; pull to refresh twice).
+**Build:** branch `claude/our-tank-game-design-xhmavw`, cache version **v495** (Settings shows the build; pull to refresh twice).
 **Status: the physical-device test and the first-player test have NOT been run yet.** Sections 2, 4 and 5 are blank forms to fill in. Nothing in them is a result.
 
 ---
 
 ## 1. How to get this build on an iPhone
 
-- **Website (works today):** open the game's address in Safari, then Share → Add to Home Screen. Open it from the home screen icon, so it runs full screen like an app. If an older version shows, pull down to refresh twice and check that Settings shows v478.
+- **Website (works today):** open the game's address in Safari, then Share → Add to Home Screen. Open it from the home screen icon, so it runs full screen like an app. If an older version shows, pull down to refresh twice and check that Settings shows v495.
 - **TestFlight app:** the "iPhone app to TestFlight" workflow has **never been run**. It needs the Apple keys added to the repository first (four secrets and one variable; the steps are in `ios-app/README.md`). Once they're in, run it from GitHub → Actions → "iPhone app to TestFlight" → Run workflow. The build shows up in TestFlight about 15–30 minutes later.
 
 ## 2. The 10-minute check (what changed recently, on a real phone)
@@ -28,6 +28,12 @@ Tick each one, or write what happened instead.
 | 10 | Watch a seahorse with a favorite plant | it keeps going back to the same plant | ___ |
 | 11 | A baby fish over a few days | still a baby for about 5 days; grown up at about 3 weeks | ___ |
 | 12 | Every button with your thumb, on the smallest phone you have | nothing needs a second try; nothing hides under the notch or the home bar | ___ |
+| 13 | Crew → Settings → Developer Tools → Fast lifecycle test **On** → Enter test aquarium → **Create test pair** (it starts empty) → **Neglect: A week without care** | a goodbye card ("‹name› has died… Its body is still in the tank") with **Remove from the tank** and **Later** | ___ |
+| 14 | Tap **Later**, then look at the tank | a seahorse lies on its side on the sand (a fish would float belly-up at the top, an octopus lie limp and flat); the status line says "‹name› has died. Remove them from the tank in Care." | ___ |
+| 15 | Care → To do | **Remove ‹name› from the tank** is the first row under Needs you; **Sea life health** says another "will not last another day without care" | ___ |
+| 16 | Tap the body in the tank | its card says Died, with **Remove from the tank**; no other animal's name label covers the button | ___ |
+| 17 | Tap **Remove** (from Care or the card) | the body goes; Crew → Journal → Remembered lists it, "it went too long without care" | ___ |
+| 18 | With notifications on, leave the test aquarium closed overnight after step 13 | in the morning, not at night: "will not last another day without care", then "has died. Its body is still in the tank" if it was not removed | ___ |
 
 ## 3. Automated results for this build (headless Chromium, so nothing here says how smooth it is)
 
@@ -91,6 +97,12 @@ Open the game with **`?fps`** added to the address. A meter shows frames per sec
 Their answer, word for word: ________________________________
 
 ---
+
+**New since v478: neglect can kill** (see `TAKO_TANK_NEGLECT_DEATH.md`).
+- After about a week with no care, an animal dies, and its body stays in the tank until someone removes it.
+- A last-chance warning comes first.
+- Safeguards: a week away loses nobody, at most one death a day, and the last animal never dies.
+- Checks 13–18 above cover it on a phone. The automated drill `tools/neglect_death_check.mjs` passes.
 
 ## 6. Problems found (so far, from code and drills only)
 1. **Octopus behavior since v312:** a temperament value overwrote the octopus's own `temper()` method, so its update threw an error every frame. Fixed in v315. **If testers saw an odd, frozen-looking octopus on v312–v314, that was this bug.**

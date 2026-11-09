@@ -168,6 +168,12 @@ ok('who holds on through neglect: an expecting father, a mother with eggs in her
   const off = mk([{ name: 'A', species: 'goldfish' }, { name: 'B', species: 'goldfish' }]); off.flags.mortality = false; run(off, 20); assert.equal(off.fish.length, 2, 'a tank with deaths turned off loses nobody');
   const oc = mk([{ name: 'Inky', species: 'octopus', hunger: 0.9, fedAt: 0 }, { name: 'B', species: 'goldfish' }]); oc.lastFed = 1e15; run(oc, 14); assert.ok(!oc.fish.some((f) => f.name === 'Inky'), 'an octopus nobody feeds dies too'); assert.equal(oc.floaters[0]?.species, 'octopus');
 });
+ok('the test aquarium\'s Neglect step: one animal dies and stays in the tank, another is on its last day; never on a real tank', () => {
+  const D = 864e5, now = 40 * D, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.simTs = now; t.visitAt = t.eggAt = t.storyAt = 1e15; t.fish = ['A', 'B', 'C'].map((n, i) => R.ensureFish({ id: 'f' + i, name: n, species: 'goldfish', seed: i, born: 0, stage: 'adult', traits: [] }));
+  assert.equal(R.applyAction(t, { t: 'devSea', op: 'neglect' }, { now }).reason, 'FORBIDDEN', 'not on a real tank');
+  const r = R.applyAction(t, { t: 'devSea', op: 'neglect' }, { now, test: true }); assert.equal(r.ok, true, JSON.stringify(r));
+  assert.equal(t.floaters.length, 1); assert.equal(t.fish.length, 2); assert.ok(t.fish.some((f) => f.ail >= R.AIL_LAST), 'another is fading'); assert.ok(r.events.some((e) => e.last), 'with its last-chance warning');
+});
 ok('on its last day, anyone in the crew may feed an octopus or a seahorse, not only its caretaker', () => {
   const f = R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult', traits: [], owner: 'u1' });
   assert.equal(R.canFeedOwn(f, 'u2', true), false, 'normally only its caretaker'); f.ail = R.AIL_LAST; assert.equal(R.canFeedOwn(f, 'u2', true), true, 'fading: anyone');

@@ -420,6 +420,10 @@ await t('push: an animal on its last day is told to everyone away (again only af
   setW(tk.id, { floaters: [{ id: 'gone1', name: 'Pebble', species: 'goldfish', seed: 2, stage: 'adult', born: now - 30 * 864e5, died: now - 7 * 3600e3, neglect: true }] });
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(pushed.some((q) => /Pebble has died\. Its body is still in the tank/.test(q.payload.body)), JSON.stringify(pushed.map((q) => q.payload.body)));
   S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(!pushed.some((q) => /Pebble/.test(q.payload.body)), 'once');
+  // someone who stopped playing two weeks ago is not sent deaths and last chances
+  S.db.prepare('UPDATE members SET last_seen=? WHERE user_id=?').run(now - 20 * 864e5, x.userId ?? x.id); S.db.prepare('DELETE FROM kv WHERE k LIKE ?').run('push:fade:%');
+  setW(tk.id, { floaters: [{ id: 'gone2', name: 'Moss', species: 'goldfish', seed: 4, stage: 'adult', born: now - 30 * 864e5, died: now - 7 * 3600e3, neglect: true }] });
+  S.db.prepare('DELETE FROM push_log').run(); pushed.length = 0; await S.pushSweep(now); assert.ok(!pushed.some((q) => /will not last|Moss/.test(q.payload.body)), 'nothing to someone long gone: ' + JSON.stringify(pushed.map((q) => q.payload.body)));
   wy.close();
 });
 await t('push: the day\'s limit keeps room for what matters: light news never blocks a hungry animal or a birth', async () => {

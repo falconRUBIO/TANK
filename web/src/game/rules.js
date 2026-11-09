@@ -939,11 +939,15 @@ export function seaStage(t, now = Date.now()) {
 // The developer's lifecycle test. It runs only on a test aquarium (the server allows it nowhere else) and never changes a duration or the
 // clock: it creates a pair, starts a pregnancy the way a courtship does, or moves this one family's own timestamps forward, and then the
 // game's rules (seaFamilies, through advance) do what they always do: the pairing, the birth, the nursery, the moment they are ready.
-const DEV_SEA = new Set(['pair', 'pregnant', 'preg3', 'preg6', 'birth', 'nurs2', 'nurs4', 'ready']);
+const DEV_SEA = new Set(['pair', 'pregnant', 'preg3', 'preg6', 'birth', 'nurs2', 'nurs4', 'ready', 'neglect']);
 function devSea(t, op, now, ev) {
   if (!DEV_SEA.has(op)) return 'BAD_STEP';
   const hs = () => t.fish.filter((f) => f.species === 'seahorse' && !f.dead), st = seaStage(t, now), fam = () => { const m = hs().find((f) => f.preg) ?? hs().find((f) => sexOf(f) === 'm' && f.mate); return { m, w: m && hs().find((x) => x.id === (m.preg?.mother ?? m.mate)) }; };
   const shift = (d, ...objs) => { for (const [o, ...ks] of objs) for (const k of ks) if (Number.isFinite(o?.[k])) o[k] += d; };
+  if (op === 'neglect') {      // a week without care, now: one animal dies (its body stays until removed) and another is on its last day
+    const can = t.fish.filter((f) => !f.dead && !f.away && !f.visitor && !holdsOn(t, f)); if (can.length < 2) return 'NOT_NOW';
+    t.createdAt = Math.min(t.createdAt ?? now, now - 10 * DAY); t.lastDeath = 0; can[0].ail = AIL_DEATH + 3600; can[1].ail = AIL_LAST + 3600; can[1].lastSaid = false; t.simTs = Math.min(t.simTs ?? now, now - 1000); ev.push(...advance(t, now)); return null;      // (a second of tank time, so the day's rules run)
+  }
   if (op === 'pair') {
     if (st.stage !== 'none') return 'NOT_NOW';
     const free = (sx) => hs().find((f) => sexOf(f) === sx && !f.mate && stageOf(f, now) === 'adult');
