@@ -89,7 +89,7 @@ export const DECOR_DEF = {
   mangrove: { label: 'Mangrove Roots', cat: 'PLANTS',    price: 34, level: 4, blurb: 'Arching roots, the nursery of the sea. Seahorses wrap their tails round them and young fish hide among them.' },
   sponge:   { label: 'Sponge Garden', cat: 'ROCKS',      price: 34, level: 7, blurb: 'Barrel and tube sponges in orange and purple. A hawksbill turtle pries them off the reef to eat.' },
   ...Object.fromEntries(Object.entries(SHELLS).map(([k, S]) => [k, { label: S.label, cat: 'SHELLS', price: S.price, level: 3, blurb: S.blurb, ...(S.hidden ? { hidden: true } : {}) }])),      /* (empty shells for the hermit crabs: crabs.js) */
-  rubble:   { label: 'Shell Rubble',  cat: 'ROCKS',      price: 26, level: 7, blurb: 'Broken shell and coral chips. A loggerhead crunches through it for snails and crabs; a puffer forages in it.' },
+  rubble:   { label: 'Shell Rubble',  cat: 'ROCKS',      price: 26, level: 7, blurb: 'Broken shell and coral chips. A loggerhead crunches through it for snails and crabs; a puffer forages in it; a hermit crab sorts through it for a bigger shell.' },
 };
 // ── The shop's curve is in DECOR_DEF itself (one table): a few basics to start, three or four new things with each level, and the price climbing
 // with them: basics are a day or two of shells, nice pieces most of a week, centerpieces a few weeks of saving. Two pieces are never for sale: they are earned (EARNED).
