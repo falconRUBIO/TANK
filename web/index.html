@@ -1637,13 +1637,16 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
 /* ── one piece: an open menu and the bar are the same pane of glass ──
    Closed, the bar floats on the tank. Open, it stops being its own pill: the sheet runs down behind it and the bar is its footer, with a
    fine seam above it, so the page and where you are in the app read as one thing. */
-nav{transition:box-shadow .3s var(--ease),background .3s var(--ease)}
 #app:has(#sheet.on) nav{overflow:visible!important;background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
-#app:has(#sheet.on) nav::before{inset:auto!important;left:0!important;right:0!important;top:-10px!important;bottom:calc(-1 * (env(safe-area-inset-bottom,0px) + 10px))!important;border-radius:0!important;
-  background:linear-gradient(180deg,rgba(20,84,100,0),rgba(20,84,100,.9) 26%,rgba(14,66,84,.97))!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);-webkit-mask-image:linear-gradient(180deg,transparent,#000 26%);mask-image:linear-gradient(180deg,transparent,#000 26%)}
-#app:has(#sheet.on) nav::after{content:"";position:absolute;left:10px;right:10px;top:-2px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34) 18%,rgba(255,255,255,.34) 82%,transparent);pointer-events:none}
-#app:has(#sheet.on) nav .lens{background:linear-gradient(180deg,rgba(214,255,244,.78),rgba(150,226,210,.5))!important}
-#app:has(#sheet.on) nav [data-tab]:not(.on){color:rgba(236,255,250,.86)!important}
+#app:has(#sheet.on) nav::before{background:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* (the fade behind the tabs belongs to the sheet itself, so it is the same glass with no edge: a strip that stays at the bottom of the sheet as it scrolls) */
+#sheet{--foot:calc(env(safe-area-inset-bottom,0px) + 84px);bottom:0!important;-webkit-mask-image:none!important;mask-image:none!important;padding-bottom:var(--foot)!important}
+#sheet.on::after{content:"";display:block;position:sticky;bottom:calc(-1 * var(--foot));height:calc(var(--foot) + 44px);margin:calc(-1 * (var(--foot) + 44px)) -16px calc(-1 * var(--foot));pointer-events:none;z-index:6;
+  background:linear-gradient(180deg,rgba(15,68,88,0),rgba(15,68,88,.82) 30%,rgba(15,68,88,.96) 48%)}
+#app:has(#sheet.on) nav::after{content:none!important}
+#app:has(#sheet.on) nav .lens{background:rgba(255,255,255,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(255,255,255,.1)!important}
+#app:has(#sheet.on) nav [data-tab].on,#app:has(#sheet.on) nav [data-tab].on :is(svg,b,span,small){color:var(--aqua)!important}
+#app:has(#sheet.on) nav [data-tab]:not(.on){color:rgba(236,255,250,.8)!important}
 /* ── headers: one layout on every page ──
    A page of a tab: its title, left, one size, on one line; at most one action on the same line, right (settings, move decor).
    A page inside a page (Feed, Health, Settings): a round back button, then the title, the same size. Nothing centered, no subtitles. */
