@@ -993,7 +993,7 @@ ok('a daily mystery: one a day, the same for everyone, played out once, sometime
 });
 ok('each animal has a true next chapter: growing up, eggs, a birth, a partner, or company', () => {
   const D = 864e5, now = 40 * D, t = R.newWorld(0); R.norm(t, now); const F = (o) => R.ensureFish({ seed: 1, traits: [], stage: 'adult', born: now - 30 * D, ...o });
-  const baby = F({ id: 'b', name: 'Pip', species: 'goldfish', born: now - 3600e3, stage: 'baby' }); t.fish = [baby]; assert.match(R.storyNext(t, baby, now), /Grows into a juvenile/);
+  const baby = F({ id: 'b', name: 'Pip', species: 'goldfish', born: now - 3600e3, stage: 'baby' }); t.fish = [baby]; assert.match(R.storyNext(t, baby, now), /Grows bigger in/);
   const lone = F({ id: 'g', name: 'Goldie', species: 'goldfish' }); t.fish = [lone]; assert.match(R.storyNext(t, lone, now), /^The only clownfish here/);
   const mo = F({ id: 'o1', name: 'Inky', species: 'octopus', sex: 'f', partner: 'o2', partneredAt: now - 2 * D, home: 'c1' }), fa = F({ id: 'o2', name: 'Pearl', species: 'octopus', sex: 'm', partner: 'o1', partneredAt: now - 2 * D });
   t.fish = [mo, fa]; assert.match(R.storyNext(t, mo, now), /Partners with Pearl for 2 days.*about 5/);
