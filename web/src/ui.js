@@ -91,7 +91,9 @@ export function initUI({ game, social, cb }) {
   const eta = (ms) => { if (ms <= 0) return 'any moment now'; const m = Math.max(1, Math.ceil(ms / 60e3)); return m >= 2880 ? Math.round(m / 1440) + ' days' : m >= 90 ? Math.round(m / 60) + 'h' : m + ' min'; };
   const PIX = { '🔎': 'book', '🫙': 'feed', '🧽': 'glass', '💧': 'water', '✂️': 'trim', '🥚': 'hatched', '🧩': 'puzzle', '📷': 'camera', '🪨': 'rock', '🌿': 'spot', '🥥': 'coconut', '🫧': 'bubbles', '🌱': 'spot', '🪴': 'spot', '🦀': 'crab', '🦐': 'shrimp', '🍤': 'shrimp', '🟤': 'pellets', '🎁': 'gift', '📦': 'gift', '📝': 'note', '✏️': 'note', '🍾': 'bottle', '👋': 'hand', '🎂': 'cake', '🍽️': 'feed', '🐙': 'grown', '✨': 'trick', '🌙': 'wish', '🩹': 'hand', '🐠': 'visitor', '👀': 'trust' };
   const pix = (e, n = 24) => (PIX[e] ? msIcon(PIX[e], true, n) : e);
-  const SQ = { '🫙': ['🍤', 'coral'], '🧽': ['🫧', 'sea'], '🥚': ['🥚', 'gold'], '🌿': ['🍼', 'mint'], '🕊️': ['🕊️', 'slate'], '🩹': ['❤️', 'pink'], '🧭': ['🧭', 'sea'], '✨': ['✨', 'gold'], '🫧': ['🔍', 'violet'], '🌟': ['🌟', 'gold'] };
+  const SETI = [[/^Sound/, '🔊', 'coral'], [/^Music/, '🎵', 'violet'], [/^Graphics/, '✨', 'sea'], [/^Replay the tips/, '💡', 'gold'], [/^Notifications/, '🔔', 'coral'], [/^Check that they arrive/, '📨', 'sea'], [/^Octopus moves/, '🐙', 'violet'], [/^Tank code/, '🔑', 'gold'], [/^Tank storage/, '💾', 'slate'], [/^Copy on this phone/, '📱', 'slate'], [/^Invite/, '👋', 'mint'], [/^Change the code/, '🔁', 'sea'], [/^Recovery key/, '🗝️', 'gold'], [/^Backup/, '📦', 'mint'], [/^Start over/, '🧹', 'slate'], [/^Tank$/, '🐠', 'sea'], [/^Player ID/, '🪪', 'slate'], [/^Your name/, '✏️', 'gold']];
+  const setIcons = (h) => h.replace(/<(label|div) class="row2"( id="[^"]*")?( hidden)?><span>([^<]*)/g, (m, tag, id, hid, label) => { const hit = SETI.find(([re]) => re.test(label.trim())) ?? (PUSH_KINDS.some(([, l]) => l === label.trim()) ? [null, '🔔', 'coral'] : null); return hit ? `<${tag} class="row2 hasi"${id ?? ''}${hid ?? ''}><span class="ci sq ${hit[2]}" aria-hidden="true">${hit[1]}</span><span>${label}` : m; });      // (Settings: each row its app tile, as on an iPhone)
+  const SQ = { '🚨': ['🚨', 'coral'], '👉': ['👉', 'gold'], '🗺️': ['🗺️', 'mint'], '📮': ['📮', 'coral'], '🫙': ['🍤', 'coral'], '🧽': ['🫧', 'sea'], '🥚': ['🥚', 'gold'], '🌿': ['🍼', 'mint'], '🕊️': ['🕊️', 'slate'], '🩹': ['❤️', 'pink'], '🧭': ['🧭', 'sea'], '✨': ['✨', 'gold'], '🫧': ['🔍', 'violet'], '🌟': ['🌟', 'gold'] };
   const sq = (e) => { const [g, hue] = SQ[e] ?? [e, 'sea']; return `<span class="ci sq ${hue}" aria-hidden="true">${g}</span>`; };      // a row's icon: an app-style tile, the same shape and size everywhere      // the emoji the menus used, drawn in the tank's own pixel style
   const tile = (icon, label, act, sub = '', cls = '') => `<button class="tile ${cls}" data-act="${act}"><span>${pix(icon, 26)}</span>${label}${sub ? `<small>${sub}</small>` : ''}</button>`;
   const inH = (h) => (h < 1 ? 'within the hour' : h < 24 ? `in about ${Math.round(h)}h` : `in about ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? '' : 's'}`);
@@ -899,7 +901,7 @@ export function initUI({ game, social, cb }) {
     const cards = (s.postcards ?? []).filter((c) => c.got).slice(-2).reverse().map((c) => `<div class="tc-card"><i class="tc-ic">${msIcon(c.kind === 'turtle' ? 'turtle' : 'postcard', true, 20)}</i><span><small>POSTCARD FROM ${esc(c.name.toUpperCase())}</small><p>“${esc(c.text)}”</p></span></div>`).join('');
     const st = bestStep(s, now, { uid: game.you?.userId ?? null, shared: !!game.shared, members: game.members ?? [] }), eta = levelEta(s, now), goal = LEVEL_PRIZE[lv + 1];
     const sk = shopKeyFor(st.how), sd = sk ? (sk.startsWith('fish:') ? SPECIES_DEF : DECOR_DEF)[sk.split(':')[1]] : null;      // a need the Shop fills: the step goes straight to that item
-    const stepHtml = `<button class="tc-step ${st.urgent ? 'urgent' : ''}" ${sk ? `data-shopkey="${esc(sk)}"` : st.fid ? `data-wellopen="${esc(st.fid)}"` : `data-act="${st.act}"${st.to ? ` data-to="${esc(st.to)}"` : ''}`}><small>${st.urgent ? 'DO THIS FIRST' : 'DO NEXT'}</small><b>${esc(st.title)}</b><span>${esc(st.why)}</span><i>›</i></button>`;
+    const stepHtml = `<button class="tc-step ${st.urgent ? 'urgent' : ''}" ${sk ? `data-shopkey="${esc(sk)}"` : st.fid ? `data-wellopen="${esc(st.fid)}"` : `data-act="${st.act}"${st.to ? ` data-to="${esc(st.to)}"` : ''}`}>${sq(st.urgent ? '🚨' : '👉')}<small>${st.urgent ? 'DO THIS FIRST' : 'DO NEXT'}</small><b>${esc(st.title)}</b><span>${esc(st.why)}</span><i>›</i></button>`;
     // (no separate objective block: the road below says where the tank stands, the thriving days what to keep doing)
     const say = { good: 'Your sea life is thriving and the tank is spotless.', ok: 'Healthy and happy. A little more care makes it thrive.', warn: 'Some things need you. See below for what helps most.', bad: 'The tank is unwell. Care for it now: growth is paused.' }[cls];
     let seen = true; try { seen = !!localStorage.getItem('ourtank.chartSeen'); } catch { /* storage unavailable */ }
@@ -909,7 +911,7 @@ export function initUI({ game, social, cb }) {
       
       ${stepHtml}
       ${st.urgent ? asks.split('</button>').slice(1).join('</button>') : asks}
-      <details class="tc-roadw"${roadPick ? ' open' : ''}><summary><b>${b ? 'The road ahead' : 'All levels'}</b><span>${b ? `${left} point${left === 1 ? '' : 's'} to level ${lv + 1}${eta ? ` · ${typeof eta === 'number' ? `about ${Math.max(1, Math.round(eta))} day${Math.round(eta) === 1 ? '' : 's'}` : ''}` : ''}` : ''}</span></summary>      <!-- (folded: the level line above already says where the tank is; the road and what each level opens are a tap away) -->
+      <details class="tc-roadw"${roadPick ? ' open' : ''}><summary>${sq('🗺️')}<b>${b ? 'The road ahead' : 'All levels'}</b><span>${b ? `${left} point${left === 1 ? '' : 's'} to level ${lv + 1}${eta ? ` · ${typeof eta === 'number' ? `about ${Math.max(1, Math.round(eta))} day${Math.round(eta) === 1 ? '' : 's'}` : ''}` : ''}` : ''}</span></summary>      <!-- (folded: the level line above already says where the tank is; the road and what each level opens are a tap away) -->
       <div class="tc-level"><div class="tc-lh"><b>${b ? 'The road ahead' : 'Top level for now'}</b><span>${b ? `${left} point${left === 1 ? '' : 's'} to level ${lv + 1}` : `${Math.max(0, Math.floor(sc - a))} points banked`}</span></div><ol class="tc-road">${road}</ol></div></details>${b ? nextCard : ''}      <!-- (what the next level brings, right here; the whole road a tap above it) -->
       ${goalD ? `<div class="cgroup"><div class="crow">${sq('🌟')}<span class="ct"><b>Thriving days</b><small>A new look at ${goalD}</small></span><b class="crn">${days} of ${goalD}</b></div></div>` : ''}
       ${cards ? `<h4 class="tc-h">Postcards</h4>${cards}` : ''}</div>`; };
@@ -999,7 +1001,7 @@ export function initUI({ game, social, cb }) {
       if (sub === 'look') return lookHtml();
       if (sub === 'devtools') return views.devtools();
       if (!game.shared) return `<div class="crew"><h3>Crew</h3>${seg}<div class="crewbox"><div class="slots"><div class="slot me"><span class="avw live"><canvas class="av big" data-slot="me"></canvas></span><b>You</b><small>Here now</small><button class="nudge" data-edit-me>Edit look</button></div><div class="slot empty"><span class="avw add">+</span><b>Invite</b><small>3 seats free</small></div></div>
-        <button class="pcmini" data-act="photo"><span>${msIcon('postcard', true, 26)}</span><b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
+        <button class="pcmini" data-act="photo">${sq('📮')}<b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
         <p class="dim crewsolo">Up to three friends can care for it with you.</p></div>`;
       const wish = WISHES[S().wishIdx];
       const me = game.you.userId, myName = game.members?.find((x) => x.id === me)?.name ?? '', youify = (txt) => (myName ? txt.replace(new RegExp('^' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), 'You').replace(new RegExp(' and ' + myName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), ' and you') : txt);
@@ -1017,7 +1019,7 @@ export function initUI({ game, social, cb }) {
         const pic = { feed: 'feed', water: 'water', glass: 'glass', decor: 'spot', trim: 'trim', fish: 'grown', note: 'note', gift: 'gift', visitor: 'visitor', bottle: 'bottle', wish: 'wish', puzzle: 'puzzle', grow: 'grown' }[it.type] ?? 'wish';
         return `${head}<div class="fact ${mine ? 'mine' : ''}">${who ? `<span class="fav" style="--h:${hue}">${ini}</span>` : '<span class="fav tank">🐠</span>'}<span class="tx">${who ? `<b>${esc(who)}</b> ` : ''}${esc(who ? body.replace(/^\w/, (c) => c.toLowerCase()) : youify(raw))} <small>${ago(it.ts)}${who && !mine ? ` · <button class="frep" data-reply="${esc(who)}">Reply</button>` : ''}</small></span><span class="fic">${msIcon(pic, true, 30)}</span>${can ? `<button class="heart" data-thank="${it.id}" data-to="${it.userId}" aria-label="Say thanks">♡</button>` : ''}</div>`; }).join('');
       const on = (game.online ?? []).length, all = (game.members ?? []).length;
-      return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="crewbox"><div class="slots">${slotsHtml()}</div><button class="pcmini" data-act="photo"><span>${msIcon('postcard', true, 26)}</span><b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
+      return `<div class="crew"><h3>Crew</h3><p class="crewsub">${esc(game.tankName ?? 'Your tank')} · ${on > 1 ? `${on} here now` : all > 1 ? `${all} caretakers` : 'Invite friends to share it'}</p>${seg}<div class="crewbox"><div class="slots">${slotsHtml()}</div><button class="pcmini" data-act="photo">${sq('📮')}<b>Send a postcard</b><small>of the tank right now</small><i class="chev">›</i></button></div>
         <h4>Leave something</h4>${(() => { const others = (game.members ?? []).filter((x) => x.id !== me); if (composeMode !== 'note' && composeMode !== 'bottle') composeMode = 'note'; if (composeMode === 'bottle' && !others.length) composeMode = 'note';
           if (!others.some((x) => x.id === bottleTo)) bottleTo = others[0]?.id ?? null; const to = others.find((x) => x.id === bottleTo)?.name ?? 'a friend';
           const tileM = (k, ic, t, sm, dis = false) => `<button type="button" class="ctile ${composeMode === k ? 'on' : ''}" data-mode="${k}"${dis ? ' disabled' : ''}><span>${msIcon(ic, true, 30)}</span><b>${t}</b><small>${sm}</small></button>`;
@@ -1028,7 +1030,7 @@ export function initUI({ game, social, cb }) {
         <h4>Activity</h4>        <div class="feed">${feed || '<p class="dim">Nothing yet. Say hello to the crew.</p>'}</div>
         ${wish ? `<div class="wish"><small>THE TANK'S WISH</small><span>${esc(wish.text)}</span><b>+${wish.reward} 🐚</b></div>` : ''}</div>`;
     },
-    settings: () => `<h3>Settings</h3><div class="set">
+    settings: () => setIcons(`<h3>Settings</h3><div class="set">
       <h4>Sound and look</h4><div class="group">
         <label class="row2"><span>Sound</span><button class="tog ${soundOn() ? 'on' : ''}" id="snd">${soundOn() ? 'On' : 'Off'}</button></label>
         <label class="row2"><span>Music</span><button class="tog ${musicOn() ? 'on' : ''}" id="mus">${musicOn() ? 'On' : 'Off'}</button></label>
@@ -1055,7 +1057,7 @@ export function initUI({ game, social, cb }) {
       ${new URLSearchParams(location.search).has('dev') ? `<h4>Developer</h4><div class="group"><div class="row2"><span>Test tools</span><span><button class="tog" id="dshell">+50 shells</button> <button class="tog" id="dday">Skip a day</button></span></div></div>` : ''}
       ${game.dev ? `<h4>Developer</h4><div class="group"><label class="row2"><span>Developer Tools</span><button class="tog" id="devtools">Open ›</button></label></div>` : ''}
       ${game.shared && !game.test ? `<h4>Your data</h4><div class="group"><label class="row2"><span>Player ID<small>${esc(game.you?.userId ?? '')}</small></span><button class="tog" id="myid">Copy</button></label><label class="row2"><span>Delete my data</span><button class="tog warn" id="delme">Delete</button></label></div>` : ''}
-      <p class="dim foot">Tako Tank · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>${build ? ` · build ${build}` : ''}</p></div>`,
+      <p class="dim foot">Tako Tank · four friends, one tank. No ads, no purchases, no streaks. <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>${build ? ` · build ${build}` : ''}</p></div>`),
   };
   // ── Developer Tools (only for the player ids the server lists; every step is checked again there) ──
   views.devtools = () => {

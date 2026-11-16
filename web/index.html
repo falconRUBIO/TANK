@@ -1692,6 +1692,21 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #sheet .jadd{margin-top:14px}
 /* the welcome and every question: rounded, roomy */
 #modal .box h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.01em}#modal .box p{font-size:15px;line-height:1.45}
+/* the same rows, sizes and tiles on every page */
+#sheet .set .row2.hasi{display:flex!important;align-items:center;gap:12px;min-height:58px}#sheet .set .row2.hasi > span:nth-child(2){flex:1;min-width:0;font-size:16px;font-weight:600}
+#sheet .set .row2.hasi > span:nth-child(2) small{display:block;font-size:13px;font-weight:500;opacity:.75;margin-top:1px}
+#sheet .set .ci.sq{width:34px!important;height:34px!important;border-radius:10px!important;font-size:18px}
+#sheet .set .row2:not(.hasi){min-height:52px}
+#app #sheet .tc-step{grid-template-columns:40px 1fr auto!important;grid-template-rows:auto auto auto;column-gap:12px!important;row-gap:1px!important}#app #sheet .tc-step > .ci{grid-column:1!important;grid-row:1 / span 3!important;align-self:center}#app #sheet .tc-step > small{grid-column:2!important;grid-row:1!important}#app #sheet .tc-step > b{grid-column:2!important;grid-row:2!important}#app #sheet .tc-step > span:not(.ci){grid-column:2!important;grid-row:3!important}#app #sheet .tc-step > i{grid-column:3!important;grid-row:1 / span 3!important;align-self:center}
+#app #sheet .tc-roadw > summary{display:flex!important;align-items:center;gap:12px;min-height:60px;padding:10px 14px!important}#app #sheet .tc-roadw > summary b{font-size:16.5px!important;flex:none}#app #sheet .tc-roadw > summary span:not(.ci){flex:1;text-align:right;font-size:13px!important}
+#sheet .pcmini{display:grid!important;grid-template-columns:40px 1fr auto;column-gap:12px;align-items:center;min-height:64px;padding:12px 14px!important;text-align:left}#sheet .pcmini > .ci{grid-row:1 / span 2}#sheet .pcmini b{grid-column:2;font-size:16.5px!important}#sheet .pcmini small{grid-column:2;font-size:13.5px!important}#sheet .pcmini > i{grid-column:3;grid-row:1 / span 2}
+/* the animal card: the same section labels, rows and buttons */
+#card .csec,#card h4{margin:20px 4px 8px!important}
+#card .now{display:flex;align-items:center;gap:10px;min-height:50px;padding:10px 14px!important;border-radius:var(--r-l)!important;font-size:15px}
+#card :is(.act2,.pet){min-height:56px;border-radius:var(--r-l)!important;font-size:16px!important;font-weight:700!important}#card :is(.act2,.pet) small{font-size:12.5px!important;font-weight:500!important;opacity:.8}
+#card .trust{min-height:56px;padding:10px 14px!important;border-radius:var(--r-l)!important}
+#card .chd h2{font-size:24px!important;font-weight:800!important;letter-spacing:-.01em}#card .chd .sp{font-size:13px!important;line-height:1.4}
+#card .chimg{border-radius:20px!important}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
