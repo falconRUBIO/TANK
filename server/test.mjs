@@ -318,6 +318,10 @@ await t('a fish already paid for still arrives after the server lost the tank an
   w.orders[0].arrivesAt = Date.now() - 1; setW(r.body.id, { orders: w.orders }); const ws2 = await open(a2.token); await new Promise((ok) => setTimeout(ok, 200));
   await ackOf(ws2, { t: 'observe', idem: 'po-3' }).catch(() => null); ws2.close(); w = getW(r.body.id);
   assert.ok(w.fish.some((f) => f.name === 'Nemo'), 'and it arrives'); assert.equal(w.orders.length, 0);
+  // a kind of octopus that was paid for comes back with its kind (it used to arrive as whatever kind its seed gave)
+  { const copy2 = JSON.parse(JSON.stringify(copy)); copy2.orders = [{ id: 'oz1', species: 'octopus', kind: 'mimic', name: 'Zed', seed: 9, by: 'Zach', owner: a1.userId, ownerName: 'Zach', paid: 120, at: Date.now() - 864e5, arrivesAt: Date.now() + 3600e3 }];
+    const a3 = await mkUser('Zach'), r3 = await call('/api/import', { app: 'our-tank', tank: { name: 'Order2' }, world: copy2, heal: true, was: a1.userId }, a3.token); assert.equal(r3.status, 200, JSON.stringify(r3.body));
+    const w3 = getW(r3.body.id); assert.equal(w3.orders.length, 1, 'the octopus order is kept'); assert.equal(w3.orders[0].kind, 'mimic', 'with the kind that was chosen'); assert.equal(w3.orders[0].paid, 120); }
 });
 await t('the server forgets a tank and both phones put it back: one tank, not two, with everybody\'s own octopus (whichever phone goes first)', async () => {
   for (const friendFirst of [false, true]) {

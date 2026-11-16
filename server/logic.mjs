@@ -218,13 +218,14 @@ export function claimSeat(db, code, slot, isOnline = () => false, key = null, no
 // Fish already paid for and on their way are kept when a tank is put back (they used to be dropped, so the shells were spent and the fish never came).
 // Each one is checked: a real species, room for it, and it arrives no later than a full wait from now (one that was due arrives straight away).
 function keepOrders(list, world, heal, uid, now, was = []) {
-  const out = []; let room = R.capacity(world.level) - world.fish.length;
+  const out = [], room = (o) => R.capacityOf(world, R.TURTLES.has(o.species)) - world.fish.length - out.reduce((n, q) => n + R.SPECIES_DEF[q.species].count, 0);      // (the same room a purchase is checked against: with what decorations and the sanctuary add)
   for (const o of Array.isArray(list) ? list.slice(0, 12) : []) {
-    const d = R.SPECIES_DEF[o?.species]; if (!d || d.count > room) continue; room -= d.count;
+    const d = R.SPECIES_DEF[o?.species]; if (!d || d.count > room(o)) continue;
     const at = Number.isFinite(+o.arrivesAt) ? +o.arrivesAt : now;
     out.push({ id: typeof o.id === 'string' ? o.id.slice(0, 24) : 'o' + now + out.length, species: o.species, name: clean(o.name, 14) || null, seed: Math.abs(Math.floor(+o.seed || now)) % 100000,
       by: clean(o.by, 16) || 'Someone', owner: heal && typeof o.owner === 'string' && !formerIds(was).includes(o.owner) ? o.owner : uid, ownerName: clean(o.ownerName, 16) || clean(o.by, 16) || 'Someone', giftFrom: o.giftFrom ? clean(o.giftFrom, 16) : null, ...(o.giftFrom ? { giftFromId: typeof o.giftFromId === 'string' ? o.giftFromId.slice(0, 64) : null, giftNote: o.giftNote ? clean(o.giftNote, 80) : null, surprise: !!o.surprise } : {}),
-      at: Number.isFinite(+o.at) ? +o.at : now, arrivesAt: Math.max(now, Math.min(at, now + d.wait * 60e3)) });
+      at: Number.isFinite(+o.at) ? +o.at : now, arrivesAt: Math.max(now, Math.min(at, now + d.wait * 60e3)),
+      ...(R.KINDS[o.species]?.[o.kind] ? { kind: o.kind } : {}), ...(o.sex === 'm' || o.sex === 'f' ? { sex: o.sex } : {}), ...(typeof o.carries === 'string' && R.MORPHS[o.carries] ? { carries: o.carries } : {}), ...(Number.isFinite(+o.paid) ? { paid: Math.max(0, Math.min(1e4, +o.paid)) } : {}) });      // (what was chosen and paid for comes too: the kind of octopus, a seahorse's sex, a carrier's color)
   }
   return out;
 }
