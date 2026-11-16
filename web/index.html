@@ -1715,9 +1715,13 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #app #sheet .hhab{background:none!important;box-shadow:none!important;padding:0!important}
 #app #sheet .hhab h6{font-size:12px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase;color:var(--accent)!important;margin:18px 4px 8px!important}
 #app #sheet .hhab ul{display:flex;flex-direction:column;gap:8px;padding:0;margin:0;list-style:none}
-#app #sheet .hhab li{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px!important;border-radius:var(--r-l)!important;background:var(--pebble)!important;box-shadow:var(--pebble-rim)!important;border:0!important;font-size:14.5px}
-#app #sheet .hhab li::before{display:none!important}#app #sheet .hhab li span{flex:1;min-width:0}#app #sheet .hhab li b{display:block;font-size:16px}#app #sheet .hhab li small{font-size:13px}
-#app #sheet .hhab li em{flex:none;font-style:normal;font-weight:700;font-size:13.5px;color:var(--gold)}
+#app #sheet .hhab li{display:block;min-height:0;padding:12px 14px!important;border-radius:var(--r-l)!important;background:var(--pebble)!important;box-shadow:var(--pebble-rim)!important;border:0!important;font-size:15px;line-height:1.4;color:var(--ink)!important}
+#app #sheet .hhab.hhelp li{display:flex;align-items:center;gap:12px;min-height:56px}
+#app #sheet .hhab li :is(a,.tlk a,b){text-decoration:none!important;color:#fff!important;font-weight:700}#app #sheet .hhab li small{display:block;margin-top:2px;font-size:13.5px;color:rgba(232,252,246,.8)!important}#app #sheet .hhab h6 + ul,#app #sheet .hhab ul + h6{margin-top:8px}
+#app #sheet .hhab li::before{display:none!important}#app #sheet .hhab.hhelp li span{flex:1;min-width:0}#app #sheet .hhab.hhelp li b{display:block;font-size:16px}#app #sheet .hhab li small{font-size:13px}
+#app #sheet .hhab.hhelp li em{flex:none;font-style:normal;font-weight:700;font-size:13.5px;color:var(--gold)}
+#app #sheet .hhab{color:var(--ink)!important}#app #sheet .hhab :is(p,.fnote){color:rgba(232,252,246,.85)!important;font-size:14px}
+#app #sheet .tankpg :is(.fam,.famrow,.fexp,.nurs) :is(small,em,i){color:rgba(232,252,246,.8)!important}#app #sheet .tankpg h4.tkh span{color:rgba(232,252,246,.8)!important}
 #app #sheet .hcard .htop{min-height:64px}#app #sheet .hcard .hw{font-size:11.5px!important}
 /* the shop preview: buttons centred, the same press */
 .notesheet .nsact :is(.close,.buy){display:flex!important;align-items:center!important;justify-content:center!important;font-weight:800!important;font-size:16px!important}
@@ -1733,6 +1737,11 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #card .psum{border-radius:var(--r-l)!important;padding:14px!important}#card .psum b{font-size:17px!important}
 #card .tg{border-radius:var(--r-m)!important}#card .tg span{font-size:12px!important}
 #card .tfact{font-size:14px;line-height:1.45}
+/* readability: every second line at least 82% white; no box inside a box */
+#app #sheet .atile small,#app #sheet .crow .ct small,#app #sheet .mrow small,#app #sheet .toy small,#app #sheet .fcard small,#app #card .sp,#app #card small{color:rgba(236,253,248,.86)!important}
+#app #sheet .hhab.tkb,#app #sheet .hhab.htrb{background:none!important;box-shadow:none!important;border:0!important;padding:0!important}
+#app #sheet .hhab h6{color:rgba(236,253,248,.7)!important}
+#app #sheet .hhab li{text-shadow:0 1px 2px rgba(0,40,50,.25)}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
