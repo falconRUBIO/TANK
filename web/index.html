@@ -1170,70 +1170,6 @@ body.gifting #toast{top:calc(var(--top) + 46px)}
 
 #settle p.chap.life{flex-direction:row;align-items:center;gap:12px;text-align:left}#settle p.chap.life img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none}#settle p.chap.life>i{font-size:30px;font-style:normal;flex:none}#settle p.chap.life>span{display:flex;flex-direction:column;gap:2px;min-width:0}
 </style>
-<style id="polish">
-/* ── polish pass: one material for every sheet, card and panel (cooler, more opaque, so the sand behind never turns it olive), tidier rows, consistent tags ── */
-:root{--lg-bg:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 52%,rgba(255,255,255,.07)),rgba(12,32,58,.84);--lg-blur:blur(26px) saturate(1.1) brightness(1.02)}
-:root{--lg-big:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 50%,rgba(255,255,255,.06)),rgba(12,32,58,.86)}      /* (the big surfaces: sheets, cards, the welcome box) */
-/* the HUD: the level and health rings sit on the same glass as the shell pill, not a separate dark pill; the fish pill's "doing" line trims cleanly; the gift bar matches */
-#bell.rings{background:var(--lg-big)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;border:1px solid rgba(255,255,255,.2)!important;box-shadow:var(--lg-rim),var(--lg-drop)!important}
-#fishpill{max-width:min(340px,calc(100vw - 48px))}
-#fishpill b{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#fishpill small{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;opacity:.85}
-#fishpill span{flex:none}
-#giftbar{background:var(--lg-big)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;border:1px solid rgba(255,255,255,.2)!important;box-shadow:var(--lg-rim),var(--lg-drop)!important}
-.tc-fund .tc-hab{display:block;margin-top:5px;font-size:12px;color:rgba(200,222,240,.72)}.tc-fund .tc-hab.ok{color:#9fe3b4}.tc-fund .tc-hab.warn{color:#ffcf8a}
-#sheet .detail .tnote{margin:6px 0 0;font-size:13px;line-height:1.35;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.07)}#sheet .detail .tnote.ok{color:#bfeccb}#sheet .detail .tnote.warn{color:#ffd9a6;background:rgba(255,170,80,.12)}#sheet .card .pr s{opacity:.55;font-weight:600;margin:0 2px}
-#sheet .thp span.key{border-color:rgba(255,214,110,.6);box-shadow:inset 0 0 0 1px rgba(255,214,110,.25)}
-/* the strip behind the grab handle is part of the same glass, not a darker band across the top */
-#sheet .x{background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-/* the coach tip steps aside while a sheet, a card or a preview is up (it used to sit over their titles) */
-#app:has(#sheet.on) #coach,#app:has(#card.on) #coach,body:has(.nsw.on) #coach{opacity:0!important;pointer-events:none!important}#app:has(#sheet.on) #coach.over.on{opacity:1!important;pointer-events:auto!important}      /* (a tip that walks you through the open sheet stays up with it) */
-/* a preview over the shop: the shop fades back so the two do not read through each other */
-body:has(.nsw.on) #sheet{opacity:.08;transition:opacity .25s}
-/* the toy box: a row per toy, icon left, two lines of text at most */
-#sheet .toybox{grid-template-columns:1fr!important;gap:10px}
-#sheet .toybox .toy{display:grid!important;grid-template-columns:46px 1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:12px;row-gap:2px;text-align:left;padding:12px 14px!important}
-#sheet .toybox .toy>span{grid-row:1/3;grid-column:1;display:flex;align-items:center;justify-content:center}
-#sheet .toybox .toy b{grid-column:2;grid-row:1;font-size:16px;line-height:1.25}
-#sheet .toybox .toy small{grid-column:2;grid-row:2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12.5px;line-height:1.3;opacity:.82}
-#sheet .toybox .toy em{grid-column:3;grid-row:1/3;margin:0!important;white-space:nowrap}
-/* the shop: the price on one line, any tag on its own line under it */
-#sheet .shop2 .card .pr{display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.3}
-#sheet .shop2 .card .pr em{display:inline-block;max-width:100%;box-sizing:border-box;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;line-height:1.3;white-space:normal;text-align:center}
-/* milestones: a row you can scroll, with tiles big enough to read */
-.mpath{display:flex!important;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.mpath::-webkit-scrollbar{display:none}
-.mpath>span{flex:0 0 96px;scroll-snap-align:start;padding:10px 6px 9px}
-.mpath>span small{font-size:11.5px;line-height:1.25;display:block}
-/* section labels, one voice everywhere */
-#sheet h4,#card h4,.mhead span,#sheet .sec,#card .sec{font-size:12px!important;letter-spacing:.08em!important;text-transform:uppercase;font-weight:700!important;color:rgba(200,222,240,.78)!important}
-/* the Feed screen is only as tall as what it shows */
-#sheet.feedv{height:auto!important;max-height:min(78vh,calc(100vh - var(--top) - var(--bar) - 30px))!important}
-  /* the countdown tag for a birth or a hatching (ui.js momentTag): quiet while days away, a ticking clock for the last 8 hours, a pulse when it is time */
-  #moment{all:unset;pointer-events:auto;cursor:pointer;box-sizing:border-box;max-width:100%;padding:7px 15px;border-radius:999px;font:600 13px -apple-system,system-ui,sans-serif;color:#eaf6ee;background:rgba(14,32,30,.6);border:1px solid rgba(160,230,190,.28);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-  #moment[hidden]{display:none}#moment.live{border-color:rgba(160,240,190,.6);box-shadow:0 0 14px rgba(120,230,170,.35)}
-  #moment.now{color:#10241a;background:#bff0cf;border-color:#e8fff0;animation:mpulse 1.6s ease-in-out infinite}
-  @keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(170,245,200,.6)}50%{box-shadow:0 0 0 9px rgba(170,245,200,0)}}
-  @media (prefers-reduced-motion:reduce){#moment.now{animation:none}}
-  .care2 .mrows{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
-  .care2 .mrow{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:18px;background:rgba(40,90,70,.28);border:1px solid rgba(160,230,190,.3)}
-  .care2 .mrow.due{background:linear-gradient(135deg,rgba(255,214,120,.24),rgba(255,255,255,.06) 65%);border-color:rgba(255,214,120,.55)}.care2 .mrow.due small{color:#ffd79a}
-  .care2 .mrow i{display:grid;place-items:center;width:30px}.care2 .mrow span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.care2 .mrow b{font-size:15px}.care2 .mrow small{color:#b7d8c6;font-variant-numeric:tabular-nums}.care2 .mrow em{font-style:normal;opacity:.6}
-  /* the birth countdown at the top of a seahorse parent's card (main.js birthBanner) */
-  #card .bwait{display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:12px 16px 12px 12px;border-radius:22px;cursor:pointer;background:linear-gradient(135deg,rgba(70,170,130,.30),rgba(46,84,128,.34));border:1px solid rgba(170,240,200,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 18px rgba(0,0,0,.18)}
-  #card .bwait .bring{position:relative;flex:none;width:62px;height:62px}#card .bwait svg{width:62px;height:62px;transform:rotate(-90deg)}
-  #card .bwait .bt{fill:rgba(0,0,0,.18);stroke:rgba(255,255,255,.12);stroke-width:6}#card .bwait .bp{fill:none;stroke:#9ff0c4;stroke-width:6;stroke-linecap:round;transition:stroke-dasharray .6s}
-  #card .bwait .bd{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;color:#eafff3;font-size:22px}#card .bwait .bd b{font:800 21px -apple-system,system-ui,sans-serif}#card .bwait .bd small{font-size:10.5px;color:#a8e8c6;margin-top:2px;letter-spacing:.04em}
-  #card .bwait .btx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}#card .bwait .btx small{font:700 11px -apple-system,system-ui,sans-serif;letter-spacing:.14em;color:#a8e8c6}
-  #card .bwait .btx strong{font:800 27px -apple-system,system-ui,sans-serif;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}#card .bwait .btx strong i{font-style:normal}#card .bwait .btx strong u{text-decoration:none;font-size:15px;font-weight:700;color:#bfe9d3;margin-left:1px}
-  #card .bwait .btx span{font-size:13px;line-height:1.3;color:#cfe3da;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  #card .bwait.live{border-color:rgba(170,250,205,.7);animation:bglow 2.4s ease-in-out infinite}
-  #card .bwait.now{background:linear-gradient(135deg,rgba(110,220,160,.45),rgba(60,120,150,.4));border-color:#d6ffe6;animation:bglow 1.4s ease-in-out infinite}#card .bwait.now strong{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#card .bwait.now{gap:11px;padding-right:12px}#card .bwait.now .bring,#card .bwait.now svg{width:50px;height:50px}#card .bwait.now .bgo{padding:8px 13px}
-  #card .bwait .bgo{flex:none;padding:9px 16px;border-radius:999px;background:#bff0cf;color:#10241a;font:800 14px -apple-system,system-ui,sans-serif}
-  @keyframes bglow{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 0 rgba(160,240,195,.0)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 18px 2px rgba(160,240,195,.35)}}
-  @media (prefers-reduced-motion:reduce){#card .bwait{animation:none!important}}
-  @media (max-width:350px){#card .bwait .btx strong{font-size:22px}}
-</style>
 </head><body><div id="app">
 <div id="testb" hidden>TEST AQUARIUM</div><header><div class="pill" id="pill"><span id="shells">🐚 0</span><span id="conn" title="Reconnecting">●</span><span id="day" hidden></span><span id="todl" hidden></span></div>
 <button id="giftbar" type="button" hidden></button><div class="hr"><div class="avs" id="avs" hidden></div><button id="bell" aria-label="Today"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg><i></i></button><button id="gear" aria-label="Settings" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button></div></header>
@@ -1713,6 +1649,112 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
 /* the animal card: what matters now on the front; the rest under one More */
 #card .cmore{margin:14px 0 4px}#card .cmore > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:0 16px;border-radius:var(--r-l);background:var(--pebble);box-shadow:var(--pebble-rim);font-size:15px;font-weight:700;color:var(--ink)}
 #card .cmore > summary::-webkit-details-marker{display:none}#card .cmore > summary::after{content:"›";font-size:20px;color:var(--ink-3);transition:transform .2s}#card .cmore[open] > summary::after{transform:rotate(90deg)}#card .cmore[open] > summary{margin-bottom:6px}
+</style>
+<style id="polish">
+/* ═══ Launch polish ═══
+   Friendly enough for a ten-year-old, made like Apple or Nintendo would: one rounded typeface (Apple's own on iPhone), clear sizes,
+   each part of the game with its own colour, icons as small app tiles, and buttons you can feel. Calm, not loud. */
+:root{--round:ui-rounded,"SF Pro Rounded","SF Pro Display",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  --c-tank:#7fe6e0;--c-care:#ff9d8a;--c-shop:#ffd27a;--c-crew:#c4b0ff;--accent:var(--c-tank)}
+#app:has(nav [data-tab="care"].on){--accent:var(--c-care)}#app:has(nav [data-tab="decorate"].on){--accent:var(--c-shop)}#app:has(nav [data-tab="friends"].on){--accent:var(--c-crew)}
+#sheet,#card,#modal .box,nav,header,#fishpill,#toast,#coach,#goal,.notesheet{font-family:var(--round)!important}
+#sheet *,#card *,#modal .box *,nav *,header *,#fishpill *,#toast,#coach *,.notesheet *{font-family:inherit!important}
+/* type: four sizes. 17 for what a row is, 14 for its few words, 12 for section labels, 21 for a page's own name */
+#sheet .crow .ct b,#sheet .mrow b,#sheet .atile b,#sheet .toy b,#sheet .fcard .fmid b,#sheet .shop2 .card b{font-size:16.5px!important;font-weight:700!important;letter-spacing:-.01em}
+#sheet .crow .ct small,#sheet .mrow small,#sheet .fcard small,#sheet .ffood span{font-size:14px!important;color:rgba(232,252,246,.72)!important;font-weight:500}
+#sheet .atile b{font-size:14px!important}#sheet .atile small,#sheet .toy small{font-size:12px!important}
+#sheet h4,#sheet .crew h4,#card h4,#card .csec{font-size:12px!important;font-weight:800!important;letter-spacing:.12em!important;color:var(--accent)!important;opacity:.9}
+/* where you are: the chosen tab and the chosen part wear the part's colour */
+nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:var(--accent)!important}
+#app:has(#sheet.on) nav .lens{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 34%,rgba(255,255,255,.3)),color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.1)))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 14px -6px color-mix(in srgb,var(--accent) 70%,transparent)!important}
+#sheet .seg button.on,#card .seg button.on{color:#0b3b40!important}
+#sheet .seg button.on::after{content:"";display:block;width:16px;height:3px;border-radius:2px;margin:3px auto -6px;background:var(--accent)}
+nav [data-tab]{font-weight:700!important;letter-spacing:0}
+/* icons: small app tiles, one shape, one size, a colour each */
+#sheet .ci.sq{width:40px!important;height:40px!important;flex:none;display:grid!important;place-items:center;border-radius:12px!important;font-size:22px;line-height:1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.08),0 4px 10px -4px rgba(0,30,40,.45)!important}
+#sheet .ci.sq.coral{background:linear-gradient(180deg,#ffb4a2,#ff7d6b)!important}#sheet .ci.sq.sea{background:linear-gradient(180deg,#8fe3ff,#3fa9e0)!important}
+#sheet .ci.sq.gold{background:linear-gradient(180deg,#ffe49a,#f6b84a)!important}#sheet .ci.sq.mint{background:linear-gradient(180deg,#a8f2c4,#4fc98a)!important}
+#sheet .ci.sq.violet{background:linear-gradient(180deg,#d6c6ff,#9a7cf2)!important}#sheet .ci.sq.pink{background:linear-gradient(180deg,#ffc2d4,#ff7fa3)!important}
+#sheet .ci.sq.slate{background:linear-gradient(180deg,#d7e3ea,#93a7b4)!important}
+/* rows: a little more air, a calmer arrow */
+#app #sheet .cgroup > .crow{min-height:64px;padding:12px 14px 12px 12px!important;gap:12px}
+#sheet .crow .chev{font-size:22px;color:rgba(232,252,246,.45)!important;font-style:normal}
+/* buttons: firm, with an edge, and they press down */
+#sheet .cbtn,#sheet .fcard .fgo,.big:not(.alt):not(.danger):not(.warn):not([disabled]),#modal .big.gold,.notesheet .nsact .buy:not(.dim){
+  background:linear-gradient(180deg,#ffeaa8,#ffcf62 52%,#f2b043)!important;color:#4a2c03!important;font-weight:800!important;letter-spacing:0;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.8),inset 0 -2px 0 rgba(170,100,10,.35),0 6px 14px -6px rgba(190,120,10,.8)!important;transition:transform .12s var(--spring),box-shadow .12s}
+:is(#sheet .cbtn,#sheet .fcard .fgo,.big,#modal .big.gold,.notesheet .nsact .buy,#sheet .atile,#sheet .toy,#sheet .shop2 .card,#sheet .feedall,#app #sheet .cgroup > .crow):active{transform:translateY(1px) scale(.97)!important}
+#sheet .feedall{min-height:56px!important}#sheet .feedall b{font-size:16.5px!important;font-weight:800!important}
+/* tiles: picture first, generous */
+#sheet .atile .apic{width:72px;height:60px}#sheet .shop2 .card{padding-bottom:10px!important}
+/* the journal: your own line at the end */
+#sheet .jadd{margin-top:14px}
+/* the welcome and every question: rounded, roomy */
+#modal .box h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.01em}#modal .box p{font-size:15px;line-height:1.45}
+@media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
+</style>
+<style id="cozy">
+/* ═══ Cozy ═══
+   Light, milky sea glass, the way a piece of beach glass looks in your hand: soft white-aqua panes the tank glows through, dark
+   friendly text, white pebbles with soft shadows, colour kept for icons, the section you are in and the one main button.
+   Warm and calm like a well-made life-sim, never loud. */
+:root{--ink:#24474a;--ink-2:rgba(36,71,74,.72);--ink-3:rgba(36,71,74,.5);
+  --c-tank:#1c9f99;--c-care:#e2664f;--c-shop:#c58a10;--c-crew:#7a5fe0;
+  --pane:linear-gradient(180deg,rgba(248,255,252,.9),rgba(236,250,246,.94) 40%,rgba(228,246,242,.97));
+  --pane-rim:inset 0 1.5px 0 #fff,inset 0 0 0 1px rgba(255,255,255,.6);
+  --peb:#fffffe;--peb-rim:0 1px 0 rgba(36,71,74,.06),0 8px 18px -12px rgba(30,90,90,.45);}
+/* the panes */
+#app #sheet,#app #card,#app #modal .box,#app .notesheet .nsw,#app #coach,#app #placebar{background:var(--pane)!important;color:var(--ink)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(1.3)!important;backdrop-filter:blur(24px) saturate(1.3)!important;box-shadow:var(--pane-rim),0 -10px 36px rgba(0,40,52,.22)!important}
+#app #sheet .x::before,#app #sheet .grab,#app #card .grab::before{background:rgba(36,71,74,.22)!important}
+#app :is(#sheet,#card,#modal .box,.notesheet .nsw,#coach) :is(b,strong,h2,h3,h5,h6,label,summary,p,span,small,em,i,li,dt,dd,div){color:inherit}
+#app :is(#sheet,#card,#modal .box,.notesheet .nsw,#coach) :is(h2,h3,b,strong){color:var(--ink)!important;text-shadow:none!important}
+#app :is(#sheet,#card,#modal .box,.notesheet .nsw) :is(small,.dim,.todaysub,p,.sp,.ffood span){color:var(--ink-2)!important}
+#app #sheet .crow .ct small,#app #sheet .mrow small,#app #sheet .fcard small,#app #sheet .atile small,#app #sheet .toy small{color:var(--ink-2)!important}
+#app #sheet .crow .chev,#app #sheet .soon b{color:var(--ink-3)!important}
+#app :is(#sheet,#card) :is(h4,.csec){color:var(--accent)!important;opacity:1}
+:root{--accent:var(--c-tank)}#app:has(nav [data-tab="care"].on){--accent:var(--c-care)}#app:has(nav [data-tab="decorate"].on){--accent:var(--c-shop)}#app:has(nav [data-tab="friends"].on){--accent:var(--c-crew)}
+/* pebbles: white, soft-shadowed, no borders */
+#app #sheet :is(.cgroup > .crow,.mrows > .mrow,.soon,.atile,.toy,.shop2 .card,.anr,.tc-roadw,.tc-tile,.tc-step,.htank > div,.havg,.fcard,.fold,.rkbox,.detail,.wish,.moodchip,.orders,.sty,.theme,.cmf,.jpost,.slot,.crewbox,.pcmini,.tc-card,.tc-next,.set .group),
+#app #card :is(.fold,.rkbox,.cmf,.now,.trust,.act2,.pet,.fv,.info,.cmore > summary,.tg,.psum,.dyk),#app #modal :is(ul.away li,.pk,.chooser > *),#app .notesheet :is(.pvuse,.pvf,.pvnow){
+  background:var(--peb)!important;border:0!important;box-shadow:var(--peb-rim)!important;color:var(--ink)!important}
+#app #sheet .crewbox{background:transparent!important;box-shadow:none!important}
+#app #sheet .cgroup > .crow.hot,#app #sheet .cgroup > .crow.due{background:linear-gradient(180deg,#fffaf0,#fff4dc)!important;box-shadow:0 1px 0 rgba(160,110,20,.12),0 8px 18px -12px rgba(170,110,10,.5)!important}
+#app #sheet .shop2 .card.sel,#app #sheet .shop2 .card.on,#app #modal .pk.on{box-shadow:inset 0 0 0 2.5px var(--accent),0 8px 18px -12px rgba(30,90,90,.5)!important}
+#app #sheet .shop2 .card.lock,#app #sheet .shop2 .card.poor{opacity:.6}
+/* tabs inside a page: a soft groove, the chosen one a white pill */
+#app :is(#sheet,#card) .seg{background:rgba(36,71,74,.08)!important;box-shadow:inset 0 1px 2px rgba(36,71,74,.1)!important}
+#app :is(#sheet,#card) .seg button{color:var(--ink-2)!important;font-weight:700!important}
+#app :is(#sheet,#card) .seg button.on{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -4px rgba(30,90,90,.4)!important}
+#app #sheet .seg button.on::after{background:var(--accent)!important}
+/* chips and quiet buttons */
+#app #sheet :is(.cat,.chipb,button.lnk),#app :is(#sheet,#card) .tog:not(.on){background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -6px rgba(30,90,90,.35)!important}
+#app #sheet :is(.cat.on,.chipb.on){background:var(--accent)!important;color:#fff!important}#app #sheet .cat.on .nc{background:#fff!important;color:var(--accent)!important}
+#app #sheet .cats .cat.mv{background:rgba(255,255,255,.6)!important;box-shadow:inset 0 0 0 1.5px rgba(36,71,74,.18)!important}
+#app :is(#sheet,#card,#modal .box) .fx,#app #sheet .gear{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -5px rgba(30,90,90,.4)!important}
+.big.alt,#app .notesheet .nsact .close{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -6px rgba(30,90,90,.35)!important}
+#app .notesheet .nsact{background:rgba(228,246,242,.9)!important}
+#app #modal input,#app #sheet input{background:#fff!important;color:var(--ink)!important;box-shadow:inset 0 1px 3px rgba(36,71,74,.18)!important}#app :is(#modal,#sheet) input::placeholder{color:var(--ink-3)!important}
+/* Feed everyone: the aqua one */
+#app #sheet .feedall{background:linear-gradient(180deg,#9ff0de,#4fd0bb)!important;color:#0d4943!important;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.75),inset 0 -2px 0 rgba(0,80,70,.18),0 6px 14px -6px rgba(20,130,110,.7)!important}
+#app #sheet .feedall :is(b,small,span){color:#0d4943!important}
+/* meters and rings on light glass */
+#app :is(#sheet,#card) .hring svg circle:first-child{stroke:rgba(36,71,74,.12)}#app :is(#sheet,#card) .hring b{color:var(--ink)!important}
+#app #sheet .tc-tile .ring circle:first-child,#app #sheet .tc-duo svg circle:first-child{stroke:rgba(36,71,74,.12)!important}
+#app #sheet :is(.vm i,.tc-bar,.lvrow i,.nb i,.pj){background:rgba(36,71,74,.1)!important;box-shadow:none!important}
+/* the bar, when a pane is open: the same milky glass, dark labels */
+#app:has(#sheet.on) nav::before{background:linear-gradient(180deg,rgba(232,248,244,0),rgba(232,248,244,.95) 32%,rgba(228,246,242,.99) 60%)!important}
+#app:has(#sheet.on) nav [data-tab]:not(.on),#app:has(#sheet.on) nav [data-tab]:not(.on) :is(svg,b,span,small){color:var(--ink-2)!important}
+#app:has(#sheet.on) nav [data-tab].on,#app:has(#sheet.on) nav [data-tab].on :is(svg,b,span,small){color:var(--accent)!important}
+#app:has(#sheet.on) nav .lens{background:#fff!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 6px 14px -6px rgba(30,90,90,.45)!important}
+/* the card's tabs and its header */
+#app #card .tabs::before{background:linear-gradient(180deg,rgba(240,252,248,.97) 78%,rgba(240,252,248,0))!important}
+#app #card .chimg{background:#fff!important;box-shadow:var(--peb-rim)!important}
+#app #card .ren,#app #card .x{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08)!important}
+#app #sheet .x::after,#app #card .grab::after,#app .notesheet .grab::after{background:linear-gradient(180deg,rgba(246,255,252,.98) 70%,rgba(246,255,252,0))!important}
+/* journal tags keep their colour on white */
+#app #sheet .jpost .jt{filter:saturate(1.2) brightness(.8)}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
