@@ -1775,6 +1775,19 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #modal .box .clist > .crow[aria-checked="true"]{background:rgba(255,255,255,.4)!important;box-shadow:inset 0 0 0 2px #fff!important}
 #modal .box .clist .crad{border-color:#fff!important}
 .ncbtn .stick:disabled{opacity:.55}
+/* Play: every tile the same: an icon bead, a name, one small line; the same size and frost */
+#app #sheet .care2 :is(.grid2.acts .tile,.toybox .toy){display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;
+  min-height:128px!important;padding:14px 8px 12px!important;border-radius:22px!important;border:0!important;text-align:center!important;
+  background:linear-gradient(160deg,rgba(255,255,255,.26),rgba(255,255,255,.1) 55%,rgba(255,255,255,.16))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 16px -8px rgba(0,40,52,.5)!important;
+  font:700 15px/1.2 var(--round)!important;color:#fff!important}
+#app #sheet .care2 :is(.grid2.acts .tile,.toybox .toy) > span:first-child{width:48px;height:48px;flex:none;display:grid!important;place-items:center;border-radius:50%;background:rgba(255,255,255,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+#app #sheet .care2 :is(.grid2.acts .tile,.toybox .toy) b{font:700 15px/1.2 var(--round)!important;color:#fff!important}
+#app #sheet .care2 :is(.grid2.acts .tile,.toybox .toy) small{font:500 12.5px/1.3 var(--round)!important;color:rgba(255,255,255,.88)!important;margin:0!important}
+#app #sheet .care2 .grid2.acts{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+#app #sheet .care2 .toybox .toy.lock{opacity:.6}
+#sheet .crow.due .ct b::after{display:none!important}
+#app #sheet .care2 .grid2.acts > .tile.tile,#app #sheet .care2 .grid2.acts > button.tile{background:linear-gradient(160deg,rgba(255,255,255,.26),rgba(255,255,255,.1) 55%,rgba(255,255,255,.16))!important;filter:none!important}
+#app #sheet .care2 .grid2.acts > .tile::before,#app #sheet .care2 .grid2.acts > .tile::after{display:none!important}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
