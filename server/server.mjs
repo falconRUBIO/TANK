@@ -265,6 +265,23 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       pushState(tk.id, L.publicTank(w)); broadcast(tk.id, { t: 'event', toast: `${n} shells were given back to the tank.` });
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ ok: true, shells: w.shells }));
     }
+    // the developer's delivery: an animal someone paid for that never came is put on order for them and arrives now, the usual way (it swims in,
+    // the journal says so, and the one it is for is its caretaker). POST only, with the admin key, one animal at a time, only if there is room.
+    if (url.pathname === '/admin/deliver') {
+      const key = process.env.ADMIN_KEY ?? '', given = url.searchParams.get('key') ?? '', q = (k) => String(url.searchParams.get(k) ?? '').replace(/[\u0000-\u001f<>]/g, '').trim();
+      if (req.method !== 'POST' || !key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
+      const bad = (reason, extra = {}) => { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: false, reason, ...extra })); };
+      const code = q('code').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12), species = q('species') || 'octopus', d = R.SPECIES_DEF[species], kind = q('kind').toLowerCase(), who = q('for').toLowerCase();
+      const tk = code && db.prepare('SELECT id FROM tanks WHERE code=? AND test=0').get(code); if (!tk) return bad('NO_TANK'); if (!d || d.visitor) return bad('BAD_SPECIES');
+      if (kind && !R.KINDS[species]?.[kind]) return bad('BAD_KIND', { kinds: Object.keys(R.KINDS[species] ?? {}) });
+      const ms = L.listMembers(db, tk.id), m = who ? ms.find((x) => String(x.name).toLowerCase() === who) : null; if (who && !m) return bad('NO_SUCH_CARETAKER', { caretakers: ms.map((x) => x.name) });
+      const now = Date.now(), { w } = L.loadWorld(db, tk.id);
+      if (w.fish.length + R.pending(w) + d.count > R.capacityOf(w, R.TURTLES.has(species))) return bad('TANK_FULL');
+      w.seq = (w.seq ?? 10) + 1; w.orders.push({ id: 'o' + w.seq, species, ...(kind ? { kind } : {}), name: q('name').slice(0, 14) || null, seed: (now % 90000) | 0, paid: d.price, by: m?.name ?? 'The shop', owner: m?.id ?? null, ownerName: m?.name ?? null, at: now, arrivesAt: now });
+      L.saveWorld(db, tk.id, w); L.addJournal(db, tk.id, `The ${d.label.toLowerCase()} ${m ? `${m.name} paid for` : 'that was paid for'} has been sent on${q('why') ? `: ${q('why').slice(0, 80)}` : '.'}`, null, now);
+      const r = L.tickTank(db, tk.id, now); pushState(tk.id, L.publicTank(r.world)); for (const e of r.events) broadcast(tk.id, { t: 'event', ...e });
+      const got = r.world.fish.find((f) => f.species === species && f.arrived === now); res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ ok: !!got, name: got?.name ?? null, kind: got?.kind ?? null, owner: got?.ownerName ?? null }));
+    }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel; try { rel = decodeURIComponent(url.pathname); } catch { res.writeHead(400); return res.end('Bad request'); }      // a malformed address once threw out of the handler and took the server down
     if (/^\/join\/[A-Za-z0-9]{0,8}$/.test(rel) || rel === '/') rel = '/index.html';      // invitation links open the app
