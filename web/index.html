@@ -1788,6 +1788,10 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #sheet .crow.due .ct b::after{display:none!important}
 #app #sheet .care2 .grid2.acts > .tile.tile,#app #sheet .care2 .grid2.acts > button.tile{background:linear-gradient(160deg,rgba(255,255,255,.26),rgba(255,255,255,.1) 55%,rgba(255,255,255,.16))!important;filter:none!important}
 #app #sheet .care2 .grid2.acts > .tile::before,#app #sheet .care2 .grid2.acts > .tile::after{display:none!important}
+/* section labels: white, so they read on any part of the glass; the section's colour is a small bar in front */
+#app :is(#sheet,#card) :is(h4,.csec,.hhab h6){color:#fff!important;opacity:1!important;display:flex!important;align-items:center;gap:8px;text-shadow:0 1px 3px rgba(0,30,40,.55)!important;font-size:12.5px!important}
+#app :is(#sheet,#card) :is(h4,.csec,.hhab h6)::before{content:"";flex:none;width:14px;height:4px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+#app :is(#sheet,#card) :is(h4,.csec) > span{color:rgba(255,255,255,.85)!important}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
