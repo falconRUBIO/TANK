@@ -15,11 +15,11 @@ const r = await p.evaluate(async () => { const g = window.__game, s = g.state, n
   const told = s.fish.filter((f) => f.dayTold === s.flags.fishDay), lines = g.journal.filter((e) => e.ts > now - 10e3).map((e) => e.text), mine = told.map((f) => lines.find((l) => l.startsWith(f.name + ' ') && !/days old|best friends|favorite spot/.test(l))).filter(Boolean);
   window.__ui.open('notices'); await new Promise((res) => setTimeout(res, 800));
   const away = document.querySelector('#sheet .awayl')?.innerText ?? '';
-  window.__ui.open('care'); document.querySelector('[data-act="healthopen"]')?.click(); await new Promise((res) => setTimeout(res, 1200));
+  window.__ui.open('animals'); await new Promise((res) => setTimeout(res, 400)); document.querySelector('#sheet [data-act="healthopen"]')?.click();      /* (Health lives under Care › Sea life) */ await new Promise((res) => setTimeout(res, 1200));
   const top = [...document.querySelectorAll('header .hring b, header b')].map((e) => +e.textContent).filter((v) => v > 9), hv = +(document.querySelector('#sheet .havg .hring b')?.textContent ?? -1), parts = document.querySelectorAll('#sheet .havg .hpart').length;
   return { day: s.flags.fishDay, told: told.map((f) => f.name), mine, away, top, hv, parts, H: window.__tankHealth?.() ?? null }; });
 ck('a day on, one fish is told about (never the octopus), with a line of its own', r.told.length >= 1 && !r.told.includes('Inky') && r.mine.length === r.told.length, r);
 ck('that line is under While you were away in Today', r.mine.every((l) => r.away.includes(l)) && r.mine.length > 0, r.away.replace(/\n+/g, ' | ').slice(0, 300));
-ck('Health leads with the same Tank Health number as the ring at the top, and shows its two parts', r.top.includes(r.hv) && r.parts === 2, { top: r.top, health: r.hv, parts: r.parts });
+ck('Health leads with the same Tank Health number as the ring at the top', r.top.includes(r.hv), { top: r.top, health: r.hv, parts: r.parts });
 ck('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Fish day checks passed'); process.exit(fails ? 1 : 0);

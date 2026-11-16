@@ -13,7 +13,7 @@ const r = await p.evaluate(async () => {
   const logRes = []; for (let k = 1; k <= 3; k++) logRes.push(await g.dispatch({ t: 'fishLog', logs: [{ fish: pip.id, dist: 2, lv: { low: 100 }, places: [cave.id], secs: { [cave.id]: 170 }, near: { [q.id]: 180 } }] }, { dev: true, now: g.now() + k * 6e5 }).then((x) => JSON.stringify(x).slice(0, 120), (e) => 'threw ' + e.message));      /* (each report's answer, for the line below when it is not taken) */
   const J = (g.journal ?? []).filter((j) => j.about?.includes(pip.id)).map((j) => j.text);
   // the Health screen
-  window.__ui.open('care'); await new Promise((r) => setTimeout(r, 400)); document.querySelector('#sheet [data-act="healthopen"]')?.click(); await new Promise((r) => setTimeout(r, 600));
+  window.__ui.open('animals'); await new Promise((r) => setTimeout(r, 400)); document.querySelector('#sheet [data-act="healthopen"]')?.click(); await new Promise((r) => setTimeout(r, 600));
   const hab = [...document.querySelectorAll('#sheet .hhab li')].map((e) => e.textContent);
   // the card's Journal tab
   window.__ui.open('tank'); await new Promise((r) => setTimeout(r, 300)); window.__focus(window.__fishes.list.indexOf(window.__fishes.byId.get(pip.id))); await new Promise((r) => setTimeout(r, 800)); document.querySelector('#card .tb[data-tab="jour"]')?.click(); await new Promise((r) => setTimeout(r, 500));

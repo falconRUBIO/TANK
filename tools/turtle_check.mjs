@@ -18,7 +18,7 @@ const life = await p.evaluate(async () => { const F = window.__fishes, f = F.byI
 ck('it comes right up to the surface to breathe', life.hi > 10, `highest ${life.hi.toFixed(1)}`);
 ck('and goes down low to rest or graze', life.low < 3.2, `lowest ${life.low.toFixed(1)}`);
 ck('it does several turtle things', life.seen.length >= 3, life.seen.join(', '));
-const card = async (id) => { await p.evaluate((id) => window.__showCard(window.__fishes.byId.get(id)), id); await p.waitForTimeout(1200); return p.evaluate(() => document.getElementById('card').innerText); };
+const card = async (id) => { await p.evaluate((id) => window.__showCard(window.__fishes.byId.get(id)), id); await p.waitForTimeout(1200); return p.evaluate(() => { document.querySelectorAll('#card details').forEach((d) => (d.open = true)); return document.getElementById('card').innerText; }); };
 const young = await card('tB'); ck('a young turtle\'s card counts down to the ocean', /Ready for the ocean in about \d+ day/.test(young));
 const grown = await card('tA'); ck('a grown one has its release button, and its milestone is the ocean', /Release Shelly to the ocean/.test(grown) && /Ready for the ocean/.test(grown) && !/Became a parent/.test(grown));
 const sh0 = await p.evaluate(() => window.__game.state.shells);

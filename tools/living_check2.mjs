@@ -29,7 +29,7 @@ if (process.env.DBG) console.log('B1', JSON.stringify(await p.evaluate(() => ({ 
 if (process.env.DBG) console.log(JSON.stringify(await p.evaluate(() => { const s = window.__game.state, f = s.fish.find((x) => x.id === 'oA'); return { away: f.away, restless: f.restless, buddy: f.buddy, out: [...(window.__fishes.out?.keys() ?? [])], palRec: window.__fishes.byId.get('fP')?.palId }; })));
 const wait = await p.evaluate(() => { const F = window.__fishes, f = F.byId.get('fP'), o = F.out.get('oA'); let n = 0; for (let i = 0; i < 200; i++) { f.retarget = 0; f.pick(Math.random); if (f.target.y > 8 && f.target.z < -1.5) n++; } return { n, waited: f.waitedFor ?? 0 }; });
 ck('while Biscuit is away, its friend Pal keeps going up to the back where it left', wait.n > 30, JSON.stringify(wait));
-await p.evaluate(() => { window.__showCard(window.__fishes.byId.get('fP')); }); await p.waitForTimeout(700); const palCard = await p.evaluate(() => document.body.innerText); if (process.env.DBG) console.log('S', JSON.stringify(await p.evaluate(() => { const o = window.__game.state.fish.find((x) => x.id === 'oA'); return { buddy: o.buddy, away: !!o.away }; })));
+await p.evaluate(() => { window.__showCard(window.__fishes.byId.get('fP')); }); await p.waitForTimeout(700); const palCard = await p.evaluate(() => { document.querySelectorAll('#card details').forEach((d) => (d.open = true)); return document.body.innerText; }); if (process.env.DBG) console.log('S', JSON.stringify(await p.evaluate(() => { const o = window.__game.state.fish.find((x) => x.id === 'oA'); return { buddy: o.buddy, away: !!o.away }; })));
 ck('Pal\'s profile: "Waiting for Biscuit to come back."', /Waiting for Biscuit to come back/.test(palCard), process.env.DBG ? palCard.slice(0, 600).replace(/\n/g, ' | ') : (palCard.match(/Waiting[^\n]*/)?.[0] ?? ''));
 await p.evaluate(() => document.querySelector('#card .x')?.click()); await p.waitForTimeout(300);
 // 3. the kid leans toward its parents (bolder), on its own personality
@@ -41,7 +41,7 @@ await p.waitForTimeout(500); await p.evaluate(async () => { await window.__game.
 const kv = await p.evaluate(() => window.__game.state.keeps[0].h?.visits ?? null);
 ck('the pebble remembers Biscuit coming to it', kv?.oA?.[0] === 1 && kv.oA[2] === 'Biscuit', JSON.stringify(kv));
 // 5. the profiles say these things, from the record
-await p.evaluate(() => { window.__game.profTab = 'over'; window.__showCard(window.__fishes.byId.get('fK')); }); await p.waitForTimeout(700); const kidCard = await p.evaluate(() => document.body.innerText);
+await p.evaluate(() => { window.__game.profTab = 'over'; window.__showCard(window.__fishes.byId.get('fK')); }); await p.waitForTimeout(700); const kidCard = await p.evaluate(() => { document.querySelectorAll('#card details').forEach((d) => (d.open = true)); return document.body.innerText; });
 ck('the kid\'s profile: "Takes after Mo and Ma: … a little more bold"', /Takes after Mo and Ma: .*a little more bold/.test(kidCard), kidCard.match(/Takes after[^\n]*/)?.[0] ?? '');
 await p.evaluate(() => document.querySelector('#card .x')?.click()); await p.waitForTimeout(300);
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));

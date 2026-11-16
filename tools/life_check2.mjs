@@ -58,7 +58,7 @@ await step(20); const owl = await p.evaluate(() => { const F = window.__fishes; 
 ck('night owls: the explorer is about at night, the show-off goes home', owl.a === true && owl.b === false, JSON.stringify(owl));
 // the profile: habits and the favourite place's own history, from the record
 await p.evaluate(() => { window.__game.profTab = 'over'; window.__showCard(window.__fishes.byId.get('oB')); }); await p.waitForTimeout(800);
-const prof = await p.evaluate(() => document.body.innerText); await p.screenshot({ path: `${out}/profile.png` });
+const prof = await p.evaluate(() => { document.querySelectorAll('#card details').forEach((d) => (d.open = true)); return document.body.innerText; }); await p.screenshot({ path: `${out}/profile.png` });
 ck('the profile shows its habit and its favourite place\'s history', /Every afternoon: the reef boulder/i.test(prof) && /Reef Boulder: Sly found it first/.test(prof), prof.match(/Every[^\n]*|Reef Boulder:[^\n]*/g)?.join(' | ') ?? '');
 // (the seahorse on its own with the plants: with octopuses about it keeps clear of the stems)
 await p.evaluate(() => { const g = window.__game, s = g.state; s.fish = s.fish.filter((f) => f.id === 'sH'); s.decor = [{ id: 'p1', type: 'grass', x: -2.6, z: 2.3, ry: 0 }, { id: 'p2', type: 'fern', x: 1.2, z: 2.4, ry: 0 }, { id: 'p3', type: 'sword', x: -1.0, z: -0.3, ry: 0 }, { id: 'p4', type: 'brain', x: 2.6, z: 2.2, ry: 0 }]; g.emit('state');      /* (the seahorse drill's own plants) */ }); await p.waitForTimeout(2500);
