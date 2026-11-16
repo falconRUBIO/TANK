@@ -112,6 +112,19 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
   // changed by itself can drift) gets the whole tank instead. A phone that is not being looked at gets nothing until it is looked at again.
   const tankCopy = new Map();      // tankId -> { v, w }: the last copy that went out
   const sendFull = (w, pub, extra = {}) => { const c = tankCopy.get(w.tankId); send(w, { t: 'state', tank: pub, v: c?.w === pub ? c.v : undefined, ...extra }); w.sv = c?.w === pub ? c.v : undefined; w.fullAt = Date.now(); w.stale = false; };
+  // an animal someone paid for that never came: put on order for them and it arrives now, the usual way (it swims in, the journal says so, and the one
+  // it is for is its caretaker). Counts as paid for. One at a time, only if there is room. Used by the admin key (/admin/deliver) and the developer's own button.
+  const sendLost = (tankId, { species: sp, kind: kd, name: nm, forName, forId, why } = {}) => {
+    const clean = (v, n) => String(v ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, n), species = clean(sp, 20) || 'octopus', d = R.SPECIES_DEF[species], kind = clean(kd, 20).toLowerCase(), who = clean(forName, 30).toLowerCase();
+    if (!d || d.visitor) return { ok: false, reason: 'BAD_SPECIES' }; if (kind && !R.KINDS[species]?.[kind]) return { ok: false, reason: 'BAD_KIND', kinds: Object.keys(R.KINDS[species] ?? {}) };
+    const ms = L.listMembers(db, tankId), m = forId ? ms.find((x) => x.id === forId) : who ? ms.find((x) => String(x.name).toLowerCase() === who) : null; if ((who || forId) && !m) return { ok: false, reason: 'NO_SUCH_CARETAKER', caretakers: ms.map((x) => x.name) };
+    const now = Date.now(), { w } = L.loadWorld(db, tankId);
+    if (w.fish.length + R.pending(w) + d.count > R.capacityOf(w, R.TURTLES.has(species))) return { ok: false, reason: 'TANK_FULL' };
+    w.seq = (w.seq ?? 10) + 1; w.orders.push({ id: 'o' + w.seq, species, ...(kind ? { kind } : {}), name: clean(nm, 14) || null, seed: (now % 90000) | 0, paid: d.price, by: m?.name ?? 'The shop', owner: m?.id ?? null, ownerName: m?.name ?? null, at: now, arrivesAt: now });
+    L.saveWorld(db, tankId, w); L.addJournal(db, tankId, `The ${d.label.toLowerCase()} ${m ? `${m.name} paid for` : 'that was paid for'} has been sent on${clean(why, 80) ? `: ${clean(why, 80)}` : '.'}`, null, now);
+    const r = L.tickTank(db, tankId, now); pushState(tankId, L.publicTank(r.world)); for (const e of r.events) broadcast(tankId, { t: 'event', ...e });
+    const got = r.world.fish.find((f) => f.species === species && f.arrived === now); return got ? { ok: true, name: got.name, kind: got.kind ?? null, owner: got.ownerName ?? null } : { ok: false, reason: 'NOT_DELIVERED' };
+  };
   const pushState = (tankId, pub, extra = {}, fresh = null) => {
     const last = tankCopy.get(tankId), d = last ? diffTank(last.w, pub) : null, v = (last?.v ?? 0) + 1;
     if (last && !d && !fresh) return;      // (nothing changed)
@@ -170,6 +183,7 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
         if (!isDev(user)) throw new L.GameError('FORBIDDEN', 'Not available.', 403);
         const info = (t) => { if (!t) return { tank: null }; const { w } = L.loadWorld(db, t.id); return { tank: { id: t.id, code: t.code, name: t.name }, stage: R.seaStage(w), people: L.listMembers(db, t.id).map((m) => m.name) }; };
         if (req.method === 'GET' && p === '/api/dev/test') return json(res, 200, info(L.testTankOf(db, user.id)));
+        if (req.method === 'POST' && p === '/api/dev/deliver') { const t = L.tankOf(db, user.id); if (!t) throw new L.GameError('NO_TANK', 'You have no tank.', 404); const b = await readBody(req); const r = sendLost(t.id, { species: b?.species, kind: b?.kind, name: b?.name, forId: typeof b?.for === 'string' ? b.for : null, why: b?.why }); return json(res, 200, r); }      // (the developer's own real tank: a paid-for animal that never came)
         if (req.method === 'POST' && p === '/api/dev/test/open') { L.openTestTank(db, user); return json(res, 200, info(L.testTankOf(db, user.id))); }
         if (req.method === 'POST' && p === '/api/dev/test/join') { const b = await readBody(req); const t = L.joinTestTank(db, user, String(b.code ?? '')); for (const w of [...(rooms.get(t.id) ?? [])]) send(w, { t: 'presence', online: online(t.id) }); return json(res, 200, info(L.testTankOf(db, user.id))); }
         if (req.method === 'POST' && p === '/api/dev/test/step') {
@@ -268,19 +282,11 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
     // the developer's delivery: an animal someone paid for that never came is put on order for them and arrives now, the usual way (it swims in,
     // the journal says so, and the one it is for is its caretaker). POST only, with the admin key, one animal at a time, only if there is room.
     if (url.pathname === '/admin/deliver') {
-      const key = process.env.ADMIN_KEY ?? '', given = url.searchParams.get('key') ?? '', q = (k) => String(url.searchParams.get(k) ?? '').replace(/[\u0000-\u001f<>]/g, '').trim();
+      const key = process.env.ADMIN_KEY ?? '', given = url.searchParams.get('key') ?? '', q = (k) => String(url.searchParams.get(k) ?? '');
       if (req.method !== 'POST' || !key || given.length !== key.length || !timingSafeEqual(Buffer.from(given), Buffer.from(key))) { res.writeHead(404); return res.end('Not found'); }
-      const bad = (reason, extra = {}) => { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: false, reason, ...extra })); };
-      const code = q('code').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12), species = q('species') || 'octopus', d = R.SPECIES_DEF[species], kind = q('kind').toLowerCase(), who = q('for').toLowerCase();
-      const tk = code && db.prepare('SELECT id FROM tanks WHERE code=? AND test=0').get(code); if (!tk) return bad('NO_TANK'); if (!d || d.visitor) return bad('BAD_SPECIES');
-      if (kind && !R.KINDS[species]?.[kind]) return bad('BAD_KIND', { kinds: Object.keys(R.KINDS[species] ?? {}) });
-      const ms = L.listMembers(db, tk.id), m = who ? ms.find((x) => String(x.name).toLowerCase() === who) : null; if (who && !m) return bad('NO_SUCH_CARETAKER', { caretakers: ms.map((x) => x.name) });
-      const now = Date.now(), { w } = L.loadWorld(db, tk.id);
-      if (w.fish.length + R.pending(w) + d.count > R.capacityOf(w, R.TURTLES.has(species))) return bad('TANK_FULL');
-      w.seq = (w.seq ?? 10) + 1; w.orders.push({ id: 'o' + w.seq, species, ...(kind ? { kind } : {}), name: q('name').slice(0, 14) || null, seed: (now % 90000) | 0, paid: d.price, by: m?.name ?? 'The shop', owner: m?.id ?? null, ownerName: m?.name ?? null, at: now, arrivesAt: now });
-      L.saveWorld(db, tk.id, w); L.addJournal(db, tk.id, `The ${d.label.toLowerCase()} ${m ? `${m.name} paid for` : 'that was paid for'} has been sent on${q('why') ? `: ${q('why').slice(0, 80)}` : '.'}`, null, now);
-      const r = L.tickTank(db, tk.id, now); pushState(tk.id, L.publicTank(r.world)); for (const e of r.events) broadcast(tk.id, { t: 'event', ...e });
-      const got = r.world.fish.find((f) => f.species === species && f.arrived === now); res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify({ ok: !!got, name: got?.name ?? null, kind: got?.kind ?? null, owner: got?.ownerName ?? null }));
+      const code = q('code').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12), tk = code && db.prepare('SELECT id FROM tanks WHERE code=? AND test=0').get(code);
+      const r = tk ? sendLost(tk.id, { species: q('species'), kind: q('kind'), name: q('name'), forName: q('for'), why: q('why') }) : { ok: false, reason: 'NO_TANK' };
+      res.writeHead(r.ok ? 200 : 400, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); return res.end(JSON.stringify(r));
     }
     if (url.pathname.startsWith('/api/')) return api(req, res, url);
     let rel; try { rel = decodeURIComponent(url.pathname); } catch { res.writeHead(400); return res.end('Bad request'); }      // a malformed address once threw out of the handler and took the server down
