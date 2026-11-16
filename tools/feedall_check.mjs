@@ -15,7 +15,7 @@ const openFeed = async () => { await p.evaluate(() => { for (let i = 0; i < 4; i
 const hungers = () => p.evaluate(() => { const s = window.__game.state; return { fish: +(s.hunger ?? 0).toFixed(2), ...Object.fromEntries(s.fish.filter((f) => f.species === 'octopus' || f.species === 'seahorse').map((f) => [f.name, +(f.hunger ?? 0).toFixed(2)])), shells: s.shells }; });
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.7 }, { id: 's1', name: 'Pip', species: 'seahorse', seed: 4, hunger: 0.6, sex: 'm' }, { id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }, { id: 'g2', name: 'Bubbles', species: 'neon', seed: 7 }], h: 0.5 });
 await openFeed(); const btn = await p.evaluate(() => { const x = document.querySelector('#sheet .feedall'); return x ? { text: x.textContent.replace(/\s+/g, ' ').trim(), list: x.dataset.list } : null; });
-ck('three can eat: the Feed screen offers Feed everyone, three meals, free', !!btn && /Feed everyone/.test(btn.text) && /3 meals · free/.test(btn.text), btn);
+ck('three can eat: the Feed screen offers Feed everyone, one free tap for all three', !!btn && /Feed everyone/.test(btn.text) && /One tap · free/.test(btn.text) && btn.list.split(',').length === 3, btn);
 ck('each gets its own everyday food', btn && ['flakes:', 'crab:o1', 'mysis:s1'].every((k) => btn.list.split(',').includes(k)), btn?.list);
 await p.screenshot({ path: `${OUT}/feedall.png` });
 const before = await hungers(); await p.evaluate(() => document.querySelector('#sheet .feedall').click());
