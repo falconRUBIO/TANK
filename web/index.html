@@ -1707,6 +1707,32 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #card .trust{min-height:56px;padding:10px 14px!important;border-radius:var(--r-l)!important}
 #card .chd h2{font-size:24px!important;font-weight:800!important;letter-spacing:-.01em}#card .chd .sp{font-size:13px!important;line-height:1.4}
 #card .chimg{border-radius:20px!important}
+/* Health: the summary a row like the rest; what would help, plain rows */
+#app #sheet .havg{background:var(--pebble)!important;box-shadow:var(--pebble-rim)!important;border-radius:var(--r-l)!important;padding:14px 16px!important}
+#app #sheet .havg .hvtop{display:flex!important;align-items:center;justify-content:flex-start!important;gap:14px;text-align:left}
+#app #sheet .havg .hvtop b{font-size:20px!important}#app #sheet .havg .hverdict{font-size:15px!important}
+#app #sheet .htank > div{border-radius:var(--r-l)!important;min-height:76px}#app #sheet .htank small{font-size:11px!important;letter-spacing:.1em}#app #sheet .htank b{font-size:18px!important}
+#app #sheet .hhab{background:none!important;box-shadow:none!important;padding:0!important}
+#app #sheet .hhab h6{font-size:12px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase;color:var(--accent)!important;margin:18px 4px 8px!important}
+#app #sheet .hhab ul{display:flex;flex-direction:column;gap:8px;padding:0;margin:0;list-style:none}
+#app #sheet .hhab li{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px!important;border-radius:var(--r-l)!important;background:var(--pebble)!important;box-shadow:var(--pebble-rim)!important;border:0!important;font-size:14.5px}
+#app #sheet .hhab li::before{display:none!important}#app #sheet .hhab li span{flex:1;min-width:0}#app #sheet .hhab li b{display:block;font-size:16px}#app #sheet .hhab li small{font-size:13px}
+#app #sheet .hhab li em{flex:none;font-style:normal;font-weight:700;font-size:13.5px;color:var(--gold)}
+#app #sheet .hcard .htop{min-height:64px}#app #sheet .hcard .hw{font-size:11.5px!important}
+/* the shop preview: buttons centred, the same press */
+.notesheet .nsact :is(.close,.buy){display:flex!important;align-items:center!important;justify-content:center!important;font-weight:800!important;font-size:16px!important}
+.notesheet .dch h3{font-size:24px!important;font-weight:800!important}.notesheet .dch > p{font-size:15px!important}
+.notesheet :is(.pvuse,.pvf) small{font-size:11.5px!important;letter-spacing:.11em;font-weight:800}
+.notesheet .pvuse li b{font-size:15px}
+/* the welcome and every picker: the same type, tiles, and the gold button */
+#modal .box.pick .pkdesc{font-size:14.5px!important;line-height:1.4}#modal .box.pick .pkdesc small,#modal .box.pick .pkdesc em{display:none!important}
+#modal .box :is(#mok,.big):not(.alt):not(.lnk){min-height:52px;border-radius:999px!important;background:linear-gradient(180deg,#ffeaa8,#ffcf62 52%,#f2b043)!important;color:#4a2c03!important;font-weight:800!important;font-size:17px!important;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.8),inset 0 -2px 0 rgba(170,100,10,.35),0 6px 14px -6px rgba(190,120,10,.8)!important}
+#modal .box .pk{border-radius:var(--r-l)!important}#modal .box .pk b{font-size:13.5px!important;font-weight:700}
+#modal .box input{min-height:50px;font-size:17px!important;font-weight:600;text-align:center}
+/* the card's Personality: the same labels and tiles */
+#card .psum{border-radius:var(--r-l)!important;padding:14px!important}#card .psum b{font-size:17px!important}
+#card .tg{border-radius:var(--r-m)!important}#card .tg span{font-size:12px!important}
+#card .tfact{font-size:14px;line-height:1.45}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
