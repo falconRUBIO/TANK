@@ -19,6 +19,7 @@ await p.waitForTimeout(1500);
 await p.evaluate(() => { window.__ui.open('book'); }); await p.waitForTimeout(1200);
 const page = await p.evaluate(() => ({ text: document.querySelector('#sheet')?.innerText ?? '', tabs: [...document.querySelectorAll('#sheet .seg button')].map((b) => b.textContent.trim()) }));
 await p.screenshot({ path: `${out}/collection.png`, timeout: 120000 }).catch(() => {});
-ck('the Guide tab is gone: Crew has Friends, Sea life and Journal, and anything asking for the Guide gets the sea life', page.tabs.join() === 'Friends,Sea life,Journal' && /Everyone living in your tank/.test(page.text), page.tabs);
+const on = await p.evaluate(() => document.querySelector('#sheet .seg button.on')?.textContent.trim() ?? '');
+ck('the Guide tab is gone: anything asking for the Guide (or the old book) gets Care › Sea life, with a tile for each animal', page.tabs.some((t) => t === 'Sea life') && on === 'Sea life' && /Your sea life/i.test(page.text), { tabs: page.tabs, on });
 ck('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 await b.close(); console.log(fails ? `${fails} failed` : 'Field Guide checks passed'); process.exit(fails ? 1 : 0);
