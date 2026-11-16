@@ -1707,6 +1707,9 @@ nav [data-tab].on,nav [data-tab].on :is(svg,b,span,small){color:#0c4a50!importan
 #app #sheet .tc-step{display:grid!important;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:12px 16px!important;border-radius:var(--r-l)!important;background:linear-gradient(160deg,rgba(255,236,190,.34),rgba(255,255,255,.12) 60%,rgba(255,224,160,.2))!important;box-shadow:inset 0 1px 0 rgba(255,250,230,.7),0 6px 16px -8px rgba(60,40,0,.45)!important;border:0!important;text-align:left}
 #app #sheet .tc-step small{grid-column:1;font-size:11px;letter-spacing:.1em;color:var(--gold)}#app #sheet .tc-step b{grid-column:1;font-size:16px}#app #sheet .tc-step span{grid-column:1;font-size:13px;color:var(--ink-2)}#app #sheet .tc-step > i{grid-column:2;grid-row:1 / span 3;font-style:normal;font-size:20px;color:var(--ink-3)}
 #app #sheet .tc-duo{gap:8px}#app #sheet .tc-tile{border:0!important}
+#sheet .fcard .ftop{display:flex;align-items:center;gap:12px}#sheet .fcard .ftop .fgo{all:unset;cursor:pointer;margin-left:auto}
+#sheet .fmore{margin:8px 0 0}#sheet .fmore > summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);padding:6px 2px}#sheet .fmore > summary::-webkit-details-marker{display:none}#sheet .fmore > summary::after{content:"›";transition:transform .2s}#sheet .fmore[open] > summary::after{transform:rotate(90deg)}
+#sheet .fmore .ftiles{margin-top:6px}
 </style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
