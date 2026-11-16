@@ -47,11 +47,11 @@ const tw = await p.evaluate(() => ({ sheet: document.getElementById('sheet').cla
 await p.evaluate(() => document.querySelector('#modal.on #mno')?.click()); await p.waitForTimeout(300);
 // 3. only fish, one thing due; 4. an empty tank
 await set({ fish: [{ id: 'g1', name: 'Nori', species: 'goldfish', seed: 3 }], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
-ck('fish only, hungry: one job on the Care tab, and Feed for the fish', r.hero === '1' && r.due.length === 1 && /1 of your sea life could use food/.test(r.due[0]), r.due);
+ck('fish only, hungry: one job on the Care tab, and Feed for the fish', r.hero === '1' && r.due.length === 1 && /1 hungry/.test(r.due[0]), r.due);
 await set({ fish: [], h: 0.5, w: 0.95, g: 0.05 }); await open(); r = await read();
 ck('an empty tank does not break the page, and has no Feed row', r.later.some((x) => /^Cleaning/.test(x)) && !r.later.some((x) => /^Feed/.test(x)), r);
 // the Tank status fold opens to the meters
 await set({ fish: [{ id: 'o1', name: 'Inky', species: 'octopus', seed: 5, hunger: 0.3 }], h: 0.1, w: 0.9, g: 0.1 }); await open();
-await p.evaluate(() => document.querySelector('#sheet [data-act=healthopen]').click()); await p.waitForTimeout(500); const hl = await p.evaluate(() => [...document.querySelectorAll('#sheet .hcard')].map((r) => r.textContent)); ck('Health has a row for each animal, with a word for how it is', hl.length >= 1 && hl.every((t) => /Thriving|Happy|Content|Hungry|Lonely|Uneasy|Unsettled|Unhappy|Stressed|Gloomy|Unwell/.test(t)), hl);
+await p.evaluate(async () => { window.__ui.open('animals'); await new Promise((q) => setTimeout(q, 400)); document.querySelector('#sheet [data-act=healthopen]').click(); });      /* (Health is under Care › Sea life) */ await p.waitForTimeout(500); const hl = await p.evaluate(() => [...document.querySelectorAll('#sheet .hcard')].map((r) => r.textContent)); ck('Health has a row for each animal, with a word for how it is', hl.length >= 1 && hl.every((t) => /Thriving|Happy|Content|Hungry|Lonely|Uneasy|Unsettled|Unhappy|Stressed|Gloomy|Unwell/.test(t)), hl);
 ck('no page errors', errs.length === 0, errs.slice(0, 3));
 console.log(fails ? `${fails} failed` : 'Care checks passed'); await b.close();
