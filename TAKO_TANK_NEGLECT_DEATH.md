@@ -19,7 +19,7 @@ Notifications never go out between 10pm and 8am, so a warning sent once could be
 
 Both are high priority, so lighter news never uses up the day's notification allowance before them. Coming back to the game, a death or a last-day warning is the first line under "While you were away", and the Care row "Sea life health" says "‹name› will not last another day without care".
 
-Because of the 30-hour wait, a player who feeds the tank and leaves loses nobody in a week. A death needs roughly eight days with no care at all.
+Because of the 30-hour wait, and because one meal now fills the tank for a whole day, a player who feeds the tank and leaves loses nobody in a week. A death needs well over a week with no care at all.
 
 ## The body stays until someone removes it
 

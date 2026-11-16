@@ -119,12 +119,12 @@ export function nurseryBrood(N, taken = []) {
     const trait = BROOD_TRAITS[(h >>> 3) % BROOD_TRAITS.length]; out.push({ id: `${N.id}~${k}`, name, seed: h % 90000, sex: (h >>> 7) & 1 ? 'm' : 'f', traits: [trait], role: BROOD_ROLE[trait], brood: k + 1 }); }
   return out;
 }
-// The rhythm of looking after the tank (the water and glass come due a little before three full days, so someone who visits once a day at about the same time meets them on the third). Feeding is the everyday visit, about twice a day, because watching the fish rush for food
+// The rhythm of looking after the tank (the water and glass come due a little before three full days, so someone who visits once a day at about the same time meets them on the third). Feeding is the everyday visit, once a day (one tap of Feed everyone fills everyone), because watching the fish rush for food
 // and the octopus hunt its crab is the fun part. The water and the glass are a bigger job every few days, and pay more for it.
-// A tank that misses a day is fine: a fish only starts to suffer after a day and a half with no food, or about five days of old water.
+// A tank that misses a day is fine: a fish only starts to suffer after about two and a half days with no food, or about five days of old water.
 export const CARE = {
-  meal: 12,         // hours after a full meal until the fish are due another (hunger 0 to 0.3)
-  crab: 12,         // hours after a crab until an octopus is due its next (hunger 0 to OCTO_DUE)
+  meal: 24,         // hours after a full meal until the fish are due another (hunger 0 to 0.3): once a day
+  crab: 24,         // hours after a crab until an octopus is due its next (hunger 0 to OCTO_DUE): once a day
   water: 66,        // hours until fresh water turns cloudy enough to change (1 to 0.7, with the little each meal leaves behind)
   glass: 66,        // hours until clean glass needs a wipe (0 to 0.3)
 };
@@ -2301,7 +2301,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
         if (f.hunger < 0.08) return ok({ applied: false, delta: 0, food, fish: f.id });
         f.fedAt = now;      /* (its own meal: it does not count as feeding the fish, and a full one is not fed at all) */
         const needed = f.hunger > 0.25, pay = 0; careNeed = needed;      // (feeding is care: no pay)
-        f.hunger = Math.max(0, f.hunger - 0.5); t.shells += pay; f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
+        f.hunger = 0; t.shells += pay;      /* (one crab or one serving of mysis fills it: nobody has to come back for a second) */ f.fedBy = { uid, name, at: now };      // shown in the feed menu, so two caretakers do not feed back to back
          f.happy = Math.min(1, (f.happy ?? 0.7) + 0.08); f.bond ||= {}; const tw = octoTrust(f, uid).lvl; f.bond[uid] = (f.bond[uid] ?? 0) + 1; trustStep(f, uid, tw, events); unlock(t, f, 'food', now, events, { food });
         if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); checkWant(t, now, events, { type: 'feed', food }); if (food === 'crab') { checkWant(t, now, events, { type: 'crab', id: f.id }); f.crabs = (f.crabs ?? 0) + 1; if (f.crabs === 1) events.push({ journal: `${f.name} caught its first crab.` }); } }      // a real meal is a crab caught: it counts towards the shells it keeps at its den
         dayCheck(t, now, events, 'care', needed); events.push({ activity: { type: 'feed', text: food === 'crab' ? `${name} fed ${f.name} a crab.` : `${name} fed ${f.name} mysis shrimp.` } });
@@ -2313,7 +2313,7 @@ function _applyAction(t, a, { name = 'Someone', now = Date.now(), dev = false, t
       if (t.hunger < 0.08) return ok({ applied: false, delta: 0 });
       if (t.shells < price) return fail('NOT_ENOUGH_SHELLS');
       const needed = t.hunger > 0.25, pay = 0; careNeed = needed;
-      t.shells -= price; t.hunger = Math.max(0, t.hunger - 0.3); t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
+      t.shells -= price; t.hunger = 0;      /* (one meal fills the tank: feeding is once a day, one tap) */ t.fedBy = { uid, name, at: now, food }; t.water = Math.max(0.3, t.water - 0.005); t.shells += pay;
       if (needed) { careEgg(t, now); raiseNote(t, now, 'fed'); dailySurprise(t, now, events); teamCare(t, uid, name, now, events); careBy(t, uid, name, now); progress(t, 'care', events, name); progress(t, 'care2', events, name, 'feed'); feedLearn(t, now); }
       if (food !== 'flakes') for (const f of t.fish) { if ((food === 'crab') !== (f.species === 'octopus') || (FOODS[food].sea && f.species !== 'seahorse')) continue; const love = favFoodOf(f) === food; f.happy = Math.min(1, (f.happy ?? 0.7) + (love ? 0.1 : 0.03)); if (love) unlock(t, f, 'food', now, events, { food }); }
       if (needed) checkWant(t, now, events, { type: 'feed', food }); dayCheck(t, now, events, 'care', needed);

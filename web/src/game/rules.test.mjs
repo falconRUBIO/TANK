@@ -450,8 +450,8 @@ ok('the spire is the shop\'s big save-up at level 8; the lighthouse and the tori
 ok('food choice: flakes are free and pay as before, pellets and treats cost shells and cheer fish, favourites are noticed once', () => {
   const t = quiet(3); t.fish[0].traits = ['Greedy']; t.fish[1].traits = ['Shy']; t.fish[2].traits = ['Brave']; t.fish.forEach((f) => { f.happy = 0.5; }); t.hunger = 0.8; t.shells = 20; t.simTs = 0; t.level = 8; t.wishIdx = 12; t.seen.fish = ['goldfish']; t.flags.collMs = 99;
   assert.equal(R.favFoodOf(t.fish[0]), 'treats'); assert.equal(R.favFoodOf(t.fish[1]), 'pellets'); assert.equal(R.favFoodOf(t.fish[2]), 'flakes');
-  const fl = R.applyAction(t, { t: 'feed' }, { now: 10, name: 'A', uid: 'u1' }); assert.equal(fl.delta, 0, 'flakes: feeding pays nothing'); assert.equal(t.shells, 20);
-  const pe = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 20, name: 'A', uid: 'u1' }); assert.equal(pe.delta, -2); assert.equal(t.shells, 18); assert.ok(t.fish[1].happy > t.fish[0].happy, 'the pellet lover is happiest');
+  const fl = R.applyAction(t, { t: 'feed' }, { now: 10, name: 'A', uid: 'u1' }); assert.equal(fl.delta, 0, 'flakes: feeding pays nothing'); assert.equal(t.shells, 20); assert.equal(t.hunger, 0, 'one meal fills the tank');
+  t.hunger = 0.8; const pe = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 20, name: 'A', uid: 'u1' }); assert.equal(pe.delta, -2); assert.equal(t.shells, 18); assert.ok(t.fish[1].happy > t.fish[0].happy, 'the pellet lover is happiest');
   assert.ok(pe.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'noticed'); t.hunger = 0.8; const again = R.applyAction(t, { t: 'feed', food: 'pellets' }, { now: 30, name: 'A', uid: 'u1' }); assert.ok(!again.events.some((e) => /loves pellets/.test(e.journal ?? '')), 'only once');
   t.hunger = 0.8; t.shells = 3; const poor = R.applyAction(t, { t: 'feed', food: 'treats' }, { now: 40, name: 'A', uid: 'u1' }); assert.equal(poor.ok, false); assert.equal(poor.reason, 'NOT_ENOUGH_SHELLS'); assert.equal(t.shells, 3, 'nothing taken');
   const junk = R.applyAction(t, { t: 'feed', food: 'gold' }, { now: 50, name: 'A', uid: 'u1' }); assert.ok(junk.ok, 'unknown food is treated as flakes');
@@ -771,13 +771,13 @@ ok('habit lines come only from real counts: none for a newcomer, each number is 
     const t = R.newWorld(0, 3, { empty: true }); t.level = 8; t.shells = 500; t.flags.tut = 5; R.applyAction(t, { t: 'buyFish', species: 'goldfish', name: 'G', seed: 4, sex: 'f' }, { now: 1000 }); R.advance(t, 1000 + 864e5); assert.equal(t.fish[0].sex, 'f', 'any single fish can be chosen male or female, to complete a pair'); });
   ok('a seahorse has its own hunger: it grows while nobody feeds it, and only its caretaker (or anyone, if it has none) can feed it', () => {
     const t = R.newWorld(0, 3, { empty: true }); t.level = 8; t.flags.tut = 5; t.fish.push(R.ensureFish({ id: 's1', name: 'Mine', species: 'seahorse', seed: 4, born: -30 * D, stage: 'adult', traits: [], owner: 'u1', ownerName: 'Ann' }), R.ensureFish({ id: 's2', name: 'Theirs', species: 'seahorse', seed: 5, born: -30 * D, stage: 'adult', traits: [], owner: 'u2', ownerName: 'Bo' }), R.ensureFish({ id: 's3', name: 'Nobodys', species: 'seahorse', seed: 6, born: -30 * D, stage: 'adult', traits: [], owner: null }));
-    t.simTs = 0; R.advance(t, 12 * 3600e3); assert.ok(t.fish[0].hunger > 0.6, 'hungry after half a day: ' + t.fish[0].hunger);
+    t.simTs = 0; R.advance(t, 24 * 3600e3); assert.ok(t.fish[0].hunger > 0.6, 'hungry after a day: ' + t.fish[0].hunger);
     const m = [{ id: 'u1', name: 'Ann' }, { id: 'u2', name: 'Bo' }];
-    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's2' }, { now: 12 * 3600e3, uid: 'u1', name: 'Ann', members: m }).reason, 'NOT_YOURS', 'not someone else\'s');
-    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's1' }, { now: 12 * 3600e3, uid: 'u1', name: 'Ann', members: m }).ok, true); assert.ok(t.fish[0].hunger < 0.4);
-    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's3' }, { now: 12 * 3600e3, uid: 'u2', name: 'Bo', members: m }).ok, true, 'no caretaker: anyone');
+    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's2' }, { now: 24 * 3600e3, uid: 'u1', name: 'Ann', members: m }).reason, 'NOT_YOURS', 'not someone else\'s');
+    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's1' }, { now: 24 * 3600e3, uid: 'u1', name: 'Ann', members: m }).ok, true); assert.ok(t.fish[0].hunger < 0.4);
+    assert.equal(R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's3' }, { now: 24 * 3600e3, uid: 'u2', name: 'Bo', members: m }).ok, true, 'no caretaker: anyone');
     assert.ok(t.fish[1].hunger > 0.6, 'Bo\'s own seahorse is still waiting for Bo'); assert.equal(R.canFeedOwn(t.fish[1], 'u2'), true); assert.equal(R.canFeedOwn(t.fish[1], 'u1'), false);
-    const solo = R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's2' }, { now: 12 * 3600e3, uid: 'me', name: 'Me', solo: true }); assert.equal(solo.ok, true, 'a solo tank: all yours'); });
+    const solo = R.applyAction(t, { t: 'feed', food: 'mysis', fish: 's2' }, { now: 24 * 3600e3, uid: 'me', name: 'Me', solo: true }); assert.equal(solo.ok, true, 'a solo tank: all yours'); });
   ok('the pouch fills through the pregnancy and goes back down after the birth; seahorses no longer lay eggs; an old save without any of this still loads', () => {
     const p = { preg: { start: 0, due: 7 * D } }; assert.equal(R.broodOf(p, 0), 0); assert.ok(Math.abs(R.broodOf(p, 3.5 * D) - 0.5) < 1e-9); assert.equal(R.broodOf(p, 9 * D), 1);
     assert.ok(R.broodOf({ lastBirth: 0 }, 1 * D) > 0 && R.broodOf({ lastBirth: 0 }, 3 * D) === 0);
@@ -864,12 +864,12 @@ ok('an octopus remembers a friend and a rival for every phone, and its moments a
   R.applyAction(t, { t: 'chooseFirst', species: 'octopus', name: 'Ink', seed: 3 }, { now: 1000, name: 'Ana', uid: 'a', members: M });
   R.applyAction(t, { t: 'firstFish', name: 'Dot', seed: 4 }, { now: 1000, name: 'Bo', uid: 'b', members: M });
   const ink = t.fish.find((f) => f.name === 'Ink'), dot = t.fish.find((f) => f.name === 'Dot'); assert.equal(ink.hunger, 0.3);
-  R.advance(t, 1000 + 14 * 3600e3); assert.ok(ink.hunger > 0.75 && ink.hunger < 0.85, 'fourteen hours on: ' + ink.hunger); assert.equal(R.needsOf(ink, t).mood, 'Hungry');
-  const no = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 14 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.equal(no.reason, 'NOT_YOURS', 'Bo cannot feed Ana\'s octopus');
-  const s0 = t.shells, ok1 = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 14 * 3600e3, name: 'Ana', uid: 'a', members: M }); assert.ok(ok1.ok && ok1.applied && ok1.delta === 0, JSON.stringify(ok1)); assert.ok(ink.hunger < 0.35); assert.equal(t.shells, s0);
+  R.advance(t, 1000 + 28 * 3600e3); assert.ok(ink.hunger > 0.75 && ink.hunger < 0.85, 'twenty-eight hours on: ' + ink.hunger); assert.equal(R.needsOf(ink, t).mood, 'Hungry');
+  const no = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 28 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.equal(no.reason, 'NOT_YOURS', 'Bo cannot feed Ana\'s octopus');
+  const s0 = t.shells, ok1 = R.applyAction(t, { t: 'feed', food: 'crab', fish: ink.id }, { now: 1000 + 28 * 3600e3, name: 'Ana', uid: 'a', members: M }); assert.ok(ok1.ok && ok1.applied && ok1.delta === 0, JSON.stringify(ok1)); assert.ok(ink.hunger < 0.35); assert.equal(t.shells, s0);
   assert.ok(dot.hunger > 0.75, 'Dot is still hungry: feeding Ink did nothing for it'); assert.equal(t.hunger < 0.9, true);
-  const pick = R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 14 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.ok(pick.ok && pick.fish === dot.id, 'with no fish named, a caretaker feeds their own');
-  assert.equal(R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 14 * 3600e3 + 1, name: 'Bo', uid: 'b', members: M }).applied, true); assert.equal(R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 14 * 3600e3 + 2, name: 'Bo', uid: 'b', members: M }).applied, false, 'full');
+  const pick = R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 28 * 3600e3, name: 'Bo', uid: 'b', members: M }); assert.ok(pick.ok && pick.fish === dot.id, 'with no fish named, a caretaker feeds their own');
+  assert.equal(dot.hunger, 0, 'one crab fills it'); assert.equal(R.applyAction(t, { t: 'feed', food: 'crab' }, { now: 1000 + 28 * 3600e3 + 2, name: 'Bo', uid: 'b', members: M }).applied, false, 'full');
   ink.born = 1000 - 10 * 864e5; t.shells = 50; assert.equal(R.applyAction(t, { t: 'crab', id: ink.id }, { now: 1000 + 14 * 3600e3, name: 'Bo', uid: 'b', members: M }).reason, 'NOT_YOURS', 'the crab treat too'); assert.ok(R.applyAction(t, { t: 'crab', id: ink.id }, { now: 1000 + 14 * 3600e3, name: 'Ana', uid: 'a', members: M }).applied);
   const solo = R.newWorld(0, 1, { empty: true }); R.norm(solo, 0); R.applyAction(solo, { t: 'chooseFirst', species: 'octopus', name: 'S', seed: 1 }, { now: 1000, name: 'You', uid: 'me', solo: true });
   solo.fish[0].owner = 'someone'; R.advance(solo, 1000 + 14 * 3600e3); assert.ok(R.applyAction(solo, { t: 'feed', food: 'crab' }, { now: 1000 + 14 * 3600e3, name: 'You', uid: 'me', solo: true }).applied, 'alone, you feed any octopus');
@@ -1124,7 +1124,7 @@ ok('(refine) decisions come only from something real, four to seven days apart; 
   const D = 864e5, t0 = 20 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
   t.fish = ['g', 'h'].map((id, i) => R.ensureFish({ id, name: id, species: 'goldfish', seed: 4 + i, born: 0, stage: 'adult', traits: [] })); t.decor = [];
   for (let d = 0; d < 20; d++) { t.hunger = 0; t.water = 1; t.glass = 0; R.advance(t, t0 + d * D); } assert.ok(!t.dilemma, 'two happy goldfish: nothing to decide');
-  t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0 + 20 * D; omenThen(t, t0 + 20 * D + 1000); assert.equal(t.dilemma?.kind, 'sick'); const gap = (t.dilemmaAt - (t0 + 20 * D)) / D; assert.ok(gap >= 4 && gap < 8, String(gap));
+  R.advance(t, t0 + 20 * D); t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0 + 20 * D; omenThen(t, t0 + 20 * D + 1000); assert.equal(t.dilemma?.kind, 'sick'); const gap = (t.dilemmaAt - (t0 + 20 * D)) / D; assert.ok(gap >= 4 && gap < 8, String(gap));
 });
 ok('(refine) the daily mystery is never the same kind two days running, and never says an octopus did something it did not', () => {
   const D = 864e5, t = R.newWorld(0); R.norm(t, 0); t.flags.tut = 5; t.fish = [R.ensureFish({ id: 'o', name: 'Inky', species: 'octopus', seed: 1, born: 0, stage: 'adult' })]; t.keeps = [];
@@ -1154,7 +1154,7 @@ ok('(refine) the tank shows what is wrong a day before it asks; a sickness that 
   const D = 864e5, t0 = 30 * D, t = R.newWorld(0); R.norm(t, t0); t.flags.tut = 5; t.simTs = t0; t.flags.noWants = true; t.visitAt = t.eggAt = 9e15;
   t.fish = ['g', 'h', 'i'].map((id, k) => R.ensureFish({ id, name: id.toUpperCase(), species: 'goldfish', seed: 4 + k, born: 0, stage: 'adult', traits: [] })); t.fish[0].ail = R.AIL_TIRED; t.dilemmaAt = t0;
   const ev = R.advance(t, t0 + 1000); assert.ok(!t.dilemma && t.omen?.kind === 'sick' && ev.some((e) => e.omen === 'sick' && /pale/.test(e.journal)), 'first it is seen');
-  t.fish[0].ail = R.AIL_TIRED; R.advance(t, t0 + 0.95 * D); assert.equal(t.dilemma?.kind, 'sick', 'then it is asked');
+  R.advance(t, t0 + 0.9 * D - 1000); t.fish[0].ail = R.AIL_TIRED; R.advance(t, t0 + 0.95 * D); assert.equal(t.dilemma?.kind, 'sick', 'then it is asked');      // (still off colour when the day comes: fed fish mend quickly now)
   let spread = false; for (let s = 0; s < 40 && !spread; s++) { const u = structuredClone(t); u.dilemma.at = u.dilemma.at + s * 6e4; const r = R.applyAction(u, { t: 'decide', id: u.dilemma.id, k: 'wait' }, { now: t0 + D, name: 'You' }); if (/It spread/.test(r.line ?? r.events?.map((e) => e.journal).join(' ') ?? '')) { spread = true; assert.ok(u.fish.every((f) => f.ail >= R.AIL_TIRED), 'they are unwell'); } }
 });
 ok('wellbeing log: a line only when a need goes missing or is met, and how long it has been missing', () => {
