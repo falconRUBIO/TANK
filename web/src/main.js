@@ -2156,14 +2156,14 @@ async function boot() {
       try { await api('/api/dev/test/join', { code }); setTest(true); location.reload(); } catch (e) { ui.toast(e.message || 'Could not join'); } },
     devStep: (op) => devStep(op), devDemo: (after) => devDemo(after), devDemoOn: () => !!demoRun,
     devLost: async () => {      // the developer's own button (Crew, Sea life): an octopus someone paid for that never arrived is sent now, free, to its caretaker
-      if (!game.dev) return; const K = KINDS.octopus ?? {};
+      const K = KINDS.octopus ?? {};      /* (TEMPORARY: open to everyone until the lost octopus is back) */
       const kind = await ui.choose({ title: 'Which octopus?', text: 'The kind that was bought.', options: Object.entries(K).map(([k, v]) => ({ label: v.label, value: k })), cancel: 'Not now' }); if (!kind) return;
       const name = await ui.dialog({ title: 'Its name', text: 'The name it was given when it was bought. Leave it blank and the shop picks one.', input: { value: '', placeholder: 'Name', max: 14 }, ok: 'Next', cancel: 'Not now' }); if (name === null || name === undefined || name === false) return;
       const people = game.members ?? []; let to = game.you?.userId ?? null;
       if (people.length > 1) { to = await ui.choose({ title: 'Whose is it?', text: 'Who bought it. They become its caretaker.', options: people.map((m) => ({ label: m.name, value: m.id })), cancel: 'Not now' }); if (!to) return; }
       const who = people.find((m) => m.id === to)?.name ?? 'you';
       if (!(await ui.dialog({ title: 'Send it now?', text: `A ${K[kind]?.label ?? 'octopus'}${typeof name === 'string' && name.trim() ? ` called ${name.trim()}` : ''} for ${who}. It arrives in the tank now, free: it was already paid for.`, ok: 'Send it', cancel: 'Not now' }))) return;
-      try { const r = await api('/api/dev/deliver', { species: 'octopus', kind, name: typeof name === 'string' ? name.trim() : '', for: to, why: 'it never arrived' });
+      try { const r = await api('/api/lost', { species: 'octopus', kind, name: typeof name === 'string' ? name.trim() : '', for: to, why: 'it never arrived' });
         if (r.ok) { sfx('arrive'); ui.toast(`${r.name} is on the way in.`, 3200); ui.open('tank'); } else ui.toast({ TANK_FULL: 'The tank is full: make room first.', NO_SUCH_CARETAKER: 'That caretaker is not in the tank.', BAD_KIND: 'That kind is not known.' }[r.reason] ?? 'It could not be sent.'); }
       catch (e) { ui.toast(e.message || 'It could not be sent.'); }
     },

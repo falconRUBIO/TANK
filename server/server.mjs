@@ -179,6 +179,8 @@ export function start({ port = 8080, dbPath = 'ourtank.db', staticDir = path.joi
       }
       if (req.method === 'GET' && p === '/api/me') { const t = L.tankOf(db, user.id); return json(res, 200, { user, tank: t ? { id: t.id, name: t.name, code: t.code, slot: t.slot } : null, ...(isDev(user) ? { dev: true } : {}) }); }
       // ── the developer's seahorse lifecycle test: every call checks the player id on the server, and only ever touches that player's test aquarium ──
+      // TEMPORARY (until the lost octopus is back): anyone may send an animal that was paid for and never came to their own tank. Remove with the Settings button.
+      if (req.method === 'POST' && p === '/api/lost') { const t = L.tankOf(db, user.id); if (!t) throw new L.GameError('NO_TANK', 'You have no tank.', 404); const b = await readBody(req); const r = sendLost(t.id, { species: b?.species, kind: b?.kind, name: b?.name, forId: typeof b?.for === 'string' ? b.for : null, why: b?.why }); return json(res, 200, r); }
       if (p.startsWith('/api/dev/')) {
         if (!isDev(user)) throw new L.GameError('FORBIDDEN', 'Not available.', 403);
         const info = (t) => { if (!t) return { tank: null }; const { w } = L.loadWorld(db, t.id); return { tank: { id: t.id, code: t.code, name: t.name }, stage: R.seaStage(w), people: L.listMembers(db, t.id).map((m) => m.name) }; };
