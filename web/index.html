@@ -1694,68 +1694,6 @@ nav [data-tab]{font-weight:700!important;letter-spacing:0}
 #modal .box h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.01em}#modal .box p{font-size:15px;line-height:1.45}
 @media (prefers-reduced-motion:reduce){:is(#sheet .cbtn,.big,#sheet .atile,#sheet .toy,#sheet .shop2 .card):active{transform:none!important}}
 </style>
-<style id="cozy">
-/* ═══ Cozy ═══
-   Light, milky sea glass, the way a piece of beach glass looks in your hand: soft white-aqua panes the tank glows through, dark
-   friendly text, white pebbles with soft shadows, colour kept for icons, the section you are in and the one main button.
-   Warm and calm like a well-made life-sim, never loud. */
-:root{--ink:#24474a;--ink-2:rgba(36,71,74,.72);--ink-3:rgba(36,71,74,.5);
-  --c-tank:#1c9f99;--c-care:#e2664f;--c-shop:#c58a10;--c-crew:#7a5fe0;
-  --pane:linear-gradient(180deg,rgba(248,255,252,.9),rgba(236,250,246,.94) 40%,rgba(228,246,242,.97));
-  --pane-rim:inset 0 1.5px 0 #fff,inset 0 0 0 1px rgba(255,255,255,.6);
-  --peb:#fffffe;--peb-rim:0 1px 0 rgba(36,71,74,.06),0 8px 18px -12px rgba(30,90,90,.45);}
-/* the panes */
-#app #sheet,#app #card,#app #modal .box,#app .notesheet .nsw,#app #coach,#app #placebar{background:var(--pane)!important;color:var(--ink)!important;
-  -webkit-backdrop-filter:blur(24px) saturate(1.3)!important;backdrop-filter:blur(24px) saturate(1.3)!important;box-shadow:var(--pane-rim),0 -10px 36px rgba(0,40,52,.22)!important}
-#app #sheet .x::before,#app #sheet .grab,#app #card .grab::before{background:rgba(36,71,74,.22)!important}
-#app :is(#sheet,#card,#modal .box,.notesheet .nsw,#coach) :is(b,strong,h2,h3,h5,h6,label,summary,p,span,small,em,i,li,dt,dd,div){color:inherit}
-#app :is(#sheet,#card,#modal .box,.notesheet .nsw,#coach) :is(h2,h3,b,strong){color:var(--ink)!important;text-shadow:none!important}
-#app :is(#sheet,#card,#modal .box,.notesheet .nsw) :is(small,.dim,.todaysub,p,.sp,.ffood span){color:var(--ink-2)!important}
-#app #sheet .crow .ct small,#app #sheet .mrow small,#app #sheet .fcard small,#app #sheet .atile small,#app #sheet .toy small{color:var(--ink-2)!important}
-#app #sheet .crow .chev,#app #sheet .soon b{color:var(--ink-3)!important}
-#app :is(#sheet,#card) :is(h4,.csec){color:var(--accent)!important;opacity:1}
-:root{--accent:var(--c-tank)}#app:has(nav [data-tab="care"].on){--accent:var(--c-care)}#app:has(nav [data-tab="decorate"].on){--accent:var(--c-shop)}#app:has(nav [data-tab="friends"].on){--accent:var(--c-crew)}
-/* pebbles: white, soft-shadowed, no borders */
-#app #sheet :is(.cgroup > .crow,.mrows > .mrow,.soon,.atile,.toy,.shop2 .card,.anr,.tc-roadw,.tc-tile,.tc-step,.htank > div,.havg,.fcard,.fold,.rkbox,.detail,.wish,.moodchip,.orders,.sty,.theme,.cmf,.jpost,.slot,.crewbox,.pcmini,.tc-card,.tc-next,.set .group),
-#app #card :is(.fold,.rkbox,.cmf,.now,.trust,.act2,.pet,.fv,.info,.cmore > summary,.tg,.psum,.dyk),#app #modal :is(ul.away li,.pk,.chooser > *),#app .notesheet :is(.pvuse,.pvf,.pvnow){
-  background:var(--peb)!important;border:0!important;box-shadow:var(--peb-rim)!important;color:var(--ink)!important}
-#app #sheet .crewbox{background:transparent!important;box-shadow:none!important}
-#app #sheet .cgroup > .crow.hot,#app #sheet .cgroup > .crow.due{background:linear-gradient(180deg,#fffaf0,#fff4dc)!important;box-shadow:0 1px 0 rgba(160,110,20,.12),0 8px 18px -12px rgba(170,110,10,.5)!important}
-#app #sheet .shop2 .card.sel,#app #sheet .shop2 .card.on,#app #modal .pk.on{box-shadow:inset 0 0 0 2.5px var(--accent),0 8px 18px -12px rgba(30,90,90,.5)!important}
-#app #sheet .shop2 .card.lock,#app #sheet .shop2 .card.poor{opacity:.6}
-/* tabs inside a page: a soft groove, the chosen one a white pill */
-#app :is(#sheet,#card) .seg{background:rgba(36,71,74,.08)!important;box-shadow:inset 0 1px 2px rgba(36,71,74,.1)!important}
-#app :is(#sheet,#card) .seg button{color:var(--ink-2)!important;font-weight:700!important}
-#app :is(#sheet,#card) .seg button.on{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -4px rgba(30,90,90,.4)!important}
-#app #sheet .seg button.on::after{background:var(--accent)!important}
-/* chips and quiet buttons */
-#app #sheet :is(.cat,.chipb,button.lnk),#app :is(#sheet,#card) .tog:not(.on){background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -6px rgba(30,90,90,.35)!important}
-#app #sheet :is(.cat.on,.chipb.on){background:var(--accent)!important;color:#fff!important}#app #sheet .cat.on .nc{background:#fff!important;color:var(--accent)!important}
-#app #sheet .cats .cat.mv{background:rgba(255,255,255,.6)!important;box-shadow:inset 0 0 0 1.5px rgba(36,71,74,.18)!important}
-#app :is(#sheet,#card,#modal .box) .fx,#app #sheet .gear{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -5px rgba(30,90,90,.4)!important}
-.big.alt,#app .notesheet .nsact .close{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 4px 10px -6px rgba(30,90,90,.35)!important}
-#app .notesheet .nsact{background:rgba(228,246,242,.9)!important}
-#app #modal input,#app #sheet input{background:#fff!important;color:var(--ink)!important;box-shadow:inset 0 1px 3px rgba(36,71,74,.18)!important}#app :is(#modal,#sheet) input::placeholder{color:var(--ink-3)!important}
-/* Feed everyone: the aqua one */
-#app #sheet .feedall{background:linear-gradient(180deg,#9ff0de,#4fd0bb)!important;color:#0d4943!important;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.75),inset 0 -2px 0 rgba(0,80,70,.18),0 6px 14px -6px rgba(20,130,110,.7)!important}
-#app #sheet .feedall :is(b,small,span){color:#0d4943!important}
-/* meters and rings on light glass */
-#app :is(#sheet,#card) .hring svg circle:first-child{stroke:rgba(36,71,74,.12)}#app :is(#sheet,#card) .hring b{color:var(--ink)!important}
-#app #sheet .tc-tile .ring circle:first-child,#app #sheet .tc-duo svg circle:first-child{stroke:rgba(36,71,74,.12)!important}
-#app #sheet :is(.vm i,.tc-bar,.lvrow i,.nb i,.pj){background:rgba(36,71,74,.1)!important;box-shadow:none!important}
-/* the bar, when a pane is open: the same milky glass, dark labels */
-#app:has(#sheet.on) nav::before{background:linear-gradient(180deg,rgba(232,248,244,0),rgba(232,248,244,.95) 32%,rgba(228,246,242,.99) 60%)!important}
-#app:has(#sheet.on) nav [data-tab]:not(.on),#app:has(#sheet.on) nav [data-tab]:not(.on) :is(svg,b,span,small){color:var(--ink-2)!important}
-#app:has(#sheet.on) nav [data-tab].on,#app:has(#sheet.on) nav [data-tab].on :is(svg,b,span,small){color:var(--accent)!important}
-#app:has(#sheet.on) nav .lens{background:#fff!important;box-shadow:0 1px 0 rgba(36,71,74,.08),0 6px 14px -6px rgba(30,90,90,.45)!important}
-/* the card's tabs and its header */
-#app #card .tabs::before{background:linear-gradient(180deg,rgba(240,252,248,.97) 78%,rgba(240,252,248,0))!important}
-#app #card .chimg{background:#fff!important;box-shadow:var(--peb-rim)!important}
-#app #card .ren,#app #card .x{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 0 rgba(36,71,74,.08)!important}
-#app #sheet .x::after,#app #card .grab::after,#app .notesheet .grab::after{background:linear-gradient(180deg,rgba(246,255,252,.98) 70%,rgba(246,255,252,0))!important}
-/* journal tags keep their colour on white */
-#app #sheet .jpost .jt{filter:saturate(1.2) brightness(.8)}
-</style>
 <noscript>Tako Tank needs JavaScript.</noscript>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:")addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>
 <script type="module" src="src/main.js"></script>
